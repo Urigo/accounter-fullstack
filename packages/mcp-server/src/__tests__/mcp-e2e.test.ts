@@ -93,6 +93,51 @@ function upstreamData(query: string, authorization?: string): unknown {
       allTags: [{ id: 'tag-1', name: 'food', namePath: ['food'], ownerId: AUTHORIZED_BUSINESS }],
     };
   }
+  if (query.includes('contractsByFilters')) {
+    return {
+      contractsByFilters: [
+        {
+          id: 'contract-1',
+          ownerId: AUTHORIZED_BUSINESS,
+          isActive: true,
+          startDate: '2026-01-01',
+          endDate: '2026-12-31',
+          billingCycle: 'MONTHLY',
+          documentType: 'INVOICE',
+          product: null,
+          plan: null,
+          purchaseOrders: [],
+          remarks: null,
+          amount: { raw: 1000, formatted: '$1,000.00', currency: 'USD' },
+          client: {
+            id: 'client-1',
+            originalBusiness: { id: 'client-1', name: 'Client Ltd' },
+          },
+        },
+      ],
+    };
+  }
+  if (query.includes('allClients')) {
+    return {
+      allClients: [
+        {
+          id: 'client-1',
+          ownerId: AUTHORIZED_BUSINESS,
+          emails: ['billing@client.example'],
+          generatedDocumentType: 'PROFORMA',
+          originalBusiness: { id: 'client-1', name: 'Client Ltd' },
+          integrations: {
+            hiveId: 'hive-1',
+            linearId: null,
+            slackChannelKey: null,
+            notionId: null,
+            workflowyUrl: null,
+            greenInvoiceInfo: { greenInvoiceId: 'gi-1' },
+          },
+        },
+      ],
+    };
+  }
   if (query.includes('taxCategories')) {
     return {
       taxCategories: [
@@ -348,6 +393,7 @@ describe('authenticated tool invocation', () => {
         'accounter_balance_report',
         'accounter_list_security_holdings',
         'accounter_get_security_executions',
+        'accounter_list_clients',
       ]),
     );
     // Discovery leads the list, and the internal smoke tool is not advertised.
@@ -357,6 +403,51 @@ describe('authenticated tool invocation', () => {
     // upgrades into: the write tools must not appear.
     expect(tools).not.toContain('accounter_update_charges_tags');
     expect(tools).not.toContain('accounter_upload_documents');
+  });
+
+  it('lists clients with their integrations flattened and scoped to the caller', async () => {
+    const result = await callTool('accounter_list_clients', {}, 'owner-token');
+    expect(result.isError).toBeUndefined();
+    const { clients, scope } = result.structuredContent as {
+      clients: Array<{
+        businessId: string;
+        name: string;
+        ownerId: string;
+        emails: string[];
+        generatedDocumentType: string;
+        integrations: Record<string, string>;
+      }>;
+      scope: { memberBusinessIds: string[] };
+    };
+
+    expect(clients).toHaveLength(1);
+    expect(clients[0].businessId).toBe('client-1');
+    expect(clients[0].name).toBe('Client Ltd');
+    expect(clients[0].ownerId).toBe(AUTHORIZED_BUSINESS);
+    expect(clients[0].emails).toEqual(['billing@client.example']);
+    expect(clients[0].generatedDocumentType).toBe('PROFORMA');
+    // Green Invoice's id is flattened up out of its nested wrapper, and the five
+    // unconfigured integrations are absent rather than null.
+    expect(clients[0].integrations).toEqual({ greenInvoiceId: 'gi-1', hiveId: 'hive-1' });
+    expect(scope.memberBusinessIds).toEqual([AUTHORIZED_BUSINESS]);
+  });
+
+  // The whole reason this tool sits ahead of contracts: the id it returns is the
+  // one the contracts filter takes, with no translation in between.
+  it('returns client ids that feed straight into the contracts filter', async () => {
+    const listed = await callTool('accounter_list_clients', {}, 'owner-token');
+    const { clients } = listed.structuredContent as { clients: Array<{ businessId: string }> };
+
+    const contracts = await callTool(
+      'accounter_get_contracts',
+      { clientIds: [clients[0].businessId] },
+      'owner-token',
+    );
+    expect(contracts.isError).toBeUndefined();
+    const { contracts: rows } = contracts.structuredContent as {
+      contracts: Array<{ client: { businessId: string } }>;
+    };
+    expect(rows[0].client.businessId).toBe(clients[0].businessId);
   });
 
   it('rejects a write tool as unknown while writes are disabled', async () => {

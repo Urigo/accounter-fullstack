@@ -56,6 +56,7 @@ function dataFor(query: string): unknown {
   if (query.includes('transactionsByIDs')) return { transactionsByIDs: [] };
   if (query.includes('documentsByIds')) return { documentsByIds: [] };
   if (query.includes('allTags')) return { allTags: [] };
+  if (query.includes('allClients')) return { allClients: [] };
   if (query.includes('securityHoldings')) return { securityHoldings: [] };
   if (query.includes('securityExecutions')) {
     return { securityExecutions: { nodes: [], pageInfo: { totalPages: 0, totalRecords: 0 } } };

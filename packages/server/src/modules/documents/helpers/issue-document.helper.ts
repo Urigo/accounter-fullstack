@@ -26,7 +26,7 @@ import type { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import type { IGetFinancialBankAccountsByIdsResult } from '../../financial-accounts/types.js';
-import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { parseStoredClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
@@ -314,7 +314,7 @@ export const convertContractToDraft = async (
     throw new GraphQLError(`Client not found for business ID="${contract.client_id}"`);
   }
 
-  const greenInvoiceId = validateClientIntegrations(client.integrations)?.greenInvoiceId;
+  const greenInvoiceId = parseStoredClientIntegrations(client.integrations)?.greenInvoiceId;
 
   if (!greenInvoiceId) {
     throw new GraphQLError(`Green invoice match not found for business ID="${contract.client_id}"`);

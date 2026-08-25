@@ -122,6 +122,51 @@ describe('generated schema contract', () => {
   it('Transaction exposes eventExchangeRates', () => {
     expect(loadSchema()).toMatch(/^interface Transaction \{[^}]*eventExchangeRates: ExchangeRates/m);
   });
+
+  // Same row-attribution rule as Tag/TaxCategory/Transaction above: without it
+  // `accounter_list_clients` cannot tag rows, and its defense-in-depth owner
+  // filter — which drops any row outside the resolved scope — would drop every
+  // row instead of none, turning a missing field into an empty result.
+  it('Client exposes a non-null ownerId', () => {
+    expect(typeBlock(loadSchema(), 'Client')).toContain('ownerId: UUID!');
+  });
+
+  /**
+   * `accounter_list_businesses` reads `isClient` through an inline fragment on
+   * `LtdFinancialEntity`, because `allBusinesses` is typed to the `Business`
+   * interface which does not carry the field. That selection is only total
+   * because `Business.__resolveType` returns `LtdFinancialEntity` for every
+   * node. Pin the field here; the resolver half is pinned by the directory
+   * tool's own suite, which asserts the `?? false` fallback rather than
+   * assuming the fragment always matches.
+   */
+  it('LtdFinancialEntity exposes a non-null isClient', () => {
+    expect(typeBlock(loadSchema(), 'LtdFinancialEntity')).toContain('isClient: Boolean!');
+  });
+
+  // The flag is only useful as a filter if upstream can apply it before paging.
+  // Filtering an already-sliced page would report "the clients on page 1" while
+  // reading as "the clients".
+  it('allBusinesses accepts an isClient predicate', () => {
+    // Matched up to the return type rather than with a `[^)]*` run: the
+    // argument's own description contains parentheses.
+    const args = loadSchema().match(/allBusinesses\([\s\S]*?\): PaginatedBusinesses/);
+    expect(args?.[0]).toContain('isClient: Boolean');
+  });
+
+  /**
+   * The connector reads a client's Green Invoice id through
+   * `integrations { greenInvoiceInfo { greenInvoiceId } }` and selects nothing
+   * else on that type on purpose: `greenInvoiceId` resolves from a value already
+   * in hand, while its siblings each call the external Green Invoice API. If the
+   * nested shape were flattened upstream the selection would break loudly, which
+   * is the good outcome — this pins it so the reason is on record.
+   */
+  it('ClientIntegrations exposes greenInvoiceInfo', () => {
+    expect(typeBlock(loadSchema(), 'ClientIntegrations')).toContain(
+      'greenInvoiceInfo: GreenInvoiceClient',
+    );
+  });
 });
 
 /**

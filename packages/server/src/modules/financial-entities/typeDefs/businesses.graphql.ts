@@ -4,7 +4,13 @@ export default gql`
   extend type Query {
     business(id: UUID!): Business! @requiresAuth
     businesses(ids: [UUID!]!): [Business!]! @requiresAuth
-    allBusinesses(page: Int, limit: Int, name: String): PaginatedBusinesses @requiresAuth
+    allBusinesses(
+      page: Int
+      limit: Int
+      name: String
+      " narrow to businesses that are (true) or are not (false) clients; omit for both "
+      isClient: Boolean
+    ): PaginatedBusinesses @requiresAuth
   }
 
   " represent a financial entity of any type that may hold financial accounts (company, business, individual) "

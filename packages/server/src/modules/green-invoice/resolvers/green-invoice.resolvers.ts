@@ -9,7 +9,7 @@ import type {
   IInsertDocumentsResult,
   IUpdateIssuedDocumentParams,
 } from '../../documents/types.js';
-import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { parseStoredClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
   convertGreenInvoiceDocumentToDocumentDraft,
@@ -30,7 +30,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
           throw new GraphQLError(`Client not found for ID="${clientId}"`);
         }
 
-        const greenInvoiceId = validateClientIntegrations(client.integrations)?.greenInvoiceId;
+        const greenInvoiceId = parseStoredClientIntegrations(client.integrations)?.greenInvoiceId;
         if (!greenInvoiceId) {
           throw new GraphQLError(`Client ID="${clientId}" is missing Green Invoice integration`);
         }
@@ -175,7 +175,7 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
   },
   ClientIntegrations: {
     greenInvoiceInfo: business =>
-      validateClientIntegrations(business.integrations).greenInvoiceId ?? null,
+      parseStoredClientIntegrations(business.integrations).greenInvoiceId ?? null,
   },
   GreenInvoiceClient: {
     greenInvoiceId: clientId => clientId,

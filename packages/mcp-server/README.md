@@ -18,14 +18,14 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of fourteen read-only tools
+Accounter GraphQL server; a curated registry of fifteen read-only tools
 (`accounter_list_business_memberships`, `accounter_explain_terminology`, `accounter_search_charges`,
 `accounter_get_charges`, `accounter_get_transactions`, `accounter_get_documents`,
-`accounter_get_ledger_records`, `accounter_get_contracts`, `accounter_list_security_holdings`,
-`accounter_get_security_executions`, `accounter_list_tags`, `accounter_list_tax_categories`,
-`accounter_list_businesses`, `accounter_balance_report`) each gated by strict input validation, a
-per-tool authorization policy, and business-scope narrowing forwarded upstream as
-`x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
+`accounter_get_ledger_records`, `accounter_list_clients`, `accounter_get_contracts`,
+`accounter_list_security_holdings`, `accounter_get_security_executions`, `accounter_list_tags`,
+`accounter_list_tax_categories`, `accounter_list_businesses`, `accounter_balance_report`) each gated
+by strict input validation, a per-tool authorization policy, and business-scope narrowing forwarded
+upstream as `x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
 propagation, sanitized errors); a unified error taxonomy; per-`tools/call` rate limiting; in-process
 operational metrics (request/outcome counters, a latency histogram, auth-failure counters) exposed
 at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
@@ -169,6 +169,15 @@ scope, because it _is_ the scope.
   (account, amount, local currency amount), so results spanning businesses or charges group without
   a second call. Date ranges are bounded (≤ 1096 days) and rows capped (≤ 500, default 200) with a
   `truncated` flag.
+- **`accounter_list_clients`** — the **clients** you bill: the businesses carrying a `clients` row,
+  with their contact emails, the client-level default document type, and the external-system ids
+  configured for each (Green Invoice, Hive, Linear, Slack, Notion, Workflowy). Filters by
+  `nameContains` and by `clientBusinessIds`; each row reports its `ownerId`. A client's `businessId`
+  **is** its business id, so it is the same value `accounter_list_businesses` returns as `id` and
+  the same value `accounter_get_contracts` takes as `clientIds` — this is the tool that resolves a
+  client by name before asking about its contracts. Unconfigured integrations are omitted rather
+  than returned as `null`, and `generatedDocumentType` is the client-level default only: what
+  actually gets issued is the contract's own `documentType`. Rows capped (≤ 300, default 150).
 - **`accounter_get_contracts`** — read-only **client billing contracts**. Filters by `clientIds`, by
   `contractIds`, and by `isActive`. The owning ("admin") business axis is the membership axis — a
   contract is always owned by a business you are a member of — so `memberBusinessIds` doubles as the
@@ -205,13 +214,16 @@ scope, because it _is_ the scope.
   bookkeeping sort code, active flag), optionally filtered by name, active status, or
   `memberBusinessIds`. Same deterministic sort + cap.
 - **`accounter_list_businesses`** — list the full business directory (id, name, `ownerId`, active
-  flag) — every business visible to the caller, not just their memberships — optionally filtered by
-  name (forwarded to the upstream `allBusinesses(name:)` filter), active status, or
-  `memberBusinessIds`, and paginated with `limit` + 1-based `page` (forwarded as the upstream
-  `limit`/`page` args; the response echoes `pagination`). Same deterministic sort + cap. Note that
-  `activeOnly`/`nameContains` narrowing happens within the fetched page, so a page can come back
-  short. Use `accounter_list_business_memberships` instead for just the caller's own memberships and
-  roles.
+  flag, and `isClient`) — every business visible to the caller, not just their memberships —
+  optionally filtered by name (forwarded to the upstream `allBusinesses(name:)` filter), active
+  status, client status, or `memberBusinessIds`, and paginated with `limit` + 1-based `page`
+  (forwarded as the upstream `limit`/`page` args; the response echoes `pagination`). Same
+  deterministic sort + cap. Note that `activeOnly`/`nameContains` narrowing happens within the
+  fetched page, so a page can come back short — `isClient` is the exception, forwarded to the
+  upstream `allBusinesses(isClient:)` predicate so counts and paging describe the filtered
+  directory. Use `accounter_list_business_memberships` instead for just the caller's own memberships
+  and roles, and `accounter_list_clients` to enumerate clients with their emails and integrations
+  rather than paging this directory for them.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
   your businesses over a bounded date range (≤ 1096 days), selected by the required singular
   `memberBusinessId`. Requires `business_owner`/`accountant` role; rows are capped at 1000 with a
@@ -529,9 +541,26 @@ curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"accounter_get_security_executions","arguments":{"securityBusinessIds":["<securityBusinessId from step 8>"],"includeCharges":true,"pageSize":5}}}'
+
+# 10. Clients, then the contracts behind one. Expect integrations to carry only
+#     the keys actually configured, and no Green Invoice API call in the server log.
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"accounter_list_clients","arguments":{}}}'
+
+# 11. The businessId from step 10 is already a clientIds value — no translation.
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"accounter_get_contracts","arguments":{"clientIds":["<businessId from step 10>"]}}}'
+
+# 12. The same clients, seen from the directory: every row carries isClient, and
+#     the filter is applied upstream so totalCount describes the filtered set.
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"accounter_list_businesses","arguments":{"isClient":true}}}'
 ```
 
-The automated equivalent of steps 1–9 (with the Auth0 verifier and upstream mocked) lives in
+The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream mocked) lives in
 `src/__tests__/mcp-e2e.test.ts` and runs with `yarn workspace @accounter/mcp-server test`.
 
 ## Troubleshooting

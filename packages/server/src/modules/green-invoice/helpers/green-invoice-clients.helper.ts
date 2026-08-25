@@ -6,7 +6,7 @@ import {
 import type { ClientUpdateInput, UpdateBusinessInput } from '../../../__generated__/types.js';
 import { CountryCode } from '../../../shared/enums.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
-import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { parseStoredClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
@@ -99,7 +99,7 @@ export async function addGreenInvoiceClient(clientId: string, injector: Injector
       throw new Error('Failed to create Green Invoice client');
     }
 
-    const integrations = validateClientIntegrations(localClient.integrations);
+    const integrations = parseStoredClientIntegrations(localClient.integrations);
 
     // add green invoice id to local client
     await injector.get(ClientsProvider).updateClient({
@@ -187,14 +187,11 @@ export async function updateGreenInvoiceClient(
     localClientPromise,
   ]);
 
-  let greenInvoiceId: string | undefined;
-  try {
-    greenInvoiceId =
-      validateClientIntegrations(localClient?.integrations ?? {}).greenInvoiceId ?? undefined;
-  } catch {
-    // swallow errors
-    return;
-  }
+  // No try/catch: `parseStoredClientIntegrations` never throws, so an unreadable
+  // stored value simply leaves `greenInvoiceId` undefined and falls into the
+  // guard below — which warns, rather than returning silently as the old catch did.
+  const greenInvoiceId =
+    parseStoredClientIntegrations(localClient?.integrations).greenInvoiceId ?? undefined;
   if (!localBusiness?.name || !greenInvoiceId) {
     // We cannot update a client in Green Invoice without its ID.
     console.warn(

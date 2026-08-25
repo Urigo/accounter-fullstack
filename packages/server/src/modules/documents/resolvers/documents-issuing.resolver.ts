@@ -18,7 +18,7 @@ import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { buildContractDocumentDescription } from '../../contracts/helpers/contracts.helper.js';
 import { ContractsProvider } from '../../contracts/providers/contracts.provider.js';
 import { IGetContractsByIdsResult } from '../../contracts/types.js';
-import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { parseStoredClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
@@ -131,7 +131,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         ),
       ).then(res => res.filter(Boolean) as _DOLLAR_defs_Document[]);
 
-      const greenInvoiceClientId = validateClientIntegrations(
+      const greenInvoiceClientId = parseStoredClientIntegrations(
         client?.integrations ?? {},
       ).greenInvoiceId;
       if (!greenInvoiceClientId) {
@@ -296,7 +296,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
 
       const paymentPromise = getPaymentsFromTransactions(injector, transactions ?? []);
 
-      const greenInvoiceClientId = validateClientIntegrations(
+      const greenInvoiceClientId = parseStoredClientIntegrations(
         client?.integrations ?? {},
       ).greenInvoiceId;
       if (!greenInvoiceClientId) {
@@ -432,7 +432,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         throw new GraphQLError(`Client not found for business ID="${contract.client_id}"`);
       }
 
-      const greenInvoiceId = validateClientIntegrations(client.integrations)?.greenInvoiceId;
+      const greenInvoiceId = parseStoredClientIntegrations(client.integrations)?.greenInvoiceId;
 
       if (!greenInvoiceId) {
         throw new GraphQLError(

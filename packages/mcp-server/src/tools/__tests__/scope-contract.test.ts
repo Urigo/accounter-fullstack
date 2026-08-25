@@ -5,6 +5,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { listBusinessMembershipsTool } from '../businesses.js';
 import { getChargesTool } from '../charge-details.js';
 import { searchChargesTool } from '../charges.js';
+import { listClientsTool } from '../clients.js';
 import { getContractsTool } from '../contracts.js';
 import { getDocumentsTool } from '../document-details.js';
 import { executeRegisteredTool } from '../execute.js';
@@ -56,6 +57,7 @@ function clientReturning(data: unknown) {
 const BUSINESS_SCOPED_TOOLS = [
   searchChargesTool,
   getLedgerRecordsTool,
+  listClientsTool,
   getContractsTool,
   listSecurityHoldingsTool,
   getSecurityExecutionsTool,
@@ -72,6 +74,7 @@ const BUSINESS_SCOPED_TOOLS = [
 const MULTI_BUSINESS_TOOLS = [
   searchChargesTool,
   getLedgerRecordsTool,
+  listClientsTool,
   getContractsTool,
   listSecurityHoldingsTool,
   getSecurityExecutionsTool,
@@ -188,6 +191,29 @@ describe('echoed effective scope', () => {
       listBusinessesTool,
       { allBusinesses: { nodes: [{ id: 'b1', name: 'c', ownerId: 'b1', isActive: true }] } },
       'businesses',
+    ],
+    [
+      listClientsTool,
+      {
+        allClients: [
+          {
+            id: 'b1',
+            ownerId: 'b1',
+            emails: [],
+            generatedDocumentType: 'PROFORMA',
+            originalBusiness: { id: 'b1', name: 'c' },
+            integrations: {
+              hiveId: null,
+              linearId: null,
+              slackChannelKey: null,
+              notionId: null,
+              workflowyUrl: null,
+              greenInvoiceInfo: null,
+            },
+          },
+        ],
+      },
+      'clients',
     ],
   ] as const;
 
