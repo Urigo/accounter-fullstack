@@ -186,6 +186,10 @@ export const CHARGE_FILTER_SHAPE = {
     .boolean()
     .optional()
     .describe('Include only charges with no linked receipt document.'),
+  withoutTags: z
+    .boolean()
+    .optional()
+    .describe('Include only charges carrying no tags at all (untagged charges).'),
   withoutTransactions: z
     .boolean()
     .optional()
@@ -262,6 +266,7 @@ export function buildChargeFilters(
   if (input.withoutInvoice !== undefined) filters.withoutInvoice = input.withoutInvoice;
   if (input.withoutLedger !== undefined) filters.withoutLedger = input.withoutLedger;
   if (input.withoutReceipt !== undefined) filters.withoutReceipt = input.withoutReceipt;
+  if (input.withoutTags !== undefined) filters.withoutTags = input.withoutTags;
   if (input.withoutTransactions !== undefined) {
     filters.withoutTransactions = input.withoutTransactions;
   }

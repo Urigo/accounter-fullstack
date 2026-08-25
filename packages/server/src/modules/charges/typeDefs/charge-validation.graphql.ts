@@ -81,6 +81,8 @@ export default gql`
     unbalanced: Boolean
     " Include only charges that doesn't have ledger records linked "
     withoutLedger: Boolean
+    " Include only charges that doesn't have any tag linked "
+    withoutTags: Boolean
     withOpenDocuments: Boolean
   }
 `;
