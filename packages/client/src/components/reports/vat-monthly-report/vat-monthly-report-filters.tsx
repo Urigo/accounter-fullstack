@@ -14,6 +14,7 @@ import { UserContext } from '../../../providers/user-provider.js';
 import { chargesTypeFilterOptions } from '../../charges/charges-filters.js';
 import { PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
+import { getDefaultVatReportMonth } from './utils.js';
 
 interface VatMonthlyReportFilterFormProps {
   filter: VatReportFilter;
@@ -31,6 +32,8 @@ function VatMonthlyReportFilterForm({
   });
   const { selectableAdminBusinesses: adminBusinesses, fetching: feLoading } =
     useGetAdminBusinesses();
+
+  const defaultPickerMonth = new Date(filter?.monthDate ?? getDefaultVatReportMonth());
 
   const onSubmit: SubmitHandler<VatReportFilter> = data => {
     setFilter(data);
@@ -86,8 +89,8 @@ function VatMonthlyReportFilterForm({
           )}
         />
         <MonthPickerInput
-          defaultValue={filter?.monthDate ? new Date(filter.monthDate) : new Date()}
-          defaultDate={filter?.monthDate ? new Date(filter.monthDate) : new Date()}
+          defaultValue={defaultPickerMonth}
+          defaultDate={defaultPickerMonth}
           onChange={onSelectDate}
           popoverProps={{ withinPortal: true }}
         />
@@ -135,7 +138,7 @@ export function VatMonthlyReportFilter({
   function onSetFilter(newFilter?: VatReportFilter): void {
     newFilter ||= {
       financialEntityId: userContext?.context.adminBusinessId ?? filter.financialEntityId,
-      monthDate: format(new Date(), 'yyyy-MM-15') as TimelessDateString,
+      monthDate: getDefaultVatReportMonth(),
     };
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
