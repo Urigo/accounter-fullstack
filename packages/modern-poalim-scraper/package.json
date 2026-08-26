@@ -34,13 +34,13 @@
     "puppeteer": "25.8.0",
     "puppeteer-extra": "3.3.6",
     "puppeteer-extra-plugin-stealth": "2.11.2",
-    "uuid": "14.0.1",
+    "uuid": "14.0.2",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.13",
     "@types/uuid": "11.0.0",
-    "concurrently": "10.0.4",
+    "concurrently": "10.0.5",
     "nodemon": "3.1.14",
     "typescript": "6.0.3"
   },
