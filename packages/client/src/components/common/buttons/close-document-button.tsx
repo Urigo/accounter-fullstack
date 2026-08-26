@@ -40,9 +40,12 @@ export function CloseDocumentButton({
   const [localOpen, setLocalOpen] = useState(false);
   const [previewCreditInvoice, setPreviewCreditInvoice] = useState(false);
 
-  const isControlled = !!setExternalOpen;
-  const open = externalOpen ?? localOpen;
-  const setOpen = setExternalOpen ?? setLocalOpen;
+  // `open` and `setOpen` are a pair: with only one of them the dialog would read the external value
+  // but write to local state (or vice versa) and get stuck, so fall back to local state unless both
+  // are supplied.
+  const isControlled = setExternalOpen !== undefined && externalOpen !== undefined;
+  const open = isControlled ? externalOpen : localOpen;
+  const setOpen = isControlled ? setExternalOpen : setLocalOpen;
 
   const onFinallyClose = useCallback(async () => {
     const closed = await closeDocument({ documentId });

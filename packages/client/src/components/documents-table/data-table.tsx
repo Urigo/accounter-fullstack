@@ -12,7 +12,9 @@ type Props<TData extends RowData> = {
  * build the table themselves via `useDocumentsTable` so they can host their own toolbar.
  */
 export function DocumentsDataTable<TData extends RowData>({ table }: Props<TData>): ReactElement {
-  const columnCount = table.getAllColumns().length;
+  // Visible leaf columns only: `getAllColumns()` counts hidden and group columns too, so the
+  // empty-state cell would outspan the rendered header once a column is hidden.
+  const columnCount = table.getVisibleLeafColumns().length;
 
   return (
     <Table>

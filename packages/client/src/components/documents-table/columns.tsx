@@ -313,8 +313,8 @@ export function getDocumentsTableColumns({
     },
     {
       id: 'actions',
-      accessorKey: 'id',
-      header: '',
+      enableHiding: false,
+      enableSorting: false,
       cell: ({ row }) => {
         return <DocumentActionsMenu document={row.original} withChargeLink={withChargeLink} />;
       },
