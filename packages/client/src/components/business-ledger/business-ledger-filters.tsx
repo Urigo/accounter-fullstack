@@ -41,6 +41,14 @@ function BusinessLedgerRecordsFilterForm({
 
   const { userContext } = useContext(UserContext);
 
+  // A single owner is not a choice: pre-select it so the (disabled) input and the
+  // submitted filter agree — a disabled field never fires onChange to sync itself.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      form.setValue('ownerIds', [soleAdminBusinessId]);
+    }
+  }, [soleAdminBusinessId, form]);
+
   const onSubmit: SubmitHandler<BusinessTransactionsFilter> = data => {
     setFilter(data);
     closeModal();

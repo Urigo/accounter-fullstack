@@ -43,6 +43,14 @@ function TrialBalanceReportFilterForm({
 
   const { userContext } = useContext(UserContext);
 
+  // A single owner is not a choice: pre-select it so the (disabled) input and the
+  // submitted filter agree — a disabled field never fires onChange to sync itself.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      form.setValue('ownerIds', [soleAdminBusinessId]);
+    }
+  }, [soleAdminBusinessId, form]);
+
   const onSubmit: SubmitHandler<TrialBalanceReportFilters> = data => {
     if (data.fromDate?.trim() === '') data.fromDate = undefined;
     if (data.toDate?.trim() === '') data.toDate = undefined;

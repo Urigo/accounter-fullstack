@@ -74,6 +74,14 @@ function DocumentsFiltersForm({
     soleAdminBusinessId,
   } = useGetAdminBusinesses();
 
+  // A single owner is not a choice: pre-select it so the (disabled) input and the
+  // submitted filter agree — a disabled field never fires onChange to sync itself.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      form.setValue('ownerIDs', [soleAdminBusinessId]);
+    }
+  }, [soleAdminBusinessId, form]);
+
   const onSubmit: SubmitHandler<DocumentsFiltersType> = data => {
     // A blank free-text box is not a filter — sending `''` would mark the screen as filtered and
     // hand the server an empty search term.
