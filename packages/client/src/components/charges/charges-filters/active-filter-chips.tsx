@@ -8,6 +8,9 @@ import { Button } from '../../ui/button.js';
 import { COMPLETENESS_KEYS } from './counts.js';
 import type { ChargeFilterFormValues } from './schema.js';
 
+/** Chips rendered before collapsing the tail into a count. */
+const MAX_VISIBLE_CHIPS = 8;
+
 type Option = { value: string; label: string };
 
 type Chip = {
@@ -160,9 +163,15 @@ export function ActiveFilterChips({
 
   if (chips.length === 0) return null;
 
+  // The header is shrink-0 and sits outside the scrollable body, so an unbounded chip
+  // list squeezes the form until it is unreachable -- trivial to hit with "select all"
+  // on financial entities. Past the cap, the last slot becomes a count instead.
+  const visible = chips.length > MAX_VISIBLE_CHIPS ? chips.slice(0, MAX_VISIBLE_CHIPS - 1) : chips;
+  const hiddenCount = chips.length - visible.length;
+
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {chips.map(chip => (
+      {visible.map(chip => (
         <Badge
           key={chip.key}
           variant="outline"
@@ -185,6 +194,13 @@ export function ActiveFilterChips({
           </button>
         </Badge>
       ))}
+      {hiddenCount > 0 && (
+        // Always plural: at the cap everything is shown, so the smallest possible
+        // overflow is 2 (9 chips -> 7 visible).
+        <Badge variant="secondary" className="py-1 font-normal text-muted-foreground">
+          {`${hiddenCount} more filters`}
+        </Badge>
+      )}
       <Button
         type="button"
         variant="ghost"
