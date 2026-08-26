@@ -3,6 +3,7 @@ export * from './amount.js';
 export * from './date.js';
 export * from './debtor.js';
 export * from './description.js';
+export * from './expandable-text.js';
 export * from './files.js';
 export * from './remarks.js';
 export * from './serial.js';
