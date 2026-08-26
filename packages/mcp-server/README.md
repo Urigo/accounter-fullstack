@@ -51,6 +51,16 @@ the serialized payload (dropping whole trailing items — never invalid JSON), r
 / `totalCount` / `truncated`, and attaches a `continuation` hint whenever not all results were
 returned (an upstream cap or the payload-size guard).
 
+**Every payload is mirrored into `content`.** `shapeListResult`, `shapeWriteResult` and
+`toToolErrorResult` all return the serialized payload as a `content` text block (after the summary
+line) _as well as_ in `structuredContent` — the backwards-compatibility behaviour MCP 2025-06-18
+asks of a server returning structured content. This is not optional polish: `structuredContent` is
+contractually meaningful only when a tool advertises an `outputSchema`, none of these do, and a
+client is free to ignore it. Relying on it alone once left every tool returning summary lines with
+no rows behind them. `mirroring-contract.test.ts` enforces the rule across the whole registry, so a
+new tool cannot opt out — and the byte cap still measures the payload the model actually reads,
+since the mirrored text is the same string `fittingCount` binary-searches on.
+
 Each `tools/call` is rate-limited (`src/rate-limit/`) with an in-memory fixed-window counter keyed
 by **user + business scope + tool**, enforced before any upstream call. Exceeding the limit returns
 a `RATE_LIMIT_ERROR` with `retryAfterMs`. Limits are configured via `MCP_RATE_LIMIT_CONFIG`
