@@ -8,7 +8,7 @@ import { MonthPickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import type { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
 import { type TimelessDateString } from '../../../helpers/index.js';
-import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
+import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { PopUpModal } from '../../common/index.js';
@@ -28,7 +28,19 @@ function ValidateReportsFilterForm({
   const { control, handleSubmit, setValue } = useForm<ValidatePcn874ReportsQueryVariables>({
     defaultValues: { ...filter },
   });
-  const { selectableBusinesses: businesses, fetching: feLoading } = useGetBusinesses();
+  const {
+    selectableAdminBusinesses: adminBusinesses,
+    fetching: feLoading,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
+
+  // A single admin business is not a choice: pre-select it so the (disabled) input
+  // and the submitted filter agree.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      setValue('businessId', soleAdminBusinessId);
+    }
+  }, [soleAdminBusinessId, setValue]);
 
   const onSubmit: SubmitHandler<ValidatePcn874ReportsQueryVariables> = data => {
     setFilter(data);
@@ -46,10 +58,10 @@ function ValidateReportsFilterForm({
           render={({ field, fieldState }): ReactElement => (
             <Select
               {...field}
-              data={businesses}
-              value={field.value}
-              disabled={feLoading}
-              label="Businesses"
+              data={adminBusinesses}
+              value={soleAdminBusinessId ?? field.value}
+              disabled={feLoading || !!soleAdminBusinessId}
+              label="Report Issuer"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}
               searchable

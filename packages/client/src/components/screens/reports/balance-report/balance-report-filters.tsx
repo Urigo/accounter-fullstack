@@ -119,13 +119,24 @@ function BalanceReportFiltersForm({
     defaultValues: filterToFormValues(filter, defaultFinancialAccountsBusinesses),
   });
 
-  const { selectableAdminBusinesses: adminBusinesses, fetching: fetchingAdminBusinesses } =
-    useGetAdminBusinesses();
+  const {
+    selectableAdminBusinesses: adminBusinesses,
+    fetching: fetchingAdminBusinesses,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
   const { selectableFinancialAccounts: financialAccounts, fetching: financialAccountsFetching } =
     useGetFinancialAccounts();
   const { selectableTags: allTags, fetching: tagsFetching } = useGetTags();
+
+  // A single admin business is not a choice: pre-select it so the (disabled) input
+  // and the submitted filter agree.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      form.setValue('ownerId', soleAdminBusinessId);
+    }
+  }, [soleAdminBusinessId, form]);
 
   const onSubmit: SubmitHandler<BalanceReportFilterFormValues> = data => {
     setFilter(data as BalanceReportFilter);
@@ -159,8 +170,8 @@ function BalanceReportFiltersForm({
                   <ComboBox
                     onChange={field.onChange}
                     data={adminBusinesses}
-                    value={field.value}
-                    disabled={fetchingAdminBusinesses}
+                    value={soleAdminBusinessId ?? field.value}
+                    disabled={fetchingAdminBusinesses || !!soleAdminBusinessId}
                     placeholder="Scroll to see all options"
                     formPart
                   />

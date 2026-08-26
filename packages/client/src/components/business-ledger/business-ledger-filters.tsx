@@ -6,6 +6,7 @@ import { Indicator, MultiSelect, Select } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
+import { useGetAdminBusinesses } from '../../hooks/use-get-admin-businesses.js';
 import { useGetBusinesses } from '../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
@@ -32,6 +33,11 @@ function BusinessLedgerRecordsFilterForm({
   });
   const { control, handleSubmit } = form;
   const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
+  const {
+    selectableAdminBusinesses: owners,
+    fetching: ownersLoading,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
 
   const { userContext } = useContext(UserContext);
 
@@ -64,14 +70,16 @@ function BusinessLedgerRecordsFilterForm({
                     <FormControl>
                       <MultiSelect
                         {...field}
-                        data={businesses}
+                        data={owners}
                         value={
-                          field.value ??
-                          (userContext?.context.adminBusinessId
-                            ? [userContext.context.adminBusinessId]
-                            : undefined)
+                          soleAdminBusinessId
+                            ? [soleAdminBusinessId]
+                            : (field.value ??
+                              (userContext?.context.adminBusinessId
+                                ? [userContext.context.adminBusinessId]
+                                : undefined))
                         }
-                        disabled={businessesLoading}
+                        disabled={ownersLoading || !!soleAdminBusinessId}
                         placeholder="Scroll to see all options"
                         maxDropdownHeight={160}
                         searchable

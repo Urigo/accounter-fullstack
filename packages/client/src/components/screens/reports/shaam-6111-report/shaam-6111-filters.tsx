@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Building2, Calendar, Filter } from 'lucide-react';
-import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
+import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesses.js';
 import { ComboBox } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import {
@@ -39,7 +39,18 @@ export function Shaam6111Filters({
   setReferenceYear,
 }: Shaam6111FiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(!selectedYear || !selectedBusiness);
-  const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
+  const {
+    selectableAdminBusinesses: businesses,
+    fetching: businessesLoading,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
+
+  // A single reportable business is not a choice: select it and lock the input.
+  useEffect(() => {
+    if (soleAdminBusinessId && selectedBusiness !== soleAdminBusinessId) {
+      setSelectedBusiness(soleAdminBusinessId);
+    }
+  }, [soleAdminBusinessId, selectedBusiness, setSelectedBusiness]);
 
   const businessName = useMemo(() => {
     if (!selectedBusiness) return '';
@@ -74,8 +85,8 @@ export function Shaam6111Filters({
             <ComboBox
               onChange={value => setSelectedBusiness(value ?? undefined)}
               data={businesses}
-              value={selectedBusiness}
-              disabled={businessesLoading}
+              value={soleAdminBusinessId ?? selectedBusiness}
+              disabled={businessesLoading || !!soleAdminBusinessId}
               placeholder="Scroll to see all options"
               triggerProps={{ className: 'w-full' }}
             />

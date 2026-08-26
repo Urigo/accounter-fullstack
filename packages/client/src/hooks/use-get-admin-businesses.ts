@@ -21,6 +21,12 @@ type UseGetAdminBusinesses = {
   refresh: () => void;
   adminBusinesses: AdminBusinesses;
   selectableAdminBusinesses: Array<{ value: string; label: string }>;
+  /**
+   * The single business the caller may act as owner of, or null when there are
+   * several (or none). An owner input with one option is not a choice — callers
+   * pre-select this value and disable the input.
+   */
+  soleAdminBusinessId: string | null;
 };
 
 export const useGetAdminBusinesses = (): UseGetAdminBusinesses => {
@@ -48,10 +54,14 @@ export const useGetAdminBusinesses = (): UseGetAdminBusinesses => {
     }));
   }, [adminBusinesses]);
 
+  const soleAdminBusinessId =
+    selectableAdminBusinesses.length === 1 ? selectableAdminBusinesses[0].value : null;
+
   return {
     fetching,
     refresh: () => fetch(),
     adminBusinesses,
     selectableAdminBusinesses,
+    soleAdminBusinessId,
   };
 };

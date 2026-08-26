@@ -4,7 +4,7 @@ import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { encodeFilters } from '@/router/routes.js';
 import type { DepreciationReportFilter } from '../../../../gql/graphql.js';
-import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
+import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesses.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { ComboBox, NumberInput } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
@@ -34,8 +34,19 @@ function DepreciationReportFiltersForm({
     defaultValues: { ...filter },
   });
   const { control, handleSubmit } = form;
-  const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
-    useGetFinancialEntities();
+  const {
+    selectableAdminBusinesses: owners,
+    fetching: ownersFetching,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
+
+  // A single owner is not a choice: pre-select it so the (disabled) input and the
+  // submitted filter agree.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      form.setValue('financialEntityId', soleAdminBusinessId);
+    }
+  }, [soleAdminBusinessId, form]);
 
   const onSubmit: SubmitHandler<DepreciationReportFilter> = data => {
     setFilter({ ...data, year: Number(data.year) });
@@ -75,10 +86,10 @@ function DepreciationReportFiltersForm({
               <FormLabel>Owner</FormLabel>
               <ComboBox
                 {...field}
-                data={financialEntities}
-                value={field.value ?? undefined}
-                disabled={financialEntitiesFetching}
-                placeholder="Select a financial entity"
+                data={owners}
+                value={soleAdminBusinessId ?? field.value ?? undefined}
+                disabled={ownersFetching || !!soleAdminBusinessId}
+                placeholder="Select an owner"
                 formPart
               />
               <FormMessage />
@@ -86,7 +97,7 @@ function DepreciationReportFiltersForm({
           )}
         />
         <DialogFooter>
-          <Button type="submit" disabled={financialEntitiesFetching}>
+          <Button type="submit" disabled={ownersFetching}>
             Filter
           </Button>
         </DialogFooter>

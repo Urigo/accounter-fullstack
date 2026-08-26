@@ -20,6 +20,7 @@ import {
   type DynamicReportTemplateQuery,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
+import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
 import { useUpdateDynamicReportTemplate } from '../../../hooks/use-update-dynamic-report-template.js';
@@ -52,7 +53,13 @@ import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.j
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
 import { serializeReportTree } from './utils/template-serialization.js';
-import { buildNodeStats, type CustomData, type FlatNode, type Template } from './utils/types.js';
+import {
+  buildNodeStats,
+  type CustomData,
+  type FlatNode,
+  type Owner,
+  type Template,
+} from './utils/types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -270,13 +277,21 @@ export function DynamicReport() {
 
   const { sortCodes } = useGetSortCodes({ ownerId: userContext?.context.adminBusinessId });
 
+  // Owner options are the businesses the user may report on, not every financial
+  // entity — and a single one is not a choice, so the picker is then read-only.
+  const { adminBusinesses, soleAdminBusinessId } = useGetAdminBusinesses();
+  const owners = useMemo<Owner[]>(
+    () => adminBusinesses.map(business => ({ id: business.id, name: business.name })),
+    [adminBusinesses],
+  );
+
   const [{ data: businessSumsData }] = useQuery({
     query: DynamicReportDocument,
     variables: {
       filters: {
         fromDate: fromDate as TimelessDateString,
         toDate: toDate as TimelessDateString,
-        ownerIds: [selectedOwner],
+        ownerIds: [soleAdminBusinessId ?? selectedOwner],
       },
     },
   });
@@ -600,13 +615,10 @@ export function DynamicReport() {
         toDate={toDate}
         onFromDateChange={setFromDate}
         onToDateChange={setToDate}
-        owners={
-          adminBusinessId
-            ? [{ id: adminBusinessId, name: userContext?.username ?? adminBusinessId }]
-            : []
-        }
-        selectedOwner={selectedOwner}
+        owners={owners}
+        selectedOwner={soleAdminBusinessId ?? selectedOwner}
         onOwnerChange={setSelectedOwner}
+        ownerDisabled={!!soleAdminBusinessId}
         showZeroed={showZeroed}
         onShowZeroedChange={setShowZeroed}
         editMode={editMode}

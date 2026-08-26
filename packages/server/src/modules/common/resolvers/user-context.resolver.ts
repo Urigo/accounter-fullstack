@@ -9,6 +9,10 @@ export const userContextResolvers: CommonModule.Resolvers = {
     userContext: async (_, __, { injector }) => {
       const authContext = await injector.get(AuthContextProvider).getAuthContext();
 
+      // Names are resolved for *every* membership, including the ones outside this
+      // request's read scope — the business switcher is how a user leaves a narrow
+      // scope, so it cannot be limited by it. The `membership_business_visibility`
+      // RLS policy on `financial_entities` is what makes these loads succeed.
       const businessNamesMap = new Map<string, string>();
       await Promise.all(
         (authContext?.memberships ?? [])
