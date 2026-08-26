@@ -92,6 +92,7 @@ export async function fetchFilteredCharges(
       withOpenDocuments: filters?.withOpenDocuments,
       withoutTransactions: filters?.withoutTransactions,
       withoutLedger: filters?.withoutLedger,
+      withoutTags: filters?.withoutTags,
       freeText: filters?.freeText?.trim().toLowerCase(),
       tags: filters?.byTags,
       accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,

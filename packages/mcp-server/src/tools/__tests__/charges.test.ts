@@ -260,6 +260,7 @@ describe('searchChargesTool — successful read', () => {
       withoutInvoice: true,
       withoutLedger: false,
       withoutReceipt: false,
+      withoutTags: true,
       withoutTransactions: false,
     });
 
@@ -277,6 +278,7 @@ describe('searchChargesTool — successful read', () => {
       withoutInvoice: true,
       withoutLedger: false,
       withoutReceipt: false,
+      withoutTags: true,
       withoutTransactions: false,
       // Scoping still goes through byOwners, never the counterparty predicate.
       byOwners: ['b1'],

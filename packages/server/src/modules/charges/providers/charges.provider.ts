@@ -750,6 +750,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($withoutLedger = FALSE OR COALESCE(ec.ledger_count, 0) = 0)
   AND ($isAccountantStatuses = 0 OR ec.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
   AND ($isTags = 0 OR ec.tags && $tags)
+  AND ($withoutTags = FALSE OR COALESCE(array_length(ec.tags, 1), 0) = 0)
   AND ($isBusinessTripIds = 0 OR ec.business_trip_id = ANY ($businessTripIds::uuid[]))
   AND ($isAccountIds = 0 OR ec.account_array && $accountIds::uuid[])
   AND ($withMissingCounterparty = FALSE OR COALESCE(ec.missing_counterparty_transactions, false) = true OR COALESCE(ec.missing_counterparty_documents, false) = true)
@@ -1263,6 +1264,7 @@ export class ChargesProvider {
       withOpenDocuments: params.withOpenDocuments ?? false,
       withoutTransactions: params.withoutTransactions ?? false,
       withoutLedger: params.withoutLedger ?? false,
+      withoutTags: params.withoutTags ?? false,
       accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,
       // strip thousands separators so amount searches match the plain value stored in the DB
       freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,

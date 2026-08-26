@@ -8,7 +8,7 @@ import {
   VatMonthlyReportDocument,
   type VatReportFilter,
 } from '../../../gql/graphql.js';
-import { dedupeFragments, type TimelessDateString } from '../../../helpers/index.js';
+import { dedupeFragments } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { UserContext } from '../../../providers/user-provider.js';
@@ -21,6 +21,7 @@ import { MiscTable } from './misc-table.js';
 import { MissingInfoTable } from './missing-info-table.js';
 import { PCNGenerator } from './pcn-generator.js';
 import { ReportSummary } from './report-summary.js';
+import { getDefaultVatReportMonth } from './utils.js';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -53,7 +54,7 @@ export const VatMonthlyReport = (): ReactElement => {
         ) as VatReportFilter)
       : {
           financialEntityId: userContext?.context.adminBusinessId ?? '',
-          monthDate: format(new Date(), 'yyyy-MM-15') as TimelessDateString,
+          monthDate: getDefaultVatReportMonth(),
         },
   );
   // Single selection source of truth, shared by every sub-table so charges picked in one table
