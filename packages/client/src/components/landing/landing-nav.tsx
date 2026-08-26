@@ -1,4 +1,6 @@
 import type { ReactElement } from 'react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '../../router/routes.js';
 import { Button } from '../ui/button.js';
 import { NAV_SECTIONS, REQUEST_ACCESS_URL } from './landing-content.js';
 
@@ -27,9 +29,20 @@ export function LandingNav(): ReactElement {
           ))}
         </ul>
 
-        <Button asChild>
-          <a href={REQUEST_ACCESS_URL}>Request access</a>
-        </Button>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/*
+            Routed to the existing login screen rather than calling
+            loginWithRedirect here: that screen already owns returnTo, the
+            reauth flow and Auth0 error messaging, and this page is meant to
+            stay free of auth logic.
+          */}
+          <Button asChild variant="ghost">
+            <Link to={ROUTES.LOGIN}>Sign in</Link>
+          </Button>
+          <Button asChild>
+            <a href={REQUEST_ACCESS_URL}>Request access</a>
+          </Button>
+        </div>
       </nav>
     </header>
   );

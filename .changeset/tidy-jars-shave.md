@@ -6,7 +6,7 @@ Add a public landing page at `/`.
 
 Logged-out visitors now get a static marketing page describing what Accounter does — how data is
 collected and matched, the feature set, the integrations, the Israeli compliance formats and the MCP
-connector — with a "Request access" call to action in the header. Anyone with a session is
+connector — with "Sign in" and "Request access" buttons in the header. Anyone with a session is
 redirected into the app instead.
 
 The route tree changed to make room for it: the protected subtree is now a pathless layout route, so
