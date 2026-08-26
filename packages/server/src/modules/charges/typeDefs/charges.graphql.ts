@@ -330,12 +330,20 @@ export default gql`
     byOwners: [UUID!]
     " Include only charges related to specific financial accounts "
     byFinancialAccounts: [UUID!]
+    " Exclude charges related to any of these financial accounts "
+    excludedFinancialAccounts: [UUID!]
     " Include only charges including specific business "
     byBusinesses: [UUID!]
+    " Exclude charges including any of these businesses "
+    excludedBusinesses: [UUID!]
     " Include only charges with those tags "
     byTags: [String!]
+    " Exclude charges carrying any of these tags "
+    excludedTags: [String!]
     " Include only charges with user description | transactions description / reference | documents description / remarks / serial that contains this text "
     freeText: String
+    " Exclude charges with user description | transactions description / reference | documents description / remarks / serial that contains this text "
+    excludedFreeText: String
     sortBy: ChargeSortBy
     chargesType: ChargeFilterType
     " Include only charges resolved to one of these concrete types (by __typename) "

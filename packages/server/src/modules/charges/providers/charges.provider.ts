@@ -172,6 +172,42 @@ const generateCharge = sql<IGenerateChargeQuery>`
   RETURNING *;
 `;
 
+/**
+ * Collapses a search string that is empty once trimmed to `null`.
+ *
+ * An empty string is not `NULL` in SQL, so it survives the `IS NOT NULL` guards and
+ * degrades to `ILIKE '%%'`, which matches every non-null column. On the exclusion side
+ * that drops nearly every charge; on the positive side it drops the opposite set --
+ * charges whose description is `NULL` -- because they fail the `ILIKE` the others pass.
+ * Either way the caller meant "no text predicate", so normalize it away.
+ */
+export function normalizeSearchText(text?: string | null | void): string | null {
+  const trimmed = text?.trim().toLowerCase();
+  return trimmed || null;
+}
+
+/**
+ * The amount-matching branches compare against `amount::TEXT`, so a search term with
+ * no digit in it cannot match one and only costs a scan. Thousands separators are
+ * stripped so both "1,234.56" and "1234.56" match the plain stored value.
+ */
+export function toNumericSearchText(text: string | null): string | null {
+  return text && /\d/.test(text) ? text.replaceAll(',', '') : null;
+}
+
+/**
+ * Note for editors: pgTyped silently truncates the generated parameter list at the
+ * first `--` comment inside the closing WHERE clause, dropping every parameter after
+ * it. Keep explanatory comments in TypeScript rather than in that clause.
+ *
+ * The `excluded*` filters are array NON-overlap against the per-charge aggregates
+ * (`business_array`, `tags`, `account_array`), so a charge is dropped when *any* of
+ * its businesses / tags / accounts appears in the exclusion list. Each is wrapped in
+ * COALESCE because those arrays come from LEFT JOINs and `NULL && array` is NULL,
+ * which would otherwise drop the charges that have none of the excluded thing.
+ * `excludedFreeText` works the other way round, as an `excluded_matches` CTE the
+ * charge must not appear in.
+ */
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   WITH search_matches AS (
     -- Strategy: Identify IDs via Trigram indexes before doing any heavy math
@@ -228,6 +264,60 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     WHERE ($freeText::TEXT IS NOT NULL
            AND fe.name ILIKE '%' || $freeText || '%')
   ),
+  excluded_matches AS (
+    -- Mirror of search_matches for the negative side. Every branch requires the
+    -- param to be NOT NULL, so with no exclusion the set is empty and nothing is
+    -- dropped -- the opposite of search_matches, whose first branch passes every
+    -- charge through when $freeText is NULL.
+    -- A charge whose columns are all NULL simply never enters this set, so
+    -- "does not mention X" keeps charges with no text at all.
+    SELECT id FROM accounter_schema.charges
+    WHERE ($excludedFreeText::TEXT IS NOT NULL
+           AND user_description ILIKE '%' || $excludedFreeText || '%'
+    )
+    UNION
+    SELECT charge_id FROM accounter_schema.transactions
+    WHERE ($excludedFreeText::TEXT IS NOT NULL
+           AND (source_description ILIKE '%' || $excludedFreeText || '%'
+                OR source_reference ILIKE '%' || $excludedFreeText || '%')
+    )
+    UNION
+    SELECT charge_id FROM accounter_schema.documents
+    WHERE ($excludedFreeText::TEXT IS NOT NULL
+           AND (description ILIKE '%' || $excludedFreeText || '%'
+                OR remarks ILIKE '%' || $excludedFreeText || '%'
+                OR serial_number ILIKE '%' || $excludedFreeText || '%')
+    )
+    UNION
+    SELECT charge_id FROM accounter_schema.transactions
+    WHERE ($excludedFreeTextNumeric::TEXT IS NOT NULL
+           AND (amount::TEXT ILIKE '%' || $excludedFreeTextNumeric || '%'
+                OR ABS(amount)::TEXT ILIKE '%' || $excludedFreeTextNumeric || '%')
+    )
+    UNION
+    SELECT charge_id FROM accounter_schema.documents
+    WHERE ($excludedFreeTextNumeric::TEXT IS NOT NULL
+           AND (total_amount::TEXT ILIKE '%' || $excludedFreeTextNumeric || '%'
+                OR ABS(total_amount)::TEXT ILIKE '%' || $excludedFreeTextNumeric || '%'
+                OR vat_amount::TEXT ILIKE '%' || $excludedFreeTextNumeric || '%'
+                OR ABS(vat_amount)::TEXT ILIKE '%' || $excludedFreeTextNumeric || '%')
+    )
+    UNION
+    SELECT t.charge_id FROM accounter_schema.transactions t
+    JOIN accounter_schema.financial_entities fe ON fe.id = t.business_id
+    WHERE ($excludedFreeText::TEXT IS NOT NULL
+           AND fe.name ILIKE '%' || $excludedFreeText || '%')
+    UNION
+    SELECT d.charge_id FROM accounter_schema.documents d
+    JOIN accounter_schema.financial_entities fe ON fe.id = d.creditor_id
+    WHERE ($excludedFreeText::TEXT IS NOT NULL
+           AND fe.name ILIKE '%' || $excludedFreeText || '%')
+    UNION
+    SELECT d.charge_id FROM accounter_schema.documents d
+    JOIN accounter_schema.financial_entities fe ON fe.id = d.debtor_id
+    WHERE ($excludedFreeText::TEXT IS NOT NULL
+           AND fe.name ILIKE '%' || $excludedFreeText || '%')
+  ),
   filtered_charges AS MATERIALIZED (
     -- This is our "source of truth" for the rest of the query
     SELECT c.*
@@ -235,6 +325,10 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     INNER JOIN search_matches sm ON c.id = sm.id 
     WHERE ($isIDs = 0 OR c.id IN $$IDs)
       AND ($isOwnerIds = 0 OR c.owner_id IN $$ownerIds)
+      AND (
+        ($excludedFreeText::TEXT IS NULL AND $excludedFreeTextNumeric::TEXT IS NULL)
+        OR NOT EXISTS (SELECT 1 FROM excluded_matches em WHERE em.id = c.id)
+      )
   ),
   years_of_relevance AS (
     SELECT cs.charge_id,
@@ -736,6 +830,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   FROM enriched_charges ec
   WHERE
   ($isBusinessIds = 0 OR ec.business_array && $businessIds)
+  AND ($isExcludedBusinessIds = 0 OR NOT COALESCE(ec.business_array && $excludedBusinessIds, FALSE))
   AND ($fromDate ::TEXT IS NULL OR COALESCE(ec.documents_min_date, ec.transactions_min_event_date)::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
   AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(ec.documents_max_date, ec.transactions_max_event_date, ec.transactions_max_debit_date, ec.ledger_max_invoice_date, ec.ledger_max_value_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
   AND ($toDate ::TEXT IS NULL OR COALESCE(ec.documents_max_date, ec.transactions_max_event_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
@@ -750,9 +845,11 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($withoutLedger = FALSE OR COALESCE(ec.ledger_count, 0) = 0)
   AND ($isAccountantStatuses = 0 OR ec.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
   AND ($isTags = 0 OR ec.tags && $tags)
+  AND ($isExcludedTags = 0 OR NOT COALESCE(ec.tags && $excludedTags, FALSE))
   AND ($withoutTags = FALSE OR COALESCE(array_length(ec.tags, 1), 0) = 0)
   AND ($isBusinessTripIds = 0 OR ec.business_trip_id = ANY ($businessTripIds::uuid[]))
   AND ($isAccountIds = 0 OR ec.account_array && $accountIds::uuid[])
+  AND ($isExcludedAccountIds = 0 OR NOT COALESCE(ec.account_array && $excludedAccountIds::uuid[], FALSE))
   AND ($withMissingCounterparty = FALSE OR COALESCE(ec.missing_counterparty_transactions, false) = true OR COALESCE(ec.missing_counterparty_documents, false) = true)
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END ASC,
@@ -1105,6 +1202,13 @@ type IGetAdjustedChargesByFiltersParams = Optional<
     | 'isAccountIds'
     | 'accountIds'
     | 'freeTextNumeric'
+    | 'isExcludedBusinessIds'
+    | 'excludedBusinessIds'
+    | 'isExcludedTags'
+    | 'excludedTags'
+    | 'isExcludedAccountIds'
+    | 'excludedAccountIds'
+    | 'excludedFreeTextNumeric'
   >,
   'ownerIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
 > & {
@@ -1114,6 +1218,9 @@ type IGetAdjustedChargesByFiltersParams = Optional<
   businessIds?: readonly string[] | null;
   businessTripIds?: readonly string[] | null;
   accountIds?: readonly string[] | null;
+  excludedBusinessIds?: readonly string[] | null;
+  excludedTags?: readonly string[] | null;
+  excludedAccountIds?: readonly string[] | null;
 };
 
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
@@ -1232,6 +1339,13 @@ export class ChargesProvider {
     const isAccountantStatuses = !!params?.accountantStatuses?.length;
     const isBusinessTripIds = !!params?.businessTripIds?.filter(Boolean).length;
     const isAccountIds = !!params?.accountIds?.filter(Boolean).length;
+    const isExcludedBusinessIds = !!params?.excludedBusinessIds?.filter(Boolean).length;
+    const isExcludedTags = !!params?.excludedTags?.length;
+    const isExcludedAccountIds = !!params?.excludedAccountIds?.filter(Boolean).length;
+    // A value in both an include and its exclude list is dropped: the predicates are
+    // ANDed in SQL, so exclude wins.
+    const freeText = normalizeSearchText(params.freeText);
+    const excludedFreeText = normalizeSearchText(params.excludedFreeText);
 
     const defaults = {
       asc: false,
@@ -1247,6 +1361,9 @@ export class ChargesProvider {
       isAccountantStatuses: isAccountantStatuses ? 1 : 0,
       isBusinessTripIds: isBusinessTripIds ? 1 : 0,
       isAccountIds: isAccountIds ? 1 : 0,
+      isExcludedBusinessIds: isExcludedBusinessIds ? 1 : 0,
+      isExcludedTags: isExcludedTags ? 1 : 0,
+      isExcludedAccountIds: isExcludedAccountIds ? 1 : 0,
       ...params,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
@@ -1256,6 +1373,9 @@ export class ChargesProvider {
       tags: isTags ? (params.tags! as string[]) : null,
       businessTripIds: isBusinessTripIds ? (params.businessTripIds! as string[]) : null,
       accountIds: isAccountIds ? (params.accountIds! as string[]) : null,
+      excludedBusinessIds: isExcludedBusinessIds ? (params.excludedBusinessIds! as string[]) : null,
+      excludedTags: isExcludedTags ? (params.excludedTags! as string[]) : null,
+      excludedAccountIds: isExcludedAccountIds ? (params.excludedAccountIds! as string[]) : null,
       withMissingCounterparty: params.withMissingCounterparty ?? false,
       chargeType: params.chargeType ?? 'ALL',
       withoutInvoice: params.withoutInvoice ?? false,
@@ -1266,8 +1386,12 @@ export class ChargesProvider {
       withoutLedger: params.withoutLedger ?? false,
       withoutTags: params.withoutTags ?? false,
       accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,
-      // strip thousands separators so amount searches match the plain value stored in the DB
-      freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,
+      // Normalized here rather than at the callers: this is the single chokepoint in
+      // front of the SQL, and several resolvers build these params independently.
+      freeText,
+      freeTextNumeric: toNumericSearchText(freeText),
+      excludedFreeText,
+      excludedFreeTextNumeric: toNumericSearchText(excludedFreeText),
     };
     return getChargesByFilters.run(fullParams, this.db).then(charges => {
       // The enriched rows are supersets of the plain charge rows — prime the
