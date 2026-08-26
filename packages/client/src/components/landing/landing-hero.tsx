@@ -15,10 +15,11 @@ export function LandingHero(): ReactElement {
             Manage your taxes.
           </h1>
           <p className="mt-6 text-lg text-pretty text-gray-600 sm:text-xl">
-            Accounter is one system for every shekel that moves through your business. It pulls in
-            bank, card, crypto and payroll activity, matches each transaction to the invoice that
-            explains it, keeps a double-entry ledger you can trust, and generates the exact files
-            the Israeli Tax Authority asks for.
+            Accounter is one system for every shekel that moves through your business — bank, card,
+            crypto, securities, deposits and payroll. It collects the activity on its own,
+            auto-matches every transaction to the document that explains it, generates the
+            double-entry ledger from those matches, and produces the exact files the Israeli Tax
+            Authority asks for. Your job is to review it, not to type it.
           </p>
 
           <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">

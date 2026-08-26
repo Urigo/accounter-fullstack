@@ -62,7 +62,7 @@ export const STEPS: Step[] = [
   {
     title: 'Connect',
     description:
-      'Bank accounts, credit cards, crypto exchanges and payroll providers are pulled in automatically. Invoices arrive by forwarding them to your own @accounter.tax inbox, from Google Drive, or straight from Green Invoice.',
+      'Bank accounts, credit cards, crypto exchanges, brokerage accounts and payroll providers are pulled in automatically. Invoices arrive by forwarding them to your own @accounter.tax inbox, from a shared drive, or straight from your invoicing provider.',
   },
   {
     title: 'Match',
@@ -166,6 +166,8 @@ export type IntegrationGroup = {
   icon: LucideIcon;
   title: string;
   items: string[];
+  /** Renders a trailing "and more" so a sampled list does not read as the full set. */
+  andMore?: boolean;
 };
 
 export const INTEGRATION_GROUPS: IntegrationGroup[] = [
@@ -174,13 +176,14 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
     title: 'Israeli banks and cards',
     items: [
       'Bank Hapoalim',
+      'Bank Leumi',
       'Bank Discount',
-      'Bank Otsar Ha-Hayal',
       'Isracard',
       'American Express',
       'CAL',
       'Max',
     ],
+    andMore: true,
   },
   {
     icon: Bitcoin,
@@ -196,6 +199,7 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
     icon: ReceiptText,
     title: 'Invoicing and accounting',
     items: ['Green Invoice (two-way)', 'Hashavshevet', 'Payper'],
+    andMore: true,
   },
   {
     icon: BadgeDollarSign,
@@ -209,7 +213,7 @@ export const INTEGRATION_GROUPS: IntegrationGroup[] = [
       'Per-tenant @accounter.tax inbox',
       'Google Drive',
       'AI reading of scanned invoices',
-      'Cloudinary file storage',
+      'Cloud file storage',
     ],
   },
   {
@@ -239,13 +243,14 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
       'The annual tax report — generated, parsed and validated, with correct Hebrew encoding.',
   },
   {
-    title: 'Uniform format (מבנה אחיד)',
+    title: 'Uniform format (קובץ אחיד)',
     description:
-      'INI.TXT and BKMVDATA.TXT per SHAAM spec 1.31, down to field widths, padding and line endings.',
+      'INI.TXT and BKMVDATA.TXT per SHAAM spec 1.31, compatible with the leading accounting providers.',
   },
   {
     title: 'Monthly VAT',
-    description: 'A reviewable monthly VAT report built from the same ledger, not a side workbook.',
+    description:
+      'A reviewable monthly VAT report built from the same documents, not a side workbook.',
   },
   {
     title: 'Corporate tax',
@@ -280,8 +285,9 @@ export const HERO_PILLARS: Pillar[] = [
   },
   {
     icon: Scale,
-    title: 'A ledger that holds',
-    description: 'Double-entry records, regenerated on demand and checked for imbalance.',
+    title: 'A ledger that writes itself',
+    description:
+      'Double-entry records generated for you, regenerated on demand and checked for imbalance.',
   },
   {
     icon: FileCheck2,
@@ -297,10 +303,14 @@ export type PipelineStage = {
 };
 
 export const PIPELINE_STAGES: PipelineStage[] = [
-  { icon: Landmark, label: 'Transactions', caption: 'banks · cards · crypto · payroll' },
+  {
+    icon: Landmark,
+    label: 'Transactions',
+    caption: 'banks · cards · crypto · securities · deposits · payroll',
+  },
   { icon: Files, label: 'Documents', caption: 'invoices · receipts · email · drive' },
-  { icon: Receipt, label: 'Charge', caption: 'matched and categorised' },
-  { icon: Calculator, label: 'Ledger', caption: 'double-entry, validated' },
+  { icon: Receipt, label: 'Charge', caption: 'auto-matched and categorised' },
+  { icon: Calculator, label: 'Ledger', caption: 'auto-generated, validated' },
   { icon: HandCoins, label: 'Tax files', caption: 'VAT · PCN874 · 6111 · uniform' },
 ];
 

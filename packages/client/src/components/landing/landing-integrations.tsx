@@ -26,6 +26,7 @@ export function LandingIntegrations(): ReactElement {
                     {item}
                   </li>
                 ))}
+                {group.andMore ? <li className="text-sm text-gray-400">…and more</li> : null}
               </ul>
             </div>
           ))}
