@@ -109,7 +109,7 @@ async function renderPublicPath(pathname: string, authState: AuthState) {
         ),
       },
       {
-        path: ROUTES.HOME,
+        path: ROUTES.APP_HOME,
         element: React.createElement('div', null, 'Home Page'),
       },
     ],
@@ -255,7 +255,7 @@ describe('PublicOnlyGuard', () => {
       isLoading: false,
     });
 
-    expect(router.state.location.pathname).toBe(ROUTES.HOME);
+    expect(router.state.location.pathname).toBe(ROUTES.APP_HOME);
     await cleanup();
   });
 

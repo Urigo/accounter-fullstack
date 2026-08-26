@@ -65,7 +65,14 @@ function getTrialBalanceReportHref(filter?: TrialBalanceReportFilters | null): s
 }
 
 export const ROUTES = {
+  /** Public landing page. Logged-out visitors land here; see `LandingRoute`. */
   HOME: '/',
+  /**
+   * First screen inside the app shell. `HOME` is the marketing page now, so
+   * anything that means "send the user into the app" points here instead.
+   * Keep in sync with `CHARGES.ROOT`.
+   */
+  APP_HOME: '/charges',
   LOGIN: '/login',
   AUTH_CALLBACK: '/auth/callback',
   WELCOME: '/welcome',
