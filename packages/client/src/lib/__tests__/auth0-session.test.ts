@@ -50,4 +50,28 @@ describe('auth0-session utilities', () => {
     expect(getStoredAuth0AccessToken()).toBeNull();
     expect(hasStoredAuth0Session()).toBe(false);
   });
+  it('reports no session when the browser blocks storage access', () => {
+    // Private windows and "block all cookies" make the accessor itself throw.
+    // LandingRoute calls this during render, so a throw here would take the
+    // public landing page down for the visitors it exists to serve.
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    });
+
+    expect(() => getStoredAuth0AccessToken()).not.toThrow();
+    expect(getStoredAuth0AccessToken()).toBeNull();
+    expect(hasStoredAuth0Session()).toBe(false);
+
+    getItem.mockRestore();
+  });
+
+  it('reports no session when enumerating storage throws', () => {
+    const length = vi.spyOn(Storage.prototype, 'length', 'get').mockImplementation(() => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    });
+
+    expect(hasStoredAuth0Session()).toBe(false);
+
+    length.mockRestore();
+  });
 });

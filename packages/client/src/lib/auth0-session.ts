@@ -30,31 +30,39 @@ export function getStoredAuth0AccessToken(): string | null {
     return null;
   }
 
-  const exactCacheKey = `@@auth0spajs@@::${clientId}::${audience}::${AUTH0_SCOPE}`;
-  const exactValue = localStorage.getItem(exactCacheKey);
-  if (exactValue) {
-    const token = parseAuth0CacheEntry(exactValue);
-    if (token) {
-      return token;
-    }
-  }
-
-  const prefix = buildAuth0CachePrefix(clientId, audience);
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const key = localStorage.key(index);
-    if (!key?.startsWith(prefix)) {
-      continue;
+  // Reading localStorage throws outright where the browser blocks site data
+  // (private windows, "block all cookies"). A browser that cannot hold a cache
+  // has no cached session, so answer that rather than propagating: callers use
+  // this during render, where a throw would take the page down.
+  try {
+    const exactCacheKey = `@@auth0spajs@@::${clientId}::${audience}::${AUTH0_SCOPE}`;
+    const exactValue = localStorage.getItem(exactCacheKey);
+    if (exactValue) {
+      const token = parseAuth0CacheEntry(exactValue);
+      if (token) {
+        return token;
+      }
     }
 
-    const rawValue = localStorage.getItem(key);
-    if (!rawValue) {
-      continue;
-    }
+    const prefix = buildAuth0CachePrefix(clientId, audience);
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key?.startsWith(prefix)) {
+        continue;
+      }
 
-    const token = parseAuth0CacheEntry(rawValue);
-    if (token) {
-      return token;
+      const rawValue = localStorage.getItem(key);
+      if (!rawValue) {
+        continue;
+      }
+
+      const token = parseAuth0CacheEntry(rawValue);
+      if (token) {
+        return token;
+      }
     }
+  } catch {
+    return null;
   }
 
   return null;
