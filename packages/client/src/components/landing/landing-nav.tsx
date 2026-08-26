@@ -1,10 +1,11 @@
 import type { ReactElement } from 'react';
-import { Link } from 'react-router-dom';
-import { ROUTES } from '../../router/routes.js';
+import { useLogin } from '../../hooks/use-login.js';
 import { Button } from '../ui/button.js';
 import { NAV_SECTIONS, REQUEST_ACCESS_URL } from './landing-content.js';
 
 export function LandingNav(): ReactElement {
+  const login = useLogin();
+
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/85 backdrop-blur-sm">
       <nav
@@ -31,13 +32,12 @@ export function LandingNav(): ReactElement {
 
         <div className="flex items-center gap-1 sm:gap-2">
           {/*
-            Routed to the existing login screen rather than calling
-            loginWithRedirect here: that screen already owns returnTo, the
-            reauth flow and Auth0 error messaging, and this page is meant to
-            stay free of auth logic.
+            Straight to Auth0, not to /login. An existing user arriving on a new
+            device already knows who they are; the login screen would only be a
+            page with one button on it.
           */}
-          <Button asChild variant="ghost">
-            <Link to={ROUTES.LOGIN}>Sign in</Link>
+          <Button variant="ghost" onClick={() => void login()}>
+            Log in
           </Button>
           <Button asChild>
             <a href={REQUEST_ACCESS_URL}>Request access</a>

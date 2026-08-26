@@ -1,13 +1,15 @@
 import { useEffect, type ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useLogin } from '../hooks/use-login.js';
 import { AUTH0_ERROR_MESSAGES } from '../lib/auth0-errors.js';
 import { clearStoredAuth0Session } from '../lib/auth0-session.js';
 import { ROUTES } from '../router/routes.js';
 import { Button } from './ui/button.js';
 
 export function LoginPage(): ReactElement {
-  const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth0();
+  const login = useLogin();
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -54,21 +56,7 @@ export function LoginPage(): ReactElement {
           </div>
 
           <Button
-            onClick={() => {
-              // Avoid overwriting an existing returnTo set earlier in the reauth flow.
-              if (!isReauthFlow || !sessionStorage.getItem('auth:returnTo')) {
-                sessionStorage.setItem('auth:returnTo', returnTo);
-              }
-              return loginWithRedirect({
-                authorizationParams: {
-                  audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                  scope: 'openid profile email offline_access',
-                  ...(isReauthFlow ? { prompt: 'login' } : {}),
-                  redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
-                },
-                appState: { returnTo },
-              });
-            }}
+            onClick={() => login({ returnTo, isReauth: isReauthFlow })}
             className="w-full font-semibold"
             disabled={isLoading}
           >
