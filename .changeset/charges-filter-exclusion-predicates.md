@@ -37,6 +37,15 @@ All four are removed from the MCP server's `UNSUPPORTED_UPSTREAM_CHARGE_FILTER_F
 "everything except these accounts" expressible by a model for the first time. `unbalanced` and
 `businessTrip` stay on that list — they remain accepted-but-ignored.
 
+Both text predicates are now normalized at the provider: a value that is empty once trimmed becomes
+`NULL` rather than reaching SQL as an empty string, which would degrade to `ILIKE '%%'`. As an
+exclusion that would have dropped nearly every charge — reachable through the MCP tools, whose
+`.min(2)` accepted two spaces — and the same latent bug existed on the pre-existing `freeText` path,
+where it instead drops the charges whose description is `NULL`. The mapping layer and the MCP input
+schema now reject whitespace-only text as well, so it fails at the edge. The numeric variants are
+only set when the term contains a digit, since those branches compare against `amount::TEXT` and a
+digit-free term can never match one.
+
 One editing hazard found and documented: **pgTyped silently truncates the generated parameter list at
 the first `--` comment inside the closing `WHERE` clause.** An explanatory comment placed there cut
 `IGetChargesByFiltersParams` from 30-odd entries to ten, taking `tags`, `accountIds` and `sortColumn`

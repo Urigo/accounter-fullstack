@@ -156,6 +156,18 @@ describe('Query.allCharges filter forwarding', () => {
       });
     });
 
+    /**
+     * A whitespace-only value trims to an empty string, which is not NULL in SQL and
+     * so degrades to `ILIKE '%%'`. On the exclusion side that would drop nearly every
+     * charge; on the positive side it drops charges whose description is NULL. Both
+     * sides must read it as "no text predicate".
+     */
+    it('treats whitespace-only text as no predicate on both sides', async () => {
+      const params = await paramsFor({ freeText: '   ', excludedFreeText: '  ' });
+      expect(params.freeText).toBeUndefined();
+      expect(params.excludedFreeText).toBeUndefined();
+    });
+
     it('leaves the exclusion parameters unset when the filter omits them', async () => {
       const params = await paramsFor({ byBusinesses: ['biz-1'] });
       expect(params.excludedBusinessIds).toBeUndefined();

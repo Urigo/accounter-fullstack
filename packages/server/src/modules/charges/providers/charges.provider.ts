@@ -173,6 +173,29 @@ const generateCharge = sql<IGenerateChargeQuery>`
 `;
 
 /**
+ * Collapses a search string that is empty once trimmed to `null`.
+ *
+ * An empty string is not `NULL` in SQL, so it survives the `IS NOT NULL` guards and
+ * degrades to `ILIKE '%%'`, which matches every non-null column. On the exclusion side
+ * that drops nearly every charge; on the positive side it drops the opposite set --
+ * charges whose description is `NULL` -- because they fail the `ILIKE` the others pass.
+ * Either way the caller meant "no text predicate", so normalize it away.
+ */
+export function normalizeSearchText(text?: string | null | void): string | null {
+  const trimmed = text?.trim().toLowerCase();
+  return trimmed || null;
+}
+
+/**
+ * The amount-matching branches compare against `amount::TEXT`, so a search term with
+ * no digit in it cannot match one and only costs a scan. Thousands separators are
+ * stripped so both "1,234.56" and "1234.56" match the plain stored value.
+ */
+export function toNumericSearchText(text: string | null): string | null {
+  return text && /\d/.test(text) ? text.replaceAll(',', '') : null;
+}
+
+/**
  * Note for editors: pgTyped silently truncates the generated parameter list at the
  * first `--` comment inside the closing WHERE clause, dropping every parameter after
  * it. Keep explanatory comments in TypeScript rather than in that clause.
@@ -1321,6 +1344,8 @@ export class ChargesProvider {
     const isExcludedAccountIds = !!params?.excludedAccountIds?.filter(Boolean).length;
     // A value in both an include and its exclude list is dropped: the predicates are
     // ANDed in SQL, so exclude wins.
+    const freeText = normalizeSearchText(params.freeText);
+    const excludedFreeText = normalizeSearchText(params.excludedFreeText);
 
     const defaults = {
       asc: false,
@@ -1361,12 +1386,12 @@ export class ChargesProvider {
       withoutLedger: params.withoutLedger ?? false,
       withoutTags: params.withoutTags ?? false,
       accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,
-      // strip thousands separators so amount searches match the plain value stored in the DB
-      freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,
-      excludedFreeText: params.excludedFreeText ?? null,
-      excludedFreeTextNumeric: params.excludedFreeText
-        ? params.excludedFreeText.replaceAll(',', '')
-        : null,
+      // Normalized here rather than at the callers: this is the single chokepoint in
+      // front of the SQL, and several resolvers build these params independently.
+      freeText,
+      freeTextNumeric: toNumericSearchText(freeText),
+      excludedFreeText,
+      excludedFreeTextNumeric: toNumericSearchText(excludedFreeText),
     };
     return getChargesByFilters.run(fullParams, this.db).then(charges => {
       // The enriched rows are supersets of the plain charge rows — prime the

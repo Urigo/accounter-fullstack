@@ -64,6 +64,19 @@ describe('charge filter exclusions', () => {
     expect(chargeFiltersInput.safeParse({ excludedFreeText: 'ab' }).success).toBe(true);
   });
 
+  /**
+   * `.min(2)` alone accepts "  ", which is truthy and so reaches the builder, then
+   * trims to an empty string downstream — where SQL reads it as `ILIKE '%%'`. The
+   * exclusion form of that drops nearly every charge, so it has to fail at the edge.
+   */
+  it('rejects whitespace-only search text on both sides', () => {
+    expect(chargeFiltersInput.safeParse({ excludedFreeText: '  ' }).success).toBe(false);
+    expect(chargeFiltersInput.safeParse({ excludedFreeText: '    ' }).success).toBe(false);
+    expect(chargeFiltersInput.safeParse({ freeText: '  ' }).success).toBe(false);
+    // still fine with surrounding whitespace around real content
+    expect(chargeFiltersInput.safeParse({ excludedFreeText: ' ab ' }).success).toBe(true);
+  });
+
   // The shared array helper preprocesses `[]` to absent, so an empty exclusion never
   // becomes a predicate. Exercised through parse-then-build, which is the real path:
   // `[]` is truthy, so the builder alone would forward it (true of the positive

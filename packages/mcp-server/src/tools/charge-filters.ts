@@ -70,6 +70,19 @@ export function optionalNonEmptyStringArray(max: number) {
   );
 }
 
+/**
+ * A free-text predicate. `.min(2)` alone accepts "  ", which is truthy and so gets
+ * forwarded, then trims to an empty string downstream — where SQL reads it as
+ * `ILIKE '%%'` and it matches everything. The refine holds the floor after trimming.
+ */
+function searchText(max: number) {
+  return z
+    .string()
+    .min(2)
+    .max(max)
+    .refine(value => value.trim().length >= 2, 'must contain at least 2 non-whitespace characters');
+}
+
 /** Same empty-array-means-absent treatment, for a fixed enum vocabulary. */
 function optionalNonEmptyEnumArray<const T extends readonly [string, ...string[]]>(values: T) {
   return z.preprocess(
@@ -143,10 +156,7 @@ export const CHARGE_FILTER_SHAPE = {
       'Drop charges with any transaction in these financial accounts. Applied after the include ' +
         'lists, so an account named in both is excluded.',
     ),
-  excludedFreeText: z
-    .string()
-    .min(2)
-    .max(CHARGE_FILTER_TEXT_MAX)
+  excludedFreeText: searchText(CHARGE_FILTER_TEXT_MAX)
     .optional()
     .describe(
       'Drop charges matching this text across the same fields as `freeText`. Charges with no text ' +
@@ -162,10 +172,7 @@ export const CHARGE_FILTER_SHAPE = {
     .enum(['ALL', 'INCOME', 'EXPENSE'])
     .optional()
     .describe('Restrict to income or expense charges (ALL for both).'),
-  freeText: z
-    .string()
-    .min(2)
-    .max(CHARGE_FILTER_TEXT_MAX)
+  freeText: searchText(CHARGE_FILTER_TEXT_MAX)
     .optional()
     .describe(
       'Free-text search across the charge: user description, transaction description/reference, and ' +

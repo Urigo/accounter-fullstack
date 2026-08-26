@@ -48,6 +48,22 @@ never enters `excluded_matches`, so **"does not mention X" keeps charges with no
 `excludedFreeText` gets the same thousands-separator stripping as `freeText`
 (`excludedFreeTextNumeric`), so excluding `1,234.56` also excludes `1234.56`.
 
+## Empty search text
+
+An empty string is not `NULL` in SQL, so it survives the query's `IS NOT NULL` guards and degrades
+to `ILIKE '%%'`. As an exclusion that drops nearly every charge; as a positive filter it drops the
+opposite set — the charges whose description is `NULL`, since they fail an `ILIKE` every other row
+passes. A whitespace-only input trims to exactly that.
+
+`ChargesProvider.getChargesByFilters` normalizes both `freeText` and `excludedFreeText` to `NULL`
+when they are empty after trimming. That is deliberately at the provider rather than any one caller
+— several resolvers build these params independently. The GraphQL mapping layer and the MCP input
+schema reject it too, so it fails at the edge rather than silently becoming a no-op.
+
+The numeric variants (`freeTextNumeric`, `excludedFreeTextNumeric`) are only set when the term
+contains a digit: those branches compare against `amount::TEXT`, so a digit-free term cannot match
+one and only costs a scan.
+
 ## Precedence
 
 Include and exclude are separate predicates, `AND`ed. A value named in both lists is therefore
