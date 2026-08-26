@@ -1,144 +1,48 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import equal from 'deep-equal';
-import {
-  flexRender,
-  useTable,
-  type ColumnVisibilityState,
-  type SortingState,
-} from '@tanstack/react-table';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
-import {
-  TableDocumentsRowFieldsFragmentDoc,
-  type TableDocumentsRowFieldsFragment,
-} from '../../gql/graphql.js';
-import { getFragmentData, type FragmentType } from '../../gql/index.js';
+import type { ReactElement } from 'react';
+import type { TableDocumentsRowFieldsFragmentDoc } from '../../gql/graphql.js';
+import type { FragmentType } from '../../gql/index.js';
 import { EditDocumentModal } from '../common/index.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { columns, type DocumentsTableRowType } from './columns.js';
+import { DocumentsDataTable } from './data-table.js';
+import { useDocumentsTable } from './use-documents-table.js';
 
 type Props = {
   documentsProps: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>[];
   onChange?: () => void;
   /** Called when removing a document emptied its charge and the server deleted the charge too. */
   onChargeDeleted?: (chargeId: string) => void;
-  limited?: boolean;
+  /** Restrict the table to these column ids. Defaults to the full shared column set. */
+  columnIds?: string[];
+  /** Include the actions-menu items that navigate to the document's charge. */
+  withChargeLink?: boolean;
 };
 
 export const DocumentsTable = ({
   documentsProps,
   onChange,
   onChargeDeleted,
-  limited = false,
+  columnIds,
+  withChargeLink,
 }: Props): ReactElement => {
-  const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
-  const [sorting, setSorting] = useState<SortingState>([]);
-
-  const incomingDocuments = useMemo(
-    () =>
-      documentsProps?.map(rawDocument =>
-        getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument),
-      ) ?? [],
-    [documentsProps],
-  );
-
-  // The document row fields are fetched under a `@defer` fragment, so on a
-  // refetch each document streams back id-first and its other fields (amount,
-  // vat, …) arrive in later patches — the not-yet-arrived fields are absent from
-  // the payload. Merge each incoming document's present fields over the version
-  // currently shown (matched by id) so every cell keeps its value until the real
-  // data replaces it, instead of the rows flashing empty while only the id is
-  // present. Present values (including a legitimate `null`) are applied as they
-  // arrive; only absent/`undefined` fields fall back to the previous value. Bail
-  // out when nothing changed so we don't re-render (and "blink") on an identical
-  // refetch.
-  const [documents, setDocuments] = useState<TableDocumentsRowFieldsFragment[]>(incomingDocuments);
-  useEffect(() => {
-    setDocuments(prev => {
-      const prevById = new Map(prev.map(document => [document.id, document]));
-      const next = incomingDocuments.map(document => {
-        const previous = prevById.get(document.id);
-        if (!previous) {
-          return document;
-        }
-        const merged: Record<string, unknown> = { ...previous };
-        for (const [key, value] of Object.entries(document)) {
-          if (value !== undefined) {
-            merged[key] = value;
-          }
-        }
-        return merged as TableDocumentsRowFieldsFragment;
-      });
-      return equal(prev, next) ? prev : next;
-    });
-  }, [incomingDocuments]);
-
-  const data: DocumentsTableRowType[] = useMemo(
-    () =>
-      documents.map(document => ({
-        ...document,
-        editDocument: (): void => setEditDocumentId(document.id),
-        onUpdate: onChange ?? (() => {}),
-      })),
-    [documents, onChange],
-  );
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
-  const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'file'];
-  const table = useTable({
-    features: tableFeaturesConfig,
-    data,
-    columns: limited
-      ? columns.filter(column => column.id && limitedColumns.includes(column.id))
-      : columns,
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnVisibility,
-    },
+  const { table, editDocumentId, closeEditDocument } = useDocumentsTable({
+    documentsProps,
+    onChange,
+    columnIds,
+    withChargeLink,
   });
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map(headerGroup => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map(header => (
-                <TableHead key={header.id} colSpan={header.colSpan}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map(row => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                {row.getVisibleCells().map(cell => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <DocumentsDataTable table={table} />
       <EditDocumentModal
         documentId={editDocumentId}
-        onDone={(): void => setEditDocumentId(undefined)}
+        onDone={closeEditDocument}
         onChange={() => onChange?.()}
         onChargeDeleted={onChargeDeleted}
       />
     </>
   );
 };
+
+export { DocumentsDataTable } from './data-table.js';
+export { DocumentActionsMenu } from './document-actions-menu.js';
+export { useDocumentsTable } from './use-documents-table.js';

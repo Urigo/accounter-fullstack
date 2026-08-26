@@ -1,29 +1,18 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
-import { ArrowUpDown, Loader2 } from 'lucide-react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Image } from '@mantine/core';
-import {
-  flexRender,
-  useTable,
-  type ColumnDef,
-  type ColumnVisibilityState,
-  type SortingState,
-} from '@tanstack/react-table';
-import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import {
   DocumentsScreenDocument,
   type DocumentsFilters as DocumentsFiltersType,
-  type DocumentsScreenQuery,
 } from '../../../../gql/graphql.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import {
-  AccounterTable,
   DataTablePagination,
-  PopUpModal,
+  EditDocumentModal,
   UploadDocumentsModal,
 } from '../../../common/index.js';
+import { DocumentsDataTable, useDocumentsTable } from '../../../documents-table/index.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import { Button } from '../../../ui/button.js';
 import {
@@ -32,14 +21,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '../../../ui/dropdown-menu.js';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../../ui/table.js';
 import { DocumentsFilters } from './documents-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -47,234 +28,12 @@ import { DocumentsFilters } from './documents-filters.js';
   query DocumentsScreen($filters: DocumentsFilters!) {
     documentsByFilters(filters: $filters) {
       id
-      image
-      file
-      charge {
-        id
-        userDescription
-        __typename
-        vat {
-          formatted
-          __typename
-        }
-        transactions {
-          id
-          eventDate
-          sourceDescription
-          effectiveDate
-          amount {
-            formatted
-            __typename
-          }
-        }
-      }
-      __typename
-      ... on FinancialDocument {
-        creditor {
-          id
-          name
-        }
-        debtor {
-          id
-          name
-        }
-        vat {
-          raw
-          formatted
-          currency
-        }
-        serialNumber
-        date
-        amount {
-          raw
-          formatted
-          currency
-        }
-      }
+      ...TableDocumentsRowFields
     }
   }
 `;
 
-export const columns: ColumnDef<
-  TableFeaturesConfig,
-  DocumentsScreenQuery['documentsByFilters'][number]
->[] = [
-  {
-    accessorKey: '__typename',
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        <div className="text-left">Type</div>
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      const { __typename } = row.original;
-      return <div className="text-left font-medium">{__typename}</div>;
-    },
-  },
-  {
-    accessorKey: 'image',
-    header: () => <div className="text-left">Image</div>,
-    cell: ({ row }) => {
-      const { image } = row.original;
-
-      return (
-        <div className="text-left font-medium">
-          {image ? (
-            <img alt="missing img" src={image?.toString()} height={80} width={80} />
-          ) : (
-            'No image'
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: 'file',
-    header: () => <div className="text-left">File</div>,
-    cell: ({ row }) => {
-      const { file } = row.original;
-
-      return (
-        <div className="text-left font-medium">
-          {file && (
-            <Button variant="outline" size="sm" asChild>
-              <a target="_blank" rel="noreferrer" href={file?.toString()}>
-                Open
-              </a>
-            </Button>
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: 'date',
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        <div className="text-left">Date</div>
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      return 'date' in row.original && row.original.date ? (
-        <div className="text-left font-medium">
-          {format(new Date(row.original.date), 'dd/MM/yy')}
-        </div>
-      ) : null;
-    },
-  },
-  {
-    accessorKey: 'serialNumber',
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        <div className="text-left">Serial Number</div>
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      return 'serialNumber' in row.original && row.original.serialNumber ? (
-        <div className="text-left font-medium">{row.original.serialNumber}</div>
-      ) : null;
-    },
-  },
-  {
-    accessorKey: 'vat.raw',
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        <div className="text-left">VAT</div>
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      return 'vat' in row.original && row.original.vat?.formatted ? (
-        <div className="text-left font-medium whitespace-nowrap">{row.original.vat.formatted}</div>
-      ) : null;
-    },
-  },
-  {
-    accessorKey: 'amount.raw',
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        <div className="text-left">Amount</div>
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      return 'amount' in row.original && row.original.amount?.formatted ? (
-        <div className="text-left font-medium whitespace-nowrap">
-          {row.original.amount.formatted}
-        </div>
-      ) : null;
-    },
-  },
-  {
-    accessorKey: 'creditor.name',
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        <div className="text-left">Creditor</div>
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      return 'creditor' in row.original && row.original.creditor?.name ? (
-        <div className="text-left font-medium whitespace-nowrap">{row.original.creditor.name}</div>
-      ) : null;
-    },
-  },
-  {
-    accessorKey: 'debtor.name',
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-        <div className="text-left">Debtor</div>
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      return 'debtor' in row.original && row.original.debtor?.name ? (
-        <div className="text-left font-medium whitespace-nowrap">{row.original.debtor.name}</div>
-      ) : null;
-    },
-  },
-  {
-    accessorKey: 'charge.transactions[0].id',
-    header: () => <div className="text-left">Related Transaction</div>,
-    cell: ({ row }) => {
-      return row.original.charge?.transactions?.[0]?.id ? (
-        <AccounterTable
-          items={row.original.charge?.transactions ?? []}
-          columns={[
-            {
-              title: 'Transaction Amount',
-              value: transaction => transaction?.amount.formatted,
-            },
-            {
-              title: 'Transaction Created At',
-              value: transaction =>
-                transaction?.eventDate ? format(new Date(transaction.eventDate), 'dd/MM/yy') : null,
-            },
-            {
-              title: 'Transaction Effective Date',
-              value: transaction =>
-                transaction?.effectiveDate
-                  ? format(new Date(transaction.effectiveDate), 'dd/MM/yy')
-                  : null,
-            },
-            {
-              title: 'Transaction Description',
-              value: transaction => transaction?.sourceDescription,
-            },
-          ]}
-        />
-      ) : (
-        'No Related Transaction'
-      );
-    },
-  },
-];
-
 export const DocumentsReport = (): ReactElement => {
-  const [openedImage, setOpenedImage] = useState<string | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const { get } = useUrlQuery();
   const uriFilters = get('documentsFilters');
@@ -290,8 +49,6 @@ export const DocumentsReport = (): ReactElement => {
     return undefined;
   }, [uriFilters]);
   const [filter, setFilter] = useState<DocumentsFiltersType | undefined>(initialFilters);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const { setFiltersContext } = useContext(FiltersContext);
 
   const [{ data, fetching }, refetchDocuments] = useQuery({
@@ -302,23 +59,26 @@ export const DocumentsReport = (): ReactElement => {
     pause: true,
   });
 
-  // refetch charges on filter change
+  // refetch documents on filter change
   useEffect(() => {
     if (filter) {
       refetchDocuments();
     }
   }, [filter, refetchDocuments]);
 
-  const table = useTable({
-    features: tableFeaturesConfig,
-    data: data?.documentsByFilters ?? [],
-    columns,
-    onSortingChange: setSorting,
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnVisibility,
-    },
+  const documentsProps = useMemo(() => data?.documentsByFilters ?? [], [data?.documentsByFilters]);
+
+  // Stable identity: the hook memoizes its row data on it, so an inline arrow would rebuild every row
+  // on every render.
+  const onDocumentChange = useCallback(
+    (): void => refetchDocuments({ requestPolicy: 'network-only' }),
+    [refetchDocuments],
+  );
+
+  const { table, editDocumentId, closeEditDocument } = useDocumentsTable({
+    documentsProps,
+    onChange: onDocumentChange,
+    withChargeLink: true,
   });
 
   // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:
@@ -369,60 +129,20 @@ export const DocumentsReport = (): ReactElement => {
         </div>
       }
     >
+      <UploadDocumentsModal
+        open={uploadModalOpen}
+        onOpenChange={setUploadModalOpen}
+        onChange={refetchDocuments}
+      />
+      <EditDocumentModal
+        documentId={editDocumentId}
+        onDone={closeEditDocument}
+        onChange={onDocumentChange}
+      />
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
-        <>
-          <UploadDocumentsModal
-            open={uploadModalOpen}
-            onOpenChange={setUploadModalOpen}
-            onChange={refetchDocuments}
-          />
-          {openedImage && (
-            <PopUpModal
-              modalSize="45%"
-              content={<Image src={openedImage} />}
-              opened={!!openedImage}
-              onClose={(): void => setOpenedImage(null)}
-            />
-          )}
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </>
+        <DocumentsDataTable table={table} />
       )}
     </PageLayout>
   );

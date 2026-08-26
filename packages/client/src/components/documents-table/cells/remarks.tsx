@@ -1,14 +1,11 @@
 import type { ReactElement } from 'react';
 import type { DocumentsTableRowType } from '../columns.js';
+import { ExpandableText } from './expandable-text.js';
 
 type Props = {
   document: DocumentsTableRowType;
 };
 
-export const Remarks = ({ document }: Props): ReactElement => {
-  return (
-    <div className="flex flex-col justify-center whitespace-normal">
-      <p>{document.remarks}</p>
-    </div>
-  );
+export const Remarks = ({ document }: Props): ReactElement | null => {
+  return <ExpandableText text={document.remarks} />;
 };

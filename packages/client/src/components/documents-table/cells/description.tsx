@@ -1,11 +1,12 @@
 import type { ReactElement } from 'react';
 import type { DocumentsTableRowType } from '../columns.js';
+import { ExpandableText } from './expandable-text.js';
 
 type Props = {
   document: DocumentsTableRowType;
 };
 
-export const Description = ({ document }: Props): ReactElement => {
+export const Description = ({ document }: Props): ReactElement | null => {
   let description = '';
   if (document.description) {
     description = document.description;
@@ -16,9 +17,5 @@ export const Description = ({ document }: Props): ReactElement => {
     const { income } = document.issuedDocumentInfo.originalDocument;
     description = income.map(item => item.description).join(', ');
   }
-  return (
-    <div className="flex flex-col justify-center whitespace-normal">
-      <p>{description}</p>
-    </div>
-  );
+  return <ExpandableText text={description} />;
 };

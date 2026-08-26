@@ -5,9 +5,16 @@ import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
-import type { DocumentsFilters as DocumentsFiltersType } from '../../../../gql/graphql.js';
+import {
+  DocumentType,
+  type DocumentsFilters as DocumentsFiltersType,
+} from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
-import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
+import {
+  getDocumentNameFromType,
+  isObjectEmpty,
+  TIMELESS_DATE_REGEX,
+} from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
@@ -21,7 +28,19 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Input } from '../../../ui/input.js';
 import { Switch } from '../../../ui/switch.js';
+
+const FLAG_FIELDS = [
+  { name: 'unmatched', label: 'Unmatched only' },
+  { name: 'missingInfo', label: 'Invalid documents only' },
+  { name: 'missingCounterparty', label: 'Missing counterparty' },
+] as const satisfies readonly { name: keyof DocumentsFiltersType; label: string }[];
+
+const DOCUMENT_TYPE_OPTIONS = Object.values(DocumentType).map(type => ({
+  value: type,
+  label: getDocumentNameFromType(type),
+}));
 
 interface DocumentsFiltersFormProps {
   filter: DocumentsFiltersType;
@@ -50,7 +69,10 @@ function DocumentsFiltersForm({
     useGetFinancialEntities();
 
   const onSubmit: SubmitHandler<DocumentsFiltersType> = data => {
-    setFilter(data);
+    // A blank free-text box is not a filter — sending `''` would mark the screen as filtered and
+    // hand the server an empty search term.
+    const { freeText, ...rest } = data;
+    setFilter(freeText?.trim() ? { ...rest, freeText: freeText.trim() } : rest);
     closeModal();
   };
 
@@ -95,7 +117,7 @@ function DocumentsFiltersForm({
               defaultValue={filter.businessIDs}
               render={({ field, fieldState }): ReactElement => (
                 <FormItem>
-                  <FormLabel>Financial Entities</FormLabel>
+                  <FormLabel>Counterparty</FormLabel>
                   <FormControl>
                     <MultiSelect
                       {...field}
@@ -168,23 +190,77 @@ function DocumentsFiltersForm({
               )}
             />
             <FormField
-              name="unmatched"
+              name="type"
               control={control}
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Unmatched only</FormLabel>
-                  </div>
+              defaultValue={filter.type}
+              render={({ field, fieldState }): ReactElement => (
+                <FormItem>
+                  <FormLabel>Document Type</FormLabel>
                   <FormControl>
-                    <Switch
-                      defaultChecked={filter.unmatched ?? false}
-                      onCheckedChange={field.onChange}
+                    <MultiSelect
+                      {...field}
+                      data={DOCUMENT_TYPE_OPTIONS}
+                      value={field.value ?? []}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      error={fieldState.error?.message}
+                      withinPortal
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="freeText"
+              control={control}
+              defaultValue={filter.freeText}
+              rules={{
+                minLength: {
+                  value: 2,
+                  message: 'Must be at least 2 characters',
+                },
+              }}
+              render={({ field, fieldState }): ReactElement => (
+                <FormItem>
+                  <FormLabel htmlFor="documents-free-text">Free Text</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="documents-free-text"
+                      placeholder="Serial, amount, description, remarks, counterparty"
+                      {...field}
+                      value={field.value ?? ''}
+                      aria-invalid={!!fieldState.error}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
           </SimpleGrid>
+          <div className="mt-5 rounded-lg border p-3 shadow-sm">
+            <p className="mb-3 text-sm font-medium">Missing Information</p>
+            <SimpleGrid cols={2}>
+              {FLAG_FIELDS.map(({ name, label }) => (
+                <FormField
+                  key={name}
+                  name={name}
+                  control={control}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>{label}</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              ))}
+            </SimpleGrid>
+          </div>
           <div className="flex justify-center mt-5 gap-3">
             <button
               type="submit"

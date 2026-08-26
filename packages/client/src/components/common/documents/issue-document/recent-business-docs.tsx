@@ -90,7 +90,7 @@ export function RecentBusinessDocs({
     'description',
     'remarks',
     'file',
-    'edit',
+    'actions',
   ];
   const table = useTable({
     features: tableFeaturesConfig,
