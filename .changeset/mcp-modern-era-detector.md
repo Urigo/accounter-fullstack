@@ -41,5 +41,12 @@ byte-identical whether or not a probe was detected.
 it reads is caller-supplied and unvalidated, and a probe this server cannot parse is precisely the
 event worth seeing rather than throwing on.
 
+Capability names copied out of caller input are bounded — each clipped, the set capped at 20 with a
+trailing `+N more` so a truncated list is visibly truncated. Both how many keys a caller sends and
+how long each one is are bounded only by the 1 MB body cap, so a verbatim copy into a log line was
+caller-controlled amplification: a ~600KB payload produced a ~613KB log line, and now produces a
+1.4KB one. The same fix applies to `describeInitializeParams`, which shipped with the identical
+unbounded copy and is already released — this corrects both.
+
 Runbook §3.2 documents the fields, the `jq` recipes, and — since the point of this is to be a trigger
 — what to do when it fires.

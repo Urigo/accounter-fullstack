@@ -130,6 +130,39 @@ function clipClientLabel(value: unknown): string | null {
     : `${value.slice(0, MAX_CLIENT_LABEL_LENGTH - 1)}\u2026`;
 }
 
+/**
+ * Max capability names copied from a caller-supplied capabilities object.
+ *
+ * Both how many keys there are and how long each one is are the caller's
+ * choice, bounded only by the 1 MB body cap — so copying the set verbatim into
+ * a log line is caller-controlled amplification. Same reasoning as
+ * {@link MAX_CLIENT_LABEL_LENGTH} and the metrics registry's
+ * `MAX_COUNTER_LABELS`: anything derived from caller input gets a ceiling.
+ */
+export const MAX_LOGGED_CAPABILITIES = 20;
+
+/**
+ * Capability *names* from a caller-supplied capabilities object — sorted,
+ * clipped, and capped.
+ *
+ * Values are never read: they are unbounded and carry no diagnostic value here.
+ * Sorted so the same handshake logs the same line and a change is visible by
+ * diffing. When more names are present than the cap allows, a final `+N more`
+ * entry says so, because a list that is silently short reads as a client that
+ * declared fewer capabilities.
+ */
+function capabilityNames(value: unknown): string[] {
+  const names = Object.keys(asRecord(value)).sort();
+  const kept = names
+    .slice(0, MAX_LOGGED_CAPABILITIES)
+    .map(name => clipClientLabel(name))
+    .filter((name): name is string => name !== null);
+
+  return names.length > MAX_LOGGED_CAPABILITIES
+    ? [...kept, `+${names.length - MAX_LOGGED_CAPABILITIES} more`]
+    : kept;
+}
+
 /** What a client told us about itself during `initialize`. */
 export interface InitializeHandshake {
   clientName: string | null;
@@ -165,9 +198,7 @@ export function describeInitializeParams(params: unknown): InitializeHandshake {
     servedProtocolVersion: MCP_PROTOCOL_VERSION,
     protocolVersionMismatch:
       requestedProtocolVersion !== null && requestedProtocolVersion !== MCP_PROTOCOL_VERSION,
-    // Sorted so the same handshake always logs the same line, which makes a
-    // change in what the client declares visible by diffing.
-    clientCapabilities: Object.keys(asRecord(record.capabilities)).sort(),
+    clientCapabilities: capabilityNames(record.capabilities),
   };
 }
 
@@ -215,7 +246,7 @@ export function describeModernEraProbe(
     metaProtocolVersion: clipClientLabel(meta[META_PROTOCOL_VERSION_KEY]),
     metaClientName: clipClientLabel(metaClientInfo.name),
     metaClientVersion: clipClientLabel(metaClientInfo.version),
-    metaClientCapabilities: Object.keys(asRecord(meta[META_CLIENT_CAPABILITIES_KEY])).sort(),
+    metaClientCapabilities: capabilityNames(meta[META_CLIENT_CAPABILITIES_KEY]),
     modernMethod: method === SERVER_DISCOVER_METHOD,
   };
 

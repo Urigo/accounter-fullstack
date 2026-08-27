@@ -9,7 +9,9 @@ import {
   describeInitializeParams,
   dispatchMcpRequest,
   handleMcpBody,
+  describeModernEraProbe,
   MAX_CLIENT_LABEL_LENGTH,
+  MAX_LOGGED_CAPABILITIES,
   MCP_INITIALIZE_EVENT,
   MCP_MODERN_PROBE_EVENT,
   MCP_PROTOCOL_VERSION,
@@ -727,5 +729,69 @@ describe('modern-era probe detection', () => {
     for (const params of [null, 'nope', [1, 2], { _meta: 'nope' }, { _meta: { 'io.modelcontextprotocol/clientInfo': 7 } }]) {
       await expect(dispatch({ method: 'tools/list', params })).resolves.toBeDefined();
     }
+  });
+});
+
+describe('caller-supplied capability lists are bounded', () => {
+  /**
+   * Every field these two extractors read comes from the caller and is bounded
+   * only by the 1 MB body cap, so an unbounded copy into a log line is
+   * caller-controlled amplification. `clientName` and `clientVersion` were
+   * clipped from the start; the capability *set* was not, in either extractor.
+   */
+  const many = (count: number): Record<string, unknown> =>
+    Object.fromEntries(Array.from({ length: count }, (_, i) => [`cap${String(i).padStart(3, '0')}`, {}]));
+
+  it('caps the number of capability names on a handshake', () => {
+    const { clientCapabilities } = describeInitializeParams({ capabilities: many(500) });
+
+    expect(clientCapabilities).toHaveLength(MAX_LOGGED_CAPABILITIES + 1);
+    // Silently short would read as a client declaring fewer capabilities.
+    expect(clientCapabilities.at(-1)).toBe(`+${500 - MAX_LOGGED_CAPABILITIES} more`);
+  });
+
+  it('caps the number of capability names on a modern probe', () => {
+    const probe = describeModernEraProbe(
+      'tools/list',
+      { _meta: { 'io.modelcontextprotocol/clientCapabilities': many(100) } },
+      undefined,
+    );
+
+    expect(probe!.metaClientCapabilities).toHaveLength(MAX_LOGGED_CAPABILITIES + 1);
+    expect(probe!.metaClientCapabilities.at(-1)).toBe(`+${100 - MAX_LOGGED_CAPABILITIES} more`);
+  });
+
+  it('clips an over-long capability name', () => {
+    const { clientCapabilities } = describeInitializeParams({
+      capabilities: { ['c'.repeat(500)]: {} },
+    });
+
+    expect(clientCapabilities[0]).toHaveLength(MAX_CLIENT_LABEL_LENGTH);
+    expect(clientCapabilities[0]!.endsWith('…')).toBe(true);
+  });
+
+  it('leaves a normal capability set untouched and sorted', () => {
+    const { clientCapabilities } = describeInitializeParams({
+      capabilities: { sampling: {}, elicitation: {}, roots: {} },
+    });
+
+    expect(clientCapabilities).toEqual(['elicitation', 'roots', 'sampling']);
+  });
+
+  it('bounds the whole emitted line, not just the array', () => {
+    const probe = describeModernEraProbe(
+      'tools/list',
+      {
+        _meta: {
+          'io.modelcontextprotocol/clientCapabilities': Object.fromEntries(
+            Array.from({ length: 2000 }, (_, i) => [`${'x'.repeat(300)}${i}`, {}]),
+          ),
+        },
+      },
+      undefined,
+    );
+
+    // ~600KB of caller input; the log line must not scale with it.
+    expect(JSON.stringify(probe).length).toBeLessThan(2_000);
   });
 });

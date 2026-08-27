@@ -108,15 +108,15 @@ Every `initialize` emits one line. This is the only record of _which client_ is 
 connector — a remote client's handling of tool results can change without anything in this repo
 changing, and when that happened once, dating it required the client's own local logs.
 
-| Field                      | Meaning                                                                                                                          |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `clientName`               | `clientInfo.name` as the client reported it, clipped. `null` if it sent none.                                                    |
-| `clientVersion`            | `clientInfo.version`, clipped. **The field that dates a client-side behavior change.**                                           |
-| `requestedProtocolVersion` | The MCP revision the client asked for. `null` if absent.                                                                         |
-| `servedProtocolVersion`    | What this server answered — currently unconditional.                                                                             |
-| `protocolVersionMismatch`  | Client asked for a revision this server does not implement. The one field worth alerting on. `false` when nothing was requested. |
-| `clientCapabilities`       | Capability _names_ only, sorted. Values are unbounded and caller-supplied.                                                       |
-| `userId` / `correlationId` | Same meaning as on `tool_call`, so a session can be joined across both events.                                                   |
+| Field                      | Meaning                                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `clientName`               | `clientInfo.name` as the client reported it, clipped. `null` if it sent none.                                                              |
+| `clientVersion`            | `clientInfo.version`, clipped. **The field that dates a client-side behavior change.**                                                     |
+| `requestedProtocolVersion` | The MCP revision the client asked for. `null` if absent.                                                                                   |
+| `servedProtocolVersion`    | What this server answered — currently unconditional.                                                                                       |
+| `protocolVersionMismatch`  | Client asked for a revision this server does not implement. The one field worth alerting on. `false` when nothing was requested.           |
+| `clientCapabilities`       | Capability _names_ only, sorted, clipped and capped at 20 with a trailing `+N more`. Values are never read: caller-supplied and unbounded. |
+| `userId` / `correlationId` | Same meaning as on `tool_call`, so a session can be joined across both events.                                                             |
 
 Caller-derived fields are merged beneath the canonical ones, so `clientName` and friends can never
 overwrite `userId`, `correlationId`, or `event`. A handshake the server cannot parse still logs a
@@ -140,8 +140,9 @@ records that attempt.
 | `protocolVersionHeader`                | The `MCP-Protocol-Version` value — recorded **only when it disagrees** with what we serve, since the header is also required by our own revision and would otherwise be on every call |
 | `metaProtocolVersion`                  | Version from per-request `_meta`; the defining marker of a modern request                                                                                                             |
 | `metaClientName` / `metaClientVersion` | Modern per-request identity, where handshake-era clients send it once                                                                                                                 |
-| `metaClientCapabilities`               | Capability names only, sorted                                                                                                                                                         |
+| `metaClientCapabilities`               | Capability names only, sorted, each clipped and the set capped at 20 with a trailing `+N more` — it is caller-supplied and otherwise unbounded                                        |
 | `modernMethod`                         | The method itself exists only in the modern protocol                                                                                                                                  |
+| `servedProtocolVersion`                | The revision this server implements, so served-versus-requested reads off the line itself                                                                                             |
 | `servedEra`                            | Always `legacy` — what we actually answered, which this event never changes                                                                                                           |
 
 **What to do when it fires.** Nothing breaks at first: the client falls back and keeps working. It
