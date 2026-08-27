@@ -399,7 +399,7 @@ __metadata:
     auth0: "npm:6.3.0"
     basic-auth: "npm:3.0.0"
     bcrypt: "npm:6.0.0"
-    cloudinary: "npm:2.10.1"
+    cloudinary: "npm:2.11.0"
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.4.0"
     dotenv: "npm:17.4.2"
@@ -13484,12 +13484,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cloudinary@npm:2.10.1":
-  version: 2.10.1
-  resolution: "cloudinary@npm:2.10.1"
+"cloudinary@npm:2.11.0":
+  version: 2.11.0
+  resolution: "cloudinary@npm:2.11.0"
   dependencies:
     lodash: "npm:^4.17.23"
-  checksum: 10c0/87045f366d1fffd09ee6bb3c51e2f262054582460d214571e030a775ba386b5d044e862c87f507e6c3e79d9ede6395e1637b5771183ad6ed98e7f48e9dc1ac5f
+  checksum: 10c0/54163496d1b03bac0a97d9abf5f3e4569b7161d49140f78e9302baff1bdda1cfee2745ca922b3012748fcb6eeb2c44016b3cee2c0504ad9d609af0cf6488013f
   languageName: node
   linkType: hard
 
