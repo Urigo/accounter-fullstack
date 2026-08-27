@@ -111,7 +111,7 @@ changing, and when that happened once, dating it required the client's own local
 | Field                      | Meaning                                                                                                                          |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `clientName`               | `clientInfo.name` as the client reported it, clipped. `null` if it sent none.                                                    |
-| `clientVersion`            | `clientInfo.version`, clipped. **The field that dates a client-side behavior change.**                                          |
+| `clientVersion`            | `clientInfo.version`, clipped. **The field that dates a client-side behavior change.**                                           |
 | `requestedProtocolVersion` | The MCP revision the client asked for. `null` if absent.                                                                         |
 | `servedProtocolVersion`    | What this server answered — currently unconditional.                                                                             |
 | `protocolVersionMismatch`  | Client asked for a revision this server does not implement. The one field worth alerting on. `false` when nothing was requested. |
