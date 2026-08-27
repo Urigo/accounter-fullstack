@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_TOOL_RESULT_BYTES, shapeListResult } from '../output.js';
+import { MAX_TOOL_RESULT_BYTES, shapeListResult, shapeWriteResult } from '../output.js';
 
 function bytes(value: unknown): number {
   return Buffer.byteLength(JSON.stringify(value), 'utf8');
@@ -107,5 +107,50 @@ describe('shapeListResult — payload-size guard', () => {
     const structured = result.structuredContent as { rows: unknown[]; returnedCount: number };
     expect(structured.rows).toHaveLength(0);
     expect(structured.returnedCount).toBe(0);
+  });
+});
+
+describe('mirroring the payload into content', () => {
+  /**
+   * `structuredContent` is the field a client may ignore; a `content` text block
+   * is the one a model is guaranteed to read. Both shapers must put the payload
+   * in both places — see `mirroring-contract.test.ts` for the registry-wide
+   * version of this rule.
+   */
+  it('shapeListResult mirrors the structured payload verbatim', () => {
+    const result = shapeListResult({ items: [{ id: 'row-1' }], itemsKey: 'things' });
+
+    expect(result.content).toHaveLength(2);
+    expect(result.content[0].text).toBe('Returning 1 of 1 result(s).');
+    expect(JSON.parse(result.content[1].text)).toEqual(result.structuredContent);
+    expect(result.content[1].text).toContain('row-1');
+  });
+
+  it('shapeWriteResult mirrors its outcome, so the model can see what changed', () => {
+    const result = shapeWriteResult({
+      action: 'update_tags',
+      summary: 'Updated 2 charge(s).',
+      outcome: { updatedCount: 2 },
+      items: { key: 'charges', values: [{ id: 'charge-1' }] },
+    });
+
+    expect(result.content).toHaveLength(2);
+    expect(JSON.parse(result.content[1].text)).toEqual(result.structuredContent);
+    expect(result.content[1].text).toContain('charge-1');
+  });
+
+  /**
+   * The mirrored text is the same string `fittingCount` measures, so the 60 KB
+   * cap still describes exactly what the model consumes — it did not silently
+   * become a 120 KB model-facing budget.
+   */
+  it('keeps the byte cap measuring what the model actually reads', () => {
+    const items = Array.from({ length: 5000 }, (_, i) => ({ id: `row-${i}`, pad: 'x'.repeat(50) }));
+    const result = shapeListResult({ items, itemsKey: 'things' });
+
+    expect(bytes(result.structuredContent)).toBeLessThanOrEqual(MAX_TOOL_RESULT_BYTES);
+    expect(Buffer.byteLength(result.content[1].text, 'utf8')).toBeLessThanOrEqual(
+      MAX_TOOL_RESULT_BYTES,
+    );
   });
 });

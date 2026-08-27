@@ -1,4 +1,5 @@
 import { TokenVerificationError } from '../auth/token.js';
+import { mirroredResult } from '../tools/output.js';
 import type { ToolResult, ToolValidationIssue } from '../tools/registry.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
 
@@ -157,11 +158,18 @@ export function isInternalError(error: unknown): boolean {
   );
 }
 
-/** Render an error payload as an MCP tool result (`isError: true`). */
+/**
+ * Render an error payload as an MCP tool result (`isError: true`).
+ *
+ * Mirrored like a success result, for the same reason and then some: the code
+ * and message fit in the summary line, but `issues`, `correlationId` and
+ * `retryable` do not. A rejected call whose validation issues stay in
+ * `structuredContent` tells the model only *that* it was wrong, never *what* to
+ * fix — so it retries the same shape.
+ */
 export function toToolErrorResult(payload: McpErrorPayload): ToolResult {
   return {
-    content: [{ type: 'text', text: `${payload.code}: ${payload.message}` }],
+    ...mirroredResult(`${payload.code}: ${payload.message}`, withOptionalFields(payload)),
     isError: true,
-    structuredContent: withOptionalFields(payload),
   };
 }

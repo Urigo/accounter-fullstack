@@ -21,6 +21,32 @@ function byteLength(value: string): number {
   return Buffer.byteLength(value, 'utf8');
 }
 
+/**
+ * Build a tool result whose payload is visible to *both* kinds of client.
+ *
+ * The rows go into a `content` text block — which is what a model actually
+ * reads — and stay in `structuredContent` for hosts that consume it directly.
+ * MCP 2025-06-18: a tool returning structured content SHOULD also return the
+ * serialized JSON in a TextContent block.
+ *
+ * This is deliberately the single place the mirroring happens. Putting rows in
+ * `structuredContent` alone made every tool's data invisible to a client that
+ * ignores unschema'd structured content, and a per-tool convention would let
+ * exactly that drift back in one tool at a time.
+ *
+ * The summary leads so the model gets a cheap orientation line before the
+ * payload, and so existing `content[0]` expectations keep pointing at it.
+ */
+export function mirroredResult(summary: string, structured: object): ToolResult {
+  return {
+    content: [
+      { type: 'text', text: summary },
+      { type: 'text', text: JSON.stringify(structured) },
+    ],
+    structuredContent: structured,
+  };
+}
+
 /** Continuation hint returned when results are truncated. */
 export interface ContinuationHint {
   reason: 'payload_size' | 'result_cap';
@@ -119,10 +145,7 @@ export function shapeListResult<T>(params: ShapeListParams<T>): ToolResult {
   const truncated = structured.truncated === true;
   const summarize = params.summarize ?? defaultSummary;
 
-  return {
-    content: [{ type: 'text', text: summarize(shown, total, truncated) }],
-    structuredContent: structured,
-  };
+  return mirroredResult(summarize(shown, total, truncated), structured);
 }
 
 /**
@@ -200,8 +223,5 @@ export function shapeWriteResult<T>(params: ShapeWriteParams<T>): ToolResult {
           };
   }
 
-  return {
-    content: [{ type: 'text', text: params.summary }],
-    structuredContent: structured,
-  };
+  return mirroredResult(params.summary, structured);
 }
