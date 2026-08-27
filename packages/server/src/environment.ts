@@ -92,9 +92,11 @@ const PostgresModel = zod.object({
    * still has to write — and this is what bounds the deferral. Tight on purpose:
    * a request still doing real work keeps querying and never reaches it, while
    * one whose execution died with the connection (a query urql cancelled on the
-   * next keystroke) goes silent at once and is reclaimed promptly. Kept above
-   * POSTGRES_STATEMENT_TIMEOUT_MS, since a long query only bumps activity at its
-   * start and end.
+   * next keystroke) goes silent at once and is reclaimed promptly.
+   *
+   * Floored at `POSTGRES_STATEMENT_TIMEOUT_MS + 30s` — a long query only bumps
+   * activity at its start and end, so a lower value would reclaim a connection
+   * mid-query. A smaller setting is raised to that floor rather than honoured.
    */
   POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(150_000),
   /**
@@ -326,7 +328,15 @@ export const env = {
       postgres.POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS,
       postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
     ),
-    abortedClientMaxIdleMs: postgres.POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS,
+    // Floored above the statement timeout rather than merely documented as
+    // needing to be: a long query bumps activity only at its start and end, so
+    // an aborted ceiling below it would reclaim a connection out from under a
+    // query that is still running. The margin is what keeps a query that runs
+    // right up to the statement timeout from being caught at the boundary.
+    abortedClientMaxIdleMs: Math.max(
+      postgres.POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS,
+      postgres.POSTGRES_STATEMENT_TIMEOUT_MS + 30_000,
+    ),
     watchdogIntervalMs:
       postgres.POSTGRES_WATCHDOG_INTERVAL_MS ??
       Math.min(postgres.POSTGRES_CLIENT_MAX_IDLE_MS, 30_000),

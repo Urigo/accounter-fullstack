@@ -117,14 +117,22 @@ async function disposeClients(context: AccounterContext, options?: { whenIdle?: 
     ),
   );
 
+  // End-of-execution disposal is final: whatever happened, there is no later
+  // pass to hand these to, and the watchdog is the backstop for a failure.
+  if (!options?.whenIdle) {
+    return;
+  }
+
   // A client that only *deferred* its disposal is still live and still owns a
   // connection, so it goes back on the list for the end-of-execution pass to
-  // finish the job. Everything else is done with and stays off it.
-  const deferred = clients.filter((_, index) => {
+  // finish the job. So does one whose deferral *failed*: a rejection released
+  // nothing, and dropping it here would strand a checked-out connection with
+  // nothing left to release it.
+  const unreleased = clients.filter((_, index) => {
     const outcome = settled[index];
-    return outcome?.status === 'fulfilled' && outcome.value === true;
+    return outcome?.status !== 'fulfilled' || outcome.value === true;
   });
-  if (deferred.length) {
-    context.dbClientsToDispose = [...deferred, ...(context.dbClientsToDispose ?? [])];
+  if (unreleased.length) {
+    context.dbClientsToDispose = [...unreleased, ...(context.dbClientsToDispose ?? [])];
   }
 }

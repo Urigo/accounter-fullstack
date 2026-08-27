@@ -84,6 +84,27 @@ describe('dbCleanupPlugin', () => {
     });
   });
 
+  it('keeps a client registered when its deferral fails', async () => {
+    // A rejected deferral released nothing. Dropping the client here would
+    // strand its checked-out connection with nothing left to release it.
+    const controller = new AbortController();
+    const context = buildContext(controller);
+    onContextBuilding(context);
+
+    const disposeWhenIdle = vi.fn().mockRejectedValue(new Error('boom'));
+    context.dbClientsToDispose!.push({
+      dispose: vi.fn().mockResolvedValue(undefined),
+      disposeWhenIdle,
+    });
+
+    controller.abort();
+
+    await vi.waitFor(() => {
+      expect(disposeWhenIdle).toHaveBeenCalledTimes(1);
+      expect(context.dbClientsToDispose).toHaveLength(1);
+    });
+  });
+
   it('marks execution in flight, and clears it once execution is done', async () => {
     const context = buildContext(new AbortController());
     const plugin = dbCleanupPlugin();

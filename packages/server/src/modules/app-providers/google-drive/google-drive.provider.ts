@@ -57,7 +57,7 @@ export class GoogleDriveProvider {
     const res = await fetchWithTimeout(url, 'listing a shared folder').catch(err => {
       const message = `Failed fetching data from Google Drive for URL="${folderUrl}": ${err instanceof Error ? err.message : String(err)}`;
       console.error(message);
-      throw new Error(message);
+      throw new Error(message, { cause: err });
     });
 
     const jsonResponse = await res.json().catch(err => {
@@ -84,7 +84,7 @@ export class GoogleDriveProvider {
     const response = await fetchWithTimeout(url, `downloading "${fileInfo.name}"`).catch(err => {
       const message = `Failed fetching file from Google Drive for file="${fileInfo.name}": ${err instanceof Error ? err.message : String(err)}`;
       console.error(message);
-      throw new Error(message);
+      throw new Error(message, { cause: err });
     });
 
     const buffer = await response.arrayBuffer().catch(err => {
@@ -143,7 +143,7 @@ export class GoogleDriveProvider {
     const res = await fetchWithTimeout(url, `reading metadata for id="${fileId}"`).catch(err => {
       const message = `Failed fetching file metadata from Google Drive for id="${fileId}": ${err instanceof Error ? err.message : String(err)}`;
       console.error(message);
-      throw new Error(message);
+      throw new Error(message, { cause: err });
     });
 
     if (!res.ok) {

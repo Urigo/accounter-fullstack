@@ -226,7 +226,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           insertError = `failed storing the fetched document: ${
             error instanceof Error ? error.message : String(error)
           }`;
-          console.error(`Failed inserting documents fetched from URLs: ${error}`);
+          // Passed as a separate argument rather than interpolated, so the log
+          // keeps the stack and any nested `cause`.
+          console.error('Failed inserting documents fetched from URLs:', error);
         }
       }
 
