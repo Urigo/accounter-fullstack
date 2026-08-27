@@ -29,13 +29,13 @@ The fix moves every payload into `content`, the one channel a model is guarantee
 
 - **All nineteen tools affected.** The failure was in shared output shaping, not in any one tool.
 - **Read tools were unusable for any data question.** A model could learn that seven charges matched
-  and nothing else about them — not enough to answer, summarise, chart, or drill into.
+  and nothing else about them — not enough to answer, summarize, chart, or drill into.
 - **Write outcomes were invisible.** `shapeWriteResult` had the same shape, so `updatedCount`,
   uploaded/failed counts and changed-record echoes never reached the model either. A write would
   apply upstream while the model could not confirm what it had done. No duplicate write was
   observed, but a model retrying an action it could not verify is the obvious hazard, and nothing in
   the design prevented it.
-- **Error details were invisible.** `VALIDATION_ERROR` carries field-level `issues`; those travelled
+- **Error details were invisible.** `VALIDATION_ERROR` carries field-level `issues`; those traveled
   in the same unread field. A rejected call told the model _that_ it was wrong but never _what_ to
   fix, so its natural next move was to retry the same shape.
 - **The glossary returned nothing readable.** `accounter_explain_terminology` shipped its entire
@@ -80,9 +80,9 @@ nowhere in the codebase's history. The specification correspondingly directs a s
 structured content to _also_ return it serialized in a `TextContent` block, precisely so that a
 client which ignores the structured channel still receives the data. This server did neither.
 
-The connector was therefore depending on undefined-by-specification client behaviour for its entire
-payload. That dependency held for as long as the client happened to surface an unschema'd
-`structuredContent`, and failed the moment it stopped.
+The connector was therefore depending on undefined-by-specification client behavior for its entire
+payload. That dependency held for as long as the client happened to surface a `structuredContent`
+with no schema behind it, and failed the moment it stopped.
 
 ### Establishing that it was the client
 
@@ -139,7 +139,7 @@ that stop.
 **5. The insight existed but had not been acted on.** A comment in `charges.ts` already read: _"The
 text content is what the model reads first, so surface a multi-business result there — otherwise a
 union across businesses looks like a single-business answer until the model inspects `scope` in the
-structured payload."_ Someone had recognised that `content` is the channel that reaches the model
+structured payload."_ Someone had recognized that `content` is the channel that reaches the model
 and had moved one derived fact into it. The rows never followed.
 
 **6. Nothing prevented recurrence per tool.** The shared shaper meant one fix repaired all nineteen
@@ -163,8 +163,8 @@ Upper bound on the undetected window is 8 days.
 A single `mirroredResult(summary, structured)` in `src/tools/output.ts`, which `shapeListResult`,
 `shapeWriteResult` and `toToolErrorResult` all return through. The summary still leads; the
 serialized payload follows in a second text block; `structuredContent` is retained for clients that
-consume it directly. This is the backwards-compatibility behaviour the specification asks for, and
-it is client-independent: no host can silently drop it.
+consume it directly. This is the backwards-compatibility behavior the specification asks for, and it
+is client-independent: no host can silently drop it.
 
 Deliberately one function rather than a per-tool convention, because the failure mode being fixed is
 exactly the kind that returns one tool at a time. No tool handler changed — all nineteen already
@@ -207,7 +207,7 @@ drifting from the payload converts working calls into client-side errors — sev
 schemas of risk for redundancy that is not currently needed.
 
 **We did not change protocol-version negotiation.** The server continues to answer `2025-06-18`
-unconditionally. Altering what it advertises is a live behavioural change to a connector that has
+unconditionally. Altering what it advertises is a live behavioral change to a connector that has
 just broken once, and should be decided against a logged mismatch rather than a guess — which
 `protocolVersionMismatch` now supplies.
 
@@ -219,7 +219,7 @@ choose.
 
 ## Lessons
 
-1. **Never let a payload depend on optional client behaviour.** If the specification says a client
+1. **Never let a payload depend on optional client behavior.** If the specification says a client
    _may_ ignore a field, it will eventually ignore it. Put the data where delivery is guaranteed,
    and treat any second channel as redundancy rather than as the primary.
 
