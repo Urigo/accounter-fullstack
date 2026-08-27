@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type {
   LabeledCounter,
   ToolDefinition,
@@ -352,7 +352,8 @@ export const explainTerminologyTool: ToolDefinition<typeof explainTerminologyInp
     'the counterparty; `INTERNAL`/`CONVERSION` charges are money moving between your own accounts and ' +
     'double-count in spend totals). Call it with no arguments for a one-line index of every term, then ' +
     'pass `terms` to define specific ones or `topics` to read a whole area. Reference content only: ' +
-    'static, read-only, no business data, and callable before you know which businesses you can access.',
+    'static, read-only, no business data, and callable before you know which businesses you can access. ' +
+    resultEnvelopeDescription('terms'),
   inputSchema: explainTerminologyInput,
   policy: {
     // Deliberately unscoped and `public`: the content is static reference text

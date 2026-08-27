@@ -3,7 +3,7 @@ import type { McpBalanceReportQuery, McpBalanceReportQueryVariables } from '../g
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { normalizeAmount } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -135,6 +135,8 @@ export const balanceReportTool: ToolDefinition<typeof balanceReportInput> = {
   name: BALANCE_REPORT_TOOL_NAME,
   description:
     'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Every row carries the owning business as `ownerId`. Requires business owner or accountant role. ' +
+    resultEnvelopeDescription('rows') +
+    ' ' +
     SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: balanceReportInput,
   policy: {

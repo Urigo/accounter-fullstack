@@ -3,7 +3,7 @@ import { ToolInputError } from '../errors/taxonomy.js';
 import type { McpGetSecurityExecutionsQuery, McpListSecurityHoldingsQuery } from '../gql/index.js';
 import { parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { normalizeAmount } from './entity-shapes.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -301,6 +301,8 @@ export const listSecurityHoldingsTool: ToolDefinition<typeof listSecurityHolding
     "Amounts are in each security's own trade currency and are never converted: use the response's `byCurrency` subtotals rather than adding rows up, and never sum quantities or average costs. " +
     'Every response carries a `caveats` array stating the limits of the derivation. ' +
     'Set `includeClosed` to also see securities traded but no longer held. Use accounter_get_security_executions for the trades behind a row. Read-only. ' +
+    resultEnvelopeDescription('holdings') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listSecurityHoldingsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
@@ -580,6 +582,8 @@ export const getSecurityExecutionsTool: ToolDefinition<typeof getSecurityExecuti
     "Amounts are in each security's own trade currency and are never converted, so do not add rows from different securities together. " +
     'Set `includeCharges` to also get the charge each trade cash movement landed on; that requires naming the securities, because the pairing is computed over a security whole history rather than a page. ' +
     'If a call fails with an upstream error naming an unknown trade type, the bank has used a label the server does not yet translate - that is a data bug worth reporting, not something to retry; passing explicit `tradeTypes` filters such rows out and works around it. Read-only. ' +
+    resultEnvelopeDescription('executions') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getSecurityExecutionsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

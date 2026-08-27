@@ -5,7 +5,7 @@ import type {
   McpBatchUploadDocumentsMutation,
 } from '../gql/index.js';
 import type { UploadFile } from '../upstream/graphql-client.js';
-import { shapeWriteResult } from './output.js';
+import { shapeWriteResult, writeResultDescription } from './output.js';
 import type {
   ToolDefinition,
   ToolExecutionContext,
@@ -470,6 +470,9 @@ export const uploadDocumentsTool: ToolDefinition<typeof uploadDocumentsInput> = 
     'because that content travels as tool arguments and both costs enormous output and risks ' +
     'corrupting the file. Never re-encode or downscale a financial document to make it fit — use ' +
     '`documentUrls` instead. ' +
+    'Each result is positional and carries `status` (`uploaded` or `failed`) with either `documentId` and `documentType` or a `message`, keyed by `url` or `filename` depending on which input you used; `uploadedCount` and `failedCount` summarise them, so a partial failure is visible rather than collapsed. ' +
+    writeResultDescription('results') +
+    ' ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: uploadDocumentsInput,
   policy: {

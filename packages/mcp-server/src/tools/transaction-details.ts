@@ -8,7 +8,7 @@ import type {
 import { UpstreamError } from '../upstream/graphql-client.js';
 import { TIMELESS_DATE } from './dates.js';
 import { MAX_DETAIL_IDS, normalizeTransaction, type RawTransaction } from './entity-shapes.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -295,6 +295,8 @@ export const getTransactionsTool: ToolDefinition<typeof getTransactionsInput> = 
   name: GET_TRANSACTIONS_TOOL_NAME,
   description:
     'Fetch bank/card transactions either by id or by filters (owners, charge ids, date ranges, counterparties, missing-info flags, and free-text), with amount, dates, direction, counterparty, account, and the owning business (`ownerId`). Read-only. ' +
+    resultEnvelopeDescription('transactions') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getTransactionsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

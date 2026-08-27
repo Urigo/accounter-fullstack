@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { McpListClientsQuery } from '../gql/index.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -233,6 +233,8 @@ export const listClientsTool: ToolDefinition<typeof listClientsInput> = {
     'resolve a client by name before asking about its contracts. `generatedDocumentType` is the ' +
     "client-level default only — what actually gets issued is the contract's own `documentType`. " +
     'Read-only. ' +
+    resultEnvelopeDescription('clients') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listClientsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

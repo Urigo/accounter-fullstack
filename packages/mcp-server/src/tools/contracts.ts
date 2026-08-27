@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { McpGetContractsQuery, McpGetContractsQueryVariables } from '../gql/index.js';
 import { normalizeAmount, type NormalizedAmount } from './entity-shapes.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -183,6 +183,8 @@ export const getContractsTool: ToolDefinition<typeof getContractsInput> = {
   name: GET_CONTRACTS_TOOL_NAME,
   description:
     'List client billing contracts within your authorized businesses. Filter by client, by contract id, and by active state; `memberBusinessIds` narrows to specific owning (admin) businesses, since a contract is always owned by one of yours. Each row reports its `ownerId`. Read-only. ' +
+    resultEnvelopeDescription('contracts') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getContractsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

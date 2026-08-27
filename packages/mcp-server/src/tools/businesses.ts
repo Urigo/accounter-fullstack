@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 
 /**
@@ -96,7 +96,9 @@ function handler(_input: ListBusinessesInput, context: ToolExecutionContext): To
 export const listBusinessMembershipsTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME,
   description:
-    'List the businesses you are a member of, with your role in each. This is your access/scope discovery entry point — call it first when you may belong to more than one business, then pass the returned `memberBusinessId` values as `memberBusinessIds` to the other tools. To browse every business known to the system (e.g. counterparties), use `accounter_list_businesses` instead. Read-only; takes no parameters.',
+    'List the businesses you are a member of and your role in each — your access-scope discovery entry point: call it first when you may belong to more than one business, then pass the returned `memberBusinessId` values as `memberBusinessIds` to the other tools. Each row is `{ memberBusinessId, name, role }`, sorted by name. ' +
+    resultEnvelopeDescription('businesses') +
+    ' To browse every business known to the system (e.g. counterparties), use `accounter_list_businesses` instead. Read-only; takes no parameters.',
   inputSchema: listBusinessesInput,
   policy: {
     // Deliberately false: a caller with zero memberships should get an empty

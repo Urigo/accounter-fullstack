@@ -8,7 +8,7 @@ import {
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { chargeTypeFromTypename, normalizeAmount, type NormalizedAmount } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -325,6 +325,8 @@ export const searchChargesTool: ToolDefinition<typeof searchChargesInput> = {
   name: SEARCH_CHARGES_TOOL_NAME,
   description:
     'Search and browse accounting charges within your authorized businesses. Supports every ChargeFilter predicate — date ranges (overlap via `fromDate`/`toDate`, containment via `fromMainDate`/`toMainDate`), tags, free text, income/expense, charge types, counterparties, business trips, accountant status, ordering, and the missing-document/transaction/ledger flags — with bounded pagination. Each row carries `chargeType`, so money moving between your own accounts can be excluded without inspecting descriptions. Read-only. ' +
+    resultEnvelopeDescription('charges') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: searchChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

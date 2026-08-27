@@ -7,7 +7,7 @@ import type {
 } from '../gql/index.js';
 import { TIMELESS_DATE } from './dates.js';
 import { MAX_DETAIL_IDS, normalizeDocument, type RawDocument } from './entity-shapes.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -326,7 +326,9 @@ async function handler(
 export const getDocumentsTool: ToolDefinition<typeof getDocumentsInput> = {
   name: GET_DOCUMENTS_TOOL_NAME,
   description:
-    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, VAT, creditor/debtor, file/image links, and the owning business (`ownerId`). Read-only. ' +
+    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, VAT, creditor/debtor, the `fileUrl`/`imageUrl` links, and the owning business (`ownerId`). Read-only. ' +
+    resultEnvelopeDescription('documents') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getDocumentsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
