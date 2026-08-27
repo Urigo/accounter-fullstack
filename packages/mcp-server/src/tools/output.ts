@@ -14,6 +14,47 @@ import type { ToolResult } from './registry.js';
  * echo is dropped when the payload guard trips.
  */
 
+/**
+ * Describe the shared list envelope, for a tool's description text.
+ *
+ * Lives next to {@link shapeListResult} deliberately: this is the prose
+ * counterpart of the object that function builds, and the two drift the moment
+ * they live apart.
+ *
+ * It exists because the description is the *only* channel that reaches the
+ * model. Claude Desktop shows it neither `structuredContent` nor a declared
+ * `outputSchema` (see `docs/connector-gaps-and-decisions.md`), so anything the
+ * model needs to know about a result has to be written in prose — asked what a
+ * tool returned, it could infer that rows existed but not what they were keyed
+ * under.
+ *
+ * Same idiom as `SCOPE_DESCRIPTION_SUFFIX`: one shared clause so the model
+ * learns the envelope once instead of a different phrasing per tool.
+ */
+export function resultEnvelopeDescription(itemsKey: string): string {
+  return (
+    `Rows come back under \`${itemsKey}\`, alongside \`returnedCount\`, \`totalCount\` and ` +
+    '`truncated`; when not everything fit, a `continuation` hint says why and what to narrow.'
+  );
+}
+
+/**
+ * Describe the shared write envelope, for a write tool's description text.
+ *
+ * The counterpart of {@link resultEnvelopeDescription}, and it matters more:
+ * neither write tool documents its result at all today, so a model that has
+ * just changed data cannot tell from the description what confirmation to
+ * expect — including that `itemsOmitted` means the write *applied* and only the
+ * echo was dropped, which reads like a failure if you have not been told.
+ */
+export function writeResultDescription(itemsKey: string): string {
+  return (
+    `The result reports \`ok\`, \`action\` and per-item outcomes under \`${itemsKey}\`; if that ` +
+    'echo is too large it is replaced by `itemsOmitted`, which means the write applied in full and ' +
+    'only the echo was dropped.'
+  );
+}
+
 /** Max serialized size of a tool result's structured content, in bytes. */
 export const MAX_TOOL_RESULT_BYTES = 60_000;
 

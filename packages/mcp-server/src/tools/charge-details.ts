@@ -23,7 +23,7 @@ import {
   type RawDocument,
   type RawTransaction,
 } from './entity-shapes.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -610,7 +610,9 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
 export const getChargesTool: ToolDefinition<typeof getChargesInput> = {
   name: GET_CHARGES_TOOL_NAME,
   description:
-    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (total, VAT, withholding), dates, tags, metadata counts and `chargeType`. Linked transactions and documents are opt-in via `includeTransactions` / `includeDocuments`, and for a foreign-securities charge the security traded and the portfolio executions behind it are opt-in via `includeSecurities` (each reporting a `securityBusinessId` that accounter_list_security_holdings and accounter_get_security_executions accept). Read-only. ' +
+    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (`totalAmount`, `vat`, `withholdingTax`), a nested `dates` object, `tags`, `metadata` counts and `chargeType`. Linked transactions and documents are opt-in via `includeTransactions` / `includeDocuments`, and for a foreign-securities charge the security traded and the portfolio executions behind it are opt-in via `includeSecurities` (each reporting a `securityBusinessId` that accounter_list_security_holdings and accounter_get_security_executions accept). Read-only. ' +
+    resultEnvelopeDescription('charges') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

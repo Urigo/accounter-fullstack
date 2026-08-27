@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
 import type { McpBatchUpdateChargesTagsMutation } from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
-import { shapeWriteResult } from './output.js';
+import { shapeWriteResult, writeResultDescription } from './output.js';
 import type {
   ToolDefinition,
   ToolExecutionContext,
@@ -164,6 +164,9 @@ export const updateChargesTagsTool: ToolDefinition<typeof updateChargesTagsInput
     'tags already on a charge and not listed in `removeTagIds` stay. Removals are applied before ' +
     'additions, so a tag id passed in BOTH lists ends up added. Adding a tag a charge already has ' +
     'does nothing. ' +
+    'Each row echoes `{ id, tags }` for the charge as it now stands, alongside `updatedCount`, `requestedCount`, `addedTagIds` and `removedTagIds`. ' +
+    writeResultDescription('charges') +
+    ' ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: updateChargesTagsInput,
   policy: {

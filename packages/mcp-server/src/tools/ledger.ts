@@ -3,7 +3,7 @@ import type { McpGetLedgerRecordsQuery, McpGetLedgerRecordsQueryVariables } from
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { normalizeAmount, normalizeEntity, type NormalizedAmount } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -338,6 +338,8 @@ export const getLedgerRecordsTool: ToolDefinition<typeof getLedgerRecordsInput> 
   name: GET_LEDGER_RECORDS_TOOL_NAME,
   description:
     'Search double-entry ledger records within your authorized businesses. Filter by invoice date, value date, or either; by the financial entity in any of the debit/credit account slots; and by charge id. Each row reports its `ownerId` and `chargeId`. Read-only. ' +
+    resultEnvelopeDescription('ledgerRecords') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getLedgerRecordsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

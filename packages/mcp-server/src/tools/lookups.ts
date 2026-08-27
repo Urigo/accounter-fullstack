@@ -4,7 +4,7 @@ import type {
   McpListTagsQuery,
   McpListTaxCategoriesQuery,
 } from '../gql/index.js';
-import { shapeListResult } from './output.js';
+import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
@@ -109,7 +109,9 @@ async function listTagsHandler(
 export const listTagsTool: ToolDefinition<typeof listTagsInput> = {
   name: LIST_TAGS_TOOL_NAME,
   description:
-    'List the tags available for categorizing charges, optionally filtered by name. Read-only. ' +
+    "List the tags available for categorizing charges, optionally filtered by name. Each row is `{ id, name, ownerId, namePath }`, where `namePath` is the tag's ancestry for nested tags. " +
+    resultEnvelopeDescription('tags') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listTagsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
@@ -178,7 +180,9 @@ async function listTaxCategoriesHandler(
 export const listTaxCategoriesTool: ToolDefinition<typeof listTaxCategoriesInput> = {
   name: LIST_TAX_CATEGORIES_TOOL_NAME,
   description:
-    'List tax categories (id, name, IRS code, active flag), optionally filtered by name or active status. Read-only. ' +
+    'List tax categories, optionally filtered by name or active status. Each row is `{ id, name, ownerId, irsCode, isActive, sortCode }`. ' +
+    resultEnvelopeDescription('taxCategories') +
+    ' ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listTaxCategoriesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
@@ -358,6 +362,8 @@ export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
     'List the full business directory (id, name, ownerId, active flag, and whether the business is a client) — every business visible to you, not just the ones you are a member of — optionally filtered by name, active status, or client status, with `limit`/`page` pagination over the name-ordered directory. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
+    resultEnvelopeDescription('businesses') +
+    ' ' +
     DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listBusinessesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

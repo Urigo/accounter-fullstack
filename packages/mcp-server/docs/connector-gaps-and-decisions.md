@@ -187,6 +187,51 @@ what scopes them in production. So a lookup by ISIN sees every tenant's securiti
 on a whole result set's size assumes exclusive access to the database. Use synthetic per-suite ISINs
 and assert on your own fixtures' buckets, not on totals.
 
+### Claude Desktop shows the model neither `structuredContent` nor `outputSchema` (2026-08-27, decided)
+
+Settled by experiment after the blind-connector incident, so it is not re-litigated: **the tool
+description is the only channel that reaches the model.** Two independent measurements, on Claude
+Desktop with a locally-tunnelled connector.
+
+**`structuredContent`.** Established by the incident itself. Rows lived only in that field, and when
+the client stopped surfacing it every tool returned its summary line with nothing behind it. Fixed
+by mirroring the payload into `content` (#4295).
+
+**`outputSchema`.** Declared on one canary tool (`accounter_list_business_memberships`) purely to
+find out, since the cost of adopting it — "servers MUST provide structured results that conform",
+across every tool — is certain while the benefit was not.
+
+- First probe was inconclusive in an instructive way: the tool came back as a **deferred**
+  definition, so the model had a one-line summary and no schema at all. It correctly declined to
+  guess field names.
+- The canary changed _only_ `outputSchema` — description and `inputSchema` byte-identical — so a
+  cached `tools/list` would look exactly like a client that strips the field. Ruled out by adding a
+  marker string to the description, restarting, and **reconnecting the connector** to force a fresh
+  listing. A new conversation is not enough; the listing is cached per connection.
+- Second probe was decisive: the model reported the marker (listing fresh) and enumerated the loaded
+  definition as name, description, input schema — "There is no output schema."
+
+Since model comprehension was the entire upside — validation is the _risk_, not the benefit —
+declaring schemas for a field the model never sees buys nothing. The canary PR was closed rather
+than merged; none of its parts stand alone once the schema is dropped.
+
+**Known limit.** This establishes that Desktop does not show `outputSchema` _to the model_. It does
+**not** establish whether the host validates `structuredContent` against a declared one. Moot while
+we declare none, and the first thing to re-check if that changes.
+
+**Second finding, from the same probes: Desktop defers tool definitions.** Until the model chooses
+to load one, it sees roughly the first sentence of the description. Our scope-discovery instruction
+— "call it first … pass the returned `memberBusinessId` values as `memberBusinessIds`" — is sentence
+two, and did not arrive until the definition was explicitly loaded. Sentence one carries
+disproportionate weight.
+
+**The general lesson:** a tool's description is load-bearing in a way its schemas are not. Asked
+what a tool returns, the model reconstructed the shape from _sibling_ descriptions — `list_tags`,
+`list_tax_categories` and `list_clients` all saying to call this tool "to discover ids" — inferred
+an id, a role and a name, then named exactly what it could not know: whether rows sit under
+`businesses` or `memberships`, and whether there is a `scope` echo. Anything the model needs about a
+result has to be in prose, in the description, ideally in its first sentence.
+
 ## Open decisions
 
 1. **Audience strategy.** Accept the shared `https://api.accounter.com` audience for MCP and GraphQL
