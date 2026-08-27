@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { Dispatch, ReactElement, SetStateAction } from 'react';
 import { Trash } from 'lucide-react';
 import { useDeleteDocument } from '../../../hooks/use-delete-document.js';
 import { Button } from '../../ui/button.js';
@@ -14,6 +14,13 @@ interface Props {
    * deleted id, which would leave a stale "shadow charge" on screen.
    */
   onChargeDeleted?: (chargeId: string) => void;
+  /**
+   * Drive the confirmation from outside instead of from the built-in icon trigger. Hosts that
+   * already have their own trigger (the documents table's actions menu, for instance) pass both
+   * and no trigger button is rendered.
+   */
+  open?: boolean;
+  setOpen?: Dispatch<SetStateAction<boolean>>;
 }
 
 export function DeleteDocumentButton({
@@ -21,6 +28,8 @@ export function DeleteDocumentButton({
   onChange,
   onDone,
   onChargeDeleted,
+  open,
+  setOpen,
 }: Props): ReactElement {
   const { deleteDocument } = useDeleteDocument();
 
@@ -43,10 +52,17 @@ export function DeleteDocumentButton({
   }
 
   return (
-    <ConfirmationModal onConfirm={onDelete} title="Are you sure you want to delete this document?">
-      <Button variant="ghost" size="icon" className="size-7.5 text-red-500">
-        <Trash className="size-5" />
-      </Button>
+    <ConfirmationModal
+      onConfirm={onDelete}
+      title="Are you sure you want to delete this document?"
+      open={open}
+      setOpen={setOpen}
+    >
+      {setOpen ? undefined : (
+        <Button variant="ghost" size="icon" className="size-7.5 text-red-500">
+          <Trash className="size-5" />
+        </Button>
+      )}
     </ConfirmationModal>
   );
 }

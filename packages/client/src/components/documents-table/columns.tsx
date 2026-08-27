@@ -83,6 +83,8 @@ import { DocumentActionsMenu } from './document-actions-menu.js';
 export type DocumentsTableRowType = TableDocumentsRowFieldsFragment & {
   onUpdate: () => void;
   editDocument: () => void;
+  /** Called when removing the document emptied its charge and the server deleted the charge too. */
+  onChargeDeleted?: (chargeId: string) => void;
 };
 
 export interface DocumentsTableColumnsOptions {
