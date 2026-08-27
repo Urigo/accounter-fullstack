@@ -67,12 +67,16 @@ describe('one money shape, across every tool that emits money', () => {
    * Asserted against the tools' real output rather than by grepping the source,
    * so a fourth copy that happens to be correct today still has to stay correct.
    */
+  // Declared in emission order, and compared in order: the mirrored `content`
+  // block is `JSON.stringify(structuredContent)`, so key order is a real
+  // property of what the model reads, not just an implementation detail. The
+  // changeset claims the emitted JSON is unchanged — this is what backs it.
   const MONEY_KEYS = ['value', 'formatted', 'currency'];
 
   it('normalizeAmount defines exactly the expected keys', () => {
     const amount = normalizeAmount({ raw: -180, formatted: '-180.00', currency: 'ILS' });
 
-    expect(Object.keys(amount!).sort()).toEqual([...MONEY_KEYS].sort());
+    expect(Object.keys(amount!)).toEqual(MONEY_KEYS);
     expect(amount).toEqual({ value: -180, formatted: '-180.00', currency: 'ILS' });
   });
 
@@ -106,7 +110,7 @@ describe('one money shape, across every tool that emits money', () => {
     });
 
     const [charge] = (result.structuredContent as { charges: Array<{ amount: object }> }).charges;
-    expect(Object.keys(charge!.amount).sort()).toEqual([...MONEY_KEYS].sort());
+    expect(Object.keys(charge!.amount)).toEqual(MONEY_KEYS);
     expect(charge!.amount).toEqual({ value: -180, formatted: '-180.00', currency: 'ILS' });
   });
 
@@ -132,7 +136,7 @@ describe('one money shape, across every tool that emits money', () => {
     });
 
     const [row] = (result.structuredContent as { rows: Array<{ amount: object }> }).rows;
-    expect(Object.keys(row!.amount).sort()).toEqual([...MONEY_KEYS].sort());
+    expect(Object.keys(row!.amount)).toEqual(MONEY_KEYS);
     expect(row!.amount).toEqual({ value: 10, formatted: '10.00', currency: 'ILS' });
   });
 });
