@@ -79,10 +79,14 @@ describe('URQL auth exchange hardening', () => {
 
   async function initializeAuth(
     provider?: TestAccessTokenProvider,
+    businessScopeIds: string[] = [],
   ) {
     const urql = await import('../providers/urql.js');
     urql.resetUrqlClient();
     urql.setUrqlAccessTokenProvider(provider ?? null);
+    // Always set explicitly: the scope is module state seeded from localStorage,
+    // so leaving it implicit makes these tests depend on the environment.
+    urql.setBusinessScope(businessScopeIds);
     urql.getUrqlClient();
 
     if (!authFactory) {
@@ -124,6 +128,67 @@ describe('URQL auth exchange hardening', () => {
     expect(enrichedOperation.context.fetchOptions.headers['X-Dev-Auth']).toBe('dev-user-123');
     expect(enrichedOperation.context.fetchOptions.headers.Authorization).toBeUndefined();
     expect(provider).not.toHaveBeenCalled();
+  });
+
+  it('adds x-business-scope alongside Authorization when a scope is set', async () => {
+    const provider = vi.fn(async () => 'token-123');
+    const { authConfig } = await initializeAuth(provider, ['business-a', 'business-b']);
+
+    const operation = { context: {} };
+    const enrichedOperation = authConfig.addAuthToOperation(operation);
+
+    expect(appendHeadersMock).toHaveBeenCalledWith(operation, {
+      Authorization: 'Bearer token-123',
+      'x-business-scope': 'business-a,business-b',
+    });
+    expect(enrichedOperation.context.fetchOptions.headers['x-business-scope']).toBe(
+      'business-a,business-b',
+    );
+  });
+
+  it('omits x-business-scope for an operation that opted out', async () => {
+    const provider = vi.fn(async () => 'token-123');
+    const { urql, authConfig } = await initializeAuth(provider, ['business-a', 'business-b']);
+
+    const operation = { context: { ...urql.UNSCOPED_OPERATION_CONTEXT } };
+    const enrichedOperation = authConfig.addAuthToOperation(operation);
+
+    expect(appendHeadersMock).toHaveBeenCalledWith(operation, {
+      Authorization: 'Bearer token-123',
+    });
+    expect(enrichedOperation.context.fetchOptions.headers['x-business-scope']).toBeUndefined();
+    expect(enrichedOperation.context.fetchOptions.headers.Authorization).toBe('Bearer token-123');
+  });
+
+  it('adds x-business-scope alongside X-Dev-Auth when VITE_DEV_AUTH=1', async () => {
+    vi.stubEnv('VITE_DEV_AUTH', '1');
+    vi.stubEnv('VITE_DEV_AUTH_USER_ID', 'dev-user-123');
+
+    const { authConfig } = await initializeAuth(undefined, ['business-a']);
+
+    const operation = { context: {} };
+    const enrichedOperation = authConfig.addAuthToOperation(operation);
+
+    expect(appendHeadersMock).toHaveBeenCalledWith(operation, {
+      'X-Dev-Auth': 'dev-user-123',
+      'x-business-scope': 'business-a',
+    });
+    expect(enrichedOperation.context.fetchOptions.headers['x-business-scope']).toBe('business-a');
+  });
+
+  it('omits x-business-scope for an opted-out operation in dev-auth mode', async () => {
+    vi.stubEnv('VITE_DEV_AUTH', '1');
+    vi.stubEnv('VITE_DEV_AUTH_USER_ID', 'dev-user-123');
+
+    const { urql, authConfig } = await initializeAuth(undefined, ['business-a']);
+
+    const operation = { context: { ...urql.UNSCOPED_OPERATION_CONTEXT } };
+    const enrichedOperation = authConfig.addAuthToOperation(operation);
+
+    expect(appendHeadersMock).toHaveBeenCalledWith(operation, {
+      'X-Dev-Auth': 'dev-user-123',
+    });
+    expect(enrichedOperation.context.fetchOptions.headers['x-business-scope']).toBeUndefined();
   });
 
   it('detects only UNAUTHENTICATED GraphQL auth errors', async () => {

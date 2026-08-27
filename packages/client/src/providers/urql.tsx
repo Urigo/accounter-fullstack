@@ -7,6 +7,7 @@ import {
   type AnyVariables,
   type Client,
   type Operation,
+  type OperationContext,
 } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
 import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
@@ -35,6 +36,25 @@ type AccessTokenProvider = (options?: {
 }) => Promise<AccessTokenProviderResult>;
 
 const BUSINESS_SCOPE_LS_KEY = 'urql:businessScope';
+
+/** Operation-context key marking a request as exempt from `x-business-scope`. */
+export const SKIP_BUSINESS_SCOPE = 'skipBusinessScope';
+
+/**
+ * Sends one operation without the `x-business-scope` header. Pass as
+ * `useQuery({ context: UNSCOPED_OPERATION_CONTEXT })`.
+ *
+ * Reserved for the query that *discovers* the scope: narrowing that one by the
+ * scope is circular, since its result is the list a user needs in order to
+ * leave a narrow scope. The MCP connector documents the same rule for its
+ * membership bootstrap — see packages/mcp-server/src/upstream/memberships.ts.
+ *
+ * A frozen module constant, not an inline object: urql re-executes an operation
+ * whenever its context identity changes, so a per-render literal would loop.
+ */
+export const UNSCOPED_OPERATION_CONTEXT: Partial<OperationContext> = Object.freeze({
+  [SKIP_BUSINESS_SCOPE]: true,
+});
 
 let accessTokenProvider: AccessTokenProvider | null = null;
 let bearerToken: string | null = null;
@@ -74,6 +94,21 @@ export function setBusinessScope(ids: string[]): void {
   }
   resetUrqlClient();
   onClientReset?.(getUrqlClient());
+}
+
+/**
+ * The `x-business-scope` header for an operation, or nothing when no scope is
+ * set or the operation opted out. One helper for both auth branches so they
+ * cannot drift apart.
+ */
+function businessScopeHeader(operation: Operation<unknown, AnyVariables>): Record<string, string> {
+  if (!businessScope) {
+    return {};
+  }
+  if ((operation.context as Record<string, unknown> | undefined)?.[SKIP_BUSINESS_SCOPE] === true) {
+    return {};
+  }
+  return { 'x-business-scope': businessScope };
 }
 
 function normalizeAccessTokenResult(result: AccessTokenProviderResult): AccessTokenResolution {
@@ -218,8 +253,10 @@ export function getUrqlClient(): Client {
                 return operation;
               }
 
-              const devHeaders: Record<string, string> = { 'X-Dev-Auth': devAuthUserId };
-              if (businessScope) devHeaders['x-business-scope'] = businessScope;
+              const devHeaders: Record<string, string> = {
+                'X-Dev-Auth': devAuthUserId,
+                ...businessScopeHeader(operation),
+              };
               return utils.appendHeaders(operation, devHeaders);
             }
 
@@ -227,8 +264,10 @@ export function getUrqlClient(): Client {
               return operation;
             }
 
-            const headers: Record<string, string> = { Authorization: bearerToken };
-            if (businessScope) headers['x-business-scope'] = businessScope;
+            const headers: Record<string, string> = {
+              Authorization: bearerToken,
+              ...businessScopeHeader(operation),
+            };
             return utils.appendHeaders(operation, headers);
           },
           didAuthError(error): boolean {
