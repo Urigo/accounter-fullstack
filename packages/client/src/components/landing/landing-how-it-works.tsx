@@ -1,29 +1,55 @@
-import type { ReactElement } from 'react';
-import { STEPS } from './landing-content.js';
+import { Fragment, type ReactElement } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { useLandingContent } from './landing-i18n.js';
 import { LandingSectionHeading } from './landing-section-heading.js';
 
 export function LandingHowItWorks(): ReactElement {
+  const { content } = useLandingContent();
+  const { how } = content;
+
   return (
     <section id="how-it-works" className="border-b border-gray-200 bg-white">
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
-        <LandingSectionHeading
-          eyebrow="How it works"
-          title="From a bank feed to a filed report, without the spreadsheet in the middle"
-          description="The same four steps run all year. Nothing is saved up for the last week before a deadline."
-        />
+        <LandingSectionHeading {...how.heading} />
 
-        <ol className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map((step, index) => (
-            <li key={step.title} className="border-t-2 border-gray-950 pt-5">
-              <span className="text-sm font-semibold text-gray-400 tabular-nums">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <h3 className="mt-2 text-lg font-semibold text-gray-950">{step.title}</h3>
-              <p className="mt-2 text-sm text-gray-600">{step.description}</p>
-            </li>
-          ))}
-        </ol>
+        <Pipeline />
       </div>
     </section>
+  );
+}
+
+/**
+ * The product in one picture: two kinds of raw input become ledger records,
+ * which become the files that get filed and the reports that stay current.
+ */
+function Pipeline(): ReactElement {
+  const { content } = useLandingContent();
+
+  return (
+    <div className="mt-12 overflow-x-auto rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-6">
+      <p className="flex items-center gap-2 text-sm text-gray-600">
+        <span className="relative flex h-2 w-2" aria-hidden="true">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        </span>
+        {content.how.note}
+      </p>
+      <ol className="mt-4 flex min-w-max items-stretch gap-2">
+        {content.pipelineStages.map((stage, index) => (
+          <Fragment key={stage.label}>
+            {index > 0 && (
+              <li aria-hidden="true" className="flex items-center">
+                <ChevronRight className="h-5 w-5 text-gray-300 rtl:rotate-180" />
+              </li>
+            )}
+            <li className="flex w-44 flex-col gap-2 rounded-lg border border-gray-200 bg-white p-4">
+              <stage.icon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+              <span className="text-sm font-semibold text-gray-950">{stage.label}</span>
+              <span className="text-xs text-gray-500">{stage.caption}</span>
+            </li>
+          </Fragment>
+        ))}
+      </ol>
+    </div>
   );
 }
