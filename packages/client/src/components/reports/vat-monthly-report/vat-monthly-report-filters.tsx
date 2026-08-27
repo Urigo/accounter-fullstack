@@ -30,8 +30,19 @@ function VatMonthlyReportFilterForm({
   const { control, handleSubmit, setValue } = useForm<VatReportFilter>({
     defaultValues: { ...filter },
   });
-  const { selectableAdminBusinesses: adminBusinesses, fetching: feLoading } =
-    useGetAdminBusinesses();
+  const {
+    selectableAdminBusinesses: adminBusinesses,
+    fetching: feLoading,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
+
+  // A single admin business is not a choice: pre-select it so the (disabled) input
+  // and the submitted filter agree.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      setValue('financialEntityId', soleAdminBusinessId);
+    }
+  }, [soleAdminBusinessId, setValue]);
 
   const defaultPickerMonth = new Date(filter?.monthDate ?? getDefaultVatReportMonth());
 
@@ -62,8 +73,8 @@ function VatMonthlyReportFilterForm({
             <Select
               {...field}
               data={adminBusinesses}
-              value={field.value}
-              disabled={feLoading}
+              value={soleAdminBusinessId ?? field.value}
+              disabled={feLoading || !!soleAdminBusinessId}
               label="Report Issuer (Admin Business)"
               placeholder="Scroll to see all options"
               maxDropdownHeight={160}

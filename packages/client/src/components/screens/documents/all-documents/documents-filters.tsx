@@ -15,6 +15,7 @@ import {
   isObjectEmpty,
   TIMELESS_DATE_REGEX,
 } from '../../../../helpers/index.js';
+import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesses.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
@@ -67,6 +68,19 @@ function DocumentsFiltersForm({
   const { control, handleSubmit } = form;
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
+  const {
+    selectableAdminBusinesses: owners,
+    fetching: ownersFetching,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
+
+  // A single owner is not a choice: pre-select it so the (disabled) input and the
+  // submitted filter agree — a disabled field never fires onChange to sync itself.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      form.setValue('ownerIDs', [soleAdminBusinessId]);
+    }
+  }, [soleAdminBusinessId, form]);
 
   const onSubmit: SubmitHandler<DocumentsFiltersType> = data => {
     // A blank free-text box is not a filter — sending `''` would mark the screen as filtered and
@@ -97,9 +111,9 @@ function DocumentsFiltersForm({
                   <FormControl>
                     <MultiSelect
                       {...field}
-                      data={financialEntities}
-                      value={field.value ?? []}
-                      disabled={financialEntitiesFetching}
+                      data={owners}
+                      value={soleAdminBusinessId ? [soleAdminBusinessId] : (field.value ?? [])}
+                      disabled={ownersFetching || !!soleAdminBusinessId}
                       placeholder="Scroll to see all options"
                       maxDropdownHeight={160}
                       searchable

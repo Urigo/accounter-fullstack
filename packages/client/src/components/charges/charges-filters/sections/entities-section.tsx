@@ -15,7 +15,11 @@ export type EntitiesData = ReturnType<typeof useEntitiesData>;
 
 /** Hoisted so the form can also feed the header chips and gate the Apply button. */
 export function useEntitiesData() {
-  const { selectableAdminBusinesses, fetching: ownersFetching } = useGetAdminBusinesses();
+  const {
+    selectableAdminBusinesses,
+    fetching: ownersFetching,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
   const { selectableFinancialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
   const { selectableFinancialAccounts, fetching: financialAccountsFetching } =
@@ -36,6 +40,7 @@ export function useEntitiesData() {
   return {
     owners: selectableAdminBusinesses,
     ownersFetching,
+    soleOwnerId: soleAdminBusinessId,
     financialEntities: selectableFinancialEntities,
     financialEntitiesFetching,
     financialAccounts: accountOptions,
@@ -64,9 +69,10 @@ export function EntitiesSection({
   const byBusinessTrips = useWatch({ control, name: 'byBusinessTrips' });
   const byOwners = useWatch({ control, name: 'byOwners' });
 
-  // A single-owner tenant has nothing to choose, so the field is noise — but never hide
-  // a value that is already set, or it becomes invisible and unremovable.
-  const showOwners = data.owners.length > 1 || (byOwners?.length ?? 0) > 0;
+  // A single-owner tenant has nothing to choose: show the one owner, locked, rather
+  // than an input that pretends to offer a choice. Never hide a value that is already
+  // set, or it becomes invisible and unremovable.
+  const showOwners = data.owners.length > 0 || (byOwners?.length ?? 0) > 0;
   // Same rule: keep the trip picker reachable whenever a trip is already selected.
   const showBusinessTrips =
     (byChargeTypes ?? []).includes(ChargeType.BusinessTrip) || (byBusinessTrips?.length ?? 0) > 0;
@@ -80,6 +86,7 @@ export function EntitiesSection({
           label="Owners"
           options={data.owners}
           loading={data.ownersFetching}
+          disabled={!!data.soleOwnerId}
           placeholder="All my businesses"
           searchPlaceholder="Search owners..."
         />

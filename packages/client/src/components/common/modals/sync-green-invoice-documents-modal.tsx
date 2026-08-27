@@ -11,12 +11,23 @@ type ModalProps = {
 };
 
 export function SyncDocumentsModal({ opened, close, setIsLoading }: ModalProps): ReactElement {
-  const { selectableAdminBusinesses: adminBusinesses, fetching: fetchingAdminBusinesses } =
-    useGetAdminBusinesses();
+  const {
+    selectableAdminBusinesses: adminBusinesses,
+    fetching: fetchingAdminBusinesses,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
 
-  const { control, handleSubmit } = useForm<{ ownerId: string }>({
-    defaultValues: { ownerId: '6a20aa69-57ff-446e-8d6a-1e96d095e988' },
+  const { control, handleSubmit, setValue } = useForm<{ ownerId: string }>({
+    defaultValues: { ownerId: '' },
   });
+
+  // A single admin business is not a choice: pre-select it so the (disabled) input
+  // and the submitted value agree.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      setValue('ownerId', soleAdminBusinessId);
+    }
+  }, [soleAdminBusinessId, setValue]);
 
   const { syncGreenInvoiceDocuments, fetching: syncingDocuments } = useSyncGreenInvoiceDocuments();
 
@@ -38,12 +49,13 @@ export function SyncDocumentsModal({ opened, close, setIsLoading }: ModalProps):
           <Controller
             name="ownerId"
             control={control}
+            rules={{ required: 'Owner is required' }}
             render={({ field, fieldState }): ReactElement => (
               <Select
                 {...field}
                 data={adminBusinesses}
-                value={field.value}
-                disabled={fetchingAdminBusinesses}
+                value={soleAdminBusinessId ?? field.value}
+                disabled={fetchingAdminBusinesses || !!soleAdminBusinessId}
                 label="Owner:"
                 placeholder="Scroll to see all options"
                 maxDropdownHeight={160}

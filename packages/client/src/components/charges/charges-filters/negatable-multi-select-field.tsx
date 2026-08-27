@@ -21,6 +21,7 @@ type SharedProps = {
   groupBy?: (option: NegatableMultiSelectOption) => string | undefined;
   groupOrder?: readonly string[];
   renderOption?: (option: NegatableMultiSelectOption) => ReactNode;
+  disabled?: boolean;
 };
 
 /**
@@ -98,6 +99,7 @@ export function MultiSelectField({
   placeholder,
   searchPlaceholder,
   renderOption,
+  disabled,
 }: SharedProps & { name: PlainField }): ReactElement {
   return (
     <FormField
@@ -114,6 +116,7 @@ export function MultiSelectField({
               value={field.value ?? []}
               onValueChange={(next): void => field.onChange(orUndefined(next))}
               loading={loading}
+              disabled={disabled}
               placeholder={placeholder}
               searchPlaceholder={searchPlaceholder}
               renderOption={renderOption}

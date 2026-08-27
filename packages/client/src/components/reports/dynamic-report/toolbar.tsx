@@ -29,6 +29,8 @@ interface ToolbarProps {
   owners: Owner[];
   selectedOwner: string;
   onOwnerChange: (ownerId: string) => void;
+  /** True when there is a single owner to pick — the value is shown, not chosen. */
+  ownerDisabled?: boolean;
   showZeroed: boolean;
   onShowZeroedChange: (show: boolean) => void;
   editMode: boolean;
@@ -53,6 +55,7 @@ export function Toolbar({
   owners,
   selectedOwner,
   onOwnerChange,
+  ownerDisabled = false,
   showZeroed,
   onShowZeroedChange,
   editMode,
@@ -98,7 +101,7 @@ export function Toolbar({
           />
         </div>
 
-        <Select value={selectedOwner} onValueChange={onOwnerChange}>
+        <Select value={selectedOwner} onValueChange={onOwnerChange} disabled={ownerDisabled}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Select owner" />
           </SelectTrigger>

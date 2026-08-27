@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useCronJobs } from '../../hooks/use-cron-jobs.js';
 import { useFetchDeelDocuments } from '../../hooks/use-fetch-deel-documents.js';
+import { useMyMemberships } from '../../hooks/use-my-memberships.js';
 import { UserContext } from '../../providers/index.js';
 import { getBusinessScopeIds, setBusinessScope } from '../../providers/urql.js';
 import { ROUTES } from '../../router/routes.js';
@@ -30,6 +31,14 @@ export function UserNav(): JSX.Element | null {
   const { executeJobs } = useCronJobs();
   const { fetching: fetchingDeelDocuments, fetchDocuments: fetchDeelDocuments } =
     useFetchDeelDocuments();
+  // Scope-independent: `userContext.memberships` is fetched under the active
+  // business scope, so it names only the in-scope businesses — leaving the rest
+  // of this very picker as bare UUIDs. Skipped entirely when the picker could
+  // not render anyway.
+  const contextMemberships = userContext?.context.memberships ?? [];
+  const { memberships: unscopedMemberships } = useMyMemberships({
+    pause: contextMemberships.length < 2,
+  });
 
   if (!isAuthenticated || !user) {
     return null;
@@ -69,7 +78,12 @@ export function UserNav(): JSX.Element | null {
     .map(part => part[0]?.toUpperCase() + part.slice(1))
     .join(' ');
 
-  const businessOptions = (userContext?.context.memberships ?? []).map(m => ({
+  // Fall back while the unscoped query is in flight, or when it fails — its role
+  // gate is narrower than this menu's audience. Both lists hold the same
+  // businesses, so only the labels change and the picker does not pop in and out.
+  const businessOptions = (
+    unscopedMemberships.length > 0 ? unscopedMemberships : contextMemberships
+  ).map(m => ({
     value: m.businessId,
     label: m.businessName ?? 'Unknown',
     description: m.businessId,

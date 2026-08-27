@@ -1,5 +1,6 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { describe, expect, it, vi } from 'vitest';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { AuthContextProvider } from '../providers/auth-context.provider.js';
 import { membershipsResolvers } from '../resolvers/memberships.resolver.js';
 
@@ -14,13 +15,24 @@ const myMembershipsResolver = membershipsResolvers.Query?.myMemberships as (
 
 const mockInfo = {} as GraphQLResolveInfo;
 
-function contextWith(getAuthContext: ReturnType<typeof vi.fn>) {
+/**
+ * `load` stands in for the financial-entity DataLoader that supplies membership
+ * business names. Defaults to "no row", i.e. an unnamed business.
+ */
+function contextWith(
+  getAuthContext: ReturnType<typeof vi.fn>,
+  load: ReturnType<typeof vi.fn> = vi.fn().mockResolvedValue(undefined),
+) {
   const mockAuthProvider = { getAuthContext };
+  const mockFinancialEntitiesProvider = { getFinancialEntityByIdLoader: { load } };
   return {
     injector: {
       get<T>(token: unknown): T {
         if (token === AuthContextProvider) {
           return mockAuthProvider as T;
+        }
+        if (token === FinancialEntitiesProvider) {
+          return mockFinancialEntitiesProvider as T;
         }
         throw new Error('Unexpected provider requested');
       },
@@ -29,7 +41,7 @@ function contextWith(getAuthContext: ReturnType<typeof vi.fn>) {
 }
 
 describe('myMemberships resolver', () => {
-  it('returns all memberships for a multi-business user', async () => {
+  it('returns all memberships for a multi-business user, resolving missing names', async () => {
     const getAuthContext = vi.fn().mockResolvedValue({
       authType: 'jwt',
       user: { userId: 'user-1' },
@@ -39,23 +51,70 @@ describe('myMemberships resolver', () => {
         { businessId: 'business-2', roleId: 'accountant' },
       ],
     });
+    // Only business-2 needs a lookup; business-1 already carries a name.
+    const load = vi
+      .fn()
+      .mockImplementation(async (id: string) =>
+        id === 'business-2' ? { id, name: 'Globex' } : { id, name: 'from-db' },
+      );
 
-    const result = await myMembershipsResolver({}, {}, contextWith(getAuthContext), mockInfo);
+    const result = await myMembershipsResolver({}, {}, contextWith(getAuthContext, load), mockInfo);
 
     expect(result).toEqual([
       {
         id: 'user-1:business-1',
         businessId: 'business-1',
         roleId: 'business_owner',
+        // The auth context wins over the loader.
         businessName: 'Acme',
       },
       {
         id: 'user-1:business-2',
         businessId: 'business-2',
         roleId: 'accountant',
-        businessName: null,
+        businessName: 'Globex',
       },
     ]);
+  });
+
+  it('leaves a membership unnamed when its business row is unreadable, keeping the others', async () => {
+    const getAuthContext = vi.fn().mockResolvedValue({
+      authType: 'jwt',
+      user: { userId: 'user-1' },
+      tenant: { businessId: 'business-1', roleId: 'business_owner' },
+      memberships: [
+        { businessId: 'business-1', roleId: 'business_owner' },
+        { businessId: 'business-2', roleId: 'accountant' },
+      ],
+    });
+    // An out-of-scope business: RLS returns no row, or the load rejects outright.
+    const load = vi.fn().mockImplementation(async (id: string) => {
+      if (id === 'business-2') {
+        throw new Error('out of scope');
+      }
+      return { id, name: 'Acme' };
+    });
+
+    const result = await myMembershipsResolver({}, {}, contextWith(getAuthContext, load), mockInfo);
+
+    expect(result).toMatchObject([
+      { businessId: 'business-1', businessName: 'Acme' },
+      { businessId: 'business-2', businessName: null },
+    ]);
+  });
+
+  it('leaves a membership unnamed when the business row carries no name', async () => {
+    const getAuthContext = vi.fn().mockResolvedValue({
+      authType: 'jwt',
+      user: { userId: 'user-1' },
+      tenant: { businessId: 'business-1', roleId: 'business_owner' },
+      memberships: [{ businessId: 'business-1', roleId: 'business_owner' }],
+    });
+    const load = vi.fn().mockResolvedValue({ id: 'business-1', name: '' });
+
+    const result = await myMembershipsResolver({}, {}, contextWith(getAuthContext, load), mockInfo);
+
+    expect(result).toMatchObject([{ businessId: 'business-1', businessName: null }]);
   });
 
   it('returns an empty list for an authenticated user with no memberships', async () => {

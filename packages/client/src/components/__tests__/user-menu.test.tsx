@@ -8,12 +8,14 @@ import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, executeJobsMock, fetchDeelDocumentsMock, logoutMock } = vi.hoisted(() => ({
-  useAuth0Mock: vi.fn(),
-  executeJobsMock: vi.fn(),
-  fetchDeelDocumentsMock: vi.fn(),
-  logoutMock: vi.fn(),
-}));
+const { useAuth0Mock, executeJobsMock, fetchDeelDocumentsMock, logoutMock, useMyMembershipsMock } =
+  vi.hoisted(() => ({
+    useAuth0Mock: vi.fn(),
+    executeJobsMock: vi.fn(),
+    fetchDeelDocumentsMock: vi.fn(),
+    logoutMock: vi.fn(),
+    useMyMembershipsMock: vi.fn(),
+  }));
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
@@ -27,8 +29,24 @@ vi.mock('../../hooks/use-fetch-deel-documents.js', () => ({
   useFetchDeelDocuments: () => ({ fetching: false, fetchDocuments: fetchDeelDocumentsMock }),
 }));
 
+vi.mock('../../hooks/use-my-memberships.js', () => ({
+  useMyMemberships: useMyMembershipsMock,
+}));
+
 vi.mock('../common/modals/balance-charge-modal.js', () => ({
   BalanceChargeModal: () => null,
+}));
+
+// Stand-in that just lists the option labels, so tests can assert what the
+// business-scope picker offers without driving a real popover.
+vi.mock('../common/inputs/multi-select.js', () => ({
+  MultiSelect: ({ options }: { options: Array<{ value: string; label: string }> }) => (
+    <ul data-slot="business-scope-options">
+      {options.map(option => (
+        <li key={option.value}>{option.label}</li>
+      ))}
+    </ul>
+  ),
 }));
 
 vi.mock('../ui/avatar.js', () => ({
@@ -87,7 +105,7 @@ const baseUserContext: UserInfo = {
   },
 };
 
-async function renderUserNav() {
+async function renderUserNav(userContext: UserInfo = baseUserContext) {
   const container = document.createElement('div');
   document.body.append(container);
 
@@ -99,7 +117,7 @@ async function renderUserNav() {
         UserContext.Provider,
         {
           value: {
-            userContext: baseUserContext,
+            userContext,
             setUserContext: () => void 0,
           },
         },
@@ -125,6 +143,8 @@ describe('UserNav menu', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     logoutMock.mockResolvedValue(undefined);
+    // Default: the unscoped membership query has produced nothing yet.
+    useMyMembershipsMock.mockReturnValue({ fetching: false, memberships: [] });
   });
 
   it('renders null when user is not authenticated', async () => {
@@ -237,6 +257,70 @@ describe('UserNav menu', () => {
         returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
       },
     });
+
+    await cleanup();
+  });
+
+  it('labels the business-scope picker from the unscoped membership query', async () => {
+    useAuth0Mock.mockReturnValue({
+      isAuthenticated: true,
+      user: { name: 'John Doe', email: 'john@example.com' },
+      logout: logoutMock,
+    });
+    // What the scoped UserContext query can see: only the in-scope business is named.
+    const userContext: UserInfo = {
+      ...baseUserContext,
+      context: {
+        ...baseUserContext.context,
+        memberships: [
+          { businessId: 'business-1', role: 'business_owner', businessName: 'Acme' },
+          { businessId: 'business-2', role: 'accountant', businessName: null },
+        ],
+      },
+    };
+    useMyMembershipsMock.mockReturnValue({
+      fetching: false,
+      memberships: [
+        { businessId: 'business-1', businessName: 'Acme' },
+        { businessId: 'business-2', businessName: 'Globex' },
+      ],
+    });
+
+    const { container, cleanup } = await renderUserNav(userContext);
+
+    const labels = [...container.querySelectorAll('[data-slot="business-scope-options"] li')].map(
+      item => item.textContent,
+    );
+    expect(labels).toEqual(['Acme', 'Globex']);
+
+    await cleanup();
+  });
+
+  it('falls back to the user context memberships when the unscoped query yields nothing', async () => {
+    useAuth0Mock.mockReturnValue({
+      isAuthenticated: true,
+      user: { name: 'John Doe', email: 'john@example.com' },
+      logout: logoutMock,
+    });
+    const userContext: UserInfo = {
+      ...baseUserContext,
+      context: {
+        ...baseUserContext.context,
+        memberships: [
+          { businessId: 'business-1', role: 'business_owner', businessName: 'Acme' },
+          { businessId: 'business-2', role: 'accountant', businessName: null },
+        ],
+      },
+    };
+    // In flight, or the caller's role is outside the query's gate.
+    useMyMembershipsMock.mockReturnValue({ fetching: true, memberships: [] });
+
+    const { container, cleanup } = await renderUserNav(userContext);
+
+    const labels = [...container.querySelectorAll('[data-slot="business-scope-options"] li')].map(
+      item => item.textContent,
+    );
+    expect(labels).toEqual(['Acme', 'Unknown']);
 
     await cleanup();
   });

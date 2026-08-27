@@ -1,7 +1,7 @@
 import type { BusinessMembership } from '../../../shared/types/auth.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
-import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { resolveMembershipBusinessNames } from '../../financial-entities/helpers/membership-names.helper.js';
 import type { CommonModule } from '../types.js';
 
 export const userContextResolvers: CommonModule.Resolvers = {
@@ -9,22 +9,14 @@ export const userContextResolvers: CommonModule.Resolvers = {
     userContext: async (_, __, { injector }) => {
       const authContext = await injector.get(AuthContextProvider).getAuthContext();
 
-      const businessNamesMap = new Map<string, string>();
-      await Promise.all(
-        (authContext?.memberships ?? [])
-          .filter(membership => membership.businessId)
-          .map(async m => {
-            try {
-              const financialEntity = await injector
-                .get(FinancialEntitiesProvider)
-                .getFinancialEntityByIdLoader.load(m.businessId);
-              if (financialEntity?.name) {
-                businessNamesMap.set(m.businessId, financialEntity.name);
-              }
-            } catch (error) {
-              console.error(`Failed to load financial entity for business ${m.businessId}:`, error);
-            }
-          }),
+      // Names come from each business's `financial_entities` row, so RLS limits
+      // them to this request's read scope: a scoped request leaves out-of-scope
+      // memberships unnamed. That is intentional here — the client's scope
+      // switcher, which must name every membership to let a user leave a narrow
+      // scope, reads `myMemberships` unscoped instead.
+      const businessNamesMap = await resolveMembershipBusinessNames(
+        injector,
+        authContext?.memberships ?? [],
       );
 
       const memberships = (authContext?.memberships ?? []).map(

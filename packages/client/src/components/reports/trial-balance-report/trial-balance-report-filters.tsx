@@ -6,6 +6,7 @@ import { Indicator, MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
@@ -34,8 +35,21 @@ function TrialBalanceReportFilterForm({
   });
   const { control, handleSubmit } = form;
   const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
+  const {
+    selectableAdminBusinesses: owners,
+    fetching: ownersLoading,
+    soleAdminBusinessId,
+  } = useGetAdminBusinesses();
 
   const { userContext } = useContext(UserContext);
+
+  // A single owner is not a choice: pre-select it so the (disabled) input and the
+  // submitted filter agree — a disabled field never fires onChange to sync itself.
+  useEffect(() => {
+    if (soleAdminBusinessId) {
+      form.setValue('ownerIds', [soleAdminBusinessId]);
+    }
+  }, [soleAdminBusinessId, form]);
 
   const onSubmit: SubmitHandler<TrialBalanceReportFilters> = data => {
     if (data.fromDate?.trim() === '') data.fromDate = undefined;
@@ -64,14 +78,16 @@ function TrialBalanceReportFilterForm({
                 <FormControl>
                   <MultiSelect
                     {...field}
-                    data={businesses}
+                    data={owners}
                     value={
-                      field.value ??
-                      (userContext?.context.adminBusinessId
-                        ? [userContext?.context.adminBusinessId]
-                        : undefined)
+                      soleAdminBusinessId
+                        ? [soleAdminBusinessId]
+                        : (field.value ??
+                          (userContext?.context.adminBusinessId
+                            ? [userContext?.context.adminBusinessId]
+                            : undefined))
                     }
-                    disabled={businessesLoading}
+                    disabled={ownersLoading || !!soleAdminBusinessId}
                     placeholder="Scroll to see all options"
                     maxDropdownHeight={160}
                     searchable
