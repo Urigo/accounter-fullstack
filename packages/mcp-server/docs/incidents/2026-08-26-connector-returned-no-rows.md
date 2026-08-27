@@ -1,13 +1,13 @@
 # Incident: the MCP connector returned counts without rows
 
-|                   |                                                                                                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Date reported** | 2026-08-26                                                                                                                                                                           |
-| **Window**        | Between 2026-08-18 and 2026-08-26 (upper bound 8 days)                                                                                                                               |
-| **Status**        | Resolved — fix verified end-to-end, pending merge ([#4295](https://github.com/Urigo/accounter-fullstack/pull/4295), [#4299](https://github.com/Urigo/accounter-fullstack/pull/4299)) |
-| **Severity**      | High — the connector was unusable for its primary purpose                                                                                                                            |
-| **Data loss**     | None. No incorrect data was served; no security impact                                                                                                                               |
-| **Trigger**       | External: a change in how the MCP client surfaces tool results                                                                                                                       |
+|                   |                                                                                                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date reported** | 2026-08-26                                                                                                                                                                                |
+| **Window**        | Between 2026-08-18 and 2026-08-26 (upper bound 8 days)                                                                                                                                    |
+| **Status**        | Resolved — [#4295](https://github.com/Urigo/accounter-fullstack/pull/4295) and [#4299](https://github.com/Urigo/accounter-fullstack/pull/4299) merged 2026-08-27, fix verified end-to-end |
+| **Severity**      | High — the connector was unusable for its primary purpose                                                                                                                                 |
+| **Data loss**     | None. No incorrect data was served; no security impact                                                                                                                                    |
+| **Trigger**       | External: a change in how the MCP client surfaces tool results                                                                                                                            |
 
 ---
 
@@ -17,7 +17,7 @@ Every tool in the Accounter MCP connector stopped delivering data to the model. 
 succeeded, and still returned their human-readable summary line —
 `Found 7 charge(s) across 2 businesses; showing 7 on page 1 of 1.` — but the rows behind that
 sentence never reached the model. No ids, no dates, no amounts, no business names, from any of the
-nineteen tools.
+seventeen tools.
 
 Nothing in this repository changed. The row data had lived in `structuredContent` since the
 package's first commit, a field an MCP client is not obliged to surface, and the client stopped
@@ -27,7 +27,7 @@ The fix moves every payload into `content`, the one channel a model is guarantee
 
 ## Impact
 
-- **All nineteen tools affected.** The failure was in shared output shaping, not in any one tool.
+- **All seventeen tools affected.** The failure was in shared output shaping, not in any one tool.
 - **Read tools were unusable for any data question.** A model could learn that seven charges matched
   and nothing else about them — not enough to answer, summarize, chart, or drill into.
 - **Write outcomes were invisible.** `shapeWriteResult` had the same shape, so `updatedCount`,
@@ -56,7 +56,7 @@ responded by trying different filters. A hard error would have been diagnosed in
 | 2026-08-26         | Reported: charge queries return counts with no rows. Reproduced across `search_charges`, `get_charges`, `get_documents`, `list_business_memberships`, `list_businesses`.                                                |
 | 2026-08-26         | Root cause identified from the code, then confirmed empirically by dumping a real tool result. Fix implemented and verified end-to-end in the client ([#4295](https://github.com/Urigo/accounter-fullstack/pull/4295)). |
 | 2026-08-27         | Rollback test: commit `e31e8066` — the exact code that worked on Aug 18 — checked out and run again, and it **reproduces the failure**. Server held constant, outcome flipped. Client confirmed as the variable.        |
-| 2026-08-27         | Handshake logging added so the next such change is visible from this side ([#4299](https://github.com/Urigo/accounter-fullstack/pull/4299)).                                                                            |
+| 2026-08-27         | Handshake logging added so the next such change is visible from this side ([#4299](https://github.com/Urigo/accounter-fullstack/pull/4299)). Both fixes merged the same day.                                            |
 
 ## Root cause
 
@@ -142,7 +142,7 @@ union across businesses looks like a single-business answer until the model insp
 structured payload."_ Someone had recognized that `content` is the channel that reaches the model
 and had moved one derived fact into it. The rows never followed.
 
-**6. Nothing prevented recurrence per tool.** The shared shaper meant one fix repaired all nineteen
+**6. Nothing prevented recurrence per tool.** The shared shaper meant one fix repaired all seventeen
 tools — a genuine strength. But nothing enforced that a _new_ tool would use it, so the same class
 of bug could return one tool at a time.
 
@@ -167,7 +167,7 @@ consume it directly. This is the backwards-compatibility behavior the specificat
 is client-independent: no host can silently drop it.
 
 Deliberately one function rather than a per-tool convention, because the failure mode being fixed is
-exactly the kind that returns one tool at a time. No tool handler changed — all nineteen already
+exactly the kind that returns one tool at a time. No tool handler changed — all seventeen already
 funnelled through those three functions.
 
 The 60 KB budget is unchanged and still measures what the model consumes, since `fittingCount`
