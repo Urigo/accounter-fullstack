@@ -1,6 +1,11 @@
 /**
- * Shared normalizers for the by-id detail tools (`get_charges`,
- * `get_transactions`, `get_documents`).
+ * Shared normalizers for tool row shapes.
+ *
+ * Originally scoped to the by-id detail tools (`get_charges`,
+ * `get_transactions`, `get_documents`), now also the single definition of the
+ * money shape — `normalizeAmount` is used by `search_charges` and
+ * `balance_report` too. It had been hand-rewritten in both, which is drift
+ * waiting to happen: three copies of `raw -> value` that nothing keeps in step.
  *
  * The GraphQL field selections are intentionally *not* shared as interpolated
  * fragment strings — graphql-codegen plucks operations from plain
