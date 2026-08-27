@@ -323,6 +323,9 @@ async function uploadFromUrls(
       variables: { urls, chargeId: input.chargeId, isSensitive: PINNED_IS_SENSITIVE },
     },
     context.upstream,
+    // Upstream fetches each URL, uploads it to Cloudinary and OCRs it before it
+    // writes anything — minutes, not the seconds an ordinary call is budgeted.
+    { longRunning: true },
   );
   return toOutcomes(data.batchUploadDocumentsFromUrls, urls);
 }
@@ -369,6 +372,8 @@ async function uploadInline(
     },
     files,
     context.upstream,
+    // Same shape of work as the URL branch: Cloudinary + OCR before the insert.
+    { longRunning: true },
   );
 
   return toOutcomes(

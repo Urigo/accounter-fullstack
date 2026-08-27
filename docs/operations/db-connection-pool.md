@@ -61,10 +61,28 @@ Four independent mechanisms, deliberately overlapping — the bug class here is 
 does not run", so no single mechanism is trusted:
 
 1. **Disposal on abort** (`dbCleanupPlugin`) — fixes the root cause: the request's `AbortSignal`
-   disposes the client when the caller goes away.
+   disposes the client when the caller goes away. The caller hanging up does **not** stop the
+   operation this server is running, so a client still serving one has its disposal _deferred_
+   (`disposeWhenIdle`) rather than performed: the work finishes and writes, and the client is
+   released at the end of execution. Disposing there is what turned a timed-out document upload into
+   `TenantAwareDBClient is already disposed` at its final INSERT, throwing away the download,
+   Cloudinary upload and OCR that preceded it.
 2. **Watchdog** (`startTenantDbClientWatchdog`) — sweeps every connection holder and force-disposes
-   any that has not issued a query in `POSTGRES_CLIENT_MAX_IDLE_MS`. The predicate is _idle_ time,
-   not age, so a slow-but-active request is untouched while a leaked one is reclaimed.
+   any that has not issued a query within its ceiling. The predicate is _idle_ time, not age, so a
+   slow-but-active request is untouched while a leaked one is reclaimed. Three ceilings, by what the
+   client's request is doing:
+
+   | State                              | Ceiling                               |
+   | ---------------------------------- | ------------------------------------- |
+   | Caller hung up (disposal deferred) | `POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS` |
+   | GraphQL execution still running    | `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS`  |
+   | Neither                            | `POSTGRES_CLIENT_MAX_IDLE_MS`         |
+
+   The aborted ceiling is the tightest on purpose: it bounds the deferral above. An aborted request
+   still doing real work keeps querying and never reaches it; one whose execution died with the
+   abort goes silent at once and is reclaimed within a sweep or two. All three must stay above
+   `POSTGRES_STATEMENT_TIMEOUT_MS`, since a long query bumps activity only at its start and end.
+
 3. **`connectionTimeoutMillis`** — an exhausted pool now produces fast, loud errors naming the
    operation instead of silently hanging forever.
 4. **`idle_in_transaction_session_timeout`** — Postgres itself terminates an abandoned session.
@@ -78,6 +96,8 @@ does not run", so no single mechanism is trusted:
 | `POSTGRES_STATEMENT_TIMEOUT_MS`           | `120000` | Bounds a pathological query. Raise if bulk jobs need it.   |
 | `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` | `300000` | See the warning below before lowering.                     |
 | `POSTGRES_CLIENT_MAX_IDLE_MS`             | `300000` | Client-side counterpart of the above.                      |
+| `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS`      | `900000` | Ceiling while GraphQL execution is still running.          |
+| `POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS`     | `150000` | Ceiling once the caller hung up; bounds deferred disposal. |
 | `POSTGRES_WATCHDOG_INTERVAL_MS`           | derived  | Sweep interval; defaults to `min(30s, client max idle)`.   |
 | `POSTGRES_MONITOR_INTERVAL_MS`            | `30000`  | `0` disables the heartbeat.                                |
 
@@ -89,8 +109,11 @@ idle-in-transaction for a minute or more while waiting on an upstream API. An ag
 would kill live requests. Five minutes bounds a leak to something survivable without touching real
 traffic.
 
-The right long-term fix is to stop holding a connection across external calls at all, which would
-let these timeouts drop by an order of magnitude.
+The right long-term fix is to stop holding a connection across external calls at all. Document
+ingestion — by far the worst offender — now does exactly that: `releaseDbConnectionForExternalWork`
+hands the connection back before the download / Cloudinary upload / OCR stretch, and the next query
+opens a fresh session. Other external-I/O paths have not been converted yet, which is why these
+timeouts are still measured in minutes.
 
 ### Terminating leaked sessions by hand
 

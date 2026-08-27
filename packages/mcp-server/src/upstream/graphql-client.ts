@@ -89,10 +89,32 @@ interface WireBody {
 export interface UpstreamClientConfig {
   endpoint: string;
   timeoutMs: number;
+  /**
+   * Budget for operations declared long-running by their caller (see
+   * {@link UpstreamCallOptions.longRunning}). Defaults to {@link timeoutMs},
+   * which is only correct for a deployment that has none.
+   */
+  longRunningTimeoutMs?: number;
   /** Max retry attempts for idempotent read failures (default 2). */
   maxRetries?: number;
   /** Injectable fetch (defaults to global fetch) for testing. */
   fetchImpl?: typeof fetch;
+}
+
+/** Per-call knobs a tool may set on a write. */
+export interface UpstreamCallOptions {
+  /**
+   * This operation is expected to take far longer than an ordinary request, and
+   * should be given {@link UpstreamClientConfig.longRunningTimeoutMs} instead of
+   * the default budget.
+   *
+   * Document ingestion is the case this exists for: upstream downloads the file,
+   * uploads it to Cloudinary and runs OCR over it before it writes anything —
+   * comfortably past the default budget, which is sized for a database read. On
+   * the default budget the client gave up mid-upload every time while upstream
+   * carried on working, so the caller saw nothing but timeouts.
+   */
+  longRunning?: boolean;
 }
 
 interface GraphQLResponseBody<TData> {
@@ -166,12 +188,14 @@ function sanitizeGraphQLErrors(errors: Array<{ message?: unknown }>): string {
 export class UpstreamGraphQLClient {
   private readonly endpoint: string;
   private readonly timeoutMs: number;
+  private readonly longRunningTimeoutMs: number;
   private readonly maxRetries: number;
   private readonly fetchImpl: typeof fetch;
 
   constructor(config: UpstreamClientConfig) {
     this.endpoint = config.endpoint;
     this.timeoutMs = config.timeoutMs;
+    this.longRunningTimeoutMs = Math.max(config.longRunningTimeoutMs ?? 0, config.timeoutMs);
     this.maxRetries = config.maxRetries ?? 2;
     this.fetchImpl = config.fetchImpl ?? globalThis.fetch;
   }
@@ -204,7 +228,11 @@ export class UpstreamGraphQLClient {
    * upstream could double-apply it. A timed-out or network-failed write surfaces
    * to the caller as-is, for them to decide about.
    */
-  async mutate<TData>(request: GraphQLRequest, context: UpstreamRequestContext): Promise<TData> {
+  async mutate<TData>(
+    request: GraphQLRequest,
+    context: UpstreamRequestContext,
+    options?: UpstreamCallOptions,
+  ): Promise<TData> {
     assertSingleMutation(request.query);
     return this.execute<TData>(
       () => ({
@@ -217,6 +245,7 @@ export class UpstreamGraphQLClient {
       }),
       context,
       0,
+      { ...options, mutating: true },
     );
   }
 
@@ -237,6 +266,7 @@ export class UpstreamGraphQLClient {
     request: GraphQLRequest,
     files: readonly UploadFile[],
     context: UpstreamRequestContext,
+    options?: UpstreamCallOptions,
   ): Promise<TData> {
     assertSingleMutation(request.query);
     return this.execute<TData>(
@@ -267,6 +297,7 @@ export class UpstreamGraphQLClient {
       },
       context,
       0,
+      { ...options, mutating: true },
     );
   }
 
@@ -279,7 +310,12 @@ export class UpstreamGraphQLClient {
     buildBody: () => WireBody,
     context: UpstreamRequestContext,
     maxRetries: number,
+    options?: UpstreamCallOptions & { mutating?: boolean },
   ): Promise<TData> {
+    const timeoutMs =
+      options?.longRunning && this.longRunningTimeoutMs
+        ? this.longRunningTimeoutMs
+        : this.timeoutMs;
     // Span covers all retry attempts; the correlation id also propagates to the
     // upstream server via the X-Correlation-Id header on each attempt.
     return withSpan('upstream:graphql', context.correlationId, async () => {
@@ -287,8 +323,25 @@ export class UpstreamGraphQLClient {
       // Total tries = 1 + maxRetries; only retryable failures loop.
       for (;;) {
         try {
-          return await this.executeOnce<TData>(buildBody, context);
+          return await this.executeOnce<TData>(buildBody, context, timeoutMs);
         } catch (error) {
+          if (
+            options?.mutating &&
+            error instanceof UpstreamError &&
+            error.code === 'TIMEOUT_ERROR'
+          ) {
+            // Giving up on a write says nothing about what upstream did with it.
+            // Reporting it as retryable invites the caller to send it again and
+            // duplicate whatever did land — so it is re-flagged as *not*
+            // retryable, and the message says what to do instead.
+            throw new UpstreamError(
+              'TIMEOUT_ERROR',
+              `Upstream did not answer within ${Math.round(timeoutMs / 1000)}s. The write may still ` +
+                'be in progress upstream and may yet succeed — check whether it took effect before ' +
+                'sending it again, or the retry may duplicate it.',
+              false,
+            );
+          }
           const isRetryable = error instanceof UpstreamError && error.retryable;
           if (!isRetryable || attempt >= maxRetries) {
             throw error;
@@ -302,6 +355,7 @@ export class UpstreamGraphQLClient {
   private async executeOnce<TData>(
     buildBody: () => WireBody,
     context: UpstreamRequestContext,
+    timeoutMs: number,
   ): Promise<TData> {
     // Build the request BEFORE arming the timeout. Two reasons: the timeout
     // budget is for the upstream exchange, not for serializing our own body; and
@@ -334,7 +388,7 @@ export class UpstreamGraphQLClient {
     // consuming its body — so an upstream that sends headers then stalls the body
     // is still aborted. The timer is cleared only once everything is done.
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       let response: Response;

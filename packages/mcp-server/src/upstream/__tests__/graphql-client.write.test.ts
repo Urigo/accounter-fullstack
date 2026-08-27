@@ -250,3 +250,74 @@ describe('body construction failures', () => {
     clearTimeoutSpy.mockRestore();
   });
 });
+
+describe('long-running writes', () => {
+  /** A fetch that never answers until its signal aborts. */
+  const hangingFetch = () =>
+    vi.fn(
+      (_url: string, init: { signal: AbortSignal }) =>
+        new Promise<Response>((_, reject) => {
+          init.signal.addEventListener('abort', () => {
+            const error = new Error('aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        }),
+    );
+
+  it('gives a long-running write the larger budget', async () => {
+    // Document ingestion downloads the file, uploads it to Cloudinary and OCRs
+    // it before upstream writes anything. On the ordinary budget — sized for a
+    // database read — the client gave up mid-upload every time while upstream
+    // carried on working, and the caller saw nothing but timeouts.
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const client = new UpstreamGraphQLClient({
+      endpoint: 'http://localhost:4000/graphql',
+      timeoutMs: 1000,
+      longRunningTimeoutMs: 300_000,
+      fetchImpl: okFetch() as unknown as typeof fetch,
+    });
+
+    await client.mutate({ query: MUTATION, variables: { id: '1' } }, CONTEXT, {
+      longRunning: true,
+    });
+
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 300_000);
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('keeps the ordinary budget for a write that does not ask for more', async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const client = new UpstreamGraphQLClient({
+      endpoint: 'http://localhost:4000/graphql',
+      timeoutMs: 1000,
+      longRunningTimeoutMs: 300_000,
+      fetchImpl: okFetch() as unknown as typeof fetch,
+    });
+
+    await client.mutate({ query: MUTATION, variables: { id: '1' } }, CONTEXT);
+
+    expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('reports a timed-out write as NOT retryable, and says to verify first', async () => {
+    // Giving up says nothing about what upstream did with the write. Advertising
+    // it as retryable invites the caller to send it again and duplicate whatever
+    // did land — the upload that started this was sent five times over.
+    const client = new UpstreamGraphQLClient({
+      endpoint: 'http://localhost:4000/graphql',
+      timeoutMs: 5,
+      fetchImpl: hangingFetch() as unknown as typeof fetch,
+    });
+
+    const error = await client
+      .mutate({ query: MUTATION, variables: { id: '1' } }, CONTEXT)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(UpstreamError);
+    expect((error as UpstreamError).code).toBe('TIMEOUT_ERROR');
+    expect((error as UpstreamError).retryable).toBe(false);
+    expect((error as UpstreamError).message).toMatch(/may still be in progress/i);
+  });
+});

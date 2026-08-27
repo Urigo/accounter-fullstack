@@ -55,11 +55,36 @@ export type BusinessTransactionProto = {
   chargeId: string;
 };
 
+/**
+ * A request-scoped DB client the cleanup plugin is responsible for releasing.
+ *
+ * `disposeWhenIdle` exists for the abort path: the caller hanging up does not
+ * stop the operation already running on this server, so a client that is still
+ * serving one is asked to release itself when it can, rather than being pulled
+ * out from under a half-written mutation. Optional so a plain `{ dispose }` (as
+ * used in tests and ad-hoc registrations) still satisfies the contract.
+ *
+ * It resolves to `true` when disposal was *deferred* — the client is still live
+ * and must stay registered for the end-of-execution pass — and `false` when it
+ * disposed on the spot.
+ */
+export type DisposableDbClient = {
+  dispose: () => Promise<void>;
+  disposeWhenIdle?: () => Promise<boolean>;
+};
+
 export type AccounterContext = YogaInitialContext & {
   env: Environment;
   pool: pg.Pool;
   rawAuth?: RawAuth;
-  dbClientsToDispose?: { dispose: () => Promise<void> }[];
+  dbClientsToDispose?: DisposableDbClient[];
+  /**
+   * True while GraphQL execution for this request is running. Read by
+   * TenantAwareDBClient (and its watchdog) to tell a request that is merely
+   * quiet on the database — fetching a file, waiting on OCR — from one that has
+   * gone away.
+   */
+  executionInFlight?: boolean;
 };
 
 type addZero<T> = T | 0;

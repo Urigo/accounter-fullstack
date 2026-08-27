@@ -14,7 +14,10 @@ import {
   fetchRemoteDocument,
   RemoteDocumentError,
 } from '../helpers/fetch-remote-document.helper.js';
-import { getDocumentFromFile } from '../helpers/upload.helper.js';
+import {
+  getDocumentFromFile,
+  releaseDbConnectionForExternalWork,
+} from '../helpers/upload.helper.js';
 import { basicDocumentValidation } from '../helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
@@ -171,6 +174,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         chargeId = newCharge.id;
       }
 
+      // The fetch + OCR that follows is minutes of external I/O; the charge is
+      // already committed, so nothing needs the connection until the INSERT.
+      await releaseDbConnectionForExternalWork(injector);
+
       // Results are positional and one URL's failure must not sink the batch, so
       // each fetch is settled independently and its outcome is carried alongside
       // the index it came from.
@@ -203,11 +210,25 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           'document' in entry,
       );
 
-      const inserted = fetched.length
-        ? await injector
+      // The insert is the last step of a job that has already cost a download,
+      // a Cloudinary upload and an OCR pass per URL. Letting it throw turns all
+      // of that into one opaque top-level GraphQL error with no indication of
+      // which documents were lost or why, so it is reported the same positional
+      // way every other failure in this resolver is.
+      let inserted: Awaited<ReturnType<DocumentsProvider['insertDocuments']>> = [];
+      let insertError: string | undefined;
+      if (fetched.length) {
+        try {
+          inserted = await injector
             .get(DocumentsProvider)
-            .insertDocuments({ documents: fetched.map(entry => entry.document) })
-        : [];
+            .insertDocuments({ documents: fetched.map(entry => entry.document) });
+        } catch (error) {
+          insertError = `failed storing the fetched document: ${
+            error instanceof Error ? error.message : String(error)
+          }`;
+          console.error(`Failed inserting documents fetched from URLs: ${error}`);
+        }
+      }
 
       if (inserted.length) {
         await degradeChargesAccountantApproval(injector, [chargeId]);
@@ -228,7 +249,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const reason =
           failure && 'message' in failure
             ? failure.message
-            : 'document was fetched but could not be stored';
+            : (insertError ?? 'document was fetched but could not be stored');
         return { __typename: 'CommonError' as const, message: `${url}: ${reason}` };
       });
     },
@@ -251,6 +272,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       if (!isValidGoogleDriveUrl(sharedFolderUrl)) {
         throw new GraphQLError('Invalid Google Drive folder URL');
       }
+
+      // Downloading a whole shared folder is external I/O — release the pooled
+      // connection for its duration (see the helper).
+      await releaseDbConnectionForExternalWork(injector);
 
       const files = await injector
         .get(GoogleDriveProvider)

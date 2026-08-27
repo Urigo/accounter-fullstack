@@ -230,8 +230,12 @@ jq -r 'select(.event=="mcp_initialize" and .protocolVersionMismatch)
 ### B. Elevated `UPSTREAM_ERROR` / `TIMEOUT_ERROR`
 
 1. Check the Accounter GraphQL server health and network path (`GRAPHQL_UPSTREAM_URL`).
-2. Timeouts are bounded-retried; persistent 5xx exhaust retries then surface as errors. Consider
-   raising `GRAPHQL_UPSTREAM_TIMEOUT_MS` only if the upstream is legitimately slow.
+2. Timeouts on reads are bounded-retried; persistent 5xx exhaust retries then surface as errors.
+   Consider raising `GRAPHQL_UPSTREAM_TIMEOUT_MS` only if the upstream is legitimately slow.
+   Document ingestion is exempt from that budget — it downloads the file, uploads it to Cloudinary
+   and OCRs it before writing, and runs on `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` (default 5 min). A
+   timed-out **write** is reported as non-retryable on purpose: giving up says nothing about what
+   upstream did with it, so it must be verified before being sent again rather than duplicated.
 3. 4xx/GraphQL-level errors are **not** retried — investigate the upstream, not the connector.
 
 ### C. Elevated `RATE_LIMIT_ERROR`

@@ -74,6 +74,30 @@ const PostgresModel = zod.object({
    */
   POSTGRES_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(300_000),
   /**
+   * The same ceiling for a client whose GraphQL operation is *still executing*.
+   *
+   * Such a request is allowed to be quiet on the database for much longer than
+   * an ordinary one: document ingestion fetches a file, uploads it to Cloudinary
+   * and waits on OCR before it writes anything. Reclaiming its client on the
+   * ordinary ceiling would leave the request running with no connection, so its
+   * final INSERT fails with "already disposed" after all the expensive work.
+   * Still bounded, because the executing flag lives on a request context that a
+   * missed lifecycle hook could leave set forever.
+   */
+  POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(900_000),
+  /**
+   * Ceiling for a client whose caller already hung up.
+   *
+   * Disposal is deferred for those requests — the operation keeps running and
+   * still has to write — and this is what bounds the deferral. Tight on purpose:
+   * a request still doing real work keeps querying and never reaches it, while
+   * one whose execution died with the connection (a query urql cancelled on the
+   * next keystroke) goes silent at once and is reclaimed promptly. Kept above
+   * POSTGRES_STATEMENT_TIMEOUT_MS, since a long query only bumps activity at its
+   * start and end.
+   */
+  POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(150_000),
+  /**
    * How often the watchdog sweeps for leaked connections. Defaults to the
    * smaller of 30s and the idle ceiling, so a tightened ceiling is still
    * enforced promptly.
@@ -298,6 +322,11 @@ export const env = {
     statementTimeoutMs: postgres.POSTGRES_STATEMENT_TIMEOUT_MS,
     idleInTransactionTimeoutMs: postgres.POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS,
     clientMaxIdleMs: postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+    activeClientMaxIdleMs: Math.max(
+      postgres.POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS,
+      postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+    ),
+    abortedClientMaxIdleMs: postgres.POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS,
     watchdogIntervalMs:
       postgres.POSTGRES_WATCHDOG_INTERVAL_MS ??
       Math.min(postgres.POSTGRES_CLIENT_MAX_IDLE_MS, 30_000),

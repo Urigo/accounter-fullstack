@@ -43,6 +43,68 @@ describe('dbCleanupPlugin', () => {
     });
   });
 
+  it('defers disposal of a client whose operation is still running', async () => {
+    // The caller hanging up does not stop the mutation this server is running.
+    // A document upload that times out mid-OCR still has an INSERT ahead of it;
+    // disposing here failed that write with "already disposed" and lost the work.
+    const controller = new AbortController();
+    const context = buildContext(controller);
+    onContextBuilding(context);
+
+    const dispose = vi.fn().mockResolvedValue(undefined);
+    const disposeWhenIdle = vi.fn().mockResolvedValue(true); // deferred
+    context.dbClientsToDispose!.push({ dispose, disposeWhenIdle });
+
+    controller.abort();
+
+    await vi.waitFor(() => {
+      expect(disposeWhenIdle).toHaveBeenCalledTimes(1);
+      // Still registered: it holds a connection the end-of-execution pass must release.
+      expect(context.dbClientsToDispose).toHaveLength(1);
+    });
+    expect(dispose).not.toHaveBeenCalled();
+  });
+
+  it('drops a client that disposed on the spot from the list', async () => {
+    const controller = new AbortController();
+    const context = buildContext(controller);
+    onContextBuilding(context);
+
+    const disposeWhenIdle = vi.fn().mockResolvedValue(false); // nothing in flight
+    context.dbClientsToDispose!.push({
+      dispose: vi.fn().mockResolvedValue(undefined),
+      disposeWhenIdle,
+    });
+
+    controller.abort();
+
+    await vi.waitFor(() => {
+      expect(disposeWhenIdle).toHaveBeenCalledTimes(1);
+      expect(context.dbClientsToDispose).toEqual([]);
+    });
+  });
+
+  it('marks execution in flight, and clears it once execution is done', async () => {
+    const context = buildContext(new AbortController());
+    const plugin = dbCleanupPlugin();
+    onContextBuilding(context);
+
+    const dispose = vi.fn().mockResolvedValue(undefined);
+    context.dbClientsToDispose!.push({ dispose });
+
+    const hooks = plugin.onExecute!({ args: { contextValue: context } } as never) as {
+      onExecuteDone: (payload: { result: unknown }) => Promise<void>;
+    };
+    // The window in which a DB client that has gone quiet belongs to a live
+    // request rather than to a leak.
+    expect(context.executionInFlight).toBe(true);
+
+    await hooks.onExecuteDone({ result: {} });
+
+    expect(context.executionInFlight).toBe(false);
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
   it('disposes clients registered after the abort listener was attached', async () => {
     // Clients are constructed during execution, well after context building.
     const controller = new AbortController();

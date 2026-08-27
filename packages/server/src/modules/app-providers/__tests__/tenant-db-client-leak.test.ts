@@ -34,7 +34,7 @@ const authContext: AuthContext = {
   activeReadScope: { businessIds: ['business-456'] },
 } as unknown as AuthContext;
 
-function buildClient(poolClient: FakePoolClient) {
+function buildClient(poolClient: FakePoolClient, context?: GraphQLModules.GlobalContext) {
   const dbProvider = {
     pool: { connect: vi.fn().mockResolvedValue(poolClient as unknown as PoolClient) } as unknown as
       | Pool
@@ -47,7 +47,11 @@ function buildClient(poolClient: FakePoolClient) {
 
   // A GraphQL context puts the client in request-scoped mode: the connection is
   // held until dispose(), which is exactly the lifecycle that can leak.
-  return new TenantAwareDBClient(dbProvider, authContextProvider, {} as GraphQLModules.GlobalContext);
+  return new TenantAwareDBClient(
+    dbProvider,
+    authContextProvider,
+    context ?? ({} as GraphQLModules.GlobalContext),
+  );
 }
 
 describe('TenantAwareDBClient connection-leak safeguards', () => {
@@ -115,6 +119,113 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     await vi.waitFor(() => expect(poolClient.release).toHaveBeenCalled());
 
     watchdog.stop();
+  });
+
+  it('leaves a quiet client alone while its operation is still executing', async () => {
+    // A document upload goes minutes without a query while it downloads the
+    // file and waits on OCR. Reclaiming its connection there leaves the request
+    // running with nothing to write through, which is exactly how an upload
+    // ended at "TenantAwareDBClient is already disposed" on its final INSERT.
+    vi.useFakeTimers();
+    const context = { executionInFlight: true } as GraphQLModules.GlobalContext;
+    const client = buildClient(poolClient, context);
+    await client.query('SELECT 1');
+
+    const onLeak = vi.fn();
+    const watchdog = startTenantDbClientWatchdog({
+      maxIdleMs: 1000,
+      activeMaxIdleMs: 10_000,
+      intervalMs: 100,
+      onLeak,
+    });
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(onLeak).not.toHaveBeenCalled();
+
+    // Still bounded, though: the flag lives on a request context a missed hook
+    // could leave set forever.
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(onLeak).toHaveBeenCalledTimes(1);
+    expect(onLeak.mock.calls[0]![0].operationInFlight).toBe(true);
+
+    watchdog.stop();
+  });
+
+  it('puts a client on a short leash once its caller has hung up', async () => {
+    // Deferring disposal past an abort is what saves the upload's final INSERT,
+    // but a request whose execution died along with the abort would otherwise
+    // sit on its connection for the whole active ceiling. It stays quiet, so the
+    // tighter ceiling reclaims it; a request still doing real work keeps
+    // querying and never reaches it.
+    vi.useFakeTimers();
+    const context = { executionInFlight: true } as GraphQLModules.GlobalContext;
+    const client = buildClient(poolClient, context);
+    await client.query('SELECT 1');
+    await client.disposeWhenIdle();
+
+    const onLeak = vi.fn();
+    const watchdog = startTenantDbClientWatchdog({
+      maxIdleMs: 5000,
+      activeMaxIdleMs: 60_000,
+      abortedMaxIdleMs: 2000,
+      intervalMs: 100,
+      onLeak,
+    });
+
+    await vi.advanceTimersByTimeAsync(2500);
+
+    expect(onLeak).toHaveBeenCalledTimes(1);
+    expect(onLeak.mock.calls[0]![0].requestAborted).toBe(true);
+    await vi.waitFor(() => expect(poolClient.release).toHaveBeenCalled());
+
+    watchdog.stop();
+  });
+
+  it('keeps serving queries after a disposal deferred by an in-flight operation', async () => {
+    const context = { executionInFlight: true } as GraphQLModules.GlobalContext;
+    const client = buildClient(poolClient, context);
+    await client.query('SELECT 1');
+
+    // The caller aborted (MCP/urql timeout) while the mutation is mid-flight.
+    await expect(client.disposeWhenIdle()).resolves.toBe(true);
+
+    // The write that the abort must not have cost us.
+    await expect(client.query('INSERT INTO documents DEFAULT VALUES')).resolves.toBeDefined();
+
+    // Execution ends; the deferred disposal comes due on the next query boundary.
+    context.executionInFlight = false;
+    await client.query('SELECT 2');
+    await vi.waitFor(() => expect(poolClient.release).toHaveBeenCalled());
+  });
+
+  it('disposes immediately when nothing is in flight', async () => {
+    const client = buildClient(poolClient);
+    await client.query('SELECT 1');
+
+    await expect(client.disposeWhenIdle()).resolves.toBe(false);
+
+    await expect(client.query('SELECT 2')).rejects.toThrow('already disposed');
+  });
+
+  it('hands the connection back for long external work, then reopens on demand', async () => {
+    const client = buildClient(poolClient, {
+      executionInFlight: true,
+    } as GraphQLModules.GlobalContext);
+    await client.query('SELECT 1');
+    expect(getTenantDbClientStats().holdingConnection).toBe(1);
+
+    // Nothing needs the DB while the file is fetched, uploaded and OCR'd — and
+    // holding it there risks both the watchdog and Postgres's own
+    // idle_in_transaction timeout killing a healthy request.
+    await client.releaseIdleConnection();
+    expect(poolClient.release).toHaveBeenCalled();
+    expect(getTenantDbClientStats().holdingConnection).toBe(0);
+
+    // The client itself is untouched: the next query opens a fresh session.
+    await expect(client.query('SELECT 2')).resolves.toBeDefined();
+    expect(getTenantDbClientStats().holdingConnection).toBe(1);
+
+    await client.dispose();
   });
 
   it('leaves a slow but active client alone', async () => {

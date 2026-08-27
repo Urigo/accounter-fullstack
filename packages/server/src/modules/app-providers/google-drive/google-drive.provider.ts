@@ -8,6 +8,31 @@ import {
   type DriveFolderContent,
 } from './types/folder-content.js';
 
+/**
+ * Wall-clock budget for a single Drive exchange (metadata lookup or download).
+ *
+ * `fetch` has no default timeout, so without this a Drive call that never
+ * answers pins the request forever: the caller eventually gives up while the
+ * server keeps the operation — and its database client — alive with nothing to
+ * show for it. A bounded failure is reportable; a hang is not.
+ */
+export const DRIVE_FETCH_TIMEOUT_MS = 60_000;
+
+/** `fetch` with {@link DRIVE_FETCH_TIMEOUT_MS} enforced, timeout named as such. */
+async function fetchWithTimeout(url: URL, what: string): Promise<Response> {
+  try {
+    return await fetch(url, { signal: AbortSignal.timeout(DRIVE_FETCH_TIMEOUT_MS) });
+  } catch (error) {
+    if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+      throw new Error(
+        `Google Drive did not answer within ${DRIVE_FETCH_TIMEOUT_MS / 1000}s while ${what}`,
+        { cause: error },
+      );
+    }
+    throw error;
+  }
+}
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -29,9 +54,9 @@ export class GoogleDriveProvider {
       `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&key=${this.apiKey}`,
     );
 
-    const res = await fetch(url).catch(err => {
-      const message = `Failed fetching data from Google Drive for URL="${folderUrl}"`;
-      console.error(`${message}: ${err}`);
+    const res = await fetchWithTimeout(url, 'listing a shared folder').catch(err => {
+      const message = `Failed fetching data from Google Drive for URL="${folderUrl}": ${err instanceof Error ? err.message : String(err)}`;
+      console.error(message);
       throw new Error(message);
     });
 
@@ -56,9 +81,9 @@ export class GoogleDriveProvider {
     const url = new URL(`https://drive.google.com/uc?export=download&id=${fileId}`);
 
     // fetch file
-    const response = await fetch(url).catch(err => {
-      const message = `Failed fetching file from Google Drive for file="${fileInfo.name}"`;
-      console.error(`${message}: ${err}`);
+    const response = await fetchWithTimeout(url, `downloading "${fileInfo.name}"`).catch(err => {
+      const message = `Failed fetching file from Google Drive for file="${fileInfo.name}": ${err instanceof Error ? err.message : String(err)}`;
+      console.error(message);
       throw new Error(message);
     });
 
@@ -115,9 +140,9 @@ export class GoogleDriveProvider {
       `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,kind&key=${this.apiKey}`,
     );
 
-    const res = await fetch(url).catch(err => {
-      const message = `Failed fetching file metadata from Google Drive for id="${fileId}"`;
-      console.error(`${message}: ${err}`);
+    const res = await fetchWithTimeout(url, `reading metadata for id="${fileId}"`).catch(err => {
+      const message = `Failed fetching file metadata from Google Drive for id="${fileId}": ${err instanceof Error ? err.message : String(err)}`;
+      console.error(message);
       throw new Error(message);
     });
 
@@ -170,8 +195,10 @@ export class GoogleDriveProvider {
 
       return files;
     } catch (e) {
-      const message = `Failed fetching files from Google Drive`;
-      console.error(`${message}: ${e}`);
+      // Keep the reason in the message: this is the only thing the caller (and
+      // the model driving an upload) sees, and "failed" alone is undiagnosable.
+      const message = `Failed fetching files from Google Drive: ${e instanceof Error ? e.message : String(e)}`;
+      console.error(message);
       throw new Error(message, { cause: e });
     }
   }
