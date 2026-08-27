@@ -40,5 +40,5 @@ gated.
 
 Also deliberately excluded: protocol-version *negotiation*. The server keeps answering `2025-06-18`
 unconditionally; this only records what was asked. Changing what the server advertises is a live
-behavioural change to a connector that has just broken once, and it should be decided against a
+behavioral change to a connector that has just broken once, and it should be decided against a
 logged mismatch rather than a guess — which is what `protocolVersionMismatch` now provides.
