@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { McpBalanceReportQuery, McpBalanceReportQueryVariables } from '../gql/index.js';
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
+import { normalizeAmount } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
@@ -110,11 +111,7 @@ async function handler(
     date: row.date,
     isFee: row.isFee,
     description: row.description,
-    amount: {
-      value: row.amount.raw,
-      formatted: row.amount.formatted,
-      currency: row.amount.currency,
-    },
+    amount: normalizeAmount(row.amount),
   }));
 
   return shapeListResult({

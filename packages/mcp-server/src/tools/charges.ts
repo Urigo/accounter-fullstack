@@ -6,7 +6,7 @@ import {
   type ChargeFiltersInput,
 } from './charge-filters.js';
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
-import { chargeTypeFromTypename } from './entity-shapes.js';
+import { chargeTypeFromTypename, normalizeAmount, type NormalizedAmount } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
@@ -143,7 +143,7 @@ export interface NormalizedCharge {
   /** Owning business, so multi-business results can be grouped by the model. */
   ownerId: string | null;
   ownerName: string | null;
-  amount: { value: number; formatted: string; currency: string } | null;
+  amount: NormalizedAmount | null;
   date: string | null;
 }
 
@@ -267,13 +267,7 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
     // Optional chaining: fixtures predating owner selection omit the field.
     ownerId: charge.ownerId,
     ownerName: charge.owner?.name ?? null,
-    amount: charge.totalAmount
-      ? {
-          value: charge.totalAmount.raw,
-          formatted: charge.totalAmount.formatted,
-          currency: charge.totalAmount.currency,
-        }
-      : null,
+    amount: normalizeAmount(charge.totalAmount),
     date: charge.minEventDate,
   };
 }
