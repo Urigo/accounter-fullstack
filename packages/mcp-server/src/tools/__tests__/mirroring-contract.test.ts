@@ -114,12 +114,17 @@ describe('structured payloads are mirrored into content', () => {
    * `shapeWriteResult` are the only sanctioned way to build a list or write
    * result, and both mirror. A tool assembling `content: [...]` itself has
    * stepped outside the guarantee, whether or not it remembered to mirror today.
+   *
+   * Matched by pattern rather than substring: prettier normalizes the spacing
+   * today, but a guard against drift should not itself depend on prettier
+   * having run.
    */
   it('no tool builds a result payload by hand', () => {
+    const HAND_ROLLED_CONTENT = /\bcontent\s*:\s*\[/;
     const toolsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
     const offenders = readdirSync(toolsDir)
       .filter(file => file.endsWith('.ts') && file !== 'output.ts')
-      .filter(file => readFileSync(join(toolsDir, file), 'utf8').includes('content: ['));
+      .filter(file => HAND_ROLLED_CONTENT.test(readFileSync(join(toolsDir, file), 'utf8')));
 
     expect(
       offenders,
