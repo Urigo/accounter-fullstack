@@ -59,6 +59,34 @@ export const MCP_PROTOCOL_VERSION = '2025-06-18';
 export const MCP_INITIALIZE_EVENT = 'mcp_initialize';
 
 /**
+ * `event` discriminator for a request that looks like it came from a client
+ * speaking a protocol era this server does not implement.
+ *
+ * The connector implements a handshake-based ("legacy") revision. Under the
+ * current revision there is no `initialize` at all: version, identity and
+ * capabilities travel per-request in `_meta`. A client that has moved there
+ * entirely would not handshake, so `mcp_initialize` would simply stop
+ * appearing — silence, not a changed value, discovered when calls began to
+ * fail.
+ *
+ * What makes this detectable in advance is that a dual-era client on
+ * Streamable HTTP tries a modern request *first* and falls back on the
+ * response. That probe is the warning, and this is what records it.
+ */
+export const MCP_MODERN_PROBE_EVENT = 'mcp_modern_probe';
+
+/** Header carrying the protocol revision a request is written against. */
+export const MCP_PROTOCOL_VERSION_HEADER = 'mcp-protocol-version';
+
+/** `_meta` keys a modern request carries, per the current revision. */
+const META_PROTOCOL_VERSION_KEY = 'io.modelcontextprotocol/protocolVersion';
+const META_CLIENT_INFO_KEY = 'io.modelcontextprotocol/clientInfo';
+const META_CLIENT_CAPABILITIES_KEY = 'io.modelcontextprotocol/clientCapabilities';
+
+/** Method a modern client calls to discover what a server supports. */
+export const SERVER_DISCOVER_METHOD = 'server/discover';
+
+/**
  * Hard cap on the length of a logged client identifier, ellipsis included.
  *
  * `clientInfo.name` and `clientInfo.version` are caller-supplied strings off the
@@ -141,6 +169,65 @@ export function describeInitializeParams(params: unknown): InitializeHandshake {
     // change in what the client declares visible by diffing.
     clientCapabilities: Object.keys(asRecord(record.capabilities)).sort(),
   };
+}
+
+/** A request bearing signals of a protocol era this server does not implement. */
+export interface ModernEraProbe {
+  method: string;
+  /** The header value, recorded only when it disagrees with what we serve. */
+  protocolVersionHeader: string | null;
+  metaProtocolVersion: string | null;
+  metaClientName: string | null;
+  metaClientVersion: string | null;
+  metaClientCapabilities: string[];
+  /** True when the method itself only exists in the modern protocol. */
+  modernMethod: boolean;
+}
+
+/**
+ * Describe a request's modern-era signals, or `null` when it has none.
+ *
+ * Returning `null` for the ordinary case is the design: this line must mean
+ * "something changed", not "a request happened". `MCP-Protocol-Version` is
+ * required by the revision we already implement, so it may well be on every
+ * call — recorded only when its value *disagrees* with ours, since
+ * `mcp_initialize` already reports the negotiated version.
+ *
+ * Pure and total, like {@link describeInitializeParams}: everything here is
+ * caller-supplied and unvalidated, and a probe this server cannot parse is
+ * exactly the event worth seeing rather than throwing on.
+ */
+export function describeModernEraProbe(
+  method: string,
+  params: unknown,
+  protocolVersionHeader: string | undefined,
+): ModernEraProbe | null {
+  const meta = asRecord(asRecord(params)._meta);
+  const metaClientInfo = asRecord(meta[META_CLIENT_INFO_KEY]);
+  const headerDisagrees =
+    typeof protocolVersionHeader === 'string' &&
+    protocolVersionHeader.length > 0 &&
+    protocolVersionHeader !== MCP_PROTOCOL_VERSION;
+
+  const probe: ModernEraProbe = {
+    method,
+    protocolVersionHeader: headerDisagrees ? clipClientLabel(protocolVersionHeader) : null,
+    metaProtocolVersion: clipClientLabel(meta[META_PROTOCOL_VERSION_KEY]),
+    metaClientName: clipClientLabel(metaClientInfo.name),
+    metaClientVersion: clipClientLabel(metaClientInfo.version),
+    metaClientCapabilities: Object.keys(asRecord(meta[META_CLIENT_CAPABILITIES_KEY])).sort(),
+    modernMethod: method === SERVER_DISCOVER_METHOD,
+  };
+
+  const sawSomething =
+    probe.protocolVersionHeader !== null ||
+    probe.metaProtocolVersion !== null ||
+    probe.metaClientName !== null ||
+    probe.metaClientVersion !== null ||
+    probe.metaClientCapabilities.length > 0 ||
+    probe.modernMethod;
+
+  return sawSomething ? probe : null;
 }
 
 /**
@@ -241,6 +328,15 @@ export interface McpDispatchContext {
   /** Caller's Authorization header value, forwarded upstream (never logged). */
   authorization?: string;
   /**
+   * The caller's `MCP-Protocol-Version` header, for era detection only.
+   *
+   * Read, never enforced. Enforcing it would change what we answer, and a
+   * dual-era client decides we are legacy from the shape of our reply — look
+   * modern and it stops falling back, which is the failure this is meant to
+   * warn about rather than cause.
+   */
+  protocolVersionHeader?: string;
+  /**
    * `MCP_TOOL_ALLOWLIST`, resolved at the HTTP boundary. Empty ⇒ no restriction
    * (every registered tool is exposed); non-empty ⇒ `tools/list` and
    * `tools/call` are limited to exactly these tool names.
@@ -276,6 +372,30 @@ export async function dispatchMcpRequest(
     return null;
   }
   const id = request.id ?? null;
+
+  // Era detection, before anything else: a request carrying modern signals is
+  // the only advance warning available that a client is moving off the
+  // handshake-based protocol this server implements.
+  //
+  // Observation only — nothing below changes, and no response byte differs.
+  // That is deliberate rather than incidental: era detection keys off exactly
+  // what we return, so answering a modern probe would stop the fallback that is
+  // currently keeping every client working.
+  const probe = describeModernEraProbe(
+    request.method,
+    request.params,
+    context.protocolVersionHeader,
+  );
+  if (probe) {
+    log('warn', 'mcp modern-era probe', {
+      ...probe,
+      event: MCP_MODERN_PROBE_EVENT,
+      servedProtocolVersion: MCP_PROTOCOL_VERSION,
+      servedEra: 'legacy',
+      userId: context.auth.userId,
+      correlationId: context.correlationId,
+    });
+  }
 
   // Record the handshake, then let `handleRpcRequest` build the response.
   //
@@ -521,6 +641,10 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     correlationId: getRequestContext(req)?.correlationId ?? '',
     authorization:
       typeof req.headers.authorization === 'string' ? req.headers.authorization : undefined,
+    protocolVersionHeader:
+      typeof req.headers[MCP_PROTOCOL_VERSION_HEADER] === 'string'
+        ? (req.headers[MCP_PROTOCOL_VERSION_HEADER] as string)
+        : undefined,
     allowlist: env.server.toolAllowlist,
     writeToolsEnabled: env.server.writeToolsEnabled,
   });

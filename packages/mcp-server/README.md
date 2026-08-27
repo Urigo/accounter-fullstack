@@ -377,6 +377,23 @@ fields are merged _beneath_ the canonical ones, so a client cannot attribute its
 user by putting `userId` in `clientInfo`, and `clientInfo` strings are clipped before they reach the
 log.
 
+### Modern-era probe detection
+
+The connector implements a handshake-based protocol revision. The current revision removed
+`initialize` entirely, so a client that moved there completely would stop handshaking — and
+`mcp_initialize` would go _quiet_ rather than change, leaving failing calls as the first symptom.
+
+A dual-era client tries a modern request first and falls back on the response, so that attempt is
+the available warning. Any request carrying `MCP-Protocol-Version` that disagrees with what we
+serve, a per-request `_meta` protocol version, or the modern-only `server/discover` method emits one
+`event: "mcp_modern_probe"` line at `warn`. Silence is the normal state; a line means a client is
+moving.
+
+It is **observation only, and that is load-bearing**: era detection keys off what a server returns,
+so answering `server/discover` — or anything else that makes us look modern — would stop the
+fallback currently keeping every client working. A test asserts responses are byte-identical whether
+or not a probe was detected.
+
 ### Usage logging
 
 Operational telemetry answers "is it healthy"; usage telemetry answers "what are callers trying to
@@ -407,9 +424,9 @@ from stale charge ids becomes visible. This line is the complement to the `audit
 write already emits _before_ its handler runs: the audit line names the records, this one says what
 applied. Neither carries document content, filenames, or URLs.
 
-See [`docs/operations-runbook.md`](./docs/operations-runbook.md) §3.1 (handshake) and §3.2 (tool
-calls) for the full field references and the `jq` extraction recipes (client versions,
-most-requested terms, missing terms, tool popularity).
+See [`docs/operations-runbook.md`](./docs/operations-runbook.md) §3.1 (handshake), §3.2 (modern-era
+probes) and §3.3 (tool calls) for the full field references and the `jq` extraction recipes (client
+versions, most-requested terms, missing terms, tool popularity).
 
 ### Tracing (OpenTelemetry → Grafana Tempo)
 

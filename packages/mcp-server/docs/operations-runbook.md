@@ -122,7 +122,46 @@ Caller-derived fields are merged beneath the canonical ones, so `clientName` and
 overwrite `userId`, `correlationId`, or `event`. A handshake the server cannot parse still logs a
 line, with the unparseable fields `null`.
 
-### 3.2 Tool-call usage logs (`event: "tool_call"`)
+### 3.2 Modern-era probes (`event: "mcp_modern_probe"`, level `warn`)
+
+**This is a trigger, not a diagnostic.** Silence is the normal state; a line here means a client is
+speaking a protocol revision this server does not implement.
+
+The connector implements a handshake-based revision. The current revision removed `initialize`
+entirely — version, identity and capabilities travel per-request in `_meta`. A client that moved
+there completely would simply stop handshaking, so `mcp_initialize` would go quiet rather than
+change, and the first real symptom would be failing calls. What makes it visible in advance is that
+a dual-era client tries a modern request **first** and falls back on the response; this event
+records that attempt.
+
+| Field                                  | Meaning                                                                                                                                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `method`                               | What was attempted. `server/discover` is modern-only                                                                                                                                  |
+| `protocolVersionHeader`                | The `MCP-Protocol-Version` value — recorded **only when it disagrees** with what we serve, since the header is also required by our own revision and would otherwise be on every call |
+| `metaProtocolVersion`                  | Version from per-request `_meta`; the defining marker of a modern request                                                                                                             |
+| `metaClientName` / `metaClientVersion` | Modern per-request identity, where handshake-era clients send it once                                                                                                                 |
+| `metaClientCapabilities`               | Capability names only, sorted                                                                                                                                                         |
+| `modernMethod`                         | The method itself exists only in the modern protocol                                                                                                                                  |
+| `servedEra`                            | Always `legacy` — what we actually answered, which this event never changes                                                                                                           |
+
+**What to do when it fires.** Nothing breaks at first: the client falls back and keeps working. It
+means the dual-era migration has stopped being hypothetical, and the analysis for it is in
+[`connector-gaps-and-decisions.md`](./connector-gaps-and-decisions.md). The hazard to avoid is a
+partial response: era detection keys off what we return, so answering `server/discover` — or
+anything else that makes us look modern — stops the fallback that is currently keeping clients
+working. Either the modern path is complete or it is absent.
+
+```bash
+# Has any client tried the modern protocol?
+jq -r 'select(.event=="mcp_modern_probe")
+  | [.timestamp, .method, .metaClientName, .metaProtocolVersion // .protocolVersionHeader] | @tsv' logs.jsonl
+
+# Which revisions are being asked for, and by whom
+jq -r 'select(.event=="mcp_modern_probe")
+  | [.metaClientName, .metaClientVersion, .metaProtocolVersion // .protocolVersionHeader] | @tsv' logs.jsonl | sort -u
+```
+
+### 3.3 Tool-call usage logs (`event: "tool_call"`)
 
 Every completed tool call emits exactly one line with `event: "tool_call"` — including calls
 rejected by validation, policy, or the rate limiter, which never reach a handler. This is the only
