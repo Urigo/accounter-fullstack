@@ -11,6 +11,7 @@ export function getUpstreamClient(): UpstreamGraphQLClient {
   cached ??= new UpstreamGraphQLClient({
     endpoint: env.upstream.graphqlUrl,
     timeoutMs: env.upstream.timeoutMs,
+    longRunningTimeoutMs: env.upstream.longTimeoutMs,
   });
   return cached;
 }

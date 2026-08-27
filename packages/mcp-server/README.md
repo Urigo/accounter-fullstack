@@ -486,28 +486,29 @@ Environment variables are validated at startup with a strict schema
 ([`src/config/env.ts`](src/config/env.ts)). Missing required variables or malformed values cause the
 process to exit immediately with a clear error. Secrets are supplied via the environment only.
 
-| Variable                      | Required | Default                  | Description                                                        |
-| ----------------------------- | -------- | ------------------------ | ------------------------------------------------------------------ |
-| `MCP_PUBLIC_BASE_URL`         | yes      | —                        | Public HTTPS origin of this MCP server (used in OAuth metadata)    |
-| `AUTH0_ISSUER_URL`            | yes      | —                        | Auth0 issuer/tenant URL used to validate access tokens             |
-| `AUTH0_AUDIENCE`              | yes      | —                        | Expected `aud` claim for incoming access tokens                    |
-| `GRAPHQL_UPSTREAM_URL`        | yes      | —                        | Base URL of the Accounter GraphQL server the tools call            |
-| `MCP_SERVER_PORT`             | no       | `3100`                   | TCP port the HTTP transport listens on                             |
-| `MCP_ENABLED`                 | no       | `1`                      | Master kill-switch (`1` on / `0` off)                              |
-| `MCP_TOOL_ALLOWLIST`          | no       | `''` (none)              | Comma-separated tool names allowed (empty = least privilege)       |
-| `MCP_ENABLE_WRITE_TOOLS`      | no       | `0`                      | Expose mutating (write) tools (`1` on / `0` off)                   |
-| `AUTH0_JWKS_URL`              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
-| `GRAPHQL_UPSTREAM_TIMEOUT_MS` | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
-| `MCP_RATE_LIMIT_CONFIG`       | no       | `''` (defaults)          | Optional rate-limit override spec (parsed by the limiter later)    |
-| `OTEL_ENABLED`                | no       | `0`                      | Enable OpenTelemetry tracing (`1` on / `0` off)                    |
-| `OTEL_SERVICE_NAME`           | no       | `accounter-mcp-server`   | `service.name` resource attribute                                  |
-| `OTEL_SERVICE_NAMESPACE`      | no       | `accounter`              | `service.namespace` resource attribute                             |
-| `OTEL_DEPLOYMENT_ENV`         | no       | `NODE_ENV`/`development` | `deployment.environment.name` resource attribute                   |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | if OTEL  | —                        | OTLP/HTTP traces endpoint (e.g. `http://localhost:4318/v1/traces`) |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | no       | —                        | OTLP exporter headers as `key=value,key=value`                     |
-| `OTEL_TRACES_SAMPLER`         | no       | `always_on`              | Sampler strategy (`always_on`, `parentbased_traceidratio`, …)      |
-| `OTEL_TRACES_SAMPLER_ARG`     | if ratio | —                        | Ratio `0`–`1` for the ratio-based samplers                         |
-| `OTEL_STARTUP_STRICT`         | no       | —                        | `true` ⇒ abort the process on a telemetry startup failure          |
+| Variable                           | Required | Default                  | Description                                                        |
+| ---------------------------------- | -------- | ------------------------ | ------------------------------------------------------------------ |
+| `MCP_PUBLIC_BASE_URL`              | yes      | —                        | Public HTTPS origin of this MCP server (used in OAuth metadata)    |
+| `AUTH0_ISSUER_URL`                 | yes      | —                        | Auth0 issuer/tenant URL used to validate access tokens             |
+| `AUTH0_AUDIENCE`                   | yes      | —                        | Expected `aud` claim for incoming access tokens                    |
+| `GRAPHQL_UPSTREAM_URL`             | yes      | —                        | Base URL of the Accounter GraphQL server the tools call            |
+| `MCP_SERVER_PORT`                  | no       | `3100`                   | TCP port the HTTP transport listens on                             |
+| `MCP_ENABLED`                      | no       | `1`                      | Master kill-switch (`1` on / `0` off)                              |
+| `MCP_TOOL_ALLOWLIST`               | no       | `''` (none)              | Comma-separated tool names allowed (empty = least privilege)       |
+| `MCP_ENABLE_WRITE_TOOLS`           | no       | `0`                      | Expose mutating (write) tools (`1` on / `0` off)                   |
+| `AUTH0_JWKS_URL`                   | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
+| `GRAPHQL_UPSTREAM_TIMEOUT_MS`      | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
+| `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` | no       | `300000`                 | Budget for long-running calls (document ingestion: fetch + OCR)    |
+| `MCP_RATE_LIMIT_CONFIG`            | no       | `''` (defaults)          | Optional rate-limit override spec (parsed by the limiter later)    |
+| `OTEL_ENABLED`                     | no       | `0`                      | Enable OpenTelemetry tracing (`1` on / `0` off)                    |
+| `OTEL_SERVICE_NAME`                | no       | `accounter-mcp-server`   | `service.name` resource attribute                                  |
+| `OTEL_SERVICE_NAMESPACE`           | no       | `accounter`              | `service.namespace` resource attribute                             |
+| `OTEL_DEPLOYMENT_ENV`              | no       | `NODE_ENV`/`development` | `deployment.environment.name` resource attribute                   |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`      | if OTEL  | —                        | OTLP/HTTP traces endpoint (e.g. `http://localhost:4318/v1/traces`) |
+| `OTEL_EXPORTER_OTLP_HEADERS`       | no       | —                        | OTLP exporter headers as `key=value,key=value`                     |
+| `OTEL_TRACES_SAMPLER`              | no       | `always_on`              | Sampler strategy (`always_on`, `parentbased_traceidratio`, …)      |
+| `OTEL_TRACES_SAMPLER_ARG`          | if ratio | —                        | Ratio `0`–`1` for the ratio-based samplers                         |
+| `OTEL_STARTUP_STRICT`              | no       | —                        | `true` ⇒ abort the process on a telemetry startup failure          |
 
 ## Scripts
 
@@ -597,15 +598,15 @@ The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream m
 
 ## Troubleshooting
 
-| Symptom                                                                         | Likely cause / fix                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Process exits at startup with `[env] Invalid environment …`                     | A required env var is missing/malformed. The printed report lists each offending key; fix and restart. Required: `MCP_PUBLIC_BASE_URL`, `AUTH0_ISSUER_URL`, `AUTH0_AUDIENCE`, `GRAPHQL_UPSTREAM_URL`. |
-| `POST /mcp` returns `401` with no `error`                                       | No bearer token. The `WWW-Authenticate` header points at the metadata document.                                                                                                                       |
-| `POST /mcp` returns `401` with `error="invalid_token"`                          | Token failed verification (signature/JWKS, `iss`, `aud`, or expiry). Confirm the token's audience matches `AUTH0_AUDIENCE` and the issuer matches `AUTH0_ISSUER_URL`.                                 |
-| `/mcp` and `/.well-known/...` return `404` (`/health` + `/metrics` still `200`) | The kill-switch is on (`MCP_ENABLED=0`) — only the MCP transport and its OAuth metadata route are disabled; `/health` and `/metrics` stay up. Set `MCP_ENABLED=1`.                                    |
-| Tool result `isError: true`, code `UPSTREAM_ERROR`/`TIMEOUT_ERROR`              | The Accounter GraphQL server was unreachable/slow. Check `GRAPHQL_UPSTREAM_URL` and `GRAPHQL_UPSTREAM_TIMEOUT_MS`; timeouts are retried (bounded), 4xx/GraphQL errors are not.                        |
-| Tool result code `AUTHORIZATION_ERROR`                                          | The caller lacks a required role, requested a business outside their memberships, or has no memberships. Verify the token's scopes and the server-side `business_users` rows.                         |
-| Tool result code `RATE_LIMIT_ERROR` with `retryAfterMs`                         | Per-`{user, scope, tool}` window exceeded. Back off for `retryAfterMs`, or tune `MCP_RATE_LIMIT_CONFIG`.                                                                                              |
+| Symptom                                                                         | Likely cause / fix                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Process exits at startup with `[env] Invalid environment …`                     | A required env var is missing/malformed. The printed report lists each offending key; fix and restart. Required: `MCP_PUBLIC_BASE_URL`, `AUTH0_ISSUER_URL`, `AUTH0_AUDIENCE`, `GRAPHQL_UPSTREAM_URL`.                                                                                                                                                         |
+| `POST /mcp` returns `401` with no `error`                                       | No bearer token. The `WWW-Authenticate` header points at the metadata document.                                                                                                                                                                                                                                                                               |
+| `POST /mcp` returns `401` with `error="invalid_token"`                          | Token failed verification (signature/JWKS, `iss`, `aud`, or expiry). Confirm the token's audience matches `AUTH0_AUDIENCE` and the issuer matches `AUTH0_ISSUER_URL`.                                                                                                                                                                                         |
+| `/mcp` and `/.well-known/...` return `404` (`/health` + `/metrics` still `200`) | The kill-switch is on (`MCP_ENABLED=0`) — only the MCP transport and its OAuth metadata route are disabled; `/health` and `/metrics` stay up. Set `MCP_ENABLED=1`.                                                                                                                                                                                            |
+| Tool result `isError: true`, code `UPSTREAM_ERROR`/`TIMEOUT_ERROR`              | The Accounter GraphQL server was unreachable/slow. Check `GRAPHQL_UPSTREAM_URL` and `GRAPHQL_UPSTREAM_TIMEOUT_MS` (uploads use `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS`); read timeouts are retried (bounded), 4xx/GraphQL errors are not, and a timed-out **write** is reported non-retryable — it may still be in progress upstream, so verify before re-sending. |
+| Tool result code `AUTHORIZATION_ERROR`                                          | The caller lacks a required role, requested a business outside their memberships, or has no memberships. Verify the token's scopes and the server-side `business_users` rows.                                                                                                                                                                                 |
+| Tool result code `RATE_LIMIT_ERROR` with `retryAfterMs`                         | Per-`{user, scope, tool}` window exceeded. Back off for `retryAfterMs`, or tune `MCP_RATE_LIMIT_CONFIG`.                                                                                                                                                                                                                                                      |
 
 ## Write tools
 

@@ -8,6 +8,7 @@ import type {
   BusinessMatchData,
   OwnerMatchInfo,
 } from '../../app-providers/helpers/business-matcher.helper.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type { IInsertDocumentsParams } from '../types.js';
@@ -30,6 +31,29 @@ export const uploadToCloudinary = async (injector: Injector, file: File | Blob) 
     throw new Error(message, { cause: e });
   }
 };
+
+/**
+ * Give the pooled Postgres connection back before a long stretch of external
+ * work (download, Cloudinary upload, OCR).
+ *
+ * Document ingestion is the one request shape that pauses on the database for
+ * minutes at a time, and holding the connection across that pause is what makes
+ * the pause dangerous: the connection sits `idle in transaction`, occupying a
+ * pool slot, exposed to `idle_in_transaction_session_timeout` and to the leak
+ * watchdog — both of which kill the session out from under a request that is
+ * perfectly healthy, so its closing INSERT fails. Releasing costs one BEGIN on
+ * the next query, which is nothing next to the OCR round trip it brackets.
+ *
+ * Best-effort by design: this is a resource optimization, and a client that
+ * cannot be resolved or released must not fail the upload.
+ */
+export async function releaseDbConnectionForExternalWork(injector: Injector): Promise<void> {
+  try {
+    await injector.get(TenantAwareDBClient).releaseIdleConnection();
+  } catch (e) {
+    console.warn('Failed releasing the DB connection before external work:', e);
+  }
+}
 
 export type OcrData = {
   isOwnerIssuer?: boolean;
@@ -120,6 +144,11 @@ export async function getOcrData(
   const [businesses, owner] = matchContext
     ? [matchContext.businesses, matchContext.owner]
     : await Promise.all([fetchBusinessesForMatching(injector), fetchOwnerForMatching(injector)]);
+
+  // The matcher data is in hand and the OCR call that follows is the long pole
+  // of the whole upload — don't sit on a pooled connection while it runs.
+  await releaseDbConnectionForExternalWork(injector);
+
   const draft = await injector
     .get(AnthropicProvider)
     .extractInvoiceDetails(file, businesses, owner);
@@ -318,6 +347,11 @@ export async function getDocumentFromFile(
     // Buffer the file to allow multiple reads from a stream
     const buffer = await file.arrayBuffer();
     const multiReadableFile = new Blob([buffer], { type: file.type });
+
+    // Everything below is external I/O — Cloudinary and the OCR model — and can
+    // run for minutes. Nothing here needs the database, so it must not hold a
+    // connection open across it.
+    await releaseDbConnectionForExternalWork(injector);
 
     const [{ fileUrl, imageUrl }, ocrData, fileHash] = await Promise.all([
       uploadToCloudinary(injector, multiReadableFile),

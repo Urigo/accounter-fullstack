@@ -66,10 +66,18 @@ async function main() {
   // sweep deliberately trusts none of them.
   const dbClientWatchdog = startTenantDbClientWatchdog({
     maxIdleMs: env.postgres.clientMaxIdleMs,
+    activeMaxIdleMs: env.postgres.activeClientMaxIdleMs,
+    abortedMaxIdleMs: env.postgres.abortedClientMaxIdleMs,
     intervalMs: env.postgres.watchdogIntervalMs,
-    onLeak: ({ idleMs, lastQuery }) => {
+    onLeak: ({ idleMs, lastQuery, operationInFlight, requestAborted }) => {
+      const state = requestAborted
+        ? ' (caller aborted; deferred disposal never completed)'
+        : operationInFlight
+          ? ' (operation still marked in flight)'
+          : '';
       process.stderr.write(
-        `[db] Reclaiming leaked connection after ${Math.round(idleMs / 1000)}s idle. Last query: ${lastQuery ?? 'unknown'}\n`,
+        `[db] Reclaiming leaked connection after ${Math.round(idleMs / 1000)}s idle${state}. ` +
+          `Last query: ${lastQuery ?? 'unknown'}\n`,
       );
     },
   });

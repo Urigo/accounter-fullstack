@@ -26,6 +26,9 @@ const REQUIRED = {
 const MANAGED_KEYS = [
   'POSTGRES_WATCHDOG_INTERVAL_MS',
   'POSTGRES_CLIENT_MAX_IDLE_MS',
+  'POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS',
+  'POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS',
+  'POSTGRES_STATEMENT_TIMEOUT_MS',
   'POSTGRES_MONITOR_INTERVAL_MS',
   'POSTGRES_CONNECTION_TIMEOUT_MS',
 ];
@@ -71,6 +74,39 @@ describe('postgres pool configuration', () => {
 
     // Sweeping every 30s would let a leak sit for far longer than the ceiling.
     expect(env.postgres.watchdogIntervalMs).toBe(9000);
+  });
+
+  it('keeps the aborted ceiling above the statement timeout', async () => {
+    // A long query bumps activity only at its start and end, so a ceiling under
+    // the statement timeout would reclaim the connection mid-query. A setting
+    // below the floor is raised rather than honoured.
+    const env = await loadEnv({
+      ...REQUIRED,
+      POSTGRES_STATEMENT_TIMEOUT_MS: '300000',
+      POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS: '60000',
+    });
+
+    expect(env.postgres.abortedClientMaxIdleMs).toBe(330_000);
+  });
+
+  it('honours an aborted ceiling that already clears the floor', async () => {
+    const env = await loadEnv({
+      ...REQUIRED,
+      POSTGRES_STATEMENT_TIMEOUT_MS: '120000',
+      POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS: '400000',
+    });
+
+    expect(env.postgres.abortedClientMaxIdleMs).toBe(400_000);
+  });
+
+  it('never lets the active ceiling fall below the ordinary one', async () => {
+    const env = await loadEnv({
+      ...REQUIRED,
+      POSTGRES_CLIENT_MAX_IDLE_MS: '600000',
+      POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS: '60000',
+    });
+
+    expect(env.postgres.activeClientMaxIdleMs).toBe(600_000);
   });
 
   it('accepts 0 for the monitor interval, which disables the heartbeat', async () => {

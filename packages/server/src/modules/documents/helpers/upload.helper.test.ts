@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import type { Injector } from 'graphql-modules';
+import { describe, expect, it, vi } from 'vitest';
 import { DocumentType } from '../../../shared/enums.js';
-import { resolveOwnerSideFromUuids, type OcrData } from './upload.helper.js';
+import {
+  releaseDbConnectionForExternalWork,
+  resolveOwnerSideFromUuids,
+  type OcrData,
+} from './upload.helper.js';
 
 const OWNER_ID = '00000000-0000-0000-0000-000000000001';
 const ISSUER_ID = '00000000-0000-0000-0000-000000000002';
@@ -94,5 +99,28 @@ describe('resolveOwnerSideFromUuids', () => {
     const data = ocr();
     resolveOwnerSideFromUuids(data, OWNER_ID);
     expect(data).toEqual({ documentType: DocumentType.Invoice });
+  });
+});
+
+describe('releaseDbConnectionForExternalWork', () => {
+  it('releases the pooled connection before long external work', async () => {
+    const releaseIdleConnection = vi.fn().mockResolvedValue(undefined);
+    const injector = { get: () => ({ releaseIdleConnection }) } as unknown as Injector;
+
+    await releaseDbConnectionForExternalWork(injector);
+
+    expect(releaseIdleConnection).toHaveBeenCalledTimes(1);
+  });
+
+  it('never fails the upload when the client cannot be released', async () => {
+    // Best-effort by design: this is a resource optimization, and an upload that
+    // has already paid for a download and an OCR pass must not die for it.
+    const injector = {
+      get: () => {
+        throw new Error('no client in this injector');
+      },
+    } as unknown as Injector;
+
+    await expect(releaseDbConnectionForExternalWork(injector)).resolves.toBeUndefined();
   });
 });

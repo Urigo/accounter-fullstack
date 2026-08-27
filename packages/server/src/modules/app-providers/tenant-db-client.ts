@@ -57,9 +57,44 @@ export function getTenantDbClientStats(): TenantDbClientStats {
 export interface WatchdogOptions {
   /** Force-dispose a client idle for longer than this. */
   maxIdleMs: number;
+  /**
+   * Ceiling for a client whose GraphQL operation is *still executing*.
+   *
+   * A request can legitimately go quiet on the database for minutes while it
+   * does external work — a document upload fetches the file, pushes it to
+   * Cloudinary and waits on OCR before it writes anything. Reclaiming its client
+   * on the plain idle rule would leave the request alive but its database
+   * connection gone, so the write at the end fails with "already disposed" after
+   * all that work. Such a client is therefore given a longer rope; it is not
+   * exempt, because the flag saying it is executing lives on a request context
+   * that a missed hook could leave set forever.
+   *
+   * Defaults to {@link maxIdleMs} when unset.
+   */
+  activeMaxIdleMs?: number;
+  /**
+   * Ceiling for a client whose caller has already hung up.
+   *
+   * Disposal is deferred for these (the operation keeps running and still has to
+   * write), so this is what bounds that deferral. It is deliberately much
+   * tighter than {@link activeMaxIdleMs}: an aborted request that is genuinely
+   * still working keeps issuing queries and never comes near it, while one whose
+   * execution died with the connection — a query urql cancelled on the next
+   * keystroke — goes silent immediately and is reclaimed within a sweep or two
+   * rather than being held for the full active ceiling.
+   *
+   * Must stay above the statement timeout: a long query only bumps activity at
+   * its start and end, so a shorter ceiling would reclaim a connection mid-query.
+   */
+  abortedMaxIdleMs?: number;
   /** How often to sweep. */
   intervalMs: number;
-  onLeak?: (info: { idleMs: number; lastQuery: string | null }) => void;
+  onLeak?: (info: {
+    idleMs: number;
+    lastQuery: string | null;
+    operationInFlight: boolean;
+    requestAborted: boolean;
+  }) => void;
 }
 
 /**
@@ -75,14 +110,31 @@ export interface WatchdogOptions {
  * another statement, so its idle time grows without bound.
  */
 export function startTenantDbClientWatchdog(options: WatchdogOptions): { stop: () => void } {
+  const activeMaxIdleMs = Math.max(options.activeMaxIdleMs ?? options.maxIdleMs, options.maxIdleMs);
+  const abortedMaxIdleMs = options.abortedMaxIdleMs ?? options.maxIdleMs;
+
   const timer = setInterval(() => {
     const now = Date.now();
     for (const client of connectionHolders) {
-      if (now - client.lastActivityAt < options.maxIdleMs) {
+      const operationInFlight = client.operationInFlight;
+      const requestAborted = client.requestAborted;
+      // An aborted request is on the short leash whether or not it is still
+      // executing — that is the whole point of the tighter ceiling.
+      const limit = requestAborted
+        ? abortedMaxIdleMs
+        : operationInFlight
+          ? activeMaxIdleMs
+          : options.maxIdleMs;
+      if (now - client.lastActivityAt < limit) {
         continue;
       }
 
-      const info = { idleMs: now - client.lastActivityAt, lastQuery: client.lastQuery };
+      const info = {
+        idleMs: now - client.lastActivityAt,
+        lastQuery: client.lastQuery,
+        operationInFlight,
+        requestAborted,
+      };
       options.onLeak?.(info);
       void client.dispose().catch(error => {
         console.error('Watchdog failed to dispose leaked TenantAwareDBClient:', error);
@@ -151,9 +203,11 @@ export class TenantAwareDBClient {
   private sessionOpen = false;
   private transactionDepth = 0;
   private isDisposed = false;
+  private disposalRequested = false;
   private authContext: AuthContext | null = null;
   private authContextInitialized = false;
   private clientErrorListener: ((error: Error) => void) | null = null;
+  private readonly context: GraphQLModules.GlobalContext | undefined;
 
   /** Timestamp of the last query issued, for leak detection. See the watchdog. */
   public lastActivityAt = Date.now();
@@ -162,6 +216,26 @@ export class TenantAwareDBClient {
 
   public get holdsConnection(): boolean {
     return this.activeClient !== null;
+  }
+
+  /**
+   * Whether the GraphQL operation that owns this client is still executing.
+   *
+   * Set by `dbCleanupPlugin` around execution. It is what tells a request that
+   * has gone quiet on the database — because it is fetching a file or waiting on
+   * OCR — apart from one that has gone away.
+   */
+  public get operationInFlight(): boolean {
+    return this.context?.executionInFlight === true;
+  }
+
+  /**
+   * Whether the caller of the owning request has hung up. Set when a deferred
+   * disposal is recorded; puts the client on the watchdog's short leash, which
+   * is what bounds the deferral.
+   */
+  public get requestAborted(): boolean {
+    return this.disposalRequested;
   }
 
   /**
@@ -184,6 +258,7 @@ export class TenantAwareDBClient {
     // response — including any @defer/@stream tail — is fully sent. Absent
     // context (direct construction), fall back to commit-and-release per
     // operation since nothing would ever call dispose().
+    this.context = context;
     if (context) {
       (context.dbClientsToDispose ??= []).push(this);
       this.autoRelease = false;
@@ -224,6 +299,19 @@ export class TenantAwareDBClient {
       return { ...result, rowCount: result.rowCount ?? 0 };
     }
 
+    try {
+      return await this.queryOnSession<T>(text, params);
+    } finally {
+      // A disposal deferred while this operation was in flight (a client-side
+      // abort) comes due once the work it was protecting has landed.
+      this.disposeIfRequested();
+    }
+  }
+
+  private async queryOnSession<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: unknown[],
+  ): Promise<QueryResult<T> & { rowCount: number }> {
     return this.mutex.runExclusive(async () => {
       this.ensureNotDisposed();
       const client = await this.ensureSession();
@@ -315,6 +403,9 @@ export class TenantAwareDBClient {
 
       if (this.transactionDepth === 0 && this.autoRelease) {
         this.releaseClient();
+      }
+      if (this.transactionDepth === 0) {
+        this.disposeIfRequested();
       }
     }
   }
@@ -454,6 +545,76 @@ export class TenantAwareDBClient {
       `,
       [businessIdValue, userIdValue, authType, readScopeValue],
     );
+  }
+
+  /**
+   * Hand the pooled connection back for the duration of long *non-database*
+   * work, without ending the client's life.
+   *
+   * Document ingestion is the motivating case: between one query and the next it
+   * downloads a file, uploads it to Cloudinary and waits on OCR — minutes during
+   * which the connection would otherwise sit checked out and `idle in
+   * transaction`, occupying a pool slot and pinning the oldest transaction
+   * snapshot. Any open read session is committed (writes commit as they go
+   * anyway) and a fresh one opens lazily on the next query.
+   *
+   * A no-op inside an explicit `transaction()` scope, whose atomicity depends on
+   * keeping the connection, and a no-op once disposed.
+   */
+  public async releaseIdleConnection(): Promise<void> {
+    // Checked before touching the mutex: inside a transaction() scope the mutex
+    // is already held by this same async context, so acquiring it would deadlock.
+    if (this.isDisposed || this.storage.getStore() || !this.activeClient) {
+      return;
+    }
+
+    await this.mutex.runExclusive(async () => {
+      if (this.isDisposed || this.transactionDepth > 0 || !this.activeClient) {
+        return;
+      }
+      await this.endSession('COMMIT');
+      this.releaseClient();
+    });
+  }
+
+  /**
+   * Dispose, but not out from under a request that is still running.
+   *
+   * Used for client-side aborts: the HTTP connection going away says nothing
+   * about the mutation still executing on this server, and JavaScript cannot
+   * cancel the promise chain it is running on. Disposing there is what turned a
+   * timed-out document upload into an "already disposed" failure at the final
+   * INSERT — minutes of fetching and OCR thrown away at the last step, with the
+   * charge left untouched.
+   *
+   * So while the operation is in flight the disposal is only *recorded*; the
+   * work finishes and writes, and the client is released at the next natural
+   * point — the end-of-execution hook, or the completion of its final query. The
+   * watchdog remains the backstop for a request that never completes at all.
+   *
+   * @returns whether disposal was deferred (`true`) rather than performed.
+   */
+  public async disposeWhenIdle(): Promise<boolean> {
+    if (this.isDisposed) return false;
+
+    if (!this.operationInFlight) {
+      await this.dispose();
+      return false;
+    }
+
+    this.disposalRequested = true;
+    return true;
+  }
+
+  /** Run a disposal that was deferred by {@link disposeWhenIdle}, if it is now due. */
+  private disposeIfRequested(): void {
+    if (!this.disposalRequested || this.isDisposed || this.operationInFlight) {
+      return;
+    }
+    this.disposalRequested = false;
+    void this.dispose().catch(error => {
+      console.error('Deferred TenantAwareDBClient disposal failed:', error);
+    });
   }
 
   /**

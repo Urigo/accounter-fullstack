@@ -23,6 +23,7 @@ import zod from 'zod';
  * | MCP_ENABLE_WRITE_TOOLS      | no       | 0                        | Expose mutating (write) tools (`1` on / `0` off).                 |
  * | AUTH0_JWKS_URL              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`.      |
  * | GRAPHQL_UPSTREAM_TIMEOUT_MS | no       | 10000                    | Upstream GraphQL request timeout budget in milliseconds.          |
+ * | GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS | no  | 300000                   | Budget for long-running upstream calls (document ingestion).      |
  * | MCP_RATE_LIMIT_CONFIG       | no       | '' (defaults applied)    | Optional rate-limit override spec (parsed by the limiter later).  |
  * | OTEL_ENABLED                | no       | 0                        | Master switch for OpenTelemetry tracing (`1` on / `0` off).       |
  * | OTEL_SERVICE_NAME           | no       | accounter-mcp-server     | `service.name` resource attribute.                                |
@@ -84,6 +85,13 @@ export const envSchema = zod
     ),
     GRAPHQL_UPSTREAM_TIMEOUT_MS: emptyStringAsUndefined(
       zod.coerce.number().int().positive().max(120_000).optional().default(10_000),
+    ),
+    // Budget for the operations that are slow by nature rather than by fault:
+    // document ingestion downloads the file, uploads it to Cloudinary and runs
+    // OCR before it writes. The ordinary budget is sized for a database read and
+    // expires mid-upload every time, so those calls get this one instead.
+    GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS: emptyStringAsUndefined(
+      zod.coerce.number().int().positive().max(900_000).optional().default(300_000),
     ),
     MCP_RATE_LIMIT_CONFIG: emptyStringAsUndefined(zod.string().optional().default('')),
 
@@ -178,6 +186,8 @@ export interface AppConfig {
   upstream: {
     graphqlUrl: string;
     timeoutMs: number;
+    /** Budget for operations a tool marks long-running (document ingestion). */
+    longTimeoutMs: number;
   };
   rateLimit: {
     /** Raw config spec; parsed by the rate limiter in a later prompt. */
@@ -256,6 +266,10 @@ export function parseEnv(source: NodeJS.ProcessEnv): AppConfig {
     upstream: {
       graphqlUrl: raw.GRAPHQL_UPSTREAM_URL,
       timeoutMs: raw.GRAPHQL_UPSTREAM_TIMEOUT_MS,
+      longTimeoutMs: Math.max(
+        raw.GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS,
+        raw.GRAPHQL_UPSTREAM_TIMEOUT_MS,
+      ),
     },
     rateLimit: {
       raw: raw.MCP_RATE_LIMIT_CONFIG,
