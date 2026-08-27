@@ -136,7 +136,10 @@ export function AuthCallbackPage(): ReactElement {
         const invitationReturnTo = sessionStorage.getItem('auth:invitationReturnTo');
         const savedReturnTo = sessionStorage.getItem('auth:returnTo');
         const returnTo =
-          invitationReturnTo ?? callbackResult.appState?.returnTo ?? savedReturnTo ?? ROUTES.HOME;
+          invitationReturnTo ??
+          callbackResult.appState?.returnTo ??
+          savedReturnTo ??
+          ROUTES.APP_HOME;
 
         callbackResolvedReturnToBySearch.set(callbackSearch, returnTo);
         sessionStorage.setItem('auth:lastResolvedReturnTo', returnTo);
@@ -185,7 +188,7 @@ export function AuthCallbackPage(): ReactElement {
                     scope: 'openid profile email offline_access',
                     redirect_uri: `${redirectUriOrigin}${ROUTES.AUTH_CALLBACK}`,
                   },
-                  appState: { returnTo: savedReturnTo ?? ROUTES.HOME },
+                  appState: { returnTo: savedReturnTo ?? ROUTES.APP_HOME },
                 });
               }}
             >

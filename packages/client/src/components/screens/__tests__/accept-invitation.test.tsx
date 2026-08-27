@@ -192,7 +192,7 @@ describe('AcceptInvitationPage', () => {
     });
 
     expect(acceptInvitationMock).toHaveBeenCalledWith('invite-token-123');
-    expect(navigateMock).toHaveBeenCalledWith(ROUTES.HOME, { replace: true });
+    expect(navigateMock).toHaveBeenCalledWith(ROUTES.APP_HOME, { replace: true });
 
     await cleanup();
   });

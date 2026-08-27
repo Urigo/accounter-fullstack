@@ -30,7 +30,7 @@ export function WelcomePage(): ReactElement {
   // send an already-active viewer back to the app rather than stranding them.
   useEffect(() => {
     if (viewer?.status === 'ACTIVE') {
-      navigate(ROUTES.HOME, { replace: true });
+      navigate(ROUTES.APP_HOME, { replace: true });
     }
   }, [viewer?.status, navigate]);
 

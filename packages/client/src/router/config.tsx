@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { ErrorBoundary } from '../components/error-boundary.js';
 import { PageSkeleton, ReportSkeleton, TableSkeleton } from '../components/layout/page-skeleton.js';
-import { ProtectedRoute, PublicOnlyGuard } from './guards/auth-guards.js';
+import { LandingRoute, ProtectedRoute, PublicOnlyGuard } from './guards/auth-guards.js';
 import { DashboardLayoutRoute } from './layouts/dashboard-layout.js';
 import { RootLayout } from './layouts/root-layout.js';
 import { businessLoader, chargeLoader } from './loaders/index.js';
@@ -213,6 +213,11 @@ const WelcomePage = lazy(() =>
   import('../components/screens/welcome.js').then(m => ({ default: m.WelcomePage })),
 );
 
+// Public landing page
+const LandingPage = lazy(() =>
+  import('../components/landing/index.js').then(m => ({ default: m.LandingPage })),
+);
+
 /**
  * Helper to wrap components with Suspense
  */
@@ -238,6 +243,16 @@ export const routes: RouteObject[] = [
     element: <RootLayout />,
     errorElement: <ErrorBoundary />,
     children: [
+      // Public landing page. Owns `/` for logged-out visitors; `LandingRoute`
+      // sends anyone with a session on to ROUTES.APP_HOME instead.
+      // No handle.title on purpose: DocumentTitle then leaves the plain "Accounter".
+      {
+        index: true,
+        element: (
+          <LandingRoute>{withSuspense(LandingPage, <div className="min-h-screen" />)}</LandingRoute>
+        ),
+      },
+
       // Public routes (login, error pages)
       {
         path: ROUTES.LOGIN,
@@ -270,9 +285,10 @@ export const routes: RouteObject[] = [
         },
       },
 
-      // Protected routes (require authentication)
+      // Protected routes (require authentication).
+      // Pathless layout route: `/` itself belongs to the landing page above, and
+      // the relative child paths below still resolve against the root.
       {
-        path: '/',
         element: (
           <ProtectedRoute>
             <DashboardLayoutRoute />
@@ -280,16 +296,6 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <ErrorBoundary />,
         children: [
-          // Home / Charges (default)
-          {
-            index: true,
-            element: withSuspense(AllCharges, <TableSkeleton />),
-            handle: {
-              title: 'All Charges',
-              breadcrumb: 'Charges',
-            },
-          },
-
           // Charges section
           {
             path: 'charges',

@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import { Link, useResolvedPath } from 'react-router-dom';
 import { cn } from '../../lib/utils.js';
+import { ROUTES } from '../../router/routes.js';
 import { MobileSidebar } from './mobile-sidebar.js';
 import { sidelinks } from './sidelinks.js';
 import { UserNav } from './user-nav.js';
@@ -19,7 +20,7 @@ export function Header(): JSX.Element {
     <div className="supports-backdrop-blur:bg-white/60 fixed left-0 right-0 top-0 z-20 border-b bg-white/95 backdrop-blur-sm">
       <nav className="flex h-14 items-center justify-between px-4">
         <div className="hidden lg:block">
-          <Link to="/">
+          <Link to={ROUTES.APP_HOME}>
             <img src="../../../icons/logo.svg" alt="Guild Logo" className="w-[64px] h-[64px]" />
           </Link>
         </div>

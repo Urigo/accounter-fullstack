@@ -93,8 +93,17 @@ export async function fetchFilteredCharges(
       withoutTransactions: filters?.withoutTransactions,
       withoutLedger: filters?.withoutLedger,
       withoutTags: filters?.withoutTags,
-      freeText: filters?.freeText?.trim().toLowerCase(),
+      // `|| undefined` so a whitespace-only value never leaves the mapping layer as
+      // an empty string, which SQL would read as ILIKE '%%'. The provider normalizes
+      // again as the authoritative guard.
+      freeText: filters?.freeText?.trim().toLowerCase() || undefined,
       tags: filters?.byTags,
+      // Exclusions. A value present in both an include and its exclude list is
+      // dropped: the predicates are ANDed, so exclude wins.
+      excludedBusinessIds: filters?.excludedBusinesses,
+      excludedAccountIds: filters?.excludedFinancialAccounts,
+      excludedTags: filters?.excludedTags,
+      excludedFreeText: filters?.excludedFreeText?.trim().toLowerCase() || undefined,
       accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
     })
     .catch(error => {

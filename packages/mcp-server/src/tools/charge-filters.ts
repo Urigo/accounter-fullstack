@@ -70,6 +70,19 @@ export function optionalNonEmptyStringArray(max: number) {
   );
 }
 
+/**
+ * A free-text predicate. `.min(2)` alone accepts "  ", which is truthy and so gets
+ * forwarded, then trims to an empty string downstream — where SQL reads it as
+ * `ILIKE '%%'` and it matches everything. The refine holds the floor after trimming.
+ */
+function searchText(max: number) {
+  return z
+    .string()
+    .min(2)
+    .max(max)
+    .refine(value => value.trim().length >= 2, 'must contain at least 2 non-whitespace characters');
+}
+
 /** Same empty-array-means-absent treatment, for a fixed enum vocabulary. */
 function optionalNonEmptyEnumArray<const T extends readonly [string, ...string[]]>(values: T) {
   return z.preprocess(
@@ -131,14 +144,35 @@ export const CHARGE_FILTER_SHAPE = {
   byTags: optionalNonEmptyStringArray(CHARGE_FILTER_TAGS_CAP)
     .optional()
     .describe('Include only charges carrying these tags.'),
+  excludedBusinesses: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP)
+    .optional()
+    .describe(
+      'Drop charges involving any of these businesses as the counterparty. Applied after the ' +
+        'include lists, so a business named in both is excluded.',
+    ),
+  excludedFinancialAccounts: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP)
+    .optional()
+    .describe(
+      'Drop charges with any transaction in these financial accounts. Applied after the include ' +
+        'lists, so an account named in both is excluded.',
+    ),
+  excludedFreeText: searchText(CHARGE_FILTER_TEXT_MAX)
+    .optional()
+    .describe(
+      'Drop charges matching this text across the same fields as `freeText`. Charges with no text ' +
+        'at all are kept. Combine with `freeText` for "mentions X but not Y".',
+    ),
+  excludedTags: optionalNonEmptyStringArray(CHARGE_FILTER_TAGS_CAP)
+    .optional()
+    .describe(
+      'Drop charges carrying any of these tags. Applied after the include lists, so a tag named ' +
+        'in both is excluded.',
+    ),
   chargesType: z
     .enum(['ALL', 'INCOME', 'EXPENSE'])
     .optional()
     .describe('Restrict to income or expense charges (ALL for both).'),
-  freeText: z
-    .string()
-    .min(2)
-    .max(CHARGE_FILTER_TEXT_MAX)
+  freeText: searchText(CHARGE_FILTER_TEXT_MAX)
     .optional()
     .describe(
       'Free-text search across the charge: user description, transaction description/reference, and ' +
@@ -252,6 +286,12 @@ export function buildChargeFilters(
   if (input.byChargeTypes) filters.byChargeTypes = [...input.byChargeTypes];
   if (input.byTags) filters.byTags = [...input.byTags];
   if (input.chargesType) filters.chargesType = input.chargesType;
+  if (input.excludedBusinesses) filters.excludedBusinesses = [...input.excludedBusinesses];
+  if (input.excludedFinancialAccounts) {
+    filters.excludedFinancialAccounts = [...input.excludedFinancialAccounts];
+  }
+  if (input.excludedFreeText) filters.excludedFreeText = input.excludedFreeText;
+  if (input.excludedTags) filters.excludedTags = [...input.excludedTags];
   if (input.freeText) filters.freeText = input.freeText;
   if (input.fromAnyDate) filters.fromAnyDate = input.fromAnyDate;
   if (input.fromDate) filters.fromDate = input.fromDate;

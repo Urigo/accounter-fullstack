@@ -11,7 +11,7 @@ import { type TimelessDateString } from '../../../helpers/index.js';
 import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { chargesTypeFilterOptions } from '../../charges/charges-filters.js';
+import { chargesTypeFilterOptions } from '../../charges/charges-filters/index.js';
 import { PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { getDefaultVatReportMonth } from './utils.js';

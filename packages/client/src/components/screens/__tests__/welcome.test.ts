@@ -43,7 +43,7 @@ async function renderWelcome(
   const router = createMemoryRouter(
     [
       { path: ROUTES.WELCOME, element: React.createElement(WelcomePage) },
-      { path: ROUTES.HOME, element: React.createElement('div', null, 'Home Page') },
+      { path: ROUTES.APP_HOME, element: React.createElement('div', null, 'Home Page') },
       { path: ROUTES.LOGIN, element: React.createElement('div', null, 'Login Page') },
     ],
     { initialEntries: [ROUTES.WELCOME] },
@@ -143,7 +143,7 @@ describe('WelcomePage', () => {
       viewer: { email: 'member@example.com', emailVerified: true, status: 'ACTIVE' },
     });
 
-    expect(router.state.location.pathname).toBe(ROUTES.HOME);
+    expect(router.state.location.pathname).toBe(ROUTES.APP_HOME);
     await cleanup();
   });
 });
