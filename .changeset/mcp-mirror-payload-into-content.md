@@ -27,7 +27,7 @@ became visible when the assumption underneath it changed.
 still leads — a cheap orientation line before the payload — followed by the serialized JSON, with
 `structuredContent` kept as-is for hosts that consume it directly. Deliberately one function rather
 than a per-tool convention: the failure mode being fixed is exactly the kind that drifts back one
-tool at a time. No tool handler changed; all nineteen already route through those three functions.
+tool at a time. No tool handler changed; all seventeen already route through those three functions.
 
 Two things this restores that were less obvious than the missing rows:
 
