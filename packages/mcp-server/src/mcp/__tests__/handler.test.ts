@@ -9,6 +9,7 @@ import {
   describeInitializeParams,
   dispatchMcpRequest,
   handleMcpBody,
+  MAX_CLIENT_LABEL_LENGTH,
   MCP_INITIALIZE_EVENT,
   MCP_PROTOCOL_VERSION,
   mcpHttpHandler,
@@ -414,10 +415,16 @@ describe('hasBearerToken', () => {
 
 describe('describeInitializeParams', () => {
   /**
-   * `params` arrives as `unknown` and is validated only as a non-null object or
-   * array, so every one of these shapes is reachable from the wire. A malformed
-   * handshake still has to produce a line — a client sending something this
-   * server cannot parse is exactly the event worth seeing.
+   * Not all of these are reachable through `parseMcpBody` today —
+   * `asJsonRpcRequest` rejects a primitive or null `params` before dispatch, so
+   * over the wire this narrows to object, array, or absent.
+   *
+   * The helper is total anyway, for two reasons: `params` is typed `unknown`, so
+   * the compiler offers no guarantee here; and the parser's validation is
+   * exactly the kind of upstream promise that quietly stops holding. A
+   * malformed handshake has to produce a line rather than an exception — a
+   * client sending something this server cannot parse is the event most worth
+   * seeing, and throwing would lose it.
    */
   it('reads a well-formed handshake', () => {
     expect(
@@ -482,14 +489,25 @@ describe('describeInitializeParams', () => {
     expect(described.clientVersion).toBeNull();
   });
 
-  it('clips an over-long client identifier', () => {
+  // The ellipsis counts towards the cap, so the emitted string never exceeds
+  // MAX_CLIENT_LABEL_LENGTH. Asserted against the constant rather than a literal
+  // so raising the cap cannot silently loosen the guarantee.
+  it('clips an over-long client identifier to a hard cap', () => {
     const described = describeInitializeParams({
       clientInfo: { name: 'n'.repeat(500), version: 'v'.repeat(500) },
     });
 
-    expect(described.clientName!.length).toBeLessThanOrEqual(61);
+    expect(described.clientName).toHaveLength(MAX_CLIENT_LABEL_LENGTH);
     expect(described.clientName!.endsWith('…')).toBe(true);
-    expect(described.clientVersion!.length).toBeLessThanOrEqual(61);
+    expect(described.clientVersion).toHaveLength(MAX_CLIENT_LABEL_LENGTH);
+  });
+
+  it('leaves an identifier exactly at the cap untouched', () => {
+    const exact = 'n'.repeat(MAX_CLIENT_LABEL_LENGTH);
+    const described = describeInitializeParams({ clientInfo: { name: exact } });
+
+    expect(described.clientName).toBe(exact);
+    expect(described.clientName!.endsWith('…')).toBe(false);
   });
 
   // Deterministic ordering is what makes "the client started declaring a new
@@ -552,6 +570,9 @@ describe('initialize handshake logging', () => {
     });
   });
 
+  // Reaches `dispatchMcpRequest` directly, bypassing the parser that would
+  // reject this shape — the point is that the log line survives a `params` the
+  // helper cannot read, whatever route delivered it.
   it('still logs a handshake it could not parse', async () => {
     await initialize('not-an-object');
 

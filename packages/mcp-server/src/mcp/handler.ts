@@ -59,14 +59,17 @@ export const MCP_PROTOCOL_VERSION = '2025-06-18';
 export const MCP_INITIALIZE_EVENT = 'mcp_initialize';
 
 /**
- * Length cap on a logged client identifier.
+ * Hard cap on the length of a logged client identifier, ellipsis included.
  *
  * `clientInfo.name` and `clientInfo.version` are caller-supplied strings off the
  * wire with no schema behind them, so they are clipped before reaching the log.
- * Mirrors `MAX_MISS_LABEL_LENGTH` in `tools/terminology.ts`, which caps the
- * other caller-derived text this server records.
+ * Same motivation as `MAX_MISS_LABEL_LENGTH` in `tools/terminology.ts`, but
+ * deliberately a different number: that one bounds a `/metrics` label, where
+ * the constraint is a readable snapshot, while this bounds a log field and only
+ * needs to stop an unbounded string. A real client identifier
+ * (`claude-ai` / `1.37937.1`) is nowhere near either limit.
  */
-const MAX_CLIENT_LABEL_LENGTH = 60;
+export const MAX_CLIENT_LABEL_LENGTH = 60;
 
 export const MCP_SERVER_INFO = {
   name: SERVICE_NAME,
@@ -83,14 +86,20 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-/** Clip a caller-supplied identifier for the log, or `null` when absent. */
+/**
+ * Clip a caller-supplied identifier for the log, or `null` when absent.
+ *
+ * The ellipsis counts towards the cap, so the result is never longer than
+ * {@link MAX_CLIENT_LABEL_LENGTH} — a cap that its own truncation marker can
+ * push past is not a cap.
+ */
 function clipClientLabel(value: unknown): string | null {
   if (typeof value !== 'string' || value.length === 0) {
     return null;
   }
   return value.length <= MAX_CLIENT_LABEL_LENGTH
     ? value
-    : `${value.slice(0, MAX_CLIENT_LABEL_LENGTH)}\u2026`;
+    : `${value.slice(0, MAX_CLIENT_LABEL_LENGTH - 1)}\u2026`;
 }
 
 /** What a client told us about itself during `initialize`. */
