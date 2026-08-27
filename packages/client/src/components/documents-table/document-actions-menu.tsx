@@ -1,6 +1,7 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import {
   CircleX,
+  Copy,
   Edit,
   ExternalLink,
   File,
@@ -8,12 +9,20 @@ import {
   Link as LinkIcon,
   ListPlus,
   MoreVertical,
+  Trash,
+  Unlink,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
 import { DocumentType } from '../../gql/graphql.js';
 import { writeToClipboard } from '../../helpers/index.js';
-import { CloseDocumentButton, DocumentImageDrawer, PreviewDocumentModal } from '../common/index.js';
+import {
+  CloseDocumentButton,
+  DeleteDocumentButton,
+  DocumentImageDrawer,
+  PreviewDocumentModal,
+  UnlinkDocumentButton,
+} from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
   DropdownMenu,
@@ -48,6 +57,8 @@ export function DocumentActionsMenu({
   const [imageOpen, setImageOpen] = useState(false);
   const [closeDocumentOpen, setCloseDocumentOpen] = useState(false);
   const [issueDocumentOpen, setIssueDocumentOpen] = useState(false);
+  const [unlinkOpen, setUnlinkOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const chargeId = document.charge?.id;
   const fileHref = toHref(document.file);
@@ -59,6 +70,10 @@ export function DocumentActionsMenu({
       writeToClipboard(`${window.location.origin}${ROUTES.CHARGES.DETAIL(chargeId)}`);
     }
   }, [chargeId]);
+
+  const onCopyDocumentId = useCallback((): void => {
+    writeToClipboard(document.id);
+  }, [document.id]);
 
   return (
     <>
@@ -83,6 +98,10 @@ export function DocumentActionsMenu({
           <DropdownMenuItem onSelect={document.editDocument}>
             <Edit className="size-4" />
             Edit Document
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onCopyDocumentId}>
+            <Copy className="size-4" />
+            Copy Document ID
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
@@ -139,6 +158,17 @@ export function DocumentActionsMenu({
               </DropdownMenuItem>
             </>
           )}
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem disabled={!chargeId} onSelect={() => setUnlinkOpen(true)}>
+            <Unlink className="size-4" />
+            Unlink Document
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
+            <Trash className="size-4" />
+            Delete Document
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -146,6 +176,21 @@ export function DocumentActionsMenu({
         src={document.image}
         opened={imageOpen}
         onClose={(): void => setImageOpen(false)}
+      />
+
+      <UnlinkDocumentButton
+        documentId={document.id}
+        onChange={document.onUpdate}
+        onChargeDeleted={document.onChargeDeleted}
+        open={unlinkOpen}
+        setOpen={setUnlinkOpen}
+      />
+      <DeleteDocumentButton
+        documentId={document.id}
+        onChange={document.onUpdate}
+        onChargeDeleted={document.onChargeDeleted}
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
       />
 
       {isOpenIssuedDocument && (

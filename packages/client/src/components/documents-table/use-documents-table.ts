@@ -12,6 +12,8 @@ import { getDocumentsTableColumns, type DocumentsTableRowType } from './columns.
 type UseDocumentsTableOptions = {
   documentsProps: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>[];
   onChange?: () => void;
+  /** Called when removing a document emptied its charge and the server deleted the charge too. */
+  onChargeDeleted?: (chargeId: string) => void;
   /** Restrict the table to these column ids, in the shared columns' order. Defaults to all of them. */
   columnIds?: string[];
   /** Include the actions-menu items that navigate to the document's charge. */
@@ -28,6 +30,7 @@ type UseDocumentsTableOptions = {
 export function useDocumentsTable({
   documentsProps,
   onChange,
+  onChargeDeleted,
   columnIds,
   withChargeLink = false,
 }: UseDocumentsTableOptions) {
@@ -80,8 +83,9 @@ export function useDocumentsTable({
         ...document,
         editDocument: (): void => setEditDocumentId(document.id),
         onUpdate: onChange ?? ((): void => {}),
+        onChargeDeleted,
       })),
-    [documents, onChange],
+    [documents, onChange, onChargeDeleted],
   );
 
   const tableColumns = useMemo(() => {

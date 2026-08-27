@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { type Dispatch, type ReactElement, type SetStateAction } from 'react';
 import { Unlink } from 'lucide-react';
 import { EMPTY_UUID } from '../../../helpers/index.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
@@ -15,6 +15,13 @@ interface Props {
    * which would leave a stale "shadow charge" on screen.
    */
   onChargeDeleted?: (chargeId: string) => void;
+  /**
+   * Drive the confirmation from outside instead of from the built-in icon trigger. Hosts that
+   * already have their own trigger (the documents table's actions menu, for instance) pass both
+   * and no trigger button is rendered.
+   */
+  open?: boolean;
+  setOpen?: Dispatch<SetStateAction<boolean>>;
 }
 
 export function UnlinkDocumentButton({
@@ -22,6 +29,8 @@ export function UnlinkDocumentButton({
   onChange,
   onDone,
   onChargeDeleted,
+  open,
+  setOpen,
 }: Props): ReactElement {
   const { updateDocument } = useUpdateDocument();
 
@@ -48,10 +57,14 @@ export function UnlinkDocumentButton({
     <ConfirmationModal
       onConfirm={onUnlink}
       title="Are you sure you want to unlink this document from the charge?"
+      open={open}
+      setOpen={setOpen}
     >
-      <Button variant="ghost" size="icon" className="size-7.5">
-        <Unlink className="size-5" />
-      </Button>
+      {setOpen ? undefined : (
+        <Button variant="ghost" size="icon" className="size-7.5">
+          <Unlink className="size-5" />
+        </Button>
+      )}
     </ConfirmationModal>
   );
 }

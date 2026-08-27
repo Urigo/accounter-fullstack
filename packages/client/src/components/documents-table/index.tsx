@@ -26,6 +26,7 @@ export const DocumentsTable = ({
   const { table, editDocumentId, closeEditDocument } = useDocumentsTable({
     documentsProps,
     onChange,
+    onChargeDeleted,
     columnIds,
     withChargeLink,
   });
