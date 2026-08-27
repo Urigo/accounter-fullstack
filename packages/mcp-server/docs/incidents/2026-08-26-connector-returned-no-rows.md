@@ -1,13 +1,13 @@
 # Incident: the MCP connector returned counts without rows
 
-|                   |                                                                                                                                                                                           |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Date reported** | 2026-08-26                                                                                                                                                                                |
-| **Window**        | Between 2026-08-18 and 2026-08-26 (upper bound 8 days)                                                                                                                                    |
-| **Status**        | Resolved — [#4295](https://github.com/Urigo/accounter-fullstack/pull/4295) and [#4299](https://github.com/Urigo/accounter-fullstack/pull/4299) merged 2026-08-27, fix verified end-to-end |
-| **Severity**      | High — the connector was unusable for its primary purpose                                                                                                                                 |
-| **Data loss**     | None. No incorrect data was served; no security impact                                                                                                                                    |
-| **Trigger**       | External: a change in how the MCP client surfaces tool results                                                                                                                            |
+|                   |                                                                                     |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| **Date reported** | 2026-08-26                                                                          |
+| **Window**        | Between 2026-08-18 and 2026-08-26 (upper bound 8 days)                              |
+| **Status**        | Resolved — fix verified end-to-end; #4295, #4299, #4302 and #4306 merged 2026-08-27 |
+| **Severity**      | High — the connector was unusable for its primary purpose                           |
+| **Data loss**     | None. No incorrect data was served; no security impact                              |
+| **Trigger**       | External: a change in how the MCP client surfaces tool results                      |
 
 ---
 
@@ -198,13 +198,59 @@ the canonical ones, so `clientInfo` cannot be used to attribute a call to a diff
 The runbook gains §3.1 with the field reference and `jq` recipes, including the query that would
 have dated this incident in one command.
 
+### What the follow-up probes revealed about the client
+
+Testing whether a declared `outputSchema` would reach the model turned up a second property of the
+same client, in the same version window: **Desktop defers tool definitions.** Until the model
+chooses to load one, it is shown roughly the first sentence of the description — not the input
+schema, not the output schema, not the rest of the prose.
+
+That is consistent with the same context-minimizing rework the log evidence points at, and it made a
+latent problem visible. Our scope-discovery instruction — _"call it first … pass the returned
+`memberBusinessId` values as `memberBusinessIds`"_ — was sentence two of
+`accounter_list_business_memberships`. It did not arrive until the model explicitly loaded the
+definition, which meant the "discover, then scope" contract that the whole multi-business design
+rests on was reaching the model only by chance.
+
+### Follow-up work the incident produced
+
+Three further changes came out of investigating it, rather than out of fixing it:
+
+- **[#4302](https://github.com/Urigo/accounter-fullstack/pull/4302) — one money shape.** Auditing
+  the row layer for a possible `outputSchema` turned up drift that had already happened:
+  `normalizeAmount` was meant to be the single definition of how money appears in a result, and the
+  same `raw -> value` mapping had been rewritten by hand in `search_charges` and `balance_report`.
+  Three copies, nothing keeping them in step. Collapsed onto one, pinned by a contract test
+  asserting key names _and order_ against real tool output — order matters because the mirrored
+  `content` block is `JSON.stringify(structuredContent)`.
+
+- **[#4303](https://github.com/Urigo/accounter-fullstack/pull/4303) — `outputSchema`, closed by
+  experiment.** See the decision below.
+
+- **[#4306](https://github.com/Urigo/accounter-fullstack/pull/4306) — document each tool's result.**
+  The direct consequence of learning that the description is the only channel that reaches the
+  model. Shared `resultEnvelopeDescription` / `writeResultDescription` clauses live beside the
+  functions that build those envelopes so prose and shape cannot drift; both write tools had
+  documented nothing about their result at all; and `accounter_list_business_memberships` had its
+  scope-discovery instruction moved into sentence one, because that is the only sentence a deferred
+  definition guarantees.
+
 ## Decisions taken deliberately
 
-**We did not declare `outputSchema` per tool.** It would restore `structuredContent` as a validated
-second channel and is the specification-native shape. It was rejected because the fix no longer
-depends on it, and because "servers **MUST** provide structured results that conform" means a schema
-drifting from the payload converts working calls into client-side errors — seventeen hand-written
-schemas of risk for redundancy that is not currently needed.
+**We did not declare `outputSchema` per tool — and this is now measured, not judged.** It was
+initially deferred on cost: "servers **MUST** provide structured results that conform" would bind
+all seventeen tools, for a benefit nobody had verified. So it was tested on one, and the answer was
+no. Claude Desktop does not surface a declared `outputSchema` to the model — established after
+ruling out a cached `tools/list` with a marker string, at which point the model enumerated the
+loaded definition as name, description, input schema and said outright that there was no output
+schema. Since model comprehension was the entire upside — validation is the _risk_, not the benefit
+— declaring schemas for a field the model never sees buys nothing. Full evidence, including the
+known limit that we never tested whether the host _validates_ against one, is in
+[`connector-gaps-and-decisions.md`](../connector-gaps-and-decisions.md).
+
+Combined with the incident itself, the model sees **neither** `structuredContent` nor `outputSchema`
+on this client. `content` is the only channel, now on two independent measurements rather than
+inference — which makes the mirroring above permanent rather than provisional.
 
 **We did not change protocol-version negotiation.** The server continues to answer `2025-06-18`
 unconditionally. Altering what it advertises is a live behavioral change to a connector that has
@@ -227,9 +273,13 @@ choose.
    what crosses the boundary will pass through a total outage. The question a test must answer is
    not "did we build the right payload" but "would the recipient receive it".
 
-3. **Log every boundary you do not control.** The handshake was the one hop with no record, and it
-   was the hop where the world changed. Diagnosis depended on log files on a developer's laptop that
-   a production deployment would never have.
+3. **Log every boundary you do not control — and check the log would actually fire.** The handshake
+   was the one hop with no record, and it was the hop where the world changed. Diagnosis depended on
+   log files on a developer's laptop that a production deployment would never have. But the fix has
+   a blind spot worth naming: handshake logging cannot detect a client that stops handshaking. A
+   client moving to a protocol revision with no `initialize` produces _silence_, not a changed
+   version, so we would learn at failure time — the same shape as this incident. An alarm you have
+   not checked can fire is not yet an alarm.
 
 4. **Partial success is worse than failure.** Correct counts with missing rows produced a plausible
    wrong answer and misdirected the investigation. Where a payload can be partly delivered, prefer
