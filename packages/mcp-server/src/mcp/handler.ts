@@ -51,6 +51,26 @@ import { listedTools, runSmokeTool, SMOKE_TOOL_NAME } from './tools.js';
 /** MCP protocol revision this server implements. */
 export const MCP_PROTOCOL_VERSION = '2025-06-18';
 
+/**
+ * `event` discriminator on the handshake log line, so `initialize` can be
+ * selected out of the log stream without matching on free-text messages —
+ * the same contract as `TOOL_CALL_EVENT` in `tools/execute.ts`.
+ */
+export const MCP_INITIALIZE_EVENT = 'mcp_initialize';
+
+/**
+ * Hard cap on the length of a logged client identifier, ellipsis included.
+ *
+ * `clientInfo.name` and `clientInfo.version` are caller-supplied strings off the
+ * wire with no schema behind them, so they are clipped before reaching the log.
+ * Same motivation as `MAX_MISS_LABEL_LENGTH` in `tools/terminology.ts`, but
+ * deliberately a different number: that one bounds a `/metrics` label, where
+ * the constraint is a readable snapshot, while this bounds a log field and only
+ * needs to stop an unbounded string. A real client identifier
+ * (`claude-ai` / `1.37937.1`) is nowhere near either limit.
+ */
+export const MAX_CLIENT_LABEL_LENGTH = 60;
+
 export const MCP_SERVER_INFO = {
   name: SERVICE_NAME,
   version: getServiceVersion(),
@@ -58,6 +78,70 @@ export const MCP_SERVER_INFO = {
 
 /** Max accepted request body size (bounded input, per spec §9.1). */
 export const MAX_MCP_BODY_BYTES = 1_000_000;
+
+/** Narrow an unknown value to a plain object, or `{}` — never throws. */
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/**
+ * Clip a caller-supplied identifier for the log, or `null` when absent.
+ *
+ * The ellipsis counts towards the cap, so the result is never longer than
+ * {@link MAX_CLIENT_LABEL_LENGTH} — a cap that its own truncation marker can
+ * push past is not a cap.
+ */
+function clipClientLabel(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length === 0) {
+    return null;
+  }
+  return value.length <= MAX_CLIENT_LABEL_LENGTH
+    ? value
+    : `${value.slice(0, MAX_CLIENT_LABEL_LENGTH - 1)}\u2026`;
+}
+
+/** What a client told us about itself during `initialize`. */
+export interface InitializeHandshake {
+  clientName: string | null;
+  clientVersion: string | null;
+  requestedProtocolVersion: string | null;
+  servedProtocolVersion: string;
+  /** The client asked for a revision this server does not implement. */
+  protocolVersionMismatch: boolean;
+  /** Capability *names* only — the values are unbounded and caller-supplied. */
+  clientCapabilities: string[];
+}
+
+/**
+ * Describe an `initialize` request for the log.
+ *
+ * Pure, and deliberately total: `params` is `unknown` off the wire and is
+ * validated only as a non-null object *or array* (`jsonrpc.ts`), so every field
+ * is narrowed here and anything unexpected degrades to `null`/`[]` rather than
+ * throwing. A malformed handshake must still be recorded — a client sending
+ * something this server cannot parse is precisely the event worth seeing.
+ *
+ * An absent `protocolVersion` is not a mismatch: nothing was asked for.
+ */
+export function describeInitializeParams(params: unknown): InitializeHandshake {
+  const record = asRecord(params);
+  const requestedProtocolVersion = clipClientLabel(record.protocolVersion);
+  const clientInfo = asRecord(record.clientInfo);
+
+  return {
+    clientName: clipClientLabel(clientInfo.name),
+    clientVersion: clipClientLabel(clientInfo.version),
+    requestedProtocolVersion,
+    servedProtocolVersion: MCP_PROTOCOL_VERSION,
+    protocolVersionMismatch:
+      requestedProtocolVersion !== null && requestedProtocolVersion !== MCP_PROTOCOL_VERSION,
+    // Sorted so the same handshake always logs the same line, which makes a
+    // change in what the client declares visible by diffing.
+    clientCapabilities: Object.keys(asRecord(record.capabilities)).sort(),
+  };
+}
 
 /**
  * Dispatch a single JSON-RPC request to its MCP method handler. Returns the
@@ -192,6 +276,29 @@ export async function dispatchMcpRequest(
     return null;
   }
   const id = request.id ?? null;
+
+  // Record the handshake, then let `handleRpcRequest` build the response.
+  //
+  // It is logged here rather than in that function's `case 'initialize'` for two
+  // reasons: `handleRpcRequest` is the pure, env-free half and takes only the
+  // request, so it has neither the caller nor the correlation id to log; and
+  // keeping the response in one place means the two cannot drift.
+  //
+  // This is the one hop that was never recorded, which is why a client changing
+  // its handling of tool results underneath this server had to be reconstructed
+  // from the *client's* own logs. `clientInfo` is what dates such a change.
+  if (request.method === 'initialize') {
+    // Caller-derived fields spread first so the canonical ones below always win
+    // a name collision — cf. the `tool_call` line in `tools/execute.ts`. A
+    // client cannot misreport who it is by putting `userId` in `clientInfo`.
+    log('info', 'mcp initialize', {
+      ...describeInitializeParams(request.params),
+      event: MCP_INITIALIZE_EVENT,
+      userId: context.auth.userId,
+      correlationId: context.correlationId,
+    });
+    return handleRpcRequest(request);
+  }
 
   // Exposure controls: `MCP_TOOL_ALLOWLIST` (empty ⇒ every tool; non-empty ⇒
   // only the named subset) and `MCP_ENABLE_WRITE_TOOLS` (off ⇒ no mutating
