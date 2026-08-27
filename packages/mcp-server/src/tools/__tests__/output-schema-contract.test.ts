@@ -50,33 +50,69 @@ function clientReturning(data: unknown) {
 
 const declaring = toolRegistry.list().filter(tool => tool.outputSchema !== undefined);
 
+/** Arguments and canned upstream response that drive one tool to a *success*. */
+interface Fixture {
+  rawArgs: Record<string, unknown>;
+  upstream: unknown;
+}
+
+/**
+ * Required for every tool that declares a schema — deliberately not optional.
+ *
+ * An earlier version of this sweep ran each tool with empty args against an
+ * empty upstream and returned early on an error result, reasoning that an error
+ * payload is the taxonomy shape rather than the declared one. That is true, and
+ * it made the test worthless: a tool could declare a schema, fail under the
+ * harness for any reason, and pass here having validated nothing.
+ *
+ * Declaring an `outputSchema` is opt-in and binding, so the cost of proving the
+ * tool can actually produce a conforming result belongs with the declaration.
+ * Adding a schema without adding a fixture fails the suite.
+ */
+const FIXTURES: Record<string, Fixture> = {
+  [LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME]: { rawArgs: {}, upstream: {} },
+};
+
 describe('declared output schemas', () => {
   it('at least one tool declares one, so the sweep below is not vacuous', () => {
     expect(declaring.map(tool => tool.name)).toContain(LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME);
   });
 
+  it('every tool declaring a schema has a fixture that exercises it', () => {
+    const unfixtured = declaring.map(tool => tool.name).filter(name => !(name in FIXTURES));
+
+    expect(
+      unfixtured,
+      'these tools declare an outputSchema but cannot be exercised here, so their schema would never be checked against real output',
+    ).toEqual([]);
+  });
+
   it.each(declaring.map(tool => [tool.name, tool] as const))(
     '%s produces structuredContent conforming to its declared schema',
-    async (_name, tool) => {
+    async (name, tool) => {
+      const fixture = FIXTURES[name];
+      expect(fixture, `${name} has no fixture — see FIXTURES above`).toBeDefined();
+
       const result = await executeRegisteredTool({
         tool,
-        rawArgs: {},
+        rawArgs: fixture!.rawArgs,
         auth: authContext(),
         correlationId: 'c',
-        client: clientReturning({}),
+        client: clientReturning(fixture!.upstream),
         authorization: 'Bearer t',
       });
 
-      // An error result is the taxonomy payload, not the declared shape — the
-      // MUST applies to the tool's own structured results.
-      if (result.isError) {
-        return;
-      }
+      // The check that stops this passing vacuously: a tool that cannot reach a
+      // successful result has not demonstrated anything about its schema.
+      expect(
+        result.isError ?? false,
+        `${name} did not produce a success result, so its schema went unchecked: ${JSON.stringify(result.content)}`,
+      ).toBe(false);
 
       const parsed = tool.outputSchema!.safeParse(result.structuredContent);
       expect(
         parsed.success ? [] : parsed.error.issues,
-        `${tool.name} returned structuredContent its own outputSchema rejects`,
+        `${name} returned structuredContent its own outputSchema rejects`,
       ).toEqual([]);
     },
   );

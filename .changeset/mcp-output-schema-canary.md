@@ -29,8 +29,13 @@ Tools that declare nothing are unchanged, and `tools/list` omits the key entirel
 than emitting an empty contract a client might try to validate against.
 
 Guarded by `output-schema-contract.test.ts`, which is registry-driven: every tool declaring a schema
-is executed and its real `structuredContent` parsed against its own advertised schema. Tools that
-gain schemas later are covered without extending the file.
+is executed and its real `structuredContent` parsed against its own advertised schema.
+
+Declaring a schema requires adding a fixture that drives the tool to a *successful* result, and the
+sweep fails if either is missing. That asymmetry is deliberate — an earlier draft skipped error
+results on the grounds that an error payload is the taxonomy shape rather than the declared one,
+which is true and made the test worthless: a tool could declare a schema, fail under the harness for
+any reason, and pass having validated nothing. A binding contract should cost a fixture.
 
 This changes nothing about the `content` mirror. That exists because a client may ignore
 `structuredContent` for any reason, which a declared schema does not prevent.
