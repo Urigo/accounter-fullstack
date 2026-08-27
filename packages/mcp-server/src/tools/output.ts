@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { ToolResult } from './registry.js';
 
 /**
@@ -224,4 +225,49 @@ export function shapeWriteResult<T>(params: ShapeWriteParams<T>): ToolResult {
   }
 
   return mirroredResult(params.summary, structured);
+}
+
+// ---------------------------------------------------------------------------
+// Declared output shape
+// ---------------------------------------------------------------------------
+
+/**
+ * The framework-owned half of a list envelope, as Zod.
+ *
+ * Mirrors exactly what {@link shapeListResult} builds, so a declared
+ * `outputSchema` describes the payload rather than a wish. `continuation` is
+ * optional because it is attached only when the result is truncated.
+ */
+const continuationSchema = z.object({
+  reason: z.enum(['payload_size', 'result_cap']),
+  returnedCount: z.number().int(),
+  totalCount: z.number().int(),
+  hint: z.string(),
+});
+
+/**
+ * Build the output schema for a list-producing tool.
+ *
+ * Deliberately generated from the same row schema the tool shapes its items
+ * with rather than hand-written: the spec makes a declared schema binding
+ * ("servers MUST provide structured results that conform"), so a schema that
+ * can drift from the payload turns working calls into client-side errors. One
+ * source removes that failure mode instead of documenting it.
+ *
+ * `extra` carries the per-tool domain fields (`scope`, `pagination`, `period`,
+ * …) that {@link ShapeListParams.extra} merges in.
+ */
+export function listOutputSchema<Row extends z.ZodType, Extra extends z.ZodRawShape>(
+  itemsKey: string,
+  row: Row,
+  extra?: Extra,
+): z.ZodObject {
+  return z.object({
+    ...extra,
+    [itemsKey]: z.array(row),
+    returnedCount: z.number().int(),
+    totalCount: z.number().int(),
+    truncated: z.boolean(),
+    continuation: continuationSchema.optional(),
+  });
 }

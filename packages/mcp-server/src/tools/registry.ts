@@ -118,6 +118,21 @@ export interface ToolDefinition<Schema extends ToolInputSchema = ToolInputSchema
    * `tool`, `outcome`, or `userId`.
    */
   observe?: (input: z.infer<Schema>, result: ToolResult) => ToolObservation;
+  /**
+   * Shape of this tool's `structuredContent`, advertised on `tools/list`.
+   *
+   * Optional, and deliberately Zod rather than raw JSON Schema — the same
+   * choice the input side makes, so the advertised schema is rendered from a
+   * definition the code can also build against instead of a parallel hand-
+   * written document. A declared schema is binding ("servers MUST provide
+   * structured results that conform"), so anything that can drift from the
+   * payload is a liability rather than documentation.
+   *
+   * Omitting it is fully valid: a tool may return `structuredContent` with no
+   * schema. It simply gives a client nothing to validate against — which is
+   * why the payload is also mirrored into `content` regardless.
+   */
+  outputSchema?: z.ZodType;
 }
 
 /** Tool descriptor advertised by `tools/list` (JSON Schema for the input). */
@@ -125,6 +140,8 @@ export interface ToolDescriptor {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  /** Present only for tools that declare one; absent is valid and common. */
+  outputSchema?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -223,6 +240,12 @@ export class ToolRegistry {
       // so the advertised JSON Schema (`additionalProperties: false`) matches the
       // runtime unknown-field rejection, rather than describing a laxer shape.
       inputSchema: z.toJSONSchema(tool.inputSchema.strict()) as Record<string, unknown>,
+      // Spread so the key is absent rather than `undefined` for the tools that
+      // declare no output schema — `tools/list` should not advertise an empty
+      // contract that clients might try to validate against.
+      ...(tool.outputSchema
+        ? { outputSchema: z.toJSONSchema(tool.outputSchema) as Record<string, unknown> }
+        : {}),
     }));
   }
 }

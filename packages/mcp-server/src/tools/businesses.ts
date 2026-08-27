@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { shapeListResult } from './output.js';
+import { listOutputSchema, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 
 /**
@@ -26,12 +26,26 @@ export const LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME = 'accounter_list_business_memb
 const listBusinessesInput = z.object({});
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
-interface BusinessSummary {
+/**
+ * The membership row, as Zod.
+ *
+ * This tool is the canary for declared output schemas: it is pure (no upstream
+ * call), returns three flat fields, and its summary line already instructs the
+ * model to pass `memberBusinessId` onward — so if a client does surface a
+ * declared schema to the model, this is where it should show.
+ *
+ * The TypeScript type is inferred from the schema rather than declared beside
+ * it, which is the whole point: the handler cannot build a row the advertised
+ * schema does not describe.
+ */
+const businessSummarySchema = z.object({
   /** Id of the member business — the value the other tools take as scope. */
-  memberBusinessId: string;
-  name: string | null;
-  role: string;
-}
+  memberBusinessId: z.string(),
+  name: z.string().nullable(),
+  role: z.string(),
+});
+
+type BusinessSummary = z.infer<typeof businessSummarySchema>;
 
 // Fixed-locale collator so ordering is deterministic across hosts/runtimes
 // rather than depending on the ambient default locale (mirrors `lookups.ts`).
@@ -98,6 +112,7 @@ export const listBusinessMembershipsTool: ToolDefinition<typeof listBusinessesIn
   description:
     'List the businesses you are a member of, with your role in each. This is your access/scope discovery entry point — call it first when you may belong to more than one business, then pass the returned `memberBusinessId` values as `memberBusinessIds` to the other tools. To browse every business known to the system (e.g. counterparties), use `accounter_list_businesses` instead. Read-only; takes no parameters.',
   inputSchema: listBusinessesInput,
+  outputSchema: listOutputSchema('businesses', businessSummarySchema),
   policy: {
     // Deliberately false: a caller with zero memberships should get an empty
     // list and a helpful summary, not an AUTHORIZATION_ERROR. This is the
