@@ -102,7 +102,27 @@ Useful queries (adapt to your log backend):
 - **Unexpected tool errors**: `message == "unexpected error during tool execution"` (carries `tool`,
   `correlationId`, and the sanitized error) — these map to `INTERNAL_ERROR` for callers.
 
-### 3.1 Tool-call usage logs (`event: "tool_call"`)
+### 3.1 Handshake logs (`event: "mcp_initialize"`)
+
+Every `initialize` emits one line. This is the only record of _which client_ is talking to the
+connector — a remote client's handling of tool results can change without anything in this repo
+changing, and when that happened once, dating it required the client's own local logs.
+
+| Field                      | Meaning                                                                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `clientName`               | `clientInfo.name` as the client reported it, clipped. `null` if it sent none.                                                    |
+| `clientVersion`            | `clientInfo.version`, clipped. **The field that dates a client-side behaviour change.**                                          |
+| `requestedProtocolVersion` | The MCP revision the client asked for. `null` if absent.                                                                         |
+| `servedProtocolVersion`    | What this server answered — currently unconditional.                                                                             |
+| `protocolVersionMismatch`  | Client asked for a revision this server does not implement. The one field worth alerting on. `false` when nothing was requested. |
+| `clientCapabilities`       | Capability _names_ only, sorted. Values are unbounded and caller-supplied.                                                       |
+| `userId` / `correlationId` | Same meaning as on `tool_call`, so a session can be joined across both events.                                                   |
+
+Caller-derived fields are merged beneath the canonical ones, so `clientName` and friends can never
+overwrite `userId`, `correlationId`, or `event`. A handshake the server cannot parse still logs a
+line, with the unparseable fields `null`.
+
+### 3.2 Tool-call usage logs (`event: "tool_call"`)
 
 Every completed tool call emits exactly one line with `event: "tool_call"` — including calls
 rejected by validation, policy, or the rate limiter, which never reach a handler. This is the only
@@ -179,6 +199,18 @@ jq -r 'select(.event=="tool_call" and .updatedChargeCount != null
 # Tool popularity and error rate
 jq -r 'select(.event=="tool_call") | "\(.tool)\t\(.outcome)"' logs.jsonl \
   | sort | uniq -c | sort -rn
+
+# Client versions seen, in order — the query that dates a client-side change
+jq -r 'select(.event=="mcp_initialize")
+  | [.timestamp, .clientName, .clientVersion] | @tsv' logs.jsonl
+
+# Distinct client + protocol revision pairs: what is connecting, and with what
+jq -r 'select(.event=="mcp_initialize")
+  | [.clientName, .clientVersion, .requestedProtocolVersion] | @tsv' logs.jsonl | sort -u
+
+# Clients asking for a protocol revision this server does not serve
+jq -r 'select(.event=="mcp_initialize" and .protocolVersionMismatch)
+  | [.timestamp, .clientName, .requestedProtocolVersion, .servedProtocolVersion] | @tsv' logs.jsonl
 ```
 
 ## 4. Incident playbooks

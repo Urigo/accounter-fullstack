@@ -5,7 +5,14 @@ import { buildAuthContext } from '../../auth/identity.js';
 import { TokenVerificationError } from '../../auth/token.js';
 import { verifyAccessToken } from '../../auth/verifier.js';
 import { getMetrics, resetMetrics } from '../../observability/metrics.js';
-import { dispatchMcpRequest, handleMcpBody, MCP_PROTOCOL_VERSION, mcpHttpHandler } from '../handler.js';
+import {
+  describeInitializeParams,
+  dispatchMcpRequest,
+  handleMcpBody,
+  MCP_INITIALIZE_EVENT,
+  MCP_PROTOCOL_VERSION,
+  mcpHttpHandler,
+} from '../handler.js';
 import type { JsonRpcErrorResponse, JsonRpcSuccess } from '../jsonrpc.js';
 import { JsonRpcErrorCode } from '../jsonrpc.js';
 import { SMOKE_TOOL_NAME } from '../tools.js';
@@ -402,5 +409,188 @@ describe('hasBearerToken', () => {
     expect(hasBearerToken(mockReq('', {}))).toBe(false);
     expect(hasBearerToken(mockReq('', { authorization: 'Bearer ' }))).toBe(false);
     expect(hasBearerToken(mockReq('', { authorization: 'Basic xyz' }))).toBe(false);
+  });
+});
+
+describe('describeInitializeParams', () => {
+  /**
+   * `params` arrives as `unknown` and is validated only as a non-null object or
+   * array, so every one of these shapes is reachable from the wire. A malformed
+   * handshake still has to produce a line — a client sending something this
+   * server cannot parse is exactly the event worth seeing.
+   */
+  it('reads a well-formed handshake', () => {
+    expect(
+      describeInitializeParams({
+        protocolVersion: MCP_PROTOCOL_VERSION,
+        capabilities: { roots: { listChanged: true }, sampling: {} },
+        clientInfo: { name: 'claude-ai', version: '1.37937.1' },
+      }),
+    ).toEqual({
+      clientName: 'claude-ai',
+      clientVersion: '1.37937.1',
+      requestedProtocolVersion: MCP_PROTOCOL_VERSION,
+      servedProtocolVersion: MCP_PROTOCOL_VERSION,
+      protocolVersionMismatch: false,
+      clientCapabilities: ['roots', 'sampling'],
+    });
+  });
+
+  it('flags a client asking for a revision this server does not implement', () => {
+    const described = describeInitializeParams({ protocolVersion: '2099-01-01' });
+
+    expect(described.requestedProtocolVersion).toBe('2099-01-01');
+    expect(described.servedProtocolVersion).toBe(MCP_PROTOCOL_VERSION);
+    expect(described.protocolVersionMismatch).toBe(true);
+  });
+
+  // Absent is not mismatched — nothing was asked for, so there is nothing to
+  // disagree with. Flagging it would make every bare handshake look like a
+  // version conflict.
+  it('does not flag a mismatch when no version was requested', () => {
+    expect(describeInitializeParams({}).protocolVersionMismatch).toBe(false);
+    expect(describeInitializeParams({}).requestedProtocolVersion).toBeNull();
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['a string', 'initialize'],
+    ['an array', [1, 2, 3]],
+    ['a number', 42],
+  ])('degrades to nulls for params that are %s', (_label, params) => {
+    expect(describeInitializeParams(params)).toEqual({
+      clientName: null,
+      clientVersion: null,
+      requestedProtocolVersion: null,
+      servedProtocolVersion: MCP_PROTOCOL_VERSION,
+      protocolVersionMismatch: false,
+      clientCapabilities: [],
+    });
+  });
+
+  it.each([
+    ['clientInfo is a string', { clientInfo: 'claude' }],
+    ['clientInfo is an array', { clientInfo: ['claude'] }],
+    ['clientInfo is null', { clientInfo: null }],
+    ['name is not a string', { clientInfo: { name: 7, version: {} } }],
+    ['name is empty', { clientInfo: { name: '', version: '' } }],
+  ])('tolerates a clientInfo where %s', (_label, params) => {
+    const described = describeInitializeParams(params);
+
+    expect(described.clientName).toBeNull();
+    expect(described.clientVersion).toBeNull();
+  });
+
+  it('clips an over-long client identifier', () => {
+    const described = describeInitializeParams({
+      clientInfo: { name: 'n'.repeat(500), version: 'v'.repeat(500) },
+    });
+
+    expect(described.clientName!.length).toBeLessThanOrEqual(61);
+    expect(described.clientName!.endsWith('…')).toBe(true);
+    expect(described.clientVersion!.length).toBeLessThanOrEqual(61);
+  });
+
+  // Deterministic ordering is what makes "the client started declaring a new
+  // capability" visible by diffing two lines.
+  it('reports capability names only, sorted', () => {
+    expect(
+      describeInitializeParams({ capabilities: { sampling: {}, elicitation: {}, roots: {} } })
+        .clientCapabilities,
+    ).toEqual(['elicitation', 'roots', 'sampling']);
+  });
+});
+
+describe('initialize handshake logging', () => {
+  const auth = buildAuthContext(PRINCIPAL, []);
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // Scoped restore rather than `vi.restoreAllMocks()`, which would also drop
+    // the module-level verifier/upstream mocks this file relies on.
+    logSpy.mockRestore();
+  });
+
+  function handshakeLines(): Record<string, unknown>[] {
+    return logSpy.mock.calls
+      .map(call => JSON.parse(String(call[0])) as Record<string, unknown>)
+      .filter(entry => entry.event === MCP_INITIALIZE_EVENT);
+  }
+
+  async function initialize(params?: unknown) {
+    return dispatchMcpRequest(
+      { jsonrpc: '2.0', id: 1, method: 'initialize', ...(params !== undefined && { params }) },
+      { auth, correlationId: 'corr-1', allowlist: [], writeToolsEnabled: false },
+    );
+  }
+
+  it('emits exactly one line naming the client and the negotiated versions', async () => {
+    await initialize({
+      protocolVersion: MCP_PROTOCOL_VERSION,
+      capabilities: { roots: {} },
+      clientInfo: { name: 'claude-ai', version: '1.37937.1' },
+    });
+
+    const lines = handshakeLines();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      event: MCP_INITIALIZE_EVENT,
+      message: 'mcp initialize',
+      clientName: 'claude-ai',
+      clientVersion: '1.37937.1',
+      requestedProtocolVersion: MCP_PROTOCOL_VERSION,
+      servedProtocolVersion: MCP_PROTOCOL_VERSION,
+      protocolVersionMismatch: false,
+      clientCapabilities: ['roots'],
+      userId: auth.userId,
+      correlationId: 'corr-1',
+    });
+  });
+
+  it('still logs a handshake it could not parse', async () => {
+    await initialize('not-an-object');
+
+    expect(handshakeLines()).toHaveLength(1);
+    expect(handshakeLines()[0]).toMatchObject({ clientName: null, protocolVersionMismatch: false });
+  });
+
+  // The canonical fields are spread last precisely so a client cannot overwrite
+  // them; without that, `clientInfo` is an attacker-controlled way to attribute
+  // a call to someone else.
+  it('a client cannot overwrite the canonical fields', async () => {
+    await initialize({
+      clientInfo: { name: 'claude-ai', version: '1' },
+      userId: 'somebody-else',
+      event: 'tool_call',
+      correlationId: 'forged',
+    });
+
+    expect(handshakeLines()[0]).toMatchObject({
+      event: MCP_INITIALIZE_EVENT,
+      userId: auth.userId,
+      correlationId: 'corr-1',
+    });
+  });
+
+  it('leaves the initialize response untouched', async () => {
+    const res = (await initialize({ clientInfo: { name: 'claude-ai' } })) as JsonRpcSuccess;
+    const result = res.result as Record<string, unknown>;
+
+    expect(result.protocolVersion).toBe(MCP_PROTOCOL_VERSION);
+    expect(result.capabilities).toEqual({ tools: { listChanged: false } });
+  });
+
+  // The sync entry point has no caller and no correlation id to log, and no
+  // production call sites — so it stays silent, and its existing coverage of the
+  // pure response shape is unaffected.
+  it('does not log on the sync handleMcpBody path', () => {
+    handleMcpBody(rpc('initialize'));
+
+    expect(handshakeLines()).toHaveLength(0);
   });
 });

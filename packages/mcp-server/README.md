@@ -346,6 +346,27 @@ A snapshot is exposed at `GET /metrics`:
 curl http://localhost:3100/metrics
 ```
 
+### Handshake logging
+
+Every `initialize` emits one structured line tagged `event: "mcp_initialize"`, carrying
+`clientName`, `clientVersion`, `requestedProtocolVersion`, `servedProtocolVersion`,
+`protocolVersionMismatch`, `clientCapabilities` (names only) and the usual `userId` /
+`correlationId`.
+
+This exists because a client's handling of tool results changed underneath this connector once and
+the server had no record of it — the change had to be reconstructed from the _client's_ own logs.
+`clientInfo` is what dates such a change, and `protocolVersionMismatch` is the one field worth
+alerting on.
+
+The line is emitted from `dispatchMcpRequest`, not from the `case 'initialize'` that builds the
+response: `handleRpcRequest` is the pure, env-free half and receives neither the caller nor the
+correlation id. `describeInitializeParams` does the parsing and is deliberately total — `params` is
+`unknown` off the wire, so a malformed handshake still produces a line rather than an exception. A
+client sending something the server cannot parse is precisely the event worth seeing. Caller-derived
+fields are merged _beneath_ the canonical ones, so a client cannot attribute its call to another
+user by putting `userId` in `clientInfo`, and `clientInfo` strings are clipped before they reach the
+log.
+
 ### Usage logging
 
 Operational telemetry answers "is it healthy"; usage telemetry answers "what are callers trying to
@@ -376,8 +397,9 @@ from stale charge ids becomes visible. This line is the complement to the `audit
 write already emits _before_ its handler runs: the audit line names the records, this one says what
 applied. Neither carries document content, filenames, or URLs.
 
-See [`docs/operations-runbook.md`](./docs/operations-runbook.md) §3.1 for the full field reference
-and the `jq` extraction recipes (most-requested terms, missing terms, tool popularity).
+See [`docs/operations-runbook.md`](./docs/operations-runbook.md) §3.1 (handshake) and §3.2 (tool
+calls) for the full field references and the `jq` extraction recipes (client versions,
+most-requested terms, missing terms, tool popularity).
 
 ### Tracing (OpenTelemetry → Grafana Tempo)
 
