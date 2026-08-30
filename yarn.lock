@@ -84,7 +84,7 @@ __metadata:
     "@storybook/react-vite": "npm:10.5.10"
     "@tailwindcss/vite": "npm:4.3.3"
     "@tanstack/react-query": "npm:5.102.3"
-    "@tanstack/react-table": "npm:9.1.2"
+    "@tanstack/react-table": "npm:9.2.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
     "@types/react": "npm:19.2.18"
@@ -10324,7 +10324,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-store@npm:^0.11.0":
+"@tanstack/react-store@npm:^0.11.1":
   version: 0.11.1
   resolution: "@tanstack/react-store@npm:0.11.1"
   dependencies:
@@ -10337,31 +10337,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-table@npm:9.1.2":
-  version: 9.1.2
-  resolution: "@tanstack/react-table@npm:9.1.2"
+"@tanstack/react-table@npm:9.2.3":
+  version: 9.2.3
+  resolution: "@tanstack/react-table@npm:9.2.3"
   dependencies:
-    "@tanstack/react-store": "npm:^0.11.0"
-    "@tanstack/table-core": "npm:9.1.2"
+    "@tanstack/react-store": "npm:^0.11.1"
+    "@tanstack/table-core": "npm:9.2.3"
   peerDependencies:
     react: ">=18"
-  checksum: 10c0/b077ffef00ffefab14a6095b07c0d853e24f812ec96aba84ca988ebd20c5aa04a34ef781a5638d579720c23c9415b6eefc03f9d2bec60acd2666e1741ae65e20
+  checksum: 10c0/4815fc2b142773c6fa5cef26b0a706d45568b57aca4fa2addf404dea222228b385ea3d6782544a8a0e9275001026fc3385e62ca221e537ef492cc9c37936efdd
   languageName: node
   linkType: hard
 
-"@tanstack/store@npm:0.11.1, @tanstack/store@npm:^0.11.0":
+"@tanstack/store@npm:0.11.1, @tanstack/store@npm:^0.11.1":
   version: 0.11.1
   resolution: "@tanstack/store@npm:0.11.1"
   checksum: 10c0/36e308f3a5037a4d79e2b2ea9f6f4015a617fcd7cb8ff541fe50869b015fb8753b267a8c24709ad197c4c3b5fd85207edc4f71eccaf9b0d311f62336a9cf7764
   languageName: node
   linkType: hard
 
-"@tanstack/table-core@npm:9.1.2":
-  version: 9.1.2
-  resolution: "@tanstack/table-core@npm:9.1.2"
+"@tanstack/table-core@npm:9.2.3":
+  version: 9.2.3
+  resolution: "@tanstack/table-core@npm:9.2.3"
   dependencies:
-    "@tanstack/store": "npm:^0.11.0"
-  checksum: 10c0/c11991f8bc2e595cfa7e071e630d107928c59513f2b79d6339e690c5b1b465f38a6e042e2742f3f4eff55847c0981b9c17b1ccf132de417c6dfe87da50cffda5
+    "@tanstack/store": "npm:^0.11.1"
+  checksum: 10c0/a0c2fdbe976358138dd81e54c5c6ebfd08cf2840b608807d642fca1706ddf277fe9c234147cf047bd8aa7b1097100dd61564efac8df91679287c4a06de22af72
   languageName: node
   linkType: hard
 
