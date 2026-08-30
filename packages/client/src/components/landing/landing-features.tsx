@@ -1,19 +1,18 @@
 import type { ReactElement } from 'react';
-import { FEATURES } from './landing-content.js';
+import { useLandingContent } from './landing-i18n.js';
 import { LandingSectionHeading } from './landing-section-heading.js';
 
 export function LandingFeatures(): ReactElement {
-  return (
-    <section id="features" className="border-b border-gray-200 bg-gray-50">
-      <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
-        <LandingSectionHeading
-          eyebrow="Features"
-          title="Everything the business actually does, in one place"
-          description="Accounter is not a reporting layer bolted onto someone else's books. The day-to-day work and the year-end filing happen against the same data."
-        />
+  const { content } = useLandingContent();
+  const { features } = content;
 
-        <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map(feature => (
+  return (
+    <section id="features" className="border-b border-gray-200 bg-white">
+      <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+        <LandingSectionHeading {...features.heading} />
+
+        <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 sm:grid-cols-2 lg:grid-cols-4">
+          {features.items.map(feature => (
             <article key={feature.title} className="bg-white p-6">
               <feature.icon className="h-6 w-6 text-gray-500" aria-hidden="true" />
               <h3 className="mt-4 text-base font-semibold text-gray-950">{feature.title}</h3>
@@ -21,6 +20,17 @@ export function LandingFeatures(): ReactElement {
             </article>
           ))}
         </div>
+
+        <ul className="mt-8 flex flex-wrap gap-2">
+          {features.chips.map(chip => (
+            <li
+              key={chip}
+              className="rounded-full border border-gray-200 bg-gray-50 px-3.5 py-1.5 text-sm text-gray-600"
+            >
+              {chip}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
