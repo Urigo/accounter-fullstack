@@ -109,7 +109,7 @@ __metadata:
     html2canvas-pro: "npm:2.4.0"
     iconv-lite: "npm:0.7.3"
     json-bigint-patch: "npm:0.0.9"
-    lucide-react: "npm:1.35.0"
+    lucide-react: "npm:1.37.0"
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:6.2.108"
     radix-ui: "npm:1.6.7"
@@ -20020,12 +20020,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:1.35.0":
-  version: 1.35.0
-  resolution: "lucide-react@npm:1.35.0"
+"lucide-react@npm:1.37.0":
+  version: 1.37.0
+  resolution: "lucide-react@npm:1.37.0"
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/03d8833fc4293ff566d6c56d6efcac7539b72a725b5344a8ffedce4889267a852b9f94b18bf886d3771c90664ea3275a66f8f3b8cd658b33182b664f85e0d643
+  checksum: 10c0/827bdf1f39c5c86fad944260a97769302bdf06ed55d9d96059c5d362e9f1a0aaaede5fc9f31f3144a974e830003f5953e6c83bc3a5bc214c4c8d5110e78ec356
   languageName: node
   linkType: hard
 
