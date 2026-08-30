@@ -68,7 +68,7 @@ __metadata:
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:3.0.0"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.1.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.2.0"
     "@auth0/auth0-react": "npm:2.24.1"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
@@ -534,17 +534,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.1.0":
-  version: 2.1.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.1.0"
+"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.2.0":
+  version: 2.2.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.2.0"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^3.0.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^3.1.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10c0/88918b66aa58db4de26fc6d6990da52e17e6e9db796b5697acaac3f1d36731a4f6bb6ba89cb7eab05d7115ce8522c4187dcad943ca9d37aa8a989ad47532ec33
+  checksum: 10c0/277d943024f453755ef865712442e32bf547c9ea1d65f3b984ccb50945a329e775a19a8267464211012eb38e4745354e3f7e05395c0d6c912d235d00c86426a2
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:3.0.0, @atlaskit/pragmatic-drag-and-drop@npm:^3.0.0":
+"@atlaskit/pragmatic-drag-and-drop@npm:3.0.0":
   version: 3.0.0
   resolution: "@atlaskit/pragmatic-drag-and-drop@npm:3.0.0"
   dependencies:
@@ -552,6 +552,17 @@ __metadata:
     bind-event-listener: "npm:^3.0.0"
     raf-schd: "npm:^4.0.3"
   checksum: 10c0/7d760cfdf642522f5d85b3bb808e6c6e795b283933625f84ab6ec656c86d0845df5e8749d61528fb51a6aa0770b8b34230dc11edcf0abbb603240f233bfa23e2
+  languageName: node
+  linkType: hard
+
+"@atlaskit/pragmatic-drag-and-drop@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:3.1.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.0.0"
+    bind-event-listener: "npm:^3.0.0"
+    raf-schd: "npm:^4.0.3"
+  checksum: 10c0/e1e79c4c25f95a7842c90ebe81f6d81f2f172dfa7dfe725bb2a976c3bfbe55d480d1ceeef04def26c6cb11828b4a0e9b1449d743caefda25319f901f5fe869c0
   languageName: node
   linkType: hard
 
