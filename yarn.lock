@@ -2029,7 +2029,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint/compat@npm:2.1.0, @eslint/compat@npm:^2.0.3":
+"@eslint/compat@npm:2.1.0, @eslint/compat@npm:^2.1.0":
   version: 2.1.0
   resolution: "@eslint/compat@npm:2.1.0"
   dependencies:
@@ -11826,7 +11826,7 @@ __metadata:
     concurrently: "npm:10.0.5"
     dotenv: "npm:17.4.2"
     eslint: "npm:10.9.1"
-    eslint-config-flat-gitignore: "npm:2.3.0"
+    eslint-config-flat-gitignore: "npm:2.4.0"
     eslint-config-prettier: "npm:10.1.8"
     eslint-plugin-import: "npm:2.32.0"
     eslint-plugin-jsx-a11y: "npm:6.10.2"
@@ -15419,14 +15419,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-flat-gitignore@npm:2.3.0":
-  version: 2.3.0
-  resolution: "eslint-config-flat-gitignore@npm:2.3.0"
+"eslint-config-flat-gitignore@npm:2.4.0":
+  version: 2.4.0
+  resolution: "eslint-config-flat-gitignore@npm:2.4.0"
   dependencies:
-    "@eslint/compat": "npm:^2.0.3"
+    "@eslint/compat": "npm:^2.1.0"
   peerDependencies:
     eslint: ^9.5.0 || ^10.0.0
-  checksum: 10c0/31aac4524c2bb9f4fb9532674570f93540f4c24e71a19a07898f9f418d7c5b245284105062faf185dbfd6f54eeddf64ad3b68a66651050d61315a9a17e8a1983
+  checksum: 10c0/d59e94c0d0755372c36aa422a5b3a3e8457496ba5907f00874318be73a9c7288cdb6e73b071f5ccdfea834ab8a5defae2194f859a1bdb4dc0bb9e521943ccf45
   languageName: node
   linkType: hard
 
