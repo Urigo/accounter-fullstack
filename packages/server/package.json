@@ -60,7 +60,7 @@
     "auth0": "6.3.0",
     "basic-auth": "3.0.0",
     "bcrypt": "6.0.0",
-    "cloudinary": "2.10.1",
+    "cloudinary": "2.11.0",
     "dataloader": "2.2.3",
     "date-fns": "4.4.0",
     "dotenv": "17.4.2",
