@@ -50,7 +50,6 @@
     "build": "yarn generate && bob build",
     "dev": "node --import ../../scripts/register-esm.js ./src/index.ts",
     "generate": "rimraf .mesh src/.mesh src/mesh-artifacts && mesh build --dir ./src  && node ../../scripts/mesh-artifacts-rename.mjs",
-    "prepublish": "yarn build",
     "start": "node ./dist",
     "test": "node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
