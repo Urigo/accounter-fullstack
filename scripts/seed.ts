@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import pg from 'pg';
 import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
+import { makeUUID } from '../packages/server/src/demo-fixtures/helpers/deterministic-uuid.js';
 import { seedCountries as seedCountriesUtil } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
 config();
@@ -33,16 +34,30 @@ async function seed() {
   try {
     await client.connect();
 
+    // Derive the admin id up front and pin the RLS context to it before the first write.
+    //
+    // Every table below is `FORCE ROW LEVEL SECURITY` and `get_current_business_id()` raises
+    // when `app.current_business_id` is unset, so on a non-superuser connection an unpinned
+    // insert aborts with P0001. The context has to name the entity's id before that entity
+    // exists -- which is exactly what the `allow_bootstrap_root` policy
+    // (`id = get_current_business_id()`) permits -- so the id cannot come back from the
+    // database via RETURNING. Derive it the same way `seedAdminCore` and `bootstrapNewClient`
+    // do, and insert it explicitly.
+    //
+    // Session-level (is_local = false): this script runs its statements outside a transaction.
+    const adminEntityId = makeUUID('business', 'Admin Business');
+    await client.query(`SELECT set_config('app.current_business_id', $1, false)`, [adminEntityId]);
+
     // Create admin business entity
-    const adminEntityResult = await client.query(`
-      INSERT INTO accounter_schema.financial_entities (type, name)
-      VALUES ('business', 'Admin Business')
-      RETURNING id
-    `);
+    await client.query(
+      `
+      INSERT INTO accounter_schema.financial_entities (id, type, name)
+      VALUES ($1, 'business', 'Admin Business')
+    `,
+      [adminEntityId],
+    );
 
     console.log('✅ Created admin business entity');
-
-    const adminEntityId = adminEntityResult.rows[0].id;
 
     // Create corresponding business record
     await client.query(

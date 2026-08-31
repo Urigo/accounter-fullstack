@@ -7,6 +7,7 @@ import type {
   Fixture,
   FixtureAccountTaxCategories,
 } from '../packages/server/src/__tests__/helpers/fixture-types.js';
+import { makeUUID } from '../packages/server/src/demo-fixtures/helpers/deterministic-uuid.js';
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
 import { seedDemoUsers } from '../packages/server/src/demo-fixtures/helpers/seed-demo-users.js';
 import { seedExchangeRates } from '../packages/server/src/demo-fixtures/helpers/seed-exchange-rates.js';
@@ -216,6 +217,32 @@ async function seedDemoData() {
     await client.connect();
     console.log('✅ Connected to database');
 
+    // 1.5. Pin the session to the admin tenant before touching any domain table.
+    //
+    // Every table this script writes is `FORCE ROW LEVEL SECURITY`, and
+    // `accounter_schema.get_current_business_id()` RAISES rather than returning NULL when
+    // `app.current_business_id` is unset -- so with no context every insert aborts with
+    // P0001. Locally that never surfaces: dev and CI connect as the `postgres` superuser,
+    // which bypasses RLS regardless of FORCE. A deployed run connects as a non-superuser
+    // and does not.
+    //
+    // The admin id is derived the same way `seedAdminCore` derives it, so the context can be
+    // established before the row it names exists -- that is what the `allow_bootstrap_root`
+    // policy (`id = get_current_business_id()`) is for. Every subsequent row is owned by this
+    // same business, so one context covers the whole seed.
+    //
+    // Session-level (is_local = false) is required: steps 2-4 below run outside any
+    // transaction, and a transaction-local setting would be gone by the next statement.
+    const expectedAdminBusinessId = makeUUID('business', 'Admin Business');
+    await client.query(`SELECT set_config('app.current_business_id', $1, false)`, [
+      expectedAdminBusinessId,
+    ]);
+
+    // Prove the context took *before* the destructive reset below. That TRUNCATE is
+    // autocommitted, so discovering a context problem after it would leave the environment
+    // wiped rather than merely un-reseeded.
+    await client.query(`SELECT accounter_schema.get_current_business_id()`);
+
     // 2. Destructive reset (domain tables only; preserve schema/migrations/countries)
     console.log('🧹 Clearing existing demo data...');
     await client.query(`
@@ -249,6 +276,14 @@ async function seedDemoData() {
     // 4. Create admin business context
     console.log('✅ Creating admin business context...');
     const { adminEntityId: adminBusinessId } = await seedAdminCore(client);
+    if (adminBusinessId !== expectedAdminBusinessId) {
+      // The RLS context above was pinned to the derived id. If seedAdminCore ever returns a
+      // different one, every write after this point is silently outside the policy.
+      throw new DemoSeedError(
+        `Admin business id mismatch: RLS context is pinned to ${expectedAdminBusinessId} but ` +
+          `seedAdminCore returned ${adminBusinessId}`,
+      );
+    }
     await client.query(
       `INSERT INTO accounter_schema.businesses_admin (id, owner_id)
        VALUES ($1, $1)
