@@ -80,7 +80,7 @@ __metadata:
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.4.0"
-    "@mui/x-charts": "npm:8.29.3"
+    "@mui/x-charts": "npm:9.12.0"
     "@storybook/react-vite": "npm:10.5.10"
     "@tailwindcss/vite": "npm:4.3.3"
     "@tanstack/react-query": "npm:5.102.4"
@@ -746,7 +746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.28.4, @babel/runtime@npm:^7.28.6, @babel/runtime@npm:^7.29.7, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.28.6, @babel/runtime@npm:^7.29.2, @babel/runtime@npm:^7.29.7, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
   version: 7.29.7
   resolution: "@babel/runtime@npm:7.29.7"
   checksum: 10c0/ca11572f7146b21e0bde6a9ed4bb6a89eafbee5f0944c7eb54d0d8a2dac962c33638a1d611e14faa71dfbb92b4b5f9236232208568a6b7d5c6f3f39ddb91771e
@@ -793,6 +793,25 @@ __metadata:
     "@babel/helper-string-parser": "npm:^7.29.7"
     "@babel/helper-validator-identifier": "npm:^7.29.7"
   checksum: 10c0/be7c279f0abf2a086c633e21b49c7ca80275d05283cc5a268b67a708c9914bd0c944f1422b3eb3cb37682a2af5d560abf520ccf9b01b53ecbfe6b71fbc3fdde6
+  languageName: node
+  linkType: hard
+
+"@base-ui/utils@npm:^0.3.1":
+  version: 0.3.2
+  resolution: "@base-ui/utils@npm:0.3.2"
+  dependencies:
+    "@babel/runtime": "npm:^7.29.2"
+    "@floating-ui/utils": "npm:^0.2.12"
+    reselect: "npm:^5.2.0"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    "@types/react": ^17 || ^18 || ^19
+    react: ^17 || ^18 || ^19
+    react-dom: ^17 || ^18 || ^19
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/b523339f350679915550605e59754b5db9806a41a3b390d6f6adad29fedc0caf084c8ad1bad6bb62a463360593382defb7d3ea941a94404ed9db0142fdae5800
   languageName: node
   linkType: hard
 
@@ -5566,20 +5585,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/types@npm:^7.4.12":
-  version: 7.4.12
-  resolution: "@mui/types@npm:7.4.12"
-  dependencies:
-    "@babel/runtime": "npm:^7.28.6"
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 10c0/e2247f9c3b8ef08e2eb7494ad8fcaffd8d695655cb355b8c3f23ebecbf69e13fcf73411b0a209fc0750eb416f7d0f7da1aa82557beb9bd58f26f9645f3f2ce95
-  languageName: node
-  linkType: hard
-
 "@mui/types@npm:^9.4.0":
   version: 9.4.0
   resolution: "@mui/types@npm:9.4.0"
@@ -5594,27 +5599,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/utils@npm:^7.3.5":
-  version: 7.3.11
-  resolution: "@mui/utils@npm:7.3.11"
-  dependencies:
-    "@babel/runtime": "npm:^7.28.6"
-    "@mui/types": "npm:^7.4.12"
-    "@types/prop-types": "npm:^15.7.15"
-    clsx: "npm:^2.1.1"
-    prop-types: "npm:^15.8.1"
-    react-is: "npm:^19.2.3"
-  peerDependencies:
-    "@types/react": ^17.0.0 || ^18.0.0 || ^19.0.0
-    react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 10c0/fdea802667ac724f5648637b22c4a7893135cfd0be80d2c4de1281cac5395b12c6e59ffd487932e3cb21fc628456b479abce8cc4f31c1223da8a1d125f0dd38b
-  languageName: node
-  linkType: hard
-
-"@mui/utils@npm:^9.4.0":
+"@mui/utils@npm:^9.3.0, @mui/utils@npm:^9.4.0":
   version: 9.4.0
   resolution: "@mui/utils@npm:9.4.0"
   dependencies:
@@ -5634,14 +5619,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-charts-vendor@npm:8.29.0":
-  version: 8.29.0
-  resolution: "@mui/x-charts-vendor@npm:8.29.0"
+"@mui/x-charts-vendor@npm:^9.11.1":
+  version: 9.11.1
+  resolution: "@mui/x-charts-vendor@npm:9.11.1"
   dependencies:
-    "@babel/runtime": "npm:^7.28.4"
+    "@babel/runtime": "npm:^7.29.7"
     "@types/d3-array": "npm:^3.2.2"
     "@types/d3-color": "npm:^3.1.3"
     "@types/d3-format": "npm:^3.0.4"
+    "@types/d3-geo": "npm:^3.1.0"
     "@types/d3-interpolate": "npm:^3.0.4"
     "@types/d3-path": "npm:^3.1.1"
     "@types/d3-scale": "npm:^4.0.9"
@@ -5652,6 +5638,7 @@ __metadata:
     d3-array: "npm:^3.2.4"
     d3-color: "npm:^3.1.0"
     d3-format: "npm:^3.1.2"
+    d3-geo: "npm:^3.1.1"
     d3-interpolate: "npm:^3.0.1"
     d3-path: "npm:^3.1.0"
     d3-scale: "npm:^4.0.2"
@@ -5659,31 +5646,31 @@ __metadata:
     d3-time: "npm:^3.1.0"
     d3-time-format: "npm:^4.1.0"
     d3-timer: "npm:^3.0.1"
-    flatqueue: "npm:^3.0.0"
+    flatqueue: "npm:^3.1.0"
     internmap: "npm:^2.0.3"
-  checksum: 10c0/6066a445d7980ea766873757f524722e54cee99aa5be06ae4144a14b4a34f9cb4340ecf1413872c682e5f236603048c19b0270cef3084c3c0c5132cfd88056f0
+  checksum: 10c0/5226d0042fe4c39e525dcc0b155545f38ed32786ae5cf82fe3ad96c46ca7da2a7bb6209260612a75e32e66d17ce127eb2125bf859fa114fa5d6b6929ec0cafae
   languageName: node
   linkType: hard
 
-"@mui/x-charts@npm:8.29.3":
-  version: 8.29.3
-  resolution: "@mui/x-charts@npm:8.29.3"
+"@mui/x-charts@npm:9.12.0":
+  version: 9.12.0
+  resolution: "@mui/x-charts@npm:9.12.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.4"
-    "@mui/utils": "npm:^7.3.5"
-    "@mui/x-charts-vendor": "npm:8.29.0"
-    "@mui/x-internal-gestures": "npm:0.5.0"
-    "@mui/x-internals": "npm:8.29.3"
-    bezier-easing: "npm:^2.1.0"
+    "@babel/runtime": "npm:^7.29.7"
+    "@mui/utils": "npm:^9.3.0"
+    "@mui/x-charts-vendor": "npm:^9.11.1"
+    "@mui/x-internal-gestures": "npm:^9.12.0"
+    "@mui/x-internals": "npm:^9.12.0"
+    bezier-easing: "npm:^3.0.1"
     clsx: "npm:^2.1.1"
     prop-types: "npm:^15.8.1"
-    reselect: "npm:^5.1.1"
+    reselect: "npm:^5.2.0"
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
     "@emotion/react": ^11.9.0
     "@emotion/styled": ^11.8.1
-    "@mui/material": ^5.15.14 || ^6.0.0 || ^7.0.0
-    "@mui/system": ^5.15.14 || ^6.0.0 || ^7.0.0
+    "@mui/material": ^7.3.0 || ^9.0.0
+    "@mui/system": ^7.3.0 || ^9.0.0
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
@@ -5691,30 +5678,36 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/64ec51141c9b7e6865fcf85215bc08c946388d38051d4294be80d11448c7a5a635c26ead739f0f588a773c29b066839435e12c8e2a8dae2448c0b079024e9510
+  checksum: 10c0/1e0ee9bafdd4719000cb97a56baa703dd7547121a1ca759a2b66e1360deaad068250fb1ea88f8e0b0e81ffa268183c2a487fdf30b47808e0de7c2933452521da
   languageName: node
   linkType: hard
 
-"@mui/x-internal-gestures@npm:0.5.0":
-  version: 0.5.0
-  resolution: "@mui/x-internal-gestures@npm:0.5.0"
+"@mui/x-internal-gestures@npm:^9.12.0":
+  version: 9.12.0
+  resolution: "@mui/x-internal-gestures@npm:9.12.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.4"
-  checksum: 10c0/2fe5af91d2c95b661933112991adb41fe9679a32a35c018f3880b10695e7d4671a27bb7e0ffef185e2076fb3d333f5bc3d852079492d3485e8f22933e55f52b4
+    "@babel/runtime": "npm:^7.29.7"
+    "@base-ui/utils": "npm:^0.3.1"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/55aaaa04b8f570ab13b5c8fecae2a45e5c904350f269f3deb6ae4556ebd3740640b894d251b45f5d9fe3c848a4c7941f430ef1cfe7235c03318eac0a4efb11cf
   languageName: node
   linkType: hard
 
-"@mui/x-internals@npm:8.29.3":
-  version: 8.29.3
-  resolution: "@mui/x-internals@npm:8.29.3"
+"@mui/x-internals@npm:^9.12.0":
+  version: 9.12.0
+  resolution: "@mui/x-internals@npm:9.12.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.4"
-    "@mui/utils": "npm:^7.3.5"
-    reselect: "npm:^5.1.1"
+    "@babel/runtime": "npm:^7.29.7"
+    "@base-ui/utils": "npm:^0.3.1"
+    "@mui/utils": "npm:^9.3.0"
+    reselect: "npm:^5.2.0"
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/62bf51b77ad89436b4f2c742b2e727d71d6acdf07a4aa92d6f1651c47945c2a640ba3224c54b329e504b9175c3dbdf9b47ca5e6bc80d8170b0f9e084d8bc2352
+    react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/4e9b87073d9e8d8f00d649dfaf03c65403dd2c220b341cdc18aa5630df5f7f9a7daaa542902b91d1817b9ea100ae07ae6a5161acc5eceec05f66609bc59a87b0
   languageName: node
   linkType: hard
 
@@ -10648,6 +10641,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/d3-geo@npm:^3.1.0":
+  version: 3.1.1
+  resolution: "@types/d3-geo@npm:3.1.1"
+  dependencies:
+    "@types/geojson": "npm:*"
+  checksum: 10c0/bb0405ec99a6b5947d9b47481171f2514c7cbd7dc028a80463193e0ea7411cde997c2813d25146c670c8c0bee08867cdc839fce029586647c8465b5627551493
+  languageName: node
+  linkType: hard
+
 "@types/d3-interpolate@npm:^3.0.1, @types/d3-interpolate@npm:^3.0.4":
   version: 3.0.4
   resolution: "@types/d3-interpolate@npm:3.0.4"
@@ -10753,6 +10755,13 @@ __metadata:
   version: 1.0.9
   resolution: "@types/estree@npm:1.0.9"
   checksum: 10c0/3ad3286ca2988cd550dafb8f2ad599c8474868e954fa601a36655bdfefd8039f7c714b8c1c7f2ae219ffbd58bd4660e66fa7479a0120fc02d4777057d4865387
+  languageName: node
+  linkType: hard
+
+"@types/geojson@npm:*":
+  version: 7946.0.16
+  resolution: "@types/geojson@npm:7946.0.16"
+  checksum: 10c0/1ff24a288bd5860b766b073ead337d31d73bdc715e5b50a2cee5cb0af57a1ed02cc04ef295f5fa68dc40fe3e4f104dd31282b2b818a5ba3231bc1001ba084e3c
   languageName: node
   linkType: hard
 
@@ -12556,10 +12565,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bezier-easing@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "bezier-easing@npm:2.1.0"
-  checksum: 10c0/138a160698de3c12501479cc80280d5cc0ab47df73e20d7b5058cba6d62c0876eb97e63aa1e398233269aa2a6bb396fb0ee394da391de7258c9da20729df5158
+"bezier-easing@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "bezier-easing@npm:3.0.1"
+  checksum: 10c0/b6d17c06011f36d7ddc9d87fe97c79d2b2ac825040858470db4440bf0ebdc1503a3184ab40684678d68ec4f16b4e7990581399ab5628fd03173185f99ba39e07
   languageName: node
   linkType: hard
 
@@ -13982,7 +13991,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"d3-array@npm:2 - 3, d3-array@npm:2.10.0 - 3, d3-array@npm:^3.1.6, d3-array@npm:^3.2.4":
+"d3-array@npm:2 - 3, d3-array@npm:2.10.0 - 3, d3-array@npm:2.5.0 - 3, d3-array@npm:^3.1.6, d3-array@npm:^3.2.4":
   version: 3.2.4
   resolution: "d3-array@npm:3.2.4"
   dependencies:
@@ -14009,6 +14018,15 @@ __metadata:
   version: 3.1.2
   resolution: "d3-format@npm:3.1.2"
   checksum: 10c0/0de452ae07585238e7f01607a7e0066665c34609652188b6ac7dc9f424f69465a425e07d16d79bd0e5955202ac7f241c66d0c76f68a79fc6f4857c94cf420652
+  languageName: node
+  linkType: hard
+
+"d3-geo@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "d3-geo@npm:3.1.1"
+  dependencies:
+    d3-array: "npm:2.5.0 - 3"
+  checksum: 10c0/d32270dd2dc8ac3ea63e8805d63239c4c8ec6c0d339d73b5e5a30a87f8f54db22a78fb434369799465eae169503b25f9a107c642c8a16c32a3285bc0e6d8e8c1
   languageName: node
   linkType: hard
 
@@ -16614,7 +16632,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"flatqueue@npm:^3.0.0":
+"flatqueue@npm:^3.1.0":
   version: 3.1.0
   resolution: "flatqueue@npm:3.1.0"
   checksum: 10c0/0fdd28d0f7265b53397b47f762fbe453d8768f9853987874c629ded86b50e822e22a03d63f2c7bce7b967a0bd73211fd1807561b8dfb800e77971234541df1db
@@ -23478,7 +23496,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-is@npm:^19.2.3, react-is@npm:^19.2.8":
+"react-is@npm:^19.2.8":
   version: 19.2.8
   resolution: "react-is@npm:19.2.8"
   checksum: 10c0/ed5322c84efe035c8fc814b1614ff5ca7fb8c2872a7c045197daf99f9b1bd68f32a2c79ffcbcfcff2fc5d93924ff9f9447400898f5b1534e6302bb0736a257f0
@@ -24046,7 +24064,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"reselect@npm:^5.1.0, reselect@npm:^5.1.1":
+"reselect@npm:^5.1.0, reselect@npm:^5.2.0":
   version: 5.3.0
   resolution: "reselect@npm:5.3.0"
   checksum: 10c0/c79728e4f315152bfb2d82456d35075b705392d9e72c485d7d9b1061bd80af628416216d80f02a42f24dbb24d738aec7fec45806930aaa1d17c32e9875fa1bd6
