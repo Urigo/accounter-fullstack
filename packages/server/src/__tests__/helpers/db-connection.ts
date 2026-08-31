@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { testDbConfig } from './test-db-config.js';
+import { assertTestDatabaseIsLocal, testDbConfig } from './test-db-config.js';
 import { debugLog, emitMetrics } from './diagnostics.js';
 import { TestDbConnectionError } from './errors.js';
 
@@ -11,6 +11,11 @@ export function getSharedPool(): Pool | null {
 
 export async function connectTestDb(): Promise<Pool> {
   if (sharedPool) return sharedPool;
+
+  // Every DB-backed test helper reaches a connection through this function, so this is the
+  // chokepoint -- including the vitest global setup, which writes reference data before any
+  // test file loads.
+  assertTestDatabaseIsLocal();
 
   const createPool = () =>
     new Pool({
