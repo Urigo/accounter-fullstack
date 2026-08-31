@@ -7,6 +7,7 @@ import {
   type BatchUpdateChargesMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useRefreshCharges } from '../providers/charge-refresh.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,9 +42,14 @@ const NOTIFICATION_ID = 'batchUpdateCharges';
 
 export const useBatchUpdateCharges = (): UseBatchUpdateCharges => {
   // TODO: add authentication
-  // TODO: add local data update method after change
 
   const [{ fetching }, mutate] = useMutation(BatchUpdateChargesDocument);
+  // A batch update, by definition, changes charges the caller isn't rendering an action for — the
+  // similar-charges dialog applies one charge's tags/description to a set of others. Any of those
+  // that are rows in a charges table would otherwise keep their pre-mutation values until a reload,
+  // so refresh them here rather than asking every caller to remember. A no-op outside a charges
+  // table, and for ids that aren't currently rendered.
+  const refreshCharges = useRefreshCharges();
   const batchUpdateCharges = useCallback(
     async (variables: BatchUpdateChargesMutationVariables) => {
       const chargeIds = Array.isArray(variables.chargeIds)
@@ -62,6 +68,8 @@ export const useBatchUpdateCharges = (): UseBatchUpdateCharges => {
             id: notificationId,
             description: `${chargeIds.length} charge${chargeIds.length > 1 ? 's' : ''} updated`,
           });
+          // The server's own list, not the requested ids — only these actually changed.
+          refreshCharges(data.batchUpdateCharges.charges.map(charge => charge.id));
           return data.batchUpdateCharges.charges;
         }
       } catch (e) {
@@ -75,7 +83,7 @@ export const useBatchUpdateCharges = (): UseBatchUpdateCharges => {
       }
       return void 0;
     },
-    [mutate],
+    [mutate, refreshCharges],
   );
 
   return {

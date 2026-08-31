@@ -19,6 +19,7 @@ import {
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import type { ChargeType } from '../../helpers/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
+import { ChargeRefreshProvider } from '../../providers/charge-refresh.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import type { AmountProps } from './cells/amount.js';
 import type { BusinessTripProps } from './cells/business-trip.js';
@@ -391,55 +392,59 @@ export const ChargesTable = ({
   const exportIds = selectedIds.length > 0 ? selectedIds : chargeIds;
 
   return (
-    <BatchChargesExtendedInfoProvider chargeIds={chargeIds} active={isAllOpened}>
-      <div className="flex flex-col gap-2 w-full">
-        {showExport && (
-          <div className="flex justify-end">
-            <DownloadChargesCsv chargeIds={exportIds} />
-          </div>
-        )}
-        <div className="overflow-hidden rounded-md border w-full">
-          {/* Cells wrap (overriding the ui table's nowrap, and the nowrap of the sort
+    // Rows publish their refetch here, so a mutation that touched several charges at once can
+    // refresh whichever of them this table happens to be showing.
+    <ChargeRefreshProvider>
+      <BatchChargesExtendedInfoProvider chargeIds={chargeIds} active={isAllOpened}>
+        <div className="flex flex-col gap-2 w-full">
+          {showExport && (
+            <div className="flex justify-end">
+              <DownloadChargesCsv chargeIds={exportIds} />
+            </div>
+          )}
+          <div className="overflow-hidden rounded-md border w-full">
+            {/* Cells wrap (overriding the ui table's nowrap, and the nowrap of the sort
               buttons in the headers) so the table fits the viewport instead of forcing
               the page to scroll sideways. */}
-          <Table className="[&_th]:whitespace-normal [&_td]:whitespace-normal [&_th_button]:whitespace-normal">
-            <TableHeader>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                  <TableHead />
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table
-                  .getRowModel()
-                  .rows.map(row => (
-                    <ChargeRow
-                      key={row.id}
-                      row={row}
-                      updateCharge={updateCharge}
-                      removeCharge={removeCharge}
-                    />
-                  ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+            <Table className="[&_th]:whitespace-normal [&_td]:whitespace-normal [&_th_button]:whitespace-normal">
+              <TableHeader>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <TableHead key={header.id} colSpan={header.colSpan}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                    <TableHead />
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table
+                    .getRowModel()
+                    .rows.map(row => (
+                      <ChargeRow
+                        key={row.id}
+                        row={row}
+                        updateCharge={updateCharge}
+                        removeCharge={removeCharge}
+                      />
+                    ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
-    </BatchChargesExtendedInfoProvider>
+      </BatchChargesExtendedInfoProvider>
+    </ChargeRefreshProvider>
   );
 };

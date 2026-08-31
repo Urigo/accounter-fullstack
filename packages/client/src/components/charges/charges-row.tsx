@@ -7,6 +7,7 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData } from '@/gql/index.js';
 import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import { useRegisterChargeRefresh } from '../../providers/charge-refresh.js';
 import { Card } from '../ui/card.js';
 import { TableCell, TableRow } from '../ui/table.js';
 import { ChargeExtendedInfo } from './charge-extended-info.js';
@@ -48,6 +49,11 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
   const refetchCharge = useCallback((): void => {
     fetchCharge({ requestPolicy: 'network-only' });
   }, [fetchCharge]);
+
+  // Publish the same refetch under this charge's id, so a batch mutation elsewhere in the tree can
+  // refresh this row without holding a reference to it. `row.original` is swapped out on every
+  // refresh, but its id is stable, which is what the registry keys on.
+  useRegisterChargeRefresh(row.original.id, refetchCharge);
 
   const dropCharge = useCallback((): void => {
     removeCharge(row.original.id);

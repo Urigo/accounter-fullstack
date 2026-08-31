@@ -2,3 +2,8 @@ export { UrqlProvider } from './urql.js';
 export { UserContext, UserProvider, type UserInfo } from './user-provider.js';
 export { FiltersContext } from './filters-context.js';
 export { PortalContainerContext, usePortalContainer } from './portal-container.js';
+export {
+  ChargeRefreshProvider,
+  useRefreshCharges,
+  useRegisterChargeRefresh,
+} from './charge-refresh.js';
