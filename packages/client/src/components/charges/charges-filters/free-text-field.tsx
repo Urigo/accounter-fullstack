@@ -23,6 +23,9 @@ export function FreeTextField({
   const excludedFreeText = useWatch({ control, name: 'excludedFreeText' });
   const excluding = !!excludedFreeText;
   const activeField = excluding ? 'excludedFreeText' : 'freeText';
+  // Not `field.value`: clearing the input writes `undefined`, and the controller's own
+  // value falls back to whatever the field held when the modal opened.
+  const activeValue = excluding ? excludedFreeText : freeText;
 
   function flip(): void {
     const text = excluding ? excludedFreeText : freeText;
@@ -73,7 +76,7 @@ export function FreeTextField({
                 <Input
                   {...field}
                   id="charges-free-text"
-                  value={field.value ?? ''}
+                  value={activeValue ?? ''}
                   onChange={(event): void => field.onChange(event.target.value || undefined)}
                   placeholder={
                     excluding

@@ -8,6 +8,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../
 import { chargesTypeFilterOptions, chargeTypeNameOptions } from '../constants.js';
 import { MultiSelectField } from '../negatable-multi-select-field.js';
 import type { ChargeFilterFormValues } from '../schema.js';
+import { useFilterValue } from '../use-filter-value.js';
 
 const ACCOUNTANT_STATUSES: AccountantStatus[] = [
   AccountantStatus.Approved,
@@ -15,11 +16,18 @@ const ACCOUNTANT_STATUSES: AccountantStatus[] = [
   AccountantStatus.Unapproved,
 ];
 
+/** Stable identity for the "nothing selected" case, so it isn't a fresh array per render. */
+const EMPTY_STATUSES: AccountantStatus[] = [];
+
 export function ClassificationSection({
   control,
 }: {
   control: Control<ChargeFilterFormValues>;
 }): ReactElement {
+  // Cleared to `undefined` below, which is exactly what makes the controller's own
+  // value fall back to whatever the field held when the modal opened.
+  const accountantStatus = useFilterValue(control, 'accountantStatus') ?? EMPTY_STATUSES;
+
   return (
     <>
       <FormField
@@ -73,7 +81,7 @@ export function ClassificationSection({
                 {ACCOUNTANT_STATUSES.map(status => {
                   const option = accountantApprovalOptions[status];
                   const ApprovalIcon = option.icon;
-                  const selected = (field.value ?? []).includes(status);
+                  const selected = accountantStatus.includes(status);
                   return (
                     <Button
                       key={status}
@@ -85,10 +93,9 @@ export function ClassificationSection({
                         selected ? 'border-primary bg-accent' : option.bgColor,
                       )}
                       onClick={(): void => {
-                        const current = field.value ?? [];
                         const next = selected
-                          ? current.filter(item => item !== status)
-                          : [...current, status];
+                          ? accountantStatus.filter(item => item !== status)
+                          : [...accountantStatus, status];
                         field.onChange(next.length > 0 ? next : undefined);
                       }}
                     >

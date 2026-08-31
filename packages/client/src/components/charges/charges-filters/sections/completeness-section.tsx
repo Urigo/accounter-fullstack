@@ -6,6 +6,7 @@ import { Switch } from '../../../ui/switch.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../../ui/tooltip.js';
 import type { COMPLETENESS_KEYS } from '../counts.js';
 import type { ChargeFilterFormValues } from '../schema.js';
+import { useFilterValue } from '../use-filter-value.js';
 
 type ToggleKey = (typeof COMPLETENESS_KEYS)[number];
 type ToggleDef = { name: ToggleKey; label: string; tooltip?: string };
@@ -41,6 +42,10 @@ function ToggleRow({
   control: Control<ChargeFilterFormValues>;
   def: ToggleDef;
 }): ReactElement {
+  // Switching a toggle off writes `undefined`, which is exactly what makes the
+  // controller's own value fall back to the state the modal opened with.
+  const checked = useFilterValue(control, def.name) ?? false;
+
   return (
     <FormField
       control={control}
@@ -67,8 +72,8 @@ function ToggleRow({
           <FormControl>
             {/* Controlled, so form.reset() from Reset / Clear all moves the switch. */}
             <Switch
-              checked={field.value ?? false}
-              onCheckedChange={(checked): void => field.onChange(checked || undefined)}
+              checked={checked}
+              onCheckedChange={(next): void => field.onChange(next || undefined)}
             />
           </FormControl>
         </FormItem>
