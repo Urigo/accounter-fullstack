@@ -443,8 +443,8 @@ fixtures: {
 
 This is invisible locally: dev and CI connect as the `postgres` superuser, which bypasses RLS
 regardless of `FORCE`. A deployed database connects as a non-superuser, which does not. A change
-that works on `yarn test:integration` and `yarn test:demo-seed` can still fail on the first
-deployed run.
+that works on `yarn test:integration` and `yarn test:demo-seed` can still fail on the first deployed
+run.
 
 **Solution**: The seed and validator pin the context themselves — `scripts/seed-demo-data.ts` and
 `packages/server/src/demo-fixtures/validate-demo-data.ts` both call
