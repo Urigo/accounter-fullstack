@@ -202,6 +202,7 @@ import migration_2026_08_14T10_00_00_poalim_securities_transactions_calendar_dat
 import migration_2026_08_20T10_00_00_add_security_businesses from './actions/2026-08-20T10-00-00.add-security-businesses.js';
 import migration_2026_08_23T10_00_00_rls_scope_securities_tables from './actions/2026-08-23T10-00-00.rls-scope-securities-tables.js';
 import migration_2026_08_31T10_00_00_add_tenant_scoped_date_indexes from './actions/2026-08-31T10-00-00.add-tenant-scoped-date-indexes.js';
+import migration_2026_08_31T11_00_00_index_financial_entity_names from './actions/2026-08-31T11-00-00.index-financial-entity-names.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -408,6 +409,7 @@ export const MIGRATIONS = [
   migration_2026_08_20T10_00_00_add_security_businesses,
   migration_2026_08_23T10_00_00_rls_scope_securities_tables,
   migration_2026_08_31T10_00_00_add_tenant_scoped_date_indexes,
+  migration_2026_08_31T11_00_00_index_financial_entity_names,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
