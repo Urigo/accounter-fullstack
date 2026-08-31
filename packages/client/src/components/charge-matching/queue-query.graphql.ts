@@ -71,11 +71,15 @@
         baseCharge {
           ...ChargeMatchCardFields
         }
-        suggestions {
-          chargeId
-          confidenceScore
-          charge {
-            ...ChargeMatchCardFields
+        # Scored lazily on the server so the queue paints immediately; the
+        # suggestions stream in via @defer once evaluated.
+        ... on ChargeWithSuggestions @defer {
+          suggestions {
+            chargeId
+            confidenceScore
+            charge {
+              ...ChargeMatchCardFields
+            }
           }
         }
       }
