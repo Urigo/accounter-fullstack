@@ -33,15 +33,26 @@ const child = spawn(
   },
 );
 
+let spawnFailed = false;
+
+child.on('error', error => {
+  spawnFailed = true;
+  console.error(`Failed to run 'changeset publish': ${error.message}`);
+});
+
 child.on('close', code => {
-  if (code === 0) {
-    for (const line of readReport()) {
-      if (line.type === 'git-tag' && line.tag) {
-        console.log(`New tag: ${line.tag}`);
+  const succeeded = !spawnFailed && code === 0;
+  if (succeeded) {
+    for (const event of readReport()) {
+      if (event.type === 'git-tag' && event.tag) {
+        console.log(`New tag: ${event.tag}`);
       }
     }
   }
-  process.exit(code ?? 1);
+  // Not `process.exit()`: that can truncate the lines above when stdout is a pipe (as it is in
+  // CI, where the release action reads them). A `null`/negative code means the child was killed
+  // by a signal or never started, so report a plain failure.
+  process.exitCode = succeeded ? 0 : code > 0 ? code : 1;
 });
 
 function readReport() {
@@ -54,7 +65,8 @@ function readReport() {
     .filter(Boolean)
     .map(line => {
       try {
-        return JSON.parse(line);
+        const parsed = JSON.parse(line);
+        return typeof parsed === 'object' && parsed !== null ? parsed : {};
       } catch {
         return {};
       }
