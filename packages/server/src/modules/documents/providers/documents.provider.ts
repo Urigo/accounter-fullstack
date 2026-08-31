@@ -251,7 +251,7 @@ const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
     AND ($isUnmatched = 0 OR NOT EXISTS (
       SELECT 1
       FROM accounter_schema.transactions t
-      WHERE t.charge_id = charge_id
+      WHERE t.charge_id = documents.charge_id
     ))
     AND ($freeText::TEXT IS NULL OR (
       serial_number ILIKE '%' || $freeText || '%'
