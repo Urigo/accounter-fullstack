@@ -1,5 +1,6 @@
 import type { PoolConfig } from 'pg';
 import { config } from 'dotenv';
+import { assertLocalDatabase } from '../../../../migrations/src/local-db-guard.js';
 
 // Load environment variables
 config({ path: [`.env`, `../../.env`] });
@@ -16,6 +17,20 @@ export const testDbConfig: PoolConfig = {
   database: process.env.POSTGRES_DB || 'accounter_test',
   ssl: process.env.POSTGRES_SSL === '1',
 };
+
+// Fail at import time rather than at first query. Every DB-backed test helper builds its
+// pool from `testDbConfig`, so this one call covers the whole harness -- including the
+// vitest global setup, which writes reference data before any test file is loaded.
+// Tests must never touch a deployed database; override POSTGRES_* or set ALLOW_REMOTE_DB=1.
+assertLocalDatabase(
+  {
+    host: testDbConfig.host,
+    port: testDbConfig.port,
+    db: testDbConfig.database,
+    user: testDbConfig.user,
+  },
+  'the test harness',
+);
 
 /**
  * Database schema name for queries

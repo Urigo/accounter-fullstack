@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import pg from 'pg';
+import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
 import { seedAdminCore } from '../packages/server/scripts/seed-admin-context.js';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
 import type {
@@ -188,6 +189,19 @@ async function seedDemoData() {
     console.error('❌ ALLOW_DEMO_SEED=1 required to run demo seed');
     process.exit(1);
   }
+
+  // NODE_ENV above says nothing about which host POSTGRES_* points at -- and the root .env
+  // sets NODE_ENV=production while often pointing at the dev container, so the two are
+  // independent. Check the actual target too.
+  assertLocalDatabase(
+    {
+      host: process.env.POSTGRES_HOST,
+      port: process.env.POSTGRES_PORT,
+      db: process.env.POSTGRES_DB,
+      user: process.env.POSTGRES_USER,
+    },
+    'the demo data seed',
+  );
 
   const client = new pg.Client({
     user: process.env.POSTGRES_USER,
