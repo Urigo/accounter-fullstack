@@ -47,15 +47,39 @@ const LOCAL_HOSTNAMES = new Set([
 ]);
 
 /**
- * Normalize a host the way a human would have typed it into `.env`: dotenv already strips
- * matching quotes, but a hand-edited value can still carry whitespace or stray quotes.
+ * Strip what a hand-edited `.env` tends to leave behind: dotenv already removes matching
+ * quotes, but a value typed by hand can still carry surrounding whitespace or stray quotes.
+ * Shared by classification and display so the two never disagree about what was read.
  */
-function normalizeHost(host: string): string {
-  return host
+function stripQuotesAndTrim(value: string): string {
+  return value
     .trim()
     .replace(/^['"]|['"]$/g, '')
-    .trim()
-    .toLowerCase();
+    .trim();
+}
+
+function normalizeHost(host: string): string {
+  return stripQuotesAndTrim(host).toLowerCase();
+}
+
+/** Upper bound on any single field rendered into a message. */
+const MAX_DISPLAY_LENGTH = 120;
+
+/**
+ * Render one connection field for human eyes, applying the same trimming used for
+ * classification so the message cannot describe a different value than the one judged.
+ *
+ * Also strips C0/C1 control characters. A stray byte in `.env` would otherwise be echoed
+ * verbatim into an error, and an ANSI escape sequence there would corrupt the terminal of
+ * whoever is reading it — the one place we can be sure a human is looking.
+ */
+function sanitizeForDisplay(value: string | number): string {
+  const text = stripQuotesAndTrim(String(value)).replace(
+    // eslint-disable-next-line no-control-regex -- stripping control characters is the point
+    /[\u0000-\u001F\u007F-\u009F]/g,
+    '',
+  );
+  return text.length > MAX_DISPLAY_LENGTH ? `${text.slice(0, MAX_DISPLAY_LENGTH)}…` : text;
 }
 
 /**
@@ -94,12 +118,23 @@ export function isLocalDatabaseHost(host: string | undefined | null): boolean {
   return false;
 }
 
-/** Human-readable target with the password omitted — safe to log or put in an error. */
+/**
+ * Human-readable target with the password omitted — safe to log or put in an error.
+ *
+ * Every field goes through `sanitizeForDisplay`, so a `.env` value carrying quotes,
+ * whitespace or control bytes is shown as the value that was actually classified rather
+ * than as raw input.
+ */
 export function describeDatabaseTarget(target: DatabaseTarget): string {
-  const host = target.host === undefined || target.host === '' ? '<default>' : target.host;
-  const port = target.port === undefined ? '' : `:${target.port}`;
-  const db = target.db === undefined || target.db === '' ? '' : `/${target.db}`;
-  const user = target.user === undefined || target.user === '' ? '' : `${target.user}@`;
+  const rawHost = target.host === undefined ? '' : sanitizeForDisplay(target.host);
+  const rawPort = target.port === undefined ? '' : sanitizeForDisplay(target.port);
+  const rawDb = target.db === undefined ? '' : sanitizeForDisplay(target.db);
+  const rawUser = target.user === undefined ? '' : sanitizeForDisplay(target.user);
+
+  const host = rawHost === '' ? '<default>' : rawHost;
+  const port = rawPort === '' ? '' : `:${rawPort}`;
+  const db = rawDb === '' ? '' : `/${rawDb}`;
+  const user = rawUser === '' ? '' : `${rawUser}@`;
   return `${user}${host}${port}${db}`;
 }
 

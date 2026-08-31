@@ -77,6 +77,48 @@ describe('describeDatabaseTarget', () => {
   it('marks an absent host explicitly', () => {
     expect(describeDatabaseTarget({ db: 'accounter' })).toBe('<default>/accounter');
   });
+
+  // The displayed value must match the value that was classified, or the message describes
+  // a different target than the one the guard judged.
+  it('shows the trimmed, unquoted host rather than the raw .env value', () => {
+    expect(describeDatabaseTarget({ host: "  'db.example.com'  " })).toBe('db.example.com');
+  });
+
+  it('applies the same trimming to port, user and database', () => {
+    expect(
+      describeDatabaseTarget({
+        host: ' "db.example.com" ',
+        port: " '5433' ",
+        db: "  'prod_db' ",
+        user: ' "prod_user" ',
+      }),
+    ).toBe('prod_user@db.example.com:5433/prod_db');
+  });
+
+  it('strips control characters so an ANSI escape cannot reach the terminal', () => {
+    const withEscape = describeDatabaseTarget({
+      host: 'db.example.com\u001B[31m',
+      user: 'user\u0000\u0007',
+      db: 'prod\u007F',
+    });
+
+    // The ESC byte is removed, which is what disarms the sequence; the remaining "[31m" is
+    // inert printable text and is deliberately left visible rather than silently rewritten.
+    expect(withEscape).toBe('user@db.example.com[31m/prod');
+    // eslint-disable-next-line no-control-regex -- asserting control characters are gone
+    expect(withEscape).not.toMatch(/[\u0000-\u001F\u007F-\u009F]/);
+  });
+
+  it('treats a host that is only quotes and whitespace as absent', () => {
+    expect(describeDatabaseTarget({ host: "  ''  " })).toBe('<default>');
+  });
+
+  it('truncates a pathologically long value instead of flooding the message', () => {
+    const long = 'a'.repeat(500);
+    const rendered = describeDatabaseTarget({ host: long });
+    expect(rendered.length).toBeLessThan(130);
+    expect(rendered.endsWith('…')).toBe(true);
+  });
 });
 
 describe('isRemoteDatabaseAllowed', () => {
