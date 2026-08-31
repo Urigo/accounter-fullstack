@@ -83,10 +83,10 @@ const getLedgerRecordsByFilters = sql<IGetLedgerRecordsByFiltersQuery>`
     ORDER BY invoice_date, value_date, id
     LIMIT $limit;`;
 
--- Every one of the four entity slots contributes to the balance, so all four are
--- summed. UNION ALL rather than UNION: two ledger sides that happen to share an
--- entity, amount and date are two real movements, and deduplicating them would
--- drop one of them from the sum.
+// Every one of the four entity slots contributes to the balance, so all four are
+// summed. UNION ALL rather than UNION: two ledger sides that happen to share an
+// entity, amount and date are two real movements, and deduplicating them would
+// drop one of them from the sum.
 const getLedgerBalanceToDate = sql<IGetLedgerBalanceToDateQuery>`
     WITH grouped_entities AS (SELECT credit_entity1 AS entity_id, credit_local_amount1 AS amount, invoice_date
                               FROM accounter_schema.ledger_records
