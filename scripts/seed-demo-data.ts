@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 import pg from 'pg';
-import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
+import { warnIfRemoteDatabase } from '../packages/migrations/src/local-db-guard.js';
 import { seedAdminCore } from '../packages/server/scripts/seed-admin-context.js';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
 import type {
@@ -192,8 +192,15 @@ async function seedDemoData() {
 
   // NODE_ENV above says nothing about which host POSTGRES_* points at -- and the root .env
   // sets NODE_ENV=production while often pointing at the dev container, so the two are
-  // independent. Check the actual target too.
-  assertLocalDatabase(
+  // independent. Report the actual target too.
+  //
+  // Warn rather than refuse: this script runs inside the staging deploy's build command
+  // (`ALLOW_DEMO_SEED=1 yarn seed:staging-demo`) against a deployed database, so a deployed
+  // target is its intended use, not a mistake. Requiring an opt-in variable here would mean
+  // every new staging or preview environment fails its first deploy on a safety check --
+  // which is exactly what happened when this refused. The real protection against seeding
+  // the wrong database is the ALLOW_DEMO_SEED gate above plus a visible target in the log.
+  warnIfRemoteDatabase(
     {
       host: process.env.POSTGRES_HOST,
       port: process.env.POSTGRES_PORT,

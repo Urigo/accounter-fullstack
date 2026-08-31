@@ -1,11 +1,15 @@
 import { createPool as createSlonikPool, type DatabasePool } from 'slonik';
-import { testDbConfig, testDbSchema } from './test-db-config.js';
+import { assertTestDatabaseIsLocal, testDbConfig, testDbSchema } from './test-db-config.js';
 import { runPGMigrations, LATEST_MIGRATION_NAME } from '../../../../migrations/src/run-pg-migrations.js';
 import { debugLog, emitMetrics } from './diagnostics.js';
 import { TestDbMigrationError } from './errors.js';
 import type { Pool } from 'pg';
 
 export async function runMigrationsIfNeeded(pgPool: Pool): Promise<void> {
+  // This opens its own slonik pool from testDbConfig below and can apply DDL, so it does not
+  // inherit connectTestDb's check.
+  assertTestDatabaseIsLocal();
+
   let needToRun = false;
   const client = await pgPool.connect();
   try {
