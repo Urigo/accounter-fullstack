@@ -228,8 +228,8 @@ const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
   FROM accounter_schema.documents
   WHERE
     ($isIDs = 0 OR id IN $$IDs)
-    AND ($fromVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date)::TEXT::DATE >= date_trunc('day', $fromVatDate ::DATE))
-    AND ($toVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date)::TEXT::DATE <= date_trunc('day', $toVatDate ::DATE))
+    AND ($fromVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date) >= $fromVatDate ::DATE)
+    AND ($toVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date) <= $toVatDate ::DATE)
     AND ($isBusinessIDs = 0 OR debtor_id IN $$businessIDs OR creditor_id IN $$businessIDs)
   ORDER BY created_at DESC;
 `;
@@ -239,10 +239,10 @@ const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
   FROM accounter_schema.documents
   WHERE
     ($isIDs = 0 OR id IN $$IDs)
-    AND ($fromVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date)::TEXT::DATE >= date_trunc('day', $fromVatDate ::DATE))
-    AND ($toVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date)::TEXT::DATE <= date_trunc('day', $toVatDate ::DATE))
-    AND ($fromDate ::TEXT IS NULL OR date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
-    AND ($toDate ::TEXT IS NULL OR date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
+    AND ($fromVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date) >= $fromVatDate ::DATE)
+    AND ($toVatDate ::TEXT IS NULL OR COALESCE(vat_report_date_override ,date) <= $toVatDate ::DATE)
+    AND ($fromDate ::TEXT IS NULL OR date >= $fromDate ::DATE)
+    AND ($toDate ::TEXT IS NULL OR date <= $toDate ::DATE)
     AND ($isBusinessIDs = 0 OR debtor_id IN $$businessIDs OR creditor_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR owner_id IN $$ownerIDs)
     AND ($isChargeIDs = 0 OR charge_id IN $$chargeIDs)
