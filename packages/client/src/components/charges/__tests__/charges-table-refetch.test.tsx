@@ -43,11 +43,17 @@ function makeCharge(overrides: Record<string, unknown> = {}) {
 }
 
 /** Builds an urql client backed by a scripted, request-recording fetch. */
-function makeClient(operations: string[], responses: Record<string, () => unknown>): Client {
+function makeClient(
+  operations: string[],
+  responses: Record<string, (variables: Record<string, unknown>) => unknown>,
+): Client {
   const mockFetch = (async (_url: string, init: RequestInit) => {
-    const body = JSON.parse(String(init.body)) as { operationName: string };
+    const body = JSON.parse(String(init.body)) as {
+      operationName: string;
+      variables?: Record<string, unknown>;
+    };
     operations.push(body.operationName);
-    const data = (responses[body.operationName] ?? (() => ({})))();
+    const data = (responses[body.operationName] ?? (() => ({})))(body.variables ?? {});
     const payload = JSON.stringify({ data });
     return {
       status: 200,
@@ -90,13 +96,13 @@ describe('charges table row refetch', () => {
     }
   }
 
-  async function renderTable(client: Client, charge: ChargeFixture): Promise<void> {
+  async function renderTable(client: Client, ...charges: ChargeFixture[]): Promise<void> {
     await act(async () => {
       root.render(
         <MemoryRouter>
           <Provider value={client}>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw fixture stands in for the masked fragment */}
-            <ChargesTable data={[charge as any]} />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw fixtures stand in for the masked fragments */}
+            <ChargesTable data={charges as any} />
           </Provider>
         </MemoryRouter>,
       );
@@ -202,5 +208,170 @@ describe('charges table row refetch', () => {
     await click(remaining[0]);
     expect(refetchCount).toBe(2);
     expect(confirmButtons()).toHaveLength(0);
+  });
+
+  /** The similar-charges dialog renders through a portal on `document.body`, not into `container`. */
+  function dialog(): HTMLElement | null {
+    return document.body.querySelector<HTMLElement>('[role="dialog"]');
+  }
+
+  function buttonByText(scope: ParentNode, text: string): HTMLElement | undefined {
+    return [...scope.querySelectorAll<HTMLElement>('button')].find(
+      element => element.textContent?.trim() === text,
+    );
+  }
+
+  it('refreshes the other charges a similar-charges approval updated', async () => {
+    const operations: string[] = [];
+    const refetched: string[] = [];
+    // Flipped by the batch mutation: until then the refetch answers with the pre-approval charge,
+    // exactly as the server would.
+    let approved = false;
+
+    const client = makeClient(operations, {
+      UpdateCharge: () => ({
+        updateCharge: { __typename: 'UpdateChargeSuccessfulResult', charge: { id: 'charge-1' } },
+      }),
+      // `charge-2` is a row in the table *and* a similar charge — the case that used to go stale.
+      SimilarCharges: () => ({
+        similarCharges: [
+          {
+            id: 'charge-2',
+            __typename: 'CommonCharge',
+            counterparty: { name: 'Acme', id: 'business-1' },
+            minEventDate: '2024-01-02',
+            minDebitDate: null,
+            minDocumentsDate: null,
+            totalAmount: { raw: -50, formatted: '-50 ILS' },
+            vat: { raw: -7, formatted: '-7 ILS' },
+            userDescription: null,
+            tags: [],
+            taxCategory: { id: 'tax-1', name: 'Expenses' },
+            metadata: {
+              transactionsCount: 1,
+              documentsCount: 0,
+              ledgerCount: 0,
+              miscExpensesCount: 0,
+            },
+          },
+        ],
+      }),
+      BatchUpdateCharges: () => {
+        approved = true;
+        return {
+          batchUpdateCharges: {
+            __typename: 'BatchUpdateChargesSuccessfulResult',
+            charges: [{ id: 'charge-2' }],
+          },
+        };
+      },
+      RefetchChargeForChargesTable: variables => {
+        const chargeId = String(variables.chargeId);
+        refetched.push(chargeId);
+        if (chargeId === 'charge-1') {
+          return { charge: makeCharge({ userDescription: 'Confirmed description' }) };
+        }
+        return {
+          charge: makeCharge({
+            id: 'charge-2',
+            userDescription: approved ? 'Confirmed description' : 'Stale description',
+          }),
+        };
+      },
+    });
+
+    await renderTable(
+      client,
+      makeCharge({
+        validationData: { missingInfo: ['DESCRIPTION'] },
+        missingInfoSuggestions: { description: 'Suggested description', tags: [] },
+      }),
+      makeCharge({ id: 'charge-2', userDescription: 'Stale description' }),
+    );
+
+    // Confirming charge-1's suggestion refreshes its own row and opens the similar-charges dialog.
+    await click(confirmButtons()[0]);
+    expect(container.textContent).toContain('Confirmed description');
+    expect(container.textContent).toContain('Stale description');
+
+    const modal = dialog();
+    expect(modal).not.toBeNull();
+
+    // The header checkbox selects every charge the dialog is offering — here, just charge-2.
+    const selectAll = modal!.querySelector<HTMLElement>('[role="checkbox"]');
+    expect(selectAll).not.toBeNull();
+    await click(selectAll!);
+
+    const approve = buttonByText(modal!, 'Approve selected');
+    expect(approve).toBeDefined();
+    await click(approve!);
+
+    expect(operations).toContain('BatchUpdateCharges');
+    // The approval only ever touched charge-2, so that is the row that had to be refreshed.
+    expect(refetched.filter(id => id === 'charge-2')).not.toHaveLength(0);
+    expect(container.textContent).not.toContain('Stale description');
+  });
+
+  it('leaves charges that are not in the table alone', async () => {
+    const operations: string[] = [];
+    const refetched: string[] = [];
+
+    const client = makeClient(operations, {
+      UpdateCharge: () => ({
+        updateCharge: { __typename: 'UpdateChargeSuccessfulResult', charge: { id: 'charge-1' } },
+      }),
+      SimilarCharges: () => ({
+        similarCharges: [
+          {
+            id: 'charge-elsewhere',
+            __typename: 'CommonCharge',
+            counterparty: { name: 'Acme', id: 'business-1' },
+            minEventDate: '2024-01-02',
+            minDebitDate: null,
+            minDocumentsDate: null,
+            totalAmount: { raw: -50, formatted: '-50 ILS' },
+            vat: { raw: -7, formatted: '-7 ILS' },
+            userDescription: null,
+            tags: [],
+            taxCategory: { id: 'tax-1', name: 'Expenses' },
+            metadata: {
+              transactionsCount: 1,
+              documentsCount: 0,
+              ledgerCount: 0,
+              miscExpensesCount: 0,
+            },
+          },
+        ],
+      }),
+      BatchUpdateCharges: () => ({
+        batchUpdateCharges: {
+          __typename: 'BatchUpdateChargesSuccessfulResult',
+          charges: [{ id: 'charge-elsewhere' }],
+        },
+      }),
+      RefetchChargeForChargesTable: variables => {
+        refetched.push(String(variables.chargeId));
+        return { charge: makeCharge({ userDescription: 'Confirmed description' }) };
+      },
+    });
+
+    await renderTable(
+      client,
+      makeCharge({
+        validationData: { missingInfo: ['DESCRIPTION'] },
+        missingInfoSuggestions: { description: 'Suggested description', tags: [] },
+      }),
+    );
+
+    await click(confirmButtons()[0]);
+
+    const modal = dialog();
+    expect(modal).not.toBeNull();
+    await click(modal!.querySelector<HTMLElement>('[role="checkbox"]')!);
+    await click(buttonByText(modal!, 'Approve selected')!);
+
+    expect(operations).toContain('BatchUpdateCharges');
+    // Only charge-1's own post-mutation refresh; the approved charge isn't rendered anywhere.
+    expect(refetched).not.toContain('charge-elsewhere');
   });
 });
