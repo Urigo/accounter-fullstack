@@ -9,12 +9,15 @@ import {
   describeInitializeParams,
   dispatchMcpRequest,
   handleMcpBody,
+  describeModernEraProbe,
   MAX_CLIENT_LABEL_LENGTH,
+  MAX_LOGGED_CAPABILITIES,
   MCP_INITIALIZE_EVENT,
+  MCP_MODERN_PROBE_EVENT,
   MCP_PROTOCOL_VERSION,
   mcpHttpHandler,
 } from '../handler.js';
-import type { JsonRpcErrorResponse, JsonRpcSuccess } from '../jsonrpc.js';
+import type { JsonRpcErrorResponse, JsonRpcResponse, JsonRpcSuccess } from '../jsonrpc.js';
 import { JsonRpcErrorCode } from '../jsonrpc.js';
 import { SMOKE_TOOL_NAME } from '../tools.js';
 
@@ -613,5 +616,182 @@ describe('initialize handshake logging', () => {
     handleMcpBody(rpc('initialize'));
 
     expect(handshakeLines()).toHaveLength(0);
+  });
+});
+
+describe('modern-era probe detection', () => {
+  const auth = buildAuthContext(PRINCIPAL, []);
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    logSpy.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  function probes(): Record<string, unknown>[] {
+    return logSpy.mock.calls
+      .map(call => JSON.parse(String(call[0])) as Record<string, unknown>)
+      .filter(entry => entry.event === MCP_MODERN_PROBE_EVENT);
+  }
+
+  async function dispatch(
+    request: Record<string, unknown>,
+    protocolVersionHeader?: string,
+  ): Promise<JsonRpcResponse | null> {
+    return dispatchMcpRequest({ jsonrpc: '2.0', id: 1, ...request } as never, {
+      auth,
+      correlationId: 'corr-1',
+      allowlist: [],
+      writeToolsEnabled: false,
+      protocolVersionHeader,
+    });
+  }
+
+  it('stays silent for an ordinary request', async () => {
+    await dispatch({ method: 'tools/list' });
+
+    expect(probes()).toEqual([]);
+  });
+
+  // The header is required by the revision we already implement, so it may be
+  // on every call. Logging its presence would make this event mean "a request
+  // happened" rather than "something changed".
+  it('stays silent when the header agrees with what we serve', async () => {
+    await dispatch({ method: 'tools/list' }, MCP_PROTOCOL_VERSION);
+
+    expect(probes()).toEqual([]);
+  });
+
+  it('reports a header naming a revision we do not implement', async () => {
+    await dispatch({ method: 'tools/list' }, '2026-07-28');
+
+    expect(probes()).toHaveLength(1);
+    expect(probes()[0]).toMatchObject({
+      method: 'tools/list',
+      protocolVersionHeader: '2026-07-28',
+      servedProtocolVersion: MCP_PROTOCOL_VERSION,
+      servedEra: 'legacy',
+      correlationId: 'corr-1',
+    });
+  });
+
+  it('reports per-request `_meta`, the marker of a modern request', async () => {
+    await dispatch({
+      method: 'tools/list',
+      params: {
+        _meta: {
+          'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+          'io.modelcontextprotocol/clientInfo': { name: 'claude-ai', version: '1.40.0' },
+          'io.modelcontextprotocol/clientCapabilities': { roots: {}, elicitation: {} },
+        },
+      },
+    });
+
+    expect(probes()[0]).toMatchObject({
+      metaProtocolVersion: '2026-07-28',
+      metaClientName: 'claude-ai',
+      metaClientVersion: '1.40.0',
+      metaClientCapabilities: ['elicitation', 'roots'],
+    });
+  });
+
+  it('reports `server/discover`, and still answers method-not-found', async () => {
+    const response = (await dispatch({ method: 'server/discover' })) as JsonRpcErrorResponse;
+
+    expect(probes()[0]).toMatchObject({ method: 'server/discover', modernMethod: true });
+    // Answering it would tell a dual-era client we are modern, and it would
+    // stop falling back to the handshake that currently works.
+    expect(response.error.code).toBe(JsonRpcErrorCode.MethodNotFound);
+  });
+
+  /**
+   * The load-bearing assertion. Detection must be observation only: a dual-era
+   * client decides our era from what we return, so a response that changes
+   * because a probe was noticed would cause the very failure this warns about.
+   */
+  it('changes no response byte when a probe is detected', async () => {
+    const quiet = await dispatch({ method: 'tools/list' });
+    const probed = await dispatch(
+      { method: 'tools/list', params: { _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' } } },
+      '2026-07-28',
+    );
+
+    expect(probes().length).toBeGreaterThan(0);
+    expect(JSON.stringify(probed)).toBe(JSON.stringify(quiet));
+  });
+
+  it('survives junk in `_meta` rather than throwing', async () => {
+    for (const params of [null, 'nope', [1, 2], { _meta: 'nope' }, { _meta: { 'io.modelcontextprotocol/clientInfo': 7 } }]) {
+      await expect(dispatch({ method: 'tools/list', params })).resolves.toBeDefined();
+    }
+  });
+});
+
+describe('caller-supplied capability lists are bounded', () => {
+  /**
+   * Every field these two extractors read comes from the caller and is bounded
+   * only by the 1 MB body cap, so an unbounded copy into a log line is
+   * caller-controlled amplification. `clientName` and `clientVersion` were
+   * clipped from the start; the capability *set* was not, in either extractor.
+   */
+  const many = (count: number): Record<string, unknown> =>
+    Object.fromEntries(Array.from({ length: count }, (_, i) => [`cap${String(i).padStart(3, '0')}`, {}]));
+
+  it('caps the number of capability names on a handshake', () => {
+    const { clientCapabilities } = describeInitializeParams({ capabilities: many(500) });
+
+    expect(clientCapabilities).toHaveLength(MAX_LOGGED_CAPABILITIES + 1);
+    // Silently short would read as a client declaring fewer capabilities.
+    expect(clientCapabilities.at(-1)).toBe(`+${500 - MAX_LOGGED_CAPABILITIES} more`);
+  });
+
+  it('caps the number of capability names on a modern probe', () => {
+    const probe = describeModernEraProbe(
+      'tools/list',
+      { _meta: { 'io.modelcontextprotocol/clientCapabilities': many(100) } },
+      undefined,
+    );
+
+    expect(probe!.metaClientCapabilities).toHaveLength(MAX_LOGGED_CAPABILITIES + 1);
+    expect(probe!.metaClientCapabilities.at(-1)).toBe(`+${100 - MAX_LOGGED_CAPABILITIES} more`);
+  });
+
+  it('clips an over-long capability name', () => {
+    const { clientCapabilities } = describeInitializeParams({
+      capabilities: { ['c'.repeat(500)]: {} },
+    });
+
+    expect(clientCapabilities[0]).toHaveLength(MAX_CLIENT_LABEL_LENGTH);
+    expect(clientCapabilities[0]!.endsWith('…')).toBe(true);
+  });
+
+  it('leaves a normal capability set untouched and sorted', () => {
+    const { clientCapabilities } = describeInitializeParams({
+      capabilities: { sampling: {}, elicitation: {}, roots: {} },
+    });
+
+    expect(clientCapabilities).toEqual(['elicitation', 'roots', 'sampling']);
+  });
+
+  it('bounds the whole emitted line, not just the array', () => {
+    const probe = describeModernEraProbe(
+      'tools/list',
+      {
+        _meta: {
+          'io.modelcontextprotocol/clientCapabilities': Object.fromEntries(
+            Array.from({ length: 2000 }, (_, i) => [`${'x'.repeat(300)}${i}`, {}]),
+          ),
+        },
+      },
+      undefined,
+    );
+
+    // ~600KB of caller input; the log line must not scale with it.
+    expect(JSON.stringify(probe).length).toBeLessThan(2_000);
   });
 });
