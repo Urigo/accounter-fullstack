@@ -4,6 +4,7 @@ import type { NegatableMultiSelectOption } from '../../common/inputs/negatable-m
 import { NegatableMultiSelect } from '../../common/inputs/negatable-multi-select.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import type { ChargeFilterFormValues } from './schema.js';
+import { useFilterValue } from './use-filter-value.js';
 
 /** The include/exclude field pairs the schema supports. */
 type NegatableFieldPair =
@@ -24,10 +25,14 @@ type SharedProps = {
   disabled?: boolean;
 };
 
+/** Stable identity for the "nothing selected" case, so it isn't a fresh array per render. */
+const EMPTY_LIST: string[] = [];
+
 /**
  * An empty array is not the same as "unset": JSON.stringify keeps `[]` but drops
  * `undefined`, so a stray empty array churns the URL and makes an otherwise empty
- * filter look active.
+ * filter look active. `useFilterValue` is what keeps the cleared field rendering as
+ * cleared despite that — see the comment there.
  */
 const orUndefined = (values: string[]): string[] | undefined =>
   values.length > 0 ? values : undefined;
@@ -38,6 +43,9 @@ const orUndefined = (values: string[]): string[] | undefined =>
  * prop, which is invoked as a function rather than mounted as a component. The
  * include leg stays a `FormField` because that is what installs the context
  * `FormLabel` / `FormControl` / `FormMessage` depend on.
+ *
+ * Both legs render from `useFilterValue` rather than from the controller's own value,
+ * which falls back to whatever the field held when the modal opened.
  */
 export function NegatableMultiSelectField({
   control,
@@ -53,6 +61,8 @@ export function NegatableMultiSelectField({
   renderOption,
 }: NegatableFieldPair & SharedProps): ReactElement {
   const { field: excluded } = useController({ control, name: exclude });
+  const includedValue = useFilterValue(control, include) ?? EMPTY_LIST;
+  const excludedValue = useFilterValue(control, exclude) ?? EMPTY_LIST;
 
   return (
     <FormField
@@ -67,9 +77,9 @@ export function NegatableMultiSelectField({
               onBlur={field.onBlur}
               negatable
               options={options}
-              value={field.value ?? []}
+              value={includedValue}
               onValueChange={(next): void => field.onChange(orUndefined(next))}
-              excludedValue={excluded.value ?? []}
+              excludedValue={excludedValue}
               onExcludedChange={(next): void => excluded.onChange(orUndefined(next))}
               loading={loading}
               placeholder={placeholder}
@@ -101,6 +111,8 @@ export function MultiSelectField({
   renderOption,
   disabled,
 }: SharedProps & { name: PlainField }): ReactElement {
+  const value = useFilterValue(control, name) ?? EMPTY_LIST;
+
   return (
     <FormField
       control={control}
@@ -113,7 +125,7 @@ export function MultiSelectField({
               ref={field.ref}
               onBlur={field.onBlur}
               options={options}
-              value={field.value ?? []}
+              value={value}
               onValueChange={(next): void => field.onChange(orUndefined(next))}
               loading={loading}
               disabled={disabled}

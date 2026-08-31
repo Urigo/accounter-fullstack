@@ -6,6 +6,7 @@ import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
 import { DATE_PRESETS } from '../constants.js';
 import type { ChargeFilterFormValues } from '../schema.js';
+import { useFilterValue } from '../use-filter-value.js';
 
 export function DateRangeSection({
   control,
@@ -13,6 +14,11 @@ export function DateRangeSection({
   control: Control<ChargeFilterFormValues>;
 }): ReactElement {
   const { setValue } = useFormContext<ChargeFilterFormValues>();
+  // Clearing a date — from the picker, the "No range" preset or a header chip — writes
+  // `undefined`, which is exactly what makes the controller's own value fall back to
+  // whatever the field held when the modal opened.
+  const fromAnyDate = useFilterValue(control, 'fromAnyDate') as TimelessDateString | undefined;
+  const toAnyDate = useFilterValue(control, 'toAnyDate') as TimelessDateString | undefined;
 
   return (
     <>
@@ -46,9 +52,9 @@ export function DateRangeSection({
               <FormControl>
                 <DatePickerInput
                   id="from-any-date"
-                  value={(field.value ?? undefined) as TimelessDateString | undefined}
+                  value={fromAnyDate}
                   onChange={(date): void => {
-                    if (date !== field.value) field.onChange(date ?? undefined);
+                    if (date !== fromAnyDate) field.onChange(date ?? undefined);
                   }}
                   aria-invalid={!!fieldState.error}
                 />
@@ -66,9 +72,9 @@ export function DateRangeSection({
               <FormControl>
                 <DatePickerInput
                   id="to-any-date"
-                  value={(field.value ?? undefined) as TimelessDateString | undefined}
+                  value={toAnyDate}
                   onChange={(date): void => {
-                    if (date !== field.value) field.onChange(date ?? undefined);
+                    if (date !== toAnyDate) field.onChange(date ?? undefined);
                   }}
                   aria-invalid={!!fieldState.error}
                 />
