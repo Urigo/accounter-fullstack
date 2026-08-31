@@ -73,7 +73,7 @@ function ToggleRow({
             {/* Controlled, so form.reset() from Reset / Clear all moves the switch. */}
             <Switch
               checked={checked}
-              onCheckedChange={(checked): void => field.onChange(checked || undefined)}
+              onCheckedChange={(next): void => field.onChange(next || undefined)}
             />
           </FormControl>
         </FormItem>
