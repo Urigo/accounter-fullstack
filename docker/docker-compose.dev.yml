@@ -2,7 +2,7 @@ version: "1.0"
 name: "accounter-dev"
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     networks:
       - "stack"
     healthcheck:
@@ -14,9 +14,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: accounter
-      PGDATA: /var/lib/postgresql/data
+      # postgres:18+ scopes PGDATA by major version (/var/lib/postgresql/18/docker) and
+      # declares its VOLUME at /var/lib/postgresql. Leave PGDATA unset and mount the
+      # parent: /var/lib/postgresql/data is a symlink in these images, so mounting
+      # over it fails at startup.
     volumes:
-      - ./.accounter-dev/postgresql/db:/var/lib/postgresql/data
+      - ./.accounter-dev/postgresql/db:/var/lib/postgresql
     ports:
       - "5432:5432"
 
