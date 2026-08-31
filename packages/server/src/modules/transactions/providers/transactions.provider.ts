@@ -39,10 +39,10 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
   FROM accounter_schema.transactions
   WHERE
     ($isIDs = 0 OR id IN $$IDs)
-    AND ($fromEventDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
-    AND ($toEventDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
-    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(debit_date_override, debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
-    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(debit_date_override, debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
+    AND ($fromEventDate ::TEXT IS NULL OR event_date >= $fromEventDate ::DATE)
+    AND ($toEventDate ::TEXT IS NULL OR event_date <= $toEventDate ::DATE)
+    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(debit_date_override, debit_date) >= $fromDebitDate ::DATE)
+    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(debit_date_override, debit_date) <= $toDebitDate ::DATE)
     AND ($isBusinessIDs = 0 OR business_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR owner_id IN $$ownerIDs)
   ORDER BY event_date DESC;
@@ -57,23 +57,23 @@ const getTransactionsByExtendedFilters = sql<IGetTransactionsByExtendedFiltersQu
     AND ($isChargeIDs = 0 OR t.charge_id IN $$chargeIDs)
     AND ($isOwnerIDs = 0 OR t.owner_id IN $$ownerIDs)
     AND ($isCounterpartyIDs = 0 OR t.business_id IN $$counterpartyIDs)
-    AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
-    AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
-    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
-    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
+    AND ($fromEventDate ::TEXT IS NULL OR t.event_date >= $fromEventDate ::DATE)
+    AND ($toEventDate ::TEXT IS NULL OR t.event_date <= $toEventDate ::DATE)
+    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date) >= $fromDebitDate ::DATE)
+    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date) <= $toDebitDate ::DATE)
     -- "any date" matches when a single date (event OR debit) falls within the requested range,
     -- so a transaction whose event date precedes the range and debit date follows it is excluded.
     AND (
       ($fromAnyDate ::TEXT IS NULL AND $toAnyDate ::TEXT IS NULL)
       OR (
         t.event_date IS NOT NULL
-        AND ($fromAnyDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
-        AND ($toAnyDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+        AND ($fromAnyDate ::TEXT IS NULL OR t.event_date >= $fromAnyDate ::DATE)
+        AND ($toAnyDate ::TEXT IS NULL OR t.event_date <= $toAnyDate ::DATE)
       )
       OR (
         COALESCE(t.debit_date_override, t.debit_date) IS NOT NULL
-        AND ($fromAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
-        AND ($toAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+        AND ($fromAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date) >= $fromAnyDate ::DATE)
+        AND ($toAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date) <= $toAnyDate ::DATE)
       )
     )
     AND ($withMissingCounterparty = FALSE OR t.business_id IS NULL)
