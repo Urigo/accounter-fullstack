@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import pg from 'pg';
+import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
 import { seedCountries as seedCountriesUtil } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
 config();
@@ -7,6 +8,19 @@ config();
 type FinancialAccountType = 'BANK_ACCOUNT' | 'CREDIT_CARD' | 'CRYPTO_WALLET';
 
 async function seed() {
+  // This script INSERTs business, account and tax-category rows. It is named
+  // `seed:production` and targeting a deployed database is a legitimate use -- but it must
+  // be a decision, so require ALLOW_REMOTE_DB=1 rather than inheriting it from .env.
+  assertLocalDatabase(
+    {
+      host: process.env.POSTGRES_HOST,
+      port: process.env.POSTGRES_PORT,
+      db: process.env.POSTGRES_DB,
+      user: process.env.POSTGRES_USER,
+    },
+    'scripts/seed.ts',
+  );
+
   const client = new pg.Client({
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,

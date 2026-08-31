@@ -1,6 +1,7 @@
 import { createPool, DatabasePool, sql } from 'slonik';
 import { createConnectionString } from '../connection-string.js';
 import { env } from '../environment.js';
+import { assertLocalDatabase } from '../local-db-guard.js';
 import { runPGMigrations } from '../run-pg-migrations.js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import z from 'zod';
@@ -13,6 +14,12 @@ describe('RLS All Tables Migration', () => {
   let testPool: DatabasePool;
 
   beforeAll(async () => {
+    // This suite CREATEs and DROPs a database and runs every migration into it. Against a
+    // deployed server that is destructive, so refuse unless explicitly opted in. The
+    // postgres-18 runbook does opt in (ALLOW_REMOTE_DB=1) to re-assert RLS on an upgraded
+    // PITR-restored server -- that is the one intended non-local use.
+    assertLocalDatabase({ ...env.postgres }, 'the RLS all-tables migration suite');
+
     // 1. Connect to default DB
     const connectionString = createConnectionString({
       ...env.postgres,
