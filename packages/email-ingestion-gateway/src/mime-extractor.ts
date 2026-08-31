@@ -127,11 +127,13 @@ export async function extractFromMime(rawMime: Buffer): Promise<ExtractionResult
 
   return {
     success: true,
-    subject: email.subject,
+    subject: normalizeHeaderWhitespace(email.subject) || undefined,
     body,
     senderEvidence: {
       from: formatAddress(email.from),
-      fromDisplayName: email.from?.name?.trim() || undefined,
+      fromDisplayName: normalizeHeaderWhitespace(email.from?.name) || undefined,
+      // postal-mime v3 returns address lists in document order (v2 reversed them),
+      // so [0] is the header's first — i.e. primary — Reply-To address.
       replyTo: formatAddress(email.replyTo?.[0]),
       // Kept as separate fields: X-Original-From is the original *author* (often a
       // display name only), X-Original-Sender the relaying platform. Reading them as
@@ -194,10 +196,29 @@ function toBuffer(content: ArrayBuffer | Uint8Array | string): Buffer {
   return Buffer.from(new Uint8Array(content));
 }
 
+/**
+ * Collapse every whitespace run in a header value to a single space, and trim.
+ *
+ * Not an unfold — postal-mime has already joined the folded lines. RFC 5322 folding
+ * inserts `CRLF` + a space **or tab** at arbitrary points in a long header, and
+ * postal-mime v3 unfolds by dropping only the `CRLF`, so the fold's tab (or run of
+ * spaces) survives inside the value and inside display names parsed out of it. v2
+ * collapsed those runs itself; everything reading this evidence assumes single spaces
+ * (`splitViaDisplayName` looks for a literal `' via '`, the server compares display names
+ * against the tenant's own business names), so normalize here rather than teaching every
+ * consumer about folding.
+ *
+ * `\s` is Unicode-aware, so this also folds NBSP / U+202F to a plain space — the same
+ * normalization `forwarded.ts` applies to quoted blocks via `SPACE_LIKE_CODE_POINTS`.
+ */
+function normalizeHeaderWhitespace(value: string | null | undefined): string {
+  return value ? value.replaceAll(/\s+/g, ' ').trim() : '';
+}
+
 /** Render a parsed address as `Name <addr>` (or just the address / display name). */
 function formatAddress(addr: Address | undefined): string | undefined {
   if (!addr) return undefined;
-  const name = addr.name?.trim();
+  const name = normalizeHeaderWhitespace(addr.name);
   const address = addr.address?.trim();
   if (name && address) return `${name} <${address}>`;
   return address || name || undefined;
@@ -213,12 +234,19 @@ function headerValue(
 ): string | undefined {
   for (const name of names) {
     const lower = name.toLowerCase();
+    // `email.headers` is in document order under postal-mime v3; v2 reversed it, so this
+    // same `.find` used to return the *last* occurrence of a repeated header and now
+    // returns the *first* — matching how v3 resolves single-value headers such as
+    // `subject` / `from`. It matters for headers that legitimately repeat: each relay hop
+    // prepends its own `Delivered-To` / `X-Forwarded-To`, so `forwardedTo` is now the most
+    // recent hop rather than the original recipient.
     const found = headers.find(header => header.key.toLowerCase() === lower);
-    if (found?.value) {
+    const value = normalizeHeaderWhitespace(found?.value);
+    if (value) {
       try {
-        return decodeWords(found.value);
+        return decodeWords(value);
       } catch {
-        return found.value;
+        return value;
       }
     }
   }

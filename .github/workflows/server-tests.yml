@@ -7,6 +7,7 @@ on:
     paths:
       - 'packages/server/**'
       - 'packages/migrations/**'
+      - 'packages/email-ingestion-gateway/**'
       - '.github/workflows/server-tests.yml'
 
 jobs:

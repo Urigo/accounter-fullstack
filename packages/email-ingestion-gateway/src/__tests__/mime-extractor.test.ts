@@ -444,6 +444,144 @@ describe('extractFromMime — senderEvidence', () => {
     expect(result.senderEvidence.originalSender).toBe('orig-sender@vendor.com');
   });
 
+  // postal-mime v3 unfolds long headers by dropping the CRLF only, leaving the fold's
+  // space/tab inside the value (v2 collapsed every whitespace run itself). Everything
+  // downstream — the server's `' via '` split, its display-name comparison against the
+  // tenant's own business names — assumes single spaces, so the extractor normalizes.
+  it('collapses the whitespace RFC 5322 folding leaves in header values', async () => {
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: Test',
+        'X-Original-From: "Vendor Ltd" via',
+        '\tAccount Payables <billing@vendor.com>',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
+    expect(result.senderEvidence.originalFrom).toBe(
+      '"Vendor Ltd" via Account Payables <billing@vendor.com>',
+    );
+  });
+
+  it('collapses folding whitespace inside the From display name', async () => {
+    const mime = Buffer.from(
+      [
+        'From: "Vendor Ltd" via',
+        '\tAccount Payables <group@tenant.example>',
+        'To: invoices@example.com',
+        'Subject: Test',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
+    expect(result.senderEvidence.fromDisplayName).toBe('Vendor Ltd via Account Payables');
+    expect(result.senderEvidence.from).toBe('Vendor Ltd via Account Payables <group@tenant.example>');
+  });
+
+  it('takes the first Reply-To address as the primary one', async () => {
+    const mime = makeMultipartMime({
+      replyTo: 'primary@vendor.com, secondary@vendor.com',
+      attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
+    });
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
+    expect(result.senderEvidence.replyTo).toBe('primary@vendor.com');
+  });
+
+  it('resolves a duplicated single-value header to its first occurrence', async () => {
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: First',
+        'Subject: Second',
+        'X-Original-Sender: first@vendor.com',
+        'X-Original-Sender: second@vendor.com',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as {
+      success: true;
+      subject: string;
+      senderEvidence: SenderEvidence;
+    };
+    expect(result.subject).toBe('First');
+    expect(result.senderEvidence.originalSender).toBe('first@vendor.com');
+  });
+
+  it('collapses the whitespace folding leaves in the subject', async () => {
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: Your invoice from Vendor Ltd for',
+        '\tAugust 2026',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as { success: true; subject: string };
+    expect(result.subject).toBe('Your invoice from Vendor Ltd for August 2026');
+  });
+
+  it('takes the first occurrence of a repeated relay header', async () => {
+    // Each hop prepends its own header, so document order runs newest -> oldest. Under v2
+    // (reversed `headers`) this returned the oldest; pin the v3 direction.
+    const mime = Buffer.from(
+      [
+        'X-Forwarded-To: payables@tenant.example',
+        'X-Forwarded-To: alice@tenant.example',
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: Test',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as {
+      success: true;
+      senderEvidence: SenderEvidence;
+    };
+    expect(result.senderEvidence.forwardedTo).toBe('payables@tenant.example');
+  });
+
+  it('collapses folding whitespace inside a Reply-To display name', async () => {
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: Test',
+        'Reply-To: "Vendor Ltd" via',
+        '\tAccount Payables <billing@vendor.com>',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as {
+      success: true;
+      senderEvidence: SenderEvidence;
+    };
+    expect(result.senderEvidence.replyTo).toBe(
+      'Vendor Ltd via Account Payables <billing@vendor.com>',
+    );
+  });
+
   it('returns undefined for absent optional headers', async () => {
     const mime = makeMultipartMime({
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
@@ -748,6 +886,31 @@ describe('extractFromMime — body capture & issuer candidates', () => {
       // postal-mime appends a trailing newline to decoded text bodies; the
       // assertion only cares that the windows-1255 bytes decoded correctly.
       expect(result.body).toContain('אבג');
+    }
+  });
+  it('decodes a non-WHATWG charset label instead of falling back to windows-1252', async () => {
+    // `ISO-8859-8-I` (Hebrew, logical ordering) is not a WHATWG Encoding label, so the
+    // TextDecoder constructor throws on it. postal-mime v2 swallowed that and fell back
+    // to windows-1252, decoding Hebrew invoices as mojibake ('\u00f9\u00ec\u00e5\u00ed');
+    // v3 aliases the label onto iso-8859-8. The body feeds issuer-candidate extraction
+    // and the body->PDF render, so this is worth pinning.
+    const header = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: Test',
+        'Content-Type: text/plain; charset=ISO-8859-8-I',
+        '',
+        '',
+      ].join('\r\n'),
+      'utf8',
+    );
+    // 0xF9 0xEC 0xE5 0xED = שלום in ISO-8859-8
+    const mime = Buffer.concat([header, Buffer.from([0xf9, 0xec, 0xe5, 0xed])]);
+    const result = await extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.body).toContain('שלום');
     }
   });
 });
