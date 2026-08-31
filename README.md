@@ -30,6 +30,12 @@ If you want to create new local database, run:
 yarn local:setup
 ```
 
+> **Note:** the local Postgres data directory lives in `docker/.accounter-dev/postgresql/db` and is
+> tied to the major version of the `postgres` image in `docker/docker-compose.dev.yml`. Whenever
+> that major version changes (e.g. 16 → 18), the server refuses to start against the old data
+> directory — delete `docker/.accounter-dev/postgresql/db` and re-run `yarn local:setup`. It is
+> dev-only data.
+
 In case you already have a database, you can set the database variables in your `.env` file, then
 run:
 
@@ -138,9 +144,8 @@ ALLOW_DEMO_SEED=1 yarn test:demo-seed
 
 Integration and demo-seed tests require:
 
-1. **PostgreSQL running**: Start with
-   `docker compose -f docker/docker-compose.dev.yml up -d postgres`
-2. **Migrations applied**: Run `yarn workspace @accounter/migrations migration:run`
+1. **PostgreSQL running**: Start with `docker compose -f docker/docker-compose.dev.yml up -d db`
+2. **Migrations applied**: Run `yarn workspace @accounter-helper/migrations migration:run`
 3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` environment variable
 
 If migrations are stale, demo-seed tests fail gracefully with instructions to run migrations.

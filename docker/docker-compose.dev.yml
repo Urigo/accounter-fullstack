@@ -2,7 +2,7 @@ version: "1.0"
 name: "accounter-dev"
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     networks:
       - "stack"
     healthcheck:
@@ -14,9 +14,14 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: accounter
-      PGDATA: /var/lib/postgresql/data
+      # postgres:18+ images scope PGDATA by major version
+      # (/var/lib/postgresql/<major>/docker) and declare their VOLUME at the parent
+      # /var/lib/postgresql. So: leave PGDATA unset and bind-mount /var/lib/postgresql,
+      # NOT /var/lib/postgresql/data -- the latter is a symlink in these images and
+      # mounting over it fails at startup. This holds for any future major bump; only
+      # the <major> segment of the on-disk path changes (today: db/18/docker).
     volumes:
-      - ./.accounter-dev/postgresql/db:/var/lib/postgresql/data
+      - ./.accounter-dev/postgresql/db:/var/lib/postgresql
     ports:
       - "5432:5432"
 
