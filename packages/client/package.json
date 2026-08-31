@@ -39,7 +39,7 @@
     "@mantine/hooks": "6.0.22",
     "@minoru/react-dnd-treeview": "3.5.4",
     "@mui/material": "9.4.0",
-    "@mui/x-charts": "8.29.3",
+    "@mui/x-charts": "9.12.0",
     "@tanstack/react-query": "5.102.4",
     "@tanstack/react-table": "9.2.3",
     "@urql/exchange-auth": "3.0.0",
