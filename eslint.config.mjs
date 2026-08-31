@@ -342,6 +342,10 @@ export default [
       // Exempt global/auth providers that need direct DB access for RLS bypass to function
       'packages/server/src/modules/auth/providers/auth-context.provider.ts',
       'packages/server/src/modules/auth/providers/accept-invitations.provider.ts',
+      // pending-invitations.provider.ts serves callers with no membership at all,
+      // so TenantAwareDBClient would throw UNAUTHENTICATED. Isolation comes from
+      // filtering on an identity-provider-verified email, never a client-supplied one.
+      'packages/server/src/modules/auth/providers/pending-invitations.provider.ts',
       'packages/server/src/modules/business-trips/providers/business-trips-tax-variables.provider.ts',
       'packages/server/src/modules/countries/providers/countries.provider.ts',
       'packages/server/src/modules/depreciation/providers/depreciation-categories.provider.ts',

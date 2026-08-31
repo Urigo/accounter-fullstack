@@ -118,6 +118,35 @@ export const invitationsResolvers: AuthModule.Resolvers = {
         });
       }
     },
+    claimInvitation: async (_, { invitationId }, { injector }) => {
+      const authContextProvider = injector.get(AuthContextProvider);
+
+      // Read the identity straight from the verified token rather than from an
+      // auth context: the callers this exists for have no membership, so they
+      // have no auth context at all. A caller who already has one still works —
+      // their token carries the same claims.
+      const identity = await authContextProvider.getJwtIdentity();
+
+      if (!identity) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      try {
+        return await injector
+          .get(AcceptInvitationsProvider)
+          .claimInvitation(invitationId, identity);
+      } catch (error) {
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+
+        throw new GraphQLError('Failed to accept invitation', {
+          extensions: { code: 'INVITATION_ACCEPT_FAILED' },
+        });
+      }
+    },
     revokeInvitation: async (_, { id }, { injector }) => {
       try {
         return await injector.get(InvitationsProvider).revokeInvitation(id);
