@@ -102,6 +102,9 @@ header shape (Google-Group relay, invoice-platform relay, nested manual forward,
 encoded-words). `example-docs/` is git-ignored: it holds real captured messages with real vendor
 addresses, DKIM signatures and real invoice PDFs. Use it locally with `inspect:eml` (add `--json` to
 get the exact `senderEvidence` payload sent to `requestIngestControl`), never in a committed test.
+`replay:eml` re-drives one of those captured messages through the _real_ pipeline (control →
+treatment → ingest); it is the recovery step for an email that was lost, and is safe to re-run
+because idempotency keys on `rawMessageHash`.
 
 ## Commands
 
@@ -111,5 +114,7 @@ yarn workspace @accounter/email-ingestion-gateway build         # tsc → dist/
 yarn workspace @accounter/email-ingestion-gateway typecheck     # tsc --noEmit
 yarn workspace @accounter/email-ingestion-gateway worker:dev    # wrangler dev (Worker)
 yarn workspace @accounter/email-ingestion-gateway worker:deploy # wrangler deploy
+yarn workspace @accounter/email-ingestion-gateway inspect:eml <f>  # what the extractor sees
+yarn workspace @accounter/email-ingestion-gateway replay:eml <f>   # re-drive a captured message
 yarn generate:graphql                                           # regenerate src/gql/
 ```

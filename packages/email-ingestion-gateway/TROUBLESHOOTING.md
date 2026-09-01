@@ -286,3 +286,39 @@ When `EMAIL_INGESTION_SHADOW_MODE=1`, `/webhook` responds `202` **immediately** 
 orchestration asynchronously (`webhook.ts`). The HTTP response will **not** contain the real outcome
 — look for `shadow:orchestration:complete` / `:failed` / `:error` log lines (by `correlationId`) to
 see what actually happened. The legacy listener remains the authoritative handler in this mode.
+
+---
+
+## 6. Recovering a lost email: replaying a captured message
+
+A failure that never reached a resolved tenant leaves **no durable record** — no charge, no
+document, no quarantine row, no idempotency key. There is nothing to reprocess server-side; the
+message survives only in the upstream mailbox.
+
+To re-drive such a message, download the raw MIME (Gmail: open the message → ⋮ → "Show original" →
+"Download Original") into the git-ignored `example-docs/`, then:
+
+```bash
+# what would the extractor see? (no server call)
+yarn workspace @accounter/email-ingestion-gateway inspect:eml example-docs/lost.eml
+
+# actually re-drive it through control → treatment → ingest
+yarn workspace @accounter/email-ingestion-gateway replay:eml example-docs/lost.eml
+```
+
+`replay:eml` signs the body exactly as the Worker does and POSTs it to the gateway, printing the
+response (`outcome`, `ingestId`, `reasonCode`, `correlationId`). Useful flags:
+
+| Flag                  | Why                                                                           |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `--recipient <alias>` | The alias in the headers is not always the one that routed the message.       |
+| `--received-at <iso>` | Keep the original date in the charge description rather than the replay date. |
+| `--gateway <url>`     | Point at a different gateway than `GATEWAY_URL` / `http://localhost:3000`.    |
+| `--message-id <id>`   | Override the `Message-ID` taken from the message.                             |
+| `--dry-run`           | Print the signed request without sending it.                                  |
+
+**It is safe to re-run.** Idempotency keys on the gateway-computed `rawMessageHash`, so a genuinely
+lost message inserts cleanly while one that already landed comes back `DUPLICATE`.
+
+`CF_WEBHOOK_SECRET` must match the target gateway's; the script refuses to send an unsigned request
+rather than producing a confusing `INVALID_AUTH`.
