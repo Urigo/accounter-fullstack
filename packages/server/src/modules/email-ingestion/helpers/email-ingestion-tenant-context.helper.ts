@@ -5,8 +5,41 @@ import type { Pool, PoolClient } from 'pg';
  * query being rejected. `pg` surfaces a dead socket as a plain `Error` whose
  * message is `Connection terminated unexpectedly`, and the underlying socket
  * failures as Node `code`s.
+ *
+ * `err.code` carries either a Node errno (socket-level) or a Postgres SQLSTATE
+ * (server-reported), so both are checked.
  */
-const CONNECTION_ERROR_CODES = new Set(['ECONNRESET', 'EPIPE', 'ETIMEDOUT', 'ECONNREFUSED']);
+const CONNECTION_ERROR_CODES = new Set([
+  // Node errno codes — the socket failed underneath us.
+  'ECONNRESET',
+  'EPIPE',
+  'ETIMEDOUT',
+  'ECONNREFUSED',
+  // SQLSTATE class 08 — connection_exception. Reached when the server reports the
+  // failure rather than the socket simply dying.
+  '08000', // connection_exception
+  '08001', // sqlclient_unable_to_establish_sqlconnection
+  '08003', // connection_does_not_exist
+  '08004', // sqlserver_rejected_establishment_of_sqlconnection
+  '08006', // connection_failure
+  '08P01', // protocol_violation
+  // SQLSTATE class 57 — the server terminated the connection on purpose. 57P01
+  // ("terminating connection due to administrator command") is literally the
+  // database killing an idle session, which is the case this whole helper exists
+  // for.
+  '57P01', // admin_shutdown
+  '57P02', // crash_shutdown
+  '57P03', // cannot_connect_now
+]);
+
+/**
+ * SQLSTATE 08007 (transaction_resolution_unknown) is in the connection-exception
+ * class but must NEVER be retried: it means the connection dropped while the
+ * transaction was being resolved, so it may well have committed. Same hazard as
+ * a failure during COMMIT, and handled the same way — excluded here, so the
+ * caller rethrows instead of replaying the work.
+ */
+const TRANSACTION_RESOLUTION_UNKNOWN = '08007';
 const CONNECTION_ERROR_MESSAGES = [
   'connection terminated',
   'connection ended unexpectedly',
@@ -34,6 +67,7 @@ export function isConnectionLevelError(err: unknown): boolean {
   if (err instanceof UnknownCommitOutcomeError) return false;
   if (!(err instanceof Error)) return false;
   const code = (err as NodeJS.ErrnoException).code;
+  if (code === TRANSACTION_RESOLUTION_UNKNOWN) return false;
   if (code && CONNECTION_ERROR_CODES.has(code)) return true;
   const message = err.message.toLowerCase();
   return CONNECTION_ERROR_MESSAGES.some(fragment => message.includes(fragment));

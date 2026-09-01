@@ -59,6 +59,28 @@ describe('isConnectionLevelError', () => {
     expect(isConnectionLevelError(err)).toBe(true);
   });
 
+  // `pg` also surfaces connection failures the *server* reported, as SQLSTATE
+  // codes rather than Node errnos — with a message that need not match any of the
+  // text fragments above.
+  it.each([
+    ['08000', 'connection_exception'],
+    ['08003', 'connection_does_not_exist'],
+    ['08006', 'connection_failure'],
+    ['08P01', 'protocol_violation'],
+    ['57P01', 'terminating connection due to administrator command'],
+  ])('recognizes SQLSTATE %s (%s)', (code, message) => {
+    expect(isConnectionLevelError(Object.assign(new Error(message), { code }))).toBe(true);
+  });
+
+  // 08007 is in the connection-exception class but means the connection dropped
+  // while the transaction was being *resolved* — it may have committed. Retrying
+  // it could double-apply the work, so it must be classified as non-retryable
+  // despite sitting alongside the codes above.
+  it('does NOT treat 08007 (transaction_resolution_unknown) as retryable', () => {
+    const err = Object.assign(new Error('transaction resolution unknown'), { code: '08007' });
+    expect(isConnectionLevelError(err)).toBe(false);
+  });
+
   // A statement error must never be retried: the query was rejected on purpose.
   it.each([
     'duplicate key value violates unique constraint',
