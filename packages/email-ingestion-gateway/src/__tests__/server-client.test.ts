@@ -4,9 +4,10 @@ import {
   CONTROL_TIMEOUT_MS,
   CONTROL_MAX_RETRIES,
   CONTROL_BASE_DELAY_MS,
-  RETRY_JITTER_RATIO,
   INGEST_TIMEOUT_MS,
   INGEST_MAX_RETRIES,
+  MAX_ERROR_MESSAGE_LENGTH,
+  RETRY_JITTER_RATIO,
   ServerClient,
   type ControlInput,
   type IngestInput,
@@ -271,6 +272,10 @@ describe('ServerClient.requestControl — GraphQL errors', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
+      // The cause is carried on the failure rather than dropped (#4345).
+      expect(result.message).toContain('internal server error');
+      expect(result.status).toBe(200);
+      expect(result.attempts).toBe(1);
     }
   });
 
@@ -282,6 +287,18 @@ describe('ServerClient.requestControl — GraphQL errors', () => {
     const client = makeClient(fetchFn);
     await client.requestControl(CONTROL_INPUT);
     expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+  });
+
+  it('truncates a very long upstream error instead of logging it whole', async () => {
+    const client = makeClient(
+      makeFetch([{ body: { errors: [{ message: 'x'.repeat(5_000) }], data: null } }]),
+    );
+    const result = await client.requestControl(CONTROL_INPUT);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.message.length).toBeLessThan(MAX_ERROR_MESSAGE_LENGTH + 30);
+      expect(result.message).toContain('truncated');
+    }
   });
 
   it('returns UPSTREAM_ERROR when data is null (no requestIngestControl field)', async () => {
@@ -346,8 +363,12 @@ describe('ServerClient.requestControl — retry on 5xx', () => {
     if (!result.success) {
       // A 5xx is the server failing rather than refusing — still transient.
       expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+      expect(result.status).toBe(503);
+      expect(result.attempts).toBe(CONTROL_MAX_RETRIES + 1);
     }
-    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(CONTROL_MAX_RETRIES + 1);
+    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(
+      CONTROL_MAX_RETRIES + 1,
+    );
   });
 
   it('does NOT retry on a terminal 4xx, and reports it as UPSTREAM_ERROR', async () => {
@@ -357,6 +378,7 @@ describe('ServerClient.requestControl — retry on 5xx', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
+      expect(result.status).toBe(401);
     }
     expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
   });
@@ -485,6 +507,7 @@ describe('ServerClient.requestIngest — GraphQL errors', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
+      expect(result.message).toContain('schema error');
     }
   });
 

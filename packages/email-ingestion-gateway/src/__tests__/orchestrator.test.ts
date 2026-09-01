@@ -188,6 +188,7 @@ describe('orchestrate — control denied', () => {
       success: false,
       reason: IngestReasonCode.UNKNOWN_ALIAS,
       message: 'Alias not registered',
+      attempts: 1,
     });
     const result = await orchestrate(BASE_INPUT, deps);
     expect(result.success).toBe(false);
@@ -200,6 +201,7 @@ describe('orchestrate — control denied', () => {
       success: false,
       reason: IngestReasonCode.TIMEOUT,
       message: 'Control endpoint timed out',
+      attempts: 1,
     });
     const result = await orchestrate(BASE_INPUT, deps);
     expect(result.success).toBe(false);
@@ -212,6 +214,7 @@ describe('orchestrate — control denied', () => {
       success: false,
       reason: IngestReasonCode.TRANSIENT_UPSTREAM,
       message: 'Server error',
+      attempts: 1,
     });
     const result = await orchestrate(BASE_INPUT, deps);
     expect(result.success).toBe(false);
@@ -229,6 +232,7 @@ describe('orchestrate — ingest failures', () => {
       success: false,
       reason: IngestReasonCode.GRANT_INVALID,
       message: 'Grant already consumed',
+      attempts: 1,
     });
     const result = await orchestrate(BASE_INPUT, deps);
     expect(result.success).toBe(false);
@@ -240,6 +244,7 @@ describe('orchestrate — ingest failures', () => {
       success: false,
       reason: IngestReasonCode.TIMEOUT,
       message: 'Ingest endpoint timed out',
+      attempts: 1,
     });
     const result = await orchestrate(BASE_INPUT, deps);
     expect(result.success).toBe(false);
@@ -251,6 +256,7 @@ describe('orchestrate — ingest failures', () => {
       success: false,
       reason: IngestReasonCode.TRANSIENT_UPSTREAM,
       message: 'Server error',
+      attempts: 1,
     });
     const result = await orchestrate(BASE_INPUT, deps);
     expect(result.success).toBe(false);
@@ -304,6 +310,7 @@ describe('orchestrate — adversarial security scenarios', () => {
       success: false,
       reason: IngestReasonCode.GRANT_INVALID,
       message: 'Grant jti already consumed',
+      attempts: 1,
     });
     const result = await orchestrate(BASE_INPUT, deps);
     expect(result.success).toBe(false);
@@ -318,6 +325,7 @@ describe('orchestrate — adversarial security scenarios', () => {
       success: false,
       reason: IngestReasonCode.UNKNOWN_ALIAS,
       message: 'no such alias',
+      attempts: 1,
     });
     await orchestrate(BASE_INPUT, deps);
     expect(deps.serverClient.requestIngest).not.toHaveBeenCalled();
@@ -356,6 +364,7 @@ describe('orchestrate — end-to-end flow verification', () => {
       success: false,
       reason: IngestReasonCode.UNKNOWN_ALIAS,
       message: 'not found',
+      attempts: 1,
     });
     await orchestrate(BASE_INPUT, deps);
     expect(deps.serverClient.requestControl).toHaveBeenCalledOnce();
@@ -468,5 +477,73 @@ describe('orchestrate — end-to-end flow verification', () => {
       expect(result.outcome).toBe('DUPLICATE');
       expect(result.existingIngestId).toBe('ingest-prev-001');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Denial diagnostics (#4345)
+//
+// `TRANSIENT_UPSTREAM` alone covers connection refused, DNS failure, TLS
+// failure, any 5xx, any 4xx and every GraphQL error the server returns. The
+// fields that tell them apart used to be dropped, so diagnosing #4344 meant
+// reconstructing the retry arithmetic from `durationMs`.
+// ---------------------------------------------------------------------------
+
+describe('orchestrate — denial diagnostics', () => {
+  function loggedFields(spy: ReturnType<typeof vi.spyOn>, event: string) {
+    for (const call of spy.mock.calls) {
+      const entry = JSON.parse(call[0] as string) as Record<string, unknown>;
+      if (entry.message === event) return entry;
+    }
+    return undefined;
+  }
+
+  it('logs the upstream message, status and attempt count on control denial', async () => {
+    // The console spy is file-level, so clear it: entries from earlier cases
+    // would otherwise match the lookup first.
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    logSpy.mockClear();
+    const deps = makeDeps({
+      success: false,
+      reason: IngestReasonCode.UPSTREAM_ERROR,
+      message: 'HTTP 200: Failed to process ingest control request',
+      status: 200,
+      attempts: 1,
+    });
+
+    await orchestrate(BASE_INPUT, deps);
+
+    const entry = loggedFields(logSpy, 'orchestrate:control:denied');
+    expect(entry).toMatchObject({
+      reason: IngestReasonCode.UPSTREAM_ERROR,
+      upstreamMessage: 'HTTP 200: Failed to process ingest control request',
+      status: 200,
+      attempts: 1,
+      correlationId: 'corr-test-001',
+    });
+  });
+
+  it('logs the upstream message and attempt count on ingest failure', async () => {
+    // The console spy is file-level, so clear it: entries from earlier cases
+    // would otherwise match the lookup first.
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    logSpy.mockClear();
+    const deps = makeDeps(CONTROL_SUCCESS, {
+      success: false,
+      reason: IngestReasonCode.TRANSIENT_UPSTREAM,
+      message: 'TypeError: fetch failed',
+      attempts: 2,
+    });
+
+    await orchestrate(BASE_INPUT, deps);
+
+    const entry = loggedFields(logSpy, 'orchestrate:ingest:failed');
+    expect(entry).toMatchObject({
+      reason: IngestReasonCode.TRANSIENT_UPSTREAM,
+      upstreamMessage: 'TypeError: fetch failed',
+      attempts: 2,
+      // No HTTP status: the server never answered.
+      status: null,
+    });
   });
 });

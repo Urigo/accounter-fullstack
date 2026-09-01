@@ -12,7 +12,17 @@ dotenv({
     process.env.TEST_ENV_FILE && process.env.TEST_ENV_FILE.trim() !== ''
       ? process.env.TEST_ENV_FILE
       : [resolve(packageRoot, '.env')],
-  debug: process.env.RELEASE ? false : true,
+  // Opt-in rather than opt-out. In the deployed container the environment comes
+  // from the platform and there is no `.env` file, so dotenv's debug output wrote
+  // a "failed to load … ENOENT" line plus an "injected env (0)" line on every
+  // boot. Both are expected there, but they read as errors at the top of an
+  // incident log. The previous `RELEASE`-based gate depended on a variable that
+  // is not actually set in the deployment (#4345).
+  debug: process.env.DOTENV_DEBUG === '1',
+  // Suppresses dotenv's own "injected env (0) from .env // tip: …" banner, which
+  // is printed independently of `debug` and is equally meaningless in the
+  // deployed container.
+  quiet: process.env.DOTENV_DEBUG !== '1',
 });
 
 // treat an empty string (`''`) as undefined

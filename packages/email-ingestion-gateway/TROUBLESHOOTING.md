@@ -265,19 +265,19 @@ LIMIT 50;
 
 Grep gateway logs by these `message` values (all structured JSON, all carry `correlationId`):
 
-| Event                                      | Meaning                                                        |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| `incoming request`                         | Request hit the router.                                        |
-| `webhook authenticity check failed`        | Stage B rejection (`reason`).                                  |
-| `webhook: MIME extraction failed`          | Stage C parse/size failure (`reason`).                         |
-| `webhook accepted`                         | Passed auth + parse; `attachmentCount` logged.                 |
-| `orchestrate:control:start/granted/denied` | Control call + tenant resolution.                              |
-| `orchestrate:treatment:complete`           | `documentCount` after treatment (0 ⇒ upcoming `NO_DOCUMENTS`). |
-| `treatment: body→PDF render failed`        | Chromium / render problem; body document dropped.              |
-| `treatment: internal-link fetch failed`    | Link fetch error (or SSRF guard returned empty).               |
-| `orchestrate:ingest:failed`                | Ingest call failed (`reason`).                                 |
-| `orchestrate:ingest:complete`              | Final `outcome`, `ingestId`, `reasonCode`, `durationMs`.       |
-| `shadow:orchestration:*`                   | Shadow-mode async run results.                                 |
+| Event                                      | Meaning                                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `incoming request`                         | Request hit the router.                                                                     |
+| `webhook authenticity check failed`        | Stage B rejection (`reason`).                                                               |
+| `webhook: MIME extraction failed`          | Stage C parse/size failure (`reason`).                                                      |
+| `webhook accepted`                         | Passed auth + parse; `attachmentCount` logged.                                              |
+| `orchestrate:control:start/granted/denied` | Control call + tenant resolution. Denials carry `upstreamMessage`, `status` and `attempts`. |
+| `orchestrate:treatment:complete`           | `documentCount` after treatment (0 ⇒ upcoming `NO_DOCUMENTS`).                              |
+| `treatment: body→PDF render failed`        | Chromium / render problem; body document dropped.                                           |
+| `treatment: internal-link fetch failed`    | Link fetch error (or SSRF guard returned empty).                                            |
+| `orchestrate:ingest:failed`                | Ingest call failed (`reason`, `upstreamMessage`, `status`, `attempts`).                     |
+| `orchestrate:ingest:complete`              | Final `outcome`, `ingestId`, `reasonCode`, `durationMs`.                                    |
+| `shadow:orchestration:*`                   | Shadow-mode async run results.                                                              |
 
 ---
 

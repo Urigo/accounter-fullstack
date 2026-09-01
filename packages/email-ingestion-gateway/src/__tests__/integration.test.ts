@@ -339,6 +339,7 @@ describe('integration — unknown alias', () => {
       success: false,
       reason: IngestReasonCode.UNKNOWN_ALIAS,
       message: 'Alias invoices@acme.example.com is not registered',
+      attempts: 1,
     });
     const handler = createWebhookHandler({
       verifier: makeVerifier(),
@@ -365,6 +366,7 @@ describe('integration — grant reuse', () => {
       success: false,
       reason: IngestReasonCode.GRANT_INVALID,
       message: 'Grant jti-001 already consumed',
+      attempts: 1,
     });
     const handler = createWebhookHandler({
       verifier: makeVerifier(),
@@ -443,6 +445,7 @@ describe('integration — shadow mode', () => {
         success: false,
         reason: IngestReasonCode.UNKNOWN_ALIAS,
         message: 'not found',
+        attempts: 1,
       } as ControlResult),
       requestIngest: vi.fn(),
     };
