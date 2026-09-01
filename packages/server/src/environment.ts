@@ -68,6 +68,19 @@ const PostgresModel = zod.object({
     .optional()
     .default(300_000),
   /**
+   * How long an *idle* pooled connection is kept before the pool retires it.
+   *
+   * Must stay comfortably **below** the idle cutoff enforced by the database and
+   * by anything sitting between the server and it (proxy, load balancer, NAT).
+   * A connection killed from the far side while idle stays in the pool: the next
+   * checkout hands it out, that request fails immediately with
+   * `Connection terminated unexpectedly` / `ECONNRESET`, `pg` discards it, and
+   * everything afterwards works — the exact "only the first request after a quiet
+   * period fails" signature in #4348. 10 s (pg's own default, now explicit so it
+   * cannot drift) is below any realistic middlebox timeout.
+   */
+  POSTGRES_IDLE_TIMEOUT_MS: emptyString(NumberFromString).optional().default(10_000),
+  /**
    * Client-side counterpart to the above: a TenantAwareDBClient whose last
    * query finished this long ago is force-disposed by the watchdog, returning
    * its connection to the pool. Same reasoning for the default.
@@ -323,6 +336,7 @@ export const env = {
     connectionTimeoutMs: postgres.POSTGRES_CONNECTION_TIMEOUT_MS,
     statementTimeoutMs: postgres.POSTGRES_STATEMENT_TIMEOUT_MS,
     idleInTransactionTimeoutMs: postgres.POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS,
+    idleTimeoutMs: postgres.POSTGRES_IDLE_TIMEOUT_MS,
     clientMaxIdleMs: postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
     activeClientMaxIdleMs: Math.max(
       postgres.POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS,
