@@ -157,9 +157,12 @@ async function main(): Promise<void> {
   const correlationId = randomUUID();
 
   // Identical construction to worker.ts: HMAC-SHA256 over `${timestamp}.` followed
-  // by the raw MIME bytes, hex-encoded.
+  // by the raw MIME bytes, hex-encoded. Fed incrementally rather than through a
+  // concatenated buffer — the digest is the same, without a second copy of a
+  // message that can be up to 25 MB.
   const signature = createHmac('sha256', secret)
-    .update(Buffer.concat([Buffer.from(`${timestamp}.`, 'utf8'), rawBytes]))
+    .update(`${timestamp}.`, 'utf8')
+    .update(rawBytes)
     .digest('hex');
 
   const headers: Record<string, string> = {
@@ -189,7 +192,9 @@ async function main(): Promise<void> {
   const response = await fetch(`${gatewayUrl}/webhook`, {
     method: 'POST',
     headers,
-    body: new Uint8Array(rawBytes),
+    // A Buffer is already a Uint8Array, so it is a valid BodyInit as-is; wrapping
+    // it copied the whole message for nothing.
+    body: rawBytes,
   });
 
   const text = await response.text();
