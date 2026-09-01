@@ -2,7 +2,7 @@ import { PassThrough } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { IngestReasonCode } from '../contracts.js';
-import { createWebhookHandler } from '../webhook.js';
+import { createWebhookHandler, statusForOrchestrationFailure } from '../webhook.js';
 import type { AuthenticityVerdict, CloudflareAuthenticityVerifier } from '../verifier.js';
 
 vi.mock('dotenv', () => ({ config: vi.fn() }));
@@ -437,5 +437,127 @@ describe('POST /webhook — shadow mode', () => {
     expect(getStatus()).toBe(202);
     expect(getBody()).toMatchObject({ shadow: true });
     expect((getBody() as Record<string, unknown>)['failed']).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// POST /webhook — response status on orchestration failure (#4346)
+//
+// The Cloudflare Worker's no-loss path is `if (!response.ok) → forward to
+// FALLBACK_EMAIL`. A blanket 202 satisfied `response.ok`, so a total-loss
+// outcome read as success and the fallback branch was unreachable — which is how
+// a sub-second upstream blip permanently destroyed five emails (#4344).
+// ---------------------------------------------------------------------------
+
+describe('POST /webhook — status on orchestration failure', () => {
+  function makeFailingHandler(reason: string) {
+    return createWebhookHandler({
+      verifier: makeVerifier({ valid: true }),
+      featureFlags: { v2Enabled: true, shadowMode: false },
+      serverClient: {
+        requestControl: vi
+          .fn()
+          .mockResolvedValue({ success: false, reason, message: 'upstream said no', attempts: 1 }),
+        requestIngest: vi.fn(),
+      },
+      applyTreatment: vi.fn().mockResolvedValue([]),
+    });
+  }
+
+  // Nothing durable exists server-side for these: control never granted, so there
+  // is no tenant, no quarantine row and no idempotency key. The email survives
+  // only if the Worker forwards it.
+  it.each([
+    IngestReasonCode.TRANSIENT_UPSTREAM,
+    IngestReasonCode.UPSTREAM_ERROR,
+    IngestReasonCode.TIMEOUT,
+    IngestReasonCode.UNKNOWN_ALIAS,
+  ])('returns 503 for %s so the Worker falls back to FALLBACK_EMAIL', async reason => {
+    const { res, getStatus, getBody } = makeRes();
+    await makeFailingHandler(reason)(makeReq(), res);
+
+    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBeGreaterThan(299); // i.e. !response.ok in the Worker
+    expect(getBody()).toMatchObject({ status: 'failed', failed: true, reason });
+  });
+
+  // Post-grant failures ARE recorded server-side (audit/quarantine rows) and are
+  // reprocessable, so forwarding them would duplicate work.
+  it('keeps 202 for GRANT_INVALID, which is recorded server-side and reprocessable', async () => {
+    const handler = createWebhookHandler({
+      verifier: makeVerifier({ valid: true }),
+      featureFlags: { v2Enabled: true, shadowMode: false },
+      serverClient: {
+        requestControl: vi.fn().mockResolvedValue({
+          success: true,
+          decision: {
+            id: 'd1',
+            tenantId: 't1',
+            decisionId: 'dec1',
+            auditId: 'a1',
+            grant: {
+              id: 'g1',
+              jti: 'jti-1',
+              tenantId: 't1',
+              action: 'ingest',
+              expiresAt: '2099-01-01T00:00:00Z',
+            },
+            businessEmailConfig: null,
+            classification: 'DIRECT',
+          },
+        }),
+        requestIngest: vi.fn().mockResolvedValue({
+          success: false,
+          reason: IngestReasonCode.GRANT_INVALID,
+          message: 'grant already consumed',
+          attempts: 1,
+        }),
+      },
+      applyTreatment: vi.fn().mockResolvedValue([]),
+    });
+
+    const { res, getStatus, getBody } = makeRes();
+    await handler(makeReq(), res);
+
+    expect(getStatus()).toBe(202);
+    expect(getBody()).toMatchObject({
+      status: 'accepted',
+      failed: true,
+      reason: IngestReasonCode.GRANT_INVALID,
+    });
+  });
+
+  // Shadow mode answers before orchestration runs, so it cannot participate.
+  it('leaves shadow mode on 202 regardless of the failure reason', async () => {
+    const handler = createWebhookHandler({
+      verifier: makeVerifier({ valid: true }),
+      featureFlags: { v2Enabled: true, shadowMode: true },
+      serverClient: {
+        requestControl: vi.fn().mockResolvedValue({
+          success: false,
+          reason: IngestReasonCode.TRANSIENT_UPSTREAM,
+          message: 'boom',
+          attempts: 5,
+        }),
+        requestIngest: vi.fn(),
+      },
+      applyTreatment: vi.fn().mockResolvedValue([]),
+    });
+
+    const { res, getStatus } = makeRes();
+    await handler(makeReq(), res);
+    expect(getStatus()).toBe(202);
+  });
+});
+
+describe('statusForOrchestrationFailure', () => {
+  it('maps every non-durable reason to 503 and everything else to 202', () => {
+    expect(statusForOrchestrationFailure(IngestReasonCode.TRANSIENT_UPSTREAM)).toBe(503);
+    expect(statusForOrchestrationFailure(IngestReasonCode.UPSTREAM_ERROR)).toBe(503);
+    expect(statusForOrchestrationFailure(IngestReasonCode.TIMEOUT)).toBe(503);
+    expect(statusForOrchestrationFailure(IngestReasonCode.UNKNOWN_ALIAS)).toBe(503);
+    expect(statusForOrchestrationFailure(IngestReasonCode.GRANT_INVALID)).toBe(202);
+    expect(statusForOrchestrationFailure(IngestReasonCode.NO_DOCUMENTS)).toBe(202);
+    expect(statusForOrchestrationFailure(IngestReasonCode.TENANT_MISMATCH)).toBe(202);
   });
 });

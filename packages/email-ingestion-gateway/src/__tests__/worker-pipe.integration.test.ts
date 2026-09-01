@@ -236,6 +236,47 @@ describe('worker -> gateway -> mocked server integration', () => {
     expect(ingestInput.correlationId).toBe(controlInput.correlationId);
   });
 
+  // #4346: the whole point of the Worker's `if (!response.ok)` branch. Before the
+  // fix the gateway answered 202 on orchestration failure, `202` satisfied
+  // `response.ok`, and the fallback was unreachable for every failure — five
+  // emails were permanently lost that way (#4344).
+  it('forwards to FALLBACK_EMAIL when orchestration fails with no durable record', async () => {
+    // The mock server answers control with a GraphQL error — the exact signature
+    // a server-side exception produces through yoga.
+    mockServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+      await readJson(req);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({ errors: [{ message: 'Failed to process ingest control request' }], data: null }),
+      );
+    });
+    const mockServerUrl = await listen(mockServer);
+
+    process.env.PORT = '3000';
+    process.env.EMAIL_INGESTION_V2_ENABLED = '1';
+    process.env.EMAIL_INGESTION_SHADOW_MODE = '0';
+    process.env.CF_WEBHOOK_SECRET = 'worker-shared-secret';
+    process.env.GATEWAY_SERVER_URL = mockServerUrl;
+    process.env.GATEWAY_CP_TOKEN = 'gateway-control-plane-token';
+
+    const { requestHandler } = await import('../index.js');
+    gatewayServer = createServer(requestHandler);
+    const gatewayUrl = await listen(gatewayServer);
+
+    const { default: worker } = await import('../worker.js');
+    const message = makeEmailMessage();
+
+    await worker.email(message, {
+      CF_WEBHOOK_SECRET: 'worker-shared-secret',
+      GATEWAY_URL: gatewayUrl,
+      FALLBACK_EMAIL: 'fallback@example.com',
+      EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+    });
+
+    // No email lost: it reached a human even though nothing was recorded server-side.
+    expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
+  });
+
   it('falls back to forwarding when the gateway is unreachable', async () => {
     const { default: worker } = await import('../worker.js');
     const message = makeEmailMessage();

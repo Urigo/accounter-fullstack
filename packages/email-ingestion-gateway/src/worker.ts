@@ -96,14 +96,21 @@ const worker = {
     });
 
     if (!response.ok) {
-      // Gateway is reachable but rejected the request — e.g. it is disabled
-      // (EMAIL_INGESTION_V2_ENABLED=0 returns 503 during rollback) or an auth
-      // check failed. Forward to the legacy Gmail inbox so no email is lost
-      // during rollback, and only throw when no fallback exists. This forwards
-      // *after* the read on a best-effort basis — verify it forwards in the
-      // Cloudflare runtime via the §6 staging smoke tests.
+      // Gateway is reachable but rejected the request — it is disabled
+      // (EMAIL_INGESTION_V2_ENABLED=0 returns 503 during rollback), an auth check
+      // failed, or orchestration failed leaving no durable record server-side
+      // (503; see `statusForOrchestrationFailure` in webhook.ts). Forward to the
+      // legacy Gmail inbox so no email is lost, and only throw when no fallback
+      // exists. This forwards *after* the read on a best-effort basis — verify it
+      // forwards in the Cloudflare runtime via the §6 staging smoke tests.
+      console.warn(`gateway rejected the webhook with status ${response.status}`);
       if (env.FALLBACK_EMAIL) {
+        // A forward to EMAIL_FORWARD_DESTINATION already happened above; this is a
+        // second forward to a *different* destination, which the Workers runtime
+        // permits. Never let a fallback failure end the handler quietly — rethrow
+        // so Cloudflare surfaces it rather than the email vanishing.
         await message.forward(env.FALLBACK_EMAIL);
+        console.log(`email forwarded to fallback ${env.FALLBACK_EMAIL}`);
         return;
       }
       throw new Error('Gateway returned status ' + response.status);

@@ -373,7 +373,10 @@ describe('e2e — email with no matched business', () => {
       attempts: 1,
     });
 
-    expect(r.status).toBe(202);
+    // 503, not 202: nothing was recorded server-side and the mail is undeliverable
+    // to any tenant, so the Worker must see `!response.ok` and forward it to
+    // FALLBACK_EMAIL rather than treating a dropped email as success.
+    expect(r.status).toBe(503);
     expect(r.body).toMatchObject({ failed: true, reason: IngestReasonCode.UNKNOWN_ALIAS });
     // Control denied → treatment and ingest never run.
     expect(r.ingestCalled).toBe(false);
