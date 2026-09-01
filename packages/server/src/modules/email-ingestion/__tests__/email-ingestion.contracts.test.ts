@@ -38,6 +38,7 @@ describe('IngestReasonCode', () => {
     'OVERSIZE_MESSAGE',
     'TIMEOUT',
     'TRANSIENT_UPSTREAM',
+    'UPSTREAM_ERROR',
     'SELF_ISSUED',
     'UPLOAD_FAILED',
   ] as const;
@@ -46,8 +47,8 @@ describe('IngestReasonCode', () => {
     expect(IngestReasonCode[code]).toBe(code);
   });
 
-  it('has exactly twelve reason codes', () => {
-    expect(Object.keys(IngestReasonCode)).toHaveLength(12);
+  it('has exactly thirteen reason codes', () => {
+    expect(Object.keys(IngestReasonCode)).toHaveLength(13);
   });
 
   it('all keys equal their values (self-referential constants)', () => {

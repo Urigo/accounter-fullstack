@@ -13,9 +13,29 @@ import { INGEST_EMAIL_MUTATION, REQUEST_INGEST_CONTROL_MUTATION } from './graphq
 // ---------------------------------------------------------------------------
 
 export const CONTROL_TIMEOUT_MS = 3000;
-export const CONTROL_MAX_RETRIES = 2;
+/**
+ * Control is side-effect-free before `issueGrant`, so it can afford a real retry
+ * budget. With {@link CONTROL_BASE_DELAY_MS} the backoff is 250/500/1000/2000 ms
+ * — up to ~3.75 s of sleep across 5 attempts, plus jitter. The previous budget
+ * (2 retries at 100 ms base = 300 ms total) was orders of magnitude tighter than
+ * the 3 s per-attempt timeout it sat under, and could not ride out a server
+ * restart or a cold connection pool.
+ */
+export const CONTROL_MAX_RETRIES = 4;
+export const CONTROL_BASE_DELAY_MS = 250;
 export const INGEST_TIMEOUT_MS = 30_000;
+/**
+ * Deliberately NOT widened: the ingest grant is single-use, so a retry that the
+ * server actually received burns it and comes back GRANT_INVALID.
+ */
 export const INGEST_MAX_RETRIES = 1;
+export const INGEST_BASE_DELAY_MS = 100;
+/**
+ * Fraction of the computed backoff added as random jitter. Inbound bursts (the
+ * logs show 6 webhooks within 2 s) would otherwise retry in lockstep and hit a
+ * recovering upstream all at once.
+ */
+export const RETRY_JITTER_RATIO = 0.25;
 
 // ---------------------------------------------------------------------------
 // Domain types (public API)
@@ -90,7 +110,8 @@ export type ControlResult =
       reason:
         | typeof IngestReasonCode.UNKNOWN_ALIAS
         | typeof IngestReasonCode.TIMEOUT
-        | typeof IngestReasonCode.TRANSIENT_UPSTREAM;
+        | typeof IngestReasonCode.TRANSIENT_UPSTREAM
+        | typeof IngestReasonCode.UPSTREAM_ERROR;
       message: string;
     };
 
@@ -133,7 +154,8 @@ export type IngestResult =
       reason:
         | typeof IngestReasonCode.GRANT_INVALID
         | typeof IngestReasonCode.TIMEOUT
-        | typeof IngestReasonCode.TRANSIENT_UPSTREAM;
+        | typeof IngestReasonCode.TRANSIENT_UPSTREAM
+        | typeof IngestReasonCode.UPSTREAM_ERROR;
       message: string;
     };
 
@@ -146,6 +168,8 @@ export interface ServerClientDeps {
   cpToken: string;
   fetch?: typeof globalThis.fetch;
   sleep?: (ms: number) => Promise<void>;
+  /** Jitter source in [0, 1); injectable so backoff is deterministic under test. */
+  random?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -158,8 +182,16 @@ function isTimeoutError(err: unknown): boolean {
   return false;
 }
 
+/** Statuses that mean "answered, but come back later" rather than a terminal no. */
+const RETRYABLE_CLIENT_STATUSES = new Set([408, 425, 429]);
+
 function isRetryable(err: unknown, retryOnTimeout = true): boolean {
-  if (err instanceof ClientError) return (err.response.status ?? 500) >= 500;
+  if (err instanceof ClientError) {
+    const status = err.response.status ?? 500;
+    // 5xx is the server failing; 408/425/429 are explicit "retry" statuses. Every
+    // other 4xx (400/401/403/404/413) is terminal — retrying only wastes time.
+    return status >= 500 || RETRYABLE_CLIENT_STATUSES.has(status);
+  }
   // A timeout means the server may still be processing. Safe to retry for control
   // (no side effect), but NOT for ingest — a retry there would hit an
   // already-consumed single-use grant and fail with GRANT_INVALID.
@@ -167,10 +199,26 @@ function isRetryable(err: unknown, retryOnTimeout = true): boolean {
   return true; // network errors (TypeError: fetch failed) — server never received the request
 }
 
+/**
+ * A `ClientError` means the server answered — either a non-2xx status, or (the
+ * case that hid the incident in #4344) HTTP 200 with a GraphQL `errors[]` array,
+ * which is how a server-side exception surfaces through yoga. Those are not
+ * transient and must not be labelled as such. A 5xx is the server failing rather
+ * than refusing, and is expected to clear, so it stays TRANSIENT_UPSTREAM
+ * alongside the transport failures.
+ */
 function classifyFinalError(
   err: unknown,
-): typeof IngestReasonCode.TIMEOUT | typeof IngestReasonCode.TRANSIENT_UPSTREAM {
-  return isTimeoutError(err) ? IngestReasonCode.TIMEOUT : IngestReasonCode.TRANSIENT_UPSTREAM;
+):
+  | typeof IngestReasonCode.TIMEOUT
+  | typeof IngestReasonCode.TRANSIENT_UPSTREAM
+  | typeof IngestReasonCode.UPSTREAM_ERROR {
+  if (isTimeoutError(err)) return IngestReasonCode.TIMEOUT;
+  if (err instanceof ClientError) {
+    const status = err.response.status ?? 500;
+    return status >= 500 ? IngestReasonCode.TRANSIENT_UPSTREAM : IngestReasonCode.UPSTREAM_ERROR;
+  }
+  return IngestReasonCode.TRANSIENT_UPSTREAM;
 }
 
 // ---------------------------------------------------------------------------
@@ -180,6 +228,7 @@ function classifyFinalError(
 export class ServerClient {
   private readonly gqlClient: GraphQLClient;
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly random: () => number;
 
   constructor(deps: ServerClientDeps) {
     this.gqlClient = new GraphQLClient(`${deps.serverUrl}/graphql`, {
@@ -187,6 +236,7 @@ export class ServerClient {
       fetch: deps.fetch,
     });
     this.sleep = deps.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
+    this.random = deps.random ?? Math.random;
   }
 
   // -------------------------------------------------------------------------
@@ -206,13 +256,17 @@ export class ServerClient {
             signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS),
           }),
         CONTROL_MAX_RETRIES,
-        100,
+        CONTROL_BASE_DELAY_MS,
       );
-      const result = data.requestIngestControl;
+      // `data` itself can be null when the server answers 200 with a body that does
+      // not match the contract; the optional chain routes that into the same
+      // UPSTREAM_ERROR branch instead of throwing a TypeError classified as transport.
+      const result = data?.requestIngestControl;
       if (!result) {
         return {
           success: false,
-          reason: IngestReasonCode.TRANSIENT_UPSTREAM,
+          // The server answered 200 with a body the contract does not allow.
+          reason: IngestReasonCode.UPSTREAM_ERROR,
           message: 'Invalid or empty response from server',
         };
       }
@@ -268,14 +322,15 @@ export class ServerClient {
             signal: AbortSignal.timeout(INGEST_TIMEOUT_MS),
           }),
         INGEST_MAX_RETRIES,
-        100,
+        INGEST_BASE_DELAY_MS,
         false, // do not retry ingest on timeout — would burn the single-use grant
       );
-      const result = data.ingestEmail;
+      const result = data?.ingestEmail;
       if (!result) {
         return {
           success: false,
-          reason: IngestReasonCode.TRANSIENT_UPSTREAM,
+          // The server answered 200 with a body the contract does not allow.
+          reason: IngestReasonCode.UPSTREAM_ERROR,
           message: 'Invalid or empty response from server',
         };
       }
@@ -319,9 +374,15 @@ export class ServerClient {
         return await fn();
       } catch (err) {
         if (attempt >= maxRetries || !isRetryable(err, retryOnTimeout)) throw err;
-        await this.sleep(baseDelayMs * Math.pow(2, attempt));
+        await this.sleep(this.backoffMs(baseDelayMs, attempt));
         attempt++;
       }
     }
+  }
+
+  /** Exponential backoff with additive jitter, so concurrent retries desynchronize. */
+  private backoffMs(baseDelayMs: number, attempt: number): number {
+    const delay = baseDelayMs * Math.pow(2, attempt);
+    return Math.round(delay + delay * RETRY_JITTER_RATIO * this.random());
   }
 }

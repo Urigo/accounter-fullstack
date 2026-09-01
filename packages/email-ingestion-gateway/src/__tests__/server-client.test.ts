@@ -3,6 +3,8 @@ import { IngestReasonCode } from '../contracts.js';
 import {
   CONTROL_TIMEOUT_MS,
   CONTROL_MAX_RETRIES,
+  CONTROL_BASE_DELAY_MS,
+  RETRY_JITTER_RATIO,
   INGEST_TIMEOUT_MS,
   INGEST_MAX_RETRIES,
   ServerClient,
@@ -151,7 +153,12 @@ function makeClient(fetchFn: typeof globalThis.fetch) {
 
 describe('exported constants', () => {
   it('CONTROL_TIMEOUT_MS is 3000', () => expect(CONTROL_TIMEOUT_MS).toBe(3_000));
-  it('CONTROL_MAX_RETRIES is 2', () => expect(CONTROL_MAX_RETRIES).toBe(2));
+  // Widened from 2 (#4347): control is side-effect-free before issueGrant, so the
+  // budget can afford to ride out a restart or a cold pool rather than giving up
+  // after 300ms of backoff.
+  it('CONTROL_MAX_RETRIES is 4', () => expect(CONTROL_MAX_RETRIES).toBe(4));
+  it('CONTROL_BASE_DELAY_MS is 250', () => expect(CONTROL_BASE_DELAY_MS).toBe(250));
+  // Never widened: a retried ingest burns the single-use grant.
   it('INGEST_TIMEOUT_MS is 30000', () => expect(INGEST_TIMEOUT_MS).toBe(30_000));
   it('INGEST_MAX_RETRIES is 1', () => expect(INGEST_MAX_RETRIES).toBe(1));
 });
@@ -253,23 +260,36 @@ describe('ServerClient.requestControl — success', () => {
 // ---------------------------------------------------------------------------
 
 describe('ServerClient.requestControl — GraphQL errors', () => {
-  it('returns TRANSIENT_UPSTREAM when server returns top-level GraphQL errors', async () => {
+  // HTTP 200 + errors[] means the server answered and said no — a server-side
+  // exception through yoga. Not transient: labelling it so is what made the
+  // #4344 incident read as a passing cloud for two days.
+  it('returns UPSTREAM_ERROR when server returns top-level GraphQL errors', async () => {
     const client = makeClient(
       makeFetch([{ body: { errors: [{ message: 'internal server error' }], data: null } }]),
     );
     const result = await client.requestControl(CONTROL_INPUT);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+      expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
     }
   });
 
-  it('returns TRANSIENT_UPSTREAM when data is null (no requestIngestControl field)', async () => {
+  it('does NOT retry a 200-with-GraphQL-errors response', async () => {
+    const fetchFn = makeFetch([
+      { body: { errors: [{ message: 'boom' }], data: null } },
+      { body: { errors: [{ message: 'boom' }], data: null } },
+    ]);
+    const client = makeClient(fetchFn);
+    await client.requestControl(CONTROL_INPUT);
+    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+  });
+
+  it('returns UPSTREAM_ERROR when data is null (no requestIngestControl field)', async () => {
     const client = makeClient(makeFetch([{ body: { data: null } }]));
     const result = await client.requestControl(CONTROL_INPUT);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+      expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
     }
   });
 });
@@ -304,7 +324,7 @@ describe('ServerClient.requestControl — UNKNOWN_ALIAS', () => {
 // ---------------------------------------------------------------------------
 
 describe('ServerClient.requestControl — retry on 5xx', () => {
-  it('retries up to CONTROL_MAX_RETRIES times on 5xx', async () => {
+  it('retries on 5xx and succeeds within the budget', async () => {
     const fetchFn = makeFetch([
       { status: 503, body: { error: 'unavailable' } },
       { status: 502, body: { error: 'bad gateway' } },
@@ -317,26 +337,36 @@ describe('ServerClient.requestControl — retry on 5xx', () => {
   });
 
   it('returns TRANSIENT_UPSTREAM when all retries exhausted on 5xx', async () => {
-    const fetchFn = makeFetch([
-      { status: 503, body: {} },
-      { status: 503, body: {} },
-      { status: 503, body: {} },
-    ]);
+    const fetchFn = makeFetch(
+      Array.from({ length: CONTROL_MAX_RETRIES + 1 }, () => ({ status: 503, body: {} })),
+    );
     const client = makeClient(fetchFn);
     const result = await client.requestControl(CONTROL_INPUT);
     expect(result.success).toBe(false);
     if (!result.success) {
+      // A 5xx is the server failing rather than refusing — still transient.
       expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
     }
-    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(3); // 1 + 2 retries
+    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(CONTROL_MAX_RETRIES + 1);
   });
 
-  it('does NOT retry on 4xx', async () => {
+  it('does NOT retry on a terminal 4xx, and reports it as UPSTREAM_ERROR', async () => {
     const fetchFn = makeFetch([{ status: 401, body: {} }]);
     const client = makeClient(fetchFn);
     const result = await client.requestControl(CONTROL_INPUT);
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
+    }
     expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+  });
+
+  it('DOES retry a 429 (the server asked us to come back)', async () => {
+    const fetchFn = makeFetch([{ status: 429, body: {} }, { body: CONTROL_SUCCESS_RESPONSE }]);
+    const client = makeClient(fetchFn);
+    const result = await client.requestControl(CONTROL_INPUT);
+    expect(result.success).toBe(true);
+    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2);
   });
 
   it('applies exponential backoff between retries', async () => {
@@ -346,15 +376,39 @@ describe('ServerClient.requestControl — retry on 5xx', () => {
       { status: 503, body: {} },
       { body: CONTROL_SUCCESS_RESPONSE },
     ]);
-    const client = new ServerClient({ serverUrl: BASE_URL, cpToken: CP_TOKEN, fetch: fetchFn, sleep });
+    const client = new ServerClient({
+      serverUrl: BASE_URL,
+      cpToken: CP_TOKEN,
+      fetch: fetchFn,
+      sleep,
+      random: () => 0, // no jitter, so the exponential shape is exact
+    });
     await client.requestControl(CONTROL_INPUT);
 
     expect(sleep).toHaveBeenCalledTimes(2);
     const [delay1, delay2] = (sleep as ReturnType<typeof vi.fn>).mock.calls.map(
       (c: unknown[]) => c[0] as number,
     );
-    expect(delay1).toBeGreaterThan(0);
-    expect(delay2).toBeGreaterThan(delay1 ?? 0); // exponential: delay2 > delay1
+    expect(delay1).toBe(CONTROL_BASE_DELAY_MS);
+    expect(delay2).toBe(CONTROL_BASE_DELAY_MS * 2);
+  });
+
+  it('adds jitter on top of the exponential delay so concurrent retries desynchronize', async () => {
+    const sleep = vi.fn().mockResolvedValue(undefined);
+    const fetchFn = makeFetch([{ status: 503, body: {} }, { body: CONTROL_SUCCESS_RESPONSE }]);
+    const client = new ServerClient({
+      serverUrl: BASE_URL,
+      cpToken: CP_TOKEN,
+      fetch: fetchFn,
+      sleep,
+      random: () => 1, // maximum jitter
+    });
+    await client.requestControl(CONTROL_INPUT);
+
+    const [delay] = (sleep as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => c[0] as number,
+    );
+    expect(delay).toBe(Math.round(CONTROL_BASE_DELAY_MS * (1 + RETRY_JITTER_RATIO)));
   });
 });
 
@@ -423,23 +477,23 @@ describe('ServerClient.requestControl — timeout', () => {
 // ---------------------------------------------------------------------------
 
 describe('ServerClient.requestIngest — GraphQL errors', () => {
-  it('returns TRANSIENT_UPSTREAM when server returns top-level GraphQL errors', async () => {
+  it('returns UPSTREAM_ERROR when server returns top-level GraphQL errors', async () => {
     const client = makeClient(
       makeFetch([{ body: { errors: [{ message: 'schema error' }], data: null } }]),
     );
     const result = await client.requestIngest(INGEST_INPUT);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+      expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
     }
   });
 
-  it('returns TRANSIENT_UPSTREAM when data is null (no ingestEmail field)', async () => {
+  it('returns UPSTREAM_ERROR when data is null (no ingestEmail field)', async () => {
     const client = makeClient(makeFetch([{ body: { data: null } }]));
     const result = await client.requestIngest(INGEST_INPUT);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+      expect(result.reason).toBe(IngestReasonCode.UPSTREAM_ERROR);
     }
   });
 });
