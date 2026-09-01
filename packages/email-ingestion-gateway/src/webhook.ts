@@ -50,7 +50,7 @@ function getSingleHeader(value: string | string[] | undefined): string | undefin
  * server-side and is reprocessable, so it stays 202 — forwarding those would
  * duplicate work.
  */
-const NON_DURABLE_FAILURE_REASONS: ReadonlySet<string> = new Set<string>([
+const NON_DURABLE_FAILURE_REASONS: ReadonlySet<IngestReasonCode> = new Set<IngestReasonCode>([
   IngestReasonCode.TRANSIENT_UPSTREAM,
   IngestReasonCode.UPSTREAM_ERROR,
   IngestReasonCode.TIMEOUT,
@@ -60,9 +60,15 @@ const NON_DURABLE_FAILURE_REASONS: ReadonlySet<string> = new Set<string>([
 /**
  * HTTP status for a failed orchestration. 503 is chosen so the Cloudflare Worker
  * sees `!response.ok` and forwards to `FALLBACK_EMAIL`.
+ *
+ * The parameter stays `string` because `orchestrate` reports `reason` as one —
+ * an unrecognized value is simply not in the set and falls through to 202, the
+ * safe side (the email is not force-forwarded on a code we cannot reason about).
+ * The *set* is typed `IngestReasonCode`, so a typo in its members is a compile
+ * error rather than a silently-never-matching entry.
  */
 export function statusForOrchestrationFailure(reason: string): number {
-  return NON_DURABLE_FAILURE_REASONS.has(reason) ? 503 : 202;
+  return NON_DURABLE_FAILURE_REASONS.has(reason as IngestReasonCode) ? 503 : 202;
 }
 
 export interface WebhookDeps {

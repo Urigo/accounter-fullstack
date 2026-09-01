@@ -551,13 +551,25 @@ describe('POST /webhook — status on orchestration failure', () => {
 });
 
 describe('statusForOrchestrationFailure', () => {
-  it('maps every non-durable reason to 503 and everything else to 202', () => {
-    expect(statusForOrchestrationFailure(IngestReasonCode.TRANSIENT_UPSTREAM)).toBe(503);
-    expect(statusForOrchestrationFailure(IngestReasonCode.UPSTREAM_ERROR)).toBe(503);
-    expect(statusForOrchestrationFailure(IngestReasonCode.TIMEOUT)).toBe(503);
-    expect(statusForOrchestrationFailure(IngestReasonCode.UNKNOWN_ALIAS)).toBe(503);
-    expect(statusForOrchestrationFailure(IngestReasonCode.GRANT_INVALID)).toBe(202);
-    expect(statusForOrchestrationFailure(IngestReasonCode.NO_DOCUMENTS)).toBe(202);
-    expect(statusForOrchestrationFailure(IngestReasonCode.TENANT_MISMATCH)).toBe(202);
+  // The reasons that must drive the Worker's FALLBACK_EMAIL branch. Kept as an
+  // explicit list here, then checked against *every* code in the contract below,
+  // so the mapping cannot drift: adding a code to the production set without
+  // updating this list fails, and a newly added reason code is asserted to take
+  // the safe 202 default rather than silently going uncovered.
+  const EXPECTED_503: readonly IngestReasonCode[] = [
+    IngestReasonCode.TRANSIENT_UPSTREAM,
+    IngestReasonCode.UPSTREAM_ERROR,
+    IngestReasonCode.TIMEOUT,
+    IngestReasonCode.UNKNOWN_ALIAS,
+  ];
+
+  it.each(Object.values(IngestReasonCode))('maps %s to the documented status', code => {
+    const expected = EXPECTED_503.includes(code) ? 503 : 202;
+    expect(statusForOrchestrationFailure(code)).toBe(expected);
+  });
+
+  it('falls back to 202 for a reason code it does not recognize', () => {
+    // The safe side: never force-forward an email on a code we cannot reason about.
+    expect(statusForOrchestrationFailure('SOME_FUTURE_CODE')).toBe(202);
   });
 });
