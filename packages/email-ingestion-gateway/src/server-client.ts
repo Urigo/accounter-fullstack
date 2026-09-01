@@ -36,8 +36,12 @@ export const INGEST_BASE_DELAY_MS = 100;
  * recovering upstream all at once.
  */
 export const RETRY_JITTER_RATIO = 0.25;
-/** Upper bound on the error text carried into a failure result and the logs. */
+/**
+ * Hard upper bound on the error text carried into a failure result and the logs.
+ * A truncated string, suffix included, never exceeds this.
+ */
 export const MAX_ERROR_MESSAGE_LENGTH = 500;
+const TRUNCATION_SUFFIX = '… [truncated]';
 
 // ---------------------------------------------------------------------------
 // Domain types (public API)
@@ -258,8 +262,10 @@ export function formatUpstreamError(err: unknown): string {
   } else {
     text = String(err);
   }
+  // The suffix counts toward the budget: MAX_ERROR_MESSAGE_LENGTH is a hard
+  // ceiling on what reaches the logs, not on the slice before decoration.
   return text.length > MAX_ERROR_MESSAGE_LENGTH
-    ? `${text.slice(0, MAX_ERROR_MESSAGE_LENGTH)}… [truncated]`
+    ? `${text.slice(0, MAX_ERROR_MESSAGE_LENGTH - TRUNCATION_SUFFIX.length)}${TRUNCATION_SUFFIX}`
     : text;
 }
 

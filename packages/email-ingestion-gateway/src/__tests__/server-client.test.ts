@@ -296,7 +296,8 @@ describe('ServerClient.requestControl — GraphQL errors', () => {
     const result = await client.requestControl(CONTROL_INPUT);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.message.length).toBeLessThan(MAX_ERROR_MESSAGE_LENGTH + 30);
+      // The bound is hard: the "… [truncated]" suffix counts toward it.
+      expect(result.message.length).toBeLessThanOrEqual(MAX_ERROR_MESSAGE_LENGTH);
       expect(result.message).toContain('truncated');
     }
   });
