@@ -334,7 +334,7 @@ describe('integration — invalid auth', () => {
 // ---------------------------------------------------------------------------
 
 describe('integration — unknown alias', () => {
-  it('returns 202 with failed:true and UNKNOWN_ALIAS when alias is not registered', async () => {
+  it('returns 503 with failed:true and UNKNOWN_ALIAS when alias is not registered', async () => {
     const serverClient = makeServerClient({
       success: false,
       reason: IngestReasonCode.UNKNOWN_ALIAS,
@@ -349,8 +349,9 @@ describe('integration — unknown alias', () => {
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
-    // Gateway always returns 202 (Cloudflare must not retry)
-    expect(getStatus()).toBe(202);
+    // Non-2xx so the Worker's `if (!response.ok)` fallback fires: nothing durable
+    // was recorded and the mail belongs to no tenant, so a human must see it.
+    expect(getStatus()).toBe(503);
     expect(getBody()).toMatchObject({ failed: true, reason: IngestReasonCode.UNKNOWN_ALIAS });
     expect(serverClient.requestIngest).not.toHaveBeenCalled();
   });
