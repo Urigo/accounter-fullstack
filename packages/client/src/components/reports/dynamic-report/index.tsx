@@ -15,6 +15,7 @@ import { FiltersContext } from '@/providers/index.js';
 import {
   AllDynamicReportsDocument,
   DynamicReportDocument,
+  DynamicReportSnapshotDocument,
   DynamicReportTemplateDocument,
   type AllDynamicReportsQuery,
   type DynamicReportTemplateQuery,
@@ -51,6 +52,7 @@ import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
+import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
 import { buildSnapshotInput } from './utils/snapshot.js';
@@ -122,6 +124,12 @@ import {
       updated
       fromDate
       toDate
+      snapshots {
+        id
+        createdAt
+        fromDate
+        toDate
+      }
       template {
         id
         parent
@@ -133,6 +141,35 @@ import {
           hebrewText
           sortCode
         }
+      }
+    }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReportSnapshot($id: UUID!) {
+    dynamicReportSnapshot(id: $id) {
+      id
+      createdAt
+      fromDate
+      toDate
+      scopeOwnerId
+      tree {
+        id
+        parent
+        text
+        droppable
+        data {
+          nodeType
+          isOpen
+          hebrewText
+          sortCode
+        }
+      }
+      values {
+        entityId
+        value
       }
     }
   }
@@ -174,6 +211,7 @@ export function DynamicReport() {
   const selectedOwner = searchParams.get('owner') ?? adminBusinessId;
   const showZeroed = searchParams.get('zeroed') === '1';
   const selectedTemplateName = searchParams.get('template');
+  const selectedBaselineId = searchParams.get('baseline');
 
   const setFromDate = useCallback(
     (v: string) =>
@@ -243,6 +281,22 @@ export function DynamicReport() {
     [setSearchParams],
   );
 
+  const setSelectedBaselineId = useCallback(
+    (v: string | null) =>
+      setSearchParams(
+        p => {
+          if (v) {
+            p.set('baseline', v);
+          } else {
+            p.delete('baseline');
+          }
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+
   // UI state
   const [editMode, setEditMode] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -285,6 +339,9 @@ export function DynamicReport() {
   // Owner options are the businesses the user may report on, not every financial
   // entity — and a single one is not a choice, so the picker is then read-only.
   const { adminBusinesses, soleAdminBusinessId } = useGetAdminBusinesses();
+  // The owner the figures are queried for. Kept here because both the sums query and the baseline
+  // comparison need it.
+  const scopeOwnerId = soleAdminBusinessId ?? selectedOwner;
   const owners = useMemo<Owner[]>(
     () => adminBusinesses.map(business => ({ id: business.id, name: business.name })),
     [adminBusinesses],
@@ -336,10 +393,69 @@ export function DynamicReport() {
       filters: {
         fromDate: fromDate as TimelessDateString,
         toDate: toDate as TimelessDateString,
-        ownerIds: [soleAdminBusinessId ?? selectedOwner],
+        ownerIds: [scopeOwnerId],
       },
     },
   });
+
+  // Derive business sums array
+  const businessSums = useMemo(() => {
+    const result = businessSumsData?.businessTransactionsSumFromLedgerRecords;
+    if (result?.__typename === 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult') {
+      return result.businessTransactionsSum;
+    }
+    return [];
+  }, [businessSumsData]);
+
+  // ── Baseline ──────────────────────────────────────────────────────────────
+  const snapshots = useMemo(
+    () => templateNodesData?.dynamicReport?.snapshots ?? [],
+    [templateNodesData],
+  );
+  // Newest first from the server, so the head is "last save" unless the user picked another.
+  const activeBaselineId =
+    snapshots.find(snapshot => snapshot.id === selectedBaselineId)?.id ?? snapshots[0]?.id ?? null;
+
+  const [{ data: snapshotData }] = useQuery({
+    query: DynamicReportSnapshotDocument,
+    variables: { id: activeBaselineId ?? '' },
+    pause: !activeBaselineId,
+  });
+
+  const baselineSnapshot = snapshotData?.dynamicReportSnapshot ?? null;
+
+  // A snapshot is only comparable to a report computed over the same period for the same owner.
+  // Anything else — a deep link's date override, a different owner — and the figures are answers to
+  // a different question, so the diff is suspended rather than shown wrong.
+  const isBaselineComparable =
+    !!baselineSnapshot &&
+    baselineSnapshot.fromDate === fromDate &&
+    baselineSnapshot.toDate === toDate &&
+    baselineSnapshot.scopeOwnerId === scopeOwnerId;
+
+  const baseline = useMemo<Baseline | null>(() => {
+    if (!baselineSnapshot || !isBaselineComparable) return null;
+    return {
+      tree: baselineSnapshot.tree,
+      values: new Map(baselineSnapshot.values.map(value => [value.entityId, value.value])),
+    };
+  }, [baselineSnapshot, isBaselineComparable]);
+
+  const reportDiff = useMemo(
+    () => (baseline ? buildReportDiff(reportTree, baseline) : null),
+    [reportTree, baseline],
+  );
+
+  const newEntityIds = useMemo(
+    () =>
+      baseline
+        ? findNewEntityIds(
+            businessSums.map(sum => sum.business.id),
+            baseline,
+          )
+        : undefined,
+    [businessSums, baseline],
+  );
 
   // Derive template list for TemplateManager
   const templates = useMemo<Template[]>(
@@ -358,15 +474,6 @@ export function DynamicReport() {
       if (found.isLocked) setEditMode(false);
     }
   }, [selectedTemplateName, templates, currentTemplate]);
-
-  // Derive business sums array
-  const businessSums = useMemo(() => {
-    const result = businessSumsData?.businessTransactionsSumFromLedgerRecords;
-    if (result?.__typename === 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult') {
-      return result.businessTransactionsSum;
-    }
-    return [];
-  }, [businessSumsData]);
 
   // ── Refs for reading latest values inside effects without adding them as deps ──
   // Updated via useLayoutEffect (runs before useEffect) so effects always see current values.
@@ -586,8 +693,6 @@ export function DynamicReport() {
     [isDirty, applyTemplate],
   );
 
-  const scopeOwnerId = soleAdminBusinessId ?? selectedOwner;
-
   // The baseline a later visit diffs against: the figures currently on screen, for the period they
   // were computed over.
   const snapshotInput = useMemo(
@@ -727,6 +832,16 @@ export function DynamicReport() {
           isPeriodOverridden && draftFromDate && draftToDate ? { draftFromDate, draftToDate } : null
         }
         onRestoreDraftPeriod={restoreDraftPeriod}
+        snapshots={snapshots}
+        activeBaselineId={activeBaselineId}
+        onBaselineChange={setSelectedBaselineId}
+        diffSuspendedReason={
+          snapshots.length === 0
+            ? 'No baseline yet — save this draft to start tracking changes'
+            : baselineSnapshot && !isBaselineComparable
+              ? `Baseline covers ${baselineSnapshot.fromDate} to ${baselineSnapshot.toDate} — changes are hidden`
+              : null
+        }
       />
 
       {showLegacyBanner && currentTemplate?.isLegacy && (
@@ -747,6 +862,7 @@ export function DynamicReport() {
             onToggleExpand={handleToggleBankExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
+            newEntityIds={newEntityIds}
           />
 
           <TreePanel
@@ -761,6 +877,7 @@ export function DynamicReport() {
             onToggleExpand={handleToggleReportExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
+            diff={reportDiff}
           />
         </div>
       </div>
