@@ -1,4 +1,13 @@
-import { ChevronDown, Copy, Download, Edit2, FileText, Save, Trash2 } from 'lucide-react';
+import {
+  CalendarRange,
+  ChevronDown,
+  Copy,
+  Download,
+  Edit2,
+  FileText,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { DatePickerInput } from '@/components/common/index.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
@@ -45,6 +54,12 @@ interface ToolbarProps {
   onDelete: () => void;
   onDownloadCSV: () => void;
   isLocked?: boolean;
+  /** True while a draft is loaded: the draft owns its period, so the pickers are read-only. */
+  datesDisabled?: boolean;
+  onChangePeriod: () => void;
+  /** Set when the URL overrides the draft's own period, e.g. an annual-audit deep link. */
+  periodOverride?: { draftFromDate: string; draftToDate: string } | null;
+  onRestoreDraftPeriod: () => void;
 }
 
 export function Toolbar({
@@ -70,6 +85,10 @@ export function Toolbar({
   onDelete,
   onDownloadCSV,
   isLocked = false,
+  datesDisabled = false,
+  onChangePeriod,
+  periodOverride = null,
+  onRestoreDraftPeriod,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
 
@@ -86,6 +105,7 @@ export function Toolbar({
             value={fromDate as TimelessDateString}
             onChange={e => onFromDateChange(e ?? '')}
             className="w-36"
+            disabled={datesDisabled}
           />
         </div>
 
@@ -98,6 +118,7 @@ export function Toolbar({
             value={toDate as TimelessDateString}
             onChange={e => onToDateChange(e ?? '')}
             className="w-36"
+            disabled={datesDisabled}
           />
         </div>
 
@@ -120,6 +141,17 @@ export function Toolbar({
             Show zeroed accounts
           </Label>
         </div>
+
+        {periodOverride && (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-sky-100 text-sky-800 border-sky-300">
+              Draft period is {periodOverride.draftFromDate} to {periodOverride.draftToDate}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={onRestoreDraftPeriod}>
+              Back to draft period
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Right side: Template controls */}
@@ -160,6 +192,10 @@ export function Toolbar({
             <DropdownMenuItem onClick={onResave} disabled={!hasTemplate || isLocked}>
               <Save className="size-4 mr-2" />
               Resave
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onChangePeriod} disabled={!hasTemplate || isLocked}>
+              <CalendarRange className="size-4 mr-2" />
+              Change period
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRename} disabled={!hasTemplate || isLocked}>
               <Edit2 className="size-4 mr-2" />

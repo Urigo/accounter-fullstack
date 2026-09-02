@@ -25,6 +25,7 @@ import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
 import { useUpdateDynamicReportTemplate } from '../../../hooks/use-update-dynamic-report-template.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { ChangePeriodDialog, type ChangePeriodDialogRef } from './dialogs/change-period-dialog.js';
 import {
   DeleteBranchConfirmation,
   type DeleteBranchConfirmationRef,
@@ -52,6 +53,7 @@ import { buildInitialBankTree } from './utils/bank-tree.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
+import { buildSnapshotInput } from './utils/snapshot.js';
 import { serializeReportTree } from './utils/template-serialization.js';
 import {
   buildNodeStats,
@@ -118,6 +120,8 @@ import {
       name
       isLocked
       updated
+      fromDate
+      toDate
       template {
         id
         parent
@@ -165,8 +169,8 @@ export function DynamicReport() {
   // Filters — persisted in URL search params
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const fromDate = searchParams.get('from') ?? DEFAULT_FROM;
-  const toDate = searchParams.get('to') ?? DEFAULT_TO;
+  const urlFromDate = searchParams.get('from');
+  const urlToDate = searchParams.get('to');
   const selectedOwner = searchParams.get('owner') ?? adminBusinessId;
   const showZeroed = searchParams.get('zeroed') === '1';
   const selectedTemplateName = searchParams.get('template');
@@ -267,6 +271,7 @@ export function DynamicReport() {
   const saveAsNewTemplateDialogRef = useRef<SaveAsNewTemplateDialogRef>(null);
   const renameTemplateDialogRef = useRef<RenameTemplateDialogRef>(null);
   const deleteTemplateConfirmationRef = useRef<DeleteTemplateConfirmationRef>(null);
+  const changePeriodDialogRef = useRef<ChangePeriodDialogRef>(null);
 
   // ── GQL mutations ────────────────────────────────────────────────────────────
 
@@ -285,17 +290,6 @@ export function DynamicReport() {
     [adminBusinesses],
   );
 
-  const [{ data: businessSumsData }] = useQuery({
-    query: DynamicReportDocument,
-    variables: {
-      filters: {
-        fromDate: fromDate as TimelessDateString,
-        toDate: toDate as TimelessDateString,
-        ownerIds: [soleAdminBusinessId ?? selectedOwner],
-      },
-    },
-  });
-
   const [{ data: allTemplatesData }, refetchAllTemplates] = useQuery({
     query: AllDynamicReportsDocument,
   });
@@ -305,6 +299,46 @@ export function DynamicReport() {
     query: DynamicReportTemplateDocument,
     variables: { name: selectedTemplateName ?? '' },
     pause: !selectedTemplateName,
+  });
+
+  // ── Period ────────────────────────────────────────────────────────────────
+  // A draft owns the period it was built for, so the pickers are read-only while one is loaded.
+  // Explicit ?from=/?to= still win: annual-audit step 05 deep-links the same locked template at two
+  // different ranges (Balance Sheet and P&L), and those links must keep working.
+  const draftFromDate = templateNodesData?.dynamicReport?.fromDate ?? null;
+  const draftToDate = templateNodesData?.dynamicReport?.toDate ?? null;
+
+  const fromDate = urlFromDate ?? draftFromDate ?? DEFAULT_FROM;
+  const toDate = urlToDate ?? draftToDate ?? DEFAULT_TO;
+
+  const isPeriodOverridden =
+    !!draftFromDate &&
+    !!draftToDate &&
+    ((!!urlFromDate && urlFromDate !== draftFromDate) ||
+      (!!urlToDate && urlToDate !== draftToDate));
+
+  const restoreDraftPeriod = useCallback(
+    () =>
+      setSearchParams(
+        p => {
+          p.delete('from');
+          p.delete('to');
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+
+  const [{ data: businessSumsData }] = useQuery({
+    query: DynamicReportDocument,
+    variables: {
+      filters: {
+        fromDate: fromDate as TimelessDateString,
+        toDate: toDate as TimelessDateString,
+        ownerIds: [soleAdminBusinessId ?? selectedOwner],
+      },
+    },
   });
 
   // Derive template list for TemplateManager
@@ -530,11 +564,14 @@ export function DynamicReport() {
       setSelectedTemplateName(template.name);
       setShowLegacyBanner(template.isLegacy ?? false);
       setIsDirty(false);
+      // Drop any period override from the previous draft — each draft owns its own period, and a
+      // leftover ?from=/?to= would silently apply to the one being loaded.
+      restoreDraftPeriod();
       if (template.isLocked) {
         setEditMode(false);
       }
     },
-    [setSelectedTemplateName],
+    [setSelectedTemplateName, restoreDraftPeriod],
   );
 
   const handleLoadTemplate = useCallback(
@@ -549,18 +586,48 @@ export function DynamicReport() {
     [isDirty, applyTemplate],
   );
 
+  const scopeOwnerId = soleAdminBusinessId ?? selectedOwner;
+
+  // The baseline a later visit diffs against: the figures currently on screen, for the period they
+  // were computed over.
+  const snapshotInput = useMemo(
+    () =>
+      buildSnapshotInput({
+        businessSums,
+        fromDate: fromDate as TimelessDateString,
+        toDate: toDate as TimelessDateString,
+        scopeOwnerId,
+      }),
+    [businessSums, fromDate, toDate, scopeOwnerId],
+  );
+
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
     const serialized = serializeReportTree(reportTree);
     const result = await updateDynamicReportTemplate({
       name: currentTemplate.name,
       template: serialized,
+      snapshot: snapshotInput,
     });
     if (result) {
       setIsDirty(false);
       setShowLegacyBanner(false);
     }
-  }, [currentTemplate, reportTree, updateDynamicReportTemplate]);
+  }, [currentTemplate, reportTree, updateDynamicReportTemplate, snapshotInput]);
+
+  const handleChangePeriod = useCallback(() => {
+    changePeriodDialogRef.current?.changePeriod(fromDate, toDate);
+  }, [fromDate, toDate]);
+
+  const handlePeriodConfirmed = useCallback(
+    (nextFrom: string, nextTo: string) => {
+      setFromDate(nextFrom);
+      setToDate(nextTo);
+      // The period is part of the draft, so changing it is an unsaved edit like any other.
+      setIsDirty(true);
+    },
+    [setFromDate, setToDate],
+  );
 
   const handleRenameInManager = useCallback(
     async (template: Template, newName: string) => {
@@ -654,6 +721,12 @@ export function DynamicReport() {
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
         onDownloadCSV={handleDownloadCSV}
         isLocked={currentTemplate?.isLocked ?? false}
+        datesDisabled={!!currentTemplate}
+        onChangePeriod={handleChangePeriod}
+        periodOverride={
+          isPeriodOverridden && draftFromDate && draftToDate ? { draftFromDate, draftToDate } : null
+        }
+        onRestoreDraftPeriod={restoreDraftPeriod}
       />
 
       {showLegacyBanner && currentTemplate?.isLegacy && (
@@ -691,6 +764,8 @@ export function DynamicReport() {
           />
         </div>
       </div>
+
+      <ChangePeriodDialog ref={changePeriodDialogRef} onConfirm={handlePeriodConfirmed} />
 
       {/* Template Manager Modal */}
       <TemplateManager
@@ -741,6 +816,7 @@ export function DynamicReport() {
         setIsDirty={setIsDirty}
         setCurrentTemplate={setCurrentTemplate}
         reportTree={reportTree}
+        snapshot={snapshotInput}
       />
 
       <RenameTemplateDialog
