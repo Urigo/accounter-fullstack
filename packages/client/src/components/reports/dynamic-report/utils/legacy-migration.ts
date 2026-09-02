@@ -73,34 +73,38 @@ export function migrateLegacyTemplateNodes(
       // Expand descendantFinancialEntities into explicit leaf nodes
       for (const uuid of node.data.descendantFinancialEntities ?? []) {
         if (explicitLeafIds.has(uuid) || processedIds.has(uuid)) continue;
+        // No sum means no ledger activity in the period. Keep the leaf hidden rather than
+        // dropping it, so migrating and then saving can't prune it from the template. The legacy
+        // format carries no per-entity name, so the id stands in until a sum reveals the real one.
         const bizSum = sumById.get(uuid);
-        if (!bizSum) continue;
         processedIds.add(uuid);
         result.push({
           id: uuid,
           parent: id,
-          text: bizSum.business.name,
+          text: bizSum?.business.name ?? uuid,
           droppable: false,
           data: {
             nodeType: 'financial-entity',
-            value: bizSum.total.raw * -1,
+            value: bizSum ? bizSum.total.raw * -1 : 0,
             isOpen: false,
+            ...(bizSum ? {} : { isHidden: true }),
           },
         });
       }
     } else {
-      // Explicit leaf already in template — keep as-is (hydrated from businessSums if available)
+      // Explicit leaf already in template — keep as-is (hydrated from businessSums if available).
+      // Without a sum the leaf is hidden, not dropped, so a save after migration can't prune it.
       const bizSum = sumById.get(id);
-      if (!bizSum) continue;
       result.push({
         id,
         parent,
-        text: bizSum.business.name,
+        text: bizSum?.business.name ?? node.text,
         droppable: false,
         data: {
           nodeType: 'financial-entity',
-          value: bizSum.total.raw * -1,
+          value: bizSum ? bizSum.total.raw * -1 : 0,
           isOpen: node.data.isOpen,
+          ...(bizSum ? {} : { isHidden: true }),
           ...(node.data.hebrewText == null ? {} : { hebrewText: node.data.hebrewText }),
         },
       });

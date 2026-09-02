@@ -409,13 +409,33 @@ export function DynamicReport() {
 
     // O(N) value lookup
     const sumById = new Map(businessSums.map(b => [b.business.id, b.total.raw * -1]));
+    const nameById = new Map(businessSums.map(b => [b.business.id, b.business.name]));
 
-    // Patch values on report-tree leaf nodes, preserve all structural properties
+    // Patch values on report-tree leaf nodes, preserve all structural properties.
+    // A leaf whose entity has no sum in the new period is hidden rather than dropped, and one
+    // whose sum reappears is un-hidden — mirroring buildReportTree, so widening the date range
+    // brings a leaf back instead of leaving it invisible with a live value.
     const nextReportTree = currentReportTree.map(node => {
       if (node.droppable) return node;
-      const value = sumById.get(node.id) ?? 0;
-      if (node.data.value === value) return node;
-      return { ...node, data: { ...node.data, value } };
+      const sum = sumById.get(node.id);
+      const value = sum ?? 0;
+      const isHidden = sum === undefined;
+      // Keep the last known name while hidden — there is no sum to read one from.
+      const text = isHidden ? node.text : (nameById.get(node.id) ?? node.text);
+      if (
+        node.data.value === value &&
+        (node.data.isHidden ?? false) === isHidden &&
+        node.text === text
+      ) {
+        return node;
+      }
+      const data = { ...node.data, value };
+      if (isHidden) {
+        data.isHidden = true;
+      } else {
+        delete data.isHidden;
+      }
+      return { ...node, text, data };
     });
 
     // Placed entity IDs haven't changed (structure is preserved)
@@ -579,6 +599,7 @@ export function DynamicReport() {
     function traverse(parentId: string, depth: number) {
       const children = childrenMap.get(parentId) ?? [];
       for (const node of children) {
+        if (node.data.isHidden) continue;
         if (node.droppable) {
           const sum = nodeStats.get(node.id)?.sum ?? 0;
           rows.push(`${escapeCsv(node.text)},${sum},${depth}`);
