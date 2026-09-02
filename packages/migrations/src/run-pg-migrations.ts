@@ -204,6 +204,8 @@ import migration_2026_08_23T10_00_00_rls_scope_securities_tables from './actions
 import migration_2026_08_31T10_00_00_add_tenant_scoped_date_indexes from './actions/2026-08-31T10-00-00.add-tenant-scoped-date-indexes.js';
 import migration_2026_08_31T11_00_00_index_financial_entity_names from './actions/2026-08-31T11-00-00.index-financial-entity-names.js';
 import migration_2026_08_31T12_00_00_rls_reassert_salaries from './actions/2026-08-31T12-00-00.rls-reassert-salaries.js';
+import migration_2026_09_02T10_00_00_dynamic_report_template_snapshots from './actions/2026-09-02T10-00-00.dynamic-report-template-snapshots.js';
+import migration_2026_09_02T10_30_00_rls_dynamic_report_template_snapshots from './actions/2026-09-02T10-30-00.rls-dynamic-report-template-snapshots.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -412,6 +414,8 @@ export const MIGRATIONS = [
   migration_2026_08_31T10_00_00_add_tenant_scoped_date_indexes,
   migration_2026_08_31T11_00_00_index_financial_entity_names,
   migration_2026_08_31T12_00_00_rls_reassert_salaries,
+  migration_2026_09_02T10_00_00_dynamic_report_template_snapshots,
+  migration_2026_09_02T10_30_00_rls_dynamic_report_template_snapshots,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
