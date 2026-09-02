@@ -1,16 +1,49 @@
 import type { DynamicReportNode } from '../../../__generated__/types.js';
 import { errorSimplifier } from '../../../shared/errors.js';
+import {
+  dateToTimelessDateString,
+  optionalDateToTimelessDateString,
+} from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import {
   isLegacyTemplate,
   migrateLegacyTemplate,
+  parseSnapshotTree,
   parseTemplate,
+  recordToSnapshotValues,
+  snapshotValuesToRecord,
+  validateSnapshotInput,
   validateTemplate,
+  type DynamicReportSnapshotInputType,
 } from '../helpers/dynamic-report.helper.js';
 import { DynamicReportProvider } from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';
+
+/**
+ * Records the baseline a later diff is measured against: the tree exactly as it was saved, and the
+ * figures the client had on screen at that moment. Snapshot ≡ save, so this runs on every write
+ * that carries one.
+ */
+async function writeSnapshot(
+  provider: DynamicReportProvider,
+  ownerId: string,
+  templateName: string,
+  template: string,
+  snapshot: DynamicReportSnapshotInputType,
+): Promise<void> {
+  await provider.insertSnapshot({
+    ownerId,
+    templateName,
+    fromDate: snapshot.fromDate,
+    toDate: snapshot.toDate,
+    scopeOwnerId: snapshot.scopeOwnerId,
+    tree: template,
+    leafValues: JSON.stringify(snapshotValuesToRecord(snapshot.values)),
+    createdBy: null,
+  });
+}
 
 export const dynamicReportResolver: ReportsModule.Resolvers = {
   Query: {
@@ -35,27 +68,41 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw errorSimplifier('Failed to get all dynamic report templates', error);
       }
     },
+    dynamicReportSnapshot: async (_, { id }, { injector }) => {
+      try {
+        // RLS scopes the row to the caller's businesses, so an id from another tenant simply
+        // returns nothing rather than leaking.
+        return (await injector.get(DynamicReportProvider).getSnapshotById({ id })) ?? null;
+      } catch (error) {
+        throw errorSimplifier(`Failed to get dynamic report snapshot "${id}"`, error);
+      }
+    },
   },
   Mutation: {
-    updateDynamicReportTemplate: async (_, { name, template }, { injector }) => {
+    updateDynamicReportTemplate: async (_, { name, template, snapshot }, { injector }) => {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
         validateTemplate(template);
+        const validatedSnapshot = snapshot ? validateSnapshotInput(snapshot) : null;
 
-        return injector
-          .get(DynamicReportProvider)
-          .updateTemplate({
-            name,
-            ownerId,
-            template,
-          })
-          .then(result => {
-            if (result.length === 0) {
-              throw new Error(`Report template "${name}" not found`);
-            }
-            return result[0];
-          });
+        const provider = injector.get(DynamicReportProvider);
+        const result = await provider.updateTemplate({
+          name,
+          ownerId,
+          template,
+          fromDate: validatedSnapshot?.fromDate ?? null,
+          toDate: validatedSnapshot?.toDate ?? null,
+        });
+        if (result.length === 0) {
+          throw new Error(`Report template "${name}" not found`);
+        }
+
+        if (validatedSnapshot) {
+          await writeSnapshot(provider, ownerId, name, template, validatedSnapshot);
+        }
+
+        return result[0];
       } catch (error) {
         throw errorSimplifier(`Failed to update dynamic report template "${name}"`, error);
       }
@@ -81,22 +128,27 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw errorSimplifier(`Failed to update dynamic report template name "${name}"`, error);
       }
     },
-    insertDynamicReportTemplate: async (_, { name, template }, { injector }) => {
+    insertDynamicReportTemplate: async (_, { name, template, snapshot }, { injector }) => {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
         validateTemplate(template);
+        const validatedSnapshot = snapshot ? validateSnapshotInput(snapshot) : null;
 
-        return injector
-          .get(DynamicReportProvider)
-          .insertTemplate({
-            name,
-            ownerId,
-            template,
-          })
-          .then(result => {
-            return result[0];
-          });
+        const provider = injector.get(DynamicReportProvider);
+        const result = await provider.insertTemplate({
+          name,
+          ownerId,
+          template,
+          fromDate: validatedSnapshot?.fromDate ?? null,
+          toDate: validatedSnapshot?.toDate ?? null,
+        });
+
+        if (validatedSnapshot) {
+          await writeSnapshot(provider, ownerId, name, template, validatedSnapshot);
+        }
+
+        return result[0];
       } catch (error) {
         throw errorSimplifier(`Failed to insert dynamic report template "${name}"`, error);
       }
@@ -145,12 +197,38 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
       }
     },
   },
+  DynamicReportSnapshotMeta: {
+    id: snapshot => snapshot.id,
+    createdAt: snapshot => snapshot.created_at,
+    createdBy: snapshot => snapshot.created_by,
+    fromDate: snapshot => dateToTimelessDateString(snapshot.from_date),
+    toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
+  },
+  DynamicReportSnapshot: {
+    id: snapshot => snapshot.id,
+    createdAt: snapshot => snapshot.created_at,
+    createdBy: snapshot => snapshot.created_by,
+    fromDate: snapshot => dateToTimelessDateString(snapshot.from_date),
+    toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
+    scopeOwnerId: snapshot => snapshot.scope_owner_id,
+    tree: snapshot => parseSnapshotTree(snapshot.tree) as DynamicReportNode[],
+    values: snapshot => recordToSnapshotValues(snapshot.leaf_values),
+  },
   DynamicReportInfo: {
     id: report => `${report.owner_id}-${report.name}`,
     name: report => report.name,
     created: report => report.created_at,
     updated: report => report.updated_at,
     isLocked: report => report.is_locked ?? false,
+    fromDate: report => optionalDateToTimelessDateString(report.from_date),
+    toDate: report => optionalDateToTimelessDateString(report.to_date),
+    snapshots: async (report, _args, { injector }) => {
+      const snapshots = await injector
+        .get(DynamicReportProvider)
+        .getSnapshotsMetaByOwnerIdLoader.load(report.owner_id);
+      // Batched per owner, so narrow to this template. Already ordered newest first by the query.
+      return snapshots.filter(snapshot => snapshot.template_name === report.name);
+    },
     template: async (report, _args, { injector }) => {
       try {
         return parseTemplate(report.template) as DynamicReportNode[];
