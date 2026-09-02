@@ -125,23 +125,21 @@ export async function insertFixture(
   // Validate fixture before insertion
   assertValidFixture(fixture);
 
-  // Set RLS context if possible to allow insertion into protected tables (e.g. charges)
+  // Set the RLS context so inserts into the tenant-scoped tables satisfy `tenant_isolation`.
+  //
+  // This is not best-effort: on a non-superuser connection every table below is
+  // `FORCE ROW LEVEL SECURITY` and `get_current_business_id()` raises when unset, so a failure
+  // here turns into a cascade of policy violations further down that say nothing about the real
+  // cause. Let it throw.
   const contextBusinessId = adminBusinessId || fixture.businesses?.businesses?.[0]?.id;
   if (contextBusinessId) {
-    try {
-      await client.query(
-        `SELECT
-          set_config('app.current_business_id', $1, true),
-          set_config('app.current_user_id', $1, true),
-          set_config('app.auth_type', 'jwt', true)`,
-        [contextBusinessId],
-      );
-    } catch (error) {
-       // Ignore error if function doesn't exist (e.g. in some mock setups) 
-       // or if we can't set config for some reason.
-       // The insertion might still succeed if RLS isn't fully active or checks are loose.
-       console.warn('Failed to set RLS context in insertFixture:', error);
-    }
+    await client.query(
+      `SELECT
+        set_config('app.current_business_id', $1, true),
+        set_config('app.current_user_id', $1, true),
+        set_config('app.auth_type', 'jwt', true)`,
+      [contextBusinessId],
+    );
   }
 
   const idMapping: FixtureIdMapping = new Map();

@@ -435,6 +435,42 @@ fixtures: {
 
 ---
 
+#### Error: "No business context set - authentication required" (Postgres `P0001`)
+
+**Cause**: Row-Level Security. Every domain table is `FORCE ROW LEVEL SECURITY`, and
+`accounter_schema.get_current_business_id()` raises rather than returning NULL when the
+`app.current_business_id` session variable is unset — so any read or write aborts.
+
+This is invisible locally: dev and CI connect as the `postgres` superuser, which bypasses RLS
+regardless of `FORCE`. A deployed database connects as a non-superuser, which does not. A change
+that works on `yarn test:integration` and `yarn test:demo-seed` can still fail on the first deployed
+run.
+
+**Solution**: The seed and validator pin the context themselves — `scripts/seed-demo-data.ts` and
+`packages/server/src/demo-fixtures/validate-demo-data.ts` both call
+`set_config('app.current_business_id', <admin business id>, false)` right after connecting, using
+the deterministic id `makeUUID('business', 'Admin Business')`. If you add a script that touches
+domain tables, it must do the same.
+
+To reproduce a deployed run locally, seed as a non-superuser instead of as `postgres`:
+
+```sql
+CREATE ROLE staging_sim LOGIN PASSWORD 'staging_sim';
+GRANT USAGE ON SCHEMA accounter_schema TO staging_sim;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA accounter_schema TO staging_sim;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA accounter_schema TO staging_sim;
+```
+
+```bash
+POSTGRES_USER=staging_sim POSTGRES_PASSWORD=staging_sim \
+  ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+`packages/server/src/__tests__/seed-admin-context-rls.integration.test.ts` covers this in CI by
+running `seedAdminCore` under a non-superuser role.
+
+---
+
 ### Validation Script Issues
 
 #### Error: "Accounter Admin Business entity missing"

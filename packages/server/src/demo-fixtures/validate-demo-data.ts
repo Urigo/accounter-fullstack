@@ -22,6 +22,7 @@
  */
 import { config } from 'dotenv';
 import pg from 'pg';
+import { makeUUID } from './helpers/deterministic-uuid.js';
 import { getAllUseCases } from './use-cases/index.js';
 import { validateLedgerRecords } from './validators/ledger-validators.js';
 import type { LedgerRecord, ValidationContext } from './validators/types.js';
@@ -50,6 +51,18 @@ async function validateDemoData() {
 
   try {
     await client.connect();
+
+    // 0. Pin the RLS context before reading anything.
+    //
+    // Every table this script reads is `FORCE ROW LEVEL SECURITY`, and
+    // `get_current_business_id()` RAISES when `app.current_business_id` is unset -- so
+    // without this the very first SELECT below aborts with P0001 on any non-superuser
+    // connection (dev and CI connect as the `postgres` superuser and bypass RLS, which is
+    // why this is invisible locally). The id is derived exactly as `seedAdminCore` derives
+    // it, and every demo row is owned by that business.
+    await client.query(`SELECT set_config('app.current_business_id', $1, false)`, [
+      makeUUID('business', 'Admin Business'),
+    ]);
 
     // 1. Admin business exists
     const adminCheck = await client.query(
