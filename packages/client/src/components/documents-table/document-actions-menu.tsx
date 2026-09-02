@@ -6,6 +6,7 @@ import {
   ExternalLink,
   File,
   Image,
+  Link2,
   Link as LinkIcon,
   ListPlus,
   MoreVertical,
@@ -20,6 +21,7 @@ import {
   CloseDocumentButton,
   DeleteDocumentButton,
   DocumentImageDrawer,
+  LinkDocumentButton,
   PreviewDocumentModal,
   UnlinkDocumentButton,
 } from '../common/index.js';
@@ -57,6 +59,7 @@ export function DocumentActionsMenu({
   const [imageOpen, setImageOpen] = useState(false);
   const [closeDocumentOpen, setCloseDocumentOpen] = useState(false);
   const [issueDocumentOpen, setIssueDocumentOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const [unlinkOpen, setUnlinkOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -161,6 +164,10 @@ export function DocumentActionsMenu({
 
           <DropdownMenuSeparator />
 
+          <DropdownMenuItem onSelect={() => setLinkOpen(true)}>
+            <Link2 className="size-4" />
+            {chargeId ? 'Link to Another Charge' : 'Link to Charge'}
+          </DropdownMenuItem>
           <DropdownMenuItem disabled={!chargeId} onSelect={() => setUnlinkOpen(true)}>
             <Unlink className="size-4" />
             Unlink Document
@@ -178,6 +185,13 @@ export function DocumentActionsMenu({
         onClose={(): void => setImageOpen(false)}
       />
 
+      <LinkDocumentButton
+        documentId={document.id}
+        onChange={document.onUpdate}
+        onChargeDeleted={document.onChargeDeleted}
+        open={linkOpen}
+        setOpen={setLinkOpen}
+      />
       <UnlinkDocumentButton
         documentId={document.id}
         onChange={document.onUpdate}
