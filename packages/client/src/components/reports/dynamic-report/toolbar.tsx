@@ -60,6 +60,12 @@ interface ToolbarProps {
   /** Set when the URL overrides the draft's own period, e.g. an annual-audit deep link. */
   periodOverride?: { draftFromDate: string; draftToDate: string } | null;
   onRestoreDraftPeriod: () => void;
+  /** Saved baselines, newest first. */
+  snapshots: readonly { id: string; createdAt: Date | string; fromDate: string; toDate: string }[];
+  activeBaselineId: string | null;
+  onBaselineChange: (id: string | null) => void;
+  /** Set when change tracking cannot be shown, explaining why. */
+  diffSuspendedReason?: string | null;
 }
 
 export function Toolbar({
@@ -89,8 +95,21 @@ export function Toolbar({
   onChangePeriod,
   periodOverride = null,
   onRestoreDraftPeriod,
+  snapshots,
+  activeBaselineId,
+  onBaselineChange,
+  diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
+
+  const baselineLabel = (snapshot: { createdAt: Date | string }, index: number): string => {
+    const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    return index === 0 ? `Last save · ${when}` : when;
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b bg-muted/30">
@@ -169,6 +188,35 @@ export function Toolbar({
           <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
             Unsaved changes
           </Badge>
+        )}
+
+        {hasTemplate && diffSuspendedReason && (
+          <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
+            {diffSuspendedReason}
+          </Badge>
+        )}
+
+        {hasTemplate && snapshots.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="baseline" className="text-sm text-muted-foreground">
+              Compare to
+            </Label>
+            <Select
+              value={activeBaselineId ?? undefined}
+              onValueChange={value => onBaselineChange(value)}
+            >
+              <SelectTrigger id="baseline" className="w-52">
+                <SelectValue placeholder="Last save" />
+              </SelectTrigger>
+              <SelectContent>
+                {snapshots.map((snapshot, index) => (
+                  <SelectItem key={snapshot.id} value={snapshot.id}>
+                    {baselineLabel(snapshot, index)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
 
         <DropdownMenu>
