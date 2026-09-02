@@ -35,7 +35,7 @@ function renderSubtree(
   props: Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'>,
 ): ReactElement[] {
   return nodes
-    .filter(n => n.parent === parentId)
+    .filter(n => n.parent === parentId && !n.data.isHidden)
     .map(node => (
       <Fragment key={node.id}>
         <TreeNodeRow
@@ -84,7 +84,7 @@ export function TreePanel({
   }, [editMode, treeId]);
 
   const nodeStats = useMemo(() => buildNodeStats(nodes), [nodes]);
-  const hasRootNodes = nodes.some(n => n.parent === treeId);
+  const hasRootNodes = nodes.some(n => n.parent === treeId && !n.data.isHidden);
 
   const CollapseIcon =
     treeId === 'bank'
