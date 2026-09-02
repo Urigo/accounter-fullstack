@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/tooltip.js';
 import { cn } from '@/lib/utils.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
+import { DiffMarkers, type RowDiff } from './diff-markers.js';
 import { DragOverlayContent } from './drag-overlay.js';
 import type { DragPayload } from './utils/cross-tree-drop.js';
 import {
@@ -58,6 +59,8 @@ interface TreeNodeProps {
   onToggleExpand: (nodeId: string) => void;
   onRename?: (nodeId: string, currentName: string) => void;
   onDelete?: (nodeId: string) => void;
+  /** How this row differs from the last saved baseline, when a baseline is in play. */
+  diff?: RowDiff;
 }
 
 function instructionToIndicator(
@@ -79,6 +82,7 @@ export function TreeNodeRow({
   onToggleExpand,
   onRename,
   onDelete,
+  diff,
 }: TreeNodeProps): ReactElement {
   const [isDragging, setIsDragging] = useState(false);
   const [dropIndicator, setDropIndicator] = useState<'top' | 'bottom' | 'child' | null>(null);
@@ -88,11 +92,15 @@ export function TreeNodeRow({
 
   const isExpanded = node.data.isOpen;
   const isBranch = isBranchNode(node);
+  // A ghost row shows what a node used to contribute before it left the report. It is a record,
+  // not a node: it cannot be dragged, dropped onto, renamed or deleted.
+  const isGhost = diff?.isGhost === true;
+  const isInteractive = editMode && !isGhost;
 
   // Attach draggable
   useEffect(() => {
     const el = rowRef.current;
-    if (!el || !editMode) return undefined;
+    if (!el || !isInteractive) return undefined;
     return draggable({
       element: el,
       dragHandle: dragHandleRef.current ?? undefined,
@@ -111,12 +119,12 @@ export function TreeNodeRow({
       onDragStart: () => setIsDragging(true),
       onDrop: () => setIsDragging(false),
     });
-  }, [editMode, node, treeId]);
+  }, [isInteractive, node, treeId]);
 
   // Attach drop target
   useEffect(() => {
     const el = rowRef.current;
-    if (!el || !editMode) return undefined;
+    if (!el || !isInteractive) return undefined;
     return dropTargetForElements({
       element: el,
       getData: ({ input, element: el }) =>
@@ -137,7 +145,7 @@ export function TreeNodeRow({
       onDragLeave: () => setDropIndicator(null),
       onDrop: () => setDropIndicator(null),
     });
-  }, [depth, editMode, isExpanded, node.droppable, node.id, treeId]);
+  }, [depth, isInteractive, isExpanded, node.droppable, node.id, treeId]);
 
   const indentPx = depth * 24;
 
@@ -151,16 +159,20 @@ export function TreeNodeRow({
         className={cn(
           'flex flex-col',
           isDragging && 'opacity-50',
+          isGhost && 'opacity-60',
           dropIndicator === 'top' && 'border-t-2 border-primary',
           dropIndicator === 'bottom' && 'border-b-2 border-primary',
           dropIndicator === 'child' && 'bg-accent/30',
         )}
       >
         <div
-          className="flex items-center h-10 px-2 hover:bg-muted/50 border-b border-border/50 group"
+          className={cn(
+            'flex items-center h-10 px-2 hover:bg-muted/50 border-b border-border/50 group',
+            diff && diff.changes.length > 0 && !isGhost && 'bg-sky-50',
+          )}
           style={{ paddingInlineStart: `${indentPx + 8}px` }}
         >
-          {editMode && (
+          {isInteractive && (
             <button
               ref={dragHandleRef}
               className="cursor-grab p-1 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
@@ -184,7 +196,9 @@ export function TreeNodeRow({
             <Folder className="size-4 text-muted-foreground ml-1" />
           )}
 
-          <span className="ml-2 font-medium truncate">{node.text}</span>
+          <span className={cn('ml-2 font-medium truncate', isGhost && 'line-through')}>
+            {node.text}
+          </span>
 
           {node.data.nodeType === 'sort-code-branch' && node.data.sortCode && (
             <Badge variant="outline" className="ml-2 text-xs">
@@ -193,6 +207,8 @@ export function TreeNodeRow({
           )}
 
           <div className="flex items-center gap-2 ml-auto">
+            <DiffMarkers diff={diff} />
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -223,7 +239,7 @@ export function TreeNodeRow({
               </TooltipProvider>
             )}
 
-            {editMode && node.data.nodeType === 'synthetic-branch' && (
+            {isInteractive && node.data.nodeType === 'synthetic-branch' && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -268,10 +284,13 @@ export function TreeNodeRow({
       )}
     >
       <div
-        className="flex items-center h-10 px-2 hover:bg-muted/50 border-b border-border/50 group"
+        className={cn(
+          'flex items-center h-10 px-2 hover:bg-muted/50 border-b border-border/50 group',
+          diff && diff.changes.length > 0 && !isGhost && 'bg-sky-50',
+        )}
         style={{ paddingInlineStart: `${indentPx + 8}px` }}
       >
-        {editMode && (
+        {isInteractive && (
           <button
             ref={dragHandleRef}
             className="cursor-grab p-1 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
@@ -288,9 +307,11 @@ export function TreeNodeRow({
           )}
         </div>
 
-        <span className="ml-2 truncate">{node.text}</span>
+        <span className={cn('ml-2 truncate', isGhost && 'line-through')}>{node.text}</span>
 
         <div className="flex items-center gap-2 ml-auto">
+          <DiffMarkers diff={diff} />
+
           <Badge
             variant="secondary"
             className={cn(
@@ -301,22 +322,24 @@ export function TreeNodeRow({
             {formatCurrency(value)}
           </Badge>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="size-6 p-0"
-            onClick={() => onToggleExpand(node.id)}
-          >
-            {isExpanded ? (
-              <PanelTopClose className="size-4" />
-            ) : (
-              <PanelTopOpen className="size-4" />
-            )}
-          </Button>
+          {!isGhost && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-6 p-0"
+              onClick={() => onToggleExpand(node.id)}
+            >
+              {isExpanded ? (
+                <PanelTopClose className="size-4" />
+              ) : (
+                <PanelTopOpen className="size-4" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
-      {isExpanded && (
+      {isExpanded && !isGhost && (
         <div
           className="bg-muted/30 border-b border-border/50 py-2 overflow-x-auto"
           style={{ paddingInlineStart: `${indentPx + 32}px`, paddingInlineEnd: '8px' }}
