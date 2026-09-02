@@ -24,6 +24,40 @@ const SCHEMA = 'accounter_schema';
  */
 export const RLS_TEST_ROLE = `rls_test_user_${process.pid}_${Math.random().toString(36).slice(2, 10)}`;
 
+/**
+ * Advisory-lock key serializing role setup and teardown across test files.
+ *
+ * The role names are per-worker and never collide, but the *grants* do: `GRANT
+ * USAGE ON SCHEMA accounter_schema` rewrites the ACL on the single `pg_namespace`
+ * row for the schema, and `DROP OWNED BY` / `DROP ROLE` rewrite the same catalog
+ * rows on the way out. When several RLS suites run in parallel -- vitest's default
+ * -- two workers touching that one tuple race, and Postgres aborts the loser with
+ * `tuple concurrently updated`, failing whichever suite happened to lose. Catalog
+ * updates take no row lock a caller can wait on, so serializing explicitly is the
+ * fix; the lock is transaction-scoped and released on COMMIT/ROLLBACK.
+ */
+const RLS_ROLE_LOCK_KEY = 4_242_424_242;
+
+/** Run `fn`'s statements in a transaction holding the shared role-setup lock. */
+async function withRoleLock(pool: Pool, fn: (client: PoolClient) => Promise<void>): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`SELECT pg_advisory_xact_lock(${RLS_ROLE_LOCK_KEY})`);
+    await fn(client);
+    await client.query('COMMIT');
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      /* the original error is the one worth surfacing */
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 /** A table privilege grant: e.g. `{ table: 'sort_codes', privileges: 'INSERT, SELECT' }`. */
 export interface RlsRoleGrant {
   /** Unqualified table name (schema prefix is added automatically). */
@@ -46,9 +80,8 @@ export interface RlsRoleOptions {
  * pair with {@link dropRlsRole} in `afterAll`.
  */
 export async function ensureRlsRole(pool: Pool, options: RlsRoleOptions = {}): Promise<void> {
-  const client = await pool.connect();
-  try {
-    // CREATE ROLE is not transactional — guard against re-create across workers.
+  await withRoleLock(pool, async client => {
+    // Guard against re-create across workers.
     await client.query(
       `DO $$ BEGIN
          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${RLS_TEST_ROLE}') THEN
@@ -60,9 +93,7 @@ export async function ensureRlsRole(pool: Pool, options: RlsRoleOptions = {}): P
     for (const { table, privileges } of options.grants ?? []) {
       await client.query(`GRANT ${privileges} ON ${SCHEMA}.${table} TO ${RLS_TEST_ROLE}`);
     }
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /**
@@ -76,8 +107,7 @@ export async function ensureRlsRole(pool: Pool, options: RlsRoleOptions = {}): P
  * surfaces the real error instead of a "role does not exist" during teardown.
  */
 export async function dropRlsRole(pool: Pool): Promise<void> {
-  const client = await pool.connect();
-  try {
+  await withRoleLock(pool, async client => {
     await client.query(
       `DO $$ BEGIN
          IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${RLS_TEST_ROLE}') THEN
@@ -86,9 +116,7 @@ export async function dropRlsRole(pool: Pool): Promise<void> {
          END IF;
        END $$`,
     );
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /**

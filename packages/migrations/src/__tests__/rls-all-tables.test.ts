@@ -146,9 +146,13 @@ describe('RLS All Tables Migration', () => {
       `,
     );
 
-    // Guard against the query silently matching nothing and the assertions below
-    // passing vacuously.
-    expect(rows.length).toBeGreaterThan(40);
+    // Guard against the query silently matching nothing (a schema or catalog change
+    // that breaks the join would otherwise make every assertion below pass
+    // vacuously). Deliberately not pinned to the current table count -- the point is
+    // that the query returned something, and `salaries` being present is asserted
+    // outright just below, so a tighter bound would only break on unrelated schema
+    // changes.
+    expect(rows.length).toBeGreaterThan(0);
 
     const covered = rows.filter(r => !RLS_EXEMPT_OWNER_ID_TABLES.has(r.relname));
 

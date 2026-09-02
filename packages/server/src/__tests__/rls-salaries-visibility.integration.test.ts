@@ -78,9 +78,17 @@ describe('RLS read visibility: salaries are scoped to the tenant', () => {
         [A, EMPLOYEE_A],
         [B, EMPLOYEE_B],
       ] as const) {
-        // Every INSERT below is checked against `WITH CHECK (owner_id =
-        // get_current_business_id())`, so the write target has to be the tenant
-        // being created.
+        // This is the pool's own connection, which is `postgres` -- a superuser with
+        // BYPASSRLS, so it is exempt from the policies even though the tables are
+        // FORCED. The fixture INSERTs below are therefore *not* policy-checked, and
+        // the `financial_entities` row seeded with a NULL `owner_id` is the proof:
+        // under an enforced `WITH CHECK (owner_id = get_current_business_id())` it
+        // would be rejected, since `NULL = <uuid>` is NULL rather than true.
+        //
+        // The write target is still set per tenant so the fixtures are built under
+        // the same context the application would use, and so a future move of this
+        // setup to a non-superuser role stays correct. Enforcement is exercised only
+        // in the tests below, via `runAsRlsRole`.
         await setup.query(`SELECT set_config('app.current_business_id', $1, true)`, [tenant]);
 
         // The tenant business, self-owned. financial_entities goes in first with a
