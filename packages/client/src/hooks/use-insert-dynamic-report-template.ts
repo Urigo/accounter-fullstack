@@ -7,8 +7,12 @@ import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation InsertDynamicReportTemplate($name: String!, $template: String!) {
-    insertDynamicReportTemplate(name: $name, template: $template) {
+  mutation InsertDynamicReportTemplate(
+    $name: String!
+    $template: String!
+    $snapshot: DynamicReportSnapshotInput
+  ) {
+    insertDynamicReportTemplate(name: $name, template: $template, snapshot: $snapshot) {
       id
       name
     }
