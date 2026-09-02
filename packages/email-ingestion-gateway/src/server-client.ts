@@ -36,6 +36,12 @@ export const INGEST_BASE_DELAY_MS = 100;
  * recovering upstream all at once.
  */
 export const RETRY_JITTER_RATIO = 0.25;
+/**
+ * Hard upper bound on the error text carried into a failure result and the logs.
+ * A truncated string, suffix included, never exceeds this.
+ */
+export const MAX_ERROR_MESSAGE_LENGTH = 500;
+const TRUNCATION_SUFFIX = '… [truncated]';
 
 // ---------------------------------------------------------------------------
 // Domain types (public API)
@@ -103,17 +109,30 @@ export interface ControlDecision {
   classification: EmailClassificationKind;
 }
 
+/**
+ * Diagnostics attached to every failure result, so a denial can be read off one
+ * log line instead of being reconstructed from `durationMs` against the retry
+ * policy (see #4345).
+ */
+export interface UpstreamFailureDetails {
+  /** Truncated error text — the one field that distinguishes the failure modes. */
+  message: string;
+  /** HTTP status, when the server actually answered. Absent for transport failures. */
+  status?: number;
+  /** How many attempts were made in total (1 = never retried). */
+  attempts: number;
+}
+
 export type ControlResult =
   | { success: true; decision: ControlDecision }
-  | {
+  | ({
       success: false;
       reason:
         | typeof IngestReasonCode.UNKNOWN_ALIAS
         | typeof IngestReasonCode.TIMEOUT
         | typeof IngestReasonCode.TRANSIENT_UPSTREAM
         | typeof IngestReasonCode.UPSTREAM_ERROR;
-      message: string;
-    };
+    } & UpstreamFailureDetails);
 
 export interface IngestDocumentInput {
   hash: string;
@@ -149,15 +168,14 @@ export type IngestResult =
       auditId: string;
       reasonCode: string | null | undefined;
     }
-  | {
+  | ({
       success: false;
       reason:
         | typeof IngestReasonCode.GRANT_INVALID
         | typeof IngestReasonCode.TIMEOUT
         | typeof IngestReasonCode.TRANSIENT_UPSTREAM
         | typeof IngestReasonCode.UPSTREAM_ERROR;
-      message: string;
-    };
+    } & UpstreamFailureDetails);
 
 // ---------------------------------------------------------------------------
 // Dependency injection interface
@@ -221,6 +239,41 @@ function classifyFinalError(
   return IngestReasonCode.TRANSIENT_UPSTREAM;
 }
 
+/** HTTP status of an upstream answer, when there was one. */
+function statusOf(err: unknown): number | undefined {
+  return err instanceof ClientError ? (err.response.status ?? undefined) : undefined;
+}
+
+/**
+ * Render an error for logging. `String(err)` on a `ClientError` embeds the whole
+ * response body — which can be a multi-kilobyte HTML error page from a proxy —
+ * so a `ClientError` is reduced to its status plus the GraphQL error messages,
+ * and everything is truncated.
+ */
+export function formatUpstreamError(err: unknown): string {
+  let text: string;
+  if (err instanceof ClientError) {
+    const status = err.response.status ?? 'unknown';
+    const messages = (err.response.errors ?? [])
+      .map(e => e.message)
+      .filter(Boolean)
+      .join('; ');
+    text = `HTTP ${status}${messages ? `: ${messages}` : `: ${err.message}`}`;
+  } else {
+    text = String(err);
+  }
+  // The suffix counts toward the budget: MAX_ERROR_MESSAGE_LENGTH is a hard
+  // ceiling on what reaches the logs, not on the slice before decoration.
+  return text.length > MAX_ERROR_MESSAGE_LENGTH
+    ? `${text.slice(0, MAX_ERROR_MESSAGE_LENGTH - TRUNCATION_SUFFIX.length)}${TRUNCATION_SUFFIX}`
+    : text;
+}
+
+function failureDetails(err: unknown, attempts: number): UpstreamFailureDetails {
+  const status = statusOf(err);
+  return { message: formatUpstreamError(err), attempts, ...(status ? { status } : {}) };
+}
+
 // ---------------------------------------------------------------------------
 // ServerClient
 // ---------------------------------------------------------------------------
@@ -244,6 +297,7 @@ export class ServerClient {
   // -------------------------------------------------------------------------
 
   async requestControl(input: ControlInput): Promise<ControlResult> {
+    const counter = { attempts: 0 };
     try {
       const data = await this.withRetry(
         () =>
@@ -257,6 +311,8 @@ export class ServerClient {
           }),
         CONTROL_MAX_RETRIES,
         CONTROL_BASE_DELAY_MS,
+        true,
+        counter,
       );
       // `data` itself can be null when the server answers 200 with a body that does
       // not match the contract; the optional chain routes that into the same
@@ -268,6 +324,7 @@ export class ServerClient {
           // The server answered 200 with a body the contract does not allow.
           reason: IngestReasonCode.UPSTREAM_ERROR,
           message: 'Invalid or empty response from server',
+          attempts: counter.attempts,
         };
       }
       if (result.__typename === 'CommonError') {
@@ -275,6 +332,7 @@ export class ServerClient {
           success: false,
           reason: IngestReasonCode.UNKNOWN_ALIAS,
           message: result.message ?? 'Unknown alias',
+          attempts: counter.attempts,
         };
       }
       const cfg = result.businessEmailConfig;
@@ -307,12 +365,13 @@ export class ServerClient {
       return {
         success: false,
         reason: classifyFinalError(err),
-        message: String(err),
+        ...failureDetails(err, counter.attempts),
       };
     }
   }
 
   async requestIngest(input: IngestInput): Promise<IngestResult> {
+    const counter = { attempts: 0 };
     try {
       const data = await this.withRetry(
         () =>
@@ -324,6 +383,7 @@ export class ServerClient {
         INGEST_MAX_RETRIES,
         INGEST_BASE_DELAY_MS,
         false, // do not retry ingest on timeout — would burn the single-use grant
+        counter,
       );
       const result = data?.ingestEmail;
       if (!result) {
@@ -332,6 +392,7 @@ export class ServerClient {
           // The server answered 200 with a body the contract does not allow.
           reason: IngestReasonCode.UPSTREAM_ERROR,
           message: 'Invalid or empty response from server',
+          attempts: counter.attempts,
         };
       }
       if (result.__typename === 'CommonError') {
@@ -339,6 +400,7 @@ export class ServerClient {
           success: false,
           reason: IngestReasonCode.GRANT_INVALID,
           message: result.message ?? 'Ingest failed',
+          attempts: counter.attempts,
         };
       }
       return {
@@ -353,7 +415,7 @@ export class ServerClient {
       return {
         success: false,
         reason: classifyFinalError(err),
-        message: String(err),
+        ...failureDetails(err, counter.attempts),
       };
     }
   }
@@ -362,14 +424,20 @@ export class ServerClient {
   // Private helpers
   // -------------------------------------------------------------------------
 
+  /**
+   * @param counter mutable holder the caller reads back after a failure, so the
+   *   attempt count can be logged instead of inferred from elapsed time.
+   */
   private async withRetry<T>(
     fn: () => Promise<T>,
     maxRetries: number,
     baseDelayMs: number,
     retryOnTimeout = true,
+    counter: { attempts: number } = { attempts: 0 },
   ): Promise<T> {
     let attempt = 0;
     for (;;) {
+      counter.attempts = attempt + 1;
       try {
         return await fn();
       } catch (err) {

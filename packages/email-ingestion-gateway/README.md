@@ -100,7 +100,10 @@ process with code `1`.
 | `GATEWAY_SERVER_URL`          | `http://localhost:4000` | Base URL of the Accounter GraphQL server (`/graphql` is appended).                              |
 | `GATEWAY_CP_TOKEN`            | `''`                    | Shared secret sent as `X-Gateway-CP-Token` to authenticate as the `gateway_control_plane` role. |
 
-> Set `TEST_ENV_FILE` to load an alternate dotenv file (used by tests).
+> Set `TEST_ENV_FILE` to load an alternate dotenv file (used by tests). Set `DOTENV_DEBUG=1` to see
+> dotenv's own load diagnostics; they are off by default because the deployed container takes its
+> environment from the platform and has no `.env`, so the "failed to load … ENOENT" line was pure
+> noise at the top of every boot.
 
 ### Cloudflare Worker env (`.dev.vars` / Wrangler secrets)
 
