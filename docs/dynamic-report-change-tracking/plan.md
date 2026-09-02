@@ -77,7 +77,7 @@ CREATE TABLE accounter_schema.dynamic_report_template_snapshots (
   to_date        date        NOT NULL,
   scope_owner_id uuid        NOT NULL,   -- owner the sums were queried for
   tree           jsonb       NOT NULL,   -- same shape as templates.template
-  values         jsonb       NOT NULL,   -- { "<businessId>": number } — leaves only
+  leaf_values    jsonb       NOT NULL,   -- { "<businessId>": number } — leaves only
   created_by     uuid,
   created_at     timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT dynamic_report_template_snapshots_template_fk
@@ -93,7 +93,8 @@ CREATE INDEX dynamic_report_template_snapshots_lookup_index
 
 `ON UPDATE CASCADE` is what makes rename safe — template identity is `(owner_id, name)` and
 `updateTemplateName` rewrites it. Only **leaf** values are stored; branch sums are recomputed with
-the existing `buildNodeStats`.
+the existing `buildNodeStats`. The column is `leaf_values` rather than `values`, which is a reserved
+word and would need quoting at every use site.
 
 > **Don't skip this half.** A second migration must apply the RLS policy set to the new table,
 > copying `2026-08-23T10-00-00.rls-scope-securities-tables.ts` verbatim: the permissive
