@@ -370,6 +370,7 @@ describe('e2e — email with no matched business', () => {
       success: false,
       reason: IngestReasonCode.UNKNOWN_ALIAS,
       message: 'alias not registered',
+      attempts: 1,
     });
 
     expect(r.status).toBe(202);
