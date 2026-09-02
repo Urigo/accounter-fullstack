@@ -89,8 +89,19 @@ describe('buildReportTree', () => {
     const sums = [bizSum('e-exists', 'Surviving Entity', 200)];
     const { reportTree, placedEntityIds } = buildReportTree(template, sums);
 
-    it('missing entity leaf is dropped from reportTree', () => {
-      expect(reportTree.find(n => n.id === 'e-missing')).toBeUndefined();
+    it('missing entity leaf is kept, hidden and zeroed, so a save cannot prune it', () => {
+      const missing = reportTree.find(n => n.id === 'e-missing');
+      expect(missing).toBeDefined();
+      expect(missing?.data.isHidden).toBe(true);
+      expect(missing?.data.value).toBe(0);
+    });
+
+    it('missing entity leaf keeps the name stored in the template', () => {
+      expect(reportTree.find(n => n.id === 'e-missing')?.text).toBe('e-missing');
+    });
+
+    it('surviving entity leaf is not marked hidden', () => {
+      expect(reportTree.find(n => n.id === 'e-exists')?.data.isHidden).toBeUndefined();
     });
 
     it('placedEntityIds contains only the surviving entity', () => {

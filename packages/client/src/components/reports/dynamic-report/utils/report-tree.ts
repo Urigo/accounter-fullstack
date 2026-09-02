@@ -61,9 +61,28 @@ export function buildReportTree(
 
       reportTree.push({ id, parent, text: node.text, droppable: true, data });
     } else {
-      // Entity leaf — hydrate from businessSums; drop if not found
+      // Entity leaf — hydrate from businessSums. An entity with no ledger activity in the period
+      // has no sum, but dropping it here would delete it from the template on the next save
+      // (serializeReportTree walks this tree), so keep it hidden instead: same rendering as before,
+      // no data loss. It stays out of placedEntityIds — with no sum it is absent from the bank
+      // tree's input anyway, so it can neither be listed there nor double-counted.
       const bizSum = sumById.get(id);
-      if (!bizSum) continue;
+      if (!bizSum) {
+        reportTree.push({
+          id,
+          parent,
+          text: node.text,
+          droppable: false,
+          data: {
+            nodeType: 'financial-entity',
+            isOpen: node.data.isOpen,
+            value: 0,
+            isHidden: true,
+            ...(node.data.hebrewText == null ? {} : { hebrewText: node.data.hebrewText }),
+          },
+        });
+        continue;
+      }
 
       placedEntityIds.add(id);
       reportTree.push({
