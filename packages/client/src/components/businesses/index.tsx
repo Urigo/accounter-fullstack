@@ -8,6 +8,8 @@ import {
   type RowSelectionState,
   type SortingState,
 } from '@tanstack/react-table';
+import { useEphemeralState } from '@/hooks/use-ephemeral-state.js';
+import { usePersistentState } from '@/hooks/use-persistent-state.js';
 import { tableFeaturesConfig } from '@/lib/table-features.js';
 import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
@@ -41,6 +43,15 @@ import {
 import { BusinessesFilters } from './businesses-filters.js';
 import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
 import { TableScrollContainer } from './table-scroll-container.js';
+import {
+  BUSINESSES_ROW_SELECTION_KEY,
+  BUSINESSES_STORAGE_KEYS,
+  reviveColumnVisibility,
+  reviveSorting,
+} from './table-state-storage.js';
+
+const EMPTY_ROW_SELECTION: RowSelectionState = {};
+const EMPTY_SORTING: SortingState = [];
 
 // Fetch all businesses (no server pagination) so filtering/sorting/pagination are all client-side
 // and apply across the whole set, not just one page. The resolver already loads them all in memory.
@@ -116,10 +127,23 @@ export const Businesses = (): ReactElement => {
     [data?.allBusinesses?.nodes],
   );
 
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [columnVisibility, setColumnVisibility] =
-    useState<ColumnVisibilityState>(DEFAULT_COLUMN_VISIBILITY);
-  const [sorting, setSorting] = useState<SortingState>([]);
+  // Selection is transient: it follows the user across navigation and filter changes, but a page
+  // refresh starts from a clean slate — hence an in-memory store rather than localStorage.
+  const [rowSelection, setRowSelection] = useEphemeralState<RowSelectionState>(
+    BUSINESSES_ROW_SELECTION_KEY,
+    EMPTY_ROW_SELECTION,
+  );
+  // Column visibility and sorting are preferences: they stick across refreshes.
+  const [columnVisibility, setColumnVisibility] = usePersistentState<ColumnVisibilityState>(
+    BUSINESSES_STORAGE_KEYS.COLUMN_VISIBILITY,
+    DEFAULT_COLUMN_VISIBILITY,
+    reviveColumnVisibility,
+  );
+  const [sorting, setSorting] = usePersistentState<SortingState>(
+    BUSINESSES_STORAGE_KEYS.SORTING,
+    EMPTY_SORTING,
+    reviveSorting,
+  );
   const [filters, setFilters] = useState<BusinessRowFilters>({
     name: '',
     client: false,
@@ -171,12 +195,13 @@ export const Businesses = (): ReactElement => {
     } as BusinessTableMeta,
   });
 
-  // Derive selected ids from the stable `filteredRows` (the table's data) and `rowSelection`
-  // (keyed by row id via getRowId), avoiding the unstable `table` object. This stays in sync
-  // when filters or data change, unlike memoizing on `rowSelection` alone.
+  // Derive selected ids from `rows` and `rowSelection` (keyed by row id via getRowId), avoiding
+  // the unstable `table` object. Deliberately the *unfiltered* row set: a row selected under one
+  // filter stays selected when the filter changes (and is still checked once it is visible
+  // again). Ids of rows that no longer exist at all drop out on their own.
   const selectedIds = useMemo(
-    () => filteredRows.filter(row => rowSelection[row.id]).map(row => row.id),
-    [filteredRows, rowSelection],
+    () => rows.filter(row => rowSelection[row.id]).map(row => row.id),
+    [rows, rowSelection],
   );
 
   // Footer
@@ -210,7 +235,16 @@ export const Businesses = (): ReactElement => {
         />
       </div>,
     );
-  }, [setFiltersContext, selectedIds, refetch, filters, setFilters, usageEnabled, usageFetching]);
+  }, [
+    setFiltersContext,
+    selectedIds,
+    refetch,
+    filters,
+    setFilters,
+    setRowSelection,
+    usageEnabled,
+    usageFetching,
+  ]);
 
   return (
     <PageLayout
