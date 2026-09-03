@@ -105,7 +105,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.2"
-    happy-dom: "npm:20.12.0"
+    happy-dom: "npm:20.13.2"
     html2canvas-pro: "npm:2.4.0"
     iconv-lite: "npm:0.7.3"
     json-bigint-patch: "npm:0.0.9"
@@ -17321,9 +17321,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:20.12.0":
-  version: 20.12.0
-  resolution: "happy-dom@npm:20.12.0"
+"happy-dom@npm:20.13.2":
+  version: 20.13.2
+  resolution: "happy-dom@npm:20.13.2"
   dependencies:
     "@types/node": "npm:>=20.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
@@ -17332,7 +17332,7 @@ __metadata:
     entities: "npm:^7.0.1"
     whatwg-mimetype: "npm:^3.0.0"
     ws: "npm:^8.21.0"
-  checksum: 10c0/5937db4ba0b4897743f995565980a4444d6dd8445abf31228b0dd2658819fca1e09ae8da36ba4abf69c38248a3de82c9597d17ed0c5b2083c2de9cdfc4f8056e
+  checksum: 10c0/d8002d6d009afa22b1b627b5d8b005051b86ed95edf3eebb5de9f22b17ef6a6f29b78b935d61ab18678af7b18ccf9647bc56b009ab6fd5dbbb30fe918402fa63
   languageName: node
   linkType: hard
 
