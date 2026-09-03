@@ -146,12 +146,28 @@ describe('listBusinessesTool', () => {
     clientReturning({
       allBusinesses: {
         nodes: [
-          { id: '3', name: 'Zebra', ownerId: 'o1', isActive: true, isClient: true },
-          // No `isClient` key at all: stands in for a node that did not resolve
-          // to LtdFinancialEntity, which the row mapper must read as `false`
-          // rather than `undefined`.
+          {
+            id: '3',
+            name: 'Zebra',
+            ownerId: 'o1',
+            isActive: true,
+            isClient: true,
+            taxCategory: { id: 'tc1', name: 'Income' },
+          },
+          // No `isClient`/`taxCategory` keys at all: stands in for a node that
+          // did not resolve to LtdFinancialEntity, which the row mapper must
+          // read as `false`/`null` rather than `undefined`.
           { id: '1', name: 'apple', ownerId: 'o1', isActive: false },
-          { id: '2', name: 'Banana', ownerId: 'o1', isActive: true, isClient: false },
+          // Resolved to LtdFinancialEntity but with no tax category matched —
+          // the common case for auto-generated businesses.
+          {
+            id: '2',
+            name: 'Banana',
+            ownerId: 'o1',
+            isActive: true,
+            isClient: false,
+            taxCategory: null,
+          },
         ],
       },
     });
@@ -200,6 +216,32 @@ describe('listBusinessesTool', () => {
       ['Banana', false],
       ['Zebra', true],
     ]);
+  });
+
+  // The matched tax category is what makes the directory usable for
+  // categorization work: without it the model can only see that a business
+  // exists, not what its charges book to. `null` must survive as `null` — an
+  // unmapped business is a real, actionable answer, not a missing field.
+  it('reports the matched taxCategory per row, or null when none is mapped', async () => {
+    const result = await runTool(listBusinessesTool, client(), authContext(['b1']), {});
+    const rows = (
+      result.structuredContent as {
+        businesses: Array<{ name: string; taxCategory: { id: string; name: string } | null }>;
+      }
+    ).businesses;
+    expect(rows.map(b => [b.name, b.taxCategory])).toEqual([
+      ['apple', null],
+      ['Banana', null],
+      ['Zebra', { id: 'tc1', name: 'Income' }],
+    ]);
+  });
+
+  it('selects the business tax category upstream', async () => {
+    let sentInit: RequestInit | undefined;
+    const capturing = clientReturning({ allBusinesses: { nodes: [] } }, init => (sentInit = init));
+    await runTool(listBusinessesTool, capturing, authContext(['b1']), {});
+    const { query } = JSON.parse(sentInit!.body as string) as { query: string };
+    expect(query).toContain('taxCategory');
   });
 
   // `isClient` is a real upstream predicate, unlike `activeOnly`: it must reach

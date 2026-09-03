@@ -144,6 +144,18 @@ describe('generated schema contract', () => {
     expect(typeBlock(loadSchema(), 'LtdFinancialEntity')).toContain('isClient: Boolean!');
   });
 
+  /**
+   * The directory reports each business's matched tax category through the same
+   * inline fragment, so it depends on the field living on `LtdFinancialEntity`
+   * rather than on the `Business` interface. It is deliberately nullable
+   * upstream — a business with no mapping yet — and the tool passes that `null`
+   * through, so pin the nullability too: a change to `TaxCategory!` would mean
+   * unmapped businesses now fail the selection instead of reporting `null`.
+   */
+  it('LtdFinancialEntity exposes a nullable taxCategory', () => {
+    expect(typeBlock(loadSchema(), 'LtdFinancialEntity')).toMatch(/^ {2}taxCategory: TaxCategory$/m);
+  });
+
   // The flag is only useful as a filter if upstream can apply it before paging.
   // Filtering an already-sliced page would report "the clients on page 1" while
   // reading as "the clients".
