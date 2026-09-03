@@ -29,7 +29,20 @@ export const IngestReasonCode = {
   PARSE_ERROR: 'PARSE_ERROR',
   OVERSIZE_MESSAGE: 'OVERSIZE_MESSAGE',
   TIMEOUT: 'TIMEOUT',
+  // The call never reached a responding server, or the server failed in a way
+  // that is expected to clear on its own: connection refused, DNS/TLS failure,
+  // connection reset, or any 5xx. Retried by the gateway's retry policy.
   TRANSIENT_UPSTREAM: 'TRANSIENT_UPSTREAM',
+  // The server *answered* and said no: a 4xx, or HTTP 200 carrying a GraphQL
+  // `errors[]` array (which is how a server-side exception surfaces through
+  // yoga). Not transient — it will not clear by waiting. Most 4xx are terminal
+  // and are not retried at all; the exceptions are 408/425/429, which the server
+  // itself is asking us to repeat, and which land here only once the retry budget
+  // is spent. A 5xx never reaches this code — that is the server failing rather
+  // than refusing, and stays TRANSIENT_UPSTREAM. Split out of TRANSIENT_UPSTREAM,
+  // which used to cover both and made a persistent server-side bug read as a
+  // passing cloud.
+  UPSTREAM_ERROR: 'UPSTREAM_ERROR',
   // Self-issued document: a copy of an invoice the tenant issued itself (e.g. via
   // Morning/greeninvoice), whose document already exists from creation. The email
   // is IGNORED — recorded and inspectable, but not inserted and not counted as a

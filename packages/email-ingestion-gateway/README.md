@@ -79,9 +79,16 @@ The gateway service exposes three routes (see `src/index.ts`):
 The body is the **raw MIME message** (`Content-Type: message/rfc822`). The gateway — not the Worker
 — computes the authoritative `rawMessageHash` from the signed body.
 
-The endpoint always responds `202 Accepted` once authenticity passes; the ingest `outcome`
-(`INSERTED` / `DUPLICATE` / `QUARANTINED` / `REJECTED`) is included in the JSON body in production
-mode. Authenticity failures return `401`, malformed requests `400`, oversize bodies `413`.
+Once authenticity passes the endpoint responds `202 Accepted` with the ingest `outcome` (`INSERTED`
+/ `DUPLICATE` / `QUARANTINED` / `REJECTED` / `IGNORED`) in the JSON body in production mode.
+Authenticity failures return `401`, malformed requests `400`, oversize bodies `413`.
+
+One case is deliberately **not** `202`: when orchestration fails leaving no durable record anywhere
+(`TRANSIENT_UPSTREAM`, `UPSTREAM_ERROR`, `TIMEOUT`, `UNKNOWN_ALIAS`) the endpoint answers `503`.
+That is what drives the Worker's `if (!response.ok)` branch to forward the email to `FALLBACK_EMAIL`
+instead of dropping it. Failures that _are_ recorded server-side and can be reprocessed
+(`GRANT_INVALID` and the other post-grant reasons) stay `202`, since forwarding those would
+duplicate work.
 
 ## Configuration
 
@@ -100,17 +107,20 @@ process with code `1`.
 | `GATEWAY_SERVER_URL`          | `http://localhost:4000` | Base URL of the Accounter GraphQL server (`/graphql` is appended).                              |
 | `GATEWAY_CP_TOKEN`            | `''`                    | Shared secret sent as `X-Gateway-CP-Token` to authenticate as the `gateway_control_plane` role. |
 
-> Set `TEST_ENV_FILE` to load an alternate dotenv file (used by tests).
+> Set `TEST_ENV_FILE` to load an alternate dotenv file (used by tests). Set `DOTENV_DEBUG=1` to see
+> dotenv's own load diagnostics; they are off by default because the deployed container takes its
+> environment from the platform and has no `.env`, so the "failed to load … ENOENT" line was pure
+> noise at the top of every boot.
 
 ### Cloudflare Worker env (`.dev.vars` / Wrangler secrets)
 
 See [`.dev.vars.example`](./.dev.vars.example):
 
-| Variable            | Description                                                               |
-| ------------------- | ------------------------------------------------------------------------- |
-| `CF_WEBHOOK_SECRET` | Must match the gateway's secret — the Worker signs, the gateway verifies. |
-| `GATEWAY_URL`       | URL the Worker `POST`s the webhook to.                                    |
-| `FALLBACK_EMAIL`    | Address the Worker forwards to when the gateway is unreachable.           |
+| Variable            | Description                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| `CF_WEBHOOK_SECRET` | Must match the gateway's secret — the Worker signs, the gateway verifies.                          |
+| `GATEWAY_URL`       | URL the Worker `POST`s the webhook to.                                                             |
+| `FALLBACK_EMAIL`    | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above). |
 
 ## Local development
 

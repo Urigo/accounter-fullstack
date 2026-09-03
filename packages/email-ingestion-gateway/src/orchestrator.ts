@@ -74,10 +74,22 @@ export async function orchestrate(
   const controlResult = await serverClient.requestControl(controlInput);
 
   if (!controlResult.success) {
+    // Log the upstream error text, status and attempt count alongside the reason
+    // code: the code alone cannot distinguish a refused connection from a 4xx or
+    // from a GraphQL error the server returned, and reconstructing that from
+    // durationMs against the retry policy is not a diagnosis (#4345).
     log(
       'warn',
       'orchestrate:control:denied',
-      { reason: controlResult.reason, durationMs: Date.now() - t0 },
+      {
+        reason: controlResult.reason,
+        // Named `upstreamMessage`, not `message`: `log()` spreads `fields` and then
+        // sets its own `message`, so a field by that name is silently overwritten.
+        upstreamMessage: controlResult.message,
+        status: controlResult.status ?? null,
+        attempts: controlResult.attempts,
+        durationMs: Date.now() - t0,
+      },
       correlationId,
     );
     return { success: false, reason: controlResult.reason, message: controlResult.message };
@@ -156,6 +168,9 @@ export async function orchestrate(
       'orchestrate:ingest:failed',
       {
         reason: ingestResult.reason,
+        upstreamMessage: ingestResult.message,
+        status: ingestResult.status ?? null,
+        attempts: ingestResult.attempts,
         tenantId: decision.tenantId,
         decisionId: decision.decisionId,
         auditId: decision.auditId,

@@ -49,19 +49,20 @@ cross-package runtime import) and kept in sync by parity tests.
 
 ### Reason codes — where each is produced
 
-| Reason code          | Stage / file                              | What happened                                                                                          |
-| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `INVALID_AUTH`       | gateway `verifier.ts`                     | IP not allowlisted, timestamp outside ±300s, or bad HMAC signature. → `401`.                           |
-| `REPLAY_DETECTED`    | gateway `verifier.ts`                     | Nonce already seen within the retention window (default 600s). → `401`.                                |
-| `OVERSIZE_MESSAGE`   | gateway `mime-extractor.ts`               | Raw MIME > 25 MB, > 10 attachments, or extracted bytes > 20 MB.                                        |
-| `PARSE_ERROR`        | gateway `mime-extractor.ts`               | Empty body or `postal-mime` failed (e.g. nesting depth > 10).                                          |
-| `UNKNOWN_ALIAS`      | server `email-ingestion-control.provider` | `recipientAlias` does not resolve to an active tenant alias.                                           |
-| `TIMEOUT`            | gateway `server-client.ts`                | Control (3s) or ingest (10s) call timed out after retries.                                             |
-| `TRANSIENT_UPSTREAM` | gateway `server-client.ts`                | Server returned 5xx / network error after retries, or empty response.                                  |
-| `GRANT_INVALID`      | server `email-ingestion-control.provider` | Grant missing, expired, already consumed, wrong action, or message/hash mismatch.                      |
-| `TENANT_MISMATCH`    | server `email-ingestion-control.provider` | Grant's `owner_id` ≠ the claimed `tenantId`.                                                           |
-| `NO_DOCUMENTS`       | server `email-ingestion-ingest.provider`  | After treatment, the document set was empty. **Most common quarantine reason.**                        |
-| `UPLOAD_FAILED`      | server `email-ingestion-ingest.provider`  | Document preparation failed (e.g. Cloudinary upload error) after accept. Quarantined for reprocessing. |
+| Reason code          | Stage / file                              | What happened                                                                                                                                                                                                                                               |
+| -------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `INVALID_AUTH`       | gateway `verifier.ts`                     | IP not allowlisted, timestamp outside ±300s, or bad HMAC signature. → `401`.                                                                                                                                                                                |
+| `REPLAY_DETECTED`    | gateway `verifier.ts`                     | Nonce already seen within the retention window (default 600s). → `401`.                                                                                                                                                                                     |
+| `OVERSIZE_MESSAGE`   | gateway `mime-extractor.ts`               | Raw MIME > 25 MB, > 10 attachments, or extracted bytes > 20 MB.                                                                                                                                                                                             |
+| `PARSE_ERROR`        | gateway `mime-extractor.ts`               | Empty body or `postal-mime` failed (e.g. nesting depth > 10).                                                                                                                                                                                               |
+| `UNKNOWN_ALIAS`      | server `email-ingestion-control.provider` | `recipientAlias` does not resolve to an active tenant alias.                                                                                                                                                                                                |
+| `TIMEOUT`            | gateway `server-client.ts`                | Control (3s) or ingest (10s) call timed out after retries.                                                                                                                                                                                                  |
+| `TRANSIENT_UPSTREAM` | gateway `server-client.ts`                | Transport failure (connection refused / DNS / TLS / reset) or 5xx after retries. Expected to self-heal.                                                                                                                                                     |
+| `UPSTREAM_ERROR`     | gateway `server-client.ts`                | The server **answered and said no**: a terminal 4xx (400/401/403/404/413, not retried), an exhausted 408/425/429 (retried first), or HTTP 200 carrying GraphQL `errors[]`. Not transient — investigate the server. A 5xx is `TRANSIENT_UPSTREAM`, not this. |
+| `GRANT_INVALID`      | server `email-ingestion-control.provider` | Grant missing, expired, already consumed, wrong action, or message/hash mismatch.                                                                                                                                                                           |
+| `TENANT_MISMATCH`    | server `email-ingestion-control.provider` | Grant's `owner_id` ≠ the claimed `tenantId`.                                                                                                                                                                                                                |
+| `NO_DOCUMENTS`       | server `email-ingestion-ingest.provider`  | After treatment, the document set was empty. **Most common quarantine reason.**                                                                                                                                                                             |
+| `UPLOAD_FAILED`      | server `email-ingestion-ingest.provider`  | Document preparation failed (e.g. Cloudinary upload error) after accept. Quarantined for reprocessing.                                                                                                                                                      |
 
 ---
 
@@ -264,19 +265,19 @@ LIMIT 50;
 
 Grep gateway logs by these `message` values (all structured JSON, all carry `correlationId`):
 
-| Event                                      | Meaning                                                        |
-| ------------------------------------------ | -------------------------------------------------------------- |
-| `incoming request`                         | Request hit the router.                                        |
-| `webhook authenticity check failed`        | Stage B rejection (`reason`).                                  |
-| `webhook: MIME extraction failed`          | Stage C parse/size failure (`reason`).                         |
-| `webhook accepted`                         | Passed auth + parse; `attachmentCount` logged.                 |
-| `orchestrate:control:start/granted/denied` | Control call + tenant resolution.                              |
-| `orchestrate:treatment:complete`           | `documentCount` after treatment (0 ⇒ upcoming `NO_DOCUMENTS`). |
-| `treatment: body→PDF render failed`        | Chromium / render problem; body document dropped.              |
-| `treatment: internal-link fetch failed`    | Link fetch error (or SSRF guard returned empty).               |
-| `orchestrate:ingest:failed`                | Ingest call failed (`reason`).                                 |
-| `orchestrate:ingest:complete`              | Final `outcome`, `ingestId`, `reasonCode`, `durationMs`.       |
-| `shadow:orchestration:*`                   | Shadow-mode async run results.                                 |
+| Event                                      | Meaning                                                                                     |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `incoming request`                         | Request hit the router.                                                                     |
+| `webhook authenticity check failed`        | Stage B rejection (`reason`).                                                               |
+| `webhook: MIME extraction failed`          | Stage C parse/size failure (`reason`).                                                      |
+| `webhook accepted`                         | Passed auth + parse; `attachmentCount` logged.                                              |
+| `orchestrate:control:start/granted/denied` | Control call + tenant resolution. Denials carry `upstreamMessage`, `status` and `attempts`. |
+| `orchestrate:treatment:complete`           | `documentCount` after treatment (0 ⇒ upcoming `NO_DOCUMENTS`).                              |
+| `treatment: body→PDF render failed`        | Chromium / render problem; body document dropped.                                           |
+| `treatment: internal-link fetch failed`    | Link fetch error (or SSRF guard returned empty).                                            |
+| `orchestrate:ingest:failed`                | Ingest call failed (`reason`, `upstreamMessage`, `status`, `attempts`).                     |
+| `orchestrate:ingest:complete`              | Final `outcome`, `ingestId`, `reasonCode`, `durationMs`.                                    |
+| `shadow:orchestration:*`                   | Shadow-mode async run results.                                                              |
 
 ---
 

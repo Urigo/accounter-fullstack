@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { IngestReasonCode } from './contracts.js';
 import { generateCorrelationId, log } from './logger.js';
 import { extractFromMime, MAX_RAW_MIME_BYTES, type ExtractedDocument } from './mime-extractor.js';
 import { orchestrate, type OrchestratorDeps } from './orchestrator.js';
@@ -29,6 +30,45 @@ const RECEIVED_AT_HEADER = 'x-cf-received-at';
  */
 function getSingleHeader(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * Reason codes for which orchestration left **no durable record anywhere** —
+ * control never granted, so there is no resolved tenant and therefore no
+ * quarantine row, no idempotency key and no audit row. Nothing can reprocess
+ * these; the email exists only in the upstream mailbox.
+ *
+ * The Worker's no-loss path (`if (!response.ok) → message.forward(FALLBACK_EMAIL)`)
+ * is the last line of defence for exactly this case, and a 202 defeated it —
+ * `202` satisfies `response.ok`, so a total-loss outcome read as success and five
+ * emails were permanently lost (#4344/#4346).
+ *
+ * UNKNOWN_ALIAS is included deliberately: the mail is undeliverable to any tenant,
+ * and putting it in front of a human beats dropping it.
+ *
+ * Everything else (GRANT_INVALID and the other post-grant failures) *is* recorded
+ * server-side and is reprocessable, so it stays 202 — forwarding those would
+ * duplicate work.
+ */
+const NON_DURABLE_FAILURE_REASONS: ReadonlySet<IngestReasonCode> = new Set<IngestReasonCode>([
+  IngestReasonCode.TRANSIENT_UPSTREAM,
+  IngestReasonCode.UPSTREAM_ERROR,
+  IngestReasonCode.TIMEOUT,
+  IngestReasonCode.UNKNOWN_ALIAS,
+]);
+
+/**
+ * HTTP status for a failed orchestration. 503 is chosen so the Cloudflare Worker
+ * sees `!response.ok` and forwards to `FALLBACK_EMAIL`.
+ *
+ * The parameter stays `string` because `orchestrate` reports `reason` as one —
+ * an unrecognized value is simply not in the set and falls through to 202, the
+ * safe side (the email is not force-forwarded on a code we cannot reason about).
+ * The *set* is typed `IngestReasonCode`, so a typo in its members is a compile
+ * error rather than a silently-never-matching entry.
+ */
+export function statusForOrchestrationFailure(reason: string): number {
+  return NON_DURABLE_FAILURE_REASONS.has(reason as IngestReasonCode) ? 503 : 202;
 }
 
 export interface WebhookDeps {
@@ -255,8 +295,17 @@ export function createWebhookHandler(deps: WebhookDeps) {
         reasonCode: result.reasonCode ?? undefined,
       });
     } else {
-      writeJson(res, 202, {
-        status: 'accepted',
+      const statusCode = statusForOrchestrationFailure(result.reason);
+      if (statusCode !== 202) {
+        log(
+          'warn',
+          'webhook: orchestration failed with no durable record — signalling the Worker to fall back',
+          { reason: result.reason, statusCode },
+          effectiveCorrelationId,
+        );
+      }
+      writeJson(res, statusCode, {
+        status: statusCode === 202 ? 'accepted' : 'failed',
         correlationId: effectiveCorrelationId,
         failed: true,
         reason: result.reason,
