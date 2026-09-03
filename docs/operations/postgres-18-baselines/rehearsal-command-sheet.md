@@ -26,7 +26,7 @@ password. Step 0b is on its own for exactly this reason — paste it, press Ente
 ## 0a. Variables
 
 ```sh
-cd /Users/gilgardosh/guild/accounter-fullstack
+cd /path/to/accounter-fullstack # your local checkout
 BASE=docs/operations/postgres-18-baselines
 RESTORED_HOST=$RESTORED_HOST # <-- set to the real hostname
 A=$OWNER_A                   # owner for scope1
