@@ -1,6 +1,0 @@
----
-"@accounter/modern-poalim-scraper": patch
----
-dependencies updates:
-  - Updated dependency [`puppeteer@25.9.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.9.0) (from `25.8.0`, in `dependencies`)
-  - Updated dependency [`uuid@14.0.2` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.2) (from `14.0.1`, in `dependencies`)
