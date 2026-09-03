@@ -10,7 +10,8 @@ import {
   fetchPoalimXSRFWithinPage,
 } from '../utils/fetch.js';
 import {
-  HapoalimAccountDataSchema,
+  HapoalimAccountDataBusinessSchema,
+  HapoalimAccountDataPersonalSchema,
   type HapoalimAccountData,
 } from '../zod-schemas/hapoalim-account-data-schema.js';
 import {
@@ -291,7 +292,11 @@ export async function hapoalim(
       const getAccountsFunction = fetchGetWithinPage<HapoalimAccountData>(page, accountDataUrl);
       if (options?.validateSchema) {
         const data = await getAccountsFunction;
-        const validation = HapoalimAccountDataSchema.safeParse(data);
+        // The personal portal returns a few extra per-account fields (defaultSwitch, isClosed,
+        // isPinned) that biz2 never sends, and both schemas are strict.
+        const validation = (
+          options.isBusiness ? HapoalimAccountDataBusinessSchema : HapoalimAccountDataPersonalSchema
+        ).safeParse(data);
         return {
           data: validation.data ?? null,
           isValid: validation.success,
