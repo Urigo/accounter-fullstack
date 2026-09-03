@@ -63,7 +63,7 @@ interface ToolbarProps {
   /** Saved baselines, newest first. */
   snapshots: readonly { id: string; createdAt: Date | string; fromDate: string; toDate: string }[];
   activeBaselineId: string | null;
-  onBaselineChange: (id: string | null) => void;
+  onBaselineChange: (id: string) => void;
   /** Set when change tracking cannot be shown, explaining why. */
   diffSuspendedReason?: string | null;
 }
