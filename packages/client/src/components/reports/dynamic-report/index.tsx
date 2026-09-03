@@ -413,8 +413,18 @@ export function DynamicReport() {
     [templateNodesData],
   );
   // Newest first from the server, so the head is "last save" unless the user picked another.
+  const latestBaselineId = snapshots[0]?.id ?? null;
   const activeBaselineId =
-    snapshots.find(snapshot => snapshot.id === selectedBaselineId)?.id ?? snapshots[0]?.id ?? null;
+    snapshots.find(snapshot => snapshot.id === selectedBaselineId)?.id ?? latestBaselineId;
+
+  // Picking the newest entry clears the param rather than pinning its id. An absent param already
+  // means "whatever the latest snapshot is", so this is what keeps "Last save" tracking the newest
+  // baseline across future saves instead of freezing on the snapshot that happened to be newest
+  // when it was chosen.
+  const handleBaselineChange = useCallback(
+    (id: string) => setSelectedBaselineId(id === latestBaselineId ? null : id),
+    [latestBaselineId, setSelectedBaselineId],
+  );
 
   const [{ data: snapshotData }] = useQuery({
     query: DynamicReportSnapshotDocument,
@@ -717,8 +727,18 @@ export function DynamicReport() {
     if (result) {
       setIsDirty(false);
       setShowLegacyBanner(false);
+      // The save just became the newest baseline. Releasing any pin means the user is comparing
+      // against what they just saved rather than against something older with nothing on screen
+      // saying so.
+      setSelectedBaselineId(null);
     }
-  }, [currentTemplate, reportTree, updateDynamicReportTemplate, snapshotInput]);
+  }, [
+    currentTemplate,
+    reportTree,
+    updateDynamicReportTemplate,
+    snapshotInput,
+    setSelectedBaselineId,
+  ]);
 
   const handleChangePeriod = useCallback(() => {
     changePeriodDialogRef.current?.changePeriod(fromDate, toDate);
@@ -834,7 +854,7 @@ export function DynamicReport() {
         onRestoreDraftPeriod={restoreDraftPeriod}
         snapshots={snapshots}
         activeBaselineId={activeBaselineId}
-        onBaselineChange={setSelectedBaselineId}
+        onBaselineChange={handleBaselineChange}
         diffSuspendedReason={
           snapshots.length === 0
             ? 'No baseline yet — save this draft to start tracking changes'
