@@ -1,23 +1,29 @@
 // @vitest-environment happy-dom
 
 import React, { act, type Dispatch, type SetStateAction } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { clearEphemeralState, useEphemeralState } from '../use-ephemeral-state.js';
 
 const KEY = 'test_ephemeral_state';
 
 let container: HTMLDivElement;
+/** Every root mounted by `mount`, so any still-live one is torn down after the test. */
+let mountedRoots: Root[];
 
 beforeEach(() => {
   clearEphemeralState(KEY);
   localStorage.clear();
   sessionStorage.clear();
+  mountedRoots = [];
   container = document.createElement('div');
   document.body.appendChild(container);
 });
 
 afterEach(() => {
+  for (const root of mountedRoots) {
+    act(() => root.unmount());
+  }
   container.remove();
 });
 
@@ -36,11 +42,15 @@ function mount<T>(fallback: T): {
   }
 
   const localRoot = createRoot(container);
+  mountedRoots.push(localRoot);
   act(() => localRoot.render(React.createElement(Harness)));
   return {
     current: () => state,
     set: value => act(() => setState(value)),
-    unmount: () => act(() => localRoot.unmount()),
+    unmount: () => {
+      act(() => localRoot.unmount());
+      mountedRoots = mountedRoots.filter(root => root !== localRoot);
+    },
   };
 }
 

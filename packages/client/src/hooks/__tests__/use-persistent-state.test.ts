@@ -43,6 +43,26 @@ function mount<T>(
   };
 }
 
+/** Mounts the hook with a `storageKey` that can be changed after mount. */
+function mountWithKey<T>(
+  initialKey: string,
+  fallback: T,
+): { current: () => T; setKey: (key: string) => void } {
+  let state: T = fallback;
+
+  function Harness({ storageKey }: { storageKey: string }): null {
+    [state] = usePersistentState(storageKey, fallback);
+    return null;
+  }
+
+  const render = (storageKey: string): void => {
+    act(() => root.render(React.createElement(Harness, { storageKey })));
+  };
+
+  render(initialKey);
+  return { current: () => state, setKey: render };
+}
+
 describe('usePersistentState', () => {
   it('starts from the fallback and writes it to localStorage', () => {
     const hook = mount({ name: true });
@@ -83,6 +103,28 @@ describe('usePersistentState', () => {
       throw new Error('bad shape');
     });
     expect(hook.current()).toEqual({ name: true });
+  });
+
+  it('re-hydrates from a changed storageKey', () => {
+    localStorage.setItem('key_a', JSON.stringify(['from a']));
+    localStorage.setItem('key_b', JSON.stringify(['from b']));
+
+    const hook = mountWithKey<string[]>('key_a', []);
+    expect(hook.current()).toEqual(['from a']);
+
+    hook.setKey('key_b');
+    expect(hook.current()).toEqual(['from b']);
+    // The old key's value must not leak into the new key.
+    expect(JSON.parse(localStorage.getItem('key_b')!)).toEqual(['from b']);
+  });
+
+  it('falls back when a changed storageKey has nothing stored', () => {
+    localStorage.setItem('key_a', JSON.stringify(['from a']));
+
+    const hook = mountWithKey<string[]>('key_a', []);
+    hook.setKey('key_unstored');
+
+    expect(hook.current()).toEqual([]);
   });
 
   it('keeps working when localStorage writes fail', () => {

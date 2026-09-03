@@ -34,9 +34,19 @@ describe('reviveColumnVisibility', () => {
     });
   });
 
-  it('keeps defaults for columns added since the value was stored', () => {
-    expect(reviveColumnVisibility({ name: false, gone: true }, VISIBILITY_FALLBACK)).toEqual({
+  it('keeps the default for a column added since the value was stored', () => {
+    // `city` is absent from the stored value, so it keeps its (hidden) default.
+    expect(reviveColumnVisibility({ name: false }, VISIBILITY_FALLBACK)).toEqual({
       name: false,
+      city: false,
+    });
+  });
+
+  it('carries over a stored entry for a column that no longer exists', () => {
+    // Harmless: the table ignores visibility entries with no matching column, and keeping the
+    // entry means a column that comes back keeps the visibility the user last chose for it.
+    expect(reviveColumnVisibility({ gone: true }, VISIBILITY_FALLBACK)).toEqual({
+      name: true,
       city: false,
       gone: true,
     });
