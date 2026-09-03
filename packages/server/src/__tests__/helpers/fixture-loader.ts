@@ -329,15 +329,21 @@ export async function insertFixture(
   if (fixture.transactions?.transactions && fixture.transactions.transactions.length > 0) {
     await executeSavepointSection('transactions', async () => {
       for (const transaction of fixture.transactions!.transactions) {
-        // Set RLS context for each transaction
-        if (transaction.business_id) {
-          try {
-             await client.query("SELECT set_config('app.current_business_id', $1, true)", [transaction.business_id]);
-          } catch(e) {
-            console.warn('Failed to set RLS context for transaction in fixture-loader:', e);
-          }
+        // Point the RLS write target at the row's *owner*, never at `business_id`.
+        //
+        // `transactions.business_id` is the counterparty (the vendor/customer on the other
+        // side of the money movement), not the tenant that owns the row. `tenant_isolation`
+        // is `WITH CHECK (owner_id = get_current_business_id())`, so setting the context from
+        // `business_id` guarantees a policy violation on every transaction whose counterparty
+        // is not the owner -- which is every real transaction. Superuser connections (local
+        // dev, CI) bypass RLS and hid this; deployed non-superuser runs did not.
+        const transactionOwnerId = transaction.owner_id ?? adminBusinessId;
+        if (transactionOwnerId) {
+          await client.query("SELECT set_config('app.current_business_id', $1, true)", [
+            transactionOwnerId,
+          ]);
         }
-        
+
         // If account_id looks like an account_number (not a UUID), look up the actual UUID.
         // Prefer the UUID cached from step 3 (financial_accounts insert) to avoid
         // non-deterministic SELECT when duplicate account_number rows exist in DB.
@@ -411,6 +417,15 @@ export async function insertFixture(
   if (fixture.documents?.documents && fixture.documents.documents.length > 0) {
     await executeSavepointSection('documents', async () => {
       for (const document of fixture.documents!.documents) {
+        // Same as transactions above: pin the write target to this row's owner rather than
+        // inheriting whatever the previous section happened to leave in the session.
+        const documentOwnerId = document.owner_id ?? adminBusinessId;
+        if (documentOwnerId) {
+          await client.query("SELECT set_config('app.current_business_id', $1, true)", [
+            documentOwnerId,
+          ]);
+        }
+
         await client.query(
           `INSERT INTO ${qualifyTable('documents')} (
             id, image_url, file_url, type, serial_number, date,
