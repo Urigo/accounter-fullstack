@@ -3,7 +3,7 @@
 Every check to run against the PITR-restored server, in order, with the expected result for each.
 Parameterised by `$RESTORED_HOST`. Paste blocks in sequence.
 
-Companion to `../postgres-18-upgrade.md`. Uncommitted, like the runbook and the baselines.
+Companion to `../postgres-18-upgrade.md`.
 
 ## ⚠️ Ordering rule — read this before anything else
 
