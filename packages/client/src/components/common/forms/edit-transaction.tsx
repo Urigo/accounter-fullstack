@@ -12,13 +12,11 @@ import {
   TIMELESS_DATE_REGEX,
   type MakeBoolean,
 } from '../../../helpers/index.js';
-import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
+import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
-import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
-import { DatePickerInput, SimpleGrid } from '../index.js';
+import { ComboBox, DatePickerInput, SimpleGrid } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -46,9 +44,6 @@ type Props = {
 };
 
 export const EditTransaction = ({ transactionID, onDone, onChange }: Props): ReactElement => {
-  // This form renders inside PopUpDrawer, whose focus-trapping dialog blocks interaction with
-  // anything portaled to `document.body`. See `usePortalContainer`.
-  const portalContainer = usePortalContainer();
   const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
     query: EditTransactionDocument,
     variables: {
@@ -89,8 +84,7 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
     }
   };
 
-  const { selectableFinancialEntities: financialEntities, fetching: fetchingFinancialEntities } =
-    useGetFinancialEntities();
+  const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
 
   return (
     <>
@@ -110,29 +104,16 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                     minLength: { value: 2, message: 'Minimum 2 characters' },
                   }}
                   render={({ field }): ReactElement => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Counterparty</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
+                      <ComboBox
+                        {...field}
+                        data={businesses}
                         value={field.value ?? undefined}
-                        disabled={fetchingFinancialEntities}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full truncate">
-                            <SelectValue placeholder="Scroll to see all options" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent
-                          onClick={event => event.stopPropagation()}
-                          container={portalContainer}
-                        >
-                          {financialEntities.map(({ value, label }) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        disabled={fetchingBusinesses}
+                        placeholder="Select counterparty"
+                        formPart
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
