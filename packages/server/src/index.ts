@@ -46,6 +46,11 @@ async function main() {
     statement_timeout: env.postgres.statementTimeoutMs,
     // Server-side backstop: Postgres reclaims a session abandoned mid-transaction.
     idle_in_transaction_session_timeout: env.postgres.idleInTransactionTimeoutMs,
+    // Retire idle connections before the database or an intermediary kills them
+    // from the far side — a connection killed while idle stays in the pool and
+    // fails the *next* request that checks it out, which is why only the first
+    // request after a quiet period failed (#4348).
+    idleTimeoutMillis: env.postgres.idleTimeoutMs,
     // Detect connections silently dropped by an intermediary rather than
     // discovering it on the next query.
     keepAlive: true,

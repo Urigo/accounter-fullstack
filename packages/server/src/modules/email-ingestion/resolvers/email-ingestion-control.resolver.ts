@@ -86,6 +86,15 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
       classification: classification.kind,
     };
   } catch (err) {
+    // Log before rethrowing. The wire response is a generic message, so without
+    // this a server-side exception here produced no server-side log line at all
+    // and the cause had to be inferred from the gateway's client-side timing
+    // (#4348).
+    console.error(
+      `[email-ingestion] requestIngestControl failed for alias "${input.recipientAlias}" ` +
+        `(messageId=${input.messageId}, correlationId=${input.correlationId ?? 'none'}):`,
+      err,
+    );
     throw new GraphQLError('Failed to process ingest control request', {
       extensions: { code: 'INTERNAL_SERVER_ERROR', cause: err },
     });
