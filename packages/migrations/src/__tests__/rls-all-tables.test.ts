@@ -82,6 +82,95 @@ describe('RLS All Tables Migration', () => {
     expect(migrationResult.rowCount).toBe(1);
   }, 120_000);
 
+  /**
+   * Tables that carry an `owner_id` but are deliberately (or, for now, knowingly)
+   * left without RLS. Keep this list as short as the truth allows — every entry is
+   * a table the invariant below cannot vouch for.
+   *
+   * - `bank_deposits`: NOT a deliberate exemption. It has a NOT NULL `owner_id`
+   *   with an FK to `businesses` and is read unscoped
+   *   (`SELECT * FROM accounter_schema.bank_deposits;` in
+   *   `packages/server/src/modules/bank-deposits/providers/bank-deposits.provider.ts`),
+   *   so it is the same gap this suite exists to catch — it was simply never added
+   *   to any of the RLS migration lists (`charges_bank_deposits`, a different
+   *   table, is in them, which is how it was missed). Left out of scope of the
+   *   salaries fix deliberately rather than silently; removing this entry is the
+   *   whole of what closing it requires here.
+   */
+  const RLS_EXEMPT_OWNER_ID_TABLES = new Set(['bank_deposits']);
+
+  /**
+   * The invariant that would have caught a table losing RLS: in `accounter_schema`,
+   * carrying an `owner_id` column means being tenant-scoped, and being tenant-scoped
+   * means RLS both ENABLED and FORCED plus a `tenant_isolation` policy.
+   *
+   * ENABLE without FORCE is the failure mode worth naming: `accounter_prod_user`
+   * inherits from `prod_group`, which owns these tables, and a table owner is exempt
+   * from its own policies unless the table is FORCED. A table in that state looks
+   * protected in the catalog and filters nothing for the application.
+   *
+   * Checked against the catalog rather than a hardcoded table list so a newly added
+   * tenant table is covered the day it lands, without anyone remembering to add it.
+   */
+  it('enforces RLS on every table carrying an owner_id', async () => {
+    const rows = await testPool.any(
+      sql.type(
+        z.object({
+          relname: z.string(),
+          enabled: z.boolean(),
+          forced: z.boolean(),
+          policies: z.array(z.string()),
+        }),
+      )`
+        SELECT
+          c.relname,
+          c.relrowsecurity AS enabled,
+          c.relforcerowsecurity AS forced,
+          COALESCE(
+            (
+              SELECT array_agg(p.polname ORDER BY p.polname)
+              FROM pg_catalog.pg_policy p
+              WHERE p.polrelid = c.oid
+            ),
+            '{}'::text[]
+          ) AS policies
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        JOIN pg_catalog.pg_attribute a
+          ON a.attrelid = c.oid
+         AND a.attname = 'owner_id'
+         AND NOT a.attisdropped
+        WHERE n.nspname = 'accounter_schema'
+          AND c.relkind = 'r'
+        ORDER BY c.relname
+      `,
+    );
+
+    // Guard against the query silently matching nothing (a schema or catalog change
+    // that breaks the join would otherwise make every assertion below pass
+    // vacuously). Deliberately not pinned to the current table count -- the point is
+    // that the query returned something, and `salaries` being present is asserted
+    // outright just below, so a tighter bound would only break on unrelated schema
+    // changes.
+    expect(rows.length).toBeGreaterThan(0);
+
+    const covered = rows.filter(r => !RLS_EXEMPT_OWNER_ID_TABLES.has(r.relname));
+
+    // `salaries` is the table this suite was extended for -- assert it explicitly so
+    // a future edit to the exemption set cannot quietly drop it from the check.
+    expect(covered.map(r => r.relname)).toContain('salaries');
+
+    const unprotected = covered
+      .filter(r => !r.enabled || !r.forced)
+      .map(r => `${r.relname} (enabled=${r.enabled}, forced=${r.forced})`);
+    expect(unprotected).toEqual([]);
+
+    const unpolicied = covered
+      .filter(r => !r.policies.includes('tenant_isolation'))
+      .map(r => `${r.relname} (policies=[${r.policies.join(', ')}])`);
+    expect(unpolicied).toEqual([]);
+  }, 30_000);
+
   it('should enforce RLS on key tables (isolation test)', async () => {
     // Test logic:
     // 1. Insert 2 businesses (as superuser/owner, bypassing RLS via NO context? No, forceful RLS blocks that too unless User is superuser).
