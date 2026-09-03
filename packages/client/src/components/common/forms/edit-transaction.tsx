@@ -12,7 +12,7 @@ import {
   TIMELESS_DATE_REGEX,
   type MakeBoolean,
 } from '../../../helpers/index.js';
-import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
+import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Switch } from '../../ui/switch.js';
@@ -84,8 +84,7 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
     }
   };
 
-  const { selectableFinancialEntities: financialEntities, fetching: fetchingFinancialEntities } =
-    useGetFinancialEntities();
+  const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
 
   return (
     <>
@@ -109,9 +108,9 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                       <FormLabel>Counterparty</FormLabel>
                       <ComboBox
                         {...field}
-                        data={financialEntities}
+                        data={businesses}
                         value={field.value ?? undefined}
-                        disabled={fetchingFinancialEntities}
+                        disabled={fetchingBusinesses}
                         placeholder="Select counterparty"
                         formPart
                       />
