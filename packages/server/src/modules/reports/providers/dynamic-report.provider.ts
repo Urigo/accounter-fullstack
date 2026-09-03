@@ -146,14 +146,6 @@ export class DynamicReportProvider {
     return snapshot;
   }
 
-  public async updateTemplate(params: IUpdateTemplateParams) {
-    if (params.name && params.ownerId) {
-      await this.assertNotLocked(params.name, params.ownerId);
-      this.invalidateByOwnerId(params.ownerId);
-    }
-    return updateTemplate.run(params, this.db);
-  }
-
   /**
    * Saves a template and the baseline captured with it as one unit.
    *
@@ -190,14 +182,6 @@ export class DynamicReportProvider {
       this.invalidateByOwnerId(params.ownerId);
     }
     return updateTemplateName.run(params, this.db);
-  }
-
-  public async insertTemplate(params: IInsertTemplateParams) {
-    if (params.ownerId) {
-      this.invalidateByOwnerId(params.ownerId);
-    }
-    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    return insertTemplate.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   /** Creates a template and its first baseline atomically — see `updateTemplateWithSnapshot`. */
