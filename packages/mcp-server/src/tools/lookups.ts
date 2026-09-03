@@ -254,6 +254,14 @@ const LIST_BUSINESSES_QUERY = /* GraphQL */ `
         # schema-contract.test.ts pins both halves of that assumption.
         ... on LtdFinancialEntity {
           isClient
+          # The tax category the business's charges are booked to. Null is a
+          # real answer here — a business with no mapping yet — and the model
+          # needs it to tell "not categorized" from "categorized as X" without
+          # a second round-trip through accounter_list_tax_categories.
+          taxCategory {
+            id
+            name
+          }
         }
       }
       pageInfo {
@@ -281,6 +289,28 @@ type RawBusinessNode = NonNullable<McpListBusinessesQuery['allBusinesses']>['nod
  */
 function rawBusinessIsClient(business: RawBusinessNode): boolean {
   return 'isClient' in business ? business.isClient : false;
+}
+
+/** The `{ id, name }` pair the directory reports for a matched tax category. */
+interface BusinessTaxCategory {
+  id: string;
+  name: string;
+}
+
+/**
+ * Read the matched tax category off a directory row.
+ *
+ * Narrowed structurally for the same reason as `rawBusinessIsClient`: the field
+ * is selected through the `LtdFinancialEntity` inline fragment, so the compiler
+ * sees it on only one arm of the union. `null` covers both "not an
+ * LtdFinancialEntity" (unreachable in practice) and the genuine case of a
+ * business with no tax category mapped yet — the two are the same answer to the
+ * caller: nothing to book against.
+ */
+function rawBusinessTaxCategory(business: RawBusinessNode): BusinessTaxCategory | null {
+  if (!('taxCategory' in business)) return null;
+  const taxCategory = business.taxCategory;
+  return taxCategory ? { id: taxCategory.id, name: taxCategory.name } : null;
 }
 
 async function listBusinessesHandler(
@@ -314,6 +344,7 @@ async function listBusinessesHandler(
     ownerId: business.ownerId,
     isActive: business.isActive,
     isClient: rawBusinessIsClient(business),
+    taxCategory: rawBusinessTaxCategory(business),
   }));
 
   // `totalRecords` counts upstream's whole (name-filtered) directory rather than
@@ -361,7 +392,7 @@ const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
-    'List the full business directory (id, name, ownerId, active flag, and whether the business is a client) — every business visible to you, not just the ones you are a member of — optionally filtered by name, active status, or client status, with `limit`/`page` pagination over the name-ordered directory. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
+    'List the full business directory — every business visible to you, not just the ones you are a member of — optionally filtered by name, active status, or client status, with `limit`/`page` pagination over the name-ordered directory. Each row is `{ id, name, ownerId, isActive, isClient, taxCategory }`, where `taxCategory` is the `{ id, name }` of the tax category the business is matched to, or `null` when no tax category is mapped to it. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
     resultEnvelopeDescription('businesses') +
     ' ' +
     DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,
