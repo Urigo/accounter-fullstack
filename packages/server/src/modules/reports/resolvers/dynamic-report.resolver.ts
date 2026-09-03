@@ -22,18 +22,18 @@ import { DynamicReportProvider } from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';
 
 /**
- * Records the baseline a later diff is measured against: the tree exactly as it was saved, and the
- * figures the client had on screen at that moment. Snapshot ≡ save, so this runs on every write
- * that carries one.
+ * Shapes the baseline row a later diff is measured against: the tree exactly as it was saved, and
+ * the figures the client had on screen at that moment. The row is handed to the provider so it can
+ * be written inside the same transaction as the template — snapshot ≡ save, and a save that lands
+ * without its snapshot would leave the next visit diffing against an older baseline.
  */
-async function writeSnapshot(
-  provider: DynamicReportProvider,
+function toSnapshotRow(
   ownerId: string,
   templateName: string,
   template: string,
   snapshot: DynamicReportSnapshotInputType,
-): Promise<void> {
-  await provider.insertSnapshot({
+) {
+  return {
     ownerId,
     templateName,
     fromDate: snapshot.fromDate,
@@ -42,7 +42,7 @@ async function writeSnapshot(
     tree: template,
     leafValues: JSON.stringify(snapshotValuesToRecord(snapshot.values)),
     createdBy: null,
-  });
+  };
 }
 
 export const dynamicReportResolver: ReportsModule.Resolvers = {
@@ -86,23 +86,23 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         validateTemplate(template);
         const validatedSnapshot = snapshot ? validateSnapshotInput(snapshot) : null;
 
-        const provider = injector.get(DynamicReportProvider);
-        const result = await provider.updateTemplate({
-          name,
-          ownerId,
-          template,
-          fromDate: validatedSnapshot?.fromDate ?? null,
-          toDate: validatedSnapshot?.toDate ?? null,
+        const result = await injector.get(DynamicReportProvider).updateTemplateWithSnapshot({
+          template: {
+            name,
+            ownerId,
+            template,
+            fromDate: validatedSnapshot?.fromDate ?? null,
+            toDate: validatedSnapshot?.toDate ?? null,
+          },
+          snapshot: validatedSnapshot
+            ? toSnapshotRow(ownerId, name, template, validatedSnapshot)
+            : null,
         });
-        if (result.length === 0) {
+        if (!result) {
           throw new Error(`Report template "${name}" not found`);
         }
 
-        if (validatedSnapshot) {
-          await writeSnapshot(provider, ownerId, name, template, validatedSnapshot);
-        }
-
-        return result[0];
+        return result;
       } catch (error) {
         throw errorSimplifier(`Failed to update dynamic report template "${name}"`, error);
       }
@@ -135,20 +135,18 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         validateTemplate(template);
         const validatedSnapshot = snapshot ? validateSnapshotInput(snapshot) : null;
 
-        const provider = injector.get(DynamicReportProvider);
-        const result = await provider.insertTemplate({
-          name,
-          ownerId,
-          template,
-          fromDate: validatedSnapshot?.fromDate ?? null,
-          toDate: validatedSnapshot?.toDate ?? null,
+        return injector.get(DynamicReportProvider).insertTemplateWithSnapshot({
+          template: {
+            name,
+            ownerId,
+            template,
+            fromDate: validatedSnapshot?.fromDate ?? null,
+            toDate: validatedSnapshot?.toDate ?? null,
+          },
+          snapshot: validatedSnapshot
+            ? toSnapshotRow(ownerId, name, template, validatedSnapshot)
+            : null,
         });
-
-        if (validatedSnapshot) {
-          await writeSnapshot(provider, ownerId, name, template, validatedSnapshot);
-        }
-
-        return result[0];
       } catch (error) {
         throw errorSimplifier(`Failed to insert dynamic report template "${name}"`, error);
       }
