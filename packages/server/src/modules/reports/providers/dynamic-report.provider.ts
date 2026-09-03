@@ -154,6 +154,36 @@ export class DynamicReportProvider {
     return updateTemplate.run(params, this.db);
   }
 
+  /**
+   * Saves a template and the baseline captured with it as one unit.
+   *
+   * The whole premise of change tracking is that a snapshot exists for every save. Writing the two
+   * separately would let the template land while the snapshot fails, leaving a save with no
+   * baseline and the next visit silently diffing against an older one — so they share a
+   * transaction and the save is all-or-nothing.
+   */
+  public async updateTemplateWithSnapshot(params: {
+    template: IUpdateTemplateParams;
+    snapshot?: IInsertSnapshotParams | null;
+  }) {
+    const { name, ownerId } = params.template;
+    if (name && ownerId) {
+      await this.assertNotLocked(name, ownerId);
+      this.invalidateByOwnerId(ownerId);
+    }
+
+    return this.db.transaction(async client => {
+      const rows = await updateTemplate.run(params.template, client);
+      if (rows.length === 0) {
+        return undefined;
+      }
+      if (params.snapshot) {
+        await insertSnapshot.run(params.snapshot, client);
+      }
+      return rows[0];
+    });
+  }
+
   public async updateTemplateName(params: IUpdateTemplateNameParams) {
     if (params.prevName && params.ownerId) {
       await this.assertNotLocked(params.prevName, params.ownerId);
@@ -168,6 +198,26 @@ export class DynamicReportProvider {
     }
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertTemplate.run(reassureOwnerIdExists(params, ownerId), this.db);
+  }
+
+  /** Creates a template and its first baseline atomically — see `updateTemplateWithSnapshot`. */
+  public async insertTemplateWithSnapshot(params: {
+    template: IInsertTemplateParams;
+    snapshot?: IInsertSnapshotParams | null;
+  }) {
+    if (params.template.ownerId) {
+      this.invalidateByOwnerId(params.template.ownerId);
+    }
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    const template = reassureOwnerIdExists(params.template, ownerId);
+
+    return this.db.transaction(async client => {
+      const rows = await insertTemplate.run(template, client);
+      if (params.snapshot) {
+        await insertSnapshot.run(params.snapshot, client);
+      }
+      return rows[0];
+    });
   }
 
   public async deleteTemplate(params: IDeleteTemplateParams) {
