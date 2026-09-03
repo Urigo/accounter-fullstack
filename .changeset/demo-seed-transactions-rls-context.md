@@ -14,11 +14,14 @@ business while the row named another and every transaction whose counterparty is
 which is every realistic transaction — was rejected. The sections before it (businesses, tax
 categories, accounts, charges) set the context from `owner_id` and so were unaffected.
 
-The transactions loop now pins the context to `transaction.owner_id ?? adminBusinessId`, and a
+The transactions loop now pins the context to `transaction.owner_id || adminBusinessId`, and a
 failure to set it propagates instead of being swallowed by a `console.warn` — a broken context
 otherwise turns into a cascade of policy violations downstream that say nothing about the real
 cause. The documents loop, which set no context at all and inherited whatever the previous section
-left behind, pins its own owner the same way; it would have been the next section to fail.
+left behind, pins its own owner the same way; it would have been the next section to fail. Both
+loops now treat a resolvable owner as a precondition and throw naming the offending row, rather than
+skipping the `set_config` and letting the row fail several statements later against the RLS or
+`NOT NULL` constraint on `owner_id`.
 
 This never reproduced locally or in CI because both connect as the `postgres` superuser, which
 bypasses RLS even under `FORCE ROW LEVEL SECURITY`. Deployed runs connect as a non-superuser and do
