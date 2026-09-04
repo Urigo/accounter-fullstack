@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   isLegacyTemplate,
   migrateLegacyTemplate,
+  parseSnapshotTree,
   parseTemplate,
+  recordToSnapshotValues,
+  snapshotValuesToRecord,
+  validateSnapshotInput,
   validateTemplate,
 } from '../dynamic-report.helper.js';
 
@@ -282,5 +286,120 @@ describe('migrateLegacyTemplate', () => {
     const result = migrateLegacyTemplate(treeWithExplicitLeaf, new Map());
     const leafAEntries = result.filter(n => n.id === ENTITY_A);
     expect(leafAEntries).toHaveLength(1);
+  });
+});
+
+// ── Snapshots ────────────────────────────────────────────────────────────────
+
+const OWNER = '11111111-1111-1111-1111-111111111111';
+const ENTITY = '22222222-2222-2222-2222-222222222222';
+
+function snapshotInput(overrides: Record<string, unknown> = {}) {
+  return {
+    fromDate: '2026-01-01',
+    toDate: '2026-03-31',
+    scopeOwnerId: OWNER,
+    values: [{ entityId: ENTITY, value: -1234.5 }],
+    ...overrides,
+  };
+}
+
+describe('validateSnapshotInput', () => {
+  it('accepts a well-formed snapshot', () => {
+    expect(validateSnapshotInput(snapshotInput())).toMatchObject({ scopeOwnerId: OWNER });
+  });
+
+  it('accepts an empty value list — a report with no placed entities is legitimate', () => {
+    expect(validateSnapshotInput(snapshotInput({ values: [] })).values).toEqual([]);
+  });
+
+  it('accepts fromDate equal to toDate', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ fromDate: '2026-01-01', toDate: '2026-01-01' })),
+    ).not.toThrow();
+  });
+
+  it('rejects an inverted period', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ fromDate: '2026-03-31', toDate: '2026-01-01' })),
+    ).toThrow(/toDate/);
+  });
+
+  it('rejects a non-UUID entity id', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ values: [{ entityId: 'nope', value: 1 }] })),
+    ).toThrow();
+  });
+
+  it('rejects a non-finite value, which would round-trip through JSON as null', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ values: [{ entityId: ENTITY, value: Number.NaN }] })),
+    ).toThrow();
+  });
+
+  it('rejects unknown fields', () => {
+    expect(() => validateSnapshotInput(snapshotInput({ surprise: true }))).toThrow();
+  });
+
+  // Entities seeded by this codebase carry ids like 00000000-0000-0000-0000-0000000005a1, whose
+  // version and variant nibbles are not RFC-4122 conformant. Rejecting those would make saving a
+  // report containing them fail.
+  it('accepts a hex-shaped id that is not RFC-4122 conformant', () => {
+    const seeded = '00000000-0000-0000-0000-0000000005a1';
+    expect(() =>
+      validateSnapshotInput(
+        snapshotInput({ scopeOwnerId: seeded, values: [{ entityId: seeded, value: 1 }] }),
+      ),
+    ).not.toThrow();
+  });
+
+  it('still rejects an id of the wrong shape', () => {
+    expect(() => validateSnapshotInput(snapshotInput({ scopeOwnerId: '123-abc' }))).toThrow();
+  });
+});
+
+describe('snapshot value encoding', () => {
+  it('round-trips values through the stored record shape', () => {
+    const values = [
+      { entityId: ENTITY, value: -1234.5 },
+      { entityId: OWNER, value: 0 },
+    ];
+    expect(recordToSnapshotValues(snapshotValuesToRecord(values))).toEqual(
+      expect.arrayContaining(values),
+    );
+  });
+
+  it('last write wins on a duplicated entity id', () => {
+    const record = snapshotValuesToRecord([
+      { entityId: ENTITY, value: 1 },
+      { entityId: ENTITY, value: 2 },
+    ]);
+    expect(record).toEqual({ [ENTITY]: 2 });
+  });
+
+  it('tolerates a malformed stored record rather than throwing on read', () => {
+    expect(recordToSnapshotValues(null)).toEqual([]);
+    expect(recordToSnapshotValues('not an object')).toEqual([]);
+    expect(recordToSnapshotValues([1, 2])).toEqual([]);
+    expect(recordToSnapshotValues({ a: 'x', b: 3 })).toEqual([{ entityId: 'b', value: 3 }]);
+  });
+});
+
+describe('parseSnapshotTree', () => {
+  it('validates an already-parsed tree, since the column is jsonb', () => {
+    const nodes = [
+      {
+        id: 'br-1',
+        parent: 'report',
+        text: 'Branch',
+        droppable: true,
+        data: { nodeType: 'synthetic-branch', isOpen: true },
+      },
+    ];
+    expect(parseSnapshotTree(nodes)).toHaveLength(1);
+  });
+
+  it('rejects a tree that is not an array', () => {
+    expect(() => parseSnapshotTree({ nope: true })).toThrow();
   });
 });

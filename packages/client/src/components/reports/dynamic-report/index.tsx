@@ -15,6 +15,7 @@ import { FiltersContext } from '@/providers/index.js';
 import {
   AllDynamicReportsDocument,
   DynamicReportDocument,
+  DynamicReportSnapshotDocument,
   DynamicReportTemplateDocument,
   type AllDynamicReportsQuery,
   type DynamicReportTemplateQuery,
@@ -25,6 +26,7 @@ import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
 import { useUpdateDynamicReportTemplate } from '../../../hooks/use-update-dynamic-report-template.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { ChangePeriodDialog, type ChangePeriodDialogRef } from './dialogs/change-period-dialog.js';
 import {
   DeleteBranchConfirmation,
   type DeleteBranchConfirmationRef,
@@ -50,8 +52,10 @@ import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
+import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
+import { buildSnapshotInput } from './utils/snapshot.js';
 import { serializeReportTree } from './utils/template-serialization.js';
 import {
   buildNodeStats,
@@ -118,6 +122,14 @@ import {
       name
       isLocked
       updated
+      fromDate
+      toDate
+      snapshots {
+        id
+        createdAt
+        fromDate
+        toDate
+      }
       template {
         id
         parent
@@ -129,6 +141,35 @@ import {
           hebrewText
           sortCode
         }
+      }
+    }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReportSnapshot($id: UUID!) {
+    dynamicReportSnapshot(id: $id) {
+      id
+      createdAt
+      fromDate
+      toDate
+      scopeOwnerId
+      tree {
+        id
+        parent
+        text
+        droppable
+        data {
+          nodeType
+          isOpen
+          hebrewText
+          sortCode
+        }
+      }
+      values {
+        entityId
+        value
       }
     }
   }
@@ -165,11 +206,12 @@ export function DynamicReport() {
   // Filters — persisted in URL search params
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const fromDate = searchParams.get('from') ?? DEFAULT_FROM;
-  const toDate = searchParams.get('to') ?? DEFAULT_TO;
+  const urlFromDate = searchParams.get('from');
+  const urlToDate = searchParams.get('to');
   const selectedOwner = searchParams.get('owner') ?? adminBusinessId;
   const showZeroed = searchParams.get('zeroed') === '1';
   const selectedTemplateName = searchParams.get('template');
+  const selectedBaselineId = searchParams.get('baseline');
 
   const setFromDate = useCallback(
     (v: string) =>
@@ -239,6 +281,22 @@ export function DynamicReport() {
     [setSearchParams],
   );
 
+  const setSelectedBaselineId = useCallback(
+    (v: string | null) =>
+      setSearchParams(
+        p => {
+          if (v) {
+            p.set('baseline', v);
+          } else {
+            p.delete('baseline');
+          }
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+
   // UI state
   const [editMode, setEditMode] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -267,6 +325,7 @@ export function DynamicReport() {
   const saveAsNewTemplateDialogRef = useRef<SaveAsNewTemplateDialogRef>(null);
   const renameTemplateDialogRef = useRef<RenameTemplateDialogRef>(null);
   const deleteTemplateConfirmationRef = useRef<DeleteTemplateConfirmationRef>(null);
+  const changePeriodDialogRef = useRef<ChangePeriodDialogRef>(null);
 
   // ── GQL mutations ────────────────────────────────────────────────────────────
 
@@ -280,21 +339,13 @@ export function DynamicReport() {
   // Owner options are the businesses the user may report on, not every financial
   // entity — and a single one is not a choice, so the picker is then read-only.
   const { adminBusinesses, soleAdminBusinessId } = useGetAdminBusinesses();
+  // The owner the figures are queried for. Kept here because both the sums query and the baseline
+  // comparison need it.
+  const scopeOwnerId = soleAdminBusinessId ?? selectedOwner;
   const owners = useMemo<Owner[]>(
     () => adminBusinesses.map(business => ({ id: business.id, name: business.name })),
     [adminBusinesses],
   );
-
-  const [{ data: businessSumsData }] = useQuery({
-    query: DynamicReportDocument,
-    variables: {
-      filters: {
-        fromDate: fromDate as TimelessDateString,
-        toDate: toDate as TimelessDateString,
-        ownerIds: [soleAdminBusinessId ?? selectedOwner],
-      },
-    },
-  });
 
   const [{ data: allTemplatesData }, refetchAllTemplates] = useQuery({
     query: AllDynamicReportsDocument,
@@ -306,6 +357,115 @@ export function DynamicReport() {
     variables: { name: selectedTemplateName ?? '' },
     pause: !selectedTemplateName,
   });
+
+  // ── Period ────────────────────────────────────────────────────────────────
+  // A draft owns the period it was built for, so the pickers are read-only while one is loaded.
+  // Explicit ?from=/?to= still win: annual-audit step 05 deep-links the same locked template at two
+  // different ranges (Balance Sheet and P&L), and those links must keep working.
+  const draftFromDate = templateNodesData?.dynamicReport?.fromDate ?? null;
+  const draftToDate = templateNodesData?.dynamicReport?.toDate ?? null;
+
+  const fromDate = urlFromDate ?? draftFromDate ?? DEFAULT_FROM;
+  const toDate = urlToDate ?? draftToDate ?? DEFAULT_TO;
+
+  const isPeriodOverridden =
+    !!draftFromDate &&
+    !!draftToDate &&
+    ((!!urlFromDate && urlFromDate !== draftFromDate) ||
+      (!!urlToDate && urlToDate !== draftToDate));
+
+  const restoreDraftPeriod = useCallback(
+    () =>
+      setSearchParams(
+        p => {
+          p.delete('from');
+          p.delete('to');
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+
+  const [{ data: businessSumsData }] = useQuery({
+    query: DynamicReportDocument,
+    variables: {
+      filters: {
+        fromDate: fromDate as TimelessDateString,
+        toDate: toDate as TimelessDateString,
+        ownerIds: [scopeOwnerId],
+      },
+    },
+  });
+
+  // Derive business sums array
+  const businessSums = useMemo(() => {
+    const result = businessSumsData?.businessTransactionsSumFromLedgerRecords;
+    if (result?.__typename === 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult') {
+      return result.businessTransactionsSum;
+    }
+    return [];
+  }, [businessSumsData]);
+
+  // ── Baseline ──────────────────────────────────────────────────────────────
+  const snapshots = useMemo(
+    () => templateNodesData?.dynamicReport?.snapshots ?? [],
+    [templateNodesData],
+  );
+  // Newest first from the server, so the head is "last save" unless the user picked another.
+  const latestBaselineId = snapshots[0]?.id ?? null;
+  const activeBaselineId =
+    snapshots.find(snapshot => snapshot.id === selectedBaselineId)?.id ?? latestBaselineId;
+
+  // Picking the newest entry clears the param rather than pinning its id. An absent param already
+  // means "whatever the latest snapshot is", so this is what keeps "Last save" tracking the newest
+  // baseline across future saves instead of freezing on the snapshot that happened to be newest
+  // when it was chosen.
+  const handleBaselineChange = useCallback(
+    (id: string) => setSelectedBaselineId(id === latestBaselineId ? null : id),
+    [latestBaselineId, setSelectedBaselineId],
+  );
+
+  const [{ data: snapshotData }] = useQuery({
+    query: DynamicReportSnapshotDocument,
+    variables: { id: activeBaselineId ?? '' },
+    pause: !activeBaselineId,
+  });
+
+  const baselineSnapshot = snapshotData?.dynamicReportSnapshot ?? null;
+
+  // A snapshot is only comparable to a report computed over the same period for the same owner.
+  // Anything else — a deep link's date override, a different owner — and the figures are answers to
+  // a different question, so the diff is suspended rather than shown wrong.
+  const isBaselineComparable =
+    !!baselineSnapshot &&
+    baselineSnapshot.fromDate === fromDate &&
+    baselineSnapshot.toDate === toDate &&
+    baselineSnapshot.scopeOwnerId === scopeOwnerId;
+
+  const baseline = useMemo<Baseline | null>(() => {
+    if (!baselineSnapshot || !isBaselineComparable) return null;
+    return {
+      tree: baselineSnapshot.tree,
+      values: new Map(baselineSnapshot.values.map(value => [value.entityId, value.value])),
+    };
+  }, [baselineSnapshot, isBaselineComparable]);
+
+  const reportDiff = useMemo(
+    () => (baseline ? buildReportDiff(reportTree, baseline) : null),
+    [reportTree, baseline],
+  );
+
+  const newEntityIds = useMemo(
+    () =>
+      baseline
+        ? findNewEntityIds(
+            businessSums.map(sum => sum.business.id),
+            baseline,
+          )
+        : undefined,
+    [businessSums, baseline],
+  );
 
   // Derive template list for TemplateManager
   const templates = useMemo<Template[]>(
@@ -324,15 +484,6 @@ export function DynamicReport() {
       if (found.isLocked) setEditMode(false);
     }
   }, [selectedTemplateName, templates, currentTemplate]);
-
-  // Derive business sums array
-  const businessSums = useMemo(() => {
-    const result = businessSumsData?.businessTransactionsSumFromLedgerRecords;
-    if (result?.__typename === 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult') {
-      return result.businessTransactionsSum;
-    }
-    return [];
-  }, [businessSumsData]);
 
   // ── Refs for reading latest values inside effects without adding them as deps ──
   // Updated via useLayoutEffect (runs before useEffect) so effects always see current values.
@@ -409,13 +560,33 @@ export function DynamicReport() {
 
     // O(N) value lookup
     const sumById = new Map(businessSums.map(b => [b.business.id, b.total.raw * -1]));
+    const nameById = new Map(businessSums.map(b => [b.business.id, b.business.name]));
 
-    // Patch values on report-tree leaf nodes, preserve all structural properties
+    // Patch values on report-tree leaf nodes, preserve all structural properties.
+    // A leaf whose entity has no sum in the new period is hidden rather than dropped, and one
+    // whose sum reappears is un-hidden — mirroring buildReportTree, so widening the date range
+    // brings a leaf back instead of leaving it invisible with a live value.
     const nextReportTree = currentReportTree.map(node => {
       if (node.droppable) return node;
-      const value = sumById.get(node.id) ?? 0;
-      if (node.data.value === value) return node;
-      return { ...node, data: { ...node.data, value } };
+      const sum = sumById.get(node.id);
+      const value = sum ?? 0;
+      const isHidden = sum === undefined;
+      // Keep the last known name while hidden — there is no sum to read one from.
+      const text = isHidden ? node.text : (nameById.get(node.id) ?? node.text);
+      if (
+        node.data.value === value &&
+        (node.data.isHidden ?? false) === isHidden &&
+        node.text === text
+      ) {
+        return node;
+      }
+      const data = { ...node.data, value };
+      if (isHidden) {
+        data.isHidden = true;
+      } else {
+        delete data.isHidden;
+      }
+      return { ...node, text, data };
     });
 
     // Placed entity IDs haven't changed (structure is preserved)
@@ -510,11 +681,14 @@ export function DynamicReport() {
       setSelectedTemplateName(template.name);
       setShowLegacyBanner(template.isLegacy ?? false);
       setIsDirty(false);
+      // Drop any period override from the previous draft — each draft owns its own period, and a
+      // leftover ?from=/?to= would silently apply to the one being loaded.
+      restoreDraftPeriod();
       if (template.isLocked) {
         setEditMode(false);
       }
     },
-    [setSelectedTemplateName],
+    [setSelectedTemplateName, restoreDraftPeriod],
   );
 
   const handleLoadTemplate = useCallback(
@@ -529,18 +703,56 @@ export function DynamicReport() {
     [isDirty, applyTemplate],
   );
 
+  // The baseline a later visit diffs against: the figures currently on screen, for the period they
+  // were computed over.
+  const snapshotInput = useMemo(
+    () =>
+      buildSnapshotInput({
+        businessSums,
+        fromDate: fromDate as TimelessDateString,
+        toDate: toDate as TimelessDateString,
+        scopeOwnerId,
+      }),
+    [businessSums, fromDate, toDate, scopeOwnerId],
+  );
+
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
     const serialized = serializeReportTree(reportTree);
     const result = await updateDynamicReportTemplate({
       name: currentTemplate.name,
       template: serialized,
+      snapshot: snapshotInput,
     });
     if (result) {
       setIsDirty(false);
       setShowLegacyBanner(false);
+      // The save just became the newest baseline. Releasing any pin means the user is comparing
+      // against what they just saved rather than against something older with nothing on screen
+      // saying so.
+      setSelectedBaselineId(null);
     }
-  }, [currentTemplate, reportTree, updateDynamicReportTemplate]);
+  }, [
+    currentTemplate,
+    reportTree,
+    updateDynamicReportTemplate,
+    snapshotInput,
+    setSelectedBaselineId,
+  ]);
+
+  const handleChangePeriod = useCallback(() => {
+    changePeriodDialogRef.current?.changePeriod(fromDate, toDate);
+  }, [fromDate, toDate]);
+
+  const handlePeriodConfirmed = useCallback(
+    (nextFrom: string, nextTo: string) => {
+      setFromDate(nextFrom);
+      setToDate(nextTo);
+      // The period is part of the draft, so changing it is an unsaved edit like any other.
+      setIsDirty(true);
+    },
+    [setFromDate, setToDate],
+  );
 
   const handleRenameInManager = useCallback(
     async (template: Template, newName: string) => {
@@ -579,6 +791,7 @@ export function DynamicReport() {
     function traverse(parentId: string, depth: number) {
       const children = childrenMap.get(parentId) ?? [];
       for (const node of children) {
+        if (node.data.isHidden) continue;
         if (node.droppable) {
           const sum = nodeStats.get(node.id)?.sum ?? 0;
           rows.push(`${escapeCsv(node.text)},${sum},${depth}`);
@@ -633,6 +846,22 @@ export function DynamicReport() {
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
         onDownloadCSV={handleDownloadCSV}
         isLocked={currentTemplate?.isLocked ?? false}
+        datesDisabled={!!currentTemplate}
+        onChangePeriod={handleChangePeriod}
+        periodOverride={
+          isPeriodOverridden && draftFromDate && draftToDate ? { draftFromDate, draftToDate } : null
+        }
+        onRestoreDraftPeriod={restoreDraftPeriod}
+        snapshots={snapshots}
+        activeBaselineId={activeBaselineId}
+        onBaselineChange={handleBaselineChange}
+        diffSuspendedReason={
+          snapshots.length === 0
+            ? 'No baseline yet — save this draft to start tracking changes'
+            : baselineSnapshot && !isBaselineComparable
+              ? `Baseline covers ${baselineSnapshot.fromDate} to ${baselineSnapshot.toDate} — changes are hidden`
+              : null
+        }
       />
 
       {showLegacyBanner && currentTemplate?.isLegacy && (
@@ -653,6 +882,7 @@ export function DynamicReport() {
             onToggleExpand={handleToggleBankExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
+            newEntityIds={newEntityIds}
           />
 
           <TreePanel
@@ -667,9 +897,12 @@ export function DynamicReport() {
             onToggleExpand={handleToggleReportExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
+            diff={reportDiff}
           />
         </div>
       </div>
+
+      <ChangePeriodDialog ref={changePeriodDialogRef} onConfirm={handlePeriodConfirmed} />
 
       {/* Template Manager Modal */}
       <TemplateManager
@@ -720,6 +953,7 @@ export function DynamicReport() {
         setIsDirty={setIsDirty}
         setCurrentTemplate={setCurrentTemplate}
         reportTree={reportTree}
+        snapshot={snapshotInput}
       />
 
       <RenameTemplateDialog

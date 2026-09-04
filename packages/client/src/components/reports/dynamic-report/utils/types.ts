@@ -7,6 +7,12 @@ export type CustomData = {
   sortCode?: number | null;
   isOpen: boolean;
   entityType?: 'business' | 'person';
+  /**
+   * Entity leaf kept in the tree but not rendered, because the entity has no ledger activity in
+   * the selected period. Carrying it means a save can't silently prune it from the template.
+   * Runtime-only — never serialized.
+   */
+  isHidden?: boolean;
 };
 
 export type FlatNode<T = CustomData> = {

@@ -9,7 +9,9 @@ import {
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
+import type { RowDiff } from './diff-markers.js';
 import { TreeNodeRow } from './tree-node.js';
+import type { ReportDiff } from './utils/diff.js';
 import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
 
 interface TreePanelProps {
@@ -24,7 +26,16 @@ interface TreePanelProps {
   onToggleExpand: (nodeId: string) => void;
   onRename?: (nodeId: string, currentName: string) => void;
   onDelete?: (nodeId: string) => void;
+  /** Differences from the last saved baseline; absent while the diff is suspended. */
+  diff?: ReportDiff | null;
+  /** Entity ids with ledger activity that the baseline had never seen. */
+  newEntityIds?: Set<string>;
 }
+
+type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
+  rowDiff: (nodeId: string) => RowDiff | undefined;
+  ghostIds: Set<string>;
+};
 
 function renderSubtree(
   nodes: FlatNode<CustomData>[],
@@ -32,10 +43,10 @@ function renderSubtree(
   depth: number,
   treeId: 'bank' | 'report',
   nodeStats: NodeStats,
-  props: Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'>,
+  props: RenderProps,
 ): ReactElement[] {
   return nodes
-    .filter(n => n.parent === parentId)
+    .filter(n => n.parent === parentId && !n.data.isHidden)
     .map(node => (
       <Fragment key={node.id}>
         <TreeNodeRow
@@ -47,9 +58,11 @@ function renderSubtree(
           onToggleExpand={props.onToggleExpand}
           onRename={props.onRename}
           onDelete={props.onDelete}
+          diff={props.rowDiff(node.id)}
         />
         {node.droppable &&
-          node.data.isOpen &&
+          // A ghost branch is a record of a removed subtree, so it always shows what it contained.
+          (node.data.isOpen || props.ghostIds.has(node.id)) &&
           renderSubtree(nodes, node.id, depth + 1, treeId, nodeStats, props)}
       </Fragment>
     ));
@@ -67,6 +80,8 @@ export function TreePanel({
   onToggleExpand,
   onRename,
   onDelete,
+  diff = null,
+  newEntityIds,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -83,8 +98,40 @@ export function TreePanel({
     });
   }, [editMode, treeId]);
 
-  const nodeStats = useMemo(() => buildNodeStats(nodes), [nodes]);
-  const hasRootNodes = nodes.some(n => n.parent === treeId);
+  // Ghosts are kept out of the live stats — they no longer contribute to any total — but they need
+  // their own sums to show what they used to be worth, so they get a separate pass.
+  const nodeStats = useMemo(() => {
+    const live = buildNodeStats(nodes);
+    if (!diff?.ghosts.length) return live;
+    for (const [id, stats] of buildNodeStats(diff.ghosts)) {
+      live.set(id, stats);
+    }
+    return live;
+  }, [nodes, diff]);
+
+  const renderedNodes = useMemo(
+    () => (diff?.ghosts.length ? [...nodes, ...diff.ghosts] : nodes),
+    [nodes, diff],
+  );
+
+  const ghostIds = useMemo(() => new Set((diff?.ghosts ?? []).map(node => node.id)), [diff]);
+
+  const rowDiff = useMemo(() => {
+    return (nodeId: string): RowDiff | undefined => {
+      if (newEntityIds?.has(nodeId)) {
+        return { changes: [{ kind: 'added' }] };
+      }
+      const changes = diff?.byNodeId.get(nodeId);
+      if (!changes) return undefined;
+      return {
+        changes,
+        subtreeDelta: diff?.subtreeDelta.get(nodeId),
+        isGhost: ghostIds.has(nodeId),
+      };
+    };
+  }, [diff, ghostIds, newEntityIds]);
+
+  const hasRootNodes = renderedNodes.some(n => n.parent === treeId && !n.data.isHidden);
 
   const CollapseIcon =
     treeId === 'bank'
@@ -143,11 +190,13 @@ export function TreePanel({
           className={cn('min-h-[300px] min-w-max transition-colors', isOver && 'bg-accent/50')}
         >
           {hasRootNodes ? (
-            renderSubtree(nodes, treeId, 0, treeId, nodeStats, {
+            renderSubtree(renderedNodes, treeId, 0, treeId, nodeStats, {
               editMode,
               onToggleExpand,
               onRename,
               onDelete,
+              rowDiff,
+              ghostIds,
             })
           ) : (
             <div className="flex items-center justify-center h-[300px] w-full text-muted-foreground text-sm">
