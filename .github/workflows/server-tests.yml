@@ -93,10 +93,14 @@ jobs:
             packages/server/src/modules/**/__generated__
             packages/client/src/gql
             packages/email-ingestion-gateway/src/gql
+          # The gateway's own GraphQL documents are a codegen input, so they belong in
+          # the key now that its `src/gql` is in the cached paths. Without them, editing
+          # only `graphql/mutations.ts` is a cache hit and the typecheck below validates
+          # against stale generated types — the drift this workflow step exists to catch.
           key:
             graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
             'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
-            'yarn.lock') }}
+            'packages/email-ingestion-gateway/src/graphql/mutations.ts', 'yarn.lock') }}
           restore-keys: |
             graphql-codegen-${{ runner.os }}-
 

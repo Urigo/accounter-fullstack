@@ -68,12 +68,18 @@ const worker = {
   async email(message: EmailMessageLike, env: WorkerEnv): Promise<void> {
     // Which variables are actually bound decides which failure path can fire, and
     // `wrangler.jsonc` declares no `vars` — these are dashboard-managed, and a
-    // plain-text (non-secret) one is silently dropped by `wrangler deploy`. Logging
-    // the booleans (never the addresses) makes a misconfiguration readable from the
-    // first delivery instead of inferred from a loop.
+    // plain-text (non-secret) one is silently dropped by `wrangler deploy`. The
+    // booleans make a misconfiguration readable from the first delivery instead of
+    // inferred from a loop.
+    //
+    // Addresses are deliberately absent from every `worker:*` line: the recipient
+    // alias is tenant-identifying and the destinations are real mailboxes, and
+    // neither adds diagnostic power over the booleans here — the gateway already
+    // records `recipientAlias` against the same correlation id. The one place an
+    // address can still surface is a runtime error string we pass through verbatim
+    // (`worker:forward_failed`), where the text is the diagnosis.
     logEvent('worker:email:start', {
       messageId: message.headers.get('message-id'),
-      to: message.to,
       gatewayUrlConfigured: !!env.GATEWAY_URL,
       forwardDestinationConfigured: !!env.EMAIL_FORWARD_DESTINATION,
       fallbackEmailConfigured: !!env.FALLBACK_EMAIL,
@@ -107,7 +113,7 @@ const worker = {
     try {
       await message.forward(env.EMAIL_FORWARD_DESTINATION);
       forwardedToDestination = true;
-      logEvent('worker:forwarded', { destination: env.EMAIL_FORWARD_DESTINATION });
+      logEvent('worker:forwarded');
     } catch (e) {
       logEvent('worker:forward_failed', {
         configured: !!env.EMAIL_FORWARD_DESTINATION,
@@ -194,10 +200,9 @@ const worker = {
         try {
           await message.forward(env.FALLBACK_EMAIL);
           forwardedToFallback = true;
-          logEvent('worker:fallback_forwarded', { destination: env.FALLBACK_EMAIL });
+          logEvent('worker:fallback_forwarded');
         } catch (e) {
           logEvent('worker:fallback_forward_failed', {
-            destination: env.FALLBACK_EMAIL,
             error: (e as Error).message,
             forwardedToDestination,
           });

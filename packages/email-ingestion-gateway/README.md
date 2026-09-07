@@ -123,10 +123,12 @@ See [`.dev.vars.example`](./.dev.vars.example):
 | `EMAIL_FORWARD_DESTINATION` | Address every message is forwarded to unconditionally, before the webhook call.                    |
 | `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above). |
 
-Set all four as **secrets** (`npx wrangler secret put <NAME>`), not as plain-text variables.
-`wrangler.jsonc` declares no `vars`, and `wrangler deploy` reconciles bindings against the config
-file: dashboard **Text** variables are deleted on the next deploy, while secrets are preserved. A
-silently-dropped `FALLBACK_EMAIL` is what turns a gateway rejection into a redelivery loop.
+Set all four as **secrets**
+(`yarn workspace @accounter/email-ingestion-gateway wrangler secret put <NAME>`), not as plain-text
+variables. `wrangler.jsonc` declares no `vars`, and `wrangler deploy` reconciles bindings against
+the config file: dashboard **Text** variables are deleted on the next deploy, while secrets are
+preserved. A silently-dropped `FALLBACK_EMAIL` is what turns a gateway rejection into a redelivery
+loop.
 
 `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` should be **different** addresses. When they match,
 the Worker skips the fallback forward (the runtime rejects a second forward to an address already

@@ -41,23 +41,29 @@ What the handler does, in order:
    failure and redelivers with growing backoff, so throwing on a permanent rejection loops forever.
 
 Every branch emits one structured `worker:*` JSON line; read them with
-`wrangler tail --name email-ingestion-gateway-worker --format pretty`.
+`yarn workspace @accounter/email-ingestion-gateway wrangler tail --name email-ingestion-gateway-worker --format pretty`.
 
 **Step 2 — Add Worker secrets** in the Cloudflare dashboard or with Wrangler:
 
+Run these through the workspace so they use the Wrangler version pinned in
+`packages/email-ingestion-gateway/package.json` rather than whatever a bare `wrangler` or `npx`
+resolves to (this repo is yarn-only):
+
 ```bash
-wrangler secret put CF_WEBHOOK_SECRET         # paste the shared secret value
-wrangler secret put GATEWAY_URL               # e.g. https://gateway.example.com
-wrangler secret put EMAIL_FORWARD_DESTINATION # archive inbox; every message is forwarded here
-wrangler secret put FALLBACK_EMAIL            # legacy Gmail inbox for rollback fallback
+W="yarn workspace @accounter/email-ingestion-gateway wrangler"
+
+$W secret put CF_WEBHOOK_SECRET         # paste the shared secret value
+$W secret put GATEWAY_URL               # e.g. https://gateway.example.com
+$W secret put EMAIL_FORWARD_DESTINATION # archive inbox; every message is forwarded here
+$W secret put FALLBACK_EMAIL            # legacy Gmail inbox for rollback fallback
 ```
 
 Use **secrets**, not plain-text variables. `wrangler.jsonc` declares no `vars`, so `wrangler deploy`
 reconciles bindings against the config file and **deletes any dashboard Text variable** while
-leaving secrets intact. Verify with `wrangler secret list --name email-ingestion-gateway-worker`:
-anything visible in the dashboard but absent from that list is Text and will not survive the next
-deploy. A silently-dropped `FALLBACK_EMAIL` is what turns a permanent gateway rejection into a
-Cloudflare redelivery loop.
+leaving secrets intact. Verify with `$W secret list --name email-ingestion-gateway-worker`: anything
+visible in the dashboard but absent from that list is Text and will not survive the next deploy. A
+silently-dropped `FALLBACK_EMAIL` is what turns a permanent gateway rejection into a Cloudflare
+redelivery loop.
 
 Keep `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` **distinct**. When they match, the Worker
 skips the fallback forward — the runtime rejects a second forward to an address already used for the
