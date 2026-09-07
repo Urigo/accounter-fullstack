@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { format } from 'date-fns';
 import {
   SecurityExecutionFieldsFragmentDoc,
   type SecurityExecutionFieldsFragment,
@@ -48,8 +49,29 @@ const securityDecimalFormat = new Intl.NumberFormat('en-US', {
 export const formatSecurityDecimal = (value: number | null | undefined): string =>
   value == null ? '' : securityDecimalFormat.format(value);
 
-export const formatSecurityDate = (value: string | Date | null | undefined): string =>
-  value ? new Date(value).toLocaleDateString() : '';
+/** `YYYY-MM-DD` and nothing else, as a `TimelessDate` field hands it over. */
+const timelessDatePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Dates read `dd/MM/yyyy` across the app. `toLocaleDateString` followed the browser's locale
+ * instead, so every securities table showed `m/d/yy` to anyone running en-US.
+ *
+ * Trade, value and settlement dates are `TimelessDate`s — a calendar day with no time of day —
+ * and `new Date('2024-01-15')` would pin one to UTC midnight, which renders as the day before
+ * anywhere west of Greenwich. Reorder those digits as text and keep `Date` for the timestamps.
+ */
+export const formatSecurityDate = (value: string | Date | null | undefined): string => {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const timeless = timelessDatePattern.exec(value);
+    if (timeless) {
+      const [, year, month, day] = timeless;
+      return `${day}/${month}/${year}`;
+    }
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : format(date, 'dd/MM/yyyy');
+};
 
 /** The bank's enum values read better as words than as SCREAMING_SNAKE_CASE. */
 export const humanizeSecurityEnum = (value: string): string =>

@@ -5,7 +5,10 @@ import {
   type ForeignSecuritiesChargeInfoFragment,
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
-import { SecurityExecutionsTable } from '../../securities/security-executions-table.js';
+import {
+  formatSecurityDate,
+  SecurityExecutionsTable,
+} from '../../securities/security-executions-table.js';
 import {
   Account,
   Amount,
@@ -100,8 +103,7 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
             {details.isForeign && <Badge variant="outline">Foreign</Badge>}
           </div>
           <div className="text-xs text-gray-400">
-            Key {security.securityKey} · reference data as of{' '}
-            {new Date(details.asOfDate).toLocaleDateString()}
+            Key {security.securityKey} · reference data as of {formatSecurityDate(details.asOfDate)}
           </div>
         </div>
       ) : (
