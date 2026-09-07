@@ -18,6 +18,27 @@ export const JsonRpcErrorCode = {
   InternalError: -32_603,
 } as const;
 
+/**
+ * Error codes defined by the MCP specification itself (revision 2026-07-28).
+ *
+ * JSON-RPC reserves `-32000..-32099` for implementation-defined server errors;
+ * MCP partitions it, keeping `-32020..-32099` for the specification. A server
+ * **MUST NOT** emit a code from that sub-range that the spec does not define,
+ * and **MUST** use the defined ones only with their specified meanings — so
+ * these are deliberately separate from {@link JsonRpcErrorCode}, which holds
+ * the transport-level codes we are free to use anywhere.
+ *
+ * All three are modern-era only. The legacy handshake path never emits them.
+ */
+export const McpErrorCode = {
+  /** Headers disagree with the body, or a required header is missing. */
+  HeaderMismatch: -32_020,
+  /** The request needs a capability the client did not declare. */
+  MissingRequiredClientCapability: -32_021,
+  /** The requested protocol revision is one this server does not implement. */
+  UnsupportedProtocolVersion: -32_022,
+} as const;
+
 export type JsonRpcId = string | number | null;
 
 export interface JsonRpcRequest {
@@ -93,4 +114,36 @@ export function asJsonRpcRequest(value: unknown): JsonRpcRequest | null {
 /** A request with no `id` is a notification: the server must not reply. */
 export function isNotification(request: JsonRpcRequest): boolean {
   return request.id === undefined;
+}
+
+/**
+ * `UnsupportedProtocolVersionError` (`-32022`).
+ *
+ * The `supported` list is the useful half: a client that asked for a revision
+ * we do not implement can pick one from it and retry, rather than failing. On
+ * HTTP this **MUST** be sent with `400 Bad Request` — which is also how a
+ * dual-era client tells a modern server from a legacy one, since it inspects
+ * the body of a 400 before deciding to fall back.
+ */
+export function unsupportedProtocolVersion(
+  id: JsonRpcId,
+  requested: string | null,
+  supported: readonly string[],
+): JsonRpcErrorResponse {
+  return failure(id, McpErrorCode.UnsupportedProtocolVersion, 'Unsupported protocol version', {
+    supported: [...supported],
+    requested,
+  });
+}
+
+/**
+ * `HeaderMismatch` (`-32020`).
+ *
+ * Raised when a mirrored header disagrees with the body, or a required one is
+ * absent. The point is not pedantry: intermediaries route on the header while
+ * the server executes the body, so a disagreement is a request that means two
+ * different things depending on who reads it.
+ */
+export function headerMismatch(id: JsonRpcId, message: string): JsonRpcErrorResponse {
+  return failure(id, McpErrorCode.HeaderMismatch, `Header mismatch: ${message}`);
 }

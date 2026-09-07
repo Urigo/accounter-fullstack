@@ -232,6 +232,39 @@ an id, a role and a name, then named exactly what it could not know: whether row
 `businesses` or `memberships`, and whether there is a `scope` echo. Anything the model needs about a
 result has to be in prose, in the description, ideally in its first sentence.
 
+### The modern-era detector fired, and the migration followed (2026-09-07, resolved)
+
+The detector added after the blind-connector incident did what it was built to do. Production logs
+over 2026-09-06/07 show, five times for five, a client probing modern and falling back within a
+second:
+
+```
+00:18:02.879  claude-code/2.1.263       discover(2026-07-28) -> initialize(2025-11-25)  +1154ms
+04:17:38.081  claude-code/2.1.263       discover(2026-07-28) -> initialize(2025-11-25)   +447ms
+06:18:42.290  Anthropic/ClaudeAI/1.0.0  discover(2026-07-28) -> initialize(2025-11-25)   +538ms
+```
+
+Two client families across three users, so this was never one developer's machine. Not every
+`initialize` is preceded by a probe — clients cache the era determination, exactly as the spec says
+they should — which is why the probes appear every few hours rather than on every connect.
+
+**A second thing the logs showed that nobody had predicted:** every handshake was already a version
+mismatch. Clients asked for `2025-11-25` and were served `2025-06-18`, with
+`protocolVersionMismatch: true` on 100% of connects. So the ladder had three rungs, not two — the
+client's modern preference (`2026-07-28`), its legacy fallback (`2025-11-25`), and what we served.
+
+**The intermediate rung was considered and rejected.** Moving `2025-06-18` → `2025-11-25` is cheap
+(both are handshake-era, and nothing in that revision's changelog touches what this server
+implements) but it closes a _cosmetic_ gap: the mismatch costs nothing observable, and it leaves the
+actual exposure — a client dropping the legacy fallback — completely untouched. It is also a rung on
+a ladder being abandoned. The one argument for it was insurance if the migration were to sit for
+months, which it did not.
+
+**The general lesson:** the alarm was worth more than the thing it was watching for. Building the
+detector cost far less than the migration and it converted "we should probably do this eventually"
+into a dated, evidenced decision — including surfacing the handshake mismatch, which no amount of
+reasoning had turned up.
+
 ## Open decisions
 
 1. **Audience strategy.** Accept the shared `https://api.accounter.com` audience for MCP and GraphQL

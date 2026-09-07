@@ -87,6 +87,15 @@ export const routes: Record<string, Record<string, RouteHandler>> = {
   POST: {
     [MCP_ROUTE_PATH]: mcpHttpHandler,
   },
+  // Session termination via DELETE belonged to the session-based Streamable
+  // HTTP revisions. This server has never had sessions, and 2026-07-28 removed
+  // them from the protocol, so the honest answer is the same 405 as GET.
+  DELETE: {
+    [MCP_ROUTE_PATH]: (_req, res) => {
+      res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'POST' });
+      res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+    },
+  },
 };
 
 /**

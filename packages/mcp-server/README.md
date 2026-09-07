@@ -378,6 +378,34 @@ fields are merged _beneath_ the canonical ones, so a client cannot attribute its
 user by putting `userId` in `clientInfo`, and `clientInfo` strings are clipped before they reach the
 log.
 
+### Protocol eras (dual-era server)
+
+This server answers both MCP eras on one endpoint, choosing per request exactly as the spec
+prescribes: **a request carrying modern per-request `_meta` gets modern semantics; anything else —
+an `initialize` handshake included — gets legacy.**
+
+|                  | Legacy                        | Modern                                                                                                               |
+| ---------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Opens with       | `initialize`                  | per-request `_meta` protocol version                                                                                 |
+| Revision served  | `2025-06-18`                  | `2026-07-28`                                                                                                         |
+| Discovery        | `initialize` result           | `server/discover`                                                                                                    |
+| Result shape     | as before                     | `resultType: "complete"`, `_meta.serverInfo`, cache hints on `tools/list`                                            |
+| Framing failures | JSON-RPC error inside a `200` | `400` (`-32020` header mismatch, `-32021` missing capability, `-32022` unsupported version) / `404` (unknown method) |
+
+**The legacy path is byte-for-byte unchanged, and that is a hard requirement rather than an
+aspiration.** A dual-era client decides which era a server speaks from the shape of its replies, so
+a legacy answer that drifted even slightly would stop the fallback every current client depends on.
+The two eras share `dispatchToolMethods` so they cannot answer the same tool call differently, and a
+test diffs legacy responses against the pre-change output to prove it.
+
+The HTTP status is part of the contract, not decoration: a dual-era client reads _the body of a
+`400`_ to decide whether a server is modern. Flattening those to `200` — which is what the legacy
+path does with every error — would read as "not a modern server" and send the client back to the
+handshake.
+
+`server/discover` advertises only modern revisions. Listing the legacy one would invite a client to
+"choose" a version that has no per-request `_meta` to speak it with.
+
 ### Modern-era probe detection
 
 The connector implements a handshake-based protocol revision. The current revision removed
