@@ -9,13 +9,18 @@
  *
  *   yarn workspace @accounter/email-ingestion-gateway inspect:eml path/to/message.eml
  *
- * Pass `--json` to emit the raw sender evidence instead. That is the exact payload
- * the gateway sends to `requestIngestControl`, so it can be fed straight into the
- * server's `classifyEmail` to check a real sample against the policy — without
- * importing across the package boundary, which this package deliberately avoids.
+ * Pass `--json` to emit the sender evidence instead. That is the exact payload the
+ * gateway sends to `requestIngestControl` — it goes through the same
+ * `toControlSenderEvidence` projection, so extractor-only fields (a quoted block's
+ * `date`) are absent here exactly as they are on the wire. It can therefore be fed
+ * straight into the server's `classifyEmail` to check a real sample against the
+ * policy, without importing across the package boundary that this package
+ * deliberately avoids. The human-readable output below prints the extractor's own
+ * view, which is a superset.
  */
 import { readFile } from 'node:fs/promises';
 import { extractFromMime } from '../src/mime-extractor.js';
+import { toControlSenderEvidence } from '../src/server-client.js';
 
 async function main(): Promise<void> {
   const path = process.argv[2];
@@ -38,7 +43,9 @@ async function main(): Promise<void> {
   const { subject, senderEvidence, documents } = result;
 
   if (asJson) {
-    console.log(JSON.stringify({ subject, senderEvidence }, null, 2));
+    console.log(
+      JSON.stringify({ subject, senderEvidence: toControlSenderEvidence(senderEvidence) }, null, 2),
+    );
     return;
   }
 

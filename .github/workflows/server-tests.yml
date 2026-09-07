@@ -92,6 +92,7 @@ jobs:
             schema.graphql
             packages/server/src/modules/**/__generated__
             packages/client/src/gql
+            packages/email-ingestion-gateway/src/gql
           key:
             graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
             'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
@@ -103,6 +104,14 @@ jobs:
         if: ${{ steps.graphql-cache.outputs.cache-hit != 'true' }}
         shell: bash
         run: yarn generate:graphql
+
+      # The gateway's wire types are derived from `src/gql/`, and the guards in
+      # `server-client.ts` only bite when something actually compiles the package.
+      # Nothing else in CI typechecks it — lint and vitest both skip type checking —
+      # so a schema/parser drift like the `forwardedBlocks[].date` one would
+      # otherwise reach production unopposed.
+      - name: Typecheck email-ingestion-gateway
+        run: yarn workspace @accounter/email-ingestion-gateway typecheck
 
       - name: Cache PgTyped Generated Types
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

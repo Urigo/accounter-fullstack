@@ -1,4 +1,5 @@
 import { Blob } from 'node:buffer';
+import { readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -62,8 +63,17 @@ const INGEST_RESPONSE = {
   },
 };
 
-function makeEmailMessage(overrides: Partial<EmailMessageLike> = {}): EmailMessageLike {
-  const rawMime = [
+// Read as text, not Buffer: the raw MIME goes into a `Blob`, and the fixtures are
+// hand-authored ASCII (base64 for any attachment bytes), so there is nothing to lose.
+function fixture(name: string): string {
+  return readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
+}
+
+function makeEmailMessage(
+  overrides: Partial<EmailMessageLike> = {},
+  rawMimeOverride?: string,
+): EmailMessageLike {
+  const rawMime = rawMimeOverride ?? [
     'Received: from smtp.example.com (127.0.0.1)',
     'by cloudflare-email.com id local-test',
     'for <invoices@acme.example.com>;',
@@ -276,6 +286,187 @@ describe('worker -> gateway -> mocked server integration', () => {
     // No email lost: it reached a human even though nothing was recorded server-side.
     expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
   });
+
+  // The input-shape half of the wire contract, asserted on the bytes that actually
+  // leave the Worker. The gateway used to send `forwardedBlocks[].date`, which
+  // `ForwardedBlockInput` does not define, so GraphQL answered 400 for every
+  // forwarded email whose quoted block carried a `Date:` line. `toMatchObject` (used
+  // by the happy-path case above, correctly, to assert *presence*) cannot see an
+  // extra key — so this pins the key set with `toEqual` plus an explicit check.
+  it('sends only the senderEvidence fields the server SDL defines', async () => {
+    const capturedRequests: CapturedGraphqlRequest[] = [];
+    mockServer = createMockGraphqlServer(capturedRequests);
+    const mockServerUrl = await listen(mockServer);
+
+    process.env.PORT = '3000';
+    process.env.EMAIL_INGESTION_V2_ENABLED = '1';
+    process.env.EMAIL_INGESTION_SHADOW_MODE = '0';
+    process.env.CF_WEBHOOK_SECRET = 'worker-shared-secret';
+    process.env.GATEWAY_SERVER_URL = mockServerUrl;
+    process.env.GATEWAY_CP_TOKEN = 'gateway-control-plane-token';
+
+    const { requestHandler } = await import('../index.js');
+    gatewayServer = createServer(requestHandler);
+    const gatewayUrl = await listen(gatewayServer);
+
+    const { default: worker } = await import('../worker.js');
+    // Two nested quoted blocks, both carrying a `Date:` line — the exact production
+    // shape that produced the 400.
+    const message = makeEmailMessage({}, fixture('forwarded-nested-provider.eml'));
+
+    await worker.email(message, {
+      CF_WEBHOOK_SECRET: 'worker-shared-secret',
+      GATEWAY_URL: gatewayUrl,
+      FALLBACK_EMAIL: 'fallback@example.com',
+      EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+    });
+
+    const controlInput = capturedRequests[0]?.body.variables?.input as Record<string, unknown>;
+    const evidence = controlInput.senderEvidence as {
+      forwardedBlocks: Array<Record<string, unknown>>;
+    };
+
+    expect(evidence.forwardedBlocks.length).toBeGreaterThan(0);
+    // The assertion runs on the JSON-parsed request body, where `JSON.stringify` has
+    // already dropped undefined-valued keys — so this is a true key-set assertion.
+    const allowed = ['from', 'fromDisplayName', 'subject', 'to'];
+    for (const block of evidence.forwardedBlocks) {
+      expect(Object.keys(block).sort()).toEqual(
+        Object.keys(block)
+          .filter(key => allowed.includes(key))
+          .sort(),
+      );
+      expect(Object.keys(block)).not.toContain('date');
+    }
+  });
+
+  // A gateway rejection must never become a Cloudflare redelivery once a copy of the
+  // message has been forwarded: Email Routing reads an unhandled exception as a
+  // temporary delivery failure and retries with growing backoff, so a *permanent*
+  // rejection loops forever. Three messages went through 4-5 redeliveries across
+  // 12 hours that way.
+  describe('gateway rejection must not escalate into a redelivery loop', () => {
+    async function startRejectingGateway(): Promise<string> {
+      mockServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+        await readJson(req);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            errors: [{ message: 'Field "date" is not defined by type "ForwardedBlockInput".' }],
+            data: null,
+          }),
+        );
+      });
+      const mockServerUrl = await listen(mockServer);
+
+      process.env.PORT = '3000';
+      process.env.EMAIL_INGESTION_V2_ENABLED = '1';
+      process.env.EMAIL_INGESTION_SHADOW_MODE = '0';
+      process.env.CF_WEBHOOK_SECRET = 'worker-shared-secret';
+      process.env.GATEWAY_SERVER_URL = mockServerUrl;
+      process.env.GATEWAY_CP_TOKEN = 'gateway-control-plane-token';
+
+      const { requestHandler } = await import('../index.js');
+      gatewayServer = createServer(requestHandler);
+      return listen(gatewayServer);
+    }
+
+    it('resolves rather than throwing when the message was already forwarded', async () => {
+      const gatewayUrl = await startRejectingGateway();
+      const { default: worker } = await import('../worker.js');
+      const message = makeEmailMessage();
+
+      await expect(
+        worker.email(message, {
+          CF_WEBHOOK_SECRET: 'worker-shared-secret',
+          GATEWAY_URL: gatewayUrl,
+          FALLBACK_EMAIL: 'fallback@example.com',
+          EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(message.forward).toHaveBeenCalledWith('forward@example.com');
+      expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
+    });
+
+    it('forwards once when FALLBACK_EMAIL equals EMAIL_FORWARD_DESTINATION', async () => {
+      const gatewayUrl = await startRejectingGateway();
+      const { default: worker } = await import('../worker.js');
+      const message = makeEmailMessage();
+
+      // The Workers runtime rejects a second forward to an address already used for
+      // the message, and that rejection used to propagate out of the handler.
+      await expect(
+        worker.email(message, {
+          CF_WEBHOOK_SECRET: 'worker-shared-secret',
+          GATEWAY_URL: gatewayUrl,
+          FALLBACK_EMAIL: 'legacy@example.com',
+          EMAIL_FORWARD_DESTINATION: 'Legacy@Example.com ',
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(message.forward).toHaveBeenCalledTimes(1);
+    });
+
+    it('resolves when the runtime rejects the fallback forward', async () => {
+      const gatewayUrl = await startRejectingGateway();
+      const { default: worker } = await import('../worker.js');
+      const message = makeEmailMessage();
+      (message.forward as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('destination address already forwarded'));
+
+      await expect(
+        worker.email(message, {
+          CF_WEBHOOK_SECRET: 'worker-shared-secret',
+          GATEWAY_URL: gatewayUrl,
+          FALLBACK_EMAIL: 'fallback@example.com',
+          EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+        }),
+      ).resolves.toBeUndefined();
+    });
+
+    it('throws only when no copy of the message was delivered', async () => {
+      const gatewayUrl = await startRejectingGateway();
+      const { default: worker } = await import('../worker.js');
+      const message = makeEmailMessage();
+      (message.forward as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('forwarding is not configured for this address'),
+      );
+
+      // Nothing reached a human and control never granted, so nothing was recorded
+      // server-side either — the one case where a redelivery beats dropping the mail.
+      await expect(
+        worker.email(message, {
+          CF_WEBHOOK_SECRET: 'worker-shared-secret',
+          GATEWAY_URL: gatewayUrl,
+          EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+        }),
+      ).rejects.toThrow(/no copy of the message was delivered/);
+    });
+  });
+
+  it('treats a hanging /health as unreachable instead of hanging the handler', async () => {
+    // An unbounded probe outlives the Worker's wall clock, and that exception is a
+    // redelivery-loop source of its own. The probe is bounded, so this falls back.
+    const neverAnswers = createServer(() => {
+      /* deliberately never responds */
+    });
+    gatewayServer = neverAnswers;
+    const gatewayUrl = await listen(neverAnswers);
+
+    const { default: worker } = await import('../worker.js');
+    const message = makeEmailMessage();
+
+    await worker.email(message, {
+      CF_WEBHOOK_SECRET: 'worker-shared-secret',
+      GATEWAY_URL: gatewayUrl,
+      FALLBACK_EMAIL: 'fallback@example.com',
+      EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+    });
+
+    expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
+  }, 20_000);
 
   it('falls back to forwarding when the gateway is unreachable', async () => {
     const { default: worker } = await import('../worker.js');

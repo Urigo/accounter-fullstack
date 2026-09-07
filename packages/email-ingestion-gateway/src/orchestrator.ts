@@ -155,7 +155,10 @@ export async function orchestrate(
     // Descriptive metadata for the server-side charge description. `sender` is the
     // From header captured as sender evidence during extraction.
     subject: input.subject,
-    sender: input.senderEvidence?.from,
+    // `?? undefined` flattens codegen's nullable input field onto `IngestInput.sender`,
+    // which is `string | undefined`. This is the one place a nullable wire type meets
+    // the gateway's non-nullable domain type.
+    sender: input.senderEvidence?.from ?? undefined,
     receivedAt: input.receivedAt,
     extractedDocuments,
   };

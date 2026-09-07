@@ -9,6 +9,7 @@ import {
   MAX_ERROR_MESSAGE_LENGTH,
   RETRY_JITTER_RATIO,
   ServerClient,
+  toControlSenderEvidence,
   type ControlInput,
   type IngestInput,
 } from '../server-client.js';
@@ -252,6 +253,80 @@ describe('ServerClient.requestControl — success', () => {
     expect(body.variables.input.senderEvidence).toEqual({
       from: 'forwarder@gmail.com',
       issuerCandidates: ['real@vendor.com'],
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toControlSenderEvidence — the extraction→wire projection
+// ---------------------------------------------------------------------------
+
+describe('toControlSenderEvidence', () => {
+  // The gateway used to assign the extractor's `SenderEvidence` straight into a
+  // `ControlSenderEvidence` slot. TypeScript accepted it (excess-property checking
+  // skips non-literal assignments) and the quoted block's `date` reached the wire,
+  // where `ForwardedBlockInput` rejected it with a 400. The projection is what keeps
+  // extractor-only fields off the wire; this pins that.
+  it('drops extractor-only fields from each forwarded block', () => {
+    const wire = toControlSenderEvidence({
+      from: 'forwarder@gmail.com',
+      fromDisplayName: 'A Forwarder',
+      replyTo: undefined,
+      originalFrom: undefined,
+      originalSender: undefined,
+      forwardedTo: undefined,
+      listId: undefined,
+      listAddresses: [],
+      forwardedBlocks: [
+        {
+          from: 'billing@vendor.example',
+          fromDisplayName: 'Vendor Billing',
+          to: ['someone@tenant.example'],
+          date: 'Wed, 29 Jul 2026 at 4:02',
+          subject: 'Your receipt',
+        },
+      ],
+      issuerCandidates: ['billing@vendor.example'],
+    });
+
+    expect(wire.forwardedBlocks).toEqual([
+      {
+        from: 'billing@vendor.example',
+        fromDisplayName: 'Vendor Billing',
+        to: ['someone@tenant.example'],
+        subject: 'Your receipt',
+      },
+    ]);
+    // `toEqual` treats a missing key and an explicit `undefined` as equal, so assert
+    // the key set directly — that is the distinction the 400 turned on.
+    expect(Object.keys(wire.forwardedBlocks![0])).not.toContain('date');
+  });
+
+  it('carries every field the server SDL does define', () => {
+    const wire = toControlSenderEvidence({
+      from: 'from@example.com',
+      fromDisplayName: 'From Name',
+      replyTo: 'reply@example.com',
+      originalFrom: 'orig-from@example.com',
+      originalSender: 'platform@example.com',
+      forwardedTo: 'alias@accounter.tax',
+      listId: 'list.example.com',
+      listAddresses: ['list@example.com'],
+      forwardedBlocks: [],
+      issuerCandidates: ['issuer@example.com'],
+    });
+
+    expect(wire).toEqual({
+      from: 'from@example.com',
+      fromDisplayName: 'From Name',
+      replyTo: 'reply@example.com',
+      originalFrom: 'orig-from@example.com',
+      originalSender: 'platform@example.com',
+      forwardedTo: 'alias@accounter.tax',
+      listId: 'list.example.com',
+      listAddresses: ['list@example.com'],
+      forwardedBlocks: [],
+      issuerCandidates: ['issuer@example.com'],
     });
   });
 });

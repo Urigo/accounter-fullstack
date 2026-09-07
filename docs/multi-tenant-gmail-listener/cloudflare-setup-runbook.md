@@ -18,120 +18,50 @@ service, managing secrets, and rolling back to the legacy Gmail listener if need
 Cloudflare Email Routing forwards inbound messages to a Worker, which then calls the gateway HTTP
 endpoint.
 
-**Step 1 — Create a Worker** that forwards the event payload to the gateway:
+**Step 1 — Deploy the Worker** that forwards the event payload to the gateway.
 
-> This snippet mirrors the maintained implementation in
-> `packages/email-ingestion-gateway/src/worker.ts`; keep the two in sync.
+**Do not copy the Worker source into this runbook.** The maintained implementation is
+[`packages/email-ingestion-gateway/src/worker.ts`](../../packages/email-ingestion-gateway/src/worker.ts)
+— deploy it with `yarn workspace @accounter/email-ingestion-gateway worker:deploy`. An inlined copy
+lived here and drifted out of sync with the real handler, which is exactly the failure mode this
+package keeps hitting; a pointer cannot drift.
 
-```javascript
-// workers/email-forwarder/index.js
-const HEX_OCTETS = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'))
+What the handler does, in order:
 
-const hex = bytes => {
-  const uint8 = new Uint8Array(bytes)
-  let out = ''
-  for (let i = 0; i < uint8.length; i++) {
-    out += HEX_OCTETS[uint8[i]]
-  }
-  return out
-}
+1. Probes `GET /health` (bounded by a timeout) before touching the message stream, so an unreachable
+   gateway leaves a clean fallback path.
+2. Reads the raw MIME into memory.
+3. Forwards the message to `EMAIL_FORWARD_DESTINATION` **unconditionally** — so a copy always exists
+   before the webhook is attempted.
+4. HMAC-SHA256-signs `${timestamp}.${rawBody}` and `POST`s the raw MIME to `${GATEWAY_URL}/webhook`
+   with the routing metadata in `x-cf-*` headers.
+5. On a non-2xx it forwards to `FALLBACK_EMAIL` (skipped when that is unset or equal to
+   `EMAIL_FORWARD_DESTINATION`) and **returns without throwing**. It throws only when no copy of the
+   message was delivered at all — Cloudflare reads an unhandled exception as a temporary delivery
+   failure and redelivers with growing backoff, so throwing on a permanent rejection loops forever.
 
-async function isGatewayReachable(gatewayUrl) {
-  try {
-    const res = await fetch(`${gatewayUrl}/health`, { method: 'GET' })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
-export default {
-  async email(message, env) {
-    // 1. Probe the gateway first (keeps the stream untouched for a clean fallback if it fails)
-    if (!(await isGatewayReachable(env.GATEWAY_URL))) {
-      if (env.FALLBACK_EMAIL) {
-        await message.forward(env.FALLBACK_EMAIL)
-        return
-      }
-      throw new Error('Gateway unreachable and FALLBACK_EMAIL is not configured')
-    }
-
-    // 2. Read the raw message into memory
-    const rawBuffer = await new Response(message.raw).arrayBuffer()
-    const rawBytes = new Uint8Array(rawBuffer)
-
-    // 3. Forward the email
-    try {
-      await message.forward(env.EMAIL_FORWARD_DESTINATION)
-      console.log(`email forwarded to ${env.EMAIL_FORWARD_DESTINATION}`)
-    } catch (e) {
-      console.error(`Forwarding failed: ${e.message}`)
-    }
-
-    // 4. Continue with your webhook logic
-    const timestamp = Math.floor(Date.now() / 1000)
-    const nonce = crypto.randomUUID()
-
-    // Compute HMAC-SHA256 over `${timestamp}.${rawBody}`, where rawBody is the
-    // raw MIME message — the exact bytes sent as the request body. The gateway
-    // verifies the signature over the body it receives, then parses the MIME,
-    // extracts attachments, and computes the SHA-256 content hash itself. The
-    // worker therefore only forwards the message plus routing metadata (in
-    // headers); no hash is sent.
-    const key = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(env.CF_WEBHOOK_SECRET),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    )
-    const prefix = new TextEncoder().encode(timestamp + '.')
-    const payload = new Uint8Array(prefix.length + rawBytes.length)
-    payload.set(prefix, 0)
-    payload.set(rawBytes, prefix.length)
-    const signature = hex(await crypto.subtle.sign('HMAC', key, payload))
-
-    const res = await fetch(`${env.GATEWAY_URL}/webhook`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'message/rfc822',
-        'x-cf-timestamp': String(timestamp),
-        'x-cf-signature': signature,
-        'x-cf-nonce': nonce,
-        // Routing metadata — the body itself is the raw MIME message.
-        'x-cf-recipient': message.to,
-        'x-cf-message-id': message.headers.get('message-id') ?? nonce,
-        'x-cf-received-at': new Date().toISOString(),
-        'x-correlation-id': nonce
-      },
-      // Send the raw MIME bytes as the request body.
-      body: rawBytes
-    })
-
-    if (!res.ok) {
-      // Gateway is reachable but rejected the request — e.g. it is disabled
-      // (EMAIL_INGESTION_V2_ENABLED=0 returns 503 during rollback) or an auth
-      // check failed. Forward to the legacy Gmail inbox so no email is lost
-      // during rollback, and only throw when no fallback exists. This forwards
-      // *after* the read on a best-effort basis — verify it forwards in the
-      // Cloudflare runtime via the §6 staging smoke tests.
-      if (env.FALLBACK_EMAIL) {
-        await message.forward(env.FALLBACK_EMAIL)
-        return
-      }
-      throw new Error('Gateway returned status ' + res.status)
-    }
-  }
-}
-```
+Every branch emits one structured `worker:*` JSON line; read them with
+`wrangler tail --name email-ingestion-gateway-worker --format pretty`.
 
 **Step 2 — Add Worker secrets** in the Cloudflare dashboard or with Wrangler:
 
 ```bash
-wrangler secret put CF_WEBHOOK_SECRET # paste the shared secret value
-wrangler secret put GATEWAY_URL       # e.g. https://gateway.example.com
-wrangler secret put FALLBACK_EMAIL    # legacy Gmail inbox for rollback fallback
+wrangler secret put CF_WEBHOOK_SECRET         # paste the shared secret value
+wrangler secret put GATEWAY_URL               # e.g. https://gateway.example.com
+wrangler secret put EMAIL_FORWARD_DESTINATION # archive inbox; every message is forwarded here
+wrangler secret put FALLBACK_EMAIL            # legacy Gmail inbox for rollback fallback
 ```
+
+Use **secrets**, not plain-text variables. `wrangler.jsonc` declares no `vars`, so `wrangler deploy`
+reconciles bindings against the config file and **deletes any dashboard Text variable** while
+leaving secrets intact. Verify with `wrangler secret list --name email-ingestion-gateway-worker`:
+anything visible in the dashboard but absent from that list is Text and will not survive the next
+deploy. A silently-dropped `FALLBACK_EMAIL` is what turns a permanent gateway rejection into a
+Cloudflare redelivery loop.
+
+Keep `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` **distinct**. When they match, the Worker
+skips the fallback forward — the runtime rejects a second forward to an address already used for the
+message — and logs `worker:fallback_skipped` with `cause: FALLBACK_EQUALS_FORWARD_DESTINATION`.
 
 **Step 3 — Wire email addresses** in Cloudflare Email Routing:
 
