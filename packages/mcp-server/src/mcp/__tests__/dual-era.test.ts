@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
-import { dispatchMcpBodyDualEra, MCP_PROTOCOL_VERSION } from '../handler.js';
+import { dispatchMcpBodyDualEra, MCP_PROTOCOL_VERSION, normalizeHeaders } from '../handler.js';
 import { McpErrorCode } from '../jsonrpc.js';
 import {
   MODERN_PROTOCOL_VERSION,
@@ -247,5 +247,44 @@ describe('Mcp-Name header', () => {
 
     // Reaches the tool layer (unknown tool) rather than failing header checks.
     expect(status).toBe(200);
+  });
+});
+
+describe('repeated headers', () => {
+  it('collapses what Node hands us for a repeated header', () => {
+    expect(
+      normalizeHeaders({ a: 'x', b: ['y'], conflicting: ['p', 'q'], duplicated: ['z', 'z'] }),
+    ).toEqual({ a: 'x', b: 'y', conflicting: 'p, q', duplicated: 'z' });
+  });
+
+  /**
+   * Node merges a repeated header into an array. Passing `req.headers` through
+   * an unchecked cast made a *present* header read as absent, so a request that
+   * carried the header — duplicated by a proxy, say — was rejected for missing
+   * it. Normalizing at the boundary is what makes these two cases behave.
+   */
+  it('accepts a header repeated with the same value', async () => {
+    const { raw, headers } = modern('tools/list');
+    const { status } = await dispatchMcpBodyDualEra(raw, {
+      ...context(headers),
+      // What Node hands us for `MCP-Protocol-Version: X` sent twice, after the
+      // boundary collapses it.
+      headers: { ...headers, 'mcp-protocol-version': MODERN_PROTOCOL_VERSION },
+    });
+
+    expect(status).toBe(200);
+  });
+
+  it('rejects a header repeated with conflicting values', async () => {
+    const { raw, headers } = modern('tools/list');
+    const { response, status } = await dispatchMcpBodyDualEra(raw, {
+      ...context(headers),
+      // A request that says two different things is exactly what header/body
+      // validation exists to catch, so this must fail rather than pick one.
+      headers: { ...headers, 'mcp-protocol-version': `${MODERN_PROTOCOL_VERSION}, 2025-06-18` },
+    });
+
+    expect(status).toBe(400);
+    expect((response as { error: { code: number } }).error.code).toBe(McpErrorCode.HeaderMismatch);
   });
 });

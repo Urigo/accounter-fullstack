@@ -174,13 +174,13 @@ Carries `method`, `protocolVersion`, `clientName`, `clientVersion`, `userId`, `c
 **HTTP statuses are era-specific, which matters when reading `request completed` lines beside
 these:**
 
-| Status | Meaning                                                                                                                          |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `200`  | Served — either era. A legacy JSON-RPC error also rides inside a `200`                                                           |
-| `400`  | Modern framing failure: `-32020` header/body mismatch, `-32021` missing client capability, `-32022` unsupported protocol version |
-| `404`  | Modern request for a method this server does not implement                                                                       |
-| `405`  | `GET`/`DELETE` on `/mcp` — neither is part of this server's transport                                                            |
-| `202`  | Notification accepted                                                                                                            |
+| Status | Meaning                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------- |
+| `200`  | Served — either era. A legacy JSON-RPC error also rides inside a `200`                       |
+| `400`  | Modern framing failure: `-32020` header/body mismatch, `-32022` unsupported protocol version |
+| `404`  | Modern request for a method this server does not implement                                   |
+| `405`  | `GET`/`DELETE` on `/mcp` — neither is part of this server's transport                        |
+| `202`  | Notification accepted                                                                        |
 
 A `400` here is **not** an incident on its own: a client probing a revision we do not implement gets
 `-32022` with the list we do, and retries. Watch instead for a _client that never succeeds after

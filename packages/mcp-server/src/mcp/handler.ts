@@ -1,4 +1,4 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import {
   getAuthContext,
   IdentityMappingError,
@@ -612,6 +612,32 @@ function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
   });
 }
 
+/**
+ * Collapse Node's `string | string[]` header values to single strings.
+ *
+ * Node merges a repeated header into an array, so casting `req.headers` to
+ * `Record<string, string>` makes a *present* header read as absent — and the
+ * modern path would then reject the request for a missing header it was in fact
+ * sent. A proxy duplicating a header is enough to trigger that.
+ *
+ * A repeat carrying one distinct value is that value. A repeat carrying
+ * conflicting values is joined, so it fails header/body comparison with both
+ * shown — which is the right outcome: a request that says two different things
+ * is precisely what this validation exists to catch.
+ */
+export function normalizeHeaders(headers: IncomingHttpHeaders): Record<string, string | undefined> {
+  const normalized: Record<string, string | undefined> = {};
+  for (const [name, value] of Object.entries(headers)) {
+    if (typeof value === 'string') {
+      normalized[name] = value;
+    } else if (Array.isArray(value)) {
+      const distinct = [...new Set(value)];
+      normalized[name] = distinct.length === 1 ? distinct[0] : distinct.join(', ');
+    }
+  }
+  return normalized;
+}
+
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(body));
@@ -777,7 +803,7 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
         : undefined,
     // Node lower-cases incoming header names, which is what the modern path's
     // case-insensitive comparison relies on.
-    headers: req.headers as Record<string, string | undefined>,
+    headers: normalizeHeaders(req.headers),
     allowlist: env.server.toolAllowlist,
     writeToolsEnabled: env.server.writeToolsEnabled,
   });

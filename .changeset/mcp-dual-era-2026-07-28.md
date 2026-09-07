@@ -31,7 +31,7 @@ captures legacy `initialize` / `tools/list` / `ping` responses and diffs them ag
 responses built from `main`. 46,310 bytes, identical.
 
 HTTP status is part of the contract rather than decoration. Modern framing failures return `400`
-(`-32020` header mismatch, `-32021` missing client capability, `-32022` unsupported version, with the
+(`-32020` header mismatch, `-32022` unsupported version, with the
 `supported` list so a client can retry) and `404` for an unimplemented method — because a dual-era
 client reads *the body of a 400* to decide whether a server is modern. Flattening those to `200`,
 which is what the legacy path does with every error, would read as "not modern" and send the client

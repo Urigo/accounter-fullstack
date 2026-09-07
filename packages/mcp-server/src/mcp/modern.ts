@@ -55,8 +55,21 @@ export const HEADER_PROTOCOL_VERSION = 'mcp-protocol-version';
 export const HEADER_METHOD = 'mcp-method';
 export const HEADER_NAME = 'mcp-name';
 
-/** Methods that carry a name in `params.name`, and so require `Mcp-Name`. */
-const NAME_BEARING_METHODS = new Set(['tools/call', 'resources/read', 'prompts/get']);
+/**
+ * Methods requiring `Mcp-Name`, and which body field it mirrors.
+ *
+ * The transport's header table maps them differently — `tools/call` and
+ * `prompts/get` mirror `params.name`, `resources/read` mirrors `params.uri` —
+ * so a single "name-bearing" set would validate the wrong field for one of
+ * them. Only `tools/call` is reachable today, since this server implements no
+ * resources or prompts, but writing the mapping out means adding one later
+ * cannot silently compare against a field it does not have.
+ */
+const NAME_HEADER_SOURCE: ReadonlyMap<string, 'name' | 'uri'> = new Map([
+  ['tools/call', 'name'],
+  ['prompts/get', 'name'],
+  ['resources/read', 'uri'],
+]);
 
 export const SERVER_DISCOVER_METHOD = 'server/discover';
 
@@ -172,11 +185,11 @@ export function validateHeaders(
     return `${HEADER_METHOD} header value '${methodHeader}' does not match body value '${request.method}'`;
   }
 
-  if (!NAME_BEARING_METHODS.has(request.method)) {
+  const nameSource = NAME_HEADER_SOURCE.get(request.method);
+  if (nameSource === undefined) {
     return null;
   }
-  const params = asRecord(request.params);
-  const bodyName = asString(params.name) ?? asString(params.uri);
+  const bodyName = asString(asRecord(request.params)[nameSource]);
   const nameHeader = asString(headers[HEADER_NAME]);
   if (nameHeader === null) {
     return `${HEADER_NAME} header is required for ${request.method}`;

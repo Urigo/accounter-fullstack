@@ -28,13 +28,15 @@ export const JsonRpcErrorCode = {
  * these are deliberately separate from {@link JsonRpcErrorCode}, which holds
  * the transport-level codes we are free to use anywhere.
  *
- * All three are modern-era only. The legacy handshake path never emits them.
+ * Modern-era only; the legacy handshake path never emits them. `-32021`
+ * (`MissingRequiredClientCapability`) is deliberately absent: it is for a
+ * server that needs a capability the client did not declare, and this one
+ * serves only tools, which require none. Defining a reserved code with no code
+ * path behind it invites someone to reach for it with the wrong meaning.
  */
 export const McpErrorCode = {
   /** Headers disagree with the body, or a required header is missing. */
   HeaderMismatch: -32_020,
-  /** The request needs a capability the client did not declare. */
-  MissingRequiredClientCapability: -32_021,
   /** The requested protocol revision is one this server does not implement. */
   UnsupportedProtocolVersion: -32_022,
 } as const;

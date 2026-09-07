@@ -384,13 +384,13 @@ This server answers both MCP eras on one endpoint, choosing per request exactly 
 prescribes: **a request carrying modern per-request `_meta` gets modern semantics; anything else —
 an `initialize` handshake included — gets legacy.**
 
-|                  | Legacy                        | Modern                                                                                                               |
-| ---------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Opens with       | `initialize`                  | per-request `_meta` protocol version                                                                                 |
-| Revision served  | `2025-06-18`                  | `2026-07-28`                                                                                                         |
-| Discovery        | `initialize` result           | `server/discover`                                                                                                    |
-| Result shape     | as before                     | `resultType: "complete"`, `_meta.serverInfo`, cache hints on `tools/list`                                            |
-| Framing failures | JSON-RPC error inside a `200` | `400` (`-32020` header mismatch, `-32021` missing capability, `-32022` unsupported version) / `404` (unknown method) |
+|                  | Legacy                        | Modern                                                                                  |
+| ---------------- | ----------------------------- | --------------------------------------------------------------------------------------- |
+| Opens with       | `initialize`                  | per-request `_meta` protocol version                                                    |
+| Revision served  | `2025-06-18`                  | `2026-07-28`                                                                            |
+| Discovery        | `initialize` result           | `server/discover`                                                                       |
+| Result shape     | as before                     | `resultType: "complete"`, `_meta.serverInfo`, cache hints on `tools/list`               |
+| Framing failures | JSON-RPC error inside a `200` | `400` (`-32020` header mismatch, `-32022` unsupported version) / `404` (unknown method) |
 
 **The legacy path is byte-for-byte unchanged, and that is a hard requirement rather than an
 aspiration.** A dual-era client decides which era a server speaks from the shape of its replies, so
