@@ -1,7 +1,6 @@
 import { useMemo, type ReactElement, type ReactNode } from 'react';
 import {
   ForeignSecuritiesChargeInfoFragmentDoc,
-  TransactionForTransactionsTableFieldsFragmentDoc,
   type ForeignSecuritiesChargeInfoFragment,
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
@@ -9,16 +8,7 @@ import {
   formatSecurityDate,
   SecurityExecutionsTable,
 } from '../../securities/security-executions-table.js';
-import {
-  Account,
-  Amount,
-  DebitDate,
-  Description,
-  EventDate,
-  SourceID,
-} from '../../transactions-table/cells/index.js';
 import { Badge } from '../../ui/badge.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,10 +31,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
           isEtf
           isForeign
           asOfDate
-        }
-        transactions {
-          id
-          ...TransactionForTransactionsTableFields
         }
         executions {
           id
@@ -114,7 +100,6 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
           </div>
         </div>
       )}
-      <SecurityTransactionsTable transactions={security.transactions} />
       {security.executions.length > 0 && (
         <TableSection title="Portfolio activity">
           <SecurityExecutionsTable rows={security.executions.map(execution => ({ execution }))} />
@@ -136,67 +121,3 @@ const TableSection = ({
     {children}
   </div>
 );
-
-const SecurityTransactionsTable = ({
-  transactions,
-}: {
-  transactions: ChargeSecurity['transactions'];
-}): ReactNode => {
-  const rows = useMemo(
-    () =>
-      transactions.map(transaction =>
-        getFragmentData(TransactionForTransactionsTableFieldsFragmentDoc, transaction),
-      ),
-    [transactions],
-  );
-
-  return rows.length ? (
-    <TableSection title="Bank transactions">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Event Date</TableHead>
-            <TableHead>Debit Date</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Account</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Reference#</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map(transaction => {
-            const extendedTransaction = {
-              ...transaction,
-              onUpdate: () => void 0,
-              editTransaction: () => void 0,
-              enableEdit: false,
-              enableChargeLink: false,
-            };
-            return (
-              <TableRow key={transaction.id}>
-                <TableCell>
-                  <EventDate transaction={extendedTransaction} />
-                </TableCell>
-                <TableCell>
-                  <DebitDate transaction={extendedTransaction} />
-                </TableCell>
-                <TableCell>
-                  <Amount transaction={extendedTransaction} />
-                </TableCell>
-                <TableCell>
-                  <Account transaction={extendedTransaction} />
-                </TableCell>
-                <TableCell>
-                  <Description transaction={extendedTransaction} />
-                </TableCell>
-                <TableCell>
-                  <SourceID transaction={extendedTransaction} />
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </TableSection>
-  ) : null;
-};
