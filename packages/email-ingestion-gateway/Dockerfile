@@ -1,5 +1,5 @@
 # /packages/email-ingestion-gateway/Dockerfile
-FROM mcr.microsoft.com/playwright:v1.62.1 AS builder
+FROM mcr.microsoft.com/playwright:v1.63.0 AS builder
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ RUN yarn workspace @accounter/email-ingestion-gateway build
 RUN yarn workspaces focus @accounter/email-ingestion-gateway --production
 
 # --- Production Stage ---
-FROM mcr.microsoft.com/playwright:v1.62.1
+FROM mcr.microsoft.com/playwright:v1.63.0
 
 WORKDIR /app
 ENV NODE_ENV=production
