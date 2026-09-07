@@ -34,49 +34,31 @@ const BranchTypeCodeSchema = z.union([z.literal(0), z.literal(2)]);
 
 const MymailEntitlementSwitchSchema = z.union([z.literal(0), z.literal(1)]);
 
-/** Fields both portals return. */
-const accountDataItemShape = {
-  accountAgreementOpeningDate: AccountAgreementOpeningDateSchema,
-  accountClosingReasonCode: AccountClosingReasonCodeSchema,
-  accountDealDate: AccountDealDateSchema,
-  accountName: z.string().optional(),
-  accountNumber: AccountNumberSchema,
-  accountUpdateDate: AccountUpdateDateSchema,
-  bankNumber: BankNumberSchema,
-  branchNumber: BranchNumberSchema,
-  branchTypeCode: BranchTypeCodeSchema,
-  extendedBankNumber: ExtendedBankNumberSchema,
-  kodHarshaatPeilut: KodHarshaatPeilutSchema,
-  metegDoarNet: MetegDoarNetSchema,
-  mymailEntitlementSwitch: MymailEntitlementSwitchSchema,
-  partyAccountInvolvementCode: PartyAccountInvolvementCodeSchema,
-  partyPreferredIndication: PartyPreferredIndicationSchema,
-  productLabel: ProductLabelSchema,
-  serviceAuthorizationDesc: ServiceAuthorizationDescSchema,
-} as const;
-
-/**
- * Fields only the personal portal (`isBusiness === false`) returns. Both schemas are strict, so
- * these are rejected on a business response rather than silently ignored.
- */
-const personalOnlyAccountDataItemShape = {
-  defaultSwitch: z.boolean().optional(),
-  isClosed: z.boolean(),
-  isPinned: z.boolean(),
-} as const;
-
-export const AccountDataItemBusinessSchema = z.object(accountDataItemShape).strict();
-
-export const AccountDataItemPersonalSchema = z
-  .object({ ...accountDataItemShape, ...personalOnlyAccountDataItemShape })
+export const AccountDataItemSchema = z
+  .object({
+    accountAgreementOpeningDate: AccountAgreementOpeningDateSchema,
+    accountClosingReasonCode: AccountClosingReasonCodeSchema,
+    accountDealDate: AccountDealDateSchema,
+    accountName: z.string().optional(),
+    accountNumber: AccountNumberSchema,
+    accountUpdateDate: AccountUpdateDateSchema,
+    bankNumber: BankNumberSchema,
+    branchNumber: BranchNumberSchema,
+    branchTypeCode: BranchTypeCodeSchema,
+    extendedBankNumber: ExtendedBankNumberSchema,
+    kodHarshaatPeilut: KodHarshaatPeilutSchema,
+    metegDoarNet: MetegDoarNetSchema,
+    mymailEntitlementSwitch: MymailEntitlementSwitchSchema,
+    partyAccountInvolvementCode: PartyAccountInvolvementCodeSchema,
+    partyPreferredIndication: PartyPreferredIndicationSchema,
+    productLabel: ProductLabelSchema,
+    serviceAuthorizationDesc: ServiceAuthorizationDescSchema,
+    defaultSwitch: z.boolean().optional(),
+    isClosed: z.boolean(),
+    isPinned: z.boolean(),
+  })
   .strict();
 
-export const HapoalimAccountDataBusinessSchema = z.array(AccountDataItemBusinessSchema).min(1);
+export const HapoalimAccountDataSchema = z.array(AccountDataItemSchema).min(1);
 
-export const HapoalimAccountDataPersonalSchema = z.array(AccountDataItemPersonalSchema).min(1);
-
-/** An account entry from either portal: the personal-only fields are optional. */
-export type HapoalimAccountDataItem = z.infer<typeof AccountDataItemBusinessSchema> &
-  Partial<z.infer<typeof AccountDataItemPersonalSchema>>;
-
-export type HapoalimAccountData = HapoalimAccountDataItem[];
+export type HapoalimAccountData = z.infer<typeof HapoalimAccountDataSchema>;

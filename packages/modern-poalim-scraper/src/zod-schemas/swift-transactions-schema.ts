@@ -30,6 +30,8 @@ const SwiftItemSchema = z
     referenceNumber: z.string(),
     transferCatenatedId: z.string(),
     dataOriginCode: z.number().int().min(1).max(2),
+    documentTypeCode: z.null(),
+    swiftUrl: z.null(),
   })
   .strict();
 
