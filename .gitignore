@@ -7,6 +7,8 @@ storybook-static/
 **/gql/
 .idea/
 schema.graphql
+.vitest/
+coverage/
 docker/.*
 **/.mesh
 **/mesh-artifacts

@@ -13,28 +13,25 @@ if (nodeMajor >= 24) {
 
 const __dirname = import.meta.dirname;
 
+const alias = {
+  '@': resolve(__dirname, 'packages/client/src'),
+  '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
+  '@accounter/modern-poalim-scraper': resolve(
+    __dirname,
+    'packages/modern-poalim-scraper/src/index.ts',
+  ),
+};
+
+// Vitest 5 defaults `extends` to true, so every inline project below inherits the
+// root `test` options (and the root Vite config, plugins included). Options common
+// to all projects are declared once here — repeating them per project would append
+// duplicates, since inherited arrays are merged rather than overridden.
 export default defineConfig({
   plugins: [tsconfigPaths()],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'packages/client/src'),
-      '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
-      '@accounter/modern-poalim-scraper': resolve(
-        __dirname,
-        'packages/modern-poalim-scraper/src/index.ts',
-      ),
-    },
-  },
+  resolve: { alias },
   test: {
     globals: true,
-    alias: {
-      '@': resolve(__dirname, 'packages/client/src'),
-      '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
-      '@accounter/modern-poalim-scraper': resolve(
-        __dirname,
-        'packages/modern-poalim-scraper/src/index.ts',
-      ),
-    },
+    alias,
     exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
     globalSetup: ['./scripts/vitest-global-setup.ts'],
@@ -44,27 +41,10 @@ export default defineConfig({
           name: 'unit',
           include: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.tsx', '**/*.spec.tsx'],
           exclude: [
-            ...defaultExclude,
-            '**/dist/**',
-            '**/build/**',
             'packages/server/src/__tests__/**',
             'packages/server/src/demo-fixtures/**',
             '**/*.integration.test.ts',
           ],
-          globals: true,
-          alias: {
-            '@': resolve(__dirname, 'packages/client/src'),
-            '@accounter/pcn874-generator': resolve(
-              __dirname,
-              'packages/pcn874-generator/src/index.ts',
-            ),
-            '@accounter/modern-poalim-scraper': resolve(
-              __dirname,
-              'packages/modern-poalim-scraper/src/index.ts',
-            ),
-          },
-          setupFiles: ['./scripts/vitest-setup.ts'],
-          globalSetup: ['./scripts/vitest-global-setup.ts'],
         },
       },
       {
@@ -77,39 +57,14 @@ export default defineConfig({
             'packages/email-ingestion-gateway/src/**/*.integration.test.ts',
             'packages/scraper-app/src/**/*.integration.test.ts',
           ],
-          exclude: [
-            ...defaultExclude,
-            '**/dist/**',
-            '**/build/**',
-            'packages/server/src/demo-fixtures/**',
-          ],
-          globals: true,
-          alias: {
-            '@': resolve(__dirname, 'packages/client/src'),
-            '@accounter/pcn874-generator': resolve(
-              __dirname,
-              'packages/pcn874-generator/src/index.ts',
-            ),
-          },
-          setupFiles: ['./scripts/vitest-setup.ts'],
-          globalSetup: ['./scripts/vitest-global-setup.ts'],
+          exclude: ['packages/server/src/demo-fixtures/**'],
         },
       },
       {
         test: {
           name: 'demo-seed',
           include: ['packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts'],
-          exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
-          globals: true,
-          alias: {
-            '@': resolve(__dirname, 'packages/client/src'),
-            '@accounter/pcn874-generator': resolve(
-              __dirname,
-              'packages/pcn874-generator/src/index.ts',
-            ),
-          },
-          setupFiles: ['./scripts/vitest-setup.ts', './scripts/vitest-demo-seed-setup.ts'],
-          globalSetup: ['./scripts/vitest-global-setup.ts'],
+          setupFiles: ['./scripts/vitest-demo-seed-setup.ts'],
         },
       },
     ],
