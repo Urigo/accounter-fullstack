@@ -1,13 +1,31 @@
 name: Server Tests
 
 on:
+  # Allow running the suite on demand, e.g. against a branch whose PR the path
+  # filter below skipped, or to re-run after a flake without an empty commit.
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
     paths:
-      - 'packages/server/**'
-      - 'packages/migrations/**'
-      - 'packages/email-ingestion-gateway/**'
+      # Every workspace package, because this job runs the whole suite: its
+      # `yarn test:integration` covers the unit, client and integration projects, and
+      # it is currently the only workflow that runs vitest at all. Listing individual
+      # packages here reads as a scope this job does not actually have, and each
+      # omission fails silently — an unmatched PR skips the job instead of failing it.
+      - 'packages/**'
+      # Root files that decide what these tests are and how they run: dependency
+      # versions, the vitest projects/setup this job invokes, the codegen that
+      # produces the types under test, and the toolchain they run on.
+      - 'package.json'
+      - 'yarn.lock'
+      - 'vitest.config.ts'
+      - 'scripts/vitest-*.ts'
+      - 'codegen.ts'
+      - 'graphql.config.js'
+      - 'tsconfig.json'
+      - '.node-version'
+      - 'docker/pgconfig.json'
       - '.github/workflows/server-tests.yml'
 
 jobs:
@@ -111,7 +129,7 @@ jobs:
         run: yarn generate:sql
 
       - name: Run Server Tests (Integration)
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
         env:
           POSTGRES_HOST: 127.0.0.1
           POSTGRES_PORT: 5432
@@ -136,7 +154,7 @@ jobs:
           ALLOW_DEMO_SEED: '1'
           DEBUG: ''
         run: |
-          yarn vitest run --project unit --project integration --project demo-seed --reporter=default --coverage
+          yarn vitest run --project unit --project client --project integration --project demo-seed --reporter=default --coverage
 
       - name: Upload Coverage
         if: always()
