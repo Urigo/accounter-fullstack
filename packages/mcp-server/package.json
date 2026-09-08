@@ -47,7 +47,7 @@
     "@opentelemetry/sdk-node": "0.222.0",
     "@opentelemetry/semantic-conventions": "1.43.0",
     "dotenv": "17.4.2",
-    "jose": "6.2.10",
+    "jose": "6.2.12",
     "zod": "4.5.4"
   },
   "devDependencies": {
