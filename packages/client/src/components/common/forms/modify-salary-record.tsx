@@ -4,7 +4,6 @@ import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
-import { MonthPickerInput } from '@mantine/dates';
 import {
   AllEmployeesByEmployerDocument,
   AllPensionFundsDocument,
@@ -19,6 +18,7 @@ import {
 } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { CurrencyInput, SimpleGrid } from '../index.js';
@@ -172,7 +172,10 @@ export const ModifySalaryRecord = ({
     }
   };
 
-  function onSelectMonth(date: Date): void {
+  function onSelectMonth(date: Date | null): void {
+    if (!date) {
+      return;
+    }
     setValue('month', format(date, 'yyyy-MM-dd') as TimelessDateString, {
       shouldDirty: true,
       shouldTouch: true,
@@ -189,7 +192,6 @@ export const ModifySalaryRecord = ({
                 defaultDate={defaultMonth ? new Date(defaultMonth) : undefined}
                 defaultValue={defaultMonth ? new Date(defaultMonth) : undefined}
                 onChange={onSelectMonth}
-                popoverProps={{ withinPortal: true }}
               />
               <Controller
                 name="employer"

@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Filter } from 'lucide-react';
-import { YearPickerInput } from '@mantine/dates';
 import { PopUpModal } from '../../common/index.js';
+import { YearPickerInput } from '../../common/inputs/year-picker-input.js';
 import { Button } from '../../ui/button.js';
 
 interface TaxReportFilterProps {
@@ -27,7 +27,6 @@ export function TaxReportFilter({
             label="Change report year"
             value={new Date(year, 0, 1)}
             onChange={date => date && setYear(date?.getFullYear())}
-            popoverProps={{ withinPortal: true }}
             minDate={new Date(2010, 0, 1)}
             maxDate={new Date()}
           />
@@ -40,7 +39,6 @@ export function TaxReportFilter({
                 date.map(date => date.getFullYear()).filter(refYear => year !== refYear),
               )
             }
-            popoverProps={{ withinPortal: true }}
             minDate={new Date(2010, 0, 1)}
             maxDate={new Date()}
           />

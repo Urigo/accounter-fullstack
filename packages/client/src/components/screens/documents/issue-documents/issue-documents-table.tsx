@@ -4,7 +4,6 @@ import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { MonthPickerInput } from '@mantine/dates';
 import { ROUTES } from '@/router/routes.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/fragment-masking.js';
 import {
@@ -21,6 +20,7 @@ import {
   convertNewDocumentDraftFragmentIntoPreviewDocumentInput,
   type PreviewDocumentInput,
 } from '../../../common/index.js';
+import { MonthPickerInput } from '../../../common/inputs/month-picker-input.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
@@ -158,11 +158,13 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
             <Label>Issue Month:</Label>
             <MonthPickerInput
               value={new Date(issueMonth)}
-              onChange={(date: Date) => {
+              onChange={date => {
+                if (!date) {
+                  return;
+                }
                 const month = new Date(date.getFullYear(), date.getMonth(), 15);
                 setIssueMonth(format(month, 'yyyy-MM-dd') as TimelessDateString);
               }}
-              popoverProps={{ withinPortal: true }}
             />
           </div>
           <Table>

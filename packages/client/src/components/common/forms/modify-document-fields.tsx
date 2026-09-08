@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, type UseFormReturn } from 'react-hook-form';
-import { MonthPickerInput } from '@mantine/dates';
 import {
   Currency,
   DocumentType,
@@ -12,6 +11,7 @@ import {
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
+import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
@@ -261,7 +261,6 @@ export const ModifyDocumentFields = ({
                   field.onChange(date ? `${format(date, 'yyyy-MM')}-15` : undefined);
                 }}
                 error={fieldState.error?.message}
-                popoverProps={{ withinPortal: true }}
               />
             )}
           />

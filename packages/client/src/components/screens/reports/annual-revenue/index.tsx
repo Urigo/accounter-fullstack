@@ -3,12 +3,12 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Download } from 'lucide-react';
 import { useQuery } from 'urql';
-import { YearPickerInput } from '@mantine/dates';
 import { Button } from '@/components/ui/button.js';
 import { Card } from '@/components/ui/card.js';
 import { AnnualRevenueReportScreenDocument, Currency } from '../../../../gql/graphql.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { AccounterLoader } from '../../../common/index.js';
+import { YearPickerInput } from '../../../common/inputs/year-picker-input.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import { AnnualRevenueCountry } from './country.js';
 import { formatCurrency } from './utils.js';
@@ -146,7 +146,6 @@ export const AnnualRevenueReport = (): ReactElement => {
         <YearPickerInput
           value={new Date(year, 0, 1)}
           onChange={date => date && setYear(date?.getFullYear())}
-          popoverProps={{ withinPortal: true }}
           minDate={new Date(2010, 0, 1)}
           maxDate={new Date()}
         />

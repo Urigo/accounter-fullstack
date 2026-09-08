@@ -305,6 +305,7 @@ export default [
       'packages/client/src/components/charge-matching/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/charge-matches/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/clients/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/contracts/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/financial-accounts/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/landing/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/layout/**/*.{,c,m}{j,t}s{,x}',
