@@ -1,5 +1,4 @@
 import { type ReactElement } from 'react';
-import { Group, Text } from '@mantine/core';
 import { ListCapsule } from '../../common/index.js';
 
 type Props = {
@@ -14,16 +13,14 @@ export const Tags = ({ tags }: Props): ReactElement => {
   return (
     <ListCapsule
       items={tags.map(t => (
-        <Group key={t.id}>
+        <div key={t.id} className="flex items-center gap-4">
           <div>
             {t.namePath && (
-              <Text size="xs" opacity={0.65}>
-                {`${t.namePath.join(' > ')} >`}
-              </Text>
+              <div className="text-xs opacity-65">{`${t.namePath.join(' > ')} >`}</div>
             )}
-            <Text size="sm">{t.name}</Text>
+            <div className="text-sm">{t.name}</div>
           </div>
-        </Group>
+        </div>
       ))}
     />
   );

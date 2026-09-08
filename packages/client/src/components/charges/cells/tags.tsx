@@ -1,5 +1,4 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { Group, Text } from '@mantine/core';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, ListCapsule, SimilarChargesByIdModal } from '../../common/index.js';
 import { Indicator } from '../../ui/indicator.js';
@@ -55,16 +54,14 @@ export const Tags = ({
       <Indicator inline size={12} disabled={!isMissing} color="red">
         <ListCapsule
           items={tags.map(t => (
-            <Group key={t.id}>
+            <div key={t.id} className="flex items-center gap-4">
               <div>
                 {t.namePath && (
-                  <Text size="xs" opacity={0.65}>
-                    {`${t.namePath.join(' > ')} >`}
-                  </Text>
+                  <div className="text-xs opacity-65">{`${t.namePath.join(' > ')} >`}</div>
                 )}
-                <Text size="sm">{t.name}</Text>
+                <div className="text-sm">{t.name}</div>
               </div>
-            </Group>
+            </div>
           ))}
           extraClassName={hasAlternative ? 'bg-yellow-400' : undefined}
         />

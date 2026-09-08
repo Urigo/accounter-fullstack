@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Loader, Progress, ThemeIcon } from '@mantine/core';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { encodeFilters, ROUTES } from '@/router/routes.js';
 import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
@@ -12,6 +11,7 @@ import { ChargesTable } from './charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
 import { Button } from './ui/button.js';
+import { Progress } from './ui/progress.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -109,13 +109,10 @@ export const ChargesLedgerValidation = (): ReactElement => {
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5 items-center">
-        <Progress
-          value={progress}
-          label={`${progress?.toFixed(2)}%`}
-          size="xl"
-          animate={progress < 100}
-          className="min-w-52"
-        />
+        <div className="flex min-w-52 items-center gap-2">
+          <Progress value={progress} className="h-4 flex-1" />
+          <span className="text-xs tabular-nums">{`${progress?.toFixed(2)}%`}</span>
+        </div>
         <ChargesFilters
           filter={filter}
           setFilter={onFilterChange}
@@ -168,12 +165,12 @@ export const ChargesLedgerValidation = (): ReactElement => {
             isAllOpened={isAllOpened}
           />
           <div className="flex flex-row justify-center my-2">
-            {progress > 0 && progress < 100 && <Loader />}
+            {progress > 0 && progress < 100 && <Loader2 className="size-6 animate-spin" />}
             {progress === 100 &&
               !data?.chargesWithLedgerChanges.filter(res => !!res.charge).length && (
-                <ThemeIcon radius="xl" size="xl" color="green">
+                <span className="inline-flex size-11 items-center justify-center rounded-full bg-green-500 text-white">
                   <Check />
-                </ThemeIcon>
+                </span>
               )}
           </div>
         </>
