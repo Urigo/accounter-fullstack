@@ -1,12 +1,11 @@
-import type { ReactElement, RefAttributes } from 'react';
-import { Image, type ImageProps } from '@mantine/core';
+import type { ComponentProps, ReactElement } from 'react';
 
 export type IconName = 'logo';
 
-interface IconProps extends ImageProps, RefAttributes<HTMLDivElement> {
+interface IconProps extends Omit<ComponentProps<'img'>, 'src' | 'alt'> {
   name: IconName;
 }
 
 export const Icon = ({ name, ...props }: IconProps): ReactElement => {
-  return <Image src={`/icons/${name}.svg`} {...props} />;
+  return <img src={`/icons/${name}.svg`} alt={name} {...props} />;
 };

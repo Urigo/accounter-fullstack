@@ -2,12 +2,13 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Indicator, Table } from '@mantine/core';
+import { Table } from '@mantine/core';
 import { CorporateTaxRulingComplianceReportDocument, Currency } from '../../../gql/graphql.js';
 import { dedupeFragments, getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PrintToPdfButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { Indicator } from '../../ui/indicator.js';
 import { AmountCell } from './amount-cell.js';
 import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling-compliance-report-filters.js';
 import { RuleCell } from './rule-cell.js';
@@ -167,7 +168,6 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                             !!yearlyReports.find(report => report.year === year)?.differences
                           }
                           color="orange"
-                          zIndex="auto"
                         >
                           {year}
                         </Indicator>

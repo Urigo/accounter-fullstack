@@ -1,12 +1,12 @@
 import { useMemo, type ReactElement } from 'react';
 import { useQuery } from 'urql';
-import { Indicator } from '@mantine/core';
 import {
   BusinessTripsRowFieldsFragmentDoc,
   BusinessTripsRowValidationDocument,
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
+import { Indicator } from '../ui/indicator.js';
 import { EditableBusinessTrip } from './editable-business-trip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -76,7 +76,6 @@ export const BusinessTripsRow = ({
           processing={fetching}
           disabled={!indicatorUp}
           color={isError ? 'red' : 'yellow'}
-          zIndex="auto"
         >
           {trip.name}
         </Indicator>

@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
+import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -14,7 +14,7 @@ export const Vat = ({ document }: Props): ReactElement => {
   const isError = shouldHaveVat && vat?.formatted == null;
 
   return (
-    <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+    <Indicator inline size={12} disabled={!isError} color="red">
       <div
         style={{
           color: Number(vat?.raw) > 0 ? 'green' : 'red',

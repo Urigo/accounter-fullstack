@@ -1,7 +1,7 @@
 import { type ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 import { formatAmountWithCurrency } from '../../../helpers/index.js';
+import { Indicator } from '../../ui/indicator.js';
 
 export type AmountProps = {
   amount?: {
@@ -24,7 +24,6 @@ export const Amount = ({ amount }: AmountProps): ReactElement | null => {
       disabled={isValid === undefined ? true : isValid}
       processing={shouldValidate && isValid === undefined}
       color="red"
-      zIndex="auto"
     >
       <p
         className={

@@ -4,7 +4,6 @@ import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Indicator, SimpleGrid } from '@mantine/core';
 import { useGetAdminBusinesses } from '@/hooks/use-get-admin-businesses.js';
 import { useGetFinancialAccounts } from '@/hooks/use-get-financial-accounts.js';
 import { encodeFilters } from '@/router/routes.js';
@@ -14,7 +13,13 @@ import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-ent
 import { useGetTags } from '../../../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
-import { ComboBox, DatePickerInput, MultiSelect, PopUpModal } from '../../../common/index.js';
+import {
+  ComboBox,
+  DatePickerInput,
+  MultiSelect,
+  PopUpModal,
+  SimpleGrid,
+} from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import {
   Form,
@@ -24,6 +29,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Indicator } from '../../../ui/indicator.js';
 import { Switch } from '../../../ui/switch.js';
 
 export function encodeBalanceReportFilters(filter?: BalanceReportFilter | null): string | null {

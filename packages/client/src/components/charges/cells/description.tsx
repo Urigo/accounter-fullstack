@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, SimilarChargesByIdModal } from '../../common/index.js';
+import { Indicator } from '../../ui/indicator.js';
 
 export type DescriptionProps = {
   chargeId: string;
@@ -63,7 +63,7 @@ export const Description = ({
   return (
     <>
       <div className="flex flex-wrap whitespace-normal">
-        <Indicator inline size={12} disabled={!isMissing} color="red" zIndex="auto">
+        <Indicator inline size={12} disabled={!isMissing} color="red">
           <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{cellText}</p>
         </Indicator>
         {hasAlternative && (

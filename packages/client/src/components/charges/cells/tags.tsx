@@ -1,7 +1,8 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { Group, Indicator, Text } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, ListCapsule, SimilarChargesByIdModal } from '../../common/index.js';
+import { Indicator } from '../../ui/indicator.js';
 
 export type TagsProps = {
   chargeId: string;
@@ -51,7 +52,7 @@ export const Tags = ({
 
   return (
     <>
-      <Indicator inline size={12} disabled={!isMissing} color="red" zIndex="auto">
+      <Indicator inline size={12} disabled={!isMissing} color="red">
         <ListCapsule
           items={tags.map(t => (
             <Group key={t.id}>
