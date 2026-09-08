@@ -277,6 +277,46 @@ export default [
     },
     rules: {
       'react-hooks/set-state-in-effect': 'off',
+      // Mantine is being removed from the client in favour of shadcn/ui + Tailwind.
+      // This starts as a warning across the package and is escalated to 'error' per
+      // directory as each cluster is migrated (see the blocks below), so cleaned areas
+      // cannot regress while the rest of the migration is still in flight.
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@mantine/*'],
+              message:
+                'Mantine is being removed. Use src/components/ui/ (shadcn) or Tailwind utilities instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Directories with no Mantine imports left: keep them that way.
+    files: [
+      'packages/client/src/components/ui/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/hooks/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/lib/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/helpers/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/providers/**/*.{,c,m}{j,t}s{,x}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@mantine/*'],
+              message:
+                'Mantine is being removed. Use src/components/ui/ (shadcn) or Tailwind utilities instead.',
+            },
+          ],
+        },
+      ],
     },
   },
   {
