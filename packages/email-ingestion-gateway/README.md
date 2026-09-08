@@ -124,6 +124,23 @@ See [`.dev.vars.example`](./.dev.vars.example):
 | `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above). |
 | `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                 |
 
+### Telling the fallback copy apart
+
+`EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` must be **different addresses** — the Workers
+runtime rejects a second forward to an address already used for the message, and the Worker skips
+the fallback forward when it detects the two are equal.
+
+A plus-tag on the same mailbox is the cheapest way to get a distinct destination:
+`accounter+fallback@the-guild.dev` alongside `accounter@the-guild.dev`. The forwarded MIME is passed
+through unmodified, so the tag does not appear anywhere in the message body or its original headers
+— but it does not need to. The tag travels in the **SMTP envelope**, and the receiving server stamps
+it into a `Delivered-To:` header on the copy it accepts, so the fallback copy is filterable (in
+Gmail: `deliveredto:accounter+fallback@the-guild.dev`) without the sender's message being touched.
+
+Cloudflare requires every forward target to be a **verified destination address**, so add and verify
+the plus-tagged address in Email Routing before setting `FALLBACK_EMAIL` to it; the verification
+mail arrives in the same mailbox.
+
 The probe default is deliberately generous. The gateway scales to zero and cold-starts on _every_
 delivery, and the probe is what wakes it, so the probe always pays that cold start — production
 restarts measured 0.8-9.4 s to serve `/health`. A tight ceiling is not a safety measure here: it

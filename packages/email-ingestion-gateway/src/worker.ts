@@ -53,6 +53,11 @@ function hex(bytes: ArrayBuffer): string {
 /**
  * Case-insensitive, trimmed address compare, so a difference of case or padding in a
  * dashboard-entered variable is not mistaken for two distinct mailboxes.
+ *
+ * Plus-tags are deliberately NOT normalized away: `inbox+fallback@x` and `inbox@x`
+ * reach the same human mailbox, but they are two distinct Email Routing destinations,
+ * and forwarding to both is exactly how the fallback copy is made identifiable. If
+ * this collapsed them, the fallback forward below would be skipped as a duplicate.
  */
 function sameAddress(a: string | undefined, b: string | undefined): boolean {
   return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();

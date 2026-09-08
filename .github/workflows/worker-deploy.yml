@@ -1,0 +1,50 @@
+name: Deploy Email Worker
+
+# The Cloudflare Email Worker is the one deployable in this repo that is not covered
+# by the prod auto-deploy: it lives at Cloudflare's edge, not in the container that
+# `prod` ships. It was maintained by pasting source into the dashboard, which is how
+# it drifted from `src/worker.ts`. Deploying it from `prod` on the same push keeps
+# the edge and the gateway on the same commit.
+on:
+  push:
+    branches: [prod]
+    paths:
+      - 'packages/email-ingestion-gateway/src/worker.ts'
+      - 'packages/email-ingestion-gateway/wrangler.jsonc'
+      - '.github/workflows/worker-deploy.yml'
+  # Deploys are also runnable by hand — for a rollback, or the first time the repo
+  # takes ownership of a Worker that was previously dashboard-managed.
+  workflow_dispatch:
+
+concurrency:
+  group: worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: wrangler deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: '.node-version'
+          cache: 'yarn'
+
+      - name: Install Dependencies
+        run: yarn install --immutable
+
+      # The Worker is plain TypeScript with no generated-code dependency, so it
+      # typechecks without codegen. This is the same guard as the gateway's, scoped
+      # to what is about to reach the edge.
+      - name: Typecheck the Worker
+        run: yarn workspace @accounter/email-ingestion-gateway wrangler deploy --dry-run
+
+      - name: Deploy
+        run: yarn workspace @accounter/email-ingestion-gateway wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
