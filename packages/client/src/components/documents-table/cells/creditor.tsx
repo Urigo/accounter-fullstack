@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import { Indicator } from '@mantine/core';
 import { DocumentType } from '@/gql/graphql.js';
 import { useGetBusinesses } from '@/hooks/use-get-businesses.js';
 import { useUpdateDocument } from '@/hooks/use-update-document.js';
 import { ROUTES } from '@/router/routes.js';
 import { ConfirmMiniButton, InsertBusiness, SelectWithSearch } from '../../common/index.js';
+import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 export const COUNTERPARTIES_LESS_DOCUMENT_TYPES: DocumentType[] = [
@@ -93,7 +93,7 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
   return (
     <div className="flex flex-wrap">
       <div className="flex flex-col justify-center whitespace-normal">
-        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+        <Indicator inline size={12} disabled={!isError} color="red">
           {shouldHaveCreditor &&
             (id ? (
               <Link

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
+import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -18,7 +18,7 @@ export const DateCell = ({ document }: Props): ReactElement => {
   const dateContentValue = shouldHaveDate ? formattedDate : null;
 
   return (
-    <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+    <Indicator inline size={12} disabled={!isError} color="red">
       <div>{dateContentValue}</div>
     </Indicator>
   );

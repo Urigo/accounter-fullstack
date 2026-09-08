@@ -1,8 +1,9 @@
 import { useState, type ReactElement } from 'react';
 import { File, Image } from 'lucide-react';
-import { Indicator, SimpleGrid } from '@mantine/core';
+import { SimpleGrid } from '@mantine/core';
 import { DocumentImageDrawer, Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
+import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -18,7 +19,7 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
         <div className="flex flex-col justify-center">
           <SimpleGrid cols={1}>
             <Tooltip disabled={!image} content="Open Image">
-              <Indicator inline size={12} disabled={!!image} color="red" zIndex="auto">
+              <Indicator inline size={12} disabled={!!image} color="red">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -31,7 +32,7 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
               </Indicator>
             </Tooltip>
             <Tooltip disabled={!file} content="Open File">
-              <Indicator inline size={12} disabled={!!file} color="red" zIndex="auto">
+              <Indicator inline size={12} disabled={!!file} color="red">
                 {file ? (
                   <a
                     href={typeof file === 'string' ? file : file.href}

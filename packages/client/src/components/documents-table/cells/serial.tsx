@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
+import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -16,7 +16,7 @@ export const Serial = ({ document }: Props): ReactElement => {
 
   return (
     <div className="flex flex-col align-center justify-center flex-wrap">
-      <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+      <Indicator inline size={12} disabled={!isError} color="red">
         <p>{serialNumber}</p>
       </Indicator>
       {allocationNumber && <p className="text-xs">({allocationNumber})</p>}

@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Grid, Loader, Modal, NumberInput, Overlay, Select, Text } from '@mantine/core';
+import { Grid, Loader, Modal, NumberInput, Select, Text } from '@mantine/core';
 import {
   UncategorizedTransactionsByBusinessTripDocument,
   type CategorizeIntoExistingBusinessTripExpenseInput,
@@ -11,6 +11,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { useCategorizeIntoExistingBusinessTripExpense } from '../../../../hooks/use-categorize-into-existing-business-trip-expense.js';
 import { Button } from '../../../ui/button.js';
+import { Overlay } from '../../../ui/overlay.js';
 import { Tooltip } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
