@@ -69,6 +69,56 @@ Keep `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` **distinct**. When they ma
 skips the fallback forward — the runtime rejects a second forward to an address already used for the
 message — and logs `worker:fallback_skipped` with `cause: FALLBACK_EQUALS_FORWARD_DESTINATION`.
 
+### First repo-owned deploy (one-time)
+
+The Worker predates wrangler: its source was pasted into the dashboard, so the repo has never owned
+it. The first `wrangler deploy` is the one that can break things, because that is when wrangler
+reconciles config against the dashboard. Work through this in order.
+
+```bash
+W="yarn workspace @accounter/email-ingestion-gateway wrangler"
+
+$W whoami                                # prints the account id; export as CLOUDFLARE_ACCOUNT_ID
+$W secret list --name email-forward-04a7 # which values are secrets (the rest are plain-text vars)
+```
+
+1. **Confirm the name matches.** `wrangler.jsonc` says `email-forward-04a7`. If Email Routing points
+   somewhere else, fix the config — deploying under a non-matching name creates a _second_ Worker
+   and leaves routing on the original, which looks like a deploy that did nothing.
+2. **Account for every var the Worker reads**: `CF_WEBHOOK_SECRET`, `GATEWAY_URL`,
+   `EMAIL_FORWARD_DESTINATION`, `FALLBACK_EMAIL` (optional), `HEALTH_PROBE_TIMEOUT_MS` (optional).
+   Anything absent from `secret list` is a plain-text var, which `keep_vars: true` preserves — **do
+   not set `keep_vars: false` while `GATEWAY_URL` is still a var**, or the deploy deletes it and
+   every inbound email fails the health probe.
+3. **Preferably convert the remaining vars to secrets**, so the values are not readable from the
+   dashboard and `keep_vars` can eventually go away. Copy the current value out of the dashboard
+   first — this replaces it, and a typo here takes ingestion down:
+   ```bash
+   $W secret put GATEWAY_URL                # paste the value the dashboard var currently holds
+   $W secret list --name email-forward-04a7 # expect it to appear
+   ```
+4. **Dry-run before the real thing.** It bundles and validates without uploading:
+   ```bash
+   $W deploy --dry-run
+   ```
+5. **Deploy**, then confirm in the dashboard that the _existing_ Worker's "last deployed" moved and
+   that no second Worker appeared, and that the Email Routing rule still targets it:
+   ```bash
+   $W deploy
+   $W tail --name email-forward-04a7 --format pretty
+   ```
+   On the next inbound email the tail should open with `worker:email:start`, whose booleans report
+   which bindings actually resolved — that line is the fastest confirmation the deploy kept its
+   configuration.
+
+No `send_email` binding is needed: `message.forward()` to a _verified destination address_ requires
+none, which the current dashboard Worker demonstrates — it forwards today with zero bindings, and
+`wrangler deploy --dry-run` reports "No bindings found".
+
+After this, deploys are automatic — `.github/workflows/worker-deploy.yml` runs on pushes to `prod`
+that touch the Worker or its config, and is also runnable via **workflow_dispatch** for rollbacks.
+It needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets.
+
 **Step 3 — Wire email addresses** in Cloudflare Email Routing:
 
 1. Go to **Email → Email Routing → Routing Rules**.

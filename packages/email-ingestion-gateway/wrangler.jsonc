@@ -16,13 +16,14 @@
   // it. `wrangler whoami` prints it.
 
   // Wrangler treats this file as the source of truth and DELETES dashboard-set
-  // plain-text vars on deploy (secrets are always preserved). This Worker's config
-  // has only ever been managed from the dashboard, so that default would wipe
-  // whatever is set there — GATEWAY_URL included, if it is a Var rather than a
-  // secret. Keeping this true makes the first deploys non-destructive.
+  // plain-text vars on deploy (secrets are always preserved). GATEWAY_URL is
+  // currently a plain-text var, and the Worker cannot run without it — with the
+  // default `false`, the first deploy would delete it and every inbound email would
+  // fail the health probe. This must stay true until GATEWAY_URL is a secret.
   //
-  // Once every value is a secret or is declared here, set it to false so this file
-  // becomes the real source of truth and dashboard drift stops being invisible.
+  // Target state: all four values as secrets, then flip this to false so the file
+  // is the real source of truth and dashboard drift stops being invisible. Do not
+  // move GATEWAY_URL into a `vars` block here instead — this repo is public.
   "keep_vars": true,
 
   // Required for `wrangler tail` and log retention to be useful — the handler now
