@@ -34,7 +34,9 @@ export default defineConfig({
     alias,
     exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
-    globalSetup: ['./scripts/vitest-global-setup.ts'],
+    // No root-level `globalSetup`: it asserts a local Postgres and would apply to every
+    // project, including `client`, which must run without one. Each database-backed project
+    // (`unit`, `integration`, `demo-seed`) declares it individually below.
     projects: [
       {
         test: {
@@ -44,7 +46,31 @@ export default defineConfig({
             'packages/server/src/__tests__/**',
             'packages/server/src/demo-fixtures/**',
             '**/*.integration.test.ts',
+            // Client tests live in the `client` project below, which runs without a database.
+            'packages/client/**',
           ],
+        },
+      },
+      {
+        test: {
+          // Browser-facing client tests. Deliberately declares no `globalSetup`: the shared
+          // one asserts a local Postgres and seeds it, which client tests have no use for.
+          // Keeping it off is what lets `yarn test:client` run with no database at all.
+          name: 'client',
+          include: [
+            'packages/client/src/**/*.test.ts',
+            'packages/client/src/**/*.test.tsx',
+            'packages/client/src/**/*.spec.ts',
+            'packages/client/src/**/*.spec.tsx',
+          ],
+          exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
+          // Set here so the per-file `// @vitest-environment happy-dom` pragmas become redundant.
+          environment: 'happy-dom',
+          globals: true,
+          alias: {
+            '@': resolve(__dirname, 'packages/client/src'),
+          },
+          setupFiles: ['./scripts/vitest-setup.ts'],
         },
       },
       {
