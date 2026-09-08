@@ -1,5 +1,4 @@
 import { useState, type ReactElement } from 'react';
-import { MemoryRouter } from 'react-router-dom';
 import { Client, Provider, type Exchange, type OperationResult } from 'urql';
 import { map, never, pipe } from 'wonka';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -132,24 +131,22 @@ function Harness({
   return (
     <Provider value={mockClient(loading ? pendingExchange : resolvedExchange)}>
       <UserContext.Provider value={USER_CONTEXT}>
-        <MemoryRouter initialEntries={['/charges']}>
-          <div className="flex min-h-screen flex-col gap-4 bg-gray-100 p-6">
-            <div className="flex h-14 items-center justify-center rounded-lg border bg-white">
-              <ChargesFilters
-                filter={filter}
-                setFilter={setFilter}
-                activePage={page}
-                setPage={setPage}
-                totalPages={totalPages}
-                initiallyOpened={initiallyOpened}
-                withDefaultDateRange={withDefaultDateRange}
-              />
-            </div>
-            <pre className="overflow-x-auto rounded-lg border bg-white p-3 text-xs">
-              {JSON.stringify(filter, null, 2)}
-            </pre>
+        <div className="flex min-h-screen flex-col gap-4 bg-gray-100 p-6">
+          <div className="flex h-14 items-center justify-center rounded-lg border bg-white">
+            <ChargesFilters
+              filter={filter}
+              setFilter={setFilter}
+              activePage={page}
+              setPage={setPage}
+              totalPages={totalPages}
+              initiallyOpened={initiallyOpened}
+              withDefaultDateRange={withDefaultDateRange}
+            />
           </div>
-        </MemoryRouter>
+          <pre className="overflow-x-auto rounded-lg border bg-white p-3 text-xs">
+            {JSON.stringify(filter, null, 2)}
+          </pre>
+        </div>
       </UserContext.Provider>
     </Provider>
   );
@@ -161,7 +158,11 @@ function Harness({
 const meta = {
   title: 'Charges/ChargesFilters',
   component: Harness,
-  parameters: { layout: 'fullscreen' },
+  parameters: {
+    layout: 'fullscreen',
+    // The router now comes from `.storybook/preview.tsx`.
+    router: { initialEntries: ['/charges'] },
+  },
 } satisfies Meta<typeof Harness>;
 
 export default meta;

@@ -1,6 +1,4 @@
 import { useState, type ReactElement } from 'react';
-import { MemoryRouter } from 'react-router-dom';
-import { MantineProvider } from '@mantine/core';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { AllCharges } from './all-charges.js';
@@ -29,16 +27,9 @@ const meta = {
   component: AllCharges,
   parameters: {
     layout: 'fullscreen',
+    // MantineProvider and the router now come from `.storybook/preview.tsx`.
+    router: { initialEntries: [initialEntry] },
   },
-  decorators: [
-    Story => (
-      <MantineProvider theme={{ fontFamily: 'Roboto, sans-serif', fontSizes: { md: '14' } }}>
-        <MemoryRouter initialEntries={[initialEntry]}>
-          <Story />
-        </MemoryRouter>
-      </MantineProvider>
-    ),
-  ],
 } satisfies Meta<typeof AllCharges>;
 
 export default meta;

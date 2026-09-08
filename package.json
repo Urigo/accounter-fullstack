@@ -43,9 +43,10 @@
     "seed:reset-staging": "echo \"DESTRUCTIVE: Implement seed reset script as needed\"",
     "seed:staging-demo": "tsx scripts/seed-demo-data.ts",
     "setup": "yarn db:init && yarn generate",
-    "test": "vitest run --project unit",
+    "test": "vitest run --project unit --project client",
+    "test:client": "vitest run --project client",
     "test:demo-seed": "vitest run --project demo-seed",
-    "test:integration": "vitest run --project unit --project integration",
+    "test:integration": "vitest run --project unit --project client --project integration",
     "validate:demo": "tsx packages/server/src/demo-fixtures/validate-demo-data.ts"
   },
   "devDependencies": {

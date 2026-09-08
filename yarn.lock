@@ -81,6 +81,7 @@ __metadata:
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.4.0"
     "@mui/x-charts": "npm:8.29.3"
+    "@storybook/addon-a11y": "npm:10.6.0"
     "@storybook/react-vite": "npm:10.6.0"
     "@tailwindcss/vite": "npm:4.3.3"
     "@tanstack/react-query": "npm:5.102.8"
@@ -92,6 +93,7 @@ __metadata:
     "@urql/exchange-auth": "npm:3.0.0"
     "@vitejs/plugin-react": "npm:6.1.1"
     autoprefixer: "npm:10.5.4"
+    axe-core: "npm:4.11.0"
     chart.js: "npm:4.5.1"
     class-variance-authority: "npm:0.7.1"
     clsx: "npm:2.1.1"
@@ -9835,6 +9837,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@storybook/addon-a11y@npm:10.6.0":
+  version: 10.6.0
+  resolution: "@storybook/addon-a11y@npm:10.6.0"
+  dependencies:
+    "@storybook/global": "npm:^5.0.0"
+    axe-core: "npm:^4.2.0"
+  peerDependencies:
+    storybook: ^10.6.0
+  checksum: 10c0/23ed0a30b8cdeb132f724bb2486d8f1ed194aa8ca9ab78c0fed9a356d0fb1f6e61234ca9718a6c0dd6ed210e65708072f520222c0fa5c1a45f88a961bc6b40b8
+  languageName: node
+  linkType: hard
+
 "@storybook/builder-vite@npm:10.6.0":
   version: 10.6.0
   resolution: "@storybook/builder-vite@npm:10.6.0"
@@ -12170,7 +12184,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axe-core@npm:^4.10.0":
+"axe-core@npm:4.11.0":
+  version: 4.11.0
+  resolution: "axe-core@npm:4.11.0"
+  checksum: 10c0/7d7020a568a824c303711858c2fcfe56d001d27e46c0c2ff75dc31b436cfddfd4857a301e70536cc9e64829d25338f7fb782102d23497ebdc66801e9900fc895
+  languageName: node
+  linkType: hard
+
+"axe-core@npm:^4.10.0, axe-core@npm:^4.2.0":
   version: 4.13.0
   resolution: "axe-core@npm:4.13.0"
   checksum: 10c0/0e3be8be10eea64beddefd3007e1425424ff60c26c5f4d5f748ec48c2825356839c02ad4167fc1f03a6d84ecd82108f49fb2846ab7fe949273787391745561ca
