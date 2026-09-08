@@ -272,18 +272,14 @@ export function BusinessLedgerRecordsFilters({
 
   return (
     <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <BusinessLedgerRecordsFilterForm
-            single
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)}>
+        <BusinessLedgerRecordsFilterForm
+          single
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Indicator inline size={16} disabled={!isFiltered}>
         <Button
           variant="outline"

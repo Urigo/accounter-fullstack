@@ -27,20 +27,19 @@ function Harness({
         withCloseButton={withCloseButton}
         modalSize={modalSize}
         title={title}
-        content={
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-gray-600">
-              Escape and clicking outside should both close this.
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button onClick={() => setOpened(false)}>Apply</Button>
-              <Button variant="outline" onClick={() => setOpened(false)}>
-                Cancel
-              </Button>
-            </div>
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-gray-600">
+            Escape and clicking outside should both close this.
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button onClick={() => setOpened(false)}>Apply</Button>
+            <Button variant="outline" onClick={() => setOpened(false)}>
+              Cancel
+            </Button>
           </div>
-        }
-      />
+        </div>
+      </PopUpModal>
     </div>
   );
 }

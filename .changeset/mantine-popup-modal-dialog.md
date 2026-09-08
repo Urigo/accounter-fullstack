@@ -26,6 +26,18 @@ Notes:
 - Mantine's `centered` and `withinPortal` props are dropped: Radix dialogs are centred and portaled
   by default.
 
+`PopUpModal` takes its body as `children` only — the old wrapper declared both `content` and
+`children`, which were two names for the same slot (and `children` was never actually rendered). All
+thirteen call sites now pass children.
+
+**Nested dialogs restack correctly.** Radix's `DialogContent` sits at `z-1001` while Mantine v6's
+`Modal` defaults far below it, so any Mantine modal opened *from inside* a converted dialog rendered
+behind it. That affected the Depreciation dialog, whose `AddDepreciationRecord` child is a Mantine
+`Modal` — it is now a `PopUpModal` too, and nested Radix dialogs stack by portal order. The same
+applies to Mantine dropdowns portaled to the body: the four `withinPortal` `Select`s under
+`common/depreciation/` now pass `zIndex={1002}`, matching the fix already present in
+`charge-spread-input.tsx`.
+
 The dialog now carries `max-h-[90vh] overflow-y-auto`, matching the 17 other `DialogContent` sites
 that do — several filter forms are taller than the viewport, and Mantine's `Modal` scrolled its body
 by default. `merge-businesses` gains an explicit title so it is not announced as "Filters", and

@@ -22,7 +22,6 @@ const modalSizeClasses: Record<string, string> = {
 };
 
 export interface ModalProps {
-  content?: ReactNode;
   /** Heading for the dialog. When omitted, an accessible name is still provided. */
   title?: ReactNode;
   description?: ReactNode;
@@ -45,7 +44,6 @@ export interface ModalProps {
  * Radix warns about at runtime).
  */
 export const PopUpModal = ({
-  content,
   title,
   description,
   opened = false,
@@ -75,7 +73,6 @@ export const PopUpModal = ({
           <DialogTitle>{title ?? 'Filters'}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
-        {content}
         {children}
       </DialogContent>
     </Dialog>
