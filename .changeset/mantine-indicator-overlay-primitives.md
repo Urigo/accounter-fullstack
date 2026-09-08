@@ -20,9 +20,13 @@ Four wrappers were reimplemented in Tailwind, so their consumers were untouched:
 
 - `common/simple-grid.tsx` — Mantine v6's `breakpoints` array is max-width based (desktop-first)
   while Tailwind's variants are min-width based, so the ladder is inverted rather than translated.
-  Column classes are spelled out per count because Tailwind only emits utilities it finds as
-  literals. The old config listed both `maxWidth: 900, cols: 2` and `maxWidth: 755, cols: 2`, the
-  latter unreachable — these boundaries were never precision-tuned.
+  Mantine's own thresholds are kept (≤600 → 1, 601–900 → 2, 901–980 → 3, >980 → `cols`) via
+  arbitrary `min-[…]` variants, so this is not also a layout change. One deliberate difference:
+  Mantine applied those breakpoints regardless of `cols`, so a `cols={1}` grid still rendered 3
+  columns between 901px and 980px; each tier is now capped at `cols`. Column classes are spelled
+  out per count because Tailwind only emits utilities it finds as literals. The three files that
+  imported Mantine's `SimpleGrid` directly rather than through this wrapper now use it too, so
+  Mantine's grid is gone entirely.
 - `common/loaders/loader.tsx` — Mantine's `variant="dots"` loader has no lucide equivalent, so
   `AccounterLoader` now uses the house `Spinner`. **This is a deliberate, visible change** to the
   full-page loading animation.
@@ -31,4 +35,4 @@ Four wrappers were reimplemented in Tailwind, so their consumers were untouched:
 
 Also adds stories for both new primitives.
 
-Mantine imports: 124 → 104, across 117 → 97 files.
+Mantine imports: 124 → 102, across 117 → 95 files.

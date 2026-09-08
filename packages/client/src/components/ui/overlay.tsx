@@ -26,7 +26,12 @@ function Overlay({ className, children, blur, center = false, style, ...props }:
         center && 'flex items-center justify-center',
         className,
       )}
-      style={{ backdropFilter: blur ? `blur(${blur}px)` : undefined, ...style }}
+      style={{
+        backdropFilter: blur ? `blur(${blur}px)` : undefined,
+        // Safari still only honours the prefixed property.
+        WebkitBackdropFilter: blur ? `blur(${blur}px)` : undefined,
+        ...style,
+      }}
       {...props}
     >
       {children}

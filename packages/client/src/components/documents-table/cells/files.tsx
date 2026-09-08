@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { File, Image } from 'lucide-react';
-import { SimpleGrid } from '@mantine/core';
-import { DocumentImageDrawer, Tooltip } from '../../common/index.js';
+import { DocumentImageDrawer, SimpleGrid, Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
