@@ -463,6 +463,10 @@ describe('worker -> gateway -> mocked server integration', () => {
       GATEWAY_URL: gatewayUrl,
       FALLBACK_EMAIL: 'fallback@example.com',
       EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+      // The real default is 30s, sized for this gateway's cold start (measured
+      // 0.8-9.4s in production). Shrink it here so the suite asserts the abort
+      // behaviour without waiting that out.
+      HEALTH_PROBE_TIMEOUT_MS: '500',
     });
 
     expect(message.forward).toHaveBeenCalledWith('fallback@example.com');

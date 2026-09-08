@@ -122,6 +122,13 @@ See [`.dev.vars.example`](./.dev.vars.example):
 | `GATEWAY_URL`               | URL the Worker `POST`s the webhook to.                                                             |
 | `EMAIL_FORWARD_DESTINATION` | Address every message is forwarded to unconditionally, before the webhook call.                    |
 | `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above). |
+| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                 |
+
+The probe default is deliberately generous. The gateway scales to zero and cold-starts on _every_
+delivery, and the probe is what wakes it, so the probe always pays that cold start — production
+restarts measured 0.8-9.4 s to serve `/health`. A tight ceiling is not a safety measure here: it
+turns a slow-but-healthy cold start into "unreachable", which forwards the mail to `FALLBACK_EMAIL`
+and skips ingestion. Raise it if your host is slower; it is tunable without a Worker deploy.
 
 Set all four as **secrets**
 (`yarn workspace @accounter/email-ingestion-gateway wrangler secret put <NAME>`), not as plain-text

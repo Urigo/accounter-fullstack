@@ -10,18 +10,33 @@ export type WorkerEnv = {
   GATEWAY_URL: string;
   EMAIL_FORWARD_DESTINATION: string;
   FALLBACK_EMAIL?: string;
+  /**
+   * Optional override for {@link DEFAULT_HEALTH_PROBE_TIMEOUT_MS}, in milliseconds.
+   * The right ceiling depends on how slowly the gateway's host cold-starts, which is
+   * a property of the deployment rather than of this code — so it is tunable without
+   * a Worker deploy. Ignored when unset or unparseable.
+   */
+  HEALTH_PROBE_TIMEOUT_MS?: string;
 };
 
 const HEX_OCTETS = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
 
 /**
- * Ceiling on the health probe. The gateway scales to zero and cold-starts on every
- * delivery — this probe is what wakes it — so a hang here is realistic, and an
- * unbounded one runs past the Worker's wall-clock budget. That exception would reach
- * Cloudflare as a temporary delivery failure and start a redelivery loop, so a
- * timeout that resolves to "unreachable" (and forwards) is strictly safer.
+ * Ceiling on the health probe.
+ *
+ * Bounded because an unbounded probe can run past the Worker's wall-clock budget,
+ * and that exception reaches Cloudflare as a temporary delivery failure — a
+ * redelivery-loop source of its own.
+ *
+ * The value is deliberately generous. This gateway scales to zero and cold-starts
+ * on *every* delivery, and the probe is what wakes it, so the probe always pays the
+ * cold start. Production restarts measured 0.8-9.4 s from process start to serving
+ * `/health` (median ~1.7 s), and that excludes container scheduling before the
+ * process logs at all. A tight ceiling here is not a safety measure — it silently
+ * converts a slow-but-healthy cold start into "unreachable", which forwards the mail
+ * to the fallback mailbox and skips ingestion entirely. Prefer waiting.
  */
-const HEALTH_PROBE_TIMEOUT_MS = 5000;
+const DEFAULT_HEALTH_PROBE_TIMEOUT_MS = 30_000;
 
 /** Ceiling on rejected-response text carried into the logs. */
 const MAX_LOGGED_BODY_CHARS = 500;
@@ -52,11 +67,17 @@ function logEvent(event: string, fields: Record<string, unknown> = {}): void {
   console.log(JSON.stringify({ event, ...fields }));
 }
 
-async function isGatewayReachable(gatewayUrl: string): Promise<boolean> {
+/** Parse the override, falling back to the default on anything not a positive number. */
+function healthProbeTimeoutMs(env: WorkerEnv): number {
+  const parsed = Number(env.HEALTH_PROBE_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_HEALTH_PROBE_TIMEOUT_MS;
+}
+
+async function isGatewayReachable(gatewayUrl: string, timeoutMs: number): Promise<boolean> {
   try {
     const response = await fetch(`${gatewayUrl}/health`, {
       method: 'GET',
-      signal: AbortSignal.timeout(HEALTH_PROBE_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     return response.ok;
   } catch {
@@ -90,7 +111,7 @@ const worker = {
     });
 
     // 1. Probe the gateway first (keeps the stream untouched for a clean fallback if it fails)
-    if (!(await isGatewayReachable(env.GATEWAY_URL))) {
+    if (!(await isGatewayReachable(env.GATEWAY_URL, healthProbeTimeoutMs(env)))) {
       logEvent('worker:gateway_unreachable', { fallbackEmailConfigured: !!env.FALLBACK_EMAIL });
       if (env.FALLBACK_EMAIL) {
         await message.forward(env.FALLBACK_EMAIL);
