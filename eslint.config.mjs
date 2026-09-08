@@ -57,7 +57,6 @@ export default [
       '**/schema.graphql',
       '**/__tests__/',
       '**/tests/',
-      '**/.storybook/',
       '**/vite.config.ts',
       '**/vitest.config.ts',
       'packages/*/scripts/',
