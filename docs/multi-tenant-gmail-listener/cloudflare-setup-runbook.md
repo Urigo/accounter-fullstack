@@ -31,8 +31,12 @@ What the handler does, in order:
 1. Probes `GET /health` (bounded by a timeout) before touching the message stream, so an unreachable
    gateway leaves a clean fallback path.
 2. Reads the raw MIME into memory.
-3. Forwards the message to `EMAIL_FORWARD_DESTINATION` **unconditionally** — so a copy always exists
-   before the webhook is attempted.
+3. Forwards the message to `EMAIL_FORWARD_DESTINATION` **unconditionally**, so a copy exists before
+   the webhook is attempted. This is the whole no-loss guarantee, and it is only as good as the
+   variable: the forward is wrapped in try/catch, so if the address is unset or unverified the
+   failure is logged (`worker:forward_failed`) and swallowed, and **no archive copy is made**. Treat
+   `EMAIL_FORWARD_DESTINATION` as required, and check `forwardDestinationConfigured` on the
+   `worker:email:start` line to confirm it actually resolved.
 4. HMAC-SHA256-signs `${timestamp}.${rawBody}` and `POST`s the raw MIME to `${GATEWAY_URL}/webhook`
    with the routing metadata in `x-cf-*` headers.
 5. On a non-2xx it forwards to `FALLBACK_EMAIL` (skipped when that is unset or equal to

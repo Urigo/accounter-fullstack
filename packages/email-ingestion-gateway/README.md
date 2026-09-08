@@ -116,13 +116,13 @@ process with code `1`.
 
 See [`.dev.vars.example`](./.dev.vars.example):
 
-| Variable                    | Description                                                                                        |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `CF_WEBHOOK_SECRET`         | Must match the gateway's secret — the Worker signs, the gateway verifies.                          |
-| `GATEWAY_URL`               | URL the Worker `POST`s the webhook to.                                                             |
-| `EMAIL_FORWARD_DESTINATION` | Address every message is forwarded to unconditionally, before the webhook call.                    |
-| `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above). |
-| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                 |
+| Variable                    | Description                                                                                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CF_WEBHOOK_SECRET`         | Must match the gateway's secret — the Worker signs, the gateway verifies.                                                                          |
+| `GATEWAY_URL`               | URL the Worker `POST`s the webhook to.                                                                                                             |
+| `EMAIL_FORWARD_DESTINATION` | **Required.** Archive address every message is forwarded to before the webhook call. Unset or unverified ⇒ no archive copy and no loss protection. |
+| `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above).                                                 |
+| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                                                                 |
 
 ### Telling the fallback copy apart
 
