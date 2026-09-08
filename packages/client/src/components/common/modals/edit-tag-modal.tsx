@@ -26,7 +26,7 @@ export const EditTagModal = ({ onDone, data }: Props): ReactElement => {
           <Edit className="size-5" />
         </Button>
       </Tooltip>
-      <PopUpModal opened={opened} onClose={close} title="Insert Business Trip" withCloseButton>
+      <PopUpModal opened={opened} onClose={close} title="Edit Tag" withCloseButton>
         <EditTag close={close} onDone={onEditDone} data={data} />
       </PopUpModal>
     </>

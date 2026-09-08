@@ -63,7 +63,13 @@ export const PopUpModal = ({
       <DialogContent
         showCloseButton={withCloseButton}
         onClick={onClick}
-        className={cn(modalSize && modalSizeClasses[modalSize], className)}
+        className={cn(
+          // Several filter forms are taller than the viewport; 17 other DialogContent sites
+          // use this same pairing.
+          'max-h-[90vh] overflow-y-auto',
+          modalSize && modalSizeClasses[modalSize],
+          className,
+        )}
       >
         <DialogHeader className={title || description ? undefined : 'sr-only'}>
           <DialogTitle>{title ?? 'Filters'}</DialogTitle>

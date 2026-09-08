@@ -34,7 +34,13 @@ export function MergeBusinessesButton(props: {
       >
         <Merge className="size-5" />
       </Button>
-      <PopUpModal opened={opened} onClose={close} modalSize="auto" withCloseButton>
+      <PopUpModal
+        opened={opened}
+        onClose={close}
+        modalSize="auto"
+        title="Merge Businesses"
+        withCloseButton
+      >
         <MergeBusinessesSelectionForm
           businessIds={Array.from(distinctIDs)}
           onDone={onDone}

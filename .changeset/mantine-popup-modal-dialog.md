@@ -26,6 +26,12 @@ Notes:
 - Mantine's `centered` and `withinPortal` props are dropped: Radix dialogs are centred and portaled
   by default.
 
+The dialog now carries `max-h-[90vh] overflow-y-auto`, matching the 17 other `DialogContent` sites
+that do — several filter forms are taller than the viewport, and Mantine's `Modal` scrolled its body
+by default. `merge-businesses` gains an explicit title so it is not announced as "Filters", and
+`edit-tag-modal`'s title is corrected from "Insert Business Trip" (a pre-existing mislabel) to
+"Edit Tag".
+
 Mantine imports: 101 → 97, across 94 → 90 files. The remaining `Modal` users all sit in
 `business-trip-report/buttons/` and `depreciation/`, which carry other Mantine imports too and
 belong to their own cluster.
