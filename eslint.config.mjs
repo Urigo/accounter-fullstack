@@ -296,12 +296,27 @@ export default [
     },
   },
   {
-    // Directories with no Mantine imports left: keep them that way.
+    // Directories with no Mantine imports left: keep them that way. Each migrated
+    // cluster adds its directories here, so the migration cannot regress behind itself.
     files: [
+      'packages/client/src/components/admin-settings/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/bank-deposits/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/business/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/businesses/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/charge-matching/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/clients/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/financial-accounts/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/landing/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/layout/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/ledger-table/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/securities/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/tags/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/tax-categories/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/transactions-table/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/ui/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/helpers/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/hooks/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/lib/**/*.{,c,m}{j,t}s{,x}',
-      'packages/client/src/helpers/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/providers/**/*.{,c,m}{j,t}s{,x}',
     ],
     rules: {

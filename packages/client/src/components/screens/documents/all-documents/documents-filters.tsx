@@ -3,7 +3,7 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
+import { MultiSelect, SimpleGrid } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import {
   DocumentType,
@@ -29,6 +29,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Indicator } from '../../../ui/indicator.js';
 import { Input } from '../../../ui/input.js';
 import { Switch } from '../../../ui/switch.js';
 

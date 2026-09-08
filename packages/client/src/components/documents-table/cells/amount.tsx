@@ -1,8 +1,8 @@
 import { useCallback, type ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import { Currency, DocumentType } from '../../../gql/graphql.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { ConfirmMiniButton } from '../../common/index.js';
+import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -43,7 +43,7 @@ export const Amount = ({ document }: Props): ReactElement => {
   return (
     <div className="flex flex-wrap">
       <div className="flex flex-col justify-center">
-        <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+        <Indicator inline size={12} disabled={!isError} color="red">
           <p
             className={[
               'whitespace-nowrap',

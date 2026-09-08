@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
+import { Indicator } from '../../ui/indicator.js';
 
 export type TaxCategoryProps = {
   taxCategory?: {
@@ -11,7 +11,7 @@ export type TaxCategoryProps = {
 
 export const TaxCategory = ({ taxCategory, isMissing }: TaxCategoryProps): ReactElement => {
   return (
-    <Indicator inline size={12} disabled={!isMissing} color="red" zIndex="auto">
+    <Indicator inline size={12} disabled={!isMissing} color="red">
       {taxCategory?.name ?? 'N/A'}
     </Indicator>
   );

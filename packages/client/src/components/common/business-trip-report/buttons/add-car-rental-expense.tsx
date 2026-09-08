@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal, NumberInput, Overlay } from '@mantine/core';
+import { Loader, Modal, NumberInput } from '@mantine/core';
 import type { AddBusinessTripCarRentalExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripCarRentalExpense } from '../../../../hooks/use-add-business-trip-car-rental-expense.js';
 import { Button } from '../../../ui/button.js';
@@ -13,6 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Overlay } from '../../../ui/overlay.js';
 import { Switch } from '../../../ui/switch.js';
 import { Tooltip } from '../../index.js';
 import { AddExpenseFields } from './add-expense-fields.js';

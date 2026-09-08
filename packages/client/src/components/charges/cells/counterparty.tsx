@@ -1,8 +1,8 @@
 import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import { Indicator } from '@mantine/core';
 import { ROUTES } from '@/router/routes.js';
 import type { ChargeType } from '../../../helpers/index.js';
+import { Indicator } from '../../ui/indicator.js';
 import { shouldHaveCounterparty } from '../utils.js';
 
 export type CounterpartyProps = {
@@ -26,7 +26,7 @@ export const Counterparty = ({
 
   return (
     <div className="whitespace-normal">
-      <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+      <Indicator inline size={12} disabled={!isError} color="red">
         {!isError && id && (
           <Link
             to={ROUTES.BUSINESSES.DETAIL(id)}

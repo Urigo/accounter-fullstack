@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal, Overlay, Select } from '@mantine/core';
+import { Loader, Modal, Select } from '@mantine/core';
 import type { InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Overlay } from '../../../ui/overlay.js';
 import { Tooltip } from '../../index.js';
 import { DatePickerInput } from '../../inputs/date-picker-input.js';
 

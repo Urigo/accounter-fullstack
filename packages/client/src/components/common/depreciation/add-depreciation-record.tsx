@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Modal, Overlay, Select } from '@mantine/core';
+import { Loader, Modal, Select } from '@mantine/core';
 import {
   AllDepreciationCategoriesDocument,
   type InsertDepreciationRecordInput,
@@ -11,6 +11,7 @@ import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Overlay } from '../../ui/overlay.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { depreciationTypes } from './index.js';
 

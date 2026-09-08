@@ -2,7 +2,7 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Indicator, MultiSelect } from '@mantine/core';
+import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
@@ -13,6 +13,7 @@ import { UserContext } from '../../../providers/user-provider.js';
 import { DatePickerInput, PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Indicator } from '../../ui/indicator.js';
 import { Switch } from '../../ui/switch.js';
 
 export type TrialBalanceReportFilters = BusinessTransactionsFilter & {

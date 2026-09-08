@@ -4,7 +4,7 @@ import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Indicator, SimpleGrid } from '@mantine/core';
+import { SimpleGrid } from '@mantine/core';
 import { useGetAdminBusinesses } from '@/hooks/use-get-admin-businesses.js';
 import { useGetFinancialAccounts } from '@/hooks/use-get-financial-accounts.js';
 import { encodeFilters } from '@/router/routes.js';
@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Indicator } from '../../../ui/indicator.js';
 import { Switch } from '../../../ui/switch.js';
 
 export function encodeBalanceReportFilters(filter?: BalanceReportFilter | null): string | null {

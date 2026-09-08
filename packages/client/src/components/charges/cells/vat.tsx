@@ -1,7 +1,7 @@
 import { type ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 import { formatAmountWithCurrency } from '../../../helpers/index.js';
+import { Indicator } from '../../ui/indicator.js';
 
 export type VatProps = {
   value?: number;
@@ -20,7 +20,7 @@ export const Vat = ({ value, currency, amountValue, missingInfo }: VatProps): Re
     <div
       className={isError ? 'whitespace-nowrap text-red-500' : 'whitespace-nowrap text-green-700'}
     >
-      <Indicator inline size={12} disabled={!missingInfo} color="red" zIndex="auto">
+      <Indicator inline size={12} disabled={!missingInfo} color="red">
         {value != null && currency ? formatAmountWithCurrency(value, currency) : null}
       </Indicator>
     </div>
