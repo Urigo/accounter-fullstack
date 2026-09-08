@@ -119,9 +119,24 @@ No `send_email` binding is needed: `message.forward()` to a _verified destinatio
 none, which the current dashboard Worker demonstrates — it forwards today with zero bindings, and
 `wrangler deploy --dry-run` reports "No bindings found".
 
-After this, deploys are automatic — `.github/workflows/worker-deploy.yml` runs on pushes to `prod`
-that touch the Worker or its config, and is also runnable via **workflow_dispatch** for rollbacks.
-It needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository secrets.
+### Worker deploys stay manual, deliberately
+
+Subsequent deploys use the same `$W deploy` command. **Do not wire this into the `prod` push.**
+
+Pushing to `prod` already triggers Render to redeploy the gateway service. A CI job on the same
+event would deploy the Worker _in parallel_ with it, and the two have a required order: the Worker
+must never go live ahead of the gateway it talks to. The hardened handler returns instead of
+throwing once a copy of the message has been forwarded, so a Worker that is newer than its gateway
+converts a gateway rejection into a silent non-ingestion rather than a retry — losing the redelivery
+that would otherwise have recovered the message once the gateway caught up.
+
+Automating this needs the Worker deploy to _wait on_ the Render deploy reporting healthy, not merely
+to share a trigger with it. Until that exists, deploy the Worker by hand, after confirming the
+gateway is live:
+
+```bash
+$W deploy
+```
 
 **Step 3 — Wire email addresses** in Cloudflare Email Routing:
 
