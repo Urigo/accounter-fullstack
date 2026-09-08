@@ -5,19 +5,35 @@ import type { Preview } from '@storybook/react-vite';
 import 'json-bigint-patch';
 import '../src/index.css';
 import { getUrqlClient } from '../src/providers/urql.js';
-import { UserContext } from '../src/providers/user-provider.js';
+import { UserContext, type UserInfo } from '../src/providers/user-provider.js';
 
 /**
- * Minimal stand-in for the signed-in user. Stories that care about specific business
- * ids nest their own `UserContext.Provider` — the nearest provider wins.
+ * Stand-in for the signed-in user. Fully populated and typed rather than cast, so a
+ * component reading a field this fixture forgot is a type error here rather than an
+ * `undefined` at runtime in a story.
+ *
+ * Stories that care about specific business ids nest their own `UserContext.Provider` —
+ * the nearest provider wins.
  */
-const USER_CONTEXT = {
-  userContext: {
-    username: 'storybook',
-    context: { adminBusinessId: 'owner-1' },
+const STORYBOOK_USER: UserInfo = {
+  username: 'storybook',
+  context: {
+    memberships: [{ businessId: 'owner-1', role: 'ADMIN', businessName: 'The Guild' }],
+    activeReadScope: ['owner-1'],
+    adminBusinessId: 'owner-1',
+    defaultLocalCurrency: 'ILS',
+    defaultCryptoConversionFiatCurrency: 'USD',
+    ledgerLock: null,
+    financialAccountsBusinessesIds: ['owner-1'],
+    foreignSecuritiesBusinessId: null,
+    locality: 'IL',
   },
+};
+
+const USER_CONTEXT = {
+  userContext: STORYBOOK_USER,
   setUserContext: () => void 0,
-} as never;
+};
 
 const preview: Preview = {
   decorators: [

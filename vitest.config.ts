@@ -34,13 +34,15 @@ export default defineConfig({
     alias,
     exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
-    // No root-level `globalSetup`: it asserts a local Postgres and would apply to every
-    // project, including `client`, which must run without one. Each database-backed project
-    // (`unit`, `integration`, `demo-seed`) declares it individually below.
+    // `globalSetup` is deliberately NOT set here. It asserts a local Postgres and seeds it,
+    // and inherited arrays are merged rather than overridden, so a project cannot opt out of
+    // a root-level entry (`globalSetup: []` still inherits it). The three database-backed
+    // projects declare it individually so `client` can run with no database at all.
     projects: [
       {
         test: {
           name: 'unit',
+          globalSetup: ['./scripts/vitest-global-setup.ts'],
           include: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.tsx', '**/*.spec.tsx'],
           exclude: [
             'packages/server/src/__tests__/**',
@@ -53,9 +55,8 @@ export default defineConfig({
       },
       {
         test: {
-          // Browser-facing client tests. Deliberately declares no `globalSetup`: the shared
-          // one asserts a local Postgres and seeds it, which client tests have no use for.
-          // Keeping it off is what lets `yarn test:client` run with no database at all.
+          // Browser-facing client tests. Inherits the root `exclude`, `globals`, `alias` and
+          // `setupFiles`; only what genuinely differs is set here.
           name: 'client',
           include: [
             'packages/client/src/**/*.test.ts',
@@ -63,19 +64,14 @@ export default defineConfig({
             'packages/client/src/**/*.spec.ts',
             'packages/client/src/**/*.spec.tsx',
           ],
-          exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
           // Set here so the per-file `// @vitest-environment happy-dom` pragmas become redundant.
           environment: 'happy-dom',
-          globals: true,
-          alias: {
-            '@': resolve(__dirname, 'packages/client/src'),
-          },
-          setupFiles: ['./scripts/vitest-setup.ts'],
         },
       },
       {
         test: {
           name: 'integration',
+          globalSetup: ['./scripts/vitest-global-setup.ts'],
           include: [
             'packages/server/src/__tests__/**/*.test.ts',
             'packages/server/src/__tests__/**/*.spec.ts',
@@ -89,6 +85,7 @@ export default defineConfig({
       {
         test: {
           name: 'demo-seed',
+          globalSetup: ['./scripts/vitest-global-setup.ts'],
           include: ['packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts'],
           setupFiles: ['./scripts/vitest-demo-seed-setup.ts'],
         },
