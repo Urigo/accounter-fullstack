@@ -10,9 +10,36 @@ export type WorkerEnv = {
   GATEWAY_URL: string;
   EMAIL_FORWARD_DESTINATION: string;
   FALLBACK_EMAIL?: string;
+  /**
+   * Optional override for {@link DEFAULT_HEALTH_PROBE_TIMEOUT_MS}, in milliseconds.
+   * The right ceiling depends on how slowly the gateway's host cold-starts, which is
+   * a property of the deployment rather than of this code — so it is tunable without
+   * a Worker deploy. Ignored when unset or unparseable.
+   */
+  HEALTH_PROBE_TIMEOUT_MS?: string;
 };
 
 const HEX_OCTETS = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+
+/**
+ * Ceiling on the health probe.
+ *
+ * Bounded because an unbounded probe can run past the Worker's wall-clock budget,
+ * and that exception reaches Cloudflare as a temporary delivery failure — a
+ * redelivery-loop source of its own.
+ *
+ * The value is deliberately generous. This gateway scales to zero and cold-starts
+ * on *every* delivery, and the probe is what wakes it, so the probe always pays the
+ * cold start. Production restarts measured 0.8-9.4 s from process start to serving
+ * `/health` (median ~1.7 s), and that excludes container scheduling before the
+ * process logs at all. A tight ceiling here is not a safety measure — it silently
+ * converts a slow-but-healthy cold start into "unreachable", which forwards the mail
+ * to the fallback mailbox and skips ingestion entirely. Prefer waiting.
+ */
+const DEFAULT_HEALTH_PROBE_TIMEOUT_MS = 30_000;
+
+/** Ceiling on rejected-response text carried into the logs. */
+const MAX_LOGGED_BODY_CHARS = 500;
 
 function hex(bytes: ArrayBuffer): string {
   const uint8 = new Uint8Array(bytes);
@@ -23,9 +50,40 @@ function hex(bytes: ArrayBuffer): string {
   return out;
 }
 
-async function isGatewayReachable(gatewayUrl: string): Promise<boolean> {
+/**
+ * Case-insensitive, trimmed address compare, so a difference of case or padding in a
+ * dashboard-entered variable is not mistaken for two distinct mailboxes.
+ *
+ * Plus-tags are deliberately NOT normalized away: `inbox+fallback@x` and `inbox@x`
+ * reach the same human mailbox, but they are two distinct Email Routing destinations,
+ * and forwarding to both is exactly how the fallback copy is made identifiable. If
+ * this collapsed them, the fallback forward below would be skipped as a duplicate.
+ */
+function sameAddress(a: string | undefined, b: string | undefined): boolean {
+  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * One structured line per decision. A `wrangler tail` has to say which branch fired
+ * and why — reconstructing that from a bare stack trace is what made the redelivery
+ * loop hard to place.
+ */
+function logEvent(event: string, fields: Record<string, unknown> = {}): void {
+  console.log(JSON.stringify({ event, ...fields }));
+}
+
+/** Parse the override, falling back to the default on anything not a positive number. */
+function healthProbeTimeoutMs(env: WorkerEnv): number {
+  const parsed = Number(env.HEALTH_PROBE_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_HEALTH_PROBE_TIMEOUT_MS;
+}
+
+async function isGatewayReachable(gatewayUrl: string, timeoutMs: number): Promise<boolean> {
   try {
-    const response = await fetch(`${gatewayUrl}/health`, { method: 'GET' });
+    const response = await fetch(`${gatewayUrl}/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
     return response.ok;
   } catch {
     return false;
@@ -34,12 +92,39 @@ async function isGatewayReachable(gatewayUrl: string): Promise<boolean> {
 
 const worker = {
   async email(message: EmailMessageLike, env: WorkerEnv): Promise<void> {
+    // Which variables are actually bound decides which failure path can fire, and
+    // `wrangler.jsonc` declares no `vars` — these are dashboard-managed, and a
+    // plain-text (non-secret) one is silently dropped by `wrangler deploy`. The
+    // booleans make a misconfiguration readable from the first delivery instead of
+    // inferred from a loop.
+    //
+    // Addresses are deliberately absent from every `worker:*` line: the recipient
+    // alias is tenant-identifying and the destinations are real mailboxes, and
+    // neither adds diagnostic power over the booleans here — the gateway already
+    // records `recipientAlias` against the same correlation id. The one place an
+    // address can still surface is a runtime error string we pass through verbatim
+    // (`worker:forward_failed`), where the text is the diagnosis.
+    logEvent('worker:email:start', {
+      messageId: message.headers.get('message-id'),
+      gatewayUrlConfigured: !!env.GATEWAY_URL,
+      forwardDestinationConfigured: !!env.EMAIL_FORWARD_DESTINATION,
+      fallbackEmailConfigured: !!env.FALLBACK_EMAIL,
+      fallbackEqualsForwardDestination: sameAddress(
+        env.FALLBACK_EMAIL,
+        env.EMAIL_FORWARD_DESTINATION,
+      ),
+    });
+
     // 1. Probe the gateway first (keeps the stream untouched for a clean fallback if it fails)
-    if (!(await isGatewayReachable(env.GATEWAY_URL))) {
+    if (!(await isGatewayReachable(env.GATEWAY_URL, healthProbeTimeoutMs(env)))) {
+      logEvent('worker:gateway_unreachable', { fallbackEmailConfigured: !!env.FALLBACK_EMAIL });
       if (env.FALLBACK_EMAIL) {
         await message.forward(env.FALLBACK_EMAIL);
         return;
       }
+      // Nothing has been forwarded yet, so the message exists only upstream: a
+      // Cloudflare redelivery is the correct no-loss behaviour here, and a gateway
+      // outage is genuinely the kind of failure that clears.
       throw new Error('Gateway unreachable and FALLBACK_EMAIL is not configured');
     }
 
@@ -47,12 +132,19 @@ const worker = {
     const rawBuffer = await new Response(message.raw).arrayBuffer();
     const rawBytes = new Uint8Array(rawBuffer);
 
-    // 3. Forward the email
+    // 3. Forward the email. Whether this succeeded is what decides, further down,
+    //    whether a gateway rejection may be escalated into a delivery failure.
+    let forwardedToDestination = false;
+    let forwardedToFallback = false;
     try {
       await message.forward(env.EMAIL_FORWARD_DESTINATION);
-      console.log(`email forwarded to ${env.EMAIL_FORWARD_DESTINATION}`);
+      forwardedToDestination = true;
+      logEvent('worker:forwarded');
     } catch (e) {
-      console.error(`Forwarding failed: ${(e as Error).message}`);
+      logEvent('worker:forward_failed', {
+        configured: !!env.EMAIL_FORWARD_DESTINATION,
+        error: (e as Error).message,
+      });
     }
 
     // 4. Continue with your webhook logic
@@ -96,25 +188,68 @@ const worker = {
     });
 
     if (!response.ok) {
-      // Gateway is reachable but rejected the request — it is disabled
+      // The gateway is reachable but refused: it is disabled
       // (EMAIL_INGESTION_V2_ENABLED=0 returns 503 during rollback), an auth check
       // failed, or orchestration failed leaving no durable record server-side
-      // (503; see `statusForOrchestrationFailure` in webhook.ts). Forward to the
-      // legacy Gmail inbox so no email is lost, and only throw when no fallback
-      // exists. This forwards *after* the read on a best-effort basis — verify it
-      // forwards in the Cloudflare runtime via the §6 staging smoke tests.
-      console.warn(`gateway rejected the webhook with status ${response.status}`);
-      if (env.FALLBACK_EMAIL) {
-        // A forward to EMAIL_FORWARD_DESTINATION already happened above; this is a
-        // second forward to a *different* destination, which the Workers runtime
-        // permits. Never let a fallback failure end the handler quietly — rethrow
-        // so Cloudflare surfaces it rather than the email vanishing.
-        await message.forward(env.FALLBACK_EMAIL);
-        console.log(`email forwarded to fallback ${env.FALLBACK_EMAIL}`);
-        return;
+      // (503; see `statusForOrchestrationFailure` in webhook.ts).
+      //
+      // **Never throw from here.** Cloudflare Email Routing treats an unhandled
+      // exception as a temporary delivery failure and redelivers with growing
+      // backoff. A retry only helps if the gateway will answer differently later,
+      // and a permanent rejection never will — a 400 from input-shape drift put
+      // three messages through 4-5 redeliveries across 12 hours that way. Step 3
+      // has already delivered the message, so a rejection here is a lost
+      // *ingestion*, not a lost *email*, and must not be escalated.
+      const detail = await response.text().catch(() => '');
+      logEvent('worker:gateway_rejected', {
+        status: response.status,
+        // The gateway answers with { failed, reason, correlationId }; carrying it
+        // here is what joins a Worker tail to the gateway's own logs.
+        body: detail.slice(0, MAX_LOGGED_BODY_CHARS),
+        forwardedToDestination,
+      });
+
+      if (!env.FALLBACK_EMAIL) {
+        logEvent('worker:fallback_skipped', {
+          cause: 'FALLBACK_EMAIL_NOT_CONFIGURED',
+          forwardedToDestination,
+        });
+      } else if (sameAddress(env.FALLBACK_EMAIL, env.EMAIL_FORWARD_DESTINATION)) {
+        // `message.forward()` rejects a second forward to an address already used
+        // for this message, and the copy the operator would receive is the one
+        // step 3 already sent. Skipping is both correct and idempotent.
+        logEvent('worker:fallback_skipped', {
+          cause: 'FALLBACK_EQUALS_FORWARD_DESTINATION',
+          forwardedToDestination,
+        });
+      } else {
+        try {
+          await message.forward(env.FALLBACK_EMAIL);
+          forwardedToFallback = true;
+          logEvent('worker:fallback_forwarded');
+        } catch (e) {
+          logEvent('worker:fallback_forward_failed', {
+            error: (e as Error).message,
+            forwardedToDestination,
+          });
+        }
       }
-      throw new Error('Gateway returned status ' + response.status);
+
+      if (!forwardedToDestination && !forwardedToFallback) {
+        // The one genuine total-loss case: no copy reached a human, and control
+        // never granted so nothing was recorded server-side either. This is the
+        // only situation where a redelivery is worth the loop risk — and the
+        // `worker:forward_failed` / `worker:fallback_skipped` /
+        // `worker:fallback_forward_failed` lines above name the misconfiguration
+        // that has to be fixed for it to stop.
+        throw new Error(
+          `Gateway returned status ${response.status} and no copy of the message was delivered`,
+        );
+      }
+      return;
     }
+
+    logEvent('worker:gateway_accepted', { status: response.status });
   },
 };
 

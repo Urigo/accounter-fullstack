@@ -1,12 +1,17 @@
 import { ClientError, GraphQLClient } from 'graphql-request';
 import { IngestReasonCode } from './contracts.js';
+import type { ForwardedBlock } from './forwarded.js';
 import type {
+  ForwardedBlockInput,
+  IngestControlInput,
   IngestEmailMutation,
   IngestEmailMutationVariables,
   RequestIngestControlMutation,
   RequestIngestControlMutationVariables,
+  SenderEvidenceInput,
 } from './gql/index.js';
 import { INGEST_EMAIL_MUTATION, REQUEST_INGEST_CONTROL_MUTATION } from './graphql/mutations.js';
+import type { SenderEvidence } from './mime-extractor.js';
 
 // ---------------------------------------------------------------------------
 // Exported policy constants
@@ -47,39 +52,88 @@ const TRUNCATION_SUFFIX = '… [truncated]';
 // Domain types (public API)
 // ---------------------------------------------------------------------------
 
-/** A quoted forwarded-header block recovered from the body. */
-export interface ControlForwardedBlock {
-  from?: string;
-  fromDisplayName?: string;
-  to?: string[];
-  subject?: string;
+/**
+ * The wire shapes are **derived** from the generated schema types, never restated.
+ *
+ * These three were hand-written duplicates of `ForwardedBlockInput` /
+ * `SenderEvidenceInput` / `IngestControlInput`, and they drifted: `forwarded.ts`
+ * parses a `date` off each quoted block, `SenderEvidence` carried it, and
+ * `webhook.ts` assigned that object straight into a `ControlSenderEvidence` slot.
+ * A non-literal assignment does not trigger TypeScript's excess-property check, so
+ * every declared type along the path was satisfied while the JSON on the wire
+ * carried a field the schema rejects — `HTTP 400: Field "date" is not defined by
+ * type "ForwardedBlockInput"` for every forwarded email whose quoted block had a
+ * `Date:` line.
+ *
+ * Aliasing alone would not have caught it (a wider block is still structurally
+ * assignable). {@link toControlSenderEvidence} is what closes the hole: a
+ * return-position object literal with a declared return type *is* freshness-checked.
+ */
+export type ControlForwardedBlock = ForwardedBlockInput;
+export type ControlSenderEvidence = SenderEvidenceInput;
+
+/**
+ * Project one quoted block onto the wire input, field by field.
+ *
+ * The explicit literal is the point: name a field the server SDL does not define
+ * and this stops compiling.
+ */
+function toWireForwardedBlock(block: ForwardedBlock): ControlForwardedBlock {
+  return {
+    from: block.from,
+    fromDisplayName: block.fromDisplayName,
+    to: block.to,
+    subject: block.subject,
+    // `block.date` is deliberately not sent: `ForwardedBlockInput` has no such
+    // field, and nothing server-side reads a forwarded-block date — the classifier
+    // uses `from`, `fromDisplayName` and the block count only. It stays on
+    // `ForwardedBlock` for `inspect:eml` and any future in-gateway use.
+  };
 }
 
-/** Structural sender evidence for server-side classification / business recognition. */
-export interface ControlSenderEvidence {
-  from?: string;
-  fromDisplayName?: string;
-  replyTo?: string;
-  originalFrom?: string;
-  originalSender?: string;
-  forwardedTo?: string;
-  listId?: string;
-  listAddresses?: string[];
-  forwardedBlocks?: ControlForwardedBlock[];
-  issuerCandidates?: string[];
+/**
+ * Project the extractor's sender evidence onto the control input.
+ *
+ * Call this at the extraction→wire boundary rather than assigning a `SenderEvidence`
+ * into a `ControlSenderEvidence` slot; the assignment compiles and leaks extractor-only
+ * fields onto the wire, the projection does not.
+ */
+export function toControlSenderEvidence(evidence: SenderEvidence): ControlSenderEvidence {
+  return {
+    from: evidence.from,
+    fromDisplayName: evidence.fromDisplayName,
+    replyTo: evidence.replyTo,
+    originalFrom: evidence.originalFrom,
+    originalSender: evidence.originalSender,
+    forwardedTo: evidence.forwardedTo,
+    listId: evidence.listId,
+    listAddresses: evidence.listAddresses,
+    forwardedBlocks: evidence.forwardedBlocks.map(toWireForwardedBlock),
+    issuerCandidates: evidence.issuerCandidates,
+  };
 }
+
+/**
+ * Extractor fields deliberately absent from the wire input. Listing them makes the
+ * omission a reviewed decision rather than an oversight: the assertions below stop
+ * compiling when `ForwardedBlock` or `SenderEvidence` grows a field that is neither
+ * accepted by the server SDL nor named here.
+ */
+type ForwardedBlockFieldsNotSent = 'date';
+type SenderEvidenceFieldsNotSent = never;
+
+type AssertNever<T extends never> = T;
+type _BlockFieldsAccountedFor = AssertNever<
+  Exclude<keyof ForwardedBlock, keyof ControlForwardedBlock | ForwardedBlockFieldsNotSent>
+>;
+type _EvidenceFieldsAccountedFor = AssertNever<
+  Exclude<keyof SenderEvidence, keyof ControlSenderEvidence | SenderEvidenceFieldsNotSent>
+>;
 
 /** How the server classified the email; drives what treatment is worth doing. */
 export type EmailClassificationKind = 'DIRECT' | 'RELAYED' | 'FORWARDED' | 'SELF_ISSUED';
 
-export interface ControlInput {
-  recipientAlias: string;
-  messageId: string;
-  rawMessageHash: string;
-  receivedAt?: string;
-  correlationId?: string;
-  senderEvidence?: ControlSenderEvidence;
-}
+export type ControlInput = IngestControlInput;
 
 export interface GrantData {
   id: string;
@@ -298,6 +352,10 @@ export class ServerClient {
 
   async requestControl(input: ControlInput): Promise<ControlResult> {
     const counter = { attempts: 0 };
+    // Annotated, so the literal is freshness-checked against the generated variables
+    // type. `Exact<>` on the generic pins only the top level; binding it here is what
+    // makes a stray field a compile error rather than a 400 from the server.
+    const variables: RequestIngestControlMutationVariables = { input };
     try {
       const data = await this.withRetry(
         () =>
@@ -306,7 +364,7 @@ export class ServerClient {
             RequestIngestControlMutationVariables
           >({
             document: REQUEST_INGEST_CONTROL_MUTATION,
-            variables: { input },
+            variables,
             signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS),
           }),
         CONTROL_MAX_RETRIES,

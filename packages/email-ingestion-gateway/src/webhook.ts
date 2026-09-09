@@ -4,7 +4,7 @@ import { IngestReasonCode } from './contracts.js';
 import { generateCorrelationId, log } from './logger.js';
 import { extractFromMime, MAX_RAW_MIME_BYTES, type ExtractedDocument } from './mime-extractor.js';
 import { orchestrate, type OrchestratorDeps } from './orchestrator.js';
-import type { ControlSenderEvidence } from './server-client.js';
+import { toControlSenderEvidence, type ControlSenderEvidence } from './server-client.js';
 import type { AuthenticityInput, CloudflareAuthenticityVerifier } from './verifier.js';
 
 // Inbound requests carry the raw MIME message as their body, so the cap matches
@@ -197,7 +197,12 @@ export function createWebhookHandler(deps: WebhookDeps) {
       // Forward sender evidence so the server can recognize the issuing business.
       // Present even when there are no attachments (the body may still yield a
       // document during treatment).
-      senderEvidence = extraction.senderEvidence;
+      //
+      // Project rather than assign: `extraction.senderEvidence` is the extractor's
+      // own shape, which carries fields the server SDL does not define (a quoted
+      // block's `date`). A bare assignment compiles — excess-property checking skips
+      // non-literals — and puts those fields on the wire, where GraphQL answers 400.
+      senderEvidence = toControlSenderEvidence(extraction.senderEvidence);
       // Subject feeds the human-readable charge description on the server.
       subject = extraction.subject;
     } else {

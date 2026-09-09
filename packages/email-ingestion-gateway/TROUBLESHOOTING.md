@@ -72,10 +72,19 @@ cross-package runtime import) and kept in sync by parity tests.
 
 Symptom: no gateway log line for the message at all.
 
-- **Worker fell back to forwarding.** `src/worker.ts` probes `GET /health` before consuming the
-  stream; if the gateway is unreachable it calls `message.forward(FALLBACK_EMAIL)` and the email
-  goes to the legacy mailbox instead. Check Worker logs for `Gateway unreachable` and verify
-  `GATEWAY_URL` + gateway health.
+- **Worker fell back to forwarding.** `src/worker.ts` probes `GET /health` (bounded by
+  `HEALTH_PROBE_TIMEOUT_MS`) before consuming the stream; if the gateway is unreachable it calls
+  `message.forward(FALLBACK_EMAIL)` and the email goes to the legacy mailbox instead. Look for
+  `worker:gateway_unreachable` in
+  `yarn workspace @accounter/email-ingestion-gateway wrangler tail --name email-ingestion-gateway-worker`,
+  then verify `GATEWAY_URL` + gateway health.
+- **The same message keeps arriving.** Cloudflare Email Routing reads an unhandled exception from
+  the `email()` handler as a temporary delivery failure and redelivers with growing backoff, so one
+  throw becomes an unbounded loop (three messages went through 4-5 redeliveries across 12 hours that
+  way). The handler now throws only when **no copy of the message was delivered at all**; every
+  other rejection logs and returns. If you still see repeats, read the `worker:*` lines in order —
+  `worker:email:start` reports which env vars are actually bound, and `worker:forward_failed` /
+  `worker:fallback_skipped` / `worker:fallback_forward_failed` name the reason no copy landed.
 - **Feature flag off.** If `EMAIL_INGESTION_V2_ENABLED=0`, `/webhook` returns `503` immediately
   (`webhook.ts` step 1). Look for a `503` in the gateway access logs.
 - **Cloudflare routing.** The alias may not be routed to the Worker at all. See the

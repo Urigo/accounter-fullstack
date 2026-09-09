@@ -116,11 +116,48 @@ process with code `1`.
 
 See [`.dev.vars.example`](./.dev.vars.example):
 
-| Variable            | Description                                                                                        |
-| ------------------- | -------------------------------------------------------------------------------------------------- |
-| `CF_WEBHOOK_SECRET` | Must match the gateway's secret — the Worker signs, the gateway verifies.                          |
-| `GATEWAY_URL`       | URL the Worker `POST`s the webhook to.                                                             |
-| `FALLBACK_EMAIL`    | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above). |
+| Variable                    | Description                                                                                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CF_WEBHOOK_SECRET`         | Must match the gateway's secret — the Worker signs, the gateway verifies.                                                                          |
+| `GATEWAY_URL`               | URL the Worker `POST`s the webhook to.                                                                                                             |
+| `EMAIL_FORWARD_DESTINATION` | **Required.** Archive address every message is forwarded to before the webhook call. Unset or unverified ⇒ no archive copy and no loss protection. |
+| `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above).                                                 |
+| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                                                                 |
+
+### Telling the fallback copy apart
+
+`EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` must be **different addresses** — the Workers
+runtime rejects a second forward to an address already used for the message, and the Worker skips
+the fallback forward when it detects the two are equal.
+
+A plus-tag on the same mailbox is the cheapest way to get a distinct destination:
+`accounter+fallback@the-guild.dev` alongside `accounter@the-guild.dev`. The forwarded MIME is passed
+through unmodified, so the tag does not appear anywhere in the message body or its original headers
+— but it does not need to. The tag travels in the **SMTP envelope**, and the receiving server stamps
+it into a `Delivered-To:` header on the copy it accepts, so the fallback copy is filterable (in
+Gmail: `deliveredto:accounter+fallback@the-guild.dev`) without the sender's message being touched.
+
+Cloudflare requires every forward target to be a **verified destination address**, so add and verify
+the plus-tagged address in Email Routing before setting `FALLBACK_EMAIL` to it; the verification
+mail arrives in the same mailbox.
+
+The probe default is deliberately generous. The gateway scales to zero and cold-starts on _every_
+delivery, and the probe is what wakes it, so the probe always pays that cold start — production
+restarts measured 0.8-9.4 s to serve `/health`. A tight ceiling is not a safety measure here: it
+turns a slow-but-healthy cold start into "unreachable", which forwards the mail to `FALLBACK_EMAIL`
+and skips ingestion. Raise it if your host is slower; it is tunable without a Worker deploy.
+
+Set all four as **secrets**
+(`yarn workspace @accounter/email-ingestion-gateway wrangler secret put <NAME>`), not as plain-text
+variables. `wrangler.jsonc` declares no `vars`, and `wrangler deploy` reconciles bindings against
+the config file: dashboard **Text** variables are deleted on the next deploy, while secrets are
+preserved. A silently-dropped `FALLBACK_EMAIL` is what turns a gateway rejection into a redelivery
+loop.
+
+`EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` should be **different** addresses. When they match,
+the Worker skips the fallback forward (the runtime rejects a second forward to an address already
+used for the message, and the copy would be redundant anyway) and logs `worker:fallback_skipped`
+with `cause: FALLBACK_EQUALS_FORWARD_DESTINATION`.
 
 ## Local development
 

@@ -1,5 +1,33 @@
 {
-  "name": "email-ingestion-gateway-worker",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+
+  // MUST match the Worker that Cloudflare Email Routing actually routes to. This
+  // Worker predates any `wrangler deploy` — it was created by pasting source into
+  // the dashboard — so the name here was aspirational and did not match. Deploying
+  // under a non-matching name silently creates a *second* Worker and leaves Email
+  // Routing pointed at the original, which looks like a deploy that did nothing.
+  "name": "email-forward-04a7",
+
   "main": "src/worker.ts",
   "compatibility_date": "2026-06-17",
+
+  // Account id is not a secret, but it is deployment-specific: set
+  // CLOUDFLARE_ACCOUNT_ID in your shell (or as a CI secret) rather than committing
+  // it. `wrangler whoami` prints it.
+
+  // Wrangler treats this file as the source of truth and DELETES dashboard-set
+  // plain-text vars on deploy (secrets are always preserved). GATEWAY_URL is
+  // currently a plain-text var, and the Worker cannot run without it — with the
+  // default `false`, the first deploy would delete it and every inbound email would
+  // fail the health probe. This must stay true until GATEWAY_URL is a secret.
+  //
+  // Target state: all four values as secrets, then flip this to false so the file
+  // is the real source of truth and dashboard drift stops being invisible. Do not
+  // move GATEWAY_URL into a `vars` block here instead — this repo is public.
+  "keep_vars": true,
+
+  // Required for `wrangler tail` and log retention to be useful — the handler now
+  // emits one structured `worker:*` JSON line per branch, and without this they are
+  // not retained.
+  "observability": { "enabled": true },
 }
