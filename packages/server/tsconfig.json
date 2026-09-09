@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    // Type-checking program only — `tsconfig.build.json` is what emits.
+    // Type-checking program only — `tsconfig.build.json` is what emits. It carries its own
+    // `tsBuildInfoFile`: the two programs differ in options and in the files they cover, so
+    // sharing one would make each invalidate the other's state.
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/server.tsbuildinfo",
     "noEmit": true,
     // This program deliberately covers the tests too, and the helpers under `src/__tests__`
     // import `packages/migrations/src` directly, so the root has to span `packages/`. tsc

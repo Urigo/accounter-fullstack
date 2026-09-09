@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/scraper-local-app-scripts.tsbuildinfo",
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "paths": {

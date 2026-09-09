@@ -48,6 +48,24 @@ jobs:
       - name: Generate GraphQL
         run: yarn generate:graphql
 
+      # This job doesn't go through ./.github/actions/setup, so it wires the
+      # TypeScript build-info cache up itself. See that action for why the key
+      # carries a per-run suffix and why the prefix is computed in its own step.
+      - name: Compute TypeScript Build Info Cache Key
+        id: tsbuildinfo-key
+        env:
+          INPUTS_HASH: ${{ hashFiles('yarn.lock', 'tsconfig.json', 'packages/*/tsconfig*.json') }}
+        run: echo "prefix=tsbuildinfo-${RUNNER_OS}-${INPUTS_HASH}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache TypeScript Build Info
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules/.cache/tsbuildinfo
+          key: ${{ steps.tsbuildinfo-key.outputs.prefix }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ steps.tsbuildinfo-key.outputs.prefix }}-
+            tsbuildinfo-${{ runner.os }}-
+
       - name: Build Client
         working-directory: packages/client
         env:

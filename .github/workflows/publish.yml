@@ -47,6 +47,7 @@ jobs:
           # the email-ingestion-gateway's generated gql output.
           codegen: 'false'
           pgTyped: 'false'
+          tsBuildInfo: 'true'
 
       - name: alpha release
         id: changesets
@@ -78,6 +79,7 @@ jobs:
           # generated gql output.
           codegen: 'false'
           pgTyped: 'false'
+          tsBuildInfo: 'true'
 
       - name: Build Packages
         run: yarn build

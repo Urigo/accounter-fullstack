@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/modern-poalim-scraper.tsbuildinfo",
     "outDir": "dist",
     "rootDir": "./src",
     "exactOptionalPropertyTypes": true,

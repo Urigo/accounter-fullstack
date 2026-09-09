@@ -17,6 +17,12 @@ inputs:
   installDependencies:
     description: Should run yarn install?
     default: 'true'
+  tsBuildInfo:
+    description: |
+      Should restore/save the TypeScript incremental build-info cache? Only worth
+      enabling for jobs that actually run `tsc` — jobs that don't would just write
+      an empty cache entry on every run.
+    default: 'false'
   workingDirectory:
     description: Working dir
     default: ${{ github.workspace }}
@@ -49,6 +55,36 @@ runs:
           'yarn.lock') }}
         restore-keys: |
           eslint-cache-${{ runner.os }}-
+
+    # Resolved in a step of its own so the cache keys below stay one line each.
+    # `restore-keys` is a literal block: every newline in it separates two keys, so
+    # a `${{ }}` expression wrapped across lines to fit the line-length limit is a
+    # newline landing inside a key.
+    - name: Compute TypeScript Build Info Cache Key
+      id: tsbuildinfo-key
+      if: ${{ inputs.tsBuildInfo == 'true' }}
+      shell: bash
+      env:
+        INPUTS_HASH: ${{ hashFiles('yarn.lock', 'tsconfig.json', 'packages/*/tsconfig*.json') }}
+      run: echo "prefix=tsbuildinfo-${RUNNER_OS}-${INPUTS_HASH}" >> "$GITHUB_OUTPUT"
+
+    - name: Cache TypeScript Build Info
+      if: ${{ inputs.tsBuildInfo == 'true' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        # Every package points `tsBuildInfoFile` here, so one directory covers the
+        # whole workspace. The key is unique per run because cache entries are
+        # immutable — without it the first run of the day would pin a stale entry
+        # and later runs could never refresh it. `restore-keys` is what actually
+        # produces the hit: the same toolchain and tsconfig set first, then the
+        # newest entry for the OS. Build info is invalidated by TypeScript itself
+        # when a source file or a compiler option changes, so a stale restore costs
+        # a full rebuild, never a wrong one.
+        path: node_modules/.cache/tsbuildinfo
+        key: ${{ steps.tsbuildinfo-key.outputs.prefix }}-${{ github.run_id }}
+        restore-keys: |
+          ${{ steps.tsbuildinfo-key.outputs.prefix }}-
+          tsbuildinfo-${{ runner.os }}-
 
     - name: Set up Docker Buildx
       if: ${{ inputs.pgTyped == 'true' || inputs.localDB == 'true' }}

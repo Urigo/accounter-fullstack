@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/kraken-scraper.tsbuildinfo",
     "rootDir": "src",
     "outDir": "dist",
     "lib": ["es2020"],

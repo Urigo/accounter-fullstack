@@ -7,6 +7,10 @@
   // point at `dist/server/src/index.js`.
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    // Its own build info, not the one `tsconfig.json` sets: this program emits, pins a
+    // different `rootDir` and drops the tests, so sharing a file would make every `build`
+    // invalidate the last `typecheck` and vice versa.
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/server-build.tsbuildinfo",
     "noEmit": false,
     "outDir": "dist",
     // Pinned rather than inferred, so a future import that escapes `src` fails loudly with
