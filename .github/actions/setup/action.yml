@@ -72,14 +72,19 @@ runs:
       if: ${{ inputs.tsBuildInfo == 'true' }}
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        # Every package points `tsBuildInfoFile` here, so one directory covers the
-        # whole workspace. The key is unique per run because cache entries are
-        # immutable — without it the first run of the day would pin a stale entry
-        # and later runs could never refresh it. `restore-keys` is what actually
-        # produces the hit: the same toolchain and tsconfig set first, then the
-        # newest entry for the OS. Build info is invalidated by TypeScript itself
-        # when a source file or a compiler option changes, so a stale restore costs
-        # a full rebuild, never a wrong one.
+        # Every type-checking program points `tsBuildInfoFile` here, so one directory
+        # covers them all. Programs that *emit* deliberately keep their build info
+        # inside their own `outDir` and are not cached here: `tsc` trusts build info
+        # without checking that the output it describes still exists, so restoring
+        # build info over a fresh checkout (which has no git-ignored `dist`) would
+        # make those builds skip the emit and exit 0 with nothing in `dist`.
+        #
+        # The key is unique per run because cache entries are immutable — without it
+        # the first run of the day would pin a stale entry and later runs could never
+        # refresh it. `restore-keys` is what actually produces the hit: the same
+        # toolchain and tsconfig set first, then the newest entry for the OS. For the
+        # `--noEmit` programs cached here there is no output to go stale, so a stale
+        # restore costs a full typecheck, never a wrong one.
         path: node_modules/.cache/tsbuildinfo
         key: ${{ steps.tsbuildinfo-key.outputs.prefix }}-${{ github.run_id }}
         restore-keys: |

@@ -10,7 +10,15 @@
     // Its own build info, not the one `tsconfig.json` sets: this program emits, pins a
     // different `rootDir` and drops the tests, so sharing a file would make every `build`
     // invalidate the last `typecheck` and vice versa.
-    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/server-build.tsbuildinfo",
+    //
+    // It lives inside `outDir`, unlike the type-checking programs' build info under
+    // `node_modules/.cache/tsbuildinfo/`, and that placement is load-bearing: `tsc` trusts
+    // the build info without ever checking that the output it describes is still on disk.
+    // Build info that outlives its `dist` makes `tsc` skip the emit and exit 0, leaving no
+    // `dist` at all — which is exactly what a deploy does, since it restores a cached
+    // `node_modules` over a fresh checkout that has no (git-ignored) `dist`. Keeping the two
+    // in one directory means they are always created and discarded together.
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
     "noEmit": false,
     "outDir": "dist",
     // Pinned rather than inferred, so a future import that escapes `src` fails loudly with
