@@ -30,8 +30,3 @@ CLAUDE.local.md
 
 **/.wrangler
 packages/email-ingestion-gateway/.dev.vars
-
-# Local log exports pulled from the running gateway — real vendor addresses,
-# subjects and invoice numbers. Never commit these.
-packages/email-ingestion-gateway/logs.txt
-packages/email-ingestion-gateway/*.log
