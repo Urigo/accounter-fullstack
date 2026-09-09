@@ -1,6 +1,5 @@
 import { forwardRef, useState, type ComponentProps } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
-import { NumberInput } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
@@ -16,6 +15,7 @@ import {
 import { Label } from '../../ui/label.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
+import { NumberInput } from './number-input.js';
 
 const CURRENCIES = Object.values(Currency);
 
@@ -163,7 +163,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
         className="w-full min-w-[75px]"
         {...props}
         hideControls
-        precision={precision ?? 2}
+        decimalScale={precision ?? 2}
         error={error || currencyError}
       />
       <CurrencySelect {...currencyCodeProps} />
