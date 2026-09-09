@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/etherscan-scraper.tsbuildinfo",
     "rootDir": "src",
     "outDir": "dist",
     "lib": ["es2020"],

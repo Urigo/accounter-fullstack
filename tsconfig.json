@@ -14,6 +14,14 @@
     "sourceMap": true,
     "declaration": true,
 
+    // Reuse the previous compile's program state instead of typechecking from
+    // scratch every time. Inherited by every package that extends this config;
+    // each one sets its own `tsBuildInfoFile` so they never share build state.
+    // Packages built through `bob` deliberately leave `tsBuildInfoFile` unset:
+    // bob runs `tsc` twice with different `--outDir`s, so the default
+    // (per-outDir) location is the only correct one there.
+    "incremental": true,
+
     "noImplicitAny": true,
     "noImplicitThis": true,
     "alwaysStrict": true,

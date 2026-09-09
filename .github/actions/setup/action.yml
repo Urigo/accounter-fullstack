@@ -17,6 +17,12 @@ inputs:
   installDependencies:
     description: Should run yarn install?
     default: 'true'
+  tsBuildInfo:
+    description: |
+      Should restore/save the TypeScript incremental build-info cache? Only worth
+      enabling for jobs that actually run `tsc` — jobs that don't would just write
+      an empty cache entry on every run.
+    default: 'false'
   workingDirectory:
     description: Working dir
     default: ${{ github.workspace }}
@@ -49,6 +55,27 @@ runs:
           'yarn.lock') }}
         restore-keys: |
           eslint-cache-${{ runner.os }}-
+
+    - name: Cache TypeScript Build Info
+      if: ${{ inputs.tsBuildInfo == 'true' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        # Every package points `tsBuildInfoFile` here, so one directory covers the
+        # whole workspace. The key is unique per run because cache entries are
+        # immutable — without it the first run of the day would pin a stale entry
+        # and later runs could never refresh it. `restore-keys` is what actually
+        # produces the hit, falling back to the newest entry for the same toolchain
+        # and tsconfig set. Build info is invalidated by TypeScript itself when a
+        # source file or a compiler option changes, so a stale restore costs a full
+        # rebuild, never a wrong one.
+        path: node_modules/.cache/tsbuildinfo
+        key:
+          tsbuildinfo-${{ runner.os }}-${{ hashFiles('yarn.lock', 'tsconfig.json',
+          'packages/*/tsconfig*.json') }}-${{ github.run_id }}
+        restore-keys: |
+          tsbuildinfo-${{ runner.os }}-${{ hashFiles('yarn.lock', 'tsconfig.json',
+          'packages/*/tsconfig*.json') }}-
+          tsbuildinfo-${{ runner.os }}-
 
     - name: Set up Docker Buildx
       if: ${{ inputs.pgTyped == 'true' || inputs.localDB == 'true' }}

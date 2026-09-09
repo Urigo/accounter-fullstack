@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/gmail-listener.tsbuildinfo",
     "rootDir": "src",
     "outDir": "dist",
     "lib": ["ES2022", "dom"],

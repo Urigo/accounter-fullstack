@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/scraper-app.tsbuildinfo",
     "jsx": "react-jsx",
     "rootDir": "src",
     "outDir": "dist",

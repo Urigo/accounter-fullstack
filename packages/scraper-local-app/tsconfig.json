@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/scraper-local-app.tsbuildinfo",
     "rootDir": "src",
     "outDir": "dist",
     "paths": {

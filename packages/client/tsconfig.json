@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/client.tsbuildinfo",
     "module": "ESNext",
     "lib": ["DOM", "ESNext"],
     "composite": true,

@@ -66,6 +66,16 @@ yarn seed:admin-context # Seed admin context for server
 - Generated files are git-ignored: `__generated__/`, `gql/`, `schema.graphql`.
 - NEVER manually edit generated files.
 
+# TypeScript Build Cache
+
+- Every `tsc` run is incremental. Build info lives in `node_modules/.cache/tsbuildinfo/`, one file
+  per package (`tsBuildInfoFile` in each `packages/<name>/tsconfig.json`).
+- A new package that extends the root config inherits `incremental` — give it its own
+  `tsBuildInfoFile` there so it doesn't share build state with another package. Packages built by
+  `bob` are the exception: leave `tsBuildInfoFile` unset, since `bob` runs `tsc` once per output
+  format.
+- If a build ever looks stale, delete `node_modules/.cache/tsbuildinfo/` (or run `tsc --force`).
+
 # Architecture
 
 - **GraphQL Modules**: the server uses `graphql-modules`. Each module in

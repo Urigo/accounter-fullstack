@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/client-scripts.tsbuildinfo",
     "composite": false
   },
   "include": [".storybook/**/*", "src/vite-env.d.ts"]

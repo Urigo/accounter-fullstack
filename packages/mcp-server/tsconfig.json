@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/mcp-server.tsbuildinfo",
     "rootDir": "src",
     "outDir": "dist",
     "module": "ES2022",
