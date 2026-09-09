@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from 're
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Select } from '@mantine/core';
 import {
   AllBusinessTripsDocument,
   type EditChargeQuery,
@@ -19,6 +18,7 @@ import {
 import { useGetTags } from '../../../hooks/use-get-tags.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Switch } from '../../ui/switch.js';
@@ -206,19 +206,17 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
                 name="defaultTaxCategoryID"
                 control={control}
                 defaultValue={chargeInputData.defaultTaxCategoryID}
-                render={({ field, fieldState }): ReactElement => (
+                render={({ field }): ReactElement => (
                   <FormItem>
                     <FormLabel>Tax Category Override</FormLabel>
                     <FormControl>
-                      <Select
+                      <ComboBox
                         {...field}
                         data={taxCategories}
                         value={field.value}
                         disabled={fetchingTaxCategories}
                         placeholder="Scroll to see all options"
-                        maxDropdownHeight={160}
-                        searchable
-                        error={!!fieldState.error}
+                        formPart
                       />
                     </FormControl>
                     <FormMessage />
@@ -229,23 +227,21 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
                 name="businessTripID"
                 control={control}
                 defaultValue={chargeInputData.businessTripID}
-                render={({ field, fieldState }): ReactElement => (
+                render={({ field }): ReactElement => (
                   <FormItem>
                     <FormLabel>Business Trip</FormLabel>
                     <FormControl>
-                      <Select
-                        {...field}
-                        data={businessTrips}
-                        value={field.value}
-                        disabled={fetchingBusinessTrips}
-                        placeholder="Scroll to see all options"
-                        maxDropdownHeight={160}
-                        searchable
-                        error={!!fieldState.error}
-                        rightSection={
-                          <InsertBusinessTripModal onDone={refetchBusinessTripsCallback} />
-                        }
-                      />
+                      <div className="flex flex-row items-center gap-2">
+                        <ComboBox
+                          {...field}
+                          data={businessTrips}
+                          value={field.value}
+                          disabled={fetchingBusinessTrips}
+                          placeholder="Scroll to see all options"
+                          formPart
+                        />
+                        <InsertBusinessTripModal onDone={refetchBusinessTripsCallback} />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -286,18 +282,16 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
                 name="type"
                 control={control}
                 defaultValue={chargeInputData.type}
-                render={({ field, fieldState }): ReactElement => (
+                render={({ field }): ReactElement => (
                   <FormItem>
                     <FormLabel>Charge Type</FormLabel>
                     <FormControl>
-                      <Select
+                      <ComboBox
                         {...field}
                         data={chargeTypes}
                         value={field.value}
                         placeholder="Scroll to see all options"
-                        maxDropdownHeight={160}
-                        searchable
-                        error={!!fieldState.error}
+                        formPart
                       />
                     </FormControl>
                     <FormMessage />

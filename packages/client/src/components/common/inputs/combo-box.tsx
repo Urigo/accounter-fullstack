@@ -14,6 +14,7 @@ import {
 } from '../../ui/command.js';
 import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer.js';
 import { FormControl } from '../../ui/form.js';
+import { Label } from '../../ui/label.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
 type Option = {
@@ -31,6 +32,12 @@ type ComboBoxProps = {
   value?: string | null;
   formPart?: boolean;
   error?: string;
+  /** Rendered above the trigger. Carried over from Mantine's `Select`. */
+  label?: string;
+  id?: string;
+  /** Associates the trigger with a form element rendered outside it. */
+  form?: string;
+  required?: boolean;
 };
 
 export function ComboBox({
@@ -42,7 +49,13 @@ export function ComboBox({
   value,
   formPart,
   error,
+  label,
+  id,
+  form,
+  required,
 }: ComboBoxProps) {
+  const generatedId = React.useId();
+  const triggerId = id ?? generatedId;
   const [open, setOpen] = React.useState(false);
   // When the ComboBox is rendered inside a modal layer (e.g. the vaul Drawer used by PopUpDrawer),
   // the underlying Radix Dialog traps focus and blocks interaction with any element portaled to
@@ -63,10 +76,14 @@ export function ComboBox({
   if (isDesktop) {
     return (
       <div className="flex flex-col gap-1 w-full">
+        {label ? <Label htmlFor={triggerId}>{label}</Label> : null}
         <Popover modal open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild className="w-full min-w-40">
             <Trigger
+              id={triggerId}
               placeholder={placeholder}
+              form={form}
+              aria-required={required || undefined}
               selectedOption={selectedOption}
               disabled={disabled}
               formPart={formPart}
@@ -90,10 +107,14 @@ export function ComboBox({
 
   return (
     <div className="flex flex-col gap-1 w-full">
+      {label ? <Label htmlFor={triggerId}>{label}</Label> : null}
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <Trigger
+            id={triggerId}
             placeholder={placeholder}
+            form={form}
+            aria-required={required || undefined}
             selectedOption={selectedOption}
             disabled={disabled}
             formPart={formPart}

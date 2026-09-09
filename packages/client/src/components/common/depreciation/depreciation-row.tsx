@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Select } from '@mantine/core';
 import {
   AllDepreciationCategoriesDocument,
   DepreciationRecordRowFieldsFragmentDoc,
@@ -16,6 +15,7 @@ import {
   type MakeBoolean,
 } from '../../../helpers/index.js';
 import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
@@ -188,21 +188,17 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
             <FormField
               name="categoryId"
               control={control}
-              render={({ field, fieldState }): ReactElement => (
+              render={({ field }): ReactElement => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <FormControl>
-                    <Select
+                    <ComboBox
                       {...field}
                       form={`form ${depreciationRecord.id}`}
                       disabled={fetchingCategories}
                       data={categories ?? []}
                       placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                      withinPortal
-                      zIndex={1002}
+                      formPart
                     />
                   </FormControl>
                   <FormMessage />
@@ -220,21 +216,17 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
             <FormField
               name="type"
               control={control}
-              render={({ field, fieldState }): ReactElement => (
+              render={({ field }): ReactElement => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
                   <FormControl>
-                    <Select
+                    <ComboBox
                       {...field}
                       form={`form ${depreciationRecord.id}`}
                       data={depreciationTypes}
                       value={field.value}
                       placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                      withinPortal
-                      zIndex={1002}
+                      formPart
                     />
                   </FormControl>
                   <FormMessage />

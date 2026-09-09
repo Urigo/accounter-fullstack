@@ -3,7 +3,6 @@ import { format, subYears } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Select } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import type { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
 import { type TimelessDateString } from '../../../helpers/index.js';
@@ -11,6 +10,7 @@ import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.j
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { PopUpModal } from '../../common/index.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Button } from '../../ui/button.js';
 
@@ -56,15 +56,13 @@ function ValidateReportsFilterForm({
           control={control}
           defaultValue={undefined}
           render={({ field, fieldState }): ReactElement => (
-            <Select
+            <ComboBox
               {...field}
               data={adminBusinesses}
               value={soleAdminBusinessId ?? field.value}
               disabled={feLoading || !!soleAdminBusinessId}
               label="Report Issuer"
               placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
               error={fieldState.error?.message}
             />
           )}

@@ -6,11 +6,12 @@ import { useFieldArray, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Input, Select } from '@mantine/core';
+import { Input } from '@mantine/core';
 import { Currency, type GenerateBalanceChargeMutationVariables } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX, type TimelessDateString } from '../../../helpers/index.js';
 import { useGenerateBalanceCharge } from '../../../hooks/use-balance-charge.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { Button } from '../../ui/button.js';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
@@ -174,15 +175,14 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              <Select
+                              <ComboBox
                                 {...field}
                                 required
                                 data={financialEntities}
                                 value={field.value}
                                 disabled={fetchingFinancialEntities}
                                 placeholder="Creditor"
-                                maxDropdownHeight={160}
-                                searchable
+                                formPart
                               />
                             </FormControl>
                             <FormMessage />
@@ -208,15 +208,14 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
-                              <Select
+                              <ComboBox
                                 {...field}
                                 required
                                 data={financialEntities}
                                 value={field.value}
                                 disabled={fetchingFinancialEntities}
                                 placeholder="Debtor"
-                                maxDropdownHeight={160}
-                                searchable
+                                formPart
                               />
                             </FormControl>
                             <FormMessage />

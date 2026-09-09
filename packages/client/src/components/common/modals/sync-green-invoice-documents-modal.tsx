@@ -1,8 +1,9 @@
 import { useEffect, type ReactElement } from 'react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Modal, Select } from '@mantine/core';
+import { Modal } from '@mantine/core';
 import { useGetAdminBusinesses } from '@/hooks/use-get-admin-businesses.js';
 import { useSyncGreenInvoiceDocuments } from '../../../hooks/use-sync-green-invoice-documents.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 
 type ModalProps = {
   opened: boolean;
@@ -51,15 +52,13 @@ export function SyncDocumentsModal({ opened, close, setIsLoading }: ModalProps):
             control={control}
             rules={{ required: 'Owner is required' }}
             render={({ field, fieldState }): ReactElement => (
-              <Select
+              <ComboBox
                 {...field}
                 data={adminBusinesses}
                 value={soleAdminBusinessId ?? field.value}
                 disabled={fetchingAdminBusinesses || !!soleAdminBusinessId}
                 label="Owner:"
                 placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
                 error={fieldState.error?.message}
               />
             )}

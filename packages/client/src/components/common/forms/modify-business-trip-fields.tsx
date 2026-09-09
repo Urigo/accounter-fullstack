@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { type Control } from 'react-hook-form';
-import { Select } from '@mantine/core';
 import type { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useAllCountries } from '../../../hooks/use-get-countries.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { DatePickerInput } from '../index.js';
@@ -89,11 +89,11 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
       <FormField
         name="destinationCode"
         control={control}
-        render={({ field, fieldState }): ReactElement => (
+        render={({ field }): ReactElement => (
           <FormItem>
             <FormLabel>Destination</FormLabel>
             <FormControl>
-              <Select
+              <ComboBox
                 {...field}
                 data={countries.map(country => ({
                   value: country.code,
@@ -101,9 +101,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
                 }))}
                 value={field.value ?? undefined}
                 disabled={fetchingCountries}
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
+                formPart
               />
             </FormControl>
             <FormMessage />

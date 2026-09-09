@@ -3,12 +3,12 @@ import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Select } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import { Currency, type IncomeExpenseChartFilters } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX, type TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../common/index.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Button } from '../../ui/button.js';
 
@@ -77,13 +77,18 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
       <Controller
         name="currency"
         control={control}
+        // Mantine's Select took `defaultValue` directly; ComboBox is controlled, so the
+        // default belongs to the field.
+        defaultValue={Currency.Usd}
         render={({ field, fieldState }): ReactElement => (
-          <Select
+          <ComboBox
             {...field}
             label="Currency"
-            defaultValue={Currency.Usd}
             error={fieldState.error?.message}
-            data={Object.keys(Currency).map(key => Currency[key as keyof typeof Currency])}
+            data={Object.values(Currency).map(currency => ({
+              value: currency,
+              label: currency,
+            }))}
           />
         )}
       />
