@@ -4,7 +4,6 @@ import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Select } from '@mantine/core';
-import { MonthPickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import { ChargeFilterType, type VatReportFilter } from '../../../gql/graphql.js';
 import { type TimelessDateString } from '../../../helpers/index.js';
@@ -13,6 +12,7 @@ import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { chargesTypeFilterOptions } from '../../charges/charges-filters/index.js';
 import { PopUpModal } from '../../common/index.js';
+import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Button } from '../../ui/button.js';
 import { getDefaultVatReportMonth } from './utils.js';
 
@@ -56,7 +56,10 @@ function VatMonthlyReportFilterForm({
     closeModal();
   }
 
-  function onSelectDate(date: Date): void {
+  function onSelectDate(date: Date | null): void {
+    if (!date) {
+      return;
+    }
     const month = new Date(date.getFullYear(), date.getMonth(), 15);
     setValue('monthDate', format(month, 'yyyy-MM-dd') as TimelessDateString);
   }
@@ -103,7 +106,6 @@ function VatMonthlyReportFilterForm({
           defaultValue={defaultPickerMonth}
           defaultDate={defaultPickerMonth}
           onChange={onSelectDate}
-          popoverProps={{ withinPortal: true }}
         />
         <div className="flex justify-center mt-5 gap-3">
           <button
@@ -168,17 +170,13 @@ export function VatMonthlyReportFilter({
 
   return (
     <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <VatMonthlyReportFilterForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)}>
+        <VatMonthlyReportFilterForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Button
         variant="outline"
         size="icon"

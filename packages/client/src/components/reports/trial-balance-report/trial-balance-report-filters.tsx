@@ -2,7 +2,7 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Indicator, MultiSelect } from '@mantine/core';
+import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
@@ -13,6 +13,7 @@ import { UserContext } from '../../../providers/user-provider.js';
 import { DatePickerInput, PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Indicator } from '../../ui/indicator.js';
 import { Switch } from '../../ui/switch.js';
 
 export type TrialBalanceReportFilters = BusinessTransactionsFilter & {
@@ -266,17 +267,13 @@ export function TrialBalanceReportFilters({
 
   return (
     <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <TrialBalanceReportFilterForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)}>
+        <TrialBalanceReportFilterForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Indicator inline size={16} disabled={!isFiltered}>
         <Button variant="outline" onClick={(): void => setOpened(true)} className="p-2">
           <Filter size={20} />

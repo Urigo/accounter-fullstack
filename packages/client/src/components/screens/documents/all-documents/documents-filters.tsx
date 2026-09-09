@@ -3,7 +3,7 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
+import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import {
   DocumentType,
@@ -19,7 +19,7 @@ import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesse
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
-import { DatePickerInput, PopUpModal } from '../../../common/index.js';
+import { DatePickerInput, PopUpModal, SimpleGrid } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import {
   Form,
@@ -29,6 +29,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Indicator } from '../../../ui/indicator.js';
 import { Input } from '../../../ui/input.js';
 import { Switch } from '../../../ui/switch.js';
 
@@ -341,18 +342,13 @@ export function DocumentsFilters({
 
   return (
     <div className="flex flex-row gap-5 items-center">
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <DocumentsFiltersForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-        modalSize="xl"
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)} modalSize="xl">
+        <DocumentsFiltersForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Indicator inline size={16} disabled={!isFiltered}>
         <Button
           variant="outline"

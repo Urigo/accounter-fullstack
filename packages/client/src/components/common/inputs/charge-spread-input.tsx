@@ -8,13 +8,13 @@ import {
   type Path,
   type UseFormReturn,
 } from 'react-hook-form';
-import { NumberInput } from '@mantine/core';
-import { YearPickerInput } from '@mantine/dates';
 import {
   useControlledFieldArray,
   type FieldArrayItem,
 } from '../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../ui/button.js';
+import { NumberInput } from './number-input.js';
+import { YearPickerInput } from './year-picker-input.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -58,7 +58,6 @@ export function ChargeSpreadInput<T extends FieldValues>({
                       label="Year of relevance"
                       value={value ? new Date(value) : null}
                       error={fieldState.error?.message}
-                      popoverProps={{ withinPortal: true, zIndex: 1002 }}
                       required
                       onChange={date => {
                         trigger(chargeSpreadPath as Path<T>);
@@ -81,7 +80,8 @@ export function ChargeSpreadInput<T extends FieldValues>({
                     label="Amount"
                     value={field.value ?? undefined}
                     hideControls
-                    precision={2}
+                    decimalScale={2}
+                    fixedDecimalScale
                     error={fieldState.error?.message}
                     onChange={amount =>
                       field.onChange(amount && typeof amount === 'number' ? amount : undefined)

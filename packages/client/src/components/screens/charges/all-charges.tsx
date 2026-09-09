@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
-import { LoadingOverlay } from '@mantine/core';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { ChargesTable } from '@/components/charges/charges-table.js';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
@@ -12,6 +11,7 @@ import { ChargesFilters } from '../../charges/charges-filters/index.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
+import { LoadingOverlay } from '../../ui/overlay.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -145,7 +145,7 @@ export const AllCharges = (): ReactElement => {
         // but overlay a spinner so it's clear the charges are being reloaded
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
-          <LoadingOverlay visible={fetching} overlayBlur={1} />
+          <LoadingOverlay visible={fetching} blur={1} />
           <ChargesTable
             data={chargeNodes}
             rowSelection={rowSelection}

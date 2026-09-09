@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Modal, Overlay, Select } from '@mantine/core';
+import { Loader, Select } from '@mantine/core';
 import {
   AllDepreciationCategoriesDocument,
   type InsertDepreciationRecordInput,
@@ -11,7 +11,9 @@ import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Overlay } from '../../ui/overlay.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
+import { PopUpModal } from '../modals/modal.js';
 import { depreciationTypes } from './index.js';
 
 export function AddDepreciationRecord(props: {
@@ -87,9 +89,8 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
   }, [fetchingCategories, addingInProcess]);
 
   return (
-    <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Depreciation Record</Modal.Title>
-      <Modal.Body>
+    <PopUpModal opened={opened} onClose={close} title="Add Depreciation Record" withCloseButton>
+      <div>
         <Form {...form}>
           <form onSubmit={handleSubmit(onSubmit)}>
             <FormField
@@ -156,6 +157,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
                   searchable
                   error={fieldState.error?.message}
                   withinPortal
+                  zIndex={1002}
                 />
               )}
             />
@@ -173,6 +175,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
                   searchable
                   error={fieldState.error?.message}
                   withinPortal
+                  zIndex={1002}
                 />
               )}
             />
@@ -187,12 +190,12 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
             </div>
           </form>
         </Form>
-      </Modal.Body>
+      </div>
       {(addingInProcess || fetching) && (
         <Overlay blur={1} center>
           <Loader />
         </Overlay>
       )}
-    </Modal>
+    </PopUpModal>
   );
 }

@@ -1,0 +1,26 @@
+{
+  // Emit configuration: `yarn build` is `tsc -p tsconfig.build.json`.
+  //
+  // Split out from `tsconfig.json` so the emitted program is server-only. The test helpers
+  // under `src/__tests__` import `packages/migrations/src` directly, and any such file in the
+  // program forces `rootDir` back up to `packages/` — which is what used to bury the entry
+  // point at `dist/server/src/index.js`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    // Pinned rather than inferred, so a future import that escapes `src` fails loudly with
+    // TS6059 instead of silently re-nesting the whole of `dist`.
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "exclude": [
+    "**/__generated__",
+    "**/dist/**",
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/test-utils/**",
+    "src/demo-fixtures/**"
+  ]
+}

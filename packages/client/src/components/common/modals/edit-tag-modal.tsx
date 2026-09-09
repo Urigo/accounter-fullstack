@@ -1,10 +1,10 @@
 import { useState, type ReactElement } from 'react';
 import { Edit } from 'lucide-react';
-import { Modal } from '@mantine/core';
 import { EditTagFieldsFragmentDoc } from '../../../gql/graphql.js';
 import type { FragmentType } from '../../../gql/index.js';
 import { Button } from '../../ui/button.js';
 import { EditTag, Tooltip } from '../index.js';
+import { PopUpModal } from './modal.js';
 
 interface Props {
   data: FragmentType<typeof EditTagFieldsFragmentDoc>;
@@ -26,9 +26,9 @@ export const EditTagModal = ({ onDone, data }: Props): ReactElement => {
           <Edit className="size-5" />
         </Button>
       </Tooltip>
-      <Modal centered opened={opened} onClose={close} title="Insert Business Trip">
+      <PopUpModal opened={opened} onClose={close} title="Edit Tag" withCloseButton>
         <EditTag close={close} onDone={onEditDone} data={data} />
-      </Modal>
+      </PopUpModal>
     </>
   );
 };

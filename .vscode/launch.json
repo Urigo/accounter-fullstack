@@ -8,7 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Server",
-      "program": "${workspaceFolder}/packages/server/dist/server/src/index.js",
+      "program": "${workspaceFolder}/packages/server/dist/index.js",
       "console": "integratedTerminal",
       "runtimeArgs": []
     }

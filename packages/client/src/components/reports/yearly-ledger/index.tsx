@@ -2,13 +2,13 @@ import { useContext, useEffect, useMemo, useState, type ReactElement } from 'rea
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { YearPickerInput } from '@mantine/dates';
 import { flexRender, useTable, type ColumnDef, type Row } from '@tanstack/react-table';
 import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import { Currency, YearlyLedgerDocument, type YearlyLedgerQuery } from '../../../gql/graphql.js';
 import { getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { DataTablePagination } from '../../common/index.js';
+import { YearPickerInput } from '../../common/inputs/year-picker-input.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { DownloadCSV } from './download-csv.js';
@@ -206,7 +206,6 @@ export const YearlyLedgerReport = (): ReactElement => {
           <YearPickerInput
             value={new Date(year, 0, 1)}
             onChange={date => date && setYear(date?.getFullYear())}
-            popoverProps={{ withinPortal: true }}
             minDate={new Date(2010, 0, 1)}
             maxDate={new Date()}
           />

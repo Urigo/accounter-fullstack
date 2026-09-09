@@ -1,7 +1,7 @@
 import { useMemo, type ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import type { ChargeType } from '../../../helpers/index.js';
 import { DragFile, ListCapsule } from '../../common/index.js';
+import { Indicator } from '../../ui/indicator.js';
 
 export type MoreInfoProps = {
   chargeId: string;
@@ -76,14 +76,7 @@ export const MoreInfo = ({
       extraClassName:
         info?.transactionsCount || !shouldHaveTransactions ? undefined : 'bg-yellow-400',
       content: (
-        <Indicator
-          key="transactions"
-          inline
-          size={12}
-          disabled={!isTransactionsError}
-          color="red"
-          zIndex="auto"
-        >
+        <Indicator key="transactions" inline size={12} disabled={!isTransactionsError} color="red">
           <div className="whitespace-nowrap">Transactions: {info?.transactionsCount ?? 0}</div>
         </Indicator>
       ),
@@ -99,7 +92,6 @@ export const MoreInfo = ({
         processing={!ledgerStatus}
         disabled={ledgerStatus === 'VALID'}
         color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
-        zIndex="auto"
       >
         <div className="whitespace-nowrap">Ledger Records: {info?.ledgerCount ?? 0}</div>
       </Indicator>
@@ -109,14 +101,7 @@ export const MoreInfo = ({
   if (isDocumentsError || info?.documentsCount) {
     list.push({
       content: (
-        <Indicator
-          key="documents"
-          inline
-          size={12}
-          disabled={!isDocumentsError}
-          color="red"
-          zIndex="auto"
-        >
+        <Indicator key="documents" inline size={12} disabled={!isDocumentsError} color="red">
           <div className="whitespace-nowrap">Documents: {info?.documentsCount ?? 0}</div>
         </Indicator>
       ),

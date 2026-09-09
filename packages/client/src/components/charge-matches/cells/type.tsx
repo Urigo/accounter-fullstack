@@ -1,5 +1,4 @@
 import { useMemo, type ReactElement } from 'react';
-import { ThemeIcon } from '@mantine/core';
 import { getChargeTypeIcon, getChargeTypeName, type ChargeType } from '../../../helpers/index.js';
 
 type Props = {
@@ -20,9 +19,9 @@ export const TypeCell = ({ type }: Props): ReactElement => {
   return (
     <>
       <div>{text}</div>
-      <ThemeIcon radius="xl" size="xl">
+      <span className="inline-flex size-11 items-center justify-center rounded-full bg-blue-500 text-white">
         {icon}
-      </ThemeIcon>
+      </span>
     </>
   );
 };

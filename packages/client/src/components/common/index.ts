@@ -4,7 +4,6 @@ export * from './buttons/index.js';
 export * from './common-wrappers.js';
 export * from './data-table-column-header.js';
 export * from './data-table-pagination.js';
-export * from './divider.js';
 export * from './document-image-drawer.js';
 export * from './footer.js';
 export * from './forms/index.js';

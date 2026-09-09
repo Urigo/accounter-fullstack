@@ -3,8 +3,7 @@ import { format } from 'date-fns';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { NumberInput, Select } from '@mantine/core';
-import { MonthPickerInput } from '@mantine/dates';
+import { Select } from '@mantine/core';
 import {
   AllEmployeesByEmployerDocument,
   AllPensionFundsDocument,
@@ -19,9 +18,11 @@ import {
 } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { CurrencyInput, SimpleGrid } from '../index.js';
+import { NumberInput } from '../inputs/number-input.js';
 
 type Props = {
   isNewInsert: boolean;
@@ -172,7 +173,10 @@ export const ModifySalaryRecord = ({
     }
   };
 
-  function onSelectMonth(date: Date): void {
+  function onSelectMonth(date: Date | null): void {
+    if (!date) {
+      return;
+    }
     setValue('month', format(date, 'yyyy-MM-dd') as TimelessDateString, {
       shouldDirty: true,
       shouldTouch: true,
@@ -189,7 +193,6 @@ export const ModifySalaryRecord = ({
                 defaultDate={defaultMonth ? new Date(defaultMonth) : undefined}
                 defaultValue={defaultMonth ? new Date(defaultMonth) : undefined}
                 onChange={onSelectMonth}
-                popoverProps={{ withinPortal: true }}
               />
               <Controller
                 name="employer"
@@ -262,7 +265,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Base Salary"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -281,7 +283,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Global Additional Hours"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -300,7 +301,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Bonus"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -319,7 +319,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Gift"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -338,7 +337,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Travel and Subsistence"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -357,7 +355,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Recovery"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -375,7 +372,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Vacation Takeout"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -397,7 +393,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Direct Payment"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -436,7 +431,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Pension Employee Amount"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -453,9 +447,8 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
-                    rightSection="%"
+                    decimalScale={2}
+                    suffix="%"
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Pension Employee Percentage"
@@ -472,7 +465,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Pension Employer Amount"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -489,9 +481,8 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
-                    rightSection="%"
+                    decimalScale={2}
+                    suffix="%"
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Pension Employer Percentage"
@@ -510,7 +501,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Compensations Amount"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -527,9 +517,8 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
-                    rightSection="%"
+                    decimalScale={2}
+                    suffix="%"
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Compensations Percentage"
@@ -566,7 +555,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Training Employee Amount"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -583,9 +571,8 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
-                    rightSection="%"
+                    decimalScale={2}
+                    suffix="%"
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Training Employee Percentage"
@@ -602,7 +589,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Training Employer Amount"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -619,9 +605,8 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
-                    rightSection="%"
+                    decimalScale={2}
+                    suffix="%"
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Training Employer Percentage"
@@ -640,7 +625,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Social Security - Employee"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -659,7 +643,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Social Security - Employer"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -678,7 +661,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Health Insurance"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -699,7 +681,6 @@ export const ModifySalaryRecord = ({
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
                     label="Income Tax"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -717,9 +698,8 @@ export const ModifySalaryRecord = ({
                     {...field}
                     value={field.value ?? undefined}
                     error={fieldState.error?.message}
-                    precision={0}
+                    decimalScale={0}
                     label="Notional Expense"
-                    removeTrailingZeros
                     currencyCodeProps={{
                       value: 'ILS',
                       label: 'Currency',
@@ -738,8 +718,7 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
+                    decimalScale={2}
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Work Days"
@@ -754,8 +733,7 @@ export const ModifySalaryRecord = ({
                 <NumberInput
                   {...field}
                   hideControls
-                  precision={2}
-                  removeTrailingZeros
+                  decimalScale={2}
                   value={value ?? undefined}
                   error={fieldState.error?.message}
                   label="Hours"
@@ -770,8 +748,7 @@ export const ModifySalaryRecord = ({
                 <NumberInput
                   {...field}
                   hideControls
-                  precision={2}
-                  removeTrailingZeros
+                  decimalScale={2}
                   value={value ?? undefined}
                   error={fieldState.error?.message}
                   label="Hourly Rate"
@@ -786,8 +763,7 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
+                    decimalScale={2}
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Added Vacation Days"
@@ -802,8 +778,7 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
+                    decimalScale={2}
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Vacation Days Balance"
@@ -818,8 +793,7 @@ export const ModifySalaryRecord = ({
                   <NumberInput
                     {...field}
                     hideControls
-                    precision={2}
-                    removeTrailingZeros
+                    decimalScale={2}
                     value={value ?? undefined}
                     error={fieldState.error?.message}
                     label="Sickness Days Balance"

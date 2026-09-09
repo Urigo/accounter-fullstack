@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
-import { Indicator } from '@mantine/core';
 import { DocumentType } from '../../../gql/graphql.js';
 import { getDocumentNameFromType } from '../../../helpers/index.js';
+import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -17,7 +17,7 @@ export const TypeCell = ({ document: { documentType }, isOpen }: Props): ReactEl
   return (
     <div className="flex flex-wrap">
       <div className="flex flex-col justify-center whitespace-normal">
-        <Indicator inline size={12} disabled={!isError && !isOpen} color={color} zIndex="auto">
+        <Indicator inline size={12} disabled={!isError && !isOpen} color={color}>
           <p>{getDocumentNameFromType(cellText)}</p>
         </Indicator>
       </div>

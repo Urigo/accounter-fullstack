@@ -4,7 +4,6 @@ import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Select } from '@mantine/core';
-import { MonthPickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import type { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
 import { type TimelessDateString } from '../../../helpers/index.js';
@@ -12,6 +11,7 @@ import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.j
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { PopUpModal } from '../../common/index.js';
+import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Button } from '../../ui/button.js';
 
 interface ValidateReportsFilterFormProps {
@@ -73,21 +73,25 @@ function ValidateReportsFilterForm({
           label="From date"
           defaultValue={filter?.fromMonthDate ? new Date(filter.fromMonthDate) : new Date()}
           defaultDate={filter?.fromMonthDate ? new Date(filter.fromMonthDate) : new Date()}
-          onChange={(date: Date) => {
+          onChange={date => {
+            if (!date) {
+              return;
+            }
             const month = new Date(date.getFullYear(), date.getMonth(), 15);
             setValue('fromMonthDate', format(month, 'yyyy-MM-dd') as TimelessDateString);
           }}
-          popoverProps={{ withinPortal: true }}
         />
         <MonthPickerInput
           label="To date"
           defaultValue={filter?.toMonthDate ? new Date(filter.toMonthDate) : new Date()}
           defaultDate={filter?.toMonthDate ? new Date(filter.toMonthDate) : new Date()}
-          onChange={(date: Date) => {
+          onChange={date => {
+            if (!date) {
+              return;
+            }
             const month = new Date(date.getFullYear(), date.getMonth(), 15);
             setValue('toMonthDate', format(month, 'yyyy-MM-dd') as TimelessDateString);
           }}
-          popoverProps={{ withinPortal: true }}
         />
         <div className="flex justify-center mt-5 gap-3">
           <Button type="submit">Filter</Button>
@@ -137,17 +141,13 @@ export function ValidateReportsFilter({
 
   return (
     <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <ValidateReportsFilterForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)}>
+        <ValidateReportsFilterForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Button
         variant="outline"
         size="icon"

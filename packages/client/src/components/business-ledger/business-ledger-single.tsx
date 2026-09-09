@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Mark } from '@mantine/core';
 import {
   BusinessLedgerRecordsSummeryDocument,
   Currency,
@@ -84,7 +83,9 @@ export const BusinessLedgerRecordsSingle = ({ businessId }: Props): ReactElement
           title: 'Total',
           value: data =>
             data.total.raw && (data.total.raw < -0.0001 || data.total.raw > 0.0001) ? (
-              <Mark color={data.total.raw > 0 ? 'green' : 'red'}>{data.total.formatted}</Mark>
+              <mark className={data.total.raw > 0 ? 'bg-green-200' : 'bg-red-200'}>
+                {data.total.formatted}
+              </mark>
             ) : (
               data.total.formatted
             ),
@@ -132,9 +133,9 @@ function getCurrencyCells(currency: Currency): CellInfo[] {
         const currencyData = data.foreignCurrenciesSum.find(c => c.currency === currency);
         return currencyData?.total?.raw &&
           (currencyData.total.raw < -0.0001 || currencyData.total.raw > 0.0001) ? (
-          <Mark color={currencyData.total.raw > 0 ? 'green' : 'red'}>
+          <mark className={currencyData.total.raw > 0 ? 'bg-green-200' : 'bg-red-200'}>
             {currencyData.total.formatted}
-          </Mark>
+          </mark>
         ) : (
           currencyData?.total?.formatted
         );

@@ -4,12 +4,12 @@ import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Select } from '@mantine/core';
-import { MonthPickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import { Currency, type IncomeExpenseChartFilters } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX, type TimelessDateString } from '../../../helpers/index.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { PopUpModal } from '../../common/index.js';
+import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Button } from '../../ui/button.js';
 
 interface ChartFilterFormProps {
@@ -49,7 +49,6 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
               field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined);
             }}
             error={fieldState.error?.message}
-            popoverProps={{ withinPortal: true }}
           />
         )}
       />
@@ -72,7 +71,6 @@ function ChartFilterForm({ filter, setFilter, closeModal }: ChartFilterFormProps
               field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined);
             }}
             error={fieldState.error?.message}
-            popoverProps={{ withinPortal: true }}
           />
         )}
       />
@@ -139,17 +137,13 @@ export function ChartFilter({ filter, setFilter }: ChargeFilterProps): ReactElem
 
   return (
     <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <ChartFilterForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)}>
+        <ChartFilterForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Button
         variant="outline"
         size="icon"

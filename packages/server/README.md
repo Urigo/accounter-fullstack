@@ -1,5 +1,74 @@
 # @accounter-helper/server
 
+## Building
+
+```bash
+yarn workspace @accounter/server build
+```
+
+`build` is a single `tsc -p tsconfig.build.json` pass — there is no post-processing step. The
+emitted tree mirrors `src`, so the entry points are `dist/index.js` and
+`dist/bootstrap-telemetry.js`.
+
+Two tsconfigs, on purpose:
+
+| File                  | Used by                   | Program                                      |
+| --------------------- | ------------------------- | -------------------------------------------- |
+| `tsconfig.json`       | editors, `yarn typecheck` | all of `src`, tests included                 |
+| `tsconfig.build.json` | `yarn build`              | `src` minus tests, `rootDir` pinned to `src` |
+
+The build config exists because the test helpers under `src/__tests__` import
+`packages/migrations/src` directly. Any file outside `src` in the program pushes `rootDir` up to
+`packages/`, which is what used to bury the entry point at `dist/server/src/index.js`.
+
+### Build the workspace generators first
+
+The server imports four sibling packages by name:
+
+- `@accounter/green-invoice-graphql`
+- `@accounter/pcn874-generator`
+- `@accounter/shaam6111-generator`
+- `@accounter/shaam-uniform-format-generator`
+
+These resolve through the workspace `node_modules` symlinks and each package's own `exports`, whose
+`types` and `import` conditions both point into `dist`. So **their `dist` has to exist before the
+server type-resolves at all** — this applies equally to `yarn build` and `yarn typecheck`, since
+both read the same module resolution. Either one, run against unbuilt generators, fails with
+`TS2307: Cannot find module '@accounter/...'` (plus knock-on `TS7006`s wherever an inferred type
+came from a generator).
+
+Every pipeline already orders this correctly — root `yarn build` runs `build:tools` before
+`build:main`, and `yarn workspace @accounter/server server:build:prod` builds the four explicitly.
+Only hand-run commands in a fresh clone need care:
+
+```bash
+yarn build:tools # once, before either of the next two
+yarn workspace @accounter/server build
+yarn workspace @accounter/server typecheck
+```
+
+### The dev loop and the generators
+
+`yarn dev` watches the server's own `src` **and** the four generators' `dist` directories, so the
+loop differs depending on what you edit:
+
+| You edit                 | What happens                                                            |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `packages/server/src/**` | nodemon rebuilds and restarts the server                                |
+| a generator's `src/**`   | nothing — until you build that generator, which then triggers the above |
+
+```bash
+yarn workspace @accounter/pcn874-generator build # server rebuilds and restarts on its own
+```
+
+There is no watch on the generators' _source_: `bob build` has no watch mode, and rebuilding all
+four on every server-source save would cost more than it saves. Watching their build output instead
+means one explicit generator build is all it takes.
+
+Note that nodemon's `--ignore` patterns are **not** anchored to the package directory — an
+`--ignore 'dist/**'` here would also silently swallow `../<generator>/dist/**` and break these
+watches. The server's own `dist` needs no ignore rule, as it is not under any `--watch` path.
+
 ## Super-Admin & Client Onboarding
 
 Super-admins are platform operators identified by their Auth0 user ID in the `super_admins` DB

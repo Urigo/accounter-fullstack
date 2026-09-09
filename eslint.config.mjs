@@ -57,7 +57,6 @@ export default [
       '**/schema.graphql',
       '**/__tests__/',
       '**/tests/',
-      '**/.storybook/',
       '**/vite.config.ts',
       '**/vitest.config.ts',
       'packages/*/scripts/',
@@ -278,6 +277,62 @@ export default [
     },
     rules: {
       'react-hooks/set-state-in-effect': 'off',
+      // Mantine is being removed from the client in favour of shadcn/ui + Tailwind.
+      // This is a warning package-wide — the count doubles as a burn-down metric — and an
+      // error in the directories below, which already contain no Mantine imports at all.
+      // Each migrated cluster adds its directories to that list, so the migration cannot
+      // regress behind itself.
+      'no-restricted-imports': [
+        'warn',
+        {
+          patterns: [
+            {
+              group: ['@mantine/*'],
+              message:
+                'Mantine is being removed. Use src/components/ui/ (shadcn) or Tailwind utilities instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      'packages/client/src/components/admin-settings/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/bank-deposits/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/business/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/businesses/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/charge-matching/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/charge-matches/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/clients/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/contracts/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/financial-accounts/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/landing/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/layout/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/ledger-table/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/securities/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/tags/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/tax-categories/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/transactions-table/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/ui/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/helpers/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/hooks/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/lib/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/providers/**/*.{,c,m}{j,t}s{,x}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@mantine/*'],
+              message:
+                'Mantine is being removed. Use src/components/ui/ (shadcn) or Tailwind utilities instead.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

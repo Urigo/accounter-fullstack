@@ -1,8 +1,9 @@
-import { forwardRef, useCallback, useEffect, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { NumericFormat, type NumericFormatProps } from 'react-number-format';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
+import { Button } from '../../ui/button.js';
+import { Input } from '../../ui/input.js';
+import { Label } from '../../ui/label.js';
 
 export interface NumberInputProps extends Omit<
   NumericFormatProps,
@@ -22,6 +23,10 @@ export interface NumberInputProps extends Omit<
   decimalScale?: number;
   hideControls?: boolean;
   onChange?: (value: number | null | undefined) => void;
+  /** Rendered above the field. Carried over from Mantine's `NumberInput`. */
+  label?: ReactNode;
+  /** Validation message rendered below the field, and wired to `aria-describedby`. */
+  error?: ReactNode;
 }
 
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(function NumberInput(
@@ -40,10 +45,16 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     value: controlledValue,
     hideControls = false,
     onChange,
+    label,
+    error,
+    id,
     ...props
   },
   ref,
 ) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const errorId = `${inputId}-error`;
   const [value, setValue] = useState<number | undefined>(controlledValue ?? defaultValue);
 
   const handleIncrement = useCallback(() => {
@@ -99,9 +110,12 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     }
   };
 
-  return (
+  const field = (
     <div className="flex items-center">
       <NumericFormat
+        id={inputId}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         value={value}
         onValueChange={handleChange}
         thousandSeparator={thousandSeparator}
@@ -143,6 +157,28 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
           </Button>
         </div>
       )}
+    </div>
+  );
+
+  // Label and error are only wrapped when asked for, so existing call sites that render
+  // their own FormLabel/FormMessage keep exactly the markup they had.
+  if (!label && !error) {
+    return field;
+  }
+
+  return (
+    <div className="w-full">
+      {label ? (
+        <Label htmlFor={inputId} className="mb-1">
+          {label}
+        </Label>
+      ) : null}
+      {field}
+      {error ? (
+        <p id={errorId} className="text-destructive mt-1 text-xs">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 });
