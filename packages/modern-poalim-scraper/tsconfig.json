@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/modern-poalim-scraper.tsbuildinfo",
+    // Inside `outDir` on purpose: `tsc` trusts its build info without checking that the
+    // output is still on disk, so build info that outlives `dist` makes the emit a no-op
+    // that exits 0 and produces nothing. Co-locating them means they share a fate.
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
     "outDir": "dist",
     "rootDir": "./src",
     "exactOptionalPropertyTypes": true,

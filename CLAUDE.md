@@ -68,16 +68,23 @@ yarn seed:admin-context # Seed admin context for server
 
 # TypeScript Build Cache
 
-- Every `tsc` run is incremental. Build info lives in `node_modules/.cache/tsbuildinfo/`, one file
-  per tsconfig (`tsBuildInfoFile` in each `packages/<name>/tsconfig*.json`).
+- Every `tsc` run is incremental, and where the build info lives depends on whether the program
+  emits. **Programs that emit put it inside their own `outDir`** (`dist/.tsbuildinfo`); **`--noEmit`
+  type-checking programs put it in `node_modules/.cache/tsbuildinfo/`**, one file per tsconfig.
+- That split is load-bearing, not cosmetic. `tsc` trusts its build info without checking that the
+  output it describes is still on disk: if the build info outlives its `dist`, the next build skips
+  the emit and exits 0 having produced nothing. Deploys and CI hit exactly that — a fresh checkout
+  has no (git-ignored) `dist`, but a restored `node_modules` cache would still have the build info.
+  Keeping the two in one directory means they are always created and discarded together.
 - One file per tsconfig, not per package: `server` has two programs (`tsconfig.json` typechecks,
   `tsconfig.build.json` emits) and they get separate build info, because they differ in options and
   in the files they cover.
 - A new tsconfig that extends the root config inherits `incremental` — give it its own
-  `tsBuildInfoFile` so it doesn't share build state with another program. Packages built by `bob`
-  are the exception: leave `tsBuildInfoFile` unset, since `bob` runs `tsc` once per output format.
-- If a build ever looks stale, delete `node_modules/.cache/tsbuildinfo/` — that forces the next
-  `tsc` run to start from scratch.
+  `tsBuildInfoFile` so it doesn't share build state with another program, placed per the rule above.
+  Packages built by `bob` are the exception: leave `tsBuildInfoFile` unset, since `bob` runs `tsc`
+  once per output format (the default location is already inside the output dir).
+- If a build ever looks stale, delete `node_modules/.cache/tsbuildinfo/` and the package's `dist/` —
+  that forces the next `tsc` run to start from scratch.
 
 # Architecture
 
