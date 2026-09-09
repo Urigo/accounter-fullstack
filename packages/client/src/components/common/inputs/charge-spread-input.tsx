@@ -8,12 +8,12 @@ import {
   type Path,
   type UseFormReturn,
 } from 'react-hook-form';
-import { NumberInput } from '@mantine/core';
 import {
   useControlledFieldArray,
   type FieldArrayItem,
 } from '../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../ui/button.js';
+import { NumberInput } from './number-input.js';
 import { YearPickerInput } from './year-picker-input.js';
 
 type Props<T extends FieldValues> = {
@@ -80,7 +80,8 @@ export function ChargeSpreadInput<T extends FieldValues>({
                     label="Amount"
                     value={field.value ?? undefined}
                     hideControls
-                    precision={2}
+                    decimalScale={2}
+                    fixedDecimalScale
                     error={fieldState.error?.message}
                     onChange={amount =>
                       field.onChange(amount && typeof amount === 'number' ? amount : undefined)

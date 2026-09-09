@@ -8,13 +8,14 @@ import {
   type UseFormReturn,
 } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { NumberInput, Select } from '@mantine/core';
+import { Select } from '@mantine/core';
 import { AttendeesByBusinessTripDocument } from '../../../../gql/graphql.js';
 import {
   useControlledFieldArray,
   type FieldArrayItem,
 } from '../../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../../ui/button.js';
+import { NumberInput } from '../../inputs/number-input.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -135,7 +136,8 @@ export function AttendeesStayInput<T extends FieldValues>({
                     label="Nights Count"
                     value={field.value ?? undefined}
                     hideControls
-                    precision={0}
+                    decimalScale={0}
+                    fixedDecimalScale
                     error={fieldState.error?.message}
                     required
                     onChange={amount =>

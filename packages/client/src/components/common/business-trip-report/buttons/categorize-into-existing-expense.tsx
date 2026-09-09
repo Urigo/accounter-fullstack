@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Grid, Loader, Modal, NumberInput, Select, Text } from '@mantine/core';
+import { Grid, Loader, Modal, Select, Text } from '@mantine/core';
 import {
   UncategorizedTransactionsByBusinessTripDocument,
   type CategorizeIntoExistingBusinessTripExpenseInput,
@@ -13,6 +13,7 @@ import { useCategorizeIntoExistingBusinessTripExpense } from '../../../../hooks/
 import { Button } from '../../../ui/button.js';
 import { Overlay } from '../../../ui/overlay.js';
 import { Tooltip } from '../../index.js';
+import { NumberInput } from '../../inputs/number-input.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -190,8 +191,7 @@ function ModalContent({
                 {...field}
                 value={field.value ?? undefined}
                 hideControls
-                precision={2}
-                removeTrailingZeros
+                decimalScale={2}
                 error={fieldState.error?.message}
                 label="Amount"
               />

@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Car, Check, Edit, Fuel } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { NumberInput, Text } from '@mantine/core';
+import { Text } from '@mantine/core';
 import {
   BusinessTripReportCarRentalRowFieldsFragmentDoc,
   type UpdateBusinessTripCarRentalExpenseInput,
@@ -12,6 +12,7 @@ import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
 import { Tooltip } from '../../index.js';
+import { NumberInput } from '../../inputs/number-input.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -80,8 +81,7 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
                         value={field.value ?? undefined}
                         form={`form ${carRentalExpense.id}`}
                         hideControls
-                        precision={2}
-                        removeTrailingZeros
+                        decimalScale={2}
                         error={fieldState.error?.message}
                         placeholder="Rent Days"
                       />

@@ -1,6 +1,5 @@
-import { forwardRef, useState, type ComponentProps } from 'react';
+import { forwardRef, useId, useState, type ComponentProps } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
-import { NumberInput } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
@@ -16,6 +15,7 @@ import {
 import { Label } from '../../ui/label.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
+import { NumberInput } from './number-input.js';
 
 const CURRENCIES = Object.values(Currency);
 
@@ -82,7 +82,7 @@ function CurrencySelect({
   const portalContainer = usePortalContainer();
 
   return (
-    <div className="w-1/2 min-w-[75px] mt-6">
+    <div className="w-1/2 min-w-[75px]">
       {label && <Label className="sr-only">{label}</Label>}
       <Popover modal open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -141,8 +141,14 @@ type Props = ComponentProps<typeof NumberInput> & {
 export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({
   currencyCodeProps: { error: currencyError, ...currencyCodeProps },
   error,
+  label,
+  id,
   ...props
 }) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const message = error || currencyError;
+  const errorId = `${inputId}-error`;
   let { precision } = props;
   const value = Math.abs(typeof props.value === 'number' ? props.value : 0);
   if (value && !precision) {
@@ -157,16 +163,34 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
       }
     }
   }
+  // Label and error live here rather than inside `NumberInput`, so the amount field and the
+  // currency select are direct flex siblings and line up by construction. The select used to
+  // carry an `mt-6` spacer sized to Mantine's label; any label whose height differed — as the
+  // shadcn one does — left the two halves misaligned.
   return (
-    <div className="w-full flex flex-row min-w-[150px]">
-      <NumberInput
-        className="w-full min-w-[75px]"
-        {...props}
-        hideControls
-        precision={precision ?? 2}
-        error={error || currencyError}
-      />
-      <CurrencySelect {...currencyCodeProps} />
+    <div className="w-full">
+      {label ? (
+        <Label htmlFor={inputId} className="mb-1">
+          {label}
+        </Label>
+      ) : null}
+      <div className="flex flex-row min-w-[150px]">
+        <NumberInput
+          className="w-full min-w-[75px]"
+          {...props}
+          id={inputId}
+          aria-invalid={!!message}
+          aria-describedby={message ? errorId : undefined}
+          hideControls
+          decimalScale={precision ?? 2}
+        />
+        <CurrencySelect {...currencyCodeProps} />
+      </div>
+      {message ? (
+        <p id={errorId} className="text-destructive mt-1 text-xs">
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 });

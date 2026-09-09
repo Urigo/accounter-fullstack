@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal, NumberInput, Select } from '@mantine/core';
+import { Loader, Modal, Select } from '@mantine/core';
 import {
   BusinessTripExpenseCategories,
   type CategorizeBusinessTripExpenseInput,
@@ -10,6 +10,7 @@ import { useCategorizeBusinessTripExpense } from '../../../../hooks/use-categori
 import { Button } from '../../../ui/button.js';
 import { Overlay } from '../../../ui/overlay.js';
 import { Tooltip } from '../../index.js';
+import { NumberInput } from '../../inputs/number-input.js';
 
 export function CategorizeExpense(props: {
   businessTripId: string;
@@ -117,8 +118,7 @@ function ModalContent({
                 {...field}
                 value={field.value ?? undefined}
                 hideControls
-                precision={2}
-                removeTrailingZeros
+                decimalScale={2}
                 error={fieldState.error?.message}
                 label="Amount"
               />
