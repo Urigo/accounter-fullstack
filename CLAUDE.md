@@ -74,7 +74,8 @@ yarn seed:admin-context # Seed admin context for server
   `tsBuildInfoFile` there so it doesn't share build state with another package. Packages built by
   `bob` are the exception: leave `tsBuildInfoFile` unset, since `bob` runs `tsc` once per output
   format.
-- If a build ever looks stale, delete `node_modules/.cache/tsbuildinfo/` (or run `tsc --force`).
+- If a build ever looks stale, delete `node_modules/.cache/tsbuildinfo/` — that forces the next
+  `tsc` run to start from scratch.
 
 # Architecture
 

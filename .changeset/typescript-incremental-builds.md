@@ -25,7 +25,10 @@ where the relative path resolves against the root, not the package).
   `node_modules/.cache/tsbuildinfo`, enabled for the jobs that actually run `tsc` (the forked-PR
   `compile` job and both `publish` jobs). `client-publish` doesn't use that action and wires the
   same cache up directly. The key hashes `yarn.lock` (which pins the TypeScript version) plus every
-  `tsconfig`, with a per-run suffix so cache entries can refresh, and `restore-keys` for the hit.
+  `tsconfig`, with a per-run suffix so cache entries can refresh, and `restore-keys` for the hit. The
+key prefix is computed in a step of its own so every `key`/`restore-keys` line stays a single line —
+`restore-keys` is a literal block where each newline separates two keys, so an expression wrapped to
+fit the line-length limit would put a newline inside a key.
 - **`.gitignore`** ignores `*.tsbuildinfo` as a safety net for the default locations.
 
 Measured on this repo (warm = build info present, cold = none):
