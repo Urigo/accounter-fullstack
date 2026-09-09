@@ -1,5 +1,15 @@
 # @accounter-toolkit/pcn874-generator
 
+## 0.6.8
+
+### Patch Changes
+
+- [#4314](https://github.com/Urigo/accounter-fullstack/pull/4314) [`af3d19b`](https://github.com/Urigo/accounter-fullstack/commit/af3d19b71a9a3ef20c5753738ec16871223b74a9) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.5.1` ↗︎](https://www.npmjs.com/package/zod/v/4.5.1) (from `4.4.3`, in `dependencies`)
+
+- [#4324](https://github.com/Urigo/accounter-fullstack/pull/4324) [`03ad844`](https://github.com/Urigo/accounter-fullstack/commit/03ad844f400281551dda48dc8ff563083b00cceb) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.5.4` ↗︎](https://www.npmjs.com/package/zod/v/4.5.4) (from `4.5.1`, in `dependencies`)
+
 ## 0.6.7
 
 ### Patch Changes
