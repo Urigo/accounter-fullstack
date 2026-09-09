@@ -124,6 +124,12 @@ describe('server-tests workflow path filter', () => {
     }
   });
 
+  it('covers its own guard test', () => {
+    // If a change to this file cannot trigger the job that runs it, the safety net can be
+    // weakened or deleted without CI ever exercising it.
+    expect(triggers('scripts/__tests__/server-tests-workflow.test.ts')).toBe(true);
+  });
+
   it('does not trigger on documentation-only changes', () => {
     // The filter should stay a filter: widening it to everything would make the guarantee
     // above trivial and run the full suite on every README edit.

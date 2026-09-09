@@ -14,13 +14,17 @@ on:
       # packages here reads as a scope this job does not actually have, and each
       # omission fails silently — an unmatched PR skips the job instead of failing it.
       - 'packages/**'
+      # Every root script, because this job runs several of them directly: the vitest
+      # setup/globalSetup, the migration verification below, and its ESM loader. It also
+      # runs the guard test in scripts/__tests__, which must not be editable without CI
+      # exercising it.
+      - 'scripts/**'
       # Root files that decide what these tests are and how they run: dependency
-      # versions, the vitest projects/setup this job invokes, the codegen that
-      # produces the types under test, and the toolchain they run on.
+      # versions, the vitest projects this job invokes, the codegen that produces the
+      # types under test, and the toolchain they run on.
       - 'package.json'
       - 'yarn.lock'
       - 'vitest.config.ts'
-      - 'scripts/vitest-*.ts'
       - 'codegen.ts'
       - 'graphql.config.js'
       - 'tsconfig.json'
