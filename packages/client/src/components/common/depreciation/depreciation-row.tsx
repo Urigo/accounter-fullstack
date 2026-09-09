@@ -202,6 +202,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
                       searchable
                       error={fieldState.error?.message}
                       withinPortal
+                      zIndex={1002}
                     />
                   </FormControl>
                   <FormMessage />
@@ -233,6 +234,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
                       searchable
                       error={fieldState.error?.message}
                       withinPortal
+                      zIndex={1002}
                     />
                   </FormControl>
                   <FormMessage />

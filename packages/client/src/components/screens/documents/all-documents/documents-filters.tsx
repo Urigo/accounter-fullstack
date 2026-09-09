@@ -342,18 +342,13 @@ export function DocumentsFilters({
 
   return (
     <div className="flex flex-row gap-5 items-center">
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <DocumentsFiltersForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-        modalSize="xl"
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)} modalSize="xl">
+        <DocumentsFiltersForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Indicator inline size={16} disabled={!isFiltered}>
         <Button
           variant="outline"

@@ -8,7 +8,6 @@ import {
   MoreVertical,
   Trash,
 } from 'lucide-react';
-import { Modal } from '@mantine/core';
 import type { ChargeType } from '@/helpers/index.js';
 import { ROUTES } from '@/router/routes.js';
 import { writeToClipboard } from '../../helpers/index.js';
@@ -23,6 +22,7 @@ import {
   UploadDocumentsModal,
   UploadPayrollFile,
 } from '../common/index.js';
+import { PopUpModal } from '../common/modals/modal.js';
 import { Button } from '../ui/button.js';
 import { Dialog, DialogContent } from '../ui/dialog.js';
 import {
@@ -170,13 +170,12 @@ export function ChargeActionsMenu({
         onConfirm={handleDelete}
         title="Are you sure you want to delete this charge?"
       />
-      <Modal
-        withinPortal
-        size="xl"
-        centered
+      <PopUpModal
+        modalSize="xl"
         opened={depreciationOpened}
         onClose={closeDepreciation}
         title="Depreciation"
+        withCloseButton
         onClick={event => event.stopPropagation()}
       >
         <Depreciation
@@ -186,7 +185,7 @@ export function ChargeActionsMenu({
             onChange?.();
           }}
         />
-      </Modal>
+      </PopUpModal>
       <Dialog open={miscExpensesOpened} onOpenChange={setMiscExpensesOpened}>
         <DialogContent className="sm:max-w-[425px]" onClick={event => event.stopPropagation()}>
           <InsertMiscExpense
@@ -198,11 +197,11 @@ export function ChargeActionsMenu({
           />
         </DialogContent>
       </Dialog>
-      <Modal
-        centered
+      <PopUpModal
         opened={uploadSalariesOpened}
         onClose={closeUploadSalaries}
         title="Upload Payroll File"
+        withCloseButton
         onClick={event => event.stopPropagation()}
       >
         <UploadPayrollFile
@@ -212,7 +211,7 @@ export function ChargeActionsMenu({
           }}
           chargeId={chargeId}
         />
-      </Modal>
+      </PopUpModal>
       <UploadDocumentsModal
         open={uploadDocumentsOpen}
         onOpenChange={setUploadDocumentsOpen}

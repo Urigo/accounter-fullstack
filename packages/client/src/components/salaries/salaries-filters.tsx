@@ -206,18 +206,13 @@ export function SalariesFilters({ filter, setFilter }: SalariesFiltersProps): Re
 
   return (
     <div className="flex flex-row gap-5 items-center">
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <SalariesFiltersForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-        modalSize="xl"
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)} modalSize="xl">
+        <SalariesFiltersForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Button
         variant="outline"
         size="icon"

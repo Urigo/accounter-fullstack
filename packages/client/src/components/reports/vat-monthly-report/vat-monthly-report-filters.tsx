@@ -168,17 +168,13 @@ export function VatMonthlyReportFilter({
 
   return (
     <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <VatMonthlyReportFilterForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)}>
+        <VatMonthlyReportFilterForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Button
         variant="outline"
         size="icon"

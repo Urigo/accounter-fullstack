@@ -21,36 +21,31 @@ export function TaxReportFilter({
 
   return (
     <>
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        withCloseButton
-        content={
-          <>
-            <YearPickerInput
-              label="Change report year"
-              value={new Date(year, 0, 1)}
-              onChange={date => date && setYear(date?.getFullYear())}
-              popoverProps={{ withinPortal: true }}
-              minDate={new Date(2010, 0, 1)}
-              maxDate={new Date()}
-            />
-            <YearPickerInput
-              type="multiple"
-              label="Pick reference years"
-              value={referenceYears?.map(year => new Date(year, 0, 1))}
-              onChange={date =>
-                setReferenceYears(
-                  date.map(date => date.getFullYear()).filter(refYear => year !== refYear),
-                )
-              }
-              popoverProps={{ withinPortal: true }}
-              minDate={new Date(2010, 0, 1)}
-              maxDate={new Date()}
-            />
-          </>
-        }
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)} withCloseButton>
+        <>
+          <YearPickerInput
+            label="Change report year"
+            value={new Date(year, 0, 1)}
+            onChange={date => date && setYear(date?.getFullYear())}
+            popoverProps={{ withinPortal: true }}
+            minDate={new Date(2010, 0, 1)}
+            maxDate={new Date()}
+          />
+          <YearPickerInput
+            type="multiple"
+            label="Pick reference years"
+            value={referenceYears?.map(year => new Date(year, 0, 1))}
+            onChange={date =>
+              setReferenceYears(
+                date.map(date => date.getFullYear()).filter(refYear => year !== refYear),
+              )
+            }
+            popoverProps={{ withinPortal: true }}
+            minDate={new Date(2010, 0, 1)}
+            maxDate={new Date()}
+          />
+        </>
+      </PopUpModal>
       <Button
         variant="outline"
         size="icon"

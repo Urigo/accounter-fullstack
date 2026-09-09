@@ -465,18 +465,13 @@ export function BalanceReportFilters({
 
   return (
     <div className="flex flex-row gap-5 items-center">
-      <PopUpModal
-        opened={opened}
-        onClose={(): void => setOpened(false)}
-        content={
-          <BalanceReportFiltersForm
-            filter={filter}
-            setFilter={onSetFilter}
-            closeModal={(): void => setOpened(false)}
-          />
-        }
-        modalSize="xl"
-      />
+      <PopUpModal opened={opened} onClose={(): void => setOpened(false)} modalSize="xl">
+        <BalanceReportFiltersForm
+          filter={filter}
+          setFilter={onSetFilter}
+          closeModal={(): void => setOpened(false)}
+        />
+      </PopUpModal>
       <Indicator inline size={16} disabled={!isFiltered}>
         <Button
           variant="outline"

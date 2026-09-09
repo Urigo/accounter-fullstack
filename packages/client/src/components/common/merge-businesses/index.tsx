@@ -1,8 +1,8 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { Merge } from 'lucide-react';
-import { Modal } from '@mantine/core';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';
+import { PopUpModal } from '../modals/modal.js';
 import { MergeBusinessesSelectionForm } from './merge-businesses-selection-form.js';
 
 export function MergeBusinessesButton(props: {
@@ -34,13 +34,19 @@ export function MergeBusinessesButton(props: {
       >
         <Merge className="size-5" />
       </Button>
-      <Modal opened={opened} onClose={close} size="auto" centered>
+      <PopUpModal
+        opened={opened}
+        onClose={close}
+        modalSize="auto"
+        title="Merge Businesses"
+        withCloseButton
+      >
         <MergeBusinessesSelectionForm
           businessIds={Array.from(distinctIDs)}
           onDone={onDone}
           resetMerge={resetMerge}
         />
-      </Modal>
+      </PopUpModal>
     </>
   );
 }
