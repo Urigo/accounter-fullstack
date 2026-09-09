@@ -64,3 +64,34 @@ describe('ComboBox error wiring', () => {
     expect(label?.getAttribute('for')).toBe(trigger().id);
   });
 });
+
+describe('ComboBox trigger layout', () => {
+  it('lays the value out left with the chevron on the right', () => {
+    act(() => {
+      root.render(<ComboBox data={DATA} value="marketing" />);
+    });
+
+    const classes = trigger().className;
+    expect(classes).toContain('justify-between');
+    // The Button base sets justify-center; tailwind-merge must resolve in our favour.
+    expect(classes).not.toContain('justify-center');
+
+    // Value first, chevron last.
+    const [first] = [...trigger().children];
+    expect(first.tagName).toBe('SPAN');
+    expect(first.textContent).toBe('Marketing');
+    expect(trigger().lastElementChild?.tagName.toLowerCase()).toBe('svg');
+  });
+
+  it('keeps its layout classes when a parent passes className', () => {
+    // PopoverTrigger/DrawerTrigger pass `className` down via asChild. Spreading it last used
+    // to replace the trigger's own classes outright, which silently dropped the alignment.
+    act(() => {
+      root.render(<ComboBox data={DATA} value="marketing" />);
+    });
+
+    // The rendered trigger carries PopoverTrigger's width classes *and* our alignment.
+    expect(trigger().className).toContain('w-full');
+    expect(trigger().className).toContain('justify-between');
+  });
+});

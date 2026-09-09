@@ -36,4 +36,14 @@ Two call sites needed real changes rather than prop edits:
 an `aria-describedby` pointing at the message, matching `NumberInput` and the period pickers. Inside
 `formPart` the surrounding `FormControl` already does this, which is why `error` is not passed there.
 
+`ComboBox`'s trigger is also realigned to match the Mantine `Select` it replaces: the selected
+value sits on the left and the chevron on the right, rather than both centred together.
+
+The trigger already asked for `justify-start`, but never got it. `Trigger` left `className` inside
+`...triggerProps`, spread *after* its own `className` — and both `PopoverTrigger` and
+`DrawerTrigger` pass a `className` down through `asChild`. The trigger's layout classes were
+therefore replaced on every render, and the Button fell back to its base `justify-center`.
+`className` is now destructured and merged with `cn()`, the value renders in a truncating span so a
+long option cannot push the chevron off the edge, and the layout is covered by tests.
+
 Mantine imports: 75 → 68, across 74 → 67 files.

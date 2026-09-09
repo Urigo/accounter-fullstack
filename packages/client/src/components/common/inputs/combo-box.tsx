@@ -158,24 +158,24 @@ type TriggerProps = ComponentProps<typeof Button> & {
   selectedOption: Option | null;
 };
 
-function Trigger({ formPart, placeholder, selectedOption, ...triggerProps }: TriggerProps) {
-  if (formPart) {
-    return (
-      <FormControl>
-        <Button variant="outline" className="w-full justify-start" {...triggerProps}>
-          {selectedOption ? selectedOption.label : placeholder}
-          <ChevronDownIcon
-            strokeWidth={2}
-            className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
-            aria-hidden="true"
-          />
-        </Button>
-      </FormControl>
-    );
-  }
-  return (
-    <Button variant="outline" className="w-[150px] justify-start" {...triggerProps}>
-      {selectedOption ? selectedOption.label : placeholder}
+function Trigger({
+  formPart,
+  placeholder,
+  selectedOption,
+  className,
+  ...triggerProps
+}: TriggerProps) {
+  // `className` is pulled out and merged rather than left in `triggerProps`: PopoverTrigger and
+  // DrawerTrigger both pass one down through `asChild`, and spreading it last silently replaced
+  // the trigger's own layout classes — which is why `justify-start` never took effect and the
+  // Button fell back to its base `justify-center`.
+  const button = (
+    <Button variant="outline" className={cn('w-full justify-between', className)} {...triggerProps}>
+      {/* The label takes the free space and truncates, so a long option cannot push the
+          chevron off the right edge. */}
+      <span className="truncate text-left">
+        {selectedOption ? selectedOption.label : placeholder}
+      </span>
       <ChevronDownIcon
         strokeWidth={2}
         className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
@@ -183,6 +183,8 @@ function Trigger({ formPart, placeholder, selectedOption, ...triggerProps }: Tri
       />
     </Button>
   );
+
+  return formPart ? <FormControl>{button}</FormControl> : button;
 }
 
 function OptionsList({
