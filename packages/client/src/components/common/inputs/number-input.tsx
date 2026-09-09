@@ -1,9 +1,9 @@
 import { forwardRef, useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { NumericFormat, type NumericFormatProps } from 'react-number-format';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
+import { Button } from '../../ui/button.js';
+import { Input } from '../../ui/input.js';
+import { Label } from '../../ui/label.js';
 
 export interface NumberInputProps extends Omit<
   NumericFormatProps,

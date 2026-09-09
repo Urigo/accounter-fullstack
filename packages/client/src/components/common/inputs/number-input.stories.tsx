@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { NumberInput } from './number-input.js';
 
@@ -8,6 +8,11 @@ import { NumberInput } from './number-input.js';
  */
 function Harness(props: Parameters<typeof NumberInput>[0]): ReactElement {
   const [value, setValue] = useState<number | undefined>(props.value);
+
+  // Storybook keeps the same Harness mounted when args change, so without this the field
+  // would keep its first value while the controls panel says otherwise.
+  useEffect(() => setValue(props.value), [props.value]);
+
   return (
     <div className="w-72 p-6">
       <NumberInput {...props} value={value} onChange={next => setValue(next ?? undefined)} />
