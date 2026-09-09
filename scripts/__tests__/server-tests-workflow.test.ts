@@ -20,9 +20,15 @@ function readPullRequestPaths(): string[] {
   const workflow = readFileSync(join(repoRoot, workflowPath), 'utf8');
 
   // The filter is the only `paths:` block in this workflow, and it ends where the
-  // top-level `jobs:` key begins.
-  const block = workflow.slice(workflow.indexOf('    paths:'), workflow.indexOf('\njobs:'));
-  expect(block, `no pull_request paths block found in ${workflowPath}`).not.toBe('');
+  // top-level `jobs:` key begins. Both offsets are checked: a missing marker returns -1
+  // from indexOf, and slice() would happily turn that into a plausible-looking but wrong
+  // block, letting these tests pass against something that is not the filter.
+  const start = workflow.indexOf('    paths:');
+  const end = workflow.indexOf('\njobs:');
+  expect(start, `no pull_request 'paths:' block found in ${workflowPath}`).toBeGreaterThan(-1);
+  expect(end, `no top-level 'jobs:' key found in ${workflowPath}`).toBeGreaterThan(start);
+
+  const block = workflow.slice(start, end);
 
   return [...block.matchAll(/^\s+- '(?<path>[^']+)'$/gm)].map(match => match.groups!['path']!);
 }
