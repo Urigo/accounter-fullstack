@@ -30,12 +30,21 @@ function sameYear(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear();
 }
 
-/** Inclusive on both ends, compared at the granularity the caller already normalised to. */
-function withinBounds(date: Date, minDate?: Date, maxDate?: Date): boolean {
-  if (minDate && date.getTime() < startOfMonth(minDate).getTime()) {
+/**
+ * Inclusive on both ends. The bounds are collapsed with the same `normalise` the grid uses, so
+ * comparison happens at the grid's own granularity: a `minDate` of 15 June 2010 must not disable
+ * the *year* 2010, which still contains selectable dates — it only rules out earlier years.
+ */
+function withinBounds(
+  date: Date,
+  normalise: (date: Date) => Date,
+  minDate?: Date,
+  maxDate?: Date,
+): boolean {
+  if (minDate && date.getTime() < normalise(minDate).getTime()) {
     return false;
   }
-  if (maxDate && date.getTime() > startOfMonth(maxDate).getTime()) {
+  if (maxDate && date.getTime() > normalise(maxDate).getTime()) {
     return false;
   }
   return true;
@@ -138,7 +147,7 @@ export function MonthPicker({
               label={label}
               selected={value.some(selected => sameMonth(selected, date))}
               inRange={isInRange(date, range)}
-              disabled={!withinBounds(date, minDate, maxDate)}
+              disabled={!withinBounds(date, startOfMonth, minDate, maxDate)}
               onClick={() => onSelect(date)}
             />
           );
@@ -202,7 +211,7 @@ export function YearPicker({
               label={String(year)}
               selected={value.some(selected => sameYear(selected, date))}
               inRange={isInRange(date, range)}
-              disabled={!withinBounds(date, minDate, maxDate)}
+              disabled={!withinBounds(date, startOfYear, minDate, maxDate)}
               onClick={() => onSelect(date)}
             />
           );

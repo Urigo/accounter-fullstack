@@ -32,5 +32,10 @@ Behavioural notes:
   portal plumbing, and `usePortalContainer` handles it now. `numberOfColumns={2}` is dropped too:
   the month grid always shows one year.
 
-Mantine imports: 102 → 87, across 101 → 86 files. `@mantine/dates` is uninstalled; `@mantine/core`,
+Date bounds are compared at each grid's own granularity: `YearPicker` collapses `minDate`/`maxDate`
+with `startOfYear`, `MonthPicker` with `startOfMonth`. Using month granularity for both would have
+disabled the year 2010 for a `minDate` of 15 June 2010, even though that year still contains
+selectable dates. Covered by `ui/__tests__/period-picker.test.tsx`.
+
+Mantine imports: 91 → 77, across 84 → 76 files. `@mantine/dates` is uninstalled; `@mantine/core`,
 `@mantine/dropzone` and `@mantine/carousel` remain.
