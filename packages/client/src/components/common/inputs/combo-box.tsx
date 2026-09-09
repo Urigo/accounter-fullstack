@@ -56,6 +56,10 @@ export function ComboBox({
 }: ComboBoxProps) {
   const generatedId = React.useId();
   const triggerId = id ?? generatedId;
+  const errorId = `${triggerId}-error`;
+  // Inside `formPart` the surrounding FormControl already points the trigger at its
+  // FormMessage, so `error` is not passed there and this wiring is for standalone use.
+  const errorProps = error ? { 'aria-invalid': true, 'aria-describedby': errorId } : {};
   const [open, setOpen] = React.useState(false);
   // When the ComboBox is rendered inside a modal layer (e.g. the vaul Drawer used by PopUpDrawer),
   // the underlying Radix Dialog traps focus and blocks interaction with any element portaled to
@@ -84,6 +88,7 @@ export function ComboBox({
               placeholder={placeholder}
               form={form}
               aria-required={required || undefined}
+              {...errorProps}
               selectedOption={selectedOption}
               disabled={disabled}
               formPart={formPart}
@@ -100,7 +105,11 @@ export function ComboBox({
             />
           </PopoverContent>
         </Popover>
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && (
+          <p id={errorId} className="text-xs text-red-500">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
@@ -115,6 +124,7 @@ export function ComboBox({
             placeholder={placeholder}
             form={form}
             aria-required={required || undefined}
+            {...errorProps}
             selectedOption={selectedOption}
             disabled={disabled}
             formPart={formPart}
@@ -133,7 +143,11 @@ export function ComboBox({
           </div>
         </DrawerContent>
       </Drawer>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-xs text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

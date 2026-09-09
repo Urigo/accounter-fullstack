@@ -32,4 +32,8 @@ Two call sites needed real changes rather than prop edits:
 
 `components/charts` is Mantine-free and joins the ESLint rule's `error` list.
 
+`ComboBox`'s standalone error message is also now wired up: the trigger carries `aria-invalid` and
+an `aria-describedby` pointing at the message, matching `NumberInput` and the period pickers. Inside
+`formPart` the surrounding `FormControl` already does this, which is why `error` is not passed there.
+
 Mantine imports: 75 → 68, across 74 → 67 files.
