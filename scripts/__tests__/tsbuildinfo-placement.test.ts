@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -94,6 +94,24 @@ function resolveOptions(configPath: string): CompilerOptions {
   };
 }
 
+/**
+ * Whether `file` sits under `dir`.
+ *
+ * Both halves matter, and neither is covered by a bare `startsWith('..')`:
+ *
+ * - `relative()` gives up and returns an *absolute* path when the two share no root at
+ *   all — different Windows drive letters, or a UNC path — and an absolute result starts
+ *   with neither `..` nor anything else recognizable. Reading that as "inside" would make
+ *   this whole file pass silently on exactly the paths it exists to reject.
+ * - A directory genuinely inside `dir` may be *named* something like `..cache`, whose
+ *   relative path starts with `..` without escaping anything. Hence the separator.
+ */
+function isInside(dir: string, file: string): boolean {
+  const rel = relative(dir, file);
+  if (isAbsolute(rel)) return false;
+  return rel !== '..' && !rel.startsWith(`..${sep}`);
+}
+
 type TscInvocation = {
   /** Workspace directory name under `packages/`. */
   pkg: string;
@@ -161,6 +179,23 @@ const packageDirs = readdirSync(packagesDir, { withFileTypes: true })
   .map(entry => entry.name)
   .sort();
 
+describe('isInside', () => {
+  const dir = resolve(sep, 'a', 'dist');
+
+  it.each([
+    ['the file itself', join(dir, '.tsbuildinfo'), true],
+    ['a nested file', join(dir, 'nested', '.tsbuildinfo'), true],
+    // `..cache` escapes nothing; `relative()` still returns it prefixed with two dots.
+    ['a directory whose name begins with two dots', join(dir, '..cache', 'x'), true],
+    ['the directory itself', dir, true],
+    ['a path that walks out', resolve(sep, 'a', 'node_modules', '.cache', 'x'), false],
+    // Shares `/a/dist` as a *string* prefix without being inside it.
+    ['a sibling with a shared prefix', resolve(sep, 'a', 'dist-2', 'x'), false],
+  ])('%s', (_case, file, expected) => {
+    expect(isInside(dir, file)).toBe(expected);
+  });
+});
+
 describe('TypeScript build-info placement', () => {
   it('finds the emitting builds it means to check', () => {
     const emitting = packageDirs.flatMap(emittingTscInvocations);
@@ -187,12 +222,12 @@ describe('TypeScript build-info placement', () => {
         if (tsBuildInfoFile === undefined) return;
 
         expect(
-          relative(outDir!, tsBuildInfoFile).startsWith('..'),
+          isInside(outDir!, tsBuildInfoFile),
           `${config} points tsBuildInfoFile at ${relative(repoRoot, tsBuildInfoFile)}, outside ` +
             `its outDir (${relative(repoRoot, outDir!)}). Build info that outlives the output ` +
             `makes this build emit nothing and still exit 0 — see the comment at the top of ` +
             `this file.`,
-        ).toBe(false);
+        ).toBe(true);
       });
     }
   }
