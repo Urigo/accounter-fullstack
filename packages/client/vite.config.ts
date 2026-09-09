@@ -31,11 +31,22 @@ export default defineConfig({
   resolve: {
     alias: {
       html2canvas: 'html2canvas-pro',
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   server: {
     port: 3001,
+  },
+  build: {
+    // Vite's default 500 kB budget measures *uncompressed* output, which is a poor proxy here.
+    // Two chunks sit above it for reasons that are not worth splitting further:
+    //   - the generated GraphQL documents (`src/gql/graphql.ts`): ~820 kB raw but ~47 kB gzipped,
+    //     since document ASTs compress extremely well. It is a single generated module, so it
+    //     cannot be split; shrinking it means switching codegen to `documentMode: 'string'`.
+    //   - the jsPDF + html2canvas bundle behind `PrintToPdfButton`: ~650 kB, but it is loaded
+    //     on demand and never reaches the initial page load.
+    // The limit is kept low enough to still flag a genuine regression.
+    chunkSizeWarningLimit: 900,
   },
   optimizeDeps: {
     include: ['react-hook-form'],

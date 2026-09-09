@@ -8,9 +8,12 @@ import { useMyMemberships } from '../../hooks/use-my-memberships.js';
 import { UserContext } from '../../providers/index.js';
 import { getBusinessScopeIds, setBusinessScope } from '../../providers/urql.js';
 import { ROUTES } from '../../router/routes.js';
-import { ConfirmationModal, LogoutButton, SyncDocumentsModal, Tooltip } from '../common/index.js';
+import { LogoutButton } from '../common/buttons/logout-button.js';
 import { MultiSelect } from '../common/inputs/multi-select.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
+import { ConfirmationModal } from '../common/modals/confirmation-modal.js';
+import { SyncDocumentsModal } from '../common/modals/sync-green-invoice-documents-modal.js';
+import { Tooltip } from '../common/tooltip.js';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar.js';
 import { Button } from '../ui/button.js';
 import {

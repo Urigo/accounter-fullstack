@@ -66,26 +66,33 @@ vi.mock('../ui/dropdown-menu.js', () => ({
   DropdownMenuItem: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock('../common/index.js', () => {
-  return {
-    ConfirmationModal: ({ children }: { children?: React.ReactNode }) => children ?? null,
-    SyncDocumentsModal: () => null,
-    Tooltip: ({ children }: { children?: React.ReactNode }) => children ?? null,
-    LogoutButton: () => (
-      <button
-        onClick={() =>
-          logoutMock({
-            logoutParams: {
-              returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
-            },
-          })
-        }
-      >
-        Log out
-      </button>
-    ),
-  };
-});
+vi.mock('../common/modals/confirmation-modal.js', () => ({
+  ConfirmationModal: ({ children }: { children?: React.ReactNode }) => children ?? null,
+}));
+
+vi.mock('../common/modals/sync-green-invoice-documents-modal.js', () => ({
+  SyncDocumentsModal: () => null,
+}));
+
+vi.mock('../common/tooltip.js', () => ({
+  Tooltip: ({ children }: { children?: React.ReactNode }) => children ?? null,
+}));
+
+vi.mock('../common/buttons/logout-button.js', () => ({
+  LogoutButton: () => (
+    <button
+      onClick={() =>
+        logoutMock({
+          logoutParams: {
+            returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
+          },
+        })
+      }
+    >
+      Log out
+    </button>
+  ),
+}));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
