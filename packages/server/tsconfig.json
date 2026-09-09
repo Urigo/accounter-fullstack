@@ -1,26 +1,26 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
+    // Type-checking program only — `tsconfig.build.json` is what emits.
+    "noEmit": true,
+    // This program deliberately covers the tests too, and the helpers under `src/__tests__`
+    // import `packages/migrations/src` directly, so the root has to span `packages/`. tsc
+    // validates `rootDir` even under `noEmit`, so it cannot be narrowed here; the build
+    // config excludes the tests instead and pins `rootDir` to `src`.
     "rootDir": "..",
     "noUnusedLocals": false,
 
     "paths": {
-      "@accounter/green-invoice-graphql": ["../green-invoice-graphql/src/index.js"],
-      "@accounter/pcn874-generator": ["../pcn874-generator/src/index.js"],
-      "@accounter/shaam6111-generator": ["../shaam6111-generator/src/index.js"],
-      "@accounter/shaam-uniform-format-generator": [
-        "../shaam-uniform-format-generator/src/index.js"
-      ],
+      // `graphql-modules` declares no `types` condition in its `exports` map and ships no
+      // `index.d.mts` beside its ESM entry, so `moduleResolution: bundler` finds no
+      // declarations for it. This points the specifier straight at `index.d.ts`.
+      //
+      // It is a type-resolution alias only: tsc emits the bare `graphql-modules` specifier
+      // verbatim (verified against the compiled output), and Node resolves that through the
+      // package's own `exports`. Nothing has to rewrite it after emit.
       "graphql-modules": ["../../node_modules/graphql-modules/index"]
     }
   },
-  "include": [
-    "src",
-    "../green-invoice-graphql/src",
-    "../pcn874-generator/src",
-    "../shaam6111-generator/src",
-    "../shaam-uniform-format-generator/src"
-  ],
+  "include": ["src"],
   "exclude": ["**/__generated__", "**/dist/**"]
 }

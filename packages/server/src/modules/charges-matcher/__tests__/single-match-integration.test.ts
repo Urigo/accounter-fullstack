@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // Mock merge-charges helper before importing providers that use it
-vi.mock('@modules/charges/helpers/merge-charges.helper.js', () => ({
+vi.mock('../../charges/helpers/merge-charges.helper.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
 

@@ -1,5 +1,47 @@
 # @accounter-helper/server
 
+## Building
+
+```bash
+yarn workspace @accounter/server build
+```
+
+`build` is a single `tsc -p tsconfig.build.json` pass — there is no post-processing step. The
+emitted tree mirrors `src`, so the entry points are `dist/index.js` and
+`dist/bootstrap-telemetry.js`.
+
+Two tsconfigs, on purpose:
+
+| File                  | Used by                   | Program                                      |
+| --------------------- | ------------------------- | -------------------------------------------- |
+| `tsconfig.json`       | editors, `yarn typecheck` | all of `src`, tests included                 |
+| `tsconfig.build.json` | `yarn build`              | `src` minus tests, `rootDir` pinned to `src` |
+
+The build config exists because the test helpers under `src/__tests__` import
+`packages/migrations/src` directly. Any file outside `src` in the program pushes `rootDir` up to
+`packages/`, which is what used to bury the entry point at `dist/server/src/index.js`.
+
+### Build the workspace generators first
+
+The server imports four sibling packages by name:
+
+- `@accounter/green-invoice-graphql`
+- `@accounter/pcn874-generator`
+- `@accounter/shaam6111-generator`
+- `@accounter/shaam-uniform-format-generator`
+
+These resolve through the workspace `node_modules` symlinks and each package's own `exports`, so
+**their `dist` has to exist before the server compiles.** A bare server build against unbuilt
+generators fails with `TS2307: Cannot find module '@accounter/...'`.
+
+Every pipeline already orders this correctly — root `yarn build` runs `build:tools` before
+`build:main`, and `yarn workspace @accounter/server server:build:prod` builds the four explicitly.
+Only a hand-run `yarn workspace @accounter/server build` in a fresh clone needs care:
+
+```bash
+yarn build:tools && yarn workspace @accounter/server build
+```
+
 ## Super-Admin & Client Onboarding
 
 Super-admins are platform operators identified by their Auth0 user ID in the `super_admins` DB
