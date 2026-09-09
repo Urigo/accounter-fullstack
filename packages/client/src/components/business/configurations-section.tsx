@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { Plus, Save, X } from 'lucide-react';
+import { Info, Plus, Save, X } from 'lucide-react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select.js';
 import { Separator } from '@/components/ui/separator.js';
 import { Switch } from '@/components/ui/switch.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.js';
 import {
   BusinessConfigurationSectionFragmentDoc,
   EmailAttachmentType,
@@ -711,11 +712,34 @@ function AutoMatchingConfigurationSubSection({ form }: SubSectionProps) {
         name="emails"
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Email Addresses</FormLabel>
+            <div className="flex items-center gap-1.5">
+              <FormLabel>Email Addresses</FormLabel>
+              {/* The tooltip hangs off an icon rather than the label: recognition
+                  entries accept wildcards, which is not discoverable otherwise. */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" aria-label="About email addresses" className="flex">
+                    <Info className="size-3.5 text-muted-foreground" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-72">
+                  <p>
+                    An entry can be a plain address, or a wildcard pattern where <code>*</code>{' '}
+                    matches any run of characters — e.g. <code>*@cloudflare.com</code> matches every
+                    sender on that domain. Useful for suppliers that send each invoice from a
+                    different address. The domain must still contain a concrete label, so an
+                    over-broad pattern like <code>*@*.com</code> is rejected.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex gap-2">
               <Input
-                type="email"
-                placeholder="Add email..."
+                // Deliberately not type="email": a wildcard pattern such as
+                // `*@*.cloudflare.com` is a valid recognition entry but fails the
+                // browser's built-in email constraint validation.
+                type="text"
+                placeholder="Add email or wildcard pattern..."
                 value={newEmail}
                 onChange={e => setNewEmail(e.target.value)}
                 onKeyDown={e => {
