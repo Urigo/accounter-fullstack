@@ -2,7 +2,6 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
@@ -11,6 +10,7 @@ import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { DatePickerInput, PopUpModal } from '../../common/index.js';
+import { NegatableMultiSelect } from '../../common/inputs/negatable-multi-select.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Indicator } from '../../ui/indicator.js';
@@ -73,26 +73,27 @@ function TrialBalanceReportFilterForm({
             name="ownerIds"
             control={control}
             defaultValue={undefined}
-            render={({ field, fieldState }): ReactElement => (
+            render={({ field }): ReactElement => (
               <FormItem>
                 <FormLabel>Owners</FormLabel>
                 <FormControl>
-                  <MultiSelect
-                    {...field}
-                    data={owners}
+                  <NegatableMultiSelect
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    options={owners}
                     value={
                       soleAdminBusinessId
                         ? [soleAdminBusinessId]
                         : (field.value ??
                           (userContext?.context.adminBusinessId
                             ? [userContext?.context.adminBusinessId]
-                            : undefined))
+                            : []))
                     }
-                    disabled={ownersLoading || !!soleAdminBusinessId}
+                    onValueChange={field.onChange}
+                    loading={ownersLoading}
+                    disabled={!!soleAdminBusinessId}
                     placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
+                    aria-label="Owners"
                   />
                 </FormControl>
                 <FormMessage />
@@ -103,19 +104,19 @@ function TrialBalanceReportFilterForm({
             name="businessIDs"
             control={control}
             defaultValue={undefined}
-            render={({ field, fieldState }): ReactElement => (
+            render={({ field }): ReactElement => (
               <FormItem>
                 <FormLabel>Businesses</FormLabel>
                 <FormControl>
-                  <MultiSelect
-                    {...field}
-                    data={businesses}
-                    value={field.value ?? undefined}
-                    disabled={businessesLoading}
+                  <NegatableMultiSelect
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    options={businesses}
+                    value={field.value ?? []}
+                    onValueChange={field.onChange}
+                    loading={businessesLoading}
                     placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
+                    aria-label="Businesses"
                   />
                 </FormControl>
                 <FormMessage />

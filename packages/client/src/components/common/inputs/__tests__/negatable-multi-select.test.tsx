@@ -121,6 +121,43 @@ describe('NegatableMultiSelect', () => {
     expect(container.textContent).toContain('Loading');
   });
 
+  /**
+   * The filter dialogs migrated off Mantine's `MultiSelect` use the default,
+   * non-negatable mode and pass no `onExcludedChange`. Removing a chip must therefore
+   * not depend on that callback being there, and no include/exclude toggle should show.
+   */
+  it('removes a chip in non-negatable mode without an onExcludedChange handler', () => {
+    const changes: string[][] = [];
+    render(
+      <NegatableMultiSelect
+        options={OPTIONS}
+        value={['a', 'b']}
+        onValueChange={(next): void => {
+          changes.push(next);
+        }}
+      />,
+    );
+    const trigger = container.querySelector('[role="combobox"]');
+    expect(trigger?.querySelector('[aria-label="Switch to exclude"]')).toBeNull();
+
+    // A listener that throws does not propagate out of `click()` — the DOM reports it as
+    // an ErrorEvent instead — so the handler is watched rather than wrapped in `expect`.
+    const errors: unknown[] = [];
+    const onError = (event: Event): void => {
+      errors.push((event as ErrorEvent).error ?? event);
+    };
+    window.addEventListener('error', onError);
+    try {
+      const remove = trigger?.querySelector<HTMLButtonElement>('[aria-label="Remove Alpha"]');
+      expect(remove).not.toBeNull();
+      act(() => remove!.click());
+    } finally {
+      window.removeEventListener('error', onError);
+    }
+    expect(errors).toEqual([]);
+    expect(changes).toEqual([['b']]);
+  });
+
   it('renders the placeholder when nothing is selected', () => {
     render(
       <NegatableMultiSelect
