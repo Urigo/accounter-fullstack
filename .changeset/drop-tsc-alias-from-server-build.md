@@ -14,6 +14,10 @@ The emitted tree is now flat, mirroring `src`: the entry points move from
 `dist/bootstrap-telemetry.js`. Anything referencing the old layout (the package `main`, `start`,
 deploy or debug configuration) needs updating.
 
-`yarn workspace @accounter/server build` now requires the four generator packages to be built
-first. Every pipeline already orders this correctly; a hand-run build in a fresh clone needs
-`yarn build:tools` first.
+Both `yarn workspace @accounter/server build` and the new `yarn workspace @accounter/server
+typecheck` now require the four generator packages to be built first, since they share the same
+module resolution. Every pipeline already orders this correctly; a hand-run build or typecheck in a
+fresh clone needs `yarn build:tools` first.
+
+`yarn dev` now also watches the four generators' `dist` directories, so rebuilding a generator
+restarts the server without touching a server file.

@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "cleanup:expired-invitations": "tsx src/scripts/run-invitation-cleanup.ts",
-    "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
+    "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty\" --watch 'src/**/*' --watch '../green-invoice-graphql/dist/**' --watch '../pcn874-generator/dist/**' --watch '../shaam6111-generator/dist/**' --watch '../shaam-uniform-format-generator/dist/**' --delay 1 -e ts,tsx,mts,js",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
     "generate:sql:watch": "dotenv -e ../../.env yarn pgtyped:watch",

@@ -62,8 +62,8 @@ Charge-mutating ops (documents, transactions, misc-expenses, ledger, charge upda
 
 ```bash
 yarn build:tools                           # Build the four workspace generators the server imports
-yarn workspace @accounter/server build     # Build server (plain tsc, needs build:tools first)
-yarn workspace @accounter/server typecheck # Typecheck src including tests
+yarn workspace @accounter/server build     # Build server (plain tsc; needs build:tools first)
+yarn workspace @accounter/server typecheck # Typecheck src incl. tests (also needs build:tools)
 yarn seed:admin-context                    # Seed admin context
 yarn generate                              # Regenerate types after schema changes
 ```
