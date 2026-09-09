@@ -11,7 +11,6 @@ import { X } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { MonthPickerInput } from '@mantine/dates';
 import {
   AccounterLoader,
   convertNewDocumentDraftFragmentIntoPreviewDocumentInput,
@@ -23,6 +22,7 @@ import type { TimelessDateString } from '@/helpers/dates.js';
 import { useIssueMonthlyDocuments } from '@/hooks/use-issue-monthly-documents.js';
 import { ROUTES } from '@/router/routes.js';
 import { ConfirmationModal } from '../common/index.js';
+import { MonthPickerInput } from '../common/inputs/month-picker-input.js';
 import { EditIssueDocumentModal } from '../screens/documents/issue-documents/edit-issue-document-modal.js';
 import { Button } from '../ui/button.js';
 import {
@@ -142,11 +142,13 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                 <Label>Issue Month:</Label>
                 <MonthPickerInput
                   value={new Date(issueMonth)}
-                  onChange={(date: Date) => {
+                  onChange={date => {
+                    if (!date) {
+                      return;
+                    }
                     const month = new Date(date.getFullYear(), date.getMonth(), 15);
                     setIssueMonth(format(month, 'yyyy-MM-dd') as TimelessDateString);
                   }}
-                  popoverProps={{ withinPortal: false }}
                 />
               </div>
               <Table>

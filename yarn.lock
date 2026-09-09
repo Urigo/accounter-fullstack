@@ -75,7 +75,6 @@ __metadata:
     "@hookform/resolvers": "npm:5.9.1"
     "@mantine/carousel": "npm:6.0.22"
     "@mantine/core": "npm:6.0.22"
-    "@mantine/dates": "npm:6.0.22"
     "@mantine/dropzone": "npm:6.0.22"
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.4"
@@ -5108,20 +5107,6 @@ __metadata:
     react: ">=16.8.0"
     react-dom: ">=16.8.0"
   checksum: 10c0/798632bb6ce1e4d6d79169e7e6394b653adf72d4b7105fa220fddd54a8f0b76ed05f5f87cae6d6f54303c2119d93cbe696be3f1da392ae6241fbdf021b618e0e
-  languageName: node
-  linkType: hard
-
-"@mantine/dates@npm:6.0.22":
-  version: 6.0.22
-  resolution: "@mantine/dates@npm:6.0.22"
-  dependencies:
-    "@mantine/utils": "npm:6.0.22"
-  peerDependencies:
-    "@mantine/core": 6.0.22
-    "@mantine/hooks": 6.0.22
-    dayjs: ">=1.0.0"
-    react: ">=16.8.0"
-  checksum: 10c0/af4cde8431d915db21cde1cc0817a5269c154521940e294754923105d75760945ef390c48925c2643d4b92bdd114cd573eaf00651e4a33815ff04e586aba482b
   languageName: node
   linkType: hard
 

@@ -6,13 +6,13 @@ import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { MultiSelect } from '@mantine/core';
-import { MonthPickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import { AllEmployeesByEmployerDocument } from '../../gql/graphql.js';
 import { type TimelessDateString } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
+import { MonthPickerInput } from '../common/inputs/month-picker-input.js';
 import { Button } from '../ui/button.js';
 
 export type SalariesFilter = {
@@ -121,14 +121,12 @@ function SalariesFiltersForm({
       <form onSubmit={handleSubmit(onSubmit)}>
         <MonthPickerInput
           type="range"
-          numberOfColumns={2}
           defaultValue={[
             new Date(filter?.fromDate ?? defaultDates.fromDate),
             new Date(filter?.toDate ?? defaultDates.toDate),
           ]}
           defaultDate={new Date(filter?.fromDate ?? defaultDates.fromDate)}
           onChange={onSelectDateRange}
-          popoverProps={{ withinPortal: true }}
         />
         <Controller
           name="employeeIDs"
