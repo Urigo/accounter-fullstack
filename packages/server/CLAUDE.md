@@ -61,7 +61,12 @@ Charge-mutating ops (documents, transactions, misc-expenses, ledger, charge upda
 ## Commands
 
 ```bash
-yarn workspace @accounter/server build # Build server
-yarn seed:admin-context                # Seed admin context
-yarn generate                          # Regenerate types after schema changes
+yarn build:tools                           # Build the four workspace generators the server imports
+yarn workspace @accounter/server build     # Build server (plain tsc; needs build:tools first)
+yarn workspace @accounter/server typecheck # Typecheck src incl. tests (also needs build:tools)
+yarn seed:admin-context                    # Seed admin context
+yarn generate                              # Regenerate types after schema changes
 ```
+
+Build output is flat: `dist/index.js`, `dist/bootstrap-telemetry.js`. See
+[README - Building](./README.md#building) for why there are two tsconfigs.
