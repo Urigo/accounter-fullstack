@@ -2,13 +2,14 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Select } from '@mantine/core';
+import { Loader } from '@mantine/core';
 import {
   AllDepreciationCategoriesDocument,
   type InsertDepreciationRecordInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Overlay } from '../../ui/overlay.js';
@@ -147,17 +148,13 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
               name="categoryId"
               control={control}
               render={({ field, fieldState }): ReactElement => (
-                <Select
+                <ComboBox
                   {...field}
                   disabled={fetchingCategories}
                   data={categories}
                   label="Category"
                   placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
                   error={fieldState.error?.message}
-                  withinPortal
-                  zIndex={1002}
                 />
               )}
             />
@@ -165,17 +162,13 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
               name="type"
               control={control}
               render={({ field, fieldState }): ReactElement => (
-                <Select
+                <ComboBox
                   {...field}
                   data={depreciationTypes}
                   value={field.value}
                   label="Type"
                   placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
                   error={fieldState.error?.message}
-                  withinPortal
-                  zIndex={1002}
                 />
               )}
             />

@@ -2,7 +2,7 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { MultiSelect, Select } from '@mantine/core';
+import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
@@ -11,6 +11,7 @@ import { useGetBusinesses } from '../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
+import { ComboBox } from '../common/inputs/combo-box.js';
 import { DatePickerInput } from '../common/inputs/date-picker-input.js';
 import { Button } from '../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form.js';
@@ -183,11 +184,11 @@ function BusinessLedgerRecordsFilterForm({
               name="type"
               control={control}
               defaultValue={null}
-              render={({ field, fieldState }): ReactElement => (
+              render={({ field }): ReactElement => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
                   <FormControl>
-                    <Select
+                    <ComboBox
                       {...field}
                       onChange={value => field.onChange(value === 'NULL' ? null : value)}
                       data={[
@@ -195,7 +196,7 @@ function BusinessLedgerRecordsFilterForm({
                         { value: 'BUSINESS', label: 'Business' },
                         { value: 'TAX_CATEGORY', label: 'Tax Category' },
                       ]}
-                      error={fieldState.error?.message}
+                      formPart
                     />
                   </FormControl>
                   <FormMessage />

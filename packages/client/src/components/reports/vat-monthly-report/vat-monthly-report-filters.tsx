@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Select } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import { ChargeFilterType, type VatReportFilter } from '../../../gql/graphql.js';
 import { type TimelessDateString } from '../../../helpers/index.js';
@@ -12,6 +11,7 @@ import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { chargesTypeFilterOptions } from '../../charges/charges-filters/index.js';
 import { PopUpModal } from '../../common/index.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Button } from '../../ui/button.js';
 import { getDefaultVatReportMonth } from './utils.js';
@@ -73,15 +73,13 @@ function VatMonthlyReportFilterForm({
           control={control}
           defaultValue={undefined}
           render={({ field, fieldState }): ReactElement => (
-            <Select
+            <ComboBox
               {...field}
               data={adminBusinesses}
               value={soleAdminBusinessId ?? field.value}
               disabled={feLoading || !!soleAdminBusinessId}
               label="Report Issuer (Admin Business)"
               placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
               error={fieldState.error?.message}
             />
           )}
@@ -91,13 +89,12 @@ function VatMonthlyReportFilterForm({
           control={control}
           defaultValue={filter.chargesType}
           render={({ field, fieldState }): ReactElement => (
-            <Select
+            <ComboBox
               {...field}
               data={chargesTypeFilterOptions}
               value={field.value ?? ChargeFilterType.All}
               label="Charge Type"
               placeholder="Filter income/expense"
-              maxDropdownHeight={160}
               error={fieldState.error?.message}
             />
           )}

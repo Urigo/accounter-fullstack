@@ -14,6 +14,7 @@ import {
 } from '../../ui/command.js';
 import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer.js';
 import { FormControl } from '../../ui/form.js';
+import { Label } from '../../ui/label.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
 type Option = {
@@ -31,6 +32,12 @@ type ComboBoxProps = {
   value?: string | null;
   formPart?: boolean;
   error?: string;
+  /** Rendered above the trigger. Carried over from Mantine's `Select`. */
+  label?: string;
+  id?: string;
+  /** Associates the trigger with a form element rendered outside it. */
+  form?: string;
+  required?: boolean;
 };
 
 export function ComboBox({
@@ -42,7 +49,17 @@ export function ComboBox({
   value,
   formPart,
   error,
+  label,
+  id,
+  form,
+  required,
 }: ComboBoxProps) {
+  const generatedId = React.useId();
+  const triggerId = id ?? generatedId;
+  const errorId = `${triggerId}-error`;
+  // Inside `formPart` the surrounding FormControl already points the trigger at its
+  // FormMessage, so `error` is not passed there and this wiring is for standalone use.
+  const errorProps = error ? { 'aria-invalid': true, 'aria-describedby': errorId } : {};
   const [open, setOpen] = React.useState(false);
   // When the ComboBox is rendered inside a modal layer (e.g. the vaul Drawer used by PopUpDrawer),
   // the underlying Radix Dialog traps focus and blocks interaction with any element portaled to
@@ -63,10 +80,15 @@ export function ComboBox({
   if (isDesktop) {
     return (
       <div className="flex flex-col gap-1 w-full">
+        {label ? <Label htmlFor={triggerId}>{label}</Label> : null}
         <Popover modal open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild className="w-full min-w-40">
             <Trigger
+              id={triggerId}
               placeholder={placeholder}
+              form={form}
+              aria-required={required || undefined}
+              {...errorProps}
               selectedOption={selectedOption}
               disabled={disabled}
               formPart={formPart}
@@ -83,17 +105,26 @@ export function ComboBox({
             />
           </PopoverContent>
         </Popover>
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && (
+          <p id={errorId} className="text-xs text-red-500">
+            {error}
+          </p>
+        )}
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-1 w-full">
+      {label ? <Label htmlFor={triggerId}>{label}</Label> : null}
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <Trigger
+            id={triggerId}
             placeholder={placeholder}
+            form={form}
+            aria-required={required || undefined}
+            {...errorProps}
             selectedOption={selectedOption}
             disabled={disabled}
             formPart={formPart}
@@ -112,7 +143,11 @@ export function ComboBox({
           </div>
         </DrawerContent>
       </Drawer>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-xs text-red-500">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -123,24 +158,24 @@ type TriggerProps = ComponentProps<typeof Button> & {
   selectedOption: Option | null;
 };
 
-function Trigger({ formPart, placeholder, selectedOption, ...triggerProps }: TriggerProps) {
-  if (formPart) {
-    return (
-      <FormControl>
-        <Button variant="outline" className="w-full justify-start" {...triggerProps}>
-          {selectedOption ? selectedOption.label : placeholder}
-          <ChevronDownIcon
-            strokeWidth={2}
-            className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
-            aria-hidden="true"
-          />
-        </Button>
-      </FormControl>
-    );
-  }
-  return (
-    <Button variant="outline" className="w-[150px] justify-start" {...triggerProps}>
-      {selectedOption ? selectedOption.label : placeholder}
+function Trigger({
+  formPart,
+  placeholder,
+  selectedOption,
+  className,
+  ...triggerProps
+}: TriggerProps) {
+  // `className` is pulled out and merged rather than left in `triggerProps`: PopoverTrigger and
+  // DrawerTrigger both pass one down through `asChild`, and spreading it last silently replaced
+  // the trigger's own layout classes — which is why `justify-start` never took effect and the
+  // Button fell back to its base `justify-center`.
+  const button = (
+    <Button variant="outline" className={cn('w-full justify-between', className)} {...triggerProps}>
+      {/* The label takes the free space and truncates, so a long option cannot push the
+          chevron off the right edge. */}
+      <span className="truncate text-left">
+        {selectedOption ? selectedOption.label : placeholder}
+      </span>
       <ChevronDownIcon
         strokeWidth={2}
         className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
@@ -148,6 +183,8 @@ function Trigger({ formPart, placeholder, selectedOption, ...triggerProps }: Tri
       />
     </Button>
   );
+
+  return formPart ? <FormControl>{button}</FormControl> : button;
 }
 
 function OptionsList({

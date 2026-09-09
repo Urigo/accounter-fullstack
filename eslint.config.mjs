@@ -302,6 +302,7 @@ export default [
       'packages/client/src/components/bank-deposits/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/business/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/businesses/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/charts/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/charge-matching/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/charge-matches/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/clients/**/*.{,c,m}{j,t}s{,x}',

@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Select } from '@mantine/core';
 import {
   AllEmployeesByEmployerDocument,
   AllPensionFundsDocument,
@@ -18,6 +17,7 @@ import {
 } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { ComboBox } from '../../common/inputs/combo-box.js';
 import { MonthPickerInput } from '../../common/inputs/month-picker-input.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
@@ -202,15 +202,13 @@ export const ModifySalaryRecord = ({
                   required: 'Required',
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
+                  <ComboBox
                     {...field}
                     data={businesses}
                     value={field.value}
                     disabled={fetchingBusinesses}
                     label="Employer"
                     placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
                     error={fieldState.error?.message}
                   />
                 )}
@@ -240,15 +238,13 @@ export const ModifySalaryRecord = ({
                   required: 'Required',
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
+                  <ComboBox
                     {...field}
                     data={employees}
                     value={field.value}
                     disabled={employeesFetching}
                     label="Employee"
                     placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
                     error={fieldState.error?.message}
                   />
                 )}
@@ -408,15 +404,13 @@ export const ModifySalaryRecord = ({
                 control={control}
                 defaultValue={defaultValues?.pensionFundId}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
+                  <ComboBox
                     {...field}
                     data={pensionFunds}
                     value={field.value}
                     disabled={fetchingPensionFunds}
                     label="Pension Fund"
                     placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
                     error={fieldState.error?.message}
                   />
                 )}
@@ -532,15 +526,13 @@ export const ModifySalaryRecord = ({
                 control={control}
                 defaultValue={defaultValues?.trainingFundId}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
+                  <ComboBox
                     {...field}
                     data={trainingFunds}
                     value={field.value}
                     disabled={fetchingTrainingFunds}
                     label="Training Fund"
                     placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
                     error={fieldState.error?.message}
                   />
                 )}
