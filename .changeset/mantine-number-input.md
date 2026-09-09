@@ -26,4 +26,10 @@ Prop translation:
 The remaining touched files keep other Mantine imports (`Text`, `Select`, `Modal`, `Loader`) that
 belong to later clusters.
 
+`CurrencyInput` also stops aligning its two halves with a magic spacer. The currency select
+carried `mt-6`, sized to the height of Mantine's label inside the number field; swapping the field
+changed that height and left the amount input and the select on different baselines. The label and
+error now live on the `CurrencyInput` wrapper, so the two controls are direct flex siblings and line
+up by construction, whatever the label does.
+
 Mantine imports: 77 → 75, across 76 → 74 files.
