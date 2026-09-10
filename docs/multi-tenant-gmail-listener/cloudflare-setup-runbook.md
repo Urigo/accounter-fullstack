@@ -45,7 +45,7 @@ What the handler does, in order:
    failure and redelivers with growing backoff, so throwing on a permanent rejection loops forever.
 
 Every branch emits one structured `worker:*` JSON line; read them with
-`yarn workspace @accounter/email-ingestion-gateway wrangler tail --name email-ingestion-gateway-worker --format pretty`.
+`yarn workspace @accounter/email-ingestion-gateway wrangler tail email-forward-04a7 --format pretty`.
 
 **Step 2 — Add Worker secrets** in the Cloudflare dashboard or with Wrangler:
 
@@ -64,8 +64,8 @@ $W secret put FALLBACK_EMAIL            # legacy Gmail inbox for rollback fallba
 
 Use **secrets**, not plain-text variables. `wrangler.jsonc` declares no `vars`, so `wrangler deploy`
 reconciles bindings against the config file and **deletes any dashboard Text variable** while
-leaving secrets intact. Verify with `$W secret list --name email-ingestion-gateway-worker`: anything
-visible in the dashboard but absent from that list is Text and will not survive the next deploy. A
+leaving secrets intact. Verify with `$W secret list --name email-forward-04a7`: anything visible in
+the dashboard but absent from that list is Text and will not survive the next deploy. A
 silently-dropped `FALLBACK_EMAIL` is what turns a permanent gateway rejection into a Cloudflare
 redelivery loop.
 
@@ -109,7 +109,7 @@ $W secret list --name email-forward-04a7 # which values are secrets (the rest ar
    that no second Worker appeared, and that the Email Routing rule still targets it:
    ```bash
    $W deploy
-   $W tail --name email-forward-04a7 --format pretty
+   $W tail email-forward-04a7 --format pretty
    ```
    On the next inbound email the tail should open with `worker:email:start`, whose booleans report
    which bindings actually resolved — that line is the fastest confirmation the deploy kept its

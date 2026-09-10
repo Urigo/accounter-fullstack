@@ -122,13 +122,50 @@ See [`.dev.vars.example`](./.dev.vars.example):
 | `GATEWAY_URL`               | URL the Worker `POST`s the webhook to.                                                                                                             |
 | `EMAIL_FORWARD_DESTINATION` | **Required.** Archive address every message is forwarded to before the webhook call. Unset or unverified ⇒ no archive copy and no loss protection. |
 | `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above).                                                 |
-| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                                                                 |
+| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `120000`.                                                                                |
+
+### Identifying forwarded copies in the destination mailbox
+
+The forwarded MIME is passed through **unmodified**, so its `To:` still shows the tenant alias
+(`<tenant>@accounter.tax`) and nothing in the message body or original headers names the mailbox it
+was routed to. Two separate mechanisms make the copies identifiable.
+
+**1. `X-` headers, added by the Worker.** `forward(rcptTo, headers)` accepts extra headers, of which
+the runtime keeps only `X-`-prefixed ones. Every forwarded copy carries:
+
+| Header                        | Value                                                     |
+| ----------------------------- | --------------------------------------------------------- |
+| `X-Accounter-Forward`         | `archive` or `fallback` — which path produced this copy   |
+| `X-Accounter-Correlation-Id`  | the same id the gateway logs for this delivery            |
+| `X-Accounter-Recipient`       | the tenant alias the message was addressed to             |
+| `X-Accounter-Fallback-Reason` | fallback only: `gateway-unreachable` / `gateway-rejected` |
+| `X-Accounter-Gateway-Status`  | fallback only: the HTTP status the gateway answered with  |
+
+The correlation id is the useful one: it joins a message sitting in the mailbox to the `worker:*`
+and `orchestrate:*` log lines for the same delivery.
+
+⚠️ **Gmail cannot search or filter on custom headers.** These are visible under _Show original_ and
+usable by any IMAP/API client, but you cannot build a Gmail filter on them.
+
+**2. `Delivered-To`, for Gmail filtering.** Use a distinct plus-tagged destination per path — e.g.
+`gil+email-routing@…` for `EMAIL_FORWARD_DESTINATION` and `gil+email-fallback@…` for
+`FALLBACK_EMAIL`. The tag never appears in the message itself, but it is the SMTP envelope
+recipient, and the receiving server stamps it into a `Delivered-To:` header on the copy it accepts.
+That header **is** searchable in Gmail:
+
+```text
+deliveredto:gil+email-fallback@the-guild.dev
+```
+
+Confirm it is present via _Show original_ on a delivered copy before building filters on it.
 
 ### Telling the fallback copy apart
 
-`EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` must be **different addresses** — the Workers
-runtime rejects a second forward to an address already used for the message, and the Worker skips
-the fallback forward when it detects the two are equal.
+Give `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` **different addresses**. When the Worker
+detects the two are equal it skips the fallback forward: both copies would land in the same mailbox,
+so the second adds nothing over the one already sent. (Cloudflare does not document whether a repeat
+forward to the same address errors or is accepted — skipping is correct either way, and keeps the
+outcome idempotent.)
 
 A plus-tag on the same mailbox is the cheapest way to get a distinct destination:
 `accounter+fallback@the-guild.dev` alongside `accounter@the-guild.dev`. The forwarded MIME is passed
@@ -142,10 +179,14 @@ the plus-tagged address in Email Routing before setting `FALLBACK_EMAIL` to it; 
 mail arrives in the same mailbox.
 
 The probe default is deliberately generous. The gateway scales to zero and cold-starts on _every_
-delivery, and the probe is what wakes it, so the probe always pays that cold start — production
-restarts measured 0.8-9.4 s to serve `/health`. A tight ceiling is not a safety measure here: it
-turns a slow-but-healthy cold start into "unreachable", which forwards the mail to `FALLBACK_EMAIL`
-and skips ingestion. Raise it if your host is slower; it is tunable without a Worker deploy.
+delivery, and the probe is what wakes it, so the probe always pays the full cold start of a
+Playwright/Chromium image. Measured end to end in production on 2026-09-10: **48 s** of container
+scheduling before any application code ran, and **52 s** before `/health` answered.
+
+A tight ceiling is not a safety measure here — it turns a slow-but-healthy cold start into
+"unreachable", which forwards the mail to `FALLBACK_EMAIL` and skips ingestion entirely. A 30 s
+ceiling did exactly that in production, aborting 22 s before the gateway had even started. Raise it
+if your host is slower; it is tunable without a Worker deploy.
 
 Set all four as **secrets**
 (`yarn workspace @accounter/email-ingestion-gateway wrangler secret put <NAME>`), not as plain-text
@@ -155,9 +196,8 @@ preserved. A silently-dropped `FALLBACK_EMAIL` is what turns a gateway rejection
 loop.
 
 `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` should be **different** addresses. When they match,
-the Worker skips the fallback forward (the runtime rejects a second forward to an address already
-used for the message, and the copy would be redundant anyway) and logs `worker:fallback_skipped`
-with `cause: FALLBACK_EQUALS_FORWARD_DESTINATION`.
+the Worker skips the fallback forward — both copies would reach the same mailbox, so the second adds
+nothing — and logs `worker:fallback_skipped` with `cause: FALLBACK_EQUALS_FORWARD_DESTINATION`.
 
 ## Local development
 
