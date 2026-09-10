@@ -9,7 +9,9 @@ import {
   type Operation,
   type OperationContext,
 } from 'urql';
+import { devtoolsExchange } from '@urql/devtools';
 import { authExchange } from '@urql/exchange-auth';
+import { retryExchange } from '@urql/exchange-retry';
 import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
 import { ROUTES } from '../router/routes.js';
 import { handleUrqlError } from './urql-error-handler.js';
@@ -240,11 +242,18 @@ export function getUrqlClient(): Client {
   globalClient = createClient({
     url,
     exchanges: [
+      // Dev only, and first so it observes every operation and result. Tree-shaken
+      // from production builds by the constant condition.
+      ...(import.meta.env.DEV ? [devtoolsExchange] : []),
       mapExchange({
         onResult(result) {
           handleUrqlError(result);
         },
       }),
+      // `cacheExchange` belongs here, between the error handler and auth, when
+      // normalized caching lands. Nothing occupies the slot today: passing an
+      // explicit `exchanges` array means urql installs no cache of its own.
+
       authExchange(async utils => {
         if (!isDevAuthEnabled) {
           const initialToken = await getAccessToken();
@@ -322,6 +331,13 @@ export function getUrqlClient(): Client {
             bearerToken = `Bearer ${refreshedToken.token}`;
           },
         };
+      }),
+      // After `authExchange`, deliberately: auth then sees a single settled result
+      // rather than every retry attempt, so a retry can never drive
+      // `didAuthError`/`refreshAuth`. Mutations are excluded by default and stay
+      // that way — none of ours are idempotent.
+      retryExchange({
+        retryIf: error => !!error.networkError,
       }),
       fetchExchange,
     ],
