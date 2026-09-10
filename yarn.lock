@@ -105,7 +105,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.2"
-    happy-dom: "npm:20.14.0"
+    happy-dom: "npm:20.14.3"
     html2canvas-pro: "npm:2.4.2"
     iconv-lite: "npm:0.7.3"
     json-bigint-patch: "npm:0.0.9"
@@ -144,7 +144,7 @@ __metadata:
   resolution: "@accounter/email-ingestion-gateway@workspace:packages/email-ingestion-gateway"
   dependencies:
     "@types/inline-css": "npm:3.0.4"
-    "@types/node": "npm:25.9.5"
+    "@types/node": "npm:25.9.6"
     dotenv: "npm:17.4.2"
     graphql: "npm:16.14.2"
     graphql-request: "npm:7.4.0"
@@ -277,7 +277,7 @@ __metadata:
     "@opentelemetry/resources": "npm:2.11.0"
     "@opentelemetry/sdk-node": "npm:0.222.0"
     "@opentelemetry/semantic-conventions": "npm:1.43.0"
-    "@types/node": "npm:25.9.5"
+    "@types/node": "npm:25.9.6"
     dotenv: "npm:17.4.2"
     jose: "npm:6.2.12"
     tsx: "npm:4.23.13"
@@ -372,7 +372,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:4.0.50"
+    "@ai-sdk/anthropic": "npm:4.0.52"
     "@envelop/core": "npm:5.6.0"
     "@envelop/generic-auth": "npm:11.2.0"
     "@envelop/graphql-modules": "npm:9.2.0"
@@ -392,10 +392,10 @@ __metadata:
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
-    "@types/node": "npm:25.9.5"
+    "@types/node": "npm:25.9.6"
     "@types/pg": "npm:8.23.1"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:7.0.95"
+    ai: "npm:7.0.97"
     async-mutex: "npm:0.5.0"
     auth0: "npm:6.4.0"
     basic-auth: "npm:3.0.0"
@@ -461,52 +461,52 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/anthropic@npm:4.0.50":
-  version: 4.0.50
-  resolution: "@ai-sdk/anthropic@npm:4.0.50"
+"@ai-sdk/anthropic@npm:4.0.52":
+  version: 4.0.52
+  resolution: "@ai-sdk/anthropic@npm:4.0.52"
   dependencies:
-    "@ai-sdk/provider": "npm:4.0.11"
-    "@ai-sdk/provider-utils": "npm:5.0.37"
+    "@ai-sdk/provider": "npm:4.0.13"
+    "@ai-sdk/provider-utils": "npm:5.0.39"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/aebaee7257c5bd9ded8acba58a9dcb20376d9e66e3f8d31820898f2b2cf521d5f9f55513ca2ee90a285c4033768358fa799d46c7f6957a3398e8e3c6a62dc280
+  checksum: 10c0/2432310e01bf691420b12f45455e7a15e9aa340d64c14f9549f1a4702893a594adc99dab88a90dd6aa1e6636593935dc4c6404c25d8cb1de4ef7d24a743f5f25
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:4.0.76":
-  version: 4.0.76
-  resolution: "@ai-sdk/gateway@npm:4.0.76"
+"@ai-sdk/gateway@npm:4.0.78":
+  version: 4.0.78
+  resolution: "@ai-sdk/gateway@npm:4.0.78"
   dependencies:
-    "@ai-sdk/provider": "npm:4.0.11"
-    "@ai-sdk/provider-utils": "npm:5.0.37"
+    "@ai-sdk/provider": "npm:4.0.13"
+    "@ai-sdk/provider-utils": "npm:5.0.39"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/db2c84c8172ba9779e9afb1c30f6987bd135e004e4ac989a7a0cf87777033eaf1c461357172dfa0f6a6cb6b819bc0eb941fbddaadca5f9ce41d20c1acf10843b
+  checksum: 10c0/f16d9d6c0300d4cbac4123e2c5959cc06f1b6feecf70cbe4ea1bffbbc0acf4df8427fcb01599520de5d6c7ebe11b1265de62fc65a1050898255b9a31d1d1f9c9
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:5.0.37":
-  version: 5.0.37
-  resolution: "@ai-sdk/provider-utils@npm:5.0.37"
+"@ai-sdk/provider-utils@npm:5.0.39":
+  version: 5.0.39
+  resolution: "@ai-sdk/provider-utils@npm:5.0.39"
   dependencies:
-    "@ai-sdk/provider": "npm:4.0.11"
+    "@ai-sdk/provider": "npm:4.0.13"
     "@standard-schema/spec": "npm:^1.1.0"
     "@workflow/serde": "npm:4.1.0"
     eventsource-parser: "npm:^3.0.8"
     undici: "npm:^7.29.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/5d14a794b80474cf97d0717e3a82c7450a25f1eb45bcc2a53d89f2544b807857711ebdc54a4386cbd7be83334c6052c6f7a628beda107ba7bd7695bf3756f9ae
+  checksum: 10c0/1c2e592475da4f6e44c8c821d66160cef241f8aa32732e1606ebcb98709edd7af6be50781cda1b2b2ec3ce038e02de0fb21631057a3a20e4ca8912827daa0a52
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:4.0.11":
-  version: 4.0.11
-  resolution: "@ai-sdk/provider@npm:4.0.11"
+"@ai-sdk/provider@npm:4.0.13":
+  version: 4.0.13
+  resolution: "@ai-sdk/provider@npm:4.0.13"
   dependencies:
     json-schema: "npm:^0.4.0"
-  checksum: 10c0/5225dad6066a861da9887cd17ec7abae267d6485008417c632463c729084fcf62b38a76cfed45763cf92a2bc135c8467bd43f2743e7947f83404b5b29d826da9
+  checksum: 10c0/9b1a53501c8445a7b260eab5cc2196a8ef5d150374ce5414239f1cb93d456f4cfd7aaca0f45e5eabeb32059f7e831accabfb04958abf8f1ebf24f5fa89df1f3d
   languageName: node
   linkType: hard
 
@@ -10646,12 +10646,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:25.9.5":
-  version: 25.9.5
-  resolution: "@types/node@npm:25.9.5"
+"@types/node@npm:25.9.6":
+  version: 25.9.6
+  resolution: "@types/node@npm:25.9.6"
   dependencies:
     undici-types: "npm:>=7.24.0 <7.24.7"
-  checksum: 10c0/addbfe55f14d6a7f149a8796c2fca68463ac6caf911c623f552d07385691d36c0669a9c38724350d0e958131827d59a63c18781e753dede8113a903dd62b7932
+  checksum: 10c0/1ee8d7cb629caa3906b0958200747c8d557c339b4cc4fb000eaf4be8715091394dc845f45302e76a96c715a16153b240dc7884cdd3e11d22c48273d244c5ecdf
   languageName: node
   linkType: hard
 
@@ -11526,7 +11526,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
-    "@types/node": "npm:25.9.5"
+    "@types/node": "npm:25.9.6"
     "@types/pg": "npm:8.23.1"
     "@typescript-eslint/eslint-plugin": "npm:8.70.0"
     "@typescript-eslint/parser": "npm:8.70.0"
@@ -11596,16 +11596,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:7.0.95":
-  version: 7.0.95
-  resolution: "ai@npm:7.0.95"
+"ai@npm:7.0.97":
+  version: 7.0.97
+  resolution: "ai@npm:7.0.97"
   dependencies:
-    "@ai-sdk/gateway": "npm:4.0.76"
-    "@ai-sdk/provider": "npm:4.0.11"
-    "@ai-sdk/provider-utils": "npm:5.0.37"
+    "@ai-sdk/gateway": "npm:4.0.78"
+    "@ai-sdk/provider": "npm:4.0.13"
+    "@ai-sdk/provider-utils": "npm:5.0.39"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/c56d2f5d9e1dd5f69ec803c0993e80d5ce2679a158fb41a9f1fa8401b3a2bc18a619dc87e6d45d40bb1c47be6eaf36783963cd2abccfc84b95730a1086fa6b0e
+  checksum: 10c0/2b8a4a2d49fec223833dbff1b53f150bde472b63e057f77b5cb7752df617e6c4e2a2fefa1df542ec7d315ad51d1b06f942eeb3f012516b6288bcc32af0682db9
   languageName: node
   linkType: hard
 
@@ -17256,9 +17256,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:20.14.0":
-  version: 20.14.0
-  resolution: "happy-dom@npm:20.14.0"
+"happy-dom@npm:20.14.3":
+  version: 20.14.3
+  resolution: "happy-dom@npm:20.14.3"
   dependencies:
     "@types/node": "npm:>=20.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
@@ -17267,7 +17267,7 @@ __metadata:
     entities: "npm:^7.0.1"
     whatwg-mimetype: "npm:^3.0.0"
     ws: "npm:^8.21.0"
-  checksum: 10c0/087522c27a8ad0e95eadd29282cd90ba15fd69b2a8f15f2ac676b6912d8cb9cb6bbfb8d2483d060994fe3f8938647cd925496f585ff742579ae7a6179752a709
+  checksum: 10c0/6c16e3e3e9a0e1aedae620890af971c2028f9fffe3b64fbc4e9845e4a8254864fa5f22da56f7586e0970662997ae6dbf0c352e8c801e3c484c4d5229919d6686
   languageName: node
   linkType: hard
 
