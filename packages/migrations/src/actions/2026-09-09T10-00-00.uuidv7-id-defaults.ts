@@ -96,7 +96,7 @@ export default {
             'uuidv7() requires PostgreSQL 18 or newer; this server is %',
             current_setting('server_version');
         END IF;
-      END
+      END;
       $$;
     `);
 
@@ -128,7 +128,7 @@ export default {
             target.column_name
           );
         END LOOP;
-      END
+      END;
       $$;
     `);
   },
