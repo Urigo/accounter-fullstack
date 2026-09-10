@@ -31,8 +31,17 @@ function TrialBalanceReportFilterForm({
   setFilter,
   closeModal,
 }: TrialBalanceReportFilterFormProps): ReactElement {
+  const { userContext } = useContext(UserContext);
   const form = useForm<TrialBalanceReportFilters>({
-    defaultValues: { ...filter },
+    defaultValues: {
+      ...filter,
+      // Seeded into the form rather than only into the input's `value`: the select
+      // rendered the default owner as selected while the form field stayed undefined,
+      // so submitting without touching it dropped the owner from the filter.
+      ownerIds:
+        filter.ownerIds ??
+        (userContext?.context.adminBusinessId ? [userContext.context.adminBusinessId] : undefined),
+    },
   });
   const { control, handleSubmit } = form;
   const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
@@ -41,8 +50,6 @@ function TrialBalanceReportFilterForm({
     fetching: ownersLoading,
     soleAdminBusinessId,
   } = useGetAdminBusinesses();
-
-  const { userContext } = useContext(UserContext);
 
   // A single owner is not a choice: pre-select it so the (disabled) input and the
   // submitted filter agree — a disabled field never fires onChange to sync itself.
@@ -81,14 +88,7 @@ function TrialBalanceReportFilterForm({
                     ref={field.ref}
                     onBlur={field.onBlur}
                     options={owners}
-                    value={
-                      soleAdminBusinessId
-                        ? [soleAdminBusinessId]
-                        : (field.value ??
-                          (userContext?.context.adminBusinessId
-                            ? [userContext?.context.adminBusinessId]
-                            : []))
-                    }
+                    value={soleAdminBusinessId ? [soleAdminBusinessId] : (field.value ?? [])}
                     onValueChange={field.onChange}
                     loading={ownersLoading}
                     disabled={!!soleAdminBusinessId}

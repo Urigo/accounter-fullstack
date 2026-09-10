@@ -61,6 +61,12 @@ export interface NegatableMultiSelectProps {
   ref?: Ref<HTMLDivElement>;
   onBlur?: () => void;
   'aria-label'?: string;
+  /**
+   * Names the trigger from visible text. Prefer it over `aria-label` when a label is
+   * already on screen: the trigger is a `div role="combobox"`, which `<label for>`
+   * cannot address, so this is the only way to tie the two together.
+   */
+  'aria-labelledby'?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
 }
@@ -88,6 +94,7 @@ export function NegatableMultiSelect({
   ref,
   onBlur,
   'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
 }: NegatableMultiSelectProps): ReactNode {
@@ -234,7 +241,10 @@ export function NegatableMultiSelect({
               setOpen(true);
             }
           }}
-          aria-label={ariaLabel ?? placeholder}
+          // The placeholder is a last-resort name; it is skipped when the caller points at
+          // real label text, which would otherwise lose to aria-label in the name calculation.
+          aria-label={ariaLabelledBy ? ariaLabel : (ariaLabel ?? placeholder)}
+          aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           aria-invalid={ariaInvalid}
           aria-haspopup="listbox"

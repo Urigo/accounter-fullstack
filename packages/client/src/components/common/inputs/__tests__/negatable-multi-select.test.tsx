@@ -158,6 +158,29 @@ describe('NegatableMultiSelect', () => {
     expect(changes).toEqual([['b']]);
   });
 
+  /**
+   * `<label for>` cannot address the trigger (a div is not labelable), so a visible label
+   * has to reach it through aria-labelledby. The placeholder fallback must step aside, or
+   * it would win the accessible-name calculation over the real label text.
+   */
+  it('names the trigger from aria-labelledby instead of the placeholder', () => {
+    render(
+      <>
+        <span id="employees-label">Employees</span>
+        <NegatableMultiSelect
+          aria-labelledby="employees-label"
+          options={OPTIONS}
+          value={[]}
+          onValueChange={(): void => {}}
+          placeholder="Scroll to see all options"
+        />
+      </>,
+    );
+    const trigger = container.querySelector('[role="combobox"]');
+    expect(trigger?.getAttribute('aria-labelledby')).toBe('employees-label');
+    expect(trigger?.getAttribute('aria-label')).toBeNull();
+  });
+
   it('renders the placeholder when nothing is selected', () => {
     render(
       <NegatableMultiSelect

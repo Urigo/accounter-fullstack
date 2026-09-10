@@ -136,9 +136,12 @@ function SalariesFiltersForm({
           render={({ field, fieldState }): ReactElement => (
             // This form is not wrapped in shadcn's `Form`, so the label and the error
             // message that Mantine's `MultiSelect` rendered for itself are supplied here.
+            // The label is rendered `asChild` as a span rather than a <label>: the trigger
+            // is a `div role="combobox"`, which is not a labelable element, so `htmlFor`
+            // would associate nothing. The accessible name comes from `aria-labelledby`.
             <div>
-              <Label htmlFor="salaries-employees" className="mb-1">
-                Employees
+              <Label asChild className="mb-1">
+                <span id="salaries-employees-label">Employees</span>
               </Label>
               <NegatableMultiSelect
                 id="salaries-employees"
@@ -149,7 +152,7 @@ function SalariesFiltersForm({
                 onValueChange={field.onChange}
                 loading={employeesFetching}
                 placeholder="Scroll to see all options"
-                aria-label="Employees"
+                aria-labelledby="salaries-employees-label"
                 aria-invalid={!!fieldState.error}
                 aria-describedby={fieldState.error ? 'salaries-employees-error' : undefined}
               />
