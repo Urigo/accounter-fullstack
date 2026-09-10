@@ -1,8 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
-import { DeleteTagDocument, type DeleteTagMutationVariables } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import {
+  DeleteTagDocument,
+  type DeleteTagMutation,
+  type DeleteTagMutationVariables,
+} from '../gql/graphql.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -11,9 +12,12 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   }
 `;
 
+/** The tag name is only used for the notifications, so it rides along with the variables. */
+type DeleteTagVariables = DeleteTagMutationVariables & { name: string };
+
 type UseDeleteTag = {
   fetching: boolean;
-  deleteTag: (variables: DeleteTagMutationVariables & { name: string }) => Promise<void>;
+  deleteTag: (variables: DeleteTagVariables) => Promise<void>;
 };
 
 const NOTIFICATION_ID = 'deleteTag';
@@ -22,39 +26,26 @@ export const useDeleteTag = (): UseDeleteTag => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(DeleteTagDocument);
-  const deleteTag = useCallback(
-    async (variables: DeleteTagMutationVariables & { name: string }) => {
-      const message = `Error deleting new tag [${variables.name}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.tagId}`;
-      toast.loading(`Deleting tag [${variables.name}]`, {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Tag Deleted', {
-            id: notificationId,
-            description: `[${variables.name}] tag was successfully removed`,
-          });
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  // The variables are explicit because they carry `name` on top of the mutation's own.
+  const { fetching, execute } = useApiMutation<
+    DeleteTagMutation,
+    DeleteTagVariables,
+    undefined,
+    void
+  >({
+    document: DeleteTagDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.tagId}`,
+    loadingMessage: variables => `Deleting tag [${variables.name}]`,
+    errorMessage: variables => `Error deleting new tag [${variables.name}]`,
+    select: () => void 0,
+    successToast: (_result, variables) => ({
+      title: 'Tag Deleted',
+      description: `[${variables.name}] tag was successfully removed`,
+    }),
+  });
 
   return {
     fetching,
-    deleteTag,
+    deleteTag: execute,
   };
 };

@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   GenerateBalanceChargeDocument,
   type GenerateBalanceChargeMutation,
   type GenerateBalanceChargeMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -33,40 +30,17 @@ export const useGenerateBalanceCharge = (): UseGenerateBalanceCharge => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
-  const [{ fetching }, mutate] = useMutation(GenerateBalanceChargeDocument);
-  const generateBalanceCharge = useCallback(
-    async (variables: GenerateBalanceChargeMutationVariables) => {
-      const message = 'Error generating charge';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Generating balance charge', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Balance charge was created',
-          });
-          return data.generateBalanceCharge;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: GenerateBalanceChargeDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Generating balance charge',
+    errorMessage: 'Error generating charge',
+    select: data => data.generateBalanceCharge,
+    successToast: { description: 'Balance charge was created' },
+  });
 
   return {
     fetching,
-    generateBalanceCharge,
+    generateBalanceCharge: execute,
   };
 };
