@@ -12,7 +12,7 @@ marked done only once its PR is **merged**.
 | 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0] | **merged**  |
 | 1    | `handleUrqlError` skips mutations               | [#4440][s1] | in review   |
 | 2    | Extract `useQueryErrorToast`, wire one caller   | [#4442][s2] | in review   |
-| 3    | Roll the hook out to the remaining eleven       | —           | not started |
+| 3    | Roll the hook out to the remaining eleven       | [#4443][s3] | in review   |
 | 4    | `use-logout.ts` client reset                    | —           | not started |
 | 5    | Drop dead loader-data guards + redundant effect | —           | not started |
 | 6    | Hoist in-render `dedupeFragments()` calls       | —           | not started |
@@ -23,6 +23,7 @@ marked done only once its PR is **merged**.
 [s0]: https://github.com/Urigo/accounter-fullstack/pull/4438
 [s1]: https://github.com/Urigo/accounter-fullstack/pull/4440
 [s2]: https://github.com/Urigo/accounter-fullstack/pull/4442
+[s3]: https://github.com/Urigo/accounter-fullstack/pull/4443
 
 ## Context
 
