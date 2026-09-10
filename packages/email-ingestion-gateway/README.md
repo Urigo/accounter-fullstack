@@ -254,7 +254,9 @@ body→PDF rendering (caught and logged; the body document is simply omitted).
 - **SSRF hardening** for internal-link fetching: host/path allowlist, private/loopback host +
   resolved-IP blocks, http(s)-only, redirects disabled, content-type allowlist, streamed size cap.
   See `src/link-fetcher.ts`.
-- **Untrusted HTML**: email bodies render with JavaScript disabled in headless Chromium.
+- **Untrusted HTML**: email bodies render with JavaScript disabled in headless Chromium, and with
+  every remote subresource aborted — no image, stylesheet or tracking pixel in an email body is ever
+  fetched from the gateway's IP. See `src/html-to-pdf.ts`.
 
 ## Troubleshooting
 
