@@ -15,7 +15,7 @@ reached `main` under #4442's squashed commit — there is no commit titled #4443
 | 2    | Extract `useQueryErrorToast`, wire one caller   | [#4442][s2] | **merged**  |
 | 3    | Roll the hook out to the remaining eleven       | [#4443][s3] | **merged**  |
 | 4    | `use-logout.ts` client reset                    | [#4444][s4] | in review   |
-| 5    | Drop dead loader-data guards + redundant effect | —           | not started |
+| 5    | Drop dead loader-data guards + redundant effect | [#4446][s5] | in review   |
 | 6    | Hoist in-render `dedupeFragments()` calls       | —           | not started |
 | 7    | Delete dead `@tanstack/react-query`             | —           | not started |
 | 8a   | Configurable `VITE_GRAPHQL_URL`                 | —           | not started |
@@ -26,6 +26,7 @@ reached `main` under #4442's squashed commit — there is no commit titled #4443
 [s2]: https://github.com/Urigo/accounter-fullstack/pull/4442
 [s3]: https://github.com/Urigo/accounter-fullstack/pull/4443
 [s4]: https://github.com/Urigo/accounter-fullstack/pull/4444
+[s5]: https://github.com/Urigo/accounter-fullstack/pull/4446
 
 ## Context
 
@@ -708,7 +709,14 @@ Finally, run the full manual pass from the Verification section against `yarn mo
   pattern in 19 files.
 - `providers/user-provider.tsx:145-147` — `if (fetching) return <AccounterLoader />` unmounts the
   whole app tree on any `UserContext` refetch, refiring every child query.
-- The dead `chargeId?: string` prop on `Charge` (step 5).
+- The dead `chargeId?: string` prop on `Charge`, and more broadly its whole `useQuery` path: the
+  `:chargeId` route always has a loader, so that query is permanently paused in production and the
+  prop has no callers. Found while implementing step 5.
+- Two claims in this plan were wrong and were corrected when step 5 was implemented and tested. The
+  mount effect in `charge.tsx` was **not** costing a duplicate round-trip — urql dedupes the
+  re-execution against the still-in-flight operation. And the `try/catch` around `useLoaderData` was
+  **not** entirely dead: `useLoaderData` throws outside a data router, which is what it guarded.
+  Removing it is safe only because all three screens are exclusively route elements.
 - Mutation payload design — many mutations select only `{ charge { id } }`
   (`hooks/use-update-charge.ts:16-25`), which no cache can patch from. Prerequisite for optimistic
   UI.
