@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateChargeDocument,
   type UpdateChargeMutation,
   type UpdateChargeMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,40 +38,18 @@ export const useUpdateCharge = (): UseUpdateCharge => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateChargeDocument);
-  const updateCharge = useCallback(
-    async (variables: UpdateChargeMutationVariables) => {
-      const message = `Error updating charge ID [${variables.chargeId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Updating charge', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'updateCharge');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Charge updated',
-          });
-          return data.updateCharge.charge;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: UpdateChargeDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Updating charge',
+    errorMessage: variables => `Error updating charge ID [${variables.chargeId}]`,
+    commonErrorPath: 'updateCharge',
+    select: data => data.updateCharge.charge,
+    successToast: { description: 'Charge updated' },
+  });
 
   return {
     fetching,
-    updateCharge,
+    updateCharge: execute,
   };
 };

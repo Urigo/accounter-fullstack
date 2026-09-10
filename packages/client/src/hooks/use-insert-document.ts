@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   InsertDocumentDocument,
   type InsertDocumentMutation,
   type InsertDocumentMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -43,40 +40,19 @@ export const useInsertDocument = (): UseInsertDocument => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
-  const [{ fetching }, mutate] = useMutation(InsertDocumentDocument);
-  const insertDocument = useCallback(
-    async (variables: InsertDocumentMutationVariables) => {
-      const message = `Error inserting document to charge ID [${variables.record.chargeId}]`;
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Adding document', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'insertDocument');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Document added',
-          });
-          return data.insertDocument;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: InsertDocumentDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Adding document',
+    errorMessage: variables =>
+      `Error inserting document to charge ID [${variables.record.chargeId}]`,
+    commonErrorPath: 'insertDocument',
+    select: data => data.insertDocument,
+    successToast: { description: 'Document added' },
+  });
 
   return {
     fetching,
-    insertDocument,
+    insertDocument: execute,
   };
 };

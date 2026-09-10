@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   InsertClientDocument,
   type InsertClientMutation,
   type InsertClientMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -41,40 +38,20 @@ export const useInsertClient = (): UseInsertClient => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
-  const [{ fetching }, mutate] = useMutation(InsertClientDocument);
-  const insertClient = useCallback(
-    async (variables: InsertClientMutationVariables) => {
-      const errorMessage = `Error creating client [${variables.fields.businessId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.fields.businessId}`;
-      toast.loading('Creating Client...', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, errorMessage, notificationId, 'insertClient');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: `Client [${variables.fields.businessId}] was created`,
-          });
-          return data.insertClient;
-        }
-      } catch (e) {
-        console.error(`${errorMessage}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: errorMessage,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: InsertClientDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.fields.businessId}`,
+    loadingMessage: 'Creating Client...',
+    errorMessage: variables => `Error creating client [${variables.fields.businessId}]`,
+    commonErrorPath: 'insertClient',
+    select: data => data.insertClient,
+    successToast: (_result, variables) => ({
+      description: `Client [${variables.fields.businessId}] was created`,
+    }),
+  });
 
   return {
     fetching,
-    insertClient,
+    insertClient: execute,
   };
 };

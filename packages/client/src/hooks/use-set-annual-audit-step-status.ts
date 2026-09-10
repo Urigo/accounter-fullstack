@@ -1,13 +1,10 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   AnnualAuditStepStatus,
   SetAnnualAuditStepStatusDocument,
   type SetAnnualAuditStepStatusMutation,
   type SetAnnualAuditStepStatusMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -35,41 +32,24 @@ type UseSetAnnualAuditStepStatus = {
 
 const NOTIFICATION_ID = 'setAnnualAuditStepStatus';
 
+const isCompleting = (variables: SetAnnualAuditStepStatusMutationVariables) =>
+  variables.input.status === AnnualAuditStepStatus.Completed;
+
 export const useSetAnnualAuditStepStatus = (): UseSetAnnualAuditStepStatus => {
-  const [{ fetching }, mutate] = useMutation(SetAnnualAuditStepStatusDocument);
+  const { fetching, execute } = useApiMutation({
+    document: SetAnnualAuditStepStatusDocument,
+    notificationId: ({ input }) =>
+      `${NOTIFICATION_ID}-${input.ownerId}-${input.year}-${input.stepId}`,
+    loadingMessage: variables =>
+      isCompleting(variables) ? 'Marking as done...' : 'Updating step status...',
+    errorMessage: ({ input }) => `Error updating step ${input.stepId} status`,
+    select: data => data.setAnnualAuditStepStatus,
+    successToast: (_result, variables) => ({
+      title: isCompleting(variables) ? 'Step marked as done' : 'Step status updated',
+    }),
+    // This flow keeps sonner's default toast lifetime rather than the app-wide long-lived one.
+    errorToast: { duration: undefined, closeButton: undefined },
+  });
 
-  const setStepStatus = useCallback(
-    async (
-      variables: SetAnnualAuditStepStatusMutationVariables,
-    ): Promise<SetAnnualAuditStepStatusMutation['setAnnualAuditStepStatus'] | void> => {
-      const { stepId, ownerId, year } = variables.input;
-      const isCompleting = variables.input.status === AnnualAuditStepStatus.Completed;
-      const message = `Error updating step ${stepId} status`;
-      const notificationId = `${NOTIFICATION_ID}-${ownerId}-${year}-${stepId}`;
-      toast.loading(isCompleting ? 'Marking as done...' : 'Updating step status...', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success(isCompleting ? 'Step marked as done' : 'Step status updated', {
-            id: notificationId,
-          });
-          return data.setAnnualAuditStepStatus;
-        }
-        return undefined;
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-        });
-        return undefined;
-      }
-    },
-    [mutate],
-  );
-
-  return { fetching, setStepStatus };
+  return { fetching, setStepStatus: execute };
 };

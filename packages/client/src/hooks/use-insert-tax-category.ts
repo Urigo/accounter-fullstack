@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   InsertTaxCategoryDocument,
   type InsertTaxCategoryMutation,
   type InsertTaxCategoryMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -33,40 +30,17 @@ export const useInsertTaxCategory = (): UseInsertTaxCategory => {
   // TODO: add authentication
   // TODO: add local data update method after insert
 
-  const [{ fetching }, mutate] = useMutation(InsertTaxCategoryDocument);
-  const insertTaxCategory = useCallback(
-    async (variables: InsertTaxCategoryMutationVariables) => {
-      const message = 'Error creating tax category';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Adding Tax Category', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: `${data.insertTaxCategory.name} was created`,
-          });
-          return data.insertTaxCategory;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: InsertTaxCategoryDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Adding Tax Category',
+    errorMessage: 'Error creating tax category',
+    select: data => data.insertTaxCategory,
+    successToast: taxCategory => ({ description: `${taxCategory.name} was created` }),
+  });
 
   return {
     fetching,
-    insertTaxCategory,
+    insertTaxCategory: execute,
   };
 };

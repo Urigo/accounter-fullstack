@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { UpdateSortCodeDocument, type UpdateSortCodeMutationVariables } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -22,36 +20,19 @@ export const useUpdateSortCode = (): UseUpdateSortCode => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateSortCodeDocument);
+  const { fetching, execute } = useApiMutation({
+    document: UpdateSortCodeDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.key}`,
+    loadingMessage: 'Updating Sort Code...',
+    errorMessage: variables => `Error updating sort code ID [${variables.key}]`,
+    commonErrorPath: 'updateSortCode',
+    select: data => data.updateSortCode,
+    successToast: { description: 'SortCode updated' },
+  });
+
   const updateSortCode = useCallback(
-    async (variables: UpdateSortCodeMutationVariables) => {
-      const message = `Error updating sort code ID [${variables.key}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.key}`;
-      toast.loading('Updating Sort Code...', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'updateSortCode');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'SortCode updated',
-          });
-          return data.updateSortCode;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return false;
-    },
-    [mutate],
+    async (variables: UpdateSortCodeMutationVariables) => (await execute(variables)) ?? false,
+    [execute],
   );
 
   return {

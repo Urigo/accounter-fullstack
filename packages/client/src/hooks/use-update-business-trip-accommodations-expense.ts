@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateBusinessTripAccommodationsExpenseDocument,
   type UpdateBusinessTripAccommodationsExpenseMutation,
   type UpdateBusinessTripAccommodationsExpenseMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,40 +31,17 @@ export const useUpdateBusinessTripAccommodationsExpense =
     // TODO: add authentication
     // TODO: add local data update method after update
 
-    const [{ fetching }, mutate] = useMutation(UpdateBusinessTripAccommodationsExpenseDocument);
-    const updateBusinessTripAccommodationsExpense = useCallback(
-      async (variables: UpdateBusinessTripAccommodationsExpenseMutationVariables) => {
-        const message = 'Error updating business trip accommodations expense';
-        const notificationId = NOTIFICATION_ID;
-        toast.loading('Updating trip accommodations expense', {
-          id: notificationId,
-        });
-        try {
-          const res = await mutate(variables);
-          const data = handleCommonErrors(res, message, notificationId);
-          if (data) {
-            toast.success('Success', {
-              id: notificationId,
-              description: 'Business trip accommodations expense was updated',
-            });
-            return data.updateBusinessTripAccommodationsExpense;
-          }
-        } catch (e) {
-          console.error(`${message}: ${e}`);
-          toast.error('Error', {
-            id: notificationId,
-            description: message,
-            duration: 100_000,
-            closeButton: true,
-          });
-        }
-        return void 0;
-      },
-      [mutate],
-    );
+    const { fetching, execute } = useApiMutation({
+      document: UpdateBusinessTripAccommodationsExpenseDocument,
+      notificationId: NOTIFICATION_ID,
+      loadingMessage: 'Updating trip accommodations expense',
+      errorMessage: 'Error updating business trip accommodations expense',
+      select: data => data.updateBusinessTripAccommodationsExpense,
+      successToast: { description: 'Business trip accommodations expense was updated' },
+    });
 
     return {
       fetching,
-      updateBusinessTripAccommodationsExpense,
+      updateBusinessTripAccommodationsExpense: execute,
     };
   };
