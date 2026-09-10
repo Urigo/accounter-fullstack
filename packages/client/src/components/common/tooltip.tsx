@@ -12,8 +12,13 @@ export function Tooltip({
   disabled,
   asChild = false,
   ...props
-}: React.ComponentProps<typeof TooltipContent> & {
+}: Omit<React.ComponentProps<typeof TooltipContent>, 'content'> & {
   children: ReactNode;
+  /**
+   * `content` is omitted from the base props before being redeclared: React's
+   * `HTMLAttributes` carries an RDFa `content?: string`, so intersecting the two narrowed
+   * this to `string & ReactNode` and rejected any JSX tooltip body.
+   */
   content: ReactNode;
   disabled?: boolean;
   asChild?: boolean;

@@ -1,7 +1,6 @@
-import { useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Popover, Table, Text } from '@mantine/core';
 import { ROUTES } from '@/router/routes.js';
 import {
   BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
@@ -18,6 +17,15 @@ import {
   EventDate,
   SourceID,
 } from '../../../transactions-table/cells-legacy/index.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../ui/table.js';
+import { Tooltip } from '../../tooltip.js';
 import { CategorizeExpense } from '../buttons/categorize-expense.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -62,21 +70,21 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
 
   return (
     <div className="flex flex-col gap-2 mt-5">
-      <Table highlightOnHover withBorder>
-        <thead>
-          <tr>
-            <th>Event Date</th>
-            <th>Debit Date</th>
-            <th>Amount</th>
-            <th />
-            <th>Account</th>
-            <th>Description</th>
-            <th>Reference#</th>
-            <th>Counterparty</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="border">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Event Date</TableHead>
+            <TableHead>Debit Date</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead />
+            <TableHead>Account</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Reference#</TableHead>
+            <TableHead>Counterparty</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {(
             uncategorizedTransactions as Array<
               Exclude<
@@ -87,11 +95,11 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
           )
             .sort((a, b) => a.transaction.eventDate.localeCompare(b.transaction.eventDate))
             .map(uncategorizedTransaction => (
-              <tr key={uncategorizedTransaction.transaction.id}>
+              <TableRow key={uncategorizedTransaction.transaction.id}>
                 <EventDate data={uncategorizedTransaction.transaction} />
                 <DebitDate data={uncategorizedTransaction.transaction} />
                 <Amount data={uncategorizedTransaction} />
-                <td>
+                <TableCell>
                   <Link
                     to={ROUTES.CHARGES.DETAIL(uncategorizedTransaction.transaction.chargeId)}
                     target="_blank"
@@ -101,22 +109,22 @@ export const UncategorizedTransactions = ({ data, onChange }: Props): ReactEleme
                   >
                     To Charge
                   </Link>
-                </td>
+                </TableCell>
                 <Account data={uncategorizedTransaction.transaction} />
                 <Description data={uncategorizedTransaction.transaction} />
                 <SourceID data={uncategorizedTransaction.transaction} />
                 <Counterparty data={uncategorizedTransaction.transaction} />
-                <td>
+                <TableCell>
                   <CategorizeExpense
                     businessTripId={id}
                     transactionId={uncategorizedTransaction.transaction.id}
                     onChange={onChange}
                     defaultAmount={uncategorizedTransaction.transaction.amount.raw}
                   />
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-        </tbody>
+        </TableBody>
       </Table>
     </div>
   );
@@ -158,7 +166,7 @@ export const Amount = ({ data }: AmountProps): ReactElement => {
     amount?.raw !== categorizedAmount.raw && categorizedAmount.raw !== 0;
 
   return (
-    <td>
+    <TableCell>
       <div
         className="flex flex-col whitespace-nowrap"
         style={{
@@ -182,24 +190,27 @@ export const Amount = ({ data }: AmountProps): ReactElement => {
           </div>
         )}
       </div>
-    </td>
+    </TableCell>
   );
 };
 
-export const ErrorsPopover = ({ errors }: { errors: string[] }): ReactElement => {
-  const [opened, setOpened] = useState(false);
-  return (
-    <Popover width={200} position="bottom" shadow="md" opened={opened}>
-      <Popover.Target>
-        <AlertCircle onMouseEnter={() => setOpened(true)} onMouseLeave={() => setOpened(false)} />
-      </Popover.Target>
-      <Popover.Dropdown sx={{ pointerEvents: 'none' }} className="whitespace-normal text-red-500">
+export const ErrorsPopover = ({ errors }: { errors: string[] }): ReactElement => (
+  // Was a Mantine `Popover` held open by mouseenter/mouseleave with `pointerEvents: 'none'` on
+  // the dropdown — a tooltip in all but name. It is one now, so the hand-rolled open state and
+  // the two handlers go away and it picks up the keyboard and touch behaviour Radix provides.
+  <Tooltip
+    side="bottom"
+    className="max-w-50 whitespace-normal text-red-500"
+    content={
+      <ul>
         {errors.map((error, i) => (
-          <Text key={i} size="sm">
+          <li key={i} className="text-sm">
             {error}
-          </Text>
+          </li>
         ))}
-      </Popover.Dropdown>
-    </Popover>
-  );
-};
+      </ul>
+    }
+  >
+    <AlertCircle />
+  </Tooltip>
+);

@@ -18,6 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { TableCell, TableRow } from '../../../ui/table.js';
 import { ToggleExpansionButton, Tooltip } from '../../index.js';
 import { DatePickerInput } from '../../inputs/date-picker-input.js';
 import { DeleteAttendee } from '../buttons/delete-attendee.js';
@@ -75,9 +76,9 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
 
   return (
     <Form {...form}>
-      <tr key={attendee.id}>
-        <td>{attendee.name}</td>
-        <td>
+      <TableRow key={attendee.id}>
+        <TableCell>{attendee.name}</TableCell>
+        <TableCell>
           {isEditMode ? (
             <form id={`form ${attendee.id}`} onSubmit={handleSubmit(onSubmit)}>
               <FormField
@@ -114,8 +115,8 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
           ) : (
             attendee.arrivalDate
           )}
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           {isEditMode ? (
             <FormField
               name="departureDate"
@@ -149,8 +150,8 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
           ) : (
             attendee.departureDate
           )}
-        </td>
-        <td className="flex items-center gap-2">
+        </TableCell>
+        <TableCell className="flex items-center gap-2">
           <Tooltip content="Edit">
             <Button
               disabled={updatingInProcess}
@@ -186,11 +187,11 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
           />
 
           <ToggleExpansionButton toggleExpansion={setIsExtended} isExpanded={isExtended} />
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {isExtended && (
-        <tr key={`${attendee.id}-expension`}>
-          <td colSpan={4}>
+        <TableRow key={`${attendee.id}-expension`}>
+          <TableCell colSpan={4}>
             {/* Mantine's `Card shadow="sm" withBorder` carried its own 16px padding; shadcn's has
                 none. The radius and shadow are the house Card's now, so this panel matches the
                 app's other cards rather than Mantine's 4px corners. */}
@@ -217,8 +218,8 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
                 )}
               </div>
             </Card>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </Form>
   );
