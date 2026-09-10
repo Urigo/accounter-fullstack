@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   DeleteDocumentDocument,
   type DeleteDocumentMutation,
   type DeleteDocumentMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,45 +31,26 @@ export const useDeleteDocument = (): UseDeleteDocument => {
   // TODO: add authentication
   // TODO: add local data delete method after change
 
-  const [{ fetching }, mutate] = useMutation(DeleteDocumentDocument);
-  const deleteDocument = useCallback(
-    async (variables: DeleteDocumentMutationVariables) => {
-      const message = `Error deleting document ID [${variables.documentId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
-      toast.loading('Deleting Document', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          if (data.deleteDocument.success === false) {
-            throw new Error('Unsuccessful deletion');
-          }
-          toast.success('Success', {
-            id: notificationId,
-            description: data.deleteDocument.deletedChargeId
-              ? 'Document was deleted, along with its now-empty charge'
-              : 'Document was deleted',
-          });
-          return data.deleteDocument;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
+  const { fetching, execute } = useApiMutation({
+    document: DeleteDocumentDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.documentId}`,
+    loadingMessage: 'Deleting Document',
+    errorMessage: variables => `Error deleting document ID [${variables.documentId}]`,
+    select: data => {
+      if (data.deleteDocument.success === false) {
+        throw new Error('Unsuccessful deletion');
       }
-      return void 0;
+      return data.deleteDocument;
     },
-    [mutate],
-  );
+    successToast: result => ({
+      description: result.deletedChargeId
+        ? 'Document was deleted, along with its now-empty charge'
+        : 'Document was deleted',
+    }),
+  });
 
   return {
     fetching,
-    deleteDocument,
+    deleteDocument: execute,
   };
 };

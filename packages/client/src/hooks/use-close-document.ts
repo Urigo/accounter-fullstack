@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { CloseDocumentDocument, type CloseDocumentMutationVariables } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -22,36 +20,19 @@ export const useCloseDocument = (): UseCloseDocument => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(CloseDocumentDocument);
+  const { fetching, execute } = useApiMutation({
+    document: CloseDocumentDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.documentId}`,
+    loadingMessage: 'Closing Document...',
+    errorMessage: variables => `Error closing document ID [${variables.documentId}]`,
+    commonErrorPath: 'closeDocument',
+    select: data => data.closeDocument,
+    successToast: { description: 'Document closed' },
+  });
+
   const closeDocument = useCallback(
-    async (variables: CloseDocumentMutationVariables) => {
-      const message = `Error closing document ID [${variables.documentId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
-      toast.loading('Closing Document...', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'closeDocument');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Document closed',
-          });
-          return data.closeDocument;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return false;
-    },
-    [mutate],
+    async (variables: CloseDocumentMutationVariables) => (await execute(variables)) ?? false,
+    [execute],
   );
 
   return {

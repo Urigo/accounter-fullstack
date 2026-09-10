@@ -1,8 +1,6 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation, type CombinedError } from 'urql';
+import type { CombinedError } from 'urql';
 import { GenerateApiKeyDocument, type GenerateApiKeyMutation } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -32,41 +30,19 @@ type UseGenerateApiKey = {
 const NOTIFICATION_ID = 'generateApiKey';
 
 export const useGenerateApiKey = (): UseGenerateApiKey => {
-  const [{ fetching, error }, mutate] = useMutation(GenerateApiKeyDocument);
-  const generateApiKey = useCallback(
-    async ({ name, roleId }: { name: string; roleId: string }) => {
-      const message = 'Error generating API key';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Generating API key', {
-        id: notificationId,
-      });
-      try {
-        const result = await mutate({ name, roleId });
-        const data = handleCommonErrors(result, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'API key generated successfully',
-          });
-          return data.generateApiKey;
-        }
-      } catch (e) {
-        console.error(message, e);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 10_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, error, execute } = useApiMutation({
+    document: GenerateApiKeyDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Generating API key',
+    errorMessage: 'Error generating API key',
+    select: data => data.generateApiKey,
+    successToast: { description: 'API key generated successfully' },
+    errorToast: { duration: 10_000 },
+  });
 
   return {
     fetching,
     error,
-    generateApiKey,
+    generateApiKey: execute,
   };
 };

@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { FetchDeelDocumentsDocument, type FetchDeelDocumentsMutation } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -23,35 +21,18 @@ type UseFetchDeelDocuments = {
 const NOTIFICATION_ID = 'fetch-deel-documents';
 
 export const useFetchDeelDocuments = (): UseFetchDeelDocuments => {
-  const [{ fetching }, mutate] = useMutation(FetchDeelDocumentsDocument);
+  const { fetching, execute } = useApiMutation({
+    document: FetchDeelDocumentsDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Fetching Deel documents',
+    errorMessage: 'Failed to fetch Deel documents',
+    select: data => data.fetchDeelDocuments,
+    successToast: documents => ({
+      description: `Fetched ${documents.length} Deel charge(s)`,
+    }),
+  });
 
-  const fetchDocuments = useCallback(async () => {
-    const message = 'Failed to fetch Deel documents';
-    toast.loading('Fetching Deel documents', { id: NOTIFICATION_ID });
-    try {
-      const res = await mutate({});
-      const data = handleCommonErrors(res, message, NOTIFICATION_ID);
-      if (data?.fetchDeelDocuments) {
-        toast.success('Success', {
-          id: NOTIFICATION_ID,
-          description: `Fetched ${data.fetchDeelDocuments.length} Deel charge(s)`,
-        });
-        return data.fetchDeelDocuments;
-      }
-      // handleCommonErrors already surfaced any error toast; dismiss the loading toast so it
-      // doesn't linger as a permanent spinner when there's no data to report success on
-      toast.dismiss(NOTIFICATION_ID);
-    } catch (e) {
-      console.error(`${message}: ${e}`);
-      toast.error('Error', {
-        id: NOTIFICATION_ID,
-        description: message,
-        duration: 100_000,
-        closeButton: true,
-      });
-    }
-    return void 0;
-  }, [mutate]);
+  const fetchDocuments = useCallback(() => execute({}), [execute]);
 
   return { fetching, fetchDocuments };
 };

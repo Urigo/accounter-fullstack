@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   CategorizeBusinessTripExpenseDocument,
   type CategorizeBusinessTripExpenseMutation,
   type CategorizeBusinessTripExpenseMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,40 +25,17 @@ export const useCategorizeBusinessTripExpense = (): UseCategorizeBusinessTripExp
   // TODO: add authentication
   // TODO: add local data update method after update
 
-  const [{ fetching }, mutate] = useMutation(CategorizeBusinessTripExpenseDocument);
-  const categorizeBusinessTripExpense = useCallback(
-    async (variables: CategorizeBusinessTripExpenseMutationVariables) => {
-      const message = 'Error updating business trip expense category';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Updating trip expense category', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Business trip expense category was updated',
-          });
-          return data.categorizeBusinessTripExpense;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: CategorizeBusinessTripExpenseDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Updating trip expense category',
+    errorMessage: 'Error updating business trip expense category',
+    select: data => data.categorizeBusinessTripExpense,
+    successToast: { description: 'Business trip expense category was updated' },
+  });
 
   return {
     fetching,
-    categorizeBusinessTripExpense,
+    categorizeBusinessTripExpense: execute,
   };
 };

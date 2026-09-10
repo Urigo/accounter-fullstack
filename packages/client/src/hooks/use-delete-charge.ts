@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { DeleteChargeDocument, type DeleteChargeMutationVariables } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -22,39 +20,23 @@ export const useDeleteCharge = (): UseDeleteCharge => {
   // TODO: add authentication
   // TODO: add local data delete method after change
 
-  const [{ fetching }, mutate] = useMutation(DeleteChargeDocument);
-  const deleteCharge = useCallback(
-    async (variables: DeleteChargeMutationVariables) => {
-      const message = `Error deleting charge ID [${variables.chargeId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Deleting charge', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          if (data.deleteCharge === false) {
-            throw new Error('Unsuccessful deletion');
-          }
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Charge was deleted',
-          });
-          return data.deleteCharge;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
+  const { fetching, execute } = useApiMutation({
+    document: DeleteChargeDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Deleting charge',
+    errorMessage: variables => `Error deleting charge ID [${variables.chargeId}]`,
+    select: data => {
+      if (data.deleteCharge === false) {
+        throw new Error('Unsuccessful deletion');
       }
-      return false;
+      return data.deleteCharge;
     },
-    [mutate],
+    successToast: { description: 'Charge was deleted' },
+  });
+
+  const deleteCharge = useCallback(
+    async (variables: DeleteChargeMutationVariables) => (await execute(variables)) ?? false,
+    [execute],
   );
 
   return {

@@ -1,8 +1,5 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { CreateContractDocument, type CreateContractMutationVariables } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -24,39 +21,20 @@ export const useCreateContract = (): UseCreateContract => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(CreateContractDocument);
-  const createContract = useCallback(
-    async (variables: CreateContractMutationVariables) => {
-      const message = `Error creating new contract for client[${variables.input.clientId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.input.clientId}`;
-      toast.loading('Creating contract', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: `Contract for client ${variables.input.clientId} was successfully created`,
-          });
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: CreateContractDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.input.clientId}`,
+    loadingMessage: 'Creating contract',
+    errorMessage: variables =>
+      `Error creating new contract for client[${variables.input.clientId}]`,
+    select: () => void 0,
+    successToast: (_result, variables) => ({
+      description: `Contract for client ${variables.input.clientId} was successfully created`,
+    }),
+  });
 
   return {
     creating: fetching,
-    createContract,
+    createContract: execute,
   };
 };

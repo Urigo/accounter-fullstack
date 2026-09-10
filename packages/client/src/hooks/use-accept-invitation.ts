@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation, type CombinedError } from 'urql';
+import type { CombinedError } from 'urql';
 import { AcceptInvitationDocument, type AcceptInvitationMutation } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -24,37 +23,17 @@ type UseAcceptInvitation = {
 const NOTIFICATION_ID = 'acceptInvitation';
 
 export const useAcceptInvitation = (): UseAcceptInvitation => {
-  const [{ fetching, error }, mutate] = useMutation(AcceptInvitationDocument);
-  const acceptInvitation = useCallback(
-    async (token: string) => {
-      const message = 'Error accepting invitation';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Accepting invitation', {
-        id: notificationId,
-      });
-      try {
-        const result = await mutate({ token });
-        const data = handleCommonErrors(result, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Invitation accepted successfully',
-          });
-          return data.acceptInvitation;
-        }
-      } catch (e) {
-        console.error(message, e);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 10_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, error, execute } = useApiMutation({
+    document: AcceptInvitationDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Accepting invitation',
+    errorMessage: 'Error accepting invitation',
+    select: data => data.acceptInvitation,
+    successToast: { description: 'Invitation accepted successfully' },
+    errorToast: { duration: 10_000 },
+  });
+
+  const acceptInvitation = useCallback((token: string) => execute({ token }), [execute]);
 
   return {
     fetching,
