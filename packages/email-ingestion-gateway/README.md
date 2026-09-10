@@ -124,6 +124,41 @@ See [`.dev.vars.example`](./.dev.vars.example):
 | `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above).                                                 |
 | `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                                                                 |
 
+### Identifying forwarded copies in the destination mailbox
+
+The forwarded MIME is passed through **unmodified**, so its `To:` still shows the tenant alias
+(`<tenant>@accounter.tax`) and nothing in the message body or original headers names the mailbox it
+was routed to. Two separate mechanisms make the copies identifiable.
+
+**1. `X-` headers, added by the Worker.** `forward(rcptTo, headers)` accepts extra headers, of which
+the runtime keeps only `X-`-prefixed ones. Every forwarded copy carries:
+
+| Header                        | Value                                                     |
+| ----------------------------- | --------------------------------------------------------- |
+| `X-Accounter-Forward`         | `archive` or `fallback` — which path produced this copy   |
+| `X-Accounter-Correlation-Id`  | the same id the gateway logs for this delivery            |
+| `X-Accounter-Recipient`       | the tenant alias the message was addressed to             |
+| `X-Accounter-Fallback-Reason` | fallback only: `gateway-unreachable` / `gateway-rejected` |
+| `X-Accounter-Gateway-Status`  | fallback only: the HTTP status the gateway answered with  |
+
+The correlation id is the useful one: it joins a message sitting in the mailbox to the `worker:*`
+and `orchestrate:*` log lines for the same delivery.
+
+⚠️ **Gmail cannot search or filter on custom headers.** These are visible under _Show original_ and
+usable by any IMAP/API client, but you cannot build a Gmail filter on them.
+
+**2. `Delivered-To`, for Gmail filtering.** Use a distinct plus-tagged destination per path — e.g.
+`gil+email-routing@…` for `EMAIL_FORWARD_DESTINATION` and `gil+email-fallback@…` for
+`FALLBACK_EMAIL`. The tag never appears in the message itself, but it is the SMTP envelope
+recipient, and the receiving server stamps it into a `Delivered-To:` header on the copy it accepts.
+That header **is** searchable in Gmail:
+
+```text
+deliveredto:gil+email-fallback@the-guild.dev
+```
+
+Confirm it is present via _Show original_ on a delivered copy before building filters on it.
+
 ### Telling the fallback copy apart
 
 `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` must be **different addresses** — the Workers

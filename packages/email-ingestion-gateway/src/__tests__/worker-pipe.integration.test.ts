@@ -209,8 +209,8 @@ describe('worker -> gateway -> mocked server integration', () => {
 
     await worker.email(message, workerEnv);
 
-    expect(message.forward).toHaveBeenCalledWith('forward@example.com');
-    expect(message.forward).not.toHaveBeenCalledWith('fallback@example.com');
+    expect(message.forward).toHaveBeenCalledWith('forward@example.com', expect.any(Headers));
+    expect(message.forward).not.toHaveBeenCalledWith('fallback@example.com', expect.any(Headers));
     expect(capturedRequests).toHaveLength(2);
 
     const [controlRequest, ingestRequest] = capturedRequests;
@@ -284,7 +284,7 @@ describe('worker -> gateway -> mocked server integration', () => {
     });
 
     // No email lost: it reached a human even though nothing was recorded server-side.
-    expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
+    expect(message.forward).toHaveBeenCalledWith('fallback@example.com', expect.any(Headers));
   });
 
   // The input-shape half of the wire contract, asserted on the bytes that actually
@@ -340,6 +340,96 @@ describe('worker -> gateway -> mocked server integration', () => {
     }
   });
 
+  // The forwarded MIME is passed through untouched, so its `To:` still shows the
+  // tenant alias and nothing in the message names the mailbox it was routed to.
+  // These X- headers are the only thing distinguishing an archive copy from a
+  // fallback copy in the destination inbox, and the correlation id is what joins a
+  // message there back to the gateway logs for the same delivery.
+  it('stamps X- headers on the archive copy so it can be identified and correlated', async () => {
+    const capturedRequests: CapturedGraphqlRequest[] = [];
+    mockServer = createMockGraphqlServer(capturedRequests);
+    const mockServerUrl = await listen(mockServer);
+
+    process.env.PORT = '3000';
+    process.env.EMAIL_INGESTION_V2_ENABLED = '1';
+    process.env.EMAIL_INGESTION_SHADOW_MODE = '0';
+    process.env.CF_WEBHOOK_SECRET = 'worker-shared-secret';
+    process.env.GATEWAY_SERVER_URL = mockServerUrl;
+    process.env.GATEWAY_CP_TOKEN = 'gateway-control-plane-token';
+
+    const { requestHandler } = await import('../index.js');
+    gatewayServer = createServer(requestHandler);
+    const gatewayUrl = await listen(gatewayServer);
+
+    const { default: worker } = await import('../worker.js');
+    const message = makeEmailMessage();
+    await worker.email(message, {
+      CF_WEBHOOK_SECRET: 'worker-shared-secret',
+      GATEWAY_URL: gatewayUrl,
+      FALLBACK_EMAIL: 'fallback@example.com',
+      EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+    });
+
+    const [dest, headers] = (message.forward as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      Headers,
+    ];
+    expect(dest).toBe('forward@example.com');
+    expect(headers.get('X-Accounter-Forward')).toBe('archive');
+    expect(headers.get('X-Accounter-Recipient')).toBe('invoices@acme.example.com');
+
+    // The id on the copy must be the same one the gateway logged, or the two cannot
+    // be joined — that correlation is the entire point of carrying it.
+    const sent = capturedRequests[0]?.body.variables?.input as { correlationId?: string };
+    expect(headers.get('X-Accounter-Correlation-Id')).toBe(sent.correlationId);
+
+    // Only X- headers survive the runtime, so a non-X- name would be silently dropped.
+    for (const name of headers.keys()) {
+      expect(name.toLowerCase().startsWith('x-')).toBe(true);
+    }
+  });
+
+  it('marks a fallback copy distinctly, with the reason and upstream status', async () => {
+    mockServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+      await readJson(req);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ errors: [{ message: 'nope' }], data: null }));
+    });
+    const mockServerUrl = await listen(mockServer);
+
+    process.env.PORT = '3000';
+    process.env.EMAIL_INGESTION_V2_ENABLED = '1';
+    process.env.EMAIL_INGESTION_SHADOW_MODE = '0';
+    process.env.CF_WEBHOOK_SECRET = 'worker-shared-secret';
+    process.env.GATEWAY_SERVER_URL = mockServerUrl;
+    process.env.GATEWAY_CP_TOKEN = 'gateway-control-plane-token';
+
+    const { requestHandler } = await import('../index.js');
+    gatewayServer = createServer(requestHandler);
+    const gatewayUrl = await listen(gatewayServer);
+
+    const { default: worker } = await import('../worker.js');
+    const message = makeEmailMessage();
+    await worker.email(message, {
+      CF_WEBHOOK_SECRET: 'worker-shared-secret',
+      GATEWAY_URL: gatewayUrl,
+      FALLBACK_EMAIL: 'fallback@example.com',
+      EMAIL_FORWARD_DESTINATION: 'forward@example.com',
+    });
+
+    const calls = (message.forward as ReturnType<typeof vi.fn>).mock.calls as [string, Headers][];
+    const fallback = calls.find(([dest]) => dest === 'fallback@example.com');
+    expect(fallback).toBeDefined();
+    const [, headers] = fallback!;
+    expect(headers.get('X-Accounter-Forward')).toBe('fallback');
+    expect(headers.get('X-Accounter-Fallback-Reason')).toBe('gateway-rejected');
+    expect(headers.get('X-Accounter-Gateway-Status')).toBe('503');
+
+    // The archive copy sent moments earlier must not be confusable with it.
+    const archive = calls.find(([dest]) => dest === 'forward@example.com');
+    expect(archive![1].get('X-Accounter-Forward')).toBe('archive');
+  });
+
   // A gateway rejection must never become a Cloudflare redelivery once a copy of the
   // message has been forwarded: Email Routing reads an unhandled exception as a
   // temporary delivery failure and retries with growing backoff, so a *permanent*
@@ -385,8 +475,8 @@ describe('worker -> gateway -> mocked server integration', () => {
         }),
       ).resolves.toBeUndefined();
 
-      expect(message.forward).toHaveBeenCalledWith('forward@example.com');
-      expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
+      expect(message.forward).toHaveBeenCalledWith('forward@example.com', expect.any(Headers));
+      expect(message.forward).toHaveBeenCalledWith('fallback@example.com', expect.any(Headers));
     });
 
     it('forwards once when FALLBACK_EMAIL equals EMAIL_FORWARD_DESTINATION', async () => {
@@ -469,7 +559,7 @@ describe('worker -> gateway -> mocked server integration', () => {
       HEALTH_PROBE_TIMEOUT_MS: '500',
     });
 
-    expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
+    expect(message.forward).toHaveBeenCalledWith('fallback@example.com', expect.any(Headers));
   }, 20_000);
 
   it('falls back to forwarding when the gateway is unreachable', async () => {
@@ -483,6 +573,6 @@ describe('worker -> gateway -> mocked server integration', () => {
       EMAIL_FORWARD_DESTINATION: 'forward@example.com',
     });
 
-    expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
+    expect(message.forward).toHaveBeenCalledWith('fallback@example.com', expect.any(Headers));
   });
 });

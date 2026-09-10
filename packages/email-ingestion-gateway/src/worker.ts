@@ -2,7 +2,12 @@ type EmailMessageLike = {
   to: string;
   headers: Headers;
   raw: ReadableStream;
-  forward: (recipient: string) => Promise<unknown>;
+  /**
+   * Cloudflare's `forward(rcptTo, headers?)`. The runtime keeps only `X-`-prefixed
+   * headers from the second argument and drops the rest. Hand-declared because
+   * `@cloudflare/workers-types` is not a dependency of this package.
+   */
+  forward: (recipient: string, headers?: Headers) => Promise<unknown>;
 };
 
 export type WorkerEnv = {
@@ -64,6 +69,31 @@ function sameAddress(a: string | undefined, b: string | undefined): boolean {
 }
 
 /**
+ * Headers stamped onto every forwarded copy.
+ *
+ * The forwarded MIME is otherwise untouched, so its `To:` still shows the tenant
+ * alias and nothing in the message names the mailbox it was routed to. These say
+ * which path produced the copy and carry the correlation id, so a message in the
+ * destination mailbox can be joined to the gateway logs for the same delivery.
+ *
+ * The runtime keeps only `X-`-prefixed headers here and drops everything else, so
+ * every name below must start with `X-`.
+ */
+function forwardHeaders(
+  path: 'archive' | 'fallback',
+  correlationId: string,
+  message: EmailMessageLike,
+  extra: Record<string, string> = {},
+): Headers {
+  return new Headers({
+    'X-Accounter-Forward': path,
+    'X-Accounter-Correlation-Id': correlationId,
+    'X-Accounter-Recipient': message.to,
+    ...extra,
+  });
+}
+
+/**
  * One structured line per decision. A `wrangler tail` has to say which branch fired
  * and why — reconstructing that from a bare stack trace is what made the redelivery
  * loop hard to place.
@@ -92,6 +122,11 @@ async function isGatewayReachable(gatewayUrl: string, timeoutMs: number): Promis
 
 const worker = {
   async email(message: EmailMessageLike, env: WorkerEnv): Promise<void> {
+    // Minted before the first forward, not at the webhook call, so that every
+    // forwarded copy and every log line for this delivery share one id. It doubles
+    // as the replay nonce sent to the gateway.
+    const correlationId = crypto.randomUUID();
+
     // Which variables are actually bound decides which failure path can fire, and
     // `wrangler.jsonc` declares no `vars` — these are dashboard-managed, and a
     // plain-text (non-secret) one is silently dropped by `wrangler deploy`. The
@@ -106,6 +141,7 @@ const worker = {
     // (`worker:forward_failed`), where the text is the diagnosis.
     logEvent('worker:email:start', {
       messageId: message.headers.get('message-id'),
+      correlationId,
       gatewayUrlConfigured: !!env.GATEWAY_URL,
       forwardDestinationConfigured: !!env.EMAIL_FORWARD_DESTINATION,
       fallbackEmailConfigured: !!env.FALLBACK_EMAIL,
@@ -119,7 +155,12 @@ const worker = {
     if (!(await isGatewayReachable(env.GATEWAY_URL, healthProbeTimeoutMs(env)))) {
       logEvent('worker:gateway_unreachable', { fallbackEmailConfigured: !!env.FALLBACK_EMAIL });
       if (env.FALLBACK_EMAIL) {
-        await message.forward(env.FALLBACK_EMAIL);
+        await message.forward(
+          env.FALLBACK_EMAIL,
+          forwardHeaders('fallback', correlationId, message, {
+            'X-Accounter-Fallback-Reason': 'gateway-unreachable',
+          }),
+        );
         return;
       }
       // Nothing has been forwarded yet, so the message exists only upstream: a
@@ -137,7 +178,10 @@ const worker = {
     let forwardedToDestination = false;
     let forwardedToFallback = false;
     try {
-      await message.forward(env.EMAIL_FORWARD_DESTINATION);
+      await message.forward(
+        env.EMAIL_FORWARD_DESTINATION,
+        forwardHeaders('archive', correlationId, message),
+      );
       forwardedToDestination = true;
       logEvent('worker:forwarded');
     } catch (e) {
@@ -149,7 +193,7 @@ const worker = {
 
     // 4. Continue with your webhook logic
     const timestamp = Math.floor(Date.now() / 1000);
-    const nonce = crypto.randomUUID();
+    const nonce = correlationId;
 
     // Compute HMAC-SHA256 over `${timestamp}.${rawBody}`, where rawBody is the
     // raw MIME message — the exact bytes sent as the request body. The gateway
@@ -215,16 +259,23 @@ const worker = {
           forwardedToDestination,
         });
       } else if (sameAddress(env.FALLBACK_EMAIL, env.EMAIL_FORWARD_DESTINATION)) {
-        // `message.forward()` rejects a second forward to an address already used
-        // for this message, and the copy the operator would receive is the one
-        // step 3 already sent. Skipping is both correct and idempotent.
+        // Both forwards would land in the same mailbox, so the second copy adds
+        // nothing over the one step 3 already sent. (Cloudflare does not document
+        // whether a repeat forward to the same address errors or is accepted;
+        // skipping is correct either way and keeps the outcome idempotent.)
         logEvent('worker:fallback_skipped', {
           cause: 'FALLBACK_EQUALS_FORWARD_DESTINATION',
           forwardedToDestination,
         });
       } else {
         try {
-          await message.forward(env.FALLBACK_EMAIL);
+          await message.forward(
+            env.FALLBACK_EMAIL,
+            forwardHeaders('fallback', correlationId, message, {
+              'X-Accounter-Fallback-Reason': 'gateway-rejected',
+              'X-Accounter-Gateway-Status': String(response.status),
+            }),
+          );
           forwardedToFallback = true;
           logEvent('worker:fallback_forwarded');
         } catch (e) {
