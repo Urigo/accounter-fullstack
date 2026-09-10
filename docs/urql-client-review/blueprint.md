@@ -7,18 +7,20 @@ Companion document: [`findings.md`](./findings.md) — the review these steps de
 Each step lands as its own PR, stacked on the previous one while that one is unmerged. A row is
 marked done only once its PR is **merged**.
 
-| Step | Scope                                           | PR  | Status      |
-| ---- | ----------------------------------------------- | --- | ----------- |
-| 0    | Baseline + `CLAUDE.md` happy-dom fix            | —   | not started |
-| 1    | `handleUrqlError` skips mutations               | —   | not started |
-| 2    | Extract `useQueryErrorToast`, wire one caller   | —   | not started |
-| 3    | Roll the hook out to the remaining eleven       | —   | not started |
-| 4    | `use-logout.ts` client reset                    | —   | not started |
-| 5    | Drop dead loader-data guards + redundant effect | —   | not started |
-| 6    | Hoist in-render `dedupeFragments()` calls       | —   | not started |
-| 7    | Delete dead `@tanstack/react-query`             | —   | not started |
-| 8a   | Configurable `VITE_GRAPHQL_URL`                 | —   | not started |
-| 8b   | `retryExchange` + dev `devtoolsExchange`        | —   | not started |
+| Step | Scope                                           | PR          | Status      |
+| ---- | ----------------------------------------------- | ----------- | ----------- |
+| 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0] | in review   |
+| 1    | `handleUrqlError` skips mutations               | —           | not started |
+| 2    | Extract `useQueryErrorToast`, wire one caller   | —           | not started |
+| 3    | Roll the hook out to the remaining eleven       | —           | not started |
+| 4    | `use-logout.ts` client reset                    | —           | not started |
+| 5    | Drop dead loader-data guards + redundant effect | —           | not started |
+| 6    | Hoist in-render `dedupeFragments()` calls       | —           | not started |
+| 7    | Delete dead `@tanstack/react-query`             | —           | not started |
+| 8a   | Configurable `VITE_GRAPHQL_URL`                 | —           | not started |
+| 8b   | `retryExchange` + dev `devtoolsExchange`        | —           | not started |
+
+[s0]: https://github.com/Urigo/accounter-fullstack/pull/4438
 
 ## Context
 
