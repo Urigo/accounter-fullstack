@@ -22,5 +22,9 @@ a `fetch-<subject>` toast id, so a repeat replaces the existing toast instead of
 strings and the id derive from the one `subject` argument, so callers cannot drift into describing
 the same query two different ways.
 
+The console line also now passes the error as its own argument rather than interpolating it, so a
+`CombinedError` reaches devtools with its `graphQLErrors` and stack intact instead of being flattened
+into text. The toast the user sees is unchanged.
+
 Wired into `useGetBusinesses` here; the remaining lookup hooks follow in a separate change so this
 one stays reviewable.

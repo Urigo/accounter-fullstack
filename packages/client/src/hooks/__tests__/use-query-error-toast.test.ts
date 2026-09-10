@@ -66,11 +66,15 @@ describe('useQueryErrorToast', () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('toasts once for an error, and logs the subject', async () => {
-    await render({ error: makeError('boom'), subject: 'businesses' });
+  it('toasts once for an error, and logs the subject with the error intact', async () => {
+    const error = makeError('boom');
+    await render({ error, subject: 'businesses' });
 
     expect(toastErrorMock).toHaveBeenCalledTimes(1);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('businesses'));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('businesses'),
+      error,
+    );
   });
 
   it('does not re-toast when re-rendered with the same error', async () => {
