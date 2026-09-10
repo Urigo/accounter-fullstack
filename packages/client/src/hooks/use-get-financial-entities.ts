@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllFinancialEntitiesDocument, type AllFinancialEntitiesQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -31,12 +31,7 @@ export const useGetFinancialEntities = (): UseGetFinancialEntities => {
     query: AllFinancialEntitiesDocument,
   });
 
-  if (error) {
-    console.error(`Error fetching financial entities: ${error}`);
-    toast.error('Error', {
-      description: 'Unable to fetch financial entities',
-    });
-  }
+  useQueryErrorToast(error, 'financial entities');
 
   const financialEntities = useMemo(() => {
     return data?.allFinancialEntities?.nodes.sort((a, b) => (a.name > b.name ? 1 : -1)) ?? [];

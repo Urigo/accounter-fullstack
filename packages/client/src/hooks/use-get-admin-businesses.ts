@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useMemo } from 'react';
 import { useQuery } from 'urql';
 import { AllAdminBusinessesDocument, type AllAdminBusinessesQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,14 +34,7 @@ export const useGetAdminBusinesses = (): UseGetAdminBusinesses => {
     query: AllAdminBusinessesDocument,
   });
 
-  useEffect(() => {
-    if (error) {
-      console.error(`Error fetching admin businesses: ${error}`);
-      toast.error('Error', {
-        description: 'Unable to fetch admin businesses',
-      });
-    }
-  }, [error]);
+  useQueryErrorToast(error, 'admin businesses');
 
   const adminBusinesses = useMemo(() => {
     return data?.allAdminBusinesses?.slice().sort((a, b) => a.name.localeCompare(b.name)) ?? [];
