@@ -82,7 +82,7 @@
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.1.1",
     "uuid": "14.0.2",
-    "zod": "4.5.4"
+    "zod": "4.6.1"
   },
   "devDependencies": {
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.9#~/.yarn/patches/@slonik-pg-driver-npm-49.10.9-8d2c0c21df.patch",
