@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateBusinessTripTravelAndSubsistenceExpenseDocument,
   type UpdateBusinessTripTravelAndSubsistenceExpenseMutation,
   type UpdateBusinessTripTravelAndSubsistenceExpenseMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,42 +31,17 @@ export const useUpdateBusinessTripTravelAndSubsistenceExpense =
     // TODO: add authentication
     // TODO: add local data update method after update
 
-    const [{ fetching }, mutate] = useMutation(
-      UpdateBusinessTripTravelAndSubsistenceExpenseDocument,
-    );
-    const updateBusinessTripTravelAndSubsistenceExpense = useCallback(
-      async (variables: UpdateBusinessTripTravelAndSubsistenceExpenseMutationVariables) => {
-        const message = 'Error updating business trip travel&subsistence expense';
-        const notificationId = NOTIFICATION_ID;
-        toast.loading('Updating trip travel&subsistence expense', {
-          id: notificationId,
-        });
-        try {
-          const res = await mutate(variables);
-          const data = handleCommonErrors(res, message, notificationId);
-          if (data) {
-            toast.success('Success', {
-              id: notificationId,
-              description: 'Business trip travel&subsistence expense was updated',
-            });
-            return data.updateBusinessTripTravelAndSubsistenceExpense;
-          }
-        } catch (e) {
-          console.error(`${message}: ${e}`);
-          toast.error('Error', {
-            id: notificationId,
-            description: message,
-            duration: 100_000,
-            closeButton: true,
-          });
-        }
-        return void 0;
-      },
-      [mutate],
-    );
+    const { fetching, execute } = useApiMutation({
+      document: UpdateBusinessTripTravelAndSubsistenceExpenseDocument,
+      notificationId: NOTIFICATION_ID,
+      loadingMessage: 'Updating trip travel&subsistence expense',
+      errorMessage: 'Error updating business trip travel&subsistence expense',
+      select: data => data.updateBusinessTripTravelAndSubsistenceExpense,
+      successToast: { description: 'Business trip travel&subsistence expense was updated' },
+    });
 
     return {
       fetching,
-      updateBusinessTripTravelAndSubsistenceExpense,
+      updateBusinessTripTravelAndSubsistenceExpense: execute,
     };
   };

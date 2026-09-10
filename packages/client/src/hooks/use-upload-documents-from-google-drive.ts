@@ -1,15 +1,13 @@
-import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { NewDocumentsList } from '../components/common/new-documents-list.js';
 import {
-  NewFetchedDocumentFieldsFragmentDoc,
   UploadDocumentsFromGoogleDriveDocument,
+  type NewFetchedDocumentFieldsFragmentDoc,
   type UploadDocumentsFromGoogleDriveMutation,
   type UploadDocumentsFromGoogleDriveMutationVariables,
 } from '../gql/graphql.js';
 import type { FragmentType } from '../gql/index.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -39,11 +37,14 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 type UploadDocumentsFromGoogleDrive =
   UploadDocumentsFromGoogleDriveMutation['batchUploadDocumentsFromGoogleDrive'];
 
+/** The documents that actually uploaded — per-file failures are dropped from the batch. */
+type UploadedDocuments = FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>[];
+
 type UseUploadDocumentsFromGoogleDrive = {
   uploading: boolean;
   uploadDocumentsFromGoogleDrive: (
     variables: UploadDocumentsFromGoogleDriveMutationVariables,
-  ) => Promise<UploadDocumentsFromGoogleDrive | void>;
+  ) => Promise<UploadedDocuments | void>;
 };
 
 const NOTIFICATION_ID = 'uploadDocumentsFromGoogleDrive';
@@ -52,76 +53,54 @@ export const useUploadDocumentsFromGoogleDrive = (): UseUploadDocumentsFromGoogl
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching: uploading }, mutate] = useMutation(UploadDocumentsFromGoogleDriveDocument);
-  const uploadDocumentsFromGoogleDrive = useCallback(
-    async (variables: UploadDocumentsFromGoogleDriveMutationVariables) => {
-      const message = 'Error uploading documents';
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Uploading Documents', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(
-          res,
-          message,
-          notificationId,
-          'batchUploadDocumentsFromGoogleDrive',
-        );
-        if (data) {
-          let hasError = false;
-          const documents = (
-            data.batchUploadDocumentsFromGoogleDrive.filter(singleRes => {
-              if ('message' in singleRes) {
-                console.error(`Error uploading document: ${singleRes.message}`);
-                hasError = true;
-                return false;
-              }
-              if (!('document' in singleRes)) {
-                return false;
-              }
-              return true;
-            }) as Extract<
-              UploadDocumentsFromGoogleDrive[number],
-              { __typename?: 'UploadDocumentSuccessfulResult' }
-            >[]
-          ).map(
-            ({ document }) => document as FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>,
-          );
-          toast.success('Upload Successful', {
-            id: notificationId,
-            description:
-              documents.length > 0
-                ? NewDocumentsList({ data: documents })
-                : 'No successful document uploads',
-            duration: documents.length > 0 ? Infinity : 5000,
-            dismissible: true,
-            closeButton: true,
-          });
-          if (hasError) {
-            toast.error('Some files failed to upload', {
-              duration: 100_000,
-              closeButton: true,
-            });
+  const { fetching: uploading, execute } = useApiMutation({
+    document: UploadDocumentsFromGoogleDriveDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Uploading Documents',
+    errorMessage: 'Error uploading documents',
+    commonErrorPath: 'batchUploadDocumentsFromGoogleDrive',
+    select: data => {
+      let hasError = false;
+      const documents = (
+        data.batchUploadDocumentsFromGoogleDrive.filter(singleRes => {
+          if ('message' in singleRes) {
+            console.error(`Error uploading document: ${singleRes.message}`);
+            hasError = true;
+            return false;
           }
-          return documents as UploadDocumentsFromGoogleDrive;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: Infinity,
+          return 'document' in singleRes;
+        }) as Extract<
+          UploadDocumentsFromGoogleDrive[number],
+          { __typename?: 'UploadDocumentSuccessfulResult' }
+        >[]
+      ).map(({ document }) => document as FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>);
+
+      // A per-file failure doesn't fail the batch, so it gets a toast of its own alongside the
+      // hook's success notification rather than replacing it.
+      if (hasError) {
+        toast.error('Some files failed to upload', {
+          duration: 100_000,
           closeButton: true,
         });
       }
-      return void 0;
+
+      return documents;
     },
-    [mutate],
-  );
+    successToast: documents => ({
+      title: 'Upload Successful',
+      description:
+        documents.length > 0
+          ? NewDocumentsList({ data: documents })
+          : 'No successful document uploads',
+      duration: documents.length > 0 ? Infinity : 5000,
+      dismissible: true,
+      closeButton: true,
+    }),
+    errorToast: { duration: Infinity },
+  });
 
   return {
     uploading,
-    uploadDocumentsFromGoogleDrive,
+    uploadDocumentsFromGoogleDrive: execute,
   };
 };

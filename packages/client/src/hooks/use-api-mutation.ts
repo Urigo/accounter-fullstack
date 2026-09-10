@@ -1,4 +1,4 @@
-import { useCallback, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { toast, type ExternalToast } from 'sonner';
 import { useMutation, type AnyVariables, type CombinedError, type TypedDocumentNode } from 'urql';
 import { handleCommonErrors, type NonCommonError } from '../helpers/error-handling.js';
@@ -21,6 +21,11 @@ function resolve<TArgs extends unknown[], TValue>(
 export type SuccessToast = ExternalToast & {
   /** Toast heading. Defaults to `'Success'`. */
   title?: string;
+  /**
+   * Which sonner toast to raise. Defaults to `'success'`; `'warning'` suits a mutation that
+   * partly succeeded — it still resolved, so it is not the error path.
+   */
+  variant?: 'success' | 'warning' | 'info';
 };
 
 /** Error notification defaults: long-lived and dismissible, so a failure is never missed. */
@@ -120,9 +125,13 @@ export function useApiMutation<
   const [{ fetching, error }, mutate] = useMutation(options.document);
 
   // Reading the options through a ref keeps `execute` stable across renders while still running
-  // the latest callbacks, which close over up-to-date props and state.
+  // the latest callbacks, which close over up-to-date props and state. The ref starts out holding
+  // this render's options and is refreshed after every commit, so `execute` — only ever called
+  // from an event handler — sees the options of the render the user is looking at.
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => {
+    optionsRef.current = options;
+  });
 
   const execute = useCallback(
     async (variables: TVariables): Promise<TResult | void> => {
@@ -147,8 +156,8 @@ export function useApiMutation<
 
         const successOptions = resolve(successToast, result, variables);
         if (successOptions !== false) {
-          const { title = 'Success', ...toastOptions } = successOptions ?? {};
-          toast.success(title, { ...toastOptions, id: notificationId });
+          const { title = 'Success', variant = 'success', ...toastOptions } = successOptions ?? {};
+          toast[variant](title, { ...toastOptions, id: notificationId });
         }
 
         onSuccess?.(result, variables);

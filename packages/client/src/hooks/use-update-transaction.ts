@@ -1,11 +1,8 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateTransactionDocument,
   type UpdateTransactionMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -35,40 +32,18 @@ export const useUpdateTransaction = (): UseUpdateTransaction => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateTransactionDocument);
-  const updateTransaction = useCallback(
-    async (variables: UpdateTransactionMutationVariables) => {
-      const message = `Error updating transaction ID [${variables.transactionId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.transactionId}`;
-      toast.loading('Updating Transaction', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'updateTransaction');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Transaction updated',
-          });
-          return data.updateTransaction;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: UpdateTransactionDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.transactionId}`,
+    loadingMessage: 'Updating Transaction',
+    errorMessage: variables => `Error updating transaction ID [${variables.transactionId}]`,
+    commonErrorPath: 'updateTransaction',
+    select: data => data.updateTransaction,
+    successToast: { description: 'Transaction updated' },
+  });
 
   return {
     fetching,
-    updateTransaction,
+    updateTransaction: execute,
   };
 };
