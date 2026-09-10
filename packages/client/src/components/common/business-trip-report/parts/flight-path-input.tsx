@@ -8,6 +8,7 @@ import {
 import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form';
 import { Input } from '../../../ui/input';
+import { Label } from '../../../ui/label.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -33,7 +34,11 @@ export function FlightPathInput<T extends FieldValues>({
 
   return (
     <div>
-      <span className="mantine-InputWrapper-label mantine-Select-label">Flight Path</span>
+      {/* Was styled by Mantine's own `mantine-InputWrapper-label` class, which stops
+          existing once Mantine goes; this is the same look from `ui/label`. */}
+      <Label asChild>
+        <span>Flight Path</span>
+      </Label>
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">

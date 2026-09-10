@@ -2,7 +2,6 @@ import { useContext, useEffect, useMemo, useState, type ReactElement } from 'rea
 import { type Control } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Select } from '@mantine/core';
 import {
   AttendeesByBusinessTripDocument,
   Currency,
@@ -11,7 +10,7 @@ import {
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
-import { CurrencyInput, DatePickerInput } from '../../index.js';
+import { ComboBox, CurrencyInput, DatePickerInput } from '../../index.js';
 
 export type AddBusinessTripExpenseInput = Omit<
   AddBusinessTripTravelAndSubsistenceExpenseInput,
@@ -160,20 +159,17 @@ export function AddExpenseFields({
       <FormField
         name="employeeBusinessId"
         control={control}
-        render={({ field, fieldState }): ReactElement => (
+        render={({ field }): ReactElement => (
           <FormItem>
             <FormLabel>Attendee</FormLabel>
             <FormControl>
-              <Select
+              <ComboBox
                 {...field}
                 data={attendees}
                 value={field.value}
                 disabled={fetchingAttendees}
                 placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
+                formPart
               />
             </FormControl>
             <FormMessage />

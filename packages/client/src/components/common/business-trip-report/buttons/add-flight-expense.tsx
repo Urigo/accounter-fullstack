@@ -2,7 +2,6 @@ import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader, Modal, MultiSelect, Select } from '@mantine/core';
 import {
   AttendeesByBusinessTripDocument,
   FlightClass,
@@ -11,8 +10,9 @@ import {
 import { useAddBusinessTripFlightsExpense } from '../../../../hooks/use-add-business-trip-flights-expense.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
-import { Overlay } from '../../../ui/overlay.js';
-import { Tooltip } from '../../index.js';
+import { Label } from '../../../ui/label.js';
+import { LoadingOverlay } from '../../../ui/overlay.js';
+import { ComboBox, NegatableMultiSelect, PopUpModal, Tooltip } from '../../index.js';
 import { FlightPathInput } from '../parts/flight-path-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
@@ -93,70 +93,70 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
     })) ?? [];
 
   return (
-    <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Flight Expense</Modal.Title>
-      <Modal.Body>
-        <Form {...formManager}>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <AddExpenseFields
-              businessTripId={businessTripId}
-              control={control}
-              setFetching={setFetching}
-            />
+    <PopUpModal opened={opened} onClose={close} withCloseButton title="Add Flight Expense">
+      <Form {...formManager}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <AddExpenseFields
+            businessTripId={businessTripId}
+            control={control}
+            setFetching={setFetching}
+          />
 
-            <FlightPathInput formManager={formManager} flightPathPath="path" />
-            <Controller
-              name="flightClass"
-              control={control}
-              render={({ field, fieldState }): ReactElement => (
-                <Select
-                  {...field}
-                  data={flightClasses}
-                  value={field.value}
-                  label="Flight Class"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  withinPortal
-                />
-              )}
-            />
-            <Controller
-              name="attendeeIds"
-              control={control}
-              render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  disabled={fetchingAttendees}
-                  data={attendeesData}
+          <FlightPathInput formManager={formManager} flightPathPath="path" />
+          <Controller
+            name="flightClass"
+            control={control}
+            render={({ field, fieldState }): ReactElement => (
+              <ComboBox
+                {...field}
+                data={flightClasses}
+                value={field.value}
+                label="Flight Class"
+                placeholder="Scroll to see all options"
+                error={fieldState.error?.message}
+              />
+            )}
+          />
+          <Controller
+            name="attendeeIds"
+            control={control}
+            render={({ field, fieldState }): ReactElement => (
+              <div>
+                <Label asChild className="mb-1">
+                  <span id="flight-attendees-label">Attendees</span>
+                </Label>
+                <NegatableMultiSelect
+                  ref={field.ref}
+                  onBlur={field.onBlur}
+                  options={attendeesData}
                   value={field.value ?? []}
-                  label="Attendees"
+                  onValueChange={field.onChange}
+                  loading={fetchingAttendees}
                   placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  withinPortal
+                  aria-labelledby="flight-attendees-label"
+                  aria-invalid={!!fieldState.error}
+                  aria-describedby={fieldState.error ? 'flight-attendees-error' : undefined}
                 />
-              )}
-            />
+                {fieldState.error?.message ? (
+                  <p id="flight-attendees-error" className="text-destructive mt-1 text-xs">
+                    {fieldState.error.message}
+                  </p>
+                ) : null}
+              </div>
+            )}
+          />
 
-            <div className="flex justify-center mt-5 gap-3">
-              <button
-                type="submit"
-                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-              >
-                Add
-              </button>
-            </div>
-          </form>
-        </Form>
-      </Modal.Body>
-      {(addingInProcess || fetching) && (
-        <Overlay blur={1} center>
-          <Loader />
-        </Overlay>
-      )}
-    </Modal>
+          <div className="flex justify-center mt-5 gap-3">
+            <button
+              type="submit"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </Form>
+      <LoadingOverlay visible={addingInProcess || fetching} blur={1} />
+    </PopUpModal>
   );
 }

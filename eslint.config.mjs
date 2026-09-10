@@ -306,6 +306,7 @@ export default [
       'packages/client/src/components/charge-matching/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/charge-matches/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/clients/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/common/business-trip-report/buttons/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/contracts/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/financial-accounts/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/landing/**/*.{,c,m}{j,t}s{,x}',

@@ -1,9 +1,8 @@
-import { forwardRef, useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Grid, Loader, Modal, Select, Text } from '@mantine/core';
 import {
   UncategorizedTransactionsByBusinessTripDocument,
   type CategorizeIntoExistingBusinessTripExpenseInput,
@@ -11,8 +10,8 @@ import {
 } from '../../../../gql/graphql.js';
 import { useCategorizeIntoExistingBusinessTripExpense } from '../../../../hooks/use-categorize-into-existing-business-trip-expense.js';
 import { Button } from '../../../ui/button.js';
-import { Overlay } from '../../../ui/overlay.js';
-import { Tooltip } from '../../index.js';
+import { LoadingOverlay } from '../../../ui/overlay.js';
+import { ComboBox, PopUpModal, Tooltip } from '../../index.js';
 import { NumberInput } from '../../inputs/number-input.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -103,7 +102,7 @@ function ModalContent({
       defaultValues: { businessTripExpenseId },
     });
   const [uncategorizedTransactions, setUncategorizedTransactions] = useState<
-    Array<ItemProps & { value: string }>
+    Array<UncategorizedTransactionOption>
   >([]);
   const [{ data, fetching: fetchingUncategorizedTransactions, error }] = useQuery({
     query: UncategorizedTransactionsByBusinessTripDocument,
@@ -130,13 +129,17 @@ function ModalContent({
         uncategorizedTransactions
           .map(({ transaction }) => ({
             eventDate: transaction.eventDate,
-            sourceDescription: transaction.sourceDescription,
-            referenceKey: transaction.referenceKey,
-            counterparty: transaction.counterparty?.name,
-            amount: transaction.amount.formatted,
             rawAmount: transaction.amount.raw,
             value: transaction.id,
             label: `${transaction.eventDate} | ${transaction.counterparty?.name} | ${transaction.amount.formatted}`,
+            // Mantine's `itemComponent` laid the description and reference out in their own
+            // grid rows; ComboBox gives each option a second line, so they are joined into it.
+            description: [
+              transaction.sourceDescription,
+              transaction.referenceKey ? `Reference: ${transaction.referenceKey}` : null,
+            ]
+              .filter((part): part is string => !!part)
+              .join(' · '),
           }))
           .sort((a, b) => a.eventDate.localeCompare(b.eventDate)),
       );
@@ -152,101 +155,64 @@ function ModalContent({
   }, [error]);
 
   return (
-    <Modal opened={opened} onClose={close} centered>
-      <Modal.Title>Set Transaction Category</Modal.Title>
-      <Modal.Body>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 mt-3">
-          <Controller
-            name="transactionId"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                itemComponent={SelectItem}
-                data={uncategorizedTransactions ?? []}
-                disabled={fetchingUncategorizedTransactions}
-                label="Transactions"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                error={fieldState.error?.message}
-                withAsterisk
-                withinPortal
-                onChange={transactionId => {
-                  const transaction = uncategorizedTransactions.find(
-                    transaction => transaction.value === transactionId,
-                  );
-                  if (transaction?.rawAmount) {
-                    setValue('amount', transaction.rawAmount);
-                  }
-                  field.onChange(transactionId);
-                }}
-              />
-            )}
-          />
-          <Controller
-            name="amount"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <NumberInput
-                {...field}
-                value={field.value ?? undefined}
-                hideControls
-                decimalScale={2}
-                error={fieldState.error?.message}
-                label="Amount"
-              />
-            )}
-          />
-          <div className="flex justify-center gap-3">
-            <button
-              type="submit"
-              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-            >
-              Confirm
-            </button>
-          </div>
-        </form>
-      </Modal.Body>
-      {updatingInProcess && (
-        <Overlay blur={1} center>
-          <Loader />
-        </Overlay>
-      )}
-    </Modal>
+    <PopUpModal opened={opened} onClose={close} withCloseButton title="Set Transaction Category">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3 mt-3">
+        <Controller
+          name="transactionId"
+          control={control}
+          render={({ field, fieldState }): ReactElement => (
+            <ComboBox
+              {...field}
+              data={uncategorizedTransactions}
+              disabled={fetchingUncategorizedTransactions}
+              label="Transactions"
+              required
+              placeholder="Scroll to see all options"
+              error={fieldState.error?.message}
+              onChange={transactionId => {
+                const transaction = uncategorizedTransactions.find(
+                  transaction => transaction.value === transactionId,
+                );
+                if (transaction?.rawAmount) {
+                  setValue('amount', transaction.rawAmount);
+                }
+                field.onChange(transactionId);
+              }}
+            />
+          )}
+        />
+        <Controller
+          name="amount"
+          control={control}
+          render={({ field, fieldState }): ReactElement => (
+            <NumberInput
+              {...field}
+              value={field.value ?? undefined}
+              hideControls
+              decimalScale={2}
+              error={fieldState.error?.message}
+              label="Amount"
+            />
+          )}
+        />
+        <div className="flex justify-center gap-3">
+          <button
+            type="submit"
+            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+          >
+            Confirm
+          </button>
+        </div>
+      </form>
+      <LoadingOverlay visible={updatingInProcess} blur={1} />
+    </PopUpModal>
   );
 }
 
-interface ItemProps extends React.ComponentPropsWithoutRef<'div'> {
-  eventDate?: string | null;
-  sourceDescription?: string | null;
-  referenceKey?: string | null;
-  counterparty?: string | null;
-  amount?: string | null;
+type UncategorizedTransactionOption = {
+  value: string;
+  label: string;
+  description: string;
+  eventDate: string;
   rawAmount?: number | null;
-}
-
-// eslint-disable-next-line react/display-name
-const SelectItem = forwardRef<HTMLDivElement, ItemProps>(
-  (
-    { eventDate, sourceDescription, referenceKey, counterparty, amount, ...other }: ItemProps,
-    ref,
-  ) => (
-    <div ref={ref} {...other}>
-      <Grid>
-        <Grid.Col span={4}>{eventDate}</Grid.Col>
-        <Grid.Col span={4}>
-          <Text size="sm">{counterparty}</Text>
-        </Grid.Col>
-        <Grid.Col span={4}>
-          <Text size="sm">{amount}</Text>
-        </Grid.Col>
-        <Grid.Col span={8}>
-          <Text size="xs" opacity={0.65}>
-            {sourceDescription}
-          </Text>
-        </Grid.Col>
-        <Grid.Col span={4}>Reference: {referenceKey}</Grid.Col>
-      </Grid>
-    </div>
-  ),
-);
+};
