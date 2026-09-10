@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { Fragment, useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import {
@@ -97,13 +97,14 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
                 <div className="flex gap-2 items-center">
                   {flightExpense.path?.length ? (
                     flightExpense.path.map((destination, i) => (
-                      <>
-                        <div className="font-bold" key={i}>
-                          {destination}
-                        </div>
+                      // Keyed on the fragment, not the inner div: the fragment is what `.map`
+                      // returns. The index is the key because a path can repeat a destination,
+                      // which is exactly the case the separator below distinguishes.
+                      <Fragment key={i}>
+                        <div className="font-bold">{destination}</div>
                         {i < flightExpense.path!.length - 1 &&
                           (destination === flightExpense.path![i + 1] ? ' | ' : ' → ')}
-                      </>
+                      </Fragment>
                     ))
                   ) : (
                     <div className="flex gap-2 items-center font-bold text-red-500">Missing</div>
@@ -176,7 +177,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
             {flightExpense.attendees?.length ? (
               flightExpense.attendees.map(attendee => <li key={attendee.id}>{attendee.name}</li>)
             ) : (
-              <div className="text-red-500 text-sm">Missing</div>
+              <li className="list-none text-red-500 text-sm">Missing</li>
             )}
           </ul>
         )}

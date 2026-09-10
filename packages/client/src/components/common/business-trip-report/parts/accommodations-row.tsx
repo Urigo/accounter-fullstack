@@ -163,7 +163,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
                 </li>
               ))
             ) : (
-              <div className="text-red-500 text-sm">Missing</div>
+              <li className="list-none text-red-500 text-sm">Missing</li>
             )}
           </ul>
         )}
