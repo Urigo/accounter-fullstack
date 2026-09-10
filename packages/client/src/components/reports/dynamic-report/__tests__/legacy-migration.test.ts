@@ -119,12 +119,21 @@ describe('migrateLegacyTemplateNodes', () => {
     const sums = [bizSum(UUID_A, 'Present', 10)];
     const result = migrateLegacyTemplateNodes(nodes, sums);
 
-    it('missing UUID is silently dropped', () => {
-      expect(result.find(n => n.id === MISSING)).toBeUndefined();
+    it('missing UUID is kept hidden rather than dropped', () => {
+      const missing = result.find(n => n.id === MISSING);
+      expect(missing).toBeDefined();
+      expect(missing?.data.isHidden).toBe(true);
+      expect(missing?.data.value).toBe(0);
     });
 
-    it('present UUID is still inserted', () => {
-      expect(result.find(n => n.id === UUID_A)).toBeDefined();
+    it('missing UUID falls back to its id for text, having no name to hydrate from', () => {
+      expect(result.find(n => n.id === MISSING)?.text).toBe(MISSING);
+    });
+
+    it('present UUID is still inserted, and not hidden', () => {
+      const present = result.find(n => n.id === UUID_A);
+      expect(present).toBeDefined();
+      expect(present?.data.isHidden).toBeUndefined();
     });
   });
 

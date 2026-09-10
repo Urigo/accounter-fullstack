@@ -10,8 +10,12 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation UpdateDynamicReportTemplate($name: String!, $template: String!) {
-    updateDynamicReportTemplate(name: $name, template: $template) {
+  mutation UpdateDynamicReportTemplate(
+    $name: String!
+    $template: String!
+    $snapshot: DynamicReportSnapshotInput
+  ) {
+    updateDynamicReportTemplate(name: $name, template: $template, snapshot: $snapshot) {
       id
       name
     }

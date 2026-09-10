@@ -125,6 +125,9 @@ const config: CodegenConfig = {
           DividendCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '../shared/types#DocumentSuggestionsProto',
           DynamicReportInfo: '../modules/reports/types.js#IGetTemplateResult',
+          DynamicReportSnapshot: '../modules/reports/types.js#IGetSnapshotByIdResult',
+          DynamicReportSnapshotMeta:
+            '../modules/reports/types.js#IGetSnapshotsMetaByOwnerIdsResult',
           ExchangeRates: 'TimelessDateString',
           FinancialEntity:
             '../modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',
