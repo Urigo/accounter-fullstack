@@ -122,7 +122,7 @@ See [`.dev.vars.example`](./.dev.vars.example):
 | `GATEWAY_URL`               | URL the Worker `POST`s the webhook to.                                                                                                             |
 | `EMAIL_FORWARD_DESTINATION` | **Required.** Archive address every message is forwarded to before the webhook call. Unset or unverified ⇒ no archive copy and no loss protection. |
 | `FALLBACK_EMAIL`            | Address the Worker forwards to when the gateway is unreachable **or** answers non-2xx (see above).                                                 |
-| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `30000`.                                                                                 |
+| `HEALTH_PROBE_TIMEOUT_MS`   | Optional. Ceiling on the `GET /health` probe; defaults to `120000`.                                                                                |
 
 ### Identifying forwarded copies in the destination mailbox
 
@@ -177,10 +177,14 @@ the plus-tagged address in Email Routing before setting `FALLBACK_EMAIL` to it; 
 mail arrives in the same mailbox.
 
 The probe default is deliberately generous. The gateway scales to zero and cold-starts on _every_
-delivery, and the probe is what wakes it, so the probe always pays that cold start — production
-restarts measured 0.8-9.4 s to serve `/health`. A tight ceiling is not a safety measure here: it
-turns a slow-but-healthy cold start into "unreachable", which forwards the mail to `FALLBACK_EMAIL`
-and skips ingestion. Raise it if your host is slower; it is tunable without a Worker deploy.
+delivery, and the probe is what wakes it, so the probe always pays the full cold start of a
+Playwright/Chromium image. Measured end to end in production on 2026-09-10: **48 s** of container
+scheduling before any application code ran, and **52 s** before `/health` answered.
+
+A tight ceiling is not a safety measure here — it turns a slow-but-healthy cold start into
+"unreachable", which forwards the mail to `FALLBACK_EMAIL` and skips ingestion entirely. A 30 s
+ceiling did exactly that in production, aborting 22 s before the gateway had even started. Raise it
+if your host is slower; it is tunable without a Worker deploy.
 
 Set all four as **secrets**
 (`yarn workspace @accounter/email-ingestion-gateway wrangler secret put <NAME>`), not as plain-text

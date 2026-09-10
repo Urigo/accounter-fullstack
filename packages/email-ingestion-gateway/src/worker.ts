@@ -35,13 +35,21 @@ const HEX_OCTETS = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart
  *
  * The value is deliberately generous. This gateway scales to zero and cold-starts
  * on *every* delivery, and the probe is what wakes it, so the probe always pays the
- * cold start. Production restarts measured 0.8-9.4 s from process start to serving
- * `/health` (median ~1.7 s), and that excludes container scheduling before the
- * process logs at all. A tight ceiling here is not a safety measure — it silently
- * converts a slow-but-healthy cold start into "unreachable", which forwards the mail
- * to the fallback mailbox and skips ingestion entirely. Prefer waiting.
+ * full cold start of a Playwright/Chromium image.
+ *
+ * Measured end to end in production on 2026-09-10: probe fired at 08:53:41Z, the
+ * gateway process logged "gateway started" at 08:54:29Z (**48 s** of container
+ * scheduling and boot before any application code ran) and served `/health` at
+ * 08:54:33Z — **52 s** after the probe.
+ *
+ * An earlier value of 30 s was set from logs measuring only process-start to
+ * `/health` (0.8-9.4 s) and treating the scheduling gap as negligible. It is not
+ * negligible; it is the dominant term. That ceiling aborted the probe 22 s before
+ * the gateway had even started, so a healthy service read as "unreachable", the
+ * mail went to the fallback mailbox and was never ingested. A tight ceiling here is
+ * not a safety measure. Prefer waiting.
  */
-const DEFAULT_HEALTH_PROBE_TIMEOUT_MS = 30_000;
+const DEFAULT_HEALTH_PROBE_TIMEOUT_MS = 120_000;
 
 /** Ceiling on rejected-response text carried into the logs. */
 const MAX_LOGGED_BODY_CHARS = 500;
@@ -155,13 +163,27 @@ const worker = {
     if (!(await isGatewayReachable(env.GATEWAY_URL, healthProbeTimeoutMs(env)))) {
       logEvent('worker:gateway_unreachable', { fallbackEmailConfigured: !!env.FALLBACK_EMAIL });
       if (env.FALLBACK_EMAIL) {
-        await message.forward(
-          env.FALLBACK_EMAIL,
-          forwardHeaders('fallback', correlationId, message, {
-            'X-Accounter-Fallback-Reason': 'gateway-unreachable',
-          }),
-        );
-        return;
+        // Log the outcome, not just the intent: "did the fallback actually deliver?"
+        // is the only question this branch exists to answer, and without this line a
+        // tail shows `worker:gateway_unreachable` and then nothing at all.
+        try {
+          await message.forward(
+            env.FALLBACK_EMAIL,
+            forwardHeaders('fallback', correlationId, message, {
+              'X-Accounter-Fallback-Reason': 'gateway-unreachable',
+            }),
+          );
+          logEvent('worker:fallback_forwarded', { cause: 'gateway-unreachable' });
+          return;
+        } catch (e) {
+          // Nothing has been forwarded anywhere at this point, so let it throw:
+          // a Cloudflare redelivery is the correct no-loss behaviour here.
+          logEvent('worker:fallback_forward_failed', {
+            cause: 'gateway-unreachable',
+            error: (e as Error).message,
+          });
+          throw e;
+        }
       }
       // Nothing has been forwarded yet, so the message exists only upstream: a
       // Cloudflare redelivery is the correct no-loss behaviour here, and a gateway
