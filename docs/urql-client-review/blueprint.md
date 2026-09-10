@@ -9,7 +9,7 @@ marked done only once its PR is **merged**.
 
 | Step | Scope                                           | PR          | Status      |
 | ---- | ----------------------------------------------- | ----------- | ----------- |
-| 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0] | in review   |
+| 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0] | **merged**  |
 | 1    | `handleUrqlError` skips mutations               | —           | not started |
 | 2    | Extract `useQueryErrorToast`, wire one caller   | —           | not started |
 | 3    | Roll the hook out to the remaining eleven       | —           | not started |
