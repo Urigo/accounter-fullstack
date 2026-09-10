@@ -61,6 +61,12 @@ export interface NegatableMultiSelectProps {
   ref?: Ref<HTMLDivElement>;
   onBlur?: () => void;
   'aria-label'?: string;
+  /**
+   * Names the trigger from visible text. Prefer it over `aria-label` when a label is
+   * already on screen: the trigger is a `div role="combobox"`, which `<label for>`
+   * cannot address, so this is the only way to tie the two together.
+   */
+  'aria-labelledby'?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
 }
@@ -88,6 +94,7 @@ export function NegatableMultiSelect({
   ref,
   onBlur,
   'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
 }: NegatableMultiSelectProps): ReactNode {
@@ -212,7 +219,12 @@ export function NegatableMultiSelect({
         if (isDisabled) return;
         setOpen(next);
       }}
-      modal={!!portalContainer}
+      // Modal, like ComboBox's popover. Every consumer renders inside a Radix Dialog, whose
+      // RemoveScroll cancels wheel events outside the dialog content — and this popover portals
+      // to document.body, which is outside it. That made a list longer than its 300px cap
+      // unscrollable, reachable only through the search box. A modal popover pushes its own
+      // scroll lock on top of the dialog's, and only the topmost lock acts, so the list scrolls.
+      modal
     >
       <PopoverTrigger asChild>
         {/*
@@ -234,7 +246,10 @@ export function NegatableMultiSelect({
               setOpen(true);
             }
           }}
-          aria-label={ariaLabel ?? placeholder}
+          // The placeholder is a last-resort name; it is skipped when the caller points at
+          // real label text, which would otherwise lose to aria-label in the name calculation.
+          aria-label={ariaLabelledBy ? ariaLabel : (ariaLabel ?? placeholder)}
+          aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           aria-invalid={ariaInvalid}
           aria-haspopup="listbox"

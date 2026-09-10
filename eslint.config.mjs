@@ -311,6 +311,8 @@ export default [
       'packages/client/src/components/landing/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/layout/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/ledger-table/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/salaries/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/screens/documents/all-documents/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/securities/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/tags/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/tax-categories/**/*.{,c,m}{j,t}s{,x}',

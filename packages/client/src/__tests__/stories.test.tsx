@@ -53,10 +53,17 @@ describe('storybook stories', () => {
 
         for (const name of names) {
           const Story = composed[name as keyof typeof composed] as React.ComponentType;
+          const bodyChildrenBefore = new Set(document.body.children);
           await act(async () => {
             root.render(<Story />);
           });
-          expect(container.innerHTML.length).toBeGreaterThan(0);
+          // A story whose whole output is portaled — a Dialog, a Drawer — leaves the mount
+          // node empty, so "did anything render" has to count the portal targets too.
+          const portaled = [...document.body.children]
+            .filter(child => child !== container && !bodyChildrenBefore.has(child))
+            .map(child => child.outerHTML)
+            .join('');
+          expect(container.innerHTML.length + portaled.length, `story: ${name}`).toBeGreaterThan(0);
         }
       });
     });

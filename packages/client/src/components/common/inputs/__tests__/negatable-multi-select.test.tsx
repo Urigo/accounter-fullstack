@@ -121,6 +121,84 @@ describe('NegatableMultiSelect', () => {
     expect(container.textContent).toContain('Loading');
   });
 
+  /**
+   * The filter dialogs migrated off Mantine's `MultiSelect` use the default,
+   * non-negatable mode and pass no `onExcludedChange`. Removing a chip must therefore
+   * not depend on that callback being there, and no include/exclude toggle should show.
+   */
+  it('removes a chip in non-negatable mode without an onExcludedChange handler', () => {
+    const changes: string[][] = [];
+    render(
+      <NegatableMultiSelect
+        options={OPTIONS}
+        value={['a', 'b']}
+        onValueChange={(next): void => {
+          changes.push(next);
+        }}
+      />,
+    );
+    const trigger = container.querySelector('[role="combobox"]');
+    expect(trigger?.querySelector('[aria-label="Switch to exclude"]')).toBeNull();
+
+    // A listener that throws does not propagate out of `click()` — the DOM reports it as
+    // an ErrorEvent instead — so the handler is watched rather than wrapped in `expect`.
+    const errors: unknown[] = [];
+    const onError = (event: Event): void => {
+      errors.push((event as ErrorEvent).error ?? event);
+    };
+    window.addEventListener('error', onError);
+    try {
+      const remove = trigger?.querySelector<HTMLButtonElement>('[aria-label="Remove Alpha"]');
+      expect(remove).not.toBeNull();
+      act(() => remove!.click());
+    } finally {
+      window.removeEventListener('error', onError);
+    }
+    expect(errors).toEqual([]);
+    expect(changes).toEqual([['b']]);
+  });
+
+  /**
+   * `<label for>` cannot address the trigger (a div is not labelable), so a visible label
+   * has to reach it through aria-labelledby. The placeholder fallback must step aside, or
+   * it would win the accessible-name calculation over the real label text.
+   */
+  it('names the trigger from aria-labelledby instead of the placeholder', () => {
+    render(
+      <>
+        <span id="employees-label">Employees</span>
+        <NegatableMultiSelect
+          aria-labelledby="employees-label"
+          options={OPTIONS}
+          value={[]}
+          onValueChange={(): void => {}}
+          placeholder="Scroll to see all options"
+        />
+      </>,
+    );
+    const trigger = container.querySelector('[role="combobox"]');
+    expect(trigger?.getAttribute('aria-labelledby')).toBe('employees-label');
+    expect(trigger?.getAttribute('aria-label')).toBeNull();
+  });
+
+  /**
+   * The popover must be modal. Every consumer sits inside a Radix Dialog, whose RemoveScroll
+   * cancels wheel events outside the dialog content — and this popover portals to
+   * document.body, which is outside it — so a non-modal popover's option list could not be
+   * scrolled at all past its 300px cap. A modal popover pushes its own scroll lock on top,
+   * and only the topmost lock acts. `data-scroll-locked` on the body is that lock.
+   */
+  it('opens a modal popover so the option list stays scrollable inside a dialog', () => {
+    render(<NegatableMultiSelect options={OPTIONS} value={[]} onValueChange={(): void => {}} />);
+    expect(document.body.hasAttribute('data-scroll-locked')).toBe(false);
+
+    const trigger = container.querySelector<HTMLElement>('[role="combobox"]');
+    act(() => trigger!.click());
+
+    expect(container.ownerDocument.querySelector('[data-slot="command-list"]')).not.toBeNull();
+    expect(document.body.hasAttribute('data-scroll-locked')).toBe(true);
+  });
+
   it('renders the placeholder when nothing is selected', () => {
     render(
       <NegatableMultiSelect
