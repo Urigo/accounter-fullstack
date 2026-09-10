@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type Control, type SubmitHandler } from 'react-hook-form';
-import { List, Text } from '@mantine/core';
 import {
   BusinessTripReportAccommodationsRowFieldsFragmentDoc,
   type UpdateBusinessTripAccommodationsExpenseInput,
@@ -107,9 +106,9 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
                 )}
               />
             ) : (
-              <Text c={accommodationExpense.country ? undefined : 'red'}>
+              <div className={accommodationExpense.country ? undefined : 'text-red-500'}>
                 {accommodationExpense.country?.name ?? 'Missing'}
-              </Text>
+              </div>
             )}
           </form>
         </Form>
@@ -140,9 +139,9 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
               />
             </Form>
           ) : (
-            <Text c={accommodationExpense.nightsCount ? undefined : 'red'}>
+            <div className={accommodationExpense.nightsCount ? undefined : 'text-red-500'}>
               {accommodationExpense.nightsCount ?? 'Missing'}
-            </Text>
+            </div>
           )}
         </div>
       </td>
@@ -156,19 +155,17 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
             />
           </Form>
         ) : (
-          <List listStyleType="disc">
+          <ul className="list-disc list-inside">
             {accommodationExpense.attendeesStay?.length ? (
               accommodationExpense.attendeesStay.map(attendeeStay => (
-                <List.Item key={attendeeStay.id}>
+                <li key={attendeeStay.id}>
                   {attendeeStay.attendee.name} ({attendeeStay.nightsCount})
-                </List.Item>
+                </li>
               ))
             ) : (
-              <Text c="red" fz="sm">
-                Missing
-              </Text>
+              <li className="list-none text-red-500 text-sm">Missing</li>
             )}
-          </List>
+          </ul>
         )}
       </td>
       <td>

@@ -4,7 +4,6 @@ import { type Control } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Select, Text } from '@mantine/core';
 import { ROUTES } from '@/router/routes.js';
 import {
   AttendeesByBusinessTripDocument,
@@ -15,7 +14,7 @@ import {
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
-import { CurrencyInput, DatePickerInput } from '../../index.js';
+import { ComboBox, CurrencyInput, DatePickerInput } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -161,10 +160,10 @@ export const CoreExpenseRow = ({
           ) : (
             <>
               {businessTripExpense.date && format(new Date(businessTripExpense.date), 'dd/MM/yy')}
-              <Text fz="sm" c="dimmed">
+              <div className="text-sm text-gray-500">
                 {businessTripExpense.valueDate &&
                   format(new Date(businessTripExpense.valueDate), 'dd/MM/yy')}
-              </Text>
+              </div>
             </>
           )}
         </div>
@@ -212,7 +211,7 @@ export const CoreExpenseRow = ({
               control={control}
               defaultValue={businessTripExpense.employee?.id}
               render={({ field, fieldState }): ReactElement => (
-                <Select
+                <ComboBox
                   form={`form ${businessTripExpense.id}`}
                   {...field}
                   data={attendees}
@@ -220,19 +219,16 @@ export const CoreExpenseRow = ({
                   disabled={fetchingAttendees}
                   label="Attendee"
                   placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
                   error={fieldState.error?.message}
-                  withinPortal
                 />
               )}
             />
           ) : (
             <div className="flex flex-row gap-2 items-center">
               {businessTripExpense.payedByEmployee && (
-                <Text c={businessTripExpense.employee?.name ? undefined : 'red'}>
+                <div className={businessTripExpense.employee?.name ? undefined : 'text-red-500'}>
                   {businessTripExpense.employee?.name ?? 'Missing'}
-                </Text>
+                </div>
               )}
             </div>
           )}
