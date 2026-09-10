@@ -161,9 +161,11 @@ Confirm it is present via _Show original_ on a delivered copy before building fi
 
 ### Telling the fallback copy apart
 
-`EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` must be **different addresses** — the Workers
-runtime rejects a second forward to an address already used for the message, and the Worker skips
-the fallback forward when it detects the two are equal.
+Give `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` **different addresses**. When the Worker
+detects the two are equal it skips the fallback forward: both copies would land in the same mailbox,
+so the second adds nothing over the one already sent. (Cloudflare does not document whether a repeat
+forward to the same address errors or is accepted — skipping is correct either way, and keeps the
+outcome idempotent.)
 
 A plus-tag on the same mailbox is the cheapest way to get a distinct destination:
 `accounter+fallback@the-guild.dev` alongside `accounter@the-guild.dev`. The forwarded MIME is passed
@@ -194,9 +196,8 @@ preserved. A silently-dropped `FALLBACK_EMAIL` is what turns a gateway rejection
 loop.
 
 `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` should be **different** addresses. When they match,
-the Worker skips the fallback forward (the runtime rejects a second forward to an address already
-used for the message, and the copy would be redundant anyway) and logs `worker:fallback_skipped`
-with `cause: FALLBACK_EQUALS_FORWARD_DESTINATION`.
+the Worker skips the fallback forward — both copies would reach the same mailbox, so the second adds
+nothing — and logs `worker:fallback_skipped` with `cause: FALLBACK_EQUALS_FORWARD_DESTINATION`.
 
 ## Local development
 

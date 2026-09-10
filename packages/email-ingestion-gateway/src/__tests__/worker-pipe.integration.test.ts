@@ -484,8 +484,9 @@ describe('worker -> gateway -> mocked server integration', () => {
       const { default: worker } = await import('../worker.js');
       const message = makeEmailMessage();
 
-      // The Workers runtime rejects a second forward to an address already used for
-      // the message, and that rejection used to propagate out of the handler.
+      // Equal destinations mean the second copy would land in the same mailbox as the
+      // first, so it is skipped. Previously the handler attempted it regardless, and
+      // any failure propagated out.
       await expect(
         worker.email(message, {
           CF_WEBHOOK_SECRET: 'worker-shared-secret',
@@ -498,7 +499,7 @@ describe('worker -> gateway -> mocked server integration', () => {
       expect(message.forward).toHaveBeenCalledTimes(1);
     });
 
-    it('resolves when the runtime rejects the fallback forward', async () => {
+    it('resolves when the fallback forward is rejected', async () => {
       const gatewayUrl = await startRejectingGateway();
       const { default: worker } = await import('../worker.js');
       const message = makeEmailMessage();

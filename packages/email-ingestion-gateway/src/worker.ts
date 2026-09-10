@@ -85,13 +85,15 @@ function sameAddress(a: string | undefined, b: string | undefined): boolean {
  * destination mailbox can be joined to the gateway logs for the same delivery.
  *
  * The runtime keeps only `X-`-prefixed headers here and drops everything else, so
- * every name below must start with `X-`.
+ * `extra` is typed to accept nothing else: a non-`X-` key is a compile error rather
+ * than a header that vanishes silently in production and is then debugged from its
+ * absence.
  */
 function forwardHeaders(
   path: 'archive' | 'fallback',
   correlationId: string,
   message: EmailMessageLike,
-  extra: Record<string, string> = {},
+  extra: Record<`X-${string}`, string> = {},
 ): Headers {
   return new Headers({
     'X-Accounter-Forward': path,
