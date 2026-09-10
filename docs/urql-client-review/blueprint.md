@@ -10,7 +10,7 @@ marked done only once its PR is **merged**.
 | Step | Scope                                           | PR          | Status      |
 | ---- | ----------------------------------------------- | ----------- | ----------- |
 | 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0] | **merged**  |
-| 1    | `handleUrqlError` skips mutations               | —           | not started |
+| 1    | `handleUrqlError` skips mutations               | [#4440][s1] | in review   |
 | 2    | Extract `useQueryErrorToast`, wire one caller   | —           | not started |
 | 3    | Roll the hook out to the remaining eleven       | —           | not started |
 | 4    | `use-logout.ts` client reset                    | —           | not started |
@@ -21,6 +21,7 @@ marked done only once its PR is **merged**.
 | 8b   | `retryExchange` + dev `devtoolsExchange`        | —           | not started |
 
 [s0]: https://github.com/Urigo/accounter-fullstack/pull/4438
+[s1]: https://github.com/Urigo/accounter-fullstack/pull/4440
 
 ## Context
 
