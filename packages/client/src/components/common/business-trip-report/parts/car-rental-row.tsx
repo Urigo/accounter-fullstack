@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Car, Check, Edit, Fuel } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Text } from '@mantine/core';
 import {
   BusinessTripReportCarRentalRowFieldsFragmentDoc,
   type UpdateBusinessTripCarRentalExpenseInput,
@@ -88,9 +87,9 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
                     )}
                   />
                 ) : (
-                  <Text c={carRentalExpense.days ? undefined : 'red'}>
+                  <div className={carRentalExpense.days ? undefined : 'text-red-500'}>
                     {carRentalExpense.days ?? 'Missing'}
-                  </Text>
+                  </div>
                 ))}
             </div>
           </form>

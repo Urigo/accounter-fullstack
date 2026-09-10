@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Text } from '@mantine/core';
 import {
   BusinessTripReportOtherRowFieldsFragmentDoc,
   type UpdateBusinessTripOtherExpenseInput,
@@ -87,9 +86,9 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
                 )}
               />
             ) : (
-              <Text c={otherExpense.description ? undefined : 'red'}>
+              <div className={otherExpense.description ? undefined : 'text-red-500'}>
                 {otherExpense.description ?? 'Missing'}
-              </Text>
+              </div>
             )}
           </form>
         </Form>
@@ -116,13 +115,13 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
               />
             </Form>
           ) : (
-            <Text c={otherExpense.deductibleExpense ? undefined : 'red'}>
+            <div className={otherExpense.deductibleExpense ? undefined : 'text-red-500'}>
               {otherExpense.deductibleExpense === true
                 ? 'Yes'
                 : otherExpense.deductibleExpense === false
                   ? 'No'
                   : 'Missing'}
-            </Text>
+            </div>
           )}
         </div>
       </td>

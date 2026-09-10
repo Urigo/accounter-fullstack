@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Card } from '@mantine/core';
 import {
   BusinessTripReportAttendeeRowFieldsFragmentDoc,
   type BusinessTripAttendeeUpdateInput,
@@ -10,6 +9,7 @@ import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
 import { Button } from '../../../ui/button.js';
+import { Card } from '../../../ui/card.js';
 import {
   Form,
   FormControl,
@@ -191,7 +191,10 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
       {isExtended && (
         <tr key={`${attendee.id}-expension`}>
           <td colSpan={4}>
-            <Card shadow="sm" withBorder>
+            {/* Mantine's `Card shadow="sm" withBorder` carried its own 16px padding; shadcn's has
+                none. The radius and shadow are the house Card's now, so this panel matches the
+                app's other cards rather than Mantine's 4px corners. */}
+            <Card className="p-4">
               <div className="flex flex-col gap-2">
                 {attendee.flights && (
                   <>

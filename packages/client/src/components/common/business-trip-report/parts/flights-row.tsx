@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { List, MultiSelect, Select, Text } from '@mantine/core';
 import {
   BusinessTripReportFlightsRowFieldsFragmentDoc,
   FlightClass,
@@ -9,9 +8,11 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { useUpdateBusinessTripFlightsExpense } from '../../../../hooks/use-update-business-trip-flights-expense.js';
+import { cn } from '../../../../lib/utils.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
-import { Tooltip } from '../../index.js';
+import { Label } from '../../../ui/label.js';
+import { ComboBox, NegatableMultiSelect, Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
 import { CoreExpenseRow } from './core-expense-row.js';
@@ -97,17 +98,15 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
                   {flightExpense.path?.length ? (
                     flightExpense.path.map((destination, i) => (
                       <>
-                        <Text fw={700} key={i}>
+                        <div className="font-bold" key={i}>
                           {destination}
-                        </Text>
+                        </div>
                         {i < flightExpense.path!.length - 1 &&
                           (destination === flightExpense.path![i + 1] ? ' | ' : ' → ')}
                       </>
                     ))
                   ) : (
-                    <Text fw={700} className="flex gap-2 items-center" c="red">
-                      Missing
-                    </Text>
+                    <div className="flex gap-2 items-center font-bold text-red-500">Missing</div>
                   )}
                 </div>
               )}
@@ -119,26 +118,21 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
                     (flightExpense.class as FlightClass | null | undefined) ?? undefined
                   }
                   render={({ field, fieldState }): ReactElement => (
-                    <Select
+                    <ComboBox
                       form={`form ${flightExpense.id}`}
-                      data-autofocus
                       {...field}
                       data={flightClasses}
                       value={field.value}
                       label="Flight Class"
                       placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
                       error={fieldState.error?.message}
-                      withinPortal
                     />
                   )}
                 />
               ) : (
-                <Text
-                  c={flightExpense.class ? undefined : 'red'}
-                  fz="sm"
-                >{`Class: ${flightExpense.class ?? 'Missing'}`}</Text>
+                <div
+                  className={cn('text-sm', flightExpense.class ? undefined : 'text-red-500')}
+                >{`Class: ${flightExpense.class ?? 'Missing'}`}</div>
               )}
             </div>
           </form>
@@ -151,32 +145,40 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
             control={control}
             defaultValue={flightExpense.attendees?.map(attendee => attendee.id) ?? undefined}
             render={({ field, fieldState }): ReactElement => (
-              <MultiSelect
-                {...field}
-                form={`form ${flightExpense.id}`}
-                data={attendeesData}
-                value={field.value ?? []}
-                label="Attendees"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
-              />
+              <div>
+                {/*
+                  `form` is not carried over: the replacement renders no native form control to
+                  associate, and the value reaches submission through react-hook-form either way.
+                  The label is a span wired by `aria-labelledby` — the trigger is a div, so
+                  `htmlFor` would associate nothing.
+                */}
+                <Label asChild className="mb-1">
+                  <span id={`flight-attendees-label-${flightExpense.id}`}>Attendees</span>
+                </Label>
+                <NegatableMultiSelect
+                  ref={field.ref}
+                  onBlur={field.onBlur}
+                  options={attendeesData}
+                  value={field.value ?? []}
+                  onValueChange={field.onChange}
+                  placeholder="Scroll to see all options"
+                  aria-labelledby={`flight-attendees-label-${flightExpense.id}`}
+                  aria-invalid={!!fieldState.error}
+                />
+                {fieldState.error?.message ? (
+                  <p className="text-destructive mt-1 text-xs">{fieldState.error.message}</p>
+                ) : null}
+              </div>
             )}
           />
         ) : (
-          <List listStyleType="disc">
+          <ul className="list-disc list-inside">
             {flightExpense.attendees?.length ? (
-              flightExpense.attendees.map(attendee => (
-                <List.Item key={attendee.id}>{attendee.name}</List.Item>
-              ))
+              flightExpense.attendees.map(attendee => <li key={attendee.id}>{attendee.name}</li>)
             ) : (
-              <Text c="red" fz="sm">
-                Missing
-              </Text>
+              <div className="text-red-500 text-sm">Missing</div>
             )}
-          </List>
+          </ul>
         )}
       </td>
       <td>
