@@ -37,8 +37,12 @@ All 95 single-document mutation hooks now use it. `useCronJobs` (three chained m
 flow) and `useGenerateFinancialCharge` (a switch over six documents) keep their own bodies — neither
 is the one-document shape the hook abstracts.
 
-Behaviour is preserved per hook, down to the notification texts, toast ids and durations, with three
+Behaviour is preserved per hook, down to the notification texts, toast ids and durations, with four
 deliberate exceptions:
+
+- `useLedgerLock` reported "Payroll file added" on success. Locking the ledger has nothing to do with
+  payroll — a copy/paste message that predates this change — so it now says "Ledger records were
+  locked".
 
 - `useFetchDeelDocuments` no longer dismisses its own error toast. The `toast.dismiss` there only
   ran when `handleCommonErrors` had just raised an error toast under the same id, so the error was
