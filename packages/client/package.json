@@ -62,10 +62,10 @@
     "next-themes": "0.4.6",
     "pdfjs-dist": "6.3.289",
     "radix-ui": "1.6.7",
-    "react": "19.2.8",
+    "react": "19.3.0",
     "react-day-picker": "10.0.1",
     "react-dnd": "16.0.1",
-    "react-dom": "19.2.8",
+    "react-dom": "19.3.0",
     "react-error-boundary": "6.1.5",
     "react-hook-form": "7.87.0",
     "react-number-format": "5.4.5",
@@ -86,8 +86,8 @@
     "@tailwindcss/vite": "4.3.3",
     "@types/chart.js": "4.0.1",
     "@types/deep-equal": "1.0.4",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.7",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
     "autoprefixer": "10.5.5",
     "happy-dom": "20.14.0",
@@ -99,7 +99,7 @@
     "vite-plugin-node-polyfills": "0.28.0"
   },
   "overrides": {
-    "react-is": "19.2.8"
+    "react-is": "19.3.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
