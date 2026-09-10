@@ -47,7 +47,11 @@ React SPA built with Vite, urql (GraphQL), shadcn/ui, and Tailwind CSS.
 
 - Primary test directory: `src/__tests__/`
 - Colocated tests also exist (e.g. `src/components/__tests__/`)
-- Uses jsdom environment.
+- Uses the happy-dom environment (the vitest `client` project sets it, so the per-file
+  `// @vitest-environment happy-dom` pragmas are redundant).
+- There is no `@testing-library` in this package — tests render by hand with `createRoot` + `act`.
+- Run `yarn generate` first. `src/gql/` is git-ignored, and every test that imports a generated
+  document fails to resolve without it.
 
 ## Commands
 
