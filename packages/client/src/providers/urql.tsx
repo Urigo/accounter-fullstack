@@ -195,6 +195,33 @@ function redirectToLogin(): void {
 }
 
 /**
+ * The GraphQL endpoint for this build.
+ *
+ * `VITE_GRAPHQL_URL` wins when set, which is what makes preview deploys, branch
+ * environments and a per-developer backend possible. It is checked for a
+ * non-empty value rather than merely being defined: `vite.config.ts` supplies it
+ * through `define`, which substitutes an empty string when the underlying
+ * `GRAPHQL_URL` is unset rather than leaving the key absent.
+ *
+ * Without it, the per-`MODE` defaults below apply, unchanged.
+ */
+function resolveGraphQLUrl(): string {
+  const configured = import.meta.env.VITE_GRAPHQL_URL?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  switch (import.meta.env.MODE) {
+    case 'production':
+      return 'https://accounter.onrender.com/graphql';
+    case 'staging':
+      return 'https://accounter-staging.onrender.com/graphql';
+    default:
+      return 'http://localhost:4000/graphql';
+  }
+}
+
+/**
  * Singleton URQL client for use in loaders and server-side operations
  * This is separate from the Provider client to avoid React context dependencies
  */
@@ -208,21 +235,7 @@ export function getUrqlClient(): Client {
   const isDevAuthEnabled = import.meta.env.VITE_DEV_AUTH === '1';
   const devAuthUserId = import.meta.env.VITE_DEV_AUTH_USER_ID?.trim() ?? '';
 
-  let url: string;
-  switch (import.meta.env.MODE) {
-    case 'production': {
-      url = 'https://accounter.onrender.com/graphql';
-      break;
-    }
-    case 'staging': {
-      url = 'https://accounter-staging.onrender.com/graphql';
-      break;
-    }
-    default: {
-      url = 'http://localhost:4000/graphql';
-      break;
-    }
-  }
+  const url = resolveGraphQLUrl();
 
   globalClient = createClient({
     url,

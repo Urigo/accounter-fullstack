@@ -365,6 +365,28 @@ describe('URQL auth exchange hardening', () => {
     );
   });
 
+  it('uses VITE_GRAPHQL_URL for the client endpoint when set', async () => {
+    vi.stubEnv('VITE_GRAPHQL_URL', 'https://example.test/graphql');
+
+    await initializeAuth(async () => 'token-123');
+
+    expect(createClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'https://example.test/graphql' }),
+    );
+  });
+
+  it('falls back to the per-MODE endpoint when VITE_GRAPHQL_URL is unset', async () => {
+    // Vite substitutes an unset `define` with an empty string rather than
+    // dropping the key, so an empty value has to read as "not configured".
+    vi.stubEnv('VITE_GRAPHQL_URL', '');
+
+    await initializeAuth(async () => 'token-123');
+
+    expect(createClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'http://localhost:4000/graphql' }),
+    );
+  });
+
   it('keeps existing Auth0 token flow untouched when VITE_DEV_AUTH is disabled', async () => {
     vi.stubEnv('VITE_DEV_AUTH', '0');
     vi.stubEnv('VITE_DEV_AUTH_USER_ID', 'dev-user-123');
