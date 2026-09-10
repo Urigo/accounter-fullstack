@@ -58,7 +58,7 @@
     "@whatwg-node/fetch": "0.10.13",
     "ai": "7.0.95",
     "async-mutex": "0.5.0",
-    "auth0": "6.4.0",
+    "auth0": "7.0.0",
     "basic-auth": "3.0.0",
     "bcrypt": "6.0.0",
     "cloudinary": "2.11.0",
@@ -81,6 +81,7 @@
     "playwright": "1.63.0",
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.1.1",
+    "uuid": "14.0.2",
     "zod": "4.5.4"
   },
   "devDependencies": {
