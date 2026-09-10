@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { Dialog, DialogContent, DialogTitle } from '../../ui/dialog.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { NegatableMultiSelect } from './negatable-multi-select.js';
 
@@ -98,6 +99,39 @@ export const AsFormPart: Story = {
           />
         </Form>
       </div>
+    );
+  },
+};
+
+const MANY_OPTIONS = Array.from({ length: 40 }, (_, index) => ({
+  value: `business-${index}`,
+  label: `Business number ${index + 1}`,
+}));
+
+/** The list is capped at 300px; anything past that has to be reachable by scrolling. */
+export const ManyOptions: Story = { args: { options: MANY_OPTIONS } };
+
+/**
+ * The list is capped at 300px and scrolls. This is the case that used to be broken: every
+ * consumer renders inside a Radix `Dialog`, whose `RemoveScroll` cancels wheel events outside
+ * the dialog content — and the popover portals to `document.body` by default, which is outside.
+ */
+export const InsideDialogWithManyOptions: Story = {
+  render: function Render() {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <Dialog open modal>
+        <DialogContent className="max-h-[90vh] overflow-y-auto" showCloseButton={false}>
+          <DialogTitle>Filters</DialogTitle>
+          <NegatableMultiSelect
+            options={MANY_OPTIONS}
+            value={value}
+            onValueChange={setValue}
+            placeholder="Scroll to see all options"
+            aria-label="Businesses"
+          />
+        </DialogContent>
+      </Dialog>
     );
   },
 };

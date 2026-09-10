@@ -219,7 +219,12 @@ export function NegatableMultiSelect({
         if (isDisabled) return;
         setOpen(next);
       }}
-      modal={!!portalContainer}
+      // Modal, like ComboBox's popover. Every consumer renders inside a Radix Dialog, whose
+      // RemoveScroll cancels wheel events outside the dialog content — and this popover portals
+      // to document.body, which is outside it. That made a list longer than its 300px cap
+      // unscrollable, reachable only through the search box. A modal popover pushes its own
+      // scroll lock on top of the dialog's, and only the topmost lock acts, so the list scrolls.
+      modal
     >
       <PopoverTrigger asChild>
         {/*

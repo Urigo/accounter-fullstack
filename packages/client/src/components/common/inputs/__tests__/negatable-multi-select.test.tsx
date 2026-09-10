@@ -181,6 +181,24 @@ describe('NegatableMultiSelect', () => {
     expect(trigger?.getAttribute('aria-label')).toBeNull();
   });
 
+  /**
+   * The popover must be modal. Every consumer sits inside a Radix Dialog, whose RemoveScroll
+   * cancels wheel events outside the dialog content — and this popover portals to
+   * document.body, which is outside it — so a non-modal popover's option list could not be
+   * scrolled at all past its 300px cap. A modal popover pushes its own scroll lock on top,
+   * and only the topmost lock acts. `data-scroll-locked` on the body is that lock.
+   */
+  it('opens a modal popover so the option list stays scrollable inside a dialog', () => {
+    render(<NegatableMultiSelect options={OPTIONS} value={[]} onValueChange={(): void => {}} />);
+    expect(document.body.hasAttribute('data-scroll-locked')).toBe(false);
+
+    const trigger = container.querySelector<HTMLElement>('[role="combobox"]');
+    act(() => trigger!.click());
+
+    expect(container.ownerDocument.querySelector('[data-slot="command-list"]')).not.toBeNull();
+    expect(document.body.hasAttribute('data-scroll-locked')).toBe(true);
+  });
+
   it('renders the placeholder when nothing is selected', () => {
     render(
       <NegatableMultiSelect
