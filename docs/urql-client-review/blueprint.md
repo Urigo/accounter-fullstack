@@ -8,18 +8,18 @@ Each step lands as its own PR, stacked on the previous one while that one is unm
 marked done only once its PR is **merged**. Step 3 merged into step 2's branch first, so both
 reached `main` under #4442's squashed commit — there is no commit titled #4443.
 
-| Step | Scope                                           | PR          | Status      |
-| ---- | ----------------------------------------------- | ----------- | ----------- |
-| 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0] | **merged**  |
-| 1    | `handleUrqlError` skips mutations               | [#4440][s1] | **merged**  |
-| 2    | Extract `useQueryErrorToast`, wire one caller   | [#4442][s2] | **merged**  |
-| 3    | Roll the hook out to the remaining eleven       | [#4443][s3] | **merged**  |
-| 4    | `use-logout.ts` client reset                    | [#4444][s4] | in review   |
-| 5    | Drop dead loader-data guards + redundant effect | [#4446][s5] | in review   |
-| 6    | Hoist in-render `dedupeFragments()` calls       | [#4447][s6] | in review   |
-| 7    | Delete dead `@tanstack/react-query`             | [#4448][s7] | in review   |
-| 8a   | Configurable `VITE_GRAPHQL_URL`                 | —           | not started |
-| 8b   | `retryExchange` + dev `devtoolsExchange`        | —           | not started |
+| Step | Scope                                           | PR           | Status      |
+| ---- | ----------------------------------------------- | ------------ | ----------- |
+| 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0]  | **merged**  |
+| 1    | `handleUrqlError` skips mutations               | [#4440][s1]  | **merged**  |
+| 2    | Extract `useQueryErrorToast`, wire one caller   | [#4442][s2]  | **merged**  |
+| 3    | Roll the hook out to the remaining eleven       | [#4443][s3]  | **merged**  |
+| 4    | `use-logout.ts` client reset                    | [#4444][s4]  | in review   |
+| 5    | Drop dead loader-data guards + redundant effect | [#4446][s5]  | in review   |
+| 6    | Hoist in-render `dedupeFragments()` calls       | [#4447][s6]  | in review   |
+| 7    | Delete dead `@tanstack/react-query`             | [#4448][s7]  | in review   |
+| 8a   | Configurable `VITE_GRAPHQL_URL`                 | [#4449][s8a] | in review   |
+| 8b   | `retryExchange` + dev `devtoolsExchange`        | —            | not started |
 
 [s0]: https://github.com/Urigo/accounter-fullstack/pull/4438
 [s1]: https://github.com/Urigo/accounter-fullstack/pull/4440
@@ -29,6 +29,7 @@ reached `main` under #4442's squashed commit — there is no commit titled #4443
 [s5]: https://github.com/Urigo/accounter-fullstack/pull/4446
 [s6]: https://github.com/Urigo/accounter-fullstack/pull/4447
 [s7]: https://github.com/Urigo/accounter-fullstack/pull/4448
+[s8a]: https://github.com/Urigo/accounter-fullstack/pull/4449
 
 ## Context
 
