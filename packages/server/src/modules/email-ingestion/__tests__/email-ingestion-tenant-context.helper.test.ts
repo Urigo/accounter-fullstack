@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Pool, PoolClient } from 'pg';
 import {
   isConnectionLevelError,
+  withConnectionRetry,
   withTenantContext,
 } from '../helpers/email-ingestion-tenant-context.helper.js';
 
@@ -92,6 +93,60 @@ describe('isConnectionLevelError', () => {
 
   it('does not treat a non-Error as connection-level', () => {
     expect(isConnectionLevelError('Connection terminated')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// withConnectionRetry
+// ---------------------------------------------------------------------------
+
+describe('withConnectionRetry', () => {
+  it('passes the result through when the query succeeds', async () => {
+    const fn = vi.fn().mockResolvedValue([{ owner_id: 'tenant-1' }]);
+
+    await expect(withConnectionRetry(fn)).resolves.toEqual([{ owner_id: 'tenant-1' }]);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  // The uncovered half of the #4348 trigger: the alias lookup runs on the raw pool
+  // before any tenant exists, so it never got withTenantContext's retry — and being
+  // the first DB call in the control path, it is exactly where a connection killed
+  // while idle shows up.
+  it('retries once when the pooled connection was handed out dead', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(connectionError())
+      .mockResolvedValueOnce([{ owner_id: 'tenant-1' }]);
+
+    await expect(withConnectionRetry(fn)).resolves.toEqual([{ owner_id: 'tenant-1' }]);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries a socket errno as well as the terminated-connection message', async () => {
+    const err: NodeJS.ErrnoException = new Error('read ECONNRESET');
+    err.code = 'ECONNRESET';
+    const fn = vi.fn().mockRejectedValueOnce(err).mockResolvedValueOnce([]);
+
+    await expect(withConnectionRetry(fn)).resolves.toEqual([]);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries at most once — a second connection-level failure propagates', async () => {
+    const fn = vi.fn().mockRejectedValue(connectionError());
+
+    await expect(withConnectionRetry(fn)).rejects.toThrow('Connection terminated unexpectedly');
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  // A rejected statement is a real answer from a healthy connection. Repeating it
+  // would just burn another round trip and hide the actual error behind a duplicate.
+  it('does NOT retry a statement error', async () => {
+    const err: NodeJS.ErrnoException = new Error('duplicate key value violates unique constraint');
+    err.code = '23505';
+    const fn = vi.fn().mockRejectedValue(err);
+
+    await expect(withConnectionRetry(fn)).rejects.toThrow('duplicate key value');
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 });
 
