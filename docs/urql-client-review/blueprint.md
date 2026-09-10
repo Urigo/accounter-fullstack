@@ -10,7 +10,7 @@ marked done only once its PR is **merged**.
 | Step | Scope                                           | PR          | Status      |
 | ---- | ----------------------------------------------- | ----------- | ----------- |
 | 0    | Baseline + `CLAUDE.md` happy-dom fix            | [#4438][s0] | **merged**  |
-| 1    | `handleUrqlError` skips mutations               | [#4440][s1] | in review   |
+| 1    | `handleUrqlError` skips mutations               | [#4440][s1] | **merged**  |
 | 2    | Extract `useQueryErrorToast`, wire one caller   | [#4442][s2] | in review   |
 | 3    | Roll the hook out to the remaining eleven       | [#4443][s3] | in review   |
 | 4    | `use-logout.ts` client reset                    | [#4444][s4] | in review   |
