@@ -32,7 +32,7 @@ export const useLedgerLock = (): UseLedgerLock => {
       }
       return data.lockLedgerRecords;
     },
-    successToast: { description: 'Payroll file added' },
+    successToast: { description: 'Ledger records were locked' },
   });
 
   const ledgerLock = useCallback(

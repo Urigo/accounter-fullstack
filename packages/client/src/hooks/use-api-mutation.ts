@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { toast, type ExternalToast } from 'sonner';
 import { useMutation, type AnyVariables, type CombinedError, type TypedDocumentNode } from 'urql';
 import { handleCommonErrors, type NonCommonError } from '../helpers/error-handling.js';
@@ -126,10 +126,12 @@ export function useApiMutation<
 
   // Reading the options through a ref keeps `execute` stable across renders while still running
   // the latest callbacks, which close over up-to-date props and state. The ref starts out holding
-  // this render's options and is refreshed after every commit, so `execute` — only ever called
-  // from an event handler — sees the options of the render the user is looking at.
+  // this render's options and is refreshed in a layout effect, so it is current before the browser
+  // paints the render — and so before any event handler that render wired up can call `execute`.
+  // (Assigning during render would be the other way to close that gap, but React forbids touching
+  // refs there, and the repo's lint rules enforce it.)
   const optionsRef = useRef(options);
-  useEffect(() => {
+  useLayoutEffect(() => {
     optionsRef.current = options;
   });
 
