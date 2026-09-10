@@ -3,7 +3,6 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { endOfYear, format, startOfYear, subYears } from 'date-fns';
-import iconv from 'iconv-lite';
 import { Calendar, Download, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { UniformFormatDocument } from '../../../gql/graphql.js';
@@ -74,27 +73,36 @@ export function UniformFormatFilesDownloadModal({
           return;
         }
 
-        // Create files from the response data
-        const bkmvdataFile = new File(
-          [new Uint8Array(iconv.encode(bkmvdata, 'ISO-8859-8'))],
-          'bkmvdata.txt',
-          {
-            type: 'text/plain',
-          },
-        );
-        const iniFile = new File([new Uint8Array(iconv.encode(ini, 'ISO-8859-8'))], 'ini.txt', {
-          type: 'text/plain',
-        });
+        // `iconv-lite` (and its Node polyfills) is only needed to encode the downloads, so it is
+        // loaded on demand instead of shipping in the initial bundle.
+        import('iconv-lite')
+          .then(({ default: iconv }) => {
+            // Create files from the response data
+            const bkmvdataFile = new File(
+              [new Uint8Array(iconv.encode(bkmvdata, 'ISO-8859-8'))],
+              'bkmvdata.txt',
+              {
+                type: 'text/plain',
+              },
+            );
+            const iniFile = new File([new Uint8Array(iconv.encode(ini, 'ISO-8859-8'))], 'ini.txt', {
+              type: 'text/plain',
+            });
 
-        // Download both files
-        downloadFile(iniFile);
-        setTimeout(() => downloadFile(bkmvdataFile), 100); // Small delay to avoid browser blocking
+            // Download both files
+            downloadFile(iniFile);
+            setTimeout(() => downloadFile(bkmvdataFile), 100); // Small delay to avoid browser blocking
 
-        // Close modal and reset form
-        onOpenChange(false);
-        setFromDate(defaultFromDate);
-        setToDate(defaultToDate);
-        setIsLoading(false);
+            // Close modal and reset form
+            onOpenChange(false);
+            setFromDate(defaultFromDate);
+            setToDate(defaultToDate);
+          })
+          .catch(error => {
+            setFormError('Failed to encode the files. Please try again.');
+            console.error('Encoding error:', error);
+          })
+          .finally(() => setIsLoading(false));
       } else if (uniformFormatResult.stale && !uniformFormatResult.data?.uniformFormat) {
         setFormError('No data returned from the server. Please try again.');
         setIsLoading(false);
