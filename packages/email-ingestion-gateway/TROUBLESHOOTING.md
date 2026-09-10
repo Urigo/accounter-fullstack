@@ -76,8 +76,8 @@ Symptom: no gateway log line for the message at all.
   `HEALTH_PROBE_TIMEOUT_MS`) before consuming the stream; if the gateway is unreachable it calls
   `message.forward(FALLBACK_EMAIL)` and the email goes to the legacy mailbox instead. Look for
   `worker:gateway_unreachable` in
-  `yarn workspace @accounter/email-ingestion-gateway wrangler tail --name email-ingestion-gateway-worker`,
-  then verify `GATEWAY_URL` + gateway health.
+  `yarn workspace @accounter/email-ingestion-gateway wrangler tail email-forward-04a7`, then verify
+  `GATEWAY_URL` + gateway health.
 - **The same message keeps arriving.** Cloudflare Email Routing reads an unhandled exception from
   the `email()` handler as a temporary delivery failure and redelivers with growing backoff, so one
   throw becomes an unbounded loop (three messages went through 4-5 redeliveries across 12 hours that
