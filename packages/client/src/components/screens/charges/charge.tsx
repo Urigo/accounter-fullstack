@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { ChargesTable } from '@/components/charges/charges-table.js';
@@ -23,29 +23,16 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   const { chargeId: chargeIdFromUrl } = useParams<{ chargeId: string }>();
   const id = chargeId || chargeIdFromUrl;
 
-  // Try to get loader data (will be available when navigating via router)
-  let loaderData: ChargeScreenQuery | undefined;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    loaderData = useLoaderData() as ChargeScreenQuery;
-  } catch {
-    // No loader data - component used outside router context (e.g., as child component)
-  }
+  // Present when the route's loader ran; `undefined` on a route without one.
+  const loaderData = useLoaderData() as ChargeScreenQuery | undefined;
 
-  // Only fetch if we don't have loader data and need to fetch (prop-based usage)
-  const [{ data, fetching }, fetchCharge] = useQuery({
+  const [{ data, fetching }] = useQuery({
     query: ChargeScreenDocument,
     pause: !id || !!loaderData,
     variables: {
       chargeId: id ?? '',
     },
   });
-
-  useEffect(() => {
-    if (id && !loaderData) {
-      fetchCharge();
-    }
-  }, [id, loaderData, fetchCharge]);
 
   // Use loader data if available, otherwise use query data
   const chargeData = loaderData || data;
