@@ -405,7 +405,7 @@ __metadata:
     date-fns: "npm:4.4.0"
     dotenv: "npm:17.4.2"
     dotenv-cli: "npm:11.0.0"
-    googleapis: "npm:178.0.0"
+    googleapis: "npm:178.1.1"
     graphql: "npm:16.14.2"
     graphql-modules: "npm:3.1.2"
     graphql-scalars: "npm:2.0.0"
@@ -16586,7 +16586,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gaxios@npm:^7.0.0, gaxios@npm:^7.1.3, gaxios@npm:^7.1.4":
+"gaxios@npm:^7.0.0, gaxios@npm:^7.1.3, gaxios@npm:^7.1.4, gaxios@npm:^7.3.0":
   version: 7.3.1
   resolution: "gaxios@npm:7.3.1"
   dependencies:
@@ -16962,6 +16962,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"googleapis-common@npm:^9.0.0":
+  version: 9.0.4
+  resolution: "googleapis-common@npm:9.0.4"
+  dependencies:
+    extend: "npm:^3.0.2"
+    gaxios: "npm:^7.3.0"
+    google-auth-library: "npm:^11.0.0"
+    google-logging-utils: "npm:^2.0.0"
+    qs: "npm:^6.7.0"
+    url-template: "npm:^2.0.8"
+  checksum: 10c0/33bfdeec5d7e84ed1f40f9955a5b861e916e249849f70fc6cd229b68c0396ad70f2001ed8b59a16b0bc5d64e0aad355cc21e4a41913931b60b9bb56e0c02f683
+  languageName: node
+  linkType: hard
+
 "googleapis@npm:174.0.1":
   version: 174.0.1
   resolution: "googleapis@npm:174.0.1"
@@ -16972,13 +16986,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"googleapis@npm:178.0.0":
-  version: 178.0.0
-  resolution: "googleapis@npm:178.0.0"
+"googleapis@npm:178.1.1":
+  version: 178.1.1
+  resolution: "googleapis@npm:178.1.1"
   dependencies:
-    google-auth-library: "npm:10.5.0"
-    googleapis-common: "npm:^8.0.0"
-  checksum: 10c0/7bfb58c2972ddf6ddec73059815e58e493441ef428ae00e7f919a037dfe5be02a8e079d30eb0234238febda280fd575e243149ea12429e635d10866cffbbc539
+    google-auth-library: "npm:^11.0.0"
+    googleapis-common: "npm:^9.0.0"
+  checksum: 10c0/a5d0d707a187df13d5ef32e9956f35892dc07f53605a4628c7d60abadb2cc4d27deff40eee269bce0956194ce0c7ee9a4b8a49537e17d2736a0cf205fc3c9036
   languageName: node
   linkType: hard
 
