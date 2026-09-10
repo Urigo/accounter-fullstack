@@ -87,4 +87,36 @@ describe('Environment Configuration', () => {
       expect.stringContaining('AUTH0_AUDIENCE'), // Expect mention of missing field
     );
   });
+
+  // The Auth0 SDK (v7+) throws from the `ManagementClient` constructor when `domain`
+  // is not a bare hostname, so these values have to be rejected at startup instead.
+  it.each([
+    ['a scheme', 'https://test-domain.us.auth0.com'],
+    ['a trailing slash', 'test-domain.us.auth0.com/'],
+    ['a path', 'test-domain.us.auth0.com/api/v2'],
+    ['a query string', 'test-domain.us.auth0.com?foo=bar'],
+  ])('should fail validation when AUTH0_DOMAIN includes %s', async (_label, domain) => {
+    vi.resetModules();
+
+    process.env.AUTH0_DOMAIN = domain;
+    process.env.AUTH0_AUDIENCE = 'test-audience';
+    process.env.AUTH0_CLIENT_ID = 'test-client-id';
+    process.env.AUTH0_CLIENT_SECRET = 'test-client-secret';
+    process.env.AUTH0_MANAGEMENT_AUDIENCE = 'test-management-audience';
+
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await import('../environment.js');
+    } catch {
+      // `process.exit` is mocked out, so execution continues and hits `extractConfig`
+    }
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('❌ Invalid environment variables:'),
+      expect.stringContaining('AUTH0_DOMAIN'),
+    );
+  });
 });

@@ -426,6 +426,7 @@ __metadata:
     strip-indent: "npm:4.1.1"
     tsx: "npm:4.23.13"
     typescript: "npm:6.0.3"
+    uuid: "npm:14.0.2"
     zod: "npm:4.5.4"
   languageName: unknown
   linkType: soft

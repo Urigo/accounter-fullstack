@@ -81,6 +81,7 @@
     "playwright": "1.63.0",
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.1.1",
+    "uuid": "14.0.2",
     "zod": "4.5.4"
   },
   "devDependencies": {
