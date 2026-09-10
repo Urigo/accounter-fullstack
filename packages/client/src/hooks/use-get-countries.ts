@@ -1,6 +1,6 @@
-import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllCountriesDocument, type AllCountriesQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -24,12 +24,7 @@ type UseAllCountries = {
 export const useAllCountries = (): UseAllCountries => {
   const [{ data, fetching, error }, fetch] = useQuery({ query: AllCountriesDocument });
 
-  if (error) {
-    console.error(`Error fetching countries: ${error}`);
-    toast.error('Error', {
-      description: 'Unable to fetch countries',
-    });
-  }
+  useQueryErrorToast(error, 'countries');
 
   return {
     fetching,
