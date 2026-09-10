@@ -35,6 +35,13 @@
   // move GATEWAY_URL into a `vars` block here instead — this repo is public.
   "keep_vars": true,
 
+  // Both default to true when unspecified, and the live Worker has both OFF. Without
+  // these, the first deploy would silently publish a `<name>.workers.dev` URL and
+  // preview URLs for a Worker that has no `fetch` handler at all — pure attack
+  // surface for zero benefit. Pinned to match the deployed state.
+  "workers_dev": false,
+  "preview_urls": false,
+
   // Required for `wrangler tail` and log retention to be useful — the handler now
   // emits one structured `worker:*` JSON line per branch, and without this they are
   // not retained.
