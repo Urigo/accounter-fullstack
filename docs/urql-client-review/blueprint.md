@@ -16,7 +16,7 @@ reached `main` under #4442's squashed commit — there is no commit titled #4443
 | 3    | Roll the hook out to the remaining eleven       | [#4443][s3] | **merged**  |
 | 4    | `use-logout.ts` client reset                    | [#4444][s4] | in review   |
 | 5    | Drop dead loader-data guards + redundant effect | [#4446][s5] | in review   |
-| 6    | Hoist in-render `dedupeFragments()` calls       | —           | not started |
+| 6    | Hoist in-render `dedupeFragments()` calls       | [#4447][s6] | in review   |
 | 7    | Delete dead `@tanstack/react-query`             | —           | not started |
 | 8a   | Configurable `VITE_GRAPHQL_URL`                 | —           | not started |
 | 8b   | `retryExchange` + dev `devtoolsExchange`        | —           | not started |
@@ -27,6 +27,7 @@ reached `main` under #4442's squashed commit — there is no commit titled #4443
 [s3]: https://github.com/Urigo/accounter-fullstack/pull/4443
 [s4]: https://github.com/Urigo/accounter-fullstack/pull/4444
 [s5]: https://github.com/Urigo/accounter-fullstack/pull/4446
+[s6]: https://github.com/Urigo/accounter-fullstack/pull/4447
 
 ## Context
 
