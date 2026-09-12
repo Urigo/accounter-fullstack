@@ -1,7 +1,13 @@
 import { ROUTES } from '../router/routes.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createClientMock, mapExchangeMock, authExchangeMock, appendHeadersMock } = vi.hoisted(() => {
+const {
+  createClientMock,
+  mapExchangeMock,
+  authExchangeMock,
+  appendHeadersMock,
+  retryExchangeMock,
+} = vi.hoisted(() => {
   const appendHeaders = vi.fn((operation: any, headers: Record<string, string>) => ({
     ...operation,
     context: {
@@ -17,10 +23,20 @@ const { createClientMock, mapExchangeMock, authExchangeMock, appendHeadersMock }
     },
   }));
   return {
-    createClientMock: vi.fn(() => ({ mockClient: true })),
+    createClientMock: vi.fn((_options: { url: string; exchanges: unknown[] }) => ({
+      mockClient: true,
+    })),
     mapExchangeMock: vi.fn(() => ({ mockMapExchange: true })),
     authExchangeMock: vi.fn(),
     appendHeadersMock: appendHeaders,
+    retryExchangeMock: vi.fn(
+      (_options: {
+        retryIf: (
+          error: { networkError?: unknown; graphQLErrors?: unknown[] },
+          operation: { kind: string },
+        ) => boolean;
+      }) => ({ mockRetryExchange: true }),
+    ),
   };
 });
 
@@ -47,6 +63,14 @@ vi.mock('urql', () => ({
   fetchExchange: { mockFetchExchange: true },
   mapExchange: mapExchangeMock,
   Provider: ({ children }: { children?: unknown }) => children,
+}));
+
+vi.mock('@urql/exchange-retry', () => ({
+  retryExchange: retryExchangeMock,
+}));
+
+vi.mock('@urql/devtools', () => ({
+  devtoolsExchange: { mockDevtoolsExchange: true },
 }));
 
 vi.mock('@urql/exchange-auth', () => ({
@@ -363,6 +387,44 @@ describe('URQL auth exchange hardening', () => {
     expect(postRefreshOperation.context.fetchOptions.headers.Authorization).toBe(
       'Bearer token-after-refresh',
     );
+  });
+
+  it('places retryExchange after authExchange and before fetchExchange', async () => {
+    // Order is the point: authExchange must see one settled result rather than
+    // each retry attempt, so retries cannot interact with didAuthError /
+    // refreshAuth. fetchExchange stays last.
+    await initializeAuth(async () => 'token-123');
+
+    const { exchanges } = createClientMock.mock.calls[0][0];
+    const authIndex = exchanges.findIndex((e: unknown) => e === authExchangeMock.mock.results[0].value);
+    const retryIndex = exchanges.findIndex((e: unknown) => e === retryExchangeMock.mock.results[0].value);
+    const fetchIndex = exchanges.findIndex(
+      (e: unknown) => (e as { mockFetchExchange?: boolean })?.mockFetchExchange === true,
+    );
+
+    expect(authIndex).toBeGreaterThanOrEqual(0);
+    expect(retryIndex).toBeGreaterThan(authIndex);
+    expect(fetchIndex).toBeGreaterThan(retryIndex);
+  });
+
+  it('retries network errors but never GraphQL errors', async () => {
+    await initializeAuth(async () => 'token-123');
+
+    const { retryIf } = retryExchangeMock.mock.calls[0][0];
+
+    expect(retryIf({ networkError: new Error('offline') }, { kind: 'query' })).toBe(true);
+    expect(retryIf({ graphQLErrors: [{ message: 'nope' }] }, { kind: 'query' })).toBe(false);
+  });
+
+  it('never retries a mutation, even on a network error', async () => {
+    // `@urql/exchange-retry` does NOT exclude mutations on its own — `retryIf`
+    // alone decides. Without this guard a write that failed mid-flight would be
+    // resubmitted, and none of our mutations are idempotent.
+    await initializeAuth(async () => 'token-123');
+
+    const { retryIf } = retryExchangeMock.mock.calls[0][0];
+
+    expect(retryIf({ networkError: new Error('offline') }, { kind: 'mutation' })).toBe(false);
   });
 
   it('uses VITE_GRAPHQL_URL for the client endpoint when set', async () => {

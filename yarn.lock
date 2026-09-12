@@ -88,7 +88,9 @@ __metadata:
     "@types/deep-equal": "npm:1.0.4"
     "@types/react": "npm:19.3.0"
     "@types/react-dom": "npm:19.3.0"
+    "@urql/devtools": "npm:2.0.3"
     "@urql/exchange-auth": "npm:3.0.0"
+    "@urql/exchange-retry": "npm:2.0.0"
     "@vitejs/plugin-react": "npm:6.1.1"
     autoprefixer: "npm:10.5.5"
     chart.js: "npm:4.5.1"
@@ -11230,6 +11232,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@urql/devtools@npm:2.0.3":
+  version: 2.0.3
+  resolution: "@urql/devtools@npm:2.0.3"
+  dependencies:
+    wonka: "npm:>= 4.0.9"
+  peerDependencies:
+    "@urql/core": ">= 1.14.0"
+    graphql: ">= 0.11.0"
+  checksum: 10c0/130d2f91b36b2586e68a90732831cf58dcc0765fc860a6e5b6c58ab5ab4b26856c1b5f92ef84539b4ad0348d6dd1bde209416ad2a9b4731387b064ab4d5ed704
+  languageName: node
+  linkType: hard
+
 "@urql/exchange-auth@npm:3.0.0":
   version: 3.0.0
   resolution: "@urql/exchange-auth@npm:3.0.0"
@@ -11239,6 +11253,18 @@ __metadata:
   peerDependencies:
     "@urql/core": ^6.0.0
   checksum: 10c0/1e0c6a170004af62ba07041b1a97fe4f0ba8a041904ee1014f6055999e3e205f9968f64965b43ff8c748004a6e9a3be8a1e04f7fd2d5a72b36472f82f974d039
+  languageName: node
+  linkType: hard
+
+"@urql/exchange-retry@npm:2.0.0":
+  version: 2.0.0
+  resolution: "@urql/exchange-retry@npm:2.0.0"
+  dependencies:
+    "@urql/core": "npm:^6.0.0"
+    wonka: "npm:^6.3.2"
+  peerDependencies:
+    "@urql/core": ^6.0.0
+  checksum: 10c0/37a4dbea6b158c73521fc58e33c2b73ad4568e221e3e2fce373a5cadb21b93f345b4a3e574646b2b1e3f598db4d6fcf62cb6d21d5abd11a3ca88d39c248894fd
   languageName: node
   linkType: hard
 
@@ -26975,7 +27001,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wonka@npm:^6.3.2":
+"wonka@npm:>= 4.0.9, wonka@npm:^6.3.2":
   version: 6.3.6
   resolution: "wonka@npm:6.3.6"
   checksum: 10c0/a8887a7766cf9519b4f80b43842fe1b6575a0f5edf397c5a32c267185bd999af9d3c42d91d6d7cd86d3ec89fdc5f8909bb542004d184fcaad794d25e821ff70d
