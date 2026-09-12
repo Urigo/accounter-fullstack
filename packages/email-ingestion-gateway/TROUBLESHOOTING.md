@@ -160,7 +160,9 @@ Treatment (`src/treatment.ts`) assembles the final set from three sources:
    business config allowlists only `PDF` and the mail carries a PNG, the PNG is dropped.
 2. **Body → PDF**, only when **no business is recognized** _or_ `config.emailBody === true`, and the
    body is non-empty. Render failures are logged (`treatment: body→PDF render failed`) and the body
-   document is omitted — check for a missing/broken Chromium in the runtime.
+   document is omitted — check for a missing/broken Chromium in the runtime. Remote subresources are
+   blocked and every render step is capped at `RENDER_TIMEOUT_MS`, so a render failure is a Chromium
+   problem, not a slow asset in the body.
 3. **Internal-link documents**, fetched for each configured `config.internalEmailLinks` pattern
    found in the body. Failures log `treatment: internal-link fetch failed`. Note the SSRF guards in
    `src/link-fetcher.ts` will silently return `[]` if the link host isn't allowlisted, resolves to a
