@@ -43,6 +43,7 @@
     "email-ingestion-gateway:worker:dev": "yarn worker:dev",
     "generate": "yarn generate:graphql",
     "inspect:eml": "tsx scripts/inspect-eml.ts",
+    "replay:eml": "tsx scripts/replay-eml.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "worker:deploy": "wrangler deploy",
