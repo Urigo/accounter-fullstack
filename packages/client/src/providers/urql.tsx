@@ -334,10 +334,16 @@ export function getUrqlClient(): Client {
       }),
       // After `authExchange`, deliberately: auth then sees a single settled result
       // rather than every retry attempt, so a retry can never drive
-      // `didAuthError`/`refreshAuth`. Mutations are excluded by default and stay
-      // that way — none of ours are idempotent.
+      // `didAuthError`/`refreshAuth`.
+      //
+      // The mutation guard is not belt-and-braces. `@urql/exchange-retry` does
+      // not exclude mutations on its own — `retryIf`'s return value is the whole
+      // decision — so without it a write that failed mid-flight would be
+      // resubmitted, and none of ours are idempotent. Queries and subscriptions
+      // retry on network errors only; a GraphQL error is an answer, not a
+      // failure, and will not change on a second attempt.
       retryExchange({
-        retryIf: error => !!error.networkError,
+        retryIf: (error, operation) => operation.kind !== 'mutation' && !!error.networkError,
       }),
       fetchExchange,
     ],
