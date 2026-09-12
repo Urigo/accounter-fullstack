@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 import { TransactionsTableDescriptionFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,10 +20,10 @@ export const Description = ({ data }: Props): ReactElement => {
   const cellText = 'sourceDescription' in transaction ? transaction.sourceDescription : 'Missing';
 
   return (
-    <td>
+    <TableCell>
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">{cellText}</div>
       </div>
-    </td>
+    </TableCell>
   );
 };

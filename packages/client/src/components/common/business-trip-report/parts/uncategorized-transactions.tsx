@@ -210,7 +210,15 @@ export const ErrorsPopover = ({ errors }: { errors: string[] }): ReactElement =>
         ))}
       </ul>
     }
+    asChild
   >
-    <AlertCircle />
+    {/*
+      `asChild` with an explicit button: without it TooltipTrigger renders a bare <button>
+      around the icon, and an SVG on its own gives that button no accessible name. The
+      Mantine popover it replaced was not focusable at all, so the keyboard path is new.
+    */}
+    <button type="button" aria-label="Show transaction errors">
+      <AlertCircle />
+    </button>
   </Tooltip>
 );

@@ -10,6 +10,7 @@ import { SelectWithSearch, Tooltip } from '../../common/index.js';
 import { InsertBusiness } from '../../common/modals/insert-business.js';
 import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.js';
 import { Button } from '../../ui/button.js';
+import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -75,7 +76,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
   const [search, setSearch] = useState<string | null>(sourceDescription);
 
   return (
-    <td>
+    <TableCell>
       <div className="flex flex-wrap gap-1 items-center justify-center">
         {counterparty?.id ? (
           <Link
@@ -119,6 +120,6 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
         onOpenChange={setSimilarTransactionsOpen}
         onClose={onChange}
       />
-    </td>
+    </TableCell>
   );
 }

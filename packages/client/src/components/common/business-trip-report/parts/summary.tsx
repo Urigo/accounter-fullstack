@@ -115,13 +115,17 @@ export const Summary = ({ data }: Props): ReactElement => {
         </TableBody>
       </Table>
       {/* Mantine's `Grid`, on its own breakpoints (md 992, lg 1200) rather than Tailwind's,
-          so the columns keep the widths they had. `justify="flex-end"` is `justify-end`. */}
-      <div className="grid grid-cols-12 justify-end gap-4">
-        <div className="col-span-12 min-[992px]:col-span-4 min-[1200px]:col-span-2">
+          so the columns keep the widths they had. Its `justify="flex-end"` does not survive
+          as `justify-end`: Mantine's Grid is flexbox, but `grid-cols-12` makes twelve `1fr`
+          tracks that consume the full width, leaving `justify-content` no free space to
+          distribute — the cells just auto-placed from column 1. Right alignment is explicit
+          `col-start` positions instead: 6+10 of 12 at md (spans 4 and 3), 9+11 at lg (2 and 2). */}
+      <div className="grid grid-cols-12 gap-4">
+        <div className="col-span-12 col-start-1 min-[992px]:col-span-4 min-[992px]:col-start-6 min-[1200px]:col-span-2 min-[1200px]:col-start-9">
           Excess Expenditure Tax:
           <div className="text-lg">{summary.excessTax ?? '0'}%</div>
         </div>
-        <div className="col-span-12 flex flex-col justify-end min-[992px]:col-span-3 min-[1200px]:col-span-2">
+        <div className="col-span-12 col-start-1 flex flex-col justify-end min-[992px]:col-span-3 min-[992px]:col-start-10 min-[1200px]:col-span-2 min-[1200px]:col-start-11">
           <div className="text-lg">{summary.excessExpenditure?.formatted ?? '0.00'}</div>
         </div>
       </div>

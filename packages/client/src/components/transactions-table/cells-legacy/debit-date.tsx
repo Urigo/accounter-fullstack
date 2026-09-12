@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { TransactionsTableDebitDateFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -21,7 +22,7 @@ export const DebitDate = ({ data }: Props): ReactElement => {
   const effectiveDate = 'effectiveDate' in transaction ? transaction.effectiveDate : undefined;
 
   return (
-    <td>
+    <TableCell>
       <div className="flex flex-col justify-center">
         <div>{effectiveDate && format(new Date(effectiveDate), 'dd/MM/yy')}</div>
         {transaction.sourceEffectiveDate && (
@@ -30,6 +31,6 @@ export const DebitDate = ({ data }: Props): ReactElement => {
           </div>
         )}
       </div>
-    </td>
+    </TableCell>
   );
 };
