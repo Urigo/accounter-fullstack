@@ -36,7 +36,9 @@ vi.mock('../../common/index.js', async () => {
 const taxCategories = Array.from({ length: 45 }, (_, index) => ({
   id: `tax-category-${index}`,
   name: `Tax Category ${index}`,
-  sortCode: { id: index, key: index, name: `Sort Code ${index}` },
+  sortCode: { id: `sort-code-${index}`, key: index, name: `Sort Code ${index}` },
+  irsCode: index,
+  taxExcluded: index % 2 === 0,
 }));
 
 /** A render loop never settles, so it would hang the runner instead of failing.
