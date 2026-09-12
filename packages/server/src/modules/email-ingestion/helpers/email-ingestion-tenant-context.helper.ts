@@ -74,6 +74,43 @@ export function isConnectionLevelError(err: unknown): boolean {
 }
 
 /**
+ * Run a read-only, non-transactional pool query, retrying once if the connection
+ * itself was dead.
+ *
+ * This is the counterpart to {@link withTenantContext} for the one query that
+ * cannot use it: an alias lookup runs *before* any tenant is known, so there is
+ * no RLS context to pin and no transaction to wrap. It is also the **first** DB
+ * call the control path makes, which makes it the most likely place in the whole
+ * request to be handed a connection that died while idle — the #4348 failure mode
+ * that cost five inbound emails in #4344. Pinning the retry only to the calls
+ * after the tenant is resolved left that first touch uncovered.
+ *
+ * Retrying needs none of `withTenantContext`'s care: there is no BEGIN/COMMIT, so
+ * there is no in-flight transaction whose outcome could be ambiguous, and the
+ * caller is a SELECT, so repeating it cannot double any write. As there, the retry
+ * is deliberately narrow — only a connection-level failure, and only once, so a
+ * genuinely unreachable database fails fast instead of doubling every query.
+ *
+ * `pg` discards a client that errors, so the second attempt checks out a fresh
+ * connection rather than the corpse. Nothing here is specific to a dead *idle*
+ * connection: `pool.query()` only discovers the socket is gone when it writes to
+ * it, which is exactly why this cannot be handled at checkout.
+ */
+export async function withConnectionRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (!isConnectionLevelError(err)) throw err;
+    process.stderr.write(
+      `[db] Retrying pool query on a fresh connection after a connection-level failure: ${
+        err instanceof Error ? err.message : String(err)
+      }\n`,
+    );
+    return fn();
+  }
+}
+
+/**
  * Run `fn` inside a single transaction whose RLS context is pinned to the given
  * tenant. `set_config(..., true)` is transaction-local (SET LOCAL), so the
  * context is cleared on COMMIT/ROLLBACK and never leaks to the pooled

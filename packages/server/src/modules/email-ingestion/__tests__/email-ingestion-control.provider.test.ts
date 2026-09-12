@@ -97,6 +97,44 @@ describe('EmailIngestionControlProvider.resolveAlias', () => {
     expect(sql.toLowerCase()).toMatch(/is_active/);
     expect(params[0]).toBe('mixed@case.example.com');
   });
+
+  // #4344/#4348: this is the first DB call the control path makes, so it is where a
+  // connection killed while it sat idle in the pool surfaces. It runs on the raw
+  // pool (no tenant is known yet), so withTenantContext's retry never covered it —
+  // and without a retry the resolver's catch-all turned the dead socket into a
+  // GraphQL error, which the gateway classifies as non-retryable, dropping the mail.
+  it('retries once on a fresh connection when the pooled connection was handed out dead', async () => {
+    const query = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Connection terminated unexpectedly'))
+      .mockResolvedValueOnce({ rows: [{ owner_id: 'tenant-uuid-1' }], rowCount: 1 });
+    const db = { pool: { query } } as unknown as DBProvider;
+    const provider = new EmailIngestionControlProvider(db);
+
+    const result = await provider.resolveAlias('invoice@tenant.example.com');
+
+    expect(result.found).toBe(true);
+    if (result.found) {
+      expect(result.tenantId).toBe('tenant-uuid-1');
+    }
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+
+  // The retry must stay narrow. A rejected statement (an RLS/grant problem here) is
+  // a real answer from a healthy connection, so repeating it only hides the cause
+  // behind a duplicate round trip.
+  it('propagates a statement error without retrying', async () => {
+    const err: NodeJS.ErrnoException = new Error('permission denied for table alias_routing');
+    err.code = '42501';
+    const query = vi.fn().mockRejectedValue(err);
+    const db = { pool: { query } } as unknown as DBProvider;
+    const provider = new EmailIngestionControlProvider(db);
+
+    await expect(provider.resolveAlias('invoice@tenant.example.com')).rejects.toThrow(
+      'permission denied',
+    );
+    expect(query).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ---------------------------------------------------------------------------

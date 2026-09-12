@@ -15,7 +15,10 @@ import {
   type EmailClassification,
   type TenantMailContext,
 } from '../helpers/email-ingestion-classify.helper.js';
-import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
+import {
+  withConnectionRetry,
+  withTenantContext,
+} from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
   IConsumeGrantByJtiQuery,
   IGetActiveAliasesForTenantQuery,
@@ -232,9 +235,19 @@ export class EmailIngestionControlProvider {
    * before any tenant context is known, so TenantAwareDBClient would throw
    * UNAUTHENTICATED. The alias_routing table has FOR SELECT USING (TRUE) to
    * explicitly allow cross-tenant reads at the DB policy level.
+   *
+   * Running on the raw pool also means this is the one DB call in the control
+   * path that {@link withTenantContext}'s dead-connection retry cannot cover —
+   * there is no tenant to pin yet. It is also the *first* call in that path, so
+   * it is where a connection killed while idle surfaces (#4348): the retry added
+   * for the tenant-scoped calls started one step too late, leaving the original
+   * #4344 trigger reachable. {@link withConnectionRetry} closes that, and a
+   * cross-tenant SELECT is safe to repeat.
    */
   async resolveAlias(alias: string): Promise<AliasResolutionResult> {
-    const rows = await getAliasByAlias.run({ alias: alias.toLowerCase() }, this.dbProvider.pool);
+    const rows = await withConnectionRetry(() =>
+      getAliasByAlias.run({ alias: alias.toLowerCase() }, this.dbProvider.pool),
+    );
 
     if (rows.length === 0) {
       return { found: false, reason: IngestReasonCode.UNKNOWN_ALIAS };
