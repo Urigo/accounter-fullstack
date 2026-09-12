@@ -52,10 +52,11 @@ afterEach(async () => {
 
 describe('Charge screen', () => {
   it('fetches the charge exactly once on mount', async () => {
-    // The screen used to pair an already-unpaused `useQuery` with a mount
-    // effect that re-executed it under the identical condition, so every mount
-    // cost two round-trips — and with no cache exchange, nothing absorbed the
-    // second one.
+    // The screen used to pair an already-unpaused `useQuery` with a mount effect
+    // that re-executed it under the identical condition. That never cost a
+    // second request — urql dedupes the re-execution against the operation still
+    // in flight — so this count was already 1 before the effect was removed. The
+    // assertion is here to keep it that way, not to record a fix.
     const operations: string[] = [];
     const client = makeClient(operations);
 
