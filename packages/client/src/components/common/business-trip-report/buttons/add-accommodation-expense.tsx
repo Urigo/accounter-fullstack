@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { type AddBusinessTripAccommodationsExpenseInput } from '../../../../gql/graphql.js';
+import { CountryCode } from '../../../../helpers/countries.js';
 import { useAddBusinessTripAccommodationsExpense } from '../../../../hooks/use-add-business-trip-accommodations-expense.js';
 import { Button } from '../../../ui/button.js';
 import {
@@ -12,11 +13,12 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
-import { Input } from '../../../ui/input.js';
 import { LoadingOverlay } from '../../../ui/overlay.js';
-import { NumberInput, PopUpModal, Tooltip } from '../../index.js';
+import { ComboBox, NumberInput, PopUpModal, Tooltip } from '../../index.js';
 import { AttendeesStayInput } from '../parts/attendee-stay-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
+
+const countries = Object.entries(CountryCode).map(([label, value]) => ({ value, label }));
 
 export function AddAccommodationExpense(props: {
   businessTripId: string;
@@ -86,16 +88,19 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
             setFetching={setFetching}
           />
 
-          {/* TODO: replace with country select */}
           <FormField
             control={control}
             name="country"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value ?? undefined} />
-                </FormControl>
+                <ComboBox
+                  onChange={field.onChange}
+                  data={countries}
+                  value={field.value ?? null}
+                  placeholder="Select country"
+                  formPart
+                />
                 <FormMessage />
               </FormItem>
             )}
