@@ -30,6 +30,8 @@ export default gql`
     createInvitation(email: String!, roleId: String!): InvitationPayload!
       @requiresRole(role: "business_owner")
     acceptInvitation(token: String!): AcceptInvitationPayload!
+    " claim an invitation listed on viewer.pendingInvitations, for a caller who does not have the emailed token; authorized by the caller's verified email matching the invitation's "
+    claimInvitation(invitationId: UUID!): AcceptInvitationPayload!
     generateApiKey(name: String!, roleId: String!): GenerateApiKeyPayload!
       @requiresRole(role: "business_owner")
     revokeApiKey(id: ID!): Boolean! @requiresRole(role: "business_owner")
