@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 import { TransactionsTableSourceIdFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -18,10 +19,10 @@ export const SourceID = ({ data }: Props): ReactElement => {
   const transaction = getFragmentData(TransactionsTableSourceIdFieldsFragmentDoc, data);
 
   return (
-    <td>
+    <TableCell>
       <div className="flex flex-wrap">
         <div className="flex flex-col justify-center">{transaction.referenceKey}</div>
       </div>
-    </td>
+    </TableCell>
   );
 };

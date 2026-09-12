@@ -1,7 +1,14 @@
 import type { ReactElement } from 'react';
-import { Table } from '@mantine/core';
 import { BusinessTripReportAccommodationsTableFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../ui/table.js';
 import { AddAccommodationExpense } from '../buttons/add-accommodation-expense.js';
 import { AccommodationsRow } from './accommodations-row.js';
 import { CoreExpenseHeader } from './core-expense-row.js';
@@ -41,17 +48,17 @@ export const AccommodationsTable = ({
 
   return (
     <div className="flex flex-col gap-2 mt-5">
-      <Table highlightOnHover withBorder>
-        <thead>
-          <tr>
+      <Table className="border">
+        <TableHeader>
+          <TableRow>
             <CoreExpenseHeader />
-            <th>Location</th>
-            <th>Nights</th>
-            <th>Attendees Stay</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead>Location</TableHead>
+            <TableHead>Nights</TableHead>
+            <TableHead>Attendees Stay</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {accommodationExpenses
             .sort((a, b) => {
               // sort by start date (if available, newest top) and then by name
@@ -71,13 +78,13 @@ export const AccommodationsTable = ({
               />
             ))}
           {onChange && (
-            <tr>
-              <td colSpan={6}>
+            <TableRow>
+              <TableCell colSpan={6}>
                 <AddAccommodationExpense businessTripId={businessTripId} onAdd={onChange} />
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
+        </TableBody>
       </Table>
     </div>
   );

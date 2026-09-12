@@ -12,6 +12,7 @@ import { cn } from '../../../../lib/utils.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
+import { TableCell, TableRow } from '../../../ui/table.js';
 import { ComboBox, NegatableMultiSelect, Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
@@ -75,7 +76,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
   }));
 
   return (
-    <tr key={flightExpense.id}>
+    <TableRow key={flightExpense.id}>
       <CoreExpenseRow
         data={flightExpense}
         isEditMode={isEditMode}
@@ -83,7 +84,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
         businessTripId={businessTripId}
       />
 
-      <td>
+      <TableCell>
         <Form {...formManager}>
           <form id={`form ${flightExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-2 justify-center">
@@ -138,8 +139,8 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
             </div>
           </form>
         </Form>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         {isEditMode ? (
           <Controller
             name="attendeeIds"
@@ -181,8 +182,8 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
             )}
           </ul>
         )}
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         {onChange && (
           <>
             <Tooltip content="Edit">
@@ -225,7 +226,7 @@ export const FlightsRow = ({ data, businessTripId, onChange, attendees }: Props)
             />
           </>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 };
