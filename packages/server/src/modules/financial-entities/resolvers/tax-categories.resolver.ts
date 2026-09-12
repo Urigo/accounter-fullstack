@@ -2,9 +2,14 @@ import { GraphQLError } from 'graphql';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
+import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
-import type { FinancialEntitiesModule, IUpdateTaxCategoryParams } from '../types.js';
+import type {
+  FinancialEntitiesModule,
+  IGetBusinessesByIdsResult,
+  IUpdateTaxCategoryParams,
+} from '../types.js';
 import { commonTaxChargeFields } from './common.js';
 
 export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
@@ -130,6 +135,23 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     name: parent => parent.name,
     isActive: parent => parent.is_active ?? true,
     taxExcluded: parent => !!parent.tax_excluded,
+    businesses: async (parent, _, { injector }) => {
+      const businessIds = await injector
+        .get(TaxCategoriesProvider)
+        .businessIdsByTaxCategoryIdLoader.load(parent.id);
+      if (businessIds.length === 0) {
+        return [];
+      }
+      const businesses = await injector
+        .get(BusinessesProvider)
+        .getBusinessByIdLoader.loadMany(businessIds);
+      // A match row can outlive its business row; drop the misses rather than
+      // failing the whole tax category over one dangling reference.
+      return businesses.filter(
+        (business): business is IGetBusinessesByIdsResult =>
+          !!business && !(business instanceof Error),
+      );
+    },
   },
   CommonCharge: commonTaxChargeFields,
   FinancialCharge: commonTaxChargeFields,
