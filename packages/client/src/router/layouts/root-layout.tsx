@@ -4,22 +4,12 @@ import { MantineProvider } from '@mantine/core';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { red } from '@mui/material/colors';
 import { createTheme } from '@mui/material/styles';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DocumentTitle } from '../../components/layout/document-title.js';
 import { NavigationProgress } from '../../components/layout/navigation-progress.js';
 import { Toaster } from '../../components/ui/sonner.js';
 import { UrqlProvider, UserProvider } from '../../providers/index.js';
 
-// Create these outside the component to prevent recreation on every render
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
-
+// Created outside the component to prevent recreation on every render
 const theme = createTheme({
   palette: {
     primary: {
@@ -51,13 +41,11 @@ export function RootLayout(): ReactElement {
         <CssBaseline />
         <Toaster />
         <UrqlProvider>
-          <QueryClientProvider client={queryClient}>
-            <UserProvider>
-              <DocumentTitle />
-              <NavigationProgress />
-              <Outlet />
-            </UserProvider>
-          </QueryClientProvider>
+          <UserProvider>
+            <DocumentTitle />
+            <NavigationProgress />
+            <Outlet />
+          </UserProvider>
         </UrqlProvider>
       </ThemeProvider>
     </MantineProvider>
