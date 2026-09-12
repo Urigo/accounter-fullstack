@@ -31,7 +31,10 @@ const {
     appendHeadersMock: appendHeaders,
     retryExchangeMock: vi.fn(
       (_options: {
-        retryIf: (error: { networkError?: unknown; graphQLErrors?: unknown[] }) => boolean;
+        retryIf: (
+          error: { networkError?: unknown; graphQLErrors?: unknown[] },
+          operation: { kind: string },
+        ) => boolean;
       }) => ({ mockRetryExchange: true }),
     ),
   };
@@ -409,8 +412,19 @@ describe('URQL auth exchange hardening', () => {
 
     const { retryIf } = retryExchangeMock.mock.calls[0][0];
 
-    expect(retryIf({ networkError: new Error('offline') })).toBe(true);
-    expect(retryIf({ graphQLErrors: [{ message: 'nope' }] })).toBe(false);
+    expect(retryIf({ networkError: new Error('offline') }, { kind: 'query' })).toBe(true);
+    expect(retryIf({ graphQLErrors: [{ message: 'nope' }] }, { kind: 'query' })).toBe(false);
+  });
+
+  it('never retries a mutation, even on a network error', async () => {
+    // `@urql/exchange-retry` does NOT exclude mutations on its own — `retryIf`
+    // alone decides. Without this guard a write that failed mid-flight would be
+    // resubmitted, and none of our mutations are idempotent.
+    await initializeAuth(async () => 'token-123');
+
+    const { retryIf } = retryExchangeMock.mock.calls[0][0];
+
+    expect(retryIf({ networkError: new Error('offline') }, { kind: 'mutation' })).toBe(false);
   });
 
   it('uses VITE_GRAPHQL_URL for the client endpoint when set', async () => {
