@@ -3,7 +3,12 @@ import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { executeRegisteredTool } from '../execute.js';
-import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
+import {
+  listBusinessesTool,
+  listSortCodesTool,
+  listTagsTool,
+  listTaxCategoriesTool,
+} from '../lookups.js';
 
 function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
@@ -34,7 +39,11 @@ function clientReturning(data: unknown, capture?: (init: RequestInit) => void) {
 }
 
 const runTool = (
-  tool: typeof listTagsTool | typeof listTaxCategoriesTool | typeof listBusinessesTool,
+  tool:
+    | typeof listTagsTool
+    | typeof listTaxCategoriesTool
+    | typeof listSortCodesTool
+    | typeof listBusinessesTool,
   client: UpstreamGraphQLClient,
   auth: McpAuthContext,
   rawArgs: unknown,
@@ -138,6 +147,121 @@ describe('listTaxCategoriesTool', () => {
     });
     const rows = (result.structuredContent as { taxCategories: Array<{ name: string }> }).taxCategories;
     expect(rows.map(r => r.name)).toEqual(['Income']);
+  });
+});
+
+describe('listSortCodesTool', () => {
+  const client = () =>
+    clientReturning({
+      allSortCodes: [
+        { id: 'b1|930', key: 930, name: 'Marketing', ownerId: 'b1', defaultIrsCode: 300 },
+        { id: 'b1|910', key: 910, name: 'Revenue', ownerId: 'b1', defaultIrsCode: 100 },
+        // Unnamed and with no inherited IRS code: both are real upstream states,
+        // and both must survive as `null` rather than becoming '' or 0.
+        { id: 'b1|920', key: 920, name: null, ownerId: 'b1', defaultIrsCode: null },
+        // Another owner's chart of accounts, reusing a key — `key` is unique per
+        // owner, not globally, which is why the tie-break exists.
+        { id: 'b2|910', key: 910, name: 'Revenue', ownerId: 'b2', defaultIrsCode: 100 },
+      ],
+    });
+
+  it('returns sort codes ordered by numeric key, then ownerId', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext(['b1', 'b2']), {});
+    const rows = (
+      result.structuredContent as { sortCodes: Array<{ key: number; ownerId: string }> }
+    ).sortCodes;
+
+    expect(rows.map(row => [row.key, row.ownerId])).toEqual([
+      [910, 'b1'],
+      [910, 'b2'],
+      [920, 'b1'],
+      [930, 'b1'],
+    ]);
+  });
+
+  it('keeps a missing name and a missing defaultIrsCode as null', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext(['b1']), { keys: [920] });
+    const rows = (result.structuredContent as { sortCodes: unknown[] }).sortCodes;
+
+    expect(rows).toEqual([
+      { id: 'b1|920', key: 920, name: null, ownerId: 'b1', defaultIrsCode: null },
+    ]);
+  });
+
+  it('filters by keys', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext(['b1', 'b2']), {
+      keys: [930],
+    });
+    const structured = result.structuredContent as {
+      sortCodes: Array<{ name: string | null }>;
+      totalCount: number;
+    };
+
+    expect(structured.sortCodes.map(row => row.name)).toEqual(['Marketing']);
+    expect(structured.totalCount).toBe(1);
+  });
+
+  it('filters by nameContains (case-insensitive) and never matches an unnamed code', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext(['b1']), {
+      nameContains: 'reven',
+    });
+    const structured = result.structuredContent as {
+      sortCodes: Array<{ key: number }>;
+      totalCount: number;
+    };
+
+    // 920 has no name, so a name search excludes it rather than treating its
+    // null as an empty string that matches everything.
+    expect(structured.sortCodes.map(row => row.key)).toEqual([910]);
+    expect(structured.totalCount).toBe(1);
+  });
+
+  /**
+   * The defense-in-depth owner filter, which is what makes `memberBusinessIds`
+   * narrowing observable here: the upstream query takes no arguments, so a row
+   * belonging to an owner outside the resolved scope must be dropped locally or
+   * it reaches the caller.
+   */
+  it('drops rows owned outside the resolved scope', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext(['b1', 'b2']), {
+      memberBusinessIds: ['b2'],
+    });
+    const structured = result.structuredContent as {
+      sortCodes: Array<{ id: string; ownerId: string }>;
+      totalCount: number;
+    };
+
+    expect(structured.sortCodes.map(row => row.id)).toEqual(['b2|910']);
+    expect(structured.totalCount).toBe(1);
+  });
+
+  it('caps results and flags truncation', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext(['b1', 'b2']), {
+      limit: 2,
+    });
+    const structured = result.structuredContent as {
+      sortCodes: unknown[];
+      totalCount: number;
+      truncated: boolean;
+      continuation: { reason: string };
+    };
+
+    expect(structured.sortCodes).toHaveLength(2);
+    expect(structured.totalCount).toBe(4);
+    expect(structured.truncated).toBe(true);
+    expect(structured.continuation.reason).toBe('result_cap');
+  });
+
+  it('enforces business scope (denies a caller with no memberships)', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext([]), {});
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
+  });
+
+  it('rejects unknown input fields', async () => {
+    const result = await runTool(listSortCodesTool, client(), authContext(['b1']), { bogus: 1 });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
   });
 });
 
@@ -353,6 +477,9 @@ describe('lookups — business scoping', () => {
       { id: '1', name: 'a', ownerId: 'b2', irsCode: null, isActive: true, sortCode: null },
     ],
   };
+  const SORT_CODES = {
+    allSortCodes: [{ id: 'b2|910', key: 910, name: 'a', ownerId: 'b2', defaultIrsCode: null }],
+  };
   const BUSINESSES = {
     allBusinesses: { nodes: [{ id: '1', name: 'a', ownerId: 'b2', isActive: true }] },
   };
@@ -360,6 +487,7 @@ describe('lookups — business scoping', () => {
   it.each([
     ['accounter_list_tags', listTagsTool, TAGS, 'tags'],
     ['accounter_list_tax_categories', listTaxCategoriesTool, TAX_CATEGORIES, 'taxCategories'],
+    ['accounter_list_sort_codes', listSortCodesTool, SORT_CODES, 'sortCodes'],
     ['accounter_list_businesses', listBusinessesTool, BUSINESSES, 'businesses'],
   ] as const)('%s narrows to a requested subset and reflects it in scope', async (
     _name,
@@ -390,6 +518,7 @@ describe('lookups — business scoping', () => {
   it.each([
     ['accounter_list_tags', listTagsTool, TAGS],
     ['accounter_list_tax_categories', listTaxCategoriesTool, TAX_CATEGORIES],
+    ['accounter_list_sort_codes', listSortCodesTool, SORT_CODES],
     ['accounter_list_businesses', listBusinessesTool, BUSINESSES],
   ] as const)('%s denies ids outside the caller memberships', async (_name, tool, data) => {
     const result = await runTool(tool, clientReturning(data), authContext(['b1']), {
