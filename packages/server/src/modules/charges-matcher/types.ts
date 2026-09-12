@@ -1,3 +1,4 @@
+import type { IGetChargesByFiltersResult } from '../charges/types.js';
 import type { currency, document_type, IGetAllDocumentsResult } from '../documents/types.js';
 import type { IGetTransactionsByIdsResult } from '../transactions/types.js';
 
@@ -29,6 +30,24 @@ export interface ChargeMatchProto {
 export interface ChargeMatchesResult {
   /** Array of up to 5 matches, ordered by confidence score (highest first) */
   matches: ChargeMatchProto[];
+}
+
+/**
+ * GraphQL mapper for the `ChargeWithSuggestions` type.
+ *
+ * `suggestions` is optional so the queue resolver can return base charges without
+ * eagerly scoring them: the `ChargeWithSuggestions.suggestions` field resolver
+ * computes them lazily (enabling `@defer` on the client). When the queue is sorted
+ * `BY_SCORE` the suggestions are precomputed (needed for the sort) and carried here
+ * so the field resolver can return them directly.
+ */
+export interface ChargeWithSuggestionsMapper {
+  /** UUID of the unmatched base charge */
+  id: string;
+  /** The unmatched base charge under review (enriched charge row) */
+  baseCharge: IGetChargesByFiltersResult;
+  /** Precomputed match suggestions, when already evaluated (e.g. BY_SCORE sort) */
+  suggestions?: ChargeMatchProto[];
 }
 
 /**
