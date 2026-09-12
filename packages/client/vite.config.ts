@@ -58,6 +58,10 @@ export default defineConfig({
       process.env.AUTH0_FRONTEND_CLIENT_ID,
     ),
     'import.meta.env.VITE_AUTH0_AUDIENCE': JSON.stringify(process.env.AUTH0_AUDIENCE),
+    // `?? ''` rather than a bare stringify: an unset var would otherwise inline
+    // the literal `undefined` into the bundle instead of a value the client can
+    // test for.
+    'import.meta.env.VITE_GRAPHQL_URL': JSON.stringify(process.env.GRAPHQL_URL ?? ''),
     'import.meta.env.VITE_DEV_AUTH': JSON.stringify(process.env.ALLOW_DEV_AUTH),
     'import.meta.env.VITE_DEV_AUTH_USER_ID': JSON.stringify(process.env.DEV_AUTH_USER_ID),
   },
