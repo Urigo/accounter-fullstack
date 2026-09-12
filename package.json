@@ -19,6 +19,7 @@
     "build:tools": "yarn workspaces foreach --all --parallel --include @accounter/etana-scraper --include @accounter/etherscan-scraper --include @accounter/green-invoice-graphql --include @accounter/hashavshevet-mesh --include @accounter/israeli-vat-scraper --include @accounter/kraken-scraper --include @accounter/payper-mesh --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build",
     "changeset:publish": "node scripts/changeset-publish.mjs",
     "db:migrate": "yarn migration:run",
+    "db:reindex-trgm": "tsx scripts/reindex-trigram-indexes.ts",
     "encrypt-password": "node scripts/encrypt-password.mjs",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",
     "generate:all": "yarn generate",

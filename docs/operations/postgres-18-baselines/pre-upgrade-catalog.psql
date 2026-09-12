@@ -1,0 +1,159 @@
+-- Pre-upgrade catalog snapshot for the Postgres 16 -> 18 upgrade.
+--
+-- Named .psql, not .sql, on purpose: it contains psql meta-commands (\pset, \echo) which
+-- prettier-plugin-sql cannot parse, and `yarn prettier:check` runs over the whole repo.
+--
+-- Captures the "before" state of every fact the post-upgrade checks have to re-assert.
+-- Contains NO tenant data -- catalog metadata only -- so the output is safe to commit as-is.
+--
+-- Run as a role that can read the catalogs; accounter_admin is fine. Example:
+--
+--   printf 'accounter_admin password: '; read -rs PGPASSWORD; echo
+--   docker exec -i -e PGPASSWORD="$PGPASSWORD" accounter-dev-db-1 \
+--     psql --host=$PROD_HOST \
+--          --username=accounter_admin --dbname=accounter_prod_db \
+--     < docs/operations/postgres-18-baselines/pre-upgrade-catalog.psql \
+--     > docs/operations/postgres-18-baselines/16-catalog-snapshot.txt 2>&1
+--   unset PGPASSWORD
+--
+-- Re-run the identical script against the upgraded server and diff the two files.
+
+\pset pager off
+\pset footer off
+\timing off
+
+\echo '================ 1. server version and collation provider ================'
+-- datlocprovider decides whether the pg_trgm / FTS reindex is REQUIRED after pg_upgrade:
+--   'c' = libc     -> not required (still cheap insurance)
+--   'i' = ICU      -> REQUIRED
+--   'b' = builtin  -> REQUIRED
+SELECT version();
+SELECT datname, datlocprovider, datcollate, datctype, datcollversion
+FROM pg_database WHERE datname = current_database();
+
+\echo '================ 2. extensions and versions ================'
+-- pg_upgrade carries old extension versions forward; Azure auto-upgrades most.
+SELECT e.extname, e.extversion, n.nspname AS schema
+FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+ORDER BY e.extname;
+
+\echo '================ 3. RLS coverage summary ================'
+SELECT count(*) AS tables,
+       count(*) FILTER (WHERE relrowsecurity) AS rls_enabled,
+       count(*) FILTER (WHERE relrowsecurity AND relforcerowsecurity) AS rls_forced
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema' AND c.relkind = 'r';
+
+\echo '---- tables WITHOUT RLS. has_owner_id = true means tenant data with no policy ----'
+SELECT c.relname,
+       pg_get_userbyid(c.relowner) AS owner,
+       EXISTS (SELECT 1 FROM pg_attribute a
+               WHERE a.attrelid = c.oid AND a.attname = 'owner_id' AND a.attnum > 0
+                 AND NOT a.attisdropped) AS has_owner_id
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema' AND c.relkind = 'r' AND NOT c.relrowsecurity
+ORDER BY has_owner_id DESC, c.relname;
+
+\echo '---- tables WITH RLS enabled but NOT forced (owner escapes its own policy) ----'
+SELECT c.relname, pg_get_userbyid(c.relowner) AS owner
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema' AND c.relkind = 'r'
+  AND c.relrowsecurity AND NOT c.relforcerowsecurity
+ORDER BY c.relname;
+
+\echo '================ 4. table ownership distribution ================'
+SELECT pg_get_userbyid(c.relowner) AS owner, c.relkind, count(*)
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema' AND c.relkind IN ('r','v','m')
+GROUP BY 1, 2 ORDER BY 1, 2;
+
+\echo '================ 5. views: security_invoker must stay UNSET ================'
+SELECT c.relname, pg_get_userbyid(c.relowner) AS owner, c.reloptions
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema' AND c.relkind = 'v'
+ORDER BY c.relname;
+
+\echo '================ 6. roles and attributes ================'
+SELECT rolname, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole, rolcanlogin, rolinherit
+FROM pg_roles
+WHERE rolname IN ('accounter_admin','accounter_prod_user','accounter_staging_user','prod_group')
+   OR rolsuper OR rolbypassrls
+ORDER BY rolname;
+
+\echo '---- role memberships (INHERIT TRUE is why FORCE RLS is load-bearing) ----'
+SELECT r.rolname AS member, g.rolname AS granted_role, m.admin_option, m.inherit_option
+FROM pg_auth_members m
+JOIN pg_roles r ON r.oid = m.member
+JOIN pg_roles g ON g.oid = m.roleid
+WHERE r.rolname IN ('accounter_admin','accounter_prod_user','accounter_staging_user','prod_group')
+ORDER BY r.rolname, g.rolname;
+
+\echo '================ 7. RLS helper functions: owner + SECURITY DEFINER ================'
+-- get_current_business_scope() is owned by a DIFFERENT role than its siblings, so it executes
+-- with different privileges. Azure grants the first ADMIN-option user privileges over other
+-- roles after a major upgrade, so this is the row to re-check afterwards.
+SELECT p.proname,
+       pg_get_userbyid(p.proowner) AS owner,
+       p.prosecdef AS security_definer,
+       p.provolatile,
+       p.proconfig
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'accounter_schema' AND p.proname LIKE 'get_current_%'
+ORDER BY p.proname;
+
+\echo '================ 8. tenant_isolation policies ================'
+SELECT count(*) AS policy_count, polcmd, polpermissive
+FROM pg_policy GROUP BY polcmd, polpermissive ORDER BY polcmd, polpermissive;
+
+\echo '---- representative policy definitions ----'
+SELECT tablename, policyname, permissive, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'accounter_schema'
+  AND tablename IN ('charges','transactions','documents','tags','financial_entities')
+ORDER BY tablename, policyname;
+
+\echo '================ 9. trigram indexes and validity ================'
+-- All must be reindexed CONCURRENTLY after the upgrade if datlocprovider is not 'c'.
+SELECT n.nspname AS schema, c.relname AS index_name, t.relname AS table_name,
+       i.indisvalid, i.indisready, pg_size_pretty(pg_relation_size(c.oid)) AS size
+FROM pg_index i
+JOIN pg_class c ON c.oid = i.indexrelid
+JOIN pg_class t ON t.oid = i.indrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema'
+  AND EXISTS (SELECT 1 FROM unnest(i.indclass::oid[]) AS ic(oid)
+              JOIN pg_opclass oc ON oc.oid = ic.oid
+              WHERE oc.opcname = ANY (ARRAY['gin_trgm_ops','gist_trgm_ops']))
+ORDER BY c.relname;
+
+\echo '---- any INVALID index anywhere in the schema (planner silently ignores these) ----'
+SELECT c.relname, i.indisvalid, i.indisready
+FROM pg_index i
+JOIN pg_class c ON c.oid = i.indexrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema' AND NOT (i.indisvalid AND i.indisready)
+ORDER BY c.relname;
+
+\echo '================ 10. expression indexes (own statistics, need ANALYZE) ================'
+SELECT c.relname AS index_name, t.relname AS table_name,
+       pg_get_indexdef(i.indexrelid) AS definition
+FROM pg_index i
+JOIN pg_class c ON c.oid = i.indexrelid
+JOIN pg_class t ON t.oid = i.indrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'accounter_schema'
+  AND 0 = ANY (i.indkey::int[])          -- 0 in indkey marks an expression column
+ORDER BY t.relname, c.relname;
+
+\echo '================ 11. row counts for the main tenant tables ================'
+SELECT 'charges' AS t, count(*) FROM accounter_schema.charges
+UNION ALL SELECT 'transactions', count(*) FROM accounter_schema.transactions
+UNION ALL SELECT 'documents', count(*) FROM accounter_schema.documents
+UNION ALL SELECT 'ledger_records', count(*) FROM accounter_schema.ledger_records
+ORDER BY 1;
+
+\echo '================ 12. database size ================'
+SELECT pg_size_pretty(pg_database_size(current_database())) AS db_size;
+
+\echo '================ end of snapshot ================'
+SELECT now() AS captured_at_utc;
