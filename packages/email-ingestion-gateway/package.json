@@ -16,7 +16,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "26.8.1"
+    "node": "26.8.2"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@types/inline-css": "3.0.4",
-    "@types/node": "25.9.5",
+    "@types/node": "25.9.6",
     "tsx": "4.23.13",
     "typescript": "6.0.3",
     "wrangler": "4.130.0"
