@@ -129,6 +129,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     id: parent => parent.id,
     name: parent => parent.name,
     isActive: parent => parent.is_active ?? true,
+    taxExcluded: parent => !!parent.tax_excluded,
   },
   CommonCharge: commonTaxChargeFields,
   FinancialCharge: commonTaxChargeFields,

@@ -14,8 +14,10 @@ import { EditTaxCategory } from '../common/modals/edit-tax-category.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { IrsCode } from './cells/irs-code.js';
 import { Name } from './cells/name.js';
 import { SortCode } from './cells/sort-code.js';
+import { TaxExcluded } from './cells/tax-excluded.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,6 +30,8 @@ import { SortCode } from './cells/sort-code.js';
         key
         name
       }
+      irsCode
+      taxExcluded
     }
   }
 `;
@@ -62,6 +66,38 @@ const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Sort Code
+          <ArrowUpDown />
+        </Button>
+      );
+    },
+  },
+  {
+    id: 'irsCode',
+    accessorKey: 'irsCode',
+    cell: ({ row }) => <IrsCode data={row.original} />,
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          IRS Code
+          <ArrowUpDown />
+        </Button>
+      );
+    },
+  },
+  {
+    id: 'taxExcluded',
+    accessorKey: 'taxExcluded',
+    cell: ({ row }) => <TaxExcluded data={row.original} />,
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Tax Excluded
           <ArrowUpDown />
         </Button>
       );
