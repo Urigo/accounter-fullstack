@@ -10,7 +10,12 @@ import { getContractsTool } from '../contracts.js';
 import { getDocumentsTool } from '../document-details.js';
 import { executeRegisteredTool } from '../execute.js';
 import { getLedgerRecordsTool } from '../ledger.js';
-import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
+import {
+  listBusinessesTool,
+  listSortCodesTool,
+  listTagsTool,
+  listTaxCategoriesTool,
+} from '../lookups.js';
 import type { ToolExecutionContext, ToolResult } from '../registry.js';
 import { balanceReportTool } from '../reports.js';
 import { getSecurityExecutionsTool, listSecurityHoldingsTool } from '../securities.js';
@@ -63,6 +68,7 @@ const BUSINESS_SCOPED_TOOLS = [
   getSecurityExecutionsTool,
   listTagsTool,
   listTaxCategoriesTool,
+  listSortCodesTool,
   listBusinessesTool,
   balanceReportTool,
 ];
@@ -80,6 +86,7 @@ const MULTI_BUSINESS_TOOLS = [
   getSecurityExecutionsTool,
   listTagsTool,
   listTaxCategoriesTool,
+  listSortCodesTool,
 ];
 
 describe('uniform business-scope input', () => {
@@ -186,6 +193,11 @@ describe('echoed effective scope', () => {
         ],
       },
       'taxCategories',
+    ],
+    [
+      listSortCodesTool,
+      { allSortCodes: [{ id: 'b1|910', key: 910, name: 'Revenue', ownerId: 'b1', defaultIrsCode: 100 }] },
+      'sortCodes',
     ],
     [
       listBusinessesTool,
