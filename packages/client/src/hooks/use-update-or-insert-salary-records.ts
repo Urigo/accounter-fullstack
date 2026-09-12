@@ -1,11 +1,9 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateOrInsertSalaryRecordsDocument,
   type UpdateOrInsertSalaryRecordsMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -40,41 +38,20 @@ export const useUpdateOrInsertSalaryRecords = (): UseUpdateOrInsertSalaryRecords
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateOrInsertSalaryRecordsDocument);
+  const { fetching, execute } = useApiMutation({
+    document: UpdateOrInsertSalaryRecordsDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Updating Salary Records',
+    errorMessage: 'Error updating salary records',
+    commonErrorPath: 'insertOrUpdateSalaryRecords',
+    select: data => data.insertOrUpdateSalaryRecords.salaryRecords,
+    successToast: { description: 'Salary records were updated' },
+  });
+
   const updateOrInsertSalaryRecords = useCallback(
-    async (variables: UpdateOrInsertSalaryRecordsMutationVariables) => {
-      const message = 'Error updating salary records';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Updating Salary Records', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(
-          res,
-          message,
-          notificationId,
-          'insertOrUpdateSalaryRecords',
-        );
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Salary records were updated',
-          });
-          return data.insertOrUpdateSalaryRecords.salaryRecords;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return [];
-    },
-    [mutate],
+    async (variables: UpdateOrInsertSalaryRecordsMutationVariables) =>
+      (await execute(variables)) ?? [],
+    [execute],
   );
 
   return {

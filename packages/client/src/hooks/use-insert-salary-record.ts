@@ -1,12 +1,11 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   InsertSalaryRecordDocument,
   type InsertSalaryRecordMutation,
   type InsertSalaryRecordMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -42,72 +41,61 @@ type UseInsertSalaryRecord = {
 
 const NOTIFICATION_ID = 'insertSalaryRecords';
 
+/** The single record being inserted, or `undefined` when the input can't produce one. */
+const firstSalaryRecord = (variables: InsertSalaryRecordMutationVariables) =>
+  Array.isArray(variables.salaryRecords) ? variables.salaryRecords[0] : variables.salaryRecords;
+
 export const useInsertSalaryRecord = (): UseInsertSalaryRecord => {
   // TODO: add authentication
   // TODO: add local data insert method after change
 
-  const [{ fetching }, mutate] = useMutation(InsertSalaryRecordDocument);
+  const { fetching, execute } = useApiMutation({
+    document: InsertSalaryRecordDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Adding salary record',
+    errorMessage: variables => {
+      const salaryRecord = firstSalaryRecord(variables);
+      return `Error adding salary record [${salaryRecord?.month}] employee [${salaryRecord?.employeeId}]`;
+    },
+    commonErrorPath: 'insertSalaryRecords',
+    select: data => data.insertSalaryRecords.salaryRecords[0],
+    successToast: { description: 'Salary record was added' },
+  });
+
   const insertSalaryRecord = useCallback(
     async (variables: InsertSalaryRecordMutationVariables) => {
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Adding salary record', {
-        id: notificationId,
-      });
+      // Guard before the mutation: the server would reject these anyway, and reporting them here
+      // keeps the message specific about which field is missing.
+      const rejectWith = (description: string) => {
+        toast.error('Error', {
+          id: NOTIFICATION_ID,
+          description,
+          duration: 100_000,
+          closeButton: true,
+        });
+        return void 0;
+      };
 
       if (
         !variables.salaryRecords ||
         (Array.isArray(variables.salaryRecords) && variables.salaryRecords.length === 0)
       ) {
-        toast.error('Error', {
-          id: notificationId,
-          description: 'No salary records to insert',
-          duration: 100_000,
-          closeButton: true,
-        });
-        return void 0;
+        return rejectWith('No salary records to insert');
       }
-      const salaryRecord = Array.isArray(variables.salaryRecords)
-        ? variables.salaryRecords[0]
-        : variables.salaryRecords;
+
+      const salaryRecord = firstSalaryRecord(variables);
       if (
         !salaryRecord?.directPaymentAmount ||
         !salaryRecord?.employeeId ||
         !salaryRecord?.employer ||
         !salaryRecord?.month
       ) {
-        toast.error('Error', {
-          id: notificationId,
-          description: 'Missing required salary record fields',
-          duration: 100_000,
-          closeButton: true,
-        });
-        return void 0;
+        return rejectWith('Missing required salary record fields');
       }
 
-      const message = `Error adding salary record [${salaryRecord.month}] employee [${salaryRecord.employeeId}]`;
-
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'insertSalaryRecords');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Salary record was added',
-          });
-          return data.insertSalaryRecords.salaryRecords[0];
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
+      return execute(variables);
     },
-    [mutate],
+    [execute],
   );
 
   return {

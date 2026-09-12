@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UploadDocumentDocument,
   type UploadDocumentMutation,
   type UploadDocumentMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -46,42 +43,21 @@ export const useUploadDocument = (): UseUploadDocument => {
   // TODO: add authentication
   // TODO: add local data update method after upload
 
-  const [{ fetching }, mutate] = useMutation(UploadDocumentDocument);
-  const uploadDocument = useCallback(
-    async (variables: UploadDocumentMutationVariables) => {
-      const message = variables.chargeId
+  const { fetching, execute } = useApiMutation({
+    document: UploadDocumentDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Uploading Document',
+    errorMessage: variables =>
+      variables.chargeId
         ? `Error uploading document to charge ID [${variables.chargeId}]`
-        : 'Error uploading document';
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Uploading Document', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'uploadDocument');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Document was added',
-          });
-          return data.uploadDocument;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+        : 'Error uploading document',
+    commonErrorPath: 'uploadDocument',
+    select: data => data.uploadDocument,
+    successToast: { description: 'Document was added' },
+  });
 
   return {
     fetching,
-    uploadDocument,
+    uploadDocument: execute,
   };
 };

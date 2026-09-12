@@ -1,11 +1,8 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   CreditShareholdersBusinessTripTravelAndSubsistenceDocument,
   type CreditShareholdersBusinessTripTravelAndSubsistenceMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -16,9 +13,10 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 type UseCreditShareholdersBusinessTripTravelAndSubsistence = {
   fetching: boolean;
+  /** Resolves to the number of charges generated, or to nothing on failure. */
   creditShareholders: (
     variables: CreditShareholdersBusinessTripTravelAndSubsistenceMutationVariables,
-  ) => Promise<void>;
+  ) => Promise<number | void>;
 };
 
 const NOTIFICATION_ID = 'creditShareholdersBusinessTripTravelAndSubsistence';
@@ -28,41 +26,21 @@ export const useCreditShareholdersBusinessTripTnS =
     // TODO: add authentication
     // TODO: add local data update method after change
 
-    const [{ fetching }, mutate] = useMutation(
-      CreditShareholdersBusinessTripTravelAndSubsistenceDocument,
-    );
-    const creditShareholders = useCallback(
-      async (variables: CreditShareholdersBusinessTripTravelAndSubsistenceMutationVariables) => {
-        const message = `Error crediting shareholders for trip ID ${variables.businessTripId}`;
-        const notificationId = `${NOTIFICATION_ID}-${variables.businessTripId}`;
-        toast.loading('Crediting Shareholders', {
-          id: notificationId,
-        });
-        try {
-          const res = await mutate(variables);
-          const data = handleCommonErrors(res, message, notificationId);
-          if (data) {
-            toast.success('Shareholders Credited', {
-              id: notificationId,
-              description: `${data.creditShareholdersBusinessTripTravelAndSubsistence.length} Corresponding charges were successfully generated`,
-            });
-          }
-        } catch (e) {
-          console.error(`${message}: ${e}`);
-          toast.error('Error', {
-            id: notificationId,
-            description: message,
-            duration: 100_000,
-            closeButton: true,
-          });
-        }
-        return void 0;
-      },
-      [mutate],
-    );
+    const { fetching, execute } = useApiMutation({
+      document: CreditShareholdersBusinessTripTravelAndSubsistenceDocument,
+      notificationId: variables => `${NOTIFICATION_ID}-${variables.businessTripId}`,
+      loadingMessage: 'Crediting Shareholders',
+      errorMessage: variables =>
+        `Error crediting shareholders for trip ID ${variables.businessTripId}`,
+      select: data => data.creditShareholdersBusinessTripTravelAndSubsistence.length,
+      successToast: chargesCount => ({
+        title: 'Shareholders Credited',
+        description: `${chargesCount} Corresponding charges were successfully generated`,
+      }),
+    });
 
     return {
       fetching,
-      creditShareholders,
+      creditShareholders: execute,
     };
   };

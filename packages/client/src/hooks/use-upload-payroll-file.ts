@@ -1,11 +1,9 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UploadPayrollFileDocument,
   type UploadPayrollFileMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -25,41 +23,19 @@ export const useUploadPayrollFile = (): UseUploadPayrollFile => {
   // TODO: add authentication
   // TODO: add local data update method after upload
 
-  const [{ fetching }, mutate] = useMutation(UploadPayrollFileDocument);
+  const { fetching, execute } = useApiMutation({
+    document: UploadPayrollFileDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Uploading payroll file',
+    errorMessage: variables => `Error uploading payroll file to charge ID [${variables.chargeId}]`,
+    commonErrorPath: 'insertSalaryRecordsFromFile',
+    select: data => data.insertSalaryRecordsFromFile,
+    successToast: { description: 'Payroll file added' },
+  });
+
   const uploadPayrollFile = useCallback(
-    async (variables: UploadPayrollFileMutationVariables) => {
-      const message = `Error uploading payroll file to charge ID [${variables.chargeId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Uploading payroll file', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(
-          res,
-          message,
-          notificationId,
-          'insertSalaryRecordsFromFile',
-        );
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Payroll file added',
-          });
-          return data.insertSalaryRecordsFromFile;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return false;
-    },
-    [mutate],
+    async (variables: UploadPayrollFileMutationVariables) => (await execute(variables)) ?? false,
+    [execute],
   );
 
   return {

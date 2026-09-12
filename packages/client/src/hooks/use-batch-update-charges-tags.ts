@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   BatchUpdateChargesTagsDocument,
   type BatchUpdateChargesTagsMutation,
   type BatchUpdateChargesTagsMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -42,48 +39,28 @@ type UseBatchUpdateChargesTags = {
   fetching: boolean;
   batchUpdateChargesTags: (
     variables: BatchUpdateChargesTagsMutationVariables,
-  ) => Promise<Charges | undefined>;
+  ) => Promise<Charges | void>;
 };
 
 const NOTIFICATION_ID = 'batchUpdateChargesTags';
 
 export const useBatchUpdateChargesTags = (): UseBatchUpdateChargesTags => {
-  const [{ fetching }, mutate] = useMutation(BatchUpdateChargesTagsDocument);
-  const batchUpdateChargesTags = useCallback(
-    async (variables: BatchUpdateChargesTagsMutationVariables) => {
+  const { fetching, execute } = useApiMutation({
+    document: BatchUpdateChargesTagsDocument,
+    // Short, stable toast id — a batch action, so don't build it from every selected UUID.
+    notificationId: `${NOTIFICATION_ID}-batch`,
+    loadingMessage: 'Updating tags',
+    errorMessage: 'Error updating charges tags',
+    commonErrorPath: 'batchUpdateChargesTags',
+    select: data => data.batchUpdateChargesTags.charges,
+    successToast: (_result, variables) => {
       const count = variables.chargeIds.length;
-      const message = 'Error updating charges tags';
-      // Short, stable toast id — a batch action, so don't build it from every selected UUID.
-      const notificationId = `${NOTIFICATION_ID}-batch`;
-      toast.loading('Updating tags', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'batchUpdateChargesTags');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: `Tags updated for ${count} charge${count > 1 ? 's' : ''}`,
-          });
-          return data.batchUpdateChargesTags.charges;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
+      return { description: `Tags updated for ${count} charge${count > 1 ? 's' : ''}` };
     },
-    [mutate],
-  );
+  });
 
   return {
     fetching,
-    batchUpdateChargesTags,
+    batchUpdateChargesTags: execute,
   };
 };

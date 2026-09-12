@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateDynamicReportTemplateDocument,
   type UpdateDynamicReportTemplateMutation,
   type UpdateDynamicReportTemplateMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,40 +31,17 @@ export const useUpdateDynamicReportTemplate = (): UseUpdateDynamicReportTemplate
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateDynamicReportTemplateDocument);
-  const updateDynamicReportTemplate = useCallback(
-    async (variables: UpdateDynamicReportTemplateMutationVariables) => {
-      const message = `Error updating report template "${variables.name}"`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.name}`;
-      toast.loading('Updating report template', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: `Report template "${data.updateDynamicReportTemplate.name}" updated`,
-          });
-          return data.updateDynamicReportTemplate;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: UpdateDynamicReportTemplateDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.name}`,
+    loadingMessage: 'Updating report template',
+    errorMessage: variables => `Error updating report template "${variables.name}"`,
+    select: data => data.updateDynamicReportTemplate,
+    successToast: template => ({ description: `Report template "${template.name}" updated` }),
+  });
 
   return {
     fetching,
-    updateDynamicReportTemplate,
+    updateDynamicReportTemplate: execute,
   };
 };

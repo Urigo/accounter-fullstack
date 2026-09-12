@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
-  AccountantStatus,
   UpdateChargeAccountantApprovalDocument,
+  type AccountantStatus,
   type UpdateChargeAccountantApprovalMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,45 +25,19 @@ export const useUpdateChargeAccountantApproval = (): UseUpdateChargeAccountantAp
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateChargeAccountantApprovalDocument);
-  const updateChargeAccountantApproval = useCallback(
-    async (variables: UpdateChargeAccountantApprovalMutationVariables) => {
-      const message = `Error toggling accountant approval to ledger record ID [${variables.chargeId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Updating approval status', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(
-          res,
-          message,
-          notificationId,
-          'updateChargeAccountantApproval',
-        );
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Accountant approval was updated',
-          });
-          return data.updateChargeAccountantApproval;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: UpdateChargeAccountantApprovalDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Updating approval status',
+    errorMessage: variables =>
+      `Error toggling accountant approval to ledger record ID [${variables.chargeId}]`,
+    commonErrorPath: 'updateChargeAccountantApproval',
+    select: data => data.updateChargeAccountantApproval,
+    successToast: { description: 'Accountant approval was updated' },
+  });
 
   return {
     fetching,
-    updateChargeAccountantApproval,
+    updateChargeAccountantApproval: execute,
   };
 };

@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   AddBusinessTripFlightsExpenseDocument,
   type AddBusinessTripFlightsExpenseMutation,
   type AddBusinessTripFlightsExpenseMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,40 +25,17 @@ export const useAddBusinessTripFlightsExpense = (): UseAddBusinessTripFlightsExp
   // TODO: add authentication
   // TODO: add local data update method after update
 
-  const [{ fetching }, mutate] = useMutation(AddBusinessTripFlightsExpenseDocument);
-  const addBusinessTripFlightsExpense = useCallback(
-    async (variables: AddBusinessTripFlightsExpenseMutationVariables) => {
-      const message = 'Error adding business trip flight expense';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Adding business trip flight expense', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Business trip flight expense added',
-          });
-          return data.addBusinessTripFlightsExpense;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: AddBusinessTripFlightsExpenseDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Adding business trip flight expense',
+    errorMessage: 'Error adding business trip flight expense',
+    select: data => data.addBusinessTripFlightsExpense,
+    successToast: { description: 'Business trip flight expense added' },
+  });
 
   return {
     fetching,
-    addBusinessTripFlightsExpense,
+    addBusinessTripFlightsExpense: execute,
   };
 };

@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateBusinessTripFlightsExpenseDocument,
   type UpdateBusinessTripFlightsExpenseMutation,
   type UpdateBusinessTripFlightsExpenseMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,40 +25,17 @@ export const useUpdateBusinessTripFlightsExpense = (): UseUpdateBusinessTripFlig
   // TODO: add authentication
   // TODO: add local data update method after update
 
-  const [{ fetching }, mutate] = useMutation(UpdateBusinessTripFlightsExpenseDocument);
-  const updateBusinessTripFlightsExpense = useCallback(
-    async (variables: UpdateBusinessTripFlightsExpenseMutationVariables) => {
-      const message = 'Error updating business trip flights expense';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Updating trip flights expense', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Business trip flights expense was updated',
-          });
-          return data.updateBusinessTripFlightsExpense;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: UpdateBusinessTripFlightsExpenseDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Updating trip flights expense',
+    errorMessage: 'Error updating business trip flights expense',
+    select: data => data.updateBusinessTripFlightsExpense,
+    successToast: { description: 'Business trip flights expense was updated' },
+  });
 
   return {
     fetching,
-    updateBusinessTripFlightsExpense,
+    updateBusinessTripFlightsExpense: execute,
   };
 };
