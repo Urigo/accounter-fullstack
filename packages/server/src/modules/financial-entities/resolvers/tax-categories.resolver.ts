@@ -152,12 +152,24 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       const businesses = await injector
         .get(BusinessesProvider)
         .getBusinessByIdLoader.loadMany(businessIds);
-      // A match row can outlive its business row; drop the misses rather than
-      // failing the whole tax category over one dangling reference.
-      return businesses.filter(
-        (business): business is IGetBusinessesByIdsResult =>
-          !!business && !(business instanceof Error),
-      );
+
+      const rows: IGetBusinessesByIdsResult[] = [];
+      for (const business of businesses) {
+        // `loadMany` reports a rejected batch as a per-key Error instead of
+        // throwing, so swallowing these would make a failed query read as "this
+        // category has no businesses".
+        if (business instanceof Error) {
+          const message = `Failed to load businesses of tax category ID="${parent.id}"`;
+          console.error(`${message}: ${business.message}`);
+          throw new GraphQLError(message);
+        }
+        // A match row can outlive its business row; skip those misses rather
+        // than failing the category over one dangling reference.
+        if (business) {
+          rows.push(business);
+        }
+      }
+      return rows;
     },
   },
   CommonCharge: commonTaxChargeFields,

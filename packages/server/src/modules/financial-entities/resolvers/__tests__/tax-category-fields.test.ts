@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import type { Injector } from 'graphql-modules';
+import { describe, expect, it, vi } from 'vitest';
+import { BusinessesProvider } from '../../providers/businesses.provider.js';
+import { TaxCategoriesProvider } from '../../providers/tax-categories.provider.js';
 import { taxCategoriesResolvers } from '../tax-categories.resolver.js';
 
 /**
@@ -33,7 +36,7 @@ const ROW = {
  * whichever form it is rather than casting the union away, which would let a
  * resolver silently change shape without this test noticing.
  */
-function resolveField(field: string, parent: unknown): unknown {
+function resolveField(field: string, parent: unknown, context: unknown = {}): unknown {
   const resolvers = taxCategoriesResolvers.TaxCategory as Record<string, unknown>;
   const resolver = resolvers[field];
   if (!resolver) {
@@ -43,7 +46,7 @@ function resolveField(field: string, parent: unknown): unknown {
   return (resolve as (parent: unknown, args: unknown, context: unknown, info: unknown) => unknown)(
     parent,
     {},
-    {},
+    context,
     {},
   );
 }
@@ -72,5 +75,62 @@ describe('TaxCategory field mappings', () => {
 
   it('serves a null irsCode rather than undefined', () => {
     expect(resolveField('irsCode', { ...ROW, irs_code: null })).toBeNull();
+  });
+});
+
+/**
+ * `TaxCategory.businesses` — the businesses this category is the default for.
+ *
+ * The two loaders it spans fail in different shapes: the match loader rejects,
+ * but `loadMany` turns a rejected business batch into per-key `Error` values
+ * rather than throwing. Filtering those out alongside the genuine misses would
+ * dress a database outage up as "no businesses use this default".
+ */
+
+const BUSINESS = { id: 'aa000000-0000-4000-8000-000000000001', name: 'Some Business' };
+
+function contextWith(businessIds: string[], loadManyResult: unknown[]) {
+  const load = vi.fn().mockResolvedValue(businessIds);
+  const loadMany = vi.fn().mockResolvedValue(loadManyResult);
+  const injector = {
+    get: (token: unknown) => {
+      if (token === TaxCategoriesProvider) {
+        return { businessIdsByTaxCategoryIdLoader: { load } };
+      }
+      if (token === BusinessesProvider) {
+        return { getBusinessByIdLoader: { loadMany } };
+      }
+      throw new Error('unexpected provider requested');
+    },
+  } as unknown as Injector;
+  return { context: { injector }, load, loadMany };
+}
+
+describe('TaxCategory.businesses', () => {
+  it('returns the matched business rows', async () => {
+    const { context } = contextWith([BUSINESS.id], [BUSINESS]);
+
+    await expect(resolveField('businesses', ROW, context)).resolves.toStrictEqual([BUSINESS]);
+  });
+
+  it('skips a match row whose business row is gone', async () => {
+    const { context } = contextWith([BUSINESS.id, 'missing'], [BUSINESS, undefined]);
+
+    await expect(resolveField('businesses', ROW, context)).resolves.toStrictEqual([BUSINESS]);
+  });
+
+  it('throws when the business batch failed instead of reporting an empty list', async () => {
+    const { context } = contextWith([BUSINESS.id], [new Error('connection terminated')]);
+
+    await expect(resolveField('businesses', ROW, context)).rejects.toThrow(
+      /Failed to load businesses of tax category/,
+    );
+  });
+
+  it('does not query businesses when nothing matches', async () => {
+    const { context, loadMany } = contextWith([], []);
+
+    await expect(resolveField('businesses', ROW, context)).resolves.toStrictEqual([]);
+    expect(loadMany).not.toHaveBeenCalled();
   });
 });
