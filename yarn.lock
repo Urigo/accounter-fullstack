@@ -123,7 +123,7 @@ __metadata:
     react-router-dom: "npm:7.18.3"
     react-to-pdf: "npm:3.2.2"
     recharts: "npm:3.10.1"
-    simple-icons: "npm:16.30.0"
+    simple-icons: "npm:16.31.0"
     sonner: "npm:2.0.8"
     storybook: "npm:10.6.0"
     tailwind-merge: "npm:3.7.0"
@@ -24576,10 +24576,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"simple-icons@npm:16.30.0":
-  version: 16.30.0
-  resolution: "simple-icons@npm:16.30.0"
-  checksum: 10c0/efb4d8d8c48dc947ec2b2acada82d2d57d2ef51a71f386a27afc1fab82cd3a76188c5169ae7e8382f012ae680002719518ecfe27e02c590e9f171c76fbb78b50
+"simple-icons@npm:16.31.0":
+  version: 16.31.0
+  resolution: "simple-icons@npm:16.31.0"
+  checksum: 10c0/e0d7d2a6bf0534cf4003c1920a4954d385dd7206e8bdf97ff9df076cf7f863e108a9c0e3c409822fc5be3a608d2a4446ec4229f0e583c469b2060065256659c7
   languageName: node
   linkType: hard
 
