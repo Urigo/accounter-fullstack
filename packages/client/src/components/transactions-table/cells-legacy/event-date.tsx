@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { TransactionsTableEventDateFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -20,10 +21,10 @@ export const EventDate = ({ data }: Props): ReactElement => {
   const eventDate = 'eventDate' in transaction ? transaction.eventDate : undefined;
 
   return (
-    <td>
+    <TableCell>
       <div className="flex flex-col justify-center">
         {eventDate && format(new Date(eventDate), 'dd/MM/yy')}
       </div>
-    </td>
+    </TableCell>
   );
 };

@@ -14,6 +14,7 @@ import {
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
+import { TableCell, TableHead } from '../../../ui/table.js';
 import { ComboBox, CurrencyInput, DatePickerInput } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -94,7 +95,7 @@ export const CoreExpenseRow = ({
 
   return (
     <>
-      <td>
+      <TableCell>
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode && businessTripExpense.payedByEmployee ? (
             <>
@@ -167,8 +168,8 @@ export const CoreExpenseRow = ({
             </>
           )}
         </div>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         {isEditMode && businessTripExpense.payedByEmployee ? (
           <FormField
             name="amount"
@@ -202,8 +203,8 @@ export const CoreExpenseRow = ({
         ) : (
           <div>{businessTripExpense.amount?.formatted}</div>
         )}
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode && businessTripExpense.payedByEmployee ? (
             <FormField
@@ -233,8 +234,8 @@ export const CoreExpenseRow = ({
             </div>
           )}
         </div>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <div className="flex flex-col gap-2">
           {linkedChargeIds.map(id => (
             <Link
@@ -249,7 +250,7 @@ export const CoreExpenseRow = ({
             </Link>
           ))}
         </div>
-      </td>
+      </TableCell>
     </>
   );
 };
@@ -257,10 +258,10 @@ export const CoreExpenseRow = ({
 export const CoreExpenseHeader = (): ReactElement => {
   return (
     <>
-      <th>Date</th>
-      <th>Amount</th>
-      <th>Payed By Attendee</th>
-      <th>Charges</th>
+      <TableHead>Date</TableHead>
+      <TableHead>Amount</TableHead>
+      <TableHead>Payed By Attendee</TableHead>
+      <TableHead>Charges</TableHead>
     </>
   );
 };

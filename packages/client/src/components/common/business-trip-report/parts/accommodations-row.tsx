@@ -11,6 +11,7 @@ import { useUpdateBusinessTripAccommodationsExpense } from '../../../../hooks/us
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
+import { TableCell, TableRow } from '../../../ui/table.js';
 import { NumberInput, Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
@@ -75,7 +76,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
   };
 
   return (
-    <tr key={accommodationExpense.id}>
+    <TableRow key={accommodationExpense.id}>
       <CoreExpenseRow
         data={accommodationExpense}
         isEditMode={isEditMode}
@@ -83,7 +84,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
         businessTripId={businessTripId}
       />
 
-      <td>
+      <TableCell>
         <Form {...formManager}>
           <form id={`form ${accommodationExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
             {isEditMode ? (
@@ -112,8 +113,8 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
             )}
           </form>
         </Form>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode ? (
             <Form {...formManager}>
@@ -144,8 +145,8 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
             </div>
           )}
         </div>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         {isEditMode ? (
           <Form {...formManager}>
             <AttendeesStayInput
@@ -167,8 +168,8 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
             )}
           </ul>
         )}
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         {onChange && (
           <>
             <Tooltip content="Edit">
@@ -211,7 +212,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
             />
           </>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 };

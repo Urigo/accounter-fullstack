@@ -11,6 +11,7 @@ import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
 import { Switch } from '../../../ui/switch.js';
+import { TableCell, TableRow } from '../../../ui/table.js';
 import { Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
@@ -56,7 +57,7 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
   };
 
   return (
-    <tr key={otherExpense.id}>
+    <TableRow key={otherExpense.id}>
       <CoreExpenseRow
         data={otherExpense}
         isEditMode={isEditMode}
@@ -64,7 +65,7 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
         businessTripId={businessTripId}
       />
 
-      <td>
+      <TableCell>
         <Form {...form}>
           <form id={`form ${otherExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
             {isEditMode ? (
@@ -92,8 +93,8 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
             )}
           </form>
         </Form>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode ? (
             <Form {...form}>
@@ -124,8 +125,8 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
             </div>
           )}
         </div>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <Tooltip content="Edit">
           <Button
             disabled={updatingInProcess}
@@ -161,7 +162,7 @@ export const OtherRow = ({ data, businessTripId, onChange }: Props): ReactElemen
         />
 
         <DeleteBusinessTripExpense businessTripExpenseId={otherExpense.id} onDelete={onChange} />
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 };
