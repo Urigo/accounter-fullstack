@@ -703,7 +703,7 @@ const ENTITY_ENTRIES: readonly GlossaryEntry[] = [
       'Attached to financial entities — both businesses and tax categories. Reports do not group by individual account but by sort-code range: revenue, cost of sales, research and development, marketing, management and general, financial expenses. If you want a profit-and-loss shaped answer, the sort code is the grouping key, not the entity name.',
     aliases: ['sortCode', 'SortCode', 'קוד מיון'],
     seeAlso: ['financial-entity', 'tax-category', 'irs-code'],
-    tools: ['accounter_list_tax_categories'],
+    tools: ['accounter_list_sort_codes', 'accounter_list_tax_categories'],
   },
   {
     term: 'irs-code',
@@ -714,7 +714,7 @@ const ENTITY_ENTRIES: readonly GlossaryEntry[] = [
       'A second, coarser classification alongside the sort code, used to aggregate entities into the line items of the statutory annual financial-statement filing. Sort codes supply a default IRS code, which individual entities can override.',
     aliases: ['irsCode'],
     seeAlso: ['sort-code', 'financial-entity', 'tax-category'],
-    tools: ['accounter_list_tax_categories'],
+    tools: ['accounter_list_sort_codes', 'accounter_list_tax_categories'],
   },
   {
     term: 'financial-account',

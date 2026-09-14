@@ -138,6 +138,17 @@ function upstreamData(query: string, authorization?: string): unknown {
       ],
     };
   }
+  if (query.includes('allSortCodes')) {
+    return {
+      allSortCodes: [
+        { id: `${AUTHORIZED_BUSINESS}|910`, key: 910, name: 'Revenue', ownerId: AUTHORIZED_BUSINESS, defaultIrsCode: 100 },
+        // An unnamed code, and one belonging to a business the caller is not a
+        // member of — the scope filter must drop the latter, not the former.
+        { id: `${AUTHORIZED_BUSINESS}|920`, key: 920, name: null, ownerId: AUTHORIZED_BUSINESS, defaultIrsCode: null },
+        { id: 'bb000000-0000-4000-8000-000000000002|900', key: 900, name: 'Someone else', ownerId: 'bb000000-0000-4000-8000-000000000002', defaultIrsCode: null },
+      ],
+    };
+  }
   if (query.includes('taxCategories')) {
     return {
       taxCategories: [
@@ -390,6 +401,7 @@ describe('authenticated tool invocation', () => {
         'accounter_search_charges',
         'accounter_list_tags',
         'accounter_list_tax_categories',
+        'accounter_list_sort_codes',
         'accounter_balance_report',
         'accounter_list_security_holdings',
         'accounter_get_security_executions',
@@ -429,6 +441,25 @@ describe('authenticated tool invocation', () => {
     // Green Invoice's id is flattened up out of its nested wrapper, and the five
     // unconfigured integrations are absent rather than null.
     expect(clients[0].integrations).toEqual({ greenInvoiceId: 'gi-1', hiveId: 'hive-1' });
+    expect(scope.memberBusinessIds).toEqual([AUTHORIZED_BUSINESS]);
+  });
+
+  it('lists sort codes in key order, scoped to the caller', async () => {
+    const result = await callTool('accounter_list_sort_codes', {}, 'owner-token');
+    expect(result.isError).toBeUndefined();
+    const { sortCodes, scope } = result.structuredContent as {
+      sortCodes: Array<{ key: number; name: string | null; ownerId: string; defaultIrsCode: number | null }>;
+      scope: { memberBusinessIds: string[] };
+    };
+
+    // The third fixture row belongs to another business: RLS would normally not
+    // have returned it at all, and the tool's own owner filter is what makes
+    // that a guarantee rather than an assumption.
+    expect(sortCodes.map(row => row.key)).toEqual([910, 920]);
+    expect(sortCodes[0].name).toBe('Revenue');
+    expect(sortCodes[0].defaultIrsCode).toBe(100);
+    expect(sortCodes[1].name).toBeNull();
+    expect(sortCodes.every(row => row.ownerId === AUTHORIZED_BUSINESS)).toBe(true);
     expect(scope.memberBusinessIds).toEqual([AUTHORIZED_BUSINESS]);
   });
 

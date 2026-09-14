@@ -30,6 +30,7 @@ const LIST_TOOLS: ReadonlyArray<readonly [tool: string, itemsKey: string]> = [
   ['accounter_get_security_executions', 'executions'],
   ['accounter_list_tags', 'tags'],
   ['accounter_list_tax_categories', 'taxCategories'],
+  ['accounter_list_sort_codes', 'sortCodes'],
   ['accounter_list_businesses', 'businesses'],
   ['accounter_balance_report', 'rows'],
 ];

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type {
   McpListBusinessesQuery,
+  McpListSortCodesQuery,
   McpListTagsQuery,
   McpListTaxCategoriesQuery,
 } from '../gql/index.js';
@@ -9,16 +10,19 @@ import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registr
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
- * Tool 2: read-only lookups for tags, tax categories, and businesses (spec §8.2).
+ * Tool 2: read-only lookups for tags, tax categories, sort codes, and businesses
+ * (spec §8.2).
  *
  * These are reference-data lookups. Input is minimal, output is deterministically
- * sorted (by name, then id) and size-capped. A caller must belong to at least
- * one business (scope-gated) to browse them.
+ * sorted (by name, then id — sort codes by their numeric key, see
+ * {@link byKeyThenOwner}) and size-capped. A caller must belong to at least one
+ * business (scope-gated) to browse them.
  */
 
 export const LIST_TAGS_TOOL_NAME = 'accounter_list_tags';
 export const LIST_TAX_CATEGORIES_TOOL_NAME = 'accounter_list_tax_categories';
 export const LIST_BUSINESSES_TOOL_NAME = 'accounter_list_businesses';
+export const LIST_SORT_CODES_TOOL_NAME = 'accounter_list_sort_codes';
 
 /** Hard cap on returned rows (spec §9.3). */
 export const MAX_LOOKUP_RESULTS = 1000;
@@ -187,6 +191,163 @@ export const listTaxCategoriesTool: ToolDefinition<typeof listTaxCategoriesInput
   inputSchema: listTaxCategoriesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
   handler: listTaxCategoriesHandler,
+};
+
+// ---------------------------------------------------------------------------
+// Sort codes
+// ---------------------------------------------------------------------------
+
+/**
+ * The chart-of-accounts grouping (kod miyun) every financial report buckets by.
+ *
+ * This is the missing half of the tax-category lookup. A tax category already
+ * carries its `sortCode` as `{ key, name }`, so a model could read the grouping
+ * off a row it happened to have — but nothing enumerated the groupings
+ * themselves, so "show me the profit and loss by sort code" had no way to learn
+ * which buckets exist, which are revenue and which are expense, or that a code
+ * seen on one row has a name at all. The glossary already tells the model the
+ * sort code is the grouping key for report-shaped questions; this is the tool
+ * that makes acting on that possible.
+ *
+ * `defaultIrsCode` comes along because it is the only place it is defined: a
+ * financial entity's own `irsCode` overrides it, and without the default the
+ * model cannot tell an entity that was deliberately overridden from one simply
+ * inheriting its group's code.
+ */
+
+/** Upper bound on `keys` entries, matching the other id-filter caps. */
+export const MAX_SORT_CODE_KEY_FILTERS = 50;
+
+const listSortCodesInput = z.object({
+  memberBusinessIds: memberBusinessIdsInput,
+  nameContains,
+  keys: z
+    .array(z.number().int())
+    .max(MAX_SORT_CODE_KEY_FILTERS)
+    .optional()
+    .describe(
+      'Only these sort codes, by numeric `key` — the value a tax category reports as ' +
+        '`sortCode.key`. Use it to resolve codes already seen on other rows; omit it to browse ' +
+        'every group.',
+    ),
+  limit,
+});
+type ListSortCodesInput = z.infer<typeof listSortCodesInput>;
+
+// Upstream also offers `allSortCodesByBusiness(ownerId:)`, deliberately not used
+// here: it takes exactly one owner, so honoring a multi-membership scope would
+// mean one aliased query per owner for a table that is tens of rows per business
+// — the same reasoning that keeps `allClients` unfiltered upstream. The owner
+// narrowing happens below instead, where it doubles as the defense-in-depth
+// filter the other scoped tools apply.
+const LIST_SORT_CODES_QUERY = /* GraphQL */ `
+  query McpListSortCodes {
+    allSortCodes {
+      id
+      key
+      name
+      ownerId
+      defaultIrsCode
+    }
+  }
+`;
+
+/** A sort code as this tool returns it. */
+interface NormalizedSortCode {
+  id: string;
+  /** The numeric chart-of-accounts code. Unique per owner, not globally. */
+  key: number;
+  /** Null for a code that was created with no name yet — a real state upstream. */
+  name: string | null;
+  ownerId: string;
+  /** IRS code inherited by entities in this group unless they override it. */
+  defaultIrsCode: number | null;
+}
+
+/**
+ * Stable order: by numeric `key` ascending, tie-broken by `ownerId`.
+ *
+ * Deliberately not the name-then-id order the other lookups use. A sort code IS
+ * its number — accountants read a chart of accounts in code order, ranges of
+ * codes are what reports group by, and the name is nullable, so sorting by it
+ * would scatter the ranges and bunch the unnamed rows together at one end.
+ * `(key, ownerId)` is also the upstream uniqueness constraint, so the tie-break
+ * makes the order total rather than merely stable-ish across owners.
+ */
+function byKeyThenOwner(a: NormalizedSortCode, b: NormalizedSortCode): number {
+  return a.key - b.key || (a.ownerId < b.ownerId ? -1 : a.ownerId > b.ownerId ? 1 : 0);
+}
+
+async function listSortCodesHandler(
+  input: ListSortCodesInput,
+  context: ToolExecutionContext,
+): Promise<ToolResult> {
+  const data = await context.client.query<McpListSortCodesQuery>(
+    { query: LIST_SORT_CODES_QUERY },
+    context.upstream,
+  );
+
+  // Defense-in-depth owner filter on top of RLS, matching `accounter_list_clients`:
+  // a second barrier that would catch an upstream scoping regression, which an
+  // upstream filter argument — running in the same server on the same connection
+  // — could not.
+  const scopeIds = new Set(context.readScope.memberBusinessIds);
+  const requestedKeys = input.keys?.length ? new Set(input.keys) : null;
+  const needle = input.nameContains?.toLowerCase();
+
+  const matched = (data.allSortCodes ?? [])
+    .filter(sortCode => scopeIds.has(sortCode.ownerId))
+    .filter(sortCode => requestedKeys === null || requestedKeys.has(sortCode.key))
+    // An unnamed sort code cannot match a name search — it is excluded rather
+    // than treated as an empty string, which would match every needle-free call
+    // only to vanish the moment one was given.
+    .filter(
+      sortCode => needle === undefined || (sortCode.name?.toLowerCase().includes(needle) ?? false),
+    )
+    .map((sortCode): NormalizedSortCode => ({
+      id: sortCode.id,
+      key: sortCode.key,
+      name: sortCode.name ?? null,
+      ownerId: sortCode.ownerId,
+      defaultIrsCode: sortCode.defaultIrsCode ?? null,
+    }))
+    .sort(byKeyThenOwner);
+
+  // `total` counts every match, so `truncated` and the continuation hint
+  // describe the cap rather than the page.
+  const total = matched.length;
+
+  return shapeListResult({
+    items: matched.slice(0, input.limit),
+    itemsKey: 'sortCodes',
+    total,
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
+    summarize: (shown, count, truncated) =>
+      count === 0
+        ? 'No sort codes matched the given filters.'
+        : `Found ${count} sort ${count === 1 ? 'code' : 'codes'}${
+            truncated ? `; showing ${shown}` : ''
+          }.`,
+  });
+}
+
+export const listSortCodesTool: ToolDefinition<typeof listSortCodesInput> = {
+  name: LIST_SORT_CODES_TOOL_NAME,
+  description:
+    'List the chart-of-accounts sort codes (kod miyun) — the numeric groupings every financial ' +
+    'report buckets by, such as revenue, cost of sales, research and development, or financial ' +
+    'expenses. Each row is `{ id, key, name, ownerId, defaultIrsCode }`, ordered by `key`, where ' +
+    '`key` is the number a tax category reports as `sortCode.key` and `defaultIrsCode` is the IRS ' +
+    'code entities in the group inherit unless they override it with their own. `name` is `null` ' +
+    'for a code created without one. This is the grouping key for profit-and-loss shaped questions ' +
+    '— group by sort code rather than by entity name — and pairs with ' +
+    '`accounter_list_tax_categories` to see which accounts fall in each group. Read-only. ' +
+    resultEnvelopeDescription('sortCodes') +
+    ' ' +
+    SCOPE_DESCRIPTION_SUFFIX,
+  inputSchema: listSortCodesInput,
+  policy: { requiresBusinessScope: true, dataClassification: 'business' },
+  handler: listSortCodesHandler,
 };
 
 // ---------------------------------------------------------------------------

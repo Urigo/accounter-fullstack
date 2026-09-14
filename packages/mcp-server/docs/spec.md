@@ -279,7 +279,7 @@ Recommended initial groups:
   their transactions and documents nested inline), `accounter_get_transactions`,
   `accounter_get_documents`. These narrow to the caller's businesses via RLS (`x-business-scope`),
   with an owner-scope filter as defense-in-depth where an owner is resolvable.
-- Tags and tax-category lookups
+- Tags, tax-category and sort-code lookups
 - Counterparty/business entity lookups
 - Selected report generation queries (read-only)
 - Ledger/query inspection (read-only)

@@ -6,7 +6,12 @@ import { getContractsTool } from './contracts.js';
 import { getDocumentsTool } from './document-details.js';
 import { uploadDocumentsTool } from './documents-write.js';
 import { getLedgerRecordsTool } from './ledger.js';
-import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from './lookups.js';
+import {
+  listBusinessesTool,
+  listSortCodesTool,
+  listTagsTool,
+  listTaxCategoriesTool,
+} from './lookups.js';
 import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports.js';
 import { getSecurityExecutionsTool, listSecurityHoldingsTool } from './securities.js';
@@ -55,6 +60,10 @@ toolRegistry.register(listSecurityHoldingsTool);
 toolRegistry.register(getSecurityExecutionsTool);
 toolRegistry.register(listTagsTool);
 toolRegistry.register(listTaxCategoriesTool);
+// Sort codes directly after tax categories: a sort code is the grouping a tax
+// category belongs to, and the tax-category rows carry `sortCode.key` — so the
+// tool that names those keys is listed where the model meets them.
+toolRegistry.register(listSortCodesTool);
 // The full business directory sits with the other reference-data lookups.
 toolRegistry.register(listBusinessesTool);
 toolRegistry.register(balanceReportTool);

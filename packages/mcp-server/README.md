@@ -18,18 +18,18 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of fifteen read-only tools
+Accounter GraphQL server; a curated registry of sixteen read-only tools
 (`accounter_list_business_memberships`, `accounter_explain_terminology`, `accounter_search_charges`,
 `accounter_get_charges`, `accounter_get_transactions`, `accounter_get_documents`,
 `accounter_get_ledger_records`, `accounter_list_clients`, `accounter_get_contracts`,
 `accounter_list_security_holdings`, `accounter_get_security_executions`, `accounter_list_tags`,
-`accounter_list_tax_categories`, `accounter_list_businesses`, `accounter_balance_report`) each gated
-by strict input validation, a per-tool authorization policy, and business-scope narrowing forwarded
-upstream as `x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
-propagation, sanitized errors); a unified error taxonomy; per-`tools/call` rate limiting; in-process
-operational metrics (request/outcome counters, a latency histogram, auth-failure counters) exposed
-at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
-backend via `traceparent` and `X-Correlation-Id`.
+`accounter_list_tax_categories`, `accounter_list_sort_codes`, `accounter_list_businesses`,
+`accounter_balance_report`) each gated by strict input validation, a per-tool authorization policy,
+and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
+client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
+per-`tools/call` rate limiting; in-process operational metrics (request/outcome counters, a latency
+histogram, auth-failure counters) exposed at `GET /metrics`; and OpenTelemetry tracing exported to
+Grafana Tempo (opt-in), correlated with the backend via `traceparent` and `X-Correlation-Id`.
 
 Phase 2 (write scope) has landed its first two tools — `accounter_update_charges_tags` and
 `accounter_upload_documents` — behind the `MCP_ENABLE_WRITE_TOOLS` flag, which is **off by
@@ -223,6 +223,18 @@ scope, because it _is_ the scope.
 - **`accounter_list_tax_categories`** — list tax categories (id, name, `ownerId`, IRS code,
   bookkeeping sort code, active flag), optionally filtered by name, active status, or
   `memberBusinessIds`. Same deterministic sort + cap.
+- **`accounter_list_sort_codes`** — list the chart-of-accounts sort codes (kod miyun): the numeric
+  groupings — revenue, cost of sales, research and development, marketing, financial expenses — that
+  every financial report buckets by. Rows are `{ id, key, name, ownerId, defaultIrsCode }`,
+  optionally filtered by `keys`, name, or `memberBusinessIds`. This is the other half of
+  `accounter_list_tax_categories`: a tax-category row already carries its `sortCode` as
+  `{ key, name }`, but nothing enumerated the groupings themselves, so a profit-and-loss shaped
+  question had no way to learn which buckets exist. `defaultIrsCode` lives only here — an entity's
+  own `irsCode` overrides it, so without the default there is no telling a deliberate override from
+  an inherited code. Ordered by numeric `key` (tie-broken by `ownerId`) rather than by name, which
+  is the order a chart of accounts is read in and is also nullable; upstream's per-owner
+  `allSortCodesByBusiness` is deliberately not used, so a multi-membership scope stays one query,
+  narrowed by the same defense-in-depth owner filter `accounter_list_clients` applies.
 - **`accounter_list_businesses`** — list the full business directory (id, name, `ownerId`, active
   flag, `isClient`, and the matched `taxCategory` as `{ id, name }`, or `null` when the business has
   none mapped) — every business visible to the caller, not just their memberships — optionally
