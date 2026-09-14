@@ -131,8 +131,15 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
   },
   TaxCategory: {
     __isTypeOf: parent => 'hashavshevet_name' in parent,
+    // The parent is a DB row, so every field whose GraphQL name differs from its
+    // column name needs an explicit mapping — `TaxCategory` cannot spread
+    // `commonFinancialEntityFields`, which is typed against the business row.
     id: parent => parent.id,
+    ownerId: parent => parent.owner_id,
     name: parent => parent.name,
+    irsCode: parent => parent.irs_code,
+    createdAt: parent => parent.created_at,
+    updatedAt: parent => parent.updated_at,
     isActive: parent => parent.is_active ?? true,
     taxExcluded: parent => !!parent.tax_excluded,
     businesses: async (parent, _, { injector }) => {
