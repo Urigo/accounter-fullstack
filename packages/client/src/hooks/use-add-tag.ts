@@ -1,8 +1,5 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { AddTagDocument, type AddTagMutationVariables } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -22,39 +19,19 @@ export const useAddTag = (): UseAddTag => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(AddTagDocument);
-  const addTag = useCallback(
-    async (variables: AddTagMutationVariables) => {
-      const message = `Error adding new tag [${variables.tagName}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.tagName}`;
-      toast.loading('Adding tag', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: `"${variables.tagName}" tag was successfully added`,
-          });
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: AddTagDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.tagName}`,
+    loadingMessage: 'Adding tag',
+    errorMessage: variables => `Error adding new tag [${variables.tagName}]`,
+    select: () => void 0,
+    successToast: (_result, variables) => ({
+      description: `"${variables.tagName}" tag was successfully added`,
+    }),
+  });
 
   return {
     fetching,
-    addTag,
+    addTag: execute,
   };
 };

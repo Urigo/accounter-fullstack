@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateDocumentDocument,
   type UpdateDocumentMutation,
   type UpdateDocumentMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -44,40 +41,18 @@ export const useUpdateDocument = (): UseUpdateDocument => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateDocumentDocument);
-  const updateDocument = useCallback(
-    async (variables: UpdateDocumentMutationVariables) => {
-      const message = `Error updating document ID [${variables.documentId}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.documentId}`;
-      toast.loading('Updating document', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'updateDocument');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Document updated',
-          });
-          return data.updateDocument;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: UpdateDocumentDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.documentId}`,
+    loadingMessage: 'Updating document',
+    errorMessage: variables => `Error updating document ID [${variables.documentId}]`,
+    commonErrorPath: 'updateDocument',
+    select: data => data.updateDocument,
+    successToast: { description: 'Document updated' },
+  });
 
   return {
     fetching,
-    updateDocument,
+    updateDocument: execute,
   };
 };
