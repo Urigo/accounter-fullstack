@@ -28,7 +28,7 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "3.1.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "2.2.0",
-    "@auth0/auth0-react": "2.24.1",
+    "@auth0/auth0-react": "2.25.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@hookform/resolvers": "5.9.1",
