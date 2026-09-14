@@ -17,6 +17,21 @@ vi.mock('urql', () => ({
   useQuery: useQueryMock,
 }));
 
+/** Records the options the screen builds its table with, real hook still running. */
+let capturedTableOptions: { autoResetPageIndex?: boolean } | null = null;
+vi.mock('@tanstack/react-table', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-table')>(
+    '@tanstack/react-table',
+  );
+  return {
+    ...actual,
+    useTable: (options: Parameters<typeof actual.useTable>[0]) => {
+      capturedTableOptions = options;
+      return actual.useTable(options);
+    },
+  };
+});
+
 vi.mock('../../common/modals/edit-tax-category.js', () => ({
   EditTaxCategory: () => null,
 }));
@@ -276,5 +291,26 @@ describe('TaxCategories table state in the URL', () => {
     expect(container.textContent).toContain('Page 2 of 2');
     expect(new URLSearchParams(currentSearch).get('page')).toBe('2');
     expect(renderCount).toBeLessThan(MAX_RENDERS);
+  });
+
+  /**
+   * Regression guard for the "next page flashes then snaps back to page 1" bug.
+   *
+   * TanStack resets the page index to 0 whenever a row model recomputes
+   * (`table_autoResetPageIndex`, wired into the core and sorted row models). With
+   * pagination controlled, that reset arrives as a second `onPaginationChange`
+   * right after the user's own, so paging flashed page 2 and snapped back — and
+   * wrote the page out of the URL with it. A fresh `data` identity from urql is
+   * enough to trigger it.
+   *
+   * This asserts the option rather than the behaviour: the reset only fires once
+   * the store has caught up to the new page, an ordering `act()` collapses, so it
+   * does not reproduce under happy-dom. It was diagnosed and the fix verified in
+   * a real browser; this keeps the line from being dropped.
+   */
+  it('turns off the table\'s own page-index reset, since the URL owns it', () => {
+    act(() => root.render(<Harness />));
+
+    expect(capturedTableOptions?.autoResetPageIndex).toBe(false);
   });
 });

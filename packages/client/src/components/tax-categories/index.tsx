@@ -217,6 +217,12 @@ export const TaxCategories = (): ReactElement => {
     state: { pagination, sorting },
     onPaginationChange: handlePaginationChange,
     onSortingChange: handleSortingChange,
+    // The page index lives in the URL, so the table must not reset it on its
+    // own. Its default is to jump back to page 1 whenever a row model
+    // recomputes — which a fresh `data` identity from urql does on its own —
+    // and that would silently rewrite the page out of a shared link. The one
+    // reset worth having is explicit, in `handleSortingChange`.
+    autoResetPageIndex: false,
   });
 
   // `useTable` hands back a fresh object on every render and `getPageOptions()` a fresh array, so
