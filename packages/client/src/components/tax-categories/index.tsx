@@ -1,8 +1,16 @@
-import { Fragment, useContext, useEffect, useMemo, type ReactElement } from 'react';
+import { Fragment, useCallback, useContext, useEffect, useMemo, type ReactElement } from 'react';
 import { ArrowUpDown, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { flexRender, useTable, type ColumnDef } from '@tanstack/react-table';
+import {
+  flexRender,
+  useTable,
+  type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
+  type SortingState,
+} from '@tanstack/react-table';
 import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import {
   AllTaxCategoriesForScreenDocument,
@@ -18,6 +26,12 @@ import { IrsCode } from './cells/irs-code.js';
 import { Name } from './cells/name.js';
 import { SortCode } from './cells/sort-code.js';
 import { TaxExcluded } from './cells/tax-excluded.js';
+import {
+  parseTaxCategoriesTableState,
+  TAX_CATEGORIES_TABLE_PARAM_KEYS,
+  taxCategoriesTableStateToSearchParams,
+  type TaxCategoriesTableState,
+} from './table-state.js';
 import { TaxCategoryBusinesses } from './tax-category-businesses.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -142,18 +156,67 @@ export const TaxCategories = (): ReactElement => {
 
   const taxCategories = useMemo(() => data?.taxCategories ?? [], [data?.taxCategories]);
 
+  // Page, page size and sort order live in the URL query string, so a shared
+  // link reproduces exactly what the sender was looking at.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { pagination, sorting } = useMemo(
+    () => parseTaxCategoriesTableState(searchParams),
+    [searchParams],
+  );
+
+  const writeTableState = useCallback(
+    (next: TaxCategoriesTableState): void => {
+      setSearchParams(
+        prev => {
+          // Merge into the existing params so unrelated ones are preserved;
+          // only the keys this table owns are set or cleared.
+          const merged = new URLSearchParams(prev);
+          const nextParams = taxCategoriesTableStateToSearchParams(next);
+          for (const key of TAX_CATEGORIES_TABLE_PARAM_KEYS) {
+            const value = nextParams[key];
+            if (value == null) {
+              merged.delete(key);
+            } else {
+              merged.set(key, value);
+            }
+          }
+          return merged;
+        },
+        // replace: paging and sorting shouldn't stack history entries, so Back
+        // still leaves the screen rather than replaying every click.
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const handlePaginationChange = useCallback<OnChangeFn<PaginationState>>(
+    updater => {
+      const next = typeof updater === 'function' ? updater(pagination) : updater;
+      writeTableState({ pagination: next, sorting });
+    },
+    [pagination, sorting, writeTableState],
+  );
+
+  const handleSortingChange = useCallback<OnChangeFn<SortingState>>(
+    updater => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater;
+      // Re-sorting reorders the whole set, so the rows under the current page
+      // number are unrelated to the ones the user was just looking at.
+      writeTableState({ pagination: { ...pagination, pageIndex: 0 }, sorting: next });
+    },
+    [pagination, sorting, writeTableState],
+  );
+
   const table = useTable({
     features: tableFeaturesConfig,
     data: taxCategories,
     columns,
     // Only categories that are some business's default have anything to show.
     getRowCanExpand: row => row.original.businesses.length > 0,
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 30,
-      },
-    },
+    state: { pagination, sorting },
+    onPaginationChange: handlePaginationChange,
+    onSortingChange: handleSortingChange,
   });
 
   // `useTable` hands back a fresh object on every render and `getPageOptions()` a fresh array, so
@@ -162,6 +225,14 @@ export const TaxCategories = (): ReactElement => {
   // The pagination bar only reads these primitives, so depend on them instead.
   const { pageIndex, pageSize } = table.state.pagination;
   const pageCount = table.getPageCount();
+
+  // A link can outlive the rows it pointed at (a category deleted, a smaller
+  // page size). Land on the last real page instead of rendering an empty table.
+  useEffect(() => {
+    if (pageCount > 0 && pageIndex >= pageCount) {
+      writeTableState({ pagination: { pageIndex: pageCount - 1, pageSize }, sorting });
+    }
+  }, [pageCount, pageIndex, pageSize, sorting, writeTableState]);
 
   useEffect(() => {
     setFiltersContext(

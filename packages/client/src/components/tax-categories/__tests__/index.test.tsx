@@ -3,7 +3,7 @@
 import { useState, type ReactElement } from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { TaxCategories } from '../index.js';
@@ -52,22 +52,51 @@ const taxCategories = Array.from({ length: 45 }, (_, index) => ({
 const MAX_RENDERS = 50;
 let renderCount = 0;
 
+/** Records the live query string so tests can assert what the screen wrote. */
+let currentSearch = '';
+function LocationProbe(): null {
+  currentSearch = useLocation().search;
+  return null;
+}
+
 /** Mirrors DashboardLayoutRoute: the filters context is parent state, so every
  * `setFiltersContext` call re-renders the screen below it. */
-function Harness(): ReactElement {
+function Harness({ initialEntry = '/tax-categories' }: { initialEntry?: string }): ReactElement {
   renderCount += 1;
   if (renderCount > MAX_RENDERS) {
     throw new Error(`Render loop detected: the screen re-rendered more than ${MAX_RENDERS} times`);
   }
   const [filtersContext, setFiltersContext] = useState<ReactElement | null>(null);
   return (
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <LocationProbe />
       <FiltersContext.Provider value={{ filtersContext, setFiltersContext }}>
         {filtersContext}
         <TaxCategories />
       </FiltersContext.Provider>
     </MemoryRouter>
   );
+}
+
+/** The header button that toggles sorting for a column. */
+function sortHeader(container: HTMLElement, label: string): HTMLButtonElement {
+  const button = [...container.querySelectorAll('button')].find(
+    candidate => candidate.textContent?.trim() === label,
+  );
+  if (!button) {
+    throw new Error(`No sort header labelled "${label}"`);
+  }
+  return button as HTMLButtonElement;
+}
+
+/** Names in the order the table currently renders them. Reads the name cell
+ * rather than the row text, which runs the name straight into the sort code. */
+function renderedNames(container: HTMLElement): string[] {
+  return [...container.querySelectorAll('tbody tr')].flatMap(row => {
+    const cells = row.querySelectorAll('td');
+    // Skip an expanded sub-row, which is a single full-width cell.
+    return cells.length > 1 ? [cells[1].textContent ?? ''] : [];
+  });
 }
 
 describe('TaxCategories screen', () => {
@@ -77,6 +106,7 @@ describe('TaxCategories screen', () => {
 
   beforeEach(() => {
     renderCount = 0;
+    currentSearch = '';
     useQueryMock.mockReset();
     useQueryMock.mockReturnValue([
       { data: { taxCategories }, fetching: false, error: undefined },
@@ -144,5 +174,107 @@ describe('TaxCategories screen', () => {
     expect(
       container.querySelector('[aria-label="Show businesses of Tax Category 1"]'),
     ).toBeNull();
+  });
+
+  it('opens a business in a new tab, as a distinct bulleted entry', () => {
+    act(() => root.render(<Harness />));
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Show businesses of Tax Category 0"]')!
+        .click();
+    });
+
+    // Bulleted list items, so a long name wrapping to a second line cannot read
+    // as a second business.
+    const list = container.querySelector('ul')!;
+    expect(list.className).toContain('list-disc');
+    expect(list.querySelectorAll('li')).toHaveLength(1);
+
+    const link = container.querySelector<HTMLAnchorElement>('a[href="/businesses/business-0"]')!;
+    expect(link.target).toBe('_blank');
+    expect(link.rel).toContain('noopener');
+  });
+});
+
+describe('TaxCategories table state in the URL', () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  let consoleError: MockInstance<typeof console.error>;
+
+  beforeEach(() => {
+    renderCount = 0;
+    currentSearch = '';
+    useQueryMock.mockReset();
+    useQueryMock.mockReturnValue([
+      { data: { taxCategories }, fetching: false, error: undefined },
+      refetchMock,
+    ]);
+    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    consoleError.mockRestore();
+  });
+
+  it('restores page, page size and sort from a shared link', () => {
+    act(() =>
+      root.render(<Harness initialEntry="/tax-categories?page=2&pageSize=10&sort=name:desc" />),
+    );
+
+    // 45 rows at 10 per page => 5 pages, and the link asked for the second.
+    expect(container.textContent).toContain('Page 2 of 5');
+    // TanStack's default sort is alphanumeric, so the trailing numbers compare
+    // as numbers: descending runs 44..35 on page 1 and starts at 34 on page 2.
+    const names = renderedNames(container);
+    expect(names).toHaveLength(10);
+    expect(names[0]).toBe('Tax Category 34');
+  });
+
+  it('writes paging to the URL', () => {
+    act(() => root.render(<Harness />));
+    expect(currentSearch).toBe('');
+
+    act(() => {
+      [...container.ownerDocument.querySelectorAll('button')]
+        .find(button => button.textContent?.includes('Go to next page'))!
+        .click();
+    });
+
+    expect(new URLSearchParams(currentSearch).get('page')).toBe('2');
+    expect(container.textContent).toContain('Page 2 of 2');
+  });
+
+  it('writes sorting to the URL and returns to the first page', () => {
+    act(() => root.render(<Harness initialEntry="/tax-categories?page=2" />));
+
+    act(() => sortHeader(container, 'Name').click());
+
+    const params = new URLSearchParams(currentSearch);
+    expect(params.get('sort')).toBe('name:asc');
+    // Re-sorting reorders everything, so page 2 would show unrelated rows.
+    expect(params.get('page')).toBeNull();
+    expect(container.textContent).toContain('Page 1 of 2');
+  });
+
+  it('leaves unrelated query params alone', () => {
+    act(() => root.render(<Harness initialEntry="/tax-categories?keep=me" />));
+
+    act(() => sortHeader(container, 'IRS Code').click());
+
+    expect(new URLSearchParams(currentSearch).get('keep')).toBe('me');
+  });
+
+  it('lands on the last real page when the link points past the end', () => {
+    act(() => root.render(<Harness initialEntry="/tax-categories?page=9" />));
+
+    expect(container.textContent).toContain('Page 2 of 2');
+    expect(new URLSearchParams(currentSearch).get('page')).toBe('2');
+    expect(renderCount).toBeLessThan(MAX_RENDERS);
   });
 });
