@@ -13,6 +13,13 @@ import { AmountCell } from './amount-cell.js';
 import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling-compliance-report-filters.js';
 import { RuleCell } from './rule-cell.js';
 
+// Hoisted, matching `vat-monthly-report/index.tsx`: `dedupeFragments` builds a new
+// `DocumentNode` on every call, so doing it inline re-printed and re-hashed the
+// document on each render just to arrive at the same operation key.
+const corporateTaxRulingComplianceReportQuery = dedupeFragments(
+  CorporateTaxRulingComplianceReportDocument,
+);
+
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query CorporateTaxRulingComplianceReport($years: [Int!]!) {
@@ -119,7 +126,7 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
 
   // fetch data
   const [{ data, fetching }] = useQuery({
-    query: dedupeFragments(CorporateTaxRulingComplianceReportDocument),
+    query: corporateTaxRulingComplianceReportQuery,
     variables: {
       years,
     },

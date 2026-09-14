@@ -11,6 +11,11 @@ import { PageLayout } from '../../layout/page-layout.js';
 import { ReportCommentaryRow } from '../shared/report-commentary-row.js';
 import { TaxReportFilter } from './tax-report-filters.js';
 
+// Hoisted, matching `vat-monthly-report/index.tsx`: `dedupeFragments` builds a new
+// `DocumentNode` on every call, so doing it inline re-printed and re-hashed the
+// document on each render just to arrive at the same operation key.
+const taxReportQuery = dedupeFragments(TaxReportDocument);
+
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query TaxReport($reportYear: Int!, $referenceYears: [Int!]!) {
@@ -150,7 +155,7 @@ export const TaxReport = (): ReactElement => {
 
   // fetch data
   const [{ data, fetching }] = useQuery({
-    query: dedupeFragments(TaxReportDocument),
+    query: taxReportQuery,
     variables: {
       reportYear: year,
       referenceYears,
