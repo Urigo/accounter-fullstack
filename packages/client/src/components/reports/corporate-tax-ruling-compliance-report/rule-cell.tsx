@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { getFragmentData, type FragmentType } from '../../../gql/fragment-masking.js';
 import { CorporateTaxRulingReportRuleCellFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -31,14 +32,14 @@ export const RuleCell = ({ originalRuleData, diffRuleData }: Props): ReactElemen
 
   if (!diffRule || !isDiff) {
     return (
-      <td className={originalRule.isCompliant ? 'text-green-500' : 'text-red-500'}>
+      <TableCell className={originalRule.isCompliant ? 'text-green-500' : 'text-red-500'}>
         {originalRule.percentage.formatted}
-      </td>
+      </TableCell>
     );
   }
 
   return (
-    <td className={originalRule.isCompliant ? 'text-green-500' : 'text-red-500'}>
+    <TableCell className={originalRule.isCompliant ? 'text-green-500' : 'text-red-500'}>
       <div className="flex flex-col">
         <p
           className={'line-through '.concat(
@@ -57,6 +58,6 @@ export const RuleCell = ({ originalRuleData, diffRuleData }: Props): ReactElemen
           </div>
         )}
       </div>
-    </td>
+    </TableCell>
   );
 };

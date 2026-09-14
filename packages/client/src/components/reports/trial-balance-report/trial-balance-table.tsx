@@ -1,8 +1,8 @@
 import { useMemo, type ReactElement } from 'react';
-import { Table } from '@mantine/core';
 import { TrialBalanceTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { formatStringifyAmount } from '../../../helpers/index.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { DownloadCSV } from './download-csv.js';
 import type { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import { TrialBalanceReportGroup } from './trial-balance-report-group.js';
@@ -119,25 +119,25 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
   }, [businessTransactionsSum, filter.isShowZeroedAccounts]);
 
   return (
-    <Table highlightOnHover>
-      <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
-        <tr className="bg-gray-300">
-          <th>Sort Code</th>
-          <th>Account</th>
-          <th>Account Name</th>
-          <th>Total Debit</th>
-          <th>Total Credit</th>
-          <th>Balance</th>
-          <th>
+    <Table>
+      <TableHeader className="sticky top-0 z-20">
+        <TableRow className="bg-gray-300">
+          <TableHead>Sort Code</TableHead>
+          <TableHead>Account</TableHead>
+          <TableHead>Account Name</TableHead>
+          <TableHead>Total Debit</TableHead>
+          <TableHead>Total Credit</TableHead>
+          <TableHead>Balance</TableHead>
+          <TableHead>
             <DownloadCSV
               data={sortCodesGroups}
               fromDate={filter.fromDate ?? undefined}
               toDate={filter.toDate ?? undefined}
             />
-          </th>
-        </tr>
-      </thead>
-      <tbody>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {Object.entries(sortCodesGroups).map(([group, data]) => (
           <TrialBalanceReportGroup
             key={group}
@@ -147,10 +147,10 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
             isAllOpened={isAllOpened}
           />
         ))}
-        <tr className="bg-gray-100">
-          <td colSpan={2}>Report total:</td>
-          <td />
-          <td>
+        <TableRow className="bg-gray-100">
+          <TableCell colSpan={2}>Report total:</TableCell>
+          <TableCell />
+          <TableCell>
             (
             {formatStringifyAmount(
               Object.values(sortCodesGroups).reduce(
@@ -159,8 +159,8 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
               ),
             )}
             )
-          </td>
-          <td>
+          </TableCell>
+          <TableCell>
             (
             {formatStringifyAmount(
               Object.values(sortCodesGroups).reduce(
@@ -169,14 +169,14 @@ export const TrialBalanceTable = ({ data, filter, isAllOpened }: Props): ReactEl
               ),
             )}
             )
-          </td>
-          <td colSpan={1}>
+          </TableCell>
+          <TableCell colSpan={1}>
             {formatStringifyAmount(
               Object.values(sortCodesGroups).reduce((total, row) => total + row.sum, 0),
             )}
-          </td>
-        </tr>
-      </tbody>
+          </TableCell>
+        </TableRow>
+      </TableBody>
     </Table>
   );
 };
