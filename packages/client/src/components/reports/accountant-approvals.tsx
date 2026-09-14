@@ -7,11 +7,11 @@ import {
   type ChargeFilter,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { ChargesFilters } from '../charges/charges-filters/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { SegmentedProgress } from '../ui/segmented-progress.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -123,33 +123,3 @@ export const AccountantApprovals = (): ReactElement => {
     </PageLayout>
   );
 };
-
-/**
- * Replaces Mantine's `Progress` in its `sections` form, which `ui/progress` has no equivalent
- * for — it is a single-value bar. Sizes are Mantine's: `size="xl"` is 16px tall and
- * `radius="xl"` is fully rounded, and the colours are its green/orange/red 6-shade.
- */
-function SegmentedProgress({
-  segments,
-}: {
-  /** `id` rather than `label` carries the identity: an even split renders the same label
-      in every segment (three of three charges is `33.3% (1)` three times over). */
-  segments: Array<{ id: string; value: number; className: string; label: string }>;
-}): ReactElement {
-  return (
-    <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-200">
-      {segments.map(segment => (
-        <div
-          key={segment.id}
-          style={{ width: `${segment.value}%` }}
-          className={cn(
-            'flex items-center justify-center overflow-hidden text-[10px] font-bold whitespace-nowrap text-white',
-            segment.className,
-          )}
-        >
-          {segment.label}
-        </div>
-      ))}
-    </div>
-  );
-}
