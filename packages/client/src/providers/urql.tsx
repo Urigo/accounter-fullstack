@@ -92,8 +92,7 @@ export function setBusinessScope(ids: string[]): void {
   } catch {
     // ignore
   }
-  resetUrqlClient();
-  onClientReset?.(getUrqlClient());
+  resetUrqlClientAndNotify();
 }
 
 /**
@@ -325,6 +324,20 @@ export function resetUrqlClient(): void {
   globalClient = null;
   bearerToken = null;
   loginRedirectInProgress = false;
+}
+
+/**
+ * Discards the client and hands the Provider a fresh one.
+ *
+ * `resetUrqlClient` alone only clears the singleton, so anything already
+ * holding the old `Client` — every mounted `useQuery`, via the Provider — keeps
+ * using it, along with its bearer token and any cache an exchange is holding.
+ * Both callers need the swap as well, so they share this rather than each
+ * remembering to make the second call.
+ */
+export function resetUrqlClientAndNotify(): void {
+  resetUrqlClient();
+  onClientReset?.(getUrqlClient());
 }
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {

@@ -7,19 +7,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLogout } from '../use-logout.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, useClientMock, logoutMock, resetStoreMock } = vi.hoisted(() => ({
-  useAuth0Mock: vi.fn(),
-  useClientMock: vi.fn(),
-  logoutMock: vi.fn(),
-  resetStoreMock: vi.fn(),
-}));
+const { useAuth0Mock, logoutMock, resetClientMock, callOrder } = vi.hoisted(() => {
+  const order: string[] = [];
+  return {
+    useAuth0Mock: vi.fn(),
+    logoutMock: vi.fn(() => {
+      order.push('logout');
+      return Promise.resolve();
+    }),
+    resetClientMock: vi.fn(() => {
+      order.push('reset');
+    }),
+    callOrder: order,
+  };
+});
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
 }));
 
-vi.mock('urql', () => ({
-  useClient: useClientMock,
+vi.mock('../../providers/urql.js', () => ({
+  resetUrqlClientAndNotify: resetClientMock,
 }));
 
 function LogoutHarness(): React.ReactElement {
@@ -63,12 +71,11 @@ describe('useLogout', () => {
     localStorage.clear();
     sessionStorage.clear();
 
-    logoutMock.mockResolvedValue(undefined);
+    callOrder.length = 0;
     useAuth0Mock.mockReturnValue({ logout: logoutMock });
-    useClientMock.mockReturnValue({ resetStore: resetStoreMock });
   });
 
-  it.skip('calls urqlClient.resetStore()', async () => {
+  it('discards the urql client on logout', async () => {
     const { container, cleanup } = await renderHarness();
     const button = container.querySelector('button');
 
@@ -77,7 +84,23 @@ describe('useLogout', () => {
       await Promise.resolve();
     });
 
-    expect(resetStoreMock).toHaveBeenCalledTimes(1);
+    expect(resetClientMock).toHaveBeenCalledTimes(1);
+
+    await cleanup();
+  });
+
+  it('discards the client before Auth0 navigates away', async () => {
+    // `logout()` triggers a full-page redirect, so anything queued after it is
+    // not guaranteed to run. The reset has to happen first.
+    const { container, cleanup } = await renderHarness();
+    const button = container.querySelector('button');
+
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(callOrder).toEqual(['reset', 'logout']);
 
     await cleanup();
   });
