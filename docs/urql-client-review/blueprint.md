@@ -5,8 +5,9 @@ Companion document: [`findings.md`](./findings.md) — the review these steps de
 ## Status
 
 Each step lands as its own PR, stacked on the previous one while that one is unmerged. A row is
-marked done only once its PR is **merged**. Step 3 merged into step 2's branch first, so both
-reached `main` under #4442's squashed commit — there is no commit titled #4443.
+marked done only once its PR is **merged**. Steps 3 and 7 were each merged into their parent's
+branch first, so they reached `main` inside #4442's and #4447's squashed commits respectively —
+there is no commit titled #4443 or #4448.
 
 | Step | Scope                                           | PR           | Status     |
 | ---- | ----------------------------------------------- | ------------ | ---------- |
@@ -16,8 +17,8 @@ reached `main` under #4442's squashed commit — there is no commit titled #4443
 | 3    | Roll the hook out to the remaining eleven       | [#4443][s3]  | **merged** |
 | 4    | `use-logout.ts` client reset                    | [#4444][s4]  | **merged** |
 | 5    | Drop dead loader-data guards + redundant effect | [#4446][s5]  | **merged** |
-| 6    | Hoist in-render `dedupeFragments()` calls       | [#4447][s6]  | in review  |
-| 7    | Delete dead `@tanstack/react-query`             | [#4448][s7]  | in review  |
+| 6    | Hoist in-render `dedupeFragments\(\)` calls     | [#4447][s6]  | **merged** |
+| 7    | Delete dead `@tanstack/react-query`             | [#4448][s7]  | **merged** |
 | 8a   | Configurable `VITE_GRAPHQL_URL`                 | [#4449][s8a] | in review  |
 | 8b   | `retryExchange` + dev `devtoolsExchange`        | [#4450][s8b] | in review  |
 
