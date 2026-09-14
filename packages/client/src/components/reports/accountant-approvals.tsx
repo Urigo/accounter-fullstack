@@ -99,16 +99,19 @@ export const AccountantApprovals = (): ReactElement => {
           <SegmentedProgress
             segments={[
               {
+                id: 'approved',
                 value: approvalRate,
                 className: 'bg-green-500',
                 label: `${approvalRate.toFixed(1)}% (${approved})`,
               },
               {
+                id: 'pending',
                 value: pendingRate,
                 className: 'bg-orange-500',
                 label: `${pendingRate.toFixed(1)}% (${pending})`,
               },
               {
+                id: 'unapproved',
                 value: UnapprovedRate,
                 className: 'bg-red-500',
                 label: `${UnapprovedRate.toFixed(1)}% (${Unapproved})`,
@@ -129,13 +132,15 @@ export const AccountantApprovals = (): ReactElement => {
 function SegmentedProgress({
   segments,
 }: {
-  segments: Array<{ value: number; className: string; label: string }>;
+  /** `id` rather than `label` carries the identity: an even split renders the same label
+      in every segment (three of three charges is `33.3% (1)` three times over). */
+  segments: Array<{ id: string; value: number; className: string; label: string }>;
 }): ReactElement {
   return (
     <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-200">
       {segments.map(segment => (
         <div
-          key={segment.label}
+          key={segment.id}
           style={{ width: `${segment.value}%` }}
           className={cn(
             'flex items-center justify-center overflow-hidden text-[10px] font-bold whitespace-nowrap text-white',
