@@ -12,6 +12,13 @@ import {
 
 const SERVICE_URL = 'https://digital.isracard.co.il/services/ProxyRequestHandler.ashx';
 
+type IsracardLoginResponse = {
+  status: string;
+  returnCode: string;
+  message: string | null;
+  clbMessage: string | null;
+};
+
 async function login(credentials: IsracardCredentials, page: Page) {
   const validateUrl = `${SERVICE_URL}?reqName=performLogonI`;
   const validateRequest = {
@@ -21,7 +28,21 @@ async function login(credentials: IsracardCredentials, page: Page) {
     countryCode: '212',
     idType: '1',
   };
-  return fetchPostWithinPage(page, validateUrl, validateRequest);
+  const loginResult = await fetchPostWithinPage<IsracardLoginResponse>(
+    page,
+    validateUrl,
+    validateRequest,
+  );
+
+  if (loginResult?.status !== '1' || loginResult?.returnCode !== '1') {
+    const message =
+      loginResult?.message?.trim() ||
+      loginResult?.clbMessage?.trim() ||
+      `status: ${loginResult?.status}, returnCode: ${loginResult?.returnCode}`;
+    throw new Error(`Isracard login failed: ${message}`);
+  }
+
+  return loginResult;
 }
 
 async function getMonthDashboard(page: Page, monthDate: Date, options?: IsracardOptions) {
