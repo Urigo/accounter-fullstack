@@ -90,7 +90,7 @@
     "@types/react-dom": "19.3.0",
     "@urql/devtools": "2.0.3",
     "@vitejs/plugin-react": "6.1.1",
-    "autoprefixer": "10.5.5",
+    "autoprefixer": "10.6.0",
     "happy-dom": "20.14.3",
     "storybook": "10.6.0",
     "tailwindcss": "4.3.3",
