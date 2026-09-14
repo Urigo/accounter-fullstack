@@ -14,7 +14,7 @@ reached `main` under #4442's squashed commit — there is no commit titled #4443
 | 1    | `handleUrqlError` skips mutations               | [#4440][s1]  | **merged** |
 | 2    | Extract `useQueryErrorToast`, wire one caller   | [#4442][s2]  | **merged** |
 | 3    | Roll the hook out to the remaining eleven       | [#4443][s3]  | **merged** |
-| 4    | `use-logout.ts` client reset                    | [#4444][s4]  | in review  |
+| 4    | `use-logout.ts` client reset                    | [#4444][s4]  | **merged** |
 | 5    | Drop dead loader-data guards + redundant effect | [#4446][s5]  | in review  |
 | 6    | Hoist in-render `dedupeFragments()` calls       | [#4447][s6]  | in review  |
 | 7    | Delete dead `@tanstack/react-query`             | [#4448][s7]  | in review  |
