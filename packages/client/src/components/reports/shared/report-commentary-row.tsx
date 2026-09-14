@@ -1,8 +1,8 @@
 import { useState, type ReactElement } from 'react';
-import { Table } from '@mantine/core';
 import { ReportCommentaryTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { ToggleExpansionButton } from '../../common/index.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { ReportSubCommentaryRow } from './report-sub-commentary-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -41,41 +41,44 @@ export const ReportCommentaryRow = ({ commentaryData, dataRow }: Props): ReactEl
     <>
       {dataRow(button)}
       {opened && (
-        <tr>
-          <td colSpan={99}>
-            <Table striped highlightOnHover className="ml-8 w-full h-full">
-              <thead>
-                <tr>
-                  <th>Sort Code</th>
-                  <th>Amount</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
+        <TableRow>
+          <TableCell colSpan={99}>
+            {/* Mantine's `striped`, whose selector was `> tbody > tr:nth-of-type(odd)`. The
+                child combinators matter: these tables nest, and a descendant selector would
+                stripe the inner table's rows from the outer table's rule as well. */}
+            <Table className="ml-8 h-full w-full [&>tbody>tr:nth-child(odd)]:bg-gray-50">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sort Code</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {records
                   ?.sort((a, b) => a.sortCode.key - b.sortCode.key)
                   .map(record => (
                     <ReportSubCommentaryRow
                       key={record.sortCode.key}
                       dataRow={button => (
-                        <tr key={record.sortCode.key}>
-                          <td>
+                        <TableRow key={record.sortCode.key}>
+                          <TableCell>
                             {record.sortCode.key} - {record.sortCode.name}
-                          </td>
-                          <td>{record.amount.formatted}</td>
-                          <td>{button}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell>{record.amount.formatted}</TableCell>
+                          <TableCell>{button}</TableCell>
+                        </TableRow>
                       )}
                       subCommentaryData={record.records}
                     />
                   ))}
-                <tr>
-                  <td colSpan={8} />
-                </tr>
-              </tbody>
+                <TableRow>
+                  <TableCell colSpan={8} />
+                </TableRow>
+              </TableBody>
             </Table>
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );

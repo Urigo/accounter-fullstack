@@ -1,10 +1,10 @@
 import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
-import { Text } from '@mantine/core';
 import type { TrialBalanceTableFieldsFragment } from '../../../gql/graphql.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
+import { TableCell, TableRow } from '../../ui/table.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
 export type ExtendedBusiness = Extract<
@@ -31,18 +31,20 @@ export const TrialBalanceReportBusiness = ({
   const rowCredit = record?.credit?.raw ?? 0;
   return (
     <>
-      <tr key={record.business.id}>
-        <td>{sortCodeKey}</td>
-        <td>{record.business.id}</td>
-        <td>{record.business.name ?? undefined}</td>
-        <td>{rowDebit ? record?.debit?.formatted : undefined}</td>
-        <td>{rowCredit ? record?.credit?.formatted : undefined}</td>
-        <td>
+      <TableRow key={record.business.id}>
+        <TableCell>{sortCodeKey}</TableCell>
+        <TableCell>{record.business.id}</TableCell>
+        <TableCell>{record.business.name ?? undefined}</TableCell>
+        <TableCell>{rowDebit ? record?.debit?.formatted : undefined}</TableCell>
+        <TableCell>{rowCredit ? record?.credit?.formatted : undefined}</TableCell>
+        <TableCell>
           {(rowTotal > 0.001 || rowTotal < -0.001) && (
-            <Text color={rowTotal > 0 ? 'green' : 'red'}>{record?.total?.formatted}</Text>
+            <div className={rowTotal > 0 ? 'text-green-500' : 'text-red-500'}>
+              {record?.total?.formatted}
+            </div>
           )}
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           <Tooltip content="Detailed records">
             <Button
               variant="outline"
@@ -57,14 +59,14 @@ export const TrialBalanceReportBusiness = ({
               )}
             </Button>
           </Tooltip>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {(isExtended || isAllOpened) && (
-        <tr>
-          <td colSpan={7}>
+        <TableRow>
+          <TableCell colSpan={7}>
             <BusinessExtendedInfo businessID={record.business?.id} filter={filter} />
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );

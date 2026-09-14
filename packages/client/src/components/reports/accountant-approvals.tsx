@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Progress } from '@mantine/core';
 import {
   AccountantApprovalsChargesTableDocument,
   ChargeSortByField,
   type ChargeFilter,
 } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { ChargesFilters } from '../charges/charges-filters/index.js';
@@ -96,24 +96,21 @@ export const AccountantApprovals = (): ReactElement => {
       ) : (
         <div className="mx-10 mt-5 flex flex-col gap-5">
           {`Total charges: ${charges}`}
-          <Progress
-            color="green"
-            radius="xl"
-            size="xl"
-            sections={[
+          <SegmentedProgress
+            segments={[
               {
                 value: approvalRate,
-                color: 'green',
+                className: 'bg-green-500',
                 label: `${approvalRate.toFixed(1)}% (${approved})`,
               },
               {
                 value: pendingRate,
-                color: 'orange',
+                className: 'bg-orange-500',
                 label: `${pendingRate.toFixed(1)}% (${pending})`,
               },
               {
                 value: UnapprovedRate,
-                color: 'red',
+                className: 'bg-red-500',
                 label: `${UnapprovedRate.toFixed(1)}% (${Unapproved})`,
               },
             ]}
@@ -123,3 +120,31 @@ export const AccountantApprovals = (): ReactElement => {
     </PageLayout>
   );
 };
+
+/**
+ * Replaces Mantine's `Progress` in its `sections` form, which `ui/progress` has no equivalent
+ * for — it is a single-value bar. Sizes are Mantine's: `size="xl"` is 16px tall and
+ * `radius="xl"` is fully rounded, and the colours are its green/orange/red 6-shade.
+ */
+function SegmentedProgress({
+  segments,
+}: {
+  segments: Array<{ value: number; className: string; label: string }>;
+}): ReactElement {
+  return (
+    <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-200">
+      {segments.map(segment => (
+        <div
+          key={segment.label}
+          style={{ width: `${segment.value}%` }}
+          className={cn(
+            'flex items-center justify-center overflow-hidden text-[10px] font-bold whitespace-nowrap text-white',
+            segment.className,
+          )}
+        >
+          {segment.label}
+        </div>
+      ))}
+    </div>
+  );
+}
