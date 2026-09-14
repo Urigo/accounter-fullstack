@@ -66,6 +66,14 @@ export default gql`
     ): [UploadDocumentResult!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " Re-run OCR against the document's already-stored file and fill in whatever information it is missing. Values the document already has are never overwritten; its type is replaced only while it is still UNPROCESSED. "
+    reprocessDocumentOcr(documentId: UUID!): ReprocessDocumentOcrResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " Re-run OCR for several documents at once. Results are positional — one entry per input id, so a partial failure names the document that failed. "
+    batchReprocessDocumentsOcr(documentIds: [UUID!]!): [ReprocessDocumentOcrResult!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     closeDocument(id: UUID!): Boolean!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
@@ -374,6 +382,16 @@ export default gql`
   " result type for insertDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type InsertDocumentSuccessfulResult {
     document: Document
+  }
+
+  " result type for reprocessDocumentOcr and batchReprocessDocumentsOcr "
+  union ReprocessDocumentOcrResult = ReprocessDocumentOcrSuccessfulResult | CommonError
+
+  " result type for reprocessDocumentOcr" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type ReprocessDocumentOcrSuccessfulResult {
+    document: Document
+    " names of the fields this pass filled in; empty when OCR produced nothing the document was missing "
+    updatedFields: [String!]!
   }
 
   " result type for uploadDocument "
