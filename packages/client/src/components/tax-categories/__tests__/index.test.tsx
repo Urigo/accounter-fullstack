@@ -3,6 +3,7 @@
 import { useState, type ReactElement } from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { TaxCategories } from '../index.js';
@@ -39,6 +40,11 @@ const taxCategories = Array.from({ length: 45 }, (_, index) => ({
   sortCode: { id: `sort-code-${index}`, key: index, name: `Sort Code ${index}` },
   irsCode: index,
   taxExcluded: index % 2 === 0,
+  // Every third category is some business's default; the rest have nothing to expand.
+  businesses:
+    index % 3 === 0
+      ? [{ id: `business-${index}`, name: `Business ${index}` }]
+      : [],
 }));
 
 /** A render loop never settles, so it would hang the runner instead of failing.
@@ -55,10 +61,12 @@ function Harness(): ReactElement {
   }
   const [filtersContext, setFiltersContext] = useState<ReactElement | null>(null);
   return (
-    <FiltersContext.Provider value={{ filtersContext, setFiltersContext }}>
-      {filtersContext}
-      <TaxCategories />
-    </FiltersContext.Provider>
+    <MemoryRouter>
+      <FiltersContext.Provider value={{ filtersContext, setFiltersContext }}>
+        {filtersContext}
+        <TaxCategories />
+      </FiltersContext.Provider>
+    </MemoryRouter>
   );
 }
 
@@ -111,5 +119,30 @@ describe('TaxCategories screen', () => {
 
     // 45 rows at a page size of 30 => 2 pages, rendered by DataTablePagination.
     expect(container.textContent).toContain('Page 1 of 2');
+  });
+
+  it('expands a row into links to the businesses it is the default for', () => {
+    act(() => root.render(<Harness />));
+
+    // Only rows with businesses get an expander; `Tax Category 0` is the first.
+    const expander = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Show businesses of Tax Category 0"]',
+    );
+    expect(expander).not.toBeNull();
+
+    act(() => expander!.click());
+
+    const link = container.querySelector<HTMLAnchorElement>('a[href="/businesses/business-0"]');
+    expect(link).not.toBeNull();
+    expect(link!.textContent).toBe('Business 0');
+  });
+
+  it('offers no expander for a tax category no business defaults to', () => {
+    act(() => root.render(<Harness />));
+
+    // `Tax Category 1` has an empty `businesses` list.
+    expect(
+      container.querySelector('[aria-label="Show businesses of Tax Category 1"]'),
+    ).toBeNull();
   });
 });

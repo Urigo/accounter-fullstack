@@ -1,5 +1,5 @@
-import { useContext, useEffect, useMemo, type ReactElement } from 'react';
-import { ArrowUpDown, Loader2 } from 'lucide-react';
+import { Fragment, useContext, useEffect, useMemo, type ReactElement } from 'react';
+import { ArrowUpDown, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { flexRender, useTable, type ColumnDef } from '@tanstack/react-table';
@@ -18,6 +18,7 @@ import { IrsCode } from './cells/irs-code.js';
 import { Name } from './cells/name.js';
 import { SortCode } from './cells/sort-code.js';
 import { TaxExcluded } from './cells/tax-excluded.js';
+import { TaxCategoryBusinesses } from './tax-category-businesses.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -32,6 +33,10 @@ import { TaxExcluded } from './cells/tax-excluded.js';
       }
       irsCode
       taxExcluded
+      businesses {
+        id
+        name
+      }
     }
   }
 `;
@@ -39,6 +44,26 @@ import { TaxExcluded } from './cells/tax-excluded.js';
 type RowType = AllTaxCategoriesForScreenQuery['taxCategories'][number];
 
 const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
+  {
+    id: 'expander',
+    header: () => null,
+    cell: ({ row }) =>
+      row.getCanExpand() ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => row.toggleExpanded()}
+          aria-label={
+            row.getIsExpanded()
+              ? `Hide businesses of ${row.original.name}`
+              : `Show businesses of ${row.original.name}`
+          }
+        >
+          {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
+        </Button>
+      ) : null,
+    enableSorting: false,
+  },
   {
     id: 'name',
     accessorKey: 'name',
@@ -121,6 +146,8 @@ export const TaxCategories = (): ReactElement => {
     features: tableFeaturesConfig,
     data: taxCategories,
     columns,
+    // Only categories that are some business's default have anything to show.
+    getRowCanExpand: row => row.original.businesses.length > 0,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -189,13 +216,22 @@ export const TaxCategories = (): ReactElement => {
                 </TableRow>
               ) : (
                 table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                  <Fragment key={row.id}>
+                    <TableRow>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    {row.getIsExpanded() && (
+                      <TableRow>
+                        <TableCell colSpan={columns.length}>
+                          <TaxCategoryBusinesses businesses={row.original.businesses} />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 ))
               )}
             </TableBody>

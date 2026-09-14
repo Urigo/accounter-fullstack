@@ -2,9 +2,14 @@ import { GraphQLError } from 'graphql';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
+import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
-import type { FinancialEntitiesModule, IUpdateTaxCategoryParams } from '../types.js';
+import type {
+  FinancialEntitiesModule,
+  IGetBusinessesByIdsResult,
+  IUpdateTaxCategoryParams,
+} from '../types.js';
 import { commonTaxChargeFields } from './common.js';
 
 export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
@@ -137,6 +142,35 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     updatedAt: parent => parent.updated_at,
     isActive: parent => parent.is_active ?? true,
     taxExcluded: parent => !!parent.tax_excluded,
+    businesses: async (parent, _, { injector }) => {
+      const businessIds = await injector
+        .get(TaxCategoriesProvider)
+        .businessIdsByTaxCategoryIdLoader.load(parent.id);
+      if (businessIds.length === 0) {
+        return [];
+      }
+      const businesses = await injector
+        .get(BusinessesProvider)
+        .getBusinessByIdLoader.loadMany(businessIds);
+
+      const rows: IGetBusinessesByIdsResult[] = [];
+      for (const business of businesses) {
+        // `loadMany` reports a rejected batch as a per-key Error instead of
+        // throwing, so swallowing these would make a failed query read as "this
+        // category has no businesses".
+        if (business instanceof Error) {
+          const message = `Failed to load businesses of tax category ID="${parent.id}"`;
+          console.error(`${message}: ${business.message}`);
+          throw new GraphQLError(message);
+        }
+        // A match row can outlive its business row; skip those misses rather
+        // than failing the category over one dangling reference.
+        if (business) {
+          rows.push(business);
+        }
+      }
+      return rows;
+    },
   },
   CommonCharge: commonTaxChargeFields,
   FinancialCharge: commonTaxChargeFields,
