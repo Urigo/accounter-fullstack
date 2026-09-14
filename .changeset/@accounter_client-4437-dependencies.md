@@ -8,3 +8,4 @@ dependencies updates:
   - Updated dependency [`react-hook-form@7.88.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.88.0) (from `7.87.0`, in `dependencies`)
   - Updated dependency [`simple-icons@16.31.0` ↗︎](https://www.npmjs.com/package/simple-icons/v/16.31.0) (from `16.30.0`, in `dependencies`)
   - Updated dependency [`tailwind-merge@3.7.0` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.7.0) (from `3.6.0`, in `dependencies`)
+  - Removed dependency [`@tanstack/react-query@5.102.8` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.102.8) (from `dependencies`)
