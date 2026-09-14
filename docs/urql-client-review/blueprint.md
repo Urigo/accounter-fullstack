@@ -17,7 +17,7 @@ there is no commit titled #4443 or #4448.
 | 3    | Roll the hook out to the remaining eleven       | [#4443][s3]  | **merged** |
 | 4    | `use-logout.ts` client reset                    | [#4444][s4]  | **merged** |
 | 5    | Drop dead loader-data guards + redundant effect | [#4446][s5]  | **merged** |
-| 6    | Hoist in-render `dedupeFragments\(\)` calls     | [#4447][s6]  | **merged** |
+| 6    | Hoist in-render `dedupeFragments()` calls       | [#4447][s6]  | **merged** |
 | 7    | Delete dead `@tanstack/react-query`             | [#4448][s7]  | **merged** |
 | 8a   | Configurable `VITE_GRAPHQL_URL`                 | [#4449][s8a] | in review  |
 | 8b   | `retryExchange` + dev `devtoolsExchange`        | [#4450][s8b] | in review  |
