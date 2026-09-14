@@ -179,6 +179,7 @@ export default [
               'DocumentSuggestions',
               'DocumentValidationCheck',
               'DynamicReportNodeData',
+              'DynamicReportSnapshotValue',
               'ExchangeRates',
               'FinancialAmount',
               'FinancialIntAmount',
