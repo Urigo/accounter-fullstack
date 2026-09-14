@@ -1,4 +1,4 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http';
 import {
   getAuthContext,
   IdentityMappingError,
@@ -36,6 +36,7 @@ import {
   type JsonRpcRequest,
   type JsonRpcResponse,
 } from './jsonrpc.js';
+import { dispatchModernRequest, isModernRequest, type ModernOutcome } from './modern.js';
 import { listedTools, runSmokeTool, SMOKE_TOOL_NAME } from './tools.js';
 
 /**
@@ -74,6 +75,14 @@ export const MCP_INITIALIZE_EVENT = 'mcp_initialize';
  * response. That probe is the warning, and this is what records it.
  */
 export const MCP_MODERN_PROBE_EVENT = 'mcp_modern_probe';
+
+/**
+ * `event` discriminator for an `Origin` header we did not expect.
+ *
+ * Observation only for now — see the note at the read site. It exists so that
+ * enforcement, when it comes, is turned on against evidence rather than a guess.
+ */
+export const MCP_UNEXPECTED_ORIGIN_EVENT = 'mcp_unexpected_origin';
 
 /** Header carrying the protocol revision a request is written against. */
 export const MCP_PROTOCOL_VERSION_HEADER = 'mcp-protocol-version';
@@ -368,6 +377,14 @@ export interface McpDispatchContext {
    */
   protocolVersionHeader?: string;
   /**
+   * Lower-cased request headers, for the modern path's header/body validation.
+   *
+   * Modern requests mirror `method` and `params.name` into `Mcp-Method` and
+   * `Mcp-Name` so intermediaries can route without parsing the body — which
+   * only helps if the server checks the two agree.
+   */
+  headers?: Record<string, string | undefined>;
+  /**
    * `MCP_TOOL_ALLOWLIST`, resolved at the HTTP boundary. Empty ⇒ no restriction
    * (every registered tool is exposed); non-empty ⇒ `tools/list` and
    * `tools/call` are limited to exactly these tool names.
@@ -402,7 +419,6 @@ export async function dispatchMcpRequest(
   if (isNotification(request)) {
     return null;
   }
-  const id = request.id ?? null;
 
   // Era detection, before anything else: a request carrying modern signals is
   // the only advance warning available that a client is moving off the
@@ -451,6 +467,25 @@ export async function dispatchMcpRequest(
     return handleRpcRequest(request);
   }
 
+  return dispatchToolMethods(request, context);
+}
+
+/**
+ * Serve the tool methods — `tools/list` and `tools/call`.
+ *
+ * Extracted verbatim from {@link dispatchMcpRequest} so both eras run the same
+ * code rather than two copies that can drift. The era-specific parts stay with
+ * their eras: the legacy path keeps the handshake and the probe log, the modern
+ * path adds `resultType`, server identity and cache hints around whatever this
+ * returns.
+ *
+ * Returns `null` only for a notification, which the callers turn into a 202.
+ */
+async function dispatchToolMethods(
+  request: JsonRpcRequest,
+  context: McpDispatchContext,
+): Promise<JsonRpcResponse | null> {
+  const id = request.id ?? null;
   // Exposure controls: `MCP_TOOL_ALLOWLIST` (empty ⇒ every tool; non-empty ⇒
   // only the named subset) and `MCP_ENABLE_WRITE_TOOLS` (off ⇒ no mutating
   // tool). Both are threaded in via the dispatch context (built at the HTTP
@@ -499,6 +534,52 @@ export async function dispatchMcpRequest(
   return handleRpcRequest(request);
 }
 
+/**
+ * Serve a body in whichever era the client opened in.
+ *
+ * The spec's own rule for a dual-era server: a request carrying modern
+ * per-request `_meta` gets modern semantics; anything else — an `initialize`
+ * handshake included — gets legacy. Routing here rather than inside
+ * {@link dispatchMcpRequest} is what keeps the legacy path *literally
+ * unchanged*, which matters more than it looks: a dual-era client decides our
+ * era from the shape of our replies, so a legacy answer that drifted even
+ * slightly could stop the fallback that every current client depends on.
+ */
+export async function dispatchMcpBodyDualEra(
+  raw: string,
+  context: McpDispatchContext,
+): Promise<ModernOutcome> {
+  const parsed = parseMcpBody(raw);
+  if ('response' in parsed) {
+    return { response: parsed.response, status: 200 };
+  }
+
+  if (isModernRequest(parsed.request)) {
+    return dispatchModernRequest(parsed.request, {
+      headers: context.headers ?? {},
+      serverInfo: MCP_SERVER_INFO,
+      instructions: MODERN_INSTRUCTIONS,
+      correlationId: context.correlationId,
+      userId: context.auth.userId,
+      dispatch: request => dispatchToolMethods(request, context),
+    });
+  }
+
+  return { response: await dispatchMcpRequest(parsed.request, context), status: 200 };
+}
+
+/**
+ * Guidance the modern `server/discover` result carries for the model.
+ *
+ * Same reasoning as the tool descriptions: prose is the channel that reaches a
+ * model, so the one place a server gets to speak for itself is worth using.
+ */
+const MODERN_INSTRUCTIONS =
+  'Read-only accounting data for the businesses you are a member of, plus two opt-in write tools. ' +
+  'Call `accounter_list_business_memberships` first to discover the `memberBusinessId` values every ' +
+  'other tool takes as scope, and `accounter_explain_terminology` for what a charge, transaction, ' +
+  'document or ledger record means here — the distinctions are not inferable from the schema.';
+
 /** Parse + async-dispatch a raw body. Returns `null` for notifications. */
 export async function dispatchMcpBody(
   raw: string,
@@ -529,6 +610,32 @@ function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
+}
+
+/**
+ * Collapse Node's `string | string[]` header values to single strings.
+ *
+ * Node merges a repeated header into an array, so casting `req.headers` to
+ * `Record<string, string>` makes a *present* header read as absent — and the
+ * modern path would then reject the request for a missing header it was in fact
+ * sent. A proxy duplicating a header is enough to trigger that.
+ *
+ * A repeat carrying one distinct value is that value. A repeat carrying
+ * conflicting values is joined, so it fails header/body comparison with both
+ * shown — which is the right outcome: a request that says two different things
+ * is precisely what this validation exists to catch.
+ */
+export function normalizeHeaders(headers: IncomingHttpHeaders): Record<string, string | undefined> {
+  const normalized: Record<string, string | undefined> = {};
+  for (const [name, value] of Object.entries(headers)) {
+    if (typeof value === 'string') {
+      normalized[name] = value;
+    } else if (Array.isArray(value)) {
+      const distinct = [...new Set(value)];
+      normalized[name] = distinct.length === 1 ? distinct[0] : distinct.join(', ');
+    }
+  }
+  return normalized;
 }
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
@@ -642,6 +749,24 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     return;
   }
 
+  // Streamable HTTP says a server MUST reject an invalid `Origin` with 403, to
+  // block DNS rebinding. We have never read the header, so we do not yet know
+  // what our clients actually send — and blind-enforcing a 403 on a connector
+  // that three users depend on is how you cause the outage you were preventing.
+  //
+  // So: observe now, enforce once the logs say what "valid" looks like. Same
+  // two-step as the modern-era probe, and for the same reason.
+  const origin = typeof req.headers.origin === 'string' ? req.headers.origin : undefined;
+  if (origin !== undefined && origin !== env.server.publicBaseUrl) {
+    log('warn', 'mcp unexpected origin', {
+      event: MCP_UNEXPECTED_ORIGIN_EVENT,
+      origin,
+      expected: env.server.publicBaseUrl,
+      enforced: false,
+      correlationId: getRequestContext(req)?.correlationId ?? '',
+    });
+  }
+
   let raw: string;
   try {
     raw = await readBody(req, MAX_MCP_BODY_BYTES);
@@ -667,7 +792,7 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     return;
   }
 
-  const response = await dispatchMcpBody(raw, {
+  const { response, status } = await dispatchMcpBodyDualEra(raw, {
     auth,
     correlationId: getRequestContext(req)?.correlationId ?? '',
     authorization:
@@ -676,6 +801,9 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
       typeof req.headers[MCP_PROTOCOL_VERSION_HEADER] === 'string'
         ? (req.headers[MCP_PROTOCOL_VERSION_HEADER] as string)
         : undefined,
+    // Node lower-cases incoming header names, which is what the modern path's
+    // case-insensitive comparison relies on.
+    headers: normalizeHeaders(req.headers),
     allowlist: env.server.toolAllowlist,
     writeToolsEnabled: env.server.writeToolsEnabled,
   });
@@ -687,5 +815,10 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     return;
   }
 
-  sendJson(res, 200, response);
+  // The status comes from the dispatcher because only it knows the era. Legacy
+  // is always 200 — a JSON-RPC error rides inside a 200 body, as it always has.
+  // Modern uses 400 and 404 for framing failures, and that is load-bearing: a
+  // dual-era client reads the body of a 400 to decide whether we are modern, so
+  // flattening these to 200 would send it back to the handshake.
+  sendJson(res, status, response);
 }
