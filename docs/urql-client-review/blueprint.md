@@ -4,10 +4,10 @@ Companion document: [`findings.md`](./findings.md) — the review these steps de
 
 ## Status
 
-Each step lands as its own PR, stacked on the previous one while that one is unmerged. A row is
-marked done only once its PR is **merged**. Steps 3 and 7 were each merged into their parent's
-branch first, so they reached `main` inside #4442's and #4447's squashed commits respectively —
-there is no commit titled #4443 or #4448.
+**All ten steps are merged.** Each landed as its own PR, stacked on the previous one while that one
+was unmerged. Steps 3 and 7 were each merged into their parent's branch first, so they reached
+`main` inside #4442's and #4447's squashed commits respectively — there is no commit titled #4443 or
+#4448.
 
 | Step | Scope                                           | PR           | Status     |
 | ---- | ----------------------------------------------- | ------------ | ---------- |
@@ -19,8 +19,8 @@ there is no commit titled #4443 or #4448.
 | 5    | Drop dead loader-data guards + redundant effect | [#4446][s5]  | **merged** |
 | 6    | Hoist in-render `dedupeFragments()` calls       | [#4447][s6]  | **merged** |
 | 7    | Delete dead `@tanstack/react-query`             | [#4448][s7]  | **merged** |
-| 8a   | Configurable `VITE_GRAPHQL_URL`                 | [#4449][s8a] | in review  |
-| 8b   | `retryExchange` + dev `devtoolsExchange`        | [#4450][s8b] | in review  |
+| 8a   | Configurable `VITE_GRAPHQL_URL`                 | [#4449][s8a] | **merged** |
+| 8b   | `retryExchange` + dev `devtoolsExchange`        | [#4450][s8b] | **merged** |
 
 [s0]: https://github.com/Urigo/accounter-fullstack/pull/4438
 [s1]: https://github.com/Urigo/accounter-fullstack/pull/4440
