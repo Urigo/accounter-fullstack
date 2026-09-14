@@ -37,18 +37,26 @@ All 95 single-document mutation hooks now use it. `useCronJobs` (three chained m
 flow) and `useGenerateFinancialCharge` (a switch over six documents) keep their own bodies — neither
 is the one-document shape the hook abstracts.
 
-Behaviour is preserved per hook, down to the notification texts, toast ids and durations, with four
+Behaviour is preserved per hook, down to the notification texts, toast ids and durations, with these
 deliberate exceptions:
 
 - `useLedgerLock` reported "Payroll file added" on success. Locking the ledger has nothing to do with
   payroll — a copy/paste message that predates this change — so it now says "Ledger records were
   locked".
-
-- `useFetchDeelDocuments` no longer dismisses its own error toast. The `toast.dismiss` there only
-  ran when `handleCommonErrors` had just raised an error toast under the same id, so the error was
-  wiped before it could be read.
-- `useRevokeApiKey`, `useRevokeInvitation` and `useRemoveBusinessUser` resolve to `undefined` rather
-  than `false` when the server reports nothing was revoked or removed. The toast explaining why is
-  unchanged.
-- The two batch-upload hooks declare the document type they actually resolve to instead of casting
-  it to the mutation's raw union.
+- `useFetchDeelDocuments` no longer dismisses its own error toast. The `toast.dismiss` there only ran
+  when `handleCommonErrors` had just raised an error toast under the same id, so the error was wiped
+  before it could be read. It was unreachable on success because `fetchDeelDocuments` is a non-null
+  list, so even an empty result is truthy.
+- `useIssueMonthlyDocuments` no longer overwrites the server's own message. When
+  `handleCommonErrors` reported a specific failure, the hook used to immediately replace that toast,
+  under the same id, with the generic "Error issuing monthly documents".
+- `useInsertSalaryRecord` validates its input before raising the loading toast rather than after, so
+  a rejected input no longer flashes a spinner first.
+- The two batch-upload hooks declare the document type they actually resolve to instead of casting it
+  to the mutation's raw union, and report their per-file failures after the success toast rather than
+  before — sonner stacks newest first, so the failure notice belongs on top.
+- Two hooks widened a `void` return to the value they already had in hand:
+  `useCreditShareholdersBusinessTripTnS` to `number | void` (the count it reports in its own toast)
+  and `useAssignChargeToDeposit` to `string | void` (the deposit id). No caller reads either.
+- Failures now log the caught error as its own `console.error` argument instead of interpolating it
+  into the message, so the stack survives.

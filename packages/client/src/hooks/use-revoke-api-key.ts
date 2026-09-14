@@ -18,23 +18,23 @@ type UseRevokeApiKey = {
 
 const NOTIFICATION_ID = 'revokeApiKey';
 
-const MESSAGE = 'Error revoking API key';
-
 export const useRevokeApiKey = (): UseRevokeApiKey => {
   const { fetching, error, execute } = useApiMutation({
     document: RevokeApiKeyDocument,
     notificationId: NOTIFICATION_ID,
     loadingMessage: 'Revoking API key',
-    errorMessage: MESSAGE,
-    select: data => {
-      if (!data.revokeApiKey) {
-        // No GraphQL error, but the key was not revoked (already revoked or not found).
-        throw new Error('Failed to revoke API key. It may have already been revoked.');
-      }
-      return true as const;
-    },
-    successToast: { description: 'API key revoked successfully' },
-    errorDescription: e => (e instanceof Error ? e.message : MESSAGE),
+    errorMessage: 'Error revoking API key',
+    select: data => data.revokeApiKey,
+    // A `false` is not a failure to report through the error path: the mutation resolved, and
+    // callers refetch on it so the stale row is dropped. It only needs its own notification.
+    successToast: revoked =>
+      revoked
+        ? { description: 'API key revoked successfully' }
+        : {
+            variant: 'error',
+            title: 'Error',
+            description: 'Failed to revoke API key. It may have already been revoked.',
+          },
     errorToast: { duration: 10_000 },
   });
 

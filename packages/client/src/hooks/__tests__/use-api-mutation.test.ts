@@ -38,8 +38,8 @@ const DOCUMENT = {} as TypedDocumentNode<Data, Variables>;
 /** Resolves the mutation with `data`, as a successful urql `OperationResult` would. */
 const resolveWith = (data: Data) => vi.fn().mockResolvedValue({ data });
 
-async function renderHook<TResult>(
-  options: UseApiMutationOptions<Data, Variables, undefined, TResult>,
+async function renderHook<TKey extends keyof Data | undefined, TResult>(
+  options: UseApiMutationOptions<Data, Variables, TKey, TResult>,
 ) {
   const container = document.createElement('div');
   document.body.append(container);
@@ -77,7 +77,9 @@ const baseOptions = {
 
 describe('useApiMutation', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // `reset`, not `clear`: some tests install a `mockImplementation` on the toast spies to record
+    // ordering, and that would otherwise leak into every test that runs after them.
+    vi.resetAllMocks();
   });
 
   it('shows a loading toast, then a success toast under the same notification id', async () => {
@@ -168,13 +170,16 @@ describe('useApiMutation', () => {
     expect(toastMock.success).not.toHaveBeenCalled();
   });
 
-  it('runs `onSuccess` after a successful mutation', async () => {
-    useMutationMock.mockReturnValue([{ fetching: false }, resolveWith({ addTag: true })]);
-    const onSuccess = vi.fn();
+  it('runs `onSuccess` after the success toast, with the raw data', async () => {
+    const data = { addTag: true };
+    useMutationMock.mockReturnValue([{ fetching: false }, resolveWith(data)]);
+    const order: string[] = [];
+    toastMock.success.mockImplementation(() => void order.push('toast'));
+    const onSuccess = vi.fn(() => void order.push('onSuccess'));
 
     const { current } = await renderHook({
       ...baseOptions,
-      select: (data: Data) => data.addTag,
+      select: (d: Data) => d.addTag,
       onSuccess,
     });
 
@@ -182,7 +187,57 @@ describe('useApiMutation', () => {
       await current().execute({ tagName: 'travel' });
     });
 
-    expect(onSuccess).toHaveBeenCalledWith(true, { tagName: 'travel' });
+    expect(onSuccess).toHaveBeenCalledWith(true, { tagName: 'travel' }, data);
+    // The side effect must not pre-empt the notification the user sees.
+    expect(order).toEqual(['toast', 'onSuccess']);
+  });
+
+  it('reports a `CommonError` under `commonErrorPath` as a failure', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    // `handleCommonErrors` is the real one here, so this exercises the whole discriminator path.
+    useMutationMock.mockReturnValue([
+      { fetching: false },
+      vi.fn().mockResolvedValue({
+        data: { addTag: { __typename: 'CommonError', message: 'Tag already exists' } },
+      }),
+    ]);
+
+    const { current } = await renderHook({ ...baseOptions, commonErrorPath: 'addTag' as const });
+
+    let result: unknown = 'unset';
+    await act(async () => {
+      result = await current().execute({ tagName: 'travel' });
+    });
+
+    expect(result).toBeUndefined();
+    expect(toastMock.success).not.toHaveBeenCalled();
+    // `handleCommonErrors` raises it, carrying the server's own message.
+    expect(toastMock.error).toHaveBeenCalledTimes(1);
+    expect(toastMock.error).toHaveBeenCalledWith(
+      'Error',
+      expect.objectContaining({ description: 'Tag already exists', id: 'addTag' }),
+    );
+    consoleError.mockRestore();
+  });
+
+  it('shows the loading toast before awaiting the mutation', async () => {
+    const order: string[] = [];
+    toastMock.loading.mockImplementation(() => void order.push('loading'));
+    useMutationMock.mockReturnValue([
+      { fetching: false },
+      vi.fn().mockImplementation(() => {
+        order.push('mutate');
+        return Promise.resolve({ data: { addTag: true } });
+      }),
+    ]);
+
+    const { current } = await renderHook({ ...baseOptions, select: (d: Data) => d.addTag });
+
+    await act(async () => {
+      await current().execute({ tagName: 'travel' });
+    });
+
+    expect(order).toEqual(['loading', 'mutate']);
   });
 
   describe('failures', () => {

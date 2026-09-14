@@ -18,23 +18,23 @@ type UseRevokeInvitation = {
 
 const NOTIFICATION_ID = 'revokeInvitation';
 
-const MESSAGE = 'Error revoking invitation';
-
 export const useRevokeInvitation = (): UseRevokeInvitation => {
   const { fetching, error, execute } = useApiMutation({
     document: RevokeInvitationDocument,
     notificationId: NOTIFICATION_ID,
     loadingMessage: 'Revoking invitation',
-    errorMessage: MESSAGE,
-    select: data => {
-      if (!data.revokeInvitation) {
-        // No GraphQL error, but nothing was revoked (already revoked or not found).
-        throw new Error('Failed to revoke invitation. It may have already been revoked.');
-      }
-      return true as const;
-    },
-    successToast: { description: 'Invitation revoked successfully' },
-    errorDescription: e => (e instanceof Error ? e.message : MESSAGE),
+    errorMessage: 'Error revoking invitation',
+    select: data => data.revokeInvitation,
+    // A `false` is not a failure to report through the error path: the mutation resolved, and
+    // callers refetch on it so the stale row is dropped. It only needs its own notification.
+    successToast: revoked =>
+      revoked
+        ? { description: 'Invitation revoked successfully' }
+        : {
+            variant: 'error',
+            title: 'Error',
+            description: 'Failed to revoke invitation. It may have already been revoked.',
+          },
     errorToast: { duration: 10_000 },
   });
 

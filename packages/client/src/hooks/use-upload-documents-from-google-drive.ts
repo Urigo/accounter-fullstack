@@ -59,33 +59,15 @@ export const useUploadDocumentsFromGoogleDrive = (): UseUploadDocumentsFromGoogl
     loadingMessage: 'Uploading Documents',
     errorMessage: 'Error uploading documents',
     commonErrorPath: 'batchUploadDocumentsFromGoogleDrive',
-    select: data => {
-      let hasError = false;
-      const documents = (
-        data.batchUploadDocumentsFromGoogleDrive.filter(singleRes => {
-          if ('message' in singleRes) {
-            console.error(`Error uploading document: ${singleRes.message}`);
-            hasError = true;
-            return false;
-          }
-          return 'document' in singleRes;
-        }) as Extract<
+    select: data =>
+      (
+        data.batchUploadDocumentsFromGoogleDrive.filter(
+          singleRes => !('message' in singleRes) && 'document' in singleRes,
+        ) as Extract<
           UploadDocumentsFromGoogleDrive[number],
           { __typename?: 'UploadDocumentSuccessfulResult' }
         >[]
-      ).map(({ document }) => document as FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>);
-
-      // A per-file failure doesn't fail the batch, so it gets a toast of its own alongside the
-      // hook's success notification rather than replacing it.
-      if (hasError) {
-        toast.error('Some files failed to upload', {
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-
-      return documents;
-    },
+      ).map(({ document }) => document as FragmentType<typeof NewFetchedDocumentFieldsFragmentDoc>),
     successToast: documents => ({
       title: 'Upload Successful',
       description:
@@ -96,6 +78,23 @@ export const useUploadDocumentsFromGoogleDrive = (): UseUploadDocumentsFromGoogl
       dismissible: true,
       closeButton: true,
     }),
+    // A per-file failure doesn't fail the batch, so it gets a toast of its own — raised after the
+    // success notification, so sonner stacks it in front rather than behind.
+    onSuccess: (_documents, _variables, data) => {
+      const failures = data.batchUploadDocumentsFromGoogleDrive.filter(
+        singleRes => 'message' in singleRes,
+      );
+      if (failures.length === 0) {
+        return;
+      }
+      for (const failure of failures) {
+        console.error(`Error uploading document: ${failure.message}`);
+      }
+      toast.error('Some files failed to upload', {
+        duration: 100_000,
+        closeButton: true,
+      });
+    },
     errorToast: { duration: Infinity },
   });
 

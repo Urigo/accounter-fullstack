@@ -22,10 +22,12 @@ export type SuccessToast = ExternalToast & {
   /** Toast heading. Defaults to `'Success'`. */
   title?: string;
   /**
-   * Which sonner toast to raise. Defaults to `'success'`; `'warning'` suits a mutation that
-   * partly succeeded — it still resolved, so it is not the error path.
+   * Which sonner toast to raise. Defaults to `'success'`. The other variants are for a mutation
+   * that resolved without doing what was asked: `'warning'` when it partly succeeded, `'error'`
+   * when the server reported the whole operation as a no-op. Both are still this branch rather
+   * than the error path, because the caller needs the resolved value either way.
    */
-  variant?: 'success' | 'warning' | 'info';
+  variant?: 'success' | 'warning' | 'info' | 'error';
 };
 
 /** Error notification defaults: long-lived and dismissible, so a failure is never missed. */
@@ -67,10 +69,13 @@ export type UseApiMutationOptions<
   /** Success notification, or `false` to show none. Defaults to a plain `'Success'` toast. */
   successToast?: FromResult<TResult, TVariables, SuccessToast | false>;
   /**
-   * Side effects to run once the mutation succeeded and its toast was shown — refreshing a
-   * cache, for instance. Use `select` instead to shape what `execute` resolves to.
+   * Side effects to run once the mutation succeeded and its toast was shown — refreshing a cache,
+   * or reporting the partial failures inside an otherwise successful batch. Use `select` instead
+   * to shape what `execute` resolves to; it also receives the raw `data`, for the detail `select`
+   * narrowed away. Runs inside the hook's `try`, so throwing from it replaces the success toast
+   * with an error one and makes `execute` resolve to nothing.
    */
-  onSuccess?: (result: TResult, variables: TVariables) => void;
+  onSuccess?: (result: TResult, variables: TVariables, data: NonCommonError<TData, TKey>) => void;
   /** Overrides for the error notification, on top of {@link ERROR_TOAST_DEFAULTS}. */
   errorToast?: ExternalToast;
   /**
@@ -162,11 +167,13 @@ export function useApiMutation<
           toast[variant](title, { ...toastOptions, id: notificationId });
         }
 
-        onSuccess?.(result, variables);
+        onSuccess?.(result, variables, data);
 
         return result;
       } catch (e) {
-        console.error(`${errorMessage}: ${e}`);
+        // Pass the error as its own argument rather than interpolating it, so the console keeps
+        // the Error object and its stack instead of just the message.
+        console.error(`${errorMessage}:`, e);
         toast.error('Error', {
           description: errorDescription ? errorDescription(e, variables) : errorMessage,
           ...ERROR_TOAST_DEFAULTS,

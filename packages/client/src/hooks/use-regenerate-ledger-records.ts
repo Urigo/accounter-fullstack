@@ -33,9 +33,14 @@ type UseRegenerateLedgerRecords = {
 
 const NOTIFICATION_ID = 'regenerateLedgerRecords';
 
+const MESSAGE = 'Error regenerating ledger';
+
 /** The mutation's list variable also accepts a bare id, so normalise before counting. */
 const toChargeIds = (chargeIds: string | string[]): string[] =>
   Array.isArray(chargeIds) ? chargeIds : [chargeIds];
+
+const failuresIn = (results: RegenerateResult[]) =>
+  results.filter(result => result.__typename === 'CommonError');
 
 export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
   // TODO: add authentication
@@ -57,10 +62,10 @@ export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
         ? `Regenerating Ledger for ${chargeIds.length} charges`
         : 'Regenerating Ledger';
     },
-    errorMessage: 'Error regenerating ledger',
+    errorMessage: MESSAGE,
     select: data => {
       const results = data.regenerateLedgerRecords;
-      const failures = results.filter(result => result.__typename === 'CommonError');
+      const failures = failuresIn(results);
 
       // Every charge failed — surface the combined message via the error branch.
       if (failures.length > 0 && failures.length === results.length) {
@@ -70,7 +75,7 @@ export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
       return results;
     },
     successToast: (results, variables) => {
-      const failures = results.filter(result => result.__typename === 'CommonError');
+      const failures = failuresIn(results);
       if (failures.length > 0) {
         return {
           variant: 'warning',
@@ -87,7 +92,7 @@ export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
             : 'Ledger records were regenerated',
       };
     },
-    errorDescription: e => (e instanceof Error ? e.message : 'Error regenerating ledger'),
+    errorDescription: e => (e instanceof Error ? e.message : MESSAGE),
   });
 
   const regenerateLedgerRecords = useCallback(
