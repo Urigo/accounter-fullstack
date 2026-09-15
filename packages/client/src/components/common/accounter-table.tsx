@@ -1,6 +1,8 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
-import { Paper, Table } from '@mantine/core';
+import { cn } from '../../lib/utils.js';
 import { Button } from '../ui/button.js';
+import { Card } from '../ui/card.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 
 export interface AccounterTableProps<T, U> {
   highlightOnHover?: boolean;
@@ -33,16 +35,16 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>): ReactElem
 
   return (
     <>
-      <tr>
+      <TableRow>
         {props.columns.map((c, index) =>
           c.disabled ? null : (
-            <td key={String(index)} style={c.style}>
+            <TableCell key={String(index)} style={c.style}>
               {c.value(props.item, props.rowContext ? props.rowContext(props.item) : undefined)}
-            </td>
+            </TableCell>
           ),
         )}
         {props.moreInfo && (
-          <td>
+          <TableCell>
             {moreInfoValue === null ? (
               <p>No Data Related</p>
             ) : (
@@ -50,17 +52,15 @@ export function AccounterTableRow<T, U>(props: AccountTableRow<T, U>): ReactElem
                 More Info
               </Button>
             )}
-          </td>
+          </TableCell>
         )}
-      </tr>
+      </TableRow>
       {(props.isShowAll || opened) && moreInfoValue !== null && (
-        <tr>
-          <td colSpan={12}>
-            <Paper style={{ width: '100%' }} withBorder shadow="lg">
-              {moreInfoValue}
-            </Paper>
-          </td>
-        </tr>
+        <TableRow>
+          <TableCell colSpan={12}>
+            <Card className="w-full shadow-lg">{moreInfoValue}</Card>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );
@@ -83,16 +83,19 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>): ReactNod
           </Button>
         ) : null}
       </div>
-      <Table striped={props.striped} highlightOnHover={props.highlightOnHover}>
-        <thead style={props.stickyHeader ? { position: 'sticky', top: 0, zIndex: 20 } : {}}>
-          <tr className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
+      {/* `highlightOnHover` is TableRow's default, so the prop only feeds `striped` now.
+          Mantine's striped selector was `> tbody > tr:nth-of-type(odd)`; the child
+          combinators matter because these tables nest a table in their "More Info" row. */}
+      <Table className={cn(props.striped && '[&>tbody>tr:nth-child(odd)]:bg-gray-50')}>
+        <TableHeader className={cn(props.stickyHeader && 'sticky top-0 z-20')}>
+          <TableRow className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
             {props.columns.map((c, index) =>
-              c.disabled ? null : <th key={String(index)}>{c.title}</th>,
+              c.disabled ? null : <TableHead key={String(index)}>{c.title}</TableHead>,
             )}
-            {props.moreInfo && <th>More Info</th>}
-          </tr>
-        </thead>
-        <tbody>
+            {props.moreInfo && <TableHead>More Info</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {props.items.map((item, index) => (
             <AccounterTableRow
               key={index}
@@ -103,7 +106,7 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>): ReactNod
               rowContext={props.rowContext}
             />
           ))}
-        </tbody>
+        </TableBody>
       </Table>
     </>
   );
