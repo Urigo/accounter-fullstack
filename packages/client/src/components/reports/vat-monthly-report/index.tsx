@@ -1,6 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import type { RowSelectionState } from '@tanstack/react-table';
 import {
@@ -14,6 +13,7 @@ import { FiltersContext } from '../../../providers/filters-context.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { MergeChargesButton } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { BusinessTripsTable } from './business-trips-table.js';
 import { ExpensesTable } from './expenses-section/expenses-table.js';
 import { IncomeTable } from './income-section/income-table.js';
@@ -132,7 +132,7 @@ export const VatMonthlyReport = (): ReactElement => {
       title={`VAT Monthly Report${filter.monthDate ? `, ${format(new Date(filter.monthDate), 'MMMM yyyy')}` : ''}`}
     >
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <div className="min-h-screen">
           <div className="space-y-4">

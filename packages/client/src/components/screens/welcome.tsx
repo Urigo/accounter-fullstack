@@ -1,10 +1,10 @@
 import { useEffect, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useLogout } from '../../hooks/use-logout.js';
 import { useViewer } from '../../hooks/use-viewer.js';
 import { ROUTES } from '../../router/routes.js';
+import { AccounterSpinner } from '../ui/accounter-spinner.js';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert.js';
 import { Button } from '../ui/button.js';
 
@@ -37,7 +37,7 @@ export function WelcomePage(): ReactElement {
   if (isLoading || fetching) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-10 w-10 animate-spin" />
+        <AccounterSpinner />
       </div>
     );
   }

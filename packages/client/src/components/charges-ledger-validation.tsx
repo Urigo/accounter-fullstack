@@ -10,6 +10,7 @@ import { ChargesFilters } from './charges/charges-filters/index.js';
 import { ChargesTable } from './charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
+import { AccounterBarSpinner } from './ui/accounter-spinner.js';
 import { Button } from './ui/button.js';
 import { Progress } from './ui/progress.js';
 
@@ -152,7 +153,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
   return (
     <PageLayout title="Charges Ledger Validation" description="Manage charges">
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <>
           <ChargesTable

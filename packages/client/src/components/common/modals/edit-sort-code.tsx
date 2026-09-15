@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import { Edit, Loader2 } from 'lucide-react';
+import { Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
@@ -10,6 +10,7 @@ import {
 } from '../../../gql/graphql.js';
 import { relevantDataPicker, type MakeBoolean } from '../../../helpers/index.js';
 import { useUpdateSortCode } from '../../../hooks/use-update-sort-code.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -91,7 +92,7 @@ function ModalContent({ sortCodeKey, ownerId, close, onAdd }: ModalContentProps)
   }
 
   return fetching ? (
-    <Loader2 className="h-10 w-10 animate-spin" />
+    <AccounterSpinner />
   ) : sortCode ? (
     <EditSortCodeForm sortCode={sortCode} close={close} onAdd={onAdd} />
   ) : (

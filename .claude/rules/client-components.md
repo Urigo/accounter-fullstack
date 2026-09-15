@@ -48,9 +48,20 @@ export function FormComponent(): ReactElement {
 
 ## Error & Loading States
 
-- Loading: `<Loader2 className="h-10 w-10 animate-spin" />` from `lucide-react`.
-- Errors: `<Alert variant="destructive">` with `AlertTitle` and `AlertDescription` from
-  `../../components/ui/alert.js`.
+Loading states use the animated Accounter abacus, from `../../components/ui/accounter-spinner.js`.
+Both variants take the surrounding text colour and stand still under `prefers-reduced-motion`. Pick
+by the shape of the slot:
+
+- Wide and short — an overlay over a table, a full-width panel, a placeholder where a row of data is
+  about to appear: `<AccounterBarSpinner />` (one rod, three beads, 10:3; keep any size override on
+  that ratio).
+- Roughly square — a whole route, a dialog, a card: `<AccounterSpinner />` (the full abacus, resized
+  with `size-*`).
+- Inline, inside a button or a table cell: `<Spinner />` from `../../components/ui/spinner.js` — the
+  abacus is unreadable below ~40px.
+
+Errors: `<Alert variant="destructive">` with `AlertTitle` and `AlertDescription` from
+`../../components/ui/alert.js`.
 
 ## GraphQL Integration
 

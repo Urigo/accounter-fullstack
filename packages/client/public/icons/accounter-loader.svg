@@ -1,0 +1,95 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 600 600"
+  width="600"
+  height="600"
+  role="img"
+  aria-label="Loading"
+  shape-rendering="geometricPrecision"
+>
+  <title>Loading</title>
+  <g fill="none" stroke="#000102" stroke-width="14">
+    <!-- Rods -->
+    <line x1="125" y1="145" x2="475" y2="145" />
+    <line x1="125" y1="300" x2="475" y2="300" />
+    <line x1="125" y1="450" x2="475" y2="450" />
+    <!-- Frame posts, drawn last so their stroke caps the rod ends -->
+    <rect x="75" y="75" width="50" height="450" rx="25" />
+    <rect x="475" y="75" width="50" height="450" rx="25" />
+  </g>
+  <!-- Beads, sliding along their rods -->
+  <g fill="#000102">
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="250 145; 175 145; 250 145"
+        keyTimes="0; 0.5; 1"
+        calcMode="spline"
+        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+        dur="1.6s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="400 145; 425 145; 400 145"
+        keyTimes="0; 0.5; 1"
+        calcMode="spline"
+        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+        dur="1.9s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="200 300; 175 300; 200 300"
+        keyTimes="0; 0.5; 1"
+        calcMode="spline"
+        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+        dur="1.4s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="300 300; 340 300; 300 300"
+        keyTimes="0; 0.5; 1"
+        calcMode="spline"
+        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+        dur="1.8s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="400 300; 425 300; 400 300"
+        keyTimes="0; 0.5; 1"
+        calcMode="spline"
+        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+        dur="1.5s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="350 450; 175 450; 350 450"
+        keyTimes="0; 0.5; 1"
+        calcMode="spline"
+        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+        dur="2.2s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+  </g>
+</svg>
