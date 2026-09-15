@@ -1,0 +1,7 @@
+---
+"@accounter/scraper-app": patch
+---
+dependencies updates:
+  - Updated dependency [`react@19.3.0` ↗︎](https://www.npmjs.com/package/react/v/19.3.0) (from `19.2.8`, in `dependencies`)
+  - Updated dependency [`react-dom@19.3.0` ↗︎](https://www.npmjs.com/package/react-dom/v/19.3.0) (from `19.2.8`, in `dependencies`)
+  - Updated dependency [`zod@4.6.5` ↗︎](https://www.npmjs.com/package/zod/v/4.6.5) (from `4.5.4`, in `dependencies`)
