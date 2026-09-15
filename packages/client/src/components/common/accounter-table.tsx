@@ -5,7 +5,6 @@ import { Card } from '../ui/card.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 
 export interface AccounterTableProps<T, U> {
-  highlightOnHover?: boolean;
   striped?: boolean;
   stickyHeader?: boolean;
   columns: Array<{
@@ -83,9 +82,11 @@ export function AccounterTable<T, U>(props: AccounterTableProps<T, U>): ReactNod
           </Button>
         ) : null}
       </div>
-      {/* `highlightOnHover` is TableRow's default, so the prop only feeds `striped` now.
-          Mantine's striped selector was `> tbody > tr:nth-of-type(odd)`; the child
-          combinators matter because these tables nest a table in their "More Info" row. */}
+      {/* `highlightOnHover` is gone from the props: TableRow highlights on hover
+          unconditionally, so a prop that could only ever turn it off — and which no caller
+          passed as false — would have been API that did nothing. Mantine's striped selector
+          was `> tbody > tr:nth-of-type(odd)`; the child combinators matter because these
+          tables nest a table in their "More Info" row. */}
       <Table className={cn(props.striped && '[&>tbody>tr:nth-child(odd)]:bg-gray-50')}>
         <TableHeader className={cn(props.stickyHeader && 'sticky top-0 z-20')}>
           <TableRow className="px-10 py-10 title-font tracking-wider font-medium text-gray-900 text-sm bg-gray-100 rounded-tl rounded-bl">
