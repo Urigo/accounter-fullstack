@@ -22,6 +22,17 @@
   would make the `.dark` overrides below dead code.
 */
 @theme {
+  /*
+    Mantine's `withGlobalStyles` set these on `body` from its theme, and removing the provider
+    took them with it. `Roboto` was never actually loaded — no @fontsource package, no <link> in
+    index.html — so it always fell through to the generic `sans-serif`; the stack below is the
+    system one that renders, spelled out rather than left to the browser default. The 1.55
+    line-height is Mantine's, kept so the teardown is not also a global typography shift.
+  */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
   --color-background: #fff;
   --color-foreground: oklch(13% 0.028 261.692); /* gray-950 */
 
@@ -116,6 +127,13 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+
   *,
   ::after,
   ::before,
