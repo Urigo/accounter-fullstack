@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Table } from '@mantine/core';
 import { ChargeDepreciationDocument, DepreciationType } from '../../../gql/graphql.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { AddDepreciationRecord } from './add-depreciation-record.js';
 import { DepreciationRow } from './depreciation-row.js';
 
@@ -34,7 +34,7 @@ export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
   }
 
   return fetching ? (
-    <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+    <AccounterBarSpinner className="self-center" />
   ) : (
     <div className="flex flex-col gap-2 mt-5">
       <Table highlightOnHover withBorder>

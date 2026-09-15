@@ -1,5 +1,5 @@
 import { useContext, useState, type ReactElement } from 'react';
-import { Edit, Loader2 } from 'lucide-react';
+import { Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
@@ -10,6 +10,7 @@ import {
   type UpdateTaxCategoryInput,
 } from '../../../gql/graphql.js';
 import { useUpdateTaxCategory } from '../../../hooks/use-update-tax-category.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -87,7 +88,7 @@ function ModalContent({ taxCategoryId, close, onAdd }: ModalContentProps): React
   }
 
   return fetching ? (
-    <Loader2 className="h-10 w-10 animate-spin" />
+    <AccounterSpinner />
   ) : (
     <EditTaxCategoryForm taxCategory={taxCategory!} close={close} onAdd={onAdd} />
   );

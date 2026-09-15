@@ -1,6 +1,5 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { format, sub } from 'date-fns';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   MonthlyIncomeExpenseChartDocument,
@@ -10,6 +9,7 @@ import { currencyCodeToSymbol, type TimelessDateString } from '../../../helpers/
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { ChartFilter } from './chart-filter.js';
 import { Chart } from './chart.js';
 
@@ -68,7 +68,7 @@ export const MonthlyIncomeExpenseChart = (): ReactElement => {
   return (
     <PageLayout title="Monthly Income / Expense Chart" description={description}>
       {fetching || !data ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <Chart data={data.incomeExpenseChart} />
       )}

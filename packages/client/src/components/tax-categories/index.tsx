@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useContext, useEffect, useMemo, type ReactElement } from 'react';
-import { ArrowUpDown, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
@@ -20,6 +20,7 @@ import { FiltersContext } from '../../providers/filters-context.js';
 import { DataTablePagination, InsertTaxCategory } from '../common/index.js';
 import { EditTaxCategory } from '../common/modals/edit-tax-category.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Button } from '../ui/button.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { IrsCode } from './cells/irs-code.js';
@@ -266,7 +267,7 @@ export const TaxCategories = (): ReactElement => {
     >
       {fetching ? (
         <div className="flex flex-row justify-center">
-          <Loader2 className="h-10 w-10 animate-spin mr-2" />
+          <AccounterBarSpinner />
         </div>
       ) : (
         <div className="flex flex-col gap-4 rounded-md border">

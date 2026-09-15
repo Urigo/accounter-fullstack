@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   AccountantApprovalsChargesTableDocument,
@@ -11,6 +10,7 @@ import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { ChargesFilters } from '../charges/charges-filters/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { SegmentedProgress } from '../ui/segmented-progress.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -92,7 +92,7 @@ export const AccountantApprovals = (): ReactElement => {
   return (
     <PageLayout title="Accountant Approvals Status">
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <div className="mx-10 mt-5 flex flex-col gap-5">
           {`Total charges: ${charges}`}

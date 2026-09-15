@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { CorporateTaxRulingComplianceReportDocument, Currency } from '../../../gql/graphql.js';
@@ -7,6 +6,7 @@ import { dedupeFragments, getCurrencyFormatter } from '../../../helpers/index.js
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PrintToPdfButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Indicator } from '../../ui/indicator.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { AmountCell } from './amount-cell.js';
@@ -150,7 +150,7 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
       }
     >
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <div className="flex flex-col gap-4">
           {yearlyReports && (

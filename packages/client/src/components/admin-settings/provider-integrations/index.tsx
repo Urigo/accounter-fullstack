@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
-import { Spinner } from '@/components/ui/spinner.js';
 import { ProviderKey } from '@/gql/graphql.js';
 import { useProviderCredentials } from '@/hooks/use-provider-credentials.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { DeelCard } from './deel-card.js';
 import { GreenInvoiceCard } from './green-invoice-card.js';
 
@@ -11,7 +11,7 @@ export function ProviderIntegrations(): ReactElement {
   if (fetching) {
     return (
       <div className="flex justify-center p-8">
-        <Spinner className="h-10 w-10" />
+        <AccounterBarSpinner />
       </div>
     );
   }

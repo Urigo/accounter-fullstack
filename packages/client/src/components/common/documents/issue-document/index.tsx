@@ -11,6 +11,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { useIssueDocument } from '../../../../hooks/use-issue-document.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
+import { AccounterSpinner } from '../../../ui/accounter-spinner.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import {
@@ -224,7 +225,7 @@ export function GenerateDocument({
                 <div className="border-2 border-dashed border-gray-200 rounded-lg min-h-[600px] flex items-center justify-center bg-gray-50">
                   {previewFetching ? (
                     <div className="text-center">
-                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
+                      <AccounterSpinner className="mx-auto mb-4 text-gray-400" />
                       <p className="text-gray-500">Generating document preview...</p>
                     </div>
                   ) : previewContent ? (

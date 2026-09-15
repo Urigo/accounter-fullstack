@@ -1,15 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  Calculator,
-  Download,
-  Eye,
-  FileText,
-  Loader2,
-  Lock,
-  Settings,
-  Upload,
-  Users,
-} from 'lucide-react';
+import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { AnnualAuditStepsStatusDocument } from '@/gql/graphql.js';
@@ -17,6 +7,7 @@ import { ROUTES } from '@/router/routes.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { PageLayout } from '../../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../../ui/accounter-spinner.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Progress } from '../../../ui/progress.js';
@@ -179,7 +170,7 @@ export const AnnualAuditFlow = (): ReactNode => {
         {isLoadingStepStatuses ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center gap-3 py-10">
-              <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+              <AccounterBarSpinner className="text-muted-foreground" />
               <p className="text-sm text-muted-foreground">Loading annual audit step statuses...</p>
             </CardContent>
           </Card>

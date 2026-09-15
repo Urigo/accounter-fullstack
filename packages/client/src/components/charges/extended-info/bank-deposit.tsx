@@ -1,5 +1,4 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { DepositsTransactionsTable } from '@/components/bank-deposits/index.js';
 import { Alert, AlertDescription } from '@/components/ui/alert.js';
@@ -24,6 +23,7 @@ import { BankDepositInfoDocument } from '../../../gql/graphql.js';
 import { useAssignChargeToDeposit } from '../../../hooks/use-assign-charge-to-deposit.js';
 import { useCreateDepositFromCharge } from '../../../hooks/use-create-deposit-from-charge.js';
 import { useRelevantDepositsForCharge } from '../../../hooks/use-relevant-deposits-for-charge.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -128,7 +128,7 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
   );
 
   if (isInitialLoading) {
-    return <Loader2 className="h-10 w-10 animate-spin" />;
+    return <AccounterSpinner />;
   }
 
   if (depositData?.depositByCharge) {

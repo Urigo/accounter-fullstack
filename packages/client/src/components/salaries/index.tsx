@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { SalaryScreenRecordsDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
@@ -10,6 +9,7 @@ import {
   InsertSalaryRecordModal,
 } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { getDefaultFilterDates, SalariesFilters, type SalariesFilter } from './salaries-filters.js';
 import { SalariesTable } from './salaries-table.js';
 
@@ -66,7 +66,7 @@ export const Salaries = (): ReactElement => {
   return (
     <PageLayout title="Salaries" description="View and manage salaries of employees.">
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <SalariesTable
           setEditSalaryRecord={setEditSalaryRecord}
