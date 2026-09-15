@@ -478,5 +478,110 @@ export async function insertFixture(
     });
   }
 
+  // 7. Insert VAT rates (global reference data, no owner)
+  if (fixture.vatValues?.values && fixture.vatValues.values.length > 0) {
+    await executeSavepointSection('vat_value', async () => {
+      for (const vatValue of fixture.vatValues!.values) {
+        await client.query(
+          `INSERT INTO ${qualifyTable('vat_value')} (date, percentage)
+           VALUES ($1, $2)
+           ON CONFLICT (date) DO NOTHING`,
+          [vatValue.date, vatValue.percentage],
+        );
+      }
+    });
+  }
+
+  // 8. Insert business trips, their charge links, expenses and transaction matches
+  if (fixture.businessTrips) {
+    const {
+      trips = [],
+      chargeLinks = [],
+      expenses = [],
+      transactionMatches = [],
+    } = fixture.businessTrips;
+
+    // Every table here is RLS-scoped by owner_id, so the session target is pinned per row.
+    const setOwner = (ownerId: string) =>
+      client.query("SELECT set_config('app.current_business_id', $1, true)", [ownerId]);
+
+    if (trips.length > 0) {
+      await executeSavepointSection('business_trips', async () => {
+        for (const trip of trips) {
+          await setOwner(trip.ownerId);
+          await client.query(
+            `INSERT INTO ${qualifyTable('business_trips')} (
+              id, name, destination, trip_purpose, owner_id
+            )
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (id) DO NOTHING`,
+            [trip.id, trip.name, trip.destination ?? null, trip.tripPurpose ?? null, trip.ownerId],
+          );
+          idMapping.set(trip.id, trip.id);
+        }
+      });
+    }
+
+    if (chargeLinks.length > 0) {
+      await executeSavepointSection('business_trip_charges', async () => {
+        for (const link of chargeLinks) {
+          await setOwner(link.ownerId);
+          await client.query(
+            `INSERT INTO ${qualifyTable('business_trip_charges')} (
+              business_trip_id, charge_id, owner_id
+            )
+            VALUES ($1, $2, $3)
+            ON CONFLICT (charge_id) DO NOTHING`,
+            [link.businessTripId, link.chargeId, link.ownerId],
+          );
+        }
+      });
+    }
+
+    if (expenses.length > 0) {
+      await executeSavepointSection('business_trips_transactions', async () => {
+        for (const expense of expenses) {
+          await setOwner(expense.ownerId);
+          await client.query(
+            `INSERT INTO ${qualifyTable('business_trips_transactions')} (
+              id, business_trip_id, category, owner_id
+            )
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO NOTHING`,
+            [expense.id, expense.businessTripId, expense.category, expense.ownerId],
+          );
+          // Only 'OTHER' carries a generic detail row; the rest have category-specific tables
+          // that fixtures do not need yet.
+          if (expense.category === 'OTHER') {
+            await client.query(
+              `INSERT INTO ${qualifyTable('business_trips_transactions_other')} (
+                id, deductible_expense, description, owner_id
+              )
+              VALUES ($1, $2, $3, $4)
+              ON CONFLICT (id) DO NOTHING`,
+              [expense.id, true, expense.description ?? null, expense.ownerId],
+            );
+          }
+          idMapping.set(expense.id, expense.id);
+        }
+      });
+    }
+
+    if (transactionMatches.length > 0) {
+      await executeSavepointSection('business_trips_transactions_match', async () => {
+        for (const match of transactionMatches) {
+          await setOwner(match.ownerId);
+          await client.query(
+            `INSERT INTO ${qualifyTable('business_trips_transactions_match')} (
+              business_trip_transaction_id, transaction_id, amount, owner_id
+            )
+            VALUES ($1, $2, $3, $4)`,
+            [match.businessTripExpenseId, match.transactionId, match.amount, match.ownerId],
+          );
+        }
+      });
+    }
+  }
+
   return idMapping;
 }

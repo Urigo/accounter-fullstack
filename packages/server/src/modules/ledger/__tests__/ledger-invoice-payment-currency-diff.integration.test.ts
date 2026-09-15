@@ -5,10 +5,15 @@ import {
   CURRENCY_DIFF_FOREIGN_INVOICE_IDS,
   CURRENCY_DIFF_LOCAL_INVOICE_IDS,
   CURRENCY_DIFF_LOCAL_PAYMENT_IDS,
+  CURRENCY_DIFF_MIXED_IDS,
+  CURRENCY_DIFF_MIXED_USD_RATE,
+  CURRENCY_DIFF_TRIP_IDS,
   CURRENCY_DIFF_USD_RATE,
+  currencyDiffBusinessTripScenario,
   currencyDiffForeignInvoiceScenario,
   currencyDiffLocalInvoiceScenario,
   currencyDiffLocalPaymentScenario,
+  currencyDiffMixedDocumentsScenario,
 } from '../../../__tests__/fixtures/expenses/invoice-payment-currency-diff.js';
 import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-context-builder.js';
 import { TestDatabase } from '../../../__tests__/helpers/db-setup.js';
@@ -31,9 +36,12 @@ import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helpe
  * local-currency difference that is left over is absorbed by an exchange-rate record. Either
  * way the counterparty must end up balanced in local currency once generation is done.
  *
- * The scenarios below are the same shape — vendor invoice, later payment from another account —
- * and differ only in which leg is foreign, which is what decides how many foreign positions the
- * vendor holds and therefore which branch of `multipleForeignCurrenciesBalanceEntries` runs.
+ * The first three scenarios are the same shape — vendor invoice, later payment from another
+ * account — and differ only in which leg is foreign, which is what decides how many foreign
+ * positions the vendor holds and therefore which branch of
+ * `multipleForeignCurrenciesBalanceEntries` runs. The last two carry the same flag in messier
+ * shapes: a business trip reimbursement spanning several invoices in two currencies, and a
+ * charge whose invoice and receipt are in different currencies.
  */
 describe('Ledger Generation - invoice/payment currency difference', () => {
   let db: TestDatabase;
@@ -58,7 +66,9 @@ describe('Ledger Generation - invoice/payment currency difference', () => {
   type ScenarioIds =
     | typeof CURRENCY_DIFF_FOREIGN_INVOICE_IDS
     | typeof CURRENCY_DIFF_LOCAL_INVOICE_IDS
-    | typeof CURRENCY_DIFF_LOCAL_PAYMENT_IDS;
+    | typeof CURRENCY_DIFF_LOCAL_PAYMENT_IDS
+    | typeof CURRENCY_DIFF_TRIP_IDS
+    | typeof CURRENCY_DIFF_MIXED_IDS;
   type LedgerRow = Record<string, unknown>;
 
   async function insertScenario(fixture: Fixture, ids: ScenarioIds): Promise<void> {
@@ -102,6 +112,37 @@ describe('Ledger Generation - invoice/payment currency difference', () => {
           ids.chargeId,
         ]),
       );
+      if ('tripId' in ids) {
+        // Trip rows reference both the transaction and the charge, so they go first.
+        await run('business_trips_transactions_match', () =>
+          client.query(
+            `DELETE FROM ${qualifyTable('business_trips_transactions_match')}
+             WHERE transaction_id = $1`,
+            [ids.transactionId],
+          ),
+        );
+        await run('business_trips_transactions_other', () =>
+          client.query(
+            `DELETE FROM ${qualifyTable('business_trips_transactions_other')} WHERE id = $1`,
+            [ids.tripExpenseId],
+          ),
+        );
+        await run('business_trips_transactions', () =>
+          client.query(
+            `DELETE FROM ${qualifyTable('business_trips_transactions')} WHERE id = $1`,
+            [ids.tripExpenseId],
+          ),
+        );
+        await run('business_trip_charges', () =>
+          client.query(`DELETE FROM ${qualifyTable('business_trip_charges')} WHERE charge_id = $1`, [
+            ids.chargeId,
+          ]),
+        );
+        await run('business_trips', () =>
+          client.query(`DELETE FROM ${qualifyTable('business_trips')} WHERE id = $1`, [ids.tripId]),
+        );
+      }
+
       // Transactions first, so the transactions_raw_list orphan can then be cleaned up.
       await run('transactions', () =>
         client.query(`DELETE FROM ${qualifyTable('transactions')} WHERE charge_id = $1`, [
@@ -116,6 +157,14 @@ describe('Ledger Generation - invoice/payment currency difference', () => {
       await run('charges', () =>
         client.query(`DELETE FROM ${qualifyTable('charges')} WHERE id = $1`, [ids.chargeId]),
       );
+      if ('vatValueDates' in ids) {
+        // Global reference data, so it does not belong to any one suite for longer than needed.
+        await run('vat_value', () =>
+          client.query(`DELETE FROM ${qualifyTable('vat_value')} WHERE date = ANY($1)`, [
+            [...ids.vatValueDates],
+          ]),
+        );
+      }
       await run('financial_accounts_tax_categories', () =>
         client.query(
           `DELETE FROM ${qualifyTable('financial_accounts_tax_categories')}
@@ -156,7 +205,11 @@ describe('Ledger Generation - invoice/payment currency difference', () => {
     }
   }
 
-  async function generateLedger(ids: ScenarioIds, client: PoolClient) {
+  async function generateLedger(
+    ids: ScenarioIds,
+    client: PoolClient,
+    rates: typeof exchangeRates = exchangeRates,
+  ) {
     const adminContext = await buildAdminContextFromDb(client);
     await client.query("SELECT set_config('app.current_business_id', $1, false)", [ids.adminId]);
 
@@ -174,7 +227,7 @@ describe('Ledger Generation - invoice/payment currency difference', () => {
       env,
       moduleId: 'ledger',
       businessId: adminContext.ownerId,
-      mockExchangeRates: exchangeRates,
+      mockExchangeRates: rates,
     });
 
     const result = await ledgerGenerationByCharge(
@@ -393,6 +446,148 @@ describe('Ledger Generation - invoice/payment currency difference', () => {
         expect(exchangeRecord.credit_entity1).toBe(vendorId);
         expect(exchangeRecord.debit_entity1).toBe(expenseTaxCategoryId);
         expect(Number(exchangeRecord.credit_local_amount1)).toBeCloseTo(8.5, 2);
+      } finally {
+        client.release();
+      }
+    });
+  });
+  describe('business trip: several foreign invoices reimbursed in local currency', () => {
+    beforeAll(async () => {
+      await insertScenario(currencyDiffBusinessTripScenario, CURRENCY_DIFF_TRIP_IDS);
+    });
+
+    afterAll(async () => {
+      await cleanupScenario(CURRENCY_DIFF_TRIP_IDS);
+    });
+
+    it('leaves the employee balanced in local currency', async () => {
+      const client = await db.getPool().connect();
+      try {
+        const { records, errors, balance } = await generateLedger(CURRENCY_DIFF_TRIP_IDS, client);
+
+        // Four USD invoices (61.94 USD × 3.0 = 185.82 ILS) plus one ILS invoice (150.40) are
+        // credited to the employee, who is then reimbursed 360.00 ILS — an 23.78 ILS
+        // difference, which the exchange-rate record absorbs.
+        const employeeBalance = localBalanceOf(records, CURRENCY_DIFF_TRIP_IDS.vendorId);
+        expect(employeeBalance.debit).toBeCloseTo(employeeBalance.credit, 2);
+
+        expect(errors).toEqual([]);
+        expect(balance?.isBalanced).toBe(true);
+        expect(balance?.balanceSum).toBeCloseTo(0, 2);
+      } finally {
+        client.release();
+      }
+    });
+
+    it('closes only the USD position, leaving the local-currency invoice alone', async () => {
+      const client = await db.getPool().connect();
+      try {
+        const { records } = await generateLedger(CURRENCY_DIFF_TRIP_IDS, client);
+        const { vendorId, expenseTaxCategoryId } = CURRENCY_DIFF_TRIP_IDS;
+
+        // One entry per invoice, plus the reimbursement.
+        expect(records).toHaveLength(8);
+
+        // The ILS invoice is already in local currency, so only the pooled USD position needs
+        // closing: a single balancing record for all four USD invoices together.
+        const balancingRecords = byDescription(records, 'Foreign currency balance');
+        expect(balancingRecords).toHaveLength(1);
+        const [balancingRecord] = balancingRecords;
+        expect(balancingRecord.currency).toBe(Currency.Usd);
+        expect(balancingRecord.debit_entity1).toBe(vendorId);
+        expect(balancingRecord.credit_entity1).toBe(vendorId);
+        // The employee is owed USD here (the opposite of the vendor scenarios above), so the
+        // foreign leg sits on the debit side.
+        expect(balancingRecord.credit_foreign_amount1).toBeNull();
+        expect(Number(balancingRecord.debit_foreign_amount1)).toBeCloseTo(61.94, 2);
+        expect(Number(balancingRecord.credit_local_amount1)).toBeCloseTo(185.82, 2);
+
+        // The 23.78 ILS left over is booked against the trip's tax category.
+        const exchangeRecords = byDescription(records, 'Exchange ledger record');
+        expect(exchangeRecords).toHaveLength(1);
+        const [exchangeRecord] = exchangeRecords;
+        expect(exchangeRecord.currency).toBe(Currency.Ils);
+        expect(exchangeRecord.credit_entity1).toBe(vendorId);
+        expect(exchangeRecord.debit_entity1).toBe(expenseTaxCategoryId);
+        expect(Number(exchangeRecord.credit_local_amount1)).toBeCloseTo(23.78, 2);
+      } finally {
+        client.release();
+      }
+    });
+  });
+  describe('local invoice alongside a foreign receipt (the invoice is the accounting document)', () => {
+    // Settled at the rate the real charge used, so the leftover difference is the real 47.20.
+    const mixedRates = createMockExchangeRates([
+      { fromCurrency: Currency.Usd, toCurrency: Currency.Ils, rate: CURRENCY_DIFF_MIXED_USD_RATE },
+    ]);
+
+    beforeAll(async () => {
+      await insertScenario(currencyDiffMixedDocumentsScenario, CURRENCY_DIFF_MIXED_IDS);
+    });
+
+    afterAll(async () => {
+      await cleanupScenario(CURRENCY_DIFF_MIXED_IDS);
+    });
+
+    it('leaves the vendor balanced in local currency', async () => {
+      const client = await db.getPool().connect();
+      try {
+        const { records, errors, balance } = await generateLedger(
+          CURRENCY_DIFF_MIXED_IDS,
+          client,
+          mixedRates,
+        );
+
+        const vendorBalance = localBalanceOf(records, CURRENCY_DIFF_MIXED_IDS.vendorId);
+        expect(vendorBalance.debit).toBeCloseTo(vendorBalance.credit, 2);
+
+        expect(errors).toEqual([]);
+        expect(balance?.isBalanced).toBe(true);
+        expect(balance?.balanceSum).toBeCloseTo(0, 2);
+      } finally {
+        client.release();
+      }
+    });
+
+    it('accounts for the invoice and ignores the receipt and the proforma', async () => {
+      const client = await db.getPool().connect();
+      try {
+        const { records } = await generateLedger(CURRENCY_DIFF_MIXED_IDS, client, mixedRates);
+        const { vendorId, expenseTaxCategoryId } = CURRENCY_DIFF_MIXED_IDS;
+
+        // Exactly one accounting entry, from the ILS invoice: 6,777.92 credited to the vendor,
+        // split on the debit side between the expense and the VAT. Had the 1,888.00 USD receipt
+        // been taken instead, it would have cancelled the payment out exactly.
+        const documentRecords = records.filter(
+          record => record.credit_entity1 === vendorId && record.description === null,
+        );
+        expect(documentRecords).toHaveLength(1);
+        const [documentRecord] = documentRecords;
+        expect(documentRecord.currency).toBe(Currency.Ils);
+        expect(documentRecord.credit_foreign_amount1).toBeNull();
+        expect(Number(documentRecord.credit_local_amount1)).toBeCloseTo(6777.92, 2);
+        expect(documentRecord.debit_entity1).toBe(expenseTaxCategoryId);
+        expect(Number(documentRecord.debit_local_amount1)).toBeCloseTo(5744.0, 2);
+        expect(Number(documentRecord.debit_local_amount2)).toBeCloseTo(1033.92, 2);
+
+        // Invoice + payment + the USD position being closed + the difference. Nothing from the
+        // receipt or the proforma.
+        expect(records).toHaveLength(4);
+
+        const balancingRecords = byDescription(records, 'Foreign currency balance');
+        expect(balancingRecords).toHaveLength(1);
+        const [balancingRecord] = balancingRecords;
+        expect(balancingRecord.currency).toBe(Currency.Usd);
+        expect(Number(balancingRecord.credit_foreign_amount1)).toBeCloseTo(1888.0, 2);
+        expect(Number(balancingRecord.debit_local_amount1)).toBeCloseTo(6825.12, 2);
+
+        // The payment was worth more than the invoice, so the vendor is credited the rest.
+        const exchangeRecords = byDescription(records, 'Exchange ledger record');
+        expect(exchangeRecords).toHaveLength(1);
+        const [exchangeRecord] = exchangeRecords;
+        expect(exchangeRecord.credit_entity1).toBe(vendorId);
+        expect(exchangeRecord.debit_entity1).toBe(expenseTaxCategoryId);
+        expect(Number(exchangeRecord.credit_local_amount1)).toBeCloseTo(47.2, 2);
       } finally {
         client.release();
       }
