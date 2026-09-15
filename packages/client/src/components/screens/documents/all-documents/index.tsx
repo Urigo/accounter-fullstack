@@ -79,6 +79,7 @@ export const DocumentsReport = (): ReactElement => {
     documentsProps,
     onChange: onDocumentChange,
     withChargeLink: true,
+    withSelection: true,
   });
 
   // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:

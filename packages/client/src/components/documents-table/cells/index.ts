@@ -5,6 +5,7 @@ export * from './debtor.js';
 export * from './description.js';
 export * from './expandable-text.js';
 export * from './files.js';
+export * from './preview.js';
 export * from './remarks.js';
 export * from './serial.js';
 export * from './type.js';

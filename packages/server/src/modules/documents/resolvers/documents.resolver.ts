@@ -14,6 +14,7 @@ import {
   fetchRemoteDocument,
   RemoteDocumentError,
 } from '../helpers/fetch-remote-document.helper.js';
+import { MAX_REPROCESS_OCR_BATCH, reprocessDocumentsOcr } from '../helpers/reprocess-ocr.helper.js';
 import {
   getDocumentFromFile,
   releaseDbConnectionForExternalWork,
@@ -40,6 +41,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     | 'UpdateDocumentResult'
     | 'InsertDocumentResult'
     | 'UploadDocumentResult'
+    | 'ReprocessDocumentOcrResult'
     | 'Document'
     | 'FinancialDocument'
   > = {
@@ -541,6 +543,18 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
+    reprocessDocumentOcr: async (_, { documentId }, { injector }) => {
+      const [result] = await reprocessDocumentsOcr(injector, [documentId]);
+      return result!;
+    },
+    batchReprocessDocumentsOcr: async (_, { documentIds }, { injector }) => {
+      if (documentIds.length > MAX_REPROCESS_OCR_BATCH) {
+        throw new GraphQLError(
+          `Cannot re-process more than ${MAX_REPROCESS_OCR_BATCH} documents at a time (got ${documentIds.length})`,
+        );
+      }
+      return reprocessDocumentsOcr(injector, documentIds);
+    },
     closeDocument: async (_, { id }, { injector }) => {
       try {
         const issuedDocument = await injector
@@ -712,6 +726,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'UploadDocumentSuccessfulResult';
+    },
+  },
+  ReprocessDocumentOcrResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'ReprocessDocumentOcrSuccessfulResult';
     },
   },
   Invoice: {

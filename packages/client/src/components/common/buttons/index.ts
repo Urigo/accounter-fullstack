@@ -11,6 +11,7 @@ export * from './insert-mini-button.js';
 export * from './logout-button.js';
 export * from './print-to-pdf-button.js';
 export * from './regenerate-ledger-records-button.js';
+export * from './reprocess-document-ocr-button.js';
 export * from './toggle-expansion-button.js';
 export * from './toggle-merge-selected.js';
 export * from './unlink-document-button.js';
