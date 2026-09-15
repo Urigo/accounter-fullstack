@@ -5,6 +5,10 @@ interface Props {
   data: AllTaxCategoriesForScreenQuery['taxCategories'][number];
 }
 
-export const Name = ({ data }: Props): ReactElement => {
-  return <span>{data.name}</span>;
+export const IrsCode = ({ data }: Props): ReactElement => {
+  return data.irsCode == null ? (
+    <span className="text-muted-foreground">N/A</span>
+  ) : (
+    <span>{data.irsCode}</span>
+  );
 };

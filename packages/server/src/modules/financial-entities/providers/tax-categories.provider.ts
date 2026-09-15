@@ -11,6 +11,7 @@ import type {
   IDeleteTaxCategoryQuery,
   IGetAllTaxCategoriesQuery,
   IGetAllTaxCategoriesResult,
+  IGetBusinessMatchesByTaxCategoryIdsQuery,
   IGetTaxCategoryByBusinessIDsQuery,
   IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery,
   IGetTaxCategoryByFinancialAccountIdsQuery,
@@ -86,6 +87,14 @@ SELECT fe.*, tc.hashavshevet_name, tc.tax_excluded
 FROM accounter_schema.tax_categories tc
 LEFT JOIN accounter_schema.financial_entities fe
   ON fe.id = tc.id;`;
+
+const getBusinessMatchesByTaxCategoryIds = sql<IGetBusinessMatchesByTaxCategoryIdsQuery>`
+SELECT tcm.tax_category_id, tcm.business_id
+FROM accounter_schema.business_tax_category_match tcm
+INNER JOIN accounter_schema.financial_entities fe
+  ON fe.id = tcm.business_id
+WHERE tcm.tax_category_id IN $$taxCategoryIds
+ORDER BY fe.name;`;
 
 const updateTaxCategory = sql<IUpdateTaxCategoryQuery>`
 UPDATE accounter_schema.tax_categories
@@ -281,6 +290,21 @@ export class TaxCategoriesProvider {
     this.batchTaxCategoryByFinancialAccountIds(keys),
   );
 
+  private async batchBusinessIdsByTaxCategoryIds(taxCategoryIds: readonly string[]) {
+    const matches = await getBusinessMatchesByTaxCategoryIds.run({ taxCategoryIds }, this.db);
+    // The query orders by business name, so each bucket comes out sorted.
+    return taxCategoryIds.map(taxCategoryId =>
+      matches
+        .filter(match => match.tax_category_id === taxCategoryId)
+        .map(match => match.business_id),
+    );
+  }
+
+  /** Reverse of `taxCategoryByBusinessIDsLoader`: the businesses this tax category is the default for. */
+  public businessIdsByTaxCategoryIdLoader = new DataLoader((taxCategoryIds: readonly string[]) =>
+    this.batchBusinessIdsByTaxCategoryIds(taxCategoryIds),
+  );
+
   public getAllTaxCategories() {
     return getAllTaxCategories.run(undefined, this.db);
   }
@@ -307,10 +331,14 @@ export class TaxCategoriesProvider {
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
+    this.businessIdsByTaxCategoryIdLoader.clearAll();
+    this.taxCategoryByBusinessIDsLoader.clearAll();
     return insertBusinessTaxCategory.run(params, this.db);
   }
 
   public deleteBusinessTaxCategory(params: IDeleteBusinessTaxCategoryParams) {
+    this.businessIdsByTaxCategoryIdLoader.clearAll();
+    this.taxCategoryByBusinessIDsLoader.clearAll();
     return deleteBusinessTaxCategory.run(params, this.db);
   }
 
@@ -362,6 +390,7 @@ export class TaxCategoriesProvider {
     this.taxCategoryByFinancialAccountIdsLoader.clearAll();
     this.taxCategoryByFinancialAccountOwnerIdsLoader.clearAll();
     this.taxCategoriesBySortCodeLoader.clearAll();
+    this.businessIdsByTaxCategoryIdLoader.clearAll();
     this.taxCategoryByIdLoader.clear(taxCategoryId);
   }
 
@@ -372,5 +401,6 @@ export class TaxCategoriesProvider {
     this.taxCategoryByFinancialAccountIdsAndCurrenciesLoader.clearAll();
     this.taxCategoryByFinancialAccountIdsLoader.clearAll();
     this.taxCategoryByFinancialAccountOwnerIdsLoader.clearAll();
+    this.businessIdsByTaxCategoryIdLoader.clearAll();
   }
 }
