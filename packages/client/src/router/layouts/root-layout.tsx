@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
 import { Outlet } from 'react-router-dom';
-import { MantineProvider } from '@mantine/core';
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { red } from '@mui/material/colors';
 import { createTheme } from '@mui/material/styles';
@@ -30,24 +29,16 @@ const theme = createTheme({
  */
 export function RootLayout(): ReactElement {
   return (
-    <MantineProvider
-      withGlobalStyles
-      theme={{
-        fontFamily: 'Roboto, sans-serif',
-        fontSizes: { md: '14' },
-      }}
-    >
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Toaster />
-        <UrqlProvider>
-          <UserProvider>
-            <DocumentTitle />
-            <NavigationProgress />
-            <Outlet />
-          </UserProvider>
-        </UrqlProvider>
-      </ThemeProvider>
-    </MantineProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Toaster />
+      <UrqlProvider>
+        <UserProvider>
+          <DocumentTitle />
+          <NavigationProgress />
+          <Outlet />
+        </UserProvider>
+      </UrqlProvider>
+    </ThemeProvider>
   );
 }
