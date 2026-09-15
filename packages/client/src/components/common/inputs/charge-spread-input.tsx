@@ -13,6 +13,7 @@ import {
   type FieldArrayItem,
 } from '../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../ui/button.js';
+import { Label } from '../../ui/label.js';
 import { NumberInput } from './number-input.js';
 import { YearPickerInput } from './year-picker-input.js';
 
@@ -33,7 +34,11 @@ export function ChargeSpreadInput<T extends FieldValues>({
 
   return (
     <div>
-      <span className="mantine-InputWrapper-label mantine-Select-label">Charge Spread</span>
+      {/* Last of the `mantine-InputWrapper-label` classes. Mantine's CSS is uninstalled as
+          of this PR, so these were about to render unstyled. */}
+      <Label asChild>
+        <span>Charge Spread</span>
+      </Label>
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">

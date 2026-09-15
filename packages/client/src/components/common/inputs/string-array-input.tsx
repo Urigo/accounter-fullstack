@@ -8,6 +8,7 @@ import {
 import { Button } from '../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
+import { Label } from '../../ui/label.js';
 
 type Props<T extends FieldValues> = {
   label: string;
@@ -28,7 +29,9 @@ export function StringArrayInput<T extends FieldValues>({
 
   return (
     <div>
-      <span className="mantine-InputWrapper-label mantine-Select-label">{label}</span>
+      <Label asChild>
+        <span>{label}</span>
+      </Label>
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields.map((field, index) => (
           <div key={field.id} className=" flex items-center gap-2 text-gray-600 mb-2">
