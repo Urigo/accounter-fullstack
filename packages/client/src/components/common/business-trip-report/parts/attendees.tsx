@@ -1,7 +1,14 @@
 import type { ReactElement } from 'react';
-import { Table } from '@mantine/core';
 import { BusinessTripReportAttendeesFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../../ui/table.js';
 import { AddAttendee } from '../buttons/add-attendee.js';
 import { AttendeeRow } from './attendee-row.js';
 
@@ -31,16 +38,16 @@ export const Attendees = ({ data, onChange }: Props): ReactElement => {
 
   return (
     <div className="flex flex-col gap-2 mt-5">
-      <Table highlightOnHover withBorder>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Arrival Date</th>
-            <th>Departure Date</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="border">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Arrival Date</TableHead>
+            <TableHead>Departure Date</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {attendees
             .sort((a, b) => (a.name.toLocaleLowerCase() > b.name.toLocaleLowerCase() ? 1 : -1))
             .map(attendee => (
@@ -51,12 +58,12 @@ export const Attendees = ({ data, onChange }: Props): ReactElement => {
                 key={attendee.id}
               />
             ))}
-          <tr>
-            <td colSpan={4}>
+          <TableRow>
+            <TableCell colSpan={4}>
               <AddAttendee businessTripId={id} onAdd={onChange} />
-            </td>
-          </tr>
-        </tbody>
+            </TableCell>
+          </TableRow>
+        </TableBody>
       </Table>
     </div>
   );

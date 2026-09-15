@@ -2,7 +2,6 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
@@ -13,6 +12,7 @@ import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
 import { ComboBox } from '../common/inputs/combo-box.js';
 import { DatePickerInput } from '../common/inputs/date-picker-input.js';
+import { NegatableMultiSelect } from '../common/inputs/negatable-multi-select.js';
 import { Button } from '../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form.js';
 import { Indicator } from '../ui/indicator.js';
@@ -30,8 +30,17 @@ function BusinessLedgerRecordsFilterForm({
   closeModal,
   single = false,
 }: BusinessLedgerRecordsFilterFormProps): ReactElement {
+  const { userContext } = useContext(UserContext);
   const form = useForm<BusinessTransactionsFilter>({
-    defaultValues: { ...filter },
+    defaultValues: {
+      ...filter,
+      // Seeded into the form rather than only into the input's `value`: the select
+      // rendered the default owner as selected while the form field stayed undefined,
+      // so submitting without touching it dropped the owner from the filter.
+      ownerIds:
+        filter.ownerIds ??
+        (userContext?.context.adminBusinessId ? [userContext.context.adminBusinessId] : undefined),
+    },
   });
   const { control, handleSubmit } = form;
   const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
@@ -40,8 +49,6 @@ function BusinessLedgerRecordsFilterForm({
     fetching: ownersLoading,
     soleAdminBusinessId,
   } = useGetAdminBusinesses();
-
-  const { userContext } = useContext(UserContext);
 
   // A single owner is not a choice: pre-select it so the (disabled) input and the
   // submitted filter agree — a disabled field never fires onChange to sync itself.
@@ -74,26 +81,20 @@ function BusinessLedgerRecordsFilterForm({
                 name="ownerIds"
                 control={control}
                 defaultValue={filter.ownerIds}
-                render={({ field, fieldState }): ReactElement => (
+                render={({ field }): ReactElement => (
                   <FormItem>
                     <FormLabel>Owners</FormLabel>
                     <FormControl>
-                      <MultiSelect
-                        {...field}
-                        data={owners}
-                        value={
-                          soleAdminBusinessId
-                            ? [soleAdminBusinessId]
-                            : (field.value ??
-                              (userContext?.context.adminBusinessId
-                                ? [userContext.context.adminBusinessId]
-                                : undefined))
-                        }
-                        disabled={ownersLoading || !!soleAdminBusinessId}
+                      <NegatableMultiSelect
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        options={owners}
+                        value={soleAdminBusinessId ? [soleAdminBusinessId] : (field.value ?? [])}
+                        onValueChange={field.onChange}
+                        loading={ownersLoading}
+                        disabled={!!soleAdminBusinessId}
                         placeholder="Scroll to see all options"
-                        maxDropdownHeight={160}
-                        searchable
-                        error={fieldState.error?.message}
+                        aria-label="Owners"
                       />
                     </FormControl>
                     <FormMessage />
@@ -104,19 +105,19 @@ function BusinessLedgerRecordsFilterForm({
                 name="businessIDs"
                 control={control}
                 defaultValue={filter.businessIDs}
-                render={({ field, fieldState }): ReactElement => (
+                render={({ field }): ReactElement => (
                   <FormItem>
                     <FormLabel>Businesses</FormLabel>
                     <FormControl>
-                      <MultiSelect
-                        {...field}
-                        data={businesses}
-                        value={field.value ?? undefined}
-                        disabled={businessesLoading}
+                      <NegatableMultiSelect
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        options={businesses}
+                        value={field.value ?? []}
+                        onValueChange={field.onChange}
+                        loading={businessesLoading}
                         placeholder="Scroll to see all options"
-                        maxDropdownHeight={160}
-                        searchable
-                        error={fieldState.error?.message}
+                        aria-label="Businesses"
                       />
                     </FormControl>
                     <FormMessage />

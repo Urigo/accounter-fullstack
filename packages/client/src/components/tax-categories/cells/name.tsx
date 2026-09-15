@@ -6,5 +6,5 @@ interface Props {
 }
 
 export const Name = ({ data }: Props): ReactElement => {
-  return <td>{data.name}</td>;
+  return <span>{data.name}</span>;
 };

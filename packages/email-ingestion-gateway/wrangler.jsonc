@@ -9,7 +9,16 @@
   "name": "email-forward-04a7",
 
   "main": "src/worker.ts",
-  "compatibility_date": "2026-06-17",
+
+  // Pinned to the date the live Worker already runs, so the repo's first deploy
+  // changes only the handler code. This value had never been applied: the Worker
+  // was maintained by pasting source into the dashboard, so the repo's previous
+  // 2026-06-17 would have jumped the runtime ~13 months in the same deploy that
+  // first took ownership of it, making any misbehaviour ambiguous between the two.
+  //
+  // TODO: bump to a current date in a separate change, once this deploy is
+  // confirmed healthy.
+  "compatibility_date": "2025-05-23",
 
   // Account id is not a secret, but it is deployment-specific: set
   // CLOUDFLARE_ACCOUNT_ID in your shell (or as a CI secret) rather than committing
@@ -25,6 +34,13 @@
   // is the real source of truth and dashboard drift stops being invisible. Do not
   // move GATEWAY_URL into a `vars` block here instead — this repo is public.
   "keep_vars": true,
+
+  // Both default to true when unspecified, and the live Worker has both OFF. Without
+  // these, the first deploy would silently publish a `<name>.workers.dev` URL and
+  // preview URLs for a Worker that has no `fetch` handler at all — pure attack
+  // surface for zero benefit. Pinned to match the deployed state.
+  "workers_dev": false,
+  "preview_urls": false,
 
   // Required for `wrangler tail` and log retention to be useful — the handler now
   // emits one structured `worker:*` JSON line per branch, and without this they are

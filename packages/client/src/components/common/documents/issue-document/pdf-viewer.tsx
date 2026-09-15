@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import * as PDFJS from 'pdfjs-dist';
+import type * as PDFJS from 'pdfjs-dist';
 import type { PDFDocumentProxy, RenderParameters } from 'pdfjs-dist/types/src/display/api';
 import { Button } from '../../../ui/button';
 import { DialogHeader, DialogTitle } from '../../../ui/dialog';
@@ -87,19 +87,27 @@ export function PdfViewer(props: PdfProps) {
   }, [drawerOpen, pdfDoc, currentPage, renderPage]);
 
   useEffect(() => {
-    PDFJS.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${PDFJS.version}/build/pdf.worker.min.mjs`;
-  }, []);
+    let cancelled = false;
 
-  useEffect(() => {
-    const loadingTask = PDFJS.getDocument({ data: base64ToUint8Array(src) });
-    loadingTask.promise.then(
-      loadedDoc => {
-        setPdfDoc(loadedDoc);
-      },
-      error => {
+    // pdf.js is the single largest dependency in the app, so it is only fetched once a PDF is
+    // actually rendered rather than being bundled into the shared chunks.
+    import('pdfjs-dist')
+      .then(PDFJS => {
+        PDFJS.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${PDFJS.version}/build/pdf.worker.min.mjs`;
+        return PDFJS.getDocument({ data: base64ToUint8Array(src) }).promise;
+      })
+      .then(loadedDoc => {
+        if (!cancelled) {
+          setPdfDoc(loadedDoc);
+        }
+      })
+      .catch(error => {
         console.error(error);
-      },
-    );
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
 
   const nextPage = () => pdfDoc && currentPage < pdfDoc.numPages && setCurrentPage(currentPage + 1);

@@ -1,11 +1,8 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UpdateTransactionsDocument,
   type UpdateTransactionsMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -33,47 +30,26 @@ type UseUpdateTransactions = {
 
 const NOTIFICATION_ID = 'updateTransactions';
 
+const joinIds = (transactionIds: UpdateTransactionsMutationVariables['transactionIds']): string =>
+  Array.isArray(transactionIds) ? transactionIds.join(', ') : transactionIds;
+
 export const useUpdateTransactions = (): UseUpdateTransactions => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(UpdateTransactionsDocument);
-  const updateTransactions = useCallback(
-    async (variables: UpdateTransactionsMutationVariables) => {
-      const stringIds = Array.isArray(variables.transactionIds)
-        ? variables.transactionIds.join(', ')
-        : variables.transactionIds;
-      const message = `Error updating transactions ID [${stringIds}]`;
-      const notificationId = `${NOTIFICATION_ID}-${stringIds}`;
-      toast.loading('Updating Transactions', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'updateTransactions');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Transactions updated',
-          });
-          return data.updateTransactions.transactions.map(t => t.id /* map to only id */);
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: UpdateTransactionsDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${joinIds(variables.transactionIds)}`,
+    loadingMessage: 'Updating Transactions',
+    errorMessage: variables =>
+      `Error updating transactions ID [${joinIds(variables.transactionIds)}]`,
+    commonErrorPath: 'updateTransactions',
+    select: data => data.updateTransactions.transactions.map(t => t.id /* map to only id */),
+    successToast: { description: 'Transactions updated' },
+  });
 
   return {
     fetching,
-    updateTransactions,
+    updateTransactions: execute,
   };
 };

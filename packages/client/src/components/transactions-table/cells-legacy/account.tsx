@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { TransactionsTableAccountFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { getAccountTypeLabel } from '../../financial-accounts/utils.js';
+import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -27,11 +28,11 @@ export const Account = ({ data }: Props): ReactElement => {
   const accountName = account.name;
 
   return (
-    <td>
+    <TableCell>
       <div className="flex flex-col gap-2 items-center">
         <p>{accountType}</p>
         <p>{accountName}</p>
       </div>
-    </td>
+    </TableCell>
   );
 };

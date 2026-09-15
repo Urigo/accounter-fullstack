@@ -5,7 +5,6 @@ import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import { AllEmployeesByEmployerDocument } from '../../gql/graphql.js';
 import { type TimelessDateString } from '../../helpers/index.js';
@@ -13,7 +12,9 @@ import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
 import { MonthPickerInput } from '../common/inputs/month-picker-input.js';
+import { NegatableMultiSelect } from '../common/inputs/negatable-multi-select.js';
 import { Button } from '../ui/button.js';
+import { Label } from '../ui/label.js';
 
 export type SalariesFilter = {
   fromDate: TimelessDateString;
@@ -133,17 +134,34 @@ function SalariesFiltersForm({
           control={control}
           defaultValue={filter.employeeIDs}
           render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={employees}
-              value={field.value ?? []}
-              disabled={employeesFetching}
-              label="Employees"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
+            // This form is not wrapped in shadcn's `Form`, so the label and the error
+            // message that Mantine's `MultiSelect` rendered for itself are supplied here.
+            // The label is rendered `asChild` as a span rather than a <label>: the trigger
+            // is a `div role="combobox"`, which is not a labelable element, so `htmlFor`
+            // would associate nothing. The accessible name comes from `aria-labelledby`.
+            <div>
+              <Label asChild className="mb-1">
+                <span id="salaries-employees-label">Employees</span>
+              </Label>
+              <NegatableMultiSelect
+                id="salaries-employees"
+                ref={field.ref}
+                onBlur={field.onBlur}
+                options={employees}
+                value={field.value ?? []}
+                onValueChange={field.onChange}
+                loading={employeesFetching}
+                placeholder="Scroll to see all options"
+                aria-labelledby="salaries-employees-label"
+                aria-invalid={!!fieldState.error}
+                aria-describedby={fieldState.error ? 'salaries-employees-error' : undefined}
+              />
+              {fieldState.error?.message ? (
+                <p id="salaries-employees-error" className="text-destructive mt-1 text-xs">
+                  {fieldState.error.message}
+                </p>
+              ) : null}
+            </div>
           )}
         />
         <div className="flex justify-center mt-5 gap-3">

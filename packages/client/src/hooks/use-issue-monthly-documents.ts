@@ -1,11 +1,8 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   IssueMonthlyDocumentsDocument,
   type IssueMonthlyDocumentsMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,50 +25,26 @@ export const useIssueMonthlyDocuments = (): UseIssueMonthlyDocuments => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(IssueMonthlyDocumentsDocument);
-  const issueDocuments = useCallback(
-    async (variables: IssueMonthlyDocumentsMutationVariables) => {
-      const message = 'Error issuing monthly documents';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Issuing documents', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data?.issueGreenInvoiceDocuments?.success) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Documents issued successfully',
-          });
-          return;
+  const { fetching, execute } = useApiMutation({
+    document: IssueMonthlyDocumentsDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Issuing documents',
+    errorMessage: 'Error issuing monthly documents',
+    select: data => {
+      const result = data.issueGreenInvoiceDocuments;
+      if (!result?.success) {
+        if (result?.errors) {
+          console.error(result.errors);
         }
-
-        if (data?.issueGreenInvoiceDocuments?.errors) {
-          console.error(data.issueGreenInvoiceDocuments.errors);
-        }
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
+        throw new Error('Documents were not issued');
       }
       return void 0;
     },
-    [mutate],
-  );
+    successToast: { description: 'Documents issued successfully' },
+  });
 
   return {
     fetching,
-    issueDocuments,
+    issueDocuments: execute,
   };
 };

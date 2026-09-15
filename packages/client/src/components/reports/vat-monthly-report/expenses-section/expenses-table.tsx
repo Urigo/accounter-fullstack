@@ -7,7 +7,6 @@ import {
   PanelTopClose,
   PanelTopOpen,
 } from 'lucide-react';
-import { Paper } from '@mantine/core';
 import {
   flexRender,
   useTable,
@@ -188,12 +187,12 @@ export const ExpensesTable = ({
                       {row.getIsExpanded() && (
                         <TableRow>
                           <TableCell colSpan={columns.length}>
-                            <Paper style={{ width: '100%' }} withBorder shadow="lg">
+                            <Card className="w-full shadow-lg">
                               <ChargeExtendedInfo
                                 chargeID={expense.chargeId}
                                 fetching={!!expense}
                               />
-                            </Paper>
+                            </Card>
                           </TableCell>
                         </TableRow>
                       )}

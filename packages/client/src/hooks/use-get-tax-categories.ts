@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllTaxCategoriesDocument, type AllTaxCategoriesQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -27,12 +27,7 @@ export const useGetTaxCategories = (): UseGetTaxCategories => {
     query: AllTaxCategoriesDocument,
   });
 
-  if (error) {
-    console.error(`Error fetching tax categories: ${error}`);
-    toast.error('Error', {
-      description: 'Unable to fetch tax categories',
-    });
-  }
+  useQueryErrorToast(error, 'tax categories');
 
   const taxCategories = useMemo(() => {
     return data?.taxCategories?.sort((a, b) => (a.name > b.name ? 1 : -1)) ?? [];

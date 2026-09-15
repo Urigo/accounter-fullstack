@@ -21,9 +21,7 @@ export function AccountantApproval({ data }: Props): ReactElement {
     data,
   );
 
-  return (
-    <td>
-      <UpdateAccountantStatus value={chargeAccountantStatus ?? undefined} chargeId={chargeId} />
-    </td>
-  );
+  // No <td> of its own: this is a TanStack cell renderer, and both vat tables already wrap
+  // `flexRender` output in a `TableCell`, so the wrapper was nesting a td inside a td.
+  return <UpdateAccountantStatus value={chargeAccountantStatus ?? undefined} chargeId={chargeId} />;
 }

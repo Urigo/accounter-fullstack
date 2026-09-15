@@ -1,8 +1,5 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { AssignChargeToDepositDocument } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -17,44 +14,25 @@ type AssignVars = { chargeId: string; depositId: string };
 
 type UseAssignChargeToDeposit = {
   assigning: boolean;
-  assignChargeToDeposit: (variables: AssignVars) => Promise<void>;
+  /** Resolves to the id of the deposit the charge was assigned to, or to nothing on failure. */
+  assignChargeToDeposit: (variables: AssignVars) => Promise<string | void>;
 };
 
 const NOTIFICATION_ID = 'assignChargeToDeposit';
 
 export const useAssignChargeToDeposit = (): UseAssignChargeToDeposit => {
-  const [{ fetching }, mutate] = useMutation(AssignChargeToDepositDocument);
-
-  const assignChargeToDeposit = useCallback(
-    async (variables: AssignVars) => {
-      const message = `Error assigning charge ${variables.chargeId} to deposit ${variables.depositId}`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Assigning to deposit', { id: notificationId });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: `Charge assigned to deposit ${data.assignChargeToDeposit.id}`,
-          });
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: AssignChargeToDepositDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Assigning to deposit',
+    errorMessage: variables =>
+      `Error assigning charge ${variables.chargeId} to deposit ${variables.depositId}`,
+    select: data => data.assignChargeToDeposit.id,
+    successToast: depositId => ({ description: `Charge assigned to deposit ${depositId}` }),
+  });
 
   return {
     assigning: fetching,
-    assignChargeToDeposit,
+    assignChargeToDeposit: execute,
   };
 };

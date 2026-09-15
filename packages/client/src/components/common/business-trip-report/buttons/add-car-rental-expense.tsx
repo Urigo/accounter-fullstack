@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal } from '@mantine/core';
 import type { AddBusinessTripCarRentalExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripCarRentalExpense } from '../../../../hooks/use-add-business-trip-car-rental-expense.js';
 import { Button } from '../../../ui/button.js';
@@ -13,9 +12,9 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
-import { Overlay } from '../../../ui/overlay.js';
+import { LoadingOverlay } from '../../../ui/overlay.js';
 import { Switch } from '../../../ui/switch.js';
-import { Tooltip } from '../../index.js';
+import { PopUpModal, Tooltip } from '../../index.js';
 import { NumberInput } from '../../inputs/number-input.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
@@ -78,64 +77,57 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
   };
 
   return (
-    <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Car Rental Expense</Modal.Title>
-      <Modal.Body>
-        <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <AddExpenseFields
-              businessTripId={businessTripId}
-              control={control}
-              setFetching={setFetching}
-            />
+    <PopUpModal opened={opened} onClose={close} withCloseButton title="Add Car Rental Expense">
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <AddExpenseFields
+            businessTripId={businessTripId}
+            control={control}
+            setFetching={setFetching}
+          />
 
-            <Controller
-              name="days"
-              control={control}
-              render={({ field, fieldState }): ReactElement => (
-                <NumberInput
-                  {...field}
-                  value={field.value ?? undefined}
-                  hideControls
-                  decimalScale={2}
-                  error={fieldState.error?.message}
-                  label="Rent Days"
-                />
-              )}
-            />
+          <Controller
+            name="days"
+            control={control}
+            render={({ field, fieldState }): ReactElement => (
+              <NumberInput
+                {...field}
+                value={field.value ?? undefined}
+                hideControls
+                decimalScale={2}
+                error={fieldState.error?.message}
+                label="Rent Days"
+              />
+            )}
+          />
 
-            <FormField
-              name="isFuelExpense"
-              control={control}
-              render={({ field: { value, ...field } }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Is Fuel Expense</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch {...field} checked={value === true} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <FormField
+            name="isFuelExpense"
+            control={control}
+            render={({ field: { value, ...field } }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <FormLabel>Is Fuel Expense</FormLabel>
+                </div>
+                <FormControl>
+                  <Switch {...field} checked={value === true} onCheckedChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <div className="flex justify-center mt-5 gap-3">
-              <button
-                type="submit"
-                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-              >
-                Add
-              </button>
-            </div>
-          </form>
-        </Form>
-      </Modal.Body>
-      {(addingInProcess || fetching) && (
-        <Overlay blur={1} center>
-          <Loader />
-        </Overlay>
-      )}
-    </Modal>
+          <div className="flex justify-center mt-5 gap-3">
+            <button
+              type="submit"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </Form>
+      <LoadingOverlay visible={addingInProcess || fetching} blur={1} />
+    </PopUpModal>
   );
 }

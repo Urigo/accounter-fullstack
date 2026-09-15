@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useMemo } from 'react';
 import { useQuery } from 'urql';
 import { AllSecurityBusinessesDocument, type AllSecurityBusinessesQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -47,14 +47,7 @@ export const useGetSecurityBusinesses = ({
     pause,
   });
 
-  useEffect(() => {
-    if (error) {
-      console.error(`Error fetching security businesses: ${error}`);
-      toast.error('Error', {
-        description: 'Unable to fetch security businesses',
-      });
-    }
-  }, [error]);
+  useQueryErrorToast(error, 'security businesses');
 
   const securityBusinesses = useMemo(() => {
     return data?.allSecurityBusinesses?.slice().sort((a, b) => a.name.localeCompare(b.name)) ?? [];

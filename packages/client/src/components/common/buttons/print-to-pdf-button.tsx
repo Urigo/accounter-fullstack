@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Loader2, Printer } from 'lucide-react';
-import generatePDF, { type Options } from 'react-to-pdf';
+import type { Options } from 'react-to-pdf';
 import { Button } from '../../ui/button.js';
 
 const options: Options = {
@@ -19,8 +19,15 @@ export const PrintToPdfButton = ({ filename }: { filename?: string }): ReactElem
 
   const onGeneratePDF = async () => {
     setLoading(true);
-    await generatePDF(getTargetElement, { ...options, filename });
-    setLoading(false);
+    try {
+      // `react-to-pdf` pulls in jsPDF + html2canvas, so it is only loaded when the user prints.
+      const { default: generatePDF } = await import('react-to-pdf');
+      await generatePDF(getTargetElement, { ...options, filename });
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <Button

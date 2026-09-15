@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   UnlockDynamicReportTemplateDocument,
   type UnlockDynamicReportTemplateMutation,
   type UnlockDynamicReportTemplateMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -24,45 +21,23 @@ type UseUnlockDynamicReportTemplate = {
   fetching: boolean;
   unlockDynamicReportTemplate: (
     variables: UnlockDynamicReportTemplateMutationVariables,
-  ) => Promise<UnlockDynamicReportTemplateMutation['unlockDynamicReportTemplate'] | undefined>;
+  ) => Promise<UnlockDynamicReportTemplateMutation['unlockDynamicReportTemplate'] | void>;
 };
 
 const NOTIFICATION_ID = 'unlockDynamicReportTemplate';
 
 export const useUnlockDynamicReportTemplate = (): UseUnlockDynamicReportTemplate => {
-  const [{ fetching }, mutate] = useMutation(UnlockDynamicReportTemplateDocument);
+  const { fetching, execute } = useApiMutation({
+    document: UnlockDynamicReportTemplateDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.name}`,
+    loadingMessage: 'Unlocking report template...',
+    errorMessage: variables => `Error unlocking report template "${variables.name}"`,
+    select: data => data.unlockDynamicReportTemplate,
+    successToast: template => ({
+      title: 'Unlocked',
+      description: `Report template "${template.name}" is now unlocked`,
+    }),
+  });
 
-  const unlockDynamicReportTemplate = useCallback(
-    async (
-      variables: UnlockDynamicReportTemplateMutationVariables,
-    ): Promise<UnlockDynamicReportTemplateMutation['unlockDynamicReportTemplate'] | undefined> => {
-      const message = `Error unlocking report template "${variables.name}"`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.name}`;
-      toast.loading('Unlocking report template...', { id: notificationId });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Unlocked', {
-            id: notificationId,
-            description: `Report template "${data.unlockDynamicReportTemplate.name}" is now unlocked`,
-          });
-          return data.unlockDynamicReportTemplate;
-        }
-        return undefined;
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-        return undefined;
-      }
-    },
-    [mutate],
-  );
-
-  return { fetching, unlockDynamicReportTemplate };
+  return { fetching, unlockDynamicReportTemplate: execute };
 };

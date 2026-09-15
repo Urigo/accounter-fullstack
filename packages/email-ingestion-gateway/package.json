@@ -16,7 +16,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "26.8.1"
+    "node": "26.8.2"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -55,13 +55,13 @@
     "inline-css": "4.0.3",
     "playwright": "1.63.0",
     "postal-mime": "3.0.0",
-    "zod": "4.5.4"
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/inline-css": "3.0.4",
-    "@types/node": "25.9.5",
+    "@types/node": "25.9.6",
     "tsx": "4.23.13",
     "typescript": "6.0.3",
-    "wrangler": "4.129.1"
+    "wrangler": "4.131.1"
   }
 }
