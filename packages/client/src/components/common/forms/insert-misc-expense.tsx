@@ -1,8 +1,8 @@
 import { useCallback, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import type { InsertMiscExpenseInput } from '../../../gql/graphql.js';
 import { useInsertMiscExpense } from '../../../hooks/use-insert-misc-expense.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Form } from '../../ui/form.js';
 import { ModifyMiscExpenseFields } from './index.js';
 
@@ -66,7 +66,7 @@ const InsertForm = ({ onInsertDone, defaultValues, fetching }: FormProps): React
             <div className="absolute bg-white/60 z-10 h-full w-full flex items-center justify-center">
               <div className="flex items-center">
                 <span className="text-3xl mr-4">
-                  <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+                  <AccounterBarSpinner className="self-center" />
                 </span>
               </div>
             </div>

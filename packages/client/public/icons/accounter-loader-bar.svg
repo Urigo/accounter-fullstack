@@ -1,0 +1,57 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1000 300"
+  width="1000"
+  height="300"
+  role="img"
+  aria-label="Loading"
+  shape-rendering="geometricPrecision"
+>
+  <title>Loading</title>
+  <g fill="none" stroke="#000102" stroke-width="14">
+    <!-- Rod -->
+    <line x1="150" y1="150" x2="850" y2="150" />
+    <!-- Frame posts, drawn last so their stroke caps the rod ends -->
+    <rect x="100" y="75" width="50" height="150" rx="25" ry="25" />
+    <rect x="850" y="75" width="50" height="150" rx="25" ry="25" />
+  </g>
+  <!-- Beads. Radius 45, so their centres are bounded to 195..805 and sit 90 apart when touching. -->
+  <g fill="#000102">
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="195 150; 195 150; 195 150; 625 150; 625 150; 195 150; 195 150; 195 150; 195 150"
+        keyTimes="0; 0.15; 0.3; 0.45; 0.5; 0.65; 0.8; 0.95; 1"
+        calcMode="spline"
+        keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0 0 1 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0 0 1 1"
+        dur="2.5s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="285 150; 285 150; 715 150; 715 150; 715 150; 715 150; 285 150; 285 150; 285 150"
+        keyTimes="0; 0.15; 0.3; 0.45; 0.5; 0.65; 0.8; 0.95; 1"
+        calcMode="spline"
+        keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0 0 1 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0 0 1 1"
+        dur="2.5s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+    <ellipse rx="45" ry="45">
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="375 150; 805 150; 805 150; 805 150; 805 150; 805 150; 805 150; 375 150; 375 150"
+        keyTimes="0; 0.15; 0.3; 0.45; 0.5; 0.65; 0.8; 0.95; 1"
+        calcMode="spline"
+        keySplines="0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0 0 1 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0.4 0 0.2 1; 0 0 1 1"
+        dur="2.5s"
+        repeatCount="indefinite"
+      />
+    </ellipse>
+  </g>
+</svg>

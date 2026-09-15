@@ -1,9 +1,9 @@
 import { type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargeMatchesTable } from '@/components/charge-matches/index.js';
 import { ChargeMatchesDocument } from '../../../gql/graphql.js';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '../../ui/accordion.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -37,7 +37,7 @@ export const ChargeMatches = ({ chargeId, isOpened, onChange }: Props): ReactEle
       <AccordionTrigger>Charge Matches</AccordionTrigger>
       <AccordionContent>
         {fetching && !data ? (
-          <Loader2 className="h-10 w-10 animate-spin" />
+          <AccounterBarSpinner />
         ) : (
           <ChargeMatchesTable
             originChargeId={chargeId}

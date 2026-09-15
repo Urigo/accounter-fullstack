@@ -2,7 +2,6 @@ import { useContext, useEffect, useState, type ReactElement, type ReactNode } fr
 import {
   ChevronsLeftRightEllipsis,
   ChevronsRightLeft,
-  Loader2,
   PanelTopClose,
   PanelTopOpen,
 } from 'lucide-react';
@@ -19,6 +18,7 @@ import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterTableRow, Tooltip } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Button } from '../ui/button.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
 import { BusinessLedgerRecordsFilters } from './business-ledger-filters.js';
@@ -194,7 +194,7 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
   return (
     <PageLayout title="Business Ledger Records" description="Business Ledger Records Summary">
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <Table striped highlightOnHover>
           <thead className="sticky top-0 z-20">

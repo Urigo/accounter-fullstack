@@ -44,6 +44,7 @@ import { ListInvitationsDocument, type ListInvitationsQuery } from '@/gql/graphq
 import { useCreateInvitation } from '@/hooks/use-create-invitation.js';
 import { useRevokeInvitation } from '@/hooks/use-revoke-invitation.js';
 import { ConfirmationModal } from '../../common/index.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -130,7 +131,7 @@ export function InvitationsTab(): ReactElement {
         </Alert>
       ) : fetching ? (
         <div className="flex justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <AccounterBarSpinner />
         </div>
       ) : invitations.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted-foreground">No pending invitations.</p>

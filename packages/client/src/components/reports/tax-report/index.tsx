@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { TaxReportDocument } from '../../../gql/graphql.js';
@@ -7,6 +6,7 @@ import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PrintToPdfButton } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { ReportCommentaryRow } from '../shared/report-commentary-row.js';
 import { TaxReportFilter } from './tax-report-filters.js';
@@ -185,7 +185,7 @@ export const TaxReport = (): ReactElement => {
       headerActions={<PrintToPdfButton filename={`tax_report_${year}`} />}
     >
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <div className="flex flex-col gap-4">
           {report && (
