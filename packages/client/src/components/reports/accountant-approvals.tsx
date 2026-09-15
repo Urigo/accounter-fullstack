@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Progress } from '@mantine/core';
 import {
   AccountantApprovalsChargesTableDocument,
   ChargeSortByField,
@@ -12,6 +11,7 @@ import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { ChargesFilters } from '../charges/charges-filters/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { SegmentedProgress } from '../ui/segmented-progress.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -96,24 +96,24 @@ export const AccountantApprovals = (): ReactElement => {
       ) : (
         <div className="mx-10 mt-5 flex flex-col gap-5">
           {`Total charges: ${charges}`}
-          <Progress
-            color="green"
-            radius="xl"
-            size="xl"
-            sections={[
+          <SegmentedProgress
+            segments={[
               {
+                id: 'approved',
                 value: approvalRate,
-                color: 'green',
+                className: 'bg-green-500',
                 label: `${approvalRate.toFixed(1)}% (${approved})`,
               },
               {
+                id: 'pending',
                 value: pendingRate,
-                color: 'orange',
+                className: 'bg-orange-500',
                 label: `${pendingRate.toFixed(1)}% (${pending})`,
               },
               {
+                id: 'unapproved',
                 value: UnapprovedRate,
-                color: 'red',
+                className: 'bg-red-500',
                 label: `${UnapprovedRate.toFixed(1)}% (${Unapproved})`,
               },
             ]}

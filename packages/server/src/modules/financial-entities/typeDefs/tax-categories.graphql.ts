@@ -68,6 +68,10 @@ export default gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     isActive: Boolean!
+    " whether ledger records of this category are excluded from tax calculations "
+    taxExcluded: Boolean!
+    " businesses this tax category is the default for "
+    businesses: [Business!]!
   }
 
   extend type Mutation {

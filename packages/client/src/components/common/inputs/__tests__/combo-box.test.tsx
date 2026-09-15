@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act } from 'react';
+import { act, createRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ComboBox } from '../combo-box.js';
@@ -93,5 +93,46 @@ describe('ComboBox trigger layout', () => {
     // The rendered trigger carries PopoverTrigger's width classes *and* our alignment.
     expect(trigger().className).toContain('w-full');
     expect(trigger().className).toContain('justify-between');
+  });
+});
+
+/**
+ * Every call site spreads react-hook-form's `field` object straight in, so whatever the
+ * component does not declare is silently dropped. `ref` and `onBlur` used not to be
+ * declared, which cost the field its touched state, its `onBlur`-mode validation and the
+ * node `shouldFocusError` needs after a failed submit.
+ */
+describe('ComboBox react-hook-form wiring', () => {
+  it('forwards a ref to the trigger without displacing the popover trigger', () => {
+    const ref = createRef<HTMLButtonElement>();
+    act(() => {
+      root.render(<ComboBox data={DATA} value={null} ref={ref} />);
+    });
+
+    expect(ref.current).toBe(trigger());
+    // Radix composes its own ref with the child's, so the popover must still work.
+    act(() => trigger().click());
+    expect(document.querySelector('[data-slot="command-list"]')).not.toBeNull();
+  });
+
+  it('calls onBlur when the trigger loses focus', () => {
+    let blurs = 0;
+    act(() => {
+      root.render(
+        <ComboBox
+          data={DATA}
+          value={null}
+          onBlur={(): void => {
+            blurs += 1;
+          }}
+        />,
+      );
+    });
+
+    act(() => {
+      trigger().focus();
+      trigger().blur();
+    });
+    expect(blurs).toBe(1);
   });
 });

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllSortCodesDocument, type AllSortCodesQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -31,12 +31,7 @@ export const useGetSortCodes = ({ ownerId }: { ownerId?: string | null }): UseGe
     pause: !ownerId,
   });
 
-  if (error) {
-    console.error(`Error fetching sort codes: ${error}`);
-    toast.error('Error', {
-      description: 'Unable to fetch sort codes',
-    });
-  }
+  useQueryErrorToast(error, 'sort codes');
 
   const sortCodes = useMemo(() => {
     return (

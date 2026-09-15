@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   SetDeelCredentialsDocument,
   type SetDeelCredentialsMutation,
   type SetDeelCredentialsMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -36,32 +33,15 @@ type UseSetDeelCredentials = {
 const NOTIFICATION_ID = 'set-deel-credentials';
 
 export const useSetDeelCredentials = (): UseSetDeelCredentials => {
-  const [{ fetching }, mutate] = useMutation(SetDeelCredentialsDocument);
+  const { fetching, execute } = useApiMutation({
+    document: SetDeelCredentialsDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Saving Deel credentials',
+    errorMessage: 'Failed to save Deel credentials',
+    commonErrorPath: 'setDeelCredentials',
+    select: data => data.setDeelCredentials,
+    successToast: { title: 'Deel connected' },
+  });
 
-  const setCredentials = useCallback(
-    async (variables: SetDeelCredentialsMutationVariables) => {
-      const message = 'Failed to save Deel credentials';
-      toast.loading('Saving Deel credentials', { id: NOTIFICATION_ID });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, NOTIFICATION_ID, 'setDeelCredentials');
-        if (data) {
-          toast.success('Deel connected', { id: NOTIFICATION_ID });
-          return data.setDeelCredentials;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: NOTIFICATION_ID,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
-
-  return { fetching, setCredentials };
+  return { fetching, setCredentials: execute };
 };

@@ -1,8 +1,6 @@
 import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import { CreateDepositFromChargeDocument } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -16,46 +14,31 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   }
 `;
 
+type CreateDepositFromChargeVars = { chargeId: string; name: string };
+
 type UseCreateDepositFromCharge = {
   creating: boolean;
-  createDepositFromCharge: (variables: {
-    chargeId: string;
-    name: string;
-  }) => Promise<string | null>;
+  createDepositFromCharge: (variables: CreateDepositFromChargeVars) => Promise<string | null>;
 };
 
 const NOTIFICATION_ID = 'createDepositFromCharge';
 
 export const useCreateDepositFromCharge = (): UseCreateDepositFromCharge => {
-  const [{ fetching }, mutate] = useMutation(CreateDepositFromChargeDocument);
+  const { fetching, execute } = useApiMutation({
+    document: CreateDepositFromChargeDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    loadingMessage: 'Creating deposit',
+    errorMessage: variables => `Error creating deposit "${variables.name}" from charge`,
+    select: data => data.createDepositFromCharge,
+    successToast: deposit => ({
+      title: 'Deposit created',
+      description: `Deposit "${deposit.name}" (${deposit.currency}) created successfully`,
+    }),
+  });
 
   const createDepositFromCharge = useCallback(
-    async (variables: { chargeId: string; name: string }): Promise<string | null> => {
-      const message = `Error creating deposit "${variables.name}" from charge`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.chargeId}`;
-      toast.loading('Creating deposit', { id: notificationId });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Deposit created', {
-            id: notificationId,
-            description: `Deposit "${data.createDepositFromCharge.name}" (${data.createDepositFromCharge.currency}) created successfully`,
-          });
-          return data.createDepositFromCharge.id;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return null;
-    },
-    [mutate],
+    async (variables: CreateDepositFromChargeVars) => (await execute(variables))?.id ?? null,
+    [execute],
   );
 
   return {

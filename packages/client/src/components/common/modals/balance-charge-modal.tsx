@@ -16,7 +16,9 @@ import { Button } from '../../ui/button.js';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
 import { Label } from '../../ui/label.js';
-import { CurrencyInput, DatePickerInput, DateTimePickerInput } from '../index.js';
+import { CurrencyInput } from '../inputs/currency-input.js';
+import { DatePickerInput } from '../inputs/date-picker-input.js';
+import { DateTimePickerInput } from '../inputs/date-time-picker-input.js';
 
 export function BalanceChargeModal({
   open,

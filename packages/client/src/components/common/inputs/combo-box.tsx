@@ -1,4 +1,4 @@
-import React, { useMemo, type ComponentProps } from 'react';
+import React, { useMemo, type ComponentProps, type Ref } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
 import { useMediaQuery } from '../../../hooks/use-media-query.js';
 import { cn } from '../../../lib/utils.js';
@@ -38,6 +38,14 @@ type ComboBoxProps = {
   /** Associates the trigger with a form element rendered outside it. */
   form?: string;
   required?: boolean;
+  /**
+   * Both exist for react-hook-form. Every call site spreads a `field` object in, so until
+   * these were declared the `ref` and `onBlur` inside it were dropped: the field never
+   * registered as touched, `onBlur`-mode validation never ran, and `shouldFocusError` had
+   * no node to focus after a failed submit.
+   */
+  onBlur?: () => void;
+  ref?: Ref<HTMLButtonElement>;
 };
 
 export function ComboBox({
@@ -53,6 +61,8 @@ export function ComboBox({
   id,
   form,
   required,
+  onBlur,
+  ref,
 }: ComboBoxProps) {
   const generatedId = React.useId();
   const triggerId = id ?? generatedId;
@@ -85,6 +95,8 @@ export function ComboBox({
           <PopoverTrigger asChild className="w-full min-w-40">
             <Trigger
               id={triggerId}
+              ref={ref}
+              onBlur={onBlur}
               placeholder={placeholder}
               form={form}
               aria-required={required || undefined}
@@ -121,6 +133,8 @@ export function ComboBox({
         <DrawerTrigger asChild>
           <Trigger
             id={triggerId}
+            ref={ref}
+            onBlur={onBlur}
             placeholder={placeholder}
             form={form}
             aria-required={required || undefined}

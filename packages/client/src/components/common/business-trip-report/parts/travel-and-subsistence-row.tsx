@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Text } from '@mantine/core';
 import {
   BusinessTripReportTravelAndSubsistenceRowFieldsFragmentDoc,
   type UpdateBusinessTripTravelAndSubsistenceExpenseInput,
@@ -11,6 +10,7 @@ import { useUpdateBusinessTripTravelAndSubsistenceExpense } from '../../../../ho
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
+import { TableCell, TableRow } from '../../../ui/table.js';
 import { Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
@@ -62,7 +62,7 @@ export const TravelAndSubsistenceRow = ({
   };
 
   return (
-    <tr key={travelAndSubsistenceExpense.id}>
+    <TableRow key={travelAndSubsistenceExpense.id}>
       <CoreExpenseRow
         data={travelAndSubsistenceExpense}
         isEditMode={isEditMode}
@@ -70,7 +70,7 @@ export const TravelAndSubsistenceRow = ({
         businessTripId={businessTripId}
       />
 
-      <td>
+      <TableCell>
         <Form {...form}>
           <form id={`form ${travelAndSubsistenceExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
             {isEditMode ? (
@@ -92,14 +92,14 @@ export const TravelAndSubsistenceRow = ({
                 )}
               />
             ) : (
-              <Text c={travelAndSubsistenceExpense.expenseType ? undefined : 'red'}>
+              <div className={travelAndSubsistenceExpense.expenseType ? undefined : 'text-red-500'}>
                 {travelAndSubsistenceExpense.expenseType ?? 'Missing'}
-              </Text>
+              </div>
             )}
           </form>
         </Form>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <Tooltip content="Edit">
           <Button
             disabled={updatingInProcess}
@@ -138,7 +138,7 @@ export const TravelAndSubsistenceRow = ({
           businessTripExpenseId={travelAndSubsistenceExpense.id}
           onDelete={onChange}
         />
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 };

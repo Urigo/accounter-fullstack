@@ -3,6 +3,7 @@
 import { useState, type ReactElement } from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { TaxCategories } from '../index.js';
@@ -15,6 +16,21 @@ const { useQueryMock, refetchMock } = vi.hoisted(() => ({
 vi.mock('urql', () => ({
   useQuery: useQueryMock,
 }));
+
+/** Records the options the screen builds its table with, real hook still running. */
+let capturedTableOptions: { autoResetPageIndex?: boolean } | null = null;
+vi.mock('@tanstack/react-table', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-table')>(
+    '@tanstack/react-table',
+  );
+  return {
+    ...actual,
+    useTable: (options: Parameters<typeof actual.useTable>[0]) => {
+      capturedTableOptions = options;
+      return actual.useTable(options);
+    },
+  };
+});
 
 vi.mock('../../common/modals/edit-tax-category.js', () => ({
   EditTaxCategory: () => null,
@@ -36,7 +52,14 @@ vi.mock('../../common/index.js', async () => {
 const taxCategories = Array.from({ length: 45 }, (_, index) => ({
   id: `tax-category-${index}`,
   name: `Tax Category ${index}`,
-  sortCode: { id: index, key: index, name: `Sort Code ${index}` },
+  sortCode: { id: `sort-code-${index}`, key: index, name: `Sort Code ${index}` },
+  irsCode: index,
+  taxExcluded: index % 2 === 0,
+  // Every third category is some business's default; the rest have nothing to expand.
+  businesses:
+    index % 3 === 0
+      ? [{ id: `business-${index}`, name: `Business ${index}` }]
+      : [],
 }));
 
 /** A render loop never settles, so it would hang the runner instead of failing.
@@ -44,20 +67,51 @@ const taxCategories = Array.from({ length: 45 }, (_, index) => ({
 const MAX_RENDERS = 50;
 let renderCount = 0;
 
+/** Records the live query string so tests can assert what the screen wrote. */
+let currentSearch = '';
+function LocationProbe(): null {
+  currentSearch = useLocation().search;
+  return null;
+}
+
 /** Mirrors DashboardLayoutRoute: the filters context is parent state, so every
  * `setFiltersContext` call re-renders the screen below it. */
-function Harness(): ReactElement {
+function Harness({ initialEntry = '/tax-categories' }: { initialEntry?: string }): ReactElement {
   renderCount += 1;
   if (renderCount > MAX_RENDERS) {
     throw new Error(`Render loop detected: the screen re-rendered more than ${MAX_RENDERS} times`);
   }
   const [filtersContext, setFiltersContext] = useState<ReactElement | null>(null);
   return (
-    <FiltersContext.Provider value={{ filtersContext, setFiltersContext }}>
-      {filtersContext}
-      <TaxCategories />
-    </FiltersContext.Provider>
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <LocationProbe />
+      <FiltersContext.Provider value={{ filtersContext, setFiltersContext }}>
+        {filtersContext}
+        <TaxCategories />
+      </FiltersContext.Provider>
+    </MemoryRouter>
   );
+}
+
+/** The header button that toggles sorting for a column. */
+function sortHeader(container: HTMLElement, label: string): HTMLButtonElement {
+  const button = [...container.querySelectorAll('button')].find(
+    candidate => candidate.textContent?.trim() === label,
+  );
+  if (!button) {
+    throw new Error(`No sort header labelled "${label}"`);
+  }
+  return button as HTMLButtonElement;
+}
+
+/** Names in the order the table currently renders them. Reads the name cell
+ * rather than the row text, which runs the name straight into the sort code. */
+function renderedNames(container: HTMLElement): string[] {
+  return [...container.querySelectorAll('tbody tr')].flatMap(row => {
+    const cells = row.querySelectorAll('td');
+    // Skip an expanded sub-row, which is a single full-width cell.
+    return cells.length > 1 ? [cells[1].textContent ?? ''] : [];
+  });
 }
 
 describe('TaxCategories screen', () => {
@@ -67,6 +121,7 @@ describe('TaxCategories screen', () => {
 
   beforeEach(() => {
     renderCount = 0;
+    currentSearch = '';
     useQueryMock.mockReset();
     useQueryMock.mockReturnValue([
       { data: { taxCategories }, fetching: false, error: undefined },
@@ -109,5 +164,153 @@ describe('TaxCategories screen', () => {
 
     // 45 rows at a page size of 30 => 2 pages, rendered by DataTablePagination.
     expect(container.textContent).toContain('Page 1 of 2');
+  });
+
+  it('expands a row into links to the businesses it is the default for', () => {
+    act(() => root.render(<Harness />));
+
+    // Only rows with businesses get an expander; `Tax Category 0` is the first.
+    const expander = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Show businesses of Tax Category 0"]',
+    );
+    expect(expander).not.toBeNull();
+
+    act(() => expander!.click());
+
+    const link = container.querySelector<HTMLAnchorElement>('a[href="/businesses/business-0"]');
+    expect(link).not.toBeNull();
+    expect(link!.textContent).toBe('Business 0');
+  });
+
+  it('offers no expander for a tax category no business defaults to', () => {
+    act(() => root.render(<Harness />));
+
+    // `Tax Category 1` has an empty `businesses` list.
+    expect(
+      container.querySelector('[aria-label="Show businesses of Tax Category 1"]'),
+    ).toBeNull();
+  });
+
+  it('opens a business in a new tab, as a distinct bulleted entry', () => {
+    act(() => root.render(<Harness />));
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Show businesses of Tax Category 0"]')!
+        .click();
+    });
+
+    // Bulleted list items, so a long name wrapping to a second line cannot read
+    // as a second business.
+    const list = container.querySelector('ul')!;
+    expect(list.className).toContain('list-disc');
+    expect(list.querySelectorAll('li')).toHaveLength(1);
+
+    const link = container.querySelector<HTMLAnchorElement>('a[href="/businesses/business-0"]')!;
+    expect(link.target).toBe('_blank');
+    expect(link.rel).toContain('noopener');
+  });
+});
+
+describe('TaxCategories table state in the URL', () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  let consoleError: MockInstance<typeof console.error>;
+
+  beforeEach(() => {
+    renderCount = 0;
+    currentSearch = '';
+    useQueryMock.mockReset();
+    useQueryMock.mockReturnValue([
+      { data: { taxCategories }, fetching: false, error: undefined },
+      refetchMock,
+    ]);
+    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    consoleError.mockRestore();
+  });
+
+  it('restores page, page size and sort from a shared link', () => {
+    act(() =>
+      root.render(<Harness initialEntry="/tax-categories?page=2&pageSize=10&sort=name:desc" />),
+    );
+
+    // 45 rows at 10 per page => 5 pages, and the link asked for the second.
+    expect(container.textContent).toContain('Page 2 of 5');
+    // TanStack's default sort is alphanumeric, so the trailing numbers compare
+    // as numbers: descending runs 44..35 on page 1 and starts at 34 on page 2.
+    const names = renderedNames(container);
+    expect(names).toHaveLength(10);
+    expect(names[0]).toBe('Tax Category 34');
+  });
+
+  it('writes paging to the URL', () => {
+    act(() => root.render(<Harness />));
+    expect(currentSearch).toBe('');
+
+    act(() => {
+      [...container.ownerDocument.querySelectorAll('button')]
+        .find(button => button.textContent?.includes('Go to next page'))!
+        .click();
+    });
+
+    expect(new URLSearchParams(currentSearch).get('page')).toBe('2');
+    expect(container.textContent).toContain('Page 2 of 2');
+  });
+
+  it('writes sorting to the URL and returns to the first page', () => {
+    act(() => root.render(<Harness initialEntry="/tax-categories?page=2" />));
+
+    act(() => sortHeader(container, 'Name').click());
+
+    const params = new URLSearchParams(currentSearch);
+    expect(params.get('sort')).toBe('name:asc');
+    // Re-sorting reorders everything, so page 2 would show unrelated rows.
+    expect(params.get('page')).toBeNull();
+    expect(container.textContent).toContain('Page 1 of 2');
+  });
+
+  it('leaves unrelated query params alone', () => {
+    act(() => root.render(<Harness initialEntry="/tax-categories?keep=me" />));
+
+    act(() => sortHeader(container, 'IRS Code').click());
+
+    expect(new URLSearchParams(currentSearch).get('keep')).toBe('me');
+  });
+
+  it('lands on the last real page when the link points past the end', () => {
+    act(() => root.render(<Harness initialEntry="/tax-categories?page=9" />));
+
+    expect(container.textContent).toContain('Page 2 of 2');
+    expect(new URLSearchParams(currentSearch).get('page')).toBe('2');
+    expect(renderCount).toBeLessThan(MAX_RENDERS);
+  });
+
+  /**
+   * Regression guard for the "next page flashes then snaps back to page 1" bug.
+   *
+   * TanStack resets the page index to 0 whenever a row model recomputes
+   * (`table_autoResetPageIndex`, wired into the core and sorted row models). With
+   * pagination controlled, that reset arrives as a second `onPaginationChange`
+   * right after the user's own, so paging flashed page 2 and snapped back — and
+   * wrote the page out of the URL with it. A fresh `data` identity from urql is
+   * enough to trigger it.
+   *
+   * This asserts the option rather than the behaviour: the reset only fires once
+   * the store has caught up to the new page, an ordering `act()` collapses, so it
+   * does not reproduce under happy-dom. It was diagnosed and the fix verified in
+   * a real browser; this keeps the line from being dropped.
+   */
+  it('turns off the table\'s own page-index reset, since the URL owns it', () => {
+    act(() => root.render(<Harness />));
+
+    expect(capturedTableOptions?.autoResetPageIndex).toBe(false);
   });
 });

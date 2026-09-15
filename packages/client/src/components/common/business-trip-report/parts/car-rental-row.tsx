@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Car, Check, Edit, Fuel } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
-import { Text } from '@mantine/core';
 import {
   BusinessTripReportCarRentalRowFieldsFragmentDoc,
   type UpdateBusinessTripCarRentalExpenseInput,
@@ -11,6 +10,7 @@ import { useUpdateBusinessTripCarRentalExpense } from '../../../../hooks/use-upd
 import { Button } from '../../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
+import { TableCell, TableRow } from '../../../ui/table.js';
 import { Tooltip } from '../../index.js';
 import { NumberInput } from '../../inputs/number-input.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
@@ -57,7 +57,7 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
   };
 
   return (
-    <tr key={carRentalExpense.id}>
+    <TableRow key={carRentalExpense.id}>
       <CoreExpenseRow
         data={carRentalExpense}
         isEditMode={isEditMode}
@@ -65,7 +65,7 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
         businessTripId={businessTripId}
       />
 
-      <td>
+      <TableCell>
         <Form {...form}>
           <form id={`form ${carRentalExpense.id}`} onSubmit={handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-2 justify-center">
@@ -88,15 +88,15 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
                     )}
                   />
                 ) : (
-                  <Text c={carRentalExpense.days ? undefined : 'red'}>
+                  <div className={carRentalExpense.days ? undefined : 'text-red-500'}>
                     {carRentalExpense.days ?? 'Missing'}
-                  </Text>
+                  </div>
                 ))}
             </div>
           </form>
         </Form>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         {isEditMode ? (
           <Form {...form}>
             <FormField
@@ -124,8 +124,8 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
         ) : (
           <Car />
         )}
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <Tooltip content="Edit">
           <Button
             disabled={updatingInProcess}
@@ -164,7 +164,7 @@ export const CarRentalRow = ({ data, businessTripId, onChange }: Props): ReactEl
           businessTripExpenseId={carRentalExpense.id}
           onDelete={onChange}
         />
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 };

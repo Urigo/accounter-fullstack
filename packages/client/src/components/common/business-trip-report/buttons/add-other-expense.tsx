@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader, Modal } from '@mantine/core';
 import type { AddBusinessTripOtherExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripOtherExpense } from '../../../../hooks/use-add-business-trip-other-expense.js';
 import { Button } from '../../../ui/button.js';
@@ -14,9 +13,9 @@ import {
   FormMessage,
 } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
-import { Overlay } from '../../../ui/overlay.js';
+import { LoadingOverlay } from '../../../ui/overlay.js';
 import { Switch } from '../../../ui/switch.js';
-import { Tooltip } from '../../index.js';
+import { PopUpModal, Tooltip } from '../../index.js';
 import { AddExpenseFields } from './add-expense-fields.js';
 
 export function AddOtherExpense(props: {
@@ -78,62 +77,55 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
   };
 
   return (
-    <Modal opened={opened} onClose={close} centered lockScroll>
-      <Modal.Title>Add Other Expense</Modal.Title>
-      <Modal.Body>
-        <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-            <AddExpenseFields
-              businessTripId={businessTripId}
-              control={control}
-              setFetching={setFetching}
-            />
+    <PopUpModal opened={opened} onClose={close} withCloseButton title="Add Other Expense">
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <AddExpenseFields
+            businessTripId={businessTripId}
+            control={control}
+            setFetching={setFetching}
+          />
 
-            <FormField
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value ?? undefined} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <FormField
+            name="description"
+            control={control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value ?? undefined} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-            <FormField
-              control={form.control}
-              name="deductibleExpense"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                  <div className="space-y-0.5">
-                    <FormLabel>Deductible Expense</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value === true} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+          <FormField
+            control={form.control}
+            name="deductibleExpense"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <FormLabel>Deductible Expense</FormLabel>
+                </div>
+                <FormControl>
+                  <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-            <div className="flex justify-center mt-5 gap-3">
-              <button
-                type="submit"
-                className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-              >
-                Add
-              </button>
-            </div>
-          </form>
-        </Form>
-      </Modal.Body>
-      {(addingInProcess || fetching) && (
-        <Overlay blur={1} center>
-          <Loader />
-        </Overlay>
-      )}
-    </Modal>
+          <div className="flex justify-center mt-5 gap-3">
+            <button
+              type="submit"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </Form>
+      <LoadingOverlay visible={addingInProcess || fetching} blur={1} />
+    </PopUpModal>
   );
 }

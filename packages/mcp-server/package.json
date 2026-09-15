@@ -16,7 +16,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "26.8.1"
+    "node": "26.8.2"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -48,10 +48,10 @@
     "@opentelemetry/semantic-conventions": "1.43.0",
     "dotenv": "17.4.2",
     "jose": "6.2.12",
-    "zod": "4.5.4"
+    "zod": "4.6.5"
   },
   "devDependencies": {
-    "@types/node": "25.9.5",
+    "@types/node": "25.9.6",
     "tsx": "4.23.13",
     "typescript": "6.0.3",
     "vitest": "5.0.0"

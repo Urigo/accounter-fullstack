@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   InsertBusinessTripAttendeeDocument,
   type InsertBusinessTripAttendeeMutation,
   type InsertBusinessTripAttendeeMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,40 +25,17 @@ export const useInsertBusinessTripAttendee = (): UseInsertBusinessTripAttendee =
   // TODO: add authentication
   // TODO: add local data update method after insert
 
-  const [{ fetching }, mutate] = useMutation(InsertBusinessTripAttendeeDocument);
-  const insertBusinessTripAttendee = useCallback(
-    async (variables: InsertBusinessTripAttendeeMutationVariables) => {
-      const message = 'Error adding attendee to business trip';
-      const notificationId = NOTIFICATION_ID;
-      toast.loading('Adding attendee', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId);
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Attendee was added to the business trip',
-          });
-          return data.insertBusinessTripAttendee;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: InsertBusinessTripAttendeeDocument,
+    notificationId: NOTIFICATION_ID,
+    loadingMessage: 'Adding attendee',
+    errorMessage: 'Error adding attendee to business trip',
+    select: data => data.insertBusinessTripAttendee,
+    successToast: { description: 'Attendee was added to the business trip' },
+  });
 
   return {
     fetching,
-    insertBusinessTripAttendee,
+    insertBusinessTripAttendee: execute,
   };
 };

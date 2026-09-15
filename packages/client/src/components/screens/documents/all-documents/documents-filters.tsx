@@ -3,7 +3,6 @@ import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import {
   DocumentType,
@@ -20,6 +19,7 @@ import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-ent
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { DatePickerInput, PopUpModal, SimpleGrid } from '../../../common/index.js';
+import { NegatableMultiSelect } from '../../../common/inputs/negatable-multi-select.js';
 import { Button } from '../../../ui/button.js';
 import {
   Form,
@@ -106,20 +106,20 @@ function DocumentsFiltersForm({
               name="ownerIDs"
               control={control}
               defaultValue={filter.ownerIDs}
-              render={({ field, fieldState }): ReactElement => (
+              render={({ field }): ReactElement => (
                 <FormItem>
                   <FormLabel>Owners</FormLabel>
                   <FormControl>
-                    <MultiSelect
-                      {...field}
-                      data={owners}
+                    <NegatableMultiSelect
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      options={owners}
                       value={soleAdminBusinessId ? [soleAdminBusinessId] : (field.value ?? [])}
-                      disabled={ownersFetching || !!soleAdminBusinessId}
+                      onValueChange={field.onChange}
+                      loading={ownersFetching}
+                      disabled={!!soleAdminBusinessId}
                       placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                      withinPortal
+                      aria-label="Owners"
                     />
                   </FormControl>
                   <FormMessage />
@@ -130,20 +130,19 @@ function DocumentsFiltersForm({
               name="businessIDs"
               control={control}
               defaultValue={filter.businessIDs}
-              render={({ field, fieldState }): ReactElement => (
+              render={({ field }): ReactElement => (
                 <FormItem>
                   <FormLabel>Counterparty</FormLabel>
                   <FormControl>
-                    <MultiSelect
-                      {...field}
-                      data={financialEntities}
+                    <NegatableMultiSelect
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      options={financialEntities}
                       value={field.value ?? []}
-                      disabled={financialEntitiesFetching}
+                      onValueChange={field.onChange}
+                      loading={financialEntitiesFetching}
                       placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                      withinPortal
+                      aria-label="Counterparty"
                     />
                   </FormControl>
                   <FormMessage />
@@ -208,19 +207,18 @@ function DocumentsFiltersForm({
               name="type"
               control={control}
               defaultValue={filter.type}
-              render={({ field, fieldState }): ReactElement => (
+              render={({ field }): ReactElement => (
                 <FormItem>
                   <FormLabel>Document Type</FormLabel>
                   <FormControl>
-                    <MultiSelect
-                      {...field}
-                      data={DOCUMENT_TYPE_OPTIONS}
+                    <NegatableMultiSelect
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      options={DOCUMENT_TYPE_OPTIONS}
                       value={field.value ?? []}
+                      onValueChange={field.onChange}
                       placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                      withinPortal
+                      aria-label="Document Type"
                     />
                   </FormControl>
                   <FormMessage />

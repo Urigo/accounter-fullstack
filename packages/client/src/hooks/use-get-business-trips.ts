@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllBusinessTripsDocument, type AllBusinessTripsQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 type BusinessTrips = Array<NonNullable<AllBusinessTripsQuery['allBusinessTrips']>[number]>;
 
@@ -17,12 +17,7 @@ export const useGetBusinessTrips = (): UseGetBusinessTrips => {
     query: AllBusinessTripsDocument,
   });
 
-  if (error) {
-    console.error(`Error fetching business trips: ${error}`);
-    toast.error('Error', {
-      description: 'Unable to fetch business trips',
-    });
-  }
+  useQueryErrorToast(error, 'business trips');
 
   const businessTrips = useMemo(() => {
     return [...(data?.allBusinessTrips ?? [])].sort((a, b) => (a.name > b.name ? 1 : -1));

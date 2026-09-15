@@ -9,7 +9,9 @@ import {
   type Operation,
   type OperationContext,
 } from 'urql';
+import { devtoolsExchange } from '@urql/devtools';
 import { authExchange } from '@urql/exchange-auth';
+import { retryExchange } from '@urql/exchange-retry';
 import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
 import { ROUTES } from '../router/routes.js';
 import { handleUrqlError } from './urql-error-handler.js';
@@ -92,8 +94,7 @@ export function setBusinessScope(ids: string[]): void {
   } catch {
     // ignore
   }
-  resetUrqlClient();
-  onClientReset?.(getUrqlClient());
+  resetUrqlClientAndNotify();
 }
 
 /**
@@ -196,6 +197,33 @@ function redirectToLogin(): void {
 }
 
 /**
+ * The GraphQL endpoint for this build.
+ *
+ * `VITE_GRAPHQL_URL` wins when set, which is what makes preview deploys, branch
+ * environments and a per-developer backend possible. It is checked for a
+ * non-empty value rather than merely being defined: `vite.config.ts` supplies it
+ * through `define`, which substitutes an empty string when the underlying
+ * `GRAPHQL_URL` is unset rather than leaving the key absent.
+ *
+ * Without it, the per-`MODE` defaults below apply, unchanged.
+ */
+function resolveGraphQLUrl(): string {
+  const configured = import.meta.env.VITE_GRAPHQL_URL?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  switch (import.meta.env.MODE) {
+    case 'production':
+      return 'https://accounter.onrender.com/graphql';
+    case 'staging':
+      return 'https://accounter-staging.onrender.com/graphql';
+    default:
+      return 'http://localhost:4000/graphql';
+  }
+}
+
+/**
  * Singleton URQL client for use in loaders and server-side operations
  * This is separate from the Provider client to avoid React context dependencies
  */
@@ -209,30 +237,23 @@ export function getUrqlClient(): Client {
   const isDevAuthEnabled = import.meta.env.VITE_DEV_AUTH === '1';
   const devAuthUserId = import.meta.env.VITE_DEV_AUTH_USER_ID?.trim() ?? '';
 
-  let url: string;
-  switch (import.meta.env.MODE) {
-    case 'production': {
-      url = 'https://accounter.onrender.com/graphql';
-      break;
-    }
-    case 'staging': {
-      url = 'https://accounter-staging.onrender.com/graphql';
-      break;
-    }
-    default: {
-      url = 'http://localhost:4000/graphql';
-      break;
-    }
-  }
+  const url = resolveGraphQLUrl();
 
   globalClient = createClient({
     url,
     exchanges: [
+      // Dev only, and first so it observes every operation and result. Tree-shaken
+      // from production builds by the constant condition.
+      ...(import.meta.env.DEV ? [devtoolsExchange] : []),
       mapExchange({
         onResult(result) {
           handleUrqlError(result);
         },
       }),
+      // `cacheExchange` belongs here, between the error handler and auth, when
+      // normalized caching lands. Nothing occupies the slot today: passing an
+      // explicit `exchanges` array means urql installs no cache of its own.
+
       authExchange(async utils => {
         if (!isDevAuthEnabled) {
           const initialToken = await getAccessToken();
@@ -311,6 +332,19 @@ export function getUrqlClient(): Client {
           },
         };
       }),
+      // After `authExchange`, deliberately: auth then sees a single settled result
+      // rather than every retry attempt, so a retry can never drive
+      // `didAuthError`/`refreshAuth`.
+      //
+      // The mutation guard is not belt-and-braces. `@urql/exchange-retry` does
+      // not exclude mutations on its own — `retryIf`'s return value is the whole
+      // decision — so without it a write that failed mid-flight would be
+      // resubmitted, and none of ours are idempotent. Queries and subscriptions
+      // retry on network errors only; a GraphQL error is an answer, not a
+      // failure, and will not change on a second attempt.
+      retryExchange({
+        retryIf: (error, operation) => operation.kind !== 'mutation' && !!error.networkError,
+      }),
       fetchExchange,
     ],
   });
@@ -325,6 +359,20 @@ export function resetUrqlClient(): void {
   globalClient = null;
   bearerToken = null;
   loginRedirectInProgress = false;
+}
+
+/**
+ * Discards the client and hands the Provider a fresh one.
+ *
+ * `resetUrqlClient` alone only clears the singleton, so anything already
+ * holding the old `Client` — every mounted `useQuery`, via the Provider — keeps
+ * using it, along with its bearer token and any cache an exchange is holding.
+ * Both callers need the swap as well, so they share this rather than each
+ * remembering to make the second call.
+ */
+export function resetUrqlClientAndNotify(): void {
+  resetUrqlClient();
+  onClientReset?.(getUrqlClient());
 }
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {

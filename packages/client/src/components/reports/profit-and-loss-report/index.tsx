@@ -2,14 +2,19 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Table } from '@mantine/core';
 import { PrintToPdfButton } from '@/components/common/index.js';
 import { ProfitAndLossReportDocument } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { ReportCommentaryRow } from '../shared/report-commentary-row.js';
 import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
+
+// Hoisted, matching `vat-monthly-report/index.tsx`: `dedupeFragments` builds a new
+// `DocumentNode` on every call, so doing it inline re-printed and re-hashed the
+// document on each render just to arrive at the same operation key.
+const profitAndLossReportQuery = dedupeFragments(ProfitAndLossReportDocument);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -145,7 +150,7 @@ export const ProfitAndLossReport = (): ReactElement => {
 
   // fetch data
   const [{ data, fetching }] = useQuery({
-    query: dedupeFragments(ProfitAndLossReportDocument),
+    query: profitAndLossReportQuery,
     variables: {
       reportYear: year,
       referenceYears,
@@ -179,155 +184,165 @@ export const ProfitAndLossReport = (): ReactElement => {
       ) : (
         <div className="flex flex-col gap-4">
           {report && (
-            <Table highlightOnHover fontSize="md">
-              <thead>
-                <tr>
-                  <th />
-                  <th key={year}>{year}</th>
-                  <th />
+            <Table className="text-base">
+              <TableHeader>
+                <TableRow>
+                  <TableHead />
+                  <TableHead key={year}>{year}</TableHead>
+                  <TableHead />
                   {referenceYearsData.map(report => (
-                    <th key={report.year}>{report.year}</th>
+                    <TableHead key={report.year}>{report.year}</TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 <ReportCommentaryRow
                   dataRow={button => (
-                    <tr>
-                      <th>Revenue</th>
-                      <th>{report.revenue.amount.formatted}</th>
-                      <th>{button}</th>
+                    <TableRow>
+                      <TableHead>Revenue</TableHead>
+                      <TableHead>{report.revenue.amount.formatted}</TableHead>
+                      <TableHead>{button}</TableHead>
                       {referenceYearsData.map(report => (
-                        <th key={report.year}>{report.revenue.amount.formatted}</th>
+                        <TableHead key={report.year}>{report.revenue.amount.formatted}</TableHead>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                   commentaryData={report.revenue}
                 />
                 <ReportCommentaryRow
                   dataRow={button => (
-                    <tr>
-                      <td>Cost of Sales</td>
-                      <td>{report.costOfSales.amount.formatted}</td>
-                      <th>{button}</th>
+                    <TableRow>
+                      <TableCell>Cost of Sales</TableCell>
+                      <TableCell>{report.costOfSales.amount.formatted}</TableCell>
+                      <TableHead>{button}</TableHead>
                       {referenceYearsData.map(report => (
-                        <td key={report.year}>{report.costOfSales.amount.formatted}</td>
+                        <TableCell key={report.year}>
+                          {report.costOfSales.amount.formatted}
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                   commentaryData={report.costOfSales}
                 />
-                <tr>
-                  <th>Gross Profit</th>
-                  <th>{report.grossProfit.formatted}</th>
-                  <th />
+                <TableRow>
+                  <TableHead>Gross Profit</TableHead>
+                  <TableHead>{report.grossProfit.formatted}</TableHead>
+                  <TableHead />
                   {referenceYearsData.map(report => (
-                    <th key={report.year}>{report.grossProfit.formatted}</th>
+                    <TableHead key={report.year}>{report.grossProfit.formatted}</TableHead>
                   ))}
-                </tr>
+                </TableRow>
                 <ReportCommentaryRow
                   dataRow={button => (
-                    <tr>
-                      <td>R&D Expenses</td>
-                      <td>{report.researchAndDevelopmentExpenses.amount.formatted}</td>
-                      <th>{button}</th>
+                    <TableRow>
+                      <TableCell>R&D Expenses</TableCell>
+                      <TableCell>
+                        {report.researchAndDevelopmentExpenses.amount.formatted}
+                      </TableCell>
+                      <TableHead>{button}</TableHead>
                       {referenceYearsData.map(report => (
-                        <td key={report.year}>
+                        <TableCell key={report.year}>
                           {report.researchAndDevelopmentExpenses.amount.formatted}
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                   commentaryData={report.researchAndDevelopmentExpenses}
                 />
                 <ReportCommentaryRow
                   dataRow={button => (
-                    <tr>
-                      <td>Marketing Expenses</td>
-                      <td>{report.marketingExpenses.amount.formatted}</td>
-                      <th>{button}</th>
+                    <TableRow>
+                      <TableCell>Marketing Expenses</TableCell>
+                      <TableCell>{report.marketingExpenses.amount.formatted}</TableCell>
+                      <TableHead>{button}</TableHead>
                       {referenceYearsData.map(report => (
-                        <td key={report.year}>{report.marketingExpenses.amount.formatted}</td>
+                        <TableCell key={report.year}>
+                          {report.marketingExpenses.amount.formatted}
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                   commentaryData={report.marketingExpenses}
                 />
                 <ReportCommentaryRow
                   dataRow={button => (
-                    <tr>
-                      <td>Management and General Expenses</td>
-                      <td>{report.managementAndGeneralExpenses.amount.formatted}</td>
-                      <th>{button}</th>
+                    <TableRow>
+                      <TableCell>Management and General Expenses</TableCell>
+                      <TableCell>{report.managementAndGeneralExpenses.amount.formatted}</TableCell>
+                      <TableHead>{button}</TableHead>
                       {referenceYearsData.map(report => (
-                        <td key={report.year}>
+                        <TableCell key={report.year}>
                           {report.managementAndGeneralExpenses.amount.formatted}
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                   commentaryData={report.managementAndGeneralExpenses}
                 />
-                <tr>
-                  <th>Operating Profit</th>
-                  <th>{report.operatingProfit.formatted}</th>
-                  <th />
+                <TableRow>
+                  <TableHead>Operating Profit</TableHead>
+                  <TableHead>{report.operatingProfit.formatted}</TableHead>
+                  <TableHead />
                   {referenceYearsData.map(report => (
-                    <th key={report.year}>{report.operatingProfit.formatted}</th>
+                    <TableHead key={report.year}>{report.operatingProfit.formatted}</TableHead>
                   ))}
-                </tr>
+                </TableRow>
                 <ReportCommentaryRow
                   dataRow={button => (
-                    <tr>
-                      <td>Financial Expenses</td>
-                      <td>{report.financialExpenses.amount.formatted}</td>
-                      <th>{button}</th>
+                    <TableRow>
+                      <TableCell>Financial Expenses</TableCell>
+                      <TableCell>{report.financialExpenses.amount.formatted}</TableCell>
+                      <TableHead>{button}</TableHead>
                       {referenceYearsData.map(report => (
-                        <td key={report.year}>{report.financialExpenses.amount.formatted}</td>
+                        <TableCell key={report.year}>
+                          {report.financialExpenses.amount.formatted}
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                   commentaryData={report.financialExpenses}
                 />
                 <ReportCommentaryRow
                   dataRow={button => (
-                    <tr>
-                      <td>Other Income</td>
-                      <td>{report.otherIncome.amount.formatted}</td>
-                      <th>{button}</th>
+                    <TableRow>
+                      <TableCell>Other Income</TableCell>
+                      <TableCell>{report.otherIncome.amount.formatted}</TableCell>
+                      <TableHead>{button}</TableHead>
                       {referenceYearsData.map(report => (
-                        <td key={report.year}>{report.otherIncome.amount.formatted}</td>
+                        <TableCell key={report.year}>
+                          {report.otherIncome.amount.formatted}
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                   commentaryData={report.otherIncome}
                 />
-                <tr>
-                  <th>Profit Before Tax</th>
-                  <th>{report.profitBeforeTax.formatted}</th>
-                  <th />
+                <TableRow>
+                  <TableHead>Profit Before Tax</TableHead>
+                  <TableHead>{report.profitBeforeTax.formatted}</TableHead>
+                  <TableHead />
                   {referenceYearsData.map(report => (
-                    <th key={report.year}>{report.profitBeforeTax.formatted}</th>
+                    <TableHead key={report.year}>{report.profitBeforeTax.formatted}</TableHead>
                   ))}
-                </tr>
-                <tr>
-                  <td>Tax</td>
-                  <td>{report.tax.formatted}</td>
-                  <td />
+                </TableRow>
+                <TableRow>
+                  <TableCell>Tax</TableCell>
+                  <TableCell>{report.tax.formatted}</TableCell>
+                  <TableCell />
                   {referenceYearsData.map(report => (
-                    <td key={report.year}>{report.tax.formatted}</td>
+                    <TableCell key={report.year}>{report.tax.formatted}</TableCell>
                   ))}
-                </tr>
-              </tbody>
+                </TableRow>
+              </TableBody>
               <tfoot>
-                <tr>
-                  <th>Net Profit</th>
-                  <th>{report.netProfit.formatted}</th>
-                  <th />
+                <TableRow>
+                  <TableHead>Net Profit</TableHead>
+                  <TableHead>{report.netProfit.formatted}</TableHead>
+                  <TableHead />
                   {referenceYearsData.map(report => (
-                    <th key={report.year}>{report.netProfit.formatted}</th>
+                    <TableHead key={report.year}>{report.netProfit.formatted}</TableHead>
                   ))}
-                </tr>
+                </TableRow>
               </tfoot>
             </Table>
           )}

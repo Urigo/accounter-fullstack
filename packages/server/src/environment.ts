@@ -258,9 +258,26 @@ const EmailIngestionModel = zod.object({
   ),
 });
 
+// The Auth0 SDK (v7+) requires `domain` to be a bare hostname and throws from the
+// `ManagementClient` constructor when it carries a scheme, path, query string or
+// fragment. The rest of the codebase already assumes a bare hostname too (it builds
+// `https://${domain}/...` for the JWKS and issuer URLs), so validate it here: a bad
+// value fails at startup with an actionable message instead of throwing later from
+// inside the DI container.
+const Auth0DomainModel = zod
+  .string()
+  .min(1)
+  .refine(value => !/^[a-z][a-z\d+\-.]*:\/\//i.test(value), {
+    message:
+      'AUTH0_DOMAIN must not include a scheme (use "tenant.us.auth0.com", not "https://tenant.us.auth0.com")',
+  })
+  .refine(value => !/[/?#]/.test(value), {
+    message: 'AUTH0_DOMAIN must be a bare hostname, without a path, query string or fragment',
+  });
+
 const Auth0Model = zod.union([
   zod.object({
-    AUTH0_DOMAIN: zod.string().min(1),
+    AUTH0_DOMAIN: Auth0DomainModel,
     AUTH0_AUDIENCE: zod.string().min(1),
     AUTH0_CLIENT_ID: zod.string().min(1),
     AUTH0_CLIENT_SECRET: zod.string().min(1),

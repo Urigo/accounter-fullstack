@@ -1,12 +1,9 @@
-import { useCallback } from 'react';
-import { toast } from 'sonner';
-import { useMutation } from 'urql';
 import {
   MergeChargesDocument,
   type MergeChargesMutation,
   type MergeChargesMutationVariables,
 } from '../gql/graphql.js';
-import { handleCommonErrors } from '../helpers/error-handling.js';
+import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -49,40 +46,18 @@ export const useMergeCharges = (): UseMergeCharges => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
-  const [{ fetching }, mutate] = useMutation(MergeChargesDocument);
-  const mergeCharges = useCallback(
-    async (variables: MergeChargesMutationVariables) => {
-      const message = `Error merging into charge ID [${variables.baseChargeID}]`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.baseChargeID}`;
-      toast.loading('Merging Charges', {
-        id: notificationId,
-      });
-      try {
-        const res = await mutate(variables);
-        const data = handleCommonErrors(res, message, notificationId, 'mergeCharges');
-        if (data) {
-          toast.success('Success', {
-            id: notificationId,
-            description: 'Charges were merged',
-          });
-          return data.mergeCharges.charge;
-        }
-      } catch (e) {
-        console.error(`${message}: ${e}`);
-        toast.error('Error', {
-          id: notificationId,
-          description: message,
-          duration: 100_000,
-          closeButton: true,
-        });
-      }
-      return void 0;
-    },
-    [mutate],
-  );
+  const { fetching, execute } = useApiMutation({
+    document: MergeChargesDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.baseChargeID}`,
+    loadingMessage: 'Merging Charges',
+    errorMessage: variables => `Error merging into charge ID [${variables.baseChargeID}]`,
+    commonErrorPath: 'mergeCharges',
+    select: data => data.mergeCharges.charge,
+    successToast: { description: 'Charges were merged' },
+  });
 
   return {
     fetching,
-    mergeCharges,
+    mergeCharges: execute,
   };
 };

@@ -8,13 +8,14 @@ import {
   type UseFormReturn,
 } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Select } from '@mantine/core';
 import { AttendeesByBusinessTripDocument } from '../../../../gql/graphql.js';
 import {
   useControlledFieldArray,
   type FieldArrayItem,
 } from '../../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../../ui/button.js';
+import { Label } from '../../../ui/label.js';
+import { ComboBox } from '../../inputs/combo-box.js';
 import { NumberInput } from '../../inputs/number-input.js';
 
 type Props<T extends FieldValues> = {
@@ -96,7 +97,11 @@ export function AttendeesStayInput<T extends FieldValues>({
 
   return (
     <div>
-      <span className="mantine-InputWrapper-label mantine-Select-label">Employees Stay</span>
+      {/* Was styled by Mantine's own `mantine-InputWrapper-label` class, which stops
+          existing once Mantine goes; this is the same look from `ui/label`. */}
+      <Label asChild>
+        <span>Employees Stay</span>
+      </Label>
       <div className="h-full flex flex-col overflow-hidden">
         {controlledFields?.map((record, index) => (
           <div key={record.id} className="flex items-end gap-2 text-gray-600 mb-2">
@@ -108,17 +113,14 @@ export function AttendeesStayInput<T extends FieldValues>({
                   required: 'Required',
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
+                  <ComboBox
                     {...field}
                     disabled={fetching}
                     data={attendees}
                     value={field.value ?? undefined}
                     label="Attendee"
                     placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
                     error={fieldState.error?.message}
-                    withinPortal
                     required
                   />
                 )}

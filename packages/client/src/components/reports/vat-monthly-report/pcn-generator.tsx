@@ -7,6 +7,11 @@ import { dedupeFragments, downloadFile } from '../../../helpers/index.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 
+// Hoisted, matching `vat-monthly-report/index.tsx`: `dedupeFragments` builds a new
+// `DocumentNode` on every call, so doing it inline re-printed and re-hashed the
+// document on each render just to arrive at the same operation key.
+const generatePcnQuery = dedupeFragments(GeneratePcnDocument);
+
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query GeneratePCN($monthDate: TimelessDate!, $financialEntityId: UUID!) {
@@ -27,7 +32,7 @@ export const PCNGenerator = ({
   isLoading,
 }: Props): ReactElement => {
   const [{ data, fetching, error }, executeQuery] = useQuery({
-    query: dedupeFragments(GeneratePcnDocument),
+    query: generatePcnQuery,
     pause: true,
     variables: {
       monthDate,

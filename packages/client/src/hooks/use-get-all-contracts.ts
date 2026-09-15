@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { AllOpenContractsDocument, type AllOpenContractsQuery } from '../gql/graphql.js';
+import { useQueryErrorToast } from './use-query-error-toast.js';
 
 export type AllOpenContracts = Array<
   NonNullable<AllOpenContractsQuery['allOpenContracts']>[number]
@@ -19,12 +19,7 @@ export const useGetOpenContracts = (): UseGetContracts => {
     query: AllOpenContractsDocument,
   });
 
-  if (error) {
-    console.error(`Error fetching contracts: ${error}`);
-    toast.error('Error', {
-      description: 'Unable to fetch contracts',
-    });
-  }
+  useQueryErrorToast(error, 'contracts');
 
   const openContracts = useMemo(() => {
     return (
