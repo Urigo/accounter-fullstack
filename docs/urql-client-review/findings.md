@@ -4,8 +4,9 @@ Review of urql usage across `packages/client`, September 2026. Scope: 127 `useQu
 `useMutation` call sites, 318 GraphQL documents across 294 files, and the client setup in
 `packages/client/src/providers/urql.tsx`.
 
-Companion document: [`blueprint.md`](./blueprint.md) — the phased remediation plan derived from
-these findings.
+Companion documents: [`blueprint.md`](./blueprint.md) — the phased remediation plan derived from
+these findings, all ten steps now merged; [`remaining-work.md`](./remaining-work.md) — what is still
+outstanding.
 
 ## Summary
 
@@ -213,6 +214,9 @@ through the `useLoaderData()` try/catch described in §7. Adding a cache is what
 actually useful and lets that machinery be deleted.
 
 ## Recommended direction
+
+> Step 1 below shipped as a ten-PR sequence; see [`blueprint.md`](./blueprint.md). Steps 2 and 3,
+> and everything else still outstanding, are tracked in [`remaining-work.md`](./remaining-work.md).
 
 1. **Now:** the mechanical fixes in [`blueprint.md`](./blueprint.md) — §3, §4, §6, §7 above.
 2. **Next:** `@urql/exchange-graphcache`. The specific payoff for this codebase is referential

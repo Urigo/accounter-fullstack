@@ -1,6 +1,7 @@
 # urql Quick Wins — Implementation Blueprint
 
-Companion document: [`findings.md`](./findings.md) — the review these steps derive from.
+Companion documents: [`findings.md`](./findings.md) — the review these steps derive from;
+[`remaining-work.md`](./remaining-work.md) — what is still outstanding.
 
 ## Status
 
@@ -702,28 +703,9 @@ Finally, run the full manual pass from the Verification section against `yarn mo
 
 ---
 
-## Out of scope, recorded for the follow-up
+## What comes next
 
-- Any cache exchange. Next phase is `@urql/exchange-graphcache`, needing `schema` awareness for this
-  union-heavy schema (`CommonError` unions, `... on BusinessTripCharge`), `keys` for keyless types,
-  and `updates` across the 104 mutations. Its payoff here is referential stability — exactly what
-  `hooks/use-stable-value.ts` and the per-row `JSON.stringify` in `charges/charges-row.tsx:62-78`
-  exist to fake — plus optimistic updates for the tag/description edits that dominate charges.
-- Retiring the hand-rolled invalidation: `providers/charge-refresh.tsx` (~100 lines), 64 zero-arg
-  `onChange` declarations across 60 files, 25 `network-only` policies, the `pause: true` + effect
-  pattern in 19 files.
-- `providers/user-provider.tsx:145-147` — `if (fetching) return <AccounterLoader />` unmounts the
-  whole app tree on any `UserContext` refetch, refiring every child query.
-- The dead `chargeId?: string` prop on `Charge`, and more broadly its whole `useQuery` path: the
-  `:chargeId` route always has a loader, so that query is permanently paused in production and the
-  prop has no callers. Found while implementing step 5.
-- Two claims in this plan were wrong and were corrected when step 5 was implemented and tested. The
-  mount effect in `charge.tsx` was **not** costing a duplicate round-trip — urql dedupes the
-  re-execution against the still-in-flight operation. And the `try/catch` around `useLoaderData` was
-  **not** entirely dead: `useLoaderData` throws outside a data router, which is what it guarded.
-  Removing it is safe only because all three screens are exclusively route elements.
-- Mutation payload design — many mutations select only `{ charge { id } }`
-  (`hooks/use-update-charge.ts:16-25`), which no cache can patch from. Prerequisite for optimistic
-  UI.
-- Persisted documents (`presetConfig.persistedDocuments` + `usePersistedOperations`; Hive already
-  wired at `packages/server/src/index.ts:145`).
+This document is a record of a completed sequence. Everything still outstanding — the cache work and
+its schema prerequisite, the loose edges this pass left behind, and the items from the review that
+were never started — is in [`remaining-work.md`](./remaining-work.md), kept as a single list so the
+two do not drift.
