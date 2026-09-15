@@ -314,6 +314,8 @@ export default [
       'packages/client/src/components/ledger-table/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/salaries/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/screens/documents/all-documents/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/common/forms/**/*.{,c,m}{j,t}s{,x}',
+      'packages/client/src/components/common/modals/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/reports/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/securities/**/*.{,c,m}{j,t}s{,x}',
       'packages/client/src/components/tags/**/*.{,c,m}{j,t}s{,x}',

@@ -1,6 +1,8 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { FileInput, Loader } from '@mantine/core';
 import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';
+import { Input } from '../../ui/input.js';
+import { Label } from '../../ui/label.js';
+import { Spinner } from '../../ui/spinner.js';
 
 type Props = {
   chargeId: string;
@@ -25,14 +27,23 @@ export const UploadDocuments = ({ chargeId, closeModal, onChange }: Props): Reac
 
   return (
     <div className="px-5 w-max h-max justify-items-center">
-      <FileInput
-        icon={uploading && <Loader />}
-        value={value}
-        multiple
-        onChange={setValue}
-        clearable
-        label="File Upload"
-      />
+      {/*
+        Mantine's `FileInput` was a button-styled control holding the File objects itself.
+        A native file input cannot be given a value programmatically, so the picked files
+        live in state and the element stays uncontrolled — which is all this call site did
+        with `value` anyway. `clearable` goes: the native control re-picks in place, and the
+        modal closes on submit.
+      */}
+      <Label htmlFor="upload-documents-file">File Upload</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          id="upload-documents-file"
+          type="file"
+          multiple
+          onChange={event => setValue(event.target.files ? [...event.target.files] : undefined)}
+        />
+        {uploading && <Spinner className="size-4 shrink-0 text-gray-500" />}
+      </div>
       <div className="flex justify-center gap-5 mt-5">
         <button
           type="submit"

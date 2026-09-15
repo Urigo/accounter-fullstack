@@ -1,10 +1,10 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Loader } from '@mantine/core';
 import type { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { useInsertBusinessTrip } from '../../../hooks/use-insert-business-trip.js';
 import { Form } from '../../ui/form.js';
+import { Spinner } from '../../ui/spinner.js';
 import { ModifyBusinessTripFields } from './modify-business-trip-fields.js';
 
 type Props = {
@@ -48,7 +48,7 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
   };
 
   return isInserting ? (
-    <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+    <Spinner className="my-5 size-14 self-center text-gray-900" />
   ) : (
     <Form {...form}>
       <form>

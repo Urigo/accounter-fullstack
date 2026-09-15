@@ -1,7 +1,6 @@
 import { useEffect, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
-import { Loader } from '@mantine/core';
 import {
   EditTransactionDocument,
   FinancialAccountType,
@@ -15,6 +14,7 @@ import {
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Spinner } from '../../ui/spinner.js';
 import { Switch } from '../../ui/switch.js';
 import { ComboBox, DatePickerInput, SimpleGrid } from '../index.js';
 
@@ -88,9 +88,7 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
 
   return (
     <>
-      {fetchingTransaction && (
-        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
-      )}
+      {fetchingTransaction && <Spinner className="my-5 size-14 self-center text-gray-900" />}
       {!fetchingTransaction && transaction && (
         <Form {...formManager}>
           <form onSubmit={handleSubmit(onTransactionSubmit)}>
