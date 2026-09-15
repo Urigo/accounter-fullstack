@@ -2,13 +2,13 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Image, Loader } from '@mantine/core';
 import { Button } from '@/components/ui/button.js';
 import { Label } from '@/components/ui/label.js';
 import { EditDocumentDocument, type UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
 import { relevantDataPicker, type MakeBoolean } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { Form } from '../../ui/form.js';
+import { Spinner } from '../../ui/spinner.js';
 import { DocumentImageDrawer, SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
@@ -149,9 +149,7 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
 
   return (
     <div className="flex flex-row">
-      {fetchingDocument && (
-        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
-      )}
+      {fetchingDocument && <Spinner className="my-5 size-14 self-center text-gray-900" />}
       {!fetchingDocument && document && (
         <>
           <div className="px-5 w-4/5 h-max justify-items-center">
@@ -188,11 +186,21 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
           </div>
           <div className=" w-1/5 h-max flex flex-col ">
             <div className="flex justify-center">
-              <Image
+              {/* Mantine's `Image` added placeholder and object-fit handling this call site
+                  never asked for; a plain img is the whole of what it rendered. The click
+                  target is a real button now — it opens the scan in a drawer, and an img with
+                  an onClick is neither focusable nor keyboard-operable. */}
+              <button
+                type="button"
                 onClick={(): void => setOpenImage(!!document.image)}
-                src={document?.image?.toString()}
-                className=" cursor-pointer bg-gray-300 p-5 mr-5 max-h-fit max-w-fit"
-              />
+                className="cursor-pointer"
+              >
+                <img
+                  alt="Open document scan"
+                  src={document?.image?.toString()}
+                  className="bg-gray-300 p-5 mr-5 max-h-fit max-w-fit"
+                />
+              </button>
             </div>
           </div>
           <DocumentImageDrawer

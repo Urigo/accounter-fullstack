@@ -1,6 +1,5 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader } from '@mantine/core';
 import {
   EditMiscExpenseFieldsFragmentDoc,
   type UpdateMiscExpenseInput,
@@ -8,6 +7,7 @@ import {
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUpdateMiscExpense } from '../../../hooks/use-update-misc-expense.js';
 import { Form } from '../../ui/form.js';
+import { Spinner } from '../../ui/spinner.js';
 import { ModifyMiscExpenseFields } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -74,7 +74,7 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
   };
 
   return isUpdating ? (
-    <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+    <Spinner className="my-5 size-14 self-center text-gray-900" />
   ) : (
     <Form {...formManager}>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>

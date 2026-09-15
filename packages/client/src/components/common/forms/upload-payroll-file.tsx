@@ -1,6 +1,8 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { FileInput, Loader } from '@mantine/core';
 import { useUploadPayrollFile } from '../../../hooks/use-upload-payroll-file.js';
+import { Input } from '../../ui/input.js';
+import { Label } from '../../ui/label.js';
+import { Spinner } from '../../ui/spinner.js';
 
 type Props = {
   chargeId: string;
@@ -21,13 +23,17 @@ export const UploadPayrollFile = ({ chargeId, onDone }: Props): ReactElement => 
 
   return (
     <div className="px-5 w-max h-max justify-items-center">
-      <FileInput
-        icon={fetching && <Loader />}
-        value={value}
-        onChange={setValue}
-        clearable
-        label="File Upload"
-      />
+      {/* Same swap as upload-documents.tsx: a native file input cannot take a value, so the
+          picked file lives in state and `clearable` is dropped. */}
+      <Label htmlFor="upload-payroll-file">File Upload</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          id="upload-payroll-file"
+          type="file"
+          onChange={event => setValue(event.target.files?.[0] ?? null)}
+        />
+        {fetching && <Spinner className="size-4 shrink-0 text-gray-500" />}
+      </div>
       <div className="flex justify-center gap-5 mt-5">
         <button
           type="submit"
