@@ -23,8 +23,11 @@ Cloudflare Worker is holding an open HTTP request.
   itself, unbounded, and *throw* when one failed — a second way an unreachable host in the body could
   drop the document, before Chromium was even involved. It is now off; `removeLinkTags` already
   stripped those tags from the render, so only styling the body declined to inline is lost.
-- All of it is capped by a single `RENDER_TIMEOUT_MS` (5 s), set as the page's default timeout as
-  well as on the explicit waits, so one pathological body cannot dominate an email's processing time.
+- Both waits are capped by a single `RENDER_TIMEOUT_MS` (5 s), set as the page's default timeout as
+  well as explicitly, so one pathological body cannot dominate an email's processing time. It is not
+  an end-to-end deadline — `inline-css` and `page.pdf()` take no timeout — but with `applyLinkTags`
+  off and subresources blocked neither does any I/O, so what remains is CPU-bound work over a body
+  already capped at `MAX_RAW_MIME_BYTES`.
 
 Measured on the reported body shape, the render goes from a 30 s timeout that lost the document to
 ~120 ms that produces it.

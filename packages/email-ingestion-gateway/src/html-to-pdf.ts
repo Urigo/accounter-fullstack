@@ -4,13 +4,19 @@ import { chromium, type Browser, type Page } from 'playwright';
 import type { ExtractedDocument } from './mime-extractor.js';
 
 /**
- * Budget for a single body→PDF render, applied to every Playwright step below.
+ * Cap for the Playwright waits in a body→PDF render — the steps that used to
+ * hang.
  *
  * Email bodies are static documents and their remote subresources are blocked
- * (see {@link renderHtmlToPdf}), so there is nothing to settle: a render that is
+ * (see {@link renderHtmlToPdf}), so there is nothing to settle: a wait that has
  * not finished in a few seconds is hung, not slow. The cap sits well under the
  * ingest budget — the Cloudflare Worker holds an open HTTP request for the whole
  * orchestration — so one pathological body cannot dominate an email.
+ *
+ * This is not an end-to-end deadline for {@link renderHtmlToPdf}: neither the
+ * `inline-css` preprocessing step nor `page.pdf()` takes a timeout. With
+ * `applyLinkTags` off and subresources blocked, though, neither does any I/O —
+ * both are CPU-bound work over a body already capped at `MAX_RAW_MIME_BYTES`.
  */
 export const RENDER_TIMEOUT_MS = 5000;
 
@@ -59,8 +65,8 @@ export async function renderHtmlToPdf(rawHtml: string): Promise<ExtractedDocumen
   let page: Page | undefined;
   try {
     page = await context.newPage();
-    // Bound every Playwright call that takes a timeout, not just the explicit
-    // ones below, so no step can outlive the render budget.
+    // Bound the Playwright calls that take a timeout, so one added later without
+    // an explicit one cannot fall back to Playwright's 30 s default.
     page.setDefaultTimeout(RENDER_TIMEOUT_MS);
     // Nothing leaves this browser. The remote subresources of an untrusted email
     // body are a liability rather than content:
