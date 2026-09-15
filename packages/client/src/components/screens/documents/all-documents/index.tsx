@@ -22,7 +22,6 @@ import {
   DropdownMenuTrigger,
 } from '../../../ui/dropdown-menu.js';
 import { DocumentsFilters } from './documents-filters.js';
-import { ReprocessUnprocessedButton } from './reprocess-unprocessed-button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -80,6 +79,7 @@ export const DocumentsReport = (): ReactElement => {
     documentsProps,
     onChange: onDocumentChange,
     withChargeLink: true,
+    withSelection: true,
     // This screen hosts a `DataTablePagination`, so it is one of the few documents tables that
     // opts into paging. 100 is the largest size that bar offers, so its size `Select` renders the
     // value rather than showing blank.
@@ -130,7 +130,6 @@ export const DocumentsReport = (): ReactElement => {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <ReprocessUnprocessedButton table={table} onChange={onDocumentChange} />
           <Button onClick={() => setUploadModalOpen(true)}>Upload Documents</Button>
         </div>
       }
