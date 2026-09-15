@@ -61,7 +61,6 @@ export const BusinessLedgerRecordsSingle = ({ businessId }: Props): ReactElement
         <BusinessExtendedInfo businessID={item.business.id} filter={filter} />
       )}
       striped
-      highlightOnHover
       stickyHeader
       items={businessLedgerRecordsSum}
       columns={[

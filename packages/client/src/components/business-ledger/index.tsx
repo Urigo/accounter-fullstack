@@ -7,7 +7,6 @@ import {
   PanelTopOpen,
 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Mark, Table, Text } from '@mantine/core';
 import {
   BusinessLedgerRecordsSummeryDocument,
   Currency,
@@ -16,10 +15,12 @@ import {
 } from '../../gql/graphql.js';
 import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterTableRow, Tooltip } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { BusinessExtendedInfo } from './business-extended-info.js';
 import { BusinessLedgerRecordsFilters } from './business-ledger-filters.js';
 
@@ -160,10 +161,10 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
       value: data => (
         <div className="flex flex-col items-center">
           <p className="flex flex-row gap-2 whitespace-nowrap">
-            <Text c="red">{data.debit.formatted}</Text>
+            <span className="text-red-500">{data.debit.formatted}</span>
           </p>
           <p className="flex flex-row gap-2 whitespace-nowrap">
-            <Text c="green">{data.credit.formatted}</Text>
+            <span className="text-green-500">{data.credit.formatted}</span>
           </p>
         </div>
       ),
@@ -172,12 +173,18 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
     {
       title: 'Total',
       value: data => (
-        <Text
-          c={data.total.raw < -0.0001 ? 'red' : data.total.raw > 0.0001 ? 'green' : undefined}
-          fw={700}
+        <div
+          className={cn(
+            'font-bold',
+            data.total.raw < -0.0001
+              ? 'text-red-500'
+              : data.total.raw > 0.0001
+                ? 'text-green-500'
+                : undefined,
+          )}
         >
           {data.total.formatted}
-        </Text>
+        </div>
       ),
       style: { whiteSpace: 'nowrap' },
     },
@@ -196,16 +203,16 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
-        <Table striped highlightOnHover>
-          <thead className="sticky top-0 z-20">
-            <tr className="tracking-wider font-medium text-gray-900 text-sm bg-gray-100">
+        <Table className="[&>tbody>tr:nth-child(odd)]:bg-gray-50">
+          <TableHeader className="sticky top-0 z-20">
+            <TableRow className="tracking-wider font-medium text-gray-900 text-sm bg-gray-100">
               {columns.map((c, index) =>
-                c.disabled ? null : <th key={String(index)}>{c.title}</th>,
+                c.disabled ? null : <TableHead key={String(index)}>{c.title}</TableHead>,
               )}
-              <th>More Info</th>
-            </tr>
-          </thead>
-          <tbody>
+              <TableHead>More Info</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {businessLedgerRecordsSum.map((item, index) => (
               <AccounterTableRow
                 key={index}
@@ -217,7 +224,7 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
                 isShowAll={isAllOpened}
               />
             ))}
-          </tbody>
+          </TableBody>
         </Table>
       )}
     </PageLayout>
@@ -233,10 +240,10 @@ function getCurrencyCells(currency: Currency): CellInfo[] {
         return currencySum ? (
           <div className="flex flex-col items-center">
             <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="red">{currencySum.debit.formatted}</Text>
+              <span className="text-red-500">{currencySum.debit.formatted}</span>
             </p>
             <p className="flex flex-row gap-2 whitespace-nowrap">
-              <Text c="green">{currencySum.credit.formatted}</Text>
+              <span className="text-green-500">{currencySum.credit.formatted}</span>
             </p>
           </div>
         ) : null;
@@ -250,9 +257,10 @@ function getCurrencyCells(currency: Currency): CellInfo[] {
 
         return currencySum?.total?.raw &&
           (currencySum.total.raw < -0.0001 || currencySum.total.raw > 0.0001) ? (
-          <Mark color={currencySum.total.raw > 0 ? 'green' : 'red'}>
+          // Mantine's `Mark` is a <mark> tinted with the colour's 2-shade.
+          <mark className={currencySum.total.raw > 0 ? 'bg-green-200' : 'bg-red-200'}>
             {currencySum.total.formatted}
-          </Mark>
+          </mark>
         ) : (
           currencySum?.total?.formatted
         );
