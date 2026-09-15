@@ -51,12 +51,15 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return;
+    // The snap list is refreshed inside `sync`, not once before it: embla emits `reInit`
+    // when the slides change, and a stale list would leave the indicators showing the old
+    // count and `scrollTo` addressing an index that no longer exists.
     const sync = (): void => {
+      setScrollSnaps(api.scrollSnapList());
       setCanScrollPrev(api.canScrollPrev());
       setCanScrollNext(api.canScrollNext());
       setSelectedIndex(api.selectedScrollSnap());
     };
-    setScrollSnaps(api.scrollSnapList());
     sync();
     api.on('select', sync).on('reInit', sync);
     return () => {
