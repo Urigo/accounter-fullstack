@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { Drawer } from '@mantine/core';
 import { ImageMagnifier } from './image-magnifier.js';
+import { PopUpDrawer } from './modals/drawer.js';
 
 type Props = {
   /** The document image to preview. Nothing is rendered when it is absent. */
@@ -19,14 +19,14 @@ export const DocumentImageDrawer = ({ src, opened, onClose }: Props): ReactEleme
   }
 
   return (
-    <Drawer
-      classNames={{ content: 'overflow-y-auto drop-shadow-lg' }}
+    // `size="30%"` does not carry over: PopUpDrawer's content is the house width
+    // (`w-3/4 sm:max-w-sm`), which is narrower than 30% of a wide viewport.
+    <PopUpDrawer
       withCloseButton
       withOverlay={false}
       position="right"
       opened={opened}
       onClose={onClose}
-      size="30%"
     >
       <div className="m-2">
         <ImageMagnifier
@@ -36,6 +36,6 @@ export const DocumentImageDrawer = ({ src, opened, onClose }: Props): ReactEleme
           magnifierWidth={300}
         />
       </div>
-    </Drawer>
+    </PopUpDrawer>
   );
 };

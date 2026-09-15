@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
 import { toast } from 'sonner';
-import { Dropzone } from '@mantine/dropzone';
 import { useUploadMultipleDocuments } from '../../../hooks/use-upload-multiple-documents.js';
 
 type Props = {
@@ -18,29 +17,25 @@ export const DragFile = ({ children, chargeId }: Props): ReactElement => {
     });
   }
 
+  // Mantine's `Dropzone` with `activateOnClick`/`activateOnKeyboard` off, zero radius,
+  // zero padding and `border: 0` is a bare drop target wrapping its children — which is
+  // what the native drag-and-drop events give directly. `loading` only dimmed it, so the
+  // in-flight state is a pointer-events guard plus reduced opacity.
   return (
-    <Dropzone
-      onDrop={documents => uploadMultipleDocuments({ documents, chargeId, isSensitive: false })}
-      onReject={(files): void =>
-        onFail(
-          `Rejected Files:\n${files.map(file => `"${file.file.name}": ${file.errors}`).join('\n')}`,
-        )
-      }
-      activateOnClick={false}
-      activateOnKeyboard={false}
-      radius={0}
-      padding={0}
-      maxFiles={Infinity}
-      loading={uploading}
-      sx={() => ({
-        border: 0,
-        cursor: 'default',
-        width: '100%',
-        height: '100%',
-        zIndex: 1,
-      })}
+    <div
+      className={uploading ? 'pointer-events-none h-full w-full opacity-60' : 'h-full w-full'}
+      onDragOver={(event): void => event.preventDefault()}
+      onDrop={(event): void => {
+        event.preventDefault();
+        const documents = [...event.dataTransfer.files];
+        if (documents.length === 0) {
+          onFail('No files found in the drop');
+          return;
+        }
+        uploadMultipleDocuments({ documents, chargeId, isSensitive: false });
+      }}
     >
       {children}
-    </Dropzone>
+    </div>
   );
 };
