@@ -1,14 +1,15 @@
 import type { Injector } from 'graphql-modules';
 import { DocumentType } from '../../../shared/enums.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { isSupportedFileType } from '../../app-providers/anthropic.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type {
+  IFillDocumentFromOcrParams,
   IGetAllDocumentsResult,
   IInsertDocumentsParams,
-  IUpdateDocumentParams,
 } from '../types.js';
-import { fetchRemoteDocument } from './fetch-remote-document.helper.js';
+import { fetchRemoteDocument, RemoteDocumentError } from './fetch-remote-document.helper.js';
 import {
   getDocumentFromUrlsAndOcrData,
   getOcrData,
@@ -28,10 +29,10 @@ export type ReprocessOcrResult = {
 };
 
 /**
- * The columns re-OCR may fill, as [update param, OCR param, column name] — the three vocabularies
- * disagree (the insert side calls them `amount` and `vat`, the update side `totalAmount` and
- * `vatAmount`, the table `total_amount` and `vat_amount`), so the mapping is written out once here
- * rather than guessed at each use.
+ * The columns re-OCR may fill, as [query param, OCR param, column name] — the three vocabularies
+ * disagree (the OCR side calls them `amount` and `vat`, the query `totalAmount` and `vatAmount`,
+ * the table `total_amount` and `vat_amount`), so the mapping is written out once here rather than
+ * guessed at each use.
  *
  * `type` is absent on purpose: it is never null on a row, so it cannot go through the fill-a-blank
  * rule. `no_vat_amount`, `vat_report_date_override` and `exchange_rate_override` are absent because
@@ -49,7 +50,7 @@ const FILLABLE_FIELDS = [
   ['creditorId', 'creditorId', 'creditor_id'],
   ['debtorId', 'debtorId', 'debtor_id'],
 ] as const satisfies ReadonlyArray<
-  readonly [keyof IUpdateDocumentParams, keyof OcrDocumentParams, keyof IGetAllDocumentsResult]
+  readonly [keyof IFillDocumentFromOcrParams, keyof OcrDocumentParams, keyof IGetAllDocumentsResult]
 >;
 
 /**
@@ -59,10 +60,15 @@ const FILLABLE_FIELDS = [
  * handle — so the only route to them is the Cloudinary URL on the row. That makes this a download
  * plus a fresh extraction, not a replay of anything.
  *
- * The write is deliberately additive: a column is filled only where the row is currently empty, so
- * a value an accountant corrected by hand can never be overwritten by a later model run. The one
- * exception is `type`, replaced only while the document is still UNPROCESSED — the state this whole
- * path exists to get a document out of.
+ * The write is deliberately additive: a column is filled only where the row is empty, so a value an
+ * accountant corrected by hand can never be overwritten by a later model run. The one exception is
+ * `type`, replaced only while the document is still UNPROCESSED — the state this whole path exists
+ * to get a document out of.
+ *
+ * That rule is enforced by the UPDATE statement itself rather than by filtering here, because minutes
+ * pass between reading the row and writing it back. Deciding from the pre-OCR read would mean a field
+ * an accountant filled during the extraction got overwritten by a decision made before they touched
+ * it — see `DocumentsProvider.fillDocumentFromOcr`.
  */
 export async function reprocessDocumentOcr(
   injector: Injector,
@@ -72,6 +78,18 @@ export async function reprocessDocumentOcr(
   const document = await documentsProvider.getDocumentsByIdLoader.load(documentId);
   if (!document) {
     throw new ReprocessOcrError(`Document ID="${documentId}" not found`);
+  }
+
+  // Checked here, before anything expensive, because reads and writes are not scoped alike: the
+  // session pins writes to `app.current_business_id` while reads span the whole
+  // `app.current_business_scope`, so the all-documents screen can perfectly well list a row this
+  // request may not write to. Without this the mismatch would only surface at the closing UPDATE —
+  // after a download and a paid OCR call had already been spent on it.
+  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  if (document.owner_id !== ownerId) {
+    throw new ReprocessOcrError(
+      `Document ID="${documentId}" belongs to another business and cannot be modified by this request`,
+    );
   }
 
   const source = document.file_url ?? document.image_url;
@@ -103,79 +121,95 @@ export async function reprocessDocumentOcr(
     document.file_hash ? Number(document.file_hash) : undefined,
   );
 
-  const { params, updatedFields } = buildFillOnlyUpdate(documentId, document, ocrParams);
+  const params = buildOcrFillParams(documentId, ocrParams);
 
-  // Nothing new came back. Skip the UPDATE entirely rather than bumping `updated_at` and dragging
-  // the charge's accountant approval back to PENDING for a pass that changed nothing.
-  if (updatedFields.length === 0) {
-    return { document, updatedFields };
+  // The model returned nothing usable at all, so there is no point issuing a statement. This is an
+  // optimization only — which of these values may actually land is decided in SQL, not here.
+  if (!offersAnything(params)) {
+    return { document, updatedFields: [] };
   }
 
-  const [updated] = await documentsProvider.updateDocument(params);
+  const [updated] = await documentsProvider.fillDocumentFromOcr(params);
+
+  // No row came back: every column the pass could have filled was already filled. The query's WHERE
+  // clause exists precisely so this is a no-op rather than an `updated_at` bump and an
+  // accountant-approval degrade.
   if (!updated) {
-    throw new ReprocessOcrError(`Failed updating document ID="${documentId}" after OCR`);
+    return { document, updatedFields: [] };
   }
 
-  return { document: updated, updatedFields };
+  return { document: updated, updatedFields: changedFields(document, updated) };
 }
 
 /**
  * Fetch the document's bytes in a form the OCR model accepts.
  *
- * `fetchRemoteDocument`'s allowlist is wider than Anthropic's — it also passes heic, heif and tiff —
- * so a stored original can be perfectly retrievable and still be rejected downstream. Cloudinary
- * derives a `.jpg` alongside every upload and `image_url` points at it, so that derivative is the
- * fallback rather than a failure.
+ * The two allowlists in play disagree in both directions: `fetchRemoteDocument` passes heic, heif
+ * and tiff, which the model rejects, and refuses gif, which the model accepts. So the original can
+ * fail either by being fetched and turning out unusable, *or* by never being fetched at all — and
+ * both have the same remedy, since Cloudinary derives a `.jpg` alongside every upload and
+ * `image_url` points at it. Widening the fetch allowlist would be the wrong fix: it guards every
+ * remote-URL ingestion path in the app, not just this caller.
  */
 async function fetchOcrableFile(source: string, document: IGetAllDocumentsResult): Promise<File> {
-  const file = await fetchRemoteDocument(source);
-  if (isSupportedFileType(file.type.toLowerCase())) {
-    return file;
+  const derivative = document.image_url;
+  let originalProblem: string;
+
+  try {
+    const file = await fetchRemoteDocument(source);
+    if (isSupportedFileType(file.type.toLowerCase())) {
+      return file;
+    }
+    originalProblem = `is stored as "${file.type}", which cannot be sent to OCR`;
+  } catch (e) {
+    // Only the fetch layer's own refusals are recoverable by trying another representation; a
+    // programming error or an aborted request is not, and must not be reported as an unreadable
+    // document.
+    if (!(e instanceof RemoteDocumentError)) {
+      throw e;
+    }
+    if (!derivative || derivative === source) {
+      throw new ReprocessOcrError(
+        `Document ID="${document.id}" could not be read back for OCR: ${e.message}`,
+      );
+    }
+    originalProblem = `could not be read back ("${e.message}")`;
   }
 
-  const derivative = document.image_url;
   if (!derivative || derivative === source) {
     throw new ReprocessOcrError(
-      `Document ID="${document.id}" is stored as "${file.type}", which cannot be sent to OCR, and has no image derivative to fall back on`,
+      `Document ID="${document.id}" ${originalProblem}, and has no image derivative to fall back on`,
     );
   }
 
-  const fallback = await fetchRemoteDocument(derivative);
+  const fallback = await fetchRemoteDocument(derivative).catch((e: unknown) => {
+    throw new ReprocessOcrError(
+      `Document ID="${document.id}" ${originalProblem}, and its image derivative could not be read either: ${
+        e instanceof Error ? e.message : String(e)
+      }`,
+    );
+  });
   if (!isSupportedFileType(fallback.type.toLowerCase())) {
     throw new ReprocessOcrError(
-      `Document ID="${document.id}" has no OCR-compatible representation (original "${file.type}", derivative "${fallback.type}")`,
+      `Document ID="${document.id}" has no OCR-compatible representation (original ${originalProblem}, derivative is "${fallback.type}")`,
     );
   }
   return fallback;
 }
 
 /**
- * Turn the OCR result into an update that can only add information.
+ * Map the OCR result onto the fill query's parameters.
  *
- * `DocumentsProvider.updateDocument` COALESCEs every column, so a `null` argument means "leave it
- * alone" — exactly the semantics wanted here, and why the filtering is expressed by nulling out the
- * fields the document already has a value for.
+ * Every value the model produced is passed through as-is. This deliberately does *no*
+ * blank-detection: which of them may actually land is decided by the query, against the row as it
+ * is at write time rather than as it was minutes earlier when OCR started.
  */
-function buildFillOnlyUpdate(
+function buildOcrFillParams(
   documentId: string,
-  document: IGetAllDocumentsResult,
   ocrParams: OcrDocumentParams,
-): { params: IUpdateDocumentParams; updatedFields: string[] } {
-  const updatedFields: string[] = [];
-
-  const params: IUpdateDocumentParams = {
+): IFillDocumentFromOcrParams {
+  const params: IFillDocumentFromOcrParams = {
     documentId,
-    // Not derived by OCR, or deliberately preserved: the charge the document already belongs to,
-    // the stored file URLs, the manual overrides, and the review flag — `updateDocument`'s own
-    // resolver forces `isReviewed: true`, which must not happen behind a re-OCR.
-    chargeId: null,
-    fileUrl: null,
-    imageUrl: null,
-    vatReportDateOverride: null,
-    exchangeRateOverride: null,
-    noVatAmount: null,
-    isReviewed: null,
-    type: null,
     serialNumber: null,
     date: null,
     totalAmount: null,
@@ -186,30 +220,47 @@ function buildFillOnlyUpdate(
     remarks: null,
     creditorId: null,
     debtorId: null,
+    // UNPROCESSED is the absence of a type, so offering it back would be a no-op the query's WHERE
+    // clause would then have to filter out anyway.
+    type:
+      ocrParams.documentType && ocrParams.documentType !== DocumentType.Unprocessed
+        ? ocrParams.documentType
+        : null,
   };
 
-  for (const [updateKey, ocrKey, column] of FILLABLE_FIELDS) {
+  for (const [paramKey, ocrKey] of FILLABLE_FIELDS) {
     const next = ocrParams[ocrKey];
-    if (document[column] == null && next != null) {
+    if (next != null) {
       // Key and value are read off the same tuple, so the assignment is sound even though the loop
       // erases the per-field type relationship.
-      (params as Record<string, unknown>)[updateKey] = next;
-      updatedFields.push(column);
+      (params as Record<string, unknown>)[paramKey] = next;
     }
   }
 
-  // A row's type is never null, so the fill-a-blank rule cannot express "still unclassified".
-  // UNPROCESSED is that state, and moving out of it is the point of this path.
-  if (
-    document.type === DocumentType.Unprocessed &&
-    ocrParams.documentType &&
-    ocrParams.documentType !== DocumentType.Unprocessed
-  ) {
-    params.type = ocrParams.documentType;
-    updatedFields.push('type');
+  return params;
+}
+
+/** Whether the pass produced anything at all worth sending to the database. */
+function offersAnything(params: IFillDocumentFromOcrParams): boolean {
+  return params.type != null || FILLABLE_FIELDS.some(([paramKey]) => params[paramKey] != null);
+}
+
+/**
+ * Which columns this pass filled, by comparing the row before and after.
+ *
+ * Read off the returned row rather than from what was offered, because the query is the one that
+ * decided: a value can be sent and still not land, if the column was filled in the meantime.
+ */
+function changedFields(before: IGetAllDocumentsResult, after: IGetAllDocumentsResult): string[] {
+  const changed = FILLABLE_FIELDS.filter(
+    ([, , column]) => before[column] == null && after[column] != null,
+  ).map(([, , column]) => column as string);
+
+  if (before.type !== after.type) {
+    changed.push('type');
   }
 
-  return { params, updatedFields };
+  return changed;
 }
 
 /**

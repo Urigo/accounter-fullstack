@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import type { TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
+import { Checkbox } from '../ui/checkbox.js';
 import {
   Amount,
   Creditor,
@@ -10,12 +11,14 @@ import {
   Debtor,
   Description,
   Files,
+  Preview,
   Remarks,
   Serial,
   TypeCell,
   Vat,
 } from './cells/index.js';
 import { DocumentActionsMenu } from './document-actions-menu.js';
+import { DocumentsBatchActionsMenu } from './documents-batch-actions-menu.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -90,6 +93,12 @@ export type DocumentsTableRowType = TableDocumentsRowFieldsFragment & {
 export interface DocumentsTableColumnsOptions {
   /** Include the menu items that navigate to the document's charge. */
   withChargeLink?: boolean;
+  /**
+   * Add the checkbox column and the batch-actions menu that operates on the selection. Off by
+   * default so the tables embedded in a charge or a match — which show a handful of rows belonging
+   * to one thing — do not grow a bulk-action affordance they have no use for.
+   */
+  withSelection?: boolean;
 }
 
 /**
@@ -98,8 +107,48 @@ export interface DocumentsTableColumnsOptions {
  */
 export function getDocumentsTableColumns({
   withChargeLink = false,
+  withSelection = false,
 }: DocumentsTableColumnsOptions = {}): ColumnDef<TableFeaturesConfig, DocumentsTableRowType>[] {
   return [
+    ...(withSelection
+      ? ([
+          {
+            id: 'select',
+            header: ({ table }) => (
+              <div className="flex flex-row gap-1 items-center">
+                <Checkbox
+                  checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && 'indeterminate')
+                  }
+                  onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
+                  aria-label="Select all"
+                />
+                <DocumentsBatchActionsMenu table={table} />
+              </div>
+            ),
+            cell: ({ row }) => (
+              <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={value => row.toggleSelected(!!value)}
+                aria-label="Select row"
+              />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+          },
+        ] satisfies ColumnDef<TableFeaturesConfig, DocumentsTableRowType>[])
+      : []),
+    {
+      id: 'preview',
+      // No `accessorKey`: the thumbnail is rendered from `image`, but sorting documents by their
+      // image URL would be meaningless.
+      header: 'preview',
+      enableSorting: false,
+      cell: ({ row }) => {
+        return <Preview document={row.original} />;
+      },
+    },
     {
       id: 'date',
       accessorKey: 'date',

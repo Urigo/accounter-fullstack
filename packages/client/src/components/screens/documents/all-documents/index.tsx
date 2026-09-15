@@ -22,7 +22,6 @@ import {
   DropdownMenuTrigger,
 } from '../../../ui/dropdown-menu.js';
 import { DocumentsFilters } from './documents-filters.js';
-import { ReprocessUnprocessedButton } from './reprocess-unprocessed-button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -80,6 +79,7 @@ export const DocumentsReport = (): ReactElement => {
     documentsProps,
     onChange: onDocumentChange,
     withChargeLink: true,
+    withSelection: true,
   });
 
   // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:
@@ -126,7 +126,6 @@ export const DocumentsReport = (): ReactElement => {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <ReprocessUnprocessedButton table={table} onChange={onDocumentChange} />
           <Button onClick={() => setUploadModalOpen(true)}>Upload Documents</Button>
         </div>
       }

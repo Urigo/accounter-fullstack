@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import equal from 'deep-equal';
-import { useTable, type ColumnVisibilityState, type SortingState } from '@tanstack/react-table';
+import {
+  useTable,
+  type ColumnVisibilityState,
+  type RowSelectionState,
+  type SortingState,
+} from '@tanstack/react-table';
 import { tableFeaturesConfig } from '@/lib/table-features.js';
 import {
   TableDocumentsRowFieldsFragmentDoc,
@@ -18,6 +23,8 @@ type UseDocumentsTableOptions = {
   columnIds?: string[];
   /** Include the actions-menu items that navigate to the document's charge. */
   withChargeLink?: boolean;
+  /** Add the checkbox column and the batch-actions menu that operates on the selection. */
+  withSelection?: boolean;
 };
 
 /**
@@ -33,10 +40,16 @@ export function useDocumentsTable({
   onChargeDeleted,
   columnIds,
   withChargeLink = false,
+  withSelection = false,
 }: UseDocumentsTableOptions) {
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+  // `preview` starts hidden: it costs one image request per visible row, which is real weight on a
+  // table that routinely lists hundreds of documents. The Columns menu turns it on per session.
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({
+    preview: false,
+  });
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const incomingDocuments = useMemo(
     () =>
@@ -89,21 +102,28 @@ export function useDocumentsTable({
   );
 
   const tableColumns = useMemo(() => {
-    const allColumns = getDocumentsTableColumns({ withChargeLink });
+    const allColumns = getDocumentsTableColumns({ withChargeLink, withSelection });
     return columnIds
       ? allColumns.filter(column => column.id && columnIds.includes(column.id))
       : allColumns;
-  }, [columnIds, withChargeLink]);
+  }, [columnIds, withChargeLink, withSelection]);
 
   const table = useTable({
     features: tableFeaturesConfig,
     data,
     columns: tableColumns,
+    // Key row selection by document id rather than row index, so a selection survives paging,
+    // sorting, filtering and the `@defer` refreshes above — an index-keyed map would silently
+    // re-point at whichever documents happen to occupy those positions next.
+    getRowId: row => row.id,
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
       columnVisibility,
+      rowSelection,
     },
   });
 
