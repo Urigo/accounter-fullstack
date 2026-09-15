@@ -52,6 +52,14 @@ React SPA built with Vite, urql (GraphQL), shadcn/ui, and Tailwind CSS.
 - There is no `@testing-library` in this package — tests render by hand with `createRoot` + `act`.
 - Run `yarn generate` first. `src/gql/` is git-ignored, and every test that imports a generated
   document fails to resolve without it.
+- **A green `yarn test:client` does not mean the package builds.** `build` is `tsc && vite build`,
+  and `tsc` type-checks tests that vitest runs happily — an untyped `vi.fn()` factory makes
+  `.mock.calls[0][0]` an empty tuple, which vitest ignores and `tsc` rejects. A failing `tsc` also
+  skips `vite build` silently, leaving a stale `dist` behind for anything that inspects the bundle.
+  Run `tsc --noEmit` alongside the suite.
+- **A green run does not prove a test still exists.** When rebasing or restacking, check that the
+  test count did not drop: a dropped commit takes its tests with it and the suite still reports
+  success.
 
 ## Commands
 
