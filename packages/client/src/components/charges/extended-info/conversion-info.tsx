@@ -1,8 +1,9 @@
 import type { ReactElement } from 'react';
-import { Badge, Card, Grid, Group, Text } from '@mantine/core';
 import { ConversionChargeInfoFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { currencyCodeToSymbol } from '../../../helpers/index.js';
+import { Badge } from '../../ui/badge.js';
+import { Card } from '../../ui/card.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -37,35 +38,35 @@ export const ConversionInfo = ({ chargeProps }: Props): ReactElement => {
 
   const { eventRate, officialRate } = charge;
   return (
-    <Grid justify="center">
+    // Mantine's `Grid justify="center"` with `Grid.Col span="content"`: content-width
+    // columns, centred. That is a centred flex row, not a 12-column grid.
+    <div className="flex flex-wrap justify-center gap-4">
       {officialRate && (
-        <Grid.Col span="content">
-          <Card shadow="sm" padding="xs" radius="md" withBorder>
-            <Group position="apart">
-              <Text weight={500}>Official Conversion Rate</Text>
-              <Badge color="green" variant="light">
-                {`${Number(officialRate.rate)} ${currencyCodeToSymbol(
-                  officialRate.from,
-                )} => ${currencyCodeToSymbol(officialRate.to)}`}
-              </Badge>
-            </Group>
-          </Card>
-        </Grid.Col>
+        <Card className="p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-medium">Official Conversion Rate</div>
+            {/* Mantine's `variant="light"` badge was a tinted fill with matching text. */}
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              {`${Number(officialRate.rate)} ${currencyCodeToSymbol(
+                officialRate.from,
+              )} => ${currencyCodeToSymbol(officialRate.to)}`}
+            </Badge>
+          </div>
+        </Card>
       )}
       {eventRate && (
-        <Grid.Col span="content">
-          <Card shadow="sm" padding="xs" radius="md" withBorder>
-            <Group position="apart">
-              <Text weight={500}>Bank Conversion Rate</Text>
-              <Badge color="green" variant="light">
-                {`${Number(eventRate.rate)} ${currencyCodeToSymbol(
-                  eventRate.from,
-                )} => ${currencyCodeToSymbol(eventRate.to)}`}
-              </Badge>
-            </Group>
-          </Card>
-        </Grid.Col>
+        <Card className="p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-medium">Bank Conversion Rate</div>
+            {/* Mantine's `variant="light"` badge was a tinted fill with matching text. */}
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              {`${Number(eventRate.rate)} ${currencyCodeToSymbol(
+                eventRate.from,
+              )} => ${currencyCodeToSymbol(eventRate.to)}`}
+            </Badge>
+          </div>
+        </Card>
       )}
-    </Grid>
+    </div>
   );
 };

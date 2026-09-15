@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Image } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Box, Collapse, Loader } from '@mantine/core';
 import {
   ChargeExpansionFieldsFragmentDoc,
   ChargeLedgerRecordsTableFieldsFragmentDoc,
@@ -31,6 +30,8 @@ import { DocumentsTable } from '../documents-table/index.js';
 import { LedgerTable } from '../ledger-table/index.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { Button } from '../ui/button.js';
+import { Collapsible, CollapsibleContent } from '../ui/collapsible.js';
+import { Spinner } from '../ui/spinner.js';
 import { ChargeErrors } from './charge-errors.js';
 import { ChargeTransactionsTable } from './charge-transactions-table.js';
 import { BatchChargesExtendedInfoContext } from './charges-extended-info-loader.js';
@@ -574,19 +575,26 @@ export function ChargeExtendedInfo({
             )}
           </Accordion>
           {galleryIsReady && (
-            <Box maw="1/6">
-              <Collapse in={opened} transitionDuration={500} transitionTimingFunction="linear">
-                <DocumentsGallery
-                  chargeProps={charge}
-                  onChange={onExtendedChange}
-                  onChargeDeleted={onExtendedChargeDeleted}
-                />
-              </Collapse>
-            </Box>
+            <div>
+              {/* The `Box` carried `maw="1/6"`, which is not a length — the browser dropped
+                  the declaration, so it was a plain div. Mantine's `Collapse` animated height
+                  over 500ms linear; the keyframes in index.css reproduce that on Radix's
+                  --radix-collapsible-content-height. There is no trigger: `opened` is owned
+                  by this component. */}
+              <Collapsible open={opened}>
+                <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                  <DocumentsGallery
+                    chargeProps={charge}
+                    onChange={onExtendedChange}
+                    onChargeDeleted={onExtendedChargeDeleted}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
           )}
         </div>
       ) : fetching ? (
-        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+        <Spinner className="my-5 size-14 self-center text-gray-900" />
       ) : (
         <>
           {/* `charge` is derived from `chargeState`, which is committed in an effect one render after
