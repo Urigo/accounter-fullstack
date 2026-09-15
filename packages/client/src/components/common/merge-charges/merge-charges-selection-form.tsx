@@ -2,7 +2,6 @@ import { useCallback, useState, type ReactElement } from 'react';
 import { CheckSquare, XSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Checkbox } from '@mantine/core';
 import {
   getChargeTypeIcon,
   getChargeTypeInputValue,
@@ -15,6 +14,7 @@ import {
   type UpdateChargeInput,
 } from '../../../gql/graphql.js';
 import { useMergeCharges } from '../../../hooks/use-merge-charges.js';
+import { Checkbox } from '../../ui/checkbox.js';
 import { AccounterLoader, ListCapsule, Tooltip } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -212,10 +212,12 @@ export function MergeChargesSelectionForm({
               {charges.map(charge => (
                 <td key={charge.id}>
                   <div className="flex items-center justify-center mx-2 px-2 py-2 border-2 border-b-0 rounded-t-xl">
+                    {/* As in merge-businesses: controlled Radix checkboxes want
+                        `onCheckedChange`, and these behave as a radio group. */}
                     <Checkbox
+                      className="size-6"
                       checked={charge.id === mainCharge?.id}
-                      size="xl"
-                      onClick={(): void => {
+                      onCheckedChange={(): void => {
                         setMainCharge(charge);
                         setSelectedDescription({
                           id: charge.id,

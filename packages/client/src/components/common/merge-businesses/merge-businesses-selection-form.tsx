@@ -1,12 +1,12 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { Checkbox } from '@mantine/core';
 import {
   FetchMultipleBusinessesDocument,
   type FetchMultipleBusinessesQuery,
 } from '../../../gql/graphql.js';
 import { useMergeBusinesses } from '../../../hooks/use-merge-businesses.js';
+import { Checkbox } from '../../ui/checkbox.js';
 import { AccounterLoader } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -91,10 +91,14 @@ export function MergeBusinessesSelectionForm({
               {businesses.map(business => (
                 <td key={business.id}>
                   <div className="flex items-center justify-center mx-2 px-2 py-2 border-2 border-b-0 rounded-t-xl">
+                    {/* Radix wants `onCheckedChange` on a controlled checkbox; `checked` with
+                        only an onClick logs a "field without an onChange handler" warning.
+                        These behave as a radio group, so any activation selects this row —
+                        the same as the click handler did. */}
                     <Checkbox
+                      className="size-6"
                       checked={business.id === mainBusiness?.id}
-                      size="xl"
-                      onClick={(): void => {
+                      onCheckedChange={(): void => {
                         setMainBusiness(business);
                       }}
                     />
