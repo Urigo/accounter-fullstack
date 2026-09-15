@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Table } from '@mantine/core';
 import { ChargeDepreciationDocument, DepreciationType } from '../../../gql/graphql.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { AddDepreciationRecord } from './add-depreciation-record.js';
 import { DepreciationRow } from './depreciation-row.js';
 
@@ -37,26 +37,26 @@ export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
     <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
   ) : (
     <div className="flex flex-col gap-2 mt-5">
-      <Table highlightOnHover withBorder>
-        <thead>
-          <tr>
-            <th>Amount</th>
-            <th>Activation Date</th>
-            <th>Category</th>
-            <th>Type</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="border">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Amount</TableHead>
+            <TableHead>Activation Date</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {data?.depreciationRecordsByCharge.map(depreciation => (
             <DepreciationRow data={depreciation} onChange={onChange} key={depreciation.id} />
           ))}
-          <tr>
-            <td colSpan={5}>
+          <TableRow>
+            <TableCell colSpan={5}>
               <AddDepreciationRecord chargeId={chargeId} onAdd={onChange} />
-            </td>
-          </tr>
-        </tbody>
+            </TableCell>
+          </TableRow>
+        </TableBody>
       </Table>
     </div>
   );

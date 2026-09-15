@@ -18,6 +18,7 @@ import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciat
 import { ComboBox } from '../../common/inputs/combo-box.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { TableCell, TableRow } from '../../ui/table.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
 import { depreciationTypes } from './index.js';
@@ -99,8 +100,8 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
 
   return (
     <Form {...form}>
-      <tr key={depreciationRecord.id}>
-        <td>
+      <TableRow key={depreciationRecord.id}>
+        <TableCell>
           <form id={`form ${depreciationRecord.id}`} onSubmit={handleSubmit(onSubmit)}>
             {isEditMode ? (
               <FormField
@@ -144,8 +145,8 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
               </div>
             )}
           </form>
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           <div className="flex flex-col gap-2 justify-center">
             {isEditMode ? (
               <FormField
@@ -182,8 +183,8 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
               <div>{format(new Date(depreciationRecord.activationDate), 'dd/MM/yy')}</div>
             )}
           </div>
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           {isEditMode ? (
             <FormField
               name="categoryId"
@@ -210,8 +211,8 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
               {depreciationRecord.category.name} ({depreciationRecord.category.percentage}%)
             </div>
           )}
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           {isEditMode ? (
             <FormField
               name="type"
@@ -236,8 +237,8 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
           ) : (
             <div>{depreciationRecord.type}</div>
           )}
-        </td>
-        <td>
+        </TableCell>
+        <TableCell>
           <Tooltip content="Edit">
             <Button
               disabled={updatingInProcess || fetchingCategories}
@@ -270,8 +271,8 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
             depreciationRecordId={depreciationRecord.id}
             onDelete={onChange}
           />
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
     </Form>
   );
 };
