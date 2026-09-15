@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Pool, PoolClient } from 'pg';
 import {
   isConnectionLevelError,
-  withConnectionRetry,
+  withPoolReadRetry,
   withTenantContext,
 } from '../helpers/email-ingestion-tenant-context.helper.js';
 
@@ -97,14 +97,14 @@ describe('isConnectionLevelError', () => {
 });
 
 // ---------------------------------------------------------------------------
-// withConnectionRetry
+// withPoolReadRetry
 // ---------------------------------------------------------------------------
 
-describe('withConnectionRetry', () => {
+describe('withPoolReadRetry', () => {
   it('passes the result through when the query succeeds', async () => {
     const fn = vi.fn().mockResolvedValue([{ owner_id: 'tenant-1' }]);
 
-    await expect(withConnectionRetry(fn)).resolves.toEqual([{ owner_id: 'tenant-1' }]);
+    await expect(withPoolReadRetry(fn)).resolves.toEqual([{ owner_id: 'tenant-1' }]);
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
@@ -118,7 +118,7 @@ describe('withConnectionRetry', () => {
       .mockRejectedValueOnce(connectionError())
       .mockResolvedValueOnce([{ owner_id: 'tenant-1' }]);
 
-    await expect(withConnectionRetry(fn)).resolves.toEqual([{ owner_id: 'tenant-1' }]);
+    await expect(withPoolReadRetry(fn)).resolves.toEqual([{ owner_id: 'tenant-1' }]);
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
@@ -127,14 +127,14 @@ describe('withConnectionRetry', () => {
     err.code = 'ECONNRESET';
     const fn = vi.fn().mockRejectedValueOnce(err).mockResolvedValueOnce([]);
 
-    await expect(withConnectionRetry(fn)).resolves.toEqual([]);
+    await expect(withPoolReadRetry(fn)).resolves.toEqual([]);
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
   it('retries at most once — a second connection-level failure propagates', async () => {
     const fn = vi.fn().mockRejectedValue(connectionError());
 
-    await expect(withConnectionRetry(fn)).rejects.toThrow('Connection terminated unexpectedly');
+    await expect(withPoolReadRetry(fn)).rejects.toThrow('Connection terminated unexpectedly');
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
@@ -145,7 +145,7 @@ describe('withConnectionRetry', () => {
     err.code = '23505';
     const fn = vi.fn().mockRejectedValue(err);
 
-    await expect(withConnectionRetry(fn)).rejects.toThrow('duplicate key value');
+    await expect(withPoolReadRetry(fn)).rejects.toThrow('duplicate key value');
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });

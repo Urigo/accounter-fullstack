@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { MutationResolvers } from '../../../__generated__/types.js';
 import { classifyEmail, EmailKind } from '../helpers/email-ingestion-classify.helper.js';
+import { isConnectionLevelError } from '../helpers/email-ingestion-tenant-context.helper.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 
 const GRANT_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -95,8 +96,35 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
         `(messageId=${input.messageId}, correlationId=${input.correlationId ?? 'none'}):`,
       err,
     );
+    // Report a dead connection as 503 rather than letting it default to HTTP 200.
+    //
+    // This is what makes the gateway's retry budget usable. Yoga answers 200 for a
+    // GraphQL error, and the gateway's `isRetryable` declines a `ClientError` whose
+    // status is 200 (not >= 500, not one of 408/425/429) — so control failed after a
+    // single attempt and the widened CONTROL_MAX_RETRIES from #4347 never engaged,
+    // for exactly the transient failure it was widened for. A 503 re-arms it.
+    //
+    // Only connection-level errors get this: a rejected statement (constraint, RLS,
+    // syntax) is a real answer and will fail identically on every retry, so it stays
+    // a non-retryable 200 rather than making the gateway spend its budget on it.
+    //
+    // Control is safe to retry — it has no side effect before `issueGrant`, which is
+    // the last step and is not reached when this throws.
+    //
+    // Only the *status* survives to the gateway: yoga's default `maskedErrors`
+    // replaces the message with "Unexpected error." and drops `code`, but
+    // `maskError` deliberately copies `extensions.http` onto the masked error, which
+    // is what sets the response status. `code` below is for server-side reading and
+    // the tests, not a wire contract — see
+    // `__tests__/email-ingestion-control-http-status.test.ts`, which asserts the
+    // status through a real yoga instance with masking left on.
+    const isDeadConnection = isConnectionLevelError(err);
     throw new GraphQLError('Failed to process ingest control request', {
-      extensions: { code: 'INTERNAL_SERVER_ERROR', cause: err },
+      extensions: {
+        code: isDeadConnection ? 'SERVICE_UNAVAILABLE' : 'INTERNAL_SERVER_ERROR',
+        cause: err,
+        ...(isDeadConnection ? { http: { status: 503 } } : {}),
+      },
     });
   }
 };

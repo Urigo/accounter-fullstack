@@ -16,7 +16,7 @@ import {
   type TenantMailContext,
 } from '../helpers/email-ingestion-classify.helper.js';
 import {
-  withConnectionRetry,
+  withPoolReadRetry,
   withTenantContext,
 } from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
@@ -241,11 +241,11 @@ export class EmailIngestionControlProvider {
    * there is no tenant to pin yet. It is also the *first* call in that path, so
    * it is where a connection killed while idle surfaces (#4348): the retry added
    * for the tenant-scoped calls started one step too late, leaving the original
-   * #4344 trigger reachable. {@link withConnectionRetry} closes that, and a
-   * cross-tenant SELECT is safe to repeat.
+   * #4344 trigger reachable. {@link withPoolReadRetry} closes that; this is a
+   * cross-tenant SELECT, so it satisfies that helper's read-only requirement.
    */
   async resolveAlias(alias: string): Promise<AliasResolutionResult> {
-    const rows = await withConnectionRetry(() =>
+    const rows = await withPoolReadRetry(() =>
       getAliasByAlias.run({ alias: alias.toLowerCase() }, this.dbProvider.pool),
     );
 

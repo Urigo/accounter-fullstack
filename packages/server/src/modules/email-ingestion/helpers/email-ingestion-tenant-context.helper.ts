@@ -74,35 +74,40 @@ export function isConnectionLevelError(err: unknown): boolean {
 }
 
 /**
- * Run a read-only, non-transactional pool query, retrying once if the connection
- * itself was dead.
+ * Run a **read-only or otherwise idempotent** pool query, retrying once if the
+ * connection itself was dead.
  *
- * This is the counterpart to {@link withTenantContext} for the one query that
- * cannot use it: an alias lookup runs *before* any tenant is known, so there is
- * no RLS context to pin and no transaction to wrap. It is also the **first** DB
- * call the control path makes, which makes it the most likely place in the whole
- * request to be handed a connection that died while idle — the #4348 failure mode
- * that cost five inbound emails in #4344. Pinning the retry only to the calls
- * after the tenant is resolved left that first touch uncovered.
+ * This is the counterpart to {@link withTenantContext} for a query that cannot use
+ * it: an alias lookup runs *before* any tenant is known, so there is no RLS context
+ * to pin and no transaction to wrap. It is also the first DB call the control path
+ * makes, so it is where a connection that died while idle surfaces — the #4348
+ * failure mode behind the lost emails in #4344. Pinning the retry to the
+ * tenant-scoped calls alone left that first touch uncovered.
  *
- * Retrying needs none of `withTenantContext`'s care: there is no BEGIN/COMMIT, so
- * there is no in-flight transaction whose outcome could be ambiguous, and the
- * caller is a SELECT, so repeating it cannot double any write. As there, the retry
- * is deliberately narrow — only a connection-level failure, and only once, so a
- * genuinely unreachable database fails fast instead of doubling every query.
+ * **Callers must be safe to run twice.** This is a requirement, not an observation
+ * about the current caller. Postgres wraps a bare statement in an implicit
+ * transaction that autocommits, so if the socket dies after the server applied the
+ * statement but before the response is read, the outcome is genuinely ambiguous —
+ * and that failure matches `CONNECTION_ERROR_MESSAGES`, so it *would* be retried.
+ * For a `SELECT` that is harmless; for an INSERT it would double the write. A
+ * mutating caller needs {@link withTenantContext}, which tracks COMMIT and refuses
+ * to replay an ambiguous outcome, or its own idempotency key.
  *
- * `pg` discards a client that errors, so the second attempt checks out a fresh
- * connection rather than the corpse. Nothing here is specific to a dead *idle*
- * connection: `pool.query()` only discovers the socket is gone when it writes to
- * it, which is exactly why this cannot be handled at checkout.
+ * `pg` destroys the client that errored, so the retry does not draw the same corpse
+ * from the pool. It is not a guarantee the replacement is live: a restart or
+ * failover kills every idle connection at once, and the second checkout can be dead
+ * too. The retry is deliberately narrow — only a connection-level failure, and only
+ * once — so a genuinely unreachable database fails fast rather than doubling every
+ * query. Recovering from that case is the caller's business (see the control
+ * resolver, which reports it as a 503 so the gateway retries).
  */
-export async function withConnectionRetry<T>(fn: () => Promise<T>): Promise<T> {
+export async function withPoolReadRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
     if (!isConnectionLevelError(err)) throw err;
     process.stderr.write(
-      `[db] Retrying pool query on a fresh connection after a connection-level failure: ${
+      `[db] Retrying pool read on a fresh connection after a connection-level failure: ${
         err instanceof Error ? err.message : String(err)
       }\n`,
     );
