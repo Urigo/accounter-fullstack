@@ -4,9 +4,9 @@ Review of urql usage across `packages/client`, September 2026. Scope: 127 `useQu
 `useMutation` call sites, 318 GraphQL documents across 294 files, and the client setup in
 `packages/client/src/providers/urql.tsx`.
 
-Companion documents: [`blueprint.md`](./blueprint.md) — the phased remediation plan derived from
-these findings, all ten steps now merged; [`remaining-work.md`](./remaining-work.md) — what is still
-outstanding.
+Companion document: [`blueprint.md`](./blueprint.md) — the phased remediation plan derived from
+these findings, all ten steps now merged. Everything still outstanding is tracked as issues; see the
+index at the end of that document.
 
 ## Summary
 
@@ -215,8 +215,9 @@ actually useful and lets that machinery be deleted.
 
 ## Recommended direction
 
-> Step 1 below shipped as a ten-PR sequence; see [`blueprint.md`](./blueprint.md). Steps 2 and 3,
-> and everything else still outstanding, are tracked in [`remaining-work.md`](./remaining-work.md).
+> Step 1 below shipped as a ten-PR sequence; see [`blueprint.md`](./blueprint.md). Steps 2 and 3 are
+> tracked as [#4480](https://github.com/Urigo/accounter-fullstack/issues/4480) and
+> [#4481](https://github.com/Urigo/accounter-fullstack/issues/4481).
 
 1. **Now:** the mechanical fixes in [`blueprint.md`](./blueprint.md) — §3, §4, §6, §7 above.
 2. **Next:** `@urql/exchange-graphcache`. The specific payoff for this codebase is referential

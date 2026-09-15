@@ -1,7 +1,6 @@
 # urql Quick Wins — Implementation Blueprint
 
-Companion documents: [`findings.md`](./findings.md) — the review these steps derive from;
-[`remaining-work.md`](./remaining-work.md) — what is still outstanding.
+Companion document: [`findings.md`](./findings.md) — the review these steps derive from.
 
 ## Status
 
@@ -705,7 +704,18 @@ Finally, run the full manual pass from the Verification section against `yarn mo
 
 ## What comes next
 
-This document is a record of a completed sequence. Everything still outstanding — the cache work and
-its schema prerequisite, the loose edges this pass left behind, and the items from the review that
-were never started — is in [`remaining-work.md`](./remaining-work.md), kept as a single list so the
-two do not drift.
+This document records a completed sequence. Everything still outstanding is tracked as issues:
+
+| Area                                  | Issue                                                             |
+| ------------------------------------- | ----------------------------------------------------------------- |
+| Normalized cache (epic)               | [#4480](https://github.com/Urigo/accounter-fullstack/issues/4480) |
+| └ Mutations return changed fields     | [#4481](https://github.com/Urigo/accounter-fullstack/issues/4481) |
+| └ Add graphcache, charges first       | [#4482](https://github.com/Urigo/accounter-fullstack/issues/4482) |
+| └ Retire the hand-rolled invalidation | [#4483](https://github.com/Urigo/accounter-fullstack/issues/4483) |
+| `charge.tsx` dead query path          | [#4484](https://github.com/Urigo/accounter-fullstack/issues/4484) |
+| `user-provider` unmounts the app tree | [#4485](https://github.com/Urigo/accounter-fullstack/issues/4485) |
+| 12 `as FragmentType` casts            | [#4486](https://github.com/Urigo/accounter-fullstack/issues/4486) |
+| 20 `pause: true` lazy-query sites     | [#4487](https://github.com/Urigo/accounter-fullstack/issues/4487) |
+| Persisted documents                   | [#4488](https://github.com/Urigo/accounter-fullstack/issues/4488) |
+| Subscriptions: decide or drop         | [#4489](https://github.com/Urigo/accounter-fullstack/issues/4489) |
+| `willAuthError` hardcoded false       | [#4490](https://github.com/Urigo/accounter-fullstack/issues/4490) |
