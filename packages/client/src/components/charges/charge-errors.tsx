@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
-import { List, Paper, Text } from '@mantine/core';
 import { ChargesTableErrorsFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
+import { Card } from '../ui/card.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -23,15 +23,18 @@ export const ChargeErrors = ({ data }: Props): ReactElement | null => {
   const charge = getFragmentData(ChargesTableErrorsFieldsFragmentDoc, data);
 
   return charge?.errorsLedger?.validate?.errors?.length ? (
-    <Paper shadow="xs" p="md">
-      <Text c="red">Errors:</Text>
-      <List size="sm" withPadding>
+    // Mantine's `Paper shadow="xs" p="md"` carried its own 16px padding; shadcn's Card
+    // carries none. `List withPadding` indented by theme.spacing.xl (32px), and its
+    // list-style-position was inside with no padding of its own.
+    <Card className="p-4 shadow-xs">
+      <div className="text-red-500">Errors:</div>
+      <ul className="list-disc list-inside pl-8 text-sm">
         {charge.errorsLedger.validate.errors.map((error, i) => (
-          <List.Item key={i}>
-            <Text c="red">{error}</Text>
-          </List.Item>
+          <li key={i} className="text-red-500">
+            {error}
+          </li>
         ))}
-      </List>
-    </Paper>
+      </ul>
+    </Card>
   ) : null;
 };
