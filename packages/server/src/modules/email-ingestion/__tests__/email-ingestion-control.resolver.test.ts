@@ -145,6 +145,56 @@ describe('Mutation.requestIngestControl', () => {
     ).rejects.toThrow(GraphQLError);
   });
 
+  // #4344/#4348: a dead pooled connection used to reach the gateway as HTTP 200 with
+  // an errors[] array, which its `isRetryable` declines — so control failed after a
+  // single attempt and the widened CONTROL_MAX_RETRIES from #4347 never engaged for
+  // the very failure it was widened for. Marking it 503 re-arms that budget.
+  it('marks a connection-level failure 503 so the gateway retries it', async () => {
+    const injector = makeInjector({
+      resolveAlias: vi.fn().mockRejectedValue(new Error('Connection terminated unexpectedly')),
+    });
+
+    const err = await resolver(
+      {} as never,
+      { input: baseInput },
+      { injector } as never,
+      {} as never,
+    ).then(
+      () => null,
+      (e: GraphQLError) => e,
+    );
+
+    expect(err).toBeInstanceOf(GraphQLError);
+    expect(err?.extensions.http).toEqual({ status: 503 });
+    expect(err?.extensions.code).toBe('SERVICE_UNAVAILABLE');
+  });
+
+  // The other half of the contract: a rejected statement is a real answer and will
+  // fail identically on every retry, so it must NOT spend the gateway's budget.
+  it('leaves a statement error unmarked, so the gateway does not retry it', async () => {
+    const statementError: NodeJS.ErrnoException = new Error(
+      'permission denied for table alias_routing',
+    );
+    statementError.code = '42501';
+    const injector = makeInjector({
+      resolveAlias: vi.fn().mockRejectedValue(statementError),
+    });
+
+    const err = await resolver(
+      {} as never,
+      { input: baseInput },
+      { injector } as never,
+      {} as never,
+    ).then(
+      () => null,
+      (e: GraphQLError) => e,
+    );
+
+    expect(err).toBeInstanceOf(GraphQLError);
+    expect(err?.extensions.http).toBeUndefined();
+    expect(err?.extensions.code).toBe('INTERNAL_SERVER_ERROR');
+  });
+
   it('passes correlationId and messageId to issueGrant', async () => {
     const issueGrant = vi.fn().mockResolvedValue(mockGrant);
     const injector = makeInjector({ issueGrant });
