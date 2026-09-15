@@ -29,6 +29,7 @@ export interface ChargeInsertParams {
   tax_category_id?: string | null;
   optional_vat?: boolean | null;
   documents_optional_flag?: boolean | null;
+  invoice_payment_currency_diff?: boolean | null;
 }
 
 /**
@@ -46,6 +47,8 @@ export interface ChargeInsertParams {
  * - accountant_status defaults to 'PENDING' (database requires NOT NULL)
  * - optional_vat defaults to false (database requires NOT NULL)
  * - documents_optional_flag defaults to false (database requires NOT NULL)
+ * - invoice_payment_currency_diff defaults to null (set it to true for charges whose invoice
+ *   currency differs from the payment currency)
  * - is_property defaults to null (property-related charges can override to true)
  * - id defaults to deterministic UUID if not provided
  *
@@ -97,6 +100,7 @@ export function createCharge(
     tax_category_id: params.tax_category_id ?? makeUUID('tax-category', 'default-tax-category'),
     optional_vat: false,
     documents_optional_flag: false,
+    invoice_payment_currency_diff: null,
     ...overrides,
   };
 }

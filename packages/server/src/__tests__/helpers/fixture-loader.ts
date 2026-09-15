@@ -303,9 +303,9 @@ export async function insertFixture(
           `INSERT INTO ${qualifyTable('charges')} (
             id, owner_id, type, accountant_status, user_description,
             tax_category_id, optional_vat, documents_optional_flag,
-            is_property, created_at, updated_at
+            is_property, invoice_payment_currency_diff, created_at, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
           ON CONFLICT (id) DO NOTHING`,
           [
             charge.id,
@@ -317,6 +317,7 @@ export async function insertFixture(
             charge.optional_vat ?? false,
             charge.documents_optional_flag ?? false,
             charge.is_property ?? false,
+            charge.invoice_payment_currency_diff ?? null,
           ],
         );
 
