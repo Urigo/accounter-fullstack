@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { Table } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { useDeleteBusiness } from '../../hooks/use-delete-business.js';
 import {
   AlertDialog,
@@ -23,7 +23,7 @@ import {
 
 interface BusinessRowActionsProps {
   row: BusinessTableRow;
-  table: Table<TableFeaturesConfig, BusinessTableRow>;
+  table: Table<PaginatedTableFeaturesConfig, BusinessTableRow>;
 }
 
 export function BusinessRowActions({ row, table }: BusinessRowActionsProps): ReactElement {

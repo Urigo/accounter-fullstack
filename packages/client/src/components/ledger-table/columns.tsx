@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { Badge } from '../ui/badge.js';
 import { Button } from '../ui/button.js';
 import { AmountCell } from './amount-cell.js';
@@ -17,7 +17,7 @@ const shouldHideCellForAccount = (
   return !account && !diffAccount;
 };
 
-export const columns: ColumnDef<TableFeaturesConfig, LedgerRecordRow>[] = [
+export const columns: ColumnDef<PaginatedTableFeaturesConfig, LedgerRecordRow>[] = [
   {
     accessorKey: 'invoiceDate',
     header: ({ column }) => {

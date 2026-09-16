@@ -15,7 +15,7 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { EMPTY_UUID } from '@/helpers/consts.js';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -144,7 +144,7 @@ export const LedgerTable = ({
   }, [ledgerRecordsData, ledgerDiffData, matches]);
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data,
     columns,
     onSortingChange: setSorting,

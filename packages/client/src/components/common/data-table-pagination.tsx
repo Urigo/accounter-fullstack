@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import type { RowData, Table } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { Button } from '../ui/button.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select.js';
 
 interface DataTablePaginationProps<TData extends RowData> {
-  table: Table<TableFeaturesConfig, TData>;
+  table: Table<PaginatedTableFeaturesConfig, TData>;
   isFilterable?: boolean;
 }
 

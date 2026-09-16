@@ -11,7 +11,10 @@ import {
   type PaginationState,
   type SortingState,
 } from '@tanstack/react-table';
-import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
+import {
+  paginatedTableFeaturesConfig,
+  type PaginatedTableFeaturesConfig,
+} from '@/lib/table-features.js';
 import {
   AllTaxCategoriesForScreenDocument,
   type AllTaxCategoriesForScreenQuery,
@@ -57,7 +60,7 @@ import { TaxCategoryBusinesses } from './tax-category-businesses.js';
 
 type RowType = AllTaxCategoriesForScreenQuery['taxCategories'][number];
 
-const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
+const columns: ColumnDef<PaginatedTableFeaturesConfig, RowType>[] = [
   {
     id: 'expander',
     header: () => null,
@@ -209,7 +212,7 @@ export const TaxCategories = (): ReactElement => {
   );
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: taxCategories,
     columns,
     // Only categories that are some business's default have anything to show.

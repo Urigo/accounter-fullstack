@@ -3,7 +3,10 @@ import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { flexRender, useTable, type ColumnDef } from '@tanstack/react-table';
-import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
+import {
+  paginatedTableFeaturesConfig,
+  type PaginatedTableFeaturesConfig,
+} from '@/lib/table-features.js';
 import {
   AllSortCodesForScreenDocument,
   type AllSortCodesForScreenQuery,
@@ -31,7 +34,7 @@ type RowType = AllSortCodesForScreenQuery['allSortCodes'][number] & {
   refetchSortCodes: () => void;
 };
 
-const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
+const columns: ColumnDef<PaginatedTableFeaturesConfig, RowType>[] = [
   {
     id: 'key',
     accessorKey: 'key',
@@ -106,7 +109,7 @@ export const SortCodes = (): ReactElement => {
   );
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: sortCodes,
     columns,
     initialState: {

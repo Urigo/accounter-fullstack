@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ChargeType } from '@/helpers/charges.js';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import type { TransactionForTransactionsTableFieldsFragment } from '../../gql/graphql.js';
 import { ChargeNavigateButton, EditMiniButton, InsertMiscExpenseModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
@@ -64,7 +64,7 @@ export type TransactionsTableRowType = TransactionForTransactionsTableFieldsFrag
   chargeType?: ChargeType;
 };
 
-export const columns: ColumnDef<TableFeaturesConfig, TransactionsTableRowType>[] = [
+export const columns: ColumnDef<PaginatedTableFeaturesConfig, TransactionsTableRowType>[] = [
   {
     accessorKey: 'counterparty.name',
     header: ({ column }) => {
@@ -231,7 +231,7 @@ export const columns: ColumnDef<TableFeaturesConfig, TransactionsTableRowType>[]
   },
 ];
 
-export const actionsColumn: ColumnDef<TableFeaturesConfig, TransactionsTableRowType> = {
+export const actionsColumn: ColumnDef<PaginatedTableFeaturesConfig, TransactionsTableRowType> = {
   accessorKey: 'id',
   header: 'Actions',
   cell: ({ row }) => {

@@ -3,7 +3,10 @@ import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { flexRender, useTable, type ColumnDef, type Row } from '@tanstack/react-table';
-import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
+import {
+  paginatedTableFeaturesConfig,
+  type PaginatedTableFeaturesConfig,
+} from '@/lib/table-features.js';
 import { Currency, YearlyLedgerDocument, type YearlyLedgerQuery } from '../../../gql/graphql.js';
 import { getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -71,7 +74,7 @@ type RowType =
       'openingBalance' | 'closingBalance' | 'totalCredit' | 'totalDebit' | 'entity'
     >;
 
-const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
+const columns: ColumnDef<PaginatedTableFeaturesConfig, RowType>[] = [
   {
     id: 'placeholder',
     header: '',
@@ -178,7 +181,7 @@ export const YearlyLedgerReport = (): ReactElement => {
   }, [financialEntitiesInfo]);
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: records,
     columns,
     initialState: {
@@ -274,7 +277,7 @@ export const YearlyLedgerReport = (): ReactElement => {
   );
 };
 
-function EntityOpeningRows({ row }: { row: Row<TableFeaturesConfig, RowType> }) {
+function EntityOpeningRows({ row }: { row: Row<PaginatedTableFeaturesConfig, RowType> }) {
   return (
     <>
       <TableRow key={`${row.id}-opening1`} className="bg-gray-300">
@@ -311,7 +314,7 @@ function EntityOpeningRows({ row }: { row: Row<TableFeaturesConfig, RowType> }) 
   );
 }
 
-function EntityClosingRows({ row }: { row: Row<TableFeaturesConfig, RowType> }) {
+function EntityClosingRows({ row }: { row: Row<PaginatedTableFeaturesConfig, RowType> }) {
   return (
     <>
       <TableRow key={`${row.id}-totals1`} className="bg-gray-200">

@@ -2,7 +2,7 @@
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ChargeType } from '@/helpers/index.js';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { DataTableColumnHeader, Tooltip, UpdateAccountantStatus } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
@@ -23,7 +23,7 @@ import { ChargeActionsMenu } from './charge-actions-menu.js';
 import { ChargesBatchActionsMenu } from './charges-batch-actions-menu.js';
 import type { ChargeRow } from './charges-table.js';
 
-export const columns: ColumnDef<TableFeaturesConfig, ChargeRow>[] = [
+export const columns: ColumnDef<PaginatedTableFeaturesConfig, ChargeRow>[] = [
   {
     id: 'select',
     header: ({ table }) => (

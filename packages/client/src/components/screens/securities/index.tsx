@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useState, type ReactElement } from 'rea
 import { CandlestickChart, Search } from 'lucide-react';
 import { useQuery } from 'urql';
 import { flexRender, useTable } from '@tanstack/react-table';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { SecurityHoldingsScreenDocument } from '../../../gql/graphql.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { DataTablePagination, TableSkeleton } from '../../common/index.js';
@@ -80,7 +80,7 @@ export const Securities = (): ReactElement => {
   }, [holdings, search]);
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: filtered,
     columns,
     getRowId: row => row.id,

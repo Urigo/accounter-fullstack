@@ -9,7 +9,7 @@ import {
   type PaginationState,
   type SortingState,
 } from '@tanstack/react-table';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import {
   BusinessLedgerInfoDocument,
   Currency,
@@ -217,7 +217,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   }, [initialColumnVisibility]);
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: extendedLedgerRecords,
     columns,
     onSortingChange: setSorting,

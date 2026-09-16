@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { Currency } from '../../gql/graphql.js';
 import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { DataTableColumnHeader } from '../common/index.js';
@@ -15,7 +15,7 @@ import { DateCell } from './cells/date-cell.js';
 /**
  * Base columns that are always visible
  */
-export const getBaseColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => [
+export const getBaseColumns = (): ColumnDef<PaginatedTableFeaturesConfig, ExtendedLedger>[] => [
   {
     accessorKey: 'business.name',
     id: 'businessName',
@@ -51,7 +51,7 @@ export const getBaseColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>
  * Generate currency-specific columns (Amount + Balance) for all currencies
  * Columns for inactive currencies will be hidden via initialState
  */
-export const getCurrencyColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => {
+export const getCurrencyColumns = (): ColumnDef<PaginatedTableFeaturesConfig, ExtendedLedger>[] => {
   // Generate columns for ALL currencies
   const allCurrencies = Object.values(Currency).filter(currency => currency !== Currency.Ils);
 
@@ -93,7 +93,7 @@ export const getCurrencyColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLed
 /**
  * End columns that appear after all currency columns
  */
-export const getEndColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => [
+export const getEndColumns = (): ColumnDef<PaginatedTableFeaturesConfig, ExtendedLedger>[] => [
   {
     accessorKey: 'reference',
     id: 'reference',
@@ -120,7 +120,7 @@ export const getEndColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[
 /**
  * Generate all columns for the business ledger table
  */
-export const getAllColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => {
+export const getAllColumns = (): ColumnDef<PaginatedTableFeaturesConfig, ExtendedLedger>[] => {
   return [...getBaseColumns(), ...getCurrencyColumns(), ...getEndColumns()];
 };
 

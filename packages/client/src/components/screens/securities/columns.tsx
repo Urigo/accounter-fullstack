@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { ColumnDef, Row } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import type { SecurityHoldingsScreenQuery } from '../../../gql/graphql.js';
 import { ROUTES } from '../../../router/routes.js';
 import { DataTableColumnHeader } from '../../common/data-table-column-header.js';
@@ -12,7 +12,7 @@ import {
 
 export type SecurityHoldingRow = SecurityHoldingsScreenQuery['securityHoldings'][number];
 
-type HoldingRow = Row<TableFeaturesConfig, SecurityHoldingRow>;
+type HoldingRow = Row<PaginatedTableFeaturesConfig, SecurityHoldingRow>;
 
 /** Everything the search box matches on, for one holding. */
 export function holdingSearchFields(holding: SecurityHoldingRow): (string | null | undefined)[] {
@@ -49,7 +49,7 @@ const sortByDate =
   (field: 'historyStartDate' | 'lastExecutionDate') => (a: HoldingRow, b: HoldingRow) =>
     (a.original.position[field] ?? '').localeCompare(b.original.position[field] ?? '');
 
-export const columns: ColumnDef<TableFeaturesConfig, SecurityHoldingRow>[] = [
+export const columns: ColumnDef<PaginatedTableFeaturesConfig, SecurityHoldingRow>[] = [
   {
     id: 'security',
     accessorFn: displayName,

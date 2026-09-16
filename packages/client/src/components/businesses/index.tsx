@@ -10,7 +10,7 @@ import {
 } from '@tanstack/react-table';
 import { useEphemeralState } from '@/hooks/use-ephemeral-state.js';
 import { usePersistentState } from '@/hooks/use-persistent-state.js';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import {
@@ -171,7 +171,7 @@ export const Businesses = (): ReactElement => {
 
   // eslint-disable-next-line react-hooks/incompatible-library -- useTable returns non-memoizable handles by design
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: filteredRows,
     columns,
     getRowId: row => row.id,

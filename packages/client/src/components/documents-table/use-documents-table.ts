@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import equal from 'deep-equal';
-import { useTable, type ColumnVisibilityState, type SortingState } from '@tanstack/react-table';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import {
+  useTable,
+  type ColumnDef,
+  type ColumnVisibilityState,
+  type SortingState,
+} from '@tanstack/react-table';
+import {
+  paginatedTableFeaturesConfig,
+  tableFeaturesConfig,
+  type PaginatedTableFeaturesConfig,
+} from '@/lib/table-features.js';
 import {
   TableDocumentsRowFieldsFragmentDoc,
   type TableDocumentsRowFieldsFragment,
@@ -21,13 +30,15 @@ type UseDocumentsTableOptions = {
 };
 
 /**
- * Shared wiring for every documents table: fragment unmasking, `@defer` merging, row callbacks,
- * sorting / column-visibility state and the TanStack table instance.
+ * Everything a documents table needs that does not depend on the feature set: fragment unmasking,
+ * `@defer` merging, row callbacks, and the sorting / column-visibility state.
  *
- * It is a hook rather than part of `DocumentsTable` so screens that host their own toolbar
- * (pagination, column-visibility menu) can reach the table instance those controls need.
+ * Split out from the two hooks below because v9 resolves a table's API through conditional types
+ * keyed on the feature set, and a shared `TFeatures` type parameter leaves those conditionals
+ * unresolved — collapsing the table type to one that has lost the very APIs each caller needs.
+ * Each hook therefore calls `useTable` with one *concrete* feature set.
  */
-export function useDocumentsTable({
+function useDocumentsTableCore({
   documentsProps,
   onChange,
   onChargeDeleted,
@@ -95,21 +106,83 @@ export function useDocumentsTable({
       : allColumns;
   }, [columnIds, withChargeLink]);
 
+  const closeEditDocument = useCallback((): void => setEditDocumentId(undefined), []);
+
+  return {
+    data,
+    tableColumns,
+    sorting,
+    setSorting,
+    columnVisibility,
+    setColumnVisibility,
+    editDocumentId,
+    closeEditDocument,
+  };
+}
+
+/**
+ * Documents table that renders every row.
+ *
+ * This is the default because `DocumentsTable` embeds it with no pagination control — inside a
+ * charge's extended info, a charge-match row extension, the issue-document dialog. Anything
+ * paginated there would hide documents with no way to reach them.
+ */
+export function useDocumentsTable(options: UseDocumentsTableOptions) {
+  const {
+    data,
+    tableColumns,
+    sorting,
+    setSorting,
+    columnVisibility,
+    setColumnVisibility,
+    ...rest
+  } = useDocumentsTableCore(options);
+
   const table = useTable({
     features: tableFeaturesConfig,
     data,
     columns: tableColumns,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnVisibility,
-    },
+    state: { sorting, columnVisibility },
   });
 
-  const closeEditDocument = useCallback((): void => setEditDocumentId(undefined), []);
+  return { table, ...rest };
+}
 
-  return { table, editDocumentId, closeEditDocument };
+/**
+ * Documents table that pages. Only for screens that also render a pagination control — otherwise
+ * use {@link useDocumentsTable}, which shows everything.
+ */
+export function usePaginatedDocumentsTable(
+  options: UseDocumentsTableOptions & { pageSize: number },
+) {
+  const {
+    data,
+    tableColumns,
+    sorting,
+    setSorting,
+    columnVisibility,
+    setColumnVisibility,
+    ...rest
+  } = useDocumentsTableCore(options);
+
+  const table = useTable({
+    features: paginatedTableFeaturesConfig,
+    data,
+    // `ColumnDef` is invariant in the feature set, so the shared (non-paginated) definitions need a
+    // cast to reach a paginated table. Sound: none of them touch a pagination API.
+    columns: tableColumns as unknown as ColumnDef<
+      PaginatedTableFeaturesConfig,
+      DocumentsTableRowType
+    >[],
+    onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
+    state: { sorting, columnVisibility },
+    initialState: { pagination: { pageIndex: 0, pageSize: options.pageSize } },
+  });
+
+  return { table, ...rest };
 }
 
 export type DocumentsTableInstance = ReturnType<typeof useDocumentsTable>['table'];

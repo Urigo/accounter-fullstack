@@ -23,9 +23,21 @@ React SPA built with Vite, urql (GraphQL), shadcn/ui, and Tailwind CSS.
 
 - Build tables with `useTable` from `@tanstack/react-table` (v9) — `useReactTable` and the
   `get*RowModel()` options no longer exist.
-- Always pass the shared feature set: `features: tableFeaturesConfig` from
-  `src/lib/table-features.ts`. Features and row models are registered there; a table API that seems
-  to be missing usually means its feature is not registered yet.
+- Always pass a shared feature set from `src/lib/table-features.ts`. Features and row models are
+  registered there; a table API that seems to be missing usually means its feature is not registered
+  yet.
+- **Pagination is opt-in.** Default to `features: tableFeaturesConfig`, which registers no paginated
+  row model, so `getRowModel()` returns every row. Reach for `paginatedTableFeaturesConfig` only
+  when the table also renders a pagination control (`common/data-table-pagination.tsx` or
+  `common/pagination.tsx`) — never one without the other. A page size with no control to change it
+  is how tables silently truncated at ten rows.
+- Column definitions and `Row`/`Table`/`Column` annotations name a **concrete** feature set:
+  `ColumnDef<PaginatedTableFeaturesConfig, TData>` for a paginated table's columns,
+  `ColumnDef<TableFeaturesConfig, TData>` otherwise. These types are invariant in the feature set,
+  so the two are not interchangeable and a `TFeatures` type parameter does not work either — v9
+  leaves its conditional types unresolved on a generic parameter, and the table API disappears. For
+  a component shared by both kinds of table, take the `AnyColumn` / `AnyTable` unions from
+  `src/lib/table-features.ts`.
 - Core types take the feature set first: `ColumnDef<TableFeaturesConfig, TData>`,
   `Row<TableFeaturesConfig, TData>`, `Table<TableFeaturesConfig, TData>`, and
   `createColumnHelper<TableFeaturesConfig, TData>()`.

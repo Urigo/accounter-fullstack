@@ -46,4 +46,4 @@ export const DocumentsTable = ({
 
 export { DocumentsDataTable } from './data-table.js';
 export { DocumentActionsMenu } from './document-actions-menu.js';
-export { useDocumentsTable } from './use-documents-table.js';
+export { useDocumentsTable, usePaginatedDocumentsTable } from './use-documents-table.js';
