@@ -16,7 +16,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "26.8.2"
+    "node": "26.9.0"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
