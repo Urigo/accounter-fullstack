@@ -1,6 +1,6 @@
 {
   "name": "@accounter/client",
-  "version": "0.0.12",
+  "version": "0.1.0",
   "type": "module",
   "description": "Accounter client application",
   "repository": {

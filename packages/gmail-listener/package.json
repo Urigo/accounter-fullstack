@@ -1,6 +1,6 @@
 {
   "name": "@accounter/gmail-listener",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "description": "[DEPRECATED — superseded by @accounter/email-ingestion-gateway] A Gmail listener that listens for new emails, extracts financial documents, and sends them to the server",
   "repository": {
