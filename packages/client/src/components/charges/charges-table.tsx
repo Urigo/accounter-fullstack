@@ -8,7 +8,7 @@ import {
   type RowSelectionState,
   type SortingState,
 } from '@tanstack/react-table';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import {
   AccountantStatus,
   ChargeForChargesTableFieldsFragmentDoc,
@@ -349,7 +349,7 @@ export const ChargesTable = ({
   }, [stableData]);
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: charges,
     columns,
     // Key row selection by charge id (not row index) so the selection map is stable across

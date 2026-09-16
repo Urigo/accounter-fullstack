@@ -12,7 +12,7 @@ import {
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import type { ChargeType } from '@/helpers/charges.js';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { actionsColumn, columns, type TransactionsTableRowType } from './columns.js';
 
 type Props = {
@@ -58,7 +58,7 @@ export const TransactionsTable = ({
   }, [enableEdit, enableChargeLink]);
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data,
     columns: tableColumns,
     onSortingChange: setSorting,

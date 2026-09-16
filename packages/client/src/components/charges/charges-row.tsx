@@ -6,7 +6,7 @@ import {
   RefetchChargeForChargesTableDocument,
 } from '@/gql/graphql.js';
 import { getFragmentData } from '@/gql/index.js';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { useRegisterChargeRefresh } from '../../providers/charge-refresh.js';
 import { Card } from '../ui/card.js';
 import { TableCell, TableRow } from '../ui/table.js';
@@ -29,7 +29,7 @@ import {
 type Props = {
   updateCharge: (charge: ChargeRowType) => void;
   removeCharge: (chargeId: string) => void;
-  row: Row<TableFeaturesConfig, ChargeRowType>;
+  row: Row<PaginatedTableFeaturesConfig, ChargeRowType>;
 };
 
 export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElement => {

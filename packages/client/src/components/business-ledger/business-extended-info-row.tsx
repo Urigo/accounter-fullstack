@@ -1,12 +1,12 @@
 import { type ReactElement } from 'react';
 import { flexRender, type Row } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { ROUTES } from '@/router/routes.js';
 import { TableCell, TableRow } from '../ui/table.js';
 import type { ExtendedLedger } from './business-extended-info.js';
 
 type Props = {
-  row: Row<TableFeaturesConfig, ExtendedLedger>;
+  row: Row<PaginatedTableFeaturesConfig, ExtendedLedger>;
 };
 
 export const BusinessExtendedInfoRow = ({ row }: Props): ReactElement => {

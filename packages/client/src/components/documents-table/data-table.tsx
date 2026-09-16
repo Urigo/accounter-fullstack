@@ -1,17 +1,27 @@
 import type { ReactElement } from 'react';
 import { flexRender, type RowData, type Table as TableType } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { AnyTable, TableFeaturesConfig } from '@/lib/table-features.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 
 type Props<TData extends RowData> = {
-  table: TableType<TableFeaturesConfig, TData>;
+  table: AnyTable<TData>;
 };
 
 /**
  * Presentational shell for the documents table, shared by `DocumentsTable` and by screens that
  * build the table themselves via `useDocumentsTable` so they can host their own toolbar.
+ *
+ * Takes a table from either feature set: the embedded `DocumentsTable` is unpaginated while the
+ * all-documents screen paginates, and `Table` is invariant in the feature set.
  */
-export function DocumentsDataTable<TData extends RowData>({ table }: Props<TData>): ReactElement {
+export function DocumentsDataTable<TData extends RowData>({
+  table: tableFromEitherSet,
+}: Props<TData>): ReactElement {
+  // The markup below touches only core APIs — header groups, the row model, cells — which both
+  // feature sets share. Narrowing to one concrete set is what lets `flexRender` pair a column
+  // template with its context: across the union TypeScript cannot match the two pairwise.
+  const table = tableFromEitherSet as TableType<TableFeaturesConfig, TData>;
+
   // Visible leaf columns only: `getAllColumns()` counts hidden and group columns too, so the
   // empty-state cell would outspan the rendered header once a column is hidden.
   const columnCount = table.getVisibleLeafColumns().length;

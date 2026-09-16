@@ -12,7 +12,7 @@ import {
   EditDocumentModal,
   UploadDocumentsModal,
 } from '../../../common/index.js';
-import { DocumentsDataTable, useDocumentsTable } from '../../../documents-table/index.js';
+import { DocumentsDataTable, usePaginatedDocumentsTable } from '../../../documents-table/index.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import { Button } from '../../../ui/button.js';
 import {
@@ -75,10 +75,14 @@ export const DocumentsReport = (): ReactElement => {
     [refetchDocuments],
   );
 
-  const { table, editDocumentId, closeEditDocument } = useDocumentsTable({
+  const { table, editDocumentId, closeEditDocument } = usePaginatedDocumentsTable({
     documentsProps,
     onChange: onDocumentChange,
     withChargeLink: true,
+    // This screen hosts a `DataTablePagination`, so it is one of the few documents tables that
+    // opts into paging. 100 is the largest size that bar offers, so its size `Select` renders the
+    // value rather than showing blank.
+    pageSize: 100,
   });
 
   // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:

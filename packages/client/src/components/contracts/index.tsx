@@ -18,7 +18,7 @@ import {
 import { ContractForContractsTableFieldsFragmentDoc } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
-import { tableFeaturesConfig } from '@/lib/table-features.js';
+import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import type { BillingCycle, Product, SubscriptionPlan } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
 import {
@@ -135,7 +135,7 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
   );
 
   const table = useTable({
-    features: tableFeaturesConfig,
+    features: paginatedTableFeaturesConfig,
     data: contracts,
     columns,
     onSortingChange: setSorting,

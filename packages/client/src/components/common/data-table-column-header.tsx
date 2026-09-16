@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown, EyeOff } from 'lucide-react';
-import type { Column, RowData } from '@tanstack/react-table';
+import type { RowData } from '@tanstack/react-table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.js';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { AnyColumn } from '@/lib/table-features.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '../ui/button.js';
 
@@ -15,10 +15,15 @@ interface DataTableColumnHeaderProps<
   TData extends RowData,
   TValue,
 > extends React.HTMLAttributes<HTMLDivElement> {
-  column: Column<TableFeaturesConfig, TData, TValue>;
+  column: AnyColumn<TData, TValue>;
   title: string;
 }
 
+/**
+ * Accepts a column from either feature set, so paginated and non-paginated tables share one header.
+ * `Column` is invariant in the feature set — it is mutually recursive with `ColumnDef` through
+ * `HeaderContext` — so a header pinned to one set would be unusable from the other.
+ */
 export function DataTableColumnHeader<TData extends RowData, TValue>({
   column,
   title,
