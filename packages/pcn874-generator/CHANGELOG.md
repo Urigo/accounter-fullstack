@@ -1,5 +1,24 @@
 # @accounter-toolkit/pcn874-generator
 
+## 0.6.8
+
+### Patch Changes
+
+- [#4314](https://github.com/Urigo/accounter-fullstack/pull/4314) [`af3d19b`](https://github.com/Urigo/accounter-fullstack/commit/af3d19b71a9a3ef20c5753738ec16871223b74a9) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.5.1` ↗︎](https://www.npmjs.com/package/zod/v/4.5.1) (from `4.4.3`, in `dependencies`)
+
+- [#4324](https://github.com/Urigo/accounter-fullstack/pull/4324) [`03ad844`](https://github.com/Urigo/accounter-fullstack/commit/03ad844f400281551dda48dc8ff563083b00cceb) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.5.4` ↗︎](https://www.npmjs.com/package/zod/v/4.5.4) (from `4.5.1`, in `dependencies`)
+
+- [#4426](https://github.com/Urigo/accounter-fullstack/pull/4426) [`00b059f`](https://github.com/Urigo/accounter-fullstack/commit/00b059f5f06bc2b0e07cf18b7954b9c04b417f19) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.6.5` ↗︎](https://www.npmjs.com/package/zod/v/4.6.5) (from `4.5.4`, in `dependencies`)
+
+- [#4455](https://github.com/Urigo/accounter-fullstack/pull/4455) [`9a977bb`](https://github.com/Urigo/accounter-fullstack/commit/9a977bb1aac8536a381dc2136a856146f8f5f463) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`zod@4.6.5` ↗︎](https://www.npmjs.com/package/zod/v/4.6.5) (from `4.5.4`, in `dependencies`)
+
+- [#4467](https://github.com/Urigo/accounter-fullstack/pull/4467) [`95a88a5`](https://github.com/Urigo/accounter-fullstack/commit/95a88a5ca3c1d3f0ecf5d5662baed90a3a0a3306) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`zod@4.6.5` ↗︎](https://www.npmjs.com/package/zod/v/4.6.5) (from `4.5.4`, in `dependencies`)
+
 ## 0.6.7
 
 ### Patch Changes
