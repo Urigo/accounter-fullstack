@@ -97,7 +97,7 @@ export interface DocumentsTableColumnsOptions {
  * actions column takes per-host options; `columns` below is the default, option-less column set.
  *
  * Typed against the non-paginated feature set. `ColumnDef` is invariant in the feature set, so the
- * paginated all-documents screen casts this array in `useDocumentsTable` — sound because these
+ * paginated all-documents screen casts this array in `usePaginatedDocumentsTable` — sound because these
  * definitions touch no pagination API.
  */
 export function getDocumentsTableColumns({
