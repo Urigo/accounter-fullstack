@@ -2789,11 +2789,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.63.1":
-  version: 0.63.1
-  resolution: "@graphql-hive/cli@npm:0.63.1"
+"@graphql-hive/cli@npm:0.64.0":
+  version: 0.64.0
+  resolution: "@graphql-hive/cli@npm:0.64.0"
   dependencies:
-    "@graphql-hive/core": "npm:0.22.4"
+    "@graphql-hive/core": "npm:0.22.5"
     "@graphql-inspector/core": "npm:^8.0.0"
     "@graphql-tools/code-file-loader": "npm:^8.1.37"
     "@graphql-tools/graphql-file-loader": "npm:^8.1.19"
@@ -2805,7 +2805,7 @@ __metadata:
     "@oclif/core": "npm:3.26.6"
     "@oclif/plugin-help": "npm:6.2.36"
     "@oclif/plugin-update": "npm:4.7.16"
-    "@theguild/federation-composition": "npm:0.26.0"
+    "@theguild/federation-composition": "npm:0.26.2"
     cli-table3: "npm:0.6.5"
     colors: "npm:1.4.0"
     env-ci: "npm:7.3.0"
@@ -2815,7 +2815,7 @@ __metadata:
     zod: "npm:^3.25.76"
   bin:
     hive: bin/run
-  checksum: 10c0/d14b42ba7835e28313c636a854739f6752c79808fa38f8f2632955eb29a933748f953a838dbb23a3eb3459c06158e5aa988c52c70055bdf049b4c0c3a4c9f83a
+  checksum: 10c0/f56427aac579f52dd5276b35f4622600eab06d8d105987be4825784b69535ddb3d2a6dad03464885ed44887c74ac12631e3636afcc731c656a80063ab5a17428
   languageName: node
   linkType: hard
 
@@ -2836,6 +2836,26 @@ __metadata:
   peerDependencies:
     graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
   checksum: 10c0/0a73330de67b49342b1ec16ff4b48ead805af3efe5f1afc45ac9f8943106e3befc76bff3c8309adbcbcf58585bbff7b500690eaf74facc8c3d9d85d30a832f7a
+  languageName: node
+  linkType: hard
+
+"@graphql-hive/core@npm:0.22.5":
+  version: 0.22.5
+  resolution: "@graphql-hive/core@npm:0.22.5"
+  dependencies:
+    "@graphql-hive/logger": "npm:^1.1.0"
+    "@graphql-hive/signal": "npm:^2.0.0"
+    "@graphql-tools/utils": "npm:^12.0.0"
+    "@whatwg-node/fetch": "npm:^0.10.13"
+    async-retry: "npm:^1.3.3"
+    events: "npm:^3.3.0"
+    js-md5: "npm:0.8.3"
+    lodash.sortby: "npm:^4.7.0"
+    tiny-lru: "npm:^11.4.7"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+  checksum: 10c0/6416c92cd2912042c7a0ddd34a20393f1764d9119754e738bd22df333839c53dba612130862f2ef41a6eb931286cb7b616cf04f9bccea73d0e2fe4105c852c09
   languageName: node
   linkType: hard
 
@@ -10195,9 +10215,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@theguild/federation-composition@npm:0.26.0":
-  version: 0.26.0
-  resolution: "@theguild/federation-composition@npm:0.26.0"
+"@theguild/federation-composition@npm:0.26.2":
+  version: 0.26.2
+  resolution: "@theguild/federation-composition@npm:0.26.2"
   dependencies:
     constant-case: "npm:^3.0.4"
     debug: "npm:4.4.3"
@@ -10205,7 +10225,7 @@ __metadata:
     lodash.sortby: "npm:^4.7.0"
   peerDependencies:
     graphql: ^16.0.0 || ^17.0.0
-  checksum: 10c0/974c7229c163099e91d32abf232fcf286cbcbd7f3bf996e1ed07423fdcf6005b3c251709c9d3b39592e08c9666fcf2463ef5e3ef6c68eac9370761f2fff330b4
+  checksum: 10c0/d142ff9803f7cf2860103fb74078f1ef012bdc8d67358ed9d5bd488d277e7f3bac7c995b43aa9be2832ae43e1cd0ac01ee010a885b7060615413c673323653c0
   languageName: node
   linkType: hard
 
@@ -11504,7 +11524,7 @@ __metadata:
     "@graphql-codegen/typescript-graphql-request": "npm:7.1.0"
     "@graphql-codegen/typescript-resolvers": "npm:6.1.0"
     "@graphql-eslint/eslint-plugin": "npm:4.4.1"
-    "@graphql-hive/cli": "npm:0.63.1"
+    "@graphql-hive/cli": "npm:0.64.0"
     "@graphql-inspector/cli": "npm:7.0.0"
     "@graphql-tools/mock": "npm:9.1.14"
     "@parcel/watcher": "npm:2.6.0"
