@@ -51,7 +51,7 @@
     "dayjs": "1.11.23",
     "decimal.js": "10.6.0",
     "deep-equal": "2.2.3",
-    "dotenv": "17.4.2",
+    "dotenv": "18.0.0",
     "embla-carousel-react": "8.6.0",
     "fast-myers-diff": "3.2.0",
     "graphql": "16.14.2",
