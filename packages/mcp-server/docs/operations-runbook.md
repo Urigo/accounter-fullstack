@@ -162,6 +162,39 @@ jq -r 'select(.event=="mcp_modern_probe")
   | [.metaClientName, .metaClientVersion, .metaProtocolVersion // .protocolVersionHeader] | @tsv' logs.jsonl | sort -u
 ```
 
+### 3.2b Modern-era calls (`event: "mcp_modern_call"`)
+
+Emitted once per request actually **served** in the modern era — the successor to
+`mcp_modern_probe`, which fired when we could only refuse. A steady stream here means clients have
+moved and are staying moved; `mcp_initialize` lines thinning out alongside is the same story from
+the other side.
+
+Carries `method`, `protocolVersion`, `clientName`, `clientVersion`, `userId`, `correlationId`.
+
+**HTTP statuses are era-specific, which matters when reading `request completed` lines beside
+these:**
+
+| Status | Meaning                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------- |
+| `200`  | Served — either era. A legacy JSON-RPC error also rides inside a `200`                       |
+| `400`  | Modern framing failure: `-32020` header/body mismatch, `-32022` unsupported protocol version |
+| `404`  | Modern request for a method this server does not implement                                   |
+| `405`  | `GET`/`DELETE` on `/mcp` — neither is part of this server's transport                        |
+| `202`  | Notification accepted                                                                        |
+
+A `400` here is **not** an incident on its own: a client probing a revision we do not implement gets
+`-32022` with the list we do, and retries. Watch instead for a _client that never succeeds after
+one_.
+
+```bash
+# Have clients moved to the modern era, and which ones?
+jq -r 'select(.event=="mcp_modern_call")
+  | [.timestamp, .clientName, .clientVersion, .protocolVersion, .method] | @tsv' logs.jsonl
+
+# Modern framing rejections, by client — a client stuck here is a real problem
+jq -r 'select(.event=="mcp_modern_call")' logs.jsonl | ... # pair with `status` on request-completed
+```
+
 ### 3.3 Tool-call usage logs (`event: "tool_call"`)
 
 Every completed tool call emits exactly one line with `event: "tool_call"` — including calls
