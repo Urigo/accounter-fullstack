@@ -1,7 +1,8 @@
 import { useState, type ReactElement } from 'react';
-import { Loader2, Printer } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import type { Options } from 'react-to-pdf';
 import { Button } from '../../ui/button.js';
+import { Spinner } from '../../ui/spinner.js';
 
 const options: Options = {
   method: 'open',
@@ -37,11 +38,7 @@ export const PrintToPdfButton = ({ filename }: { filename?: string }): ReactElem
       onClick={onGeneratePDF}
       disabled={loading}
     >
-      {loading ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
-      ) : (
-        <Printer className="size-5" />
-      )}
+      {loading ? <Spinner className="size-5" /> : <Printer className="size-5" />}
     </Button>
   );
 };

@@ -1,6 +1,5 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { flexRender, useTable, type ColumnDef, type Row } from '@tanstack/react-table';
 import {
@@ -13,6 +12,7 @@ import { FiltersContext } from '../../../providers/filters-context.js';
 import { DataTablePagination } from '../../common/index.js';
 import { YearPickerInput } from '../../common/inputs/year-picker-input.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { DownloadCSV } from './download-csv.js';
 
@@ -221,7 +221,7 @@ export const YearlyLedgerReport = (): ReactElement => {
   return (
     <PageLayout title="Yearly Ledger Report">
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : reportData ? (
         <div className="flex flex-col gap-4 rounded-md border">
           <Table>

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
+import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargesTable } from '@/components/charges/charges-table.js';
 import { MissingInfoChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
@@ -9,6 +9,7 @@ import { FiltersContext } from '../../../providers/filters-context.js';
 import { ChargesFilters } from '../../charges/charges-filters/index.js';
 import { Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
 import { LoadingOverlay } from '../../ui/overlay.js';
 
@@ -112,7 +113,7 @@ export const MissingInfoCharges = (): ReactElement => {
       description="Review charges with missing required details"
     >
       {fetching && !data ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         // Keep the current table mounted while a filter/page change refetches,
         // but overlay a spinner so it's clear the charges are being reloaded

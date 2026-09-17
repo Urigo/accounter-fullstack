@@ -1,5 +1,4 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { flexRender, useTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
 import { getFragmentData } from '@/gql/fragment-masking.js';
@@ -11,6 +10,7 @@ import {
   DepositTransactionFieldsFragmentDoc,
   SharedDepositTransactionsDocument,
 } from '../../gql/graphql.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns, type DepositTransactionRowType } from './columns.js';
 import { DepositReassignDialog } from './deposit-reassign-dialog.js';
@@ -193,7 +193,7 @@ export function DepositsTransactionsTable({
   if (fetching && !data) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
-        <Loader2 className="size-10 animate-spin" />
+        <AccounterBarSpinner />
       </div>
     );
   }

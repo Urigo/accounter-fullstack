@@ -1,5 +1,4 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   DocumentsScreenDocument,
@@ -14,6 +13,7 @@ import {
 } from '../../../common/index.js';
 import { DocumentsDataTable, usePaginatedDocumentsTable } from '../../../documents-table/index.js';
 import { PageLayout } from '../../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../../ui/accounter-spinner.js';
 import { Button } from '../../../ui/button.js';
 import {
   DropdownMenu,
@@ -144,7 +144,7 @@ export const DocumentsReport = (): ReactElement => {
         onChange={onDocumentChange}
       />
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <DocumentsDataTable table={table} />
       )}

@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Card } from '@mantine/core';
 import { EditableBusinessTripDocument, type EditableBusinessTripQuery } from '../../gql/graphql.js';
@@ -13,6 +12,7 @@ import { Summary } from '../common/business-trip-report/parts/summary.js';
 import { TravelAndSubsistence } from '../common/business-trip-report/parts/travel-and-subsistence.js';
 import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -129,7 +129,7 @@ export function EditableBusinessTrip({ tripId, isExtended = false }: Props): Rea
           </Accordion>
         </>
       ) : (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       )}
     </Card>
   );

@@ -6,7 +6,7 @@ import {
   type ComponentProps,
   type ReactElement,
 } from 'react';
-import { Loader2, Receipt } from 'lucide-react';
+import { Receipt } from 'lucide-react';
 import { useQuery } from 'urql';
 import { getDocumentNameFromType } from '@/helpers/index.js';
 import { getFragmentData } from '../../../gql/fragment-masking.js';
@@ -20,6 +20,7 @@ import {
   type NewDocumentDraftFragment,
 } from '../../../gql/graphql.js';
 import type { CountryCode } from '../../../helpers/countries.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -365,7 +366,7 @@ export function PreviewDocumentModal({
           <DialogTitle>Issue New Document</DialogTitle>
         </DialogHeader>
         {fetchingByCharge || fetchingByDocument ? (
-          <Loader2 className="h-10 w-10 animate-spin" />
+          <AccounterSpinner />
         ) : (
           <GenerateDocument
             initialFormData={initialFormData}

@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { PrintToPdfButton } from '@/components/common/index.js';
@@ -7,6 +6,7 @@ import { ProfitAndLossReportDocument } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 import { ReportCommentaryRow } from '../shared/report-commentary-row.js';
 import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
@@ -180,7 +180,7 @@ export const ProfitAndLossReport = (): ReactElement => {
       headerActions={<PrintToPdfButton filename={`profit_and_loss_${year}`} />}
     >
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <div className="flex flex-col gap-4">
           {report && (

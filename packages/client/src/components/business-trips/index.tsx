@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   BusinessTripsRowFieldsFragmentDoc,
@@ -11,6 +10,7 @@ import { FiltersContext } from '../../providers/filters-context.js';
 import { InsertBusinessTripModal, PrintToPdfButton, Tooltip } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Accordion } from '../ui/accordion.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Switch } from '../ui/switch.js';
 import { BusinessTripsRow } from './business-trips-row.js';
 
@@ -79,7 +79,7 @@ export const BusinessTrips = (): ReactElement => {
   return (
     <PageLayout title="Business Trips" description="Manage business trips">
       {businessTrips.length === 0 && fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <Accordion
           className="w-full"

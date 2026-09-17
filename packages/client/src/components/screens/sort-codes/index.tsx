@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, type ReactElement } from 'react';
-import { ArrowUpDown, Loader2 } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { flexRender, useTable, type ColumnDef } from '@tanstack/react-table';
@@ -14,6 +14,7 @@ import {
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { DataTablePagination, EditSortCode, InsertSortCode } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
 
@@ -152,7 +153,7 @@ export const SortCodes = (): ReactElement => {
     >
       {fetching ? (
         <div className="flex flex-row justify-center">
-          <Loader2 className="h-10 w-10 animate-spin mr-2" />
+          <AccounterBarSpinner />
         </div>
       ) : (
         <div className="flex flex-col gap-4 rounded-md border">
