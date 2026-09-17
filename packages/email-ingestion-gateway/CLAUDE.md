@@ -83,7 +83,10 @@ read back from the grant.
 - Internal-link fetching keeps the SSRF guard stack in `link-fetcher.ts` (host/path allowlist,
   private-IP + resolved-IP block, http(s)-only, `redirect: 'error'`, content-type allowlist,
   streamed size cap). Don't loosen any of these without review.
-- Body HTML renders with `javaScriptEnabled: false`.
+- Body HTML renders with `javaScriptEnabled: false`, with all remote subresources aborted via
+  `page.route()` and with `inline-css`'s `applyLinkTags` off — an untrusted body must not cause any
+  outbound fetch. Waits are `domcontentloaded` + best-effort `load`, never `networkidle`, each
+  capped at `RENDER_TIMEOUT_MS`.
 - `CF_WEBHOOK_SECRET` is required in production (`index.ts` throws on startup if missing).
 
 ## Testing
