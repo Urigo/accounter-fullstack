@@ -6,6 +6,7 @@
  * no DB mutations happen here.
  */
 
+import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import type { ChargeMatchProto } from '../types.js';
 import { ChargesMatcherProvider } from './charges-matcher.provider.js';
@@ -56,5 +57,30 @@ export class QueueMatchEvaluatorProvider {
         (a, b) => b.confidenceScore - a.confidenceScore,
       ),
     }));
+  }
+
+  /**
+   * DataLoader for lazily resolving a single charge's match suggestions.
+   *
+   * Backs the `ChargeWithSuggestions.suggestions` field resolver so the queue can
+   * return base charges immediately and stream suggestions in via `@defer`. All
+   * suggestions requested within the operation are coalesced into a single
+   * `findMatchesForCharges` call, so the shared candidate pool is still built once.
+   */
+  public suggestionsByChargeIdLoader = new DataLoader<string, ChargeMatchProto[], string>(
+    chargeIds => this.batchLoadSuggestions(chargeIds),
+    { name: 'suggestionsByChargeIdLoader' },
+  );
+
+  private async batchLoadSuggestions(chargeIds: readonly string[]): Promise<ChargeMatchProto[][]> {
+    const matchesByChargeId = await this.chargesMatcherProvider.findMatchesForCharges([
+      ...chargeIds,
+    ]);
+    return chargeIds.map(chargeId =>
+      // Copy before sorting so we never mutate an array owned by another provider
+      [...(matchesByChargeId.get(chargeId) ?? [])].sort(
+        (a, b) => b.confidenceScore - a.confidenceScore,
+      ),
+    );
   }
 }

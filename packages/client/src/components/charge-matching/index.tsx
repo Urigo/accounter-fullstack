@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
-import { Check, SkipForward } from 'lucide-react';
+import { Check, Loader2, SkipForward } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import {
@@ -38,10 +38,16 @@ export const QUEUE_PAGE_SIZE = 20;
 type QueueEntry =
   ChargesAwaitingMatchQueueQuery['chargesAwaitingMatchQueue']['baseCharges'][number];
 
+// `suggestions` is delivered via @defer, so it is absent until the deferred
+// payload for that charge arrives.
+type QueueEntrySuggestions = NonNullable<QueueEntry['suggestions']>;
+
 export type ChargeMatchQueueItem = {
   id: string;
   baseCharge: ChargeMatchCardFieldsFragment;
-  suggestions: QueueEntry['suggestions'];
+  suggestions: QueueEntrySuggestions;
+  /** True until the deferred suggestions payload for this charge has arrived */
+  suggestionsPending: boolean;
 };
 
 export const ChargeMatchingReviewScreen = (): ReactElement => {
@@ -96,7 +102,12 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
     () =>
       (data?.chargesAwaitingMatchQueue.baseCharges ?? []).map(entry => {
         const baseCharge = getFragmentData(ChargeMatchCardFieldsFragmentDoc, entry.baseCharge);
-        return { id: baseCharge.id, baseCharge, suggestions: entry.suggestions };
+        return {
+          id: baseCharge.id,
+          baseCharge,
+          suggestions: entry.suggestions ?? [],
+          suggestionsPending: entry.suggestions == null,
+        };
       }),
     [data],
   );
@@ -179,7 +190,7 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
         </Alert>
       )}
 
-      {fetching ? (
+      {fetching && !data ? (
         <div className="flex gap-4">
           <Skeleton className="h-96 w-72" />
           <Skeleton className="h-96 flex-1" />
@@ -221,9 +232,16 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
               ) : (
                 <section className="rounded-lg border p-4">
                   <h3 className="mb-2 text-sm font-semibold text-gray-500">Suggested Match</h3>
-                  <p className="text-sm text-gray-500">
-                    {activeItem ? 'No suggestions for this charge.' : '—'}
-                  </p>
+                  {activeItem?.suggestionsPending ? (
+                    <p className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="size-4 animate-spin" />
+                      Scoring suggestions…
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      {activeItem ? 'No suggestions for this charge.' : '—'}
+                    </p>
+                  )}
                 </section>
               )}
             </div>
