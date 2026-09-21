@@ -351,19 +351,7 @@ export const BalanceReport = (): ReactElement => {
           ),
         };
       });
-  }, [
-    data,
-    filter.period,
-    filter.filterFinancialAccounts,
-    filter.financialAccountsBusinesses,
-    filter.includedCounterparties,
-    filter.excludedCounterparties,
-    filter.includedAccounts,
-    filter.excludedAccounts,
-    filter.includedTags,
-    filter.excludedTags,
-    userContext?.context.financialAccountsBusinessesIds,
-  ]);
+  }, [data, filter, userContext?.context.financialAccountsBusinessesIds]);
 
   return (
     <PageLayout title="Balance Report" description="Accounts periodical balance">

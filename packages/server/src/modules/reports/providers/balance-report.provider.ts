@@ -12,14 +12,14 @@ with transactions AS (SELECT
     t.charge_id,
     t.source_description,
     t.currency,
-    COALESCE(t.debit_date_override, t.debit_date) as debit_date,
+    COALESCE(t.debit_date_override, t.debit_date, t.debit_timestamp, t.event_date) as debit_date,
     t.debit_timestamp,
     t.amount,
     t.owner_id,
     t.business_id,
     t.is_fee,
-    date_part('month', COALESCE(t.debit_date_override, t.debit_date)) as month,
-    date_part('year', COALESCE(t.debit_date_override, t.debit_date)) as year,
+    date_part('month', COALESCE(t.debit_date_override, t.debit_date, t.debit_timestamp, t.event_date)) as month,
+    date_part('year', COALESCE(t.debit_date_override, t.debit_date, t.debit_timestamp, t.event_date)) as year,
     CASE
         WHEN t.currency = 'USD' THEN t.amount
         WHEN t.currency = 'ILS' THEN t.amount / lr.usd -- Convert ILS => USD
@@ -36,7 +36,7 @@ FROM accounter_schema.transactions t
 LEFT JOIN LATERAL (
     SELECT er.usd, er.eur, er.gbp, er.cad, er.jpy, er.aud, er.sek
     FROM accounter_schema.exchange_rates er
-    WHERE er.exchange_date <= t.debit_date
+    WHERE er.exchange_date <= coalesce(t.debit_date_override, t.debit_date, t.debit_timestamp, t.event_date)
     ORDER BY er.exchange_date DESC
     LIMIT 1
 ) lr ON t.currency = 'ILS' OR t.currency = 'EUR' OR t.currency ='GBP' OR t.currency = 'CAD' OR t.currency = 'JPY' OR t.currency = 'AUD' OR t.currency = 'SEK'
