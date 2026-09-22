@@ -151,6 +151,28 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw errorSimplifier(`Failed to insert dynamic report template "${name}"`, error);
       }
     },
+    captureDynamicReportBaseline: async (_, { name, tree, snapshot }, { injector }) => {
+      try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+        validateTemplate(tree);
+        const validatedSnapshot = validateSnapshotInput(snapshot);
+
+        const provider = injector.get(DynamicReportProvider);
+        const template = await provider.getTemplate({ name, ownerId });
+        if (!template) {
+          throw new Error(`Report template "${name}" not found`);
+        }
+
+        // Deliberately no `assertNotLocked`: the template row is not written, so the sign-off that
+        // locked it still describes exactly what it approved.
+        await provider.insertSnapshot(toSnapshotRow(ownerId, name, tree, validatedSnapshot));
+
+        return template;
+      } catch (error) {
+        throw errorSimplifier(`Failed to capture baseline for dynamic report "${name}"`, error);
+      }
+    },
     deleteDynamicReportTemplate: async (_, { name }, { injector }) => {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();

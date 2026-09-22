@@ -1,5 +1,6 @@
 import {
   CalendarRange,
+  Camera,
   ChevronDown,
   Copy,
   Download,
@@ -50,6 +51,7 @@ interface ToolbarProps {
   onSelectTemplate: () => void;
   onSaveAsNew: () => void;
   onResave: () => void;
+  onCaptureBaseline: () => void;
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -87,6 +89,7 @@ export function Toolbar({
   onSelectTemplate,
   onSaveAsNew,
   onResave,
+  onCaptureBaseline,
   onRename,
   onDuplicate,
   onDelete,
@@ -253,6 +256,14 @@ export function Toolbar({
               <Save className="size-4 mr-2" />
               Resave
             </DropdownMenuItem>
+            {isLocked && (
+              // The one way a locked draft can start tracking changes: a resave is off the table,
+              // but a baseline writes no template row, so the sign-off still holds.
+              <DropdownMenuItem onClick={onCaptureBaseline} disabled={!hasTemplate}>
+                <Camera className="size-4 mr-2" />
+                Capture baseline
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={onChangePeriod} disabled={!hasTemplate || isLocked}>
               <CalendarRange className="size-4 mr-2" />
               Change period

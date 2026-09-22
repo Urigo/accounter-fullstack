@@ -21,6 +21,7 @@ import {
   type DynamicReportTemplateQuery,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
+import { useCaptureDynamicReportBaseline } from '../../../hooks/use-capture-dynamic-report-baseline.js';
 import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
@@ -299,6 +300,7 @@ export function DynamicReport() {
 
   const { updateDynamicReportTemplate } = useUpdateDynamicReportTemplate();
   const { updateDynamicReportTemplateName } = useUpdateDynamicReportTemplateName();
+  const { captureDynamicReportBaseline } = useCaptureDynamicReportBaseline();
 
   // ── GQL queries ──────────────────────────────────────────────────────────────
 
@@ -320,7 +322,7 @@ export function DynamicReport() {
   });
 
   // Template nodes query — paused until a template is selected
-  const [{ data: templateNodesData }] = useQuery<DynamicReportTemplateQuery>({
+  const [{ data: templateNodesData }, refetchTemplateNodes] = useQuery<DynamicReportTemplateQuery>({
     query: DynamicReportTemplateDocument,
     variables: { name: selectedTemplateName ?? '' },
     pause: !selectedTemplateName,
@@ -338,8 +340,14 @@ export function DynamicReport() {
   // until they save — which is what gives such a draft its period and its first baseline.
   const hasDraftPeriod = !!draftFromDate && !!draftToDate;
 
-  const fromDate = urlFromDate ?? draftFromDate ?? DEFAULT_FROM;
-  const toDate = urlToDate ?? draftToDate ?? DEFAULT_TO;
+  // A draft locked by an audit sign-off can gain a baseline but never a period of its own, since
+  // that would be a write to the template. The period its newest baseline was captured for is the
+  // next best default — without it, revisiting lands on the calendar year and the only thing the
+  // diff has to say is that the periods do not match.
+  const latestSnapshot = templateNodesData?.dynamicReport?.snapshots?.[0] ?? null;
+
+  const fromDate = urlFromDate ?? draftFromDate ?? latestSnapshot?.fromDate ?? DEFAULT_FROM;
+  const toDate = urlToDate ?? draftToDate ?? latestSnapshot?.toDate ?? DEFAULT_TO;
 
   const isPeriodOverridden =
     hasDraftPeriod &&
@@ -699,6 +707,9 @@ export function DynamicReport() {
       // against what they just saved rather than against something older with nothing on screen
       // saying so.
       setSelectedBaselineId(null);
+      // The client installs no urql cache, so a mutation invalidates nothing — without this the
+      // baseline just written stays invisible until a reload.
+      refetchTemplateNodes({ requestPolicy: 'network-only' });
     }
   }, [
     currentTemplate,
@@ -706,6 +717,30 @@ export function DynamicReport() {
     updateDynamicReportTemplate,
     snapshotInput,
     setSelectedBaselineId,
+    refetchTemplateNodes,
+  ]);
+
+  // A locked draft cannot be resaved — the sign-off that locked it describes the template as it
+  // stands. Recording a baseline writes no template row, so it stays available: without it a
+  // locked draft could never start tracking changes at all.
+  const handleCaptureBaseline = useCallback(async () => {
+    if (!currentTemplate) return;
+    const result = await captureDynamicReportBaseline({
+      name: currentTemplate.name,
+      tree: serializeReportTree(reportTree),
+      snapshot: snapshotInput,
+    });
+    if (result) {
+      setSelectedBaselineId(null);
+      refetchTemplateNodes({ requestPolicy: 'network-only' });
+    }
+  }, [
+    currentTemplate,
+    reportTree,
+    snapshotInput,
+    captureDynamicReportBaseline,
+    setSelectedBaselineId,
+    refetchTemplateNodes,
   ]);
 
   const handleChangePeriod = useCallback(() => {
@@ -827,6 +862,7 @@ export function DynamicReport() {
         onSelectTemplate={() => setTemplateManagerOpen(true)}
         onSaveAsNew={handleSaveAsNew}
         onResave={handleResave}
+        onCaptureBaseline={handleCaptureBaseline}
         onRename={handleRenameTemplate}
         onDuplicate={() => currentTemplate && handleDuplicateTemplate(currentTemplate)}
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}

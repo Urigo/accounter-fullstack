@@ -27,6 +27,17 @@ export default gql`
       template: String!
       snapshot: DynamicReportSnapshotInput
     ): DynamicReportInfo! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+    # Unlike a save, this writes only a snapshot row, so it is permitted while the template is
+    # locked: a draft locked by an annual-audit sign-off holds no baseline of its own and could
+    # otherwise never start tracking changes. The tree argument is the report as it is being
+    # shown — a legacy template is migrated in the client, and a baseline has to match what the
+    # user sees.
+    " records a baseline for a template without modifying the template itself "
+    captureDynamicReportBaseline(
+      name: String!
+      tree: String!
+      snapshot: DynamicReportSnapshotInput!
+    ): DynamicReportInfo! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     deleteDynamicReportTemplate(name: String!): String!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
