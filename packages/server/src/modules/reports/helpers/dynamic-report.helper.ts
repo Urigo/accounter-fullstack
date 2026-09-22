@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../shared/constants.js';
 
 const dynamicReportNodeData = z
   .object({
@@ -49,14 +50,19 @@ export function validateTemplate(raw: string) {
 const MAX_SNAPSHOT_VALUES = 10_000;
 
 /**
- * Shape only, deliberately not `z.uuid()`. Postgres' `uuid` type accepts any hex-shaped value, and
- * this codebase seeds entities with ids like `00000000-0000-0000-0000-0000000005a1` whose version
- * and variant nibbles are not RFC-4122 conformant. Enforcing the RFC here would reject saves of
- * reports containing those entities.
+ * The shared shape-only check, deliberately not `z.uuid()`. Postgres' `uuid` type accepts any
+ * hex-shaped value, and this codebase seeds entities with ids like
+ * `00000000-0000-0000-0000-0000000005a1` whose version and variant nibbles are not RFC-4122
+ * conformant. Enforcing the RFC here would reject saves of reports containing those entities.
  */
-const uuidShaped = z
-  .string()
-  .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, 'Invalid UUID');
+const uuidShaped = z.string().regex(UUID_REGEX, 'Invalid UUID');
+
+/**
+ * The same check the `TimelessDate` scalar applies, repeated here because the ordering refine
+ * below compares the two dates lexicographically — which only decides anything for well-formed
+ * `yyyy-mm-dd` strings.
+ */
+const timelessDate = z.string().regex(TIMELESS_DATE_REGEX, 'Date must be in format yyyy-mm-dd');
 
 const snapshotValue = z
   .object({
@@ -67,8 +73,8 @@ const snapshotValue = z
 
 export const dynamicReportSnapshotInput = z
   .object({
-    fromDate: z.string(),
-    toDate: z.string(),
+    fromDate: timelessDate,
+    toDate: timelessDate,
     scopeOwnerId: uuidShaped,
     values: z.array(snapshotValue).max(MAX_SNAPSHOT_VALUES),
   })

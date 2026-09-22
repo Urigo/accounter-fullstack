@@ -356,6 +356,24 @@ describe('validateSnapshotInput', () => {
   it('still rejects an id of the wrong shape', () => {
     expect(() => validateSnapshotInput(snapshotInput({ scopeOwnerId: '123-abc' }))).toThrow();
   });
+
+  it.each(['2026-1-1', '20260101', '01-01-2026', 'yesterday', ''])(
+    'rejects %p, which is not a yyyy-mm-dd date',
+    fromDate => {
+      expect(() => validateSnapshotInput(snapshotInput({ fromDate }))).toThrow();
+    },
+  );
+
+  // The shared regex validates real calendar dates, not just the shape — so the period a snapshot
+  // claims to cover is one that actually exists.
+  it('rejects a date that never happened', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ fromDate: '2026-02-29', toDate: '2026-03-31' })),
+    ).toThrow();
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ fromDate: '2024-02-29', toDate: '2024-03-31' })),
+    ).not.toThrow();
+  });
 });
 
 describe('snapshot value encoding', () => {
