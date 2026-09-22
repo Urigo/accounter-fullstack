@@ -64,6 +64,7 @@ import {
 } from './utils/search-params.js';
 import { buildSnapshotInput } from './utils/snapshot.js';
 import { serializeReportTree } from './utils/template-serialization.js';
+import { isBuiltFrom, type TreeBuildInputs } from './utils/tree-sync.js';
 import {
   buildNodeStats,
   type CustomData,
@@ -472,18 +473,15 @@ export function DynamicReport() {
     reportTreeRef.current = reportTree;
   });
 
-  // Coordinates the two tree effects: ensures the value-patch effect skips
-  // when the template-load effect ran in the same commit.
-  const templateVersionRef = useRef(0);
-  const valuesPatchedVersionRef = useRef(0);
+  // Coordinates the two tree effects — see utils/tree-sync.ts for why this records the inputs
+  // Effect 1 built from rather than counting how often it ran.
+  const treeBuiltFromRef = useRef<TreeBuildInputs | null>(null);
 
   // ── Effect 1: Full tree rebuild on template/sort-code load ────────────────
   // Only fires when the template or sort-code data changes — NOT on filter
   // changes — so user structural edits (drags, renames, branches) are preserved.
 
   useEffect(() => {
-    templateVersionRef.current += 1;
-
     const rawNodes = templateNodesData?.dynamicReport?.template ?? [];
     const bSums = businessSumsRef.current;
     const sCodes = sortCodesRef.current;
@@ -512,21 +510,25 @@ export function DynamicReport() {
 
     const nextBankTree = buildInitialBankTree(sCodes, bSums, placedEntityIds, zeroed);
 
+    // Effect 2 stands down only for the inputs this rebuild actually used.
+    treeBuiltFromRef.current = { businessSums: bSums, showZeroed: zeroed };
+
     setBankTree(nextBankTree);
     setReportTree(nextReportTree);
   }, [templateNodesData, sortCodes]);
 
   // ── Effect 2: Value-only patch on filter change ───────────────────────────
   // Fires when businessSums or showZeroed changes. Preserves tree structure
-  // by only updating data.value on leaf nodes. Skips if Effect 1 ran in the
-  // same commit (templateVersionRef > valuesPatchedVersionRef).
+  // by only updating data.value on leaf nodes. Stands down when Effect 1 has
+  // already rebuilt from these same inputs — see utils/tree-sync.ts.
 
   useEffect(() => {
-    if (valuesPatchedVersionRef.current < templateVersionRef.current) {
-      // Effect 1 ran more recently — its trees are authoritative; skip patch.
-      valuesPatchedVersionRef.current = templateVersionRef.current;
+    const inputs = { businessSums, showZeroed };
+    if (isBuiltFrom(treeBuiltFromRef.current, inputs)) {
+      // Effect 1 just rebuilt from these very figures; its trees are authoritative.
       return;
     }
+    treeBuiltFromRef.current = inputs;
 
     const currentReportTree = reportTreeRef.current;
 
