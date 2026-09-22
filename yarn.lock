@@ -405,7 +405,6 @@ __metadata:
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.4.0"
     dotenv: "npm:18.0.2"
-    dotenv-cli: "npm:11.0.0"
     googleapis: "npm:181.0.0"
     graphql: "npm:16.14.2"
     graphql-modules: "npm:3.1.2"
