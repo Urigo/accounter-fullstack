@@ -29,15 +29,22 @@ export function clearPeriodOverride(params: URLSearchParams): void {
 /**
  * Switches the report to another draft.
  *
- * Alongside the name this drops the period override — each draft owns its own period, and a
- * leftover `?from=`/`?to=` from the previous one would silently apply to this one — and any pinned
- * baseline, which belongs to the draft it was pinned on. Filters that are not draft-scoped (owner,
- * zeroed) are left alone.
+ * Alongside the name this releases any pinned baseline, which belongs to the draft it was pinned
+ * on, and — when the incoming draft has a period of its own — the period override, since a
+ * leftover `?from=`/`?to=` from the previous draft would otherwise silently apply to this one. A
+ * draft with no period of its own owns nothing to restore, so the period on screen is the user's
+ * and is kept. Filters that are not draft-scoped (owner, zeroed) are left alone.
  */
-export function selectTemplateParams(params: URLSearchParams, templateName: string | null): void {
+export function selectTemplateParams(
+  params: URLSearchParams,
+  templateName: string | null,
+  { hasOwnPeriod = true }: { hasOwnPeriod?: boolean } = {},
+): void {
   writeParam(params, 'template', templateName);
   writeParam(params, 'baseline', null);
-  clearPeriodOverride(params);
+  if (hasOwnPeriod) {
+    clearPeriodOverride(params);
+  }
 }
 
 /** Sets an explicit period, overriding the loaded draft's own dates. */

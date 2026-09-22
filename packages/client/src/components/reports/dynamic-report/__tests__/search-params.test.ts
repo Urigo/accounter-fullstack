@@ -64,6 +64,26 @@ describe('selectTemplateParams', () => {
     expect(params.has('template')).toBe(false);
     expect(params.has('from')).toBe(false);
   });
+
+  // A draft saved before periods were recorded has none of its own, so there is nothing to fall
+  // back to: clearing would strand the user on the default period instead of the one they picked.
+  it('keeps the period when the incoming draft has none of its own', () => {
+    const params = new URLSearchParams({ from: '2024-01-01', to: '2024-12-31' });
+
+    selectTemplateParams(params, 'Legacy P&L', { hasOwnPeriod: false });
+
+    expect(params.get('template')).toBe('Legacy P&L');
+    expect(params.get('from')).toBe('2024-01-01');
+    expect(params.get('to')).toBe('2024-12-31');
+  });
+
+  it('still releases a pinned baseline for a draft with no period of its own', () => {
+    const params = new URLSearchParams({ baseline: 'snapshot-1' });
+
+    selectTemplateParams(params, 'Legacy P&L', { hasOwnPeriod: false });
+
+    expect(params.has('baseline')).toBe(false);
+  });
 });
 
 describe('setPeriodParams', () => {

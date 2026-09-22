@@ -41,6 +41,12 @@ export interface Template {
   lastUpdated: Date;
   isLocked: boolean;
   isLegacy?: boolean;
+  /**
+   * The period this draft was last saved for. Absent on a draft saved before periods were
+   * recorded — such a draft owns no period, so the pickers stay editable for it.
+   */
+  fromDate?: string | null;
+  toDate?: string | null;
 }
 
 export interface Owner {

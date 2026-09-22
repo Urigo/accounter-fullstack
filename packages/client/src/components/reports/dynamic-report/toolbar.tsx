@@ -101,6 +101,9 @@ export function Toolbar({
   diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
+  // A disabled item with no explanation reads as a broken one. Locking is the only reason these
+  // are greyed out once a draft is loaded, and the remedy is not obvious from the menu.
+  const lockedHint = isLocked ? 'Template is locked — unlock it to make changes' : undefined;
 
   const baselineLabel = (snapshot: { createdAt: Date | string }, index: number): string => {
     const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
@@ -237,15 +240,27 @@ export function Toolbar({
               <Save className="size-4 mr-2" />
               Save as new
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onResave} disabled={!hasTemplate || isLocked}>
+            <DropdownMenuItem
+              onClick={onResave}
+              disabled={!hasTemplate || isLocked}
+              title={lockedHint}
+            >
               <Save className="size-4 mr-2" />
               Resave
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onChangePeriod} disabled={!hasTemplate || isLocked}>
+            <DropdownMenuItem
+              onClick={onChangePeriod}
+              disabled={!hasTemplate || isLocked}
+              title={lockedHint}
+            >
               <CalendarRange className="size-4 mr-2" />
               Change period
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onRename} disabled={!hasTemplate || isLocked}>
+            <DropdownMenuItem
+              onClick={onRename}
+              disabled={!hasTemplate || isLocked}
+              title={lockedHint}
+            >
               <Edit2 className="size-4 mr-2" />
               Rename
             </DropdownMenuItem>
@@ -257,6 +272,7 @@ export function Toolbar({
             <DropdownMenuItem
               onClick={onDelete}
               disabled={!hasTemplate || isLocked}
+              title={lockedHint}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="size-4 mr-2" />

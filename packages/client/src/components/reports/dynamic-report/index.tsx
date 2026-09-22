@@ -79,6 +79,8 @@ import {
       name
       isLocked
       updated
+      fromDate
+      toDate
     }
   }
 `;
@@ -197,6 +199,8 @@ function toTemplate(t: AllDynamicReportsTemplate): Template {
     name: t.name,
     lastUpdated: new Date(t.updated),
     isLocked: t.isLocked,
+    fromDate: t.fromDate,
+    toDate: t.toDate,
   };
 }
 
@@ -329,12 +333,16 @@ export function DynamicReport() {
   const draftFromDate = templateNodesData?.dynamicReport?.fromDate ?? null;
   const draftToDate = templateNodesData?.dynamicReport?.toDate ?? null;
 
+  // A draft saved before periods were recorded has none of its own. There is nothing to protect
+  // and nothing to restore, so the pickers stay editable and the period on screen is the user's
+  // until they save — which is what gives such a draft its period and its first baseline.
+  const hasDraftPeriod = !!draftFromDate && !!draftToDate;
+
   const fromDate = urlFromDate ?? draftFromDate ?? DEFAULT_FROM;
   const toDate = urlToDate ?? draftToDate ?? DEFAULT_TO;
 
   const isPeriodOverridden =
-    !!draftFromDate &&
-    !!draftToDate &&
+    hasDraftPeriod &&
     ((!!urlFromDate && urlFromDate !== draftFromDate) ||
       (!!urlToDate && urlToDate !== draftToDate));
 
@@ -639,7 +647,11 @@ export function DynamicReport() {
       // The name and the previous draft's period go in one call: a second setSearchParams here
       // would recompute from the pre-update snapshot and drop ?template=, leaving the template
       // query paused and the draft never loaded.
-      updateSearchParams(p => selectTemplateParams(p, template.name));
+      updateSearchParams(p =>
+        selectTemplateParams(p, template.name, {
+          hasOwnPeriod: !!template.fromDate && !!template.toDate,
+        }),
+      );
       if (template.isLocked) {
         setEditMode(false);
       }
@@ -708,6 +720,24 @@ export function DynamicReport() {
       setIsDirty(true);
     },
     [updateSearchParams],
+  );
+
+  // The pickers are live only for a draft that has no period of its own, where the period the user
+  // picks is what the next save will record — so it counts as an unsaved edit, same as the dialog.
+  const handleFromDateChange = useCallback(
+    (next: string) => {
+      setFromDate(next);
+      if (currentTemplate) setIsDirty(true);
+    },
+    [setFromDate, currentTemplate],
+  );
+
+  const handleToDateChange = useCallback(
+    (next: string) => {
+      setToDate(next);
+      if (currentTemplate) setIsDirty(true);
+    },
+    [setToDate, currentTemplate],
   );
 
   const handleRenameInManager = useCallback(
@@ -782,8 +812,8 @@ export function DynamicReport() {
       <Toolbar
         fromDate={fromDate}
         toDate={toDate}
-        onFromDateChange={setFromDate}
-        onToDateChange={setToDate}
+        onFromDateChange={handleFromDateChange}
+        onToDateChange={handleToDateChange}
         owners={owners}
         selectedOwner={soleAdminBusinessId ?? selectedOwner}
         onOwnerChange={setSelectedOwner}
@@ -802,7 +832,7 @@ export function DynamicReport() {
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
         onDownloadCSV={handleDownloadCSV}
         isLocked={currentTemplate?.isLocked ?? false}
-        datesDisabled={!!currentTemplate}
+        datesDisabled={hasDraftPeriod}
         onChangePeriod={handleChangePeriod}
         periodOverride={
           isPeriodOverridden && draftFromDate && draftToDate ? { draftFromDate, draftToDate } : null
