@@ -7,7 +7,7 @@ import './index.css';
 import 'json-bigint-patch';
 import { ROUTES } from '@/router/routes.js';
 import { SessionExpiryDialog } from './components/session-expiry-dialog.js';
-import { isReauthRequiredAuth0Error } from './lib/auth0-errors.js';
+import { createAuth0AccessTokenProvider } from './lib/auth0-token-provider.js';
 import { setUrqlAccessTokenProvider } from './providers/urql.js';
 
 const rootElement = document.getElementById('root');
@@ -31,31 +31,7 @@ function Auth0UrqlTokenBridge() {
   const { getAccessTokenSilently } = useAuth0();
 
   // Register token provider during render so route loaders can read it immediately.
-  setUrqlAccessTokenProvider(async options => {
-    try {
-      const token = await getAccessTokenSilently({
-        authorizationParams: {
-          audience,
-          // Request API token scopes only; offline_access is requested during interactive login.
-          scope: 'openid profile email',
-        },
-        ...options,
-      });
-
-      return { status: 'token', token };
-    } catch (error) {
-      const auth0Error = error as Error & { error?: string };
-
-      // An expired/invalid/missing refresh token means silent renewal can never succeed —
-      // signal "unauthenticated" so the user is re-authenticated instead of seeing a
-      // misleading network error. Genuine transient/network failures stay as errors.
-      if (isReauthRequiredAuth0Error(auth0Error)) {
-        return { status: 'unauthenticated' };
-      }
-
-      return { status: 'error', error: auth0Error };
-    }
-  });
+  setUrqlAccessTokenProvider(createAuth0AccessTokenProvider(getAccessTokenSilently, audience));
 
   useEffect(() => {
     return () => {
