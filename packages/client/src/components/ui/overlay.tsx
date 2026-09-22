@@ -51,7 +51,7 @@ function LoadingOverlay({ visible = false, blur = 1, ...props }: LoadingOverlayP
   }
   return (
     <Overlay center blur={blur} {...props}>
-      <AccounterBarSpinner className="size-16 text-gray-500" />
+      <AccounterBarSpinner className="text-gray-500" />
     </Overlay>
   );
 }
