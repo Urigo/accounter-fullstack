@@ -16,9 +16,9 @@ import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
 import { ROUTES } from '../router/routes.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
-type TokenCacheMode = 'on' | 'off';
+export type TokenCacheMode = 'on' | 'off';
 
-type AccessTokenResolution =
+export type AccessTokenResolution =
   | {
       status: 'token';
       token: string;
@@ -31,9 +31,9 @@ type AccessTokenResolution =
       error: unknown;
     };
 
-type AccessTokenProviderResult = string | null | AccessTokenResolution;
+export type AccessTokenProviderResult = string | null | AccessTokenResolution;
 
-type AccessTokenProvider = (options?: {
+export type AccessTokenProvider = (options?: {
   cacheMode?: TokenCacheMode;
 }) => Promise<AccessTokenProviderResult>;
 
