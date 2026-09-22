@@ -169,7 +169,6 @@ export const Businesses = (): ReactElement => {
   );
   const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
 
-   
   const table = useTable({
     features: paginatedTableFeaturesConfig,
     data: filteredRows,
