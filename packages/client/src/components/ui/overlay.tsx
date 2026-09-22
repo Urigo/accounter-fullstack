@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils.js';
-import { Spinner } from './spinner.js';
+import { AccounterBarSpinner } from './accounter-spinner.js';
 
 type OverlayProps = React.ComponentProps<'div'> & {
   /** Backdrop blur radius in pixels. Dynamic, so applied as a style rather than a class. */
@@ -44,14 +44,14 @@ type LoadingOverlayProps = Omit<OverlayProps, 'center'> & {
   visible?: boolean;
 };
 
-/** An `Overlay` with a centred spinner, shown while `visible`. */
+/** An `Overlay` with the centred Accounter loader, shown while `visible`. */
 function LoadingOverlay({ visible = false, blur = 1, ...props }: LoadingOverlayProps) {
   if (!visible) {
     return null;
   }
   return (
     <Overlay center blur={blur} {...props}>
-      <Spinner className="size-8 text-gray-500" />
+      <AccounterBarSpinner className="text-gray-500" />
     </Overlay>
   );
 }

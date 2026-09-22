@@ -1,10 +1,10 @@
 import { useMemo, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   ValidatePcn874ReportsDocument,
   type ValidatePcn874ReportsQueryVariables,
 } from '../../../../gql/graphql.js';
+import { AccounterBarSpinner } from '../../../ui/accounter-spinner.js';
 import { Pcn874ReportPatch } from './rerport-patch.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -50,7 +50,7 @@ export const Pcn874Validator = ({ filter }: Props): ReactElement => {
   if (fetching) {
     return (
       <div className="w-full h-full flex justify-center">
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       </div>
     );
   }
@@ -59,7 +59,7 @@ export const Pcn874Validator = ({ filter }: Props): ReactElement => {
     <div className="flex flex-col gap-4">
       {!!data && hasNext && (
         <div className="w-full h-full flex justify-center">
-          <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+          <AccounterBarSpinner className="self-center" />
         </div>
       )}
       {reports.map((report, index) => (

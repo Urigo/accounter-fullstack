@@ -1,11 +1,12 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useQuery } from 'urql';
 import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
+import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import { TrialBalanceTable } from './trial-balance-table.js';
@@ -74,7 +75,7 @@ export const TrialBalanceReport = (): ReactElement => {
   return (
     <PageLayout title="Trial Balance Report" description="Trial balance report for all businesses">
       {fetching || !businessTransactionsData ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <TrialBalanceTable
           data={businessTransactionsData}

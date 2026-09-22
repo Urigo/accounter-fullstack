@@ -1,7 +1,6 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Decimal } from 'decimal.js';
-import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   Currency,
@@ -14,6 +13,7 @@ import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Card, CardContent, CardHeader, CardTitle } from './cards.js';
 import { ChargeFilterFilter } from './chart-filters.js';
 import { BarChart } from './chart.js';
@@ -250,7 +250,7 @@ export const ChartPage = (): ReactElement => {
   return (
     <PageLayout title="Charts" description="Income and Expenses">
       {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
+        <AccounterBarSpinner className="self-center" />
       ) : (
         <>
           <h1 className="text-2xl mb-5 font-medium">
