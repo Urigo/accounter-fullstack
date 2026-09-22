@@ -102,7 +102,7 @@ __metadata:
     dayjs: "npm:1.11.23"
     decimal.js: "npm:10.6.0"
     deep-equal: "npm:2.2.3"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.2"
@@ -146,7 +146,7 @@ __metadata:
   dependencies:
     "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:25.9.6"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     graphql: "npm:16.14.2"
     graphql-request: "npm:7.4.0"
     inline-css: "npm:4.0.3"
@@ -166,7 +166,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.10.13"
     csv-parse: "npm:7.0.2"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     pg-promise: "npm:12.7.1"
     tsup: "npm:8.5.1"
   languageName: unknown
@@ -178,7 +178,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     pg-promise: "npm:12.7.1"
     tsup: "npm:8.5.1"
   languageName: unknown
@@ -261,7 +261,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     node-kraken-api: "npm:2.2.2"
     pg-promise: "npm:12.7.1"
     tsup: "npm:8.5.1"
@@ -279,7 +279,7 @@ __metadata:
     "@opentelemetry/sdk-node": "npm:0.222.0"
     "@opentelemetry/semantic-conventions": "npm:1.43.0"
     "@types/node": "npm:25.9.6"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     jose: "npm:6.2.12"
     tsx: "npm:4.23.13"
     typescript: "npm:6.0.3"
@@ -404,7 +404,7 @@ __metadata:
     cloudinary: "npm:2.11.0"
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.4.0"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     dotenv-cli: "npm:11.0.0"
     googleapis: "npm:181.0.0"
     graphql: "npm:16.14.2"
@@ -11515,7 +11515,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:5.0.0"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:10.0.5"
-    dotenv: "npm:17.4.2"
+    dotenv: "npm:18.0.2"
     eslint: "npm:10.11.0"
     eslint-config-flat-gitignore: "npm:2.4.0"
     eslint-config-prettier: "npm:10.1.8"
@@ -14295,6 +14295,15 @@ __metadata:
   version: 17.4.2
   resolution: "dotenv@npm:17.4.2"
   checksum: 10c0/164f8e77a646c8446867d5b588d26ea6005c8ea7c5eb41cf926f6113d23f2191355f6e0cfd95ea9bab98394a5b0a3f1e51a8399711b666fe55cc7b0bd745f942
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:18.0.2":
+  version: 18.0.2
+  resolution: "dotenv@npm:18.0.2"
+  bin:
+    dotenv: dist/index.cjs
+  checksum: 10c0/c16e179205096a7028eea5fba2062dbd25e88d93a0beb66d219507d4585f63ec3f02fda755eee5dca790b7424391a39332830b19983003f0d8d449fbc6845424
   languageName: node
   linkType: hard
 
