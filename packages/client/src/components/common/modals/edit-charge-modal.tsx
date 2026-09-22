@@ -2,7 +2,7 @@ import { type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { ROUTES } from '@/router/routes.js';
 import { EditChargeDocument } from '../../../gql/graphql.js';
-import { Spinner } from '../../ui/spinner.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -94,7 +94,7 @@ export const EditChargeModal = ({ chargeId, close, onChange }: Props): ReactElem
       onClose={close}
     >
       {fetchingCharge || !charge ? (
-        <Spinner className="my-5 size-14 self-center text-gray-900" />
+        <AccounterSpinner className="my-5 self-center" />
       ) : (
         <EditCharge charge={charge} close={close} onChange={onChange ?? (() => {})} />
       )}

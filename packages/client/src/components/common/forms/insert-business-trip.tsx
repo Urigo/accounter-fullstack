@@ -3,8 +3,8 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { InsertBusinessTripInput } from '../../../gql/graphql.js';
 import { useInsertBusinessTrip } from '../../../hooks/use-insert-business-trip.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Form } from '../../ui/form.js';
-import { Spinner } from '../../ui/spinner.js';
 import { ModifyBusinessTripFields } from './modify-business-trip-fields.js';
 
 type Props = {
@@ -48,7 +48,7 @@ export const InsertBusinessTrip = ({ onDone }: Props): ReactElement => {
   };
 
   return isInserting ? (
-    <Spinner className="my-5 size-14 self-center text-gray-900" />
+    <AccounterSpinner className="my-5 self-center" />
   ) : (
     <Form {...form}>
       <form>

@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label.js';
 import { EditDocumentDocument, type UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
 import { relevantDataPicker, type MakeBoolean } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Form } from '../../ui/form.js';
-import { Spinner } from '../../ui/spinner.js';
 import { DocumentImageDrawer, SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
@@ -149,7 +149,7 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
 
   return (
     <div className="flex flex-row">
-      {fetchingDocument && <Spinner className="my-5 size-14 self-center text-gray-900" />}
+      {fetchingDocument && <AccounterSpinner className="my-5 self-center" />}
       {!fetchingDocument && document && (
         <>
           <div className="px-5 w-4/5 h-max justify-items-center">

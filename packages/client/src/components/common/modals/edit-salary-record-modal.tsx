@@ -4,7 +4,7 @@ import { useQuery } from 'urql';
 import { EditSalaryRecordDocument, type SalaryRecordInput } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/index.js';
 import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.js';
-import { Spinner } from '../../ui/spinner.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { ModifySalaryRecord, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -207,7 +207,7 @@ export const EditSalaryRecordModalContent = ({
       onClose={onDone}
     >
       {fetchingSalaryRecord || !salaryRecord ? (
-        <Spinner className="my-5 size-14 self-center text-gray-900" />
+        <AccounterSpinner className="my-5 self-center" />
       ) : (
         <ModifySalaryRecord
           isNewInsert={false}
