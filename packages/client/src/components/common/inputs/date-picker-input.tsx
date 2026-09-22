@@ -102,16 +102,28 @@ export function DatePickerInput({ value: valueDate, onChange, disabled, id, ...p
             }
           }}
           onKeyDown={e => {
-            if (e.key === 'ArrowDown') {
+            if (e.key === 'ArrowDown' && !disabled) {
               e.preventDefault();
               setOpen(true);
             }
           }}
         />
         <InputGroupAddon align="inline-end">
-          <Popover open={open} onOpenChange={setOpen} modal={!!portalContainer}>
+          {/* `disabled` has to reach the trigger too, and gate `open`: disabling only the text
+              input leaves the calendar a live way to change the value, and a popover already open
+              when the field becomes disabled would stay open. */}
+          <Popover
+            open={open && !disabled}
+            onOpenChange={next => setOpen(next && !disabled)}
+            modal={!!portalContainer}
+          >
             <PopoverTrigger asChild>
-              <InputGroupButton variant="ghost" size="icon-xs" aria-label="Select date">
+              <InputGroupButton
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Select date"
+                disabled={disabled}
+              >
                 <CalendarIcon />
                 <span className="sr-only">Select date</span>
               </InputGroupButton>
