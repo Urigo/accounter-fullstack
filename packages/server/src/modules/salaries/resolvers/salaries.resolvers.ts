@@ -51,7 +51,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
           .get(SalariesProvider)
           .getSalaryRecordsByDates({ fromDate: fromDateMonth, toDate: toDateMonth });
         return salaryRecords
-          .filter(record => (employeeIDs ? employeeIDs.includes(record.employee_id) : true))
+          .filter(record => !employeeIDs || employeeIDs.includes(record.employee_id))
           .sort((a, b) => a.month.localeCompare(b.month));
       } catch (e) {
         throw new GraphQLError(`Failed to get salary records by dates: ${(e as Error).message}`);

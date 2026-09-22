@@ -305,7 +305,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppConfig {
         ? process.env.TEST_ENV_FILE
         : [resolve(packageRoot, '.env')],
     // Only surface dotenv's own debug noise outside of release builds.
-    debug: process.env.RELEASE ? false : undefined,
+    debug: !process.env.RELEASE && undefined,
     // dotenv >= 18 announces every injection on stderr (it used stdout before).
     // Keep it out of the startup output so a validation failure is the first
     // thing reported, and so the banner never interleaves with the logger.

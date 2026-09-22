@@ -552,8 +552,7 @@ export function poalimForeignVars(
           activityTypeCode: t.activityTypeCode,
           bankNumber,
           branchNumber,
-          commentExistenceSwitch:
-            'commentExistenceSwitch' in t ? t.commentExistenceSwitch !== 0 : false,
+          commentExistenceSwitch: 'commentExistenceSwitch' in t && t.commentExistenceSwitch !== 0,
           comments: 'comments' in t ? t.comments : null,
           contraAccountFieldNameLable:
             'contraAccountFieldNameLable' in t ? t.contraAccountFieldNameLable : null,
@@ -566,7 +565,7 @@ export function poalimForeignVars(
           currencyRate: t.currencyRate,
           currencySwiftCode: t.currencySwiftCode,
           currentBalance: t.currentBalance,
-          dataGroupCode: 'dataGroupCode' in t ? t.dataGroupCode !== 0 : false,
+          dataGroupCode: 'dataGroupCode' in t && t.dataGroupCode !== 0,
           eventActivityTypeCode: t.eventActivityTypeCode,
           eventAmount: t.eventAmount,
           eventDetails: t.eventDetails,
@@ -575,7 +574,7 @@ export function poalimForeignVars(
           formattedExecutingDate: t.formattedExecutingDate,
           formattedValueDate: t.formattedValueDate,
           ...metadataAttributes,
-          originalEventKey: 'originalEventKey' in t ? t.originalEventKey !== 0 : false,
+          originalEventKey: 'originalEventKey' in t && t.originalEventKey !== 0,
           originalSystemId: t.originalSystemId,
           rateFixingCode: t.rateFixingCode,
           rateFixingDescription: t.rateFixingDescription,

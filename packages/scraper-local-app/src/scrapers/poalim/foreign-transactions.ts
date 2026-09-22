@@ -617,8 +617,7 @@ export async function getForeignTransactions(bankKey: string, account: ScrapedAc
     },
     {
       title: `Save New Transactions`,
-      skip: ctx =>
-        ctx[bankKey][foreignKey].newTransactions?.length === 0 ? 'No new transactions' : false,
+      skip: ctx => ctx[bankKey][foreignKey].newTransactions?.length === 0 && 'No new transactions',
       task: async ctx => {
         const { newTransactions = [] } = ctx[bankKey][foreignKey];
         await insertTransactions(newTransactions, ctx.pool, ctx.logger);

@@ -35,7 +35,7 @@ async function main() {
     host: env.postgres.host,
     port: Number(env.postgres.port),
     database: env.postgres.db,
-    ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
+    ssl: env.postgres.ssl && { rejectUnauthorized: false },
     max: env.postgres.max, // maximum number of clients in the pool
     // Names this app's connections in pg_stat_activity, so a session can be
     // attributed without guessing from client_addr.

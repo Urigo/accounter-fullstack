@@ -21,7 +21,7 @@ export const Amount = ({ amount }: AmountProps): ReactElement | null => {
     <Indicator
       inline
       size={12}
-      disabled={isValid === undefined ? true : isValid}
+      disabled={isValid === undefined || isValid}
       processing={shouldValidate && isValid === undefined}
       color="red"
     >

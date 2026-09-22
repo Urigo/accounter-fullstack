@@ -52,8 +52,8 @@ export function SimilarChargesByIdModal({
     query: SimilarChargesDocument,
     variables: {
       chargeId,
-      withMissingTags: showChargesWithExistingSuggestions ? false : !!tagIds,
-      withMissingDescription: showChargesWithExistingSuggestions ? false : !!description,
+      withMissingTags: !showChargesWithExistingSuggestions && !!tagIds,
+      withMissingDescription: !showChargesWithExistingSuggestions && !!description,
       tagsDifferentThan: showChargesWithExistingSuggestions
         ? tagIds
           ? tagIds.map(t => t.id)

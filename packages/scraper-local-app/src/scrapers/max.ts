@@ -489,7 +489,7 @@ export async function getMaxData(
     },
     {
       title: 'Normalize Transactions',
-      skip: ctx => (ctx[accountKey].rawTransactions?.length === 0 ? 'No transactions' : false),
+      skip: ctx => ctx[accountKey].rawTransactions?.length === 0 && 'No transactions',
       task: async (ctx, task) => {
         const { rawTransactions } = ctx[accountKey];
 
@@ -596,8 +596,7 @@ export async function getMaxData(
     },
     {
       title: `Check for New Transactions`,
-      skip: ctx =>
-        ctx[accountKey].normalizedTransactions?.length === 0 ? 'No transactions' : false,
+      skip: ctx => ctx[accountKey].normalizedTransactions?.length === 0 && 'No transactions',
       task: async (ctx, task) => {
         try {
           const { normalizedTransactions = [] } = ctx[accountKey];
