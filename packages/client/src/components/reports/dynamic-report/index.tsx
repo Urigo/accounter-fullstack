@@ -55,6 +55,12 @@ import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.j
 import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
+import {
+  clearPeriodOverride,
+  selectTemplateParams,
+  setPeriodParams,
+  writeParam,
+} from './utils/search-params.js';
 import { buildSnapshotInput } from './utils/snapshot.js';
 import { serializeReportTree } from './utils/template-serialization.js';
 import {
@@ -213,67 +219,15 @@ export function DynamicReport() {
   const selectedTemplateName = searchParams.get('template');
   const selectedBaselineId = searchParams.get('baseline');
 
-  const setFromDate = useCallback(
-    (v: string) =>
+  // The one way this screen writes to the URL. react-router hands the updater a copy of *this*
+  // render's params and navigates straight away, so two calls in one tick both start from the same
+  // snapshot and the second silently discards the first — every handler below therefore makes all
+  // of its changes inside a single call.
+  const updateSearchParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) =>
       setSearchParams(
         p => {
-          if (v) {
-            p.set('from', v);
-          } else {
-            p.delete('from');
-          }
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
-  );
-  const setToDate = useCallback(
-    (v?: string) =>
-      setSearchParams(
-        p => {
-          if (v) {
-            p.set('to', v);
-          } else {
-            p.delete('to');
-          }
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
-  );
-  const setSelectedOwner = useCallback(
-    (v: string) =>
-      setSearchParams(
-        p => {
-          p.set('owner', v);
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
-  );
-  const setShowZeroed = useCallback(
-    (v: boolean) =>
-      setSearchParams(
-        p => {
-          p.set('zeroed', v ? '1' : '0');
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
-  );
-  const setSelectedTemplateName = useCallback(
-    (v: string | null) =>
-      setSearchParams(
-        p => {
-          if (v) {
-            p.set('template', v);
-          } else {
-            p.delete('template');
-          }
+          mutate(p);
           return p;
         },
         { replace: true },
@@ -281,20 +235,30 @@ export function DynamicReport() {
     [setSearchParams],
   );
 
+  const setFromDate = useCallback(
+    (v: string) => updateSearchParams(p => writeParam(p, 'from', v)),
+    [updateSearchParams],
+  );
+  const setToDate = useCallback(
+    (v?: string) => updateSearchParams(p => writeParam(p, 'to', v)),
+    [updateSearchParams],
+  );
+  const setSelectedOwner = useCallback(
+    (v: string) => updateSearchParams(p => p.set('owner', v)),
+    [updateSearchParams],
+  );
+  const setShowZeroed = useCallback(
+    (v: boolean) => updateSearchParams(p => p.set('zeroed', v ? '1' : '0')),
+    [updateSearchParams],
+  );
+  const setSelectedTemplateName = useCallback(
+    (v: string | null) => updateSearchParams(p => writeParam(p, 'template', v)),
+    [updateSearchParams],
+  );
+
   const setSelectedBaselineId = useCallback(
-    (v: string | null) =>
-      setSearchParams(
-        p => {
-          if (v) {
-            p.set('baseline', v);
-          } else {
-            p.delete('baseline');
-          }
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
+    (v: string | null) => updateSearchParams(p => writeParam(p, 'baseline', v)),
+    [updateSearchParams],
   );
 
   // UI state
@@ -375,16 +339,8 @@ export function DynamicReport() {
       (!!urlToDate && urlToDate !== draftToDate));
 
   const restoreDraftPeriod = useCallback(
-    () =>
-      setSearchParams(
-        p => {
-          p.delete('from');
-          p.delete('to');
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
+    () => updateSearchParams(clearPeriodOverride),
+    [updateSearchParams],
   );
 
   const [{ data: businessSumsData }] = useQuery({
@@ -678,17 +634,17 @@ export function DynamicReport() {
   const applyTemplate = useCallback(
     (template: Template) => {
       setCurrentTemplate(template);
-      setSelectedTemplateName(template.name);
       setShowLegacyBanner(template.isLegacy ?? false);
       setIsDirty(false);
-      // Drop any period override from the previous draft — each draft owns its own period, and a
-      // leftover ?from=/?to= would silently apply to the one being loaded.
-      restoreDraftPeriod();
+      // The name and the previous draft's period go in one call: a second setSearchParams here
+      // would recompute from the pre-update snapshot and drop ?template=, leaving the template
+      // query paused and the draft never loaded.
+      updateSearchParams(p => selectTemplateParams(p, template.name));
       if (template.isLocked) {
         setEditMode(false);
       }
     },
-    [setSelectedTemplateName, restoreDraftPeriod],
+    [updateSearchParams],
   );
 
   const handleLoadTemplate = useCallback(
@@ -746,12 +702,12 @@ export function DynamicReport() {
 
   const handlePeriodConfirmed = useCallback(
     (nextFrom: string, nextTo: string) => {
-      setFromDate(nextFrom);
-      setToDate(nextTo);
+      // Both dates in one call — separate setFromDate/setToDate calls would keep only `to`.
+      updateSearchParams(p => setPeriodParams(p, nextFrom, nextTo));
       // The period is part of the draft, so changing it is an unsaved edit like any other.
       setIsDirty(true);
     },
-    [setFromDate, setToDate],
+    [updateSearchParams],
   );
 
   const handleRenameInManager = useCallback(
