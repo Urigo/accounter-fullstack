@@ -31,7 +31,6 @@ export const ExtendedTransactionsCard = ({
   onCloseExtendedTransactions,
 }: ExtendedTransactionsCardProps): ReactElement => {
   const transactionsMeta = periodInfo?.transactions;
-  console.log('periodInfo?.transactions', periodInfo?.transactions);
   const transactionIDs = useMemo(() => {
     if (!transactionsMeta || transactionsMeta.length === 0) {
       return [];
