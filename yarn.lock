@@ -333,7 +333,7 @@ __metadata:
   resolution: "@accounter/pcn874-generator@workspace:packages/pcn874-generator"
   dependencies:
     bob-the-bundler: "npm:7.0.1"
-    eslint: "npm:10.10.0"
+    eslint: "npm:10.11.0"
     zod: "npm:4.6.5"
   languageName: unknown
   linkType: soft
@@ -437,7 +437,7 @@ __metadata:
   resolution: "@accounter/shaam-uniform-format-generator@workspace:packages/shaam-uniform-format-generator"
   dependencies:
     bob-the-bundler: "npm:7.0.1"
-    eslint: "npm:10.10.0"
+    eslint: "npm:10.11.0"
     iconv-lite: "npm:0.7.3"
     vitest: "npm:5.0.0"
     zod: "npm:4.6.5"
@@ -449,7 +449,7 @@ __metadata:
   resolution: "@accounter/shaam6111-generator@workspace:packages/shaam6111-generator"
   dependencies:
     bob-the-bundler: "npm:7.0.1"
-    eslint: "npm:10.10.0"
+    eslint: "npm:10.11.0"
     iconv-lite: "npm:0.7.3"
     vitest: "npm:5.0.0"
     zod: "npm:4.6.5"
@@ -11516,7 +11516,7 @@ __metadata:
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:10.0.5"
     dotenv: "npm:17.4.2"
-    eslint: "npm:10.10.0"
+    eslint: "npm:10.11.0"
     eslint-config-flat-gitignore: "npm:2.4.0"
     eslint-config-prettier: "npm:10.1.8"
     eslint-plugin-import: "npm:2.32.0"
@@ -15657,9 +15657,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:10.10.0":
-  version: 10.10.0
-  resolution: "eslint@npm:10.10.0"
+"eslint@npm:10.11.0":
+  version: 10.11.0
+  resolution: "eslint@npm:10.11.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.8.0"
     "@eslint-community/regexpp": "npm:^4.12.2"
@@ -15698,7 +15698,7 @@ __metadata:
       optional: true
   bin:
     eslint: bin/eslint.js
-  checksum: 10c0/ba583145305f088585f91c5dab6825492ec657614558e4610cffc94174cf800f456e39ec3cafd3eed73e04bd9a05794067ae33b553f1323e3e7c1157242409d2
+  checksum: 10c0/c767f45f21d1921b41d70e30b1c8fa7ec4e65c0f43a8d80cc4990ca3d923127fa7b9b3416b8f5be6e877d9286f97d3c51a04ed341bc6aa73c0dba0f463e1f861
   languageName: node
   linkType: hard
 
