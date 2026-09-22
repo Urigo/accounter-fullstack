@@ -5,6 +5,7 @@ import {
   Download,
   Edit2,
   FileText,
+  Lock,
   Save,
   Trash2,
 } from 'lucide-react';
@@ -101,9 +102,6 @@ export function Toolbar({
   diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
-  // A disabled item with no explanation reads as a broken one. Locking is the only reason these
-  // are greyed out once a draft is loaded, and the remedy is not obvious from the menu.
-  const lockedHint = isLocked ? 'Template is locked — unlock it to make changes' : undefined;
 
   const baselineLabel = (snapshot: { createdAt: Date | string }, index: number): string => {
     const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
@@ -230,7 +228,18 @@ export function Toolbar({
               <ChevronDown className="size-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
+            {isLocked && (
+              <>
+                {/* A disabled item explains nothing on its own, and Radix sets pointer-events:none
+                    on it, so a tooltip never fires — the reason has to be visible outright. */}
+                <div className="flex items-start gap-2 px-2 py-1.5 text-xs text-amber-700">
+                  <Lock className="size-3.5 mt-0.5 shrink-0" />
+                  <span>Locked by an annual audit sign-off. Unlock it to make changes.</span>
+                </div>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={onSelectTemplate}>
               <FileText className="size-4 mr-2" />
               Select template
@@ -240,27 +249,15 @@ export function Toolbar({
               <Save className="size-4 mr-2" />
               Save as new
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onResave}
-              disabled={!hasTemplate || isLocked}
-              title={lockedHint}
-            >
+            <DropdownMenuItem onClick={onResave} disabled={!hasTemplate || isLocked}>
               <Save className="size-4 mr-2" />
               Resave
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onChangePeriod}
-              disabled={!hasTemplate || isLocked}
-              title={lockedHint}
-            >
+            <DropdownMenuItem onClick={onChangePeriod} disabled={!hasTemplate || isLocked}>
               <CalendarRange className="size-4 mr-2" />
               Change period
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onRename}
-              disabled={!hasTemplate || isLocked}
-              title={lockedHint}
-            >
+            <DropdownMenuItem onClick={onRename} disabled={!hasTemplate || isLocked}>
               <Edit2 className="size-4 mr-2" />
               Rename
             </DropdownMenuItem>
@@ -272,7 +269,6 @@ export function Toolbar({
             <DropdownMenuItem
               onClick={onDelete}
               disabled={!hasTemplate || isLocked}
-              title={lockedHint}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="size-4 mr-2" />
