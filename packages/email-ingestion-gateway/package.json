@@ -49,7 +49,7 @@
     "worker:dev": "wrangler dev"
   },
   "dependencies": {
-    "dotenv": "17.4.2",
+    "dotenv": "18.0.2",
     "graphql": "16.14.2",
     "graphql-request": "7.4.0",
     "inline-css": "4.0.3",

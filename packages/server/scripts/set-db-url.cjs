@@ -1,6 +1,10 @@
 // returns the database URL
 // This is a script used for later setting DATABASE_URL environment variable for the PgTyped dependency.
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+// `quiet` keeps dotenv off this script's stdout, which the caller captures as DATABASE_URL.
+require('dotenv').config({ path: ['.env', '../../.env'], quiet: true });
+
 const {
   POSTGRES_USER = 'postgres',
   POSTGRES_PASSWORD = 'postgres',
