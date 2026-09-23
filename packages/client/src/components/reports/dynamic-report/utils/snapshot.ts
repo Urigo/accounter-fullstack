@@ -5,6 +5,7 @@ import type { TimelessDateString } from '../../../../helpers/dates.js';
 type BusinessSumLike = {
   business: { id: string };
   total: { raw: number };
+  ledgerFingerprint: string;
 };
 
 /**
@@ -16,6 +17,8 @@ type BusinessSumLike = {
  * entity that gets dragged in afterwards should not read as new.
  *
  * Values carry the same sign flip the leaves render with, so the snapshot holds what was on screen.
+ * Each value also carries the entity's ledger fingerprint, so a later visit can tell that the
+ * underlying records changed even when the total did not.
  */
 export function buildSnapshotInput(params: {
   businessSums: BusinessSumLike[];
@@ -30,6 +33,7 @@ export function buildSnapshotInput(params: {
     values: params.businessSums.map(sum => ({
       entityId: sum.business.id,
       value: sum.total.raw * -1,
+      fingerprint: sum.ledgerFingerprint,
     })),
   };
 }

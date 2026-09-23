@@ -92,6 +92,8 @@ export default gql`
   type DynamicReportSnapshotValue {
     entityId: UUID!
     value: Float!
+    " the entity's ledger fingerprint at save time; null on snapshots saved before fingerprints existed "
+    fingerprint: String
   }
 
   " the figures on screen at save time, captured as the baseline for later diffs "
@@ -106,6 +108,8 @@ export default gql`
   input DynamicReportSnapshotValueInput {
     entityId: UUID!
     value: Float!
+    " the entity's ledgerFingerprint as it was on screen "
+    fingerprint: String!
   }
 
   " a single node of dynamic report template "

@@ -45,6 +45,7 @@ function bizSum(id: string, name: string, totalRaw: number): BusinessSum {
     credit: { __typename: 'FinancialAmount', formatted: '', raw: 0 },
     debit: { __typename: 'FinancialAmount', formatted: '', raw: 0 },
     total: { __typename: 'FinancialAmount', formatted: '', raw: totalRaw },
+    ledgerFingerprint: `fp-${id}`,
   } as BusinessSum;
 }
 
