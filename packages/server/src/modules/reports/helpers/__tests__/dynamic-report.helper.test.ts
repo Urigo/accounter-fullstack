@@ -515,6 +515,16 @@ describe('templateLeafIds', () => {
     expect(templateLeafIds(tree)).toEqual(new Set([ENTITY, OWNER]));
   });
 
+  it('follows droppable, as the client does, when nodeType disagrees with it', () => {
+    const tree = JSON.stringify([
+      // The client renders a droppable node as a branch whatever its nodeType says...
+      { id: ENTITY, parent: 0, text: 'Branch', droppable: true, data: { nodeType: 'financial-entity', isOpen: true } },
+      // ...and a non-droppable one as an entity leaf.
+      { id: OWNER, parent: ENTITY, text: 'Leaf', droppable: false, data: { nodeType: 'synthetic-branch', isOpen: false } },
+    ]);
+    expect(templateLeafIds(tree)).toEqual(new Set([OWNER]));
+  });
+
   it('returns an empty set for an empty tree', () => {
     expect(templateLeafIds('[]')).toEqual(new Set());
   });

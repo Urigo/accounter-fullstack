@@ -104,7 +104,7 @@ export default gql`
     toDate: TimelessDate!
     scopeOwnerId: UUID!
     values: [DynamicReportSnapshotValueInput!]!
-    " the effective status of every counted leaf; stamped by the server. Ignored when a template is created "
+    " the effective status of every counted leaf; stamped by the server. When omitted or null, the previous comparable snapshot's statuses are carried forward. Ignored when a template is created "
     approvals: [DynamicReportLeafApprovalInput!]
   }
 

@@ -10,7 +10,11 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
-import { parseLeafApprovals, stampApprovals } from '../helpers/dynamic-report-approvals.helper.js';
+import {
+  carryForwardApprovals,
+  parseLeafApprovals,
+  stampApprovals,
+} from '../helpers/dynamic-report-approvals.helper.js';
 import {
   isLegacyTemplate,
   migrateLegacyTemplate,
@@ -82,9 +86,10 @@ function stampedSnapshotWrite(
   snapshot: DynamicReportSnapshotInputType,
   userId: string | null,
 ): SnapshotWriteParams {
-  const incoming = snapshot.approvals ?? [];
+  // Null or absent when the client predates approvals: see `buildSnapshot` below.
+  const submitted = snapshot.approvals;
   const leafIds = templateLeafIds(template);
-  const outsideTree = incoming.filter(({ entityId }) => !leafIds.has(entityId));
+  const outsideTree = (submitted ?? []).filter(({ entityId }) => !leafIds.has(entityId));
   if (outsideTree.length > 0) {
     // Only a stale client can send these, so they are dropped rather than failing the save.
     // eslint-disable-next-line no-console
@@ -104,16 +109,17 @@ function stampedSnapshotWrite(
       scopeOwnerId: snapshot.scopeOwnerId,
     },
     buildSnapshot: previous => {
+      const stored = previous && {
+        approvals: parseLeafApprovals(previous.leaf_approvals),
+        fingerprints: Object.fromEntries(recordToSnapshotFingerprints(previous.leaf_fingerprints)),
+      };
       const approvals = stampApprovals({
-        incoming,
+        // A save with no approvals list must not wipe the review trail, so it re-submits the
+        // stored statuses instead. An explicit list, even an empty one, is taken as sent.
+        incoming: submitted ?? carryForwardApprovals(stored, incomingFingerprints),
         incomingFingerprints,
         leafIds,
-        previous: previous && {
-          approvals: parseLeafApprovals(previous.leaf_approvals),
-          fingerprints: Object.fromEntries(
-            recordToSnapshotFingerprints(previous.leaf_fingerprints),
-          ),
-        },
+        previous: stored,
         userId,
         now: new Date().toISOString(),
       });

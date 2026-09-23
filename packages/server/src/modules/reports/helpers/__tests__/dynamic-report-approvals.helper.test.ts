@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { LeafApprovals } from '../../types.js';
-import { parseLeafApprovals, stampApprovals } from '../dynamic-report-approvals.helper.js';
+import {
+  carryForwardApprovals,
+  parseLeafApprovals,
+  stampApprovals,
+} from '../dynamic-report-approvals.helper.js';
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
@@ -242,6 +246,59 @@ describe('stampApprovals', () => {
         now: NOW,
       }),
     ).toEqual({});
+  });
+});
+
+describe('carryForwardApprovals', () => {
+  const previous = {
+    approvals: {
+      [A]: { status: 'APPROVED', setBy: 'user-old', setAt: OLD, system: false },
+      [B]: { status: 'PENDING', setBy: 'user-old', setAt: OLD, system: false },
+      [C]: { status: 'UNAPPROVED', setBy: 'user-old', setAt: OLD, system: false },
+    } satisfies LeafApprovals,
+    fingerprints: { [A]: 'fp-a', [B]: 'fp-b', [C]: 'fp-c' },
+  };
+
+  it('returns nothing when there is no previous snapshot', () => {
+    expect(carryForwardApprovals(null, { [A]: 'fp-a' })).toEqual([]);
+  });
+
+  it('re-submits every stored status when no fingerprint changed', () => {
+    expect(carryForwardApprovals(previous, previous.fingerprints)).toEqual([
+      { entityId: A, status: 'APPROVED' },
+      { entityId: B, status: 'PENDING' },
+      { entityId: C, status: 'UNAPPROVED' },
+    ]);
+  });
+
+  it('returns an APPROVED leaf as PENDING once its fingerprint changed, and only that one', () => {
+    const changed = { [A]: 'fp-a2', [B]: 'fp-b2', [C]: 'fp-c2' };
+    expect(carryForwardApprovals(previous, changed)).toEqual([
+      { entityId: A, status: 'PENDING' },
+      { entityId: B, status: 'PENDING' },
+      { entityId: C, status: 'UNAPPROVED' },
+    ]);
+  });
+
+  it('treats an APPROVED leaf with no fingerprint now as changed', () => {
+    expect(carryForwardApprovals(previous, {})).toContainEqual({ entityId: A, status: 'PENDING' });
+  });
+
+  it('stamped, carries unchanged stamps verbatim and system-stamps the regression', () => {
+    const incomingFingerprints = { [A]: 'fp-a2', [B]: 'fp-b', [C]: 'fp-c' };
+    const result = stampApprovals({
+      incoming: carryForwardApprovals(previous, incomingFingerprints),
+      incomingFingerprints,
+      leafIds: new Set([A, B]),
+      previous,
+      userId: USER,
+      now: NOW,
+    });
+    expect(result).toEqual({
+      [A]: { status: 'PENDING', setBy: null, setAt: NOW, system: true },
+      [B]: previous.approvals[B],
+      // C is no longer a leaf of the submitted tree, so it is dropped.
+    });
   });
 });
 

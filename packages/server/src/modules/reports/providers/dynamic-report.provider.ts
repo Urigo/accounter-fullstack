@@ -89,8 +89,10 @@ const getSnapshotById = sql<IGetSnapshotByIdQuery>`
 
 // Backed by dynamic_report_template_snapshots_comparable_index. "Comparable" means the same
 // template, period and scope: the only snapshots whose approvals describe the same report lines.
+// Stamping reads only the approvals and fingerprints, so the heavy tree and leaf_values payloads
+// are left out: this runs inside the write transaction, while the template row lock is held.
 const getLatestComparableSnapshot = sql<IGetLatestComparableSnapshotQuery>`
-  SELECT *
+  SELECT id, created_at, leaf_fingerprints, leaf_approvals
   FROM accounter_schema.dynamic_report_template_snapshots
   WHERE owner_id = $ownerId!
     AND template_name = $templateName!

@@ -435,12 +435,49 @@ describe('dynamic report approvals write path', () => {
     expect(row.created_by).toBe(USER_1);
   });
 
-  it('a save without approvals stores an empty approvals object', async () => {
+  it('a first save without approvals stores an empty approvals object', async () => {
     await resave(USER_1, snapshotInput(undefined));
     const [row] = await snapshotRows();
 
     expect(row.leaf_approvals).toEqual({});
     expect(row.created_by).toBe(USER_1);
+  });
+
+  it('a save without approvals carries the stored statuses forward instead of erasing them', async () => {
+    await capture(USER_1, snapshotInput({ [LEAF_A]: 'APPROVED', [LEAF_B]: 'APPROVED', [LEAF_C]: 'PENDING' }));
+    // A client that predates approvals resaves after LEAF_B's ledger changed.
+    await resave(USER_2, snapshotInput(undefined, { [LEAF_B]: 'fp-changed' }));
+    const [first, second] = await snapshotRows();
+
+    expect(second.created_by).toBe(USER_2);
+    expect(second.leaf_approvals).toEqual({
+      [LEAF_A]: first.leaf_approvals![LEAF_A],
+      // Carrying APPROVED over a changed ledger would re-approve it: it regresses, system-stamped.
+      [LEAF_B]: { status: 'PENDING', setBy: null, setAt: expect.any(String), system: true },
+      [LEAF_C]: first.leaf_approvals![LEAF_C],
+    });
+  });
+
+  it('a save without approvals drops stored statuses of leaves no longer in the tree', async () => {
+    await capture(USER_1, snapshotInput({ [LEAF_A]: 'APPROVED', [LEAF_B]: 'APPROVED' }));
+    const treeWithoutB = JSON.stringify(JSON.parse(TREE).filter((node: { id: unknown }) => node.id !== LEAF_B));
+    await mutations.updateDynamicReportTemplate(
+      {},
+      { name: TEMPLATE_NAME, template: treeWithoutB, snapshot: snapshotInput(undefined) },
+      createContext(USER_2),
+      {},
+    );
+    const [first, second] = await snapshotRows();
+
+    expect(second.leaf_approvals).toEqual({ [LEAF_A]: first.leaf_approvals![LEAF_A] });
+  });
+
+  it('an explicit empty approvals list is taken as sent and clears the statuses', async () => {
+    await capture(USER_1, snapshotInput({ [LEAF_A]: 'APPROVED' }));
+    await resave(USER_2, { ...snapshotInput(undefined), approvals: [] });
+    const [, second] = await snapshotRows();
+
+    expect(second.leaf_approvals).toEqual({});
   });
 
   it('records created_by as null for a caller with no user row behind it', async () => {

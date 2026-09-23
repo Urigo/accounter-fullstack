@@ -88,7 +88,8 @@ export const dynamicReportSnapshotInput = z
     values: z.array(snapshotValue).max(MAX_SNAPSHOT_VALUES),
     /**
      * The effective status of every counted leaf. Optional so a client that predates approvals keeps
-     * working; `null` is what GraphQL hands over for an omitted nullable list.
+     * working (the stored statuses are then carried forward); `null` is what GraphQL hands over for
+     * an explicitly null list.
      */
     approvals: z
       .array(snapshotApproval)
@@ -119,11 +120,15 @@ export function validateSnapshotInput(raw: unknown): DynamicReportSnapshotInputT
 /**
  * The financial-entity leaves of a (new-format) template string: the only entities an approval can
  * belong to.
+ *
+ * Decided by `droppable`, not `nodeType`, because that is how the client builds the report tree: a
+ * droppable node is always rendered as a branch (whatever its `nodeType` says) and a non-droppable
+ * one as an entity leaf.
  */
 export function templateLeafIds(template: string): Set<string> {
   return new Set(
     parseTemplate(template)
-      .filter(node => node.data.nodeType === 'financial-entity')
+      .filter(node => !node.droppable)
       .map(node => String(node.id)),
   );
 }
