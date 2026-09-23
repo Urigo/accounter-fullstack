@@ -278,9 +278,19 @@ export default [
     },
     rules: {
       'react-hooks/set-state-in-effect': 'off',
-      // Mantine is gone from the client: the packages are uninstalled and nothing imports
-      // them. This rule keeps it that way, and gives anyone reaching for a Mantine component
-      // the pointer to shadcn/ui and Tailwind instead.
+    },
+  },
+  {
+    // Mantine is gone from the client: the packages are uninstalled and nothing imports
+    // them. This rule keeps it that way, and gives anyone reaching for a Mantine component
+    // the pointer to shadcn/ui and Tailwind instead.
+    //
+    // Deliberately the whole package rather than `src/`: `MantineProvider` lived in
+    // `.storybook/preview.tsx` until the teardown, so a `src`-only glob would let it back in
+    // through the one file that had it last.
+    files: ['packages/client/**/*.{,c,m}{j,t}s{,x}'],
+
+    rules: {
       'no-restricted-imports': [
         'error',
         {

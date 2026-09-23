@@ -127,6 +127,14 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+  /*
+    Mind the cascade layer: these lose to MUI's `CssBaseline`, which emits its own unlayered `body`
+    rule through emotion, and an unlayered declaration outranks a layered one of equal specificity
+    whatever the source order. The app therefore restates the same four values in the theme's
+    `MuiCssBaseline` overrides (`router/layouts/root-layout.tsx`), reading these very custom
+    properties. What is below is what applies wherever that provider is not mounted — Storybook,
+    most of all.
+  */
   body {
     font-family: var(--font-sans);
     line-height: 1.55;
