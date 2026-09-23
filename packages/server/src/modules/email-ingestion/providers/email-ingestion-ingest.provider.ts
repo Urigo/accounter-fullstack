@@ -680,7 +680,10 @@ export class EmailIngestionIngestProvider {
       // see. The gate also skips the wait entirely once the prefix is warm, where
       // serializing the first document bought nothing and cost a full OCR round
       // trip against the gateway's non-retried 30s ingest timeout.
-      return Promise.all(newCandidates.map(prepareOne));
+      // The `await` is load-bearing: a bare `return Promise.all(...)` returns before
+      // the promise settles, so the catch below never sees a rejection and a prep
+      // failure escapes raw instead of becoming an UPLOAD_FAILED quarantine.
+      return await Promise.all(newCandidates.map(prepareOne));
     } catch (err) {
       throw new DocumentPreparationError('Failed to prepare email documents for ingest', {
         cause: err,
