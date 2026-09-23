@@ -38,6 +38,21 @@ describe('stampApprovals', () => {
     expect(result[A]).not.toBe(previousApprovals[A]);
   });
 
+  it('user-stamps APPROVED -> APPROVED when the fingerprint changed (re-approval of new records)', () => {
+    const result = stampApprovals({
+      incoming: [{ entityId: A, status: 'APPROVED' }],
+      incomingFingerprints: { [A]: 'fp-a2' },
+      leafIds: new Set([A]),
+      previous: {
+        approvals: { [A]: { status: 'APPROVED', setBy: 'user-old', setAt: OLD, system: false } },
+        fingerprints: { [A]: 'fp-a1' },
+      },
+      userId: USER,
+      now: NOW,
+    });
+    expect(result).toEqual({ [A]: userStamp('APPROVED') });
+  });
+
   it('gives a new status a user stamp', () => {
     const result = stampApprovals({
       incoming: [

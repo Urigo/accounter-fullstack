@@ -47,17 +47,16 @@ export function stampApprovals({
       continue;
     }
     const prev = previous?.approvals[entityId];
+    const fingerprintChanged = previous?.fingerprints[entityId] !== incomingFingerprints[entityId];
 
-    if (prev?.status === status) {
+    // An APPROVED re-submitted over a changed ledger is a new sign-off of different records, so it
+    // gets a fresh stamp rather than the one that approved the old content.
+    if (prev?.status === status && !(status === 'APPROVED' && fingerprintChanged)) {
       result[entityId] = { ...prev };
       continue;
     }
 
-    if (
-      prev?.status === 'APPROVED' &&
-      status === 'PENDING' &&
-      previous?.fingerprints[entityId] !== incomingFingerprints[entityId]
-    ) {
+    if (prev?.status === 'APPROVED' && status === 'PENDING' && fingerprintChanged) {
       result[entityId] = { status, setBy: null, setAt: now, system: true };
       continue;
     }
