@@ -19,9 +19,15 @@ export type RowApproval =
       /** Why statuses can't be changed right now; the status is read-only while it is set. */
       disabledReason?: string | null;
     }
-  | { kind: 'branch'; counts: ApprovalCounts };
+  | {
+      kind: 'branch';
+      counts: ApprovalCounts;
+      /** Stages a status for every counted leaf in the branch. Without it the status is read-only. */
+      onChange?: (status: AccountantStatus) => void;
+      /** Why statuses can't be changed right now; the status is read-only while it is set. */
+      disabledReason?: string | null;
+    };
 
-// Branch statuses are read-only for now: bulk set from a branch is wired in a later step.
 const noop = (): void => {};
 
 export function LeafApprovalStatus({
@@ -57,15 +63,32 @@ export function LeafApprovalStatus({
   );
 }
 
-export function BranchApprovalStatus({ counts }: { counts: ApprovalCounts }): ReactElement | null {
+export function BranchApprovalStatus({
+  counts,
+  onChange,
+  disabledReason,
+}: {
+  counts: ApprovalCounts;
+  onChange?: (status: AccountantStatus) => void;
+  disabledReason?: string | null;
+}): ReactElement | null {
   const status = branchStatus(counts);
   if (!status) return null;
+  const summary = branchApprovalTooltip(counts);
+  const tooltip: ReactNode = disabledReason ? (
+    <>
+      <div>{summary}</div>
+      <div className="opacity-80">{disabledReason}</div>
+    </>
+  ) : (
+    summary
+  );
   return (
     <AccountantStatusMenu
       value={status}
-      onChange={noop}
-      disabled
-      tooltip={branchApprovalTooltip(counts)}
+      onChange={onChange ?? noop}
+      disabled={!onChange || !!disabledReason}
+      tooltip={tooltip}
     />
   );
 }
@@ -78,6 +101,10 @@ export function RowApprovalStatus({ approval }: { approval: RowApproval }): Reac
       disabledReason={approval.disabledReason}
     />
   ) : (
-    <BranchApprovalStatus counts={approval.counts} />
+    <BranchApprovalStatus
+      counts={approval.counts}
+      onChange={approval.onChange}
+      disabledReason={approval.disabledReason}
+    />
   );
 }
