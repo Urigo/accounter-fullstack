@@ -872,10 +872,12 @@ export function DynamicReport() {
     refetchTemplateNodes,
   ]);
 
-  // A locked draft cannot be resaved — the sign-off that locked it describes the template as it
-  // stands. Recording a baseline writes no template row, so it stays available: without it a
-  // locked draft could never start tracking changes at all.
-  const handleCaptureBaseline = useCallback(async () => {
+  // Save review writes a snapshot only — the staged statuses stamped onto the report as it stands —
+  // and never the template row. So a locked draft stays locked (and can still capture its first
+  // baseline, since it cannot be resaved), and an unlocked draft's own period doesn't move when a
+  // deep-linked period is being reviewed. The toolbar offers it on an unlocked draft only while
+  // staged statuses are the only unsaved change; structural edits go through Resave.
+  const handleSaveReview = useCallback(async () => {
     if (!currentTemplate) return;
     const savedOverrides = approvalOverrides;
     const approvals = await resolveSaveApprovals();
@@ -1015,12 +1017,13 @@ export function DynamicReport() {
         onShowZeroedChange={setShowZeroed}
         editMode={editMode}
         onEditModeChange={setEditMode}
-        isDirty={hasUnsavedChanges}
+        isDirty={isDirty}
+        hasStagedApprovals={hasStagedApprovals}
         currentTemplate={currentTemplate}
         onSelectTemplate={() => setTemplateManagerOpen(true)}
         onSaveAsNew={handleSaveAsNew}
         onResave={handleResave}
-        onCaptureBaseline={handleCaptureBaseline}
+        onSaveReview={handleSaveReview}
         onRename={handleRenameTemplate}
         onDuplicate={() => currentTemplate && handleDuplicateTemplate(currentTemplate)}
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
