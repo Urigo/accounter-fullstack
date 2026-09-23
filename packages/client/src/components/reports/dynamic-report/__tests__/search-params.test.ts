@@ -13,6 +13,15 @@ describe('writeParam', () => {
     expect(params.get('template')).toBe('Balance Sheet');
   });
 
+  it('sets and clears the Needs review filter', () => {
+    const params = new URLSearchParams({ template: 'P&L 2024' });
+    writeParam(params, 'review', '1');
+    expect(params.get('review')).toBe('1');
+    writeParam(params, 'review', null);
+    expect(params.has('review')).toBe(false);
+    expect(params.get('template')).toBe('P&L 2024');
+  });
+
   it.each([null, undefined, ''])('removes the key for %p', value => {
     const params = new URLSearchParams('template=Balance+Sheet');
     writeParam(params, 'template', value);
@@ -48,12 +57,18 @@ describe('selectTemplateParams', () => {
   });
 
   it('leaves filters that are not draft-scoped alone', () => {
-    const params = new URLSearchParams({ template: 'P&L 2024', owner: 'biz-1', zeroed: '1' });
+    const params = new URLSearchParams({
+      template: 'P&L 2024',
+      owner: 'biz-1',
+      zeroed: '1',
+      review: '1',
+    });
 
     selectTemplateParams(params, 'Balance Sheet 2025');
 
     expect(params.get('owner')).toBe('biz-1');
     expect(params.get('zeroed')).toBe('1');
+    expect(params.get('review')).toBe('1');
   });
 
   it('clears the template when none is selected', () => {

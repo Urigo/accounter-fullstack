@@ -13,7 +13,7 @@ import type { AccountantStatus } from '../../../gql/graphql.js';
 import type { RowApproval } from './approval-status.js';
 import type { RowDiff } from './diff-markers.js';
 import { TreeNodeRow } from './tree-node.js';
-import type { ApprovalStats, EffectiveApproval } from './utils/approvals.js';
+import type { ApprovalStats, EffectiveApproval, ReviewVisibility } from './utils/approvals.js';
 import type { ReportDiff } from './utils/diff.js';
 import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
 
@@ -46,13 +46,32 @@ interface TreePanelProps {
   onBranchApprovalChange?: (branchId: string, status: AccountantStatus) => void;
   /** Why statuses can't be changed right now; all statuses are read-only while it is set. */
   approvalsDisabledReason?: string | null;
+  /**
+   * Set while the Needs review filter is on: only these rows render, and the listed ancestors are
+   * shown open without touching their saved isOpen. Report tree only.
+   */
+  reviewVisibility?: ReviewVisibility | null;
 }
 
 type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
   rowDiff: (nodeId: string) => RowDiff | undefined;
   rowApproval: (node: FlatNode<CustomData>) => RowApproval | undefined;
   ghostIds: Set<string>;
+  reviewVisibility: ReviewVisibility | null;
 };
+
+/**
+ * Whether a row renders under its (already rendered) parent. With the Needs review filter on, only
+ * the rows it lists render, plus ghost rows under a rendered parent: a ghost is a record of what
+ * left a branch, so it stays with that branch but has no place of its own at the root.
+ */
+function isShown(node: FlatNode<CustomData>, treeId: string, props: RenderProps): boolean {
+  if (node.data.isHidden) return false;
+  const { reviewVisibility, ghostIds } = props;
+  if (!reviewVisibility) return true;
+  if (reviewVisibility.visibleIds.has(node.id)) return true;
+  return ghostIds.has(node.id) && node.parent !== treeId;
+}
 
 function renderSubtree(
   nodes: FlatNode<CustomData>[],
@@ -63,27 +82,33 @@ function renderSubtree(
   props: RenderProps,
 ): ReactElement[] {
   return nodes
-    .filter(n => n.parent === parentId && !n.data.isHidden)
-    .map(node => (
-      <Fragment key={node.id}>
-        <TreeNodeRow
-          node={node}
-          depth={depth}
-          treeId={treeId}
-          nodeStats={nodeStats}
-          editMode={props.editMode}
-          onToggleExpand={props.onToggleExpand}
-          onRename={props.onRename}
-          onDelete={props.onDelete}
-          diff={props.rowDiff(node.id)}
-          approval={props.rowApproval(node)}
-        />
-        {node.droppable &&
-          // A ghost branch is a record of a removed subtree, so it always shows what it contained.
-          (node.data.isOpen || props.ghostIds.has(node.id)) &&
-          renderSubtree(nodes, node.id, depth + 1, treeId, nodeStats, props)}
-      </Fragment>
-    ));
+    .filter(n => n.parent === parentId && isShown(n, treeId, props))
+    .map(node => {
+      const isForcedOpen = !!props.reviewVisibility?.forceOpenIds.has(node.id);
+      return (
+        <Fragment key={node.id}>
+          <TreeNodeRow
+            node={node}
+            depth={depth}
+            treeId={treeId}
+            nodeStats={nodeStats}
+            editMode={props.editMode}
+            onToggleExpand={props.onToggleExpand}
+            onRename={props.onRename}
+            onDelete={props.onDelete}
+            diff={props.rowDiff(node.id)}
+            approval={props.rowApproval(node)}
+            isForcedOpen={isForcedOpen}
+          />
+          {node.droppable &&
+            // A ghost branch is a record of a removed subtree, so it always shows what it contained.
+            // The Needs review filter opens a row on screen only; the saved isOpen stays as it is.
+            (node.data.isOpen || isForcedOpen || props.ghostIds.has(node.id)) &&
+            // Sums come from the unfiltered nodeStats, so a branch shows its full total.
+            renderSubtree(nodes, node.id, depth + 1, treeId, nodeStats, props)}
+        </Fragment>
+      );
+    });
 }
 
 export function TreePanel({
@@ -105,6 +130,7 @@ export function TreePanel({
   onLeafApprovalChange,
   onBranchApprovalChange,
   approvalsDisabledReason = null,
+  reviewVisibility = null,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -191,7 +217,23 @@ export function TreePanel({
     approvalsDisabledReason,
   ]);
 
-  const hasRootNodes = renderedNodes.some(n => n.parent === treeId && !n.data.isHidden);
+  const renderProps: RenderProps = {
+    editMode,
+    onToggleExpand,
+    onRename,
+    onDelete,
+    rowDiff,
+    rowApproval,
+    ghostIds,
+    reviewVisibility: treeId === 'report' ? reviewVisibility : null,
+  };
+
+  const hasRootNodes = renderedNodes.some(
+    n => n.parent === treeId && isShown(n, treeId, renderProps),
+  );
+  const hasUnfilteredRootNodes = renderedNodes.some(n => n.parent === treeId && !n.data.isHidden);
+  const emptyText =
+    renderProps.reviewVisibility && hasUnfilteredRootNodes ? 'Nothing needs review' : emptyMessage;
 
   const CollapseIcon =
     treeId === 'bank'
@@ -250,18 +292,10 @@ export function TreePanel({
           className={cn('min-h-[300px] min-w-max transition-colors', isOver && 'bg-accent/50')}
         >
           {hasRootNodes ? (
-            renderSubtree(renderedNodes, treeId, 0, treeId, nodeStats, {
-              editMode,
-              onToggleExpand,
-              onRename,
-              onDelete,
-              rowDiff,
-              rowApproval,
-              ghostIds,
-            })
+            renderSubtree(renderedNodes, treeId, 0, treeId, nodeStats, renderProps)
           ) : (
             <div className="flex items-center justify-center h-[300px] w-full text-muted-foreground text-sm">
-              {emptyMessage}
+              {emptyText}
             </div>
           )}
         </div>
