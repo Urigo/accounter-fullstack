@@ -20,8 +20,9 @@ export function handleBusinessLedgerRecord(
   rawRes[businessId] ??= {
     ...(Object.fromEntries(
       Object.values(Currency).map(currency => [currency, { credit: 0, debit: 0, total: 0 }]),
-    ) as Omit<RawBusinessTransactionsSum, 'businessId'>),
+    ) as Omit<RawBusinessTransactionsSum, 'businessId' | 'fingerprintTuples'>),
     businessId,
+    fingerprintTuples: [],
   };
 
   const record = rawRes[businessId];

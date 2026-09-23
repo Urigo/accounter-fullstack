@@ -43,6 +43,8 @@ export default gql`
     debit: FinancialAmount!
     total: FinancialAmount!
     foreignCurrenciesSum: [ForeignCurrencySum!]!
+    " sha256 fingerprint of the ledger records behind this sum; changes when their money, dates or counterparties change "
+    ledgerFingerprint: String!
   }
 
   " summary of foreign currency business transactions " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this

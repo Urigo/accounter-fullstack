@@ -12,6 +12,7 @@ import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
 import { REVALUATION_LEDGER_DESCRIPTION } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 import { handleBusinessLedgerRecord } from '../helpers/business-transactions.helper.js';
+import { ledgerFingerprintTuple } from '../helpers/ledger-fingerprint.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { IGetFinancialEntitiesByIdsResult } from '../types.js';
 
@@ -126,6 +127,9 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           ledger.credit_foreign_amount1,
           defaultLocalCurrency,
         );
+        rawRes[ledger.credit_entity1].fingerprintTuples.push(
+          ledgerFingerprintTuple(ledger, ledger.credit_entity1, 'credit', 1),
+        );
       }
 
       if (
@@ -140,6 +144,9 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           ledger.credit_local_amount2,
           ledger.credit_foreign_amount2,
           defaultLocalCurrency,
+        );
+        rawRes[ledger.credit_entity2].fingerprintTuples.push(
+          ledgerFingerprintTuple(ledger, ledger.credit_entity2, 'credit', 2),
         );
       }
 
@@ -156,6 +163,9 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           ledger.debit_foreign_amount1,
           defaultLocalCurrency,
         );
+        rawRes[ledger.debit_entity1].fingerprintTuples.push(
+          ledgerFingerprintTuple(ledger, ledger.debit_entity1, 'debit', 1),
+        );
       }
 
       if (
@@ -170,6 +180,9 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
           ledger.debit_local_amount2,
           ledger.debit_foreign_amount2,
           defaultLocalCurrency,
+        );
+        rawRes[ledger.debit_entity2].fingerprintTuples.push(
+          ledgerFingerprintTuple(ledger, ledger.debit_entity2, 'debit', 2),
         );
       }
     }
