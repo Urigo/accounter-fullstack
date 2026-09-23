@@ -52,6 +52,7 @@ import { LegacyBanner } from './legacy-banner.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
+import { pickLatestBaselineId } from './utils/baseline.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
 import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
@@ -140,6 +141,7 @@ import {
         createdAt
         fromDate
         toDate
+        scopeOwnerId
       }
       template {
         id
@@ -387,8 +389,13 @@ export function DynamicReport() {
     () => templateNodesData?.dynamicReport?.snapshots ?? [],
     [templateNodesData],
   );
-  // Newest first from the server, so the head is "last save" unless the user picked another.
-  const latestBaselineId = snapshots[0]?.id ?? null;
+  // "Last save" is the newest snapshot for the period and owner on screen, so a save made for
+  // another period or owner does not displace it. Only when none matches does the head stand in,
+  // and the diff then stays suspended because it is not comparable.
+  const latestBaselineId = useMemo(
+    () => pickLatestBaselineId(snapshots, { fromDate, toDate, scopeOwnerId }),
+    [snapshots, fromDate, toDate, scopeOwnerId],
+  );
   const activeBaselineId =
     snapshots.find(snapshot => snapshot.id === selectedBaselineId)?.id ?? latestBaselineId;
 
@@ -858,6 +865,7 @@ export function DynamicReport() {
         onRestoreDraftPeriod={restoreDraftPeriod}
         snapshots={snapshots}
         activeBaselineId={activeBaselineId}
+        latestBaselineId={latestBaselineId}
         onBaselineChange={handleBaselineChange}
         diffSuspendedReason={
           snapshots.length === 0
