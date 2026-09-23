@@ -5,9 +5,11 @@ import {
   approvalsDisabledReason,
   branchApprovalTooltip,
   branchStatus,
+  buildApprovalsInput,
   buildApprovalStats,
   buildEffectiveStatuses,
   deriveLeafStatuses,
+  deriveSaveStatuses,
   formatApprovalDate,
   leafApprovalTooltip,
   resolveStatus,
@@ -387,5 +389,87 @@ describe('approvalsDisabledReason', () => {
     expect(
       approvalsDisabledReason({ hasTemplate: false, isLoading: true, isLatestBaseline: false }),
     ).toBe('Load a saved template');
+  });
+});
+
+describe('buildApprovalsInput', () => {
+  it('lists every counted leaf with its effective status, UNAPPROVED included', () => {
+    const nodes = [
+      branch('b', 'report'),
+      leaf('a', 'b'),
+      leaf('c', 'b'),
+      leaf('d', 'report'),
+      leaf('hidden', 'b', { isHidden: true }),
+    ];
+    const statuses = new Map<string, EffectiveApproval>([
+      ['a', { status: AccountantStatus.Approved, isStaged: true }],
+      ['c', { status: AccountantStatus.Pending, isDerived: true }],
+      ['d', { status: AccountantStatus.Unapproved }],
+      ['hidden', { status: AccountantStatus.Approved }],
+    ]);
+    expect(buildApprovalsInput(nodes, statuses)).toEqual([
+      { entityId: 'a', status: AccountantStatus.Approved },
+      { entityId: 'c', status: AccountantStatus.Pending },
+      { entityId: 'd', status: AccountantStatus.Unapproved },
+    ]);
+  });
+
+  it('sends UNAPPROVED for a counted leaf with no known status', () => {
+    expect(buildApprovalsInput([leaf('a', 'report')], new Map())).toEqual([
+      { entityId: 'a', status: AccountantStatus.Unapproved },
+    ]);
+  });
+
+  it('is empty for a tree with no counted leaves', () => {
+    expect(buildApprovalsInput([branch('b', 'report')], new Map())).toEqual([]);
+  });
+});
+
+describe('deriveSaveStatuses', () => {
+  const scope = { fromDate: '2026-01-01', toDate: '2026-03-31', scopeOwnerId: 'owner' };
+  const tree = [leaf('a', 'report', { fingerprint: 'fp-new' }), leaf('b', 'report')];
+  const snapshot = {
+    ...scope,
+    values: [
+      { entityId: 'a', fingerprint: 'fp-old' },
+      { entityId: 'b', fingerprint: null },
+    ],
+    approvals: [approval('a', AccountantStatus.Approved), approval('b', AccountantStatus.Pending)],
+  };
+
+  it('derives from a comparable snapshot, including the fingerprint regression', () => {
+    const result = deriveSaveStatuses(tree, snapshot, scope, new Map());
+    expect(result.get('a')?.status).toBe(AccountantStatus.Pending);
+    expect(result.get('b')?.status).toBe(AccountantStatus.Pending);
+  });
+
+  it('lays the staged overrides on top', () => {
+    const result = deriveSaveStatuses(
+      tree,
+      snapshot,
+      scope,
+      new Map([['b', AccountantStatus.Approved]]),
+    );
+    expect(result.get('b')?.status).toBe(AccountantStatus.Approved);
+  });
+
+  it('ignores a snapshot for another period or owner', () => {
+    for (const other of [
+      { ...snapshot, fromDate: '2025-01-01' },
+      { ...snapshot, toDate: '2025-12-31' },
+      { ...snapshot, scopeOwnerId: 'someone-else' },
+    ]) {
+      const result = deriveSaveStatuses(tree, other, scope, new Map());
+      expect(result.get('a')?.status).toBe(AccountantStatus.Unapproved);
+      expect(result.get('b')?.status).toBe(AccountantStatus.Unapproved);
+    }
+  });
+
+  it('reads every leaf as UNAPPROVED when there is no snapshot', () => {
+    const result = deriveSaveStatuses(tree, null, scope, new Map());
+    expect([...result.values()].map(value => value.status)).toEqual([
+      AccountantStatus.Unapproved,
+      AccountantStatus.Unapproved,
+    ]);
   });
 });
