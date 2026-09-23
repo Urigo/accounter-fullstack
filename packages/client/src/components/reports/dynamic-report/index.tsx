@@ -1109,7 +1109,9 @@ export function DynamicReport() {
         snapshots={snapshots}
         activeBaselineId={activeBaselineId}
         latestBaselineId={latestBaselineId}
-        approvalSummary={approvalSummary}
+        // Until the statuses are final the counts would be stale, or all UNAPPROVED before the
+        // baseline arrives, so the line waits for them.
+        approvalSummary={isApprovalDataLoading ? null : approvalSummary}
         onBaselineChange={handleBaselineChange}
         diffSuspendedReason={
           snapshots.length === 0
