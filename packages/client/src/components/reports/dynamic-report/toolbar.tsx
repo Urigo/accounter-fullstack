@@ -57,6 +57,8 @@ interface ToolbarProps {
   onResave: () => void;
   /** Writes a snapshot only (statuses included), never the template row. */
   onSaveReview: () => void;
+  /** A Save review is in flight; its controls stay disabled so it can't be sent twice. */
+  isSavingReview?: boolean;
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -98,6 +100,7 @@ export function Toolbar({
   onSaveAsNew,
   onResave,
   onSaveReview,
+  isSavingReview = false,
   onRename,
   onDuplicate,
   onDelete,
@@ -205,7 +208,7 @@ export function Toolbar({
         )}
 
         {actions.showSaveReviewButton && (
-          <Button size="sm" onClick={onSaveReview}>
+          <Button size="sm" onClick={onSaveReview} disabled={isSavingReview}>
             <ClipboardCheck className="size-4 mr-2" />
             Save review
           </Button>
@@ -276,7 +279,10 @@ export function Toolbar({
             {actions.showSaveReviewItem && (
               // Writes a snapshot only, never the template row, so a locked draft's sign-off still
               // holds — and it is the one way a locked draft can start tracking changes.
-              <DropdownMenuItem onClick={onSaveReview} disabled={!actions.saveReviewItemEnabled}>
+              <DropdownMenuItem
+                onClick={onSaveReview}
+                disabled={!actions.saveReviewItemEnabled || isSavingReview}
+              >
                 <ClipboardCheck className="size-4 mr-2" />
                 Save review
               </DropdownMenuItem>

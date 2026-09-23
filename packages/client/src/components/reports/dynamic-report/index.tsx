@@ -877,20 +877,32 @@ export function DynamicReport() {
   // baseline, since it cannot be resaved), and an unlocked draft's own period doesn't move when a
   // deep-linked period is being reviewed. The toolbar offers it on an unlocked draft only while
   // staged statuses are the only unsaved change; structural edits go through Resave.
+  // Guards the whole Save review, including the statuses lookup that runs before the mutation:
+  // a second click in that window would otherwise write a second snapshot. The ref blocks clicks
+  // within one render; the state disables the controls.
+  const saveReviewInFlight = useRef(false);
+  const [isSavingReview, setIsSavingReview] = useState(false);
   const handleSaveReview = useCallback(async () => {
-    if (!currentTemplate) return;
-    const savedOverrides = approvalOverrides;
-    const approvals = await resolveSaveApprovals();
-    if (!approvals) return;
-    const result = await captureDynamicReportBaseline({
-      name: currentTemplate.name,
-      tree: serializeReportTree(reportTree),
-      snapshot: { ...snapshotInput, approvals },
-    });
-    if (result) {
-      setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
-      setSelectedBaselineId(null);
-      refetchTemplateNodes({ requestPolicy: 'network-only' });
+    if (!currentTemplate || saveReviewInFlight.current) return;
+    saveReviewInFlight.current = true;
+    setIsSavingReview(true);
+    try {
+      const savedOverrides = approvalOverrides;
+      const approvals = await resolveSaveApprovals();
+      if (!approvals) return;
+      const result = await captureDynamicReportBaseline({
+        name: currentTemplate.name,
+        tree: serializeReportTree(reportTree),
+        snapshot: { ...snapshotInput, approvals },
+      });
+      if (result) {
+        setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
+        setSelectedBaselineId(null);
+        refetchTemplateNodes({ requestPolicy: 'network-only' });
+      }
+    } finally {
+      saveReviewInFlight.current = false;
+      setIsSavingReview(false);
     }
   }, [
     currentTemplate,
@@ -1024,6 +1036,7 @@ export function DynamicReport() {
         onSaveAsNew={handleSaveAsNew}
         onResave={handleResave}
         onSaveReview={handleSaveReview}
+        isSavingReview={isSavingReview}
         onRename={handleRenameTemplate}
         onDuplicate={() => currentTemplate && handleDuplicateTemplate(currentTemplate)}
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
