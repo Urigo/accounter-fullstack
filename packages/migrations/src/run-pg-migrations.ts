@@ -207,6 +207,7 @@ import migration_2026_08_31T12_00_00_rls_reassert_salaries from './actions/2026-
 import migration_2026_09_02T10_00_00_dynamic_report_template_snapshots from './actions/2026-09-02T10-00-00.dynamic-report-template-snapshots.js';
 import migration_2026_09_02T10_30_00_rls_dynamic_report_template_snapshots from './actions/2026-09-02T10-30-00.rls-dynamic-report-template-snapshots.js';
 import migration_2026_09_09T10_00_00_uuidv7_id_defaults from './actions/2026-09-09T10-00-00.uuidv7-id-defaults.js';
+import migration_2026_09_23T10_00_00_dynamic_report_snapshot_approvals from './actions/2026-09-23T10-00-00.dynamic-report-snapshot-approvals.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -418,6 +419,7 @@ export const MIGRATIONS = [
   migration_2026_09_02T10_00_00_dynamic_report_template_snapshots,
   migration_2026_09_02T10_30_00_rls_dynamic_report_template_snapshots,
   migration_2026_09_09T10_00_00_uuidv7_id_defaults,
+  migration_2026_09_23T10_00_00_dynamic_report_snapshot_approvals,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

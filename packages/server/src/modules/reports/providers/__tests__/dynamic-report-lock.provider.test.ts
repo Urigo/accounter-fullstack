@@ -151,6 +151,8 @@ describe('DynamicReportProvider — lock/unlock guards', () => {
     scopeOwnerId: 'owner-1',
     tree: '[]',
     leafValues: '{}',
+    leafFingerprints: null,
+    leafApprovals: null,
     createdBy: null,
   } as never;
 
@@ -160,6 +162,10 @@ describe('DynamicReportProvider — lock/unlock guards', () => {
 
     await expect(provider.insertSnapshot(snapshotParams)).resolves.toEqual({ id: 'snapshot-1' });
     expect(pgTypedRuntimeMock.runMocks.insertSnapshotRun).toHaveBeenCalledTimes(1);
+    expect(pgTypedRuntimeMock.runMocks.insertSnapshotRun).toHaveBeenCalledWith(
+      expect.objectContaining({ leafFingerprints: null, leafApprovals: null }),
+      expect.anything(),
+    );
   });
 
   it('insertSnapshot leaves the template row untouched', async () => {
