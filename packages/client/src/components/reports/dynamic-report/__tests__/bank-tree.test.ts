@@ -57,6 +57,15 @@ describe('buildInitialBankTree', () => {
       expect(branches).toHaveLength(2);
     });
 
+    it('entity leaves carry their ledgerFingerprint, so a drop into the report keeps it', () => {
+      expect(result.find(n => n.id === 'e-1')!.data.fingerprint).toBe('fp-e-1');
+      expect(result.find(n => n.id === 'e-2')!.data.fingerprint).toBe('fp-e-2');
+    });
+
+    it('sort-code branches carry no fingerprint', () => {
+      expect(result.find(n => n.id === 'sc-100')!.data).not.toHaveProperty('fingerprint');
+    });
+
     it('sort-code branches are ordered ascending by key', () => {
       const branches = result.filter(n => n.data.nodeType === 'sort-code-branch');
       expect(branches[0].data.sortCode).toBe(100);
@@ -86,6 +95,10 @@ describe('buildInitialBankTree', () => {
 
     it('entity with no sort code has parent BANK_ROOT', () => {
       expect(result.find(n => n.id === 'e-no-sc')!.parent).toBe(BANK_ROOT);
+    });
+
+    it('entity with no sort code carries its ledgerFingerprint', () => {
+      expect(result.find(n => n.id === 'e-no-sc')!.data.fingerprint).toBe('fp-e-no-sc');
     });
 
     it('appears after sort-code branches in the array', () => {

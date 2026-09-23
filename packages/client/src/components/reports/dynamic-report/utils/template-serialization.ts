@@ -43,7 +43,8 @@ function collectReportIds(nodes: FlatNode<CustomData>[]): Set<string> {
 /**
  * Converts the in-memory reportTree to the JSON string stored in the DB.
  * Only report nodes (whose parent chain leads to REPORT_ROOT) are included.
- * Runtime fields (value, entityType) are stripped — only persisted fields are kept.
+ * Runtime fields (value, entityType, isHidden, fingerprint) are stripped — only persisted fields
+ * are kept.
  */
 export function serializeReportTree(reportTree: FlatNode<CustomData>[]): string {
   const reportIds = collectReportIds(reportTree);

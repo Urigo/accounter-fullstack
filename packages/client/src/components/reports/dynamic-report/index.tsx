@@ -64,7 +64,7 @@ import {
 } from './utils/search-params.js';
 import { buildSnapshotInput } from './utils/snapshot.js';
 import { serializeReportTree } from './utils/template-serialization.js';
-import { isBuiltFrom, type TreeBuildInputs } from './utils/tree-sync.js';
+import { isBuiltFrom, patchLeafValues, type TreeBuildInputs } from './utils/tree-sync.js';
 import {
   buildNodeStats,
   type CustomData,
@@ -423,6 +423,12 @@ export function DynamicReport() {
     return {
       tree: baselineSnapshot.tree,
       values: new Map(baselineSnapshot.values.map(value => [value.entityId, value.value])),
+      // Legacy rows carry no fingerprint; leaving them out suppresses the `records` change kind.
+      fingerprints: new Map(
+        baselineSnapshot.values.flatMap(value =>
+          value.fingerprint == null ? [] : [[value.entityId, value.fingerprint] as const],
+        ),
+      ),
     };
   }, [baselineSnapshot, isBaselineComparable]);
 
@@ -521,8 +527,8 @@ export function DynamicReport() {
 
   // ── Effect 2: Value-only patch on filter change ───────────────────────────
   // Fires when businessSums or showZeroed changes. Preserves tree structure
-  // by only updating data.value on leaf nodes. Stands down when Effect 1 has
-  // already rebuilt from these same inputs — see utils/tree-sync.ts.
+  // by only updating leaf values, names and fingerprints. Stands down when
+  // Effect 1 has already rebuilt from these same inputs — see utils/tree-sync.ts.
 
   useEffect(() => {
     const inputs = { businessSums, showZeroed };
@@ -534,36 +540,8 @@ export function DynamicReport() {
 
     const currentReportTree = reportTreeRef.current;
 
-    // O(N) value lookup
-    const sumById = new Map(businessSums.map(b => [b.business.id, b.total.raw * -1]));
-    const nameById = new Map(businessSums.map(b => [b.business.id, b.business.name]));
-
-    // Patch values on report-tree leaf nodes, preserve all structural properties.
-    // A leaf whose entity has no sum in the new period is hidden rather than dropped, and one
-    // whose sum reappears is un-hidden — mirroring buildReportTree, so widening the date range
-    // brings a leaf back instead of leaving it invisible with a live value.
-    const nextReportTree = currentReportTree.map(node => {
-      if (node.droppable) return node;
-      const sum = sumById.get(node.id);
-      const value = sum ?? 0;
-      const isHidden = sum === undefined;
-      // Keep the last known name while hidden — there is no sum to read one from.
-      const text = isHidden ? node.text : (nameById.get(node.id) ?? node.text);
-      if (
-        node.data.value === value &&
-        (node.data.isHidden ?? false) === isHidden &&
-        node.text === text
-      ) {
-        return node;
-      }
-      const data = { ...node.data, value };
-      if (isHidden) {
-        data.isHidden = true;
-      } else {
-        delete data.isHidden;
-      }
-      return { ...node, text, data };
-    });
+    // Patch values, names and fingerprints on report-tree leaf nodes, preserving all structure.
+    const nextReportTree = patchLeafValues(currentReportTree, businessSums);
 
     // Placed entity IDs haven't changed (structure is preserved)
     const placedEntityIds = new Set(currentReportTree.filter(n => !n.droppable).map(n => n.id));
