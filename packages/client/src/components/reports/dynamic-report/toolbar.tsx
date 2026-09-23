@@ -1,4 +1,15 @@
-import { ChevronDown, Copy, Download, Edit2, FileText, Save, Trash2 } from 'lucide-react';
+import {
+  CalendarRange,
+  Camera,
+  ChevronDown,
+  Copy,
+  Download,
+  Edit2,
+  FileText,
+  Lock,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import { DatePickerInput } from '@/components/common/index.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
@@ -40,11 +51,24 @@ interface ToolbarProps {
   onSelectTemplate: () => void;
   onSaveAsNew: () => void;
   onResave: () => void;
+  onCaptureBaseline: () => void;
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onDownloadCSV: () => void;
   isLocked?: boolean;
+  /** True while a draft is loaded: the draft owns its period, so the pickers are read-only. */
+  datesDisabled?: boolean;
+  onChangePeriod: () => void;
+  /** Set when the URL overrides the draft's own period, e.g. an annual-audit deep link. */
+  periodOverride?: { draftFromDate: string; draftToDate: string } | null;
+  onRestoreDraftPeriod: () => void;
+  /** Saved baselines, newest first. */
+  snapshots: readonly { id: string; createdAt: Date | string; fromDate: string; toDate: string }[];
+  activeBaselineId: string | null;
+  onBaselineChange: (id: string) => void;
+  /** Set when change tracking cannot be shown, explaining why. */
+  diffSuspendedReason?: string | null;
 }
 
 export function Toolbar({
@@ -65,13 +89,31 @@ export function Toolbar({
   onSelectTemplate,
   onSaveAsNew,
   onResave,
+  onCaptureBaseline,
   onRename,
   onDuplicate,
   onDelete,
   onDownloadCSV,
   isLocked = false,
+  datesDisabled = false,
+  onChangePeriod,
+  periodOverride = null,
+  onRestoreDraftPeriod,
+  snapshots,
+  activeBaselineId,
+  onBaselineChange,
+  diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
+
+  const baselineLabel = (snapshot: { createdAt: Date | string }, index: number): string => {
+    const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    return index === 0 ? `Last save · ${when}` : when;
+  };
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b bg-muted/30">
@@ -86,6 +128,7 @@ export function Toolbar({
             value={fromDate as TimelessDateString}
             onChange={e => onFromDateChange(e ?? '')}
             className="w-36"
+            disabled={datesDisabled}
           />
         </div>
 
@@ -98,6 +141,7 @@ export function Toolbar({
             value={toDate as TimelessDateString}
             onChange={e => onToDateChange(e ?? '')}
             className="w-36"
+            disabled={datesDisabled}
           />
         </div>
 
@@ -120,6 +164,17 @@ export function Toolbar({
             Show zeroed accounts
           </Label>
         </div>
+
+        {periodOverride && (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-sky-100 text-sky-800 border-sky-300">
+              Draft period is {periodOverride.draftFromDate} to {periodOverride.draftToDate}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={onRestoreDraftPeriod}>
+              Back to draft period
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Right side: Template controls */}
@@ -139,6 +194,35 @@ export function Toolbar({
           </Badge>
         )}
 
+        {hasTemplate && diffSuspendedReason && (
+          <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
+            {diffSuspendedReason}
+          </Badge>
+        )}
+
+        {hasTemplate && snapshots.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="baseline" className="text-sm text-muted-foreground">
+              Compare to
+            </Label>
+            <Select
+              value={activeBaselineId ?? undefined}
+              onValueChange={value => onBaselineChange(value)}
+            >
+              <SelectTrigger id="baseline" className="w-52">
+                <SelectValue placeholder="Last save" />
+              </SelectTrigger>
+              <SelectContent>
+                {snapshots.map((snapshot, index) => (
+                  <SelectItem key={snapshot.id} value={snapshot.id}>
+                    {baselineLabel(snapshot, index)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2">
@@ -147,7 +231,18 @@ export function Toolbar({
               <ChevronDown className="size-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
+            {isLocked && (
+              <>
+                {/* A disabled item explains nothing on its own, and Radix sets pointer-events:none
+                    on it, so a tooltip never fires — the reason has to be visible outright. */}
+                <div className="flex items-start gap-2 px-2 py-1.5 text-xs text-amber-700">
+                  <Lock className="size-3.5 mt-0.5 shrink-0" />
+                  <span>Locked by an annual audit sign-off. Unlock it to make changes.</span>
+                </div>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={onSelectTemplate}>
               <FileText className="size-4 mr-2" />
               Select template
@@ -160,6 +255,18 @@ export function Toolbar({
             <DropdownMenuItem onClick={onResave} disabled={!hasTemplate || isLocked}>
               <Save className="size-4 mr-2" />
               Resave
+            </DropdownMenuItem>
+            {isLocked && (
+              // The one way a locked draft can start tracking changes: a resave is off the table,
+              // but a baseline writes no template row, so the sign-off still holds.
+              <DropdownMenuItem onClick={onCaptureBaseline} disabled={!hasTemplate}>
+                <Camera className="size-4 mr-2" />
+                Capture baseline
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={onChangePeriod} disabled={!hasTemplate || isLocked}>
+              <CalendarRange className="size-4 mr-2" />
+              Change period
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRename} disabled={!hasTemplate || isLocked}>
               <Edit2 className="size-4 mr-2" />

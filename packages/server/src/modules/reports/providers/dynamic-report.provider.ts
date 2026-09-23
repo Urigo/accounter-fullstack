@@ -8,9 +8,14 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IDeleteTemplateParams,
   IDeleteTemplateQuery,
+  IGetSnapshotByIdParams,
+  IGetSnapshotByIdQuery,
+  IGetSnapshotsMetaByOwnerIdsQuery,
   IGetTemplateParams,
   IGetTemplateQuery,
   IGetTemplatesByOwnerIdsQuery,
+  IInsertSnapshotParams,
+  IInsertSnapshotQuery,
   IInsertTemplateParams,
   IInsertTemplateQuery,
   ILockTemplateParams,
@@ -35,7 +40,9 @@ WHERE owner_id IN $$ownerIds;`;
 
 const updateTemplate = sql<IUpdateTemplateQuery>`
   UPDATE accounter_schema.dynamic_report_templates
-  SET template = $template
+  SET template = $template,
+      from_date = COALESCE($fromDate, from_date),
+      to_date = COALESCE($toDate, to_date)
   WHERE name = $name AND owner_id = $ownerId
   RETURNING *;`;
 
@@ -46,9 +53,29 @@ const updateTemplateName = sql<IUpdateTemplateNameQuery>`
   RETURNING *;`;
 
 const insertTemplate = sql<IInsertTemplateQuery>`
-  INSERT INTO accounter_schema.dynamic_report_templates (name, owner_id, template)
-  VALUES ($name, $ownerId, $template)
+  INSERT INTO accounter_schema.dynamic_report_templates (name, owner_id, template, from_date, to_date)
+  VALUES ($name, $ownerId, $template, $fromDate, $toDate)
   RETURNING *;`;
+
+const insertSnapshot = sql<IInsertSnapshotQuery>`
+  INSERT INTO accounter_schema.dynamic_report_template_snapshots
+    (owner_id, template_name, from_date, to_date, scope_owner_id, tree, leaf_values, created_by)
+  VALUES ($ownerId, $templateName, $fromDate, $toDate, $scopeOwnerId, $tree, $leafValues, $createdBy)
+  RETURNING *;`;
+
+// Deliberately omits tree and leaf_values: this feeds the snapshot picker, which needs only
+// identity and dates, and those two jsonb columns are the whole weight of a row. The payload is
+// fetched by id once a baseline is actually chosen.
+const getSnapshotsMetaByOwnerIds = sql<IGetSnapshotsMetaByOwnerIdsQuery>`
+  SELECT id, owner_id, template_name, from_date, to_date, scope_owner_id, created_by, created_at
+  FROM accounter_schema.dynamic_report_template_snapshots
+  WHERE owner_id IN $$ownerIds
+  ORDER BY created_at DESC;`;
+
+const getSnapshotById = sql<IGetSnapshotByIdQuery>`
+  SELECT *
+  FROM accounter_schema.dynamic_report_template_snapshots
+  WHERE id = $id;`;
 
 const deleteTemplate = sql<IDeleteTemplateQuery>`
   DELETE FROM accounter_schema.dynamic_report_templates
@@ -93,12 +120,60 @@ export class DynamicReportProvider {
     this.batchTemplatesByOwnerIdLoader(ownerIds),
   );
 
-  public async updateTemplate(params: IUpdateTemplateParams) {
-    if (params.name && params.ownerId) {
-      await this.assertNotLocked(params.name, params.ownerId);
+  private async batchSnapshotsMetaByOwnerIdLoader(ownerIds: readonly string[]) {
+    const snapshots = await getSnapshotsMetaByOwnerIds.run({ ownerIds }, this.db);
+    return ownerIds.map(id => snapshots.filter(snapshot => snapshot.owner_id === id));
+  }
+
+  /**
+   * Batched by owner rather than by template: `allDynamicReports` resolves every template of one
+   * owner, so one query serves the whole page, and the field resolver filters by template name.
+   */
+  public getSnapshotsMetaByOwnerIdLoader = new DataLoader((ownerIds: readonly string[]) =>
+    this.batchSnapshotsMetaByOwnerIdLoader(ownerIds),
+  );
+
+  public async getSnapshotById(params: IGetSnapshotByIdParams) {
+    const [snapshot] = await getSnapshotById.run(params, this.db);
+    return snapshot;
+  }
+
+  public async insertSnapshot(params: IInsertSnapshotParams) {
+    if (params.ownerId) {
       this.invalidateByOwnerId(params.ownerId);
     }
-    return updateTemplate.run(params, this.db);
+    const [snapshot] = await insertSnapshot.run(params, this.db);
+    return snapshot;
+  }
+
+  /**
+   * Saves a template and the baseline captured with it as one unit.
+   *
+   * The whole premise of change tracking is that a snapshot exists for every save. Writing the two
+   * separately would let the template land while the snapshot fails, leaving a save with no
+   * baseline and the next visit silently diffing against an older one — so they share a
+   * transaction and the save is all-or-nothing.
+   */
+  public async updateTemplateWithSnapshot(params: {
+    template: IUpdateTemplateParams;
+    snapshot?: IInsertSnapshotParams | null;
+  }) {
+    const { name, ownerId } = params.template;
+    if (name && ownerId) {
+      await this.assertNotLocked(name, ownerId);
+      this.invalidateByOwnerId(ownerId);
+    }
+
+    return this.db.transaction(async client => {
+      const rows = await updateTemplate.run(params.template, client);
+      if (rows.length === 0) {
+        return undefined;
+      }
+      if (params.snapshot) {
+        await insertSnapshot.run(params.snapshot, client);
+      }
+      return rows[0];
+    });
   }
 
   public async updateTemplateName(params: IUpdateTemplateNameParams) {
@@ -109,12 +184,24 @@ export class DynamicReportProvider {
     return updateTemplateName.run(params, this.db);
   }
 
-  public async insertTemplate(params: IInsertTemplateParams) {
-    if (params.ownerId) {
-      this.invalidateByOwnerId(params.ownerId);
+  /** Creates a template and its first baseline atomically — see `updateTemplateWithSnapshot`. */
+  public async insertTemplateWithSnapshot(params: {
+    template: IInsertTemplateParams;
+    snapshot?: IInsertSnapshotParams | null;
+  }) {
+    if (params.template.ownerId) {
+      this.invalidateByOwnerId(params.template.ownerId);
     }
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    return insertTemplate.run(reassureOwnerIdExists(params, ownerId), this.db);
+    const template = reassureOwnerIdExists(params.template, ownerId);
+
+    return this.db.transaction(async client => {
+      const rows = await insertTemplate.run(template, client);
+      if (params.snapshot) {
+        await insertSnapshot.run(params.snapshot, client);
+      }
+      return rows[0];
+    });
   }
 
   public async deleteTemplate(params: IDeleteTemplateParams) {
@@ -158,9 +245,11 @@ export class DynamicReportProvider {
 
   public async invalidateByOwnerId(ownerId: string) {
     this.getTemplatesByOwnerIdLoader.clear(ownerId);
+    this.getSnapshotsMetaByOwnerIdLoader.clear(ownerId);
   }
 
   public clearCache() {
     this.getTemplatesByOwnerIdLoader.clearAll();
+    this.getSnapshotsMetaByOwnerIdLoader.clearAll();
   }
 }

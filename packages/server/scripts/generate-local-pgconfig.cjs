@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { readFileSync, writeFileSync } = require('node:fs');
 
+// `quiet` keeps dotenv off this script's stdout, which the caller captures as the config path.
+require('dotenv').config({ path: ['.env', '../../.env'], quiet: true });
+
 var pgconfigPath = 'pgconfig.json';
 
 if (process.env['POSTGRES_SSL'] !== '1') {

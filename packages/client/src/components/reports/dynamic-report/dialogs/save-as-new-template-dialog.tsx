@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
+import type { DynamicReportSnapshotInput } from '../../../../gql/graphql.js';
 import { useInsertDynamicReportTemplate } from '../../../../hooks/use-insert-dynamic-report-template.js';
 import { serializeReportTree } from '../utils/template-serialization.js';
 import { type CustomData, type FlatNode, type Template } from '../utils/types.js';
@@ -25,6 +26,8 @@ type Props = {
   setIsDirty: (dirty: boolean) => void;
   setCurrentTemplate: (template: Template | null) => void;
   reportTree: FlatNode<CustomData>[];
+  /** Baseline for the new template: the figures on screen, and the period they cover. */
+  snapshot: DynamicReportSnapshotInput;
 };
 
 export const SaveAsNewTemplateDialog = forwardRef<SaveAsNewTemplateDialogRef, Props>(
@@ -35,6 +38,7 @@ export const SaveAsNewTemplateDialog = forwardRef<SaveAsNewTemplateDialogRef, Pr
       setIsDirty,
       setCurrentTemplate,
       reportTree,
+      snapshot,
     }: Props,
     ref,
   ) {
@@ -64,6 +68,7 @@ export const SaveAsNewTemplateDialog = forwardRef<SaveAsNewTemplateDialogRef, Pr
       const result = await insertDynamicReportTemplate({
         name: saveAsName.trim(),
         template: serialized,
+        snapshot,
       });
       if (result) {
         setCurrentTemplate({

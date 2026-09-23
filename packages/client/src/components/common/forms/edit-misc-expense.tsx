@@ -1,12 +1,12 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { Loader } from '@mantine/core';
 import {
   EditMiscExpenseFieldsFragmentDoc,
   type UpdateMiscExpenseInput,
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUpdateMiscExpense } from '../../../hooks/use-update-misc-expense.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Form } from '../../ui/form.js';
 import { ModifyMiscExpenseFields } from './index.js';
 
@@ -74,7 +74,7 @@ export const EditMiscExpense = ({ onDone, data }: Props): ReactElement => {
   };
 
   return isUpdating ? (
-    <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+    <AccounterSpinner className="my-5 self-center" />
   ) : (
     <Form {...formManager}>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>

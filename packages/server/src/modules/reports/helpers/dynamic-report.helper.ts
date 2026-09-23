@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../shared/constants.js';
 
 const dynamicReportNodeData = z
   .object({
@@ -37,6 +38,88 @@ export function validateTemplate(raw: string) {
     throw new Error(`Error validating report template: ${validated.error}`);
   }
   return true;
+}
+
+// ── Snapshots ──────────────────────────────────────────────────────────────────
+
+/**
+ * A report tree has one leaf per financial entity, so the value list can never usefully exceed the
+ * number of entities an owner has. The cap is a guard against a malformed or hostile payload, not a
+ * real product limit.
+ */
+const MAX_SNAPSHOT_VALUES = 10_000;
+
+/**
+ * The shared shape-only check, deliberately not `z.uuid()`. Postgres' `uuid` type accepts any
+ * hex-shaped value, and this codebase seeds entities with ids like
+ * `00000000-0000-0000-0000-0000000005a1` whose version and variant nibbles are not RFC-4122
+ * conformant. Enforcing the RFC here would reject saves of reports containing those entities.
+ */
+const uuidShaped = z.string().regex(UUID_REGEX, 'Invalid UUID');
+
+/**
+ * The same check the `TimelessDate` scalar applies, repeated here because the ordering refine
+ * below compares the two dates lexicographically — which only decides anything for well-formed
+ * `yyyy-mm-dd` strings.
+ */
+const timelessDate = z.string().regex(TIMELESS_DATE_REGEX, 'Date must be in format yyyy-mm-dd');
+
+const snapshotValue = z
+  .object({
+    entityId: uuidShaped,
+    value: z.number().finite(),
+  })
+  .strict();
+
+export const dynamicReportSnapshotInput = z
+  .object({
+    fromDate: timelessDate,
+    toDate: timelessDate,
+    scopeOwnerId: uuidShaped,
+    values: z.array(snapshotValue).max(MAX_SNAPSHOT_VALUES),
+  })
+  .strict()
+  .refine(({ fromDate, toDate }) => fromDate <= toDate, {
+    message: 'fromDate must not be after toDate',
+  });
+
+export type DynamicReportSnapshotInputType = z.infer<typeof dynamicReportSnapshotInput>;
+
+export function validateSnapshotInput(raw: unknown): DynamicReportSnapshotInputType {
+  const validated = dynamicReportSnapshotInput.safeParse(raw);
+  if (!validated.success) {
+    throw new Error(`Error validating report snapshot: ${validated.error}`);
+  }
+  return validated.data;
+}
+
+/**
+ * A snapshot's tree is stored as jsonb, so it arrives already parsed — unlike a template's, which
+ * is text and goes through `parseTemplate`.
+ */
+export function parseSnapshotTree(raw: unknown) {
+  return dynamicReportTemplate.parse(raw);
+}
+
+/** Collapses the wire format into the `{ entityId: value }` object stored in `leaf_values`. */
+export function snapshotValuesToRecord(
+  values: DynamicReportSnapshotInputType['values'],
+): Record<string, number> {
+  const record: Record<string, number> = {};
+  for (const { entityId, value } of values) {
+    record[entityId] = value;
+  }
+  return record;
+}
+
+/** Expands the stored `leaf_values` object back into the list the schema exposes. */
+export function recordToSnapshotValues(raw: unknown): { entityId: string; value: number }[] {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return [];
+  }
+  return Object.entries(raw as Record<string, unknown>).flatMap(([entityId, value]) =>
+    typeof value === 'number' && Number.isFinite(value) ? [{ entityId, value }] : [],
+  );
 }
 
 // ── Legacy format ──────────────────────────────────────────────────────────────

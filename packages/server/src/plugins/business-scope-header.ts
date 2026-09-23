@@ -1,3 +1,4 @@
+import { UUID_REGEX } from '../shared/constants.js';
 import type { BusinessScopeParseError, BusinessScopeParseResult } from '../shared/types/auth.js';
 
 /**
@@ -6,8 +7,6 @@ import type { BusinessScopeParseError, BusinessScopeParseResult } from '../share
  * other auth headers are read in the auth plugin.
  */
 export const BUSINESS_SCOPE_HEADER = 'x-business-scope';
-
-const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 /**
  * Parse the `X-Business-Scope` header value into a requested read scope.
@@ -43,7 +42,7 @@ export function parseBusinessScopeHeader(
       }
       continue;
     }
-    if (!UUID_PATTERN.test(entry)) {
+    if (!UUID_REGEX.test(entry)) {
       const key = `INVALID_UUID:${entry.toLowerCase()}`;
       if (!seenErrors.has(key)) {
         seenErrors.add(key);

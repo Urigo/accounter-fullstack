@@ -79,7 +79,7 @@
     "@vitest/coverage-v8": "5.0.0",
     "bob-the-bundler": "7.0.1",
     "concurrently": "10.0.5",
-    "dotenv": "17.4.2",
+    "dotenv": "18.0.2",
     "eslint": "10.11.0",
     "eslint-config-flat-gitignore": "2.4.0",
     "eslint-config-prettier": "10.1.8",

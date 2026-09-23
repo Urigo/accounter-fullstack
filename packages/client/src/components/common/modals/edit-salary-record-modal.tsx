@@ -1,10 +1,10 @@
 import { useCallback, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { useQuery } from 'urql';
-import { Loader } from '@mantine/core';
 import { EditSalaryRecordDocument, type SalaryRecordInput } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/index.js';
 import { useUpdateSalaryRecord } from '../../../hooks/use-update-salary-record.js';
+import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { ModifySalaryRecord, PopUpDrawer } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -207,7 +207,7 @@ export const EditSalaryRecordModalContent = ({
       onClose={onDone}
     >
       {fetchingSalaryRecord || !salaryRecord ? (
-        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+        <AccounterSpinner className="my-5 self-center" />
       ) : (
         <ModifySalaryRecord
           isNewInsert={false}
