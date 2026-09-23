@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { AccountantStatus } from '../../../../gql/graphql.js';
 import {
+  applyOverride,
+  approvalsDisabledReason,
   branchApprovalTooltip,
   branchStatus,
   buildApprovalStats,
+  buildEffectiveStatuses,
   deriveLeafStatuses,
   formatApprovalDate,
   leafApprovalTooltip,
+  resolveStatus,
+  type ApprovalOverrides,
   type DynamicReportLeafApproval,
+  type EffectiveApproval,
 } from '../utils/approvals.js';
 import type { CustomData, FlatNode } from '../utils/types.js';
 
@@ -255,5 +261,131 @@ describe('branchApprovalTooltip', () => {
     expect(branchApprovalTooltip({ approved: 7, pending: 2, unapproved: 1 })).toBe(
       '7 approved · 2 pending · 1 unapproved',
     );
+  });
+});
+
+describe('applyOverride', () => {
+  const derived = new Map<string, EffectiveApproval>([
+    ['a', { status: AccountantStatus.Unapproved }],
+    ['b', { status: AccountantStatus.Approved, setAt: SET_AT, setBy: 'Dana', isSystem: false }],
+  ]);
+
+  it('stages a status that differs from the derived one, in a new map', () => {
+    const before: ApprovalOverrides = new Map();
+    const after = applyOverride(before, 'a', AccountantStatus.Approved, derived);
+    expect(after).not.toBe(before);
+    expect(before.size).toBe(0);
+    expect([...after]).toEqual([['a', AccountantStatus.Approved]]);
+  });
+
+  it('drops the override when the status equals the derived status', () => {
+    const before: ApprovalOverrides = new Map([['b', AccountantStatus.Pending]]);
+    const after = applyOverride(before, 'b', AccountantStatus.Approved, derived);
+    expect(after).not.toBe(before);
+    expect(after.has('b')).toBe(false);
+    expect(before.get('b')).toBe(AccountantStatus.Pending);
+  });
+
+  it('replaces an earlier override', () => {
+    const before: ApprovalOverrides = new Map([['a', AccountantStatus.Approved]]);
+    const after = applyOverride(before, 'a', AccountantStatus.Pending, derived);
+    expect(after.get('a')).toBe(AccountantStatus.Pending);
+  });
+
+  it('treats a leaf with no derived status as unapproved', () => {
+    const after = applyOverride(new Map(), 'unknown', AccountantStatus.Unapproved, derived);
+    expect(after.size).toBe(0);
+  });
+});
+
+describe('resolveStatus', () => {
+  const derived = new Map<string, EffectiveApproval>([
+    ['a', { status: AccountantStatus.Approved, setAt: SET_AT, setBy: 'Dana', isSystem: false }],
+  ]);
+
+  it('returns a staged override, marked as staged', () => {
+    const overrides: ApprovalOverrides = new Map([['a', AccountantStatus.Unapproved]]);
+    expect(resolveStatus('a', derived, overrides)).toEqual({
+      status: AccountantStatus.Unapproved,
+      isStaged: true,
+    });
+  });
+
+  it('falls back to the derived status', () => {
+    expect(resolveStatus('a', derived, new Map())).toBe(derived.get('a'));
+  });
+
+  it('returns undefined for a leaf it knows nothing about', () => {
+    expect(resolveStatus('x', derived, new Map())).toBeUndefined();
+  });
+});
+
+describe('buildEffectiveStatuses', () => {
+  it('overlays overrides on the derived statuses and ignores overrides for absent leaves', () => {
+    const derived = new Map<string, EffectiveApproval>([
+      ['a', { status: AccountantStatus.Unapproved }],
+      ['b', { status: AccountantStatus.Pending }],
+    ]);
+    const overrides: ApprovalOverrides = new Map([
+      ['a', AccountantStatus.Approved],
+      ['gone', AccountantStatus.Approved],
+    ]);
+    const effective = buildEffectiveStatuses(derived, overrides);
+    expect([...effective.keys()]).toEqual(['a', 'b']);
+    expect(effective.get('a')).toEqual({ status: AccountantStatus.Approved, isStaged: true });
+    expect(effective.get('b')).toBe(derived.get('b'));
+  });
+
+  it('returns the derived map itself when nothing is staged', () => {
+    const derived = new Map<string, EffectiveApproval>([
+      ['a', { status: AccountantStatus.Unapproved }],
+    ]);
+    expect(buildEffectiveStatuses(derived, new Map())).toBe(derived);
+  });
+
+  it('feeds buildApprovalStats with the effective statuses', () => {
+    const nodes = [branch('b', 'report'), leaf('a', 'b'), leaf('c', 'b')];
+    const derived = deriveLeafStatuses(nodes, null, new Map());
+    const effective = buildEffectiveStatuses(derived, new Map([['a', AccountantStatus.Approved]]));
+    const stats = buildApprovalStats(nodes, id => effective.get(id)?.status);
+    expect(stats.get('b')).toEqual({ approved: 1, pending: 0, unapproved: 1 });
+  });
+});
+
+describe('leafApprovalTooltip for staged changes', () => {
+  it('reads "Unsaved change"', () => {
+    expect(leafApprovalTooltip({ status: AccountantStatus.Approved, isStaged: true })).toBe(
+      'Unsaved change',
+    );
+  });
+});
+
+describe('approvalsDisabledReason', () => {
+  const ready = { hasTemplate: true, isLoading: false, isLatestBaseline: true };
+
+  it('is null when a saved template is loaded against its latest baseline', () => {
+    expect(approvalsDisabledReason(ready)).toBeNull();
+  });
+
+  it('asks for a saved template when none is loaded', () => {
+    expect(approvalsDisabledReason({ ...ready, hasTemplate: false })).toBe(
+      'Load a saved template',
+    );
+  });
+
+  it('explains that an older baseline is read-only', () => {
+    expect(approvalsDisabledReason({ ...ready, isLatestBaseline: false })).toBe(
+      'Viewing an older baseline — switch to Last save to review',
+    );
+  });
+
+  it('waits while the data loads', () => {
+    expect(approvalsDisabledReason({ ...ready, isLoading: true })).toBe('Loading…');
+  });
+
+  it('puts the missing template first', () => {
+    expect(
+      approvalsDisabledReason({ hasTemplate: false, isLoading: true, isLatestBaseline: false }),
+    ).toBe('Load a saved template');
   });
 });

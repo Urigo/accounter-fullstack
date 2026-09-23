@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccountantStatus } from '../../../../gql/graphql.js';
 import { TreePanel } from '../tree-panel.js';
 import { buildApprovalStats, deriveLeafStatuses } from '../utils/approvals.js';
@@ -167,5 +167,71 @@ describe('report tree status slot', () => {
     );
     expect(container.textContent).toContain('Entity a');
     expect(statusTriggers()).toHaveLength(0);
+  });
+});
+
+function openMenu(button: HTMLButtonElement): void {
+  act(() => {
+    button.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }),
+    );
+  });
+}
+
+function selectItem(label: string): void {
+  const item = [...document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+    el => el.textContent?.trim() === label,
+  );
+  if (!item) throw new Error(`menu item "${label}" not found`);
+  act(() => item.click());
+}
+
+describe('staging a leaf status', () => {
+  function renderReport(props: {
+    onLeafApprovalChange?: (entityId: string, status: AccountantStatus) => void;
+    approvalsDisabledReason?: string | null;
+  }): void {
+    const nodes = [branch('b', 'report'), leaf('a', 'b')];
+    const leafStatuses = deriveLeafStatuses(nodes, null, new Map());
+    act(() =>
+      root.render(
+        <TreePanel
+          treeId="report"
+          title="Report"
+          nodes={nodes}
+          editMode={false}
+          emptyMessage="empty"
+          onAddBranch={noop}
+          onToggleExpand={noop}
+          leafStatuses={leafStatuses}
+          approvalStats={buildApprovalStats(nodes, id => leafStatuses.get(id)?.status)}
+          {...props}
+        />,
+      ),
+    );
+  }
+
+  it('reports the chosen status with the leaf entity id', () => {
+    const onChange = vi.fn<(entityId: string, status: AccountantStatus) => void>();
+    renderReport({ onLeafApprovalChange: onChange, approvalsDisabledReason: null });
+
+    const [branchTrigger, leafTrigger] = statusTriggers();
+    // Bulk set from a branch is a later step.
+    expect(branchTrigger.disabled).toBe(true);
+    expect(leafTrigger.disabled).toBe(false);
+
+    openMenu(leafTrigger);
+    selectItem('Approved');
+    expect(onChange).toHaveBeenCalledWith('a', AccountantStatus.Approved);
+  });
+
+  it('disables the leaf while statuses are read-only', () => {
+    renderReport({ onLeafApprovalChange: noop, approvalsDisabledReason: 'Load a saved template' });
+    expect(statusTriggers().every(button => button.disabled)).toBe(true);
+  });
+
+  it('disables the leaf when there is no change handler', () => {
+    renderReport({});
+    expect(statusTriggers().every(button => button.disabled)).toBe(true);
   });
 });
