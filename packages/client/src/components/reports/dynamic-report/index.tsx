@@ -51,6 +51,7 @@ import { TemplateManager } from './dialogs/template-manager.js';
 import { LegacyBanner } from './legacy-banner.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
+import { buildApprovalStats, deriveLeafStatuses } from './utils/approvals.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
 import { pickLatestBaselineId } from './utils/baseline.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
@@ -184,6 +185,13 @@ import {
         entityId
         value
         fingerprint
+      }
+      approvals {
+        entityId
+        status
+        setAt
+        setBy
+        isSystem
       }
     }
   }
@@ -442,6 +450,19 @@ export function DynamicReport() {
   const reportDiff = useMemo(
     () => (baseline ? buildReportDiff(reportTree, baseline) : null),
     [reportTree, baseline],
+  );
+
+  // Only a comparable baseline's statuses apply: another period's or owner's approvals answer a
+  // different question, so without one every leaf reads UNAPPROVED.
+  const baselineApprovals = baseline ? (baselineSnapshot?.approvals ?? null) : null;
+  const leafStatuses = useMemo(
+    () => deriveLeafStatuses(reportTree, baselineApprovals, baseline?.fingerprints ?? new Map()),
+    [reportTree, baselineApprovals, baseline],
+  );
+
+  const approvalStats = useMemo(
+    () => buildApprovalStats(reportTree, entityId => leafStatuses.get(entityId)?.status),
+    [reportTree, leafStatuses],
   );
 
   const newEntityIds = useMemo(
@@ -910,6 +931,8 @@ export function DynamicReport() {
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
             diff={reportDiff}
+            leafStatuses={leafStatuses}
+            approvalStats={approvalStats}
           />
         </div>
       </div>

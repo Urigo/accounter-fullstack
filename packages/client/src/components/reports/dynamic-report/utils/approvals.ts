@@ -1,0 +1,179 @@
+import { AccountantStatus } from '../../../../gql/graphql.js';
+import { isFinancialEntityNode, type CustomData, type FlatNode } from './types.js';
+
+/** A leaf's stored status, as a snapshot read returns it. */
+export type DynamicReportLeafApproval = {
+  entityId: string;
+  status: AccountantStatus;
+  setAt: Date | string;
+  /** Display name of the user who set it; null for a system stamp or a user who is gone. */
+  setBy?: string | null;
+  isSystem: boolean;
+};
+
+/** The status a leaf shows, plus the stamp it came from when there is one. */
+export type EffectiveApproval = {
+  status: AccountantStatus;
+  setBy?: string | null;
+  setAt?: Date | string;
+  isSystem?: boolean;
+  /**
+   * The stored status was APPROVED but the leaf's ledger records have changed since, so it reads
+   * PENDING. Nothing has been written yet: the regression is only persisted by the next save.
+   */
+  isDerived?: boolean;
+};
+
+export type ApprovalCounts = { approved: number; pending: number; unapproved: number };
+
+export type ApprovalStats = Map<string, ApprovalCounts>;
+
+/** A counted leaf is a visible financial-entity leaf. Ghost rows never reach the live tree. */
+function isCountedLeaf(node: FlatNode<CustomData>): boolean {
+  return isFinancialEntityNode(node) && !node.data.isHidden;
+}
+
+/**
+ * Resolves each counted leaf's status from the baseline snapshot (spec R3, steps 2 and 3):
+ * - a stored status stands, except that a stored APPROVED whose baseline fingerprint differs from
+ *   the leaf's current fingerprint reads PENDING;
+ * - a leaf with no stored status, or any leaf when there is no approvals list, is UNAPPROVED.
+ *
+ * Leaf node ids are financial entity ids, so the result is keyed by both.
+ */
+export function deriveLeafStatuses(
+  tree: FlatNode<CustomData>[],
+  approvals: readonly DynamicReportLeafApproval[] | null,
+  baselineFingerprints: Map<string, string>,
+): Map<string, EffectiveApproval> {
+  const stored = new Map((approvals ?? []).map(approval => [approval.entityId, approval]));
+  const result = new Map<string, EffectiveApproval>();
+
+  for (const node of tree) {
+    if (!isCountedLeaf(node)) continue;
+
+    const approval = stored.get(node.id);
+    if (!approval) {
+      result.set(node.id, { status: AccountantStatus.Unapproved });
+      continue;
+    }
+
+    const stamp = {
+      setAt: approval.setAt,
+      setBy: approval.setBy ?? null,
+      isSystem: approval.isSystem,
+    };
+    const baselineFingerprint = baselineFingerprints.get(node.id);
+    // A legacy baseline has no fingerprint to compare with, so its approvals are taken as they are.
+    const recordsChanged =
+      baselineFingerprint !== undefined && baselineFingerprint !== node.data.fingerprint;
+
+    if (approval.status === AccountantStatus.Approved && recordsChanged) {
+      result.set(node.id, { status: AccountantStatus.Pending, ...stamp, isDerived: true });
+    } else {
+      result.set(node.id, { status: approval.status, ...stamp });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Counts approved / pending / unapproved counted leaves under every node in one post-order pass,
+ * mirroring buildNodeStats. Hidden leaves get no entry and contribute nothing. A counted leaf that
+ * statusOf doesn't know is counted as unapproved.
+ */
+export function buildApprovalStats(
+  nodes: FlatNode<CustomData>[],
+  statusOf: (entityId: string) => AccountantStatus | undefined,
+): ApprovalStats {
+  const nodeById = new Map<string, FlatNode<CustomData>>();
+  const childrenOf = new Map<string, string[]>();
+  for (const n of nodes) {
+    nodeById.set(n.id, n);
+    const siblings = childrenOf.get(n.parent);
+    if (siblings) siblings.push(n.id);
+    else childrenOf.set(n.parent, [n.id]);
+  }
+
+  const result: ApprovalStats = new Map();
+  const empty: ApprovalCounts = { approved: 0, pending: 0, unapproved: 0 };
+
+  function visit(nodeId: string): ApprovalCounts {
+    const cached = result.get(nodeId);
+    if (cached) return cached;
+
+    const node = nodeById.get(nodeId);
+    if (!node) return empty;
+
+    if (isFinancialEntityNode(node)) {
+      if (node.data.isHidden) return empty;
+      const status = statusOf(node.id) ?? AccountantStatus.Unapproved;
+      const counts: ApprovalCounts = {
+        approved: status === AccountantStatus.Approved ? 1 : 0,
+        pending: status === AccountantStatus.Pending ? 1 : 0,
+        unapproved: status === AccountantStatus.Unapproved ? 1 : 0,
+      };
+      result.set(nodeId, counts);
+      return counts;
+    }
+
+    const counts: ApprovalCounts = { approved: 0, pending: 0, unapproved: 0 };
+    for (const childId of childrenOf.get(nodeId) ?? []) {
+      const child = visit(childId);
+      counts.approved += child.approved;
+      counts.pending += child.pending;
+      counts.unapproved += child.unapproved;
+    }
+    result.set(nodeId, counts);
+    return counts;
+  }
+
+  for (const n of nodes) {
+    visit(n.id);
+  }
+
+  return result;
+}
+
+/** Worst status wins (spec R5); null for a branch with no counted leaves. */
+export function branchStatus(counts: ApprovalCounts | undefined): AccountantStatus | null {
+  if (!counts) return null;
+  if (counts.unapproved > 0) return AccountantStatus.Unapproved;
+  if (counts.pending > 0) return AccountantStatus.Pending;
+  if (counts.approved > 0) return AccountantStatus.Approved;
+  return null;
+}
+
+export function formatApprovalDate(date: Date | string): string {
+  return new Date(date).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+const STATUS_VERB: Record<AccountantStatus, string> = {
+  [AccountantStatus.Approved]: 'Approved',
+  [AccountantStatus.Pending]: 'Marked pending',
+  [AccountantStatus.Unapproved]: 'Marked unapproved',
+};
+
+/** Who set a leaf's status and when (spec R4); null when there is no stored stamp. */
+export function leafApprovalTooltip(approval: EffectiveApproval): string | null {
+  if (approval.setAt == null) return null;
+  const date = formatApprovalDate(approval.setAt);
+  if (approval.isSystem) {
+    return `Returned to pending · ledger changed after approval · ${date}`;
+  }
+  const who = approval.setBy ?? 'a former user';
+  if (approval.isDerived) {
+    return `Returned to pending · ledger changed after approval by ${who} · ${date}`;
+  }
+  return `${STATUS_VERB[approval.status]} by ${who} · ${date}`;
+}
+
+/** Counts summary for a branch (spec R6). */
+export function branchApprovalTooltip(counts: ApprovalCounts): string {
+  return `${counts.approved} approved · ${counts.pending} pending · ${counts.unapproved} unapproved`;
+}
