@@ -11,8 +11,7 @@ import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-re
 import { ComboBox } from '../../common/inputs/combo-box.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
-import { Overlay } from '../../ui/overlay.js';
-import { Spinner } from '../../ui/spinner.js';
+import { LoadingOverlay } from '../../ui/overlay.js';
 import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { PopUpModal } from '../modals/modal.js';
 import { depreciationTypes } from './index.js';
@@ -184,11 +183,7 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
           </form>
         </Form>
       </div>
-      {(addingInProcess || fetching) && (
-        <Overlay blur={1} center>
-          <Spinner className="size-9 text-gray-900" />
-        </Overlay>
-      )}
+      <LoadingOverlay visible={addingInProcess || fetching} blur={1} />
     </PopUpModal>
   );
 }

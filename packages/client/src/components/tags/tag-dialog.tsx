@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
+import { AccounterSpinner } from '@/components/ui/accounter-spinner.js';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -106,7 +107,7 @@ export function TagDialog({ open, onOpenChange, tag, onSave, isSaving }: TagDial
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
         {fetching && allTags.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-3">
-            <Spinner className="size-8" />
+            <AccounterSpinner />
             <p className="text-muted-foreground text-sm">Loading tags...</p>
           </div>
         ) : (
