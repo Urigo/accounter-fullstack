@@ -104,6 +104,14 @@ export default gql`
     toDate: TimelessDate!
     scopeOwnerId: UUID!
     values: [DynamicReportSnapshotValueInput!]!
+    " the effective status of every counted leaf; stamped by the server. Ignored when a template is created "
+    approvals: [DynamicReportLeafApprovalInput!]
+  }
+
+  " a reviewer's status for one report leaf, as submitted with a save "
+  input DynamicReportLeafApprovalInput {
+    entityId: UUID!
+    status: AccountantStatus!
   }
 
   " one financial entity's value at the moment of a save "

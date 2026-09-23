@@ -73,12 +73,33 @@ const snapshotValue = z
   })
   .strict();
 
+const snapshotApproval = z
+  .object({
+    entityId: uuidShaped,
+    status: z.enum(['APPROVED', 'PENDING', 'UNAPPROVED']),
+  })
+  .strict();
+
 export const dynamicReportSnapshotInput = z
   .object({
     fromDate: timelessDate,
     toDate: timelessDate,
     scopeOwnerId: uuidShaped,
     values: z.array(snapshotValue).max(MAX_SNAPSHOT_VALUES),
+    /**
+     * The effective status of every counted leaf. Optional so a client that predates approvals keeps
+     * working; `null` is what GraphQL hands over for an omitted nullable list.
+     */
+    approvals: z
+      .array(snapshotApproval)
+      .max(MAX_SNAPSHOT_VALUES)
+      .nullish()
+      .refine(
+        approvals =>
+          !approvals ||
+          new Set(approvals.map(({ entityId }) => entityId)).size === approvals.length,
+        { message: 'Duplicate entityId in approvals' },
+      ),
   })
   .strict()
   .refine(({ fromDate, toDate }) => fromDate <= toDate, {
@@ -93,6 +114,18 @@ export function validateSnapshotInput(raw: unknown): DynamicReportSnapshotInputT
     throw new Error(`Error validating report snapshot: ${validated.error}`);
   }
   return validated.data;
+}
+
+/**
+ * The financial-entity leaves of a (new-format) template string: the only entities an approval can
+ * belong to.
+ */
+export function templateLeafIds(template: string): Set<string> {
+  return new Set(
+    parseTemplate(template)
+      .filter(node => node.data.nodeType === 'financial-entity')
+      .map(node => String(node.id)),
+  );
 }
 
 /**

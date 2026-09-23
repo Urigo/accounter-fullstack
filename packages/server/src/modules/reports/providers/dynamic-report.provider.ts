@@ -8,6 +8,9 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IDeleteTemplateParams,
   IDeleteTemplateQuery,
+  IGetLatestComparableSnapshotParams,
+  IGetLatestComparableSnapshotQuery,
+  IGetLatestComparableSnapshotResult,
   IGetSnapshotByIdParams,
   IGetSnapshotByIdQuery,
   IGetSnapshotsMetaByOwnerIdsQuery,
@@ -18,6 +21,7 @@ import {
   IInsertSnapshotQuery,
   IInsertTemplateParams,
   IInsertTemplateQuery,
+  ILockTemplateForSnapshotQuery,
   ILockTemplateParams,
   ILockTemplateQuery,
   IUnlockTemplateParams,
@@ -57,12 +61,16 @@ const insertTemplate = sql<IInsertTemplateQuery>`
   VALUES ($name, $ownerId, $template, $fromDate, $toDate)
   RETURNING *;`;
 
+// created_at is the insert's wall-clock time, not the column default (the transaction's start).
+// A request's transaction can start long before it waits on the template row lock, so the
+// default could order a snapshot before the very row it was stamped against — and "newest
+// comparable" would then pick the wrong baseline.
 const insertSnapshot = sql<IInsertSnapshotQuery>`
   INSERT INTO accounter_schema.dynamic_report_template_snapshots
     (owner_id, template_name, from_date, to_date, scope_owner_id, tree, leaf_values,
-     leaf_fingerprints, leaf_approvals, created_by)
+     leaf_fingerprints, leaf_approvals, created_by, created_at)
   VALUES ($ownerId, $templateName, $fromDate, $toDate, $scopeOwnerId, $tree, $leafValues,
-          $leafFingerprints, $leafApprovals, $createdBy)
+          $leafFingerprints, $leafApprovals, $createdBy, clock_timestamp())
   RETURNING *;`;
 
 // Deliberately omits the jsonb payload columns (tree, leaf_values, leaf_fingerprints,
@@ -78,6 +86,28 @@ const getSnapshotById = sql<IGetSnapshotByIdQuery>`
   SELECT *
   FROM accounter_schema.dynamic_report_template_snapshots
   WHERE id = $id;`;
+
+// Backed by dynamic_report_template_snapshots_comparable_index. "Comparable" means the same
+// template, period and scope: the only snapshots whose approvals describe the same report lines.
+const getLatestComparableSnapshot = sql<IGetLatestComparableSnapshotQuery>`
+  SELECT *
+  FROM accounter_schema.dynamic_report_template_snapshots
+  WHERE owner_id = $ownerId!
+    AND template_name = $templateName!
+    AND from_date = $fromDate!
+    AND to_date = $toDate!
+    AND scope_owner_id = $scopeOwnerId!
+  ORDER BY created_at DESC
+  LIMIT 1;`;
+
+// Takes the same row lock an UPDATE of the template takes, without writing it. A capture holds it
+// for its whole transaction, so it serializes with concurrent saves and captures of the template:
+// each one reads the previous comparable snapshot only after the one before it has committed.
+const lockTemplateForSnapshot = sql<ILockTemplateForSnapshotQuery>`
+  SELECT *
+  FROM accounter_schema.dynamic_report_templates
+  WHERE name = $name! AND owner_id = $ownerId!
+  FOR NO KEY UPDATE;`;
 
 const deleteTemplate = sql<IDeleteTemplateQuery>`
   DELETE FROM accounter_schema.dynamic_report_templates
@@ -95,6 +125,27 @@ const unlockTemplate = sql<IUnlockTemplateQuery>`
   SET is_locked = FALSE
   WHERE name = $name AND owner_id = $ownerId
   RETURNING *;`;
+
+/** The client `TenantAwareDBClient.transaction` hands its callback. */
+type TransactionClient = Parameters<Parameters<TenantAwareDBClient['transaction']>[0]>[0];
+
+/** Identifies which snapshots are comparable: same template, period and scope. */
+export type ComparableSnapshotKey = {
+  ownerId: string;
+  templateName: string;
+  fromDate: string;
+  toDate: string;
+  scopeOwnerId: string;
+};
+
+export type SnapshotWriteParams = {
+  key: ComparableSnapshotKey;
+  /**
+   * Builds the row to insert from the previous comparable snapshot (null when there is none). Runs
+   * inside the write transaction; throwing aborts the whole save.
+   */
+  buildSnapshot: (previous: IGetLatestComparableSnapshotResult | null) => IInsertSnapshotParams;
+};
 
 @Injectable({
   scope: Scope.Operation,
@@ -149,16 +200,44 @@ export class DynamicReportProvider {
   }
 
   /**
+   * The newest snapshot with the same template, period and scope, or null when there is none.
+   * Pass the transaction's client to read it inside the transaction that writes the next one.
+   */
+  public async getLatestComparableSnapshot(
+    params: IGetLatestComparableSnapshotParams,
+    client?: TransactionClient,
+  ): Promise<IGetLatestComparableSnapshotResult | null> {
+    const [snapshot] = await getLatestComparableSnapshot.run(params, client ?? this.db);
+    return snapshot ?? null;
+  }
+
+  /**
+   * Looks up the previous comparable snapshot and inserts the one built from it, on the given
+   * transaction client. The caller must already hold the template's row lock, so the row read here
+   * is the one this insert actually follows.
+   */
+  private async insertStampedSnapshot(client: TransactionClient, snapshot: SnapshotWriteParams) {
+    const previous = await this.getLatestComparableSnapshot(snapshot.key, client);
+    const [inserted] = await insertSnapshot.run(snapshot.buildSnapshot(previous), client);
+    return inserted;
+  }
+
+  /**
    * Saves a template and the baseline captured with it as one unit.
    *
    * The whole premise of change tracking is that a snapshot exists for every save. Writing the two
    * separately would let the template land while the snapshot fails, leaving a save with no
    * baseline and the next visit silently diffing against an older one — so they share a
    * transaction and the save is all-or-nothing.
+   *
+   * The snapshot is built by a callback that receives the previous comparable snapshot, read inside
+   * the same transaction after the template UPDATE has taken its row lock. A concurrent save of
+   * the same template waits on that lock, so each save stamps its approvals against the row it
+   * actually follows.
    */
   public async updateTemplateWithSnapshot(params: {
     template: IUpdateTemplateParams;
-    snapshot?: IInsertSnapshotParams | null;
+    snapshot?: SnapshotWriteParams | null;
   }) {
     const { name, ownerId } = params.template;
     if (name && ownerId) {
@@ -172,9 +251,29 @@ export class DynamicReportProvider {
         return undefined;
       }
       if (params.snapshot) {
-        await insertSnapshot.run(params.snapshot, client);
+        await this.insertStampedSnapshot(client, params.snapshot);
       }
       return rows[0];
+    });
+  }
+
+  /**
+   * Records a baseline without writing the template row, so it is allowed on a locked template.
+   * Same transactional shape as `updateTemplateWithSnapshot`: the template row is locked (not
+   * written) first, then the previous comparable snapshot is read and the new one inserted.
+   * Resolves to the template row, or undefined when the template does not exist.
+   */
+  public async captureSnapshot(params: SnapshotWriteParams) {
+    const { ownerId, templateName } = params.key;
+    this.invalidateByOwnerId(ownerId);
+
+    return this.db.transaction(async client => {
+      const [template] = await lockTemplateForSnapshot.run({ name: templateName, ownerId }, client);
+      if (!template) {
+        return undefined;
+      }
+      await this.insertStampedSnapshot(client, params);
+      return template;
     });
   }
 
