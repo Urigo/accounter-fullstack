@@ -364,3 +364,26 @@ export function leafApprovalTooltip(approval: EffectiveApproval): string | null 
 export function branchApprovalTooltip(counts: ApprovalCounts): string {
   return `${counts.approved} approved · ${counts.pending} pending · ${counts.unapproved} unapproved`;
 }
+
+export type ApprovalSummary = ApprovalCounts & { total: number };
+
+/** Report-wide counts over the counted leaves' effective statuses (spec R19). */
+export function summarizeApprovals(
+  statuses: ReadonlyMap<string, EffectiveApproval>,
+): ApprovalSummary {
+  const summary: ApprovalSummary = { approved: 0, pending: 0, unapproved: 0, total: 0 };
+  for (const { status } of statuses.values()) {
+    summary.total += 1;
+    if (status === AccountantStatus.Approved) summary.approved += 1;
+    else if (status === AccountantStatus.Pending) summary.pending += 1;
+    else summary.unapproved += 1;
+  }
+  return summary;
+}
+
+/** The toolbar's progress line, e.g. "124 / 150 approved · 6 pending"; null with no counted leaves. */
+export function formatApprovalProgress(summary: ApprovalSummary): string | null {
+  if (summary.total === 0) return null;
+  const approved = `${summary.approved} / ${summary.total} approved`;
+  return summary.pending > 0 ? `${approved} · ${summary.pending} pending` : approved;
+}
