@@ -1,4 +1,7 @@
-import type { DynamicReportSnapshotInput } from '../../../../gql/graphql.js';
+import type {
+  DynamicReportLeafApprovalInput,
+  DynamicReportSnapshotInput,
+} from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 
 /** The shape `businessTransactionsSumFromLedgerRecords` returns, narrowed to what a snapshot needs. */
@@ -19,14 +22,18 @@ type BusinessSumLike = {
  * Values carry the same sign flip the leaves render with, so the snapshot holds what was on screen.
  * Each value also carries the entity's ledger fingerprint, so a later visit can tell that the
  * underlying records changed even when the total did not.
+ *
+ * `approvals` is what a Resave or Capture sends for the server to stamp. Save as new and Duplicate
+ * leave it out: a new template starts with no reviewed history (spec R14).
  */
 export function buildSnapshotInput(params: {
   businessSums: BusinessSumLike[];
   fromDate: TimelessDateString;
   toDate: TimelessDateString;
   scopeOwnerId: string;
+  approvals?: DynamicReportLeafApprovalInput[];
 }): DynamicReportSnapshotInput {
-  return {
+  const input: DynamicReportSnapshotInput = {
     fromDate: params.fromDate,
     toDate: params.toDate,
     scopeOwnerId: params.scopeOwnerId,
@@ -36,4 +43,8 @@ export function buildSnapshotInput(params: {
       fingerprint: sum.ledgerFingerprint,
     })),
   };
+  if (params.approvals) {
+    input.approvals = params.approvals;
+  }
+  return input;
 }

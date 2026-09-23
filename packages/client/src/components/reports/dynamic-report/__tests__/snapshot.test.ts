@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { AccountantStatus } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { buildSnapshotInput } from '../utils/snapshot.js';
 
@@ -31,5 +32,24 @@ describe('buildSnapshotInput', () => {
   it('carries the period and scope owner through unchanged', () => {
     const input = buildSnapshotInput({ ...base, businessSums: [] });
     expect(input).toEqual({ ...base, values: [] });
+  });
+
+  it('includes approvals when given', () => {
+    const approvals = [
+      { entityId: ENTITY_A, status: AccountantStatus.Approved },
+      { entityId: ENTITY_B, status: AccountantStatus.Unapproved },
+    ];
+    const input = buildSnapshotInput({ ...base, businessSums: [], approvals });
+    expect(input.approvals).toEqual(approvals);
+  });
+
+  it('includes an empty approvals list when given one', () => {
+    const input = buildSnapshotInput({ ...base, businessSums: [], approvals: [] });
+    expect(input.approvals).toEqual([]);
+  });
+
+  it('omits the approvals key when none are given (Save as new)', () => {
+    const input = buildSnapshotInput({ ...base, businessSums: [] });
+    expect('approvals' in input).toBe(false);
   });
 });
