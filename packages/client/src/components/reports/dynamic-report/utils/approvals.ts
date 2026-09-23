@@ -396,9 +396,10 @@ export type ReviewVisibility = {
 };
 
 /**
- * What the Needs review filter shows (spec R20). A counted leaf statusOf doesn't know is counted as
- * unapproved, as in buildApprovalStats. A fully approved subtree is left out entirely. This is a
- * render-time overlay: it never touches the nodes, so the template's saved isOpen is unchanged.
+ * What the Needs review filter shows (spec R20): every counted leaf that isn't approved, plus its
+ * ancestors. A counted leaf for which `statusOf` returns undefined is treated as unapproved, as in
+ * buildApprovalStats, and a fully approved subtree is left out entirely. This is a render-time
+ * overlay: it never touches the nodes, so the template's saved isOpen is unchanged.
  */
 export function needsReviewVisibility(
   nodes: FlatNode<CustomData>[],
