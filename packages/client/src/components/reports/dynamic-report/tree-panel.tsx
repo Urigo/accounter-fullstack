@@ -39,7 +39,12 @@ interface TreePanelProps {
   approvalStats?: ApprovalStats;
   /** Stages a leaf's status. Without it, leaf statuses are read-only. Report tree only. */
   onLeafApprovalChange?: (entityId: string, status: AccountantStatus) => void;
-  /** Why statuses can't be changed right now; leaf statuses are read-only while it is set. */
+  /**
+   * Stages a status for every counted leaf under a branch. Without it, branch statuses are
+   * read-only. Report tree only.
+   */
+  onBranchApprovalChange?: (branchId: string, status: AccountantStatus) => void;
+  /** Why statuses can't be changed right now; all statuses are read-only while it is set. */
   approvalsDisabledReason?: string | null;
 }
 
@@ -98,6 +103,7 @@ export function TreePanel({
   leafStatuses,
   approvalStats,
   onLeafApprovalChange,
+  onBranchApprovalChange,
   approvalsDisabledReason = null,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -154,7 +160,15 @@ export function TreePanel({
       if (treeId !== 'report' || ghostIds.has(node.id)) return undefined;
       if (node.droppable) {
         const counts = approvalStats?.get(node.id);
-        return counts ? { kind: 'branch', counts } : undefined;
+        if (!counts) return undefined;
+        return {
+          kind: 'branch',
+          counts,
+          onChange: onBranchApprovalChange
+            ? (status: AccountantStatus) => onBranchApprovalChange(node.id, status)
+            : undefined,
+          disabledReason: approvalsDisabledReason,
+        };
       }
       const approval = leafStatuses?.get(node.id);
       if (!approval) return undefined;
@@ -173,6 +187,7 @@ export function TreePanel({
     approvalStats,
     leafStatuses,
     onLeafApprovalChange,
+    onBranchApprovalChange,
     approvalsDisabledReason,
   ]);
 

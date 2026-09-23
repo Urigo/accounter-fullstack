@@ -55,10 +55,12 @@ import { LegacyBanner } from './legacy-banner.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import {
+  applyBulk,
   applyOverride,
   buildApprovalsInput,
   buildApprovalStats,
   buildEffectiveStatuses,
+  countedLeafIds,
   deriveLeafStatuses,
   deriveSaveStatuses,
   dropSavedOverrides,
@@ -512,6 +514,14 @@ export function DynamicReport() {
       setApprovalOverrides(prev => applyOverride(prev, entityId, status, leafStatuses));
     },
     [leafStatuses],
+  );
+
+  const handleBranchApprovalChange = useCallback(
+    (branchId: string, status: AccountantStatus) => {
+      const leafIds = countedLeafIds(reportTree, branchId);
+      setApprovalOverrides(prev => applyBulk(prev, leafIds, status, leafStatuses));
+    },
+    [reportTree, leafStatuses],
   );
 
   const newEntityIds = useMemo(
@@ -1072,6 +1082,7 @@ export function DynamicReport() {
             leafStatuses={effectiveStatuses}
             approvalStats={approvalStats}
             onLeafApprovalChange={handleLeafApprovalChange}
+            onBranchApprovalChange={handleBranchApprovalChange}
             approvalsDisabledReason={approvalsDisabledReason}
           />
         </div>
