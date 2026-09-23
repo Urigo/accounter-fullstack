@@ -487,10 +487,14 @@ export function DynamicReport() {
 
   // Statuses are saved with the template's latest snapshot, so they can only change when there is
   // a template, its latest baseline is the one on screen, and the statuses derived from it are final.
+  // Not having the template's snapshot list yet counts as loading, not as "no baseline": with no
+  // list, latestBaselineId is null and every leaf would read UNAPPROVED.
   const isApprovalDataLoading =
     templateNodesFetching ||
     businessSumsFetching ||
     snapshotFetching ||
+    templateNodesData?.dynamicReport?.name !== selectedTemplateName ||
+    !businessSumsData ||
     (!!activeBaselineId && baselineSnapshot?.id !== activeBaselineId);
   const approvalsDisabledReason = getApprovalsDisabledReason({
     hasTemplate: !!currentTemplate,
@@ -684,6 +688,13 @@ export function DynamicReport() {
   const setIsDirtyAfterSaveAsNew = useCallback((dirty: boolean) => {
     setIsDirty(dirty);
     if (!dirty) setApprovalOverrides(new Map());
+  }, []);
+
+  // Deleting the loaded template leaves no template for staged statuses to be saved with, so they
+  // go with it instead of lingering as an unsaved change.
+  const setCurrentTemplateAfterDelete = useCallback((template: Template | null) => {
+    setCurrentTemplate(template);
+    if (!template) setApprovalOverrides(new Map());
   }, []);
 
   const handleSaveAsNew = useCallback(() => {
@@ -1055,7 +1066,7 @@ export function DynamicReport() {
         setSelectedTemplateName={setSelectedTemplateName}
         refetchAllTemplates={refetchAllTemplates}
         currentTemplate={currentTemplate}
-        setCurrentTemplate={setCurrentTemplate}
+        setCurrentTemplate={setCurrentTemplateAfterDelete}
       />
     </div>
   );
