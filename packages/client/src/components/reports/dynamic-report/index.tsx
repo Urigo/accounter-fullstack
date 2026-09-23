@@ -40,6 +40,7 @@ import {
   type DeleteTemplateConfirmationRef,
 } from './dialogs/delete-template-confirmation.js';
 import { DirtyTemplateSwitchConfirmation } from './dialogs/dirty-template-switch-confirmation.js';
+import { DiscardApprovalsConfirmation } from './dialogs/discard-approvals-confirmation.js';
 import { NewBranchDialog, type NewBranchDialogRef } from './dialogs/new-branch-dialog.js';
 import { RenameBranchDialog, type RenameBranchDialogRef } from './dialogs/rename-branch-dialog.js';
 import {
@@ -72,6 +73,7 @@ import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.j
 import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
+import { guardScopeChange as runGuardedScopeChange } from './utils/scope-guard.js';
 import {
   clearPeriodOverride,
   selectTemplateParams,
@@ -303,6 +305,36 @@ export function DynamicReport() {
   );
   const hasStagedApprovals = approvalOverrides.size > 0;
   const hasUnsavedChanges = isDirty || hasStagedApprovals;
+  // A period, owner or baseline change waiting on the discard prompt. Wrapped in an object because
+  // useState would call a bare function as an updater.
+  const [pendingScopeChange, setPendingScopeChange] = useState<{ apply: () => void } | null>(null);
+
+  // Staged statuses belong to the scope they were chosen under, so a scope change asks before
+  // discarding them (spec R13). Structural edits are kept either way.
+  const guardScopeChange = useCallback(
+    (apply: () => void) =>
+      runGuardedScopeChange({
+        hasStaged: hasStagedApprovals,
+        open: pending => setPendingScopeChange({ apply: pending }),
+        apply,
+      }),
+    [hasStagedApprovals],
+  );
+
+  const handleDiscardApprovalsConfirm = useCallback(() => {
+    const pending = pendingScopeChange;
+    setPendingScopeChange(null);
+    if (!pending) return;
+    setApprovalOverrides(new Map());
+    pending.apply();
+  }, [pendingScopeChange]);
+
+  const handleDiscardApprovalsCancel = useCallback(() => setPendingScopeChange(null), []);
+
+  const handleOwnerChange = useCallback(
+    (ownerId: string) => guardScopeChange(() => setSelectedOwner(ownerId)),
+    [guardScopeChange, setSelectedOwner],
+  );
   const [showLegacyBanner, setShowLegacyBanner] = useState(false);
   const [collapsedPanel, setCollapsedPanel] = useState<'bank' | 'report' | null>(null);
 
@@ -390,8 +422,8 @@ export function DynamicReport() {
       (!!urlToDate && urlToDate !== draftToDate));
 
   const restoreDraftPeriod = useCallback(
-    () => updateSearchParams(clearPeriodOverride),
-    [updateSearchParams],
+    () => guardScopeChange(() => updateSearchParams(clearPeriodOverride)),
+    [guardScopeChange, updateSearchParams],
   );
 
   const [{ data: businessSumsData, fetching: businessSumsFetching }] = useQuery({
@@ -434,8 +466,9 @@ export function DynamicReport() {
   // baseline across future saves instead of freezing on the snapshot that happened to be newest
   // when it was chosen.
   const handleBaselineChange = useCallback(
-    (id: string) => setSelectedBaselineId(id === latestBaselineId ? null : id),
-    [latestBaselineId, setSelectedBaselineId],
+    (id: string) =>
+      guardScopeChange(() => setSelectedBaselineId(id === latestBaselineId ? null : id)),
+    [guardScopeChange, latestBaselineId, setSelectedBaselineId],
   );
 
   const [{ data: snapshotData, fetching: snapshotFetching }] = useQuery({
@@ -920,31 +953,34 @@ export function DynamicReport() {
   }, [fromDate, toDate]);
 
   const handlePeriodConfirmed = useCallback(
-    (nextFrom: string, nextTo: string) => {
-      // Both dates in one call — separate setFromDate/setToDate calls would keep only `to`.
-      updateSearchParams(p => setPeriodParams(p, nextFrom, nextTo));
-      // The period is part of the draft, so changing it is an unsaved edit like any other.
-      setIsDirty(true);
-    },
-    [updateSearchParams],
+    (nextFrom: string, nextTo: string) =>
+      guardScopeChange(() => {
+        // Both dates in one call — separate setFromDate/setToDate calls would keep only `to`.
+        updateSearchParams(p => setPeriodParams(p, nextFrom, nextTo));
+        // The period is part of the draft, so changing it is an unsaved edit like any other.
+        setIsDirty(true);
+      }),
+    [guardScopeChange, updateSearchParams],
   );
 
   // The pickers are live only for a draft that has no period of its own, where the period the user
   // picks is what the next save will record — so it counts as an unsaved edit, same as the dialog.
   const handleFromDateChange = useCallback(
-    (next: string) => {
-      setFromDate(next);
-      if (currentTemplate) setIsDirty(true);
-    },
-    [setFromDate, currentTemplate],
+    (next: string) =>
+      guardScopeChange(() => {
+        setFromDate(next);
+        if (currentTemplate) setIsDirty(true);
+      }),
+    [guardScopeChange, setFromDate, currentTemplate],
   );
 
   const handleToDateChange = useCallback(
-    (next: string) => {
-      setToDate(next);
-      if (currentTemplate) setIsDirty(true);
-    },
-    [setToDate, currentTemplate],
+    (next: string) =>
+      guardScopeChange(() => {
+        setToDate(next);
+        if (currentTemplate) setIsDirty(true);
+      }),
+    [guardScopeChange, setToDate, currentTemplate],
   );
 
   const handleRenameInManager = useCallback(
@@ -1023,7 +1059,7 @@ export function DynamicReport() {
         onToDateChange={handleToDateChange}
         owners={owners}
         selectedOwner={soleAdminBusinessId ?? selectedOwner}
-        onOwnerChange={setSelectedOwner}
+        onOwnerChange={handleOwnerChange}
         ownerDisabled={!!soleAdminBusinessId}
         showZeroed={showZeroed}
         onShowZeroedChange={setShowZeroed}
@@ -1146,6 +1182,12 @@ export function DynamicReport() {
         setPendingTemplate={setPendingTemplate}
         templateSwitchDialogOpen={templateSwitchDialogOpen}
         setTemplateSwitchDialogOpen={setTemplateSwitchDialogOpen}
+      />
+
+      <DiscardApprovalsConfirmation
+        open={!!pendingScopeChange}
+        onConfirm={handleDiscardApprovalsConfirm}
+        onCancel={handleDiscardApprovalsCancel}
       />
 
       <SaveAsNewTemplateDialog
