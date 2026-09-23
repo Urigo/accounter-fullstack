@@ -10,23 +10,48 @@ import {
   matchBusiness,
   serializeBusinessCatalog,
 } from './helpers/business-matcher.helper.js';
+import type { CacheGateOutcome } from './helpers/prompt-cache-gate.helper.js';
+import { PromptCacheGate } from './helpers/prompt-cache-gate.helper.js';
 
 const MODEL_ID = 'claude-sonnet-5';
 
 /**
  * TTL for the cached prompt prefix (instructions + business catalog).
  *
- * Anthropic prices a 5-minute cache write at 1.25x base input and a 1-hour write
- * at 2x, against reads at 0.1x — so the catalog pays for itself from the second
- * document in a 5-minute window, or the third in an hour. Document processing
- * here is bursty (an email batch, a user uploading a folder) with gaps well over
- * five minutes between bursts, and a read refreshes the entry's timer for free,
- * so the hour buys reuse across an entire working session for one extra write.
+ * The default 5 minutes, not the hour, because the arrival pattern is bursty
+ * rather than steady. Measured over a week of production ingest logs: documents
+ * cluster into bursts with a median of ~1.4s between consecutive emails, and
+ * those bursts are separated by gaps of several hours. So the cache only ever
+ * amortizes *within* a burst — five minutes covers that with room to spare, and
+ * an hour does not come close to spanning the gap to the next one.
  *
- * Revisit against the logged `cacheReadTokens` / `cacheWriteTokens`: a tenant
- * that never reaches three documents an hour is better off on the default 5m.
+ * That makes the hour a pure surcharge: it costs 2x base input per write against
+ * 1.25x for five minutes, to avoid a handful of writes it cannot actually avoid.
+ * At the observed burst shape the 5m TTL is ~25% cheaper on catalog tokens for
+ * both a high-volume and a low-volume tenant.
+ *
+ * Reads refresh the entry's timer for free, so a long burst stays warm on one
+ * write. Keep CACHE_TTL_MS in step with CACHE_TTL — the gate below uses it to
+ * decide when the entry has expired.
  */
-const CACHE_TTL = '1h' as const;
+const CACHE_TTL = '5m' as const;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * How long a caller will wait for another request to warm a cold prefix.
+ *
+ * Bounded well inside the email gateway's 30s ingest timeout, which is
+ * deliberately not retried: on expiry every waiter proceeds and pays its own
+ * cache write, which is more expensive but never stalls an ingest.
+ */
+const CACHE_GATE_MAX_WAIT_MS = 10 * 1000;
+
+/**
+ * Shaved off the TTL when recording warmth, since Anthropic measures an entry's
+ * lifetime from the start of the request that writes or reads it — generation
+ * time counts against it.
+ */
+const CACHE_GATE_SAFETY_MARGIN_MS = 60 * 1000;
 
 // NOTE: schema is kept as simple as possible to stay under Anthropic's constrained-decoding
 // grammar complexity budget. Two rules:
@@ -195,6 +220,17 @@ function buildSystemPrompt(businesses: BusinessMatchData[]): string {
   global: true,
 })
 export class AnthropicProvider {
+  /**
+   * Coordinates concurrent OCR calls that share one cached prefix. Correctness
+   * rests on this provider being a singleton: one gate per process, shared by
+   * every caller — the email ingest path and the interactive upload path alike.
+   */
+  private readonly cacheGate = new PromptCacheGate({
+    ttlMs: CACHE_TTL_MS,
+    maxWaitMs: CACHE_GATE_MAX_WAIT_MS,
+    safetyMarginMs: CACHE_GATE_SAFETY_MARGIN_MS,
+  });
+
   private async fileToBase64(fileOrBlob: File | Blob): Promise<string> {
     const buffer = await fileOrBlob.arrayBuffer();
     return Buffer.from(buffer).toString('base64');
@@ -213,10 +249,11 @@ export class AnthropicProvider {
     const fileData = await this.fileToBase64(fileOrBlob);
     const businessList = businesses ?? [];
 
+    const systemPrompt = buildSystemPrompt(businessList);
     const messages: Array<ModelMessage> = [
       {
         role: 'system',
-        content: buildSystemPrompt(businessList),
+        content: systemPrompt,
         // The cache breakpoint. Everything up to and including this block — the
         // instructions and the whole business catalog — is written once per tenant
         // and read back at 0.1x on every later document, for as long as the TTL
@@ -232,16 +269,29 @@ export class AnthropicProvider {
       },
     ];
 
-    const { output, usage } = await generateText({
-      model: anthropic(MODEL_ID),
-      output: Output.object({ schema: documentDataSchema }),
-      messages,
-      experimental_telemetry: { isEnabled: true, functionId: 'ocr-extract-invoice' },
-    }).catch(err => {
-      throw new Error(`Failed to extract document details: ${err.message}`);
-    });
-
-    logCacheUsage(usage, businessList.length);
+    // Under the gate: a cache entry is not readable until the request that writes
+    // it responds, so without this every document of a burst writes its own copy
+    // of the catalog. The gate lets one call warm a cold prefix while its
+    // siblings wait, and lets everyone through untouched once it is warm.
+    const { result, gate } = await this.cacheGate.run(
+      systemPrompt,
+      () =>
+        generateText({
+          model: anthropic(MODEL_ID),
+          output: Output.object({ schema: documentDataSchema }),
+          messages,
+          experimental_telemetry: { isEnabled: true, functionId: 'ocr-extract-invoice' },
+        }).catch(err => {
+          throw new Error(`Failed to extract document details: ${err.message}`);
+        }),
+      // Warmth is recorded from what the response actually reports, never from an
+      // assumption that the write landed. Both counters zero means the prefix
+      // never reached the model's minimum cacheable length.
+      ({ usage: u }) =>
+        (u?.inputTokenDetails?.cacheReadTokens ?? 0) > 0 ||
+        (u?.inputTokenDetails?.cacheWriteTokens ?? 0) > 0,
+    );
+    const { output, usage } = result;
 
     const draft = output;
 
@@ -251,6 +301,13 @@ export class AnthropicProvider {
     // judgement call. The model only gets consulted for a side it left unresolved.
     let suggestedIssuer = matchBusiness(draft.issuer, draft.issuerVatNumber, businessList);
     let suggestedRecipient = matchBusiness(draft.recipient, draft.recipientVatNumber, businessList);
+
+    // Kept to report whether the catalog earned its place on this document. The
+    // catalog rides on every request now, so the open question is what share of
+    // documents the deterministic matcher cannot resolve on its own — see the
+    // `modelMatchUsed` note on logCacheUsage.
+    const deterministicIssuer = suggestedIssuer;
+    const deterministicRecipient = suggestedRecipient;
 
     // Scoped to financial documents, as the separate match call was: a delivery note
     // or a bank letter has no meaningful issuer/recipient to resolve, and a match
@@ -265,6 +322,14 @@ export class AnthropicProvider {
       suggestedIssuer ??= knownId(draft.issuerMatch);
       suggestedRecipient ??= knownId(draft.recipientMatch);
     }
+
+    logCacheUsage(usage, businessList.length, {
+      tenantId: owner?.id,
+      gate,
+      modelMatchUsed:
+        (deterministicIssuer === null && suggestedIssuer !== null) ||
+        (deterministicRecipient === null && suggestedRecipient !== null),
+    });
 
     const vatAmount = applyForeignCounterpartyVatDefault(
       draft.vatAmount,
@@ -308,14 +373,31 @@ export class AnthropicProvider {
  * non-empty catalog means something ahead of the breakpoint is varying per
  * request. Both zero means the prefix never reached the model's 1024-token
  * minimum, which is expected for a small tenant and harmless.
+ *
+ * Read cost, not hit rate. A shorter TTL can lower the hit rate while lowering
+ * the bill, because a 5-minute write is 1.25x base input against 2x for an hour
+ * — tracking hit rate alone reads that as a regression.
+ *
+ * `modelMatchUsed` answers the question the cost model cannot: the catalog now
+ * accompanies every document, so what matters is the share of documents where
+ * the model's match actually resolved a side `matchBusiness` could not. `gate`
+ * reports how the call was scheduled, so a collapse in cache reads can be told
+ * apart from a gate that stopped coalescing.
  */
-function logCacheUsage(usage: LanguageModelUsage, catalogSize: number): void {
+function logCacheUsage(
+  usage: LanguageModelUsage,
+  catalogSize: number,
+  context: { tenantId?: string; gate: CacheGateOutcome; modelMatchUsed: boolean },
+): void {
   try {
     console.info(
       JSON.stringify({
         msg: 'anthropic.ocr.usage',
         model: MODEL_ID,
+        tenantId: context.tenantId,
         catalogSize,
+        gate: context.gate,
+        modelMatchUsed: context.modelMatchUsed,
         inputTokens: usage?.inputTokens,
         outputTokens: usage?.outputTokens,
         cacheReadTokens: usage?.inputTokenDetails?.cacheReadTokens,

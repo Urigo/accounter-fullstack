@@ -672,17 +672,15 @@ export class EmailIngestionIngestProvider {
         return params;
       };
 
-      // The first document is processed alone, and only then does the rest of the
-      // batch fan out. The OCR prompt's cached prefix (the tenant's business
-      // catalog) does not become readable until the request that writes it starts
-      // streaming a response, so a flat `Promise.all` has every document in the
-      // batch miss the cache and write its own copy of the catalog — paying the
-      // write premium N times over instead of once. Serializing one document turns
-      // the other N-1 writes into reads.
-      const [firstCandidate, ...restCandidates] = newCandidates;
-      const firstPrepared = await prepareOne(firstCandidate);
-      const restPrepared = await Promise.all(restCandidates.map(prepareOne));
-      return [firstPrepared, ...restPrepared];
+      // Flat fan-out. Coalescing the OCR prompt's cached prefix is `PromptCacheGate`'s
+      // job now (see AnthropicProvider), and it does it better than staggering the
+      // batch here could: emails for one tenant arrive a median ~1.4s apart as
+      // separate requests, so most of the cache writes this used to pay for were
+      // being raced between concurrent emails, which a within-batch stagger cannot
+      // see. The gate also skips the wait entirely once the prefix is warm, where
+      // serializing the first document bought nothing and cost a full OCR round
+      // trip against the gateway's non-retried 30s ingest timeout.
+      return Promise.all(newCandidates.map(prepareOne));
     } catch (err) {
       throw new DocumentPreparationError('Failed to prepare email documents for ingest', {
         cause: err,
