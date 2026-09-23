@@ -184,21 +184,27 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
               </form>
             </Form>
           </div>
-          <div className=" w-1/5 h-max flex flex-col ">
+          <div className=" w-1/5 h-max flex flex-col pr-5">
             <div className="flex justify-center">
-              {/* Mantine's `Image` added placeholder and object-fit handling this call site
-                  never asked for; a plain img is the whole of what it rendered. The click
-                  target is a real button now — it opens the scan in a drawer, and an img with
-                  an onClick is neither focusable nor keyboard-operable. */}
+              {/* Mantine's `Image` added placeholder handling this call site never asked for,
+                  but it also sized the scan: its `.image` rule is `display:block; width:100%`
+                  and its default props are `width="100%" height="auto"`. The grey box, the
+                  padding and the margin sat on the wrapper it rendered, not on the img — so
+                  `max-h-fit max-w-fit` were the leftovers of the wrapper, and on a bare img
+                  they are no-ops (`fit-content` on a replaced element is its intrinsic size).
+                  That left a multi-megapixel scan rendering at full resolution and blowing the
+                  modal out, so the width cap is explicit here now.
+                  The click target is a real button — it opens the scan in a drawer, and an img
+                  with an onClick is neither focusable nor keyboard-operable. */}
               <button
                 type="button"
                 onClick={(): void => setOpenImage(!!document.image)}
-                className="cursor-pointer"
+                className="w-full cursor-pointer bg-gray-300 p-5"
               >
                 <img
                   alt="Open document scan"
                   src={document?.image?.toString()}
-                  className="bg-gray-300 p-5 mr-5 max-h-fit max-w-fit"
+                  className="block w-full h-auto"
                 />
               </button>
             </div>
