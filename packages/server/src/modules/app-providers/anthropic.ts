@@ -11,7 +11,7 @@ import {
   serializeBusinessCatalog,
 } from './helpers/business-matcher.helper.js';
 
-const MODEL_ID = 'claude-sonnet-4-5';
+const MODEL_ID = 'claude-sonnet-5';
 
 /**
  * TTL for the cached prompt prefix (instructions + business catalog).
