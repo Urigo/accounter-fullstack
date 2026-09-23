@@ -14,8 +14,10 @@ import {
   deriveSaveStatuses,
   dropSavedOverrides,
   formatApprovalDate,
+  formatApprovalProgress,
   leafApprovalTooltip,
   resolveStatus,
+  summarizeApprovals,
   type ApprovalOverrides,
   type DynamicReportLeafApproval,
   type EffectiveApproval,
@@ -573,5 +575,50 @@ describe('deriveSaveStatuses', () => {
       AccountantStatus.Unapproved,
       AccountantStatus.Unapproved,
     ]);
+  });
+});
+
+describe('summarizeApprovals', () => {
+  it('counts every status and the total', () => {
+    const statuses = new Map<string, EffectiveApproval>([
+      ['a', { status: AccountantStatus.Approved }],
+      ['b', { status: AccountantStatus.Approved }],
+      ['c', { status: AccountantStatus.Pending, isDerived: true }],
+      ['d', { status: AccountantStatus.Unapproved }],
+      ['e', { status: AccountantStatus.Pending, isStaged: true }],
+    ]);
+    expect(summarizeApprovals(statuses)).toEqual({
+      approved: 2,
+      pending: 2,
+      unapproved: 1,
+      total: 5,
+    });
+  });
+
+  it('returns zeros for no leaves', () => {
+    expect(summarizeApprovals(new Map())).toEqual({
+      approved: 0,
+      pending: 0,
+      unapproved: 0,
+      total: 0,
+    });
+  });
+});
+
+describe('formatApprovalProgress', () => {
+  it('shows approved over total and the pending count', () => {
+    expect(formatApprovalProgress({ approved: 124, pending: 6, unapproved: 20, total: 150 })).toBe(
+      '124 / 150 approved · 6 pending',
+    );
+  });
+
+  it('omits the pending part when nothing is pending', () => {
+    expect(formatApprovalProgress({ approved: 3, pending: 0, unapproved: 2, total: 5 })).toBe(
+      '3 / 5 approved',
+    );
+  });
+
+  it('returns null when there are no counted leaves', () => {
+    expect(formatApprovalProgress({ approved: 0, pending: 0, unapproved: 0, total: 0 })).toBeNull();
   });
 });

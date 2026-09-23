@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
 import type { TimelessDateString } from '@/helpers/index.js';
+import { formatApprovalProgress, type ApprovalSummary } from './utils/approvals.js';
 import { saveActions } from './utils/save-actions.js';
 import { type Owner, type Template } from './utils/types.js';
 
@@ -78,6 +79,8 @@ interface ToolbarProps {
   /** The default baseline — the newest save for the period and owner on screen — labelled "Last save". */
   latestBaselineId: string | null;
   onBaselineChange: (id: string) => void;
+  /** Report-wide status counts over the counted leaves, shown as a progress line with a template. */
+  approvalSummary?: ApprovalSummary | null;
   /** Set when change tracking cannot be shown, explaining why. */
   diffSuspendedReason?: string | null;
 }
@@ -117,10 +120,15 @@ export function Toolbar({
   activeBaselineId,
   latestBaselineId,
   onBaselineChange,
+  approvalSummary = null,
   diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
   const actions = saveActions({ hasTemplate, isLocked, isDirty, hasStagedApprovals });
+
+  // Statuses live on a template's snapshots, so without a template there is no progress to show.
+  const approvalProgress =
+    hasTemplate && approvalSummary ? formatApprovalProgress(approvalSummary) : null;
 
   const baselineLabel = (snapshot: { id: string; createdAt: Date | string }): string => {
     const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
@@ -223,6 +231,12 @@ export function Toolbar({
           <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
             {diffSuspendedReason}
           </Badge>
+        )}
+
+        {approvalProgress && (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {approvalProgress}
+          </span>
         )}
 
         {hasTemplate && snapshots.length > 0 && (
