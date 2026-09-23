@@ -61,6 +61,7 @@ import {
   buildEffectiveStatuses,
   deriveLeafStatuses,
   deriveSaveStatuses,
+  dropSavedOverrides,
   approvalsDisabledReason as getApprovalsDisabledReason,
 } from './utils/approvals.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
@@ -775,10 +776,18 @@ export function DynamicReport() {
   // is pinned, the statuses on screen are that older save's, and sending them would write them back
   // as fresh choices — so the newest one is fetched and the statuses derived from it instead.
   // Returns null, after telling the user, when it can't be read: saving without statuses would
-  // drop every one of them.
+  // drop every one of them. The same goes while the report is still loading: until the snapshot
+  // list arrives latestBaselineId reads as "no baseline", every leaf as UNAPPROVED, and sending that
+  // would overwrite the stored statuses.
   const resolveSaveApprovals = useCallback(async (): Promise<
     DynamicReportLeafApprovalInput[] | null
   > => {
+    if (isApprovalDataLoading) {
+      toast.error('Error', {
+        description: 'The report is still loading, so nothing was saved. Try again in a moment',
+      });
+      return null;
+    }
     if (!latestBaselineId || baselineSnapshot?.id === latestBaselineId) {
       return buildApprovalsInput(reportTree, effectiveStatuses);
     }
@@ -804,6 +813,7 @@ export function DynamicReport() {
     );
     return buildApprovalsInput(reportTree, statuses);
   }, [
+    isApprovalDataLoading,
     latestBaselineId,
     baselineSnapshot,
     reportTree,
@@ -817,6 +827,8 @@ export function DynamicReport() {
 
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
+    // The overrides this save sends; anything staged while it is in flight must survive it.
+    const savedOverrides = approvalOverrides;
     const approvals = await resolveSaveApprovals();
     if (!approvals) return;
     const serialized = serializeReportTree(reportTree);
@@ -829,7 +841,7 @@ export function DynamicReport() {
       setIsDirty(false);
       // The statuses are in the new snapshot now, which the refetch below brings back as the
       // baseline. On failure they stay staged, to retry.
-      setApprovalOverrides(new Map());
+      setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
       setShowLegacyBanner(false);
       // The save just became the newest baseline. Releasing any pin means the user is comparing
       // against what they just saved rather than against something older with nothing on screen
@@ -841,6 +853,7 @@ export function DynamicReport() {
     }
   }, [
     currentTemplate,
+    approvalOverrides,
     reportTree,
     resolveSaveApprovals,
     updateDynamicReportTemplate,
@@ -854,6 +867,7 @@ export function DynamicReport() {
   // locked draft could never start tracking changes at all.
   const handleCaptureBaseline = useCallback(async () => {
     if (!currentTemplate) return;
+    const savedOverrides = approvalOverrides;
     const approvals = await resolveSaveApprovals();
     if (!approvals) return;
     const result = await captureDynamicReportBaseline({
@@ -862,12 +876,13 @@ export function DynamicReport() {
       snapshot: { ...snapshotInput, approvals },
     });
     if (result) {
-      setApprovalOverrides(new Map());
+      setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
       setSelectedBaselineId(null);
       refetchTemplateNodes({ requestPolicy: 'network-only' });
     }
   }, [
     currentTemplate,
+    approvalOverrides,
     reportTree,
     resolveSaveApprovals,
     snapshotInput,

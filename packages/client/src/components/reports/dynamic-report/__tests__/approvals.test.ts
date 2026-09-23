@@ -10,6 +10,7 @@ import {
   buildEffectiveStatuses,
   deriveLeafStatuses,
   deriveSaveStatuses,
+  dropSavedOverrides,
   formatApprovalDate,
   leafApprovalTooltip,
   resolveStatus,
@@ -297,6 +298,29 @@ describe('applyOverride', () => {
   it('treats a leaf with no derived status as unapproved', () => {
     const after = applyOverride(new Map(), 'unknown', AccountantStatus.Unapproved, derived);
     expect(after.size).toBe(0);
+  });
+});
+
+describe('dropSavedOverrides', () => {
+  const saved: ApprovalOverrides = new Map([
+    ['a', AccountantStatus.Approved],
+    ['b', AccountantStatus.Pending],
+  ]);
+
+  it('clears everything when nothing was staged during the save', () => {
+    expect(dropSavedOverrides(saved, saved).size).toBe(0);
+  });
+
+  it('keeps what was changed or added while the save was in flight', () => {
+    const current = new Map([
+      ['a', AccountantStatus.Approved], // sent as is: saved
+      ['b', AccountantStatus.Unapproved], // changed after sending: still unsaved
+      ['c', AccountantStatus.Approved], // added after sending: still unsaved
+    ]);
+    expect([...dropSavedOverrides(current, saved)]).toEqual([
+      ['b', AccountantStatus.Unapproved],
+      ['c', AccountantStatus.Approved],
+    ]);
   });
 });
 
