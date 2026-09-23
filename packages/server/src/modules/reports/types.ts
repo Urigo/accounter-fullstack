@@ -8,6 +8,25 @@ export type * from './__generated__/balance-report.types.js';
 export type * from './__generated__/vat-report.types.js';
 export type * from './__generated__/annual-revenue-report.types.js';
 
+/** Accountant status of a single dynamic-report leaf. */
+export type LeafApprovalStatus = 'APPROVED' | 'PENDING' | 'UNAPPROVED';
+
+/** Stamp stored per leaf in `dynamic_report_snapshots.leaf_approvals`. */
+export type LeafApproval = {
+  status: LeafApprovalStatus;
+  /** User id; null when system-stamped. */
+  setBy: string | null;
+  /** ISO timestamp, server clock. */
+  setAt: string;
+  system: boolean;
+};
+
+/**
+ * `leaf_approvals` jsonb shape: counted report leaves only, keyed by entity id.
+ * An absent entry means UNAPPROVED and never touched.
+ */
+export type LeafApprovals = Record<string, LeafApproval>;
+
 export type CommentaryProto = {
   amount: number;
   records: CommentaryRecordProto[];
