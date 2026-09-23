@@ -329,11 +329,21 @@ export function DynamicReport() {
     pending.apply();
   }, [pendingScopeChange]);
 
-  const handleDiscardApprovalsCancel = useCallback(() => setPendingScopeChange(null), []);
+  // The date pickers keep their own input state and only resync when their value prop changes,
+  // which a cancelled change never does. Remounting them puts the period on screen back.
+  const [datePickersKey, setDatePickersKey] = useState(0);
+  const handleDiscardApprovalsCancel = useCallback(() => {
+    setPendingScopeChange(null);
+    setDatePickersKey(key => key + 1);
+  }, []);
 
   const handleOwnerChange = useCallback(
-    (ownerId: string) => guardScopeChange(() => setSelectedOwner(ownerId)),
-    [guardScopeChange, setSelectedOwner],
+    (ownerId: string) => {
+      // Re-picking the owner on screen changes nothing, so there is nothing to discard.
+      if (ownerId === selectedOwner) return;
+      guardScopeChange(() => setSelectedOwner(ownerId));
+    },
+    [guardScopeChange, selectedOwner, setSelectedOwner],
   );
   const [showLegacyBanner, setShowLegacyBanner] = useState(false);
   const [collapsedPanel, setCollapsedPanel] = useState<'bank' | 'report' | null>(null);
@@ -466,9 +476,11 @@ export function DynamicReport() {
   // baseline across future saves instead of freezing on the snapshot that happened to be newest
   // when it was chosen.
   const handleBaselineChange = useCallback(
-    (id: string) =>
-      guardScopeChange(() => setSelectedBaselineId(id === latestBaselineId ? null : id)),
-    [guardScopeChange, latestBaselineId, setSelectedBaselineId],
+    (id: string) => {
+      if (id === activeBaselineId) return;
+      guardScopeChange(() => setSelectedBaselineId(id === latestBaselineId ? null : id));
+    },
+    [guardScopeChange, activeBaselineId, latestBaselineId, setSelectedBaselineId],
   );
 
   const [{ data: snapshotData, fetching: snapshotFetching }] = useQuery({
@@ -953,34 +965,40 @@ export function DynamicReport() {
   }, [fromDate, toDate]);
 
   const handlePeriodConfirmed = useCallback(
-    (nextFrom: string, nextTo: string) =>
+    (nextFrom: string, nextTo: string) => {
+      if (nextFrom === fromDate && nextTo === toDate) return;
       guardScopeChange(() => {
         // Both dates in one call — separate setFromDate/setToDate calls would keep only `to`.
         updateSearchParams(p => setPeriodParams(p, nextFrom, nextTo));
         // The period is part of the draft, so changing it is an unsaved edit like any other.
         setIsDirty(true);
-      }),
-    [guardScopeChange, updateSearchParams],
+      });
+    },
+    [guardScopeChange, updateSearchParams, fromDate, toDate],
   );
 
   // The pickers are live only for a draft that has no period of its own, where the period the user
   // picks is what the next save will record — so it counts as an unsaved edit, same as the dialog.
   const handleFromDateChange = useCallback(
-    (next: string) =>
+    (next: string) => {
+      if (next === fromDate) return;
       guardScopeChange(() => {
         setFromDate(next);
         if (currentTemplate) setIsDirty(true);
-      }),
-    [guardScopeChange, setFromDate, currentTemplate],
+      });
+    },
+    [guardScopeChange, fromDate, setFromDate, currentTemplate],
   );
 
   const handleToDateChange = useCallback(
-    (next: string) =>
+    (next: string) => {
+      if (next === toDate) return;
       guardScopeChange(() => {
         setToDate(next);
         if (currentTemplate) setIsDirty(true);
-      }),
-    [guardScopeChange, setToDate, currentTemplate],
+      });
+    },
+    [guardScopeChange, toDate, setToDate, currentTemplate],
   );
 
   const handleRenameInManager = useCallback(
@@ -1057,6 +1075,7 @@ export function DynamicReport() {
         toDate={toDate}
         onFromDateChange={handleFromDateChange}
         onToDateChange={handleToDateChange}
+        datePickersKey={datePickersKey}
         owners={owners}
         selectedOwner={soleAdminBusinessId ?? selectedOwner}
         onOwnerChange={handleOwnerChange}
