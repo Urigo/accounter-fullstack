@@ -8,13 +8,19 @@ export type * from './__generated__/balance-report.types.js';
 export type * from './__generated__/vat-report.types.js';
 export type * from './__generated__/annual-revenue-report.types.js';
 
-/** Accountant status of a single dynamic-report leaf. */
+/**
+ * Accountant status of a single dynamic-report leaf: the values of the GraphQL `AccountantStatus`
+ * enum, but a report-level sign-off that never reads or writes `charges.accountant_status`.
+ */
 export type LeafApprovalStatus = 'APPROVED' | 'PENDING' | 'UNAPPROVED';
 
-/** Stamp stored per leaf in `dynamic_report_snapshots.leaf_approvals`. */
+/** Stamp stored per leaf in `dynamic_report_template_snapshots.leaf_approvals`. */
 export type LeafApproval = {
   status: LeafApprovalStatus;
-  /** User id; null when system-stamped. */
+  /**
+   * Id of the user who set the status. Null when system-stamped, and also on a user stamp whose
+   * caller had no user id to record.
+   */
   setBy: string | null;
   /** ISO timestamp, server clock. */
   setAt: string;

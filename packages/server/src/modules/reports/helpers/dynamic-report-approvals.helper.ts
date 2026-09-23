@@ -74,7 +74,8 @@ export function stampApprovals({
 const leafApprovalSchema = z.object({
   status: z.enum(['APPROVED', 'PENDING', 'UNAPPROVED']),
   setBy: z.string().nullable(),
-  setAt: z.string(),
+  // Always written from the server clock; anything that is not a timestamp is a malformed row.
+  setAt: z.iso.datetime({ offset: true }),
   system: z.boolean(),
 });
 

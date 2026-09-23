@@ -258,4 +258,15 @@ describe('parseLeafApprovals', () => {
     expect(parseLeafApprovals({ [A]: { status: 'APPROVED' } })).toEqual({});
     expect(parseLeafApprovals({ 'not-a-uuid': valid[A] })).toEqual({});
   });
+
+  it('returns {} when a setAt is not an ISO timestamp', () => {
+    expect(parseLeafApprovals({ [A]: { ...valid[A], setAt: '' } })).toEqual({});
+    expect(parseLeafApprovals({ [A]: { ...valid[A], setAt: 'yesterday' } })).toEqual({});
+    expect(parseLeafApprovals({ [A]: { ...valid[A], setAt: '2026-09-23' } })).toEqual({});
+  });
+
+  it('accepts a setAt with an explicit UTC offset', () => {
+    const withOffset = { [A]: { ...valid[A], setAt: '2026-09-23T13:00:00+03:00' } };
+    expect(parseLeafApprovals(withOffset)).toEqual(withOffset);
+  });
 });
