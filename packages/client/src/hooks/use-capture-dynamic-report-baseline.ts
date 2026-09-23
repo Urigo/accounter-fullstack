@@ -35,11 +35,12 @@ export const useCaptureDynamicReportBaseline = (): UseCaptureDynamicReportBaseli
   const { fetching, execute } = useApiMutation({
     document: CaptureDynamicReportBaselineDocument,
     notificationId: variables => `${NOTIFICATION_ID}-${variables.name}`,
-    loadingMessage: 'Capturing baseline',
-    errorMessage: variables => `Error capturing baseline for report "${variables.name}"`,
+    // The mutation backs the toolbar's Save review, so its messages speak of a review.
+    loadingMessage: 'Saving review',
+    errorMessage: variables => `Error saving review for report "${variables.name}"`,
     select: data => data.captureDynamicReportBaseline,
     successToast: template => ({
-      description: `Baseline captured for "${template.name}" — changes will be tracked from here`,
+      description: `Review saved for "${template.name}" — changes will be tracked from here`,
     }),
   });
 
