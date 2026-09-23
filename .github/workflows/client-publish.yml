@@ -76,17 +76,14 @@ jobs:
           yarn build  --mode ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref ==
           'refs/heads/prod' && 'production') || 'development' }}
 
-      # cloudflare/pages-action was deprecated and its repository deleted, so a
-      # pinned SHA no longer resolves. wrangler-action is Cloudflare's supported
-      # replacement; the old projectName/directory inputs fold into `command`.
       - name: Publish to Cloudflare Pages
-        uses: cloudflare/wrangler-action@4e88846969242f7752bcfdaf5511bfbb3985ca47 # v4.1.1
+        uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca # v1.5.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName:
+            ${{ (github.ref == 'refs/heads/main' && 'accounter-staging') || (github.ref ==
+            'refs/heads/prod' && 'accounter-prod') || '' }}
+          directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          packageManager: yarn
           workingDirectory: packages/client
-          command:
-            pages deploy dist --project-name=${{ (github.ref == 'refs/heads/main' &&
-            'accounter-staging') || 'accounter-prod' }} --branch=${{ github.ref_name }}
