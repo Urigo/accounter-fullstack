@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import {
   Carousel,
@@ -54,3 +54,27 @@ export const Default: Story = { args: {} };
 export const SingleSlide: Story = { args: { slides: 1 } };
 
 export const ManySlides: Story = { args: { slides: 8 } };
+
+/**
+ * The slide count changing after mount, which is what the documents gallery does when a
+ * document is added or removed. Embla emits `reInit`, and the indicators have to follow —
+ * a stale snap list would leave a dot addressing a slide that no longer exists.
+ */
+export const ChangingSlideCount: Story = {
+  render: function Render() {
+    const [slides, setSlides] = useState(5);
+    return (
+      <div>
+        <button
+          type="button"
+          data-testid="shrink"
+          className="m-4 rounded border px-2 py-1 text-sm"
+          onClick={() => setSlides(2)}
+        >
+          Drop to 2 slides
+        </button>
+        <Harness slides={slides} />
+      </div>
+    );
+  },
+};

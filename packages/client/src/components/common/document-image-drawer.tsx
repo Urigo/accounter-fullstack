@@ -28,7 +28,10 @@ export const DocumentImageDrawer = ({ src, opened, onClose }: Props): ReactEleme
       opened={opened}
       onClose={onClose}
     >
-      <div className="m-2">
+      {/* Mantine's drawer content carried `overflow-y-auto`; PopUpDrawer's does not, and
+          ImageMagnifier renders the scan at its natural size, so a tall one would run off
+          the bottom of a fixed-position drawer with no way to reach it. */}
+      <div className="m-2 max-h-[calc(100vh-6rem)] overflow-y-auto">
         <ImageMagnifier
           src={src.toString()}
           zoomLevel={3}
