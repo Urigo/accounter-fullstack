@@ -16,6 +16,7 @@ import {
   formatApprovalDate,
   formatApprovalProgress,
   leafApprovalTooltip,
+  needsReviewVisibility,
   resolveStatus,
   summarizeApprovals,
   type ApprovalOverrides,
@@ -620,5 +621,71 @@ describe('formatApprovalProgress', () => {
 
   it('returns null when there are no counted leaves', () => {
     expect(formatApprovalProgress({ approved: 0, pending: 0, unapproved: 0, total: 0 })).toBeNull();
+  });
+});
+
+describe('needsReviewVisibility', () => {
+  const statuses = new Map<string, AccountantStatus>([
+    ['a1', AccountantStatus.Approved],
+    ['a2', AccountantStatus.Pending],
+    ['b1', AccountantStatus.Approved],
+    ['b2', AccountantStatus.Approved],
+    ['c1', AccountantStatus.Unapproved],
+  ]);
+  const statusOf = (id: string) => statuses.get(id);
+
+  // report
+  // ├─ A (branch)
+  // │  ├─ a1 approved
+  // │  └─ A2 (branch)
+  // │     └─ a2 pending
+  // ├─ B (branch, fully approved)
+  // │  ├─ b1 approved
+  // │  └─ b2 approved
+  // ├─ c1 unapproved (root leaf)
+  // └─ E (empty branch)
+  const nodes = [
+    branch('A', 'report'),
+    leaf('a1', 'A'),
+    branch('A2', 'A'),
+    leaf('a2', 'A2'),
+    branch('B', 'report'),
+    leaf('b1', 'B'),
+    leaf('b2', 'B'),
+    leaf('c1', 'report'),
+    branch('E', 'report'),
+  ];
+
+  it('shows non-approved counted leaves and all their ancestors', () => {
+    const { visibleIds } = needsReviewVisibility(nodes, statusOf);
+    expect([...visibleIds].sort()).toEqual(['A', 'A2', 'a2', 'c1']);
+  });
+
+  it('force-opens exactly the ancestors of the shown leaves', () => {
+    const { forceOpenIds } = needsReviewVisibility(nodes, statusOf);
+    expect([...forceOpenIds].sort()).toEqual(['A', 'A2']);
+  });
+
+  it('excludes a fully approved subtree and an empty branch', () => {
+    const { visibleIds } = needsReviewVisibility(nodes, statusOf);
+    for (const id of ['B', 'b1', 'b2', 'E', 'a1']) {
+      expect(visibleIds.has(id)).toBe(false);
+    }
+  });
+
+  it('treats a leaf with no known status as unapproved', () => {
+    const { visibleIds } = needsReviewVisibility([branch('X', 'report'), leaf('x', 'X')], () =>
+      undefined,
+    );
+    expect([...visibleIds].sort()).toEqual(['X', 'x']);
+  });
+
+  it('skips hidden leaves', () => {
+    const { visibleIds, forceOpenIds } = needsReviewVisibility(
+      [branch('H', 'report'), leaf('h', 'H', { isHidden: true })],
+      () => AccountantStatus.Unapproved,
+    );
+    expect(visibleIds.size).toBe(0);
+    expect(forceOpenIds.size).toBe(0);
   });
 });
