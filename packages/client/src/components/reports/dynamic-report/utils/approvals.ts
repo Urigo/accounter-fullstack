@@ -161,6 +161,22 @@ export function applyOverride(
   return next;
 }
 
+/**
+ * What stays staged after a save that sent `saved`: only what the user changed or added while the
+ * save was in flight. Everything it sent is in the new snapshot now.
+ */
+export function dropSavedOverrides(
+  current: ApprovalOverrides,
+  saved: ApprovalOverrides,
+): ApprovalOverrides {
+  if (current === saved) return new Map();
+  const next = new Map(current);
+  for (const [entityId, status] of saved) {
+    if (next.get(entityId) === status) next.delete(entityId);
+  }
+  return next;
+}
+
 /** A staged override wins over the derived status (spec R3, step 1). */
 export function resolveStatus(
   entityId: string,
