@@ -286,3 +286,134 @@ describe('BusinessUsersProvider.removeBusinessUser', () => {
     expect(mockAuditProvider.log).not.toHaveBeenCalled();
   });
 });
+
+const U1 = '00000000-0000-4000-8000-000000000001';
+const U2 = '00000000-0000-4000-8000-000000000002';
+const GONE = '00000000-0000-4000-8000-000000000003';
+const B1 = '00000000-0000-4000-8000-0000000000b1';
+const B2 = '00000000-0000-4000-8000-0000000000b2';
+
+describe('BusinessUsersProvider.getUserDisplayNamesLoader', () => {
+  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockAuth0Provider: { getUserProfileById: ReturnType<typeof vi.fn> };
+
+  function buildDisplayNameProvider() {
+    return new BusinessUsersProvider(
+      mockDb as never,
+      {} as never,
+      mockAuth0Provider as never,
+      {} as never,
+    );
+  }
+
+  function membershipRow(
+    userId: string,
+    businessId: string,
+    auth0UserId: string | null,
+    fallbackEmail: string | null = null,
+  ) {
+    return {
+      user_id: userId,
+      business_id: businessId,
+      auth0_user_id: auth0UserId,
+      fallback_email: fallbackEmail,
+    };
+  }
+
+  beforeEach(() => {
+    mockDb = { query: vi.fn() };
+    mockAuth0Provider = { getUserProfileById: vi.fn().mockResolvedValue(null) };
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('batches lookups into one query and prefers the Auth0 name, then email', async () => {
+    mockDb.query.mockResolvedValueOnce({
+      rows: [
+        membershipRow(U1, B1, 'auth0|user-1'),
+        membershipRow(U2, B1, 'auth0|user-2'),
+      ],
+      rowCount: 2,
+    });
+    mockAuth0Provider.getUserProfileById.mockImplementation(async (auth0UserId: string) =>
+      auth0UserId === 'auth0|user-1'
+        ? { name: 'Ada Lovelace', email: 'ada@example.com' }
+        : { name: null, email: 'grace@example.com' },
+    );
+
+    const loader = buildDisplayNameProvider().getUserDisplayNamesLoader;
+    const names = await Promise.all([
+      loader.load({ userId: U1, businessId: B1 }),
+      loader.load({ userId: U2, businessId: B1 }),
+      loader.load({ userId: U1, businessId: B1 }),
+    ]);
+
+    expect(names).toEqual(['Ada Lovelace', 'grace@example.com', 'Ada Lovelace']);
+    expect(mockDb.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the invitation email when Auth0 has nothing', async () => {
+    mockDb.query.mockResolvedValueOnce({
+      rows: [
+        membershipRow(U1, B1, null, 'invited@example.com'),
+        membershipRow(U2, B1, 'auth0|user-2', 'invited-2@example.com'),
+      ],
+      rowCount: 2,
+    });
+
+    const loader = buildDisplayNameProvider().getUserDisplayNamesLoader;
+    await expect(
+      loader.loadMany([
+        { userId: U1, businessId: B1 },
+        { userId: U2, businessId: B1 },
+      ]),
+    ).resolves.toEqual(['invited@example.com', 'invited-2@example.com']);
+    // No Auth0 lookup for a membership without an Auth0 identity.
+    expect(mockAuth0Provider.getUserProfileById).toHaveBeenCalledTimes(1);
+  });
+
+  it('degrades to the invitation email when the Auth0 lookup throws', async () => {
+    mockDb.query.mockResolvedValueOnce({
+      rows: [membershipRow(U1, B1, 'auth0|user-1', 'invited@example.com')],
+      rowCount: 1,
+    });
+    mockAuth0Provider.getUserProfileById.mockRejectedValueOnce(new Error('Auth0 not configured'));
+
+    await expect(
+      buildDisplayNameProvider().getUserDisplayNamesLoader.load({
+        userId: U1,
+        businessId: B1,
+      }),
+    ).resolves.toBe('invited@example.com');
+  });
+
+  it('returns null for a user who is not a member of the given business', async () => {
+    mockDb.query.mockResolvedValueOnce({
+      // user-1 exists, but only in another business.
+      rows: [membershipRow(U1, B2, 'auth0|user-1')],
+      rowCount: 1,
+    });
+    mockAuth0Provider.getUserProfileById.mockResolvedValue({ name: 'Ada', email: null });
+
+    const loader = buildDisplayNameProvider().getUserDisplayNamesLoader;
+    await expect(
+      loader.loadMany([
+        { userId: U1, businessId: B1 },
+        { userId: GONE, businessId: B1 },
+      ]),
+    ).resolves.toEqual([null, null]);
+    expect(mockAuth0Provider.getUserProfileById).not.toHaveBeenCalled();
+  });
+
+  it('resolves malformed ids to null without querying', async () => {
+    await expect(
+      buildDisplayNameProvider().getUserDisplayNamesLoader.load({
+        userId: 'api-key:abc',
+        businessId: B1,
+      }),
+    ).resolves.toBeNull();
+    expect(mockDb.query).not.toHaveBeenCalled();
+  });
+});

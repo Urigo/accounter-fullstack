@@ -6,6 +6,8 @@ import { AdminContextProvider } from '../../../admin-context/providers/admin-con
 import { DBProvider } from '../../../app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../../auth/providers/auth-context.provider.js';
+import type { Auth0ManagementProvider } from '../../../auth/providers/auth0-management.provider.js';
+import { BusinessUsersProvider } from '../../../auth/providers/business-users.provider.js';
 import { dynamicReportResolver } from '../../resolvers/dynamic-report.resolver.js';
 import { DynamicReportProvider } from '../dynamic-report.provider.js';
 
@@ -95,10 +97,32 @@ beforeAll(async () => {
      ON CONFLICT (id) DO NOTHING`,
     [TEST_OWNER_ID],
   );
+  // Members of the tenant, whose ids approval stamps resolve to display names. USER_1 has an Auth0
+  // identity; USER_2 only has the email they were invited with.
+  await pool.query(
+    `INSERT INTO accounter_schema.businesses_admin (id, owner_id)
+     VALUES ($1, $1)
+     ON CONFLICT (id) DO NOTHING`,
+    [TEST_OWNER_ID],
+  );
+  await pool.query(
+    `INSERT INTO accounter_schema.business_users (user_id, auth0_user_id, business_id, role_id)
+     VALUES ($1, $2, $4, 'accountant'), ($3, NULL, $4, 'accountant')
+     ON CONFLICT (user_id, business_id) DO NOTHING`,
+    [USER_1, USER_1_AUTH0_ID, USER_2, TEST_OWNER_ID],
+  );
+  await pool.query(
+    `INSERT INTO accounter_schema.invitations
+       (business_id, email, role_id, expires_at, token_hash, user_id)
+     VALUES ($1, $2, 'accountant', now() + interval '1 day', $3, $4)`,
+    [TEST_OWNER_ID, USER_2_EMAIL, 'dynamic-report-snapshots-test-token', USER_2],
+  );
 });
 
 afterAll(async () => {
   await cleanup();
+  // Invitations cascade with their business_users row, which cascades with businesses_admin.
+  await pool.query('DELETE FROM accounter_schema.businesses_admin WHERE id = $1', [TEST_OWNER_ID]);
   await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [TEST_OWNER_ID]);
   await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = $1', [
     TEST_OWNER_ID,
@@ -226,6 +250,11 @@ const OTHER_SCOPE_ID = '00000000-0000-0000-0000-0000000007af';
 const OUTSIDE_TREE = '00000000-0000-0000-0000-0000000007ff';
 const USER_1 = '00000000-0000-4000-8000-0000000007b1';
 const USER_2 = '00000000-0000-4000-8000-0000000007b2';
+// Stamped by a user who has since left the business: no membership row.
+const FORMER_USER = '00000000-0000-4000-8000-0000000007b3';
+const USER_1_AUTH0_ID = 'auth0|dynamic-report-snapshots-user-1';
+const USER_1_NAME = 'Ada Lovelace';
+const USER_2_EMAIL = 'dynamic-report-snapshots-user-2@example.com';
 
 const TREE = JSON.stringify([
   { id: 1, parent: 0, text: 'Root', droppable: true, data: { nodeType: 'synthetic-branch', isOpen: true } },
@@ -263,8 +292,20 @@ function snapshotInput(
 
 /** One simulated GraphQL request, acting as `userId`. */
 function createContext(userId: string | null) {
+  const auth0 = {
+    getUserProfileById: (auth0UserId: string) =>
+      Promise.resolve(
+        auth0UserId === USER_1_AUTH0_ID ? { name: USER_1_NAME, email: 'ada@example.com' } : null,
+      ),
+  } as unknown as Auth0ManagementProvider;
+  const dbClient = new TenantAwareDBClient(
+    new DBProvider(pool),
+    createMockAuthContextProvider(TEST_OWNER_ID),
+  );
+  dbClients.push(dbClient);
   const services = new Map<unknown, unknown>([
     [DynamicReportProvider, createProvider()],
+    [BusinessUsersProvider, new BusinessUsersProvider(dbClient, {} as never, auth0, {} as never)],
     [AdminContextProvider, createMockAdminContextProvider(TEST_OWNER_ID)],
     [
       AuthContextProvider,
@@ -499,5 +540,90 @@ describe('dynamic report approvals write path', () => {
       expect.stringContaining('not leaves of the submitted tree'),
       expect.objectContaining({ entityIds: [OUTSIDE_TREE] }),
     );
+  });
+});
+
+// ── Approvals on snapshot reads ──────────────────────────────────────────────
+
+const snapshotFields = dynamicReportResolver.DynamicReportSnapshot as unknown as Record<
+  string,
+  AnyResolver
+>;
+const queries = dynamicReportResolver.Query as unknown as Record<string, AnyResolver>;
+
+/** Reads a snapshot through the query and its `approvals` field resolver, as a client would. */
+async function readApprovals(id: string) {
+  const context = createContext(USER_1);
+  const snapshot = await queries.dynamicReportSnapshot({}, { id }, context, {});
+  expect(snapshot).not.toBeNull();
+  const approvals = (await snapshotFields.approvals(snapshot, {}, context, {})) as {
+    entityId: string;
+    status: Status;
+    setAt: Date;
+    setBy: string | null;
+    isSystem: boolean;
+  }[];
+  return new Map(approvals.map(approval => [approval.entityId, approval]));
+}
+
+describe('dynamic report approvals read path', () => {
+  it('returns stamped approvals with display names', async () => {
+    await capture(USER_1, snapshotInput({ [LEAF_A]: 'APPROVED', [LEAF_B]: 'APPROVED' }));
+    await capture(
+      USER_2,
+      snapshotInput(
+        { [LEAF_A]: 'APPROVED', [LEAF_B]: 'PENDING', [LEAF_C]: 'APPROVED' },
+        { [LEAF_B]: 'fp-changed' },
+      ),
+    );
+    const [, second] = await snapshotRows();
+
+    const approvals = await readApprovals(second.id);
+
+    expect(approvals.size).toBe(3);
+    // Carried forward from the first capture: still named after the user who approved it.
+    expect(approvals.get(LEAF_A)).toEqual({
+      entityId: LEAF_A,
+      status: 'APPROVED',
+      setAt: new Date(second.leaf_approvals![LEAF_A].setAt),
+      setBy: USER_1_NAME,
+      isSystem: false,
+    });
+    // The fingerprint changed under an approval: a system stamp names nobody.
+    expect(approvals.get(LEAF_B)).toMatchObject({
+      status: 'PENDING',
+      setBy: null,
+      isSystem: true,
+    });
+    // No Auth0 identity: falls back to the invitation email.
+    expect(approvals.get(LEAF_C)).toMatchObject({
+      status: 'APPROVED',
+      setBy: USER_2_EMAIL,
+      isSystem: false,
+    });
+    expect(approvals.get(LEAF_C)!.setAt).toBeInstanceOf(Date);
+  });
+
+  it('resolves a former user or a caller with no user row to a null setBy that is not a system stamp', async () => {
+    await capture(FORMER_USER, snapshotInput({ [LEAF_A]: 'APPROVED' }));
+    await capture('api-key:test', snapshotInput({ [LEAF_A]: 'APPROVED', [LEAF_B]: 'PENDING' }));
+    const [, second] = await snapshotRows();
+
+    const approvals = await readApprovals(second.id);
+
+    expect(approvals.get(LEAF_A)).toMatchObject({ setBy: null, isSystem: false });
+    expect(approvals.get(LEAF_B)).toMatchObject({ setBy: null, isSystem: false });
+  });
+
+  it('a legacy snapshot with null leaf_approvals has no approvals', async () => {
+    const inserted = await createProvider().insertSnapshot({
+      ...baseSnapshot,
+      leafFingerprints: null,
+      leafApprovals: null,
+    });
+
+    const approvals = await readApprovals(inserted!.id);
+
+    expect(approvals.size).toBe(0);
   });
 });

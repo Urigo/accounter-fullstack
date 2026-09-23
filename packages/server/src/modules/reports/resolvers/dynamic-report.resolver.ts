@@ -7,6 +7,7 @@ import {
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
 import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
+import { BusinessUsersProvider } from '../../auth/providers/business-users.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import {
   carryForwardApprovals,
@@ -322,6 +323,28 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         ...value,
         fingerprint: fingerprints.get(value.entityId) ?? null,
       }));
+    },
+    approvals: async (snapshot, _args, { injector }) => {
+      // Legacy rows (and unreadable payloads) parse to {}: no approvals.
+      const approvals = Object.entries(parseLeafApprovals(snapshot.leaf_approvals));
+      const displayNames = injector.get(BusinessUsersProvider).getUserDisplayNamesLoader;
+      return Promise.all(
+        approvals.map(async ([entityId, approval]) => ({
+          entityId,
+          status: approval.status,
+          setAt: new Date(approval.setAt),
+          // Stamps name users of the snapshot's owner business. A system stamp, a caller with no
+          // user row behind it, or a user since removed from the business all resolve to null.
+          setBy:
+            approval.system || !approval.setBy
+              ? null
+              : await displayNames.load({
+                  userId: approval.setBy,
+                  businessId: snapshot.owner_id,
+                }),
+          isSystem: approval.system,
+        })),
+      );
     },
   },
   DynamicReportInfo: {

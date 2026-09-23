@@ -88,6 +88,18 @@ export default gql`
     tree: [DynamicReportNode!]!
     " leaf values only; branch sums are recomputed from these "
     values: [DynamicReportSnapshotValue!]!
+    " the reviewer status of each counted leaf; a leaf with no entry is UNAPPROVED. Empty on snapshots saved before approvals existed "
+    approvals: [DynamicReportLeafApproval!]!
+  }
+
+  " a report leaf's reviewer status as stamped by the server at save time "
+  type DynamicReportLeafApproval {
+    entityId: UUID!
+    status: AccountantStatus!
+    setAt: DateTime!
+    " display name (BusinessUser name ?? email); null when set by the system or by a user who can no longer be resolved "
+    setBy: String
+    isSystem: Boolean!
   }
 
   " one financial entity's value at the moment of a save "
