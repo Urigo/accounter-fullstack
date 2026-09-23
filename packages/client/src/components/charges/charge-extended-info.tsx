@@ -29,9 +29,9 @@ import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
 import { LedgerTable } from '../ledger-table/index.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
+import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Button } from '../ui/button.js';
 import { Collapsible, CollapsibleContent } from '../ui/collapsible.js';
-import { Spinner } from '../ui/spinner.js';
 import { ChargeErrors } from './charge-errors.js';
 import { ChargeTransactionsTable } from './charge-transactions-table.js';
 import { BatchChargesExtendedInfoContext } from './charges-extended-info-loader.js';
@@ -594,7 +594,7 @@ export function ChargeExtendedInfo({
           )}
         </div>
       ) : fetching ? (
-        <Spinner className="my-5 size-14 self-center text-gray-900" />
+        <AccounterBarSpinner className="my-5 self-center text-gray-900" />
       ) : (
         <>
           {/* `charge` is derived from `chargeState`, which is committed in an effect one render after

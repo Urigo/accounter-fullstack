@@ -1,9 +1,16 @@
 import { useState, type ReactElement } from 'react';
-import { Carousel } from '@mantine/carousel';
-import { Badge, Image } from '@mantine/core';
 import { DocumentsGalleryFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { EditDocumentModal } from '../common/index.js';
+import { Badge } from '../ui/badge.js';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselIndicators,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '../ui/carousel.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -39,29 +46,35 @@ export const DocumentsGallery = ({
       {additionalDocuments?.length > 0 ? (
         <>
           <div className="flex flex-wrap">
-            <Carousel
-              sx={{ maxWidth: 320 }}
-              mx="auto"
-              align="center"
-              withControls={additionalDocuments.length > 1}
-              slideGap={0}
-              withIndicators
-              className="[&>*>.mantine-Carousel-indicator]:bg-gray-500"
-            >
-              {additionalDocuments.map(doc => (
-                <Carousel.Slide key={doc.id}>
-                  <div className="flex flex-col items-center">
-                    <h2 className="text-gray-900 text-base font-medium">
-                      {'documentType' in doc ? doc.documentType : 'Unprocessed'}
-                    </h2>
-                    <button className="mx-10" onClick={(): void => setOpenModal(doc.id)}>
-                      <div className="flex rounded-lg h-full bg-gray-100 p-2 m-2 flex-col">
-                        <Image src={doc.image?.toString()} withPlaceholder />
-                      </div>
-                    </button>
-                  </div>
-                </Carousel.Slide>
-              ))}
+            {/* `sx={{ maxWidth: 320 }}` and `mx="auto"`; `align="center"` and `slideGap={0}`
+                are embla's defaults for full-basis slides. The controls sat outside the
+                slides, hence the horizontal padding that makes room for them. */}
+            <Carousel className="mx-auto w-full max-w-80 px-10">
+              <CarouselContent>
+                {additionalDocuments.map(doc => (
+                  <CarouselItem key={doc.id}>
+                    <div className="flex flex-col items-center">
+                      <h2 className="text-gray-900 text-base font-medium">
+                        {'documentType' in doc ? doc.documentType : 'Unprocessed'}
+                      </h2>
+                      <button onClick={(): void => setOpenModal(doc.id)}>
+                        <div className="flex rounded-lg h-full bg-gray-100 p-2 m-2 flex-col">
+                          {/* Mantine's `withPlaceholder` drew a grey box for a missing src;
+                              the wrapper above is already that grey box. */}
+                          <img alt="Document scan" src={doc.image?.toString()} />
+                        </div>
+                      </button>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {additionalDocuments.length > 1 && (
+                <>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </>
+              )}
+              <CarouselIndicators />
             </Carousel>
           </div>
           <EditDocumentModal
@@ -72,7 +85,7 @@ export const DocumentsGallery = ({
           />
         </>
       ) : (
-        <Badge color="red">No Documents Related</Badge>
+        <Badge variant="destructive">No Documents Related</Badge>
       )}
     </div>
   );

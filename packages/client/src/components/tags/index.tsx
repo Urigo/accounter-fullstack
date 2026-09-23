@@ -4,9 +4,9 @@ import { useQuery } from 'urql';
 import { AllTagsScreenDocument } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { AccounterSpinner } from '../ui/accounter-spinner.js';
 import { Button } from '../ui/button.js';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group.js';
-import { Spinner } from '../ui/spinner.js';
 import { AddTag } from './add-tag.js';
 import { TagsList } from './tags-list.js';
 
@@ -42,7 +42,7 @@ export const TagsManager = (): ReactElement => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Spinner className="size-8" />
+          <AccounterSpinner />
           <p className="text-muted-foreground text-sm">Loading tags...</p>
         </div>
       </div>

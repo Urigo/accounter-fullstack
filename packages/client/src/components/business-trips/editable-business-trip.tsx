@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { useQuery } from 'urql';
-import { Card } from '@mantine/core';
 import { EditableBusinessTripDocument, type EditableBusinessTripQuery } from '../../gql/graphql.js';
 import { Accommodations } from '../common/business-trip-report/parts/accommodations.js';
 import { Attendees } from '../common/business-trip-report/parts/attendees.js';
@@ -13,6 +12,7 @@ import { TravelAndSubsistence } from '../common/business-trip-report/parts/trave
 import { UncategorizedTransactions } from '../common/business-trip-report/parts/uncategorized-transactions.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
+import { Card } from '../ui/card.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -62,7 +62,7 @@ export function EditableBusinessTrip({ tripId, isExtended = false }: Props): Rea
   }, [updatedTripDate?.businessTrip]);
 
   return (
-    <Card shadow="sm" radius="md" withBorder>
+    <Card className="p-4">
       {trip ? (
         <>
           <ReportHeader data={trip} onChange={onChangeDo} />
