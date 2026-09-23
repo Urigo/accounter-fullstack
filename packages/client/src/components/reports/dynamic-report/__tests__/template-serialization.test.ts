@@ -132,6 +132,23 @@ describe('serializeReportTree', () => {
     expect(serializeReportTree([])).toBe('[]');
   });
 
+  // The point of the isHidden flag: an entity with no ledger activity in the period is kept in the
+  // tree so that saving cannot silently prune it from the template.
+  it('hidden entity nodes are still serialized', () => {
+    const hidden = entity('e-hidden', 'br-1');
+    hidden.data.isHidden = true;
+    const nodes = [branch('br-1', REPORT_ROOT), entity('e-visible', 'br-1'), hidden];
+    const parsed: { id: string }[] = JSON.parse(serializeReportTree(nodes));
+    expect(parsed.map(n => n.id).sort()).toEqual(['br-1', 'e-hidden', 'e-visible']);
+  });
+
+  it('isHidden itself is not serialized — it is runtime state, and the zod schema is strict', () => {
+    const hidden = entity('e-hidden', REPORT_ROOT);
+    hidden.data.isHidden = true;
+    const parsed: { data: Record<string, unknown> }[] = JSON.parse(serializeReportTree([hidden]));
+    expect(parsed[0].data).not.toHaveProperty('isHidden');
+  });
+
   it('preserves nested branch parent IDs', () => {
     const nodes = [
       branch('parent-br', REPORT_ROOT),

@@ -15,16 +15,19 @@ import { FiltersContext } from '@/providers/index.js';
 import {
   AllDynamicReportsDocument,
   DynamicReportDocument,
+  DynamicReportSnapshotDocument,
   DynamicReportTemplateDocument,
   type AllDynamicReportsQuery,
   type DynamicReportTemplateQuery,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
+import { useCaptureDynamicReportBaseline } from '../../../hooks/use-capture-dynamic-report-baseline.js';
 import { useGetAdminBusinesses } from '../../../hooks/use-get-admin-businesses.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
 import { useUpdateDynamicReportTemplate } from '../../../hooks/use-update-dynamic-report-template.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { ChangePeriodDialog, type ChangePeriodDialogRef } from './dialogs/change-period-dialog.js';
 import {
   DeleteBranchConfirmation,
   type DeleteBranchConfirmationRef,
@@ -50,9 +53,18 @@ import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
+import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
+import {
+  clearPeriodOverride,
+  selectTemplateParams,
+  setPeriodParams,
+  writeParam,
+} from './utils/search-params.js';
+import { buildSnapshotInput } from './utils/snapshot.js';
 import { serializeReportTree } from './utils/template-serialization.js';
+import { isBuiltFrom, type TreeBuildInputs } from './utils/tree-sync.js';
 import {
   buildNodeStats,
   type CustomData,
@@ -69,6 +81,8 @@ import {
       name
       isLocked
       updated
+      fromDate
+      toDate
     }
   }
 `;
@@ -118,6 +132,14 @@ import {
       name
       isLocked
       updated
+      fromDate
+      toDate
+      snapshots {
+        id
+        createdAt
+        fromDate
+        toDate
+      }
       template {
         id
         parent
@@ -129,6 +151,35 @@ import {
           hebrewText
           sortCode
         }
+      }
+    }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReportSnapshot($id: UUID!) {
+    dynamicReportSnapshot(id: $id) {
+      id
+      createdAt
+      fromDate
+      toDate
+      scopeOwnerId
+      tree {
+        id
+        parent
+        text
+        droppable
+        data {
+          nodeType
+          isOpen
+          hebrewText
+          sortCode
+        }
+      }
+      values {
+        entityId
+        value
       }
     }
   }
@@ -150,6 +201,8 @@ function toTemplate(t: AllDynamicReportsTemplate): Template {
     name: t.name,
     lastUpdated: new Date(t.updated),
     isLocked: t.isLocked,
+    fromDate: t.fromDate,
+    toDate: t.toDate,
   };
 }
 
@@ -165,78 +218,53 @@ export function DynamicReport() {
   // Filters — persisted in URL search params
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const fromDate = searchParams.get('from') ?? DEFAULT_FROM;
-  const toDate = searchParams.get('to') ?? DEFAULT_TO;
+  const urlFromDate = searchParams.get('from');
+  const urlToDate = searchParams.get('to');
   const selectedOwner = searchParams.get('owner') ?? adminBusinessId;
   const showZeroed = searchParams.get('zeroed') === '1';
   const selectedTemplateName = searchParams.get('template');
+  const selectedBaselineId = searchParams.get('baseline');
+
+  // The one way this screen writes to the URL. react-router hands the updater a copy of *this*
+  // render's params and navigates straight away, so two calls in one tick both start from the same
+  // snapshot and the second silently discards the first — every handler below therefore makes all
+  // of its changes inside a single call.
+  const updateSearchParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) =>
+      setSearchParams(
+        p => {
+          mutate(p);
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
 
   const setFromDate = useCallback(
-    (v: string) =>
-      setSearchParams(
-        p => {
-          if (v) {
-            p.set('from', v);
-          } else {
-            p.delete('from');
-          }
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
+    (v: string) => updateSearchParams(p => writeParam(p, 'from', v)),
+    [updateSearchParams],
   );
   const setToDate = useCallback(
-    (v?: string) =>
-      setSearchParams(
-        p => {
-          if (v) {
-            p.set('to', v);
-          } else {
-            p.delete('to');
-          }
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
+    (v?: string) => updateSearchParams(p => writeParam(p, 'to', v)),
+    [updateSearchParams],
   );
   const setSelectedOwner = useCallback(
-    (v: string) =>
-      setSearchParams(
-        p => {
-          p.set('owner', v);
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
+    (v: string) => updateSearchParams(p => p.set('owner', v)),
+    [updateSearchParams],
   );
   const setShowZeroed = useCallback(
-    (v: boolean) =>
-      setSearchParams(
-        p => {
-          p.set('zeroed', v ? '1' : '0');
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
+    (v: boolean) => updateSearchParams(p => p.set('zeroed', v ? '1' : '0')),
+    [updateSearchParams],
   );
   const setSelectedTemplateName = useCallback(
-    (v: string | null) =>
-      setSearchParams(
-        p => {
-          if (v) {
-            p.set('template', v);
-          } else {
-            p.delete('template');
-          }
-          return p;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
+    (v: string | null) => updateSearchParams(p => writeParam(p, 'template', v)),
+    [updateSearchParams],
+  );
+
+  const setSelectedBaselineId = useCallback(
+    (v: string | null) => updateSearchParams(p => writeParam(p, 'baseline', v)),
+    [updateSearchParams],
   );
 
   // UI state
@@ -267,11 +295,13 @@ export function DynamicReport() {
   const saveAsNewTemplateDialogRef = useRef<SaveAsNewTemplateDialogRef>(null);
   const renameTemplateDialogRef = useRef<RenameTemplateDialogRef>(null);
   const deleteTemplateConfirmationRef = useRef<DeleteTemplateConfirmationRef>(null);
+  const changePeriodDialogRef = useRef<ChangePeriodDialogRef>(null);
 
   // ── GQL mutations ────────────────────────────────────────────────────────────
 
   const { updateDynamicReportTemplate } = useUpdateDynamicReportTemplate();
   const { updateDynamicReportTemplateName } = useUpdateDynamicReportTemplateName();
+  const { captureDynamicReportBaseline } = useCaptureDynamicReportBaseline();
 
   // ── GQL queries ──────────────────────────────────────────────────────────────
 
@@ -280,9 +310,54 @@ export function DynamicReport() {
   // Owner options are the businesses the user may report on, not every financial
   // entity — and a single one is not a choice, so the picker is then read-only.
   const { adminBusinesses, soleAdminBusinessId } = useGetAdminBusinesses();
+  // The owner the figures are queried for. Kept here because both the sums query and the baseline
+  // comparison need it.
+  const scopeOwnerId = soleAdminBusinessId ?? selectedOwner;
   const owners = useMemo<Owner[]>(
     () => adminBusinesses.map(business => ({ id: business.id, name: business.name })),
     [adminBusinesses],
+  );
+
+  const [{ data: allTemplatesData }, refetchAllTemplates] = useQuery({
+    query: AllDynamicReportsDocument,
+  });
+
+  // Template nodes query — paused until a template is selected
+  const [{ data: templateNodesData }, refetchTemplateNodes] = useQuery<DynamicReportTemplateQuery>({
+    query: DynamicReportTemplateDocument,
+    variables: { name: selectedTemplateName ?? '' },
+    pause: !selectedTemplateName,
+  });
+
+  // ── Period ────────────────────────────────────────────────────────────────
+  // A draft owns the period it was built for, so the pickers are read-only while one is loaded.
+  // Explicit ?from=/?to= still win: annual-audit step 05 deep-links the same locked template at two
+  // different ranges (Balance Sheet and P&L), and those links must keep working.
+  const draftFromDate = templateNodesData?.dynamicReport?.fromDate ?? null;
+  const draftToDate = templateNodesData?.dynamicReport?.toDate ?? null;
+
+  // A draft saved before periods were recorded has none of its own. There is nothing to protect
+  // and nothing to restore, so the pickers stay editable and the period on screen is the user's
+  // until they save — which is what gives such a draft its period and its first baseline.
+  const hasDraftPeriod = !!draftFromDate && !!draftToDate;
+
+  // A draft locked by an audit sign-off can gain a baseline but never a period of its own, since
+  // that would be a write to the template. The period its newest baseline was captured for is the
+  // next best default — without it, revisiting lands on the calendar year and the only thing the
+  // diff has to say is that the periods do not match.
+  const latestSnapshot = templateNodesData?.dynamicReport?.snapshots?.[0] ?? null;
+
+  const fromDate = urlFromDate ?? draftFromDate ?? latestSnapshot?.fromDate ?? DEFAULT_FROM;
+  const toDate = urlToDate ?? draftToDate ?? latestSnapshot?.toDate ?? DEFAULT_TO;
+
+  const isPeriodOverridden =
+    hasDraftPeriod &&
+    ((!!urlFromDate && urlFromDate !== draftFromDate) ||
+      (!!urlToDate && urlToDate !== draftToDate));
+
+  const restoreDraftPeriod = useCallback(
+    () => updateSearchParams(clearPeriodOverride),
+    [updateSearchParams],
   );
 
   const [{ data: businessSumsData }] = useQuery({
@@ -291,21 +366,79 @@ export function DynamicReport() {
       filters: {
         fromDate: fromDate as TimelessDateString,
         toDate: toDate as TimelessDateString,
-        ownerIds: [soleAdminBusinessId ?? selectedOwner],
+        ownerIds: [scopeOwnerId],
       },
     },
   });
 
-  const [{ data: allTemplatesData }, refetchAllTemplates] = useQuery({
-    query: AllDynamicReportsDocument,
+  // Derive business sums array
+  const businessSums = useMemo(() => {
+    const result = businessSumsData?.businessTransactionsSumFromLedgerRecords;
+    if (result?.__typename === 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult') {
+      return result.businessTransactionsSum;
+    }
+    return [];
+  }, [businessSumsData]);
+
+  // ── Baseline ──────────────────────────────────────────────────────────────
+  const snapshots = useMemo(
+    () => templateNodesData?.dynamicReport?.snapshots ?? [],
+    [templateNodesData],
+  );
+  // Newest first from the server, so the head is "last save" unless the user picked another.
+  const latestBaselineId = snapshots[0]?.id ?? null;
+  const activeBaselineId =
+    snapshots.find(snapshot => snapshot.id === selectedBaselineId)?.id ?? latestBaselineId;
+
+  // Picking the newest entry clears the param rather than pinning its id. An absent param already
+  // means "whatever the latest snapshot is", so this is what keeps "Last save" tracking the newest
+  // baseline across future saves instead of freezing on the snapshot that happened to be newest
+  // when it was chosen.
+  const handleBaselineChange = useCallback(
+    (id: string) => setSelectedBaselineId(id === latestBaselineId ? null : id),
+    [latestBaselineId, setSelectedBaselineId],
+  );
+
+  const [{ data: snapshotData }] = useQuery({
+    query: DynamicReportSnapshotDocument,
+    variables: { id: activeBaselineId ?? '' },
+    pause: !activeBaselineId,
   });
 
-  // Template nodes query — paused until a template is selected
-  const [{ data: templateNodesData }] = useQuery<DynamicReportTemplateQuery>({
-    query: DynamicReportTemplateDocument,
-    variables: { name: selectedTemplateName ?? '' },
-    pause: !selectedTemplateName,
-  });
+  const baselineSnapshot = snapshotData?.dynamicReportSnapshot ?? null;
+
+  // A snapshot is only comparable to a report computed over the same period for the same owner.
+  // Anything else — a deep link's date override, a different owner — and the figures are answers to
+  // a different question, so the diff is suspended rather than shown wrong.
+  const isBaselineComparable =
+    !!baselineSnapshot &&
+    baselineSnapshot.fromDate === fromDate &&
+    baselineSnapshot.toDate === toDate &&
+    baselineSnapshot.scopeOwnerId === scopeOwnerId;
+
+  const baseline = useMemo<Baseline | null>(() => {
+    if (!baselineSnapshot || !isBaselineComparable) return null;
+    return {
+      tree: baselineSnapshot.tree,
+      values: new Map(baselineSnapshot.values.map(value => [value.entityId, value.value])),
+    };
+  }, [baselineSnapshot, isBaselineComparable]);
+
+  const reportDiff = useMemo(
+    () => (baseline ? buildReportDiff(reportTree, baseline) : null),
+    [reportTree, baseline],
+  );
+
+  const newEntityIds = useMemo(
+    () =>
+      baseline
+        ? findNewEntityIds(
+            businessSums.map(sum => sum.business.id),
+            baseline,
+          )
+        : undefined,
+    [businessSums, baseline],
+  );
 
   // Derive template list for TemplateManager
   const templates = useMemo<Template[]>(
@@ -325,15 +458,6 @@ export function DynamicReport() {
     }
   }, [selectedTemplateName, templates, currentTemplate]);
 
-  // Derive business sums array
-  const businessSums = useMemo(() => {
-    const result = businessSumsData?.businessTransactionsSumFromLedgerRecords;
-    if (result?.__typename === 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult') {
-      return result.businessTransactionsSum;
-    }
-    return [];
-  }, [businessSumsData]);
-
   // ── Refs for reading latest values inside effects without adding them as deps ──
   // Updated via useLayoutEffect (runs before useEffect) so effects always see current values.
 
@@ -349,18 +473,15 @@ export function DynamicReport() {
     reportTreeRef.current = reportTree;
   });
 
-  // Coordinates the two tree effects: ensures the value-patch effect skips
-  // when the template-load effect ran in the same commit.
-  const templateVersionRef = useRef(0);
-  const valuesPatchedVersionRef = useRef(0);
+  // Coordinates the two tree effects — see utils/tree-sync.ts for why this records the inputs
+  // Effect 1 built from rather than counting how often it ran.
+  const treeBuiltFromRef = useRef<TreeBuildInputs | null>(null);
 
   // ── Effect 1: Full tree rebuild on template/sort-code load ────────────────
   // Only fires when the template or sort-code data changes — NOT on filter
   // changes — so user structural edits (drags, renames, branches) are preserved.
 
   useEffect(() => {
-    templateVersionRef.current += 1;
-
     const rawNodes = templateNodesData?.dynamicReport?.template ?? [];
     const bSums = businessSumsRef.current;
     const sCodes = sortCodesRef.current;
@@ -389,33 +510,57 @@ export function DynamicReport() {
 
     const nextBankTree = buildInitialBankTree(sCodes, bSums, placedEntityIds, zeroed);
 
+    // Effect 2 stands down only for the inputs this rebuild actually used.
+    treeBuiltFromRef.current = { businessSums: bSums, showZeroed: zeroed };
+
     setBankTree(nextBankTree);
     setReportTree(nextReportTree);
   }, [templateNodesData, sortCodes]);
 
   // ── Effect 2: Value-only patch on filter change ───────────────────────────
   // Fires when businessSums or showZeroed changes. Preserves tree structure
-  // by only updating data.value on leaf nodes. Skips if Effect 1 ran in the
-  // same commit (templateVersionRef > valuesPatchedVersionRef).
+  // by only updating data.value on leaf nodes. Stands down when Effect 1 has
+  // already rebuilt from these same inputs — see utils/tree-sync.ts.
 
   useEffect(() => {
-    if (valuesPatchedVersionRef.current < templateVersionRef.current) {
-      // Effect 1 ran more recently — its trees are authoritative; skip patch.
-      valuesPatchedVersionRef.current = templateVersionRef.current;
+    const inputs = { businessSums, showZeroed };
+    if (isBuiltFrom(treeBuiltFromRef.current, inputs)) {
+      // Effect 1 just rebuilt from these very figures; its trees are authoritative.
       return;
     }
+    treeBuiltFromRef.current = inputs;
 
     const currentReportTree = reportTreeRef.current;
 
     // O(N) value lookup
     const sumById = new Map(businessSums.map(b => [b.business.id, b.total.raw * -1]));
+    const nameById = new Map(businessSums.map(b => [b.business.id, b.business.name]));
 
-    // Patch values on report-tree leaf nodes, preserve all structural properties
+    // Patch values on report-tree leaf nodes, preserve all structural properties.
+    // A leaf whose entity has no sum in the new period is hidden rather than dropped, and one
+    // whose sum reappears is un-hidden — mirroring buildReportTree, so widening the date range
+    // brings a leaf back instead of leaving it invisible with a live value.
     const nextReportTree = currentReportTree.map(node => {
       if (node.droppable) return node;
-      const value = sumById.get(node.id) ?? 0;
-      if (node.data.value === value) return node;
-      return { ...node, data: { ...node.data, value } };
+      const sum = sumById.get(node.id);
+      const value = sum ?? 0;
+      const isHidden = sum === undefined;
+      // Keep the last known name while hidden — there is no sum to read one from.
+      const text = isHidden ? node.text : (nameById.get(node.id) ?? node.text);
+      if (
+        node.data.value === value &&
+        (node.data.isHidden ?? false) === isHidden &&
+        node.text === text
+      ) {
+        return node;
+      }
+      const data = { ...node.data, value };
+      if (isHidden) {
+        data.isHidden = true;
+      } else {
+        delete data.isHidden;
+      }
+      return { ...node, text, data };
     });
 
     // Placed entity IDs haven't changed (structure is preserved)
@@ -507,14 +652,21 @@ export function DynamicReport() {
   const applyTemplate = useCallback(
     (template: Template) => {
       setCurrentTemplate(template);
-      setSelectedTemplateName(template.name);
       setShowLegacyBanner(template.isLegacy ?? false);
       setIsDirty(false);
+      // The name and the previous draft's period go in one call: a second setSearchParams here
+      // would recompute from the pre-update snapshot and drop ?template=, leaving the template
+      // query paused and the draft never loaded.
+      updateSearchParams(p =>
+        selectTemplateParams(p, template.name, {
+          hasOwnPeriod: !!template.fromDate && !!template.toDate,
+        }),
+      );
       if (template.isLocked) {
         setEditMode(false);
       }
     },
-    [setSelectedTemplateName],
+    [updateSearchParams],
   );
 
   const handleLoadTemplate = useCallback(
@@ -529,18 +681,101 @@ export function DynamicReport() {
     [isDirty, applyTemplate],
   );
 
+  // The baseline a later visit diffs against: the figures currently on screen, for the period they
+  // were computed over.
+  const snapshotInput = useMemo(
+    () =>
+      buildSnapshotInput({
+        businessSums,
+        fromDate: fromDate as TimelessDateString,
+        toDate: toDate as TimelessDateString,
+        scopeOwnerId,
+      }),
+    [businessSums, fromDate, toDate, scopeOwnerId],
+  );
+
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
     const serialized = serializeReportTree(reportTree);
     const result = await updateDynamicReportTemplate({
       name: currentTemplate.name,
       template: serialized,
+      snapshot: snapshotInput,
     });
     if (result) {
       setIsDirty(false);
       setShowLegacyBanner(false);
+      // The save just became the newest baseline. Releasing any pin means the user is comparing
+      // against what they just saved rather than against something older with nothing on screen
+      // saying so.
+      setSelectedBaselineId(null);
+      // The client installs no urql cache, so a mutation invalidates nothing — without this the
+      // baseline just written stays invisible until a reload.
+      refetchTemplateNodes({ requestPolicy: 'network-only' });
     }
-  }, [currentTemplate, reportTree, updateDynamicReportTemplate]);
+  }, [
+    currentTemplate,
+    reportTree,
+    updateDynamicReportTemplate,
+    snapshotInput,
+    setSelectedBaselineId,
+    refetchTemplateNodes,
+  ]);
+
+  // A locked draft cannot be resaved — the sign-off that locked it describes the template as it
+  // stands. Recording a baseline writes no template row, so it stays available: without it a
+  // locked draft could never start tracking changes at all.
+  const handleCaptureBaseline = useCallback(async () => {
+    if (!currentTemplate) return;
+    const result = await captureDynamicReportBaseline({
+      name: currentTemplate.name,
+      tree: serializeReportTree(reportTree),
+      snapshot: snapshotInput,
+    });
+    if (result) {
+      setSelectedBaselineId(null);
+      refetchTemplateNodes({ requestPolicy: 'network-only' });
+    }
+  }, [
+    currentTemplate,
+    reportTree,
+    snapshotInput,
+    captureDynamicReportBaseline,
+    setSelectedBaselineId,
+    refetchTemplateNodes,
+  ]);
+
+  const handleChangePeriod = useCallback(() => {
+    changePeriodDialogRef.current?.changePeriod(fromDate, toDate);
+  }, [fromDate, toDate]);
+
+  const handlePeriodConfirmed = useCallback(
+    (nextFrom: string, nextTo: string) => {
+      // Both dates in one call — separate setFromDate/setToDate calls would keep only `to`.
+      updateSearchParams(p => setPeriodParams(p, nextFrom, nextTo));
+      // The period is part of the draft, so changing it is an unsaved edit like any other.
+      setIsDirty(true);
+    },
+    [updateSearchParams],
+  );
+
+  // The pickers are live only for a draft that has no period of its own, where the period the user
+  // picks is what the next save will record — so it counts as an unsaved edit, same as the dialog.
+  const handleFromDateChange = useCallback(
+    (next: string) => {
+      setFromDate(next);
+      if (currentTemplate) setIsDirty(true);
+    },
+    [setFromDate, currentTemplate],
+  );
+
+  const handleToDateChange = useCallback(
+    (next: string) => {
+      setToDate(next);
+      if (currentTemplate) setIsDirty(true);
+    },
+    [setToDate, currentTemplate],
+  );
 
   const handleRenameInManager = useCallback(
     async (template: Template, newName: string) => {
@@ -579,6 +814,7 @@ export function DynamicReport() {
     function traverse(parentId: string, depth: number) {
       const children = childrenMap.get(parentId) ?? [];
       for (const node of children) {
+        if (node.data.isHidden) continue;
         if (node.droppable) {
           const sum = nodeStats.get(node.id)?.sum ?? 0;
           rows.push(`${escapeCsv(node.text)},${sum},${depth}`);
@@ -613,8 +849,8 @@ export function DynamicReport() {
       <Toolbar
         fromDate={fromDate}
         toDate={toDate}
-        onFromDateChange={setFromDate}
-        onToDateChange={setToDate}
+        onFromDateChange={handleFromDateChange}
+        onToDateChange={handleToDateChange}
         owners={owners}
         selectedOwner={soleAdminBusinessId ?? selectedOwner}
         onOwnerChange={setSelectedOwner}
@@ -628,11 +864,28 @@ export function DynamicReport() {
         onSelectTemplate={() => setTemplateManagerOpen(true)}
         onSaveAsNew={handleSaveAsNew}
         onResave={handleResave}
+        onCaptureBaseline={handleCaptureBaseline}
         onRename={handleRenameTemplate}
         onDuplicate={() => currentTemplate && handleDuplicateTemplate(currentTemplate)}
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
         onDownloadCSV={handleDownloadCSV}
         isLocked={currentTemplate?.isLocked ?? false}
+        datesDisabled={hasDraftPeriod}
+        onChangePeriod={handleChangePeriod}
+        periodOverride={
+          isPeriodOverridden && draftFromDate && draftToDate ? { draftFromDate, draftToDate } : null
+        }
+        onRestoreDraftPeriod={restoreDraftPeriod}
+        snapshots={snapshots}
+        activeBaselineId={activeBaselineId}
+        onBaselineChange={handleBaselineChange}
+        diffSuspendedReason={
+          snapshots.length === 0
+            ? 'No baseline yet — save this draft to start tracking changes'
+            : baselineSnapshot && !isBaselineComparable
+              ? `Baseline covers ${baselineSnapshot.fromDate} to ${baselineSnapshot.toDate} — changes are hidden`
+              : null
+        }
       />
 
       {showLegacyBanner && currentTemplate?.isLegacy && (
@@ -653,6 +906,7 @@ export function DynamicReport() {
             onToggleExpand={handleToggleBankExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
+            newEntityIds={newEntityIds}
           />
 
           <TreePanel
@@ -667,9 +921,12 @@ export function DynamicReport() {
             onToggleExpand={handleToggleReportExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
+            diff={reportDiff}
           />
         </div>
       </div>
+
+      <ChangePeriodDialog ref={changePeriodDialogRef} onConfirm={handlePeriodConfirmed} />
 
       {/* Template Manager Modal */}
       <TemplateManager
@@ -720,6 +977,7 @@ export function DynamicReport() {
         setIsDirty={setIsDirty}
         setCurrentTemplate={setCurrentTemplate}
         reportTree={reportTree}
+        snapshot={snapshotInput}
       />
 
       <RenameTemplateDialog

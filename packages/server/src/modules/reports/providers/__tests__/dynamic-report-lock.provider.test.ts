@@ -11,6 +11,7 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     deleteTemplateRun: vi.fn(),
     lockTemplateRun: vi.fn(),
     unlockTemplateRun: vi.fn(),
+    insertSnapshotRun: vi.fn(),
   };
 
   const sql = vi.fn((strings: TemplateStringsArray) => {
@@ -27,6 +28,9 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     }
     if (query.includes('SET name = $newName')) {
       return { run: runMocks.updateTemplateNameRun };
+    }
+    if (query.includes('INSERT INTO accounter_schema.dynamic_report_template_snapshots')) {
+      return { run: runMocks.insertSnapshotRun };
     }
     if (query.includes('INSERT INTO accounter_schema.dynamic_report_templates')) {
       return { run: runMocks.insertTemplateRun };
@@ -75,7 +79,10 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 describe('DynamicReportProvider — lock/unlock guards', () => {
-  let db: { query: ReturnType<typeof vi.fn> };
+  let db: {
+    query: ReturnType<typeof vi.fn>;
+    transaction: ReturnType<typeof vi.fn>;
+  };
   let adminContextProvider: { getVerifiedAdminContext: ReturnType<typeof vi.fn> };
   let provider: DynamicReportProvider;
 
@@ -83,34 +90,87 @@ describe('DynamicReportProvider — lock/unlock guards', () => {
     vi.clearAllMocks();
     pgTypedRuntimeMock.reset();
 
-    db = { query: vi.fn() };
+    // The guarded write runs both statements in one transaction, so the mock hands the callback a
+    // client and simply runs it — the pgtyped `run` mocks above are what the statements land on.
+    db = {
+      query: vi.fn(),
+      transaction: vi.fn(async (fn: (client: unknown) => Promise<unknown>) => fn({ query: vi.fn() })),
+    };
     adminContextProvider = {
       getVerifiedAdminContext: vi.fn().mockResolvedValue({ ownerId: 'owner-1' }),
     };
     provider = new DynamicReportProvider(db as never, adminContextProvider as never);
   });
 
-  // ── updateTemplate ────────────────────────────────────────────────────────
+  // ── updateTemplateWithSnapshot ────────────────────────────────────────────
 
-  it('updateTemplate throws when template is locked', async () => {
+  const templateParams = { name: 'my-template', ownerId: 'owner-1', template: '[]' } as never;
+
+  it('updateTemplateWithSnapshot throws when template is locked', async () => {
     pgTypedRuntimeMock.runMocks.getTemplateRun.mockResolvedValue([makeRow({ is_locked: true })]);
 
     await expect(
-      provider.updateTemplate({ name: 'my-template', ownerId: 'owner-1', template: '[]' }),
+      provider.updateTemplateWithSnapshot({ template: templateParams }),
     ).rejects.toThrow(GraphQLError);
 
     await expect(
-      provider.updateTemplate({ name: 'my-template', ownerId: 'owner-1', template: '[]' }),
+      provider.updateTemplateWithSnapshot({ template: templateParams }),
     ).rejects.toThrow(/locked/);
   });
 
-  it('updateTemplate proceeds when template is unlocked', async () => {
+  it('updateTemplateWithSnapshot does not write when template is locked', async () => {
+    pgTypedRuntimeMock.runMocks.getTemplateRun.mockResolvedValue([makeRow({ is_locked: true })]);
+
+    await expect(
+      provider.updateTemplateWithSnapshot({ template: templateParams }),
+    ).rejects.toThrow(/locked/);
+
+    expect(db.transaction).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.updateTemplateRun).not.toHaveBeenCalled();
+  });
+
+  it('updateTemplateWithSnapshot proceeds when template is unlocked', async () => {
     pgTypedRuntimeMock.runMocks.getTemplateRun.mockResolvedValue([makeRow({ is_locked: false })]);
     pgTypedRuntimeMock.runMocks.updateTemplateRun.mockResolvedValue([makeRow()]);
 
     await expect(
-      provider.updateTemplate({ name: 'my-template', ownerId: 'owner-1', template: '[]' }),
+      provider.updateTemplateWithSnapshot({ template: templateParams }),
     ).resolves.toBeDefined();
+  });
+
+  // ── insertSnapshot ────────────────────────────────────────────────────────
+  // Capturing a baseline writes a snapshot row and nothing else, so it stays available on a locked
+  // template: the annual-audit sign-off that locked it still describes exactly what it approved,
+  // and without this a locked draft could never start tracking changes at all.
+
+  const snapshotParams = {
+    ownerId: 'owner-1',
+    templateName: 'my-template',
+    fromDate: '2024-01-01',
+    toDate: '2024-12-31',
+    scopeOwnerId: 'owner-1',
+    tree: '[]',
+    leafValues: '{}',
+    createdBy: null,
+  } as never;
+
+  it('insertSnapshot writes the baseline even when the template is locked', async () => {
+    pgTypedRuntimeMock.runMocks.getTemplateRun.mockResolvedValue([makeRow({ is_locked: true })]);
+    pgTypedRuntimeMock.runMocks.insertSnapshotRun.mockResolvedValue([{ id: 'snapshot-1' }]);
+
+    await expect(provider.insertSnapshot(snapshotParams)).resolves.toEqual({ id: 'snapshot-1' });
+    expect(pgTypedRuntimeMock.runMocks.insertSnapshotRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('insertSnapshot leaves the template row untouched', async () => {
+    pgTypedRuntimeMock.runMocks.getTemplateRun.mockResolvedValue([makeRow({ is_locked: true })]);
+    pgTypedRuntimeMock.runMocks.insertSnapshotRun.mockResolvedValue([{ id: 'snapshot-1' }]);
+
+    await provider.insertSnapshot(snapshotParams);
+
+    expect(pgTypedRuntimeMock.runMocks.updateTemplateRun).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.insertTemplateRun).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.updateTemplateNameRun).not.toHaveBeenCalled();
   });
 
   // ── deleteTemplate ────────────────────────────────────────────────────────
