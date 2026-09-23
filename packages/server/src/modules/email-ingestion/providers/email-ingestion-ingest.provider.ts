@@ -599,77 +599,90 @@ export class EmailIngestionIngestProvider {
       },
     );
 
-    // Upload + OCR the new documents in parallel, outside any transaction. A
-    // failure here — the Cloudinary upload or the params build; OCR itself is
-    // caught above and degrades to UNPROCESSED — is wrapped in
-    // DocumentPreparationError so the caller QUARANTINEs the email (recorded,
-    // reprocessable) instead of letting it throw raw and strand an accepted email
-    // with no durable record.
+    // Upload + OCR the new documents outside any transaction. A failure here — the
+    // Cloudinary upload or the params build; OCR itself is caught above and degrades
+    // to UNPROCESSED — is wrapped in DocumentPreparationError so the caller
+    // QUARANTINEs the email (recorded, reprocessable) instead of letting it throw raw
+    // and strand an accepted email with no durable record.
     try {
-      return await Promise.all(
-        newCandidates.map(async ({ doc, fileHash }) => {
-          const file = new File([Buffer.from(doc.content, 'base64')], doc.filename ?? 'document', {
-            type: doc.mimeType,
-          });
-          const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
-          const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
-            this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri),
-            // isSensitive=false → run OCR (Anthropic), as the legacy path does.
-            // The pre-resolved businesses/owner enable the OCR business matcher in
-            // this control-plane context (see the read block above).
-            getOcrData(injector, file, false, { businesses, owner }).catch((): OcrData => ({
-              documentType: DocumentType.Unprocessed,
-            })),
-          ]);
-          // The business recognized at control time from the sender address is the
-          // counterparty. It stays authoritative: resolveOwnerSideFromUuids fills
-          // `counterpartyId` only when unset (`??=`), so the OCR name/VAT match acts
-          // as the fallback for mail that arrives via an aggregator/forwarder whose
-          // address is not keyed in any business's `suggestion_data.emails`. The OCR
-          // match is still consulted for `isOwnerIssuer`, which orients the sides.
-          if (businessId) {
-            ocrData.counterpartyId = businessId;
-          }
-          resolveOwnerSideFromUuids(ocrData, tenantId);
-          if (businessId) {
-            const ocrCounterparty = [ocrData.suggestedIssuer, ocrData.suggestedRecipient].find(
-              id => id != null && id !== tenantId,
-            );
-            if (ocrCounterparty && ocrCounterparty !== businessId) {
-              console.warn(
-                `email ingest: counterparty disagreement (messageId: ${messageId}): grant business ${businessId} kept over OCR match ${ocrCounterparty}`,
-              );
-            }
-          }
-          const params = await getDocumentFromUrlsAndOcrData(
-            injector,
-            fileUrl,
-            imageUrl,
-            ocrData,
-            tenantId,
-            null,
-            fileHash,
-            // Pre-resolved above (raw pool, tenant RLS) so the fallback never calls
-            // the auth-coupled providers in this control-plane context. The
-            // counterparty country is taken off the loaded businesses list against
-            // the *final* counterparty — which may have come from the OCR match, not
-            // just the grant.
-            {
-              counterpartyCountry:
-                businesses.find(b => b.id === ocrData.counterpartyId)?.locality ?? null,
-              adminLocality: owner?.locality ?? null,
-            },
+      if (newCandidates.length === 0) {
+        return [];
+      }
+
+      const prepareOne = async ({ doc, fileHash }: (typeof newCandidates)[number]) => {
+        const file = new File([Buffer.from(doc.content, 'base64')], doc.filename ?? 'document', {
+          type: doc.mimeType,
+        });
+        const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
+        const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
+          this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri),
+          // isSensitive=false → run OCR (Anthropic), as the legacy path does.
+          // The pre-resolved businesses/owner enable the OCR business matcher in
+          // this control-plane context (see the read block above).
+          getOcrData(injector, file, false, { businesses, owner }).catch((): OcrData => ({
+            documentType: DocumentType.Unprocessed,
+          })),
+        ]);
+        // The business recognized at control time from the sender address is the
+        // counterparty. It stays authoritative: resolveOwnerSideFromUuids fills
+        // `counterpartyId` only when unset (`??=`), so the OCR name/VAT match acts
+        // as the fallback for mail that arrives via an aggregator/forwarder whose
+        // address is not keyed in any business's `suggestion_data.emails`. The OCR
+        // match is still consulted for `isOwnerIssuer`, which orients the sides.
+        if (businessId) {
+          ocrData.counterpartyId = businessId;
+        }
+        resolveOwnerSideFromUuids(ocrData, tenantId);
+        if (businessId) {
+          const ocrCounterparty = [ocrData.suggestedIssuer, ocrData.suggestedRecipient].find(
+            id => id != null && id !== tenantId,
           );
-          // Mirror the legacy `insertEmailDocuments` resolver, which overrides the
-          // OCR-derived remarks with an email identifier. (There it is the email
-          // description; the v2 ingest payload carries only the message id.) All
-          // other OCR fields — amount, currency, date, serial — are persisted as-is.
-          params.remarks = [params.remarks, `email-ingestion: ${messageId}`]
-            .filter(Boolean)
-            .join('; ');
-          return params;
-        }),
-      );
+          if (ocrCounterparty && ocrCounterparty !== businessId) {
+            console.warn(
+              `email ingest: counterparty disagreement (messageId: ${messageId}): grant business ${businessId} kept over OCR match ${ocrCounterparty}`,
+            );
+          }
+        }
+        const params = await getDocumentFromUrlsAndOcrData(
+          injector,
+          fileUrl,
+          imageUrl,
+          ocrData,
+          tenantId,
+          null,
+          fileHash,
+          // Pre-resolved above (raw pool, tenant RLS) so the fallback never calls
+          // the auth-coupled providers in this control-plane context. The
+          // counterparty country is taken off the loaded businesses list against
+          // the *final* counterparty — which may have come from the OCR match, not
+          // just the grant.
+          {
+            counterpartyCountry:
+              businesses.find(b => b.id === ocrData.counterpartyId)?.locality ?? null,
+            adminLocality: owner?.locality ?? null,
+          },
+        );
+        // Mirror the legacy `insertEmailDocuments` resolver, which overrides the
+        // OCR-derived remarks with an email identifier. (There it is the email
+        // description; the v2 ingest payload carries only the message id.) All
+        // other OCR fields — amount, currency, date, serial — are persisted as-is.
+        params.remarks = [params.remarks, `email-ingestion: ${messageId}`]
+          .filter(Boolean)
+          .join('; ');
+        return params;
+      };
+
+      // The first document is processed alone, and only then does the rest of the
+      // batch fan out. The OCR prompt's cached prefix (the tenant's business
+      // catalog) does not become readable until the request that writes it starts
+      // streaming a response, so a flat `Promise.all` has every document in the
+      // batch miss the cache and write its own copy of the catalog — paying the
+      // write premium N times over instead of once. Serializing one document turns
+      // the other N-1 writes into reads.
+      const [firstCandidate, ...restCandidates] = newCandidates;
+      const firstPrepared = await prepareOne(firstCandidate);
+      const restPrepared = await Promise.all(restCandidates.map(prepareOne));
+      return [firstPrepared, ...restPrepared];
     } catch (err) {
       throw new DocumentPreparationError('Failed to prepare email documents for ingest', {
         cause: err,
