@@ -22,7 +22,12 @@ export type EffectiveApproval = {
    * PENDING. Nothing has been written yet: the regression is only persisted by the next save.
    */
   isDerived?: boolean;
+  /** The user changed this status and hasn't saved yet. A staged status carries no stamp. */
+  isStaged?: boolean;
 };
+
+/** Statuses the user has chosen but not saved, keyed by entity id. */
+export type ApprovalOverrides = ReadonlyMap<string, AccountantStatus>;
 
 export type ApprovalCounts = { approved: number; pending: number; unapproved: number };
 
@@ -136,6 +141,76 @@ export function buildApprovalStats(
   return result;
 }
 
+/**
+ * Stages a leaf's status (spec R2). Returns a new map. Choosing the status the leaf would show
+ * anyway drops the override, so toggling a leaf back leaves nothing staged.
+ */
+export function applyOverride(
+  overrides: ApprovalOverrides,
+  entityId: string,
+  status: AccountantStatus,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+): Map<string, AccountantStatus> {
+  const next = new Map(overrides);
+  const derivedStatus = derived.get(entityId)?.status ?? AccountantStatus.Unapproved;
+  if (status === derivedStatus) {
+    next.delete(entityId);
+  } else {
+    next.set(entityId, status);
+  }
+  return next;
+}
+
+/** A staged override wins over the derived status (spec R3, step 1). */
+export function resolveStatus(
+  entityId: string,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+  overrides: ApprovalOverrides,
+): EffectiveApproval | undefined {
+  const override = overrides.get(entityId);
+  if (override !== undefined) {
+    return { status: override, isStaged: true };
+  }
+  return derived.get(entityId);
+}
+
+/**
+ * The status every counted leaf shows: its derived status with the staged overrides laid on top.
+ * Overrides for leaves that are no longer counted (removed or hidden) are ignored.
+ */
+export function buildEffectiveStatuses(
+  derived: Map<string, EffectiveApproval>,
+  overrides: ApprovalOverrides,
+): Map<string, EffectiveApproval> {
+  if (overrides.size === 0) return derived;
+  const result = new Map<string, EffectiveApproval>();
+  for (const entityId of derived.keys()) {
+    const effective = resolveStatus(entityId, derived, overrides);
+    if (effective) result.set(entityId, effective);
+  }
+  return result;
+}
+
+/**
+ * Why statuses can't be changed right now, or null when they can (spec R12). Statuses are saved
+ * with a template's snapshot, so there must be one; an older baseline is a read-only history view;
+ * and while the figures or the baseline load, the derived statuses aren't final yet.
+ */
+export function approvalsDisabledReason({
+  hasTemplate,
+  isLoading,
+  isLatestBaseline,
+}: {
+  hasTemplate: boolean;
+  isLoading: boolean;
+  isLatestBaseline: boolean;
+}): string | null {
+  if (!hasTemplate) return 'Load a saved template';
+  if (isLoading) return 'Loading…';
+  if (!isLatestBaseline) return 'Viewing an older baseline — switch to Last save to review';
+  return null;
+}
+
 /** Worst status wins (spec R5); null for a branch with no counted leaves. */
 export function branchStatus(counts: ApprovalCounts | undefined): AccountantStatus | null {
   if (!counts) return null;
@@ -159,8 +234,12 @@ const STATUS_VERB: Record<AccountantStatus, string> = {
   [AccountantStatus.Unapproved]: 'Marked unapproved',
 };
 
-/** Who set a leaf's status and when (spec R4); null when there is no stored stamp. */
+/**
+ * Who set a leaf's status and when (spec R4), or "Unsaved change" for a staged one; null when there
+ * is no stored stamp.
+ */
 export function leafApprovalTooltip(approval: EffectiveApproval): string | null {
+  if (approval.isStaged) return 'Unsaved change';
   if (approval.setAt == null) return null;
   const date = formatApprovalDate(approval.setAt);
   if (approval.isSystem) {
