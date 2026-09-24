@@ -246,11 +246,12 @@ export async function accountsForUniformFormat(
           if (
             isCryptoCurrency(code.toUpperCase() as Currency) ||
             code === 'ILS' ||
-            code === 'businessId'
+            code === 'businessId' ||
+            code === 'fingerprintTuples'
           ) {
             continue;
           }
-          if (typeof amounts !== 'string' && amounts.total !== 0) {
+          if (typeof amounts === 'object' && !Array.isArray(amounts) && amounts.total !== 0) {
             businessesBalance.set(businessSum.businessId, {
               ILS: {
                 opening: businessSum.ILS.total,
