@@ -7,6 +7,13 @@
     "lib": ["es2020"],
     "module": "ES2020",
     "moduleResolution": "bundler",
+    // Pinned rather than inherited. This config does not extend the repo root, so both of
+    // these used to ride on tsc's own defaults (`target: ES5`, `esModuleInterop: false`) —
+    // defaults that TypeScript 7 changes (to the current stable ES version, and to an
+    // always-on `esModuleInterop`). Stating them keeps this package's behaviour identical
+    // across that upgrade. `target` also reaches the build: tsup passes it to esbuild.
+    "target": "ES2022",
+    "esModuleInterop": true,
     "strict": true,
     "sourceMap": true,
     "types": ["node"],
