@@ -1,6 +1,4 @@
-import type { Injector } from 'graphql-modules';
 import type { DynamicReportNode } from '../../../__generated__/types.js';
-import { UUID_REGEX } from '../../../shared/constants.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import {
   dateToTimelessDateString,
@@ -8,7 +6,7 @@ import {
 } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
-import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import {
   carryForwardApprovals,
@@ -34,17 +32,6 @@ import {
   type SnapshotWriteParams,
 } from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';
-
-/**
- * The acting user's id, for `created_by` and approval stamps. Both hold user ids (`created_by` is
- * a uuid column), so a caller without a user row behind it — an API key's synthetic
- * `api-key:<id>`, for instance — is recorded as null rather than failing the save.
- */
-async function getActingUserId(injector: Injector): Promise<string | null> {
-  const authContext = await injector.get(AuthContextProvider).getAuthContext();
-  const userId = authContext?.user?.userId;
-  return userId && UUID_REGEX.test(userId) ? userId : null;
-}
 
 /**
  * Shapes the baseline row a later diff is measured against: the tree exactly as it was saved, and
