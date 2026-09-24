@@ -148,6 +148,40 @@ describe('migrateLegacyTemplateNodes', () => {
     });
   });
 
+  describe('ledger fingerprint', () => {
+    const MISSING = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+    const MISSING_EXPLICIT = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+    const nodes = [
+      legacyBranch('br-1', 'report', {
+        descendantSortCodes: [50],
+        descendantFinancialEntities: [UUID_A, MISSING],
+      }),
+      legacyLeaf(UUID_B, 'br-1'),
+      legacyLeaf(MISSING_EXPLICIT, 'br-1'),
+    ];
+    const result = migrateLegacyTemplateNodes(nodes, [
+      bizSum(UUID_A, 'Expanded', 10),
+      bizSum(UUID_B, 'Explicit', 20),
+    ]);
+
+    it('a leaf expanded from descendantFinancialEntities carries its fingerprint', () => {
+      expect(result.find(n => n.id === UUID_A)!.data.fingerprint).toBe(`fp-${UUID_A}`);
+    });
+
+    it('an explicit leaf carries its fingerprint', () => {
+      expect(result.find(n => n.id === UUID_B)!.data.fingerprint).toBe(`fp-${UUID_B}`);
+    });
+
+    it('hidden leaves have no fingerprint', () => {
+      expect(result.find(n => n.id === MISSING)!.data).not.toHaveProperty('fingerprint');
+      expect(result.find(n => n.id === MISSING_EXPLICIT)!.data).not.toHaveProperty('fingerprint');
+    });
+
+    it('a branch has no fingerprint', () => {
+      expect(result.find(n => n.id === 'br-1')!.data).not.toHaveProperty('fingerprint');
+    });
+  });
+
   describe('parent: 0 → REPORT_ROOT', () => {
     it('branch with parent 0 gets parent = REPORT_ROOT', () => {
       const nodes = [legacyBranch('br-1', 0, { descendantSortCodes: [] })];

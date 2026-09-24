@@ -13,6 +13,13 @@ export type CustomData = {
    * Runtime-only — never serialized.
    */
   isHidden?: boolean;
+  /**
+   * The entity's ledger fingerprint for the selected period, from the same read as `value`. Absent
+   * on branches and on hidden leaves, which have no records in the period. Compared against the
+   * baseline's fingerprint to spot records that changed while the total didn't.
+   * Runtime-only — never serialized.
+   */
+  fingerprint?: string;
 };
 
 export type FlatNode<T = CustomData> = {

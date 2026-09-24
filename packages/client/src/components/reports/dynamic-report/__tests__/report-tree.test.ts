@@ -111,6 +111,27 @@ describe('buildReportTree', () => {
     });
   });
 
+  describe('ledger fingerprint', () => {
+    const template: TemplateNode[] = [
+      tmplBranch('br-1', 'report'),
+      tmplLeaf('e-exists', 'br-1'),
+      tmplLeaf('e-missing', 'br-1'),
+    ];
+    const { reportTree } = buildReportTree(template, [bizSum('e-exists', 'Surviving', 200)]);
+
+    it('a visible leaf carries its business sum ledgerFingerprint', () => {
+      expect(reportTree.find(n => n.id === 'e-exists')!.data.fingerprint).toBe('fp-e-exists');
+    });
+
+    it('a hidden leaf has no fingerprint — it has no records in the period', () => {
+      expect(reportTree.find(n => n.id === 'e-missing')!.data).not.toHaveProperty('fingerprint');
+    });
+
+    it('a branch has no fingerprint', () => {
+      expect(reportTree.find(n => n.id === 'br-1')!.data).not.toHaveProperty('fingerprint');
+    });
+  });
+
   describe('sort-code-branch node with numeric id', () => {
     it('data.sortCode is set to Number(id)', () => {
       const template: TemplateNode[] = [tmplBranch(100, 'report', 'sort-code-branch')];
