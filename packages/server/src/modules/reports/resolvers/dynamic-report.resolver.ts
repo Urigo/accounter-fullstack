@@ -41,6 +41,8 @@ function toSnapshotRow(
     scopeOwnerId: snapshot.scopeOwnerId,
     tree: template,
     leafValues: JSON.stringify(snapshotValuesToRecord(snapshot.values)),
+    leafFingerprints: null,
+    leafApprovals: null,
     createdBy: null,
   };
 }

@@ -59,13 +59,15 @@ const insertTemplate = sql<IInsertTemplateQuery>`
 
 const insertSnapshot = sql<IInsertSnapshotQuery>`
   INSERT INTO accounter_schema.dynamic_report_template_snapshots
-    (owner_id, template_name, from_date, to_date, scope_owner_id, tree, leaf_values, created_by)
-  VALUES ($ownerId, $templateName, $fromDate, $toDate, $scopeOwnerId, $tree, $leafValues, $createdBy)
+    (owner_id, template_name, from_date, to_date, scope_owner_id, tree, leaf_values,
+     leaf_fingerprints, leaf_approvals, created_by)
+  VALUES ($ownerId, $templateName, $fromDate, $toDate, $scopeOwnerId, $tree, $leafValues,
+          $leafFingerprints, $leafApprovals, $createdBy)
   RETURNING *;`;
 
-// Deliberately omits tree and leaf_values: this feeds the snapshot picker, which needs only
-// identity and dates, and those two jsonb columns are the whole weight of a row. The payload is
-// fetched by id once a baseline is actually chosen.
+// Deliberately omits the jsonb payload columns (tree, leaf_values, leaf_fingerprints,
+// leaf_approvals): this feeds the snapshot picker, which needs only identity and dates, and those
+// columns are the whole weight of a row. The payload is fetched by id once a baseline is chosen.
 const getSnapshotsMetaByOwnerIds = sql<IGetSnapshotsMetaByOwnerIdsQuery>`
   SELECT id, owner_id, template_name, from_date, to_date, scope_owner_id, created_by, created_at
   FROM accounter_schema.dynamic_report_template_snapshots
