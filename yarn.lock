@@ -67,7 +67,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:3.1.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:4.0.0"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.2.1"
     "@auth0/auth0-react": "npm:2.27.0"
     "@emotion/react": "npm:11.14.0"
@@ -544,7 +544,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:3.1.0, @atlaskit/pragmatic-drag-and-drop@npm:^3.1.0":
+"@atlaskit/pragmatic-drag-and-drop@npm:4.0.0":
+  version: 4.0.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:4.0.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.0.0"
+    bind-event-listener: "npm:^3.0.0"
+    raf-schd: "npm:^4.0.3"
+  checksum: 10c0/07ade5fd8210df4631907fa55d1519ffd5ee3886c4a2bc4d250f9f186926d7def37e105a7e25533db7406437dce126d9d577f18c55c2128dac5ca2bf13fbc3ce
+  languageName: node
+  linkType: hard
+
+"@atlaskit/pragmatic-drag-and-drop@npm:^3.1.0":
   version: 3.1.0
   resolution: "@atlaskit/pragmatic-drag-and-drop@npm:3.1.0"
   dependencies:
