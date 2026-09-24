@@ -58,6 +58,7 @@ import { TreePanel } from './tree-panel.js';
 import {
   applyBulk,
   applyOverride,
+  branchStatus,
   buildApprovalsInput,
   buildApprovalStats,
   buildEffectiveStatuses,
@@ -72,6 +73,7 @@ import {
 import { buildInitialBankTree } from './utils/bank-tree.js';
 import { pickLatestBaselineId } from './utils/baseline.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
+import { buildReportCsv } from './utils/csv.js';
 import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
@@ -1045,35 +1047,13 @@ export function DynamicReport() {
   );
 
   const handleDownloadCSV = useCallback(() => {
-    const nodeStats = buildNodeStats(reportTree);
-    const rows: string[] = ['Name,Value (ILS),Depth'];
-
-    const escapeCsv = (text: string) => `"${text.replaceAll('"', '""')}"`;
-
-    const childrenMap = new Map<string, typeof reportTree>();
-    for (const node of reportTree) {
-      const list = childrenMap.get(node.parent) || [];
-      list.push(node);
-      childrenMap.set(node.parent, list);
-    }
-    function traverse(parentId: string, depth: number) {
-      const children = childrenMap.get(parentId) ?? [];
-      for (const node of children) {
-        if (node.data.isHidden) continue;
-        if (node.droppable) {
-          const sum = nodeStats.get(node.id)?.sum ?? 0;
-          rows.push(`${escapeCsv(node.text)},${sum},${depth}`);
-          traverse(node.id, depth + 1);
-        } else {
-          const value = node.data.value ?? 0;
-          rows.push(`${escapeCsv(node.text)},${value},${depth}`);
-        }
-      }
-    }
-
-    traverse('report', 0);
-
-    const csv = rows.join('\n');
+    // The export walks the full reportTree, so the Needs review filter doesn't narrow it.
+    const csv = buildReportCsv(
+      reportTree,
+      buildNodeStats(reportTree),
+      nodeId => effectiveStatuses.get(nodeId)?.status,
+      branchId => branchStatus(approvalStats.get(branchId)),
+    );
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1081,7 +1061,7 @@ export function DynamicReport() {
     link.download = `dynamic-report-${fromDate}-${toDate}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-  }, [reportTree, fromDate, toDate]);
+  }, [reportTree, effectiveStatuses, approvalStats, fromDate, toDate]);
 
   useEffect(() => {
     setFiltersContext(null);
