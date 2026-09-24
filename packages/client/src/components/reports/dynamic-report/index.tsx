@@ -872,23 +872,37 @@ export function DynamicReport() {
     refetchTemplateNodes,
   ]);
 
-  // A locked draft cannot be resaved — the sign-off that locked it describes the template as it
-  // stands. Recording a baseline writes no template row, so it stays available: without it a
-  // locked draft could never start tracking changes at all.
-  const handleCaptureBaseline = useCallback(async () => {
-    if (!currentTemplate) return;
-    const savedOverrides = approvalOverrides;
-    const approvals = await resolveSaveApprovals();
-    if (!approvals) return;
-    const result = await captureDynamicReportBaseline({
-      name: currentTemplate.name,
-      tree: serializeReportTree(reportTree),
-      snapshot: { ...snapshotInput, approvals },
-    });
-    if (result) {
-      setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
-      setSelectedBaselineId(null);
-      refetchTemplateNodes({ requestPolicy: 'network-only' });
+  // Save review writes a snapshot only — the staged statuses stamped onto the report as it stands —
+  // and never the template row. So a locked draft stays locked (and can still capture its first
+  // baseline, since it cannot be resaved), and an unlocked draft's own period doesn't move when a
+  // deep-linked period is being reviewed. The toolbar offers it on an unlocked draft only while
+  // staged statuses are the only unsaved change; structural edits go through Resave.
+  // Guards the whole Save review, including the statuses lookup that runs before the mutation:
+  // a second click in that window would otherwise write a second snapshot. The ref blocks clicks
+  // within one render; the state disables the controls.
+  const saveReviewInFlight = useRef(false);
+  const [isSavingReview, setIsSavingReview] = useState(false);
+  const handleSaveReview = useCallback(async () => {
+    if (!currentTemplate || saveReviewInFlight.current) return;
+    saveReviewInFlight.current = true;
+    setIsSavingReview(true);
+    try {
+      const savedOverrides = approvalOverrides;
+      const approvals = await resolveSaveApprovals();
+      if (!approvals) return;
+      const result = await captureDynamicReportBaseline({
+        name: currentTemplate.name,
+        tree: serializeReportTree(reportTree),
+        snapshot: { ...snapshotInput, approvals },
+      });
+      if (result) {
+        setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
+        setSelectedBaselineId(null);
+        refetchTemplateNodes({ requestPolicy: 'network-only' });
+      }
+    } finally {
+      saveReviewInFlight.current = false;
+      setIsSavingReview(false);
     }
   }, [
     currentTemplate,
@@ -1015,12 +1029,14 @@ export function DynamicReport() {
         onShowZeroedChange={setShowZeroed}
         editMode={editMode}
         onEditModeChange={setEditMode}
-        isDirty={hasUnsavedChanges}
+        isDirty={isDirty}
+        hasStagedApprovals={hasStagedApprovals}
         currentTemplate={currentTemplate}
         onSelectTemplate={() => setTemplateManagerOpen(true)}
         onSaveAsNew={handleSaveAsNew}
         onResave={handleResave}
-        onCaptureBaseline={handleCaptureBaseline}
+        onSaveReview={handleSaveReview}
+        isSavingReview={isSavingReview}
         onRename={handleRenameTemplate}
         onDuplicate={() => currentTemplate && handleDuplicateTemplate(currentTemplate)}
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
