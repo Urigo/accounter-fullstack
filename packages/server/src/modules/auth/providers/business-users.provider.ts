@@ -2,12 +2,14 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { UUID_REGEX } from '../../../shared/constants.js';
 import type { AuthContext, BusinessMembership, TenantContext } from '../../../shared/types/auth.js';
 import type { NoOptionalField } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import type {
   IDeleteBusinessUserQuery,
+  IGetBusinessUserIdentitiesQuery,
   IGetBusinessUsersByAuth0IdsQuery,
   IInsertBusinessUserParams,
   IInsertBusinessUserQuery,
@@ -63,6 +65,29 @@ const getBusinessUsersByAuth0Ids = sql<IGetBusinessUsersByAuth0IdsQuery>`
   ORDER BY updated_at DESC;
 `;
 
+// Memberships by user id, for resolving display names. Filtered by business as well, and the exact
+// (user, business) pairs are matched in code: a user is only named within a business they belong to.
+const getBusinessUserIdentities = sql<IGetBusinessUserIdentitiesQuery>`
+  SELECT
+    bu.user_id,
+    bu.business_id,
+    bu.auth0_user_id,
+    (
+      SELECT i.email
+      FROM accounter_schema.invitations i
+      WHERE i.user_id = bu.user_id
+        AND i.business_id = bu.business_id
+      ORDER BY i.created_at DESC
+      LIMIT 1
+    ) AS fallback_email
+  FROM accounter_schema.business_users bu
+  WHERE bu.user_id IN $$userIds
+    AND bu.business_id IN $$businessIds;
+`;
+
+/** A user id within the business whose records name it. */
+export type BusinessUserKey = { userId: string; businessId: string };
+
 const insertBusinessUser = sql<IInsertBusinessUserQuery>`
   INSERT INTO accounter_schema.business_users (user_id, auth0_user_id, business_id, role_id)
     VALUES ($userId, $auth0UserId, $ownerId, $roleId)
@@ -102,6 +127,10 @@ const deleteBusinessUser = sql<IDeleteBusinessUserQuery>`
   RETURNING user_id;
 `;
 
+function businessUserKey({ userId, businessId }: BusinessUserKey): string {
+  return `${businessId}:${userId}`;
+}
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -128,6 +157,59 @@ export class BusinessUsersProvider {
 
   public getBusinessUsersByAuth0IdsLoader = new DataLoader((auth0UserIds: readonly string[]) =>
     this.batchBusinessUsersByAuth0Ids(auth0UserIds),
+  );
+
+  private async batchUserDisplayNames(
+    keys: readonly BusinessUserKey[],
+  ): Promise<(string | null)[]> {
+    // Both columns are uuids: a malformed id cannot match, and would fail the whole query's cast.
+    const valid = keys.filter(
+      key => UUID_REGEX.test(key.userId) && UUID_REGEX.test(key.businessId),
+    );
+    if (valid.length === 0) {
+      return keys.map(() => null);
+    }
+    const rows = await getBusinessUserIdentities.run(
+      {
+        userIds: [...new Set(valid.map(key => key.userId))],
+        businessIds: [...new Set(valid.map(key => key.businessId))],
+      },
+      this.db,
+    );
+
+    // The query filters users and businesses independently, so drop the cross-matches (a requested
+    // user's membership in some other requested business) before any Auth0 lookup.
+    const requested = new Set(keys.map(businessUserKey));
+    const matches = rows.filter(row =>
+      requested.has(businessUserKey({ userId: row.user_id, businessId: row.business_id })),
+    );
+
+    const displayNames = new Map<string, string | null>();
+    await mapWithConcurrency(matches, AUTH0_LOOKUP_CONCURRENCY, async row => {
+      let profile: { email: string | null; name: string | null } | null = null;
+      if (row.auth0_user_id) {
+        try {
+          profile = await this.auth0ManagementProvider.getUserProfileById(row.auth0_user_id);
+        } catch {
+          // Auth0 unavailable or unconfigured: fall back to what the database knows.
+        }
+      }
+      displayNames.set(
+        businessUserKey({ userId: row.user_id, businessId: row.business_id }),
+        profile?.name || profile?.email || row.fallback_email || null,
+      );
+    });
+
+    return keys.map(key => displayNames.get(businessUserKey(key)) ?? null);
+  }
+
+  /**
+   * Display name (Auth0 name, else email, else the invitation email) of a user within a business.
+   * Resolves to null for a user who is not, or no longer, a member of that business.
+   */
+  public getUserDisplayNamesLoader = new DataLoader(
+    (keys: readonly BusinessUserKey[]) => this.batchUserDisplayNames(keys),
+    { cacheKeyFn: businessUserKey },
   );
 
   /**
