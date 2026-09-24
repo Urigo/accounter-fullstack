@@ -1,10 +1,22 @@
 import { z } from 'zod';
+import type { AccountantStatus } from '../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../shared/constants.js';
-import type { LeafApprovals, LeafApprovalStatus } from '../types.js';
+import type { LeafApprovals } from '../types.js';
+
+/**
+ * The GraphQL `AccountantStatus` values, for validating leaf statuses both as submitted and as
+ * stored. Typed as an exhaustive map so adding or removing an enum value fails to compile here
+ * instead of silently rejecting valid statuses at runtime.
+ */
+export const accountantStatusSchema = z.enum({
+  APPROVED: 'APPROVED',
+  PENDING: 'PENDING',
+  UNAPPROVED: 'UNAPPROVED',
+} as const satisfies { [S in AccountantStatus]: S });
 
 export type IncomingLeafApproval = {
   entityId: string;
-  status: LeafApprovalStatus;
+  status: AccountantStatus;
 };
 
 export type StampApprovalsParams = {
@@ -95,7 +107,7 @@ export function carryForwardApprovals(
 }
 
 const leafApprovalSchema = z.object({
-  status: z.enum(['APPROVED', 'PENDING', 'UNAPPROVED']),
+  status: accountantStatusSchema,
   setBy: z.string().nullable(),
   // Always written from the server clock; anything that is not a timestamp is a malformed row.
   setAt: z.iso.datetime({ offset: true }),
