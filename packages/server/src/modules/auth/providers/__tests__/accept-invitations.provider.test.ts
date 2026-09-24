@@ -6,6 +6,7 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
   const runMocks = {
     updateInvitationAcceptanceRun: vi.fn(),
     getInvitationForAcceptanceRun: vi.fn(),
+    getInvitationByIdForAcceptanceRun: vi.fn(),
     getInvitationByTokenRun: vi.fn(),
     getUserIdByAuth0UserIdRun: vi.fn(),
     insertAcceptedBusinessUserRun: vi.fn(),
@@ -18,6 +19,9 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
 
     if (query.includes('SET accepted_at = NOW()')) {
       return { run: runMocks.updateInvitationAcceptanceRun };
+    }
+    if (query.includes('WHERE id = $id') && query.includes('FOR UPDATE')) {
+      return { run: runMocks.getInvitationByIdForAcceptanceRun };
     }
     if (query.includes('AND accepted_at IS NULL') && query.includes('FOR UPDATE')) {
       return { run: runMocks.getInvitationForAcceptanceRun };
@@ -74,6 +78,7 @@ import { AcceptInvitationsProvider } from '../accept-invitations.provider.js';
 const [
   updateInvitationAcceptanceRun,
   getInvitationForAcceptanceRun,
+  getInvitationByIdForAcceptanceRun,
   getInvitationByTokenRun,
   getUserIdByAuth0UserIdRun,
   insertAcceptedBusinessUserRun,
@@ -81,6 +86,7 @@ const [
 ] = [
   pgTypedRuntimeMock.runMocks.updateInvitationAcceptanceRun,
   pgTypedRuntimeMock.runMocks.getInvitationForAcceptanceRun,
+  pgTypedRuntimeMock.runMocks.getInvitationByIdForAcceptanceRun,
   pgTypedRuntimeMock.runMocks.getInvitationByTokenRun,
   pgTypedRuntimeMock.runMocks.getUserIdByAuth0UserIdRun,
   pgTypedRuntimeMock.runMocks.insertAcceptedBusinessUserRun,
@@ -313,5 +319,76 @@ describe('AcceptInvitationsProvider', () => {
     expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
     expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
     expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
+  });
+
+  describe('claimInvitation', () => {
+    const verifiedIdentity = {
+      auth0UserId: 'auth0|caller',
+      email: 'invitee@example.com',
+      emailVerified: true,
+    };
+
+    it('accepts an invitation matched by verified email, without a token', async () => {
+      getInvitationByIdForAcceptanceRun.mockResolvedValue([activeInvitation()]);
+      getUserIdByAuth0UserIdRun.mockResolvedValue([{ user_id: 'existing-user' }]);
+      insertAcceptedBusinessUserRun.mockResolvedValue([]);
+      updateInvitationAcceptanceRun.mockResolvedValue([]);
+
+      const result = await provider.claimInvitation('inv-1', verifiedIdentity);
+
+      expect(result).toEqual({ success: true, businessId: 'business-1', roleId: 'employee' });
+      expect(getInvitationByIdForAcceptanceRun).toHaveBeenCalledWith({ id: 'inv-1' }, dbClient);
+      // The token lookup must not be involved — tokens are hashed and unavailable here.
+      expect(getInvitationForAcceptanceRun).not.toHaveBeenCalled();
+      expect(dbClient.query).toHaveBeenNthCalledWith(2, 'COMMIT');
+      expect(updateInvitationAcceptanceRun).toHaveBeenCalledWith({ id: 'inv-1' }, dbClient);
+    });
+
+    it('refuses an unverified email outright', async () => {
+      // The verified email is the only proof of ownership on this path, so an
+      // unverified one must not even reach the lookup.
+      await expect(
+        provider.claimInvitation('inv-1', { ...verifiedIdentity, emailVerified: false }),
+      ).rejects.toMatchObject({ extensions: { code: 'TOKEN_INVALID' } });
+
+      expect(dbProvider.pool.connect).not.toHaveBeenCalled();
+      expect(getInvitationByIdForAcceptanceRun).not.toHaveBeenCalled();
+    });
+
+    it('refuses an identity with no email claim', async () => {
+      await expect(
+        provider.claimInvitation('inv-1', { ...verifiedIdentity, email: null }),
+      ).rejects.toMatchObject({ extensions: { code: 'TOKEN_INVALID' } });
+
+      expect(dbProvider.pool.connect).not.toHaveBeenCalled();
+    });
+
+    it('refuses an invitation addressed to somebody else', async () => {
+      getInvitationByIdForAcceptanceRun.mockResolvedValue([
+        activeInvitation({ email: 'somebody-else@example.com' }),
+      ]);
+
+      await expect(provider.claimInvitation('inv-1', verifiedIdentity)).rejects.toMatchObject({
+        extensions: { code: 'TOKEN_INVALID' },
+      });
+
+      expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
+      expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
+      expect(insertAcceptedBusinessUserRun).not.toHaveBeenCalled();
+      expect(updateBusinessUserAuth0IdRun).not.toHaveBeenCalled();
+    });
+
+    it('reports accepted, expired and unknown invitations identically', async () => {
+      // The id is the only input, so distinguishing these would let a caller
+      // probe for which invitation ids exist.
+      getInvitationByIdForAcceptanceRun.mockResolvedValue([]);
+
+      await expect(provider.claimInvitation('inv-gone', verifiedIdentity)).rejects.toMatchObject({
+        extensions: { code: 'TOKEN_INVALID' },
+      });
+
+      expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
+      expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
+    });
   });
 });

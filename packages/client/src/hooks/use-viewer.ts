@@ -8,6 +8,13 @@ import { ViewerDocument, type ViewerQuery } from '../gql/graphql.js';
       email
       emailVerified
       status
+      pendingInvitations {
+        id
+        businessId
+        businessName
+        roleId
+        expiresAt
+      }
     }
   }
 `;
@@ -16,6 +23,7 @@ type UseViewer = {
   fetching: boolean;
   error: CombinedError | undefined;
   viewer: ViewerQuery['viewer'];
+  refreshViewer: () => void;
 };
 
 /**
@@ -25,10 +33,14 @@ type UseViewer = {
  * still answers for a user who is logged in to Auth0 but linked to no business.
  */
 export const useViewer = (options?: { pause?: boolean }): UseViewer => {
-  const [{ data, fetching, error }] = useQuery({
+  const [{ data, fetching, error }, reexecuteQuery] = useQuery({
     query: ViewerDocument,
     pause: options?.pause ?? false,
   });
 
-  return { fetching, error, viewer: data?.viewer ?? null };
+  // Claiming an invitation changes the caller's provisioning state, so the
+  // result has to come from the server rather than the cache.
+  const refreshViewer = () => reexecuteQuery({ requestPolicy: 'network-only' });
+
+  return { fetching, error, viewer: data?.viewer ?? null, refreshViewer };
 };

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
+import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
@@ -8,10 +9,13 @@ import {
   expiredTokenError,
   invalidTokenError,
   mapAuth0Error,
+  unavailableInvitationError,
 } from '../helpers/invitations.helper.js';
 import type {
+  IGetInvitationByIdForAcceptanceQuery,
   IGetInvitationByTokenQuery,
   IGetInvitationForAcceptanceQuery,
+  IGetInvitationForAcceptanceResult,
   IGetUserIdByAuth0UserIdQuery,
   IInsertAcceptedBusinessUserQuery,
   IUpdateBusinessUserAuth0IdQuery,
@@ -38,6 +42,15 @@ const getInvitationByToken = sql<IGetInvitationByTokenQuery>`
   SELECT id, user_id, business_id, role_id, email, auth0_user_id, accepted_at, expires_at
   FROM accounter_schema.invitations
   WHERE token_hash = $tokenHash;
+`;
+
+const getInvitationByIdForAcceptance = sql<IGetInvitationByIdForAcceptanceQuery>`
+  SELECT id, user_id, business_id, role_id, email, auth0_user_id, accepted_at, expires_at
+  FROM accounter_schema.invitations
+  WHERE id = $id
+    AND accepted_at IS NULL
+    AND expires_at > NOW()
+  FOR UPDATE;
 `;
 
 const getUserIdByAuth0UserId = sql<IGetUserIdByAuth0UserIdQuery>`
@@ -103,120 +116,194 @@ export class AcceptInvitationsProvider {
         throw invalidTokenError();
       }
 
-      const invitation = activeInvitationResult[0];
-      const effectiveAuth0UserId = auth0UserId ?? invitation.auth0_user_id;
-
-      if (!effectiveAuth0UserId) {
-        throw invalidTokenError();
-      }
-
-      // Defense in depth: authenticated users can claim only invitations for their own email.
-      if (auth0UserId) {
-        const normalizedInvitationEmail = invitation.email?.trim().toLowerCase();
-        let normalizedAuthenticatedEmail = authenticatedUserEmail?.trim().toLowerCase() ?? null;
-
-        // Access tokens for custom APIs often omit `email` claims.
-        // In that case, resolve the primary email from Auth0 profile for comparison.
-        if (!normalizedAuthenticatedEmail) {
-          const identity = await this.auth0ManagementProvider.getUserEmailById(auth0UserId);
-          if (identity?.emailVerified && identity.email) {
-            normalizedAuthenticatedEmail = identity.email.trim().toLowerCase();
-          }
-        }
-
-        if (
-          !normalizedInvitationEmail ||
-          !normalizedAuthenticatedEmail ||
-          normalizedInvitationEmail !== normalizedAuthenticatedEmail
-        ) {
-          throw invalidTokenError();
-        }
-      }
-
-      if (!invitation.user_id) {
-        throw invalidTokenError();
-      }
-
-      const assignAuth0UserToInvitedUser = async () => {
-        await updateBusinessUserAuth0Id.run(
-          {
-            auth0UserId: effectiveAuth0UserId,
-            userId: invitation.user_id,
-            ownerId: invitation.business_id,
-          },
-          client,
-        );
-      };
-
-      let userId: string;
-
-      if (auth0UserId) {
-        const existingUserResult = await getUserIdByAuth0UserId.run({ auth0UserId }, client);
-
-        if (existingUserResult.length > 0) {
-          userId = existingUserResult[0].user_id;
-
-          await insertAcceptedBusinessUser.run(
-            {
-              userId,
-              auth0UserId: effectiveAuth0UserId,
-              ownerId: invitation.business_id,
-              roleId: invitation.role_id,
-            },
-            client,
-          );
-        } else {
-          userId = invitation.user_id;
-          await assignAuth0UserToInvitedUser();
-        }
-      } else {
-        userId = invitation.user_id;
-        await assignAuth0UserToInvitedUser();
-      }
-
-      if (invitation.auth0_user_id) {
-        try {
-          if (auth0UserId && auth0UserId !== invitation.auth0_user_id) {
-            await this.auth0ManagementProvider.deleteUser(invitation.auth0_user_id);
-          } else {
-            await this.auth0ManagementProvider.unblockUser(invitation.auth0_user_id);
-          }
-        } catch (error) {
-          throw mapAuth0Error(error);
-        }
-      }
-
-      await updateInvitationAcceptance.run({ id: invitation.id }, client);
-
-      await this.auditLogsProvider.log(
-        {
-          ownerId: invitation.business_id,
-          userId,
-          auth0UserId: effectiveAuth0UserId,
-          action: 'INVITATION_ACCEPTED',
-          entity: 'Invitation',
-          entityId: invitation.id,
-          details: {
-            auth0_user_id: effectiveAuth0UserId,
-            business_id: invitation.business_id,
-            role_id: invitation.role_id,
-          },
-        },
+      const result = await this.finalizeAcceptance(
         client,
+        activeInvitationResult[0],
+        auth0UserId,
+        authenticatedUserEmail,
       );
 
       await client.query('COMMIT');
-
-      return {
-        success: true,
-        businessId: invitation.business_id,
-        roleId: invitation.role_id,
-      };
+      return result;
     } catch (error) {
       await client.query('ROLLBACK').catch(() => null);
       throw error;
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Accept an invitation the caller was matched to by verified email, without
+   * the emailed token.
+   *
+   * Invitation tokens are stored hashed, so a listed invitation cannot be turned
+   * back into its token — this is the lookup for a caller who never had (or lost)
+   * the link. Where `acceptInvitation` treats possession of the token as the
+   * proof, here the *only* proof is the verified email, so the caller's identity
+   * must carry a verified address and it must match the invitation's. The shared
+   * check in `finalizeAcceptance` enforces the match; requiring verification is
+   * this method's job.
+   */
+  public async claimInvitation(
+    invitationId: string,
+    identity: { auth0UserId: string; email: string | null; emailVerified: boolean },
+  ) {
+    if (!identity.emailVerified || !identity.email) {
+      throw unavailableInvitationError();
+    }
+
+    const client = await this.dbProvider.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const invitationResult = await getInvitationByIdForAcceptance.run(
+        { id: invitationId },
+        client,
+      );
+
+      if (invitationResult.length === 0) {
+        // Pending, unexpired invitations are the only claimable ones. Anything
+        // else (accepted, expired, unknown id) is reported identically so the
+        // mutation cannot be used to probe for invitation ids.
+        throw unavailableInvitationError();
+      }
+
+      const result = await this.finalizeAcceptance(
+        client,
+        invitationResult[0],
+        identity.auth0UserId,
+        identity.email,
+      );
+
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => null);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Shared tail of both acceptance paths: verify the claimant, link the user to
+   * the business, clean up the pre-registered Auth0 user, and mark the
+   * invitation accepted. Runs inside the caller's transaction; the caller
+   * commits.
+   */
+  private async finalizeAcceptance(
+    client: PoolClient,
+    invitation: IGetInvitationForAcceptanceResult,
+    auth0UserId: string | null,
+    authenticatedUserEmail: string | null,
+  ) {
+    const effectiveAuth0UserId = auth0UserId ?? invitation.auth0_user_id;
+
+    if (!effectiveAuth0UserId) {
+      throw invalidTokenError();
+    }
+
+    // Defense in depth: authenticated users can claim only invitations for their own email.
+    if (auth0UserId) {
+      const normalizedInvitationEmail = invitation.email?.trim().toLowerCase();
+      let normalizedAuthenticatedEmail = authenticatedUserEmail?.trim().toLowerCase() ?? null;
+
+      // Access tokens for custom APIs often omit `email` claims.
+      // In that case, resolve the primary email from Auth0 profile for comparison.
+      if (!normalizedAuthenticatedEmail) {
+        const identity = await this.auth0ManagementProvider.getUserEmailById(auth0UserId);
+        if (identity?.emailVerified && identity.email) {
+          normalizedAuthenticatedEmail = identity.email.trim().toLowerCase();
+        }
+      }
+
+      if (
+        !normalizedInvitationEmail ||
+        !normalizedAuthenticatedEmail ||
+        normalizedInvitationEmail !== normalizedAuthenticatedEmail
+      ) {
+        throw invalidTokenError();
+      }
+    }
+
+    if (!invitation.user_id) {
+      throw invalidTokenError();
+    }
+
+    const assignAuth0UserToInvitedUser = async () => {
+      await updateBusinessUserAuth0Id.run(
+        {
+          auth0UserId: effectiveAuth0UserId,
+          userId: invitation.user_id,
+          ownerId: invitation.business_id,
+        },
+        client,
+      );
+    };
+
+    let userId: string;
+
+    if (auth0UserId) {
+      const existingUserResult = await getUserIdByAuth0UserId.run({ auth0UserId }, client);
+
+      if (existingUserResult.length > 0) {
+        userId = existingUserResult[0].user_id;
+
+        await insertAcceptedBusinessUser.run(
+          {
+            userId,
+            auth0UserId: effectiveAuth0UserId,
+            ownerId: invitation.business_id,
+            roleId: invitation.role_id,
+          },
+          client,
+        );
+      } else {
+        userId = invitation.user_id;
+        await assignAuth0UserToInvitedUser();
+      }
+    } else {
+      userId = invitation.user_id;
+      await assignAuth0UserToInvitedUser();
+    }
+
+    if (invitation.auth0_user_id) {
+      try {
+        if (auth0UserId && auth0UserId !== invitation.auth0_user_id) {
+          await this.auth0ManagementProvider.deleteUser(invitation.auth0_user_id);
+        } else {
+          await this.auth0ManagementProvider.unblockUser(invitation.auth0_user_id);
+        }
+      } catch (error) {
+        throw mapAuth0Error(error);
+      }
+    }
+
+    await updateInvitationAcceptance.run({ id: invitation.id }, client);
+
+    await this.auditLogsProvider.log(
+      {
+        ownerId: invitation.business_id,
+        userId,
+        auth0UserId: effectiveAuth0UserId,
+        action: 'INVITATION_ACCEPTED',
+        entity: 'Invitation',
+        entityId: invitation.id,
+        details: {
+          auth0_user_id: effectiveAuth0UserId,
+          business_id: invitation.business_id,
+          role_id: invitation.role_id,
+        },
+      },
+      client,
+    );
+
+    return {
+      success: true,
+      businessId: invitation.business_id,
+      roleId: invitation.role_id,
+    };
   }
 }
