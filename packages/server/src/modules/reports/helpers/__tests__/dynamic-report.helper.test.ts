@@ -8,6 +8,7 @@ import {
   recordToSnapshotValues,
   snapshotFingerprintsToRecord,
   snapshotValuesToRecord,
+  templateLeafIds,
   validateSnapshotInput,
   validateTemplate,
 } from '../dynamic-report.helper.js';
@@ -385,6 +386,47 @@ describe('validateSnapshotInput', () => {
     expect(() => validateSnapshotInput(snapshotInput({ scopeOwnerId: '123-abc' }))).toThrow();
   });
 
+  it('accepts a snapshot with no approvals — the field is optional', () => {
+    expect(validateSnapshotInput(snapshotInput()).approvals).toBeUndefined();
+  });
+
+  it('accepts and keeps approvals', () => {
+    const approvals = [
+      { entityId: ENTITY, status: 'APPROVED' },
+      { entityId: OWNER, status: 'UNAPPROVED' },
+    ];
+    expect(validateSnapshotInput(snapshotInput({ approvals })).approvals).toEqual(approvals);
+  });
+
+  it('accepts an explicit null approvals list, as GraphQL sends for an omitted nullable', () => {
+    expect(() => validateSnapshotInput(snapshotInput({ approvals: null }))).not.toThrow();
+  });
+
+  it('rejects an approval with an unknown status', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ approvals: [{ entityId: ENTITY, status: 'MAYBE' }] })),
+    ).toThrow();
+  });
+
+  it('rejects an approval with a non-UUID entity id', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ approvals: [{ entityId: 'nope', status: 'PENDING' }] })),
+    ).toThrow();
+  });
+
+  it('rejects duplicate approval entity ids', () => {
+    expect(() =>
+      validateSnapshotInput(
+        snapshotInput({
+          approvals: [
+            { entityId: ENTITY, status: 'APPROVED' },
+            { entityId: ENTITY, status: 'PENDING' },
+          ],
+        }),
+      ),
+    ).toThrow(/[Dd]uplicate/);
+  });
+
   it.each(['2026-1-1', '20260101', '01-01-2026', 'yesterday', ''])(
     'rejects %p, which is not a yyyy-mm-dd date',
     fromDate => {
@@ -459,6 +501,32 @@ describe('snapshot fingerprint encoding', () => {
   it('skips entries whose fingerprint is not a non-empty string', () => {
     const fingerprints = recordToSnapshotFingerprints({ a: 3, b: '', c: null, d: 'fp-d' });
     expect([...fingerprints]).toEqual([['d', 'fp-d']]);
+  });
+});
+
+describe('templateLeafIds', () => {
+  it('collects the financial-entity leaves of a tree and ignores branches', () => {
+    const tree = JSON.stringify([
+      { id: 1, parent: 0, text: 'Assets', droppable: true, data: { nodeType: 'synthetic-branch', isOpen: true } },
+      { id: 2, parent: 1, text: 'Cash', droppable: true, data: { nodeType: 'sort-code-branch', isOpen: true, sortCode: 100 } },
+      { id: ENTITY, parent: 2, text: 'Bank', droppable: false, data: { nodeType: 'financial-entity', isOpen: false } },
+      { id: OWNER, parent: 1, text: 'Other', droppable: false, data: { nodeType: 'financial-entity', isOpen: false } },
+    ]);
+    expect(templateLeafIds(tree)).toEqual(new Set([ENTITY, OWNER]));
+  });
+
+  it('follows droppable, as the client does, when nodeType disagrees with it', () => {
+    const tree = JSON.stringify([
+      // The client renders a droppable node as a branch whatever its nodeType says...
+      { id: ENTITY, parent: 0, text: 'Branch', droppable: true, data: { nodeType: 'financial-entity', isOpen: true } },
+      // ...and a non-droppable one as an entity leaf.
+      { id: OWNER, parent: ENTITY, text: 'Leaf', droppable: false, data: { nodeType: 'synthetic-branch', isOpen: false } },
+    ]);
+    expect(templateLeafIds(tree)).toEqual(new Set([OWNER]));
+  });
+
+  it('returns an empty set for an empty tree', () => {
+    expect(templateLeafIds('[]')).toEqual(new Set());
   });
 });
 

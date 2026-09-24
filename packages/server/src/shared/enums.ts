@@ -94,6 +94,17 @@ export enum ChargeTypeEnum {
   Salary = 'SalaryCharge',
 }
 
+/**
+ * Mirrors the GraphQL `AccountantStatus` enum and the `accounter_schema.accountant_status` DB enum.
+ * Not mapped in codegen's `enumValues`, so the generated `AccountantStatus` type stays a string
+ * union and existing string-literal code keeps compiling; enum members are assignable to it.
+ */
+export enum AccountantStatus {
+  Approved = 'APPROVED',
+  Pending = 'PENDING',
+  Unapproved = 'UNAPPROVED',
+}
+
 export enum CountryCode {
   Afghanistan = 'AFG',
   Albania = 'ALB',

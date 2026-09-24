@@ -1,10 +1,12 @@
 import { z } from 'zod';
+import type { AccountantStatus } from '../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../shared/constants.js';
-import type { LeafApprovals, LeafApprovalStatus } from '../types.js';
+import { AccountantStatus as AccountantStatusEnum } from '../../../shared/enums.js';
+import type { LeafApprovals } from '../types.js';
 
 export type IncomingLeafApproval = {
   entityId: string;
-  status: LeafApprovalStatus;
+  status: AccountantStatus;
 };
 
 export type StampApprovalsParams = {
@@ -70,8 +72,32 @@ export function stampApprovals({
   return result;
 }
 
+/**
+ * The statuses to stamp for a save that submitted none, i.e. a client that predates approvals:
+ * every previously stored status, with the regression rule a reading client applies — an APPROVED
+ * leaf whose fingerprint changed since then comes back as PENDING.
+ *
+ * Passed to `stampApprovals` as `incoming`, unchanged stamps carry forward and regressions get a
+ * system stamp, so such a save neither erases the review trail nor re-approves a changed ledger.
+ */
+export function carryForwardApprovals(
+  previous: StampApprovalsParams['previous'],
+  incomingFingerprints: Record<string, string>,
+): IncomingLeafApproval[] {
+  if (!previous) {
+    return [];
+  }
+  return Object.entries(previous.approvals).map(([entityId, { status }]) => ({
+    entityId,
+    status:
+      status === 'APPROVED' && previous.fingerprints[entityId] !== incomingFingerprints[entityId]
+        ? 'PENDING'
+        : status,
+  }));
+}
+
 const leafApprovalSchema = z.object({
-  status: z.enum(['APPROVED', 'PENDING', 'UNAPPROVED']),
+  status: z.enum(AccountantStatusEnum),
   setBy: z.string().nullable(),
   // Always written from the server clock; anything that is not a timestamp is a malformed row.
   setAt: z.iso.datetime({ offset: true }),
