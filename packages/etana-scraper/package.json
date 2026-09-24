@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@whatwg-node/fetch": "0.10.13",
+    "@whatwg-node/fetch": "0.12.0",
     "csv-parse": "7.0.2",
     "diary": "0.4.5",
     "dotenv": "18.0.3",
