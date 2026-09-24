@@ -65,7 +65,7 @@
     "dataloader": "2.2.3",
     "date-fns": "4.4.0",
     "dotenv": "18.0.2",
-    "googleapis": "181.0.0",
+    "googleapis": "182.0.0",
     "graphql": "16.14.2",
     "graphql-modules": "3.1.2",
     "graphql-scalars": "2.0.0",
