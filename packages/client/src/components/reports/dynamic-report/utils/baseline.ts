@@ -1,5 +1,5 @@
 /** The view a baseline has to match for its figures to be comparable with the ones on screen. */
-export interface BaselineScope {
+interface BaselineScope {
   fromDate: string;
   toDate: string;
   scopeOwnerId: string;

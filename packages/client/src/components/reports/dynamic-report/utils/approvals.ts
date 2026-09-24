@@ -264,7 +264,7 @@ export function buildApprovalsInput(
 }
 
 /** The parts of a snapshot read that the statuses derive from. */
-export type ApprovalSnapshotLike = {
+type ApprovalSnapshotLike = {
   fromDate: string;
   toDate: string;
   scopeOwnerId: string;

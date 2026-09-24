@@ -4,12 +4,12 @@ import { UUID_REGEX } from '../../../shared/constants.js';
 import { AccountantStatus as AccountantStatusEnum } from '../../../shared/enums.js';
 import type { LeafApprovals } from '../types.js';
 
-export type IncomingLeafApproval = {
+type IncomingLeafApproval = {
   entityId: string;
   status: AccountantStatus;
 };
 
-export type StampApprovalsParams = {
+type StampApprovalsParams = {
   /** Effective status of every counted leaf, as submitted by the client. */
   incoming: IncomingLeafApproval[];
   /** Fingerprints submitted with the same save, keyed by entity id. */
