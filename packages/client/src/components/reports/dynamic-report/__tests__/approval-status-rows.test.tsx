@@ -215,9 +215,7 @@ describe('staging a leaf status', () => {
     const onChange = vi.fn<(entityId: string, status: AccountantStatus) => void>();
     renderReport({ onLeafApprovalChange: onChange, approvalsDisabledReason: null });
 
-    const [branchTrigger, leafTrigger] = statusTriggers();
-    // Bulk set from a branch is a later step.
-    expect(branchTrigger.disabled).toBe(true);
+    const [, leafTrigger] = statusTriggers();
     expect(leafTrigger.disabled).toBe(false);
 
     openMenu(leafTrigger);
@@ -233,5 +231,53 @@ describe('staging a leaf status', () => {
   it('disables the leaf when there is no change handler', () => {
     renderReport({});
     expect(statusTriggers().every(button => button.disabled)).toBe(true);
+  });
+});
+
+describe('bulk set from a branch', () => {
+  function renderReport(props: {
+    onBranchApprovalChange?: (branchId: string, status: AccountantStatus) => void;
+    approvalsDisabledReason?: string | null;
+  }): void {
+    const nodes = [branch('b', 'report'), leaf('a', 'b'), leaf('c', 'b')];
+    const leafStatuses = deriveLeafStatuses(nodes, null, new Map());
+    act(() =>
+      root.render(
+        <TreePanel
+          treeId="report"
+          title="Report"
+          nodes={nodes}
+          editMode={false}
+          emptyMessage="empty"
+          onAddBranch={noop}
+          onToggleExpand={noop}
+          leafStatuses={leafStatuses}
+          approvalStats={buildApprovalStats(nodes, id => leafStatuses.get(id)?.status)}
+          {...props}
+        />,
+      ),
+    );
+  }
+
+  it('reports the chosen status with the branch id', () => {
+    const onChange = vi.fn<(branchId: string, status: AccountantStatus) => void>();
+    renderReport({ onBranchApprovalChange: onChange, approvalsDisabledReason: null });
+
+    const [branchTrigger] = statusTriggers();
+    expect(branchTrigger.disabled).toBe(false);
+
+    openMenu(branchTrigger);
+    selectItem('Approved');
+    expect(onChange).toHaveBeenCalledWith('b', AccountantStatus.Approved);
+  });
+
+  it('disables the branch under the same rules as leaves', () => {
+    renderReport({ onBranchApprovalChange: noop, approvalsDisabledReason: 'Loading…' });
+    expect(statusTriggers()[0].disabled).toBe(true);
+  });
+
+  it('disables the branch when there is no change handler', () => {
+    renderReport({ approvalsDisabledReason: null });
+    expect(statusTriggers()[0].disabled).toBe(true);
   });
 });
