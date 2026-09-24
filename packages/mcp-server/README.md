@@ -11,6 +11,8 @@ See the design docs:
 - [`docs/operations-runbook.md`](./docs/operations-runbook.md) — incident handling, metrics, log
   queries, rollback
 - [`docs/submission-checklist.md`](./docs/submission-checklist.md) — connector submission readiness
+- [`docs/graphql-schema-tool-evaluation.md`](./docs/graphql-schema-tool-evaluation.md) — evaluation
+  of exposing a filtered GraphQL schema + a schema-navigation tool (proposal)
 
 ## Status
 
