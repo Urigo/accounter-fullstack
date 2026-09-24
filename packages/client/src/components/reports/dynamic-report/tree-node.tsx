@@ -64,6 +64,12 @@ interface TreeNodeProps {
   diff?: RowDiff;
   /** The row's accountant status. Report rows reserve a slot for it even when it is absent. */
   approval?: RowApproval;
+  /**
+   * The Needs review filter shows this branch open whatever its saved isOpen says. Its expand
+   * toggle is disabled meanwhile, since a click would flip the saved isOpen without any visible
+   * change.
+   */
+  isForcedOpen?: boolean;
 }
 
 function instructionToIndicator(
@@ -87,6 +93,7 @@ export function TreeNodeRow({
   onDelete,
   diff,
   approval,
+  isForcedOpen = false,
 }: TreeNodeProps): ReactElement {
   const [isDragging, setIsDragging] = useState(false);
   const [dropIndicator, setDropIndicator] = useState<'top' | 'bottom' | 'child' | null>(null);
@@ -94,7 +101,7 @@ export function TreeNodeRow({
   const rowRef = useRef<HTMLDivElement>(null);
   const dragHandleRef = useRef<HTMLButtonElement>(null);
 
-  const isExpanded = node.data.isOpen;
+  const isExpanded = node.data.isOpen || isForcedOpen;
   const isBranch = isBranchNode(node);
   // A ghost row shows what a node used to contribute before it left the report. It is a record,
   // not a node: it cannot be dragged, dropped onto, renamed or deleted.
@@ -197,6 +204,9 @@ export function TreeNodeRow({
             variant="ghost"
             size="sm"
             className="size-6 p-0"
+            data-expand-toggle={node.id}
+            disabled={isForcedOpen}
+            title={isForcedOpen ? 'Expanded by Needs review' : undefined}
             onClick={() => onToggleExpand(node.id)}
           >
             {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}

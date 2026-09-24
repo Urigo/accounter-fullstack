@@ -48,6 +48,9 @@ interface ToolbarProps {
   ownerDisabled?: boolean;
   showZeroed: boolean;
   onShowZeroedChange: (show: boolean) => void;
+  /** The Needs review filter (spec R20); offered only with a template loaded. */
+  reviewOnly: boolean;
+  onReviewOnlyChange: (reviewOnly: boolean) => void;
   editMode: boolean;
   onEditModeChange: (edit: boolean) => void;
   /** Structural edits (tree, period) are unsaved. Staged statuses are reported separately. */
@@ -97,6 +100,8 @@ export function Toolbar({
   ownerDisabled = false,
   showZeroed,
   onShowZeroedChange,
+  reviewOnly,
+  onReviewOnlyChange,
   editMode,
   onEditModeChange,
   isDirty,
@@ -190,6 +195,15 @@ export function Toolbar({
             Show zeroed accounts
           </Label>
         </div>
+
+        {hasTemplate && (
+          <div className="flex items-center gap-2">
+            <Switch id="needs-review" checked={reviewOnly} onCheckedChange={onReviewOnlyChange} />
+            <Label htmlFor="needs-review" className="text-sm cursor-pointer">
+              Needs review
+            </Label>
+          </div>
+        )}
 
         {periodOverride && (
           <div className="flex items-center gap-2">
