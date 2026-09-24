@@ -1,4 +1,4 @@
-import { AccountantStatus } from '../../../../gql/graphql.js';
+import { AccountantStatus, type DynamicReportLeafApprovalInput } from '../../../../gql/graphql.js';
 import { isFinancialEntityNode, type CustomData, type FlatNode } from './types.js';
 
 /** A leaf's stored status, as a snapshot read returns it. */
@@ -161,6 +161,22 @@ export function applyOverride(
   return next;
 }
 
+/**
+ * What stays staged after a save that sent `saved`: only what the user changed or added while the
+ * save was in flight. Everything it sent is in the new snapshot now.
+ */
+export function dropSavedOverrides(
+  current: ApprovalOverrides,
+  saved: ApprovalOverrides,
+): ApprovalOverrides {
+  if (current === saved) return new Map();
+  const next = new Map(current);
+  for (const [entityId, status] of saved) {
+    if (next.get(entityId) === status) next.delete(entityId);
+  }
+  return next;
+}
+
 /** A staged override wins over the derived status (spec R3, step 1). */
 export function resolveStatus(
   entityId: string,
@@ -189,6 +205,57 @@ export function buildEffectiveStatuses(
     if (effective) result.set(entityId, effective);
   }
   return result;
+}
+
+/**
+ * The approvals a Resave or Capture sends: every counted leaf with the status it shows, UNAPPROVED
+ * included. The server stamps each entry against the snapshot the save follows, so an unchanged
+ * status keeps its stamp and a derived regression is recorded as a system one.
+ */
+export function buildApprovalsInput(
+  tree: FlatNode<CustomData>[],
+  statuses: ReadonlyMap<string, EffectiveApproval>,
+): DynamicReportLeafApprovalInput[] {
+  return tree.filter(isCountedLeaf).map(node => ({
+    entityId: node.id,
+    status: statuses.get(node.id)?.status ?? AccountantStatus.Unapproved,
+  }));
+}
+
+/** The parts of a snapshot read that the statuses derive from. */
+export type ApprovalSnapshotLike = {
+  fromDate: string;
+  toDate: string;
+  scopeOwnerId: string;
+  values: readonly { entityId: string; fingerprint?: string | null }[];
+  approvals: readonly DynamicReportLeafApproval[];
+};
+
+/**
+ * Effective statuses derived from a given snapshot rather than from the baseline on screen. A save
+ * must send the statuses of the snapshot it follows (the latest comparable one), even while an
+ * older baseline is pinned for viewing, or it would write that older save's statuses back as fresh
+ * user choices. A snapshot for another period or owner carries no statuses that apply.
+ */
+export function deriveSaveStatuses(
+  tree: FlatNode<CustomData>[],
+  snapshot: ApprovalSnapshotLike | null,
+  scope: { fromDate: string; toDate: string; scopeOwnerId: string },
+  overrides: ApprovalOverrides,
+): Map<string, EffectiveApproval> {
+  const comparable =
+    !!snapshot &&
+    snapshot.fromDate === scope.fromDate &&
+    snapshot.toDate === scope.toDate &&
+    snapshot.scopeOwnerId === scope.scopeOwnerId;
+  const fingerprints = new Map<string, string>();
+  if (comparable) {
+    for (const value of snapshot.values) {
+      if (value.fingerprint != null) fingerprints.set(value.entityId, value.fingerprint);
+    }
+  }
+  const derived = deriveLeafStatuses(tree, comparable ? snapshot.approvals : null, fingerprints);
+  return buildEffectiveStatuses(derived, overrides);
 }
 
 /**

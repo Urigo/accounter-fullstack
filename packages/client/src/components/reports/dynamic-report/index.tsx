@@ -8,7 +8,8 @@ import {
   useState,
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from 'urql';
+import { toast } from 'sonner';
+import { useClient, useQuery } from 'urql';
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { FiltersContext } from '@/providers/index.js';
@@ -19,6 +20,7 @@ import {
   DynamicReportTemplateDocument,
   type AccountantStatus,
   type AllDynamicReportsQuery,
+  type DynamicReportLeafApprovalInput,
   type DynamicReportTemplateQuery,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
@@ -54,9 +56,12 @@ import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import {
   applyOverride,
+  buildApprovalsInput,
   buildApprovalStats,
   buildEffectiveStatuses,
   deriveLeafStatuses,
+  deriveSaveStatuses,
+  dropSavedOverrides,
   approvalsDisabledReason as getApprovalsDisabledReason,
 } from './utils/approvals.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
@@ -750,7 +755,8 @@ export function DynamicReport() {
   );
 
   // The baseline a later visit diffs against: the figures currently on screen, for the period they
-  // were computed over.
+  // were computed over. It carries no statuses: Save as new and Duplicate start a template with no
+  // reviewed history (spec R14). Resave and Capture add theirs through resolveSaveApprovals.
   const snapshotInput = useMemo(
     () =>
       buildSnapshotInput({
@@ -762,16 +768,80 @@ export function DynamicReport() {
     [businessSums, fromDate, toDate, scopeOwnerId],
   );
 
+  const client = useClient();
+
+  // The statuses a Resave or Capture sends. The server stamps them against the newest comparable
+  // snapshot, so they have to be that snapshot's statuses plus the staged ones. When it is the
+  // baseline on screen (or there is none) that is exactly effectiveStatuses. While an older baseline
+  // is pinned, the statuses on screen are that older save's, and sending them would write them back
+  // as fresh choices — so the newest one is fetched and the statuses derived from it instead.
+  // Returns null, after telling the user, when it can't be read: saving without statuses would
+  // drop every one of them. The same goes while the report is still loading: until the snapshot
+  // list arrives latestBaselineId reads as "no baseline", every leaf as UNAPPROVED, and sending that
+  // would overwrite the stored statuses.
+  const resolveSaveApprovals = useCallback(async (): Promise<
+    DynamicReportLeafApprovalInput[] | null
+  > => {
+    if (isApprovalDataLoading) {
+      toast.error('Error', {
+        description: 'The report is still loading, so nothing was saved. Try again in a moment',
+      });
+      return null;
+    }
+    if (!latestBaselineId || baselineSnapshot?.id === latestBaselineId) {
+      return buildApprovalsInput(reportTree, effectiveStatuses);
+    }
+    const { data, error } = await client
+      .query(
+        DynamicReportSnapshotDocument,
+        { id: latestBaselineId },
+        { requestPolicy: 'network-only' },
+      )
+      .toPromise();
+    const latest = data?.dynamicReportSnapshot;
+    if (error || !latest) {
+      toast.error('Error', {
+        description: 'Could not load the latest save’s statuses, so nothing was saved',
+      });
+      return null;
+    }
+    const statuses = deriveSaveStatuses(
+      reportTree,
+      latest,
+      { fromDate, toDate, scopeOwnerId },
+      approvalOverrides,
+    );
+    return buildApprovalsInput(reportTree, statuses);
+  }, [
+    isApprovalDataLoading,
+    latestBaselineId,
+    baselineSnapshot,
+    reportTree,
+    effectiveStatuses,
+    client,
+    fromDate,
+    toDate,
+    scopeOwnerId,
+    approvalOverrides,
+  ]);
+
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
+    // The overrides this save sends; anything staged while it is in flight must survive it.
+    const savedOverrides = approvalOverrides;
+    const approvals = await resolveSaveApprovals();
+    if (!approvals) return;
     const serialized = serializeReportTree(reportTree);
     const result = await updateDynamicReportTemplate({
       name: currentTemplate.name,
       template: serialized,
-      snapshot: snapshotInput,
+      snapshot: { ...snapshotInput, approvals },
     });
     if (result) {
       setIsDirty(false);
+      // The statuses are in the new snapshot now, which the refetch below brings back as the
+      // baseline. On failure they stay staged, to retry.
+      setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
       setShowLegacyBanner(false);
       // The save just became the newest baseline. Releasing any pin means the user is comparing
       // against what they just saved rather than against something older with nothing on screen
@@ -783,7 +853,9 @@ export function DynamicReport() {
     }
   }, [
     currentTemplate,
+    approvalOverrides,
     reportTree,
+    resolveSaveApprovals,
     updateDynamicReportTemplate,
     snapshotInput,
     setSelectedBaselineId,
@@ -795,18 +867,24 @@ export function DynamicReport() {
   // locked draft could never start tracking changes at all.
   const handleCaptureBaseline = useCallback(async () => {
     if (!currentTemplate) return;
+    const savedOverrides = approvalOverrides;
+    const approvals = await resolveSaveApprovals();
+    if (!approvals) return;
     const result = await captureDynamicReportBaseline({
       name: currentTemplate.name,
       tree: serializeReportTree(reportTree),
-      snapshot: snapshotInput,
+      snapshot: { ...snapshotInput, approvals },
     });
     if (result) {
+      setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
       setSelectedBaselineId(null);
       refetchTemplateNodes({ requestPolicy: 'network-only' });
     }
   }, [
     currentTemplate,
+    approvalOverrides,
     reportTree,
+    resolveSaveApprovals,
     snapshotInput,
     captureDynamicReportBaseline,
     setSelectedBaselineId,
