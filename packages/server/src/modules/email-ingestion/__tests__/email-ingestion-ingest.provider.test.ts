@@ -333,6 +333,59 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
   });
 
+  it('quarantines with UPLOAD_FAILED when a later document in the batch fails preparation', async () => {
+    // Companion to the test above, which fails the *first* document. The batch fans out
+    // flat now (PromptCacheGate handles prompt-cache coalescing, so prepareDocuments no
+    // longer staggers the first document), and a `return Promise.all(...)` settles after
+    // the enclosing try has already returned — so a rejection from any document escapes
+    // the DocumentPreparationError wrapper and strands an accepted email with no durable
+    // record. Failing the second document is what pins that.
+    const idemRow = {
+      id: 'idem-row-2', idempotency_key: IDEM_KEY, owner_id: TENANT_ID,
+      outcome: IngestOutcome.QUARANTINED, ingest_id: null, audit_id: 'audit-up-2', created_at: NOW,
+    };
+    const dedupRow = {
+      id: 'dedup-row-2', owner_id: TENANT_ID, fingerprint: 'fp',
+      outcome: IngestOutcome.QUARANTINED, ingest_id: null, correlation_id: CORR_ID, created_at: NOW,
+    };
+    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
+      VALID_GRANT_WITH_BUSINESS,
+      [
+        { rows: [], rowCount: 0 }, // early idempotency miss
+        // prepareDocuments dedups candidates in a serial loop — one miss per document.
+        { rows: [], rowCount: 0 },
+        { rows: [], rowCount: 0 },
+        ...prepareContextRows(), // prepareDocuments: businesses + admin locality
+        { rows: [{ id: 'q-id' }], rowCount: 1 }, // quarantine insert
+        { rows: [idemRow], rowCount: 1 }, // idempotency insert
+        { rows: [dedupRow], rowCount: 1 }, // dedup insert
+      ],
+    );
+    uploadInvoiceToCloudinary
+      .mockResolvedValueOnce({ fileUrl: 'https://cdn/first.pdf', imageUrl: 'https://cdn/first.jpg' })
+      .mockRejectedValueOnce(new Error('cloudinary down'));
+
+    const secondContent = Buffer.from('%PDF-1.4 second fake invoice').toString('base64');
+    const result = await provider.performIngest(
+      {
+        ...BASE_INPUT,
+        extractedDocuments: [
+          { hash: 'doc-hash-1', sizeBytes: 1024, mimeType: 'application/pdf', filename: 'first.pdf', content: DOC_CONTENT_B64 },
+          { hash: 'doc-hash-2', sizeBytes: 2048, mimeType: 'application/pdf', filename: 'second.pdf', content: secondContent },
+        ],
+      },
+      ocrInjector,
+    );
+
+    expect(result).toMatchObject({
+      outcome: IngestOutcome.QUARANTINED,
+      reasonCode: IngestReasonCode.UPLOAD_FAILED,
+    });
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_quarantine'))).toBe(true);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
+  });
+
   it('rethrows an unexpected (non-preparation) error without consuming the grant', async () => {
     // Errors that are not DocumentPreparationError (e.g. a DB failure) must not be masked as a
     // quarantine — they surface raw, leaving the grant unconsumed so the ingest can be retried.
