@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../shared/constants.js';
-import { accountantStatusSchema } from './dynamic-report-approvals.helper.js';
+import { AccountantStatus } from '../../../shared/enums.js';
 
 const dynamicReportNodeData = z
   .object({
@@ -77,7 +77,7 @@ const snapshotValue = z
 const snapshotApproval = z
   .object({
     entityId: uuidShaped,
-    status: accountantStatusSchema,
+    status: z.enum(AccountantStatus),
   })
   .strict();
 
