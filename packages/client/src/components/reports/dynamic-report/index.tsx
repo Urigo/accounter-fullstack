@@ -66,6 +66,7 @@ import {
   deriveSaveStatuses,
   dropSavedOverrides,
   approvalsDisabledReason as getApprovalsDisabledReason,
+  summarizeApprovals,
 } from './utils/approvals.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
 import { pickLatestBaselineId } from './utils/baseline.js';
@@ -536,6 +537,8 @@ export function DynamicReport() {
     () => buildApprovalStats(reportTree, entityId => effectiveStatuses.get(entityId)?.status),
     [reportTree, effectiveStatuses],
   );
+
+  const approvalSummary = useMemo(() => summarizeApprovals(effectiveStatuses), [effectiveStatuses]);
 
   // Statuses are saved with the template's latest snapshot, so they can only change when there is
   // a template, its latest baseline is the one on screen, and the statuses derived from it are final.
@@ -1106,6 +1109,9 @@ export function DynamicReport() {
         snapshots={snapshots}
         activeBaselineId={activeBaselineId}
         latestBaselineId={latestBaselineId}
+        // Until the statuses are final the counts would be stale, or all UNAPPROVED before the
+        // baseline arrives, so the line waits for them.
+        approvalSummary={isApprovalDataLoading ? null : approvalSummary}
         onBaselineChange={handleBaselineChange}
         diffSuspendedReason={
           snapshots.length === 0
