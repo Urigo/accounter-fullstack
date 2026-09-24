@@ -39,7 +39,9 @@ export const chargesAwaitingMatchQueueResolver: ChargesMatcherModule.Resolvers =
 
         if (sortBy === 'BY_SCORE') {
           // Evaluate the capped window of most recent charges, sort the whole
-          // derived list by top confidence score, and paginate that list
+          // derived list by top confidence score, and paginate that list. Scores
+          // are required to sort, so they are computed here and carried on each
+          // item (the suggestions field resolver returns them directly).
           const window = queue.slice(0, BY_SCORE_EVALUATION_CAP);
           const evaluated = await evaluator.evaluateMatchesForCharges(window);
           const topScore = (suggestions: { confidenceScore: number }[]): number =>
@@ -53,12 +55,13 @@ export const chargesAwaitingMatchQueueResolver: ChargesMatcherModule.Resolvers =
           };
         }
 
-        // BY_DATE (default): paginate first, then lazily evaluate scores for
-        // the requested page only
+        // BY_DATE (default): paginate first and return the base charges without
+        // scoring them. Suggestions are resolved lazily by the
+        // ChargeWithSuggestions.suggestions field resolver, so the client can
+        // @defer them and paint the queue immediately.
         const page = queue.slice(safeOffset, safeOffset + safeLimit);
-        const baseCharges = await evaluator.evaluateMatchesForCharges(page);
         return {
-          baseCharges,
+          baseCharges: page.map(baseCharge => ({ id: baseCharge.id, baseCharge })),
           totalCount: queue.length,
         };
       } catch (e) {

@@ -104,4 +104,40 @@ describe('QueueMatchEvaluatorProvider', () => {
       expect(result.baseCharge).toBe(baseCharge);
     });
   });
+
+  describe('suggestionsByChargeIdLoader', () => {
+    it('should coalesce concurrent loads into a single batch and sort each result', async () => {
+      const { provider, chargesMatcherMock } = createProvider(async chargeIds => {
+        return new Map(
+          chargeIds.map(chargeId => [
+            chargeId,
+            [
+              { chargeId: `${chargeId}-low`, confidenceScore: 0.2 },
+              { chargeId: `${chargeId}-high`, confidenceScore: 0.8 },
+            ],
+          ]),
+        );
+      });
+
+      const [first, second] = await Promise.all([
+        provider.suggestionsByChargeIdLoader.load('charge-1'),
+        provider.suggestionsByChargeIdLoader.load('charge-2'),
+      ]);
+
+      // Single shared-pool call for both charges
+      expect(chargesMatcherMock.findMatchesForCharges).toHaveBeenCalledTimes(1);
+      expect(chargesMatcherMock.findMatchesForCharges).toHaveBeenCalledWith(['charge-1', 'charge-2']);
+      // Each result sorted by confidence, highest first
+      expect(first.map(s => s.chargeId)).toEqual(['charge-1-high', 'charge-1-low']);
+      expect(second.map(s => s.chargeId)).toEqual(['charge-2-high', 'charge-2-low']);
+    });
+
+    it('should return an empty list for a charge missing from the matcher result', async () => {
+      const { provider } = createProvider(async () => new Map());
+
+      const result = await provider.suggestionsByChargeIdLoader.load('charge-1');
+
+      expect(result).toEqual([]);
+    });
+  });
 });
