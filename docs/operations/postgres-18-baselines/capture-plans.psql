@@ -1,0 +1,200 @@
+-- Query plan baselines for the Postgres 16 -> 18 upgrade (lightweight variant).
+--
+-- Named .psql, not .sql, on purpose: it contains psql meta-commands which
+-- prettier-plugin-sql cannot parse, and `yarn prettier:check` runs over the whole repo.
+--
+-- Captures EXPLAIN (ANALYZE, BUFFERS) for the queries where the PG18 risk actually
+-- concentrates:
+--   * the 4 scraper dedup queries -- B-tree skip-scan candidates on 18
+--   * the 4 date-range queries    -- exercise the (owner_id, <date>) indexes added by #4331
+--
+-- Deliberately NOT captured: getChargesByFilters (charges.provider.ts:211-862). It is 650
+-- lines with ~40 parameters and cannot be transcribed faithfully by hand; capturing it needs
+-- auto_explain driven through the UI. Accepted gap.
+--
+-- MUST run as accounter_prod_user, NOT accounter_admin. accounter_admin has BYPASSRLS, so
+-- plans captured as that role carry no owner_id predicate and are structurally different from
+-- what production executes -- worthless as a baseline.
+--
+-- Usage (note the two -v variables):
+--
+--   printf 'accounter_prod_user password: '; read -rs PGPASSWORD; echo
+--   docker exec -i -e PGPASSWORD="$PGPASSWORD" accounter-dev-db-1 \
+--     psql --host=$PROD_HOST \
+--          --username=accounter_prod_user --dbname=accounter_prod_db \
+--          -v owner=$OWNER_A \
+--          -v scope='{"$OWNER_A"}' \
+--     < docs/operations/postgres-18-baselines/capture-plans.psql \
+--     > docs/operations/postgres-18-baselines/16-plans-scope1.txt 2>&1
+--   unset PGPASSWORD
+--
+-- Run it TWICE: once with a single-element scope, once with a multi-element scope
+-- ('{"uuid-a","uuid-b"}'), writing 16-plans-scope1.txt and 16-plans-scopeN.txt. Scope
+-- cardinality is invisible to the planner but changes which of the owner_id-leading composite
+-- indexes get chosen, so both are needed.
+--
+-- After the upgrade, re-run identically against the upgraded server -> 18-plans-*.txt, and diff.
+
+\set ON_ERROR_STOP off
+\pset pager off
+\timing off
+
+\echo '########################################################################'
+\echo '# READ THE PROBE RESULT IN SECTION 2 BEFORE TRUSTING ANYTHING BELOW IT. #'
+\echo '########################################################################'
+
+BEGIN;
+
+\echo ''
+\echo '================ 1. session state ================'
+-- The app sets these with set_config(..., true) == SET LOCAL, so this must be in a transaction.
+-- app.current_business_id is MANDATORY: get_current_business_id() raises without it, and the
+-- scope helper falls back to ARRAY[that] when the scope GUC is empty.
+SET LOCAL app.current_business_id = :'owner';
+SET LOCAL app.current_business_scope = :'scope';
+SET LOCAL app.current_user_id = '';
+SET LOCAL app.auth_type = 'jwt';
+SET LOCAL statement_timeout = '120s';
+SET LOCAL application_name = 'accounter-server';
+
+SELECT current_user,
+       accounter_schema.get_current_business_id() AS write_target,
+       accounter_schema.get_current_business_scope() AS read_scope,
+       array_length(accounter_schema.get_current_business_scope(), 1) AS scope_len;
+
+\echo ''
+\echo '================ 2. PROBE: is RLS actually applied to me? ================'
+\echo '-- EXPECTED: ERROR 42501, "query would be affected by row-level security policy".'
+\echo '--'
+\echo '-- The discriminator is whether that ERROR APPEARS AT ALL -- not whether a row comes'
+\echo '-- back. A bypassing role against an empty table returns zero rows and no error, which'
+\echo '-- looks deceptively similar to success. No error => RLS was NOT applied to you => every'
+\echo '-- plan below is INVALID. Stop, reconnect as accounter_prod_user, and start again.'
+SAVEPOINT rls_probe;
+SET LOCAL row_security = off;
+SELECT 1 AS should_not_reach_here FROM accounter_schema.charges LIMIT 1;
+ROLLBACK TO SAVEPOINT rls_probe;
+
+\echo ''
+\echo '================ 3. do the scraper tables have rows at all? ================'
+\echo '-- Counts only, deliberately. An earlier version of this script printed sample rows,'
+\echo '-- which wrote real bank account numbers, branch numbers and security identifiers into'
+\echo '-- the capture file -- violating the redaction rule in README.md. Never print data here:'
+\echo '-- the dedup queries below derive their own parameters from the tables.'
+\echo '-- A zero count means that plan scans nothing; its SHAPE is still comparable, but its'
+\echo '-- row estimates are meaningless.'
+SELECT 'poalim_securities_transactions' AS tbl, count(*) FROM accounter_schema.poalim_securities_transactions
+UNION ALL SELECT 'poalim_ils_account_transactions', count(*) FROM accounter_schema.poalim_ils_account_transactions
+UNION ALL SELECT 'otsar_hahayal_foreign_account_transactions', count(*) FROM accounter_schema.otsar_hahayal_foreign_account_transactions
+ORDER BY 1;
+
+\echo '================ 4. dedup query plans (PG18 skip-scan candidates) ================'
+
+\echo '---- 4a. foreign-securities.provider.ts:57-92 -- value_date supplied, trade_date skipped'
+\echo '----     index: poalim_securities_transactions_dedup_uindex (owner_id, bank, branch, account, security, trade_date, value_date, ...)'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.poalim_securities_transactions
+WHERE security = ANY (ARRAY(SELECT DISTINCT security
+                            FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND bank_number = ANY (ARRAY(SELECT DISTINCT bank_number
+                                FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND branch_number = ANY (ARRAY(SELECT DISTINCT branch_number
+                                  FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND account_number = ANY (ARRAY(SELECT DISTINCT account_number
+                                   FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND value_date = ANY (ARRAY(SELECT DISTINCT value_date
+                               FROM accounter_schema.poalim_securities_transactions LIMIT 5));
+
+\echo '---- 4b. poalim-scraper-ingestion.provider.ts:57-95 -- serial_number skipped'
+\echo '----     index: poalim_ils_account_transactions_dedup_uindex (event_date, serial_number, account_number, branch_number)'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.poalim_ils_account_transactions
+WHERE account_number = ANY (ARRAY(SELECT DISTINCT account_number
+                                   FROM accounter_schema.poalim_ils_account_transactions LIMIT 5))
+  AND branch_number = ANY (ARRAY(SELECT DISTINCT branch_number
+                                  FROM accounter_schema.poalim_ils_account_transactions LIMIT 5))
+  AND event_date = ANY (ARRAY(SELECT DISTINCT event_date
+                               FROM accounter_schema.poalim_ils_account_transactions LIMIT 5));
+
+\echo '---- 4c. poalim-scraper-ingestion.provider.ts:355-396 -- owner_id supplied only by RLS'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.poalim_securities_transactions
+WHERE bank_number = ANY (ARRAY(SELECT DISTINCT bank_number
+                                FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND branch_number = ANY (ARRAY(SELECT DISTINCT branch_number
+                                  FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND account_number = ANY (ARRAY(SELECT DISTINCT account_number
+                                   FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND security = ANY (ARRAY(SELECT DISTINCT security
+                             FROM accounter_schema.poalim_securities_transactions LIMIT 5))
+  AND trade_date = ANY (ARRAY(SELECT DISTINCT trade_date
+                               FROM accounter_schema.poalim_securities_transactions LIMIT 5));
+
+\echo '---- 4d. otsar-hahayal-scraper-ingestion.provider.ts:137-159 -- value_date skipped, reference supplied'
+\echo '----     index: otsar_hahayal_foreign_account_transactions_conflict_key (account, branch, date, value_date, reference, description)'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.otsar_hahayal_foreign_account_transactions
+WHERE account = ANY (ARRAY(SELECT DISTINCT account
+                            FROM accounter_schema.otsar_hahayal_foreign_account_transactions LIMIT 5))
+  AND branch = ANY (ARRAY(SELECT DISTINCT branch
+                           FROM accounter_schema.otsar_hahayal_foreign_account_transactions LIMIT 5))
+  AND date = ANY (ARRAY(SELECT DISTINCT date
+                         FROM accounter_schema.otsar_hahayal_foreign_account_transactions LIMIT 5))
+  AND reference = ANY (ARRAY(SELECT DISTINCT reference
+                              FROM accounter_schema.otsar_hahayal_foreign_account_transactions LIMIT 5));
+
+\echo ''
+\echo '================ 5. date-range plans -- the four indexes added by #4331 ================'
+\echo '-- These are the reduced forms of the real provider queries: the ($gate = 0 OR ...) and'
+\echo '-- ($x ::TEXT IS NULL OR ...) guards constant-fold away when the other filters are off,'
+\echo '-- so this is what the planner effectively sees for a date-only filter.'
+
+\echo '---- 5a. idx_transactions_owner_event_date -- transactions.provider.ts:37-49'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.transactions
+WHERE event_date >= '2026-01-01'::DATE
+  AND event_date <= '2026-08-31'::DATE
+ORDER BY event_date DESC;
+
+\echo '---- 5b. idx_transactions_owner_effective_debit_date'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.transactions
+WHERE COALESCE(debit_date_override, debit_date) >= '2026-01-01'::DATE
+  AND COALESCE(debit_date_override, debit_date) <= '2026-08-31'::DATE
+ORDER BY event_date DESC;
+
+\echo '---- 5c. idx_documents_owner_date -- documents.provider.ts:237-277'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.documents
+WHERE date >= '2026-01-01'::DATE
+  AND date <= '2026-08-31'::DATE
+ORDER BY created_at DESC;
+
+\echo '---- 5d. idx_documents_owner_vat_report_date -- documents.provider.ts:226-235'
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM accounter_schema.documents
+WHERE COALESCE(vat_report_date_override, date) >= '2026-01-01'::DATE
+  AND COALESCE(vat_report_date_override, date) <= '2026-08-31'::DATE
+ORDER BY created_at DESC;
+
+\echo ''
+\echo '================ 6. what to check in every plan above ================'
+\echo '-- 1. An owner_id clause is PRESENT, e.g.'
+\echo '--      Index Cond: (owner_id = ANY (...))   or   Filter: (owner_id = ANY (...))'
+\echo '--    No owner_id clause means RLS was bypassed and the capture is invalid.'
+\echo '-- 2. Which index was chosen, and whether it was an Index Scan / Bitmap / Seq Scan.'
+\echo '-- 3. Estimated vs actual rows -- a large divergence is what moves plans on 18.'
+
+ROLLBACK;
+
+\echo ''
+\echo '================ end ================'
+SELECT now() AS captured_at_utc, version();
