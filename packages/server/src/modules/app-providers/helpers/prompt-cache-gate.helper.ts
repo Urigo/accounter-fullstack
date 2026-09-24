@@ -199,11 +199,28 @@ export class PromptCacheGate {
     if (this.states.size <= this.maxEntries) {
       return;
     }
+    // Stale entries first: they are cold anyway, so dropping them loses nothing.
     const cutoff = this.now() - 2 * this.ttlMs;
     for (const [key, state] of this.states) {
       if (state.inFlight === null && state.lastUsed < cutoff) {
         this.states.delete(key);
       }
+    }
+    if (this.states.size <= this.maxEntries) {
+      return;
+    }
+    // Still over the cap — enough distinct prefixes were touched inside one window
+    // that none has aged out — so evict the least recently used. Map iteration is
+    // insertion order, not recency, hence the sort. In-flight entries are never
+    // evicted: their lock is what the current waiters are parked on.
+    const evictable = [...this.states]
+      .filter(([, state]) => state.inFlight === null)
+      .sort(([, a], [, b]) => a.lastUsed - b.lastUsed);
+    for (const [key] of evictable) {
+      if (this.states.size <= this.maxEntries) {
+        break;
+      }
+      this.states.delete(key);
     }
   }
 }

@@ -27,11 +27,12 @@ async function flush(): Promise<void> {
   }
 }
 
-function makeGate(overrides: { now?: () => number; maxWaitMs?: number } = {}) {
+function makeGate(overrides: { now?: () => number; maxWaitMs?: number; maxEntries?: number } = {}) {
   return new PromptCacheGate({
     ttlMs: TTL_MS,
     maxWaitMs: overrides.maxWaitMs ?? 10_000,
     safetyMarginMs: SAFETY_MARGIN_MS,
+    maxEntries: overrides.maxEntries,
     now: overrides.now,
   });
 }
@@ -187,5 +188,21 @@ describe('PromptCacheGate', () => {
     expect(pending).toHaveLength(2);
     for (const p of pending) p.resolve('ok');
     expect((await Promise.all(runs)).map(r => r.gate)).toEqual(['uncacheable', 'uncacheable']);
+  });
+  it('enforces maxEntries by evicting the least recently used prefix, even inside the TTL', async () => {
+    let clock = 1_000_000;
+    const gate = makeGate({ now: () => clock, maxEntries: 2 });
+
+    // Three distinct prefixes, all still warm: none is old enough for the stale pass,
+    // so only an actual cap keeps the map from growing with catalog churn.
+    for (const prefix of ['a', 'b', 'c']) {
+      clock += 1000;
+      await gate.run(prefix, () => Promise.resolve(prefix), cached);
+    }
+
+    clock += 1000;
+    expect((await gate.run('c', () => Promise.resolve('c'), cached)).gate).toBe('warm');
+    // `a` was the least recently used, so it was evicted and has to warm again.
+    expect((await gate.run('a', () => Promise.resolve('a'), cached)).gate).toBe('warmed');
   });
 });

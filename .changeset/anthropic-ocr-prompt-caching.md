@@ -21,8 +21,13 @@ constrained-decoding grammar renders ahead of both system and messages.
 - One `generateText` call per document. The extraction schema gained optional `issuerMatch` /
   `recipientMatch` fields, so the model resolves both sides in the same pass that reads the
   document. `.optional()` rather than `.nullable()`, per the schema's existing grammar-budget rule,
-  which also keeps an unresolved match from failing validation — preserving the property that a
-  failed match degrades the result instead of failing the extraction.
+  which also keeps an unresolved match from failing validation. That covers a match the model
+  omits, not a request that fails, so if the combined request fails the provider retries once
+  without the catalog — exactly what the standalone extraction call used to send — and keeps the
+  deterministic match alone. A failed match still degrades the result instead of failing the
+  extraction, at the cost of one extra call on the failure path only. A model match is also only
+  accepted for a side the document actually has, as the separate match call only asked about
+  extracted names.
 - The instructions and business catalog moved into a `system` message carrying a
   `cacheControl` breakpoint; the document now follows it in the user turn.
   Stable content precedes volatile content, so the catalog is written once per tenant and read back

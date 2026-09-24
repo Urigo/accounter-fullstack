@@ -215,6 +215,51 @@ function buildSystemPrompt(businesses: BusinessMatchData[]): string {
   return `${EXTRACTION_INSTRUCTIONS}\n\n${MATCHING_INSTRUCTIONS}\n${serializeBusinessCatalog(businesses)}`;
 }
 
+/**
+ * The request messages: the system prompt, then the document in the user turn.
+ * `cache` places the breakpoint on the system block. Everything up to and
+ * including it — the instructions and the whole business catalog — is written
+ * once per tenant and read back at 0.1x on every later document, for as long as
+ * the TTL holds. The document sits after it and is processed fresh, which is
+ * correct: it differs every time and there is nothing to reuse.
+ */
+function buildMessages(
+  systemPrompt: string,
+  fileData: string,
+  fileType: string,
+  { cache }: { cache: boolean },
+): ModelMessage[] {
+  return [
+    {
+      role: 'system',
+      content: systemPrompt,
+      ...(cache && {
+        providerOptions: {
+          anthropic: { cacheControl: { type: 'ephemeral', ttl: CACHE_TTL } },
+        },
+      }),
+    },
+    {
+      role: 'user',
+      content: [{ type: 'file', data: fileData, mediaType: fileType }],
+    },
+  ];
+}
+
+function requestDocumentData(messages: ModelMessage[]) {
+  return generateText({
+    model: anthropic(MODEL_ID),
+    output: Output.object({ schema: documentDataSchema }),
+    messages,
+    experimental_telemetry: { isEnabled: true, functionId: 'ocr-extract-invoice' },
+  });
+}
+
+function extractionError(err: unknown): Error {
+  const message = err instanceof Error ? err.message : String(err);
+  return new Error(`Failed to extract document details: ${message}`);
+}
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -249,51 +294,12 @@ export class AnthropicProvider {
     const fileData = await this.fileToBase64(fileOrBlob);
     const businessList = businesses ?? [];
 
-    const systemPrompt = buildSystemPrompt(businessList);
-    const messages: Array<ModelMessage> = [
-      {
-        role: 'system',
-        content: systemPrompt,
-        // The cache breakpoint. Everything up to and including this block — the
-        // instructions and the whole business catalog — is written once per tenant
-        // and read back at 0.1x on every later document, for as long as the TTL
-        // holds. The document itself sits after it and is processed fresh, which
-        // is correct: it differs every time and there is nothing to reuse.
-        providerOptions: {
-          anthropic: { cacheControl: { type: 'ephemeral', ttl: CACHE_TTL } },
-        },
-      },
-      {
-        role: 'user',
-        content: [{ type: 'file', data: fileData, mediaType: fileType }],
-      },
-    ];
-
-    // Under the gate: a cache entry is not readable until the request that writes
-    // it responds, so without this every document of a burst writes its own copy
-    // of the catalog. The gate lets one call warm a cold prefix while its
-    // siblings wait, and lets everyone through untouched once it is warm.
-    const { result, gate } = await this.cacheGate.run(
-      systemPrompt,
-      () =>
-        generateText({
-          model: anthropic(MODEL_ID),
-          output: Output.object({ schema: documentDataSchema }),
-          messages,
-          experimental_telemetry: { isEnabled: true, functionId: 'ocr-extract-invoice' },
-        }).catch(err => {
-          throw new Error(`Failed to extract document details: ${err.message}`);
-        }),
-      // Warmth is recorded from what the response actually reports, never from an
-      // assumption that the write landed. Both counters zero means the prefix
-      // never reached the model's minimum cacheable length.
-      ({ usage: u }) =>
-        (u?.inputTokenDetails?.cacheReadTokens ?? 0) > 0 ||
-        (u?.inputTokenDetails?.cacheWriteTokens ?? 0) > 0,
-    );
-    const { output, usage } = result;
-
-    const draft = output;
+    const {
+      output: draft,
+      usage,
+      gate,
+      catalogFallback,
+    } = await this.requestExtraction(businessList, fileData, fileType);
 
     // The deterministic matcher stays primary and the model's suggestion is the
     // fallback, exactly as before the two calls were merged: `matchBusiness` keys
@@ -313,19 +319,36 @@ export class AnthropicProvider {
     // or a bank letter has no meaningful issuer/recipient to resolve, and a match
     // accepted there would feed `applyForeignCounterpartyVatDefault` and the
     // counterparty resolution for a document that has no counterparty.
-    if (businessList.length > 0 && draft.type != null && FINANCIAL_DOC_TYPES.has(draft.type)) {
+    //
+    // Skipped after a catalog fallback: that request never saw the catalog, so any
+    // UUID it returned could only be a guess.
+    if (
+      !catalogFallback &&
+      businessList.length > 0 &&
+      draft.type != null &&
+      FINANCIAL_DOC_TYPES.has(draft.type)
+    ) {
       // Validated against the catalog so a hallucinated UUID can never reach the
       // document pipeline as a creditor/debtor.
       const knownId = (id: string | undefined): string | null =>
         id && businessList.some(b => b.id === id) ? id : null;
 
-      suggestedIssuer ??= knownId(draft.issuerMatch);
-      suggestedRecipient ??= knownId(draft.recipientMatch);
+      // Only for a side the document actually has, as the separate match call only
+      // asked about extracted names. A document with no recipient would otherwise
+      // pick up whatever catalog entry the model offered, and feed it into
+      // counterparty resolution and the foreign-VAT default.
+      if (draft.issuer) {
+        suggestedIssuer ??= knownId(draft.issuerMatch);
+      }
+      if (draft.recipient) {
+        suggestedRecipient ??= knownId(draft.recipientMatch);
+      }
     }
 
     logCacheUsage(usage, businessList.length, {
       tenantId: owner?.id,
       gate,
+      catalogFallback,
       modelMatchUsed:
         (deterministicIssuer === null && suggestedIssuer !== null) ||
         (deterministicRecipient === null && suggestedRecipient !== null),
@@ -357,6 +380,65 @@ export class AnthropicProvider {
       suggestedRecipient,
     };
   }
+
+  /**
+   * One gated, catalog-bearing request, with a catalog-free retry if it fails.
+   *
+   * Before the extraction and matching calls were merged, a failed match call was
+   * swallowed after extraction had already succeeded. `.optional()` on the match
+   * fields covers a match the model *omits*, not a request that *fails*, so this
+   * restores the rest: when the combined request fails, re-issue exactly what the
+   * standalone extraction call used to send — the instructions without the catalog
+   * — and throw only if that fails too. A failed match still never costs the
+   * extraction; the price is one extra call, on the failure path only.
+   */
+  private async requestExtraction(
+    businessList: BusinessMatchData[],
+    fileData: string,
+    fileType: string,
+  ): Promise<{
+    output: DocumentData;
+    usage: LanguageModelUsage;
+    gate: CacheGateOutcome | null;
+    catalogFallback: boolean;
+  }> {
+    const systemPrompt = buildSystemPrompt(businessList);
+    try {
+      // Under the gate: a cache entry is not readable until the request that writes
+      // it responds, so without this every document of a burst writes its own copy
+      // of the catalog. The gate lets one call warm a cold prefix while its
+      // siblings wait, and lets everyone through untouched once it is warm.
+      const { result, gate } = await this.cacheGate.run(
+        systemPrompt,
+        () => requestDocumentData(buildMessages(systemPrompt, fileData, fileType, { cache: true })),
+        // Warmth is recorded from what the response actually reports, never from an
+        // assumption that the write landed. Both counters zero means the prefix
+        // never reached the model's minimum cacheable length.
+        ({ usage: u }) =>
+          (u?.inputTokenDetails?.cacheReadTokens ?? 0) > 0 ||
+          (u?.inputTokenDetails?.cacheWriteTokens ?? 0) > 0,
+      );
+      return { output: result.output, usage: result.usage, gate, catalogFallback: false };
+    } catch (err) {
+      // With no catalog, the retry would send the identical request.
+      if (businessList.length === 0) {
+        throw extractionError(err);
+      }
+      console.warn(
+        `anthropic.ocr: catalog-bearing request failed, retrying without the catalog: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      // Ungated and uncached: the instructions alone sit far below the model's
+      // minimum cacheable prefix, so there is nothing to write or coordinate.
+      const fallback = await requestDocumentData(
+        buildMessages(buildSystemPrompt([]), fileData, fileType, { cache: false }),
+      ).catch(fallbackErr => {
+        throw extractionError(fallbackErr);
+      });
+      return { output: fallback.output, usage: fallback.usage, gate: null, catalogFallback: true };
+    }
+  }
 }
 
 /**
@@ -382,12 +464,19 @@ export class AnthropicProvider {
  * accompanies every document, so what matters is the share of documents where
  * the model's match actually resolved a side `matchBusiness` could not. `gate`
  * reports how the call was scheduled, so a collapse in cache reads can be told
- * apart from a gate that stopped coalescing.
+ * apart from a gate that stopped coalescing. `catalogFallback` marks a document
+ * extracted by the catalog-free retry — `gate` is null there, since that request
+ * is not gated — and a rising rate of it means the catalog request is failing.
  */
 function logCacheUsage(
   usage: LanguageModelUsage,
   catalogSize: number,
-  context: { tenantId?: string; gate: CacheGateOutcome; modelMatchUsed: boolean },
+  context: {
+    tenantId?: string;
+    gate: CacheGateOutcome | null;
+    catalogFallback: boolean;
+    modelMatchUsed: boolean;
+  },
 ): void {
   try {
     console.info(
@@ -397,6 +486,7 @@ function logCacheUsage(
         tenantId: context.tenantId,
         catalogSize,
         gate: context.gate,
+        catalogFallback: context.catalogFallback,
         modelMatchUsed: context.modelMatchUsed,
         inputTokens: usage?.inputTokens,
         outputTokens: usage?.outputTokens,
