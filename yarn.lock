@@ -130,7 +130,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:8.3.0"
     vite-plugin-node-polyfills: "npm:0.28.0"
-    wrangler: "npm:4.136.3"
+    wrangler: "npm:4.137.0"
     zod: "npm:4.6.5"
     zustand: "npm:5.0.15"
   languageName: unknown
@@ -150,7 +150,7 @@ __metadata:
     postal-mime: "npm:3.0.0"
     tsx: "npm:4.23.13"
     typescript: "npm:6.0.3"
-    wrangler: "npm:4.136.3"
+    wrangler: "npm:4.137.0"
     zod: "npm:4.6.5"
   languageName: unknown
   linkType: soft
@@ -26711,9 +26711,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wrangler@npm:4.136.3":
-  version: 4.136.3
-  resolution: "wrangler@npm:4.136.3"
+"wrangler@npm:4.137.0":
+  version: 4.137.0
+  resolution: "wrangler@npm:4.137.0"
   dependencies:
     "@cloudflare/kv-asset-handler": "npm:0.5.0"
     "@cloudflare/unenv-preset": "npm:2.16.2"
@@ -26736,7 +26736,7 @@ __metadata:
     cf-wrangler: bin/cf-wrangler.js
     wrangler: bin/wrangler.js
     wrangler2: bin/wrangler.js
-  checksum: 10c0/6168114d9c08a26cdff8b46bf58c2ff7e40c28067186cf62bbad4bfec6e890b7a1e4f8def862494501b98e0335ea4fefb2c5cdc6e8415ca36d063565ce4f25bc
+  checksum: 10c0/eebc1f3be45d71f2f636e97f27cc0c5d29fd3b522d7ccc07d21386e49b6fe3bfd2b3bd99419a83b82197c0948fef40225ca97039261648852163f7232da23699
   languageName: node
   linkType: hard
 
