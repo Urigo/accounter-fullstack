@@ -68,6 +68,8 @@ const snapshotValue = z
   .object({
     entityId: uuidShaped,
     value: z.number().finite(),
+    /** The entity's `ledgerFingerprint` as it was on screen, so a later visit can tell edits apart. */
+    fingerprint: z.string().min(1),
   })
   .strict();
 
@@ -120,6 +122,35 @@ export function recordToSnapshotValues(raw: unknown): { entityId: string; value:
   return Object.entries(raw as Record<string, unknown>).flatMap(([entityId, value]) =>
     typeof value === 'number' && Number.isFinite(value) ? [{ entityId, value }] : [],
   );
+}
+
+/** Collapses the wire format into the `{ entityId: fingerprint }` object stored in `leaf_fingerprints`. */
+export function snapshotFingerprintsToRecord(
+  values: DynamicReportSnapshotInputType['values'],
+): Record<string, string> {
+  const record: Record<string, string> = {};
+  for (const { entityId, fingerprint } of values) {
+    record[entityId] = fingerprint;
+  }
+  return record;
+}
+
+/**
+ * Reads the stored `leaf_fingerprints` object back as a lookup. Snapshots saved before
+ * fingerprints existed hold `NULL`, and anything malformed is treated the same way: an empty map,
+ * never a throw.
+ */
+export function recordToSnapshotFingerprints(raw: unknown): Map<string, string> {
+  const fingerprints = new Map<string, string>();
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return fingerprints;
+  }
+  for (const [entityId, fingerprint] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof fingerprint === 'string' && fingerprint.length > 0) {
+      fingerprints.set(entityId, fingerprint);
+    }
+  }
+  return fingerprints;
 }
 
 // ── Legacy format ──────────────────────────────────────────────────────────────

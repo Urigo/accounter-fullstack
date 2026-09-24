@@ -115,6 +115,7 @@ import {
             formatted
             raw
           }
+          ledgerFingerprint
         }
       }
       ... on CommonError {
@@ -180,6 +181,7 @@ import {
       values {
         entityId
         value
+        fingerprint
       }
     }
   }

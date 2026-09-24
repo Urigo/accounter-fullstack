@@ -12,7 +12,9 @@ import {
   migrateLegacyTemplate,
   parseSnapshotTree,
   parseTemplate,
+  recordToSnapshotFingerprints,
   recordToSnapshotValues,
+  snapshotFingerprintsToRecord,
   snapshotValuesToRecord,
   validateSnapshotInput,
   validateTemplate,
@@ -41,7 +43,7 @@ function toSnapshotRow(
     scopeOwnerId: snapshot.scopeOwnerId,
     tree: template,
     leafValues: JSON.stringify(snapshotValuesToRecord(snapshot.values)),
-    leafFingerprints: null,
+    leafFingerprints: JSON.stringify(snapshotFingerprintsToRecord(snapshot.values)),
     leafApprovals: null,
     createdBy: null,
   };
@@ -234,7 +236,14 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
     scopeOwnerId: snapshot => snapshot.scope_owner_id,
     tree: snapshot => parseSnapshotTree(snapshot.tree) as DynamicReportNode[],
-    values: snapshot => recordToSnapshotValues(snapshot.leaf_values),
+    values: snapshot => {
+      // Legacy rows have no fingerprints: every value then resolves to null.
+      const fingerprints = recordToSnapshotFingerprints(snapshot.leaf_fingerprints);
+      return recordToSnapshotValues(snapshot.leaf_values).map(value => ({
+        ...value,
+        fingerprint: fingerprints.get(value.entityId) ?? null,
+      }));
+    },
   },
   DynamicReportInfo: {
     id: report => `${report.owner_id}-${report.name}`,
