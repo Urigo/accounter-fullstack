@@ -169,7 +169,6 @@ export const Businesses = (): ReactElement => {
   );
   const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- useTable returns non-memoizable handles by design
   const table = useTable({
     features: paginatedTableFeaturesConfig,
     data: filteredRows,

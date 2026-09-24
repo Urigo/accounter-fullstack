@@ -291,7 +291,7 @@ export const ChargesTable = ({
   // tanstack-table's "all rows expanded" sentinel; `{}` collapses everything. Setting it here
   // (rather than only in `initialState`) keeps toggling the button responsive after mount.
   useEffect(() => {
-    setExpanded(isAllOpened ? true : {});
+    setExpanded(isAllOpened || {});
   }, [isAllOpened]);
 
   // Controlled whenever a parent supplies the state; otherwise self-managed. When controlled

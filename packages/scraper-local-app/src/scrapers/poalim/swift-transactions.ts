@@ -369,7 +369,7 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
     {
       title: `Check for New Transactions`,
       enabled: ctx => !!ctx[bankKey][swiftKey]?.transactions,
-      skip: ctx => (ctx[bankKey][swiftKey].transactions?.length === 0 ? 'No transactions' : false),
+      skip: ctx => ctx[bankKey][swiftKey].transactions?.length === 0 && 'No transactions',
       task: async (ctx, task) => {
         const { transactions = [] } = ctx[bankKey][swiftKey];
         const newTransactions: SwiftTransaction[] = [];
@@ -385,8 +385,7 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
     {
       title: `Insert Transactions`,
       enabled: ctx => !!ctx[bankKey][swiftKey]?.newTransactions,
-      skip: ctx =>
-        ctx[bankKey][swiftKey].newTransactions?.length === 0 ? 'No transactions' : false,
+      skip: ctx => ctx[bankKey][swiftKey].newTransactions?.length === 0 && 'No transactions',
       task: async ctx => {
         try {
           const { newTransactions = [] } = ctx[bankKey][swiftKey];
