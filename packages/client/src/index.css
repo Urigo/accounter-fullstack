@@ -22,6 +22,17 @@
   would make the `.dark` overrides below dead code.
 */
 @theme {
+  /*
+    Mantine's `withGlobalStyles` set these on `body` from its theme, and removing the provider
+    took them with it. `Roboto` was never actually loaded — no @fontsource package, no <link> in
+    index.html — so it always fell through to the generic `sans-serif`; the stack below is the
+    system one that renders, spelled out rather than left to the browser default. The 1.55
+    line-height is Mantine's, kept so the teardown is not also a global typography shift.
+  */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
   --color-background: #fff;
   --color-foreground: oklch(13% 0.028 261.692); /* gray-950 */
 
@@ -116,6 +127,21 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+  /*
+    Mind the cascade layer: these lose to MUI's `CssBaseline`, which emits its own unlayered `body`
+    rule through emotion, and an unlayered declaration outranks a layered one of equal specificity
+    whatever the source order. The app therefore restates the same four values in the theme's
+    `MuiCssBaseline` overrides (`router/layouts/root-layout.tsx`), reading these very custom
+    properties. What is below is what applies wherever that provider is not mounted — Storybook,
+    most of all.
+  */
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+
   *,
   ::after,
   ::before,

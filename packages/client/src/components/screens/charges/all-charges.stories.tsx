@@ -27,7 +27,7 @@ const meta = {
   component: AllCharges,
   parameters: {
     layout: 'fullscreen',
-    // MantineProvider and the router now come from `.storybook/preview.tsx`.
+    // The router now comes from `.storybook/preview.tsx`.
     router: { initialEntries: [initialEntry] },
   },
 } satisfies Meta<typeof AllCharges>;
