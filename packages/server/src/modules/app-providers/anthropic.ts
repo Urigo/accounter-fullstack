@@ -117,7 +117,13 @@ const SUPPORTED_FILE_TYPES = [
 ] as const;
 type SupportedFileType = (typeof SUPPORTED_FILE_TYPES)[number];
 
-function isSupportedFileType(value: string): value is SupportedFileType {
+/**
+ * The media types `extractInvoiceDetails` accepts. Exported because callers that source their bytes
+ * from somewhere other than a direct upload — the re-OCR path fetches them back from Cloudinary —
+ * have to pick a usable representation *before* paying for the OCR round trip that would otherwise
+ * reject them.
+ */
+export function isSupportedFileType(value: string): value is SupportedFileType {
   return SUPPORTED_FILE_TYPES.includes(value as SupportedFileType);
 }
 

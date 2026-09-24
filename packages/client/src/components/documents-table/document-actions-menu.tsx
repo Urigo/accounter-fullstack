@@ -9,6 +9,7 @@ import {
   Link as LinkIcon,
   ListPlus,
   MoreVertical,
+  ScanText,
   Trash,
   Unlink,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ import {
   DeleteDocumentButton,
   DocumentImageDrawer,
   PreviewDocumentModal,
+  ReprocessDocumentOcrButton,
   UnlinkDocumentButton,
 } from '../common/index.js';
 import { Button } from '../ui/button.js';
@@ -59,6 +61,7 @@ export function DocumentActionsMenu({
   const [issueDocumentOpen, setIssueDocumentOpen] = useState(false);
   const [unlinkOpen, setUnlinkOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reprocessOcrOpen, setReprocessOcrOpen] = useState(false);
 
   const chargeId = document.charge?.id;
   const fileHref = toHref(document.file);
@@ -102,6 +105,15 @@ export function DocumentActionsMenu({
           <DropdownMenuItem onSelect={onCopyDocumentId}>
             <Copy className="size-4" />
             Copy Document ID
+          </DropdownMenuItem>
+          {/* Nothing records whether OCR ever ran, so the only precondition that can be checked
+              here is that there is still a file to read back. */}
+          <DropdownMenuItem
+            disabled={!document.file && !document.image}
+            onSelect={() => setReprocessOcrOpen(true)}
+          >
+            <ScanText className="size-4" />
+            Re-run OCR
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
@@ -176,6 +188,13 @@ export function DocumentActionsMenu({
         src={document.image}
         opened={imageOpen}
         onClose={(): void => setImageOpen(false)}
+      />
+
+      <ReprocessDocumentOcrButton
+        documentId={document.id}
+        onChange={document.onUpdate}
+        open={reprocessOcrOpen}
+        setOpen={setReprocessOcrOpen}
       />
 
       <UnlinkDocumentButton

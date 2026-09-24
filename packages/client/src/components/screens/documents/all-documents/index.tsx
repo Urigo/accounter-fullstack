@@ -79,6 +79,7 @@ export const DocumentsReport = (): ReactElement => {
     documentsProps,
     onChange: onDocumentChange,
     withChargeLink: true,
+    withSelection: true,
     // This screen hosts a `DataTablePagination`, so it is one of the few documents tables that
     // opts into paging. 100 is the largest size that bar offers, so its size `Select` renders the
     // value rather than showing blank.
