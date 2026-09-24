@@ -66,6 +66,8 @@ interface ToolbarProps {
   /** Saved baselines, newest first. */
   snapshots: readonly { id: string; createdAt: Date | string; fromDate: string; toDate: string }[];
   activeBaselineId: string | null;
+  /** The default baseline — the newest save for the period and owner on screen — labelled "Last save". */
+  latestBaselineId: string | null;
   onBaselineChange: (id: string) => void;
   /** Set when change tracking cannot be shown, explaining why. */
   diffSuspendedReason?: string | null;
@@ -101,18 +103,19 @@ export function Toolbar({
   onRestoreDraftPeriod,
   snapshots,
   activeBaselineId,
+  latestBaselineId,
   onBaselineChange,
   diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
 
-  const baselineLabel = (snapshot: { createdAt: Date | string }, index: number): string => {
+  const baselineLabel = (snapshot: { id: string; createdAt: Date | string }): string => {
     const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
-    return index === 0 ? `Last save · ${when}` : when;
+    return snapshot.id === latestBaselineId ? `Last save · ${when}` : when;
   };
 
   return (
@@ -213,9 +216,9 @@ export function Toolbar({
                 <SelectValue placeholder="Last save" />
               </SelectTrigger>
               <SelectContent>
-                {snapshots.map((snapshot, index) => (
+                {snapshots.map(snapshot => (
                   <SelectItem key={snapshot.id} value={snapshot.id}>
-                    {baselineLabel(snapshot, index)}
+                    {baselineLabel(snapshot)}
                   </SelectItem>
                 ))}
               </SelectContent>

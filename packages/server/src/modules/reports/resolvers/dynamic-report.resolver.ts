@@ -227,6 +227,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     createdBy: snapshot => snapshot.created_by,
     fromDate: snapshot => dateToTimelessDateString(snapshot.from_date),
     toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
+    scopeOwnerId: snapshot => snapshot.scope_owner_id,
   },
   DynamicReportSnapshot: {
     id: snapshot => snapshot.id,

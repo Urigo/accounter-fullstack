@@ -72,6 +72,8 @@ export default gql`
     createdBy: String
     fromDate: TimelessDate!
     toDate: TimelessDate!
+    " the owner the sums were queried for, which need not be the template's owner "
+    scopeOwnerId: UUID!
   }
 
   " a saved baseline: the report tree and its figures as they stood at that save "
