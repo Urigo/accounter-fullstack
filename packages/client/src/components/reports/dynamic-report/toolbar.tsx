@@ -38,6 +38,8 @@ interface ToolbarProps {
   toDate: string;
   onFromDateChange: (date: string) => void;
   onToDateChange: (date: string) => void;
+  /** Changing it remounts the date pickers, putting back a period whose change was cancelled. */
+  datePickersKey?: number;
   owners: Owner[];
   selectedOwner: string;
   onOwnerChange: (ownerId: string) => void;
@@ -85,6 +87,7 @@ export function Toolbar({
   toDate,
   onFromDateChange,
   onToDateChange,
+  datePickersKey = 0,
   owners,
   selectedOwner,
   onOwnerChange,
@@ -137,6 +140,7 @@ export function Toolbar({
             From
           </Label>
           <DatePickerInput
+            key={`from-${datePickersKey}`}
             id="from-date"
             value={fromDate as TimelessDateString}
             onChange={e => onFromDateChange(e ?? '')}
@@ -150,6 +154,7 @@ export function Toolbar({
             To
           </Label>
           <DatePickerInput
+            key={`to-${datePickersKey}`}
             id="to-date"
             value={toDate as TimelessDateString}
             onChange={e => onToDateChange(e ?? '')}
