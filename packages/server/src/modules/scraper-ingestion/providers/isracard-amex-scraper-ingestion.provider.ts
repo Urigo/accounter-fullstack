@@ -192,7 +192,17 @@ const uploadIsracardTransactions = sql<IUploadIsracardTransactionsQuery>`
     deal_sum
   )
   DO NOTHING
-  RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
+  RETURNING
+    id,
+    card,
+    full_purchase_date,
+    full_purchase_date_outbound,
+    supplier_name,
+    full_supplier_name_heb,
+    supplier_name_outbound,
+    full_supplier_name_outbound,
+    payment_sum,
+    payment_sum_outbound;
 `;
 
 const fetchAmexByCards = sql<IFetchAmexByCardsQuery>`
@@ -363,7 +373,17 @@ const uploadAmexTransactions = sql<IUploadAmexTransactionsQuery>`
     deal_sum
   )
   DO NOTHING
-  RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
+  RETURNING
+    id,
+    card,
+    full_purchase_date,
+    full_purchase_date_outbound,
+    supplier_name,
+    full_supplier_name_heb,
+    supplier_name_outbound,
+    full_supplier_name_outbound,
+    payment_sum,
+    payment_sum_outbound;
 `;
 
 type IsracardAmexKeyShape = {
@@ -478,6 +498,28 @@ function diffIsracardAmexRow<T extends IFetchIsracardByCardsResult | IFetchAmexB
   return changed;
 }
 
+/**
+ * Domestic (txnIsrael) rows populate the plain columns, while abroad (txnAbroad) rows leave
+ * them null and populate the *_outbound counterparts instead - fall back accordingly.
+ */
+function toInsertedTransactionSummary(
+  r: IUploadIsracardTransactionsResult | IUploadAmexTransactionsResult,
+): InsertedTransactionSummary {
+  const amount = r.payment_sum ?? r.payment_sum_outbound;
+  return {
+    id: r.id,
+    date: r.full_purchase_date ?? r.full_purchase_date_outbound ?? null,
+    description:
+      r.supplier_name ??
+      r.full_supplier_name_heb ??
+      r.full_supplier_name_outbound ??
+      r.supplier_name_outbound ??
+      null,
+    amount: amount == null ? null : String(amount),
+    account: String(r.card),
+  };
+}
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -512,13 +554,7 @@ export class IsracardAmexScraperIngestionProvider {
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 
-    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-      id: r.id,
-      date: r.full_purchase_date ?? null,
-      description: r.supplier_name ?? null,
-      amount: r.payment_sum == null ? null : String(r.payment_sum),
-      account: String(r.card),
-    }));
+    const insertedTransactions = result.map(toInsertedTransactionSummary);
 
     const changedTransactions: ChangedTransaction[] = [];
     for (const t of validated) {
@@ -586,13 +622,7 @@ export class IsracardAmexScraperIngestionProvider {
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 
-    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-      id: r.id,
-      date: r.full_purchase_date ?? null,
-      description: r.supplier_name ?? null,
-      amount: r.payment_sum == null ? null : String(r.payment_sum),
-      account: String(r.card),
-    }));
+    const insertedTransactions = result.map(toInsertedTransactionSummary);
 
     const changedTransactions: ChangedTransaction[] = [];
     for (const t of validated) {
