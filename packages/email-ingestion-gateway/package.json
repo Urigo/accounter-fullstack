@@ -49,12 +49,12 @@
     "worker:dev": "wrangler dev"
   },
   "dependencies": {
-    "dotenv": "18.0.3",
+    "dotenv": "18.0.4",
     "graphql": "16.14.2",
     "graphql-request": "7.4.0",
     "inline-css": "4.0.3",
     "playwright": "1.63.0",
-    "postal-mime": "3.0.0",
+    "postal-mime": "3.0.1",
     "zod": "4.6.5"
   },
   "devDependencies": {
