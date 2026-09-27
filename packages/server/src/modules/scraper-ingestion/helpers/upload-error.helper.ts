@@ -63,6 +63,23 @@ const PG_ERROR_CLASSES: Record<string, PgErrorCategory> = {
   },
 };
 
+/**
+ * SQLSTATEs whose Postgres message is built from schema metadata only — table,
+ * column, constraint or policy names — and so may be returned to the client as is.
+ * For these the row values, when Postgres reports them at all, go into `detail`,
+ * which is never returned. Every other state's message may carry uploaded data (a
+ * type error echoes the invalid input; a trigger's `RAISE EXCEPTION` interpolates
+ * `NEW` values), so the client gets the category hint instead and the raw message
+ * stays in the server log.
+ */
+const CLIENT_SAFE_MESSAGE_STATES = new Set([
+  '42501', // insufficient_privilege / RLS policy violation
+  '23505', // unique_violation
+  '23503', // foreign_key_violation
+  '23502', // not_null_violation
+  '23514', // check_violation
+]);
+
 const SQLSTATE_PATTERN = /^[0-9A-Z]{5}$/;
 const MAX_CAUSE_DEPTH = 5;
 
@@ -114,8 +131,9 @@ function categorize(sqlState: string): PgErrorCategory {
  * Without this, a rejected statement (RLS, constraint, bad value) reaches yoga as a
  * plain error, which its default `maskedErrors` turns into "Unexpected error." — the
  * scraper then shows that, with no hint of which table or rule refused the rows.
- * Postgres' own message (table, constraint or policy name — no row data) and the
- * failing trigger function are safe to return and are what points at the cause.
+ * The failing trigger function is always returned, since it points at the cause.
+ * Postgres' own message is returned only for the states in
+ * {@link CLIENT_SAFE_MESSAGE_STATES}; otherwise the client gets the category hint.
  * Anything that is not a recognized DB error keeps its message server-side only.
  *
  * `originalError` is deliberately never set: yoga masks any `GraphQLError` whose
@@ -143,8 +161,8 @@ export function toScraperUploadError(operation: string, error: unknown): GraphQL
     const { code, hint } = categorize(pgError.code);
     const dbFunction = extractDbFunction(pgError.where);
     const location = dbFunction ? ` (in ${dbFunction})` : '';
-    // One readable line instead of the full driver error dump; `where` is kept
-    // server-side because it names the exact statement inside the trigger.
+    // One log line instead of the full driver error dump; `where` is kept
+    // server-side because it quotes the exact statement inside the trigger.
     const context = [
       pgError.table && `table=${pgError.table}`,
       pgError.constraint && `constraint=${pgError.constraint}`,
@@ -154,9 +172,12 @@ export function toScraperUploadError(operation: string, error: unknown): GraphQL
       .join(' | ');
     console.error(
       `[scraper-ingestion] ${operation} failed: [${pgError.code}] ${pgError.message}${location}` +
-        (context ? `\n  ${context}` : ''),
+        (context ? ` | ${context}` : ''),
     );
-    return createGraphQLError(`${operation} failed: ${pgError.message}${location}`, {
+    const clientMessage = CLIENT_SAFE_MESSAGE_STATES.has(pgError.code)
+      ? pgError.message
+      : hint.replace(/\.$/, '');
+    return createGraphQLError(`${operation} failed: ${clientMessage}${location}`, {
       extensions: {
         code,
         operation,

@@ -61,6 +61,7 @@ describe('toScraperUploadError', () => {
     expect(consoleError).toHaveBeenCalledTimes(1);
     const [line, ...rest] = consoleError.mock.calls[0];
     expect(rest).toEqual([]);
+    expect(line).not.toContain('\n');
     expect(line).toContain('[42501] new row violates row-level security policy');
     expect(line).toContain('where=SQL statement "INSERT INTO accounter_schema.charges');
   });
@@ -96,6 +97,38 @@ describe('toScraperUploadError', () => {
     );
 
     expect(result.extensions.code).toBe('DB_INVALID_DATA');
+  });
+
+  it('does not return a type error message, which echoes the uploaded value', () => {
+    const result = toScraperUploadError(
+      'op',
+      pgError({ message: 'invalid input syntax for type integer: "4111-secret"', code: '22P02' }),
+    );
+
+    expect(result.message).toBe(
+      'op failed: A value has an invalid format or is out of range for its column',
+    );
+    expect(JSON.stringify(result.toJSON())).not.toContain('4111-secret');
+  });
+
+  it("does not return a trigger's RAISE message, keeping only the function name", () => {
+    const result = toScraperUploadError(
+      'uploadPoalimSwiftTransactions',
+      pgError({
+        message: 'Account not found for account number: 123456',
+        code: 'P0001',
+        where:
+          'PL/pgSQL function accounter_schema.insert_poalim_swift_transaction_handler() line 51 at RAISE',
+      }),
+    );
+
+    expect(result.message).toBe(
+      'uploadPoalimSwiftTransactions failed: A database trigger or function rejected the data ' +
+        '(in accounter_schema.insert_poalim_swift_transaction_handler() line 51)',
+    );
+    expect(result.extensions.code).toBe('DB_REJECTED');
+    expect(JSON.stringify(result.toJSON())).not.toContain('123456');
+    expect(consoleError.mock.calls[0][0]).toContain('Account not found for account number: 123456');
   });
 
   it('reports a dead connection as retryable-unavailable', () => {

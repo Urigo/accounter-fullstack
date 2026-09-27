@@ -13,10 +13,13 @@ the scraper task row showed kilobytes of JSON (twice, via the stack trace) and n
 cause, which was only in the server log.
 
 **Server.** Every scraper upload mutation now runs through `withScraperUploadErrors`, which turns a
-Postgres error into a `GraphQLError` carrying the database message, the failing trigger function
-and a code: `DB_PERMISSION_DENIED`, `DB_CONFLICT`, `DB_REFERENCE_MISSING`, `DB_INVALID_DATA`,
-`DB_REJECTED`, or `SERVICE_UNAVAILABLE` for a dropped connection. The SQL statement from Postgres'
-`where` context stays server-side, and any other error keeps its message out of the response. The
+Postgres error into a `GraphQLError` carrying a readable message, the failing trigger function and a
+code: `DB_PERMISSION_DENIED`, `DB_CONFLICT`, `DB_REFERENCE_MISSING`, `DB_INVALID_DATA`,
+`DB_REJECTED`, or `SERVICE_UNAVAILABLE` for a dropped connection. Postgres' own message is returned
+only for RLS/privilege and constraint violations, whose messages name schema objects only; type
+errors and trigger `RAISE EXCEPTION` messages can echo uploaded values, so those return the
+category hint instead. The raw message and the SQL statement from Postgres' `where` context stay in
+the server log, and any other error keeps its message out of the response. The
 error is built with `createGraphQLError`, the factory yoga itself uses, and never sets
 `originalError`, since yoga masks any error whose `originalError` is not a `GraphQLError`. Each failure
 is logged once as a single line; the providers' own `console.error` + rethrow blocks are removed.
