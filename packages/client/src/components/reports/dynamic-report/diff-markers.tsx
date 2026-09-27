@@ -35,6 +35,8 @@ function explain(change: NodeChange): string {
       return `Moved from ${change.previousParentText}`;
     case 'renamed':
       return `Was named "${change.previousText}"`;
+    case 'records':
+      return 'Ledger records changed — total unchanged';
   }
 }
 
@@ -44,6 +46,7 @@ function marker(changes: NodeChange[]): string | null {
   if (changes.some(change => change.kind === 'removed')) return 'removed';
   if (changes.some(change => change.kind === 'moved')) return 'moved';
   if (changes.some(change => change.kind === 'renamed')) return 'renamed';
+  if (changes.some(change => change.kind === 'records')) return 'edited';
   return null;
 }
 

@@ -25,6 +25,11 @@ export type Baseline = {
   tree: BaselineNode[];
   /** Leaf values only, keyed by financial entity id. Branch sums are recomputed from these. */
   values: Map<string, number>;
+  /**
+   * Leaf ledger fingerprints, keyed by financial entity id. Empty for a legacy snapshot saved before
+   * fingerprints were recorded, which suppresses the `records` change kind.
+   */
+  fingerprints: Map<string, string>;
 };
 
 export type NodeChange =
@@ -32,7 +37,9 @@ export type NodeChange =
   | { kind: 'added' }
   | { kind: 'removed'; previousValue: number }
   | { kind: 'moved'; previousParentText: string }
-  | { kind: 'renamed'; previousText: string };
+  | { kind: 'renamed'; previousText: string }
+  /** The leaf's ledger records changed while its total stayed within DELTA_THRESHOLD. */
+  | { kind: 'records' };
 
 export type ReportDiff = {
   /** Changes affecting each node, keyed by node id. Nodes with no changes are absent. */
@@ -122,6 +129,13 @@ export function buildReportDiff(current: FlatNode<CustomData>[], baseline: Basel
         const delta = (node.data.value ?? 0) - previous;
         if (Math.abs(delta) >= DELTA_THRESHOLD) {
           record(node.id, { kind: 'value', previous, delta });
+        } else {
+          // An edit that nets to ₪0 moves no figure, so only the fingerprint can reveal it. A
+          // baseline without one (a legacy snapshot) has nothing to compare against.
+          const previousFingerprint = baseline.fingerprints.get(node.id);
+          if (previousFingerprint !== undefined && previousFingerprint !== node.data.fingerprint) {
+            record(node.id, { kind: 'records' });
+          }
         }
       }
       if (before.parent !== node.parent) {

@@ -7,6 +7,7 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { handleBusinessTransaction } from '../helpers/business-transactions.helper.js';
+import { hashLedgerFingerprint } from '../helpers/ledger-fingerprint.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import type { FinancialEntitiesModule, IGetBusinessesByIdsResult } from '../types.js';
 import { businessTransactionsSumFromLedgerRecords } from './business-transactions-sum-from-ledger-records.resolver.js';
@@ -175,6 +176,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
     },
   },
   BusinessTransactionSum: {
+    ledgerFingerprint: rawSum => hashLedgerFingerprint(rawSum.fingerprintTuples),
     business: (rawSum, _, { injector }) =>
       injector
         .get(FinancialEntitiesProvider)

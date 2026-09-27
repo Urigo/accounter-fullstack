@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/tooltip.js';
 import { cn } from '@/lib/utils.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
+import { RowApprovalStatus, type RowApproval } from './approval-status.js';
 import { DiffMarkers, type RowDiff } from './diff-markers.js';
 import { DragOverlayContent } from './drag-overlay.js';
 import type { DragPayload } from './utils/cross-tree-drop.js';
@@ -61,6 +62,8 @@ interface TreeNodeProps {
   onDelete?: (nodeId: string) => void;
   /** How this row differs from the last saved baseline, when a baseline is in play. */
   diff?: RowDiff;
+  /** The row's accountant status. Report rows reserve a slot for it even when it is absent. */
+  approval?: RowApproval;
 }
 
 function instructionToIndicator(
@@ -83,6 +86,7 @@ export function TreeNodeRow({
   onRename,
   onDelete,
   diff,
+  approval,
 }: TreeNodeProps): ReactElement {
   const [isDragging, setIsDragging] = useState(false);
   const [dropIndicator, setDropIndicator] = useState<'top' | 'bottom' | 'child' | null>(null);
@@ -148,6 +152,14 @@ export function TreeNodeRow({
   }, [depth, isInteractive, isExpanded, node.droppable, node.id, treeId]);
 
   const indentPx = depth * 24;
+
+  // A fixed-width slot at the far right, so statuses line up as a column even on rows without one.
+  const approvalSlot =
+    treeId === 'report' ? (
+      <div className="w-7 shrink-0 flex items-center justify-center">
+        {approval && <RowApprovalStatus approval={approval} />}
+      </div>
+    ) : null;
 
   if (isBranch) {
     const sum = nodeStats.get(node.id)?.sum ?? 0;
@@ -263,6 +275,8 @@ export function TreeNodeRow({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+
+            {approvalSlot}
           </div>
         </div>
       </div>
@@ -336,6 +350,8 @@ export function TreeNodeRow({
               )}
             </Button>
           )}
+
+          {approvalSlot}
         </div>
       </div>
 

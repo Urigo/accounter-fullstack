@@ -449,7 +449,7 @@ type RawBusinessNode = NonNullable<McpListBusinessesQuery['allBusinesses']>['nod
  * type is not a client.
  */
 function rawBusinessIsClient(business: RawBusinessNode): boolean {
-  return 'isClient' in business ? business.isClient : false;
+  return 'isClient' in business && business.isClient;
 }
 
 /** The `{ id, name }` pair the directory reports for a matched tax category. */

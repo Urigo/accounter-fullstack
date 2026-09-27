@@ -8,6 +8,16 @@ type BusinessSum = Extract<
   { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
 >['businessTransactionsSum'][number];
 
+/** A bank leaf carries its fingerprint so that dropping it into the report keeps it. */
+function leafData(b: BusinessSum): CustomData {
+  return {
+    nodeType: 'financial-entity',
+    value: b.total.raw * -1,
+    isOpen: false,
+    fingerprint: b.ledgerFingerprint,
+  };
+}
+
 /**
  * Builds the initial bank flat-tree from live GraphQL data.
  *
@@ -77,7 +87,7 @@ export function buildInitialBankTree(
         parent: scId,
         text: b.business.name,
         droppable: false,
-        data: { nodeType: 'financial-entity', value: b.total.raw * -1, isOpen: false },
+        data: leafData(b),
       });
     }
   }
@@ -90,7 +100,7 @@ export function buildInitialBankTree(
       parent: BANK_ROOT,
       text: b.business.name,
       droppable: false,
-      data: { nodeType: 'financial-entity', value: b.total.raw * -1, isOpen: false },
+      data: leafData(b),
     });
   }
 

@@ -178,6 +178,7 @@ export default [
               'DocumentPaymentRecord',
               'DocumentSuggestions',
               'DocumentValidationCheck',
+              'DynamicReportLeafApproval',
               'DynamicReportNodeData',
               'DynamicReportSnapshotValue',
               'ExchangeRates',

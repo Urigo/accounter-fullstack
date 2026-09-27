@@ -70,6 +70,13 @@ describe('serializeReportTree', () => {
     expect(parsed[0].data).not.toHaveProperty('entityType');
   });
 
+  it('fingerprint is not serialized — it is runtime state, and the zod schema is strict', () => {
+    const node = entity('e-1', REPORT_ROOT);
+    node.data.fingerprint = 'fp-e-1';
+    const parsed: { data: Record<string, unknown> }[] = JSON.parse(serializeReportTree([node]));
+    expect(parsed[0].data).not.toHaveProperty('fingerprint');
+  });
+
   it('hebrewText is present when set', () => {
     const nodes = [branch('br-1', REPORT_ROOT, { hebrewText: 'שלום' })];
     const parsed: { data: { hebrewText?: string } }[] = JSON.parse(serializeReportTree(nodes));

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { isBuiltFrom, type TreeBuildInputs } from '../utils/tree-sync.js';
+import { REPORT_ROOT } from '../utils/report-tree.js';
+import { isBuiltFrom, patchLeafValues, type TreeBuildInputs } from '../utils/tree-sync.js';
+import type { CustomData, FlatNode } from '../utils/types.js';
 
 /**
  * Drives the two effects' coordination the way the component does, so the load orders below read
@@ -94,5 +96,84 @@ describe('tree effect coordination', () => {
     // the pre-rebuild tree back over it.
     report.rebuild({ businessSums: SUMS, showZeroed: false });
     expect(report.patch({ businessSums: SUMS, showZeroed: false })).toBe(false);
+  });
+});
+
+// ── patchLeafValues ──────────────────────────────────────────────────────────
+
+function sum(id: string, name: string, raw: number, ledgerFingerprint = `fp-${id}`) {
+  return { business: { id, name }, total: { raw }, ledgerFingerprint };
+}
+
+function patchBranch(id: string): FlatNode<CustomData> {
+  return {
+    id,
+    parent: REPORT_ROOT,
+    text: id,
+    droppable: true,
+    data: { nodeType: 'synthetic-branch', isOpen: true },
+  };
+}
+
+function patchLeaf(id: string, data: Partial<CustomData> = {}): FlatNode<CustomData> {
+  return {
+    id,
+    parent: 'br-1',
+    text: `Entity ${id}`,
+    droppable: false,
+    data: { nodeType: 'financial-entity', isOpen: false, value: -100, ...data },
+  };
+}
+
+describe('patchLeafValues', () => {
+  it('returns the very same node when value, visibility, name and fingerprint are unchanged', () => {
+    const node = patchLeaf('e-1', { fingerprint: 'fp-e-1' });
+    const [patched] = patchLeafValues([node], [sum('e-1', 'Entity e-1', 100)]);
+    expect(patched).toBe(node);
+  });
+
+  it('leaves branches untouched', () => {
+    const node = patchBranch('br-1');
+    expect(patchLeafValues([node], [])[0]).toBe(node);
+  });
+
+  it('patches the fingerprint when only the fingerprint changed', () => {
+    const node = patchLeaf('e-1', { fingerprint: 'fp-old' });
+    const [patched] = patchLeafValues([node], [sum('e-1', 'Entity e-1', 100, 'fp-new')]);
+    expect(patched).not.toBe(node);
+    expect(patched.data.fingerprint).toBe('fp-new');
+    expect(patched.data.value).toBe(-100);
+  });
+
+  it('sets the value, name and fingerprint from the sum', () => {
+    const node = patchLeaf('e-1');
+    const [patched] = patchLeafValues([node], [sum('e-1', 'Renamed', 40)]);
+    expect(patched.text).toBe('Renamed');
+    expect(patched.data.value).toBe(-40);
+    expect(patched.data.fingerprint).toBe('fp-e-1');
+  });
+
+  it('hides a leaf with no sum, zeroes it, keeps its name and drops its fingerprint', () => {
+    const node = patchLeaf('e-1', { fingerprint: 'fp-e-1' });
+    const [patched] = patchLeafValues([node], []);
+    expect(patched.data.isHidden).toBe(true);
+    expect(patched.data.value).toBe(0);
+    expect(patched.text).toBe('Entity e-1');
+    expect(patched.data).not.toHaveProperty('fingerprint');
+  });
+
+  it('un-hides a leaf whose sum reappears', () => {
+    const node = patchLeaf('e-1', { value: 0, isHidden: true });
+    const [patched] = patchLeafValues([node], [sum('e-1', 'Back', 10)]);
+    expect(patched.data).not.toHaveProperty('isHidden');
+    expect(patched.data.fingerprint).toBe('fp-e-1');
+  });
+
+  it('preserves structure and every other data field', () => {
+    const node = patchLeaf('e-1', { hebrewText: 'שלום', isOpen: true });
+    const [patched] = patchLeafValues([node], [sum('e-1', 'X', 5)]);
+    expect(patched.parent).toBe('br-1');
+    expect(patched.data.hebrewText).toBe('שלום');
+    expect(patched.data.isOpen).toBe(true);
   });
 });

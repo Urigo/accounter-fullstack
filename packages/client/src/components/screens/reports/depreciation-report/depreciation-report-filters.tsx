@@ -63,7 +63,8 @@ function DepreciationReportFiltersForm({
             required: 'Year is required',
             validate: (value): boolean | string => {
               const year = Number(value);
-              return Number.isNaN(year) || year < 2000 || year > 2100 ? 'Invalid year' : true;
+              const yearValid = !Number.isNaN(year) && year >= 2000 && year <= 2100;
+              return yearValid || 'Invalid year';
             },
           }}
           render={({ field }): ReactElement => (

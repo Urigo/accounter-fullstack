@@ -16,6 +16,8 @@ export type CurrencySum = {
 
 export type RawBusinessTransactionsSum = Record<Currency, CurrencySum> & {
   businessId: string;
+  /** Ledger fingerprint tuples collected from the records behind this sum */
+  fingerprintTuples: string[];
 };
 
 export type VatExtendedCharge = IGetChargesByIdsResult & {

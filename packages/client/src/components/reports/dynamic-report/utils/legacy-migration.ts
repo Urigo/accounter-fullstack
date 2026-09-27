@@ -87,7 +87,7 @@ export function migrateLegacyTemplateNodes(
             nodeType: 'financial-entity',
             value: bizSum ? bizSum.total.raw * -1 : 0,
             isOpen: false,
-            ...(bizSum ? {} : { isHidden: true }),
+            ...(bizSum ? { fingerprint: bizSum.ledgerFingerprint } : { isHidden: true }),
           },
         });
       }
@@ -104,7 +104,7 @@ export function migrateLegacyTemplateNodes(
           nodeType: 'financial-entity',
           value: bizSum ? bizSum.total.raw * -1 : 0,
           isOpen: node.data.isOpen,
-          ...(bizSum ? {} : { isHidden: true }),
+          ...(bizSum ? { fingerprint: bizSum.ledgerFingerprint } : { isHidden: true }),
           ...(node.data.hebrewText == null ? {} : { hebrewText: node.data.hebrewText }),
         },
       });

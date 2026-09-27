@@ -11,7 +11,7 @@ export async function setup() {
     user: process.env.POSTGRES_USER || 'postgres',
     password: process.env.POSTGRES_PASSWORD || 'postgres',
     database: process.env.POSTGRES_DB || 'accounter_test',
-    ssl: process.env.POSTGRES_SSL === '1' ? { rejectUnauthorized: false } : false,
+    ssl: process.env.POSTGRES_SSL === '1' && { rejectUnauthorized: false },
   });
 
   try {

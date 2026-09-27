@@ -94,6 +94,7 @@ export function buildReportTree(
           nodeType: 'financial-entity',
           isOpen: node.data.isOpen,
           value: bizSum.total.raw * -1,
+          fingerprint: bizSum.ledgerFingerprint,
           ...(node.data.hebrewText == null ? {} : { hebrewText: node.data.hebrewText }),
         },
       });

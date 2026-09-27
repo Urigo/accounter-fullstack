@@ -571,8 +571,7 @@ export async function getMonthTransactions(
       },
       {
         title: `Check for New Transactions`,
-        skip: ctx =>
-          ctx[accountKey][monthKey]?.transactions?.length === 0 ? 'No transactions' : false,
+        skip: ctx => ctx[accountKey][monthKey]?.transactions?.length === 0 && 'No transactions',
         task: async (ctx, task) => {
           try {
             const { transactions = [] } = ctx[accountKey][monthKey];

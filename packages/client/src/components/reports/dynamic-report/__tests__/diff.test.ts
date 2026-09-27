@@ -22,13 +22,23 @@ function branch(id: string, parent: string, text = `Branch ${id}`): FlatNode<Cus
   };
 }
 
-function leaf(id: string, parent: string, value: number): FlatNode<CustomData> {
+function leaf(
+  id: string,
+  parent: string,
+  value: number,
+  fingerprint?: string,
+): FlatNode<CustomData> {
   return {
     id,
     parent,
     text: `Entity ${id}`,
     droppable: false,
-    data: { nodeType: 'financial-entity', isOpen: false, value },
+    data: {
+      nodeType: 'financial-entity',
+      isOpen: false,
+      value,
+      ...(fingerprint === undefined ? {} : { fingerprint }),
+    },
   };
 }
 
@@ -52,8 +62,16 @@ function baseLeaf(id: string, parent: string): BaselineNode {
   };
 }
 
-function baseline(tree: BaselineNode[], values: Record<string, number> = {}): Baseline {
-  return { tree, values: new Map(Object.entries(values)) };
+function baseline(
+  tree: BaselineNode[],
+  values: Record<string, number> = {},
+  fingerprints: Record<string, string> = {},
+): Baseline {
+  return {
+    tree,
+    values: new Map(Object.entries(values)),
+    fingerprints: new Map(Object.entries(fingerprints)),
+  };
 }
 
 function kinds(changes: NodeChange[] | undefined): string[] {
@@ -104,6 +122,80 @@ describe('buildReportDiff', () => {
     it('treats a leaf absent from the baseline values as having been zero', () => {
       const diff = buildReportDiff([branch('br-1', REPORT_ROOT), leaf('e-1', 'br-1', 25)], baseline(tree));
       expect(diff.byNodeId.get('e-1')).toEqual([{ kind: 'value', previous: 0, delta: 25 }]);
+    });
+  });
+
+  describe('records changes', () => {
+    const tree = [baseBranch('br-1', REPORT_ROOT), baseLeaf('e-1', 'br-1')];
+
+    it('flags a leaf whose ledger records changed while its total did not', () => {
+      const current = [branch('br-1', REPORT_ROOT), leaf('e-1', 'br-1', 100, 'fp-new')];
+      const diff = buildReportDiff(current, baseline(tree, { 'e-1': 100 }, { 'e-1': 'fp-old' }));
+      expect(diff.byNodeId.get('e-1')).toEqual([{ kind: 'records' }]);
+    });
+
+    it('flags it when the delta is below the threshold too', () => {
+      const current = [
+        branch('br-1', REPORT_ROOT),
+        leaf('e-1', 'br-1', 100 + DELTA_THRESHOLD / 2, 'fp-new'),
+      ];
+      const diff = buildReportDiff(current, baseline(tree, { 'e-1': 100 }, { 'e-1': 'fp-old' }));
+      expect(kinds(diff.byNodeId.get('e-1'))).toEqual(['records']);
+    });
+
+    it('does not flag the branch — the marker belongs to the leaf', () => {
+      const current = [branch('br-1', REPORT_ROOT), leaf('e-1', 'br-1', 100, 'fp-new')];
+      const diff = buildReportDiff(current, baseline(tree, { 'e-1': 100 }, { 'e-1': 'fp-old' }));
+      expect(diff.byNodeId.has('br-1')).toBe(false);
+      expect(diff.subtreeDelta.size).toBe(0);
+    });
+
+    it('stays quiet when the fingerprint is unchanged', () => {
+      const current = [branch('br-1', REPORT_ROOT), leaf('e-1', 'br-1', 100, 'fp-same')];
+      const diff = buildReportDiff(current, baseline(tree, { 'e-1': 100 }, { 'e-1': 'fp-same' }));
+      expect(diff.byNodeId.has('e-1')).toBe(false);
+    });
+
+    it('stays quiet when the baseline has no fingerprint (a legacy snapshot)', () => {
+      const current = [branch('br-1', REPORT_ROOT), leaf('e-1', 'br-1', 100, 'fp-new')];
+      const diff = buildReportDiff(current, baseline(tree, { 'e-1': 100 }));
+      expect(diff.byNodeId.has('e-1')).toBe(false);
+    });
+
+    it('flags a leaf that lost all its records while its total stayed at zero', () => {
+      const current = [branch('br-1', REPORT_ROOT), leaf('e-1', 'br-1', 0)];
+      const diff = buildReportDiff(current, baseline(tree, { 'e-1': 0 }, { 'e-1': 'fp-old' }));
+      expect(kinds(diff.byNodeId.get('e-1'))).toEqual(['records']);
+    });
+
+    it('never emits records together with value', () => {
+      const current = [branch('br-1', REPORT_ROOT), leaf('e-1', 'br-1', 140, 'fp-new')];
+      const diff = buildReportDiff(current, baseline(tree, { 'e-1': 100 }, { 'e-1': 'fp-old' }));
+      expect(kinds(diff.byNodeId.get('e-1'))).toEqual(['value']);
+    });
+
+    it('never flags an added leaf, which has no baseline to compare with', () => {
+      const current = [branch('br-1', REPORT_ROOT), leaf('e-2', 'br-1', 0, 'fp-new')];
+      const diff = buildReportDiff(
+        current,
+        baseline([baseBranch('br-1', REPORT_ROOT)], {}, { 'e-2': 'fp-old' }),
+      );
+      expect(kinds(diff.byNodeId.get('e-2'))).toEqual(['added']);
+    });
+
+    it('records a move alongside a records change', () => {
+      const moved = [
+        baseBranch('br-1', REPORT_ROOT),
+        baseBranch('br-2', REPORT_ROOT),
+        baseLeaf('e-1', 'br-1'),
+      ];
+      const current = [
+        branch('br-1', REPORT_ROOT),
+        branch('br-2', REPORT_ROOT),
+        leaf('e-1', 'br-2', 100, 'fp-new'),
+      ];
+      const diff = buildReportDiff(current, baseline(moved, { 'e-1': 100 }, { 'e-1': 'fp-old' }));
+      expect(kinds(diff.byNodeId.get('e-1')).toSorted()).toEqual(['moved', 'records']);
     });
   });
 

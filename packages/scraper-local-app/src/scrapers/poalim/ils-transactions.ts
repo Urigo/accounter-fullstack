@@ -422,7 +422,7 @@ export async function getIlsTransactions(bankKey: string, account: ScrapedAccoun
     },
     {
       title: `Check for New Transactions`,
-      skip: ctx => (ctx[bankKey][ilsKey].transactions?.length === 0 ? 'No transactions' : false),
+      skip: ctx => ctx[bankKey][ilsKey].transactions?.length === 0 && 'No transactions',
       task: async (ctx, task) => {
         const { transactions = [] } = ctx[bankKey][ilsKey];
         const columns = ctx[bankKey].columns!.poalim_ils_account_transactions!.filter(
@@ -442,8 +442,7 @@ export async function getIlsTransactions(bankKey: string, account: ScrapedAccoun
     },
     {
       title: `Save New Transactions`,
-      skip: ctx =>
-        ctx[bankKey][ilsKey].newTransactions?.length === 0 ? 'No new transactions' : false,
+      skip: ctx => ctx[bankKey][ilsKey].newTransactions?.length === 0 && 'No new transactions',
       task: async ctx => {
         const { newTransactions = [] } = ctx[bankKey][ilsKey];
         await insertTransactions(newTransactions, ctx.pool, ctx.logger);

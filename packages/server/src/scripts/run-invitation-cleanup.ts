@@ -36,7 +36,7 @@ async function runCleanup(): Promise<void> {
     host: env.postgres.host,
     port: Number(env.postgres.port),
     database: env.postgres.db,
-    ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
+    ssl: env.postgres.ssl && { rejectUnauthorized: false },
     max: Math.min(env.postgres.max, 10),
   });
 

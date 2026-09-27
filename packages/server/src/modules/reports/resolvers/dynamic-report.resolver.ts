@@ -6,19 +6,32 @@ import {
 } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
+import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
+import { BusinessUsersProvider } from '../../auth/providers/business-users.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import {
+  carryForwardApprovals,
+  parseLeafApprovals,
+  stampApprovals,
+} from '../helpers/dynamic-report-approvals.helper.js';
 import {
   isLegacyTemplate,
   migrateLegacyTemplate,
   parseSnapshotTree,
   parseTemplate,
+  recordToSnapshotFingerprints,
   recordToSnapshotValues,
+  snapshotFingerprintsToRecord,
   snapshotValuesToRecord,
+  templateLeafIds,
   validateSnapshotInput,
   validateTemplate,
   type DynamicReportSnapshotInputType,
 } from '../helpers/dynamic-report.helper.js';
-import { DynamicReportProvider } from '../providers/dynamic-report.provider.js';
+import {
+  DynamicReportProvider,
+  type SnapshotWriteParams,
+} from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';
 
 /**
@@ -32,6 +45,8 @@ function toSnapshotRow(
   templateName: string,
   template: string,
   snapshot: DynamicReportSnapshotInputType,
+  leafApprovals: string | null,
+  createdBy: string | null,
 ) {
   return {
     ownerId,
@@ -41,7 +56,70 @@ function toSnapshotRow(
     scopeOwnerId: snapshot.scopeOwnerId,
     tree: template,
     leafValues: JSON.stringify(snapshotValuesToRecord(snapshot.values)),
-    createdBy: null,
+    leafFingerprints: JSON.stringify(snapshotFingerprintsToRecord(snapshot.values)),
+    leafApprovals,
+    createdBy,
+  };
+}
+
+/**
+ * The provider write for a save that records approvals (Resave and Capture). The stamps depend on
+ * the previous comparable snapshot, so they are computed in `buildSnapshot`, which the provider
+ * calls inside the write transaction with the row this insert actually follows.
+ */
+function stampedSnapshotWrite(
+  ownerId: string,
+  templateName: string,
+  template: string,
+  snapshot: DynamicReportSnapshotInputType,
+  userId: string | null,
+): SnapshotWriteParams {
+  // Null or absent when the client predates approvals: see `buildSnapshot` below.
+  const submitted = snapshot.approvals;
+  const leafIds = templateLeafIds(template);
+  const outsideTree = (submitted ?? []).filter(({ entityId }) => !leafIds.has(entityId));
+  if (outsideTree.length > 0) {
+    // Only a stale client can send these, so they are dropped rather than failing the save.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Dynamic report "${templateName}": dropping ${outsideTree.length} approval(s) for entities that are not leaves of the submitted tree`,
+      { ownerId, entityIds: outsideTree.map(({ entityId }) => entityId) },
+    );
+  }
+  const incomingFingerprints = snapshotFingerprintsToRecord(snapshot.values);
+
+  return {
+    key: {
+      ownerId,
+      templateName,
+      fromDate: snapshot.fromDate,
+      toDate: snapshot.toDate,
+      scopeOwnerId: snapshot.scopeOwnerId,
+    },
+    buildSnapshot: previous => {
+      const stored = previous && {
+        approvals: parseLeafApprovals(previous.leaf_approvals),
+        fingerprints: Object.fromEntries(recordToSnapshotFingerprints(previous.leaf_fingerprints)),
+      };
+      const approvals = stampApprovals({
+        // A save with no approvals list must not wipe the review trail, so it re-submits the
+        // stored statuses instead. An explicit list, even an empty one, is taken as sent.
+        incoming: submitted ?? carryForwardApprovals(stored, incomingFingerprints),
+        incomingFingerprints,
+        leafIds,
+        previous: stored,
+        userId,
+        now: new Date().toISOString(),
+      });
+      return toSnapshotRow(
+        ownerId,
+        templateName,
+        template,
+        snapshot,
+        JSON.stringify(approvals),
+        userId,
+      );
+    },
   };
 }
 
@@ -85,6 +163,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
 
         validateTemplate(template);
         const validatedSnapshot = snapshot ? validateSnapshotInput(snapshot) : null;
+        const userId = validatedSnapshot ? await getActingUserId(injector) : null;
 
         const result = await injector.get(DynamicReportProvider).updateTemplateWithSnapshot({
           template: {
@@ -95,7 +174,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             toDate: validatedSnapshot?.toDate ?? null,
           },
           snapshot: validatedSnapshot
-            ? toSnapshotRow(ownerId, name, template, validatedSnapshot)
+            ? stampedSnapshotWrite(ownerId, name, template, validatedSnapshot, userId)
             : null,
         });
         if (!result) {
@@ -134,6 +213,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
 
         validateTemplate(template);
         const validatedSnapshot = snapshot ? validateSnapshotInput(snapshot) : null;
+        const userId = validatedSnapshot ? await getActingUserId(injector) : null;
 
         return injector.get(DynamicReportProvider).insertTemplateWithSnapshot({
           template: {
@@ -143,8 +223,10 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             fromDate: validatedSnapshot?.fromDate ?? null,
             toDate: validatedSnapshot?.toDate ?? null,
           },
+          // A new template has no reviewed history, so it stores no approvals whatever the input
+          // says: Save as new never carries statuses over.
           snapshot: validatedSnapshot
-            ? toSnapshotRow(ownerId, name, template, validatedSnapshot)
+            ? toSnapshotRow(ownerId, name, template, validatedSnapshot, null, userId)
             : null,
         });
       } catch (error) {
@@ -158,15 +240,16 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         validateTemplate(tree);
         const validatedSnapshot = validateSnapshotInput(snapshot);
 
-        const provider = injector.get(DynamicReportProvider);
-        const template = await provider.getTemplate({ name, ownerId });
-        if (!template) {
-          throw new Error(`Report template "${name}" not found`);
-        }
+        const userId = await getActingUserId(injector);
 
         // Deliberately no `assertNotLocked`: the template row is not written, so the sign-off that
         // locked it still describes exactly what it approved.
-        await provider.insertSnapshot(toSnapshotRow(ownerId, name, tree, validatedSnapshot));
+        const template = await injector
+          .get(DynamicReportProvider)
+          .captureSnapshot(stampedSnapshotWrite(ownerId, name, tree, validatedSnapshot, userId));
+        if (!template) {
+          throw new Error(`Report template "${name}" not found`);
+        }
 
         return template;
       } catch (error) {
@@ -223,6 +306,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     createdBy: snapshot => snapshot.created_by,
     fromDate: snapshot => dateToTimelessDateString(snapshot.from_date),
     toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
+    scopeOwnerId: snapshot => snapshot.scope_owner_id,
   },
   DynamicReportSnapshot: {
     id: snapshot => snapshot.id,
@@ -232,7 +316,36 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
     scopeOwnerId: snapshot => snapshot.scope_owner_id,
     tree: snapshot => parseSnapshotTree(snapshot.tree) as DynamicReportNode[],
-    values: snapshot => recordToSnapshotValues(snapshot.leaf_values),
+    values: snapshot => {
+      // Legacy rows have no fingerprints: every value then resolves to null.
+      const fingerprints = recordToSnapshotFingerprints(snapshot.leaf_fingerprints);
+      return recordToSnapshotValues(snapshot.leaf_values).map(value => ({
+        ...value,
+        fingerprint: fingerprints.get(value.entityId) ?? null,
+      }));
+    },
+    approvals: async (snapshot, _args, { injector }) => {
+      // Legacy rows (and unreadable payloads) parse to {}: no approvals.
+      const approvals = Object.entries(parseLeafApprovals(snapshot.leaf_approvals));
+      const displayNames = injector.get(BusinessUsersProvider).getUserDisplayNamesLoader;
+      return Promise.all(
+        approvals.map(async ([entityId, approval]) => ({
+          entityId,
+          status: approval.status,
+          setAt: new Date(approval.setAt),
+          // Stamps name users of the snapshot's owner business. A system stamp, a caller with no
+          // user row behind it, or a user since removed from the business all resolve to null.
+          setBy:
+            approval.system || !approval.setBy
+              ? null
+              : await displayNames.load({
+                  userId: approval.setBy,
+                  businessId: snapshot.owner_id,
+                }),
+          isSystem: approval.system,
+        })),
+      );
+    },
   },
   DynamicReportInfo: {
     id: report => `${report.owner_id}-${report.name}`,

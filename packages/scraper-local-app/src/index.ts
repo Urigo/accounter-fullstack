@@ -46,7 +46,7 @@ export async function scrape() {
 
   // If concurrentScraping is not defined, default to true
   // If it is defined, use its value (true or false)
-  const concurrent = config.concurrentScraping == null ? true : config.concurrentScraping === true;
+  const concurrent = config.concurrentScraping ?? true;
 
   // Poalim accounts must be initiated before tasks list, as they might require phone code to be entered
   const poalimContexts = await Promise.all(

@@ -1,3 +1,5 @@
+import type { CustomData, FlatNode } from './types.js';
+
 /**
  * Coordination between the report's two tree effects.
  *
@@ -28,4 +30,52 @@ export function isBuiltFrom(built: TreeBuildInputs | null, current: TreeBuildInp
     built.businessSums === current.businessSums &&
     built.showZeroed === current.showZeroed
   );
+}
+
+/** The slice of a business sum the value patch reads. */
+export type LeafSum = {
+  business: { id: string; name: string };
+  total: { raw: number };
+  ledgerFingerprint: string;
+};
+
+/**
+ * Effect 2's value patch: refreshes each report leaf's value, name and fingerprint from the new
+ * figures while preserving the tree's structure, so a user's drags and renames survive a filter
+ * change. A leaf whose entity has no sum is hidden rather than dropped, and one whose sum reappears
+ * is un-hidden — mirroring buildReportTree, so widening the date range brings a leaf back instead
+ * of leaving it invisible with a live value. A node with nothing to update is returned as is.
+ */
+export function patchLeafValues(
+  reportTree: FlatNode<CustomData>[],
+  businessSums: readonly LeafSum[],
+): FlatNode<CustomData>[] {
+  const sumById = new Map(businessSums.map(b => [b.business.id, b]));
+
+  return reportTree.map(node => {
+    if (node.droppable) return node;
+    const sum = sumById.get(node.id);
+    const value = sum ? sum.total.raw * -1 : 0;
+    const isHidden = sum === undefined;
+    const fingerprint = sum?.ledgerFingerprint;
+    // Keep the last known name while hidden — there is no sum to read one from.
+    const text = sum ? sum.business.name : node.text;
+    if (
+      node.data.value === value &&
+      (node.data.isHidden ?? false) === isHidden &&
+      node.data.fingerprint === fingerprint &&
+      node.text === text
+    ) {
+      return node;
+    }
+    const data: CustomData = { ...node.data, value };
+    if (isHidden) {
+      data.isHidden = true;
+      delete data.fingerprint;
+    } else {
+      delete data.isHidden;
+      data.fingerprint = fingerprint;
+    }
+    return { ...node, text, data };
+  });
 }

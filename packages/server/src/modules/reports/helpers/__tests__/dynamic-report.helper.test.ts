@@ -4,8 +4,11 @@ import {
   migrateLegacyTemplate,
   parseSnapshotTree,
   parseTemplate,
+  recordToSnapshotFingerprints,
   recordToSnapshotValues,
+  snapshotFingerprintsToRecord,
   snapshotValuesToRecord,
+  templateLeafIds,
   validateSnapshotInput,
   validateTemplate,
 } from '../dynamic-report.helper.js';
@@ -299,7 +302,7 @@ function snapshotInput(overrides: Record<string, unknown> = {}) {
     fromDate: '2026-01-01',
     toDate: '2026-03-31',
     scopeOwnerId: OWNER,
-    values: [{ entityId: ENTITY, value: -1234.5 }],
+    values: [{ entityId: ENTITY, value: -1234.5, fingerprint: 'abc123' }],
     ...overrides,
   };
 }
@@ -327,14 +330,37 @@ describe('validateSnapshotInput', () => {
 
   it('rejects a non-UUID entity id', () => {
     expect(() =>
-      validateSnapshotInput(snapshotInput({ values: [{ entityId: 'nope', value: 1 }] })),
+      validateSnapshotInput(snapshotInput({ values: [{ entityId: 'nope', value: 1, fingerprint: 'f' }] })),
     ).toThrow();
   });
 
   it('rejects a non-finite value, which would round-trip through JSON as null', () => {
     expect(() =>
-      validateSnapshotInput(snapshotInput({ values: [{ entityId: ENTITY, value: Number.NaN }] })),
+      validateSnapshotInput(snapshotInput({
+          values: [{ entityId: ENTITY, value: Number.NaN, fingerprint: 'f' }],
+        }),
+      ),
     ).toThrow();
+  });
+
+  it('rejects a value with no fingerprint', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ values: [{ entityId: ENTITY, value: 1 }] })),
+    ).toThrow(/fingerprint/);
+  });
+
+  it('rejects a value with an empty fingerprint', () => {
+    expect(() =>
+      validateSnapshotInput(
+        snapshotInput({ values: [{ entityId: ENTITY, value: 1, fingerprint: '' }] }),
+      ),
+    ).toThrow(/fingerprint/);
+  });
+
+  it('keeps the fingerprint on each validated value', () => {
+    expect(validateSnapshotInput(snapshotInput()).values).toEqual([
+      { entityId: ENTITY, value: -1234.5, fingerprint: 'abc123' },
+    ]);
   });
 
   it('rejects unknown fields', () => {
@@ -348,13 +374,57 @@ describe('validateSnapshotInput', () => {
     const seeded = '00000000-0000-0000-0000-0000000005a1';
     expect(() =>
       validateSnapshotInput(
-        snapshotInput({ scopeOwnerId: seeded, values: [{ entityId: seeded, value: 1 }] }),
+        snapshotInput({
+          scopeOwnerId: seeded,
+          values: [{ entityId: seeded, value: 1, fingerprint: 'f' }],
+        }),
       ),
     ).not.toThrow();
   });
 
   it('still rejects an id of the wrong shape', () => {
     expect(() => validateSnapshotInput(snapshotInput({ scopeOwnerId: '123-abc' }))).toThrow();
+  });
+
+  it('accepts a snapshot with no approvals — the field is optional', () => {
+    expect(validateSnapshotInput(snapshotInput()).approvals).toBeUndefined();
+  });
+
+  it('accepts and keeps approvals', () => {
+    const approvals = [
+      { entityId: ENTITY, status: 'APPROVED' },
+      { entityId: OWNER, status: 'UNAPPROVED' },
+    ];
+    expect(validateSnapshotInput(snapshotInput({ approvals })).approvals).toEqual(approvals);
+  });
+
+  it('accepts an explicit null approvals list, as GraphQL sends for an omitted nullable', () => {
+    expect(() => validateSnapshotInput(snapshotInput({ approvals: null }))).not.toThrow();
+  });
+
+  it('rejects an approval with an unknown status', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ approvals: [{ entityId: ENTITY, status: 'MAYBE' }] })),
+    ).toThrow();
+  });
+
+  it('rejects an approval with a non-UUID entity id', () => {
+    expect(() =>
+      validateSnapshotInput(snapshotInput({ approvals: [{ entityId: 'nope', status: 'PENDING' }] })),
+    ).toThrow();
+  });
+
+  it('rejects duplicate approval entity ids', () => {
+    expect(() =>
+      validateSnapshotInput(
+        snapshotInput({
+          approvals: [
+            { entityId: ENTITY, status: 'APPROVED' },
+            { entityId: ENTITY, status: 'PENDING' },
+          ],
+        }),
+      ),
+    ).toThrow(/[Dd]uplicate/);
   });
 
   it.each(['2026-1-1', '20260101', '01-01-2026', 'yesterday', ''])(
@@ -379,18 +449,18 @@ describe('validateSnapshotInput', () => {
 describe('snapshot value encoding', () => {
   it('round-trips values through the stored record shape', () => {
     const values = [
-      { entityId: ENTITY, value: -1234.5 },
-      { entityId: OWNER, value: 0 },
+      { entityId: ENTITY, value: -1234.5, fingerprint: 'fp-entity' },
+      { entityId: OWNER, value: 0, fingerprint: 'fp-owner' },
     ];
     expect(recordToSnapshotValues(snapshotValuesToRecord(values))).toEqual(
-      expect.arrayContaining(values),
+      expect.arrayContaining(values.map(({ entityId, value }) => ({ entityId, value }))),
     );
   });
 
   it('last write wins on a duplicated entity id', () => {
     const record = snapshotValuesToRecord([
-      { entityId: ENTITY, value: 1 },
-      { entityId: ENTITY, value: 2 },
+      { entityId: ENTITY, value: 1, fingerprint: 'fp-1' },
+      { entityId: ENTITY, value: 2, fingerprint: 'fp-2' },
     ]);
     expect(record).toEqual({ [ENTITY]: 2 });
   });
@@ -400,6 +470,63 @@ describe('snapshot value encoding', () => {
     expect(recordToSnapshotValues('not an object')).toEqual([]);
     expect(recordToSnapshotValues([1, 2])).toEqual([]);
     expect(recordToSnapshotValues({ a: 'x', b: 3 })).toEqual([{ entityId: 'b', value: 3 }]);
+  });
+});
+
+describe('snapshot fingerprint encoding', () => {
+  it('collapses values into an { entityId: fingerprint } record', () => {
+    expect(
+      snapshotFingerprintsToRecord([
+        { entityId: ENTITY, value: -1234.5, fingerprint: 'fp-entity' },
+        { entityId: OWNER, value: 0, fingerprint: 'fp-owner' },
+      ]),
+    ).toEqual({ [ENTITY]: 'fp-entity', [OWNER]: 'fp-owner' });
+  });
+
+  it('round-trips fingerprints through the stored record shape', () => {
+    const fingerprints = recordToSnapshotFingerprints(
+      snapshotFingerprintsToRecord([{ entityId: ENTITY, value: 1, fingerprint: 'fp-entity' }]),
+    );
+    expect(fingerprints).toBeInstanceOf(Map);
+    expect([...fingerprints]).toEqual([[ENTITY, 'fp-entity']]);
+  });
+
+  it('returns an empty map for legacy rows and malformed input rather than throwing', () => {
+    expect(recordToSnapshotFingerprints(null).size).toBe(0);
+    expect(recordToSnapshotFingerprints(undefined).size).toBe(0);
+    expect(recordToSnapshotFingerprints('not an object').size).toBe(0);
+    expect(recordToSnapshotFingerprints(['a', 'b']).size).toBe(0);
+  });
+
+  it('skips entries whose fingerprint is not a non-empty string', () => {
+    const fingerprints = recordToSnapshotFingerprints({ a: 3, b: '', c: null, d: 'fp-d' });
+    expect([...fingerprints]).toEqual([['d', 'fp-d']]);
+  });
+});
+
+describe('templateLeafIds', () => {
+  it('collects the financial-entity leaves of a tree and ignores branches', () => {
+    const tree = JSON.stringify([
+      { id: 1, parent: 0, text: 'Assets', droppable: true, data: { nodeType: 'synthetic-branch', isOpen: true } },
+      { id: 2, parent: 1, text: 'Cash', droppable: true, data: { nodeType: 'sort-code-branch', isOpen: true, sortCode: 100 } },
+      { id: ENTITY, parent: 2, text: 'Bank', droppable: false, data: { nodeType: 'financial-entity', isOpen: false } },
+      { id: OWNER, parent: 1, text: 'Other', droppable: false, data: { nodeType: 'financial-entity', isOpen: false } },
+    ]);
+    expect(templateLeafIds(tree)).toEqual(new Set([ENTITY, OWNER]));
+  });
+
+  it('follows droppable, as the client does, when nodeType disagrees with it', () => {
+    const tree = JSON.stringify([
+      // The client renders a droppable node as a branch whatever its nodeType says...
+      { id: ENTITY, parent: 0, text: 'Branch', droppable: true, data: { nodeType: 'financial-entity', isOpen: true } },
+      // ...and a non-droppable one as an entity leaf.
+      { id: OWNER, parent: ENTITY, text: 'Leaf', droppable: false, data: { nodeType: 'synthetic-branch', isOpen: false } },
+    ]);
+    expect(templateLeafIds(tree)).toEqual(new Set([OWNER]));
+  });
+
+  it('returns an empty set for an empty tree', () => {
+    expect(templateLeafIds('[]')).toEqual(new Set());
   });
 });
 

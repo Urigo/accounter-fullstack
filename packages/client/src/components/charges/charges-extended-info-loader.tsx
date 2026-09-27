@@ -78,7 +78,7 @@ export function BatchChargesExtendedInfoProvider({
   const value = useMemo<BatchChargesExtendedInfoContextValue>(
     () => ({
       active,
-      fetching: active ? fetching : false,
+      fetching: active && fetching,
       getCharge: (chargeId: string) => chargesById.get(chargeId),
       refetch,
     }),

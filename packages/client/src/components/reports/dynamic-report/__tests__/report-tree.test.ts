@@ -39,6 +39,7 @@ function bizSum(id: string, name: string, totalRaw: number): BusinessSum {
     credit: { __typename: 'FinancialAmount', formatted: '', raw: 0 },
     debit: { __typename: 'FinancialAmount', formatted: '', raw: 0 },
     total: { __typename: 'FinancialAmount', formatted: '', raw: totalRaw },
+    ledgerFingerprint: `fp-${id}`,
   } as BusinessSum;
 }
 
@@ -107,6 +108,27 @@ describe('buildReportTree', () => {
     it('placedEntityIds contains only the surviving entity', () => {
       expect(placedEntityIds.has('e-exists')).toBe(true);
       expect(placedEntityIds.has('e-missing')).toBe(false);
+    });
+  });
+
+  describe('ledger fingerprint', () => {
+    const template: TemplateNode[] = [
+      tmplBranch('br-1', 'report'),
+      tmplLeaf('e-exists', 'br-1'),
+      tmplLeaf('e-missing', 'br-1'),
+    ];
+    const { reportTree } = buildReportTree(template, [bizSum('e-exists', 'Surviving', 200)]);
+
+    it('a visible leaf carries its business sum ledgerFingerprint', () => {
+      expect(reportTree.find(n => n.id === 'e-exists')!.data.fingerprint).toBe('fp-e-exists');
+    });
+
+    it('a hidden leaf has no fingerprint — it has no records in the period', () => {
+      expect(reportTree.find(n => n.id === 'e-missing')!.data).not.toHaveProperty('fingerprint');
+    });
+
+    it('a branch has no fingerprint', () => {
+      expect(reportTree.find(n => n.id === 'br-1')!.data).not.toHaveProperty('fingerprint');
     });
   });
 
