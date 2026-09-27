@@ -9,6 +9,7 @@ import {
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
+import type { AccountantStatus } from '../../../gql/graphql.js';
 import type { RowApproval } from './approval-status.js';
 import type { RowDiff } from './diff-markers.js';
 import { TreeNodeRow } from './tree-node.js';
@@ -36,6 +37,15 @@ interface TreePanelProps {
   leafStatuses?: Map<string, EffectiveApproval>;
   /** Approval counts per node, for branch statuses. Report tree only. */
   approvalStats?: ApprovalStats;
+  /** Stages a leaf's status. Without it, leaf statuses are read-only. Report tree only. */
+  onLeafApprovalChange?: (entityId: string, status: AccountantStatus) => void;
+  /**
+   * Stages a status for every counted leaf under a branch. Without it, branch statuses are
+   * read-only. Report tree only.
+   */
+  onBranchApprovalChange?: (branchId: string, status: AccountantStatus) => void;
+  /** Why statuses can't be changed right now; all statuses are read-only while it is set. */
+  approvalsDisabledReason?: string | null;
 }
 
 type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
@@ -92,6 +102,9 @@ export function TreePanel({
   newEntityIds,
   leafStatuses,
   approvalStats,
+  onLeafApprovalChange,
+  onBranchApprovalChange,
+  approvalsDisabledReason = null,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -147,12 +160,36 @@ export function TreePanel({
       if (treeId !== 'report' || ghostIds.has(node.id)) return undefined;
       if (node.droppable) {
         const counts = approvalStats?.get(node.id);
-        return counts ? { kind: 'branch', counts } : undefined;
+        if (!counts) return undefined;
+        return {
+          kind: 'branch',
+          counts,
+          onChange: onBranchApprovalChange
+            ? (status: AccountantStatus) => onBranchApprovalChange(node.id, status)
+            : undefined,
+          disabledReason: approvalsDisabledReason,
+        };
       }
       const approval = leafStatuses?.get(node.id);
-      return approval ? { kind: 'leaf', approval } : undefined;
+      if (!approval) return undefined;
+      return {
+        kind: 'leaf',
+        approval,
+        onChange: onLeafApprovalChange
+          ? (status: AccountantStatus) => onLeafApprovalChange(node.id, status)
+          : undefined,
+        disabledReason: approvalsDisabledReason,
+      };
     };
-  }, [treeId, ghostIds, approvalStats, leafStatuses]);
+  }, [
+    treeId,
+    ghostIds,
+    approvalStats,
+    leafStatuses,
+    onLeafApprovalChange,
+    onBranchApprovalChange,
+    approvalsDisabledReason,
+  ]);
 
   const hasRootNodes = renderedNodes.some(n => n.parent === treeId && !n.data.isHidden);
 

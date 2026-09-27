@@ -1,5 +1,10 @@
-import { AccountantStatus } from '../../../../gql/graphql.js';
-import { isFinancialEntityNode, type CustomData, type FlatNode } from './types.js';
+import { AccountantStatus, type DynamicReportLeafApprovalInput } from '../../../../gql/graphql.js';
+import {
+  getDescendantIds,
+  isFinancialEntityNode,
+  type CustomData,
+  type FlatNode,
+} from './types.js';
 
 /** A leaf's stored status, as a snapshot read returns it. */
 export type DynamicReportLeafApproval = {
@@ -22,7 +27,12 @@ export type EffectiveApproval = {
    * PENDING. Nothing has been written yet: the regression is only persisted by the next save.
    */
   isDerived?: boolean;
+  /** The user changed this status and hasn't saved yet. A staged status carries no stamp. */
+  isStaged?: boolean;
 };
+
+/** Statuses the user has chosen but not saved, keyed by entity id. */
+export type ApprovalOverrides = ReadonlyMap<string, AccountantStatus>;
 
 export type ApprovalCounts = { approved: number; pending: number; unapproved: number };
 
@@ -136,6 +146,179 @@ export function buildApprovalStats(
   return result;
 }
 
+/**
+ * Stages a leaf's status (spec R2). Returns a new map. Choosing the status the leaf would show
+ * anyway drops the override, so toggling a leaf back leaves nothing staged.
+ */
+export function applyOverride(
+  overrides: ApprovalOverrides,
+  entityId: string,
+  status: AccountantStatus,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+): Map<string, AccountantStatus> {
+  const next = new Map(overrides);
+  stageInPlace(next, entityId, status, derived);
+  return next;
+}
+
+function stageInPlace(
+  overrides: Map<string, AccountantStatus>,
+  entityId: string,
+  status: AccountantStatus,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+): void {
+  const derivedStatus = derived.get(entityId)?.status ?? AccountantStatus.Unapproved;
+  if (status === derivedStatus) {
+    overrides.delete(entityId);
+  } else {
+    overrides.set(entityId, status);
+  }
+}
+
+/** The counted leaves in a branch's subtree, at any depth: the leaves a bulk set reaches (spec R7). */
+export function countedLeafIds(nodes: FlatNode<CustomData>[], rootId: string): string[] {
+  const nodeById = new Map(nodes.map(node => [node.id, node]));
+  return getDescendantIds(nodes, rootId).filter(id => {
+    const node = nodeById.get(id);
+    return !!node && isCountedLeaf(node);
+  });
+}
+
+/**
+ * Stages one status for many leaves at once (spec R7), applying applyOverride's rule to each:
+ * leaves that would show that status anyway end up with nothing staged. Returns a new map, copied
+ * once.
+ */
+export function applyBulk(
+  overrides: ApprovalOverrides,
+  leafIds: readonly string[],
+  status: AccountantStatus,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+): Map<string, AccountantStatus> {
+  const next = new Map(overrides);
+  for (const entityId of leafIds) {
+    stageInPlace(next, entityId, status, derived);
+  }
+  return next;
+}
+
+/**
+ * What stays staged after a save that sent `saved`: only what the user changed or added while the
+ * save was in flight. Everything it sent is in the new snapshot now.
+ */
+export function dropSavedOverrides(
+  current: ApprovalOverrides,
+  saved: ApprovalOverrides,
+): ApprovalOverrides {
+  if (current === saved) return new Map();
+  const next = new Map(current);
+  for (const [entityId, status] of saved) {
+    if (next.get(entityId) === status) next.delete(entityId);
+  }
+  return next;
+}
+
+/** A staged override wins over the derived status (spec R3, step 1). */
+export function resolveStatus(
+  entityId: string,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+  overrides: ApprovalOverrides,
+): EffectiveApproval | undefined {
+  const override = overrides.get(entityId);
+  if (override !== undefined) {
+    return { status: override, isStaged: true };
+  }
+  return derived.get(entityId);
+}
+
+/**
+ * The status every counted leaf shows: its derived status with the staged overrides laid on top.
+ * Overrides for leaves that are no longer counted (removed or hidden) are ignored.
+ */
+export function buildEffectiveStatuses(
+  derived: Map<string, EffectiveApproval>,
+  overrides: ApprovalOverrides,
+): Map<string, EffectiveApproval> {
+  if (overrides.size === 0) return derived;
+  const result = new Map<string, EffectiveApproval>();
+  for (const entityId of derived.keys()) {
+    const effective = resolveStatus(entityId, derived, overrides);
+    if (effective) result.set(entityId, effective);
+  }
+  return result;
+}
+
+/**
+ * The approvals a Resave or Capture sends: every counted leaf with the status it shows, UNAPPROVED
+ * included. The server stamps each entry against the snapshot the save follows, so an unchanged
+ * status keeps its stamp and a derived regression is recorded as a system one.
+ */
+export function buildApprovalsInput(
+  tree: FlatNode<CustomData>[],
+  statuses: ReadonlyMap<string, EffectiveApproval>,
+): DynamicReportLeafApprovalInput[] {
+  return tree.filter(isCountedLeaf).map(node => ({
+    entityId: node.id,
+    status: statuses.get(node.id)?.status ?? AccountantStatus.Unapproved,
+  }));
+}
+
+/** The parts of a snapshot read that the statuses derive from. */
+export type ApprovalSnapshotLike = {
+  fromDate: string;
+  toDate: string;
+  scopeOwnerId: string;
+  values: readonly { entityId: string; fingerprint?: string | null }[];
+  approvals: readonly DynamicReportLeafApproval[];
+};
+
+/**
+ * Effective statuses derived from a given snapshot rather than from the baseline on screen. A save
+ * must send the statuses of the snapshot it follows (the latest comparable one), even while an
+ * older baseline is pinned for viewing, or it would write that older save's statuses back as fresh
+ * user choices. A snapshot for another period or owner carries no statuses that apply.
+ */
+export function deriveSaveStatuses(
+  tree: FlatNode<CustomData>[],
+  snapshot: ApprovalSnapshotLike | null,
+  scope: { fromDate: string; toDate: string; scopeOwnerId: string },
+  overrides: ApprovalOverrides,
+): Map<string, EffectiveApproval> {
+  const comparable =
+    !!snapshot &&
+    snapshot.fromDate === scope.fromDate &&
+    snapshot.toDate === scope.toDate &&
+    snapshot.scopeOwnerId === scope.scopeOwnerId;
+  const fingerprints = new Map<string, string>();
+  if (comparable) {
+    for (const value of snapshot.values) {
+      if (value.fingerprint != null) fingerprints.set(value.entityId, value.fingerprint);
+    }
+  }
+  const derived = deriveLeafStatuses(tree, comparable ? snapshot.approvals : null, fingerprints);
+  return buildEffectiveStatuses(derived, overrides);
+}
+
+/**
+ * Why statuses can't be changed right now, or null when they can (spec R12). Statuses are saved
+ * with a template's snapshot, so there must be one; an older baseline is a read-only history view;
+ * and while the figures or the baseline load, the derived statuses aren't final yet.
+ */
+export function approvalsDisabledReason({
+  hasTemplate,
+  isLoading,
+  isLatestBaseline,
+}: {
+  hasTemplate: boolean;
+  isLoading: boolean;
+  isLatestBaseline: boolean;
+}): string | null {
+  if (!hasTemplate) return 'Load a saved template';
+  if (isLoading) return 'Loading…';
+  if (!isLatestBaseline) return 'Viewing an older baseline — switch to Last save to review';
+  return null;
+}
+
 /** Worst status wins (spec R5); null for a branch with no counted leaves. */
 export function branchStatus(counts: ApprovalCounts | undefined): AccountantStatus | null {
   if (!counts) return null;
@@ -159,8 +342,12 @@ const STATUS_VERB: Record<AccountantStatus, string> = {
   [AccountantStatus.Unapproved]: 'Marked unapproved',
 };
 
-/** Who set a leaf's status and when (spec R4); null when there is no stored stamp. */
+/**
+ * Who set a leaf's status and when (spec R4), or "Unsaved change" for a staged one; null when there
+ * is no stored stamp.
+ */
 export function leafApprovalTooltip(approval: EffectiveApproval): string | null {
+  if (approval.isStaged) return 'Unsaved change';
   if (approval.setAt == null) return null;
   const date = formatApprovalDate(approval.setAt);
   if (approval.isSystem) {
