@@ -15,8 +15,8 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
 - **Core**: `server` (GraphQL API), `client` (React SPA), `migrations` (Postgres DDL/DML)
 - **Scrapers**: `modern-poalim-scraper`, `etana-scraper`, `etherscan-scraper`, `kraken-scraper`,
   `israeli-vat-scraper`
-- **Integrations**: `green-invoice-graphql`, `hashavshevet-mesh`, `payper-mesh`, `deel` (via server
-  app-providers)
+- **Integrations**: `green-invoice-graphql` (GraphQL Mesh v1 client for the Green Invoice REST API),
+  `deel` (via server app-providers)
 - **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
   pipeline)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
