@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { RunRecord as SerializedRunRecord, SourceRunRecord } from '../shared/types.js';
 import type { ServerMessage } from '../shared/ws-protocol.js';
 import type { ScraperUploadResult } from './graphql/client.js';
+import { UploadError } from './graphql/upload-error.js';
 
 export const ERR_RUN_IN_PROGRESS = 'Run already in progress';
 
@@ -108,8 +109,19 @@ export async function startRun(
         }
         errorCount++;
         const message = e instanceof Error ? e.message : String(e);
-        const stack = e instanceof Error ? e.stack : undefined;
-        emit({ type: 'task-error', sourceId: task.sourceId, message, ...(stack && { stack }) });
+        // An upload error is the server's answer, not a crash: its stack only points
+        // into graphql-request, so show the server's code and hint instead.
+        if (e instanceof UploadError) {
+          emit({
+            type: 'task-error',
+            sourceId: task.sourceId,
+            message,
+            ...(e.details && { details: e.details }),
+          });
+        } else {
+          const stack = e instanceof Error ? e.stack : undefined;
+          emit({ type: 'task-error', sourceId: task.sourceId, message, ...(stack && { stack }) });
+        }
         return {
           task,
           result: {

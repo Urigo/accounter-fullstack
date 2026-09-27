@@ -345,7 +345,14 @@ export function TaskRow({
             fontFamily: 'monospace',
           }}
         >
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>{state.error}</div>
+          <div style={{ fontWeight: 600, marginBottom: 4, overflowWrap: 'anywhere' }}>
+            {state.error}
+          </div>
+          {state.details && (
+            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#7f1d1d' }}>
+              {state.details}
+            </pre>
+          )}
           {state.stack && (
             <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#7f1d1d' }}>{state.stack}</pre>
           )}
