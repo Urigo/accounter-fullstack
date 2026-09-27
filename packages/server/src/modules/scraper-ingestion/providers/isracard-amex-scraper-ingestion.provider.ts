@@ -511,9 +511,9 @@ function toInsertedTransactionSummary(
     date: r.full_purchase_date ?? r.full_purchase_date_outbound ?? null,
     description:
       r.supplier_name ??
+      r.supplier_name_outbound ??
       r.full_supplier_name_heb ??
       r.full_supplier_name_outbound ??
-      r.supplier_name_outbound ??
       null,
     amount: amount == null ? null : String(amount),
     account: String(r.card),
