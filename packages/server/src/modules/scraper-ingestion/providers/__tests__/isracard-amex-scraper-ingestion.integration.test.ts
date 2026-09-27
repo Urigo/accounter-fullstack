@@ -131,7 +131,7 @@ describe('uploadIsracardTransactions', () => {
       {
         id: expect.any(String),
         date: '18/01/2024',
-        description: 'AWS',
+        description: 'AWS EMEA',
         amount: '42.50',
         account: '1234',
       },
