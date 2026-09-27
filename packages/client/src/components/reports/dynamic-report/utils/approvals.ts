@@ -1,5 +1,10 @@
 import { AccountantStatus, type DynamicReportLeafApprovalInput } from '../../../../gql/graphql.js';
-import { isFinancialEntityNode, type CustomData, type FlatNode } from './types.js';
+import {
+  getDescendantIds,
+  isFinancialEntityNode,
+  type CustomData,
+  type FlatNode,
+} from './types.js';
 
 /** A leaf's stored status, as a snapshot read returns it. */
 export type DynamicReportLeafApproval = {
@@ -152,11 +157,47 @@ export function applyOverride(
   derived: ReadonlyMap<string, EffectiveApproval>,
 ): Map<string, AccountantStatus> {
   const next = new Map(overrides);
+  stageInPlace(next, entityId, status, derived);
+  return next;
+}
+
+function stageInPlace(
+  overrides: Map<string, AccountantStatus>,
+  entityId: string,
+  status: AccountantStatus,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+): void {
   const derivedStatus = derived.get(entityId)?.status ?? AccountantStatus.Unapproved;
   if (status === derivedStatus) {
-    next.delete(entityId);
+    overrides.delete(entityId);
   } else {
-    next.set(entityId, status);
+    overrides.set(entityId, status);
+  }
+}
+
+/** The counted leaves in a branch's subtree, at any depth: the leaves a bulk set reaches (spec R7). */
+export function countedLeafIds(nodes: FlatNode<CustomData>[], rootId: string): string[] {
+  const nodeById = new Map(nodes.map(node => [node.id, node]));
+  return getDescendantIds(nodes, rootId).filter(id => {
+    const node = nodeById.get(id);
+    return !!node && isCountedLeaf(node);
+  });
+}
+
+/**
+ * Stages one status for many leaves at once (spec R7), applying applyOverride's rule to each:
+ * leaves that would show that status anyway end up with nothing staged. Returns a new map, copied
+ * once.
+ */
+export function applyBulk(
+  overrides: ApprovalOverrides,
+  leafIds: readonly string[],
+  status: AccountantStatus,
+  derived: ReadonlyMap<string, EffectiveApproval>,
+): Map<string, AccountantStatus> {
+  const next = new Map(overrides);
+  for (const entityId of leafIds) {
+    stageInPlace(next, entityId, status, derived);
   }
   return next;
 }
