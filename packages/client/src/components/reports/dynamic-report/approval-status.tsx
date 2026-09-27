@@ -21,6 +21,7 @@ export function LeafApprovalStatus({ approval }: { approval: EffectiveApproval }
       value={approval.status}
       onChange={noop}
       disabled
+      size="compact"
       tooltip={leafApprovalTooltip(approval) ?? undefined}
     />
   );
@@ -34,6 +35,7 @@ export function BranchApprovalStatus({ counts }: { counts: ApprovalCounts }): Re
       value={status}
       onChange={noop}
       disabled
+      size="compact"
       tooltip={branchApprovalTooltip(counts)}
     />
   );
