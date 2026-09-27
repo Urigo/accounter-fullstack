@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import type {
@@ -1283,414 +1284,383 @@ export class PoalimScraperIngestionProvider {
   async uploadPoalimIlsTransactions(
     transactions: readonly PoalimIlsTransactionInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (transactions.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const validated = validatePoalimIlsTransactions(transactions);
+    const validated = validatePoalimIlsTransactions(transactions);
 
-      const eventDates = validated
-        .map(t => (t.eventDate ? new Date(t.eventDate) : null))
-        .filter((d): d is Date => d !== null);
-      const accountNumbers = validated
-        .map(t => t.accountNumber ?? null)
-        .filter((n): n is number => n !== null);
-      const branchNumbers = validated
-        .map(t => t.branchNumber ?? null)
-        .filter((n): n is number => n !== null);
+    const eventDates = validated
+      .map(t => (t.eventDate ? new Date(t.eventDate) : null))
+      .filter((d): d is Date => d !== null);
+    const accountNumbers = validated
+      .map(t => t.accountNumber ?? null)
+      .filter((n): n is number => n !== null);
+    const branchNumbers = validated
+      .map(t => t.branchNumber ?? null)
+      .filter((n): n is number => n !== null);
 
-      const existing = await fetchPoalimIlsByKeys.run(
-        { eventDates, accountNumbers, branchNumbers },
-        this.db,
-      );
+    const existing = await fetchPoalimIlsByKeys.run(
+      { eventDates, accountNumbers, branchNumbers },
+      this.db,
+    );
 
-      type ConflictKey = `${string}_${string}_${string}_${string}`;
-      const existingByKey = new Map<ConflictKey, IFetchPoalimIlsByKeysResult>();
-      for (const row of existing) {
-        const key: ConflictKey = `${row.event_date ? dateToTimelessDateString(row.event_date) : ''}_${row.serial_number}_${row.account_number}_${row.branch_number}`;
-        existingByKey.set(key, row);
-      }
+    type ConflictKey = `${string}_${string}_${string}_${string}`;
+    const existingByKey = new Map<ConflictKey, IFetchPoalimIlsByKeysResult>();
+    for (const row of existing) {
+      const key: ConflictKey = `${row.event_date ? dateToTimelessDateString(row.event_date) : ''}_${row.serial_number}_${row.account_number}_${row.branch_number}`;
+      existingByKey.set(key, row);
+    }
 
-      const result: IUploadPoalimIlsTransactionsResult[] = await uploadPoalimIlsTransactions.run(
-        { transactions: validated },
-        this.db,
-      );
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    const result: IUploadPoalimIlsTransactionsResult[] = await uploadPoalimIlsTransactions.run(
+      { transactions: validated },
+      this.db,
+    );
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: dateToTimelessDateString(r.event_date),
-        description: r.activity_description,
-        amount: r.event_amount,
-        account: String(r.account_number),
-      }));
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: dateToTimelessDateString(r.event_date),
+      description: r.activity_description,
+      amount: r.event_amount,
+      account: String(r.account_number),
+    }));
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const t of validated) {
-        const key: ConflictKey = `${t.eventDate ? dateToTimelessDateString(new Date(t.eventDate)) : ''}_${t.serialNumber}_${t.accountNumber}_${t.branchNumber}`;
-        const existingRow = existingByKey.get(key);
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffPoalimIlsRow(existingRow, t);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of validated) {
+      const key: ConflictKey = `${t.eventDate ? dateToTimelessDateString(new Date(t.eventDate)) : ''}_${t.serialNumber}_${t.accountNumber}_${t.branchNumber}`;
+      const existingRow = existingByKey.get(key);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffPoalimIlsRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      return {
-        inserted: insertedIds.length,
-        skipped: transactions.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Poalim ILS transactions:', error);
-      throw error;
     }
+
+    return {
+      inserted: insertedIds.length,
+      skipped: transactions.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 
   async uploadPoalimForeignTransactions(
     transactions: readonly PoalimForeignTransactionInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (transactions.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const validated = validatePoalimForeignTransactions(transactions);
+    const validated = validatePoalimForeignTransactions(transactions);
 
-      const executingDates = validated
-        .map(t => (t.executingDate ? new Date(t.executingDate) : null))
-        .filter((d): d is Date => d !== null);
-      const accountNumbers = validated
-        .map(t => t.accountNumber ?? null)
-        .filter((n): n is number => n !== null);
-      const branchNumbers = validated
-        .map(t => t.branchNumber ?? null)
-        .filter((n): n is number => n !== null);
+    const executingDates = validated
+      .map(t => (t.executingDate ? new Date(t.executingDate) : null))
+      .filter((d): d is Date => d !== null);
+    const accountNumbers = validated
+      .map(t => t.accountNumber ?? null)
+      .filter((n): n is number => n !== null);
+    const branchNumbers = validated
+      .map(t => t.branchNumber ?? null)
+      .filter((n): n is number => n !== null);
 
-      const existing = await fetchPoalimForeignByKeys.run(
-        { executingDates, accountNumbers, branchNumbers },
-        this.db,
-      );
+    const existing = await fetchPoalimForeignByKeys.run(
+      { executingDates, accountNumbers, branchNumbers },
+      this.db,
+    );
 
-      type ForeignKey = `${string}_${string}_${string}_${string}`;
-      const existingByKey = new Map<ForeignKey, IFetchPoalimForeignByKeysResult>();
-      for (const row of existing) {
-        const key: ForeignKey = `${row.executing_date ? dateToTimelessDateString(row.executing_date) : ''}_${row.account_number}_${row.branch_number}_${row.event_number}`;
-        existingByKey.set(key, row);
-      }
+    type ForeignKey = `${string}_${string}_${string}_${string}`;
+    const existingByKey = new Map<ForeignKey, IFetchPoalimForeignByKeysResult>();
+    for (const row of existing) {
+      const key: ForeignKey = `${row.executing_date ? dateToTimelessDateString(row.executing_date) : ''}_${row.account_number}_${row.branch_number}_${row.event_number}`;
+      existingByKey.set(key, row);
+    }
 
-      const result: IUploadPoalimForeignTransactionsResult[] =
-        await uploadPoalimForeignTransactions.run({ transactions: validated }, this.db);
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    const result: IUploadPoalimForeignTransactionsResult[] =
+      await uploadPoalimForeignTransactions.run({ transactions: validated }, this.db);
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: r.executing_date ? dateToTimelessDateString(r.executing_date) : null,
-        description: r.activity_description ?? null,
-        amount: r.event_amount == null ? null : String(r.event_amount),
-        account: r.account_number == null ? null : String(r.account_number),
-      }));
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.executing_date ? dateToTimelessDateString(r.executing_date) : null,
+      description: r.activity_description ?? null,
+      amount: r.event_amount == null ? null : String(r.event_amount),
+      account: r.account_number == null ? null : String(r.account_number),
+    }));
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const t of validated) {
-        const key: ForeignKey = `${t.executingDate ? dateToTimelessDateString(new Date(t.executingDate)) : ''}_${t.accountNumber}_${t.branchNumber}_${t.eventNumber}`;
-        const existingRow = existingByKey.get(key);
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffPoalimForeignRow(existingRow, t);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of validated) {
+      const key: ForeignKey = `${t.executingDate ? dateToTimelessDateString(new Date(t.executingDate)) : ''}_${t.accountNumber}_${t.branchNumber}_${t.eventNumber}`;
+      const existingRow = existingByKey.get(key);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffPoalimForeignRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      return {
-        inserted: insertedIds.length,
-        skipped: transactions.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Poalim foreign transactions:', error);
-      throw error;
     }
+
+    return {
+      inserted: insertedIds.length,
+      skipped: transactions.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 
   async uploadPoalimSwiftTransactions(
     swifts: readonly PoalimSwiftTransactionInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (swifts.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (swifts.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const validated = validatePoalimSwiftTransactions(swifts);
+    const validated = validatePoalimSwiftTransactions(swifts);
 
-      const transferCatenatedIds = validated
-        .map(t => t.transferCatenatedId ?? null)
-        .filter((id): id is string => id !== null);
+    const transferCatenatedIds = validated
+      .map(t => t.transferCatenatedId ?? null)
+      .filter((id): id is string => id !== null);
 
-      const existing = await fetchPoalimSwiftByIds.run({ transferCatenatedIds }, this.db);
-      const existingById = new Map(existing.map(row => [row.transfer_catenated_id, row]));
+    const existing = await fetchPoalimSwiftByIds.run({ transferCatenatedIds }, this.db);
+    const existingById = new Map(existing.map(row => [row.transfer_catenated_id, row]));
 
-      const result: IUploadPoalimSwiftTransactionsResult[] =
-        await uploadPoalimSwiftTransactions.run({ transactions: validated }, this.db);
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    const result: IUploadPoalimSwiftTransactionsResult[] = await uploadPoalimSwiftTransactions.run(
+      { transactions: validated },
+      this.db,
+    );
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: r.start_date ?? null,
-        description: r.charge_party_name ?? null,
-        amount: r.amount == null ? null : String(r.amount),
-        account: r.account_number == null ? null : String(r.account_number),
-      }));
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.start_date ?? null,
+      description: r.charge_party_name ?? null,
+      amount: r.amount == null ? null : String(r.amount),
+      account: r.account_number == null ? null : String(r.account_number),
+    }));
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const t of validated) {
-        if (!t.transferCatenatedId) continue;
-        const existingRow = existingById.get(t.transferCatenatedId);
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffPoalimSwiftRow(existingRow, t);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of validated) {
+      if (!t.transferCatenatedId) continue;
+      const existingRow = existingById.get(t.transferCatenatedId);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffPoalimSwiftRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      return {
-        inserted: insertedIds.length,
-        skipped: swifts.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Poalim SWIFT transactions:', error);
-      throw error;
     }
+
+    return {
+      inserted: insertedIds.length,
+      skipped: swifts.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 
   async uploadPoalimSecurities(
     securities: readonly PoalimSecurityInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (securities.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (securities.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const businessId = await this.getBusinessId();
-      if (!businessId) {
-        // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
-        // tenant context the insert would fail deep inside Postgres with an opaque error.
-        throw new Error(
-          'Cannot upload Poalim securities: no business context found in the auth context',
-        );
-      }
-      const validated = validatePoalimSecurities(securities).map(s => ({
-        ...s,
-        ownerId: businessId,
-      }));
-
-      const bankNumbers = validated
-        .map(s => s.bankNumber ?? null)
-        .filter((n): n is number => n !== null);
-      const branchNumbers = validated
-        .map(s => s.branchNumber ?? null)
-        .filter((n): n is number => n !== null);
-      const accountNumbers = validated
-        .map(s => s.accountNumber ?? null)
-        .filter((n): n is number => n !== null);
-      const securityKeys = validated
-        .map(s => s.securityKey ?? null)
-        .filter((k): k is string => k !== null);
-
-      const existing = await fetchPoalimSecuritiesByKeys.run(
-        { bankNumbers, branchNumbers, accountNumbers, securityKeys },
-        this.db,
+    const businessId = await this.getBusinessId();
+    if (!businessId) {
+      // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
+      // tenant context the insert would fail deep inside Postgres with an opaque error.
+      throw new GraphQLError(
+        'Cannot upload Poalim securities: no business context found in the auth context',
+        { extensions: { code: 'FORBIDDEN' } },
       );
+    }
+    const validated = validatePoalimSecurities(securities).map(s => ({
+      ...s,
+      ownerId: businessId,
+    }));
 
-      type SecurityKey = `${string}_${string}_${string}_${string}`;
-      const securityKeyOf = (
-        bank: number | null | void,
-        branch: number | null | void,
-        account: number | null | void,
-        key: string | null | void,
-      ): SecurityKey => `${bank}_${branch}_${account}_${key}`;
+    const bankNumbers = validated
+      .map(s => s.bankNumber ?? null)
+      .filter((n): n is number => n !== null);
+    const branchNumbers = validated
+      .map(s => s.branchNumber ?? null)
+      .filter((n): n is number => n !== null);
+    const accountNumbers = validated
+      .map(s => s.accountNumber ?? null)
+      .filter((n): n is number => n !== null);
+    const securityKeys = validated
+      .map(s => s.securityKey ?? null)
+      .filter((k): k is string => k !== null);
 
-      const existingByKey = new Map<SecurityKey, IFetchPoalimSecuritiesByKeysResult>();
-      for (const row of existing) {
-        existingByKey.set(
-          securityKeyOf(row.bank_number, row.branch_number, row.account_number, row.security_key),
-          row,
-        );
-      }
+    const existing = await fetchPoalimSecuritiesByKeys.run(
+      { bankNumbers, branchNumbers, accountNumbers, securityKeys },
+      this.db,
+    );
 
-      const result: IUploadPoalimSecuritiesResult[] = await uploadPoalimSecurities.run(
-        { securities: validated },
-        this.db,
+    type SecurityKey = `${string}_${string}_${string}_${string}`;
+    const securityKeyOf = (
+      bank: number | null | void,
+      branch: number | null | void,
+      account: number | null | void,
+      key: string | null | void,
+    ): SecurityKey => `${bank}_${branch}_${account}_${key}`;
+
+    const existingByKey = new Map<SecurityKey, IFetchPoalimSecuritiesByKeysResult>();
+    for (const row of existing) {
+      existingByKey.set(
+        securityKeyOf(row.bank_number, row.branch_number, row.account_number, row.security_key),
+        row,
       );
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    }
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: r.as_of_date ? dateToTimelessDateString(r.as_of_date) : null,
-        description: r.eng_name ?? null,
-        amount: null,
-        account: `${r.branch_number}-${r.account_number}`,
-      }));
+    const result: IUploadPoalimSecuritiesResult[] = await uploadPoalimSecurities.run(
+      { securities: validated },
+      this.db,
+    );
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const s of validated) {
-        const existingRow = existingByKey.get(
-          securityKeyOf(s.bankNumber, s.branchNumber, s.accountNumber, s.securityKey),
-        );
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffPoalimSecurityRow(existingRow, s);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.as_of_date ? dateToTimelessDateString(r.as_of_date) : null,
+      description: r.eng_name ?? null,
+      amount: null,
+      account: `${r.branch_number}-${r.account_number}`,
+    }));
+
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const s of validated) {
+      const existingRow = existingByKey.get(
+        securityKeyOf(s.bankNumber, s.branchNumber, s.accountNumber, s.securityKey),
+      );
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffPoalimSecurityRow(existingRow, s);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      return {
-        inserted: insertedIds.length,
-        skipped: securities.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Poalim securities:', error);
-      throw error;
     }
+
+    return {
+      inserted: insertedIds.length,
+      skipped: securities.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 
   async uploadPoalimSecuritiesTransactions(
     transactions: readonly PoalimSecurityTransactionInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (transactions.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const businessId = await this.getBusinessId();
-      if (!businessId) {
-        // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
-        // tenant context the insert would fail deep inside Postgres with an opaque error.
-        throw new Error(
-          'Cannot upload Poalim securities transactions: no business context found in the auth context',
-        );
-      }
-      const validated = validatePoalimSecuritiesTransactions(transactions).map(t => ({
-        ...t,
-        ownerId: businessId,
-      }));
-
-      const isNumber = (value: number | null | void): value is number => typeof value === 'number';
-      const bankNumbers = validated.map(t => t.bankNumber).filter(isNumber);
-      const branchNumbers = validated.map(t => t.branchNumber).filter(isNumber);
-      const accountNumbers = validated.map(t => t.accountNumber).filter(isNumber);
-      const securities = validated
-        .map(t => t.security ?? null)
-        .filter((s): s is string => s !== null);
-      // Passed as calendar-date strings rather than `Date`s: a `Date` is serialised
-      // as a UTC instant, which lands on the previous day once Postgres casts it to
-      // the DATE column and would match nothing.
-      const tradeDates = validated
-        .map(t => (t.tradeDate ? toCalendarDate(String(t.tradeDate)) : null))
-        .filter((d): d is TimelessDateString | string => d !== null);
-
-      // Coarse fetch on the indexed prefix of the dedup key; the full key — which
-      // includes nullable corporate-action dates — is matched in memory below.
-      const existing = await fetchPoalimSecuritiesTransactionsByKeys.run(
-        { bankNumbers, branchNumbers, accountNumbers, securities, tradeDates },
-        this.db,
+    const businessId = await this.getBusinessId();
+    if (!businessId) {
+      // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
+      // tenant context the insert would fail deep inside Postgres with an opaque error.
+      throw new GraphQLError(
+        'Cannot upload Poalim securities transactions: no business context found in the auth context',
+        { extensions: { code: 'FORBIDDEN' } },
       );
+    }
+    const validated = validatePoalimSecuritiesTransactions(transactions).map(t => ({
+      ...t,
+      ownerId: businessId,
+    }));
 
-      const existingByKey = new Map<string, IFetchPoalimSecuritiesTransactionsByKeysResult>();
-      for (const row of existing) {
-        existingByKey.set(securityTransactionKeyOf(row), row);
-      }
+    const isNumber = (value: number | null | void): value is number => typeof value === 'number';
+    const bankNumbers = validated.map(t => t.bankNumber).filter(isNumber);
+    const branchNumbers = validated.map(t => t.branchNumber).filter(isNumber);
+    const accountNumbers = validated.map(t => t.accountNumber).filter(isNumber);
+    const securities = validated
+      .map(t => t.security ?? null)
+      .filter((s): s is string => s !== null);
+    // Passed as calendar-date strings rather than `Date`s: a `Date` is serialised
+    // as a UTC instant, which lands on the previous day once Postgres casts it to
+    // the DATE column and would match nothing.
+    const tradeDates = validated
+      .map(t => (t.tradeDate ? toCalendarDate(String(t.tradeDate)) : null))
+      .filter((d): d is TimelessDateString | string => d !== null);
 
-      const result: IUploadPoalimSecuritiesTransactionsResult[] =
-        await uploadPoalimSecuritiesTransactions.run({ transactions: validated }, this.db);
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    // Coarse fetch on the indexed prefix of the dedup key; the full key — which
+    // includes nullable corporate-action dates — is matched in memory below.
+    const existing = await fetchPoalimSecuritiesTransactionsByKeys.run(
+      { bankNumbers, branchNumbers, accountNumbers, securities, tradeDates },
+      this.db,
+    );
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: r.trade_date ? dateToTimelessDateString(r.trade_date) : null,
-        description: [r.trade_type, r.eng_name].filter(Boolean).join(' — ') || null,
-        amount: r.net_value_trade_currency == null ? null : String(r.net_value_trade_currency),
-        account: `${r.branch_number}-${r.account_number}`,
-      }));
+    const existingByKey = new Map<string, IFetchPoalimSecuritiesTransactionsByKeysResult>();
+    for (const row of existing) {
+      existingByKey.set(securityTransactionKeyOf(row), row);
+    }
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const t of validated) {
-        const existingRow = existingByKey.get(securityTransactionKeyOf(t));
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffPoalimSecurityTransactionRow(existingRow, t);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const result: IUploadPoalimSecuritiesTransactionsResult[] =
+      await uploadPoalimSecuritiesTransactions.run({ transactions: validated }, this.db);
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
+
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.trade_date ? dateToTimelessDateString(r.trade_date) : null,
+      description: [r.trade_type, r.eng_name].filter(Boolean).join(' — ') || null,
+      amount: r.net_value_trade_currency == null ? null : String(r.net_value_trade_currency),
+      account: `${r.branch_number}-${r.account_number}`,
+    }));
+
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of validated) {
+      const existingRow = existingByKey.get(securityTransactionKeyOf(t));
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffPoalimSecurityTransactionRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      await this.ensureSecurityBusinesses(validated);
-
-      return {
-        inserted: insertedIds.length,
-        skipped: transactions.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Poalim securities transactions:', error);
-      throw error;
     }
+
+    await this.ensureSecurityBusinesses(validated);
+
+    return {
+      inserted: insertedIds.length,
+      skipped: transactions.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 }

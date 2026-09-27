@@ -57,6 +57,7 @@ export type TaskState = {
   skipped?: number;
   error?: string;
   stack?: string;
+  details?: string;
   blockedAccounts?: string[];
   otpSourceId?: string;
   insertedTransactions?: InsertedTransactionSummary[];
@@ -157,7 +158,12 @@ export function useRunSocket(): UseRunSocketResult {
             });
             break;
           case 'task-error':
-            next.set(msg.sourceId, { status: 'error', error: msg.message, stack: msg.stack });
+            next.set(msg.sourceId, {
+              status: 'error',
+              error: msg.message,
+              stack: msg.stack,
+              details: msg.details,
+            });
             break;
           case 'task-blocked':
             next.set(msg.sourceId, {

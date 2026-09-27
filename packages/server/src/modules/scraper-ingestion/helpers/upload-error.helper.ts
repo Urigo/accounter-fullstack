@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { createGraphQLError } from '@graphql-tools/utils';
 import { isConnectionLevelError } from '../../email-ingestion/helpers/email-ingestion-tenant-context.helper.js';
 
 /**
@@ -119,6 +120,9 @@ function categorize(sqlState: string): PgErrorCategory {
  *
  * `originalError` is deliberately never set: yoga masks any `GraphQLError` whose
  * `originalError` is not itself a `GraphQLError`, which would undo all of this.
+ * Errors are built with `createGraphQLError` (the factory yoga itself uses) so they
+ * come from the same `graphql` copy yoga checks against, even where a bundler would
+ * resolve `graphql` to its ESM entry and Node to its CJS one (as vitest does).
  */
 export function toScraperUploadError(operation: string, error: unknown): GraphQLError {
   if (error instanceof GraphQLError) {
@@ -128,7 +132,7 @@ export function toScraperUploadError(operation: string, error: unknown): GraphQL
 
   if (isConnectionLevelError(error)) {
     console.error(`[scraper-ingestion] ${operation} failed: database connection error`, error);
-    return new GraphQLError(
+    return createGraphQLError(
       `${operation} failed: the server lost its database connection. Try again in a moment.`,
       { extensions: { code: 'SERVICE_UNAVAILABLE', operation } },
     );
@@ -139,11 +143,20 @@ export function toScraperUploadError(operation: string, error: unknown): GraphQL
     const { code, hint } = categorize(pgError.code);
     const dbFunction = extractDbFunction(pgError.where);
     const location = dbFunction ? ` (in ${dbFunction})` : '';
+    // One readable line instead of the full driver error dump; `where` is kept
+    // server-side because it names the exact statement inside the trigger.
+    const context = [
+      pgError.table && `table=${pgError.table}`,
+      pgError.constraint && `constraint=${pgError.constraint}`,
+      pgError.where && `where=${pgError.where.replaceAll(/\s+/g, ' ')}`,
+    ]
+      .filter(Boolean)
+      .join(' | ');
     console.error(
-      `[scraper-ingestion] ${operation} failed: [${pgError.code}] ${pgError.message}${location}`,
-      error,
+      `[scraper-ingestion] ${operation} failed: [${pgError.code}] ${pgError.message}${location}` +
+        (context ? `\n  ${context}` : ''),
     );
-    return new GraphQLError(`${operation} failed: ${pgError.message}${location}`, {
+    return createGraphQLError(`${operation} failed: ${pgError.message}${location}`, {
       extensions: {
         code,
         operation,
@@ -158,7 +171,7 @@ export function toScraperUploadError(operation: string, error: unknown): GraphQL
   }
 
   console.error(`[scraper-ingestion] ${operation} failed with an unexpected error:`, error);
-  return new GraphQLError(
+  return createGraphQLError(
     `${operation} failed due to an unexpected server error. See the server logs for details.`,
     { extensions: { code: 'INTERNAL_SERVER_ERROR', operation } },
   );

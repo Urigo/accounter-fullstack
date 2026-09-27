@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { _resetRunState, startRun, type ScrapeTask } from '../scrape-runner.js';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
+import { UploadError } from '../graphql/upload-error.js';
 
 type TaskResult = { inserted: number; skipped: number; insertedIds: string[]; insertedTransactions: []; changedTransactions: [] };
 
@@ -106,6 +107,23 @@ describe('task error handling', () => {
 
     expect(events.some(e => e.type === 'task-done' && 'sourceId' in e && e.sourceId === 'src-2')).toBe(true);
     expect(events.at(-1)).toMatchObject({ type: 'run-complete', errors: 1 });
+  });
+
+  it('sends an upload error with its details and without a stack', async () => {
+    const events: ServerMessage[] = [];
+    const failing = makeTask('src-1', async () => {
+      throw new UploadError('uploadPoalimIlsTransactions failed: denied', 'Code: DB_PERMISSION_DENIED');
+    });
+
+    await startRun([failing], false, msg => events.push(msg));
+
+    const taskError = events.find(e => e.type === 'task-error');
+    expect(taskError).toEqual({
+      type: 'task-error',
+      sourceId: 'src-1',
+      message: 'uploadPoalimIlsTransactions failed: denied',
+      details: 'Code: DB_PERMISSION_DENIED',
+    });
   });
 
   it('run-complete totals reflect only the successful task', async () => {

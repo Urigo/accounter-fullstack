@@ -1,3 +1,4 @@
+import { withScraperUploadErrors } from '../helpers/upload-error.helper.js';
 import { IsracardAmexScraperIngestionProvider } from '../providers/isracard-amex-scraper-ingestion.provider.js';
 import { OtsarHahayalScraperIngestionProvider } from '../providers/otsar-hahayal-scraper-ingestion.provider.js';
 import { PoalimScraperIngestionProvider } from '../providers/poalim-scraper-ingestion.provider.js';
@@ -7,51 +8,81 @@ import type { ScraperIngestionModule } from '../types.js';
 export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
   Mutation: {
     uploadPoalimIlsTransactions: (_, { transactions }, { injector }) =>
-      injector.get(PoalimScraperIngestionProvider).uploadPoalimIlsTransactions(transactions),
+      withScraperUploadErrors('uploadPoalimIlsTransactions', () =>
+        injector.get(PoalimScraperIngestionProvider).uploadPoalimIlsTransactions(transactions),
+      ),
 
     uploadPoalimForeignTransactions: (_, { transactions }, { injector }) =>
-      injector.get(PoalimScraperIngestionProvider).uploadPoalimForeignTransactions(transactions),
+      withScraperUploadErrors('uploadPoalimForeignTransactions', () =>
+        injector.get(PoalimScraperIngestionProvider).uploadPoalimForeignTransactions(transactions),
+      ),
 
     uploadPoalimSwiftTransactions: (_, { swifts }, { injector }) =>
-      injector.get(PoalimScraperIngestionProvider).uploadPoalimSwiftTransactions(swifts),
+      withScraperUploadErrors('uploadPoalimSwiftTransactions', () =>
+        injector.get(PoalimScraperIngestionProvider).uploadPoalimSwiftTransactions(swifts),
+      ),
 
     uploadPoalimSecurities: (_, { securities }, { injector }) =>
-      injector.get(PoalimScraperIngestionProvider).uploadPoalimSecurities(securities),
+      withScraperUploadErrors('uploadPoalimSecurities', () =>
+        injector.get(PoalimScraperIngestionProvider).uploadPoalimSecurities(securities),
+      ),
 
     uploadPoalimSecuritiesTransactions: (_, { transactions }, { injector }) =>
-      injector.get(PoalimScraperIngestionProvider).uploadPoalimSecuritiesTransactions(transactions),
+      withScraperUploadErrors('uploadPoalimSecuritiesTransactions', () =>
+        injector
+          .get(PoalimScraperIngestionProvider)
+          .uploadPoalimSecuritiesTransactions(transactions),
+      ),
 
     uploadIsracardTransactions: (_, { transactions }, { injector }) =>
-      injector.get(IsracardAmexScraperIngestionProvider).uploadIsracardTransactions(transactions),
+      withScraperUploadErrors('uploadIsracardTransactions', () =>
+        injector.get(IsracardAmexScraperIngestionProvider).uploadIsracardTransactions(transactions),
+      ),
 
     uploadAmexTransactions: (_, { transactions }, { injector }) =>
-      injector.get(IsracardAmexScraperIngestionProvider).uploadAmexTransactions(transactions),
+      withScraperUploadErrors('uploadAmexTransactions', () =>
+        injector.get(IsracardAmexScraperIngestionProvider).uploadAmexTransactions(transactions),
+      ),
 
     uploadCalTransactions: (_, { transactions }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadCalTransactions(transactions),
+      withScraperUploadErrors('uploadCalTransactions', () =>
+        injector.get(ScraperIngestionProvider).uploadCalTransactions(transactions),
+      ),
 
     uploadDiscountTransactions: (_, { transactions }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadDiscountTransactions(transactions),
+      withScraperUploadErrors('uploadDiscountTransactions', () =>
+        injector.get(ScraperIngestionProvider).uploadDiscountTransactions(transactions),
+      ),
 
     uploadMaxTransactions: (_, { transactions }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadMaxTransactions(transactions),
+      withScraperUploadErrors('uploadMaxTransactions', () =>
+        injector.get(ScraperIngestionProvider).uploadMaxTransactions(transactions),
+      ),
 
     uploadCurrencyRates: (_, { rates }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadCurrencyRates(rates),
+      withScraperUploadErrors('uploadCurrencyRates', () =>
+        injector.get(ScraperIngestionProvider).uploadCurrencyRates(rates),
+      ),
 
     uploadOtsarHahayalIlsTransactions: (_, { transactions }, { injector }) =>
-      injector
-        .get(OtsarHahayalScraperIngestionProvider)
-        .uploadOtsarHahayalIlsTransactions(transactions),
+      withScraperUploadErrors('uploadOtsarHahayalIlsTransactions', () =>
+        injector
+          .get(OtsarHahayalScraperIngestionProvider)
+          .uploadOtsarHahayalIlsTransactions(transactions),
+      ),
 
     uploadOtsarHahayalForeignTransactions: (_, { transactions }, { injector }) =>
-      injector
-        .get(OtsarHahayalScraperIngestionProvider)
-        .uploadOtsarHahayalForeignTransactions(transactions),
+      withScraperUploadErrors('uploadOtsarHahayalForeignTransactions', () =>
+        injector
+          .get(OtsarHahayalScraperIngestionProvider)
+          .uploadOtsarHahayalForeignTransactions(transactions),
+      ),
 
     uploadOtsarHahayalCreditCardTransactions: (_, { transactions }, { injector }) =>
-      injector
-        .get(OtsarHahayalScraperIngestionProvider)
-        .uploadOtsarHahayalCreditCardTransactions(transactions),
+      withScraperUploadErrors('uploadOtsarHahayalCreditCardTransactions', () =>
+        injector
+          .get(OtsarHahayalScraperIngestionProvider)
+          .uploadOtsarHahayalCreditCardTransactions(transactions),
+      ),
   },
 };

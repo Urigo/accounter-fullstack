@@ -48,6 +48,7 @@ import {
   UPLOAD_POALIM_SECURITIES_TRANSACTIONS,
   UPLOAD_POALIM_SWIFT,
 } from './mutations.js';
+import { toUploadError } from './upload-error.js';
 
 type GqlResponse<K extends string> = Record<K, ScraperUploadResult>;
 
@@ -73,7 +74,12 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
     vars: Record<string, unknown>,
     key: K,
   ): Promise<ScraperUploadResult> {
-    const data = await gql.request<GqlResponse<K>>(doc, vars);
+    let data: GqlResponse<K>;
+    try {
+      data = await gql.request<GqlResponse<K>>(doc, vars);
+    } catch (error) {
+      throw toUploadError(error, key, serverUrl);
+    }
     return extractResult(data, key);
   }
 
