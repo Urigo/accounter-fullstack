@@ -58,6 +58,7 @@ import { TreePanel } from './tree-panel.js';
 import {
   applyBulk,
   applyOverride,
+  branchStatus,
   buildApprovalsInput,
   buildApprovalStats,
   buildEffectiveStatuses,
@@ -66,11 +67,13 @@ import {
   deriveSaveStatuses,
   dropSavedOverrides,
   approvalsDisabledReason as getApprovalsDisabledReason,
+  needsReviewVisibility,
   summarizeApprovals,
 } from './utils/approvals.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
 import { pickLatestBaselineId } from './utils/baseline.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
+import { buildReportCsv } from './utils/csv.js';
 import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
@@ -251,6 +254,7 @@ export function DynamicReport() {
   const urlToDate = searchParams.get('to');
   const selectedOwner = searchParams.get('owner') ?? adminBusinessId;
   const showZeroed = searchParams.get('zeroed') === '1';
+  const reviewOnly = searchParams.get('review') === '1';
   const selectedTemplateName = searchParams.get('template');
   const selectedBaselineId = searchParams.get('baseline');
 
@@ -284,6 +288,10 @@ export function DynamicReport() {
   );
   const setShowZeroed = useCallback(
     (v: boolean) => updateSearchParams(p => p.set('zeroed', v ? '1' : '0')),
+    [updateSearchParams],
+  );
+  const setReviewOnly = useCallback(
+    (v: boolean) => updateSearchParams(p => writeParam(p, 'review', v ? '1' : null)),
     [updateSearchParams],
   );
   const setSelectedTemplateName = useCallback(
@@ -539,6 +547,18 @@ export function DynamicReport() {
   );
 
   const approvalSummary = useMemo(() => summarizeApprovals(effectiveStatuses), [effectiveStatuses]);
+
+  // The Needs review filter only narrows what the report panel renders. Editing, drag and drop,
+  // saving and the CSV all keep working on the full reportTree, and the saved isOpen is untouched.
+  // Statuses live on a template's snapshots, so the filter applies only with a template loaded.
+  const isReviewFilterOn = reviewOnly && !!currentTemplate;
+  const reviewVisibility = useMemo(
+    () =>
+      isReviewFilterOn
+        ? needsReviewVisibility(reportTree, entityId => effectiveStatuses.get(entityId)?.status)
+        : null,
+    [isReviewFilterOn, reportTree, effectiveStatuses],
+  );
 
   // Statuses are saved with the template's latest snapshot, so they can only change when there is
   // a template, its latest baseline is the one on screen, and the statuses derived from it are final.
@@ -1031,35 +1051,13 @@ export function DynamicReport() {
   );
 
   const handleDownloadCSV = useCallback(() => {
-    const nodeStats = buildNodeStats(reportTree);
-    const rows: string[] = ['Name,Value (ILS),Depth'];
-
-    const escapeCsv = (text: string) => `"${text.replaceAll('"', '""')}"`;
-
-    const childrenMap = new Map<string, typeof reportTree>();
-    for (const node of reportTree) {
-      const list = childrenMap.get(node.parent) || [];
-      list.push(node);
-      childrenMap.set(node.parent, list);
-    }
-    function traverse(parentId: string, depth: number) {
-      const children = childrenMap.get(parentId) ?? [];
-      for (const node of children) {
-        if (node.data.isHidden) continue;
-        if (node.droppable) {
-          const sum = nodeStats.get(node.id)?.sum ?? 0;
-          rows.push(`${escapeCsv(node.text)},${sum},${depth}`);
-          traverse(node.id, depth + 1);
-        } else {
-          const value = node.data.value ?? 0;
-          rows.push(`${escapeCsv(node.text)},${value},${depth}`);
-        }
-      }
-    }
-
-    traverse('report', 0);
-
-    const csv = rows.join('\n');
+    // The export walks the full reportTree, so the Needs review filter doesn't narrow it.
+    const csv = buildReportCsv(
+      reportTree,
+      buildNodeStats(reportTree),
+      nodeId => effectiveStatuses.get(nodeId)?.status,
+      branchId => branchStatus(approvalStats.get(branchId)),
+    );
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -1067,7 +1065,7 @@ export function DynamicReport() {
     link.download = `dynamic-report-${fromDate}-${toDate}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-  }, [reportTree, fromDate, toDate]);
+  }, [reportTree, effectiveStatuses, approvalStats, fromDate, toDate]);
 
   useEffect(() => {
     setFiltersContext(null);
@@ -1089,6 +1087,8 @@ export function DynamicReport() {
         ownerDisabled={!!soleAdminBusinessId}
         showZeroed={showZeroed}
         onShowZeroedChange={setShowZeroed}
+        reviewOnly={reviewOnly}
+        onReviewOnlyChange={setReviewOnly}
         editMode={editMode}
         onEditModeChange={setEditMode}
         isDirty={isDirty}
@@ -1165,6 +1165,7 @@ export function DynamicReport() {
             onLeafApprovalChange={handleLeafApprovalChange}
             onBranchApprovalChange={handleBranchApprovalChange}
             approvalsDisabledReason={approvalsDisabledReason}
+            reviewVisibility={reviewVisibility}
           />
         </div>
       </div>
