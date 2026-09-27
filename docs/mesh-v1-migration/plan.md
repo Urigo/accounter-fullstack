@@ -4,6 +4,45 @@ Prepared 2026-09-24 against `main` @ `b6474190`. Covers every `@graphql-mesh/*` 
 and draft PR [#529](https://github.com/Urigo/accounter-fullstack/pull/529) (branch
 `mesh-v1-migration`).
 
+## Implementation status
+
+Phases 1 and 2 and the Phase 3 cleanup are implemented in #529. Moving the SDK codegen to v6 is the
+remaining follow-up.
+
+Verified locally:
+
+- `server` type-checks and builds against the migrated package with no changes. `typecheck` reports
+  the same 2 pre-existing errors as `main` (in an email-ingestion test).
+- All 18 server-imported types and all 38 operation result/variables types are mutually assignable
+  with the v0 output.
+- The built ESM and CJS outputs behave the same as v0 offline.
+- The new unit tests pass.
+
+Where the implementation differs from the plan:
+
+- **Per-operation `queryStringOptions`:** `@omnigraph/json-schema` honors it at runtime but its
+  operation type doesn't declare it. The two uses in `mesh.config.ts` carry a documented
+  `@ts-expect-error`, which will start failing (and so prompt its removal) once upstream adds the
+  type.
+- **tsconfig split:** the package tsconfig is split like the server's. `tsconfig.build.json` (used
+  by bob) emits `src`, and `tsconfig.json` also covers `mesh.config.ts`, `codegen.ts` and
+  `scripts/`. Without that, type-aware ESLint rejects the root-level configs.
+- **CI step:** `server-tests.yml` gains a step that runs the package's `generate` before Vitest,
+  since the new unit tests import the generated SDK. Composing needs no network (checked with
+  networking disabled).
+- **Pending changesets:** retiring the two packages also removes their 52 pending dependency-bump
+  changesets, which would otherwise make `changeset version` fail.
+- **`glob`:** the root `glob` devDependency is removed along with `mesh-artifacts-rename.mjs`, its
+  only user.
+- **Root `typescript-operations`:** the root `codegen.ts` used the v6 plugin without declaring it;
+  it was only reachable through hoisting. Once the Green Invoice package depended on v5 directly,
+  Yarn hoisted v5 to the root and broke the `mcp-server` / `email-ingestion-gateway` builds. The
+  root now declares `@graphql-codegen/typescript-operations@6.1.7` (the version `main` already
+  resolved), and the package keeps its own v5.
+- **`@oneOf` hint:** it is still lost on `mutationInput_updateExpense_input_paymentType_Input`
+  (unused by `server`). TypeScript 6's assignability check doesn't flag it, but the generated type
+  differs.
+
 ## Summary
 
 - **Start #529 over from `main`.** The old branch was one pre-GA config file that no longer matched
