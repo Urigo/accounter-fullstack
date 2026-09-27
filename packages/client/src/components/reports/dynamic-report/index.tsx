@@ -8,7 +8,8 @@ import {
   useState,
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from 'urql';
+import { toast } from 'sonner';
+import { useClient, useQuery } from 'urql';
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { FiltersContext } from '@/providers/index.js';
@@ -19,6 +20,7 @@ import {
   DynamicReportTemplateDocument,
   type AccountantStatus,
   type AllDynamicReportsQuery,
+  type DynamicReportLeafApprovalInput,
   type DynamicReportTemplateQuery,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
@@ -38,6 +40,7 @@ import {
   type DeleteTemplateConfirmationRef,
 } from './dialogs/delete-template-confirmation.js';
 import { DirtyTemplateSwitchConfirmation } from './dialogs/dirty-template-switch-confirmation.js';
+import { DiscardApprovalsConfirmation } from './dialogs/discard-approvals-confirmation.js';
 import { NewBranchDialog, type NewBranchDialogRef } from './dialogs/new-branch-dialog.js';
 import { RenameBranchDialog, type RenameBranchDialogRef } from './dialogs/rename-branch-dialog.js';
 import {
@@ -53,10 +56,15 @@ import { LegacyBanner } from './legacy-banner.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import {
+  applyBulk,
   applyOverride,
+  buildApprovalsInput,
   buildApprovalStats,
   buildEffectiveStatuses,
+  countedLeafIds,
   deriveLeafStatuses,
+  deriveSaveStatuses,
+  dropSavedOverrides,
   approvalsDisabledReason as getApprovalsDisabledReason,
 } from './utils/approvals.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
@@ -65,6 +73,7 @@ import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.j
 import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
+import { guardScopeChange as runGuardedScopeChange } from './utils/scope-guard.js';
 import {
   clearPeriodOverride,
   selectTemplateParams,
@@ -296,6 +305,46 @@ export function DynamicReport() {
   );
   const hasStagedApprovals = approvalOverrides.size > 0;
   const hasUnsavedChanges = isDirty || hasStagedApprovals;
+  // A period, owner or baseline change waiting on the discard prompt. Wrapped in an object because
+  // useState would call a bare function as an updater.
+  const [pendingScopeChange, setPendingScopeChange] = useState<{ apply: () => void } | null>(null);
+
+  // Staged statuses belong to the scope they were chosen under, so a scope change asks before
+  // discarding them (spec R13). Structural edits are kept either way.
+  const guardScopeChange = useCallback(
+    (apply: () => void) =>
+      runGuardedScopeChange({
+        hasStaged: hasStagedApprovals,
+        open: pending => setPendingScopeChange({ apply: pending }),
+        apply,
+      }),
+    [hasStagedApprovals],
+  );
+
+  const handleDiscardApprovalsConfirm = useCallback(() => {
+    const pending = pendingScopeChange;
+    setPendingScopeChange(null);
+    if (!pending) return;
+    setApprovalOverrides(new Map());
+    pending.apply();
+  }, [pendingScopeChange]);
+
+  // The date pickers keep their own input state and only resync when their value prop changes,
+  // which a cancelled change never does. Remounting them puts the period on screen back.
+  const [datePickersKey, setDatePickersKey] = useState(0);
+  const handleDiscardApprovalsCancel = useCallback(() => {
+    setPendingScopeChange(null);
+    setDatePickersKey(key => key + 1);
+  }, []);
+
+  const handleOwnerChange = useCallback(
+    (ownerId: string) => {
+      // Re-picking the owner on screen changes nothing, so there is nothing to discard.
+      if (ownerId === selectedOwner) return;
+      guardScopeChange(() => setSelectedOwner(ownerId));
+    },
+    [guardScopeChange, selectedOwner, setSelectedOwner],
+  );
   const [showLegacyBanner, setShowLegacyBanner] = useState(false);
   const [collapsedPanel, setCollapsedPanel] = useState<'bank' | 'report' | null>(null);
 
@@ -383,8 +432,8 @@ export function DynamicReport() {
       (!!urlToDate && urlToDate !== draftToDate));
 
   const restoreDraftPeriod = useCallback(
-    () => updateSearchParams(clearPeriodOverride),
-    [updateSearchParams],
+    () => guardScopeChange(() => updateSearchParams(clearPeriodOverride)),
+    [guardScopeChange, updateSearchParams],
   );
 
   const [{ data: businessSumsData, fetching: businessSumsFetching }] = useQuery({
@@ -427,8 +476,11 @@ export function DynamicReport() {
   // baseline across future saves instead of freezing on the snapshot that happened to be newest
   // when it was chosen.
   const handleBaselineChange = useCallback(
-    (id: string) => setSelectedBaselineId(id === latestBaselineId ? null : id),
-    [latestBaselineId, setSelectedBaselineId],
+    (id: string) => {
+      if (id === activeBaselineId) return;
+      guardScopeChange(() => setSelectedBaselineId(id === latestBaselineId ? null : id));
+    },
+    [guardScopeChange, activeBaselineId, latestBaselineId, setSelectedBaselineId],
   );
 
   const [{ data: snapshotData, fetching: snapshotFetching }] = useQuery({
@@ -507,6 +559,14 @@ export function DynamicReport() {
       setApprovalOverrides(prev => applyOverride(prev, entityId, status, leafStatuses));
     },
     [leafStatuses],
+  );
+
+  const handleBranchApprovalChange = useCallback(
+    (branchId: string, status: AccountantStatus) => {
+      const leafIds = countedLeafIds(reportTree, branchId);
+      setApprovalOverrides(prev => applyBulk(prev, leafIds, status, leafStatuses));
+    },
+    [reportTree, leafStatuses],
   );
 
   const newEntityIds = useMemo(
@@ -750,7 +810,8 @@ export function DynamicReport() {
   );
 
   // The baseline a later visit diffs against: the figures currently on screen, for the period they
-  // were computed over.
+  // were computed over. It carries no statuses: Save as new and Duplicate start a template with no
+  // reviewed history (spec R14). Resave and Capture add theirs through resolveSaveApprovals.
   const snapshotInput = useMemo(
     () =>
       buildSnapshotInput({
@@ -762,16 +823,80 @@ export function DynamicReport() {
     [businessSums, fromDate, toDate, scopeOwnerId],
   );
 
+  const client = useClient();
+
+  // The statuses a Resave or Capture sends. The server stamps them against the newest comparable
+  // snapshot, so they have to be that snapshot's statuses plus the staged ones. When it is the
+  // baseline on screen (or there is none) that is exactly effectiveStatuses. While an older baseline
+  // is pinned, the statuses on screen are that older save's, and sending them would write them back
+  // as fresh choices — so the newest one is fetched and the statuses derived from it instead.
+  // Returns null, after telling the user, when it can't be read: saving without statuses would
+  // drop every one of them. The same goes while the report is still loading: until the snapshot
+  // list arrives latestBaselineId reads as "no baseline", every leaf as UNAPPROVED, and sending that
+  // would overwrite the stored statuses.
+  const resolveSaveApprovals = useCallback(async (): Promise<
+    DynamicReportLeafApprovalInput[] | null
+  > => {
+    if (isApprovalDataLoading) {
+      toast.error('Error', {
+        description: 'The report is still loading, so nothing was saved. Try again in a moment',
+      });
+      return null;
+    }
+    if (!latestBaselineId || baselineSnapshot?.id === latestBaselineId) {
+      return buildApprovalsInput(reportTree, effectiveStatuses);
+    }
+    const { data, error } = await client
+      .query(
+        DynamicReportSnapshotDocument,
+        { id: latestBaselineId },
+        { requestPolicy: 'network-only' },
+      )
+      .toPromise();
+    const latest = data?.dynamicReportSnapshot;
+    if (error || !latest) {
+      toast.error('Error', {
+        description: 'Could not load the latest save’s statuses, so nothing was saved',
+      });
+      return null;
+    }
+    const statuses = deriveSaveStatuses(
+      reportTree,
+      latest,
+      { fromDate, toDate, scopeOwnerId },
+      approvalOverrides,
+    );
+    return buildApprovalsInput(reportTree, statuses);
+  }, [
+    isApprovalDataLoading,
+    latestBaselineId,
+    baselineSnapshot,
+    reportTree,
+    effectiveStatuses,
+    client,
+    fromDate,
+    toDate,
+    scopeOwnerId,
+    approvalOverrides,
+  ]);
+
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
+    // The overrides this save sends; anything staged while it is in flight must survive it.
+    const savedOverrides = approvalOverrides;
+    const approvals = await resolveSaveApprovals();
+    if (!approvals) return;
     const serialized = serializeReportTree(reportTree);
     const result = await updateDynamicReportTemplate({
       name: currentTemplate.name,
       template: serialized,
-      snapshot: snapshotInput,
+      snapshot: { ...snapshotInput, approvals },
     });
     if (result) {
       setIsDirty(false);
+      // The statuses are in the new snapshot now, which the refetch below brings back as the
+      // baseline. On failure they stay staged, to retry.
+      setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
       setShowLegacyBanner(false);
       // The save just became the newest baseline. Releasing any pin means the user is comparing
       // against what they just saved rather than against something older with nothing on screen
@@ -783,30 +908,52 @@ export function DynamicReport() {
     }
   }, [
     currentTemplate,
+    approvalOverrides,
     reportTree,
+    resolveSaveApprovals,
     updateDynamicReportTemplate,
     snapshotInput,
     setSelectedBaselineId,
     refetchTemplateNodes,
   ]);
 
-  // A locked draft cannot be resaved — the sign-off that locked it describes the template as it
-  // stands. Recording a baseline writes no template row, so it stays available: without it a
-  // locked draft could never start tracking changes at all.
-  const handleCaptureBaseline = useCallback(async () => {
-    if (!currentTemplate) return;
-    const result = await captureDynamicReportBaseline({
-      name: currentTemplate.name,
-      tree: serializeReportTree(reportTree),
-      snapshot: snapshotInput,
-    });
-    if (result) {
-      setSelectedBaselineId(null);
-      refetchTemplateNodes({ requestPolicy: 'network-only' });
+  // Save review writes a snapshot only — the staged statuses stamped onto the report as it stands —
+  // and never the template row. So a locked draft stays locked (and can still capture its first
+  // baseline, since it cannot be resaved), and an unlocked draft's own period doesn't move when a
+  // deep-linked period is being reviewed. The toolbar offers it on an unlocked draft only while
+  // staged statuses are the only unsaved change; structural edits go through Resave.
+  // Guards the whole Save review, including the statuses lookup that runs before the mutation:
+  // a second click in that window would otherwise write a second snapshot. The ref blocks clicks
+  // within one render; the state disables the controls.
+  const saveReviewInFlight = useRef(false);
+  const [isSavingReview, setIsSavingReview] = useState(false);
+  const handleSaveReview = useCallback(async () => {
+    if (!currentTemplate || saveReviewInFlight.current) return;
+    saveReviewInFlight.current = true;
+    setIsSavingReview(true);
+    try {
+      const savedOverrides = approvalOverrides;
+      const approvals = await resolveSaveApprovals();
+      if (!approvals) return;
+      const result = await captureDynamicReportBaseline({
+        name: currentTemplate.name,
+        tree: serializeReportTree(reportTree),
+        snapshot: { ...snapshotInput, approvals },
+      });
+      if (result) {
+        setApprovalOverrides(current => dropSavedOverrides(current, savedOverrides));
+        setSelectedBaselineId(null);
+        refetchTemplateNodes({ requestPolicy: 'network-only' });
+      }
+    } finally {
+      saveReviewInFlight.current = false;
+      setIsSavingReview(false);
     }
   }, [
     currentTemplate,
+    approvalOverrides,
     reportTree,
+    resolveSaveApprovals,
     snapshotInput,
     captureDynamicReportBaseline,
     setSelectedBaselineId,
@@ -819,30 +966,39 @@ export function DynamicReport() {
 
   const handlePeriodConfirmed = useCallback(
     (nextFrom: string, nextTo: string) => {
-      // Both dates in one call — separate setFromDate/setToDate calls would keep only `to`.
-      updateSearchParams(p => setPeriodParams(p, nextFrom, nextTo));
-      // The period is part of the draft, so changing it is an unsaved edit like any other.
-      setIsDirty(true);
+      if (nextFrom === fromDate && nextTo === toDate) return;
+      guardScopeChange(() => {
+        // Both dates in one call — separate setFromDate/setToDate calls would keep only `to`.
+        updateSearchParams(p => setPeriodParams(p, nextFrom, nextTo));
+        // The period is part of the draft, so changing it is an unsaved edit like any other.
+        setIsDirty(true);
+      });
     },
-    [updateSearchParams],
+    [guardScopeChange, updateSearchParams, fromDate, toDate],
   );
 
   // The pickers are live only for a draft that has no period of its own, where the period the user
   // picks is what the next save will record — so it counts as an unsaved edit, same as the dialog.
   const handleFromDateChange = useCallback(
     (next: string) => {
-      setFromDate(next);
-      if (currentTemplate) setIsDirty(true);
+      if (next === fromDate) return;
+      guardScopeChange(() => {
+        setFromDate(next);
+        if (currentTemplate) setIsDirty(true);
+      });
     },
-    [setFromDate, currentTemplate],
+    [guardScopeChange, fromDate, setFromDate, currentTemplate],
   );
 
   const handleToDateChange = useCallback(
     (next: string) => {
-      setToDate(next);
-      if (currentTemplate) setIsDirty(true);
+      if (next === toDate) return;
+      guardScopeChange(() => {
+        setToDate(next);
+        if (currentTemplate) setIsDirty(true);
+      });
     },
-    [setToDate, currentTemplate],
+    [guardScopeChange, toDate, setToDate, currentTemplate],
   );
 
   const handleRenameInManager = useCallback(
@@ -919,20 +1075,23 @@ export function DynamicReport() {
         toDate={toDate}
         onFromDateChange={handleFromDateChange}
         onToDateChange={handleToDateChange}
+        datePickersKey={datePickersKey}
         owners={owners}
         selectedOwner={soleAdminBusinessId ?? selectedOwner}
-        onOwnerChange={setSelectedOwner}
+        onOwnerChange={handleOwnerChange}
         ownerDisabled={!!soleAdminBusinessId}
         showZeroed={showZeroed}
         onShowZeroedChange={setShowZeroed}
         editMode={editMode}
         onEditModeChange={setEditMode}
-        isDirty={hasUnsavedChanges}
+        isDirty={isDirty}
+        hasStagedApprovals={hasStagedApprovals}
         currentTemplate={currentTemplate}
         onSelectTemplate={() => setTemplateManagerOpen(true)}
         onSaveAsNew={handleSaveAsNew}
         onResave={handleResave}
-        onCaptureBaseline={handleCaptureBaseline}
+        onSaveReview={handleSaveReview}
+        isSavingReview={isSavingReview}
         onRename={handleRenameTemplate}
         onDuplicate={() => currentTemplate && handleDuplicateTemplate(currentTemplate)}
         onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
@@ -994,6 +1153,7 @@ export function DynamicReport() {
             leafStatuses={effectiveStatuses}
             approvalStats={approvalStats}
             onLeafApprovalChange={handleLeafApprovalChange}
+            onBranchApprovalChange={handleBranchApprovalChange}
             approvalsDisabledReason={approvalsDisabledReason}
           />
         </div>
@@ -1041,6 +1201,12 @@ export function DynamicReport() {
         setPendingTemplate={setPendingTemplate}
         templateSwitchDialogOpen={templateSwitchDialogOpen}
         setTemplateSwitchDialogOpen={setTemplateSwitchDialogOpen}
+      />
+
+      <DiscardApprovalsConfirmation
+        open={!!pendingScopeChange}
+        onConfirm={handleDiscardApprovalsConfirm}
+        onCancel={handleDiscardApprovalsCancel}
       />
 
       <SaveAsNewTemplateDialog

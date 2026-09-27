@@ -1,7 +1,7 @@
 import {
   CalendarRange,
-  Camera,
   ChevronDown,
+  ClipboardCheck,
   Copy,
   Download,
   Edit2,
@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
 import type { TimelessDateString } from '@/helpers/index.js';
+import { saveActions } from './utils/save-actions.js';
 import { type Owner, type Template } from './utils/types.js';
 
 interface ToolbarProps {
@@ -37,6 +38,8 @@ interface ToolbarProps {
   toDate: string;
   onFromDateChange: (date: string) => void;
   onToDateChange: (date: string) => void;
+  /** Changing it remounts the date pickers, putting back a period whose change was cancelled. */
+  datePickersKey?: number;
   owners: Owner[];
   selectedOwner: string;
   onOwnerChange: (ownerId: string) => void;
@@ -46,12 +49,18 @@ interface ToolbarProps {
   onShowZeroedChange: (show: boolean) => void;
   editMode: boolean;
   onEditModeChange: (edit: boolean) => void;
+  /** Structural edits (tree, period) are unsaved. Staged statuses are reported separately. */
   isDirty: boolean;
+  /** Leaf statuses have been chosen but not saved. */
+  hasStagedApprovals: boolean;
   currentTemplate: Template | null;
   onSelectTemplate: () => void;
   onSaveAsNew: () => void;
   onResave: () => void;
-  onCaptureBaseline: () => void;
+  /** Writes a snapshot only (statuses included), never the template row. */
+  onSaveReview: () => void;
+  /** A Save review is in flight; its controls stay disabled so it can't be sent twice. */
+  isSavingReview?: boolean;
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -78,6 +87,7 @@ export function Toolbar({
   toDate,
   onFromDateChange,
   onToDateChange,
+  datePickersKey = 0,
   owners,
   selectedOwner,
   onOwnerChange,
@@ -87,11 +97,13 @@ export function Toolbar({
   editMode,
   onEditModeChange,
   isDirty,
+  hasStagedApprovals,
   currentTemplate,
   onSelectTemplate,
   onSaveAsNew,
   onResave,
-  onCaptureBaseline,
+  onSaveReview,
+  isSavingReview = false,
   onRename,
   onDuplicate,
   onDelete,
@@ -108,6 +120,7 @@ export function Toolbar({
   diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
+  const actions = saveActions({ hasTemplate, isLocked, isDirty, hasStagedApprovals });
 
   const baselineLabel = (snapshot: { id: string; createdAt: Date | string }): string => {
     const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
@@ -127,6 +140,7 @@ export function Toolbar({
             From
           </Label>
           <DatePickerInput
+            key={`from-${datePickersKey}`}
             id="from-date"
             value={fromDate as TimelessDateString}
             onChange={e => onFromDateChange(e ?? '')}
@@ -140,6 +154,7 @@ export function Toolbar({
             To
           </Label>
           <DatePickerInput
+            key={`to-${datePickersKey}`}
             id="to-date"
             value={toDate as TimelessDateString}
             onChange={e => onToDateChange(e ?? '')}
@@ -191,10 +206,17 @@ export function Toolbar({
           </div>
         )}
 
-        {isDirty && (
+        {(isDirty || hasStagedApprovals) && (
           <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
             Unsaved changes
           </Badge>
+        )}
+
+        {actions.showSaveReviewButton && (
+          <Button size="sm" onClick={onSaveReview} disabled={isSavingReview}>
+            <ClipboardCheck className="size-4 mr-2" />
+            Save review
+          </Button>
         )}
 
         {hasTemplate && diffSuspendedReason && (
@@ -255,16 +277,19 @@ export function Toolbar({
               <Save className="size-4 mr-2" />
               Save as new
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onResave} disabled={!hasTemplate || isLocked}>
+            <DropdownMenuItem onClick={onResave} disabled={!actions.resaveEnabled}>
               <Save className="size-4 mr-2" />
               Resave
             </DropdownMenuItem>
-            {isLocked && (
-              // The one way a locked draft can start tracking changes: a resave is off the table,
-              // but a baseline writes no template row, so the sign-off still holds.
-              <DropdownMenuItem onClick={onCaptureBaseline} disabled={!hasTemplate}>
-                <Camera className="size-4 mr-2" />
-                Capture baseline
+            {actions.showSaveReviewItem && (
+              // Writes a snapshot only, never the template row, so a locked draft's sign-off still
+              // holds — and it is the one way a locked draft can start tracking changes.
+              <DropdownMenuItem
+                onClick={onSaveReview}
+                disabled={!actions.saveReviewItemEnabled || isSavingReview}
+              >
+                <ClipboardCheck className="size-4 mr-2" />
+                Save review
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={onChangePeriod} disabled={!hasTemplate || isLocked}>
