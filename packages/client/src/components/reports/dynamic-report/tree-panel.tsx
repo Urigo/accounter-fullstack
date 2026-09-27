@@ -9,8 +9,10 @@ import {
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
+import type { RowApproval } from './approval-status.js';
 import type { RowDiff } from './diff-markers.js';
 import { TreeNodeRow } from './tree-node.js';
+import type { ApprovalStats, EffectiveApproval } from './utils/approvals.js';
 import type { ReportDiff } from './utils/diff.js';
 import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
 
@@ -30,10 +32,15 @@ interface TreePanelProps {
   diff?: ReportDiff | null;
   /** Entity ids with ledger activity that the baseline had never seen. */
   newEntityIds?: Set<string>;
+  /** Each counted leaf's status, keyed by entity id. Report tree only. */
+  leafStatuses?: Map<string, EffectiveApproval>;
+  /** Approval counts per node, for branch statuses. Report tree only. */
+  approvalStats?: ApprovalStats;
 }
 
 type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
   rowDiff: (nodeId: string) => RowDiff | undefined;
+  rowApproval: (node: FlatNode<CustomData>) => RowApproval | undefined;
   ghostIds: Set<string>;
 };
 
@@ -59,6 +66,7 @@ function renderSubtree(
           onRename={props.onRename}
           onDelete={props.onDelete}
           diff={props.rowDiff(node.id)}
+          approval={props.rowApproval(node)}
         />
         {node.droppable &&
           // A ghost branch is a record of a removed subtree, so it always shows what it contained.
@@ -82,6 +90,8 @@ export function TreePanel({
   onDelete,
   diff = null,
   newEntityIds,
+  leafStatuses,
+  approvalStats,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -130,6 +140,19 @@ export function TreePanel({
       };
     };
   }, [diff, ghostIds, newEntityIds]);
+
+  const rowApproval = useMemo(() => {
+    return (node: FlatNode<CustomData>): RowApproval | undefined => {
+      // Ghost rows are records of what left the report, so they have nothing to review.
+      if (treeId !== 'report' || ghostIds.has(node.id)) return undefined;
+      if (node.droppable) {
+        const counts = approvalStats?.get(node.id);
+        return counts ? { kind: 'branch', counts } : undefined;
+      }
+      const approval = leafStatuses?.get(node.id);
+      return approval ? { kind: 'leaf', approval } : undefined;
+    };
+  }, [treeId, ghostIds, approvalStats, leafStatuses]);
 
   const hasRootNodes = renderedNodes.some(n => n.parent === treeId && !n.data.isHidden);
 
@@ -196,6 +219,7 @@ export function TreePanel({
               onRename,
               onDelete,
               rowDiff,
+              rowApproval,
               ghostIds,
             })
           ) : (
