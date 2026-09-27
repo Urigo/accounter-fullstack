@@ -49,40 +49,29 @@
   "scripts": {
     "build": "yarn generate && bob build",
     "dev": "node --import ../../scripts/register-esm.js ./src/index.ts",
-    "generate": "rimraf .mesh src/.mesh src/mesh-artifacts && mesh build --dir ./src  && node ../../scripts/mesh-artifacts-rename.mjs",
+    "generate": "rimraf src/__generated__ src/mesh-artifacts && mkdir -p src/__generated__ && mesh-compose -o src/__generated__/supergraph.graphql && node --import ../../scripts/register-esm.js scripts/generate-sdk-inputs.ts && graphql-codegen --config codegen.ts",
     "start": "node ./dist",
     "test": "node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
   "dependencies": {
-    "@graphql-mesh/config": "0.111.1",
-    "@graphql-mesh/cross-helpers": "0.4.16",
-    "@graphql-mesh/http": "0.109.1",
-    "@graphql-mesh/json-schema": "0.112.4",
-    "@graphql-mesh/runtime": "0.109.1",
-    "@graphql-mesh/store": "0.107.1",
-    "@graphql-mesh/types": "0.107.1",
-    "@graphql-mesh/utils": "0.107.1",
-    "graphql": "16.14.2",
-    "path": "0.12.7"
+    "@graphql-mesh/fusion-runtime": "1.12.1",
+    "@graphql-mesh/transport-rest": "0.12.2",
+    "graphql": "16.14.2"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.103.2",
-    "@types/mime-types": "3.0.1",
+    "@graphql-codegen/cli": "7.4.1",
+    "@graphql-codegen/typescript": "5.0.10",
+    "@graphql-codegen/typescript-generic-sdk": "5.0.1",
+    "@graphql-codegen/typescript-operations": "5.1.0",
+    "@graphql-mesh/compose-cli": "1.8.2",
+    "@graphql-tools/utils": "12.0.1",
+    "@omnigraph/json-schema": "0.112.4",
     "bob-the-bundler": "7.0.1",
-    "mime-types": "3.0.2",
     "rimraf": "6.1.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
     "access": "public"
-  },
-  "bob": {
-    "build": {
-      "copy": [
-        "json-schemas",
-        "src/mesh-artifacts/**/*.graphql"
-      ]
-    }
   },
   "typescript": {
     "definition": "dist/typings/index.d.ts"
