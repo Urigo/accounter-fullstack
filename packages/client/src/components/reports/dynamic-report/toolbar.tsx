@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
 import type { TimelessDateString } from '@/helpers/index.js';
+import { formatApprovalProgress, type ApprovalSummary } from './utils/approvals.js';
 import { saveActions } from './utils/save-actions.js';
 import { type Owner, type Template } from './utils/types.js';
 
@@ -47,6 +48,9 @@ interface ToolbarProps {
   ownerDisabled?: boolean;
   showZeroed: boolean;
   onShowZeroedChange: (show: boolean) => void;
+  /** The Needs review filter (spec R20); offered only with a template loaded. */
+  reviewOnly: boolean;
+  onReviewOnlyChange: (reviewOnly: boolean) => void;
   editMode: boolean;
   onEditModeChange: (edit: boolean) => void;
   /** Structural edits (tree, period) are unsaved. Staged statuses are reported separately. */
@@ -78,6 +82,8 @@ interface ToolbarProps {
   /** The default baseline — the newest save for the period and owner on screen — labelled "Last save". */
   latestBaselineId: string | null;
   onBaselineChange: (id: string) => void;
+  /** Report-wide status counts over the counted leaves, shown as a progress line with a template. */
+  approvalSummary?: ApprovalSummary | null;
   /** Set when change tracking cannot be shown, explaining why. */
   diffSuspendedReason?: string | null;
 }
@@ -94,6 +100,8 @@ export function Toolbar({
   ownerDisabled = false,
   showZeroed,
   onShowZeroedChange,
+  reviewOnly,
+  onReviewOnlyChange,
   editMode,
   onEditModeChange,
   isDirty,
@@ -117,10 +125,15 @@ export function Toolbar({
   activeBaselineId,
   latestBaselineId,
   onBaselineChange,
+  approvalSummary = null,
   diffSuspendedReason = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
   const actions = saveActions({ hasTemplate, isLocked, isDirty, hasStagedApprovals });
+
+  // Statuses live on a template's snapshots, so without a template there is no progress to show.
+  const approvalProgress =
+    hasTemplate && approvalSummary ? formatApprovalProgress(approvalSummary) : null;
 
   const baselineLabel = (snapshot: { id: string; createdAt: Date | string }): string => {
     const when = new Date(snapshot.createdAt).toLocaleDateString(undefined, {
@@ -183,6 +196,15 @@ export function Toolbar({
           </Label>
         </div>
 
+        {hasTemplate && (
+          <div className="flex items-center gap-2">
+            <Switch id="needs-review" checked={reviewOnly} onCheckedChange={onReviewOnlyChange} />
+            <Label htmlFor="needs-review" className="text-sm cursor-pointer">
+              Needs review
+            </Label>
+          </div>
+        )}
+
         {periodOverride && (
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="bg-sky-100 text-sky-800 border-sky-300">
@@ -223,6 +245,12 @@ export function Toolbar({
           <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
             {diffSuspendedReason}
           </Badge>
+        )}
+
+        {approvalProgress && (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {approvalProgress}
+          </span>
         )}
 
         {hasTemplate && snapshots.length > 0 && (

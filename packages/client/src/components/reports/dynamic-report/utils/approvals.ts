@@ -264,7 +264,7 @@ export function buildApprovalsInput(
 }
 
 /** The parts of a snapshot read that the statuses derive from. */
-export type ApprovalSnapshotLike = {
+type ApprovalSnapshotLike = {
   fromDate: string;
   toDate: string;
   scopeOwnerId: string;
@@ -363,4 +363,64 @@ export function leafApprovalTooltip(approval: EffectiveApproval): string | null 
 /** Counts summary for a branch (spec R6). */
 export function branchApprovalTooltip(counts: ApprovalCounts): string {
   return `${counts.approved} approved · ${counts.pending} pending · ${counts.unapproved} unapproved`;
+}
+
+export type ApprovalSummary = ApprovalCounts & { total: number };
+
+/** Report-wide counts over the counted leaves' effective statuses (spec R19). */
+export function summarizeApprovals(
+  statuses: ReadonlyMap<string, EffectiveApproval>,
+): ApprovalSummary {
+  const summary: ApprovalSummary = { approved: 0, pending: 0, unapproved: 0, total: 0 };
+  for (const { status } of statuses.values()) {
+    summary.total += 1;
+    if (status === AccountantStatus.Approved) summary.approved += 1;
+    else if (status === AccountantStatus.Pending) summary.pending += 1;
+    else summary.unapproved += 1;
+  }
+  return summary;
+}
+
+/** The toolbar's progress line, e.g. "124 / 150 approved · 6 pending"; null with no counted leaves. */
+export function formatApprovalProgress(summary: ApprovalSummary): string | null {
+  if (summary.total === 0) return null;
+  const approved = `${summary.approved} / ${summary.total} approved`;
+  return summary.pending > 0 ? `${approved} · ${summary.pending} pending` : approved;
+}
+
+export type ReviewVisibility = {
+  /** Rows the Needs review filter shows: non-approved counted leaves and all their ancestors. */
+  visibleIds: Set<string>;
+  /** The shown leaves' ancestors, rendered open whatever their saved isOpen says. */
+  forceOpenIds: Set<string>;
+};
+
+/**
+ * What the Needs review filter shows (spec R20): every counted leaf that isn't approved, plus its
+ * ancestors. A counted leaf for which `statusOf` returns undefined is treated as unapproved, as in
+ * buildApprovalStats, and a fully approved subtree is left out entirely. This is a render-time
+ * overlay: it never touches the nodes, so the template's saved isOpen is unchanged.
+ */
+export function needsReviewVisibility(
+  nodes: FlatNode<CustomData>[],
+  statusOf: (entityId: string) => AccountantStatus | undefined,
+): ReviewVisibility {
+  const nodeById = new Map(nodes.map(node => [node.id, node]));
+  const visibleIds = new Set<string>();
+  const forceOpenIds = new Set<string>();
+
+  for (const node of nodes) {
+    if (!isCountedLeaf(node)) continue;
+    if ((statusOf(node.id) ?? AccountantStatus.Unapproved) === AccountantStatus.Approved) continue;
+    visibleIds.add(node.id);
+    // Walk up until the tree root (which isn't a node) or an ancestor another leaf already added.
+    let parent = nodeById.get(node.parent);
+    while (parent && !forceOpenIds.has(parent.id)) {
+      forceOpenIds.add(parent.id);
+      visibleIds.add(parent.id);
+      parent = nodeById.get(parent.parent);
+    }
+  }
+
+  return { visibleIds, forceOpenIds };
 }
