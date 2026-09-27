@@ -98,7 +98,7 @@ describe('AccountantStatusMenu', () => {
     expect(onChange).toHaveBeenCalledWith(AccountantStatus.Approved);
   });
 
-  it('still renders the trigger when wrapped in a tooltip', () => {
+  it('keeps a disabled trigger focusable when it has a tooltip', () => {
     const onChange = vi.fn();
     render(
       <AccountantStatusMenu
@@ -108,8 +108,29 @@ describe('AccountantStatusMenu', () => {
         disabled
       />,
     );
-    expect(trigger().disabled).toBe(true);
-    // the disabled button swallows pointer events, so the tooltip needs its own trigger around it
+    // native `disabled` would block both hover and focus, leaving the tooltip unreachable by keyboard
+    expect(trigger().disabled).toBe(false);
+    expect(trigger().getAttribute('aria-disabled')).toBe('true');
+    expect(trigger().getAttribute('data-slot')).toBe('tooltip-trigger');
+    expect(trigger().getAttribute('aria-label')).toBe('Approved');
+    openMenu();
+    act(() => trigger().click());
+    expect(menuItems()).toHaveLength(0);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('wraps an enabled trigger in a tooltip', () => {
+    const onChange = vi.fn();
+    render(
+      <AccountantStatusMenu
+        value={AccountantStatus.Approved}
+        onChange={onChange}
+        tooltip="Approved by Dana"
+      />,
+    );
     expect(trigger().parentElement?.getAttribute('data-slot')).toBe('tooltip-trigger');
+    openMenu();
+    selectItem('Pending');
+    expect(onChange).toHaveBeenCalledWith(AccountantStatus.Pending);
   });
 });

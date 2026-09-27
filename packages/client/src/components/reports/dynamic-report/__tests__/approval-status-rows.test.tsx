@@ -46,6 +46,11 @@ function branch(id: string, parent: string): FlatNode<CustomData> {
 
 const noop = (): void => {};
 
+/** A disabled status with a tooltip is aria-disabled rather than natively disabled, so it stays focusable. */
+function isDisabled(button: HTMLButtonElement): boolean {
+  return button.disabled || button.getAttribute('aria-disabled') === 'true';
+}
+
 function statusTriggers(): HTMLButtonElement[] {
   return [...container.querySelectorAll<HTMLButtonElement>('[data-accountant-status-trigger]')];
 }
@@ -87,7 +92,7 @@ describe('report tree status slot', () => {
     const triggers = statusTriggers();
     // branch + leaf
     expect(triggers).toHaveLength(2);
-    expect(triggers.every(button => button.disabled)).toBe(true);
+    expect(triggers.every(isDisabled)).toBe(true);
     expect(triggers.map(button => button.getAttribute('aria-label'))).toEqual([
       'Approved',
       'Approved',
@@ -216,7 +221,7 @@ describe('staging a leaf status', () => {
     renderReport({ onLeafApprovalChange: onChange, approvalsDisabledReason: null });
 
     const [, leafTrigger] = statusTriggers();
-    expect(leafTrigger.disabled).toBe(false);
+    expect(isDisabled(leafTrigger)).toBe(false);
 
     openMenu(leafTrigger);
     selectItem('Approved');
@@ -225,12 +230,12 @@ describe('staging a leaf status', () => {
 
   it('disables the leaf while statuses are read-only', () => {
     renderReport({ onLeafApprovalChange: noop, approvalsDisabledReason: 'Load a saved template' });
-    expect(statusTriggers().every(button => button.disabled)).toBe(true);
+    expect(statusTriggers().every(isDisabled)).toBe(true);
   });
 
   it('disables the leaf when there is no change handler', () => {
     renderReport({});
-    expect(statusTriggers().every(button => button.disabled)).toBe(true);
+    expect(statusTriggers().every(isDisabled)).toBe(true);
   });
 });
 
@@ -264,7 +269,7 @@ describe('bulk set from a branch', () => {
     renderReport({ onBranchApprovalChange: onChange, approvalsDisabledReason: null });
 
     const [branchTrigger] = statusTriggers();
-    expect(branchTrigger.disabled).toBe(false);
+    expect(isDisabled(branchTrigger)).toBe(false);
 
     openMenu(branchTrigger);
     selectItem('Approved');
@@ -273,11 +278,11 @@ describe('bulk set from a branch', () => {
 
   it('disables the branch under the same rules as leaves', () => {
     renderReport({ onBranchApprovalChange: noop, approvalsDisabledReason: 'Loading…' });
-    expect(statusTriggers()[0].disabled).toBe(true);
+    expect(isDisabled(statusTriggers()[0])).toBe(true);
   });
 
   it('disables the branch when there is no change handler', () => {
     renderReport({ approvalsDisabledReason: null });
-    expect(statusTriggers()[0].disabled).toBe(true);
+    expect(isDisabled(statusTriggers()[0])).toBe(true);
   });
 });

@@ -592,6 +592,10 @@ export function DynamicReport() {
     if (currentTemplate?.name === selectedTemplateName) return;
     const found = templates.find(t => t.name === selectedTemplateName);
     if (found) {
+      // Back/forward or an edited ?template= switches template without going through
+      // applyTemplate, so staged statuses must be dropped here too or they would be saved onto the
+      // newly loaded template. A rename keeps the id, and its statuses with it.
+      if (found.id !== currentTemplate?.id) setApprovalOverrides(new Map());
       setCurrentTemplate(found);
       setShowLegacyBanner(found.isLegacy ?? false);
       if (found.isLocked) setEditMode(false);

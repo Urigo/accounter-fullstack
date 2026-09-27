@@ -82,19 +82,46 @@ export function AccountantStatusMenu({
   const Icon = config.icon;
   const sizeClasses = SIZE_CLASSES[size];
 
+  const buttonClassName = `${sizeClasses.button} p-0 ${config.bgColor}`;
+  const icon = <Icon className={`${sizeClasses.icon} ${config.color}`} />;
+
+  if (disabled && tooltip != null) {
+    // A natively disabled button takes neither pointer events nor focus, so its tooltip could only
+    // be reached by mouse. Mark it aria-disabled instead and leave the menu out: the button stays
+    // hoverable and focusable (and the tooltip becomes its accessible description), but there is
+    // nothing for it to open.
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`${buttonClassName} cursor-not-allowed opacity-50`}
+            aria-label={config.label}
+            aria-disabled="true"
+            data-accountant-status-trigger=""
+          >
+            {icon}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
   const menu = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={disabled}>
         <Button
           variant="ghost"
           size="sm"
-          className={`${sizeClasses.button} p-0 ${config.bgColor}`}
+          className={buttonClassName}
           title={tooltip == null ? config.label : undefined}
           aria-label={config.label}
           disabled={disabled}
           data-accountant-status-trigger=""
         >
-          <Icon className={`${sizeClasses.icon} ${config.color}`} />
+          {icon}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center">
@@ -116,9 +143,9 @@ export function AccountantStatusMenu({
     return menu;
   }
 
-  // A disabled button swallows pointer events, so the tooltip hangs off a wrapping span instead.
   return (
     <Tooltip>
+      {/* The menu root renders no element of its own, so the tooltip hangs off a wrapping span. */}
       <TooltipTrigger asChild>
         <span className="inline-flex">{menu}</span>
       </TooltipTrigger>
