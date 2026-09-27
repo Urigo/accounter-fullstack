@@ -1,3 +1,0 @@
-extend type Query {
-  getExpenses(input: getExpensesRequest_Input): getExpensesResponse
-}

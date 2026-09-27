@@ -221,25 +221,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/hashavshevet-mesh@workspace:packages/hashavshevet-mesh":
-  version: 0.0.0-use.local
-  resolution: "@accounter/hashavshevet-mesh@workspace:packages/hashavshevet-mesh"
-  dependencies:
-    "@graphql-mesh/cli": "npm:0.103.2"
-    "@graphql-mesh/config": "npm:0.111.1"
-    "@graphql-mesh/cross-helpers": "npm:0.4.16"
-    "@graphql-mesh/http": "npm:0.109.1"
-    "@graphql-mesh/json-schema": "npm:0.112.4"
-    "@graphql-mesh/runtime": "npm:0.109.1"
-    "@graphql-mesh/store": "npm:0.107.1"
-    "@graphql-mesh/transform-resolvers-composition": "npm:0.107.1"
-    "@graphql-mesh/types": "npm:0.107.1"
-    "@graphql-mesh/utils": "npm:0.107.1"
-    graphql: "npm:16.14.2"
-    tsup: "npm:8.5.1"
-  languageName: unknown
-  linkType: soft
-
 "@accounter/israeli-vat-scraper@workspace:packages/israeli-vat-scraper":
   version: 0.0.0-use.local
   resolution: "@accounter/israeli-vat-scraper@workspace:packages/israeli-vat-scraper"
@@ -302,25 +283,6 @@ __metadata:
     typescript: "npm:6.0.3"
     uuid: "npm:14.0.2"
     zod: "npm:4.6.5"
-  languageName: unknown
-  linkType: soft
-
-"@accounter/payper-mesh@workspace:packages/payper-mesh":
-  version: 0.0.0-use.local
-  resolution: "@accounter/payper-mesh@workspace:packages/payper-mesh"
-  dependencies:
-    "@graphql-mesh/cli": "npm:0.103.2"
-    "@graphql-mesh/config": "npm:0.111.1"
-    "@graphql-mesh/cross-helpers": "npm:0.4.16"
-    "@graphql-mesh/http": "npm:0.109.1"
-    "@graphql-mesh/json-schema": "npm:0.112.4"
-    "@graphql-mesh/runtime": "npm:0.109.1"
-    "@graphql-mesh/store": "npm:0.107.1"
-    "@graphql-mesh/transform-rename": "npm:0.108.1"
-    "@graphql-mesh/types": "npm:0.107.1"
-    "@graphql-mesh/utils": "npm:0.107.1"
-    graphql: "npm:16.14.2"
-    path: "npm:0.12.7"
   languageName: unknown
   linkType: soft
 
@@ -3497,38 +3459,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/transform-rename@npm:0.108.1":
-  version: 0.108.1
-  resolution: "@graphql-mesh/transform-rename@npm:0.108.1"
-  dependencies:
-    "@graphql-mesh/types": "npm:^0.107.1"
-    "@graphql-mesh/utils": "npm:^0.107.1"
-    "@graphql-tools/delegate": "npm:^12.1.1"
-    "@graphql-tools/utils": "npm:^11.2.2"
-    "@graphql-tools/wrap": "npm:^11.1.21"
-    graphql-scalars: "npm:^1.22.4"
-    tslib: "npm:^2.4.0"
-  peerDependencies:
-    graphql: "*"
-  checksum: 10c0/aa3dc11827666c14a912d30aab93f36d0f0f37553f19e94cc87fb6f1382e5a032e6fc6b6da9115c0d50603b8808847eec7c95b5e4550bbe43ca53925b09e8b74
-  languageName: node
-  linkType: hard
-
-"@graphql-mesh/transform-resolvers-composition@npm:0.107.1":
-  version: 0.107.1
-  resolution: "@graphql-mesh/transform-resolvers-composition@npm:0.107.1"
-  dependencies:
-    "@graphql-mesh/types": "npm:^0.107.1"
-    "@graphql-mesh/utils": "npm:^0.107.1"
-    "@graphql-tools/resolvers-composition": "npm:^7.0.35"
-    "@graphql-tools/schema": "npm:^10.0.38"
-    tslib: "npm:^2.4.0"
-  peerDependencies:
-    graphql: "*"
-  checksum: 10c0/d09e6026856defab88e009aa72adf9c65022802c599700efe1d0507191d53f0a695f2a00ac789794ccbfd824e6aaebd54136c8cf4dd025fe974778ef19c03fbb
-  languageName: node
-  linkType: hard
-
 "@graphql-mesh/transport-common@npm:^1.0.20, @graphql-mesh/transport-common@npm:^1.1.0":
   version: 1.1.0
   resolution: "@graphql-mesh/transport-common@npm:1.1.0"
@@ -3974,20 +3904,6 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/3a14ab15bf498edae5ae97d5820b96053c772b3a3470b3516eddf60c0fe110fbeb0046ae39cca910a540001c562b1ad2724cb8dad1b57804d023afae9702ee90
-  languageName: node
-  linkType: hard
-
-"@graphql-tools/resolvers-composition@npm:^7.0.35":
-  version: 7.0.37
-  resolution: "@graphql-tools/resolvers-composition@npm:7.0.37"
-  dependencies:
-    "@graphql-tools/utils": "npm:^12.0.1"
-    lodash: "npm:4.18.1"
-    micromatch: "npm:^4.0.8"
-    tslib: "npm:^2.4.0"
-  peerDependencies:
-    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/e8f806dee86e08130d37e257f94eeddac4ca91998fed694c56760902e1a053fcae54c0fbe24bbacf1c2bbf890d3824594437d723111a8e038eea77a259cee5c5
   languageName: node
   linkType: hard
 
@@ -19325,7 +19241,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:4.18.1, lodash@npm:>=4.17.21, lodash@npm:^4.17.21, lodash@npm:^4.17.23":
+"lodash@npm:>=4.17.21, lodash@npm:^4.17.21, lodash@npm:^4.17.23":
   version: 4.18.1
   resolution: "lodash@npm:4.18.1"
   checksum: 10c0/757228fc68805c59789e82185135cf85f05d0b2d3d54631d680ca79ec21944ec8314d4533639a14b8bcfbd97a517e78960933041a5af17ecb693ec6eecb99a27
