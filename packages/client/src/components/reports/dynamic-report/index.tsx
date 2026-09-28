@@ -200,6 +200,35 @@ import {
   }
 `;
 
+// Comment threads come through their own query, never as a field of DynamicReportTemplate:
+// refetching that one rebuilds both trees (Effect 1) and would wipe unsaved drags and renames.
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReportThreads($templateName: String!) {
+    dynamicReportThreads(templateName: $templateName) {
+      id
+      nodeId
+      nodeKind
+      nodeLabel
+      createdAt
+      resolvedAt
+      resolvedBy
+      messages {
+        id
+        content
+        createdAt
+        editedAt
+        deletedAt
+        author
+        isMine
+        fromDate
+        toDate
+        scopeOwnerId
+      }
+    }
+  }
+`;
+
 type AllDynamicReportsTemplate = AllDynamicReportsQuery['allDynamicReports'][number];
 
 export type DynamicReportFiltersType = {
