@@ -1,11 +1,13 @@
 import { createModule } from 'graphql-modules';
 import { AnnualRevenueReportProvider } from './providers/annual-revenue-report.provider.js';
 import { BalanceReportProvider } from './providers/balance-report.provider.js';
+import { DynamicReportCommentsProvider } from './providers/dynamic-report-comments.provider.js';
 import { DynamicReportProvider } from './providers/dynamic-report.provider.js';
 import { VatReportProvider } from './providers/vat-report.provider.js';
 import { annualRevenueResolvers } from './resolvers/annual-revenue.resover.js';
 import { balanceReportResolver } from './resolvers/balance-report.resolver.js';
 import { depreciationReportResolvers } from './resolvers/depreciation-report.resolver.js';
+import { dynamicReportCommentsResolver } from './resolvers/dynamic-report-comments.resolver.js';
 import { dynamicReportResolver } from './resolvers/dynamic-report.resolver.js';
 import { pcn874Resolvers } from './resolvers/pcn874.resolver.js';
 import { reportsResolvers } from './resolvers/reports.resolver.js';
@@ -14,6 +16,7 @@ import annualRevenue from './typeDefs/annual-revenue.graphql.js';
 import balanceReport from './typeDefs/balance-report.graphql.js';
 import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-compliance-report.graphql.js';
 import depreciationReport from './typeDefs/depreciation-report.graphql.js';
+import dynamicReportComments from './typeDefs/dynamic-report-comments.graphql.js';
 import dynamicReport from './typeDefs/dynamic-report.graphql.js';
 import pcn from './typeDefs/pcn.graphql.js';
 import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
@@ -36,6 +39,7 @@ export const reportsModule = createModule({
     corporateTaxRulingComplianceReport,
     yearlyLedger,
     dynamicReport,
+    dynamicReportComments,
     balanceReport,
     depreciationReport,
     shaam6111Report,
@@ -45,6 +49,7 @@ export const reportsModule = createModule({
   resolvers: [
     reportsResolvers,
     dynamicReportResolver,
+    dynamicReportCommentsResolver,
     balanceReportResolver,
     pcn874Resolvers,
     depreciationReportResolvers,
@@ -53,6 +58,7 @@ export const reportsModule = createModule({
   ],
   providers: () => [
     DynamicReportProvider,
+    DynamicReportCommentsProvider,
     BalanceReportProvider,
     VatReportProvider,
     AnnualRevenueReportProvider,
