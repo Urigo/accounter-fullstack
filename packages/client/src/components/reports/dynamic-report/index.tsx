@@ -1015,6 +1015,11 @@ export function DynamicReport() {
         // baseline arrives, so the line waits for them.
         approvalSummary={isApprovalDataLoading ? null : approvalSummary}
         onBaselineChange={handleBaselineChange}
+        discussions={{
+          openCount: comments.openCount,
+          disabledReason: comments.disabledReason,
+          onOpen: comments.openDiscussions,
+        }}
         diffSuspendedReason={
           snapshots.length === 0
             ? 'No baseline yet — save this draft to start tracking changes'
