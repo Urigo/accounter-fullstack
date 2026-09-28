@@ -246,13 +246,13 @@ export function TemplateManager({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Template Manager</DialogTitle>
           <DialogDescription>Select a template to load, duplicate, or delete.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
           <Input
             placeholder="Filter templates..."
             value={globalFilter}
@@ -260,7 +260,7 @@ export function TemplateManager({
             className="max-w-sm"
           />
 
-          <div className="rounded-md border">
+          <div className="min-h-0 flex-1 overflow-auto rounded-md border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map(headerGroup => (
