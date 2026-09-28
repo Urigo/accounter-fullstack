@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
 import type { AccountantStatus } from '../../../gql/graphql.js';
 import type { RowApproval } from './approval-status.js';
+import type { RowComments } from './comment-indicator.js';
 import type { RowDiff } from './diff-markers.js';
 import type { RowAnnotations } from './row-trailing.js';
 import { TreeNodeRow } from './tree-node.js';
@@ -48,6 +49,8 @@ interface TreePanelProps {
   onBranchApprovalChange?: (branchId: string, status: AccountantStatus) => void;
   /** Why statuses can't be changed right now; all statuses are read-only while it is set. */
   approvalsDisabledReason?: string | null;
+  /** Each row's comments annotation, from useCommentsLayer. Report tree only. */
+  rowComments?: (node: FlatNode<CustomData>, isGhost: boolean) => RowComments | undefined;
   /**
    * The row overlay: set while the Needs review filter is on (possibly merged with other overlays
    * through mergeVisibility). Only its visible rows render, unless it shows every row, and its
@@ -132,6 +135,7 @@ export function TreePanel({
   onLeafApprovalChange,
   onBranchApprovalChange,
   approvalsDisabledReason = null,
+  rowComments,
   reviewVisibility = null,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -225,9 +229,10 @@ export function TreePanel({
     () =>
       (node: FlatNode<CustomData>): RowAnnotations => ({
         diff: rowDiff(node.id),
+        comments: treeId === 'report' ? rowComments?.(node, ghostIds.has(node.id)) : undefined,
         approval: rowApproval(node),
       }),
-    [rowDiff, rowApproval],
+    [rowDiff, rowApproval, rowComments, treeId, ghostIds],
   );
 
   const renderProps: RenderProps = {

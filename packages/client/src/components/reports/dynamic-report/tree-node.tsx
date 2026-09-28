@@ -56,7 +56,8 @@ interface TreeNodeProps {
   /** What each layer says about this row (diff, approval, …). Absent means none has anything. */
   annotations?: RowAnnotations;
   /**
-   * The Needs review filter shows this branch open whatever its saved isOpen says. Its expand
+   * An overlay (the Needs review filter, a revealed discussion) shows this branch open whatever its
+   * saved isOpen says. Its expand
    * toggle is disabled meanwhile, since a click would flip the saved isOpen without any visible
    * change.
    */
@@ -163,6 +164,8 @@ export function TreeNodeRow({
     return (
       <div
         ref={rowRef}
+        data-node-id={node.id}
+        data-tree-id={treeId}
         className={cn(
           'flex flex-col',
           isDragging && 'opacity-50',
@@ -194,7 +197,7 @@ export function TreeNodeRow({
             className="size-6 p-0"
             data-expand-toggle={node.id}
             disabled={isForcedOpen}
-            title={isForcedOpen ? 'Expanded by Needs review' : undefined}
+            title={isForcedOpen ? 'Kept open by Needs review or a revealed discussion' : undefined}
             onClick={() => onToggleExpand(node.id)}
           >
             {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
@@ -272,6 +275,8 @@ export function TreeNodeRow({
   return (
     <div
       ref={rowRef}
+      data-node-id={node.id}
+      data-tree-id={treeId}
       className={cn(
         'flex flex-col',
         isDragging && 'opacity-50',
