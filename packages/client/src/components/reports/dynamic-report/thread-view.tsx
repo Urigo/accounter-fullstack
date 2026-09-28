@@ -483,7 +483,8 @@ function MessageItem({
       )}
 
       <AlertDialog open={confirmingDelete} onOpenChange={setConfirmingDelete}>
-        <AlertDialogContent>
+        {/* The shared AlertDialog sits at z-50, under the sheet (z-1001) it is opened from. */}
+        <AlertDialogContent className="z-1002">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this message?</AlertDialogTitle>
             <AlertDialogDescription>
