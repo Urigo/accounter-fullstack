@@ -26,6 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import {
   groupCronJobEvents,
   summarizeCronJobEvents,
+  type CronJobsRunEvent,
   type CronJobStepView,
   type FilledDebitDate,
   type FlaggedFee,
@@ -229,8 +230,16 @@ function TransactionsTable({
   );
 }
 
-export function CronJobs(): ReactElement {
-  const { running, events, runJobs } = useRunCronJobs();
+type CronJobsViewProps = {
+  /** True from the moment the run starts until its last streamed event arrives. */
+  running: boolean;
+  /** Events of the current run received so far. */
+  events: readonly CronJobsRunEvent[];
+  onRun: () => void;
+};
+
+/** The cron jobs screen, driven by props, so its states can be rendered without a server. */
+export function CronJobsView({ running, events, onRun }: CronJobsViewProps): ReactElement {
   const { steps, flaggedFees, mergedCharges, filledDebitDates } = useMemo(
     () => groupCronJobEvents(events),
     [events],
@@ -243,7 +252,7 @@ export function CronJobs(): ReactElement {
       description="Flag foreign transfer fees, merge charges that share a transaction reference, and fill missing credit card debit dates"
       headerActions={
         <ConfirmationModal
-          onConfirm={() => void runJobs()}
+          onConfirm={onRun}
           title="Are you sure you want to manually execute cron jobs?"
         >
           <Button disabled={running}>
@@ -295,4 +304,9 @@ export function CronJobs(): ReactElement {
       )}
     </PageLayout>
   );
+}
+
+export function CronJobs(): ReactElement {
+  const { running, events, runJobs } = useRunCronJobs();
+  return <CronJobsView running={running} events={events} onRun={() => void runJobs()} />;
 }
