@@ -154,7 +154,8 @@ where at.id = t.id
   AND t.debit_date IS NULL
   AND t.debit_date_override IS NULL
   AND at.alt_debit_date IS NOT NULL
-  AND at.owner_id = $ownerId;`;
+  AND at.owner_id = $ownerId
+RETURNING t.id, t.debit_date_override;`;
 
 @Injectable({
   scope: Scope.Operation,
