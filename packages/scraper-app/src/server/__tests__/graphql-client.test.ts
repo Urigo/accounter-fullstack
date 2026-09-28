@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
 import { graphql, HttpResponse } from 'msw';
 import { createUploadClient } from '../graphql/client.js';
+import { UploadError } from '../graphql/upload-error.js';
 import { makeMaxAccount } from './fixtures/max.js';
 
 const MOCK_URL = 'http://localhost:4000/graphql';
@@ -519,5 +520,78 @@ describe('error responses', () => {
       }),
     );
     await expect(client().uploadPoalimIls(ILS_PAYLOAD)).rejects.toThrow();
+  });
+});
+
+describe('upload error messages', () => {
+  async function uploadError(): Promise<UploadError> {
+    const error = await client()
+      .uploadPoalimIls(ILS_PAYLOAD)
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(UploadError);
+    return error as UploadError;
+  }
+
+  it("keeps the server's message and code, and none of the request payload", async () => {
+    server.use(
+      graphql.link(MOCK_URL).mutation('UploadPoalimIlsTransactions', () =>
+        HttpResponse.json({
+          data: null,
+          errors: [
+            {
+              message:
+                'uploadPoalimIlsTransactions failed: new row violates row-level security policy for table "charges"',
+              extensions: {
+                code: 'DB_PERMISSION_DENIED',
+                hint: 'The database refused the write for the current business.',
+                table: 'charges',
+              },
+            },
+          ],
+        }),
+      ),
+    );
+
+    const error = await uploadError();
+    expect(error.message).toBe(
+      'uploadPoalimIlsTransactions failed: new row violates row-level security policy for table "charges"',
+    );
+    expect(error.details).toBe(
+      'Code: DB_PERMISSION_DENIED\nHint: The database refused the write for the current business.\nTable: charges',
+    );
+    expect(error.message).not.toContain('variables');
+    expect(error.stack ?? '').not.toContain('"transactions"');
+  });
+
+  it('prefixes the operation name when the server message lacks it', async () => {
+    server.use(
+      graphql.link(MOCK_URL).mutation('UploadPoalimIlsTransactions', () =>
+        HttpResponse.json({ errors: [{ message: 'Unexpected error.' }] }),
+      ),
+    );
+
+    expect((await uploadError()).message).toBe(
+      'uploadPoalimIlsTransactions failed: Unexpected error.',
+    );
+  });
+
+  it('explains a rejected API key', async () => {
+    server.use(
+      graphql.link(MOCK_URL).mutation('UploadPoalimIlsTransactions', () =>
+        HttpResponse.json({ errors: [{ message: 'Unauthorized' }] }, { status: 401 }),
+      ),
+    );
+
+    const error = await uploadError();
+    expect(error.message).toContain('rejected the API key (HTTP 401)');
+  });
+
+  it('names the server when it cannot be reached', async () => {
+    server.use(
+      graphql.link(MOCK_URL).mutation('UploadPoalimIlsTransactions', () => HttpResponse.error()),
+    );
+
+    const error = await uploadError();
+    expect(error.message).toContain(`Request to the Accounter server at ${MOCK_URL} failed`);
   });
 });

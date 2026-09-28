@@ -104,6 +104,8 @@ export const TaskErrorSchema = z.object({
   sourceId: z.string(),
   message: z.string(),
   stack: z.string().optional(),
+  /** Human-readable supporting lines (error code, server hint), shown instead of the stack. */
+  details: z.string().optional(),
 });
 
 export type TaskErrorMessage = z.infer<typeof TaskErrorSchema>;

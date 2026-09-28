@@ -119,7 +119,7 @@ __metadata:
     react-router-dom: "npm:7.18.4"
     react-to-pdf: "npm:3.2.2"
     recharts: "npm:3.10.1"
-    simple-icons: "npm:16.32.0"
+    simple-icons: "npm:16.33.0"
     sonner: "npm:2.0.8"
     storybook: "npm:10.6.0"
     tailwind-merge: "npm:3.7.0"
@@ -360,7 +360,7 @@ __metadata:
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.4.0"
     dotenv: "npm:18.0.3"
-    googleapis: "npm:181.0.0"
+    googleapis: "npm:182.0.0"
     graphql: "npm:16.14.2"
     graphql-modules: "npm:3.1.2"
     graphql-scalars: "npm:2.0.0"
@@ -16474,13 +16474,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"googleapis@npm:181.0.0":
-  version: 181.0.0
-  resolution: "googleapis@npm:181.0.0"
+"googleapis@npm:182.0.0":
+  version: 182.0.0
+  resolution: "googleapis@npm:182.0.0"
   dependencies:
     google-auth-library: "npm:^11.0.0"
     googleapis-common: "npm:^9.0.0"
-  checksum: 10c0/23291265ab67e7c0901cdfab3f2c55e55016b078a358b606a41f6b0ac227a8d6c97c61476583057259a148c97353348f64f0be321192aaa96217e6ba1190ddfa
+  checksum: 10c0/f321aa0707d80c1d59dcaaace8b37e20e2f320dcf40808ad3c2a2eca7fb0dd5460fc2dc0bf8dea274c875673e69f261239ff4c17aed03c8d1fdd4b4efcc05de3
   languageName: node
   linkType: hard
 
@@ -23849,10 +23849,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"simple-icons@npm:16.32.0":
-  version: 16.32.0
-  resolution: "simple-icons@npm:16.32.0"
-  checksum: 10c0/111e9c0e3541583e2468f36d4dcd0f3addfea6c6eeb080d97615d5f0c826467d483086147012f8705aa0f227035fb975524dfedfc6dd5c38687b2067b5757e07
+"simple-icons@npm:16.33.0":
+  version: 16.33.0
+  resolution: "simple-icons@npm:16.33.0"
+  checksum: 10c0/545072c72bae189036dfa60e9b68336adb4db75876eaace37b561017076a38fbdd7d50355935de5a87879926b99df02b9bb7155a4166cadfa088824a78b44e35
   languageName: node
   linkType: hard
 

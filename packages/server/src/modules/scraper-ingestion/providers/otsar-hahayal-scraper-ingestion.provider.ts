@@ -400,347 +400,324 @@ export class OtsarHahayalScraperIngestionProvider {
   async uploadOtsarHahayalIlsTransactions(
     transactions: readonly OtsarHahayalIlsTransactionInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (transactions.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const dateOfRegistrations = transactions
-        .map(t => (t.dateOfRegistration ? new Date(t.dateOfRegistration) : null))
-        .filter((d): d is Date => d !== null);
-      const accountNumbers = transactions
-        .map(t => t.accountNumber ?? null)
-        .filter((n): n is number => n !== null);
-      const branchNumbers = transactions
-        .map(t => t.branchNumber ?? null)
-        .filter((n): n is number => n !== null);
+    const dateOfRegistrations = transactions
+      .map(t => (t.dateOfRegistration ? new Date(t.dateOfRegistration) : null))
+      .filter((d): d is Date => d !== null);
+    const accountNumbers = transactions
+      .map(t => t.accountNumber ?? null)
+      .filter((n): n is number => n !== null);
+    const branchNumbers = transactions
+      .map(t => t.branchNumber ?? null)
+      .filter((n): n is number => n !== null);
 
-      const existing = await fetchOtsarHahayalIlsByKeys.run(
-        { accountNumbers, branchNumbers, dateOfRegistrations },
-        this.db,
-      );
+    const existing = await fetchOtsarHahayalIlsByKeys.run(
+      { accountNumbers, branchNumbers, dateOfRegistrations },
+      this.db,
+    );
 
-      const existingByKey = new Map<string, IFetchOtsarHahayalIlsByKeysResult>();
-      for (const row of existing) {
-        const key = [
-          row.account_number,
-          row.branch_number,
-          row.date_of_registration ? dateToTimelessDateString(row.date_of_registration) : '',
-          row.date_of_business_day ? dateToTimelessDateString(row.date_of_business_day) : '',
-          row.reference,
-          row.origin_reference,
-          formatValue(row.credit_amount, true),
-          formatValue(row.debit_amount, true),
-        ].join('_');
-        existingByKey.set(key, row);
-      }
+    const existingByKey = new Map<string, IFetchOtsarHahayalIlsByKeysResult>();
+    for (const row of existing) {
+      const key = [
+        row.account_number,
+        row.branch_number,
+        row.date_of_registration ? dateToTimelessDateString(row.date_of_registration) : '',
+        row.date_of_business_day ? dateToTimelessDateString(row.date_of_business_day) : '',
+        row.reference,
+        row.origin_reference,
+        formatValue(row.credit_amount, true),
+        formatValue(row.debit_amount, true),
+      ].join('_');
+      existingByKey.set(key, row);
+    }
 
-      const businessId = await this.getBusinessId();
+    const businessId = await this.getBusinessId();
 
-      const params = transactions.map(t => ({
-        accountNumber: t.accountNumber,
-        accountType: t.accountType,
-        branchNumber: t.branchNumber,
-        actionCode: t.actionCode,
-        bfbSource: t.bfbSource,
-        closingBalance: t.closingBalance,
-        correspondentAccount: t.correspondentAccount,
-        correspondentAccountType: t.correspondentAccountType,
-        correspondentBank: t.correspondentBank,
-        correspondentBranch: t.correspondentBranch,
-        creditAmount: t.creditAmount,
-        customerName: t.customerName,
-        dateOfBusinessDay: t.dateOfBusinessDay,
-        dateOfRegistration: t.dateOfRegistration,
-        debitAmount: t.debitAmount,
-        depositorId: t.depositorId,
-        description: t.description,
-        drillDownUrl: t.drillDownUrl,
-        drillDownData: t.drillDownData ?? null,
-        firstTransactionOfDay: t.firstTransactionOfDay,
-        lastTransactionOfDay: t.lastTransactionOfDay,
-        name: t.name,
-        openingBalance: t.openingBalance,
-        operationSource: t.operationSource,
-        reference: t.reference,
-        salaryInd: t.salaryInd,
-        transactionSource: t.transactionSource,
-        transactionReason: t.transactionReason,
-        originReference: t.originReference ?? '',
-        ownerId: businessId,
-      }));
+    const params = transactions.map(t => ({
+      accountNumber: t.accountNumber,
+      accountType: t.accountType,
+      branchNumber: t.branchNumber,
+      actionCode: t.actionCode,
+      bfbSource: t.bfbSource,
+      closingBalance: t.closingBalance,
+      correspondentAccount: t.correspondentAccount,
+      correspondentAccountType: t.correspondentAccountType,
+      correspondentBank: t.correspondentBank,
+      correspondentBranch: t.correspondentBranch,
+      creditAmount: t.creditAmount,
+      customerName: t.customerName,
+      dateOfBusinessDay: t.dateOfBusinessDay,
+      dateOfRegistration: t.dateOfRegistration,
+      debitAmount: t.debitAmount,
+      depositorId: t.depositorId,
+      description: t.description,
+      drillDownUrl: t.drillDownUrl,
+      drillDownData: t.drillDownData ?? null,
+      firstTransactionOfDay: t.firstTransactionOfDay,
+      lastTransactionOfDay: t.lastTransactionOfDay,
+      name: t.name,
+      openingBalance: t.openingBalance,
+      operationSource: t.operationSource,
+      reference: t.reference,
+      salaryInd: t.salaryInd,
+      transactionSource: t.transactionSource,
+      transactionReason: t.transactionReason,
+      originReference: t.originReference ?? '',
+      ownerId: businessId,
+    }));
 
-      const result: IUploadOtsarHahayalIlsTransactionsResult[] =
-        await uploadOtsarHahayalIlsTransactions.run({ transactions: params }, this.db);
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    const result: IUploadOtsarHahayalIlsTransactionsResult[] =
+      await uploadOtsarHahayalIlsTransactions.run({ transactions: params }, this.db);
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: r.date_of_registration ? dateToTimelessDateString(r.date_of_registration) : null,
-        description: r.description ?? null,
-        amount:
-          Number(r.debit_amount) === 0 ? String(r.credit_amount) : String(-Number(r.debit_amount)),
-        account: String(r.account_number),
-      }));
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.date_of_registration ? dateToTimelessDateString(r.date_of_registration) : null,
+      description: r.description ?? null,
+      amount:
+        Number(r.debit_amount) === 0 ? String(r.credit_amount) : String(-Number(r.debit_amount)),
+      account: String(r.account_number),
+    }));
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const t of transactions) {
-        const key = [
-          t.accountNumber,
-          t.branchNumber,
-          t.dateOfRegistration ? dateToTimelessDateString(new Date(t.dateOfRegistration)) : '',
-          t.dateOfBusinessDay ? dateToTimelessDateString(new Date(t.dateOfBusinessDay)) : '',
-          t.reference,
-          t.originReference ?? '',
-          formatValue(t.creditAmount, true),
-          formatValue(t.debitAmount, true),
-        ].join('_');
-        const existingRow = existingByKey.get(key);
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffOtsarHahayalIlsRow(existingRow, t);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of transactions) {
+      const key = [
+        t.accountNumber,
+        t.branchNumber,
+        t.dateOfRegistration ? dateToTimelessDateString(new Date(t.dateOfRegistration)) : '',
+        t.dateOfBusinessDay ? dateToTimelessDateString(new Date(t.dateOfBusinessDay)) : '',
+        t.reference,
+        t.originReference ?? '',
+        formatValue(t.creditAmount, true),
+        formatValue(t.debitAmount, true),
+      ].join('_');
+      const existingRow = existingByKey.get(key);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffOtsarHahayalIlsRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      return {
-        inserted: insertedIds.length,
-        skipped: transactions.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Otsar HaHayal ILS transactions:', error);
-      throw error;
     }
+
+    return {
+      inserted: insertedIds.length,
+      skipped: transactions.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 
   async uploadOtsarHahayalForeignTransactions(
     transactions: readonly OtsarHahayalForeignTransactionInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (transactions.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const accounts = transactions
-        .map(t => t.account ?? null)
-        .filter((n): n is number => n !== null);
-      const branches = transactions
-        .map(t => t.branch ?? null)
-        .filter((n): n is number => n !== null);
-      const dates = transactions
-        .map(t => (t.date ? new Date(t.date) : null))
-        .filter((d): d is Date => d !== null);
-      const references = transactions
-        .map(t => t.reference ?? null)
-        .filter((r): r is string => r !== null);
+    const accounts = transactions
+      .map(t => t.account ?? null)
+      .filter((n): n is number => n !== null);
+    const branches = transactions.map(t => t.branch ?? null).filter((n): n is number => n !== null);
+    const dates = transactions
+      .map(t => (t.date ? new Date(t.date) : null))
+      .filter((d): d is Date => d !== null);
+    const references = transactions
+      .map(t => t.reference ?? null)
+      .filter((r): r is string => r !== null);
 
-      const existing = await fetchOtsarHahayalForeignByKeys.run(
-        { accounts, branches, dates, references },
-        this.db,
-      );
+    const existing = await fetchOtsarHahayalForeignByKeys.run(
+      { accounts, branches, dates, references },
+      this.db,
+    );
 
-      const existingByKey = new Map<string, IFetchOtsarHahayalForeignByKeysResult>();
-      for (const row of existing) {
-        const key = [
-          row.account,
-          row.branch,
-          row.date ? dateToTimelessDateString(row.date) : '',
-          row.value_date ? dateToTimelessDateString(row.value_date) : '',
-          row.reference,
-          row.description,
-        ].join('_');
-        existingByKey.set(key, row);
-      }
+    const existingByKey = new Map<string, IFetchOtsarHahayalForeignByKeysResult>();
+    for (const row of existing) {
+      const key = [
+        row.account,
+        row.branch,
+        row.date ? dateToTimelessDateString(row.date) : '',
+        row.value_date ? dateToTimelessDateString(row.value_date) : '',
+        row.reference,
+        row.description,
+      ].join('_');
+      existingByKey.set(key, row);
+    }
 
-      const businessId = await this.getBusinessId();
+    const businessId = await this.getBusinessId();
 
-      const params = transactions.map(t => ({
-        account: t.account,
-        branch: t.branch,
-        accountType: t.accountType,
-        currency: t.currency,
-        openingBalance: t.openingBalance,
-        balance: t.balance ?? null,
-        valueDate: t.valueDate,
-        credit: t.credit,
-        debit: t.debit,
-        description: t.description,
-        sp: t.sp ?? null,
-        reference: t.reference,
-        date: t.date,
-        subTransactions: t.subTransactions,
-        ownerId: businessId,
-      }));
+    const params = transactions.map(t => ({
+      account: t.account,
+      branch: t.branch,
+      accountType: t.accountType,
+      currency: t.currency,
+      openingBalance: t.openingBalance,
+      balance: t.balance ?? null,
+      valueDate: t.valueDate,
+      credit: t.credit,
+      debit: t.debit,
+      description: t.description,
+      sp: t.sp ?? null,
+      reference: t.reference,
+      date: t.date,
+      subTransactions: t.subTransactions,
+      ownerId: businessId,
+    }));
 
-      const result: IUploadOtsarHahayalForeignTransactionsResult[] =
-        await uploadOtsarHahayalForeignTransactions.run({ transactions: params }, this.db);
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    const result: IUploadOtsarHahayalForeignTransactionsResult[] =
+      await uploadOtsarHahayalForeignTransactions.run({ transactions: params }, this.db);
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: r.date ? dateToTimelessDateString(r.date) : null,
-        description: r.description ?? null,
-        amount: Number(r.debit) === 0 ? String(r.credit) : String(-Number(r.debit)),
-        account: String(r.account),
-      }));
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.date ? dateToTimelessDateString(r.date) : null,
+      description: r.description ?? null,
+      amount: Number(r.debit) === 0 ? String(r.credit) : String(-Number(r.debit)),
+      account: String(r.account),
+    }));
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const t of transactions) {
-        const key = [
-          t.account,
-          t.branch,
-          t.date ? dateToTimelessDateString(new Date(t.date)) : '',
-          t.valueDate ? dateToTimelessDateString(new Date(t.valueDate)) : '',
-          t.reference,
-          t.description,
-        ].join('_');
-        const existingRow = existingByKey.get(key);
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffOtsarHahayalForeignRow(existingRow, t);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of transactions) {
+      const key = [
+        t.account,
+        t.branch,
+        t.date ? dateToTimelessDateString(new Date(t.date)) : '',
+        t.valueDate ? dateToTimelessDateString(new Date(t.valueDate)) : '',
+        t.reference,
+        t.description,
+      ].join('_');
+      const existingRow = existingByKey.get(key);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffOtsarHahayalForeignRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      return {
-        inserted: insertedIds.length,
-        skipped: transactions.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Otsar HaHayal foreign transactions:', error);
-      throw error;
     }
+
+    return {
+      inserted: insertedIds.length,
+      skipped: transactions.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 
   async uploadOtsarHahayalCreditCardTransactions(
     transactions: readonly OtsarHahayalCreditCardTransactionInput[],
   ): Promise<ScraperUploadResult> {
-    try {
-      if (transactions.length === 0)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
-      const resourceIds = [...new Set(transactions.map(t => t.resourceId))];
-      const cardTypes = [...new Set(transactions.map(t => t.cardType))];
-      const dates = transactions.map(t => new Date(t.date));
+    const resourceIds = [...new Set(transactions.map(t => t.resourceId))];
+    const cardTypes = [...new Set(transactions.map(t => t.cardType))];
+    const dates = transactions.map(t => new Date(t.date));
 
-      const existing = await fetchOtsarHahayalCreditCardByKeys.run(
-        { resourceIds, cardTypes, dates },
-        this.db,
-      );
+    const existing = await fetchOtsarHahayalCreditCardByKeys.run(
+      { resourceIds, cardTypes, dates },
+      this.db,
+    );
 
-      const existingByKey = new Map<string, IFetchOtsarHahayalCreditCardByKeysResult>();
-      for (const row of existing) {
-        const key = [
-          row.resource_id,
-          row.card_type,
-          row.date ? dateToTimelessDateString(row.date) : '',
-          row.charge_date ? dateToTimelessDateString(row.charge_date) : '',
-          row.deal_amount,
-          row.deal_currency,
-          row.name,
-          row.notes,
-          row.counter,
-        ].join('|');
-        existingByKey.set(key, row);
-      }
+    const existingByKey = new Map<string, IFetchOtsarHahayalCreditCardByKeysResult>();
+    for (const row of existing) {
+      const key = [
+        row.resource_id,
+        row.card_type,
+        row.date ? dateToTimelessDateString(row.date) : '',
+        row.charge_date ? dateToTimelessDateString(row.charge_date) : '',
+        row.deal_amount,
+        row.deal_currency,
+        row.name,
+        row.notes,
+        row.counter,
+      ].join('|');
+      existingByKey.set(key, row);
+    }
 
-      const businessId = await this.getBusinessId();
+    const businessId = await this.getBusinessId();
 
-      const params = transactions.map(t => ({
-        resourceId: t.resourceId,
-        maskedPan: t.maskedPan,
-        cardType: t.cardType,
-        dealGroup: t.dealGroup,
-        date: t.date,
-        chargeDate: t.chargeDate,
-        name: t.name,
-        dealAmount: t.dealAmount,
-        chargeAmount: t.chargeAmount,
-        notes: t.notes,
-        walletType: t.walletType,
-        chargeCurrency: t.chargeCurrency,
-        dealCurrency: t.dealCurrency,
-        counter: t.counter,
-        ownerId: businessId,
-      }));
+    const params = transactions.map(t => ({
+      resourceId: t.resourceId,
+      maskedPan: t.maskedPan,
+      cardType: t.cardType,
+      dealGroup: t.dealGroup,
+      date: t.date,
+      chargeDate: t.chargeDate,
+      name: t.name,
+      dealAmount: t.dealAmount,
+      chargeAmount: t.chargeAmount,
+      notes: t.notes,
+      walletType: t.walletType,
+      chargeCurrency: t.chargeCurrency,
+      dealCurrency: t.dealCurrency,
+      counter: t.counter,
+      ownerId: businessId,
+    }));
 
-      const result: IUploadOtsarHahayalCreditCardTransactionsResult[] =
-        await uploadOtsarHahayalCreditCardTransactions.run({ transactions: params }, this.db);
-      const insertedIds = result
-        .map(r => r.id)
-        .filter((id): id is string => typeof id === 'string');
-      const insertedIdSet = new Set(insertedIds);
+    const result: IUploadOtsarHahayalCreditCardTransactionsResult[] =
+      await uploadOtsarHahayalCreditCardTransactions.run({ transactions: params }, this.db);
+    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
 
-      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-        id: r.id,
-        date: r.date ? dateToTimelessDateString(r.date) : null,
-        description: r.name ?? null,
-        amount: r.charge_amount == null ? null : String(-Number(r.charge_amount)),
-        account: r.resource_id ?? null,
-      }));
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.date ? dateToTimelessDateString(r.date) : null,
+      description: r.name ?? null,
+      amount: r.charge_amount == null ? null : String(-Number(r.charge_amount)),
+      account: r.resource_id ?? null,
+    }));
 
-      const changedTransactions: ChangedTransaction[] = [];
-      for (const t of transactions) {
-        const key = [
-          t.resourceId,
-          t.cardType,
-          t.date,
-          t.chargeDate,
-          t.dealAmount,
-          t.dealCurrency,
-          t.name,
-          t.notes,
-          t.counter,
-        ].join('|');
-        const existingRow = existingByKey.get(key);
-        if (existingRow && !insertedIdSet.has(existingRow.id)) {
-          const changedFields = diffOtsarHahayalCreditCardRow(existingRow, t);
-          if (changedFields.length > 0) {
-            changedTransactions.push({ id: existingRow.id, changedFields });
-          }
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of transactions) {
+      const key = [
+        t.resourceId,
+        t.cardType,
+        t.date,
+        t.chargeDate,
+        t.dealAmount,
+        t.dealCurrency,
+        t.name,
+        t.notes,
+        t.counter,
+      ].join('|');
+      const existingRow = existingByKey.get(key);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffOtsarHahayalCreditCardRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
-
-      return {
-        inserted: insertedIds.length,
-        skipped: transactions.length - insertedIds.length,
-        insertedIds,
-        insertedTransactions,
-        changedTransactions,
-      };
-    } catch (error) {
-      console.error('Error uploading Otsar HaHayal credit card transactions:', error);
-      throw error;
     }
+
+    return {
+      inserted: insertedIds.length,
+      skipped: transactions.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions,
+    };
   }
 }

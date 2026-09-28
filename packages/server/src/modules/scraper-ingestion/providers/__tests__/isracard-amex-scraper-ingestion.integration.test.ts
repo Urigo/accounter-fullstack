@@ -97,6 +97,46 @@ describe('uploadIsracardTransactions', () => {
     expect(result.inserted).toBe(0);
     expect(result.skipped).toBe(1);
   });
+
+  it('summarizes inserted domestic isracard transactions', async () => {
+    const result = await provider.uploadIsracardTransactions([baseTx]);
+    expect(result.insertedTransactions).toEqual([
+      {
+        id: expect.any(String),
+        date: '15/01/2024',
+        description: 'Test Store',
+        amount: '250.00',
+        account: '1234',
+      },
+    ]);
+  });
+
+  it('summarizes inserted abroad isracard transactions from outbound fields', async () => {
+    const abroadTx: IsracardTransactionInput = {
+      card: '1234',
+      cardIndex: 0,
+      fullPurchaseDateOutbound: '18/01/2024',
+      paymentSumOutbound: '42.50',
+      supplierNameOutbound: 'AWS',
+      fullSupplierNameOutbound: 'AWS EMEA',
+      voucherNumber: 9002,
+      isHoraatKeva: 'N',
+      isError: 'N',
+      isCaptcha: 'N',
+      isButton: 'N',
+      tablePageNum: 0 as unknown as boolean,
+    };
+    const result = await provider.uploadIsracardTransactions([abroadTx]);
+    expect(result.insertedTransactions).toEqual([
+      {
+        id: expect.any(String),
+        date: '18/01/2024',
+        description: 'AWS EMEA',
+        amount: '42.50',
+        account: '1234',
+      },
+    ]);
+  });
 });
 
 // ── Amex ──────────────────────────────────────────────────────────────────────
