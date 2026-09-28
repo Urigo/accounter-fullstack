@@ -67,6 +67,8 @@
     "**/node_modules",
     "**/dist",
     "packages/old-accounter",
+    "packages/hashavshevet-mesh",
+    "packages/payper-mesh",
     "**/__generated__",
     "**/__generated__/**",
     "packages/scraper-local-app/scripts"

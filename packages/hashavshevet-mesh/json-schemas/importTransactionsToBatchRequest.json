@@ -1,0 +1,158 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "batchNo": {
+      "type": "integer",
+      "format": "int32",
+      "description": "Insert the transactions to the temporary batch having this number. If no such temporary batch exists, open a new batch."
+    },
+    "check": {
+      "type": "boolean",
+      "description": "check the batch for errors and return the batch status"
+    },
+    "insertolastb": {
+      "type": "boolean",
+      "description": "Insert the transactions to the last open temporary batch. If false, open a new batch."
+    },
+    "issue": {
+      "type": "boolean",
+      "description": "input the temporary batch into the permanent storage."
+    },
+    "rows": {
+      "type": "array",
+      "additionalItems": false,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["SuF"],
+        "properties": {
+          "Osek874": {
+            "type": "string",
+            "description": "VAT registration number (max [20 or 9?] characters)"
+          },
+          "Branch": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Branch"
+          },
+          "CostCode": {
+            "type": "string",
+            "description": "Code of cost center (existing code)"
+          },
+          "TransCredID": {
+            "type": "string",
+            "description": "Main credit account identifier (max 15 charactes)"
+          },
+          "CredName": {
+            "type": "string",
+            "description": "Name of the main credit account (max 50 characters)"
+          },
+          "CurrencyCode": {
+            "type": "string",
+            "description": "Currency (max 5 characters)"
+          },
+          "DatF3": {
+            "type": "string",
+            "description": "Additional date"
+          },
+          "TransDebID": {
+            "type": "string",
+            "description": "Main debit account identifier (max 15 charactes)"
+          },
+          "DebName": {
+            "type": "string",
+            "description": "Name of the main debit account (max 50 characters)"
+          },
+          "Description": {
+            "type": "string",
+            "description": "Description (max 250 characters)"
+          },
+          "Details": {
+            "type": "string",
+            "description": "Remarks (max 50 characters)"
+          },
+          "Det2": {
+            "type": "string",
+            "description": "Additional remarks (max 50 characters)"
+          },
+          "DueDate": {
+            "type": "string",
+            "description": "Due date"
+          },
+          "SuFDlr": {
+            "type": "number",
+            "format": "float",
+            "description": "Total amount in foreign currency"
+          },
+          "Quant": {
+            "type": "number",
+            "format": "float",
+            "description": "Quantity"
+          },
+          "Referance": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Reference"
+          },
+          "Ref2": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Reference-2"
+          },
+          "Ref3": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Reference-3"
+          },
+          "SuF": {
+            "type": "number",
+            "format": "float",
+            "description": "Total NIS amount (credit or debit)"
+          },
+          "TransType": {
+            "type": "string",
+            "description": "Transaction type code"
+          },
+          "ValueDate": {
+            "type": "string",
+            "description": "Date"
+          },
+          "moves": {
+            "type": "array",
+            "additionalItems": false,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["AccountKey", "DebitCredit", "Suf"],
+              "properties": {
+                "AccountKey": {
+                  "type": "string",
+                  "description": "Account identifier (max 15 characters)"
+                },
+                "DebitCredit": {
+                  "type": "integer",
+                  "description": "Debit=1, Credit=0"
+                },
+                "SufDlr": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Foreign currency amount"
+                },
+                "Suf": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "NIS amount"
+                }
+              },
+              "description": "Interface for posting new Record"
+            },
+            "description": "List of Records to add."
+          }
+        },
+        "description": "Interface for posting new Transaction"
+      }
+    }
+  }
+}

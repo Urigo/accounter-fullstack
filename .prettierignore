@@ -22,6 +22,8 @@ yarn.lock
 
 .bob/
 packages/old-accounter/
+packages/hashavshevet-mesh/
+packages/payper-mesh/
 
 .changeset/
 CHANGELOG.md

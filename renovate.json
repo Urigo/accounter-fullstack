@@ -59,7 +59,9 @@
       "matchFileNames": [
         "packages/gmail-listener/package.json",
         "packages/gmail-listener/DockerFile",
+        "packages/hashavshevet-mesh/package.json",
         "packages/old-accounter/package.json",
+        "packages/payper-mesh/package.json",
         "packages/scraper-local-app/package.json"
       ],
       "enabled": false

@@ -6,7 +6,9 @@
   "workspaces": {
     "packages": [
       "packages/*",
-      "!packages/old-accounter"
+      "!packages/old-accounter",
+      "!packages/hashavshevet-mesh",
+      "!packages/payper-mesh"
     ]
   },
   "packageManager": "yarn@4.18.0",

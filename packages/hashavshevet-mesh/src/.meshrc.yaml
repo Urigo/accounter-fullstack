@@ -1,0 +1,125 @@
+sources:
+  - name: Hashavshevet
+    handler:
+      jsonSchema:
+        endpoint: 'https://{context.hashavshevetUrl}/'
+        queryStringOptions:
+          indices: true
+        operationHeaders:
+          Authorization: 'Bearer {context.authToken}'
+          host: '{context.hashavshevetUrl}'
+          Content-Type: application/x-www-form-urlencoded
+          Accept: application/json
+        operations:
+          - type: Query
+            field: getSession
+            path: /api/napi
+            method: POST
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getSessionResponse
+          - type: Query
+            field: getCompanies
+            path: /CompanyListToTokenApi/TokenCompanies
+            method: POST
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getCompaniesResponse
+
+          - type: Query
+            field: getRecordsRaw
+            path: /ExportDataApi/exportData
+            method: POST
+            requestSchema: ../json-schemas/getRecordsRawRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getRecordsResponse
+
+          - type: Query
+            field: getTransactionsRaw
+            path: /ExportDataApi/exportData
+            method: POST
+            requestSchema: ../json-schemas/getTransactionsRawRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getTransactionsResponse
+          - type: Mutation
+            field: importTransactionsToBatch
+            path: /jtransApi/tmpBatch
+            method: POST
+            requestSchema: ../json-schemas/importTransactionsToBatchRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/importTransactionsToBatchResponse
+
+          - type: Mutation
+            field: createBatch
+            path: /jtransApi/newBatch
+            method: POST
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/createBatch
+          - type: Query
+            field: getBatchRaw
+            path: /ExportDataApi/exportData
+            method: POST
+            requestSchema: ../json-schemas/getBatchRawRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getBatchResponse
+          - type: Query
+            field: checkBatch
+            path: /jtransApi/chkBatch
+            method: POST
+            requestSchema: ../json-schemas/checkBatchRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/checkBatchResponse
+          - type: Mutation
+            field: issueBatch
+            path: /jtransApi/issueBatch
+            method: POST
+            requestSchema: ../json-schemas/issueBatchRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/issueBatchResponse
+
+          - type: Query
+            field: getAccountsRaw
+            path: /ExportDataApi/exportData
+            method: POST
+            requestSchema: ../json-schemas/getAccountsRawRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getAccountsResponse
+          - type: Mutation
+            field: importAccountsRaw
+            path: /IndexApi/importIndex
+            method: POST
+            requestSchema: ../json-schemas/hashavshevetSchema.json#/definitions/importAccountsRawRequest
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/importAccountsResponse
+          # deleteAccounts (deleteIndexRecords)
+
+          # importItems (importIndexRecords)
+          # deleteItems (deleteIndexRecords)
+
+          - type: Query
+            field: getBankPageRecordsRaw
+            path: /ExportDataApi/exportData
+            method: POST
+            requestSchema: ../json-schemas/getBankPageRecordsRawRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getBankPageRecordsResponse
+          - type: Mutation
+            field: importBankPage
+            path: /BankPagesApi/importBankPage
+            method: POST
+            requestSchema: ../json-schemas/importBankPageRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/importBankPageResponse
+
+            # createDocument
+            # showDocument
+            # delDocument
+            # issueDoc
+
+            # crmActivities
+            # crmActivitiesTest
+
+          - type: Query
+            field: getSortCodesRaw
+            path: /ExportDataApi/exportData
+            method: POST
+            requestSchema: ../json-schemas/getSortCodesRawRequest.json
+            responseSchema: ../json-schemas/hashavshevetSchema.json#/definitions/getSortCodesResponse
+
+serve:
+  browser: false
+
+sdk:
+  generateOperations:
+    selectionSetDepth: 5
+
+additionalTypeDefs:
+  - ./additional-type-defs.graphql
+
+additionalResolvers:
+  - ./resolvers/mesh-resolvers.js
