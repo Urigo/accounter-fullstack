@@ -17,9 +17,9 @@ notes, open questions and discussion. Each message has free-text content, a date
 name, and messages are ordered by creation.
 
 The question asked is how to fit this in: layer it on top, or first rethink the whole structure.
-This document plans both and recommends one. It follows the approvals spec in
-[`docs/dynamic-report-accountant-approval/`](../dynamic-report-accountant-approval/spec.md) and the
-change-tracking plan in
+This document plans both and recommends one. It follows the approvals spec (proposed in
+[#4518](https://github.com/Urigo/accounter-fullstack/pull/4518) as
+`docs/dynamic-report-accountant-approval/spec.md`) and the change-tracking plan in
 [`docs/dynamic-report-change-tracking/`](../dynamic-report-change-tracking/plan.md).
 
 ### Decisions
@@ -219,12 +219,22 @@ input AddDynamicReportCommentInput {
 }
 extend type Query {
   dynamicReportThreads(templateName: String!): [DynamicReportThread!]!
+    @requiresAuth
+    @requiresAnyRole(roles: ["business_owner", "accountant"])
 }
 extend type Mutation {
   addDynamicReportComment(input: AddDynamicReportCommentInput!): DynamicReportThread!
+    @requiresAuth
+    @requiresAnyRole(roles: ["business_owner", "accountant"])
   editDynamicReportComment(id: UUID!, content: String!): DynamicReportComment!
+    @requiresAuth
+    @requiresAnyRole(roles: ["business_owner", "accountant"])
   deleteDynamicReportComment(id: UUID!): DynamicReportComment!
+    @requiresAuth
+    @requiresAnyRole(roles: ["business_owner", "accountant"])
   setDynamicReportThreadResolved(threadId: UUID!, resolved: Boolean!): DynamicReportThread!
+    @requiresAuth
+    @requiresAnyRole(roles: ["business_owner", "accountant"])
 }
 ```
 
