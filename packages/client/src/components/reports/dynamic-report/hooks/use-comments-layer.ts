@@ -107,6 +107,10 @@ export type CommentsLayer = {
   setResolved: (resolved: boolean) => Promise<boolean>;
   view: CommentView;
   ownerName: (ownerId: string) => string | undefined;
+  /** A thread's node as the report shows it now: its row text, or its last known label. */
+  threadLabel: (thread: CommentThread) => string;
+  /** Row texts above a thread's node, or none for a node no longer in the report. */
+  threadPath: (thread: CommentThread) => string[];
 };
 
 const NO_THREADS: readonly ThreadData[] = [];
@@ -426,6 +430,19 @@ export function useCommentsLayer({
   );
   const ownerName = useCallback((ownerId: string) => ownerNames.get(ownerId), [ownerNames]);
 
+  const threadLabel = useCallback(
+    (thread: CommentThread) =>
+      (reportNodeById.get(thread.nodeId) ?? ghostById.get(thread.nodeId))?.text ?? thread.nodeLabel,
+    [reportNodeById, ghostById],
+  );
+  const threadPath = useCallback(
+    (thread: CommentThread) =>
+      reportNodeById.has(thread.nodeId) || ghostById.has(thread.nodeId)
+        ? nodePath(renderedNodes, thread.nodeId)
+        : [],
+    [reportNodeById, ghostById, renderedNodes],
+  );
+
   return {
     threads,
     threadsFetching: threadsResult.fetching,
@@ -455,5 +472,7 @@ export function useCommentsLayer({
     setResolved,
     view,
     ownerName,
+    threadLabel,
+    threadPath,
   };
 }

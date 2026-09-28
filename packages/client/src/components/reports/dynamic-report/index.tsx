@@ -51,7 +51,9 @@ import {
 import { TemplateManager } from './dialogs/template-manager.js';
 import { useApprovalLayer } from './hooks/use-approval-layer.js';
 import { useBaselineDiff } from './hooks/use-baseline-diff.js';
+import { useCommentsLayer } from './hooks/use-comments-layer.js';
 import { LegacyBanner } from './legacy-banner.js';
+import { ThreadSheet } from './thread-sheet.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import { branchStatus, dropSavedOverrides } from './utils/approvals.js';
@@ -540,6 +542,20 @@ export function DynamicReport() {
     loadedTemplateName: templateNodesData?.dynamicReport?.name,
     selectedTemplateName,
     hasBusinessSums: !!businessSumsData,
+  });
+
+  // ── Comments ──────────────────────────────────────────────────────────────
+  // Live writes on the saved template: never part of the dirty flag, staged statuses or the scope
+  // guard, and not gated by the Edit switch, the lock or a pinned baseline.
+  const comments = useCommentsLayer({
+    templateName: currentTemplate?.name ?? null,
+    reportTree,
+    ghosts: reportDiff?.ghosts,
+    fromDate,
+    toDate,
+    scopeOwnerId,
+    owners,
+    reviewVisibility,
   });
 
   // Derive template list for TemplateManager
@@ -1047,10 +1063,13 @@ export function DynamicReport() {
             onLeafApprovalChange={handleLeafApprovalChange}
             onBranchApprovalChange={handleBranchApprovalChange}
             approvalsDisabledReason={approvalsDisabledReason}
-            reviewVisibility={reviewVisibility}
+            rowComments={comments.rowComments}
+            reviewVisibility={comments.visibility}
           />
         </div>
       </div>
+
+      <ThreadSheet layer={comments} />
 
       <ChangePeriodDialog ref={changePeriodDialogRef} onConfirm={handlePeriodConfirmed} />
 
