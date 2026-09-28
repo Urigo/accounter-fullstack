@@ -19,6 +19,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
+import { Depreciation } from '../common/depreciation/index.js';
 import {
   BusinessTripSummarizedReport,
   PreviewDocumentModal,
@@ -66,6 +67,7 @@ import { SalariesTable } from './extended-info/salaries-info.js';
       invoicesCount
       ledgerCount
       miscExpensesCount
+      depreciationRecordsCount
       isLedgerLocked
       openDocuments
     }
@@ -260,6 +262,7 @@ export function ChargeExtendedInfo({
   const hasInvoices = !!charge?.metadata?.invoicesCount;
   const isSalaryCharge = chargeType === 'SalaryCharge';
   const hasMiscExpenses = !!charge?.metadata?.miscExpensesCount;
+  const hasDepreciation = !!charge?.metadata?.depreciationRecordsCount;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
   const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasReceipts;
   const hasAccountingDocs = hasInvoices || hasReceipts;
@@ -298,6 +301,14 @@ export function ChargeExtendedInfo({
       );
     }
   }, [hasMiscExpenses]);
+
+  useEffect(() => {
+    if (hasDepreciation) {
+      setAccordionItems(items =>
+        items.includes('depreciation') ? items : [...items, 'depreciation'],
+      );
+    }
+  }, [hasDepreciation]);
 
   const galleryIsReady = isFragmentReady(
     ChargeExpansionFieldsFragmentDoc,
@@ -441,6 +452,14 @@ export function ChargeExtendedInfo({
                       onChange={onExtendedChange}
                     />
                   )}
+                </AccordionContent>
+              </AccordionItem>
+            )}
+            {hasDepreciation && (
+              <AccordionItem value="depreciation">
+                <AccordionTrigger disabled={!hasDepreciation}>Depreciation</AccordionTrigger>
+                <AccordionContent>
+                  <Depreciation chargeId={charge.id} onChange={onExtendedChange} />
                 </AccordionContent>
               </AccordionItem>
             )}
