@@ -1,3 +1,4 @@
+import { withoutCollidingBranches } from './cross-tree-drop.js';
 import { getDescendantIds, type CustomData, type FlatNode } from './types.js';
 
 /**
@@ -54,8 +55,9 @@ export function moveBranchToBank(
     }
   }
 
+  // A sort-code branch in the subtree may already be in the bank; it merges into that one.
   return {
-    nextBankTree: [...bankTree, ...subtreeNodes],
+    nextBankTree: [...bankTree, ...withoutCollidingBranches(bankTree, subtreeNodes)],
     nextReportTree,
   };
 }
