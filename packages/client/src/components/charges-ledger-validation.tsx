@@ -3,7 +3,11 @@ import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { encodeFilters, ROUTES } from '@/router/routes.js';
-import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
+import {
+  ChargesLedgerValidationDocument,
+  type ChargeFilter,
+  type ChargesLedgerValidationQuery,
+} from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
 import { ChargesFilters } from './charges/charges-filters/index.js';
@@ -43,6 +47,23 @@ export function getLedgerValidationHref(filter?: ChargeFilter | null, page?: num
   return `${ROUTES.CHARGES.LEDGER_VALIDATION}${queryParams}`;
 }
 
+type FlaggedCharge = NonNullable<
+  ChargesLedgerValidationQuery['chargesWithLedgerChanges'][number]['charge']
+>;
+
+/**
+ * Charges the validation stream flagged with ledger changes. A charge that failed on the server
+ * streams as `null`, but a deferred patch for its (async) `metadata` can still arrive afterwards —
+ * urql's incremental merge then walks the patch path and turns the `null` into a partial object
+ * holding only `metadata`. A real charge always carries `id` (selected without `@defer`), so the
+ * partial ones are dropped here instead of crashing the table.
+ */
+export function getFlaggedCharges(
+  results: ChargesLedgerValidationQuery['chargesWithLedgerChanges'] | undefined,
+): FlaggedCharge[] {
+  return (results ?? []).flatMap(res => (res.charge?.id ? [res.charge] : []));
+}
+
 export const ChargesLedgerValidation = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
@@ -78,6 +99,11 @@ export const ChargesLedgerValidation = (): ReactElement => {
   const progress = data?.chargesWithLedgerChanges?.length
     ? data.chargesWithLedgerChanges[data.chargesWithLedgerChanges.length - 1].progress
     : 0;
+
+  const flaggedCharges = useMemo(
+    () => getFlaggedCharges(data?.chargesWithLedgerChanges),
+    [data?.chargesWithLedgerChanges],
+  );
 
   const onFilterChange = useCallback(
     (newFilter: ChargeFilter): void => {
@@ -159,20 +185,16 @@ export const ChargesLedgerValidation = (): ReactElement => {
           <ChargesTable
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
-            data={
-              data?.chargesWithLedgerChanges.filter(res => !!res.charge).map(res => res.charge!) ??
-              []
-            }
+            data={flaggedCharges}
             isAllOpened={isAllOpened}
           />
           <div className="flex flex-row justify-center my-2">
             {progress > 0 && progress < 100 && <Loader2 className="size-6 animate-spin" />}
-            {progress === 100 &&
-              !data?.chargesWithLedgerChanges.filter(res => !!res.charge).length && (
-                <span className="inline-flex size-11 items-center justify-center rounded-full bg-green-500 text-white">
-                  <Check />
-                </span>
-              )}
+            {progress === 100 && !flaggedCharges.length && (
+              <span className="inline-flex size-11 items-center justify-center rounded-full bg-green-500 text-white">
+                <Check />
+              </span>
+            )}
           </div>
         </>
       )}
