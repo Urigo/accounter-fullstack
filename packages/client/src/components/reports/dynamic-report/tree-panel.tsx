@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils.js';
 import type { AccountantStatus } from '../../../gql/graphql.js';
 import type { RowApproval } from './approval-status.js';
 import type { RowDiff } from './diff-markers.js';
+import type { RowAnnotations } from './row-trailing.js';
 import { TreeNodeRow } from './tree-node.js';
 import type { ApprovalStats, EffectiveApproval, ReviewVisibility } from './utils/approvals.js';
 import type { ReportDiff } from './utils/diff.js';
@@ -54,8 +55,7 @@ interface TreePanelProps {
 }
 
 type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
-  rowDiff: (nodeId: string) => RowDiff | undefined;
-  rowApproval: (node: FlatNode<CustomData>) => RowApproval | undefined;
+  rowAnnotations: (node: FlatNode<CustomData>) => RowAnnotations;
   ghostIds: Set<string>;
   reviewVisibility: ReviewVisibility | null;
 };
@@ -96,8 +96,7 @@ function renderSubtree(
             onToggleExpand={props.onToggleExpand}
             onRename={props.onRename}
             onDelete={props.onDelete}
-            diff={props.rowDiff(node.id)}
-            approval={props.rowApproval(node)}
+            annotations={props.rowAnnotations(node)}
             isForcedOpen={isForcedOpen}
           />
           {node.droppable &&
@@ -165,6 +164,8 @@ export function TreePanel({
 
   const ghostIds = useMemo(() => new Set((diff?.ghosts ?? []).map(node => node.id)), [diff]);
 
+  // One builder per layer, combined below into the row's annotations. A new layer adds a builder
+  // and a field on RowAnnotations; TreeNodeRow and renderSubtree don't change.
   const rowDiff = useMemo(() => {
     return (nodeId: string): RowDiff | undefined => {
       if (newEntityIds?.has(nodeId)) {
@@ -217,13 +218,21 @@ export function TreePanel({
     approvalsDisabledReason,
   ]);
 
+  const rowAnnotations = useMemo(
+    () =>
+      (node: FlatNode<CustomData>): RowAnnotations => ({
+        diff: rowDiff(node.id),
+        approval: rowApproval(node),
+      }),
+    [rowDiff, rowApproval],
+  );
+
   const renderProps: RenderProps = {
     editMode,
     onToggleExpand,
     onRename,
     onDelete,
-    rowDiff,
-    rowApproval,
+    rowAnnotations,
     ghostIds,
     reviewVisibility: treeId === 'report' ? reviewVisibility : null,
   };

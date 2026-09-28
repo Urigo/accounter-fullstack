@@ -39,17 +39,10 @@ import {
 } from '@/components/ui/tooltip.js';
 import { cn } from '@/lib/utils.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
-import { RowApprovalStatus, type RowApproval } from './approval-status.js';
-import { DiffMarkers, type RowDiff } from './diff-markers.js';
 import { DragOverlayContent } from './drag-overlay.js';
+import { RowTrailing, type RowAnnotations } from './row-trailing.js';
 import type { DragPayload } from './utils/cross-tree-drop.js';
-import {
-  formatCurrency,
-  isBranchNode,
-  type CustomData,
-  type FlatNode,
-  type NodeStats,
-} from './utils/types.js';
+import { isBranchNode, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
 
 interface TreeNodeProps {
   node: FlatNode<CustomData>;
@@ -60,10 +53,8 @@ interface TreeNodeProps {
   onToggleExpand: (nodeId: string) => void;
   onRename?: (nodeId: string, currentName: string) => void;
   onDelete?: (nodeId: string) => void;
-  /** How this row differs from the last saved baseline, when a baseline is in play. */
-  diff?: RowDiff;
-  /** The row's accountant status. Report rows reserve a slot for it even when it is absent. */
-  approval?: RowApproval;
+  /** What each layer says about this row (diff, approval, …). Absent means none has anything. */
+  annotations?: RowAnnotations;
   /**
    * The Needs review filter shows this branch open whatever its saved isOpen says. Its expand
    * toggle is disabled meanwhile, since a click would flip the saved isOpen without any visible
@@ -71,6 +62,8 @@ interface TreeNodeProps {
    */
   isForcedOpen?: boolean;
 }
+
+const NO_ANNOTATIONS: RowAnnotations = {};
 
 function instructionToIndicator(
   instruction: Instruction | null,
@@ -91,10 +84,10 @@ export function TreeNodeRow({
   onToggleExpand,
   onRename,
   onDelete,
-  diff,
-  approval,
+  annotations = NO_ANNOTATIONS,
   isForcedOpen = false,
 }: TreeNodeProps): ReactElement {
+  const { diff } = annotations;
   const [isDragging, setIsDragging] = useState(false);
   const [dropIndicator, setDropIndicator] = useState<'top' | 'bottom' | 'child' | null>(null);
 
@@ -160,13 +153,8 @@ export function TreeNodeRow({
 
   const indentPx = depth * 24;
 
-  // A fixed-width slot at the far right, so statuses line up as a column even on rows without one.
-  const approvalSlot =
-    treeId === 'report' ? (
-      <div className="w-7 shrink-0 flex items-center justify-center">
-        {approval && <RowApprovalStatus approval={approval} />}
-      </div>
-    ) : null;
+  // Report rows end in fixed-width slots, so each layer's markers line up as a column.
+  const withSlots = treeId === 'report';
 
   if (isBranch) {
     const sum = nodeStats.get(node.id)?.sum ?? 0;
@@ -228,26 +216,12 @@ export function TreeNodeRow({
             </Badge>
           )}
 
-          <div className="flex items-center gap-2 ml-auto">
-            <DiffMarkers diff={diff} />
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      'text-xs font-mono',
-                      sum >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800',
-                    )}
-                  >
-                    {formatCurrency(sum)}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>Total of all descendants</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
+          <RowTrailing
+            annotations={annotations}
+            value={sum}
+            valueTooltip="Total of all descendants"
+            withSlots={withSlots}
+          >
             {!isExpanded && (
               <TooltipProvider>
                 <Tooltip>
@@ -285,9 +259,7 @@ export function TreeNodeRow({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-
-            {approvalSlot}
-          </div>
+          </RowTrailing>
         </div>
       </div>
     );
@@ -333,19 +305,7 @@ export function TreeNodeRow({
 
         <span className={cn('ml-2 truncate', isGhost && 'line-through')}>{node.text}</span>
 
-        <div className="flex items-center gap-2 ml-auto">
-          <DiffMarkers diff={diff} />
-
-          <Badge
-            variant="secondary"
-            className={cn(
-              'text-xs font-mono',
-              value >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800',
-            )}
-          >
-            {formatCurrency(value)}
-          </Badge>
-
+        <RowTrailing annotations={annotations} value={value} withSlots={withSlots}>
           {!isGhost && (
             <Button
               variant="ghost"
@@ -360,9 +320,7 @@ export function TreeNodeRow({
               )}
             </Button>
           )}
-
-          {approvalSlot}
-        </div>
+        </RowTrailing>
       </div>
 
       {isExpanded && !isGhost && (
