@@ -1,9 +1,13 @@
 import { forwardRef, useId, useState, type ComponentProps } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
 import { Currency } from '../../../gql/graphql.js';
+import {
+  currencyCodeToLabel,
+  currencyCodeToName,
+  currencyCodeToSymbol,
+} from '../../../helpers/currency.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
-import { Button } from '../../ui/button.js';
 import {
   Command,
   CommandEmpty,
@@ -65,15 +69,24 @@ type CurrencyCodeFieldProps = {
   disabled?: boolean;
   form?: string;
   defaultValue?: Currency | null;
+  /** Restricts the options in the dropdown. Defaults to every `Currency`. */
+  currencies?: Currency[];
 };
 
+/**
+ * The currency part of `CurrencyInput`, rendered inside the amount field's border.
+ *
+ * Collapsed, it shows only the currency symbol (`₪`, `$`, …) so it takes little room next to the
+ * amount; opened, each option shows the full name, code and symbol, and all three are searchable.
+ */
 function CurrencySelect({
   value,
   onChange,
   onBlur,
-  label,
+  label = 'Currency',
   disabled,
   form,
+  currencies = CURRENCIES,
 }: CurrencyCodeFieldProps) {
   const [open, setOpen] = useState(false);
   // Same modal-layer workaround as `ComboBox`: the currency search input is unusable and clicks on
@@ -81,54 +94,77 @@ function CurrencySelect({
   // See `usePortalContainer` and https://github.com/emilkowalski/vaul/issues/496
   const portalContainer = usePortalContainer();
 
+  const symbol = value ? currencyCodeToSymbol(value) : null;
+  const description = value ? `${label}: ${currencyCodeToLabel(value)}` : label;
+
+  // A locked currency is part of the value's meaning, not a control, so it renders as plain text.
+  if (disabled) {
+    return (
+      <span
+        className="flex h-full shrink-0 items-center px-3 text-sm text-gray-500 dark:text-gray-400"
+        title={description}
+        aria-label={description}
+      >
+        {symbol ?? '—'}
+      </span>
+    );
+  }
+
   return (
-    <div className="w-1/2 min-w-[75px]">
-      {label && <Label className="sr-only">{label}</Label>}
-      <Popover modal open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-between font-normal"
-            disabled={disabled}
-            onBlur={onBlur}
-            onClick={e => e.stopPropagation()}
-          >
-            <span>{value ?? 'Currency'}</span>
-            <ChevronDownIcon
-              strokeWidth={2}
-              className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
-              aria-hidden="true"
-            />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-40 p-0" align="start" container={portalContainer}>
-          <Command>
-            <CommandInput placeholder="Search currency..." form={form} />
-            <CommandList>
-              <CommandEmpty>No currency found.</CommandEmpty>
-              <CommandGroup>
-                {CURRENCIES.map(currency => (
-                  <CommandItem
-                    key={currency}
-                    value={currency}
-                    onSelect={() => {
-                      onChange?.(currency);
-                      setOpen(false);
-                    }}
-                  >
-                    {currency}
-                    <Check
-                      className={cn('ml-auto', value === currency ? 'opacity-100' : 'opacity-0')}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <Popover modal open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={description}
+          title={description}
+          className={cn(
+            'flex h-full shrink-0 items-center gap-1 rounded-r-md pl-2 pr-2.5 text-sm outline-none transition-colors',
+            'text-gray-600 hover:bg-gray-100 hover:text-gray-950 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-50',
+            'focus-visible:bg-gray-100 dark:focus-visible:bg-gray-800',
+          )}
+          onBlur={onBlur}
+          onClick={e => e.stopPropagation()}
+        >
+          <span className={cn('font-medium', !symbol && 'text-gray-500 font-normal')}>
+            {symbol ?? 'Currency'}
+          </span>
+          <ChevronDownIcon
+            strokeWidth={2}
+            className="size-3.5 shrink-0 text-gray-500/80 dark:text-gray-400/80"
+            aria-hidden="true"
+          />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="end" container={portalContainer}>
+        <Command>
+          <CommandInput placeholder="Search currency..." form={form} />
+          <CommandList>
+            <CommandEmpty>No currency found.</CommandEmpty>
+            <CommandGroup>
+              {currencies.map(currency => (
+                <CommandItem
+                  key={currency}
+                  value={currency}
+                  keywords={[currencyCodeToName(currency), currencyCodeToSymbol(currency)]}
+                  onSelect={() => {
+                    onChange?.(currency);
+                    setOpen(false);
+                  }}
+                >
+                  <span className="w-9 shrink-0 text-center font-medium text-gray-500 dark:text-gray-400">
+                    {currencyCodeToSymbol(currency)}
+                  </span>
+                  <span className="truncate">{currencyCodeToLabel(currency)}</span>
+                  <Check
+                    className={cn('ml-auto', value === currency ? 'opacity-100' : 'opacity-0')}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -138,11 +174,19 @@ type Props = ComponentProps<typeof NumberInput> & {
   precision?: number;
 };
 
+/**
+ * A single field for an amount and its currency.
+ *
+ * The currency picker lives inside the amount field's border (like a suffix), so the pair reads as
+ * one control rather than two inputs pushed against each other. The border, focus ring and
+ * invalid state belong to the wrapper and track the inner amount input.
+ */
 export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({
   currencyCodeProps: { error: currencyError, ...currencyCodeProps },
   error,
   label,
   id,
+  className,
   ...props
 }) {
   const generatedId = useId();
@@ -163,27 +207,37 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
       }
     }
   }
-  // Label and error live here rather than inside `NumberInput`, so the amount field and the
-  // currency select are direct flex siblings and line up by construction. The select used to
-  // carry an `mt-6` spacer sized to Mantine's label; any label whose height differed — as the
-  // shadcn one does — left the two halves misaligned.
+  const invalid = !!message || props['aria-invalid'] === true || props['aria-invalid'] === 'true';
+  // Label and error live here rather than inside `NumberInput`, so they frame the whole control
+  // (amount and currency) rather than just the amount half.
   return (
-    <div className="w-full">
+    <div className={cn('w-full', className)}>
       {label ? (
         <Label htmlFor={inputId} className="mb-1">
           {label}
         </Label>
       ) : null}
-      <div className="flex flex-row min-w-[150px]">
-        <NumberInput
-          className="w-full min-w-[75px]"
-          {...props}
-          id={inputId}
-          aria-invalid={!!message}
-          aria-describedby={message ? errorId : undefined}
-          hideControls
-          decimalScale={precision ?? 2}
-        />
+      <div
+        data-slot="currency-input"
+        data-invalid={invalid || undefined}
+        className={cn(
+          'flex h-9 w-full min-w-[150px] items-stretch overflow-hidden rounded-md border border-gray-200 bg-transparent shadow-xs transition-[color,box-shadow] dark:border-gray-800 dark:bg-gray-800/30',
+          'focus-within:border-gray-950 focus-within:ring-[3px] focus-within:ring-gray-950/50 dark:focus-within:border-gray-300 dark:focus-within:ring-gray-300/50',
+          'data-invalid:border-red-500 data-invalid:ring-red-500/20 dark:data-invalid:border-red-900 dark:data-invalid:ring-red-900/40',
+          'has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-50',
+        )}
+      >
+        <div className="min-w-0 flex-1 [&>div]:h-full">
+          <NumberInput
+            className="h-full rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 aria-invalid:ring-0 disabled:opacity-100 dark:bg-transparent dark:dark:bg-transparent"
+            {...props}
+            id={inputId}
+            aria-invalid={invalid}
+            aria-describedby={message ? errorId : props['aria-describedby']}
+            hideControls
+            decimalScale={precision ?? 2}
+          />
+        </div>
         <CurrencySelect {...currencyCodeProps} />
       </div>
       {message ? (

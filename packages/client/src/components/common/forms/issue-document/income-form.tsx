@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, Receipt, Trash2 } from 'lucide-react';
-import { Currency, DocumentVatType } from '../../../../gql/graphql.js';
+import { DocumentVatType, type Currency } from '../../../../gql/graphql.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Input } from '../../../ui/input.js';
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '../../../ui/select.js';
 import { Textarea } from '../../../ui/textarea.js';
+import { CurrencyInput } from '../../inputs/currency-input.js';
 import type { Income } from './types/document.js';
 import { getCurrencyOptions, getVatTypeOptions } from './utils/enum-helpers.js';
 
@@ -24,7 +25,7 @@ interface IncomeFormProps {
 }
 
 const vatTypes = getVatTypeOptions();
-const currencies = getCurrencyOptions();
+const currencyCodes = getCurrencyOptions().map(option => option.value);
 
 export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
   const addIncomeItem = () => {
@@ -93,35 +94,21 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Price</Label>
-                <Input
-                  type="number"
-                  step="0.01"
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor={`income-${index}-price`}>Price</Label>
+                <CurrencyInput
+                  id={`income-${index}-price`}
                   value={item.price}
-                  onChange={e =>
-                    updateIncomeItem(index, 'price', Number.parseFloat(e.target.value) || 0)
-                  }
+                  onChange={value => updateIncomeItem(index, 'price', value ?? 0)}
                   placeholder="0.00"
+                  currencyCodeProps={{
+                    value: item.currency,
+                    onChange: value => {
+                      if (value) updateIncomeItem(index, 'currency', value);
+                    },
+                    currencies: currencyCodes,
+                  }}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Currency</Label>
-                <Select
-                  value={item.currency}
-                  onValueChange={(value: Currency) => updateIncomeItem(index, 'currency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currencies.map(curr => (
-                      <SelectItem key={curr.value} value={curr.value}>
-                        {curr.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Quantity</Label>
