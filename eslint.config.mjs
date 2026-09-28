@@ -53,6 +53,8 @@ export default [
   {
     ignores: [
       'packages/old-accounter/',
+      'packages/hashavshevet-mesh/',
+      'packages/payper-mesh/',
       '**/__generated__/',
       '**/schema.graphql',
       '**/__tests__/',

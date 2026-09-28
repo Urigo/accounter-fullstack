@@ -1,0 +1,12 @@
+# Detached from the monorepo workspaces: installing it standalone creates its own lockfile and
+# Yarn state, which are not committed.
+yarn.lock
+.yarn/
+node_modules/
+dist/
+.bob/
+# Mesh v0 build artifacts
+.mesh/
+src/.mesh/
+src/mesh-artifacts/
+.env

@@ -30,10 +30,17 @@ Where the implementation differs from the plan:
 - **CI step:** `server-tests.yml` gains a step that runs the package's `generate` before Vitest,
   since the new unit tests import the generated SDK. Composing needs no network (checked with
   networking disabled).
-- **Pending changesets:** retiring the two packages also removes their 52 pending dependency-bump
-  changesets, which would otherwise make `changeset version` fail.
-- **`glob`:** the root `glob` devDependency is removed along with `mesh-artifacts-rename.mjs`, its
-  only user.
+- **Deprecate and detach, not delete:** `hashavshevet-mesh` and `payper-mesh` stay in the repo. They
+  follow the `old-accounter` pattern: excluded from the Yarn workspaces, the root tsconfig, ESLint,
+  Prettier and Renovate. Their GraphQL Mesh v0 dependencies therefore leave the root lockfile. Each
+  package now declares its own build tooling (`bob-the-bundler`, `rimraf`, `typescript`, `glob`) and
+  carries its own copy of `mesh-artifacts-rename.mjs`, so it still builds standalone
+  (`touch yarn.lock && yarn install && yarn build`, verified for both).
+- **Pending changesets:** changesets can't version packages outside the workspaces, so detaching the
+  two packages also removes their 52 pending dependency-bump changesets. Otherwise
+  `changeset version` would fail.
+- **`glob`:** the root `glob` devDependency is removed along with the root
+  `mesh-artifacts-rename.mjs`, whose only users were the two detached packages.
 - **Root `typescript-operations`:** the root `codegen.ts` used the v6 plugin without declaring it;
   it was only reachable through hoisting. Once the Green Invoice package depended on v5 directly,
   Yarn hoisted v5 to the root and broke the `mcp-server` / `email-ingestion-gateway` builds. The
@@ -50,7 +57,7 @@ Where the implementation differs from the plan:
   onto `main` (§4).
 - **The scope is smaller than it looks.** Only `green-invoice-graphql` has a consumer (`server`).
   `hashavshevet-mesh` and `payper-mesh` have no consumers and no functional changes since 2024.
-  Retire them instead of porting them (Phase 1).
+  Deprecate and detach them from the monorepo instead of porting them (Phase 1).
 - **The real v1 change is the loss of the generated SDK, not the new config format.** v1 composes a
   supergraph file and stops there. The typed SDK now comes from GraphQL Codegen and runs in-process
   via `getSdkRequesterForUnifiedGraph`. This is the pattern documented on the v1
@@ -67,15 +74,15 @@ Where the implementation differs from the plan:
 
 ## 1. What changed in Mesh v1 (the parts that affect this repo)
 
-| v0                                                            | v1                                                                                                                                           | Impact here                                                                       |
-| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `.meshrc.yaml` → `mesh build` → executable `.mesh/` artifacts | `mesh.config.ts` (`composeConfig`) → `mesh-compose` → supergraph SDL (not executable)                                                        | New config; artifacts and the rename script go away                               |
-| Generated `getMeshSDK()` / `getBuiltMesh()` / `execute`       | You run Codegen yourself (`typescript-generic-sdk`) + `getSdkRequesterForUnifiedGraph` or `createGatewayRuntime(...).sdkRequester`           | The SDK layer has to be rebuilt (Phase 2)                                         |
-| `sdk.generateOperations.selectionSetDepth`                    | "You own the `.graphql` operations"                                                                                                          | Recreated with a ~20-line script, for parity                                      |
-| `@graphql-mesh/json-schema` handler                           | `loadJSONSchemaSubgraph` from `@omnigraph/json-schema`, the **same engine** (v0's handler wraps it; both are 0.112.4) with identical options | The config is a 1:1 port                                                          |
-| `additionalTypeDefs` / `additionalResolvers` + in-context SDK | Type defs at compose time; resolvers at runtime; the in-context SDK still exists, with typings from `@graphql-mesh/incontext-sdk-codegen`    | Affects only the two packages being retired                                       |
-| `resolversComposition`, `rename` transforms                   | Removed / replaced by `createRenameTransform`                                                                                                | Affects only the two packages being retired (both dependencies are unused anyway) |
-| `mesh dev` / `mesh start`                                     | Hive Gateway (formerly Mesh Serve)                                                                                                           | Not used: there is no gateway server here                                         |
+| v0                                                            | v1                                                                                                                                           | Impact here                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `.meshrc.yaml` → `mesh build` → executable `.mesh/` artifacts | `mesh.config.ts` (`composeConfig`) → `mesh-compose` → supergraph SDL (not executable)                                                        | New config; artifacts and the rename script go away                            |
+| Generated `getMeshSDK()` / `getBuiltMesh()` / `execute`       | You run Codegen yourself (`typescript-generic-sdk`) + `getSdkRequesterForUnifiedGraph` or `createGatewayRuntime(...).sdkRequester`           | The SDK layer has to be rebuilt (Phase 2)                                      |
+| `sdk.generateOperations.selectionSetDepth`                    | "You own the `.graphql` operations"                                                                                                          | Recreated with a ~20-line script, for parity                                   |
+| `@graphql-mesh/json-schema` handler                           | `loadJSONSchemaSubgraph` from `@omnigraph/json-schema`, the **same engine** (v0's handler wraps it; both are 0.112.4) with identical options | The config is a 1:1 port                                                       |
+| `additionalTypeDefs` / `additionalResolvers` + in-context SDK | Type defs at compose time; resolvers at runtime; the in-context SDK still exists, with typings from `@graphql-mesh/incontext-sdk-codegen`    | Affects only the two deprecated packages                                       |
+| `resolversComposition`, `rename` transforms                   | Removed / replaced by `createRenameTransform`                                                                                                | Affects only the two deprecated packages (both dependencies are unused anyway) |
+| `mesh dev` / `mesh start`                                     | Hive Gateway (formerly Mesh Serve)                                                                                                           | Not used: there is no gateway server here                                      |
 
 Lifecycle:
 
@@ -224,21 +231,28 @@ commit.
 
 ### Phase 0: decisions
 
-1. **Retire `hashavshevet-mesh` and `payper-mesh`?** Recommended: yes. If either must stay, the port
-   is feasible: the in-context SDK, `{context.hashavshevetUrl}` in the endpoint host and
-   form-urlencoded bodies were all verified in a scratch test. But its resolvers would lose v0's
-   generated typings.
+1. **Port `hashavshevet-mesh` and `payper-mesh`?** Decided: no. They are kept but deprecated and
+   detached from the monorepo (Phase 1). If either ever needs porting, it is feasible: the
+   in-context SDK, `{context.hashavshevetUrl}` in the endpoint host and form-urlencoded bodies were
+   all verified in a scratch test. But its resolvers would lose v0's generated typings.
 2. **Codegen flavor.** Recommended: keep the migration PR type-neutral with the v5 plugins v0
    already bundles, then move to v6 as a follow-up. Alternative: go straight to v6 if the `server`
    type fallout turns out to be trivial.
 3. **Operations.** Auto-generate them at depth 5 for parity. Hand-written documents can come later.
 
-### Phase 1: retire `hashavshevet-mesh` and `payper-mesh` (PR A, independent)
+### Phase 1: deprecate and detach `hashavshevet-mesh` and `payper-mesh`
 
-- Delete both packages.
-- Remove them from root `build:tools`, the root `tsconfig.json` paths and the `CLAUDE.md`
-  "Integrations" line.
-- Add an empty changeset (`yarn changeset --empty`) to satisfy `require-changeset.yml`.
+- Keep both packages, but exclude them from the Yarn workspaces (`!packages/<name>`, like
+  `old-accounter`). That takes their Mesh v0 dependencies out of the root lockfile.
+- Exclude them from the root `tsconfig.json`, ESLint and Prettier, and add them to the frozen rule
+  in `renovate.json`.
+- Remove them from root `build:tools` and the root `tsconfig.json` paths. Move them to the
+  "Deprecated" and "Frozen packages" sections of `CLAUDE.md`, and add a deprecation notice to each
+  README.
+- Make each package self-sufficient: declare the build tooling it used to borrow from the root, and
+  vendor `mesh-artifacts-rename.mjs`.
+- Drop their pending changesets and add an empty changeset (`yarn changeset --empty`) to satisfy
+  `require-changeset.yml`.
 - Owner action: `npm deprecate` both packages.
 
 ### Phase 2: migrate `green-invoice-graphql` (PR B)
