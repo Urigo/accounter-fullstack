@@ -35,6 +35,9 @@ const ChargeMatchingReviewScreen = lazy(() =>
     default: m.ChargeMatchingReviewScreen,
   })),
 );
+const CronJobs = lazy(() =>
+  import('../components/cron-jobs/index.js').then(m => ({ default: m.CronJobs })),
+);
 
 // Businesses
 const Businesses = lazy(() =>
@@ -328,6 +331,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Charge Matching',
                   breadcrumb: 'Matching',
+                },
+              },
+              {
+                path: 'cron-jobs',
+                element: withSuspense(CronJobs, <PageSkeleton />),
+                handle: {
+                  title: 'Cron Jobs',
+                  breadcrumb: 'Cron Jobs',
                 },
               },
               {

@@ -3,26 +3,23 @@
 import React from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, executeJobsMock, fetchDeelDocumentsMock, logoutMock, useMyMembershipsMock } =
-  vi.hoisted(() => ({
+const { useAuth0Mock, fetchDeelDocumentsMock, logoutMock, useMyMembershipsMock } = vi.hoisted(
+  () => ({
     useAuth0Mock: vi.fn(),
-    executeJobsMock: vi.fn(),
     fetchDeelDocumentsMock: vi.fn(),
     logoutMock: vi.fn(),
     useMyMembershipsMock: vi.fn(),
-  }));
+  }),
+);
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
-}));
-
-vi.mock('../../hooks/use-cron-jobs.js', () => ({
-  useCronJobs: () => ({ executeJobs: executeJobsMock }),
 }));
 
 vi.mock('../../hooks/use-fetch-deel-documents.js', () => ({
@@ -64,10 +61,6 @@ vi.mock('../ui/dropdown-menu.js', () => ({
   DropdownMenuLabel: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DropdownMenuSeparator: () => <hr />,
   DropdownMenuItem: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-}));
-
-vi.mock('../common/modals/confirmation-modal.js', () => ({
-  ConfirmationModal: ({ children }: { children?: React.ReactNode }) => children ?? null,
 }));
 
 vi.mock('../common/modals/sync-green-invoice-documents-modal.js', () => ({
@@ -128,7 +121,7 @@ async function renderUserNav(userContext: UserInfo = baseUserContext) {
             setUserContext: () => void 0,
           },
         },
-        React.createElement(UserNav),
+        React.createElement(MemoryRouter, null, React.createElement(UserNav)),
       ),
     );
 
@@ -225,6 +218,21 @@ describe('UserNav menu', () => {
 
     expect(document.body.textContent).toContain('John Doe');
     expect(document.body.textContent).toContain('john@example.com');
+
+    await cleanup();
+  });
+
+  it('links to the cron jobs screen instead of running the jobs from the menu', async () => {
+    useAuth0Mock.mockReturnValue({
+      isAuthenticated: true,
+      user: { name: 'John Doe', email: 'john@example.com' },
+      logout: logoutMock,
+    });
+
+    const { container, cleanup } = await renderUserNav();
+
+    const link = container.querySelector(`a[href="${ROUTES.CHARGES.CRON_JOBS}"]`);
+    expect(link?.textContent).toContain('Cron Jobs');
 
     await cleanup();
   });
