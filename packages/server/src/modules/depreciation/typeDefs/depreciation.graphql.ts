@@ -11,6 +11,10 @@ export default gql`
     depreciationRecords: [DepreciationRecord!]!
   }
 
+  extend type ChargeMetadata {
+    depreciationRecordsCount: Int!
+  }
+
   " represent a depreciation record for a charge"
   type DepreciationRecord {
     id: UUID!

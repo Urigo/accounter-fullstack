@@ -191,6 +191,14 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
         .getDepreciationRecordsByChargeIdLoader.load(dbCharge.id);
     },
   },
+  ChargeMetadata: {
+    depreciationRecordsCount: async (dbCharge, _, { injector }) => {
+      return injector
+        .get(DepreciationProvider)
+        .getDepreciationRecordsByChargeIdLoader.load(dbCharge.id)
+        .then(records => records.length);
+    },
+  },
   DepreciationRecord: {
     charge: (dbDepreciationRecord, _, { injector }) => {
       return injector
