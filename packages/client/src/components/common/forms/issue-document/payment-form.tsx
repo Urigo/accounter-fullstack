@@ -132,7 +132,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                   value={payment.type}
                   onValueChange={(value: PaymentType) => updatePayment(index, 'type', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -162,7 +162,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                   value={payment.currency}
                   onValueChange={(value: Currency) => updatePayment(index, 'currency', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -266,7 +266,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                         updatePayment(index, 'cardType', value || undefined)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select card type" />
                       </SelectTrigger>
                       <SelectContent>
