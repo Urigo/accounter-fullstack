@@ -6,6 +6,7 @@ import {
   type CustomData,
   type FlatNode,
 } from './types.js';
+import type { RowVisibility } from './visibility.js';
 
 /** A leaf's stored status, as a snapshot read returns it. */
 export type DynamicReportLeafApproval = {
@@ -361,12 +362,11 @@ export function formatApprovalProgress(summary: ApprovalSummary): string | null 
   return summary.pending > 0 ? `${approved} · ${summary.pending} pending` : approved;
 }
 
-export type ReviewVisibility = {
-  /** Rows the Needs review filter shows: non-approved counted leaves and all their ancestors. */
-  visibleIds: Set<string>;
-  /** The shown leaves' ancestors, rendered open whatever their saved isOpen says. */
-  forceOpenIds: Set<string>;
-};
+/**
+ * The Needs review overlay: a RowVisibility that always narrows. `visibleIds` holds the non-approved
+ * counted leaves and all their ancestors; `forceOpenIds` holds those ancestors.
+ */
+export type ReviewVisibility = RowVisibility & { visibleIds: Set<string> };
 
 /**
  * What the Needs review filter shows (spec R20): every counted leaf that isn't approved, plus its

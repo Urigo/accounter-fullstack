@@ -14,9 +14,10 @@ import type { RowApproval } from './approval-status.js';
 import type { RowDiff } from './diff-markers.js';
 import type { RowAnnotations } from './row-trailing.js';
 import { TreeNodeRow } from './tree-node.js';
-import type { ApprovalStats, EffectiveApproval, ReviewVisibility } from './utils/approvals.js';
+import type { ApprovalStats, EffectiveApproval } from './utils/approvals.js';
 import type { ReportDiff } from './utils/diff.js';
 import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
+import { isNarrowing, type RowVisibility } from './utils/visibility.js';
 
 interface TreePanelProps {
   treeId: 'bank' | 'report';
@@ -48,27 +49,29 @@ interface TreePanelProps {
   /** Why statuses can't be changed right now; all statuses are read-only while it is set. */
   approvalsDisabledReason?: string | null;
   /**
-   * Set while the Needs review filter is on: only these rows render, and the listed ancestors are
-   * shown open without touching their saved isOpen. Report tree only.
+   * The row overlay: set while the Needs review filter is on (possibly merged with other overlays
+   * through mergeVisibility). Only its visible rows render, unless it shows every row, and its
+   * force-open branches are shown open without touching their saved isOpen. Report tree only.
    */
-  reviewVisibility?: ReviewVisibility | null;
+  reviewVisibility?: RowVisibility | null;
 }
 
 type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
   rowAnnotations: (node: FlatNode<CustomData>) => RowAnnotations;
   ghostIds: Set<string>;
-  reviewVisibility: ReviewVisibility | null;
+  reviewVisibility: RowVisibility | null;
 };
 
 /**
- * Whether a row renders under its (already rendered) parent. With the Needs review filter on, only
- * the rows it lists render, plus ghost rows under a rendered parent: a ghost is a record of what
- * left a branch, so it stays with that branch but has no place of its own at the root.
+ * Whether a row renders under its (already rendered) parent. While an overlay narrows the rows (the
+ * Needs review filter), only the rows it lists render, plus ghost rows under a rendered parent: a
+ * ghost is a record of what left a branch, so it stays with that branch but has no place of its own
+ * at the root.
  */
 function isShown(node: FlatNode<CustomData>, treeId: string, props: RenderProps): boolean {
   if (node.data.isHidden) return false;
   const { reviewVisibility, ghostIds } = props;
-  if (!reviewVisibility) return true;
+  if (!reviewVisibility?.visibleIds) return true;
   if (reviewVisibility.visibleIds.has(node.id)) return true;
   return ghostIds.has(node.id) && node.parent !== treeId;
 }
@@ -242,7 +245,9 @@ export function TreePanel({
   );
   const hasUnfilteredRootNodes = renderedNodes.some(n => n.parent === treeId && !n.data.isHidden);
   const emptyText =
-    renderProps.reviewVisibility && hasUnfilteredRootNodes ? 'Nothing needs review' : emptyMessage;
+    isNarrowing(renderProps.reviewVisibility) && hasUnfilteredRootNodes
+      ? 'Nothing needs review'
+      : emptyMessage;
 
   const CollapseIcon =
     treeId === 'bank'
