@@ -124,26 +124,32 @@ async function* mergeChargesByReference(
   for (const plan of plans) {
     // Snapshot before merging: the merged charges are deleted by the merge
     const mergedCharges = buildMergedChargeSnapshots(plan.chargeIdsToMerge, candidates, chargeById);
+    let merge: Awaited<ReturnType<typeof executeReferenceMergePlan>>;
     try {
-      const baseCharge = await executeReferenceMergePlan(injector, plan, chargeById);
-      mergedCount++;
-      if (!baseCharge) {
-        stepErrors.push(
-          `Merged reference "${plan.reference}", but charge ID=${plan.baseChargeId} could not be loaded`,
-        );
-        continue;
-      }
-      yield {
-        __typename: 'ChargesMergedByReference',
-        reference: plan.reference,
-        baseCharge,
-        mergedCharges,
-      };
+      merge = await executeReferenceMergePlan(injector, plan, chargeById);
     } catch (error) {
       stepErrors.push(
         `Failed to merge reference "${plan.reference}" into charge ID=${plan.baseChargeId}: ${errorMessage(error)}`,
       );
+      continue;
     }
+
+    mergedCount++;
+    if (merge.approvalError) {
+      stepErrors.push(merge.approvalError);
+    }
+    if (!merge.baseCharge) {
+      stepErrors.push(
+        `Merged reference "${plan.reference}", but charge ID=${plan.baseChargeId} could not be loaded`,
+      );
+      continue;
+    }
+    yield {
+      __typename: 'ChargesMergedByReference',
+      reference: plan.reference,
+      baseCharge: merge.baseCharge,
+      mergedCharges,
+    };
   }
 
   return { affectedCount: mergedCount, errors: stepErrors };
@@ -195,21 +201,29 @@ export async function loadReferenceMergePlans(injector: Injector, ownerId: strin
 
 /**
  * Merges the plan's charges into its base charge and re-flags the base charge for accountant
- * review. Returns the base charge in its fresh state.
+ * review. Throws only when the merge itself fails, so nothing was merged. A failed re-flag comes
+ * back as `approvalError`: the merge is already committed by then, and must still be reported.
  */
 export async function executeReferenceMergePlan(
   injector: Injector,
-  { baseChargeId, chargeIdsToMerge }: MergeChargePlan,
+  { reference, baseChargeId, chargeIdsToMerge }: MergeChargePlan,
   chargeById: Map<string, IGetChargesByIdsResult>,
-): Promise<IGetChargesByIdsResult | undefined> {
+): Promise<{ baseCharge: IGetChargesByIdsResult | undefined; approvalError?: string }> {
   await mergeChargesExecutor(chargeIdsToMerge, baseChargeId, injector);
-  const degradedCharges = await degradeChargesAccountantApproval(injector, [baseChargeId]);
-  const degradedBaseCharge = degradedCharges.get(baseChargeId);
-  if (degradedBaseCharge) {
-    // keep the cached charge in sync with its fresh (PENDING) state
-    chargeById.set(baseChargeId, degradedBaseCharge);
+  try {
+    const degradedCharges = await degradeChargesAccountantApproval(injector, [baseChargeId]);
+    const degradedBaseCharge = degradedCharges.get(baseChargeId);
+    if (degradedBaseCharge) {
+      // keep the cached charge in sync with its fresh (PENDING) state
+      chargeById.set(baseChargeId, degradedBaseCharge);
+    }
+  } catch (error) {
+    return {
+      baseCharge: chargeById.get(baseChargeId),
+      approvalError: `Merged reference "${reference}" into charge ID=${baseChargeId}, but failed to flag it for accountant review: ${errorMessage(error)}`,
+    };
   }
-  return chargeById.get(baseChargeId);
+  return { baseCharge: chargeById.get(baseChargeId) };
 }
 
 /**

@@ -54,8 +54,11 @@ export const cronJobsResolvers: CronJobsModule.Resolvers & Pick<Resolvers, 'Cron
         for (const plan of plans) {
           const { reference, baseChargeId } = plan;
           try {
-            await executeReferenceMergePlan(injector, plan, chargeById);
+            const { approvalError } = await executeReferenceMergePlan(injector, plan, chargeById);
             mergedBaseChargeIds.add(baseChargeId);
+            if (approvalError) {
+              executionErrors.push(approvalError);
+            }
           } catch (error) {
             const message =
               error instanceof GraphQLError

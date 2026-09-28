@@ -219,6 +219,48 @@ describe('runCronJobs', () => {
     expect(events[1]).toMatchObject({ errors: ['DB is down'] });
   });
 
+  it('still reports a merge whose accountant-review flagging failed', async () => {
+    vi.mocked(degradeChargesAccountantApproval).mockRejectedValue(new Error('no permission'));
+    const charges = [buildCharge('charge-a'), buildCharge('charge-b')];
+    const injector = buildInjector(
+      {
+        flagForeignFeeTransactions: vi.fn().mockResolvedValue([]),
+        getReferenceMergeCandidates: vi
+          .fn()
+          .mockResolvedValue([
+            buildCandidate('t1', 'charge-a', { amount: '-100' }),
+            buildCandidate('t2', 'charge-b', { amount: '-1', is_fee: true }),
+          ]),
+        calculateCreditcardDebitDate: vi.fn().mockResolvedValue([]),
+      },
+      charges,
+    );
+
+    const events = await collect(runCronJobs(injector, 'owner-1'));
+
+    // the merge is already committed, so it must show up even though the next write failed
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        __typename: 'ChargesMergedByReference',
+        baseCharge: charges[0],
+      }),
+    );
+    expect(statuses(events)).toContain('MERGE_CHARGES_BY_REFERENCE:COMPLETED_WITH_ERRORS');
+    expect(
+      events.find(
+        event =>
+          event.__typename === 'CronJobStepStatus' &&
+          event.step === 'MERGE_CHARGES_BY_REFERENCE' &&
+          event.state === 'COMPLETED_WITH_ERRORS',
+      ),
+    ).toMatchObject({
+      affectedCount: 1,
+      errors: [
+        'Merged reference "REF-1" into charge ID=charge-a, but failed to flag it for accountant review: no permission',
+      ],
+    });
+  });
+
   it('keeps going when a single merge fails', async () => {
     vi.mocked(mergeChargesExecutor).mockRejectedValue(new Error('locked'));
     const injector = buildInjector(
