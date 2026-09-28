@@ -1,4 +1,5 @@
 import { AccountantStatus, type DynamicReportLeafApprovalInput } from '../../../../gql/graphql.js';
+import { rollup } from './rollup.js';
 import {
   getDescendantIds,
   isFinancialEntityNode,
@@ -89,61 +90,33 @@ export function deriveLeafStatuses(
 }
 
 /**
- * Counts approved / pending / unapproved counted leaves under every node in one post-order pass,
- * mirroring buildNodeStats. Hidden leaves get no entry and contribute nothing. A counted leaf that
- * statusOf doesn't know is counted as unapproved.
+ * Counts approved / pending / unapproved counted leaves under every node in one post-order
+ * `rollup`, as buildNodeStats does for sums. Hidden leaves get no entry and contribute nothing. A
+ * counted leaf that statusOf doesn't know is counted as unapproved.
  */
 export function buildApprovalStats(
   nodes: FlatNode<CustomData>[],
   statusOf: (entityId: string) => AccountantStatus | undefined,
 ): ApprovalStats {
-  const nodeById = new Map<string, FlatNode<CustomData>>();
-  const childrenOf = new Map<string, string[]>();
-  for (const n of nodes) {
-    nodeById.set(n.id, n);
-    const siblings = childrenOf.get(n.parent);
-    if (siblings) siblings.push(n.id);
-    else childrenOf.set(n.parent, [n.id]);
-  }
-
-  const result: ApprovalStats = new Map();
-  const empty: ApprovalCounts = { approved: 0, pending: 0, unapproved: 0 };
-
-  function visit(nodeId: string): ApprovalCounts {
-    const cached = result.get(nodeId);
-    if (cached) return cached;
-
-    const node = nodeById.get(nodeId);
-    if (!node) return empty;
-
-    if (isFinancialEntityNode(node)) {
-      if (node.data.isHidden) return empty;
+  return rollup<ApprovalCounts>(
+    nodes,
+    node => {
+      if (node.data.isHidden) return null;
       const status = statusOf(node.id) ?? AccountantStatus.Unapproved;
-      const counts: ApprovalCounts = {
+      return {
         approved: status === AccountantStatus.Approved ? 1 : 0,
         pending: status === AccountantStatus.Pending ? 1 : 0,
         unapproved: status === AccountantStatus.Unapproved ? 1 : 0,
       };
-      result.set(nodeId, counts);
-      return counts;
-    }
-
-    const counts: ApprovalCounts = { approved: 0, pending: 0, unapproved: 0 };
-    for (const childId of childrenOf.get(nodeId) ?? []) {
-      const child = visit(childId);
-      counts.approved += child.approved;
-      counts.pending += child.pending;
-      counts.unapproved += child.unapproved;
-    }
-    result.set(nodeId, counts);
-    return counts;
-  }
-
-  for (const n of nodes) {
-    visit(n.id);
-  }
-
-  return result;
+    },
+    (acc, child) => {
+      acc.approved += child.approved;
+      acc.pending += child.pending;
+      acc.unapproved += child.unapproved;
+      return acc;
+    },
+    () => ({ approved: 0, pending: 0, unapproved: 0 }),
+  );
 }
 
 /**

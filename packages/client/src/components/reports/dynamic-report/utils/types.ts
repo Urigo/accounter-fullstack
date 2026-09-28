@@ -1,3 +1,5 @@
+import { rollup } from './rollup.js';
+
 export type NodeType = 'sort-code-branch' | 'synthetic-branch' | 'financial-entity';
 
 export type CustomData = {
@@ -102,51 +104,22 @@ export function getDescendantIds(nodes: FlatNode[], rootId: string): string[] {
 export type NodeStats = Map<string, { sum: number; leafCount: number }>;
 
 /**
- * Pre-computes sum and leaf-count for every branch node in O(N) using a
- * bottom-up post-order DFS, so callers don't have to recurse per-node.
+ * Pre-computes sum and leaf-count for every node in O(N) with one post-order `rollup`, so callers
+ * don't have to recurse per-node. Hidden leaves are counted like any other: they carry a zero value.
  */
 export function buildNodeStats(nodes: FlatNode<CustomData>[]): NodeStats {
-  const nodeById = new Map<string, FlatNode<CustomData>>();
-  const childrenOf = new Map<string, string[]>();
-  for (const n of nodes) {
-    nodeById.set(n.id, n);
-    if (!childrenOf.has(n.parent)) childrenOf.set(n.parent, []);
-    childrenOf.get(n.parent)!.push(n.id);
-  }
-
-  const result: NodeStats = new Map();
-
-  function visit(nodeId: string): { sum: number; leafCount: number } {
-    const cached = result.get(nodeId);
-    if (cached) return cached;
-
-    const node = nodeById.get(nodeId);
-    if (!node) return { sum: 0, leafCount: 0 };
-
-    if (isFinancialEntityNode(node)) {
-      const stats = { sum: node.data.value ?? 0, leafCount: 1 };
-      result.set(nodeId, stats);
-      return stats;
-    }
-
-    let sum = 0;
-    let leafCount = 0;
-    for (const childId of childrenOf.get(nodeId) ?? []) {
-      const childStats = visit(childId);
-      sum += childStats.sum;
-      leafCount += childStats.leafCount;
-    }
-    const stats = { sum, leafCount };
-    result.set(nodeId, stats);
-    return stats;
-  }
-
-  for (const n of nodes) {
-    visit(n.id);
-  }
-
-  return result;
+  return rollup<{ sum: number; leafCount: number }>(
+    nodes,
+    node => ({ sum: node.data.value ?? 0, leafCount: 1 }),
+    (acc, child) => {
+      acc.sum += child.sum;
+      acc.leafCount += child.leafCount;
+      return acc;
+    },
+    () => ({ sum: 0, leafCount: 0 }),
+  );
 }
+
 const currencyFormatter = new Intl.NumberFormat('he-IL', {
   style: 'currency',
   currency: 'ILS',
