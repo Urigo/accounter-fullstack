@@ -31,25 +31,25 @@ Two principles shape everything below:
 
 These were settled during spec review.
 
-| Aspect               | Decision                                                                                                                                                                                                      |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| What a status means  | A sign-off on this report line, independent of charge approvals.                                                                                                                                              |
-| Key                  | (template, entity, `from_date`, `to_date`, `scope_owner_id`). The Balance Sheet and P&L views of one template are approved separately. Moving a leaf between branches keeps its status.                        |
-| States               | Mirrors charges: all three are user-selectable. A leaf with no stored status is `UNAPPROVED`.                                                                                                                 |
-| Regression trigger   | The entity's **ledger fingerprint** for the period changed. This catches edits that net to ₪0, not only value drift.                                                                                          |
-| Regression target    | `APPROVED` → `PENDING`. `UNAPPROVED` and `PENDING` are unaffected.                                                                                                                                            |
-| Regression timing    | **Derived on read**, never written by a read. A save records each leaf's effective status, so a regression becomes stored at the next save and saving can never re-approve.                                   |
-| Storage              | In snapshot rows: new `leaf_fingerprints` and `leaf_approvals` jsonb columns.                                                                                                                                 |
-| Persisting a toggle  | Held as an unsaved edit until **Resave** or **Save review**. One review session produces one snapshot.                                                                                                        |
-| Baseline picker      | Statuses follow the snapshot the diff uses. The default baseline becomes the newest snapshot **for the current period and owner**. An older pinned baseline shows its statuses read-only, as history.          |
-| Branch status        | Worst wins, red first: `UNAPPROVED` > `PENDING` > `APPROVED`. The tooltip shows counts.                                                                                                                       |
-| Bulk                 | A branch's status dropdown writes the chosen status to every counted leaf in its subtree.                                                                                                                     |
-| Availability         | Not gated by the Edit switch. Works on locked templates. Disabled when no saved template is loaded, or while an older baseline is pinned.                                                                     |
-| Roles & audit        | Both `business_owner` and `accountant` may set any status. Each leaf records who set it and when. A save-time regression is stamped as **system**.                                                            |
-| Fingerprint content  | Money, dates and counterparty. Description and reference are excluded.                                                                                                                                        |
-| Report-level UI      | A progress line and a **Needs review** filter in the toolbar.                                                                                                                                                 |
-| Save as new / Dup.   | Start clean: the new template's first snapshot carries no statuses.                                                                                                                                           |
-| Annual audit         | Out of scope. A follow-up issue will be opened (see [Rollout](#rollout)).                                                                                                                                      |
+| Aspect              | Decision                                                                                                                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| What a status means | A sign-off on this report line, independent of charge approvals.                                                                                                                                      |
+| Key                 | (template, entity, `from_date`, `to_date`, `scope_owner_id`). The Balance Sheet and P&L views of one template are approved separately. Moving a leaf between branches keeps its status.               |
+| States              | Mirrors charges: all three are user-selectable. A leaf with no stored status is `UNAPPROVED`.                                                                                                         |
+| Regression trigger  | The entity's **ledger fingerprint** for the period changed. This catches edits that net to ₪0, not only value drift.                                                                                  |
+| Regression target   | `APPROVED` → `PENDING`. `UNAPPROVED` and `PENDING` are unaffected.                                                                                                                                    |
+| Regression timing   | **Derived on read**, never written by a read. A save records each leaf's effective status, so a regression becomes stored at the next save and saving can never re-approve.                           |
+| Storage             | In snapshot rows: new `leaf_fingerprints` and `leaf_approvals` jsonb columns.                                                                                                                         |
+| Persisting a toggle | Held as an unsaved edit until **Resave** or **Save review**. One review session produces one snapshot.                                                                                                |
+| Baseline picker     | Statuses follow the snapshot the diff uses. The default baseline becomes the newest snapshot **for the current period and owner**. An older pinned baseline shows its statuses read-only, as history. |
+| Branch status       | Worst wins, red first: `UNAPPROVED` > `PENDING` > `APPROVED`. The tooltip shows counts.                                                                                                               |
+| Bulk                | A branch's status dropdown writes the chosen status to every counted leaf in its subtree.                                                                                                             |
+| Availability        | Not gated by the Edit switch. Works on locked templates. Disabled when no saved template is loaded, or while an older baseline is pinned.                                                             |
+| Roles & audit       | Both `business_owner` and `accountant` may set any status. Each leaf records who set it and when. A save-time regression is stamped as **system**.                                                    |
+| Fingerprint content | Money, dates and counterparty. Description and reference are excluded.                                                                                                                                |
+| Report-level UI     | A progress line and a **Needs review** filter in the toolbar.                                                                                                                                         |
+| Save as new / Dup.  | Start clean: the new template's first snapshot carries no statuses.                                                                                                                                   |
+| Annual audit        | Out of scope. A follow-up issue will be opened (see [Rollout](#rollout)).                                                                                                                             |
 
 ## Functional requirements
 
@@ -101,30 +101,31 @@ These were settled during spec review.
 - **R11.** There are two ways to persist:
   - **Resave** (unlocked templates) persists structure and statuses together through
     `updateDynamicReportTemplate`.
-  - **Save review** writes a snapshot only, through `captureDynamicReportBaseline`. It is
-    available when status changes are the only unsaved change, on locked **and** unlocked
-    templates. It replaces the locked-only "Capture baseline" menu item.
+  - **Save review** writes a snapshot only, through `captureDynamicReportBaseline`. It is available
+    when status changes are the only unsaved change, on locked **and** unlocked templates. It
+    replaces the locked-only "Capture baseline" menu item.
 
   Save review never touches the template row. That means a locked template stays locked, and an
   unlocked draft's own period doesn't move when someone reviews a deep-linked period.
+
 - **R12.** Toggles are disabled, with an explanatory tooltip, in three cases:
   - no saved template is loaded;
   - an older baseline is pinned, because that is a read-only history view;
   - the data is still loading.
 - **R13.** Changing the period, owner or pinned baseline while status changes are staged asks the
-  user to confirm discarding them, because they belong to the old scope. Staged structural edits
-  are kept. Switching template goes through the existing `DirtyTemplateSwitchConfirmation`.
+  user to confirm discarding them, because they belong to the old scope. Staged structural edits are
+  kept. Switching template goes through the existing `DirtyTemplateSwitchConfirmation`.
 - **R14.** Save as new and Duplicate create a template whose first snapshot has no statuses.
-- **R15.** A leaf removed from the report loses its status at the next save. If it is re-added
-  later it starts `UNAPPROVED`.
+- **R15.** A leaf removed from the report loses its status at the next save. If it is re-added later
+  it starts `UNAPPROVED`.
 
 ### Baseline selection
 
-- **R16.** The default baseline is the newest snapshot whose `fromDate`, `toDate` and
-  `scopeOwnerId` match the view.
-  - If none matches, fall back to `snapshots[0]`. The diff is then suspended exactly as it is
-    today, all leaves read `UNAPPROVED`, and toggles are enabled. The save creates this period's
-    first snapshot.
+- **R16.** The default baseline is the newest snapshot whose `fromDate`, `toDate` and `scopeOwnerId`
+  match the view.
+  - If none matches, fall back to `snapshots[0]`. The diff is then suspended exactly as it is today,
+    all leaves read `UNAPPROVED`, and toggles are enabled. The save creates this period's first
+    snapshot.
   - Choosing that default in the picker clears `?baseline=`, as today.
 - **R17.** The picker's "Last save" label marks the snapshot chosen by R16, not index 0.
 
@@ -184,9 +185,8 @@ These were settled during spec review.
   regeneration that deletes and re-inserts identical content doesn't regress an approval.
 - Hash: join each tuple's fields with `|`, sort the tuples, join them with `\n`, then sha256 as hex
   using `node:crypto`. An entity with no records has no fingerprint, because it has no sum either.
-- Exposed as `ledgerFingerprint: String!` on `BusinessTransactionSum`.
-  `RawBusinessTransactionsSum` (`shared/types/index.ts`) carries the collected tuples, and this
-  resolver is its only producer.
+- Exposed as `ledgerFingerprint: String!` on `BusinessTransactionSum`. `RawBusinessTransactionsSum`
+  (`shared/types/index.ts`) carries the collected tuples, and this resolver is its only producer.
 - Known effect: while `toDate` is today or later, revaluation records dated `toDate` move with
   exchange rates. Foreign-currency leaves in an open period will therefore keep regressing. Closed
   periods are stable.
@@ -194,8 +194,8 @@ These were settled during spec review.
 ### Why statuses are stored in snapshots
 
 - Snapshots are append-only records of a moment. A toggle can't mutate one, and writing a snapshot
-  per click would rebase the diff for every other leaf and hide changes nobody reviewed. That is
-  why toggles are staged and persisted with a save (R2, R11).
+  per click would rebase the diff for every other leaf and hide changes nobody reviewed. That is why
+  toggles are staged and persisted with a save (R2, R11).
 - Because a save persists effective statuses (R9), the stored status of an `APPROVED` leaf always
   refers to the fingerprint stored in the same row. So a single `leaf_fingerprints` map serves both
   the diff (R18) and the regression check (R3).
@@ -205,8 +205,7 @@ These were settled during spec review.
 ### Migration
 
 Create `packages/migrations/src/actions/2026-09-23T10-00-00.dynamic-report-snapshot-approvals.ts`
-and register it in `run-pg-migrations.ts` after
-`migration_2026_09_09T10_00_00_uuidv7_id_defaults`.
+and register it in `run-pg-migrations.ts` after `migration_2026_09_09T10_00_00_uuidv7_id_defaults`.
 
 ```sql
 ALTER TABLE accounter_schema.dynamic_report_template_snapshots
@@ -227,18 +226,18 @@ CREATE INDEX IF NOT EXISTS dynamic_report_template_snapshots_comparable_index
 
 ```ts
 // leaf_fingerprints — same coverage as leaf_values: every entity with activity
-type LeafFingerprints = Record<EntityId, string>;
+type LeafFingerprints = Record<EntityId, string>
 
 // leaf_approvals — counted report leaves only; absent entry = UNAPPROVED, never touched
 type LeafApprovals = Record<
   EntityId,
   {
-    status: 'APPROVED' | 'PENDING' | 'UNAPPROVED';
-    setBy: string | null; // user id; null when system-stamped
-    setAt: string; // ISO timestamp, server clock
-    system: boolean;
+    status: 'APPROVED' | 'PENDING' | 'UNAPPROVED'
+    setBy: string | null // user id; null when system-stamped
+    setAt: string // ISO timestamp, server clock
+    system: boolean
   }
->;
+>
 ```
 
 `created_by` is currently hard-coded to `null` in `toSnapshotRow`. Fill it from
@@ -249,8 +248,12 @@ type LeafApprovals = Record<
 In `reports/typeDefs/dynamic-report.graphql.ts`:
 
 ```graphql
-extend type DynamicReportSnapshotValue { fingerprint: String }          # null on legacy rows
-extend input DynamicReportSnapshotValueInput { fingerprint: String! }
+extend type DynamicReportSnapshotValue {
+  fingerprint: String
+} # null on legacy rows
+extend input DynamicReportSnapshotValueInput {
+  fingerprint: String!
+}
 
 type DynamicReportLeafApproval {
   entityId: UUID!
@@ -265,9 +268,15 @@ input DynamicReportLeafApprovalInput {
   status: AccountantStatus!
 }
 
-extend type DynamicReportSnapshot { approvals: [DynamicReportLeafApproval!]! }   # [] on legacy
-extend input DynamicReportSnapshotInput { approvals: [DynamicReportLeafApprovalInput!] }
-extend type DynamicReportSnapshotMeta { scopeOwnerId: UUID! }
+extend type DynamicReportSnapshot {
+  approvals: [DynamicReportLeafApproval!]!
+} # [] on legacy
+extend input DynamicReportSnapshotInput {
+  approvals: [DynamicReportLeafApprovalInput!]
+}
+extend type DynamicReportSnapshotMeta {
+  scopeOwnerId: UUID!
+}
 ```
 
 These additions are written inline in the existing type definitions, not as `extend`. The only
@@ -285,9 +294,8 @@ In `financial-entities/typeDefs/businesses-transactions.graphql.ts`, add
 2. **Sum resolver.** Push a tuple next to each `handleBusinessLedgerRecord` call, and resolve
    `ledgerFingerprint` by hashing the collected tuples.
 3. **`reports/helpers/dynamic-report.helper.ts`.**
-   - Extend the zod schema `dynamicReportSnapshotInput` with the per-value `fingerprint`
-     (non-empty string) and `approvals` (an array of `{ entityId: uuid, status: enum }`, entity ids
-     unique).
+   - Extend the zod schema `dynamicReportSnapshotInput` with the per-value `fingerprint` (non-empty
+     string) and `approvals` (an array of `{ entityId: uuid, status: enum }`, entity ids unique).
    - Add converters in the style of `snapshotValuesToRecord` and `recordToSnapshotValues` for
      fingerprints and approvals.
 4. **`reports/helpers/dynamic-report-approvals.helper.ts`** (pure).
@@ -301,8 +309,8 @@ In `financial-entities/typeDefs/businesses-transactions.graphql.ts`, add
      - `status === 'UNAPPROVED' && !prev` → omit the entry.
      - Anything else → `{ status, setBy: userId, setAt: now, system: false }`.
 5. **`reports/providers/dynamic-report.provider.ts`.**
-   - Add `getLatestComparableSnapshot({ ownerId, templateName, fromDate, toDate, scopeOwnerId })`,
-     a `SELECT … ORDER BY created_at DESC LIMIT 1` query that uses the new index.
+   - Add `getLatestComparableSnapshot({ ownerId, templateName, fromDate, toDate, scopeOwnerId })`, a
+     `SELECT … ORDER BY created_at DESC LIMIT 1` query that uses the new index.
    - Extend `insertSnapshot` with `leafFingerprints` and `leafApprovals`.
    - In `updateTemplateWithSnapshot`, and in a new transactional capture method, run the
      previous-snapshot lookup **inside the same transaction** as the insert. The resolver passes a
@@ -341,15 +349,16 @@ In `financial-entities/typeDefs/businesses-transactions.graphql.ts`, add
    - `countedLeafIds(nodes, rootId)` for the bulk set, built on `getDescendantIds`.
    - `buildApprovalsInput(tree, statusOf)` produces the input for every counted leaf.
 5. **State** (`index.tsx`):
-   - `approvalOverrides: Map<string, AccountantStatus>`. Setting a value equal to the derived
-     status deletes the key.
+   - `approvalOverrides: Map<string, AccountantStatus>`. Setting a value equal to the derived status
+     deletes the key.
    - `hasStagedApprovals` joins `isDirty` for the dirty indicator and the template-switch
      confirmation. `canSaveReview = hasStagedApprovals && !structuralDirty`.
    - Clear the overrides after a successful Resave, Save review or Save as new, and on template
      switch.
-   - Changing the period, owner or baseline prompts per R13, through a new small confirmation
-     dialog in `dialogs/`.
-   - `latestBaselineId` follows R16. `approvalsReadOnly = !currentTemplate || activeBaselineId !== latestBaselineId`.
+   - Changing the period, owner or baseline prompts per R13, through a new small confirmation dialog
+     in `dialogs/`.
+   - `latestBaselineId` follows R16.
+     `approvalsReadOnly = !currentTemplate || activeBaselineId !== latestBaselineId`.
 6. **`utils/snapshot.ts`.** `buildSnapshotInput` adds `fingerprint` per value (from
    `business.ledgerFingerprint`) and `approvals`. The Save as new path passes none.
 7. **Components.**
@@ -358,9 +367,9 @@ In `financial-entities/typeDefs/businesses-transactions.graphql.ts`, add
      wrapper, which the charges table keeps using unchanged.
    - New `dynamic-report/approval-status.tsx`: a leaf variant (attribution tooltip) and a branch
      variant (counts tooltip, bulk set).
-   - `tree-node.tsx` renders it in the fixed right-hand slot (R22), for `treeId === 'report'`
-     only. `tree-panel.tsx` plumbs the approval props the same way it plumbs `rowDiff`, and applies
-     the Needs review filter through a `forceOpenIds` set checked next to `node.data.isOpen` in
+   - `tree-node.tsx` renders it in the fixed right-hand slot (R22), for `treeId === 'report'` only.
+     `tree-panel.tsx` plumbs the approval props the same way it plumbs `rowDiff`, and applies the
+     Needs review filter through a `forceOpenIds` set checked next to `node.data.isOpen` in
      `renderSubtree`.
    - `toolbar.tsx`: the progress line, the Needs review switch, and Save review, which replaces
      Capture baseline.
@@ -370,18 +379,18 @@ In `financial-entities/typeDefs/businesses-transactions.graphql.ts`, add
 
 ## Error handling
 
-| Situation                                                        | Behaviour                                                                                                                                                                                                                     |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Invalid snapshot input (bad UUID, duplicate entity, empty fingerprint) | zod rejects it inside `validateSnapshotInput`, and the resolver throws a `GraphQLError` with the zod message. Nothing is written: the template and snapshot share one transaction, so a failed save is all-or-nothing.  |
-| Approval for an entity that is not a leaf of the submitted tree  | Dropped by `stampApprovals` and logged at `warn`. It is not an error, because it can only come from a stale client.                                                                                                        |
-| Previous-snapshot lookup fails                                   | The transaction aborts and the save fails as a whole.                                                                                                                                                                          |
-| Resave on a locked template                                      | Unchanged: `assertNotLocked` rejects it. The UI never offers it; Save review is the path.                                                                                                                                      |
-| Ledger changes between load and save                             | No rejection. The client sends the fingerprints it displayed, from the same read as the values, and the server stores them. The next load sees them as stale and derives `PENDING`, so nothing unseen can be approved.     |
-| Concurrent saves by two reviewers                                | Both snapshots are kept. Each is stamped against the previous comparable row inside its own transaction, and the newest becomes the default baseline.                                                                          |
-| Mutation fails on the client                                     | The existing hooks (`useUpdateDynamicReportTemplate`, `useCaptureDynamicReportBaseline`) show an error toast. Staged overrides and the dirty state are **kept**, so the user can retry.                                      |
-| `setBy` user no longer resolvable                                | `setBy: null` with `isSystem: false`. The tooltip reads `Approved by a former user · <date>`.                                                                                                                                  |
-| Legacy snapshot (null columns)                                   | Fingerprints and approvals resolve to `null` and `[]`. Every leaf is `UNAPPROVED` and no `records` marker appears.                                                                                                            |
-| Sums query errors (`CommonError`)                                | As today, `businessSums` is empty. All leaves are hidden and uncounted, and toggles have nothing to act on.                                                                                                                   |
+| Situation                                                              | Behaviour                                                                                                                                                                                                              |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invalid snapshot input (bad UUID, duplicate entity, empty fingerprint) | zod rejects it inside `validateSnapshotInput`, and the resolver throws a `GraphQLError` with the zod message. Nothing is written: the template and snapshot share one transaction, so a failed save is all-or-nothing. |
+| Approval for an entity that is not a leaf of the submitted tree        | Dropped by `stampApprovals` and logged at `warn`. It is not an error, because it can only come from a stale client.                                                                                                    |
+| Previous-snapshot lookup fails                                         | The transaction aborts and the save fails as a whole.                                                                                                                                                                  |
+| Resave on a locked template                                            | Unchanged: `assertNotLocked` rejects it. The UI never offers it; Save review is the path.                                                                                                                              |
+| Ledger changes between load and save                                   | No rejection. The client sends the fingerprints it displayed, from the same read as the values, and the server stores them. The next load sees them as stale and derives `PENDING`, so nothing unseen can be approved. |
+| Concurrent saves by two reviewers                                      | Both snapshots are kept. Each is stamped against the previous comparable row inside its own transaction, and the newest becomes the default baseline.                                                                  |
+| Mutation fails on the client                                           | The existing hooks (`useUpdateDynamicReportTemplate`, `useCaptureDynamicReportBaseline`) show an error toast. Staged overrides and the dirty state are **kept**, so the user can retry.                                |
+| `setBy` user no longer resolvable                                      | `setBy: null` with `isSystem: false`. The tooltip reads `Approved by a former user · <date>`.                                                                                                                          |
+| Legacy snapshot (null columns)                                         | Fingerprints and approvals resolve to `null` and `[]`. Every leaf is `UNAPPROVED` and no `records` marker appears.                                                                                                     |
+| Sums query errors (`CommonError`)                                      | As today, `businessSums` is empty. All leaves are hidden and uncounted, and toggles have nothing to act on.                                                                                                            |
 
 ## Testing plan
 
@@ -434,8 +443,8 @@ Follow `providers/__tests__/dynamic-report-lock.provider.test.ts`:
 - **`__tests__/search-params.test.ts`:** `review` is written, cleared, and kept by
   `selectTemplateParams`.
 - **`__tests__/template-serialization.test.ts`:** `fingerprint` is never serialized.
-- **Snapshot input test:** fingerprints and approvals are included, and the Save as new path
-  carries no approvals.
+- **Snapshot input test:** fingerprints and approvals are included, and the Save as new path carries
+  no approvals.
 - **Tree sync test (`tree-sync` / Effect 2 logic):** a fingerprint change alone produces a new node
   object.
 
@@ -452,12 +461,12 @@ mean the client builds; see `packages/client/CLAUDE.md`.
    `Approved by …` tooltip.
 2. Edit an amount in a ledger record behind an approved leaf and reload. The leaf and its ancestors
    read `PENDING`, and the leaf shows a delta badge.
-3. Move a record's value date within the period, so the total is unchanged. The leaf reads
-   `PENDING` and shows the `edited` marker.
+3. Move a record's value date within the period, so the total is unchanged. The leaf reads `PENDING`
+   and shows the `edited` marker.
 4. Save review. The tooltip reads `Returned to pending · ledger changed after approval`.
 5. Pin an older baseline. The statuses show that save's values and the toggles are disabled.
-6. Open a locked template through annual-audit step 05 (Balance Sheet, then P&L). Each period
-   starts independently, and Save review persists per period without unlocking anything.
+6. Open a locked template through annual-audit step 05 (Balance Sheet, then P&L). Each period starts
+   independently, and Save review persists per period without unlocking anything.
 7. Needs review hides approved subtrees without changing the saved `isOpen`: toggle it off, Resave,
    and confirm the template's expansion is unchanged.
 8. Stage statuses, then change the period. The discard prompt appears.
@@ -469,8 +478,8 @@ mean the client builds; see `packages/client/CLAUDE.md`.
    becomes required, so ship server and client in one PR.
 2. Client: everything above.
 3. Open a GitHub issue, **"Dynamic report approvals in the annual audit flow"**, containing:
-   - Step 09 (`step-09-save-template`) locks the year's template through
-     `AnnualAuditProvider` → `DynamicReportProvider.lockTemplate`.
+   - Step 09 (`step-09-save-template`) locks the year's template through `AnnualAuditProvider` →
+     `DynamicReportProvider.lockTemplate`.
    - Step 05 (`step-05-main-process`) deep-links the Balance Sheet (1900-01-01 → year-end) and the
      P&L (the calendar year) of that locked template.
    - Approvals live in `leaf_approvals` on the newest snapshot comparable to each period.

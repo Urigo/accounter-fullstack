@@ -114,8 +114,8 @@ Goal: expose a per-entity ledger fingerprint on BusinessTransactionSum.
 
 ### Step 2: Migration and provider support for the new snapshot columns
 
-Context: the storage lands first and is exercised by the existing save path, which writes `NULL`
-for now. That keeps the migration step isolated from any GraphQL change.
+Context: the storage lands first and is exercised by the existing save path, which writes `NULL` for
+now. That keeps the migration step isolated from any GraphQL change.
 
 ```text
 Goal: add leaf_fingerprints and leaf_approvals to dynamic_report_template_snapshots, and let the
@@ -185,8 +185,8 @@ Client:
 
 ### Step 4: Fingerprint on report leaves and the `records` diff kind
 
-Context: this makes fingerprints visible. An edit that nets to ₪0 now gets an "edited" marker,
-which later explains every derived PENDING.
+Context: this makes fingerprints visible. An edit that nets to ₪0 now gets an "edited" marker, which
+later explains every derived PENDING.
 
 ```text
 Goal: carry the current fingerprint on report leaves and flag leaves whose records changed while
@@ -233,8 +233,8 @@ their total didn't.
 
 ### Step 5: Default baseline is the newest comparable snapshot
 
-Context: approvals will follow the baseline, so "Last save" must mean the last save for this
-period and owner.
+Context: approvals will follow the baseline, so "Last save" must mean the last save for this period
+and owner.
 
 ```text
 Goal: default the diff baseline to the newest snapshot matching the current from/to/scopeOwner.
