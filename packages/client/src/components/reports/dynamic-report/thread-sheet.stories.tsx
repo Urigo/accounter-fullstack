@@ -78,6 +78,9 @@ function Harness({ initial }: { initial: SheetState }): ReactElement {
     rowComments: () => undefined,
     visibility: null,
     revealNodeId: null,
+    lockedOpenIds: new Set(),
+    clearReveal: () => void 0,
+    toggleExpand: (id, toggle) => toggle(id),
     sheet,
     activeNode: nodeId
       ? {

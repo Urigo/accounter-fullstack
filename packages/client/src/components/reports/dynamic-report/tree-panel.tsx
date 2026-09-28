@@ -57,12 +57,20 @@ interface TreePanelProps {
    * force-open branches are shown open without touching their saved isOpen. Report tree only.
    */
   reviewVisibility?: RowVisibility | null;
+  /**
+   * Branches whose expand toggle stays disabled while they are forced open: those the Needs review
+   * filter forces. A branch forced open only by another overlay (a revealed discussion) keeps a
+   * working toggle, and `onToggleExpand` decides what its click does. Absent, every forced-open
+   * branch is locked. Report tree only.
+   */
+  lockedOpenIds?: ReadonlySet<string>;
 }
 
 type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
   rowAnnotations: (node: FlatNode<CustomData>) => RowAnnotations;
   ghostIds: Set<string>;
   reviewVisibility: RowVisibility | null;
+  lockedOpenIds?: ReadonlySet<string>;
 };
 
 /**
@@ -104,6 +112,7 @@ function renderSubtree(
             onDelete={props.onDelete}
             annotations={props.rowAnnotations(node)}
             isForcedOpen={isForcedOpen}
+            isToggleLocked={isForcedOpen && (props.lockedOpenIds?.has(node.id) ?? true)}
           />
           {node.droppable &&
             // A ghost branch is a record of a removed subtree, so it always shows what it contained.
@@ -137,6 +146,7 @@ export function TreePanel({
   approvalsDisabledReason = null,
   rowComments,
   reviewVisibility = null,
+  lockedOpenIds,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -243,6 +253,7 @@ export function TreePanel({
     rowAnnotations,
     ghostIds,
     reviewVisibility: treeId === 'report' ? reviewVisibility : null,
+    lockedOpenIds,
   };
 
   const hasRootNodes = renderedNodes.some(

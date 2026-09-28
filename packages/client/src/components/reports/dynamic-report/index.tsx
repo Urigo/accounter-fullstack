@@ -713,6 +713,13 @@ export function DynamicReport() {
     );
   }, []);
 
+  // A branch the reveal alone holds open still collapses on click, which ends the reveal.
+  const { toggleExpand: toggleRevealedExpand } = comments;
+  const handleToggleRevealedExpand = useCallback(
+    (nodeId: string) => toggleRevealedExpand(nodeId, handleToggleReportExpand),
+    [toggleRevealedExpand, handleToggleReportExpand],
+  );
+
   const handleRenameBranch = useCallback((nodeId: string, currentName: string) => {
     renameBranchDialogRef.current?.renameBranch(nodeId, currentName);
   }, []);
@@ -1059,7 +1066,7 @@ export function DynamicReport() {
             isCollapsed={collapsedPanel === 'report'}
             onToggleCollapse={() => handleToggleCollapse('report')}
             onAddBranch={() => handleAddBranch('report')}
-            onToggleExpand={handleToggleReportExpand}
+            onToggleExpand={handleToggleRevealedExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
             diff={reportDiff}
@@ -1070,6 +1077,7 @@ export function DynamicReport() {
             approvalsDisabledReason={approvalsDisabledReason}
             rowComments={comments.rowComments}
             reviewVisibility={comments.visibility}
+            lockedOpenIds={comments.lockedOpenIds}
           />
         </div>
       </div>

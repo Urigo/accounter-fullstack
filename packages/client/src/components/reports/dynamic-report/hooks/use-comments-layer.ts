@@ -86,6 +86,19 @@ export type CommentsLayer = {
   visibility: RowVisibility | null;
   /** The node last revealed from the Discussions list, if any. */
   revealNodeId: string | null;
+  /**
+   * The branches Needs review forces open, whose expand toggle stays locked; pass it to the report
+   * TreePanel. A branch forced open only by the reveal keeps a working toggle.
+   */
+  lockedOpenIds: ReadonlySet<string>;
+  /** Drops the reveal, so every branch it opened returns to its saved isOpen. */
+  clearReveal: () => void;
+  /**
+   * Wraps the report tree's expand toggle. A click on a branch the reveal alone holds open means
+   * "collapse": it ends the reveal, and flips the branch's saved isOpen only if that is open too.
+   * Every other click goes straight to `toggle`.
+   */
+  toggleExpand: (nodeId: string, toggle: (nodeId: string) => void) => void;
   sheet: SheetState | null;
   activeNode: ActiveThreadNode | null;
   openThread: (nodeId: string) => void;
@@ -116,6 +129,7 @@ export type CommentsLayer = {
 const NO_THREADS: readonly ThreadData[] = [];
 const NO_GHOSTS: readonly FlatNode<CustomData>[] = [];
 const SHOW_EVERY_ROW: RowVisibility = { visibleIds: null, forceOpenIds: new Set() };
+const NO_IDS: ReadonlySet<string> = new Set();
 
 const REMOVED_SINCE_SAVE =
   'This row was removed from the report since the last save. Add it back to continue the discussion.';
@@ -257,6 +271,21 @@ export function useCommentsLayer({
         ? mergeVisibility(reviewVisibility ?? SHOW_EVERY_ROW, revealOverlay)
         : reviewVisibility,
     [revealOverlay, reviewVisibility],
+  );
+
+  const lockedOpenIds = reviewVisibility?.forceOpenIds ?? NO_IDS;
+  const clearReveal = useCallback(() => setReveal(null), []);
+  const toggleExpand = useCallback(
+    (nodeId: string, toggle: (nodeId: string) => void) => {
+      if (revealOverlay?.forceOpenIds.has(nodeId) && !lockedOpenIds.has(nodeId)) {
+        // The other ancestors just stop being forced open; their saved isOpen is never written.
+        setReveal(null);
+        if (reportNodeById.get(nodeId)?.data.isOpen) toggle(nodeId);
+        return;
+      }
+      toggle(nodeId);
+    },
+    [revealOverlay, lockedOpenIds, reportNodeById],
   );
 
   // ── The node in the sheet ─────────────────────────────────────────────────────────────────
@@ -455,6 +484,9 @@ export function useCommentsLayer({
     rowComments,
     visibility,
     revealNodeId: reveal?.nodeId ?? null,
+    lockedOpenIds,
+    clearReveal,
+    toggleExpand,
     sheet,
     activeNode,
     openThread,
