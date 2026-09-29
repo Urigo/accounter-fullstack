@@ -127,10 +127,12 @@ const config: CodegenConfig = {
           DepreciationRecord: '../modules/depreciation/types.js#IGetDepreciationRecordsByIdsResult',
           DividendCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '../shared/types#DocumentSuggestionsProto',
+          DynamicReportComment: '../modules/reports/types.js#IGetCommentsByThreadIdsResult',
           DynamicReportInfo: '../modules/reports/types.js#IGetTemplateResult',
           DynamicReportSnapshot: '../modules/reports/types.js#IGetSnapshotByIdResult',
           DynamicReportSnapshotMeta:
             '../modules/reports/types.js#IGetSnapshotsMetaByOwnerIdsResult',
+          DynamicReportThread: '../modules/reports/types.js#IGetThreadsByTemplateResult',
           ExchangeRates: 'TimelessDateString',
           FinancialEntity:
             '../modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',
