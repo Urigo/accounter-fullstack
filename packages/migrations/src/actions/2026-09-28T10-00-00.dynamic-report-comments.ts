@@ -21,8 +21,10 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  * Comments are live writes, independent of snapshots: posting one never writes a snapshot, which
  * would rebase every other leaf's diff.
  *
- * `created_at` on comments defaults to `clock_timestamp()` rather than the transaction start, so
- * messages order by when they were actually written. The `(owner_id, id)` unique constraint exists
+ * `created_at` on both tables defaults to `clock_timestamp()` rather than the transaction start, so
+ * threads and messages order by when they were actually written. The content CHECK rejects text
+ * made only of whitespace of any kind (not just spaces, which is all `btrim` strips); the server
+ * stores content already trimmed, so its length is checked as stored. The `(owner_id, id)` unique constraint exists
  * to back the composite FK, which keeps a comment and its thread in the same tenant.
  *
  * RLS for both tables is in `2026-09-28T10-30-00.rls-dynamic-report-comments.ts`.
@@ -43,7 +45,7 @@ CREATE TABLE IF NOT EXISTS accounter_schema.dynamic_report_threads
     node_label    text                                  NOT NULL,
     resolved_at   timestamptz,
     resolved_by   uuid,
-    created_at    timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at    timestamptz DEFAULT clock_timestamp() NOT NULL,
     CONSTRAINT dynamic_report_threads_template_fk
         FOREIGN KEY (owner_id, template_name)
             REFERENCES accounter_schema.dynamic_report_templates (owner_id, name)
@@ -61,7 +63,7 @@ CREATE TABLE IF NOT EXISTS accounter_schema.dynamic_report_comments
     author_id      uuid                                  NOT NULL,
     content        text                                  NOT NULL
         CONSTRAINT dynamic_report_comments_content_length
-            CHECK (char_length(btrim(content)) BETWEEN 1 AND 10000),
+            CHECK (char_length(content) BETWEEN 1 AND 10000 AND content ~ '[^[:space:]]'),
     from_date      date                                  NOT NULL,
     to_date        date                                  NOT NULL,
     scope_owner_id uuid                                  NOT NULL,

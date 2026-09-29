@@ -119,8 +119,15 @@ export class DynamicReportCommentsProvider {
 
   private async batchCommentsByThreadIds(threadIds: readonly string[]) {
     const comments = await getCommentsByThreadIds.run({ threadIds }, this.db);
-    // The query already orders the rows, and filtering keeps that order per thread.
-    return threadIds.map(id => comments.filter(comment => comment.thread_id === id));
+    // One pass into per-thread buckets. The query already orders the rows, and appending keeps that
+    // order within each bucket.
+    const byThreadId = new Map<string, typeof comments>();
+    for (const comment of comments) {
+      const bucket = byThreadId.get(comment.thread_id);
+      if (bucket) bucket.push(comment);
+      else byThreadId.set(comment.thread_id, [comment]);
+    }
+    return threadIds.map(id => byThreadId.get(id) ?? []);
   }
 
   /** A thread's messages, oldest first. */
