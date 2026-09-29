@@ -565,6 +565,37 @@ describe('posting and listing', () => {
     );
   });
 
+  it('stamps threads with the wall clock, so ones created in one transaction keep their order', async () => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (const nodeId of ['first-node', 'second-node']) {
+        await client.query(
+          `INSERT INTO accounter_schema.dynamic_report_threads
+             (owner_id, template_name, node_id, node_kind, node_label)
+           VALUES ($1, $2, $3, 'leaf', '')`,
+          [TEST_OWNER_ID, TEMPLATE_NAME, nodeId],
+        );
+      }
+      // Compared in SQL: timestamptz has microsecond precision, a JS Date only milliseconds.
+      const { rows } = await client.query<{ later: boolean }>(
+        `SELECT
+           (SELECT created_at FROM accounter_schema.dynamic_report_threads
+            WHERE owner_id = $1 AND node_id = 'second-node')
+           >
+           (SELECT created_at FROM accounter_schema.dynamic_report_threads
+            WHERE owner_id = $1 AND node_id = 'first-node') AS later`,
+        [TEST_OWNER_ID],
+      );
+      await client.query('ROLLBACK');
+
+      // CURRENT_TIMESTAMP would give both rows the transaction's start time.
+      expect(rows[0].later).toBe(true);
+    } finally {
+      client.release();
+    }
+  });
+
   it('returns no threads for a template without any, or one that does not exist', async () => {
     expect(await listThreads(USER_1)).toEqual([]);
     expect(await listThreads(USER_1, 'no-such-template')).toEqual([]);
@@ -613,6 +644,7 @@ describe('posting and listing', () => {
         [TEST_OWNER_ID, thread.id, USER_1, content],
       );
     await expect(insertComment('   ')).rejects.toMatchObject({ code: '23514' });
+    await expect(insertComment('\n\t \r\n')).rejects.toMatchObject({ code: '23514' });
     await expect(insertComment('x'.repeat(10_001))).rejects.toMatchObject({ code: '23514' });
 
     const insertThread = (nodeId: string, nodeKind: string) =>

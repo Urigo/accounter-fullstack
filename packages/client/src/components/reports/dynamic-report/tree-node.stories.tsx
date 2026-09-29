@@ -125,7 +125,7 @@ export const ReportBranch: Story = {
   args: { node: BRANCH, depth: 0, annotations: BRANCH_ANNOTATIONS },
 };
 
-/** A report row no layer has anything to say about still reserves its slots. */
+/** A report row with no layer annotations still reserves its slots. */
 export const ReportLeafWithoutAnnotations: Story = {};
 
 /** A bank sort-code branch: no status slot, even when annotated. */

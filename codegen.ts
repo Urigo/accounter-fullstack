@@ -2,6 +2,9 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
   overwrite: true,
+  // The GraphQL codegen cache keys in .github/actions/setup/action.yml and
+  // .github/workflows/server-tests.yml hash exactly these `schema` and `documents`
+  // globs. Update them together, or edits under a new glob reuse stale generated types.
   schema: './packages/server/src/modules/*/typeDefs/*.graphql.ts',
   documents: [
     './packages/client/src/components/**/*.tsx',
