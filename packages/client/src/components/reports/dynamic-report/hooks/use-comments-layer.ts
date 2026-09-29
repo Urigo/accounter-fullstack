@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, type CombinedError } from 'urql';
 import {
   DynamicReportNodeKind,
@@ -247,6 +247,9 @@ export function useCommentsLayer({
       // A hidden leaf and a node gone from the report have no row to reveal; a ghost row does.
       if ((live && !live.data.isHidden) || ghostById.has(nodeId)) {
         setReveal({ nodeId });
+      } else {
+        // Nothing to reveal, so the previous reveal mustn't linger for an unrelated thread.
+        setReveal(null);
       }
       openThread(nodeId);
     },
@@ -355,6 +358,11 @@ export function useCommentsLayer({
   // composer.
   const sendingRef = useRef(false);
   const [isSending, setIsSending] = useState(false);
+  // The template on screen now, for a post whose response lands after a template switch.
+  const templateNameRef = useRef(templateName);
+  useLayoutEffect(() => {
+    templateNameRef.current = templateName;
+  });
   const sendError =
     sendErrorNodeId !== null && sendErrorNodeId === activeNodeId ? SEND_FAILED : null;
 
@@ -383,12 +391,18 @@ export function useCommentsLayer({
           scopeOwnerId,
         },
       });
+      // The template changed while the post was in flight: its draft, error and refetch belong to
+      // the old one, and the new template's state (and query) must not be touched. `refresh` would
+      // re-run the query of the render that started the post, i.e. the old template's.
+      const isSameTemplate = templateNameRef.current === templateName;
       if (!result) {
-        setSendErrorNodeId(node.id);
+        if (isSameTemplate) setSendErrorNodeId(node.id);
         return false;
       }
-      writeDraft(node.id, '');
-      refresh();
+      if (isSameTemplate) {
+        writeDraft(node.id, '');
+        refresh();
+      }
       return true;
     } finally {
       sendingRef.current = false;

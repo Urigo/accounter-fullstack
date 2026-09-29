@@ -7,6 +7,7 @@ import {
   detachedThreads,
   groupDiscussions,
   indexThreads,
+  isSamePeriod,
   isSendable,
   MAX_COMMENT_LENGTH,
   messagePeriodChip,
@@ -303,6 +304,15 @@ describe('revealVisibility', () => {
     const before = JSON.stringify(tree);
     revealVisibility(tree, 'a3');
     expect(JSON.stringify(tree)).toBe(before);
+  });
+});
+
+describe('isSamePeriod', () => {
+  it('compares the period only, never the owner', () => {
+    expect(isSamePeriod(message('m'), VIEW)).toBe(true);
+    expect(isSamePeriod(message('m', { scopeOwnerId: 'owner-2' }), VIEW)).toBe(true);
+    expect(isSamePeriod(message('m', { fromDate: '2025-01-01' }), VIEW)).toBe(false);
+    expect(isSamePeriod(message('m', { toDate: '2026-06-30' }), VIEW)).toBe(false);
   });
 });
 

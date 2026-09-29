@@ -26,6 +26,7 @@ import { Switch } from '@/components/ui/switch.js';
 import { Textarea } from '@/components/ui/textarea.js';
 import { cn } from '@/lib/utils.js';
 import {
+  isSamePeriod,
   isSendable,
   MAX_COMMENT_LENGTH,
   messagePeriodChip,
@@ -123,7 +124,8 @@ export function ThreadView({
   const chips = new Map(
     messages.map(message => [message.id, messagePeriodChip(message, view, ownerName)]),
   );
-  const shown = periodOnly ? messages.filter(message => chips.get(message.id) === null) : messages;
+  // By period only: a message from another owner in this period stays, with its owner chip.
+  const shown = periodOnly ? messages.filter(message => isSamePeriod(message, view)) : messages;
   const hiddenByPeriod = messages.length - shown.length;
   const isResolved = !!thread?.resolvedAt;
 

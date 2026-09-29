@@ -180,6 +180,17 @@ export function revealVisibility(
 }
 
 /**
+ * Whether a message was written for the period on screen, whatever the owner. "This period only"
+ * filters on this, so a same-period message from another owner stays (with its owner chip).
+ */
+export function isSamePeriod(
+  message: Pick<CommentMessage, 'fromDate' | 'toDate'>,
+  view: Pick<CommentView, 'fromDate' | 'toDate'>,
+): boolean {
+  return message.fromDate === view.fromDate && message.toDate === view.toDate;
+}
+
+/**
  * The chip a message shows when it was written for another view than the one on screen: its period
  * when that differs, and its owner when that differs. Null when both match.
  *
@@ -190,7 +201,7 @@ export function messagePeriodChip(
   view: CommentView,
   ownerName?: (ownerId: string) => string | undefined,
 ): string | null {
-  const periodDiffers = message.fromDate !== view.fromDate || message.toDate !== view.toDate;
+  const periodDiffers = !isSamePeriod(message, view);
   const ownerDiffers = message.scopeOwnerId !== view.scopeOwnerId;
   if (!periodDiffers && !ownerDiffers) return null;
   const parts: string[] = [];

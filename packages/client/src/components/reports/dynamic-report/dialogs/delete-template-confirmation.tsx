@@ -10,9 +10,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog.js';
-import { DynamicReportThreadsDocument } from '../../../../gql/graphql.js';
+import { DynamicReportThreadCountDocument } from '../../../../gql/graphql.js';
 import { useDeleteDynamicReportTemplate } from '../../../../hooks/use-delete-dynamic-report-template.js';
 import { type Template } from '../utils/types.js';
+
+// Only the ids: the count needs nothing else, so the server never resolves the messages.
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReportThreadCount($templateName: String!) {
+    dynamicReportThreads(templateName: $templateName) {
+      id
+    }
+  }
+`;
 
 function threadsLabel(count: number): string {
   return count === 1 ? 'Its discussion thread' : `Its ${count} discussion threads`;
@@ -54,7 +64,7 @@ export const DeleteTemplateConfirmation = forwardRef<DeleteTemplateConfirmationR
         const request = ++countRequest.current;
         client
           .query(
-            DynamicReportThreadsDocument,
+            DynamicReportThreadCountDocument,
             { templateName: template.name },
             { requestPolicy: 'network-only' },
           )

@@ -127,7 +127,7 @@ describe('Toolbar: Discussions', () => {
 
 // ── DeleteTemplateConfirmation ─────────────────────────────────────────────────────
 
-type Asked = { templateName: string; policy: string };
+type Asked = { templateName: string; policy: string; name: string; selectsMessages: boolean };
 
 function mockClient(
   respond: (templateName: string) => OperationResult['data'] | Error,
@@ -139,7 +139,13 @@ function mockClient(
       map((operation): OperationResult => {
         const templateName = (operation.variables as { templateName: string }).templateName;
         if (operation.kind === 'query') {
-          asked.push({ templateName, policy: operation.context.requestPolicy });
+          const definition = operation.query.definitions[0];
+          asked.push({
+            templateName,
+            policy: operation.context.requestPolicy,
+            name: definition?.kind === 'OperationDefinition' ? (definition.name?.value ?? '') : '',
+            selectsMessages: JSON.stringify(operation.query).includes('"messages"'),
+          });
         }
         const response = respond(templateName);
         const base = { operation, extensions: undefined, hasNext: false, stale: false };
@@ -183,7 +189,15 @@ describe('DeleteTemplateConfirmation: threads', () => {
       mockClient(() => threadsOf(3), asked),
       other,
     );
-    expect(asked).toEqual([{ templateName: 'Other', policy: 'network-only' }]);
+    // The lean count query: ids only, so the server never resolves the messages.
+    expect(asked).toEqual([
+      {
+        templateName: 'Other',
+        policy: 'network-only',
+        name: 'DynamicReportThreadCount',
+        selectsMessages: false,
+      },
+    ]);
     expect(document.body.textContent).toContain(
       'Its 3 discussion threads will be deleted with it.',
     );
@@ -207,10 +221,12 @@ describe('DeleteTemplateConfirmation: threads', () => {
   });
 
   it('degrades to the plain confirmation when the lookup fails', async () => {
+    const asked: Asked[] = [];
     await openDeleteDialog(
-      mockClient(() => new Error('offline'), []),
+      mockClient(() => new Error('offline'), asked),
       TEMPLATE,
     );
+    expect(asked.map(entry => entry.name)).toEqual(['DynamicReportThreadCount']);
     expect(document.body.textContent).toContain('Are you sure you want to delete "T"?');
     expect(document.body.textContent).not.toContain('discussion thread');
   });

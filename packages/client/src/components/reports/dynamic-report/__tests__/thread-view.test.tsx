@@ -262,6 +262,29 @@ describe('ThreadView messages', () => {
       '1 message from other periods hidden',
     );
   });
+
+  it('keeps a same-period message from another owner under "This period only", with its chip', () => {
+    renderThread({
+      thread: thread('a', [
+        message('same'),
+        message('other-owner', { scopeOwnerId: 'owner-2' }),
+        message('other-period', { fromDate: '2025-01-01', toDate: '2025-12-31' }),
+        message('other-both', {
+          fromDate: '2025-01-01',
+          toDate: '2025-12-31',
+          scopeOwnerId: 'owner-2',
+        }),
+      ]),
+      ownerName: id => (id === 'owner-2' ? 'Acme Holdings' : undefined),
+    });
+    act(() => container.querySelector<HTMLButtonElement>('[role="switch"]')?.click());
+    const shown = [...container.querySelectorAll('[data-comment-id]')];
+    expect(shown.map(li => li.getAttribute('data-comment-id'))).toEqual(['same', 'other-owner']);
+    expect(shown[1]?.querySelector('[data-period-chip]')?.textContent).toBe('Acme Holdings');
+    expect(container.querySelector('[data-hidden-by-period]')?.textContent).toBe(
+      '2 messages from other periods hidden',
+    );
+  });
 });
 
 describe('ThreadView own-message actions', () => {

@@ -11,7 +11,7 @@ import {
   type OperationResult,
 } from 'urql';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { map, pipe } from 'wonka';
+import { fromPromise, fromValue, mergeMap, pipe } from 'wonka';
 import { DynamicReportTemplateDocument } from '../../../../gql/graphql.js';
 import {
   useCommentsLayer,
@@ -111,6 +111,8 @@ type MockServer = {
   threads: Record<string, ThreadData[]>;
   /** Makes the next addDynamicReportComment fail with this message. */
   failNextPost?: string;
+  /** Holds addDynamicReportComment responses back until it resolves. */
+  postGate?: Promise<void>;
 };
 
 function operationName(operation: Operation): string {
@@ -119,90 +121,97 @@ function operationName(operation: Operation): string {
 }
 
 function mockClient(server: MockServer, log: Recorded[]): Client {
+  function respond(operation: Operation): OperationResult {
+    const name = operationName(operation);
+    const variables = (operation.variables ?? {}) as Record<string, unknown>;
+    // Teardowns aren't requests.
+    if (operation.kind === 'query' || operation.kind === 'mutation')
+      log.push({
+        name,
+        kind: operation.kind,
+        policy: operation.context.requestPolicy,
+        variables,
+      });
+    const base = { operation, extensions: undefined, hasNext: false, stale: false };
+    switch (name) {
+      case 'DynamicReportThreads':
+        return {
+          ...base,
+          data: {
+            dynamicReportThreads: server.threads[variables['templateName'] as string] ?? [],
+          },
+          error: undefined,
+        };
+      case 'DynamicReportTemplate':
+        return {
+          ...base,
+          data: {
+            dynamicReport: {
+              id: 'owner-1-T',
+              name: 'T',
+              isLocked: false,
+              updated: new Date('2026-07-01T00:00:00Z'),
+              fromDate: FROM,
+              toDate: TO,
+              snapshots: [],
+              template: [],
+            },
+          },
+          error: undefined,
+        };
+      case 'AddDynamicReportComment': {
+        if (server.failNextPost) {
+          const message = server.failNextPost;
+          server.failNextPost = undefined;
+          return {
+            ...base,
+            data: undefined,
+            error: new CombinedError({
+              graphQLErrors: [{ message, extensions: { code: 'NOT_FOUND' } }],
+            }),
+          };
+        }
+        const input = variables['input'] as { nodeId: string };
+        return {
+          ...base,
+          data: {
+            addDynamicReportComment: {
+              id: `t-${input.nodeId}`,
+              nodeId: input.nodeId,
+              resolvedAt: null,
+            },
+          },
+          error: undefined,
+        };
+      }
+      case 'SetDynamicReportThreadResolved':
+        return {
+          ...base,
+          data: {
+            setDynamicReportThreadResolved: {
+              id: variables['threadId'],
+              resolvedAt: variables['resolved'] ? new Date() : null,
+            },
+          },
+          error: undefined,
+        };
+      default:
+        return {
+          ...base,
+          data: undefined,
+          error: new CombinedError({ networkError: new Error(name) }),
+        };
+    }
+  }
   const exchange: Exchange = () => operations$ =>
     pipe(
       operations$,
-      map((operation): OperationResult => {
-        const name = operationName(operation);
-        const variables = (operation.variables ?? {}) as Record<string, unknown>;
-        // Teardowns aren't requests.
-        if (operation.kind === 'query' || operation.kind === 'mutation')
-          log.push({
-            name,
-            kind: operation.kind,
-            policy: operation.context.requestPolicy,
-            variables,
-          });
-        const base = { operation, extensions: undefined, hasNext: false, stale: false };
-        switch (name) {
-          case 'DynamicReportThreads':
-            return {
-              ...base,
-              data: {
-                dynamicReportThreads: server.threads[variables['templateName'] as string] ?? [],
-              },
-              error: undefined,
-            };
-          case 'DynamicReportTemplate':
-            return {
-              ...base,
-              data: {
-                dynamicReport: {
-                  id: 'owner-1-T',
-                  name: 'T',
-                  isLocked: false,
-                  updated: new Date('2026-07-01T00:00:00Z'),
-                  fromDate: FROM,
-                  toDate: TO,
-                  snapshots: [],
-                  template: [],
-                },
-              },
-              error: undefined,
-            };
-          case 'AddDynamicReportComment': {
-            if (server.failNextPost) {
-              const message = server.failNextPost;
-              server.failNextPost = undefined;
-              return {
-                ...base,
-                data: undefined,
-                error: new CombinedError({
-                  graphQLErrors: [{ message, extensions: { code: 'NOT_FOUND' } }],
-                }),
-              };
-            }
-            const input = variables['input'] as { nodeId: string };
-            return {
-              ...base,
-              data: {
-                addDynamicReportComment: {
-                  id: `t-${input.nodeId}`,
-                  nodeId: input.nodeId,
-                  resolvedAt: null,
-                },
-              },
-              error: undefined,
-            };
-          }
-          case 'SetDynamicReportThreadResolved':
-            return {
-              ...base,
-              data: {
-                setDynamicReportThreadResolved: {
-                  id: variables['threadId'],
-                  resolvedAt: variables['resolved'] ? new Date() : null,
-                },
-              },
-              error: undefined,
-            };
-          default:
-            return {
-              ...base,
-              data: undefined,
-              error: new CombinedError({ networkError: new Error(name) }),
-            };
-        }
+      mergeMap(operation => {
+        const result = respond(operation);
+        // A gated post answers only once the test opens the gate.
+        return server.postGate && operationName(operation) === 'AddDynamicReportComment'
+          ? fromPromise(server.postGate.then(() => result))
+          : fromValue(result);
       }),
     );
   return new Client({ url: '/graphql', exchanges: [exchange] });
@@ -547,5 +556,80 @@ describe('useCommentsLayer: drafts and the sheet', () => {
     expect(result.current.rowComments(reportTree[4]!, false)?.isActive).toBe(true);
     act(() => result.current.closeSheet());
     expect(result.current.sheet).toBeNull();
+  });
+});
+
+describe('useCommentsLayer: review fixes', () => {
+  it('drops a previous reveal when the next thread has no row to reveal', () => {
+    const { result, render } = renderLayer(
+      mockClient({ threads: { T: [thread('a1'), thread('gone'), thread('h')] } }, []),
+    );
+    render();
+    act(() => result.current.selectThread('a1'));
+    expect(result.current.visibility?.forceOpenIds).toEqual(new Set(['A1', 'A']));
+
+    // Not in the report.
+    act(() => result.current.selectThread('gone'));
+    expect(result.current.revealNodeId).toBeNull();
+    expect(result.current.visibility).toBeNull();
+    expect(result.current.sheet).toEqual({ mode: 'node', nodeId: 'gone' });
+    expect(result.current.activeNode?.label).toBe('Label gone');
+
+    // A hidden leaf, after another reveal.
+    act(() => result.current.selectThread('a1'));
+    act(() => result.current.selectThread('h'));
+    expect(result.current.visibility).toBeNull();
+    expect(result.current.sheet).toEqual({ mode: 'node', nodeId: 'h' });
+  });
+
+  /** Starts a gated post on T's a1, switches to U and writes a draft there on the same node id. */
+  async function postAcrossTemplateSwitch(server: MockServer) {
+    let openGate = (): void => {};
+    server.postGate = new Promise<void>(resolve => {
+      openGate = resolve;
+    });
+    const log: Recorded[] = [];
+    const { result, render } = renderLayer(mockClient(server, log));
+    render();
+    act(() => result.current.openThread('a1'));
+    act(() => result.current.setDraft('Hello'));
+    let posted: Promise<boolean> = Promise.resolve(false);
+    act(() => {
+      posted = result.current.postComment();
+    });
+    expect(result.current.isSending).toBe(true);
+
+    render({ templateName: 'U' });
+    act(() => result.current.openThread('a1'));
+    act(() => result.current.setDraft('Draft on U'));
+    const logBefore = log.length;
+
+    await act(async () => {
+      openGate();
+      await posted;
+    });
+    return { result, after: log.slice(logBefore), posted };
+  }
+
+  it('leaves the next template alone when a post lands after a template switch', async () => {
+    const { result, after, posted } = await postAcrossTemplateSwitch({ threads: { T: [], U: [] } });
+    expect(await posted).toBe(true);
+    expect(result.current.draft).toBe('Draft on U');
+    expect(result.current.sendError).toBeNull();
+    expect(result.current.isSending).toBe(false);
+    // Only the mutation's own response landed: no refetch, of the old template or the new one.
+    expect(after.filter(entry => entry.name === 'DynamicReportThreads')).toEqual([]);
+  });
+
+  it('shows no send error on the next template when a post fails after a switch', async () => {
+    const { result, after, posted } = await postAcrossTemplateSwitch({
+      threads: { T: [], U: [] },
+      failNextPost: 'Template not found',
+    });
+    expect(await posted).toBe(false);
+    expect(result.current.draft).toBe('Draft on U');
+    expect(result.current.sendError).toBeNull();
+    expect(result.current.isSending).toBe(false);
+    expect(after.filter(entry => entry.name === 'DynamicReportThreads')).toEqual([]);
   });
 });
