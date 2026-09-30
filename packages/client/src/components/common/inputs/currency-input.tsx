@@ -83,6 +83,7 @@ function CurrencySelect({
   value,
   onChange,
   onBlur,
+  ref,
   label = 'Currency',
   disabled,
   form,
@@ -114,6 +115,7 @@ function CurrencySelect({
     <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
+          ref={ref as React.Ref<HTMLButtonElement>}
           type="button"
           aria-label={description}
           title={description}
@@ -181,14 +183,17 @@ type Props = ComponentProps<typeof NumberInput> & {
  * one control rather than two inputs pushed against each other. The border, focus ring and
  * invalid state belong to the wrapper and track the inner amount input.
  */
-export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput({
-  currencyCodeProps: { error: currencyError, ...currencyCodeProps },
-  error,
-  label,
-  id,
-  className,
-  ...props
-}) {
+export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function CurrencyInput(
+  {
+    currencyCodeProps: { error: currencyError, ...currencyCodeProps },
+    error,
+    label,
+    id,
+    className,
+    ...props
+  },
+  ref,
+) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const message = error || currencyError;
@@ -231,6 +236,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
           <NumberInput
             className="h-full rounded-none border-0 pr-1 text-right tabular-nums bg-transparent shadow-none focus-visible:ring-0 aria-invalid:ring-0 disabled:opacity-100 dark:bg-transparent dark:dark:bg-transparent"
             {...props}
+            ref={ref}
             id={inputId}
             aria-invalid={invalid}
             aria-describedby={message ? errorId : props['aria-describedby']}

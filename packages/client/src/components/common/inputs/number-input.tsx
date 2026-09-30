@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useId, useState, type ReactNode } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { NumericFormat, type NumericFormatProps } from 'react-number-format';
 import { Button } from '../../ui/button.js';
@@ -56,6 +56,20 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   const inputId = id ?? generatedId;
   const errorId = `${inputId}-error`;
   const [value, setValue] = useState<number | undefined>(controlledValue ?? defaultValue);
+  // The forwarded ref may be a callback ref (react-hook-form's `field.ref` is one), so the input is
+  // tracked locally and handed on to whatever ref the caller passed.
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const setInputRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      inputRef.current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    },
+    [ref],
+  );
 
   const handleIncrement = useCallback(() => {
     setValue(prev => (prev === undefined ? (stepper ?? 1) : Math.min(prev + (stepper ?? 1), max)));
@@ -67,7 +81,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement === (ref as React.RefObject<HTMLInputElement>)?.current) {
+      if (inputRef.current && document.activeElement === inputRef.current) {
         if (e.key === 'ArrowUp') {
           handleIncrement();
         } else if (e.key === 'ArrowDown') {
@@ -81,7 +95,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleIncrement, handleDecrement, ref]);
+  }, [handleIncrement, handleDecrement]);
 
   useEffect(() => {
     if (controlledValue !== undefined) {
@@ -102,10 +116,10 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     if (value !== undefined) {
       if (value < min) {
         setValue(min);
-        (ref as React.RefObject<HTMLInputElement>).current!.value = String(min);
+        if (inputRef.current) inputRef.current.value = String(min);
       } else if (value > max) {
         setValue(max);
-        (ref as React.RefObject<HTMLInputElement>).current!.value = String(max);
+        if (inputRef.current) inputRef.current.value = String(max);
       }
     }
   };
@@ -131,7 +145,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         customInput={Input}
         placeholder={placeholder}
         className={`[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none relative ${hideControls ? '' : ' rounded-r-none'}`}
-        getInputRef={ref}
+        getInputRef={setInputRef}
         {...props}
       />
 
