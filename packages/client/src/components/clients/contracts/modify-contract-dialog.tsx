@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CurrencyInput } from '@/components/common/inputs/currency-input.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -454,54 +455,29 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone, d
                   />
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <FormField
-                    control={form.control}
-                    name="paymentAmount"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Payment Amount</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="24000"
-                            {...field}
-                            onChange={event => {
-                              field.onChange(
-                                event?.target.value ? Number(event?.target.value) : undefined,
-                              );
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="paymentCurrency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Currency</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormField
+                  control={form.control}
+                  name="paymentCurrency"
+                  render={({ field: currencyField }) => (
+                    <FormField
+                      control={form.control}
+                      name="paymentAmount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Payment Amount</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                            <CurrencyInput
+                              {...field}
+                              placeholder="24000"
+                              currencyCodeProps={{ ...currencyField, label: 'Currency' }}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            {Object.values(Currency).map(currency => (
-                              <SelectItem key={currency} value={currency}>
-                                {currency}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                />
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <FormField

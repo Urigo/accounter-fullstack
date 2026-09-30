@@ -8,7 +8,7 @@ import {
   DocumentVatType,
   PaymentType,
 } from '../../../../../gql/graphql.js';
-import { getDocumentNameFromType } from '../../../../../helpers/index.js';
+import { currencyCodeToLabel, getDocumentNameFromType } from '../../../../../helpers/index.js';
 
 // Helper functions to get enum options with labels
 export const getDocumentLangOptions = () => [
@@ -16,35 +16,20 @@ export const getDocumentLangOptions = () => [
   { value: DocumentLanguage.Hebrew, label: 'Hebrew' },
 ];
 
-export const getCurrencyOptions = () => [
-  { value: Currency.Ils, label: 'Israeli Shekel (ILS)' },
-  { value: Currency.Usd, label: 'US Dollar (USD)' },
-  { value: Currency.Eur, label: 'Euro (EUR)' },
-  { value: Currency.Gbp, label: 'British Pound (GBP)' },
-  { value: Currency.Jpy, label: 'Japanese Yen (JPY)' },
-  // { value: Currency.Chf, label: 'Swiss Franc (CHF)' },
-  // { value: Currency.Cny, label: 'Chinese Yuan (CNY)' },
-  { value: Currency.Aud, label: 'Australian Dollar (AUD)' },
-  { value: Currency.Cad, label: 'Canadian Dollar (CAD)' },
-  // { value: Currency.Rub, label: 'Russian Ruble (RUB)' },
-  // { value: Currency.Brl, label: 'Brazilian Real (BRL)' },
-  // { value: Currency.Hkd, label: 'Hong Kong Dollar (HKD)' },
-  // { value: Currency.Sgd, label: 'Singapore Dollar (SGD)' },
-  // { value: Currency.Thb, label: 'Thai Baht (THB)' },
-  // { value: Currency.Mxn, label: 'Mexican Peso (MXN)' },
-  // { value: Currency.Try, label: 'Turkish Lira (TRY)' },
-  // { value: Currency.Nzd, label: 'New Zealand Dollar (NZD)' },
-  { value: Currency.Sek, label: 'Swedish Krona (SEK)' },
-  // { value: Currency.Nok, label: 'Norwegian Krone (NOK)' },
-  // { value: Currency.Dkk, label: 'Danish Krone (DKK)' },
-  // { value: Currency.Krw, label: 'South Korean Won (KRW)' },
-  // { value: Currency.Inr, label: 'Indian Rupee (INR)' },
-  // { value: Currency.Idr, label: 'Indonesian Rupiah (IDR)' },
-  // { value: Currency.Pln, label: 'Polish Zloty (PLN)' },
-  // { value: Currency.Ron, label: 'Romanian Leu (RON)' },
-  // { value: Currency.Zar, label: 'South African Rand (ZAR)' },
-  // { value: Currency.Hrk, label: 'Croatian Kuna (HRK)' },
+// Currencies that can be issued on a document (crypto is not supported by the issuing provider)
+const DOCUMENT_CURRENCIES = [
+  Currency.Ils,
+  Currency.Usd,
+  Currency.Eur,
+  Currency.Gbp,
+  Currency.Jpy,
+  Currency.Aud,
+  Currency.Cad,
+  Currency.Sek,
 ];
+
+export const getCurrencyOptions = () =>
+  DOCUMENT_CURRENCIES.map(currency => ({ value: currency, label: currencyCodeToLabel(currency) }));
 
 export const getVatTypeOptions = () => [
   { value: DocumentVatType.Default, label: 'Default (Based on business type)' },
