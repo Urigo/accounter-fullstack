@@ -14,8 +14,10 @@ DB up to the GraphQL API, and flag the ones whose type does not match their mean
 - **DB:** all migrations applied to an empty Postgres, then `information_schema.columns` queried for
   `date`, `timestamp`, `timestamptz` and `time` columns (query at the end). The one migration that
   could not run locally (`2026-09-09T10-00-00.uuidv7-id-defaults`, which needs Postgres 18) only
-  changes id defaults. The later `dynamic-report-snapshot-approvals` migration only adds an index.
-  Neither touches a date column.
+  changes id defaults. The migrations after it could not run either, because the runner stops at the
+  first failure. They were read from source: `dynamic-report-snapshot-approvals` only adds an index,
+  and `dynamic-report-comments` adds the tables `dynamic_report_threads` and
+  `dynamic_report_comments`, whose date and time columns are included below.
 - **GraphQL:** `schema.graphql` from `yarn generate:graphql`, walked with `graphql-js` for every
   field and argument typed `TimelessDate` or `DateTime`, plus `String`/`Int` fields whose name
   suggests a date.
@@ -68,10 +70,12 @@ that in local time, browsers west of the server's timezone show the previous day
 The charge dates feed the date column of the charges table
 (`packages/client/src/components/charges/cells/date.tsx`, which does `new Date(…)` and then
 `format(date, 'dd/MM/yy')`), the charges CSV export and the matching screen
-(`packages/client/src/components/charge-matches/index.tsx:91`). The ledger dates feed the
-business-ledger CSV export and the yearly ledger report
-(`packages/client/src/components/reports/yearly-ledger/`). So these are probably high-traffic
-sources of wrong dates.
+(`packages/client/src/components/charge-matches/index.tsx:91`). They also feed the new cron jobs
+screen (`packages/client/src/components/cron-jobs/index.tsx:163`,
+`formatDate(baseCharge.minEventDate)`). There, `parseISO` keeps date-only strings at local midnight,
+but a `DateTime` value is still read as an instant. The ledger dates feed the business-ledger CSV
+export and the yearly ledger report (`packages/client/src/components/reports/yearly-ledger/`). So
+these are probably high-traffic sources of wrong dates.
 
 ### 2. Date-only meaning stored as a datetime (wrong DB type)
 
@@ -158,7 +162,7 @@ raw pass-through.
 
 ## Date-only fields (correctly typed)
 
-### DB `date` columns (73 table columns + 12 view columns)
+### DB `date` columns (75 table columns + 12 view columns)
 
 | Area                    | Columns                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -167,7 +171,7 @@ raw pass-through.
 | Transactions            | `transactions.event_date`, `debit_date`, `debit_date_override`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Ledger                  | `ledger_records.invoice_date`, `value_date`; `user_context.ledger_lock`                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Misc expenses           | `misc_expenses.invoice_date`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| VAT / tax / reports     | `pcn874.month_date` (first day of the VAT month), `vat_value.date`, `corporate_tax_variables.date`, `dynamic_report_templates.from_date` / `to_date`, `dynamic_report_template_snapshots.from_date` / `to_date`                                                                                                                                                                                                                                                                                                                           |
+| VAT / tax / reports     | `pcn874.month_date` (first day of the VAT month), `vat_value.date`, `corporate_tax_variables.date`, `dynamic_report_templates.from_date` / `to_date`, `dynamic_report_template_snapshots.from_date` / `to_date`, `dynamic_report_comments.from_date` / `to_date`                                                                                                                                                                                                                                                                          |
 | Business / tenant setup | `businesses_admin.registration_date`, `business_registration_start_date`; `user_context.date_established`; `clients_contracts.start_date` / `end_date`; `employees.start_work_date` / `end_work_date`                                                                                                                                                                                                                                                                                                                                     |
 | Assets & finance        | `bank_deposits.open_date` / `close_date`, `depreciation.activation_date`, `dividends.date`, `exchange_rates.exchange_date`                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Business trips          | `business_trips_attendees.arrival` / `departure`, `business_trips_employee_payments.date` / `value_date`, `business_trips_tax_variables.date`; view `extended_business_trip_transactions.date` / `value_date`                                                                                                                                                                                                                                                                                                                             |
@@ -178,7 +182,7 @@ the first of the month; `salaries.month` is a `yyyy-MM` string;
 `user_context.initial_accounter_year`, `annual_audit_step_status.year` and `recovery.year` are
 integers.
 
-### GraphQL `TimelessDate` (71 output fields, 74 input fields, 34 arguments, 7 interface fields)
+### GraphQL `TimelessDate` (75 output fields, 76 input fields, 34 arguments, 7 interface fields)
 
 <details>
 <summary>Output and interface fields</summary>
@@ -192,10 +196,10 @@ integers.
 - **Business trips:** `BusinessTripExpense.date` / `valueDate` and all five expense types,
   `BusinessTripAttendee.arrivalDate` / `departureDate`
 - **Reports:** `VatReportRecord.documentDate` / `chargeDate`, `Pcn874Records.date`,
-  `DynamicReportInfo`, `DynamicReportSnapshot`, `DynamicReportSnapshotMeta` `fromDate` / `toDate`,
-  `IncomeExpenseChart.fromDate` / `toDate`, `IncomeExpenseChartMonthData.date`,
-  `AnnualRevenueReportClientRecord.date`, `DepreciationReportRecord.activationDate` /
-  `purchaseDate`, `DateRange.start` / `end`
+  `DynamicReportInfo`, `DynamicReportSnapshot`, `DynamicReportSnapshotMeta`, `DynamicReportComment`
+  `fromDate` / `toDate`, `IncomeExpenseChart.fromDate` / `toDate`,
+  `IncomeExpenseChartMonthData.date`, `AnnualRevenueReportClientRecord.date`,
+  `DepreciationReportRecord.activationDate` / `purchaseDate`, `DateRange.start` / `end`
 - **Tax & rates:** `CorporateTax.date`, `TaxAdvancesRate.date`, `ExchangeRates.date`
 - **Assets & securities:** `BankDeposit.openDate` / `closeDate`,
   `BankDepositMetadata.potentialCloseDate`, `DepreciationRecord.activationDate`,
@@ -203,6 +207,8 @@ integers.
   `SecurityPosition.historyStartDate` / `lastExecutionDate`
 - **Setup:** `AdminBusiness.registrationDate`, `AdminContextInfo.dateEstablished` / `ledgerLock`,
   `UserContext.ledgerLock`, `Contract.startDate` / `endDate`, `MiscExpense.invoiceDate`
+- **Cron jobs:** `MergedChargeSnapshot.date` (earliest `transactions.event_date`),
+  `CreditcardDebitDateFilled.debitDate` (the `debit_date_override` the job filled in)
 
 </details>
 
@@ -222,7 +228,8 @@ integers.
   `Create/UpdateContractInput`, `Insert/UpdateDepreciationRecordInput.activationDate`,
   `Create/UpdateAdminBusinessInput.registrationDate`, `AdminContextInput` (`dateEstablished`,
   `ledgerLock`), `BootstrapClientInput.dateEstablished`, `CurrencyRateInput.exchangeDate`,
-  `TaxAdvancesRateInput.date`, `DynamicReportSnapshotInput`, `YearOfRelevanceInput.year`
+  `TaxAdvancesRateInput.date`, `DynamicReportSnapshotInput`, `AddDynamicReportCommentInput`
+  (`fromDate`, `toDate`), `YearOfRelevanceInput.year`
 - **Arguments:** `ledgerRecordsByDates`, `salaryRecordsByDates`, `transactionsForBalanceReport`,
   `uniformFormat`, `chargesAwaitingMatchQueue`, `accountantApprovalStatus` (`from` / `to` pairs);
   `pcnByDate`, `pcnFile`, `updatePcn874` (`monthDate`); `periodicalDocumentDrafts*`,
@@ -237,21 +244,23 @@ integers.
 
 ## True datetime fields
 
-### DB `timestamptz` (52 columns, correct)
+### DB `timestamptz` (57 columns, correct)
 
 - **Audit / system columns:** `created_at` / `updated_at` on `annual_audit_step_status`,
   `bank_discount_transactions`, `business_users`, `businesses_securities`,
   `cal_creditcard_transactions`, `documents`, `email_ingestion_alias_routing`,
   `email_ingestion_quarantine`, `provider_credentials`; `created_at` only on
-  `api_key_permission_overrides`, `api_keys`, `audit_logs`, `deel_invoices`,
-  `dynamic_report_template_snapshots`, `email_ingestion_dedup_fingerprints`,
-  `email_ingestion_grants`, `email_ingestion_idempotency_keys`, `email_ingestion_replay_nonces`,
-  `invitations`, `permissions`, `roles`, `security_identifiers`, `super_admins`,
-  `user_permission_overrides`; `users.created`; `migration.date`
+  `dynamic_report_threads`, `dynamic_report_comments`, `api_key_permission_overrides`, `api_keys`,
+  `audit_logs`, `deel_invoices`, `dynamic_report_template_snapshots`,
+  `email_ingestion_dedup_fingerprints`, `email_ingestion_grants`,
+  `email_ingestion_idempotency_keys`, `email_ingestion_replay_nonces`, `invitations`, `permissions`,
+  `roles`, `security_identifiers`, `super_admins`, `user_permission_overrides`; `users.created`;
+  `migration.date`
 - **Lifecycle events:** `annual_audit_step_status.completed_at`, `api_keys.last_used_at` /
   `revoked_at`, `invitations.accepted_at` / `expires_at`, `email_ingestion_grants.consumed_at` /
   `expires_at`, `email_ingestion_replay_nonces.expires_at`, `deel_invoices.issued_at` / `paid_at` /
-  `approve_date`
+  `approve_date`, `dynamic_report_threads.resolved_at`, `dynamic_report_comments.edited_at` /
+  `deleted_at`
 - **Bank data:** `poalim_securities.as_of_date`, the quote time the bank sends (for example
   `2024-01-15T17:14:14.1886720+02:00`), exposed as `Security.asOfDate: DateTime!`
 - Also `timestamptz` but date-only in meaning: see mismatch section 2.
@@ -266,7 +275,7 @@ Listed in mismatch section 4 (real instants stored without an offset), plus
 - `max_creditcard_transactions.deal_data_purchase_time`: time of day of a card purchase, next to the
   date-only `purchase_date`.
 
-### GraphQL `DateTime` (100 output fields, 13 interface fields, 2 input fields)
+### GraphQL `DateTime` (105 output fields, 13 interface fields, 2 input fields)
 
 Correct use (real instants): `createdAt` / `updatedAt` on `Business`, `FinancialEntity`,
 `LtdFinancialEntity`, `PersonalFinancialEntity`, `TaxCategory`, `Transaction` (+ implementations),
@@ -274,7 +283,8 @@ Correct use (real instants): `createdAt` / `updatedAt` on `Business`, `Financial
 `Invitation.expiresAt`, `InvitationPayload.expiresAt`, `AnnualAuditStepStatusInfo.completedAt` /
 `updatedAt`, `DynamicReportInfo.created` / `updated`, `DynamicReportLeafApproval.setAt`,
 `DynamicReportSnapshot.createdAt`, `DynamicReportSnapshotMeta.createdAt`,
-`ProviderCredentialResult.configuredAt`, `ProviderCredentialStatus.configuredAt`,
+`DynamicReportThread.createdAt` / `resolvedAt`, `DynamicReportComment.createdAt` / `editedAt` /
+`deletedAt`, `ProviderCredentialResult.configuredAt`, `ProviderCredentialStatus.configuredAt`,
 `Security.asOfDate`, `Transaction.exactEffectiveDate` (from `transactions.debit_timestamp`). The API
 type is right for these, but several are stored as `timestamp` without time zone (section 4).
 
