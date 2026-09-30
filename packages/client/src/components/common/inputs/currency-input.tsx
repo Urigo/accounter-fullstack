@@ -101,7 +101,7 @@ function CurrencySelect({
   if (disabled) {
     return (
       <span
-        className="flex h-full shrink-0 items-center px-3 text-sm text-gray-500 dark:text-gray-400"
+        className="flex h-full shrink-0 items-center pl-1 pr-3 text-sm text-gray-500 dark:text-gray-400"
         title={description}
         aria-label={description}
       >
@@ -118,7 +118,7 @@ function CurrencySelect({
           aria-label={description}
           title={description}
           className={cn(
-            'flex h-full shrink-0 items-center gap-1 rounded-r-md pl-2 pr-2.5 text-sm outline-none transition-colors',
+            'flex h-full shrink-0 items-center gap-1 rounded-r-md pl-1.5 pr-2.5 text-sm outline-none transition-colors',
             'text-gray-600 hover:bg-gray-100 hover:text-gray-950 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-50',
             'focus-visible:bg-gray-100 dark:focus-visible:bg-gray-800',
           )}
@@ -229,7 +229,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
       >
         <div className="min-w-0 flex-1 [&>div]:h-full">
           <NumberInput
-            className="h-full rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 aria-invalid:ring-0 disabled:opacity-100 dark:bg-transparent dark:dark:bg-transparent"
+            className="h-full rounded-none border-0 pr-1 text-right tabular-nums bg-transparent shadow-none focus-visible:ring-0 aria-invalid:ring-0 disabled:opacity-100 dark:bg-transparent dark:dark:bg-transparent"
             {...props}
             id={inputId}
             aria-invalid={invalid}
