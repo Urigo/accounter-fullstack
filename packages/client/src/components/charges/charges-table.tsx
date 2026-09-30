@@ -94,6 +94,7 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
       documentsCount
       ledgerCount
       miscExpensesCount
+      depreciationRecordsCount
       ... on ChargeMetadata @defer {
         invalidLedger
       }
@@ -242,6 +243,7 @@ export function convertChargeFragmentToTableRow(
             documentsCount: fragmentData.metadata.documentsCount,
             ledgerCount: fragmentData.metadata.ledgerCount,
             miscExpensesCount: fragmentData.metadata.miscExpensesCount,
+            depreciationRecordsCount: fragmentData.metadata.depreciationRecordsCount,
             invalidLedger: fragmentData.metadata.invalidLedger,
           }
         : undefined,

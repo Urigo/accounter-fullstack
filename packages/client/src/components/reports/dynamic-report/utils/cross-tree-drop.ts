@@ -12,6 +12,25 @@ export type DragPayload = {
 };
 
 /**
+ * The nodes of a subtree moving into `target`, minus any branch `target` already holds under the
+ * same id.
+ *
+ * A sort-code branch keeps its sort code's id in either tree, and the bank is rebuilt with every
+ * entity not yet placed, so a sort-code branch can sit in the report while the bank holds another
+ * one under the same id (listing the sort code's other entities). Moving one onto the other would
+ * leave two nodes sharing an id. Instead the incoming branch merges into the one already there: its
+ * own node is dropped, and its children, which point at that id, join the existing branch. The
+ * existing branch keeps its place, name and open state, and no entity is lost.
+ */
+export function withoutCollidingBranches(
+  target: FlatNode<CustomData>[],
+  incoming: FlatNode<CustomData>[],
+): FlatNode<CustomData>[] {
+  const targetIds = new Set(target.map(n => n.id));
+  return incoming.filter(n => !(n.droppable && targetIds.has(n.id)));
+}
+
+/**
  * Applies a Pragmatic DnD tree-item Instruction to the flat node arrays.
  *
  * @param bankTree       Current bank flat nodes
@@ -54,11 +73,14 @@ export function handleCrossTreeDrop(
     }
   }
 
+  const isSameTree = payload.sourceTreeId === targetTreeId;
+
   // Collect all ids to move (dragged node + all descendants)
   const movedIds = new Set([payload.nodeId, ...getDescendantIds(sourceTree, payload.nodeId)]);
-  const movedNodes = sourceTree.filter(n => movedIds.has(n.id));
+  const subtreeNodes = sourceTree.filter(n => movedIds.has(n.id));
+  // Across trees, a branch the target already has merges into it rather than being duplicated.
+  const movedNodes = isSameTree ? subtreeNodes : withoutCollidingBranches(targetTree, subtreeNodes);
 
-  const isSameTree = payload.sourceTreeId === targetTreeId;
   // After removing moved nodes from the source, what remains
   const prunedSourceTree = sourceTree.filter(n => !movedIds.has(n.id));
   // The base for building the target (deduped: if same tree, use pruned)

@@ -4,6 +4,7 @@ import { DocumentsProvider } from '../modules/documents/providers/documents.prov
 import { IssuedDocumentsProvider } from '../modules/documents/providers/issued-documents.provider.js';
 import { DividendsProvider } from '../modules/dividends/providers/dividends.provider.js';
 import { DynamicReportProvider } from '../modules/reports/providers/dynamic-report.provider.js';
+import { DynamicReportCommentsProvider } from '../modules/reports/providers/dynamic-report-comments.provider.js';
 import { VatReportProvider } from '../modules/reports/providers/vat-report.provider.js';
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
 import { CorporateTaxesProvider } from '../modules/corporate-taxes/providers/corporate-taxes.provider.js';
@@ -51,6 +52,7 @@ describe('Cache Isolation Integration', () => {
       IssuedDocumentsProvider,
       DividendsProvider,
       DynamicReportProvider,
+      DynamicReportCommentsProvider,
       VatReportProvider,
       MiscExpensesProvider,
       CorporateTaxesProvider,

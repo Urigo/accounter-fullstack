@@ -92,6 +92,29 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
   return currencySymbol;
 }
 
+const CURRENCY_NAMES: Record<Currency, string> = {
+  [Currency.Aud]: 'Australian Dollar',
+  [Currency.Cad]: 'Canadian Dollar',
+  [Currency.Eth]: 'Ethereum',
+  [Currency.Eur]: 'Euro',
+  [Currency.Gbp]: 'British Pound',
+  [Currency.Grt]: 'The Graph',
+  [Currency.Ils]: 'Israeli Shekel',
+  [Currency.Jpy]: 'Japanese Yen',
+  [Currency.Sek]: 'Swedish Krona',
+  [Currency.Usd]: 'US Dollar',
+  [Currency.Usdc]: 'USD Coin',
+};
+
+export function currencyCodeToName(currency: Currency): string {
+  return CURRENCY_NAMES[currency] ?? currency;
+}
+
+/** Human-readable label, e.g. `Israeli Shekel (ILS)`. */
+export function currencyCodeToLabel(currency: Currency): string {
+  return `${currencyCodeToName(currency)} (${currency})`;
+}
+
 export function formatAmountWithCurrency(amount: number, currency: Currency, digits = 2): string {
   return `${currencyCodeToSymbol(currency)} ${formatStringifyAmount(amount, digits)}`;
 }

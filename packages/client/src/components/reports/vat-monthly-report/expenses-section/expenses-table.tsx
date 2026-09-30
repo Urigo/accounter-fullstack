@@ -144,17 +144,21 @@ export const ExpensesTable = ({
       </div>
       {isOpened &&
         (expensesView === 'detailed' ? (
-          <Table>
+          <Table className="text-xs">
             <TableHeader>
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className="h-auto px-1 py-2 whitespace-normal"
+                    >
                       {header.isPlaceholder ? null : (
                         <Button
                           variant="ghost"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="h-auto p-0 hover:bg-transparent"
+                          className="h-auto p-0 text-xs whitespace-normal text-left hover:bg-transparent"
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {{
@@ -179,7 +183,7 @@ export const ExpensesTable = ({
                     <Fragment key={row.id}>
                       <TableRow data-state={row.getIsSelected() && 'selected'}>
                         {row.getVisibleCells().map(cell => (
-                          <TableCell key={cell.id}>
+                          <TableCell key={cell.id} className="px-1 whitespace-normal">
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </TableCell>
                         ))}

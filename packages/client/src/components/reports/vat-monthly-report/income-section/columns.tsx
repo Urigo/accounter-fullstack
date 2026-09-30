@@ -60,9 +60,7 @@ export const columns = columnHelper.columns([
       header: 'Record Type',
       cell: info => {
         const recordType = info.getValue();
-        return (
-          <p className="whitespace-wrap">{`${getRecordTypeName(recordType)} (${recordType})`}</p>
-        );
+        return <p>{`${getRecordTypeName(recordType)} (${recordType})`}</p>;
       },
     },
   ),
@@ -106,7 +104,7 @@ export const columns = columnHelper.columns([
       const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, info.row.original.data);
       return income.image ? (
         <a href={income.image} target="_blank" rel="noreferrer">
-          <img alt="missing img" src={income.image} height={80} width={80} />
+          <img alt="missing img" src={income.image} height={48} width={48} />
         </a>
       ) : null;
     },
@@ -140,7 +138,7 @@ export const columns = columnHelper.columns([
     {
       id: 'documentDate',
       header: 'Invoice Date',
-      cell: info => info.getValue(),
+      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
     },
   ),
   columnHelper.accessor(
@@ -151,7 +149,7 @@ export const columns = columnHelper.columns([
     {
       id: 'chargeDate',
       header: 'Transaction Date',
-      cell: info => info.getValue(),
+      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
     },
   ),
   columnHelper.accessor(
@@ -164,7 +162,9 @@ export const columns = columnHelper.columns([
       header: 'Amount',
       cell: info => {
         const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, info.row.original.data);
-        return income.taxReducedForeignAmount?.formatted ?? '';
+        return (
+          <span className="whitespace-nowrap">{income.taxReducedForeignAmount?.formatted}</span>
+        );
       },
     },
   ),
@@ -178,7 +178,7 @@ export const columns = columnHelper.columns([
       header: 'Amount ₪',
       cell: info => {
         const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, info.row.original.data);
-        return income.taxReducedLocalAmount?.formatted ?? '';
+        return <span className="whitespace-nowrap">{income.taxReducedLocalAmount?.formatted}</span>;
       },
     },
   ),

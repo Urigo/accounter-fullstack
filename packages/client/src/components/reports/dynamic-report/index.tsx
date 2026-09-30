@@ -8,19 +8,16 @@ import {
   useState,
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
-import { useClient, useQuery } from 'urql';
+import { useQuery } from 'urql';
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { FiltersContext } from '@/providers/index.js';
 import {
   AllDynamicReportsDocument,
   DynamicReportDocument,
-  DynamicReportSnapshotDocument,
   DynamicReportTemplateDocument,
   type AccountantStatus,
   type AllDynamicReportsQuery,
-  type DynamicReportLeafApprovalInput,
   type DynamicReportTemplateQuery,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
@@ -52,29 +49,17 @@ import {
   type SaveAsNewTemplateDialogRef,
 } from './dialogs/save-as-new-template-dialog.js';
 import { TemplateManager } from './dialogs/template-manager.js';
+import { useApprovalLayer } from './hooks/use-approval-layer.js';
+import { useBaselineDiff } from './hooks/use-baseline-diff.js';
+import { useCommentsLayer } from './hooks/use-comments-layer.js';
 import { LegacyBanner } from './legacy-banner.js';
+import { ThreadSheet } from './thread-sheet.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
-import {
-  applyBulk,
-  applyOverride,
-  branchStatus,
-  buildApprovalsInput,
-  buildApprovalStats,
-  buildEffectiveStatuses,
-  countedLeafIds,
-  deriveLeafStatuses,
-  deriveSaveStatuses,
-  dropSavedOverrides,
-  approvalsDisabledReason as getApprovalsDisabledReason,
-  needsReviewVisibility,
-  summarizeApprovals,
-} from './utils/approvals.js';
+import { branchStatus, dropSavedOverrides } from './utils/approvals.js';
 import { buildInitialBankTree } from './utils/bank-tree.js';
-import { pickLatestBaselineId } from './utils/baseline.js';
 import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
 import { buildReportCsv } from './utils/csv.js';
-import { buildReportDiff, findNewEntityIds, type Baseline } from './utils/diff.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
 import { buildReportTree } from './utils/report-tree.js';
 import { guardScopeChange as runGuardedScopeChange } from './utils/scope-guard.js';
@@ -212,6 +197,35 @@ import {
         setAt
         setBy
         isSystem
+      }
+    }
+  }
+`;
+
+// Comment threads come through their own query, never as a field of DynamicReportTemplate:
+// refetching that one rebuilds both trees (Effect 1) and would wipe unsaved drags and renames.
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReportThreads($templateName: String!) {
+    dynamicReportThreads(templateName: $templateName) {
+      id
+      nodeId
+      nodeKind
+      nodeLabel
+      createdAt
+      resolvedAt
+      resolvedBy
+      messages {
+        id
+        content
+        createdAt
+        editedAt
+        deletedAt
+        author
+        isMine
+        fromDate
+        toDate
+        scopeOwnerId
       }
     }
   }
@@ -466,19 +480,25 @@ export function DynamicReport() {
   }, [businessSumsData]);
 
   // ── Baseline ──────────────────────────────────────────────────────────────
-  const snapshots = useMemo(
-    () => templateNodesData?.dynamicReport?.snapshots ?? [],
-    [templateNodesData],
-  );
-  // "Last save" is the newest snapshot for the period and owner on screen, so a save made for
-  // another period or owner does not displace it. Only when none matches does the head stand in,
-  // and the diff then stays suspended because it is not comparable.
-  const latestBaselineId = useMemo(
-    () => pickLatestBaselineId(snapshots, { fromDate, toDate, scopeOwnerId }),
-    [snapshots, fromDate, toDate, scopeOwnerId],
-  );
-  const activeBaselineId =
-    snapshots.find(snapshot => snapshot.id === selectedBaselineId)?.id ?? latestBaselineId;
+  const {
+    snapshots,
+    latestBaselineId,
+    activeBaselineId,
+    baselineSnapshot,
+    snapshotFetching,
+    isBaselineComparable,
+    baseline,
+    reportDiff,
+    newEntityIds,
+  } = useBaselineDiff({
+    templateNodesData,
+    fromDate,
+    toDate,
+    scopeOwnerId,
+    selectedBaselineId,
+    reportTree,
+    businessSums,
+  });
 
   // Picking the newest entry clears the param rather than pinning its id. An absent param already
   // means "whatever the latest snapshot is", so this is what keeps "Last save" tracking the newest
@@ -492,116 +512,51 @@ export function DynamicReport() {
     [guardScopeChange, activeBaselineId, latestBaselineId, setSelectedBaselineId],
   );
 
-  const [{ data: snapshotData, fetching: snapshotFetching }] = useQuery({
-    query: DynamicReportSnapshotDocument,
-    variables: { id: activeBaselineId ?? '' },
-    pause: !activeBaselineId,
-  });
-
-  const baselineSnapshot = snapshotData?.dynamicReportSnapshot ?? null;
-
-  // A snapshot is only comparable to a report computed over the same period for the same owner.
-  // Anything else — a deep link's date override, a different owner — and the figures are answers to
-  // a different question, so the diff is suspended rather than shown wrong.
-  const isBaselineComparable =
-    !!baselineSnapshot &&
-    baselineSnapshot.fromDate === fromDate &&
-    baselineSnapshot.toDate === toDate &&
-    baselineSnapshot.scopeOwnerId === scopeOwnerId;
-
-  const baseline = useMemo<Baseline | null>(() => {
-    if (!baselineSnapshot || !isBaselineComparable) return null;
-    return {
-      tree: baselineSnapshot.tree,
-      values: new Map(baselineSnapshot.values.map(value => [value.entityId, value.value])),
-      // Legacy rows carry no fingerprint; leaving them out suppresses the `records` change kind.
-      fingerprints: new Map(
-        baselineSnapshot.values.flatMap(value =>
-          value.fingerprint == null ? [] : [[value.entityId, value.fingerprint] as const],
-        ),
-      ),
-    };
-  }, [baselineSnapshot, isBaselineComparable]);
-
-  const reportDiff = useMemo(
-    () => (baseline ? buildReportDiff(reportTree, baseline) : null),
-    [reportTree, baseline],
-  );
-
-  // Only a comparable baseline's statuses apply: another period's or owner's approvals answer a
-  // different question, so without one every leaf reads UNAPPROVED.
-  const baselineApprovals = baseline ? (baselineSnapshot?.approvals ?? null) : null;
-  const leafStatuses = useMemo(
-    () => deriveLeafStatuses(reportTree, baselineApprovals, baseline?.fingerprints ?? new Map()),
-    [reportTree, baselineApprovals, baseline],
-  );
-
-  const effectiveStatuses = useMemo(
-    () => buildEffectiveStatuses(leafStatuses, approvalOverrides),
-    [leafStatuses, approvalOverrides],
-  );
-
-  const approvalStats = useMemo(
-    () => buildApprovalStats(reportTree, entityId => effectiveStatuses.get(entityId)?.status),
-    [reportTree, effectiveStatuses],
-  );
-
-  const approvalSummary = useMemo(() => summarizeApprovals(effectiveStatuses), [effectiveStatuses]);
-
-  // The Needs review filter only narrows what the report panel renders. Editing, drag and drop,
-  // saving and the CSV all keep working on the full reportTree, and the saved isOpen is untouched.
-  // Statuses live on a template's snapshots, so the filter applies only with a template loaded.
-  const isReviewFilterOn = reviewOnly && !!currentTemplate;
-  const reviewVisibility = useMemo(
-    () =>
-      isReviewFilterOn
-        ? needsReviewVisibility(reportTree, entityId => effectiveStatuses.get(entityId)?.status)
-        : null,
-    [isReviewFilterOn, reportTree, effectiveStatuses],
-  );
-
-  // Statuses are saved with the template's latest snapshot, so they can only change when there is
-  // a template, its latest baseline is the one on screen, and the statuses derived from it are final.
-  // Not having the template's snapshot list yet counts as loading, not as "no baseline": with no
-  // list, latestBaselineId is null and every leaf would read UNAPPROVED.
-  const isApprovalDataLoading =
-    templateNodesFetching ||
-    businessSumsFetching ||
-    snapshotFetching ||
-    templateNodesData?.dynamicReport?.name !== selectedTemplateName ||
-    !businessSumsData ||
-    (!!activeBaselineId && baselineSnapshot?.id !== activeBaselineId);
-  const approvalsDisabledReason = getApprovalsDisabledReason({
+  // ── Approvals ─────────────────────────────────────────────────────────────
+  const {
+    effectiveStatuses,
+    approvalStats,
+    approvalSummary,
+    reviewVisibility,
+    isApprovalDataLoading,
+    approvalsDisabledReason,
+    handleLeafApprovalChange,
+    handleBranchApprovalChange,
+    resolveSaveApprovals,
+  } = useApprovalLayer({
+    reportTree,
+    approvalOverrides,
+    setApprovalOverrides,
+    baseline,
+    baselineSnapshot,
+    latestBaselineId,
+    activeBaselineId,
+    snapshotFetching,
+    fromDate,
+    toDate,
+    scopeOwnerId,
     hasTemplate: !!currentTemplate,
-    isLoading: isApprovalDataLoading,
-    isLatestBaseline: activeBaselineId === latestBaselineId,
+    reviewOnly,
+    templateNodesFetching,
+    businessSumsFetching,
+    loadedTemplateName: templateNodesData?.dynamicReport?.name,
+    selectedTemplateName,
+    hasBusinessSums: !!businessSumsData,
   });
 
-  const handleLeafApprovalChange = useCallback(
-    (entityId: string, status: AccountantStatus) => {
-      setApprovalOverrides(prev => applyOverride(prev, entityId, status, leafStatuses));
-    },
-    [leafStatuses],
-  );
-
-  const handleBranchApprovalChange = useCallback(
-    (branchId: string, status: AccountantStatus) => {
-      const leafIds = countedLeafIds(reportTree, branchId);
-      setApprovalOverrides(prev => applyBulk(prev, leafIds, status, leafStatuses));
-    },
-    [reportTree, leafStatuses],
-  );
-
-  const newEntityIds = useMemo(
-    () =>
-      baseline
-        ? findNewEntityIds(
-            businessSums.map(sum => sum.business.id),
-            baseline,
-          )
-        : undefined,
-    [businessSums, baseline],
-  );
+  // ── Comments ──────────────────────────────────────────────────────────────
+  // Live writes on the saved template: never part of the dirty flag, staged statuses or the scope
+  // guard, and not gated by the Edit switch, the lock or a pinned baseline.
+  const comments = useCommentsLayer({
+    templateName: currentTemplate?.name ?? null,
+    reportTree,
+    ghosts: reportDiff?.ghosts,
+    fromDate,
+    toDate,
+    scopeOwnerId,
+    owners,
+    reviewVisibility,
+  });
 
   // Derive template list for TemplateManager
   const templates = useMemo<Template[]>(
@@ -758,6 +713,13 @@ export function DynamicReport() {
     );
   }, []);
 
+  // A branch the reveal alone holds open still collapses on click, which ends the reveal.
+  const { toggleExpand: toggleRevealedExpand } = comments;
+  const handleToggleRevealedExpand = useCallback(
+    (nodeId: string) => toggleRevealedExpand(nodeId, handleToggleReportExpand),
+    [toggleRevealedExpand, handleToggleReportExpand],
+  );
+
   const handleRenameBranch = useCallback((nodeId: string, currentName: string) => {
     renameBranchDialogRef.current?.renameBranch(nodeId, currentName);
   }, []);
@@ -849,63 +811,6 @@ export function DynamicReport() {
       }),
     [businessSums, fromDate, toDate, scopeOwnerId],
   );
-
-  const client = useClient();
-
-  // The statuses a Resave or Capture sends. The server stamps them against the newest comparable
-  // snapshot, so they have to be that snapshot's statuses plus the staged ones. When it is the
-  // baseline on screen (or there is none) that is exactly effectiveStatuses. While an older baseline
-  // is pinned, the statuses on screen are that older save's, and sending them would write them back
-  // as fresh choices — so the newest one is fetched and the statuses derived from it instead.
-  // Returns null, after telling the user, when it can't be read: saving without statuses would
-  // drop every one of them. The same goes while the report is still loading: until the snapshot
-  // list arrives latestBaselineId reads as "no baseline", every leaf as UNAPPROVED, and sending that
-  // would overwrite the stored statuses.
-  const resolveSaveApprovals = useCallback(async (): Promise<
-    DynamicReportLeafApprovalInput[] | null
-  > => {
-    if (isApprovalDataLoading) {
-      toast.error('Error', {
-        description: 'The report is still loading, so nothing was saved. Try again in a moment',
-      });
-      return null;
-    }
-    if (!latestBaselineId || baselineSnapshot?.id === latestBaselineId) {
-      return buildApprovalsInput(reportTree, effectiveStatuses);
-    }
-    const { data, error } = await client
-      .query(
-        DynamicReportSnapshotDocument,
-        { id: latestBaselineId },
-        { requestPolicy: 'network-only' },
-      )
-      .toPromise();
-    const latest = data?.dynamicReportSnapshot;
-    if (error || !latest) {
-      toast.error('Error', {
-        description: 'Could not load the latest save’s statuses, so nothing was saved',
-      });
-      return null;
-    }
-    const statuses = deriveSaveStatuses(
-      reportTree,
-      latest,
-      { fromDate, toDate, scopeOwnerId },
-      approvalOverrides,
-    );
-    return buildApprovalsInput(reportTree, statuses);
-  }, [
-    isApprovalDataLoading,
-    latestBaselineId,
-    baselineSnapshot,
-    reportTree,
-    effectiveStatuses,
-    client,
-    fromDate,
-    toDate,
-    scopeOwnerId,
-    approvalOverrides,
-  ]);
 
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
@@ -1117,6 +1022,11 @@ export function DynamicReport() {
         // baseline arrives, so the line waits for them.
         approvalSummary={isApprovalDataLoading ? null : approvalSummary}
         onBaselineChange={handleBaselineChange}
+        discussions={{
+          openCount: comments.openCount,
+          disabledReason: comments.disabledReason,
+          onOpen: comments.openDiscussions,
+        }}
         diffSuspendedReason={
           snapshots.length === 0
             ? 'No baseline yet — save this draft to start tracking changes'
@@ -1156,7 +1066,7 @@ export function DynamicReport() {
             isCollapsed={collapsedPanel === 'report'}
             onToggleCollapse={() => handleToggleCollapse('report')}
             onAddBranch={() => handleAddBranch('report')}
-            onToggleExpand={handleToggleReportExpand}
+            onToggleExpand={handleToggleRevealedExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
             diff={reportDiff}
@@ -1165,10 +1075,14 @@ export function DynamicReport() {
             onLeafApprovalChange={handleLeafApprovalChange}
             onBranchApprovalChange={handleBranchApprovalChange}
             approvalsDisabledReason={approvalsDisabledReason}
-            reviewVisibility={reviewVisibility}
+            rowComments={comments.rowComments}
+            reviewVisibility={comments.visibility}
+            lockedOpenIds={comments.lockedOpenIds}
           />
         </div>
       </div>
+
+      <ThreadSheet layer={comments} />
 
       <ChangePeriodDialog ref={changePeriodDialogRef} onConfirm={handlePeriodConfirmed} />
 

@@ -2,7 +2,6 @@ import { useContext, useState, type JSX } from 'react';
 import { Banknote, CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import { useCronJobs } from '../../hooks/use-cron-jobs.js';
 import { useFetchDeelDocuments } from '../../hooks/use-fetch-deel-documents.js';
 import { useMyMemberships } from '../../hooks/use-my-memberships.js';
 import { UserContext } from '../../providers/index.js';
@@ -11,7 +10,6 @@ import { ROUTES } from '../../router/routes.js';
 import { LogoutButton } from '../common/buttons/logout-button.js';
 import { MultiSelect } from '../common/inputs/multi-select.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
-import { ConfirmationModal } from '../common/modals/confirmation-modal.js';
 import { SyncDocumentsModal } from '../common/modals/sync-green-invoice-documents-modal.js';
 import { Tooltip } from '../common/tooltip.js';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar.js';
@@ -31,7 +29,6 @@ export function UserNav(): JSX.Element | null {
   const [pullDocumentsOpened, setPullDocumentsOpened] = useState(false);
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>(getBusinessScopeIds);
-  const { executeJobs } = useCronJobs();
   const { fetching: fetchingDeelDocuments, fetchDocuments: fetchDeelDocuments } =
     useFetchDeelDocuments();
   // Scope-independent: `userContext.memberships` is fetched under the active
@@ -185,17 +182,11 @@ export function UserNav(): JSX.Element | null {
               </Button>
             </Tooltip>
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Tooltip content="Execute cron jobs">
-              <ConfirmationModal
-                onConfirm={executeJobs}
-                title="Are you sure you want to manually execute cron jobs?"
-              >
-                <Button variant="ghost" size="icon" className="size-7.5">
-                  <CircleCheckBig className="size-5" />
-                </Button>
-              </ConfirmationModal>
-            </Tooltip>
+          <DropdownMenuItem asChild>
+            <Link to={ROUTES.CHARGES.CRON_JOBS}>
+              <CircleCheckBig className="size-4" />
+              <span className="hidden sm:inline">Cron Jobs</span>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <LogoutButton />

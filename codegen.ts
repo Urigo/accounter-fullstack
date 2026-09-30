@@ -2,6 +2,9 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
   overwrite: true,
+  // The GraphQL codegen cache keys in .github/actions/setup/action.yml and
+  // .github/workflows/server-tests.yml hash exactly these `schema` and `documents`
+  // globs. Update them together, or edits under a new glob reuse stale generated types.
   schema: './packages/server/src/modules/*/typeDefs/*.graphql.ts',
   documents: [
     './packages/client/src/components/**/*.tsx',
@@ -124,10 +127,12 @@ const config: CodegenConfig = {
           DepreciationRecord: '../modules/depreciation/types.js#IGetDepreciationRecordsByIdsResult',
           DividendCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           DocumentSuggestions: '../shared/types#DocumentSuggestionsProto',
+          DynamicReportComment: '../modules/reports/types.js#IGetCommentsByThreadIdsResult',
           DynamicReportInfo: '../modules/reports/types.js#IGetTemplateResult',
           DynamicReportSnapshot: '../modules/reports/types.js#IGetSnapshotByIdResult',
           DynamicReportSnapshotMeta:
             '../modules/reports/types.js#IGetSnapshotsMetaByOwnerIdsResult',
+          DynamicReportThread: '../modules/reports/types.js#IGetThreadsByTemplateResult',
           ExchangeRates: 'TimelessDateString',
           FinancialEntity:
             '../modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',

@@ -138,12 +138,18 @@ runs:
           packages/email-ingestion-gateway/src/gql
           packages/mcp-server/src/gql
           packages/scraper-app/src/server/gql
+        # The key mirrors `schema` + `documents` in codegen.ts, so keep the two in sync.
+        # `hashFiles` has no brace expansion: list each extension separately, or the
+        # pattern matches nothing and a client-only change reuses stale generated types.
         key:
-          graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
-          'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
-          'packages/gmail-listener/src/**/*.ts', 'packages/email-ingestion-gateway/src/**/*.ts',
-          'packages/mcp-server/src/**/*.ts', 'packages/scraper-app/src/**/*.{ts,tsx}', 'yarn.lock')
-          }}
+          graphql-codegen-${{ runner.os }}-${{ hashFiles('codegen.ts', 'graphql.config.js',
+          'yarn.lock', 'packages/server/src/modules/*/typeDefs/*.graphql.ts',
+          'packages/client/src/components/**/*.tsx', 'packages/client/src/hooks/**/*.ts',
+          'packages/client/src/providers/**/*.tsx', 'packages/client/src/**/*.graphql.ts',
+          'packages/gmail-listener/src/server-requests.ts',
+          'packages/scraper-app/src/server/graphql/mutations.ts',
+          'packages/email-ingestion-gateway/src/graphql/mutations.ts',
+          'packages/mcp-server/src/tools/*.ts', 'packages/mcp-server/src/upstream/*.ts') }}
         restore-keys: |
           graphql-codegen-${{ runner.os }}-
 
