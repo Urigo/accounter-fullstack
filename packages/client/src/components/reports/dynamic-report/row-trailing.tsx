@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/tooltip.js';
 import { cn } from '@/lib/utils.js';
 import { RowApprovalStatus, type RowApproval } from './approval-status.js';
+import { CommentIndicator, type RowComments } from './comment-indicator.js';
 import { DiffMarkers, type RowDiff } from './diff-markers.js';
 import { formatCurrency } from './utils/types.js';
 
@@ -18,6 +19,12 @@ import { formatCurrency } from './utils/types.js';
 export type RowAnnotations = {
   /** How this row differs from the last saved baseline, when a baseline is in play. */
   diff?: RowDiff;
+  /**
+   * The row's comments. Set on every report row while the comments layer is on (a saved template
+   * is loaded), so the slot is reserved on each of them — including rows with nothing to show —
+   * and the column never shifts from row to row. Absent, the slot isn't rendered at all.
+   */
+  comments?: RowComments;
   /** The row's accountant status. Report rows reserve a slot for it even when it is absent. */
   approval?: RowApproval;
 };
@@ -39,7 +46,7 @@ interface RowTrailingProps {
 
 /**
  * The right-hand end of a tree row, shared by branch and leaf rows: diff markers, the amount, the
- * row's controls, then one fixed-width slot per layer (today the approval status).
+ * row's controls, then one fixed-width slot per layer: comments, then the approval status.
  */
 export function RowTrailing({
   annotations,
@@ -76,6 +83,12 @@ export function RowTrailing({
       )}
 
       {children}
+
+      {withSlots && annotations.comments && (
+        <div className="w-7 shrink-0 flex items-center justify-center" data-row-slot="comments">
+          <CommentIndicator comments={annotations.comments} />
+        </div>
+      )}
 
       {withSlots && (
         <div className="w-7 shrink-0 flex items-center justify-center" data-row-slot="approval">

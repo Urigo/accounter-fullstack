@@ -7,6 +7,7 @@ import {
   Edit2,
   FileText,
   Lock,
+  MessageSquare,
   Save,
   Trash2,
 } from 'lucide-react';
@@ -29,6 +30,12 @@ import {
   SelectValue,
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip.js';
 import type { TimelessDateString } from '@/helpers/index.js';
 import { formatApprovalProgress, type ApprovalSummary } from './utils/approvals.js';
 import { saveActions } from './utils/save-actions.js';
@@ -86,6 +93,14 @@ interface ToolbarProps {
   approvalSummary?: ApprovalSummary | null;
   /** Set when change tracking cannot be shown, explaining why. */
   diffSuspendedReason?: string | null;
+  /** The Discussions button: every comment thread of the template, in the side sheet. */
+  discussions?: {
+    /** Unresolved threads. */
+    openCount: number;
+    /** Why comments are unavailable; the button is disabled with this as its tooltip. */
+    disabledReason: string | null;
+    onOpen: () => void;
+  } | null;
 }
 
 export function Toolbar({
@@ -127,6 +142,7 @@ export function Toolbar({
   onBaselineChange,
   approvalSummary = null,
   diffSuspendedReason = null,
+  discussions = null,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
   const actions = saveActions({ hasTemplate, isLocked, isDirty, hasStagedApprovals });
@@ -275,6 +291,39 @@ export function Toolbar({
             </Select>
           </div>
         )}
+
+        {discussions &&
+          (discussions.disabledReason ? (
+            // aria-disabled rather than disabled: a disabled button takes no focus and fires no
+            // pointer events, so its tooltip — the only place the reason is given — would never
+            // show.
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    aria-disabled="true"
+                    className="gap-2 cursor-not-allowed opacity-50"
+                    data-discussions-button
+                  >
+                    <MessageSquare className="size-4" />
+                    Discussions
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{discussions.disabledReason}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={discussions.onOpen}
+              data-discussions-button
+            >
+              <MessageSquare className="size-4" />
+              Discussions · {discussions.openCount} open
+            </Button>
+          ))}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

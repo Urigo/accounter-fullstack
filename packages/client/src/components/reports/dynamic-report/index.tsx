@@ -51,7 +51,9 @@ import {
 import { TemplateManager } from './dialogs/template-manager.js';
 import { useApprovalLayer } from './hooks/use-approval-layer.js';
 import { useBaselineDiff } from './hooks/use-baseline-diff.js';
+import { useCommentsLayer } from './hooks/use-comments-layer.js';
 import { LegacyBanner } from './legacy-banner.js';
+import { ThreadSheet } from './thread-sheet.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import { branchStatus, dropSavedOverrides } from './utils/approvals.js';
@@ -195,6 +197,35 @@ import {
         setAt
         setBy
         isSystem
+      }
+    }
+  }
+`;
+
+// Comment threads come through their own query, never as a field of DynamicReportTemplate:
+// refetching that one rebuilds both trees (Effect 1) and would wipe unsaved drags and renames.
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReportThreads($templateName: String!) {
+    dynamicReportThreads(templateName: $templateName) {
+      id
+      nodeId
+      nodeKind
+      nodeLabel
+      createdAt
+      resolvedAt
+      resolvedBy
+      messages {
+        id
+        content
+        createdAt
+        editedAt
+        deletedAt
+        author
+        isMine
+        fromDate
+        toDate
+        scopeOwnerId
       }
     }
   }
@@ -513,6 +544,20 @@ export function DynamicReport() {
     hasBusinessSums: !!businessSumsData,
   });
 
+  // ── Comments ──────────────────────────────────────────────────────────────
+  // Live writes on the saved template: never part of the dirty flag, staged statuses or the scope
+  // guard, and not gated by the Edit switch, the lock or a pinned baseline.
+  const comments = useCommentsLayer({
+    templateName: currentTemplate?.name ?? null,
+    reportTree,
+    ghosts: reportDiff?.ghosts,
+    fromDate,
+    toDate,
+    scopeOwnerId,
+    owners,
+    reviewVisibility,
+  });
+
   // Derive template list for TemplateManager
   const templates = useMemo<Template[]>(
     () => (allTemplatesData?.allDynamicReports ?? []).map(toTemplate),
@@ -667,6 +712,13 @@ export function DynamicReport() {
       prev.map(n => (n.id === nodeId ? { ...n, data: { ...n.data, isOpen: !n.data.isOpen } } : n)),
     );
   }, []);
+
+  // A branch the reveal alone holds open still collapses on click, which ends the reveal.
+  const { toggleExpand: toggleRevealedExpand } = comments;
+  const handleToggleRevealedExpand = useCallback(
+    (nodeId: string) => toggleRevealedExpand(nodeId, handleToggleReportExpand),
+    [toggleRevealedExpand, handleToggleReportExpand],
+  );
 
   const handleRenameBranch = useCallback((nodeId: string, currentName: string) => {
     renameBranchDialogRef.current?.renameBranch(nodeId, currentName);
@@ -970,6 +1022,11 @@ export function DynamicReport() {
         // baseline arrives, so the line waits for them.
         approvalSummary={isApprovalDataLoading ? null : approvalSummary}
         onBaselineChange={handleBaselineChange}
+        discussions={{
+          openCount: comments.openCount,
+          disabledReason: comments.disabledReason,
+          onOpen: comments.openDiscussions,
+        }}
         diffSuspendedReason={
           snapshots.length === 0
             ? 'No baseline yet — save this draft to start tracking changes'
@@ -1009,7 +1066,7 @@ export function DynamicReport() {
             isCollapsed={collapsedPanel === 'report'}
             onToggleCollapse={() => handleToggleCollapse('report')}
             onAddBranch={() => handleAddBranch('report')}
-            onToggleExpand={handleToggleReportExpand}
+            onToggleExpand={handleToggleRevealedExpand}
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
             diff={reportDiff}
@@ -1018,10 +1075,14 @@ export function DynamicReport() {
             onLeafApprovalChange={handleLeafApprovalChange}
             onBranchApprovalChange={handleBranchApprovalChange}
             approvalsDisabledReason={approvalsDisabledReason}
-            reviewVisibility={reviewVisibility}
+            rowComments={comments.rowComments}
+            reviewVisibility={comments.visibility}
+            lockedOpenIds={comments.lockedOpenIds}
           />
         </div>
       </div>
+
+      <ThreadSheet layer={comments} />
 
       <ChangePeriodDialog ref={changePeriodDialogRef} onConfirm={handlePeriodConfirmed} />
 

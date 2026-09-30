@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AccountantStatus } from '../../../gql/graphql.js';
+import type { RowComments } from './comment-indicator.js';
 import type { RowAnnotations } from './row-trailing.js';
 import { TreeNodeRow } from './tree-node.js';
 import { buildNodeStats, type CustomData, type FlatNode } from './utils/types.js';
@@ -73,6 +74,14 @@ const BRANCH_ANNOTATIONS: RowAnnotations = {
   },
 };
 
+const COMMENTS: RowComments = {
+  own: { threadId: 't1', isOpen: true, messageCount: 3, lastMessageAt: null },
+  openBelow: 0,
+  isActive: false,
+  label: 'Acme Ltd',
+  onOpen: () => void 0,
+};
+
 /* -------------------------------------------------------------------------- */
 /*  Stories                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -80,7 +89,8 @@ const BRANCH_ANNOTATIONS: RowAnnotations = {
 /**
  * One row of the dynamic report's trees. Every row ends in the shared `RowTrailing`: diff markers,
  * the amount, the row's own controls, then — on report rows only — one fixed-width slot per layer
- * (today the approval status), so each layer lines up as a column. Bank rows have no slots.
+ * (comments, then the approval status), so each layer lines up as a column. Bank rows have no
+ * slots. The comments slot appears once a saved template is loaded.
  */
 const meta = {
   title: 'Reports/DynamicReport/TreeNodeRow',
@@ -143,6 +153,39 @@ export const GhostRow: Story = {
     node: GHOST,
     annotations: {
       diff: { changes: [{ kind: 'removed', previousValue: 3100 }], isGhost: true },
+    },
+  },
+};
+
+/** A report leaf with an open discussion: the comments slot sits just before the status. */
+export const ReportLeafWithComments: Story = {
+  args: { annotations: { ...LEAF_ANNOTATIONS, comments: COMMENTS } },
+};
+
+/** A collapsed branch with no thread of its own but open threads inside: a dot. */
+export const ReportBranchWithOpenThreadsInside: Story = {
+  args: {
+    node: BRANCH,
+    depth: 0,
+    annotations: {
+      ...BRANCH_ANNOTATIONS,
+      comments: { ...COMMENTS, own: undefined, openBelow: 2, label: 'Revenue' },
+    },
+  },
+};
+
+/** A report row without a thread: hover it for the "add comment" button. */
+export const ReportLeafWithoutThread: Story = {
+  args: { annotations: { ...LEAF_ANNOTATIONS, comments: { ...COMMENTS, own: undefined } } },
+};
+
+/** A ghost row shows its thread read-only. */
+export const GhostRowWithThread: Story = {
+  args: {
+    node: GHOST,
+    annotations: {
+      diff: { changes: [{ kind: 'removed', previousValue: 3100 }], isGhost: true },
+      comments: { ...COMMENTS, readOnly: true, label: 'Globex Corp' },
     },
   },
 };

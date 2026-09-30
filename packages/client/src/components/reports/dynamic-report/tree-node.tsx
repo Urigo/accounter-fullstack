@@ -56,11 +56,16 @@ interface TreeNodeProps {
   /** What each layer says about this row (diff, approval, …). Absent means none has anything. */
   annotations?: RowAnnotations;
   /**
-   * The Needs review filter shows this branch open whatever its saved isOpen says. Its expand
-   * toggle is disabled meanwhile, since a click would flip the saved isOpen without any visible
-   * change.
+   * An overlay (the Needs review filter, a revealed discussion) shows this branch open whatever its
+   * saved isOpen says.
    */
   isForcedOpen?: boolean;
+  /**
+   * The expand toggle is disabled while the branch is forced open, since a click would flip the
+   * saved isOpen without any visible change. Defaults to `isForcedOpen`; a caller that handles the
+   * click itself (a revealed discussion lets the branch collapse) passes false.
+   */
+  isToggleLocked?: boolean;
 }
 
 const NO_ANNOTATIONS: RowAnnotations = {};
@@ -86,6 +91,7 @@ export function TreeNodeRow({
   onDelete,
   annotations = NO_ANNOTATIONS,
   isForcedOpen = false,
+  isToggleLocked = isForcedOpen,
 }: TreeNodeProps): ReactElement {
   const { diff } = annotations;
   const [isDragging, setIsDragging] = useState(false);
@@ -163,6 +169,8 @@ export function TreeNodeRow({
     return (
       <div
         ref={rowRef}
+        data-node-id={node.id}
+        data-tree-id={treeId}
         className={cn(
           'flex flex-col',
           isDragging && 'opacity-50',
@@ -193,8 +201,8 @@ export function TreeNodeRow({
             size="sm"
             className="size-6 p-0"
             data-expand-toggle={node.id}
-            disabled={isForcedOpen}
-            title={isForcedOpen ? 'Expanded by Needs review' : undefined}
+            disabled={isToggleLocked}
+            title={isToggleLocked ? 'Expanded by Needs review' : undefined}
             onClick={() => onToggleExpand(node.id)}
           >
             {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
@@ -272,6 +280,8 @@ export function TreeNodeRow({
   return (
     <div
       ref={rowRef}
+      data-node-id={node.id}
+      data-tree-id={treeId}
       className={cn(
         'flex flex-col',
         isDragging && 'opacity-50',
