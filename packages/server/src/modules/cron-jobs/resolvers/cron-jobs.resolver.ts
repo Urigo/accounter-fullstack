@@ -1,38 +1,35 @@
 import { GraphQLError } from 'graphql';
-import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
+import type { Resolvers, ResolversTypes } from '../../../__generated__/types.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
-import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
-import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
-import { buildMergeChargesByTransactionReferencePlan } from '../helpers/merge-charges-by-reference.helper.js';
+import {
+  executeReferenceMergePlan,
+  loadReferenceMergePlans,
+  runCronJobs,
+} from '../helpers/run-cron-jobs.helper.js';
 import { CronJobsProvider } from '../providers/cron-jobs.provider.js';
 import type { CronJobsModule } from '../types.js';
 
-export const cronJobsResolvers: CronJobsModule.Resolvers = {
+export const cronJobsResolvers: CronJobsModule.Resolvers & Pick<Resolvers, 'CronJobEvent'> = {
   Mutation: {
+    runCronJobs: async (_, __, { injector }) => {
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      return {
+        // An async iterable list, so the client can @stream the events as they happen
+        events: runCronJobs(
+          injector,
+          ownerId,
+        ) as unknown as readonly ResolversTypes['CronJobEvent'][],
+      };
+    },
     mergeChargesByTransactionReference: async (_, { dryRun = true }, { injector }) => {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-        const candidates = await injector.get(CronJobsProvider).getReferenceMergeCandidates({
-          ownerId,
-        });
-
-        const chargeIds = new Set<string>(candidates.map(candidate => candidate.charge_id));
-        const charges = await injector
-          .get(ChargesProvider)
-          .getChargeByIdLoader.loadMany(Array.from(chargeIds))
-          .then(
-            res =>
-              res.filter(
-                charge => charge && !(charge instanceof Error),
-              ) as IGetChargesByIdsResult[],
-          );
-
-        const chargeById = new Map(charges.map(charge => [charge.id, charge]));
-        const { plans, errors: planningErrors } = buildMergeChargesByTransactionReferencePlan({
-          candidates,
+        const {
           chargeById,
-        });
+          plans,
+          errors: planningErrors,
+        } = await loadReferenceMergePlans(injector, ownerId);
         const plannedMerges = plans.map(({ reference, baseChargeId, chargeIdsToMerge }) => ({
           reference,
           baseChargeId,
@@ -54,18 +51,14 @@ export const cronJobsResolvers: CronJobsModule.Resolvers = {
         const executionErrors = [...planningErrors];
         const mergedBaseChargeIds = new Set<string>();
 
-        for (const { reference, baseChargeId, chargeIdsToMerge } of plans) {
+        for (const plan of plans) {
+          const { reference, baseChargeId } = plan;
           try {
-            await mergeChargesExecutor(chargeIdsToMerge, baseChargeId, injector);
-            const degradedCharges = await degradeChargesAccountantApproval(injector, [
-              baseChargeId,
-            ]);
-            const degradedBaseCharge = degradedCharges.get(baseChargeId);
-            if (degradedBaseCharge) {
-              // keep the returned charge in sync with its fresh (PENDING) state
-              chargeById.set(baseChargeId, degradedBaseCharge);
-            }
+            const { approvalError } = await executeReferenceMergePlan(injector, plan, chargeById);
             mergedBaseChargeIds.add(baseChargeId);
+            if (approvalError) {
+              executionErrors.push(approvalError);
+            }
           } catch (error) {
             const message =
               error instanceof GraphQLError
@@ -121,5 +114,8 @@ export const cronJobsResolvers: CronJobsModule.Resolvers = {
         throw new GraphQLError('Failed to calculate creditcard transactions debit date');
       }
     },
+  },
+  CronJobEvent: {
+    __resolveType: parent => parent.__typename!,
   },
 };

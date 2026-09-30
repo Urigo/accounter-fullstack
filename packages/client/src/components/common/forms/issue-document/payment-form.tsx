@@ -2,7 +2,11 @@
 
 import { useCallback } from 'react';
 import { CreditCard, Plus, Trash2 } from 'lucide-react';
-import { Currency, DocumentPaymentRecordCardType, PaymentType } from '../../../../gql/graphql.js';
+import {
+  DocumentPaymentRecordCardType,
+  PaymentType,
+  type Currency,
+} from '../../../../gql/graphql.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Input } from '../../../ui/input.js';
@@ -14,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
+import { CurrencyInput } from '../../inputs/currency-input.js';
 import type { Payment } from './types/document.js';
 import {
   getCardTypeOptions,
@@ -27,7 +32,7 @@ interface PaymentFormProps {
   onChange: (payments: Payment[]) => void;
 }
 
-const currencies = getCurrencyOptions();
+const currencyCodes = getCurrencyOptions().map(option => option.value);
 const paymentTypes = getPaymentTypeOptions();
 const cardTypes = getCardTypeOptions();
 
@@ -132,7 +137,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                   value={payment.type}
                   onValueChange={(value: PaymentType) => updatePayment(index, 'type', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -144,35 +149,21 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Amount</Label>
-                <Input
-                  type="number"
-                  step="0.01"
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor={`payment-${index}-amount`}>Amount</Label>
+                <CurrencyInput
+                  id={`payment-${index}-amount`}
                   value={payment.price}
-                  onChange={e =>
-                    updatePayment(index, 'price', Number.parseFloat(e.target.value) || 0)
-                  }
+                  onChange={value => updatePayment(index, 'price', value ?? 0)}
                   placeholder="0.00"
+                  currencyCodeProps={{
+                    value: payment.currency,
+                    onChange: value => {
+                      if (value) updatePayment(index, 'currency', value);
+                    },
+                    currencies: currencyCodes,
+                  }}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Currency</Label>
-                <Select
-                  value={payment.currency}
-                  onValueChange={(value: Currency) => updatePayment(index, 'currency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currencies.map(curr => (
-                      <SelectItem key={curr.value} value={curr.value}>
-                        {curr.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
@@ -266,7 +257,7 @@ export function PaymentForm({ payments, currency, onChange }: PaymentFormProps) 
                         updatePayment(index, 'cardType', value || undefined)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select card type" />
                       </SelectTrigger>
                       <SelectContent>

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
-import { graphql, HttpResponse } from 'msw';
+import { HttpResponse } from 'msw';
+import { graphql } from 'msw/graphql';
 import { createUploadClient } from '../graphql/client.js';
 import { UploadError } from '../graphql/upload-error.js';
 import { makeMaxAccount } from './fixtures/max.js';
@@ -86,7 +87,7 @@ const server = setupServer(
   }),
 );
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   server.resetHandlers();
   lastAuthHeader = null;

@@ -97,10 +97,17 @@ jobs:
           # the key now that its `src/gql` is in the cached paths. Without them, editing
           # only `graphql/mutations.ts` is a cache hit and the typecheck below validates
           # against stale generated types — the drift this workflow step exists to catch.
+          # The rest mirrors the codegen.ts inputs for the outputs cached above (schema +
+          # client documents), so keep it in sync with codegen.ts. List each extension
+          # separately: `hashFiles` has no brace expansion, so a `*.{ts,tsx}` pattern
+          # matches nothing and client-only changes (e.g. a new document) hit a stale
+          # cache and skip codegen.
           key:
-            graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
-            'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
-            'packages/email-ingestion-gateway/src/graphql/mutations.ts', 'yarn.lock') }}
+            graphql-codegen-${{ runner.os }}-${{ hashFiles('codegen.ts', 'graphql.config.js',
+            'yarn.lock', 'packages/server/src/modules/*/typeDefs/*.graphql.ts',
+            'packages/client/src/components/**/*.tsx', 'packages/client/src/hooks/**/*.ts',
+            'packages/client/src/providers/**/*.tsx', 'packages/client/src/**/*.graphql.ts',
+            'packages/email-ingestion-gateway/src/graphql/mutations.ts') }}
           restore-keys: |
             graphql-codegen-${{ runner.os }}-
 

@@ -11,11 +11,14 @@ import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
 import type { AccountantStatus } from '../../../gql/graphql.js';
 import type { RowApproval } from './approval-status.js';
+import type { RowComments } from './comment-indicator.js';
 import type { RowDiff } from './diff-markers.js';
+import type { RowAnnotations } from './row-trailing.js';
 import { TreeNodeRow } from './tree-node.js';
-import type { ApprovalStats, EffectiveApproval, ReviewVisibility } from './utils/approvals.js';
+import type { ApprovalStats, EffectiveApproval } from './utils/approvals.js';
 import type { ReportDiff } from './utils/diff.js';
 import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
+import { isNarrowing, type RowVisibility } from './utils/visibility.js';
 
 interface TreePanelProps {
   treeId: 'bank' | 'report';
@@ -46,29 +49,40 @@ interface TreePanelProps {
   onBranchApprovalChange?: (branchId: string, status: AccountantStatus) => void;
   /** Why statuses can't be changed right now; all statuses are read-only while it is set. */
   approvalsDisabledReason?: string | null;
+  /** Each row's comments annotation, from useCommentsLayer. Report tree only. */
+  rowComments?: (node: FlatNode<CustomData>, isGhost: boolean) => RowComments | undefined;
   /**
-   * Set while the Needs review filter is on: only these rows render, and the listed ancestors are
-   * shown open without touching their saved isOpen. Report tree only.
+   * The row overlay: set while the Needs review filter is on (possibly merged with other overlays
+   * through mergeVisibility). Only its visible rows render, unless it shows every row, and its
+   * force-open branches are shown open without touching their saved isOpen. Report tree only.
    */
-  reviewVisibility?: ReviewVisibility | null;
+  reviewVisibility?: RowVisibility | null;
+  /**
+   * Branches whose expand toggle stays disabled while they are forced open: those the Needs review
+   * filter forces. A branch forced open only by another overlay (a revealed discussion) keeps a
+   * working toggle, and `onToggleExpand` decides what its click does. Absent, every forced-open
+   * branch is locked. Report tree only.
+   */
+  lockedOpenIds?: ReadonlySet<string>;
 }
 
 type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
-  rowDiff: (nodeId: string) => RowDiff | undefined;
-  rowApproval: (node: FlatNode<CustomData>) => RowApproval | undefined;
+  rowAnnotations: (node: FlatNode<CustomData>) => RowAnnotations;
   ghostIds: Set<string>;
-  reviewVisibility: ReviewVisibility | null;
+  reviewVisibility: RowVisibility | null;
+  lockedOpenIds?: ReadonlySet<string>;
 };
 
 /**
- * Whether a row renders under its (already rendered) parent. With the Needs review filter on, only
- * the rows it lists render, plus ghost rows under a rendered parent: a ghost is a record of what
- * left a branch, so it stays with that branch but has no place of its own at the root.
+ * Whether a row renders under its (already rendered) parent. While an overlay narrows the rows (the
+ * Needs review filter), only the rows it lists render, plus ghost rows under a rendered parent: a
+ * ghost is a record of what left a branch, so it stays with that branch but has no place of its own
+ * at the root.
  */
 function isShown(node: FlatNode<CustomData>, treeId: string, props: RenderProps): boolean {
   if (node.data.isHidden) return false;
   const { reviewVisibility, ghostIds } = props;
-  if (!reviewVisibility) return true;
+  if (!reviewVisibility?.visibleIds) return true;
   if (reviewVisibility.visibleIds.has(node.id)) return true;
   return ghostIds.has(node.id) && node.parent !== treeId;
 }
@@ -96,9 +110,9 @@ function renderSubtree(
             onToggleExpand={props.onToggleExpand}
             onRename={props.onRename}
             onDelete={props.onDelete}
-            diff={props.rowDiff(node.id)}
-            approval={props.rowApproval(node)}
+            annotations={props.rowAnnotations(node)}
             isForcedOpen={isForcedOpen}
+            isToggleLocked={isForcedOpen && (props.lockedOpenIds?.has(node.id) ?? true)}
           />
           {node.droppable &&
             // A ghost branch is a record of a removed subtree, so it always shows what it contained.
@@ -130,7 +144,9 @@ export function TreePanel({
   onLeafApprovalChange,
   onBranchApprovalChange,
   approvalsDisabledReason = null,
+  rowComments,
   reviewVisibility = null,
+  lockedOpenIds,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -165,6 +181,8 @@ export function TreePanel({
 
   const ghostIds = useMemo(() => new Set((diff?.ghosts ?? []).map(node => node.id)), [diff]);
 
+  // One builder per layer, combined below into the row's annotations. A new layer adds a builder
+  // and a field on RowAnnotations; TreeNodeRow and renderSubtree don't change.
   const rowDiff = useMemo(() => {
     return (nodeId: string): RowDiff | undefined => {
       if (newEntityIds?.has(nodeId)) {
@@ -217,15 +235,25 @@ export function TreePanel({
     approvalsDisabledReason,
   ]);
 
+  const rowAnnotations = useMemo(
+    () =>
+      (node: FlatNode<CustomData>): RowAnnotations => ({
+        diff: rowDiff(node.id),
+        comments: treeId === 'report' ? rowComments?.(node, ghostIds.has(node.id)) : undefined,
+        approval: rowApproval(node),
+      }),
+    [rowDiff, rowApproval, rowComments, treeId, ghostIds],
+  );
+
   const renderProps: RenderProps = {
     editMode,
     onToggleExpand,
     onRename,
     onDelete,
-    rowDiff,
-    rowApproval,
+    rowAnnotations,
     ghostIds,
     reviewVisibility: treeId === 'report' ? reviewVisibility : null,
+    lockedOpenIds,
   };
 
   const hasRootNodes = renderedNodes.some(
@@ -233,7 +261,9 @@ export function TreePanel({
   );
   const hasUnfilteredRootNodes = renderedNodes.some(n => n.parent === treeId && !n.data.isHidden);
   const emptyText =
-    renderProps.reviewVisibility && hasUnfilteredRootNodes ? 'Nothing needs review' : emptyMessage;
+    isNarrowing(renderProps.reviewVisibility) && hasUnfilteredRootNodes
+      ? 'Nothing needs review'
+      : emptyMessage;
 
   const CollapseIcon =
     treeId === 'bank'

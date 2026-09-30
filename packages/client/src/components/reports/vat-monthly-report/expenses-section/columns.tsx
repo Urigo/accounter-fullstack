@@ -82,9 +82,7 @@ export const columns = columnHelper.columns([
       header: 'Record Type',
       cell: info => {
         const recordType = info.getValue();
-        return (
-          <p className="whitespace-wrap">{`${getRecordTypeName(recordType)} (${recordType})`}</p>
-        );
+        return <p>{`${getRecordTypeName(recordType)} (${recordType})`}</p>;
       },
     },
   ),
@@ -134,7 +132,7 @@ export const columns = columnHelper.columns([
       );
       return expense.image ? (
         <a href={expense.image} target="_blank" rel="noreferrer">
-          <img alt="missing img" src={expense.image} height={80} width={80} />
+          <img alt="missing img" src={expense.image} height={48} width={48} />
         </a>
       ) : null;
     },
@@ -171,7 +169,7 @@ export const columns = columnHelper.columns([
     {
       id: 'documentDate',
       header: 'Invoice Date',
-      cell: info => info.getValue(),
+      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
     },
   ),
   columnHelper.accessor(
@@ -182,7 +180,7 @@ export const columns = columnHelper.columns([
     {
       id: 'chargeDate',
       header: 'Transaction Date',
-      cell: info => info.getValue(),
+      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
     },
   ),
   columnHelper.accessor(

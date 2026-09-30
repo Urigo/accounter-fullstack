@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { ChargeDepreciationDocument, DepreciationType } from '../../../gql/graphql.js';
 import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
@@ -22,15 +22,21 @@ interface Props {
 }
 
 export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetch] = useQuery({
     query: ChargeDepreciationDocument,
     variables: {
       chargeId,
     },
   });
 
+  // There is no normalized cache, so the records list does not refresh on its own after a mutation.
+  const onRecordsChange = useCallback(() => {
+    refetch({ requestPolicy: 'network-only' });
+    onChange?.();
+  }, [refetch, onChange]);
+
   if (!fetching && !data?.depreciationRecordsByCharge.length) {
-    return <AddDepreciationRecord chargeId={chargeId} onAdd={onChange} />;
+    return <AddDepreciationRecord chargeId={chargeId} onAdd={onRecordsChange} />;
   }
 
   return fetching ? (
@@ -49,11 +55,11 @@ export const Depreciation = ({ chargeId, onChange }: Props): ReactElement => {
         </TableHeader>
         <TableBody>
           {data?.depreciationRecordsByCharge.map(depreciation => (
-            <DepreciationRow data={depreciation} onChange={onChange} key={depreciation.id} />
+            <DepreciationRow data={depreciation} onChange={onRecordsChange} key={depreciation.id} />
           ))}
           <TableRow>
             <TableCell colSpan={5}>
-              <AddDepreciationRecord chargeId={chargeId} onAdd={onChange} />
+              <AddDepreciationRecord chargeId={chargeId} onAdd={onRecordsChange} />
             </TableCell>
           </TableRow>
         </TableBody>

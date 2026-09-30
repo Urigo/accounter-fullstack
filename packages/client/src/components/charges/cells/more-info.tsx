@@ -13,6 +13,7 @@ export type MoreInfoProps = {
     documentsCount: number;
     ledgerCount: number;
     miscExpensesCount: number;
+    depreciationRecordsCount: number;
     invalidLedger?: 'VALID' | 'DIFF' | 'INVALID';
   };
 };
@@ -113,6 +114,14 @@ export const MoreInfo = ({
     list.push({
       content: (
         <div className="whitespace-nowrap">Misc Expenses: {info.miscExpensesCount ?? 0}</div>
+      ),
+    });
+  }
+
+  if (info?.depreciationRecordsCount) {
+    list.push({
+      content: (
+        <div className="whitespace-nowrap">Depreciation: {info.depreciationRecordsCount}</div>
       ),
     });
   }
