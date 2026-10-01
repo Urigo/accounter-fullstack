@@ -1,15 +1,24 @@
 import React from 'react';
 import useEmblaCarousel, { type UseEmblaCarouselType } from 'embla-carousel-react';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
-import { Button } from './button.js';
 
 type CarouselApi = UseEmblaCarouselType[1];
-type EmblaOptions = Parameters<typeof useEmblaCarousel>[0];
+type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
+type CarouselOptions = UseCarouselParameters[0];
+type CarouselPlugin = UseCarouselParameters[1];
 
-type CarouselContextValue = {
-  carouselRef: UseEmblaCarouselType[0];
-  api: CarouselApi;
+type CarouselProps = {
+  opts?: CarouselOptions;
+  plugins?: CarouselPlugin;
+  orientation?: 'horizontal' | 'vertical';
+  setApi?: (api: CarouselApi) => void;
+};
+
+type CarouselContextProps = {
+  carouselRef: ReturnType<typeof useEmblaCarousel>[0];
+  api: ReturnType<typeof useEmblaCarousel>[1];
   scrollPrev: () => void;
   scrollNext: () => void;
   canScrollPrev: boolean;
@@ -17,78 +26,119 @@ type CarouselContextValue = {
   selectedIndex: number;
   scrollSnaps: number[];
   scrollTo: (index: number) => void;
-};
+} & CarouselProps;
 
-const CarouselContext = React.createContext<CarouselContextValue | null>(null);
+const CarouselContext = React.createContext<CarouselContextProps | null>(null);
 
-function useCarousel(): CarouselContextValue {
+function useCarousel() {
   const context = React.useContext(CarouselContext);
+
   if (!context) {
     throw new Error('useCarousel must be used within a <Carousel />');
   }
+
   return context;
 }
 
-/**
- * A horizontal carousel over embla, which is already a dependency.
- *
- * Replaced Mantine's `Carousel`. shadcn has no carousel in this repo, and Mantine's was only
- * a dependency because `@mantine/carousel` peer-depends on embla — so this keeps embla
- * legitimately in use once Mantine goes. Indicators are included because the one call site
- * used `withIndicators`; shadcn's own carousel has no equivalent.
- */
 function Carousel({
+  orientation = 'horizontal',
   opts,
+  setApi,
+  plugins,
   className,
   children,
   ...props
-}: React.ComponentProps<'div'> & { opts?: EmblaOptions }) {
-  const [carouselRef, api] = useEmblaCarousel(opts);
+}: React.ComponentProps<'div'> & CarouselProps) {
+  const [carouselRef, api] = useEmblaCarousel(
+    {
+      ...opts,
+      axis: orientation === 'horizontal' ? 'x' : 'y',
+    },
+    plugins,
+  );
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [scrollSnaps, setScrollSnaps] = React.useState<number[]>([]);
 
-  React.useEffect(() => {
+  // The snap list is refreshed here, not once on mount: embla emits `reInit` when the slides
+  // change, and a stale list would leave the indicators showing the old count and `scrollTo`
+  // addressing an index that no longer exists.
+  const onSelect = React.useCallback((api: CarouselApi) => {
     if (!api) return;
-    // The snap list is refreshed inside `sync`, not once before it: embla emits `reInit`
-    // when the slides change, and a stale list would leave the indicators showing the old
-    // count and `scrollTo` addressing an index that no longer exists.
-    const sync = (): void => {
-      setScrollSnaps(api.scrollSnapList());
-      setCanScrollPrev(api.canScrollPrev());
-      setCanScrollNext(api.canScrollNext());
-      setSelectedIndex(api.selectedScrollSnap());
-    };
-    sync();
-    api.on('select', sync).on('reInit', sync);
-    return () => {
-      api.off('select', sync).off('reInit', sync);
-    };
+    setScrollSnaps(api.scrollSnapList());
+    setCanScrollPrev(api.canScrollPrev());
+    setCanScrollNext(api.canScrollNext());
+    setSelectedIndex(api.selectedScrollSnap());
+  }, []);
+
+  const scrollPrev = React.useCallback(() => {
+    api?.scrollPrev();
   }, [api]);
 
-  const value = React.useMemo(
-    () => ({
-      carouselRef,
-      api,
-      scrollPrev: () => api?.scrollPrev(),
-      scrollNext: () => api?.scrollNext(),
-      canScrollPrev,
-      canScrollNext,
-      selectedIndex,
-      scrollSnaps,
-      scrollTo: (index: number) => api?.scrollTo(index),
-    }),
-    [carouselRef, api, canScrollPrev, canScrollNext, selectedIndex, scrollSnaps],
+  const scrollNext = React.useCallback(() => {
+    api?.scrollNext();
+  }, [api]);
+
+  const scrollTo = React.useCallback(
+    (index: number) => {
+      api?.scrollTo(index);
+    },
+    [api],
   );
 
+  const handleKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        scrollPrev();
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        scrollNext();
+      }
+    },
+    [scrollPrev, scrollNext],
+  );
+
+  React.useEffect(() => {
+    if (!api || !setApi) return;
+    setApi(api);
+  }, [api, setApi]);
+
+  React.useEffect(() => {
+    if (!api) return;
+    onSelect(api);
+    api.on('reInit', onSelect);
+    api.on('select', onSelect);
+
+    return () => {
+      api?.off('reInit', onSelect);
+      api?.off('select', onSelect);
+    };
+  }, [api, onSelect]);
+
   return (
-    <CarouselContext.Provider value={value}>
+    <CarouselContext.Provider
+      value={{
+        carouselRef,
+        api,
+        opts,
+        orientation: orientation || (opts?.axis === 'y' ? 'vertical' : 'horizontal'),
+        scrollPrev,
+        scrollNext,
+        canScrollPrev,
+        canScrollNext,
+        selectedIndex,
+        scrollSnaps,
+        scrollTo,
+      }}
+    >
       <div
-        data-slot="carousel"
+        onKeyDownCapture={handleKeyDown}
         className={cn('relative', className)}
         role="region"
         aria-roledescription="carousel"
+        data-slot="carousel"
         {...props}
       >
         {children}
@@ -98,63 +148,100 @@ function Carousel({
 }
 
 function CarouselContent({ className, ...props }: React.ComponentProps<'div'>) {
-  const { carouselRef } = useCarousel();
+  const { carouselRef, orientation } = useCarousel();
+
   return (
-    <div ref={carouselRef} data-slot="carousel-viewport" className="overflow-hidden">
-      <div data-slot="carousel-content" className={cn('flex', className)} {...props} />
+    <div ref={carouselRef} className="overflow-hidden" data-slot="carousel-content">
+      <div
+        className={cn('flex', orientation === 'horizontal' ? '-ml-4' : '-mt-4 flex-col', className)}
+        {...props}
+      />
     </div>
   );
 }
 
 function CarouselItem({ className, ...props }: React.ComponentProps<'div'>) {
+  const { orientation } = useCarousel();
+
   return (
     <div
-      data-slot="carousel-item"
       role="group"
       aria-roledescription="slide"
-      className={cn('min-w-0 shrink-0 grow-0 basis-full', className)}
+      data-slot="carousel-item"
+      className={cn(
+        'min-w-0 shrink-0 grow-0 basis-full',
+        orientation === 'horizontal' ? 'pl-4' : 'pt-4',
+        className,
+      )}
       {...props}
     />
   );
 }
 
-function CarouselPrevious({ className, ...props }: React.ComponentProps<typeof Button>) {
-  const { scrollPrev, canScrollPrev } = useCarousel();
+function CarouselPrevious({
+  className,
+  variant = 'outline',
+  size = 'icon',
+  ...props
+}: React.ComponentProps<typeof Button>) {
+  const { orientation, scrollPrev, canScrollPrev } = useCarousel();
+
   return (
     <Button
       data-slot="carousel-previous"
-      variant="outline"
-      size="icon"
-      className={cn('absolute top-1/2 -left-10 size-8 -translate-y-1/2 rounded-full', className)}
+      variant={variant}
+      size={size}
+      className={cn(
+        'absolute size-8 rounded-full',
+        orientation === 'horizontal'
+          ? 'top-1/2 -left-10 -translate-y-1/2'
+          : '-top-12 left-1/2 -translate-x-1/2 rotate-90',
+        className,
+      )}
       disabled={!canScrollPrev}
       onClick={scrollPrev}
       {...props}
     >
-      <ChevronLeftIcon className="size-4" />
+      <ArrowLeft />
       <span className="sr-only">Previous slide</span>
     </Button>
   );
 }
 
-function CarouselNext({ className, ...props }: React.ComponentProps<typeof Button>) {
-  const { scrollNext, canScrollNext } = useCarousel();
+function CarouselNext({
+  className,
+  variant = 'outline',
+  size = 'icon',
+  ...props
+}: React.ComponentProps<typeof Button>) {
+  const { orientation, scrollNext, canScrollNext } = useCarousel();
+
   return (
     <Button
       data-slot="carousel-next"
-      variant="outline"
-      size="icon"
-      className={cn('absolute top-1/2 -right-10 size-8 -translate-y-1/2 rounded-full', className)}
+      variant={variant}
+      size={size}
+      className={cn(
+        'absolute size-8 rounded-full',
+        orientation === 'horizontal'
+          ? 'top-1/2 -right-10 -translate-y-1/2'
+          : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90',
+        className,
+      )}
       disabled={!canScrollNext}
       onClick={scrollNext}
       {...props}
     >
-      <ChevronRightIcon className="size-4" />
+      <ArrowRight />
       <span className="sr-only">Next slide</span>
     </Button>
   );
 }
 
-/** Mantine's `withIndicators`: one dot per slide, the current one filled. */
+/**
+ * One dot per slide, the current one filled. Not part of upstream shadcn — kept from the
+ * Mantine `Carousel` replacement, whose documents gallery used `withIndicators`.
+ */
 function CarouselIndicators({ className, ...props }: React.ComponentProps<'div'>) {
   const { scrollSnaps, selectedIndex, scrollTo } = useCarousel();
   if (scrollSnaps.length < 2) {
@@ -168,7 +255,6 @@ function CarouselIndicators({ className, ...props }: React.ComponentProps<'div'>
     >
       {scrollSnaps.map((_, index) => (
         <button
-          // eslint-disable-next-line react/no-array-index-key -- slides are positional
           key={index}
           type="button"
           aria-label={`Go to slide ${index + 1}`}
@@ -185,11 +271,11 @@ function CarouselIndicators({ className, ...props }: React.ComponentProps<'div'>
 }
 
 export {
+  type CarouselApi,
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
   CarouselIndicators,
-  type CarouselApi,
 };
