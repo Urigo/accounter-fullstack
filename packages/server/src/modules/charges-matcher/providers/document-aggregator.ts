@@ -7,6 +7,8 @@
  */
 
 import { DocumentType } from '../../../shared/enums.js';
+import { maxTimelessDate } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { isAccountingDocument } from '../../documents/helpers/common.helper.js';
 import { currency, document_type } from '../../documents/types.js';
 import { normalizeDocumentAmount } from '../helpers/document-amount.helper.js';
@@ -24,7 +26,7 @@ export interface Document {
   creditor_id: string | null; // UUID
   debtor_id: string | null; // UUID
   currency_code: currency | null; // Currency type
-  date: Date | null;
+  date: TimelessDateString | null;
   total_amount: number | null; // double precision in DB
   type: document_type;
   serial_number: string | null;
@@ -167,17 +169,11 @@ export function aggregateDocuments(
   const businessId = uniqueBusinessIds.size === 1 ? Array.from(uniqueBusinessIds)[0] : null;
 
   // Get latest date
-  const dates = filteredDocuments
-    .map(d => d.date)
-    .filter((date): date is Date => date !== null && date !== undefined);
+  const latestDate = maxTimelessDate(...filteredDocuments.map(d => d.date));
 
-  if (dates.length === 0) {
+  if (latestDate === null) {
     throw new Error('Cannot aggregate documents: all documents have null date');
   }
-
-  const latestDate = dates.reduce((latest, d) => {
-    return d > latest ? d : latest;
-  }, dates[0]);
 
   // Concatenate descriptions (serial numbers, file names, or IDs)
   const descriptions = filteredDocuments

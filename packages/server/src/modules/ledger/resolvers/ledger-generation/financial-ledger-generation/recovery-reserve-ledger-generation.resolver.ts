@@ -5,6 +5,7 @@ import type {
   ResolversTypes,
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
+import { endOfTimelessYear } from '../../../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
@@ -67,8 +68,8 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
 
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
-      invoiceDate: new Date(year, 11, 31),
-      valueDate: new Date(year, 11, 31),
+      invoiceDate: endOfTimelessYear(year),
+      valueDate: endOfTimelessYear(year),
       currency: defaultLocalCurrency,
       isCreditorCounterparty,
       creditAccountID1: isCreditorCounterparty

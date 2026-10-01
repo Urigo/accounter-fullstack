@@ -1,6 +1,10 @@
 // import { GraphQLError } from 'graphql';
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  endOfTimelessYear,
+  getTimelessDateYear,
+  startOfTimelessYear,
+} from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeTransactionsMeta } from '../../charges/helpers/common.helper.js';
@@ -48,14 +52,11 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
         throw new GraphQLError('Unable to resolve financial entity ID');
       }
 
-      const yearBeginning = new Date(year, 0, 1);
-      const yearEnd = new Date(year, 11, 31);
-
       const depreciationRecordsPromise = injector
         .get(DepreciationProvider)
         .getDepreciationRecordsByDates({
-          fromDate: yearBeginning,
-          toDate: yearEnd,
+          fromDate: startOfTimelessYear(year),
+          toDate: endOfTimelessYear(year),
         });
       const depreciationCategoriesPromise = injector
         .get(DepreciationCategoriesProvider)
@@ -124,7 +125,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
               record.expiration_date ?? undefined,
             );
 
-          const activationYear = record.activation_date.getFullYear();
+          const activationYear = getTimelessDateYear(record.activation_date);
 
           const originalCost = activationYear === year ? 0 : amount;
           const reportYearDelta = activationYear === year ? amount : 0;
@@ -135,10 +136,8 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             id: record.id,
             chargeId: record.charge_id,
             description: charge.user_description ?? undefined,
-            purchaseDate: dateToTimelessDateString(
-              transactionsMinDebitDate ?? record.activation_date,
-            ),
-            activationDate: dateToTimelessDateString(record.activation_date),
+            purchaseDate: transactionsMinDebitDate ?? record.activation_date,
+            activationDate: record.activation_date,
             originalCost,
             reportYearDelta,
             totalDepreciableCosts,

@@ -1,4 +1,3 @@
-import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type {
@@ -10,7 +9,8 @@ import type {
   ResolverTypeWrapper,
 } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { differenceInTimelessDays } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
@@ -57,7 +57,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
       throw new GraphQLError(`Business trip with id ${businessTripId} is missing attendees`);
     }
 
-    let toDate: Date | undefined;
+    let toDate: TimelessDateString | undefined;
 
     attendees.map(({ departure }) => {
       if (departure && (!toDate || departure > toDate)) {
@@ -71,7 +71,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
 
     const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
-    if (ledgerLock && dateToTimelessDateString(toDate) < ledgerLock) {
+    if (ledgerLock && toDate < ledgerLock) {
       throw new GraphQLError(
         `Cannot credit shareholders for business trip ${businessTrip.name}, because ledger is locked`,
       );
@@ -151,8 +151,8 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
   const commonFields: AddBusinessTripTravelAndSubsistenceExpenseInput = {
     businessTripId,
     currency: Currency.Usd,
-    date: dateToTimelessDateString(businessTrip.toDate!),
-    valueDate: dateToTimelessDateString(businessTrip.toDate!),
+    date: businessTrip.toDate,
+    valueDate: businessTrip.toDate,
   };
 
   const totalPotentialAmountToDistribute = Object.values(
@@ -219,7 +219,7 @@ async function shareholdersPotentialAmountToDistributePromise(
   shareholdersMap: Map<string, IGetEmployeesByIdResult>,
   attendeesMap: Map<string, IGetBusinessTripsAttendeesByBusinessTripIdsResult>,
   attendeePayedTnSExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[],
-  businessTrip: BusinessTripProto & { toDate: Date },
+  businessTrip: BusinessTripProto & { toDate: TimelessDateString },
 ) {
   const shareholdersPotentialAmountToDistribute: Record<string, number> = {};
   const shareholdersAccommodatedNightsMap = new Map<string, number>();
@@ -266,7 +266,7 @@ async function shareholdersPotentialAmountToDistributePromise(
         throw new GraphQLError(`Tax variables are not set for date ${businessTrip.toDate}`);
       }
 
-      const totalDays = differenceInDays(attendee.departure, attendee.arrival) + 1;
+      const totalDays = differenceInTimelessDays(attendee.departure, attendee.arrival) + 1;
       const accommodatedNights = shareholdersAccommodatedNightsMap.get(id) ?? 0;
       const unAccommodatedDays = accommodatedNights
         ? totalDays - accommodatedNights - 1
@@ -294,7 +294,7 @@ async function shareholdersPotentialAmountToDistributePromise(
             } else {
               const rate = await injector
                 .get(ExchangeProvider)
-                .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, new Date(date));
+                .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, date);
 
               payedAmount += amount * rate;
             }

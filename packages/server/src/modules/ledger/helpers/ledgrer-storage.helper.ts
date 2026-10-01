@@ -1,4 +1,3 @@
-import { startOfDay } from 'date-fns';
 import type { Injector } from 'graphql-modules';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { formatCurrency } from '../../../shared/helpers/index.js';
@@ -32,8 +31,6 @@ const comparisonKeys: Array<keyof IGetLedgerRecordsByChargesIdsResult> = [
   'reference1',
   'value_date',
 ];
-
-const dateKeys: Array<keyof IGetLedgerRecordsByChargesIdsResult> = ['value_date', 'invoice_date'];
 
 export function ledgerRecordsGenerationFullMatchComparison(
   storageRecords: IGetLedgerRecordsByChargesIdsResult[],
@@ -125,11 +122,6 @@ function isExactMatch(
       return false;
     }
 
-    if (dateKeys.includes(key)) {
-      const newDate = newRecord[key] ? startOfDay(new Date(newRecord[key] as Date)) : undefined;
-      return (storageRecord[key] as Date)?.getTime() === newDate?.getTime();
-    }
-
     if (typeof storageRecord[key] === 'string' && !Number.isNaN(Number(storageRecord[key]))) {
       return Math.abs(Number(storageRecord[key]) - Number(newRecord[key])) < 0.005;
     }
@@ -172,13 +164,7 @@ function getMatchScore(
   return comparisonKeys.reduce((cumulativeScore, key) => {
     const factor = storageRecord[key] ? 1 : 0.5;
 
-    let scoreDirection: number;
-    if (dateKeys.includes(key)) {
-      scoreDirection =
-        (storageRecord[key] as Date)?.getTime() === (newRecord[key] as Date)?.getTime() ? 1 : -1;
-    } else {
-      scoreDirection = storageRecord[key] === newRecord[key] ? 1 : -1;
-    }
+    const scoreDirection = storageRecord[key] === newRecord[key] ? 1 : -1;
 
     const addedScore = factor * scoreDirection;
     return cumulativeScore + addedScore;

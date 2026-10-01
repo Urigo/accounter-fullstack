@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../../ledger/types.js';
 
 export type LedgerFingerprintSide = 'credit' | 'debit';
@@ -42,8 +41,8 @@ export function ledgerFingerprintTuple(
     normalizeAmount(localAmount) ?? '0.00',
     normalizeAmount(foreignAmount) ?? '',
     record.currency,
-    dateToTimelessDateString(record.invoice_date),
-    dateToTimelessDateString(record.value_date),
+    record.invoice_date,
+    record.value_date,
     otherSideEntities.join(','),
   ].join('|');
 }

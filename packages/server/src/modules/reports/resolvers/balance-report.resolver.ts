@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -42,7 +42,7 @@ export const balanceReportResolver: ReportsModule.Resolvers = {
     chargeId: t => t.charge_id,
     amount: t => formatFinancialAmount(t.amount, t.currency),
     amountUsd: t => formatFinancialAmount(t.amount_usd, Currency.Usd),
-    date: t => dateToTimelessDateString(t.debit_date!),
+    date: t => t.debit_date!,
     month: t => t.month!,
     year: t => t.year!,
     counterparty: (t, _, { injector }) =>

@@ -7,7 +7,12 @@ import type {
   ResolversTypes,
   TaxReportYearResolvers,
 } from '../../../../__generated__/types.js';
-import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
+import {
+  endOfTimelessYear,
+  formatFinancialAmount,
+  getTimelessDateYear,
+  startOfTimelessYear,
+} from '../../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
@@ -33,8 +38,10 @@ export const taxReport: ResolverFn<
     }
   });
 
-  const from = new Date(Math.min(...years) - 2, 0, 1, 0, 0, 0, 1); // Note: take 2 years before the earliest year requested, to calculate R&D spread over 3 years
-  const to = new Date(Math.max(...years) + 1, 0, 0);
+  const fromYear = Math.min(...years) - 2; // Note: take 2 years before the earliest year requested, to calculate R&D spread over 3 years
+  const toYear = Math.max(...years);
+  const from = startOfTimelessYear(fromYear);
+  const to = endOfTimelessYear(toYear);
   const ledgerRecords = await injector
     .get(LedgerProvider)
     .getLedgerRecordsByDates({ fromDate: from, toDate: to });
@@ -44,16 +51,12 @@ export const taxReport: ResolverFn<
   const financialEntitiesDict = new Map(financialEntities.map(entity => [entity.id, entity]));
 
   const decoratedLedgerByYear = new Map<number, DecoratedLedgerRecord[]>();
-  for (let year = from.getFullYear(); year <= to.getFullYear(); year++) {
-    if (from.getFullYear() > to.getFullYear()) {
-      break;
-    }
-
+  for (let year = fromYear; year <= toYear; year++) {
     decoratedLedgerByYear.set(year, []);
   }
 
   ledgerRecords.map(record => {
-    const year = record.invoice_date.getFullYear();
+    const year = getTimelessDateYear(record.invoice_date);
     const [decoratedRecord] = decorateLedgerRecords([record], financialEntitiesDict);
     decoratedLedgerByYear.get(year)?.push(decoratedRecord);
   });

@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { normalizeSalaryMonth } from '../helpers/salary-month.helper.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types.js';
 
@@ -8,10 +8,9 @@ export const updateSalaryRecord: SalariesModule.MutationResolvers['updateSalaryR
   { injector },
 ) => {
   try {
-    const formattedMonth =
-      salaryRecord.month && salaryRecord.month.length !== 7
-        ? format(new Date(salaryRecord.month), 'yyyy-MM')
-        : salaryRecord.month;
+    const formattedMonth = salaryRecord.month
+      ? normalizeSalaryMonth(salaryRecord.month)
+      : salaryRecord.month;
 
     const res = await injector.get(SalariesProvider).updateSalaryRecord({
       ...salaryRecord,

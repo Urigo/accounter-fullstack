@@ -72,50 +72,50 @@ describe('Match Scorer', () => {
       amount: 100,
       currency: 'USD' as const,
       businessId: BUSINESS_ID,
-      date: new Date('2024-01-15'), // event_date
-      debitDate: new Date('2024-01-20'), // debit_date
+      date: '2024-01-15', // event_date
+      debitDate: '2024-01-20', // debit_date
       description: 'Test',
     };
 
     it('should use event_date for INVOICE', () => {
       const result = selectTransactionDate(transaction, DocumentType.Invoice);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
 
     it('should use event_date for CREDIT_INVOICE', () => {
       const result = selectTransactionDate(transaction, DocumentType.CreditInvoice);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
 
     it('should use event_date for RECEIPT', () => {
       const result = selectTransactionDate(transaction, DocumentType.Receipt);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
 
     it('should use event_date for INVOICE_RECEIPT', () => {
       const result = selectTransactionDate(transaction, DocumentType.InvoiceReceipt);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
 
     it('should use event_date for RECEIPT when debitDate is null', () => {
       const txWithoutDebitDate = { ...transaction, debitDate: null };
       const result = selectTransactionDate(txWithoutDebitDate, DocumentType.Receipt);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
 
     it('should use event_date for OTHER', () => {
       const result = selectTransactionDate(transaction, DocumentType.Other);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
 
     it('should use event_date for PROFORMA', () => {
       const result = selectTransactionDate(transaction, DocumentType.Proforma);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
 
     it('should use event_date for UNPROCESSED', () => {
       const result = selectTransactionDate(transaction, DocumentType.Unprocessed);
-      expect(result).toEqual(new Date('2024-01-15'));
+      expect(result).toBe('2024-01-15');
     });
   });
 
@@ -128,7 +128,7 @@ describe('Match Scorer', () => {
             createMockTransaction({
               amount: '100.00',
               currency: 'USD',
-              event_date: new Date('2024-01-15'),
+              event_date: '2024-01-15',
               business_id: BUSINESS_ID,
             }),
           ],
@@ -140,7 +140,7 @@ describe('Match Scorer', () => {
             createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               creditor_id: BUSINESS_ID,
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -165,8 +165,8 @@ describe('Match Scorer', () => {
           transactions: [
             createMockTransaction({
               amount: "200.00",
-              event_date: new Date('2024-01-10'),
-              debit_date: new Date('2024-01-15'),
+              event_date: '2024-01-10',
+              debit_date: '2024-01-15',
               debit_timestamp: null,
               business_id: 'customer-receipt', // Different business for cross-business test
             }),
@@ -178,7 +178,7 @@ describe('Match Scorer', () => {
           documents: [
             createMockDocument({
               total_amount: 200,
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               type: 'RECEIPT',
               creditor_id: 'vendor-receipt', // Different business
             }),
@@ -255,7 +255,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-6',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: 'customer-1', // Different business for cross-business test
             }),
           ],
@@ -265,7 +265,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-6',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-16'), // 15 days difference
+              date: '2024-01-16', // 15 days difference
               creditor_id: 'vendor-1', // Different business
             }),
           ],
@@ -285,7 +285,7 @@ describe('Match Scorer', () => {
             createMockTransaction({
               amount: "100.00",
               currency: 'USD',
-              event_date: new Date('2024-01-15'),
+              event_date: '2024-01-15',
               business_id: 'client-abc',
             }),
           ],
@@ -297,7 +297,7 @@ describe('Match Scorer', () => {
             createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               creditor_id: 'client-abc',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -317,7 +317,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-client-30',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-31'),
+              event_date: '2024-01-31',
               business_id: 'client-xyz',
             }),
           ],
@@ -327,7 +327,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-30',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-01'),
+              date: '2024-01-01',
               creditor_id: 'client-xyz',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -347,7 +347,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-client-365',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: 'client-long',
             }),
           ],
@@ -357,7 +357,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-365',
           documents: [
             createMockDocument({
-              date: new Date('2023-01-01'),
+              date: '2023-01-01',
               creditor_id: 'client-long',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -377,7 +377,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-nonclient-15',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: 'vendor-plain',
             }),
           ],
@@ -387,7 +387,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-nonclient-15',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-16'),
+              date: '2024-01-16',
               creditor_id: 'vendor-plain',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -405,7 +405,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-nonclient-45',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: 'vendor-far',
             }),
           ],
@@ -415,7 +415,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-nonclient-45',
           documents: [
             createMockDocument({
-              date: new Date('2024-02-15'),
+              date: '2024-02-15',
               creditor_id: 'vendor-far',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -433,7 +433,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-cross',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: 'customer-xyz',
             }),
           ],
@@ -443,7 +443,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-cross',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-06'),
+              date: '2024-01-06',
               creditor_id: 'vendor-xyz',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -461,7 +461,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-null-business',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: null,
             }),
           ],
@@ -471,7 +471,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-null-business',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-16'),
+              date: '2024-01-16',
               creditor_id: USER_ID,
               debtor_id: null,
               type: 'INVOICE',
@@ -491,7 +491,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-client-lookup',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: 'client-lookup',
             }),
           ],
@@ -501,7 +501,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-lookup',
           documents: [
             createMockDocument({
-              date: new Date('2023-12-01'),
+              date: '2023-12-01',
               creditor_id: 'client-lookup',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -521,7 +521,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-client-null',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'),
+              event_date: '2024-01-01',
               business_id: 'client-missing',
             }),
           ],
@@ -531,7 +531,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-null',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-11'),
+              date: '2024-01-11',
               creditor_id: 'client-missing',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -551,7 +551,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-client-multi',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-15'),
+              event_date: '2024-01-15',
               business_id: 'client-multi',
             }),
           ],
@@ -561,7 +561,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-jan',
           documents: [
             createMockDocument({
-              date: new Date('2023-12-30'),
+              date: '2023-12-30',
               creditor_id: 'client-multi',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -573,7 +573,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-client-feb',
           documents: [
             createMockDocument({
-              date: new Date('2023-11-30'),
+              date: '2023-11-30',
               creditor_id: 'client-multi',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -595,7 +595,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-nonclient-multi',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-15'),
+              event_date: '2024-01-15',
               business_id: 'vendor-multi',
             }),
           ],
@@ -605,7 +605,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-nonclient-near',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-17'),
+              date: '2024-01-17',
               creditor_id: 'vendor-multi',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -617,7 +617,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-nonclient-far',
           documents: [
             createMockDocument({
-              date: new Date('2024-02-20'),
+              date: '2024-02-20',
               creditor_id: 'vendor-multi',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -638,8 +638,8 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-7',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-15'),
-              debit_date: new Date('2024-01-20'), // Different date
+              event_date: '2024-01-15',
+              debit_date: '2024-01-20', // Different date
             }),
           ],
         };
@@ -648,7 +648,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-7',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-15'), // Matches event_date
+              date: '2024-01-15', // Matches event_date
               type: 'INVOICE',
             }),
           ],
@@ -664,8 +664,8 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-8',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-10'),
-              debit_date: new Date('2024-01-15'),
+              event_date: '2024-01-10',
+              debit_date: '2024-01-15',
               debit_timestamp: null,
               business_id: 'customer-2', // Different business for cross-business test
             }),
@@ -676,7 +676,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-8',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-15'), // Matches debit_date
+              date: '2024-01-15', // Matches debit_date
               type: 'RECEIPT',
               creditor_id: 'vendor-2', // Different business
             }),
@@ -693,7 +693,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-9',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-15'),
+              event_date: '2024-01-15',
               debit_date: null,
               debit_timestamp: null,
             }),
@@ -704,7 +704,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-9',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               type: 'RECEIPT',
             }),
           ],
@@ -722,8 +722,8 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-10',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-01'), // Far from document date
-              debit_date: new Date('2024-01-15'), // Matches document date
+              event_date: '2024-01-01', // Far from document date
+              debit_date: '2024-01-15', // Matches document date
               debit_timestamp: null,
               business_id: 'customer-3', // Different business for cross-business test
             }),
@@ -734,7 +734,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-10',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               type: 'PROFORMA',
               creditor_id: 'vendor-3', // Different business
             }),
@@ -753,8 +753,8 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-11',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-10'),
-              debit_date: new Date('2024-01-25'), // Far from document
+              event_date: '2024-01-10',
+              debit_date: '2024-01-25', // Far from document
             }),
           ],
         };
@@ -763,11 +763,11 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-11',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-10'), // Matches event_date
+              date: '2024-01-10', // Matches event_date
               type: 'OTHER',
             }),
             createMockDocument({
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               type: 'UNPROCESSED',
             }),
           ],
@@ -782,7 +782,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-tx-13',
           transactions: [
             createMockTransaction({
-              event_date: new Date('2024-01-15'),
+              event_date: '2024-01-15',
               debit_date: null,
               debit_timestamp: null,
             }),
@@ -793,7 +793,7 @@ describe('Match Scorer', () => {
           chargeId: 'charge-doc-13',
           documents: [
             createMockDocument({
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               type: 'PROFORMA',
             }),
           ],
@@ -893,8 +893,8 @@ describe('Match Scorer', () => {
             createMockTransaction({
               amount: "1234.56",
               currency: 'USD',
-              event_date: new Date('2024-03-15'),
-              debit_date: new Date('2024-03-17'),
+              event_date: '2024-03-15',
+              debit_date: '2024-03-17',
               business_id: 'vendor-xyz',
             }),
           ],
@@ -906,7 +906,7 @@ describe('Match Scorer', () => {
             createMockDocument({
               total_amount: 1234.5,
               currency_code: 'USD',
-              date: new Date('2024-03-16'), // 1 day difference from tx event_date
+              date: '2024-03-16', // 1 day difference from tx event_date
               creditor_id: 'vendor-xyz',
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -930,7 +930,7 @@ describe('Match Scorer', () => {
             createMockTransaction({
               amount: "500.00",
               currency: 'USD',
-              event_date: new Date('2024-02-01'),
+              event_date: '2024-02-01',
               business_id: 'client-acme', // Registered client
             }),
           ],
@@ -942,7 +942,7 @@ describe('Match Scorer', () => {
             createMockDocument({
               total_amount: 500,
               currency_code: 'USD',
-              date: new Date('2024-01-04'), // 28 days earlier - gentle eligible
+              date: '2024-01-04', // 28 days earlier - gentle eligible
               creditor_id: 'client-acme', // Same business, registered client
               debtor_id: USER_ID,
               type: 'INVOICE',
@@ -965,7 +965,7 @@ describe('Match Scorer', () => {
             createMockTransaction({
               amount: "500.00",
               currency: 'USD',
-              event_date: new Date('2024-02-01'),
+              event_date: '2024-02-01',
               business_id: 'vendor-bob', // NOT a client (no 'client-' prefix)
             }),
           ],
@@ -977,7 +977,7 @@ describe('Match Scorer', () => {
             createMockDocument({
               total_amount: 500,
               currency_code: 'USD',
-              date: new Date('2024-03-01'), // 28 days later = 1.0 - 28/30 = 0.07
+              date: '2024-03-01', // 28 days later = 1.0 - 28/30 = 0.07
               creditor_id: 'vendor-bob', // Same business, but NOT a client
               debtor_id: USER_ID,
               type: 'INVOICE',

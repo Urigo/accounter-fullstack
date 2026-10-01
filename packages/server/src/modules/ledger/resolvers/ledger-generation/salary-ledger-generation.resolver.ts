@@ -1,11 +1,15 @@
-import { lastDayOfMonth } from 'date-fns';
 import type {
   Maybe,
   ResolverFn,
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { endOfTimelessMonth } from '../../../../shared/helpers/index.js';
+import type {
+  LedgerProto,
+  StrictLedgerProto,
+  TimelessDateString,
+} from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
@@ -123,8 +127,8 @@ export const generateLedgerRecordsForSalary: ResolverFn<
 
           const ledgerEntry: LedgerProto = {
             id: taxCategoryId,
-            invoiceDate: lastDayOfMonth(new Date(`${month}-01`)),
-            valueDate: lastDayOfMonth(new Date(`${month}-01`)),
+            invoiceDate: endOfTimelessMonth(`${month}-01` as TimelessDateString),
+            valueDate: endOfTimelessMonth(`${month}-01` as TimelessDateString),
             currency: defaultLocalCurrency,
             ...(isCredit
               ? { creditAccountID1: taxCategoryId }
@@ -174,7 +178,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
             .getExchangeRates(
               transaction.currency,
               defaultLocalCurrency,
-              transaction.debit_timestamp,
+              transaction.exchange_rate_date,
             );
         }
 
@@ -271,7 +275,7 @@ export const generateLedgerRecordsForSalary: ResolverFn<
         continue;
       }
 
-      const datesDiff = entry.invoiceDate.getTime() !== matchingTransaction?.invoiceDate.getTime();
+      const datesDiff = entry.invoiceDate !== matchingTransaction?.invoiceDate;
       if (!datesDiff) {
         continue;
       }

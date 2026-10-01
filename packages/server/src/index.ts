@@ -18,6 +18,7 @@ import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
 import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
+import { pgTypeParsers } from './shared/helpers/pg-type-parsers.js';
 import { AccounterContext } from './shared/types/index.js';
 
 const { Pool } = pg;
@@ -55,6 +56,8 @@ async function main() {
     // discovering it on the next query.
     keepAlive: true,
     keepAliveInitialDelayMillis: 10_000,
+    // Keep `date` columns as `yyyy-mm-dd` strings instead of server-local `Date`s (#4560).
+    types: pgTypeParsers,
   });
 
   if (env.auth0) {

@@ -1,10 +1,11 @@
-import { differenceInDays } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type {
   BusinessTripSummary,
   BusinessTripSummaryCategories,
 } from '../../../__generated__/types.js';
+import { differenceInTimelessDays } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import {
   accommodationExpenseDataCollector,
   AttendeeInfo,
@@ -39,8 +40,8 @@ export async function businessTripSummary(
       };
     }
 
-    let fromDate: Date | undefined;
-    let toDate: Date | undefined;
+    let fromDate: TimelessDateString | undefined;
+    let toDate: TimelessDateString | undefined;
 
     attendees.map(attendee => {
       const { arrival, departure } = attendee;
@@ -94,7 +95,7 @@ export async function businessTripSummary(
       let daysCount = 0;
       let nightsCount = 0;
       if (arrival && departure) {
-        daysCount = differenceInDays(departure, arrival) + 1;
+        daysCount = differenceInTimelessDays(departure, arrival) + 1;
         nightsCount = daysCount - 1;
       }
       attendeesMap.set(attendee.id, {

@@ -36,7 +36,7 @@ describe('missingMonthlyVatInfoSuggestions', () => {
   it('returns a VAT month suggestion when previous month VAT amount matches transactions', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: -130,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
     vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
@@ -66,10 +66,43 @@ describe('missingMonthlyVatInfoSuggestions', () => {
     });
   });
 
+  it('prefers the min event date and rolls January back to the previous December', async () => {
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -130,
+      transactionsMinDebitDate: '2026-02-03',
+      transactionsMinEventDate: '2026-01-01',
+    } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(calculateMonthlyVatTotalAmount).mockReturnValue(130);
+    vi.mocked(isWithinMonthlyVatAmountTolerance).mockReturnValue(true);
+
+    const result = await missingMonthlyVatInfoSuggestions(
+      charge,
+      {} as never,
+      { injector } as never,
+      {} as never,
+    );
+
+    expect(getVatRecords).toHaveBeenCalledWith(
+      {
+        filters: {
+          financialEntityId: 'owner-1',
+          monthDate: '2025-12-15',
+        },
+      },
+      injector,
+      { includeChargeBuckets: false },
+    );
+    expect(result).toEqual({
+      description: 'VAT for 12/2025',
+      tags: [],
+    });
+  });
+
   it('returns null when transactions amount is missing', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: null,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
 
@@ -105,7 +138,7 @@ describe('missingMonthlyVatInfoSuggestions', () => {
   it('returns null when VAT total does not match transactions amount', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: -130,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
     vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
@@ -125,7 +158,7 @@ describe('missingMonthlyVatInfoSuggestions', () => {
   it('returns null when VAT records fetching throws', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: -130,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
     vi.mocked(getVatRecords).mockRejectedValue(new Error('boom'));

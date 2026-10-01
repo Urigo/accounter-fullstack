@@ -111,7 +111,8 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       }
 
       // for each transaction, create a ledger record
-      const { currency, valueDate } = validateTransactionBasicVariables(transaction);
+      const { currency, valueDate, exchangeRateDate } =
+        validateTransactionBasicVariables(transaction);
 
       let amount = Number(transaction.amount);
       let foreignAmount: number | undefined = undefined;
@@ -120,7 +121,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
         // get exchange rate for currency
         const exchangeRate = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+          .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
 
         foreignAmount = amount;
         // calculate amounts in ILS:

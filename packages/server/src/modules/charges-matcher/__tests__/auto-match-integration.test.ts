@@ -38,10 +38,6 @@ vi.mock('../../charges/helpers/merge-charges.helper.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
 
-vi.mock('../../../shared/helpers/index.js', () => ({
-  dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
-}));
-
 const createMockProvider = (mockChargesProvider?: {
     getChargesByFilters: (filters: any) => Promise<any[]>;
   },
@@ -179,7 +175,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: txChargeId,
                   amount: "100",
                   currency: 'USD',
-                  event_date: new Date('2024-01-15'),
+                  event_date: '2024-01-15',
                 }),
               ]);
             }
@@ -197,7 +193,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: docChargeId,
                   total_amount: 100,
                   currency_code: 'USD',
-                  date: new Date('2024-01-15'),
+                  date: '2024-01-15',
                 }),
               ]);
             }
@@ -243,7 +239,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: txChargeId,
                   amount: "100",
                   currency: 'USD',
-                  event_date: new Date('2024-01-15'),
+                  event_date: '2024-01-15',
                 }),
               ]);
             }
@@ -261,7 +257,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: docCharge1Id,
                   total_amount: 100,
                   currency_code: 'USD',
-                  date: new Date('2024-01-15'),
+                  date: '2024-01-15',
                 }),
               ]);
             }
@@ -271,7 +267,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: docCharge2Id,
                   total_amount: 100,
                   currency_code: 'USD',
-                  date: new Date('2024-01-15'),
+                  date: '2024-01-15',
                 }),
               ]);
             }
@@ -378,7 +374,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   amount: "100",
                   currency: 'USD',
-                  event_date: new Date('2024-01-15'),
+                  event_date: '2024-01-15',
                 }),
               ]);
             }
@@ -388,7 +384,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   amount: "999",
                   currency: 'GBP',
-                  event_date: new Date('2024-03-15'),
+                  event_date: '2024-03-15',
                 }),
               ]);
             }
@@ -406,7 +402,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   total_amount: 100,
                   currency_code: 'USD',
-                  date: new Date('2024-01-15'),
+                  date: '2024-01-15',
                 }),
               ]);
             }
@@ -550,7 +546,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   amount: "100",
                   currency: 'USD',
-                  event_date: new Date('2024-01-15'),
+                  event_date: '2024-01-15',
                 }),
               ]);
             }
@@ -560,7 +556,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   amount: "200",
                   currency: 'EUR',
-                  event_date: new Date('2024-02-15'),
+                  event_date: '2024-02-15',
                 }),
               ]);
             }
@@ -570,7 +566,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   amount: "500",
                   currency: 'GBP',
-                  event_date: new Date('2024-03-15'),
+                  event_date: '2024-03-15',
                 }),
               ]);
             }
@@ -588,7 +584,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   total_amount: 100,
                   currency_code: 'USD',
-                  date: new Date('2024-01-15'),
+                  date: '2024-01-15',
                   debtor_id: ADMIN_BUSINESS_ID,
                   creditor_id: 'business-a',
                 }),
@@ -600,7 +596,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   total_amount: 200,
                   currency_code: 'EUR',
-                  date: new Date('2024-02-15'),
+                  date: '2024-02-15',
                   vat_amount: 10, // Different VAT
                 }),
               ]);
@@ -611,7 +607,7 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
                   charge_id: id,
                   total_amount: 200,
                   currency_code: 'EUR',
-                  date: new Date('2024-02-15'),
+                  date: '2024-02-15',
                   vat_amount: 20, // Different VAT - but this won't affect matching score
                 }),
               ]);

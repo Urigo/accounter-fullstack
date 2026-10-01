@@ -2,6 +2,7 @@ import type { FinancialAmount } from '../../__generated__/types.js';
 import type { IGetChargesByIdsResult } from '../../modules/charges/types.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../../modules/ledger/types.js';
 import type { Currency } from '../../shared/enums.js';
+import type { TimelessDateString } from './index.js';
 
 export interface EntryForFinancialAccount {
   creditAccount: string | null;
@@ -45,9 +46,9 @@ export interface LedgerProto {
   localCurrencyDebitAmount1: number;
   localCurrencyDebitAmount2?: number;
   description?: string;
-  invoiceDate: Date;
+  invoiceDate: TimelessDateString;
   reference?: string;
-  valueDate: Date;
+  valueDate: TimelessDateString;
   currency: Currency;
   isCreditorCounterparty: boolean;
   isCreditInvoice?: boolean;

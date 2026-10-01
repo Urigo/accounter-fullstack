@@ -8,7 +8,7 @@ import {
 } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import type { Currency } from '../../../shared/enums.js';
-import { formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { compareTimelessDates, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
@@ -395,7 +395,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           ownerId,
         })
         .then(records =>
-          records.sort((a, b) => a.invoice_date.getTime() - b.invoice_date.getTime()),
+          records.sort((a, b) => compareTimelessDates(a.invoice_date, b.invoice_date)),
         )
         .catch(error => {
           console.error('Failed to fetch ledger records:', error);

@@ -50,17 +50,17 @@ export default gql`
     " user custom description "
     userDescription: String
     " minimal event date from linked transactions "
-    minEventDate: DateTime
+    minEventDate: TimelessDate
     " minimal debit date from linked transactions "
-    minDebitDate: DateTime
+    minDebitDate: TimelessDate
     " minimal date from linked documents "
-    minDocumentsDate: DateTime
+    minDocumentsDate: TimelessDate
     " maximal event date from linked transactions "
-    maxEventDate: DateTime
+    maxEventDate: TimelessDate
     " maximal debit date from linked transactions "
-    maxDebitDate: DateTime
+    maxDebitDate: TimelessDate
     " maximal date from linked documents "
-    maxDocumentsDate: DateTime
+    maxDocumentsDate: TimelessDate
     " metadata about the charge "
     metadata: ChargeMetadata
     " the tax year in which the action took place "
@@ -82,12 +82,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -105,12 +105,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -128,12 +128,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -151,12 +151,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -174,12 +174,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -197,12 +197,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -220,12 +220,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -243,12 +243,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -266,12 +266,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -289,12 +289,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean

@@ -1,10 +1,17 @@
-import { differenceInDays, endOfMonth, endOfYear, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import {
   AVERAGE_MONTHLY_WORK_DAYS,
   AVERAGE_MONTHLY_WORK_HOURS,
 } from '../../../shared/constants.js';
+import {
+  differenceInTimelessDays,
+  endOfTimelessMonth,
+  endOfTimelessYear,
+  getTimelessDateYear,
+  startOfTimelessMonth,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
 import { SalariesProvider } from '../../salaries/providers/salaries.provider.js';
@@ -69,20 +76,20 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     {
       employee: IGetEmployeesByEmployerResult;
       vacationDays: number;
-      startWorkDate: Date;
+      startWorkDate: TimelessDateString;
       firstSalary: IGetSalaryRecordsByDatesResult | null;
       latestSalary: IGetSalaryRecordsByDatesResult | null;
       salaries: IGetSalaryRecordsByDatesResult[];
       isHourly: boolean;
     }
   >();
-  const yearEnd = endOfYear(new Date(`${year}-01-01`));
+  const yearEnd = endOfTimelessYear(year);
 
   for (const employee of employees) {
-    if (employee.start_work_date!.getFullYear() > year) {
+    if (getTimelessDateYear(employee.start_work_date!) > year) {
       continue;
     }
-    if (employee.end_work_date && employee.end_work_date.getTime() < yearEnd.getTime()) {
+    if (employee.end_work_date && employee.end_work_date <= yearEnd) {
       continue;
     }
 
@@ -104,19 +111,14 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     }
     const employee = employeeMap.get(salaryRecord.employee_id)!;
     // skip if salary record outside of employee's employment dates
-    if (
-      employee.employee.start_work_date.getTime() >
-      endOfMonth(new Date(`${salaryRecord.month}-01`)).getTime()
-    ) {
+    const salaryMonthStart = `${salaryRecord.month}-01` as TimelessDateString;
+    if (employee.employee.start_work_date > endOfTimelessMonth(salaryMonthStart)) {
       console.log(
         `salary record of employee ${employee.employee.first_name} before start date - ${employee.employee.start_work_date}`,
       );
       continue;
     }
-    if (
-      employee.employee.end_work_date &&
-      employee.employee.end_work_date.getTime() < new Date(`${salaryRecord.month}-01`).getTime()
-    ) {
+    if (employee.employee.end_work_date && employee.employee.end_work_date < salaryMonthStart) {
       console.log(
         `salary record of employee ${employee.employee.first_name} after end date - ${employee.employee.end_work_date}`,
       );
@@ -152,9 +154,9 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
       Number(employeeData.firstSalary.job_percentage) === 0;
     const formalEmployeeStartDate = employeeData.employee.start_work_date;
     const adjustedEmployeeStartDate = isFirstSalaryHourly
-      ? startOfMonth(formalEmployeeStartDate)
+      ? startOfTimelessMonth(formalEmployeeStartDate)
       : formalEmployeeStartDate;
-    const seniority = differenceInDays(yearEnd, adjustedEmployeeStartDate) / 365;
+    const seniority = differenceInTimelessDays(yearEnd, adjustedEmployeeStartDate) / 365;
     const cumulativeVacationDays = vacationDaysPerYearsOfExperience(seniority);
 
     employeeData.vacationDays += cumulativeVacationDays;
@@ -191,7 +193,7 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
 
   const prevVacationReserveAmount = vacationLedgerRecords.reduce((acc, record) => {
     let factor = 0;
-    if (record.value_date.getTime() >= new Date(year, 11, 31).getTime()) {
+    if (record.value_date >= yearEnd) {
       return acc;
     }
     if (

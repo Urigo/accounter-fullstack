@@ -1,11 +1,6 @@
 import type { document_status } from './__generated__/issued-documents.types.js';
 
-export type {
-  DateOrString,
-  NumberOrString,
-  currency,
-  document_type,
-} from './__generated__/documents.types.js';
+export type { NumberOrString, currency, document_type } from './__generated__/documents.types.js';
 export type * from './__generated__/documents.types.js';
 export type * from './__generated__/issued-documents.types.js';
 export type * from './__generated__/types.js';

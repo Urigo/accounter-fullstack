@@ -1,3 +1,4 @@
+import type { TimelessDateString } from '../../shared/types/index.js';
 import type {
   IGetSecuritiesByKeysResult,
   IGetSecurityExecutionsResult,
@@ -89,8 +90,8 @@ export type SecurityExecutionsFilterInput = {
   securityBusinessIds?: readonly string[] | null;
   isins?: readonly string[] | null;
   symbols?: readonly string[] | null;
-  fromTradeDate?: string | null;
-  toTradeDate?: string | null;
+  fromTradeDate?: TimelessDateString | null;
+  toTradeDate?: TimelessDateString | null;
   /** The bank's own labels, already translated from the GraphQL enums by the resolver. */
   rawTradeTypes?: readonly string[] | null;
   rawTransactionTypes?: readonly string[] | null;

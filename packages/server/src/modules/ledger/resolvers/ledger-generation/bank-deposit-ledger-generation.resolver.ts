@@ -5,6 +5,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
+import { compareTimelessDates } from '../../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { BankDepositChargesProvider } from '../../../bank-deposits/providers/bank-deposit-charges.provider.js';
@@ -127,7 +128,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     // create a ledger record for fee transactions
     const interestTransactionsPromises = interestTransactions.map(async transaction => {
       // for each transaction, create a ledger record
-      const { currency, valueDate, transactionBusinessId } =
+      const { currency, valueDate, exchangeRateDate, transactionBusinessId } =
         validateTransactionBasicVariables(transaction);
 
       const businessTaxCategory = await injector
@@ -145,7 +146,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         // get exchange rate for currency
         const exchangeRate = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+          .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
 
         foreignAmount = amount;
         // calculate amounts in ILS:
@@ -244,7 +245,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           if (txDate < mainTxDate) {
             return true;
           }
-          if (txDate.getTime() === mainTxDate.getTime()) {
+          if (txDate === mainTxDate) {
             // Same date: use ID ordering
             return tx.id < mainTransaction.id;
           }
@@ -259,8 +260,8 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         prevTransactions.sort((a, b) => {
           const dateA = a.debit_date ?? a.event_date;
           const dateB = b.debit_date ?? b.event_date;
-          if (dateB.getTime() !== dateA.getTime()) {
-            return dateB.getTime() - dateA.getTime();
+          if (dateB !== dateA) {
+            return compareTimelessDates(dateB, dateA);
           }
           return b.id.localeCompare(a.id);
         });
@@ -272,10 +273,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         let originBalance = 0;
         for (const tx of nonInterestTransactions) {
           const txDate = tx.debit_date ?? tx.event_date;
-          if (
-            txDate < prevActionDate ||
-            (txDate.getTime() === prevActionDate.getTime() && tx.id <= prevAction.id)
-          ) {
+          if (txDate < prevActionDate || (txDate === prevActionDate && tx.id <= prevAction.id)) {
             originBalance += Number(tx.amount);
           }
         }

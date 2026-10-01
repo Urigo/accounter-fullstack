@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { BankDepositsProvider } from '../providers/bank-deposits.provider.js';
@@ -39,7 +38,7 @@ export const bankDepositsResolvers: BankDepositsModule.Resolvers = {
         const deposit = await injector.get(BankDepositsProvider).insertBankDeposit({
           name,
           currency,
-          openDate: openDate ? new Date(openDate) : null,
+          openDate: openDate || null,
         });
 
         return deposit;
@@ -58,10 +57,8 @@ export const bankDepositsResolvers: BankDepositsModule.Resolvers = {
           depositId: id,
           name: name ?? existing.name,
           currency: existing.currency,
-          openDate:
-            openDate === undefined ? existing.open_date : openDate ? new Date(openDate) : null,
-          closeDate:
-            closeDate === undefined ? existing.close_date : closeDate ? new Date(closeDate) : null,
+          openDate: openDate === undefined ? existing.open_date : openDate || null,
+          closeDate: closeDate === undefined ? existing.close_date : closeDate || null,
           accountId: existing.account_id,
         });
         if (!result) {
@@ -105,9 +102,8 @@ export const bankDepositsResolvers: BankDepositsModule.Resolvers = {
         throw errorSimplifier(`Error fetching deposit account for deposit ${deposit.name}`, e);
       }
     },
-    openDate: deposit => (deposit.open_date ? dateToTimelessDateString(deposit.open_date) : null),
-    closeDate: deposit =>
-      deposit.close_date ? dateToTimelessDateString(deposit.close_date) : null,
+    openDate: deposit => deposit.open_date || null,
+    closeDate: deposit => deposit.close_date || null,
     isOpen: deposit => !deposit.close_date,
   },
 };

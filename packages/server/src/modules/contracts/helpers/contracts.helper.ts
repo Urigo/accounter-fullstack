@@ -79,8 +79,8 @@ export function buildContractDocumentDescription(
   const productPlanName = `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)}`;
 
   if (normalizeBillingCycle(contract.billing_cycle) === 'ANNUAL') {
-    const start = format(contract.start_date, 'MMMM do, yyyy');
-    const end = format(contract.end_date, 'MMMM do, yyyy');
+    const start = format(timelessDateStringToLocalDate(contract.start_date), 'MMMM do, yyyy');
+    const end = format(timelessDateStringToLocalDate(contract.end_date), 'MMMM do, yyyy');
     return `${productPlanName} ${start} → ${end}`;
   }
 

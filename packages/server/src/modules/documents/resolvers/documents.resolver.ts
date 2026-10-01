@@ -2,6 +2,8 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { DocumentType } from '../../../shared/enums.js';
+import { timelessDateStringToLocalDate } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
@@ -33,6 +35,16 @@ import {
   commonFinancialDocumentsFields,
   commonFinancialDocumentValidationField,
 } from './common.js';
+
+/**
+ * Sort key for the "recent documents" queries: the document date (at server-local midnight, as it
+ * compares against creation instants), falling back to when the document was created.
+ */
+function recencyTime(document: { date: TimelessDateString | null; created_at: Date }): number {
+  return (
+    document.date ? timelessDateStringToLocalDate(document.date) : document.created_at
+  ).getTime();
+}
 
 export const documentsResolvers: DocumentsModule.Resolvers &
   Pick<
@@ -82,9 +94,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       if (!businessDocs?.length) {
         return [];
       }
-      const sortedDocs = [...businessDocs].sort(
-        (a, b) => (b.date ?? b.created_at).getTime() - (a.date ?? a.created_at).getTime(),
-      );
+      const sortedDocs = [...businessDocs].sort((a, b) => recencyTime(b) - recencyTime(a));
       return sortedDocs.slice(0, limit ?? 7);
     },
     recentDocumentsByClient: async (_, { clientId, limit }, { injector }) => {
@@ -94,9 +104,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       if (!clientDocs?.length) {
         return [];
       }
-      const sortedDocs = [...clientDocs].sort(
-        (a, b) => (b.date ?? b.created_at).getTime() - (a.date ?? a.created_at).getTime(),
-      );
+      const sortedDocs = [...clientDocs].sort((a, b) => recencyTime(b) - recencyTime(a));
       return sortedDocs.slice(0, limit ?? 7);
     },
     recentIssuedDocumentsByType: async (_, { documentType, limit = 3 }, { injector }) => {
@@ -402,16 +410,14 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           currencyCode: fields.amount?.currency ?? null,
           creditorId: fields.creditorId ?? null,
           debtorId: fields.debtorId ?? null,
-          date: fields.date ? new Date(fields.date) : null,
+          date: fields.date ?? null,
           fileUrl: fields.file ? fields.file.toString() : null,
           imageUrl: fields.image ? fields.image.toString() : null,
           serialNumber: fields.serialNumber ?? null,
           totalAmount: fields.amount?.raw ?? null,
           type: fields.documentType ?? null,
           vatAmount: fields.vat?.raw ?? null,
-          vatReportDateOverride: fields.vatReportDateOverride
-            ? new Date(fields.vatReportDateOverride)
-            : null,
+          vatReportDateOverride: fields.vatReportDateOverride ?? null,
           noVatAmount: fields.noVatAmount ?? null,
           isReviewed: true,
           allocationNumber: fields.allocationNumber ?? null,
@@ -504,14 +510,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           file: record.file ? record.file.toString() : null,
           documentType: record.documentType ?? DocumentType.Unprocessed,
           serialNumber: record.serialNumber ?? null,
-          date: record.date ? new Date(record.date) : null,
+          date: record.date ?? null,
           amount: record.amount?.raw ?? null,
           currencyCode: record.amount?.currency ?? null,
           vat: record.vat?.raw ?? null,
           chargeId: record.chargeId ?? null,
-          vatReportDateOverride: record.vatReportDateOverride
-            ? new Date(record.vatReportDateOverride)
-            : null,
+          vatReportDateOverride: record.vatReportDateOverride ?? null,
           noVatAmount: record.noVatAmount ?? null,
           creditorId: record.creditorId ?? null,
           debtorId: record.debtorId ?? null,

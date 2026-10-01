@@ -6,7 +6,7 @@ import type {
   MergedChargeSnapshot,
 } from '../../../__generated__/types.js';
 import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/misc.js';
+import { minTimelessDate } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
@@ -171,7 +171,7 @@ async function* fillCreditcardDebitDates(
     yield {
       __typename: 'CreditcardDebitDateFilled',
       transaction: id,
-      debitDate: dateToTimelessDateString(debit_date_override),
+      debitDate: debit_date_override,
     };
   }
   return { affectedCount: filledCount, errors: [] };
@@ -237,10 +237,7 @@ export function buildMergedChargeSnapshots(
   return chargeIds.map(id => {
     const transactions = candidates.filter(candidate => candidate.charge_id === id);
 
-    const earliestDate = transactions.reduce<Date | null>(
-      (earliest, { event_date }) => (!earliest || event_date < earliest ? event_date : earliest),
-      null,
-    );
+    const earliestDate = minTimelessDate(...transactions.map(({ event_date }) => event_date));
 
     const currencies = new Set(transactions.map(transaction => transaction.currency));
     const amount =
@@ -260,7 +257,7 @@ export function buildMergedChargeSnapshots(
     return {
       id,
       description,
-      date: earliestDate ? dateToTimelessDateString(earliestDate) : null,
+      date: earliestDate,
       amount,
     };
   });

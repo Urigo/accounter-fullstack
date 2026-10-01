@@ -70,8 +70,8 @@ export default gql`
     localCurrencyDebitAmount2: FinancialAmount
     localCurrencyCreditAmount1: FinancialAmount!
     localCurrencyCreditAmount2: FinancialAmount
-    invoiceDate: DateTime!
-    valueDate: DateTime!
+    invoiceDate: TimelessDate!
+    valueDate: TimelessDate!
     description: String
     reference: String
   }

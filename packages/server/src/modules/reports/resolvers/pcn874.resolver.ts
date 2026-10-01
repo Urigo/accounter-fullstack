@@ -1,9 +1,12 @@
-import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Repeater } from 'graphql-yoga';
 import { validatePcn874 } from '@accounter/pcn874-generator';
 import type { ResolversTypes } from '../../../__generated__/types.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  addMonthsToTimelessDate,
+  endOfTimelessMonth,
+  startOfTimelessMonth,
+} from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getPcn874String } from '../helpers/pcn.helper.js';
@@ -48,13 +51,13 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
       const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       const financialEntityId = businessId || ownerId;
       const months: TimelessDateString[] = [];
-      let startTimestamp = startOfMonth(new Date(fromMonthDate)).getTime();
-      const endTimestamp = endOfMonth(new Date(toMonthDate)).getTime();
-      while (startTimestamp <= endTimestamp) {
-        const currMonth = startOfMonth(new Date(startTimestamp));
-        months.push(dateToTimelessDateString(currMonth));
-        const nextMonth = addMonths(currMonth, 1);
-        startTimestamp = nextMonth.getTime();
+      const lastDay = endOfTimelessMonth(toMonthDate);
+      for (
+        let currMonth = startOfTimelessMonth(fromMonthDate);
+        currMonth <= lastDay;
+        currMonth = addMonthsToTimelessDate(currMonth, 1)
+      ) {
+        months.push(currMonth);
       }
 
       return new Repeater<ResolversTypes['Pcn874Records']>(async (push, stop) => {
@@ -110,7 +113,7 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
   Mutation: {
     updatePcn874: async (_, { monthDate, businessId, content }, context, __) => {
       try {
-        const normalizedMonthDate = dateToTimelessDateString(startOfMonth(new Date(monthDate)));
+        const normalizedMonthDate = startOfTimelessMonth(monthDate);
         if (!validatePcn874(content)) {
           throw new GraphQLError('Invalid PCN874 content');
         }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../shared/constants.js';
 import { AccountantStatus } from '../../../shared/enums.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 
 const dynamicReportNodeData = z
   .object({
@@ -63,7 +64,10 @@ const uuidShaped = z.string().regex(UUID_REGEX, 'Invalid UUID');
  * below compares the two dates lexicographically — which only decides anything for well-formed
  * `yyyy-mm-dd` strings.
  */
-const timelessDate = z.string().regex(TIMELESS_DATE_REGEX, 'Date must be in format yyyy-mm-dd');
+const timelessDate = z
+  .string()
+  .regex(TIMELESS_DATE_REGEX, 'Date must be in format yyyy-mm-dd')
+  .transform(date => date as TimelessDateString);
 
 const snapshotValue = z
   .object({

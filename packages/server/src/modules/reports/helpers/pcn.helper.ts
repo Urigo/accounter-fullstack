@@ -1,10 +1,10 @@
-import { format, startOfMonth } from 'date-fns';
 import type { Injector } from 'graphql-modules';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
 import type { Pcn874RecordType } from '../../../__generated__/types.js';
 import {
-  dateToTimelessDateString,
+  getTimelessDateYearMonth,
   idValidator,
+  startOfTimelessMonth,
   yearMonthValidator,
 } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
@@ -223,7 +223,7 @@ const transactionsFromVatReportRecords = (
     const transaction: ExtendedPCNTransaction = {
       entryType,
       vatId: getVatIdForTransaction(t),
-      invoiceDate: format(new Date(t.documentDate!), 'yyyyMMdd'),
+      invoiceDate: t.documentDate.replaceAll('-', ''),
       refGroup: '0000',
       refNumber: getReferenceForTransaction(t),
       totalVat: getTotalVAT(t),
@@ -241,7 +241,7 @@ export async function getPcn874String(
   businessId: string,
   rawMonthDate: TimelessDateString,
 ) {
-  const monthDate = dateToTimelessDateString(startOfMonth(new Date(rawMonthDate)));
+  const monthDate = startOfTimelessMonth(rawMonthDate);
   const financialEntity = await injector
     .get(BusinessesProvider)
     .getBusinessByIdLoader.load(businessId);
@@ -253,7 +253,7 @@ export async function getPcn874String(
     injector,
     { includeChargeBuckets: false },
   );
-  const reportMonth = format(new Date(monthDate), 'yyyyMM');
+  const reportMonth = getTimelessDateYearMonth(monthDate).replace('-', '');
   const reportContent = generatePcnFromVatRecords(
     [
       ...(vatRecords.income as RawVatReportRecord[]),

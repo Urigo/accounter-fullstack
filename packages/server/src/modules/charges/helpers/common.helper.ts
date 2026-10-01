@@ -1,7 +1,13 @@
 import { Injector } from 'graphql-modules';
 import type { FinancialAmount } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
-import { formatFinancialAmount } from '../../../shared/helpers/index.js';
+import {
+  formatFinancialAmount,
+  maxTimelessDate,
+  minTimelessDate,
+  optionalDateToTimelessDateString,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
 import { basicDocumentValidation } from '../../documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -9,7 +15,10 @@ import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-ca
 import { getLedgerMeta } from '../../ledger/helpers/common.helper.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
-import { getTransactionsMeta } from '../../transactions/helpers/common.helper.js';
+import {
+  getTransactionsMeta,
+  type TransactionsMeta,
+} from '../../transactions/helpers/common.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 import type { IGetChargesByFiltersResult, IGetChargesByIdsResult } from '../types.js';
@@ -150,7 +159,24 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
   };
 }
 
-export async function getChargeDocumentsMeta(chargeRef: ChargeRef, injector: Injector) {
+export type ChargeDocumentsMeta = {
+  receiptAmount: number;
+  receiptCount: number;
+  invoiceAmount: number;
+  invoiceCount: number;
+  documentsAmount: number | null;
+  documentsVatAmount: number | null;
+  documentsCount: number;
+  documentsCurrency: Currency | null;
+  invalidDocuments: boolean;
+  documentsMinDate: TimelessDateString | null;
+  documentsMaxDate: TimelessDateString | null;
+};
+
+export async function getChargeDocumentsMeta(
+  chargeRef: ChargeRef,
+  injector: Injector,
+): Promise<ChargeDocumentsMeta> {
   const charge = await resolveCharge(chargeRef, injector);
 
   if (isEnrichedFilteredCharge(charge)) {
@@ -199,29 +225,20 @@ export async function getChargeDocumentsMeta(chargeRef: ChargeRef, injector: Inj
   let proformaAmount: number | null = null;
   const currenciesSet = new Set<Currency>();
   const proformaCurrencySet = new Set<Currency>();
-  let documentsMinAccountancyDate: Date | null = null;
-  let documentsMinAnyDate: Date | null = null;
-  let documentsMaxAccountancyDate: Date | null = null;
-  let documentsMaxDate: Date | null = null;
+  let documentsMinAccountancyDate: TimelessDateString | null = null;
+  let documentsMinAnyDate: TimelessDateString | null = null;
+  let documentsMaxAccountancyDate: TimelessDateString | null = null;
+  let documentsMaxDate: TimelessDateString | null = null;
 
-  documents.map(d => {
+  for (const d of documents) {
     const amount = d.total_amount ?? 0;
     let factor = 1;
     if (d.debtor_id === charge.owner_id) {
       factor *= -1;
     }
 
-    if (d.date) {
-      documentsMinAnyDate ??= d.date;
-      if (documentsMinAnyDate > d.date) {
-        documentsMinAnyDate = d.date;
-      }
-
-      documentsMaxDate ??= d.date;
-      if (documentsMaxDate < d.date) {
-        documentsMaxDate = d.date;
-      }
-    }
+    documentsMinAnyDate = minTimelessDate(documentsMinAnyDate, d.date);
+    documentsMaxDate = maxTimelessDate(documentsMaxDate, d.date);
 
     if (isInvoice(d.type)) {
       invoiceCount++;
@@ -230,17 +247,8 @@ export async function getChargeDocumentsMeta(chargeRef: ChargeRef, injector: Inj
         invoiceVatAmount ??= 0;
         invoiceVatAmount += (d.vat_amount ?? 0) * factor;
       }
-      if (d.date) {
-        documentsMinAccountancyDate ??= d.date;
-        if (documentsMinAccountancyDate > d.date) {
-          documentsMinAccountancyDate = d.date;
-        }
-
-        documentsMaxAccountancyDate ??= d.date;
-        if (documentsMaxAccountancyDate < d.date) {
-          documentsMaxAccountancyDate = d.date;
-        }
-      }
+      documentsMinAccountancyDate = minTimelessDate(documentsMinAccountancyDate, d.date);
+      documentsMaxAccountancyDate = maxTimelessDate(documentsMaxAccountancyDate, d.date);
       if (d.currency_code) {
         currenciesSet.add(d.currency_code as Currency);
       }
@@ -252,17 +260,8 @@ export async function getChargeDocumentsMeta(chargeRef: ChargeRef, injector: Inj
         receiptVatAmount ??= 0;
         receiptVatAmount += (d.vat_amount ?? 0) * factor;
       }
-      if (d.date) {
-        documentsMinAccountancyDate ??= d.date;
-        if (documentsMinAccountancyDate > d.date) {
-          documentsMinAccountancyDate = d.date;
-        }
-
-        documentsMaxAccountancyDate ??= d.date;
-        if (documentsMaxAccountancyDate < d.date) {
-          documentsMaxAccountancyDate = d.date;
-        }
-      }
+      documentsMinAccountancyDate = minTimelessDate(documentsMinAccountancyDate, d.date);
+      documentsMaxAccountancyDate = maxTimelessDate(documentsMaxAccountancyDate, d.date);
       if (d.currency_code) {
         currenciesSet.add(d.currency_code as Currency);
       }
@@ -279,7 +278,7 @@ export async function getChargeDocumentsMeta(chargeRef: ChargeRef, injector: Inj
     if (!basicDocumentValidation(d)) {
       invalidDocuments = true;
     }
-  });
+  }
 
   const currencies =
     currenciesSet.size > 0 ? Array.from(currenciesSet) : Array.from(proformaCurrencySet);
@@ -296,12 +295,15 @@ export async function getChargeDocumentsMeta(chargeRef: ChargeRef, injector: Inj
     documentsCount: documents.length,
     documentsCurrency: currencies.length === 1 ? currencies[0] : null,
     invalidDocuments,
-    documentsMinDate: documentsMinAccountancyDate ?? (documentsMinAnyDate as Date | null),
-    documentsMaxDate: documentsMaxAccountancyDate ?? (documentsMaxDate as Date | null),
+    documentsMinDate: documentsMinAccountancyDate ?? documentsMinAnyDate,
+    documentsMaxDate: documentsMaxAccountancyDate ?? documentsMaxDate,
   };
 }
 
-export async function getChargeTransactionsMeta(chargeRef: ChargeRef, injector: Injector) {
+export async function getChargeTransactionsMeta(
+  chargeRef: ChargeRef,
+  injector: Injector,
+): Promise<TransactionsMeta> {
   if (typeof chargeRef !== 'string' && isEnrichedFilteredCharge(chargeRef)) {
     const currencies = (chargeRef.transactions_fee_excluded_currencies ?? []) as Currency[];
     return {
@@ -313,9 +315,13 @@ export async function getChargeTransactionsMeta(chargeRef: ChargeRef, injector: 
       transactionsCurrencies: currencies,
       transactionsCurrency: currencies.length === 1 ? currencies[0] : null,
       invalidTransactions: chargeRef.invalid_transactions ?? false,
-      transactionsMinDebitDate: chargeRef.transactions_min_debit_timestamp,
+      transactionsMinDebitDate: optionalDateToTimelessDateString(
+        chargeRef.transactions_min_debit_timestamp,
+      ),
       transactionsMinEventDate: chargeRef.transactions_min_event_date,
-      transactionsMaxDebitDate: chargeRef.transactions_max_debit_timestamp,
+      transactionsMaxDebitDate: optionalDateToTimelessDateString(
+        chargeRef.transactions_max_debit_timestamp,
+      ),
       transactionsMaxEventDate: chargeRef.transactions_max_event_date,
     };
   }
@@ -328,7 +334,17 @@ export async function getChargeTransactionsMeta(chargeRef: ChargeRef, injector: 
   return getTransactionsMeta(transactions);
 }
 
-export async function getChargeLedgerMeta(chargeRef: ChargeRef, injector: Injector) {
+export type ChargeLedgerMeta = {
+  ledgerMinValueDate: TimelessDateString | null;
+  ledgerMinInvoiceDate: TimelessDateString | null;
+  ledgerMaxValueDate: TimelessDateString | null;
+  ledgerMaxInvoiceDate: TimelessDateString | null;
+};
+
+export async function getChargeLedgerMeta(
+  chargeRef: ChargeRef,
+  injector: Injector,
+): Promise<ChargeLedgerMeta> {
   if (typeof chargeRef !== 'string' && isEnrichedFilteredCharge(chargeRef)) {
     return {
       ledgerMinValueDate: chargeRef.ledger_min_value_date,

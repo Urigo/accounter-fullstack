@@ -1,7 +1,12 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { dateToTimelessDateString, getCacheInstance } from '../../../shared/helpers/index.js';
+import {
+  getCacheInstance,
+  maxTimelessDate,
+  minTimelessDate,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetExchangeRatesByDateQuery,
@@ -41,8 +46,7 @@ export class FiatExchangeProvider {
 
   constructor(private dbProvider: DBProvider) {}
 
-  public async getExchangeRates(date: Date) {
-    const formattedDate = dateToTimelessDateString(date);
+  public async getExchangeRates(formattedDate: TimelessDateString) {
     try {
       const cached = this.cache.get<IGetExchangeRatesByDateResult[]>(formattedDate);
       if (cached) {
@@ -58,9 +62,9 @@ export class FiatExchangeProvider {
     }
   }
 
-  private async batchExchangeRatesByDates(dates: readonly Date[]) {
-    const fromDate = dateToTimelessDateString(new Date(Math.min(...dates.map(d => d.getTime()))));
-    const toDate = dateToTimelessDateString(new Date(Math.max(...dates.map(d => d.getTime()))));
+  private async batchExchangeRatesByDates(dates: readonly TimelessDateString[]) {
+    const fromDate = minTimelessDate(...dates)!;
+    const toDate = maxTimelessDate(...dates)!;
     const rates = await getExchangeRatesByDates.run(
       {
         fromDate,
@@ -68,20 +72,18 @@ export class FiatExchangeProvider {
       },
       this.dbProvider,
     );
-    return dates.map(date => {
-      const stringifiedDate = dateToTimelessDateString(date);
-      return rates
-        .filter(rate => dateToTimelessDateString(rate.exchange_date!) <= stringifiedDate)
+    return dates.map(date =>
+      rates
+        .filter(rate => rate.exchange_date! <= date)
         .reduce((prev: IGetExchangeRatesByDatesResult, curr: IGetExchangeRatesByDatesResult) =>
-          (prev.exchange_date?.getTime() ?? 0) > (curr.exchange_date?.getTime() ?? 0) ? prev : curr,
-        );
-    });
+          (prev.exchange_date ?? '') > (curr.exchange_date ?? '') ? prev : curr,
+        ),
+    );
   }
 
   public getExchangeRatesByDatesLoader = new DataLoader(
-    (keys: readonly Date[]) => this.batchExchangeRatesByDates(keys),
+    (keys: readonly TimelessDateString[]) => this.batchExchangeRatesByDates(keys),
     {
-      cacheKeyFn: key => dateToTimelessDateString(key),
       cacheMap: this.cache,
     },
   );

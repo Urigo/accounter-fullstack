@@ -28,6 +28,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { CountryCode, Currency, DocumentType } from '../../../shared/enums.js';
 import { formatCurrency, hashStringToInt } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -1157,7 +1158,8 @@ export async function insertNewDocumentFromGreenInvoice(
       file: fileUrl,
       documentType,
       serialNumber: greenInvoiceDoc.number,
-      date: greenInvoiceDoc.documentDate,
+      // Green Invoice's `Date` scalar is a `yyyy-mm-dd` calendar day
+      date: greenInvoiceDoc.documentDate as TimelessDateString,
       amount: greenInvoiceDoc.amount,
       currencyCode: formatCurrency(greenInvoiceDoc.currency),
       vat: greenInvoiceDoc.vat,

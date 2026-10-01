@@ -18,8 +18,8 @@ export interface LedgerRecord {
   credit_foreign_amount2: string | null;
   credit_local_amount2: string | null;
   currency: string;
-  invoice_date: Date;
-  value_date: Date;
+  invoice_date: string;
+  value_date: string;
   description: string | null;
   reference1: string | null;
   created_at: Date;

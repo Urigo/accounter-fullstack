@@ -1,6 +1,10 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import {
+  dateToTimelessDateString,
+  formatFinancialAmount,
+  startOfTimelessMonth,
+} from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
@@ -38,8 +42,8 @@ export const chartsResolvers: ChartsModule.Resolvers = {
               .getExchangeRates(transaction.currency as Currency, currency, date);
 
             // add amount to relevant month
-            const monthTag = dateToTimelessDateString(
-              new Date(date.getFullYear(), date.getMonth(), 1),
+            const monthTag = startOfTimelessMonth(
+              typeof date === 'string' ? date : dateToTimelessDateString(date),
             );
             if (!monthDataMap.has(monthTag)) {
               monthDataMap.set(monthTag, { income: 0, expense: 0, balance: 0 });

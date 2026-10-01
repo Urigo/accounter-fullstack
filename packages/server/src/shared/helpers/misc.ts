@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { UUID_REGEX } from '../constants.js';
 import type { TimelessDateString } from '../types/index.js';
+import { getTimelessDateMonth, getTimelessDateYear } from './timeless-date.js';
 
 function parseIntRound(v: number) {
   return Math.trunc(v + Math.sign(v) / 2);
@@ -103,10 +104,13 @@ function convertMonthNameToNumber(monthName: string): string | null {
  * @description
  * Extract month from description
  * @param rawDescription string - description to extract month from
- * @param eventDate Date - optional, if provided, will use it to determine year
+ * @param eventDate TimelessDateString - optional, if provided, will use it to determine year
  * @returns month in format yyyy-mm, else null
  */
-export function getMonthFromDescription(rawDescription: string, eventDate?: Date): string[] | null {
+export function getMonthFromDescription(
+  rawDescription: string,
+  eventDate?: TimelessDateString,
+): string[] | null {
   if (!rawDescription.length) {
     return null;
   }
@@ -179,10 +183,10 @@ export function getMonthFromDescription(rawDescription: string, eventDate?: Date
         }
 
         if (eventDate) {
-          let year = eventDate.getFullYear();
+          let year = getTimelessDateYear(eventDate);
 
           // case date is in Jan/Feb and salary month is Nov/Dec, use date's prev year
-          if (eventDate.getMonth() < 2 && month > '10') {
+          if (getTimelessDateMonth(eventDate) <= 2 && month > '10') {
             year--;
           }
           const adjustedMonth = `${year}-${month}`;
@@ -197,6 +201,13 @@ export function getMonthFromDescription(rawDescription: string, eventDate?: Date
   return null;
 }
 
+/**
+ * The calendar day a point in time falls on in the server's local timezone.
+ *
+ * Use it for real instants (`timestamp` / `timestamptz` values) and for `Date`s built at local
+ * midnight (`timelessDateStringToLocalDate`). Date-only values should never become a `Date` in the
+ * first place: keep them as `TimelessDateString` (see `./timeless-date.ts`).
+ */
 export function dateToTimelessDateString(date: Date): TimelessDateString {
   return format(date, 'yyyy-MM-dd') as TimelessDateString;
 }

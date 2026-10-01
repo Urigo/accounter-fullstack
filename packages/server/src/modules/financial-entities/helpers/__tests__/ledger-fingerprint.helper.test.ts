@@ -26,8 +26,8 @@ function makeRecord(
     debit_foreign_amount1: '30',
     debit_foreign_amount2: null,
     currency: 'USD',
-    invoice_date: new Date(2026, 0, 15),
-    value_date: new Date(2026, 0, 20),
+    invoice_date: '2026-01-15',
+    value_date: '2026-01-20',
     description: 'some description',
     reference1: 'ref-1',
     ...overrides,
@@ -62,8 +62,8 @@ describe('ledgerFingerprintTuple / hashLedgerFingerprint', () => {
       ['local amount', { credit_local_amount1: '101' }],
       ['foreign amount', { credit_foreign_amount1: '31' }],
       ['currency', { currency: 'EUR' }],
-      ['invoice_date', { invoice_date: new Date(2026, 0, 16) }],
-      ['value_date', { value_date: new Date(2026, 0, 21) }],
+      ['invoice_date', { invoice_date: '2026-01-16' }],
+      ['value_date', { value_date: '2026-01-21' }],
       ['counter-entity', { debit_entity1: OTHER_2 }],
     ])('%s', (_, overrides) => {
       expect(hashOf(makeRecord(overrides))).not.toBe(base);

@@ -9,8 +9,8 @@ function buildContract(overrides: Partial<IGetContractsByIdsResult>): IGetContra
     billing_cycle: 'monthly',
     // pg parses `date` columns to local-midnight Date objects; mirror that here so
     // formatting is timezone-independent.
-    start_date: new Date(2025, 0, 15),
-    end_date: new Date(2026, 0, 14),
+    start_date: '2025-01-15',
+    end_date: '2026-01-14',
     ...overrides,
   } as unknown as IGetContractsByIdsResult;
 }

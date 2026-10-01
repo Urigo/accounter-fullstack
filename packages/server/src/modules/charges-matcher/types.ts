@@ -1,3 +1,4 @@
+import type { TimelessDateString } from '../../shared/types/index.js';
 import type { currency, document_type, IGetAllDocumentsResult } from '../documents/types.js';
 import type { IGetTransactionsByIdsResult } from '../transactions/types.js';
 
@@ -66,9 +67,9 @@ export interface AggregatedTransaction {
   /** Single non-null business ID (or null if all are null) */
   businessId: string | null;
   /** Earliest event_date among transactions */
-  date: Date;
+  date: TimelessDateString;
   /** Earliest debit_date/debit_timestamp (for receipt matching) */
-  debitDate: Date | null;
+  debitDate: TimelessDateString | null;
   /** Concatenated source_description values */
   description: string;
 }
@@ -84,7 +85,7 @@ export interface AggregatedDocument {
   /** Single non-null business ID (or null if all are null) */
   businessId: string | null;
   /** Latest document date */
-  date: Date;
+  date: TimelessDateString;
   /** Concatenated serial numbers and identifiers */
   description: string;
   /** Document type (for date matching logic) */

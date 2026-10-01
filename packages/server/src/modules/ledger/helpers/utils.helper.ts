@@ -3,14 +3,17 @@ import type { FinancialAmount } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { Currency } from '../../../shared/enums.js';
 import {
+  dateToTimelessDateString,
   formatCurrency,
   formatFinancialAmount,
   getCurrencySymbol,
+  minTimelessDate,
 } from '../../../shared/helpers/index.js';
 import type {
   LedgerBalanceInfoType,
   LedgerProto,
   StrictLedgerProto,
+  TimelessDateString,
 } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
@@ -47,7 +50,12 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
       `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${currency}`,
     );
   }
-  const valueDate = transaction.debit_timestamp ?? debitDate;
+  // `debit_timestamp` (crypto rows only) is the exact time of the transfer: the ledger records the
+  // day it falls on, and exchange rates are looked up at the time itself.
+  const valueDate = transaction.debit_timestamp
+    ? dateToTimelessDateString(transaction.debit_timestamp)
+    : debitDate;
+  const exchangeRateDate: TimelessDateString | Date = transaction.debit_timestamp ?? debitDate;
 
   if (!transaction.business_id) {
     throw new LedgerError(
@@ -60,15 +68,22 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
   return {
     currency,
     valueDate,
+    exchangeRateDate,
     transactionBusinessId,
   };
 }
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> };
 export type ValidateTransaction = Omit<
-  WithRequired<IGetTransactionsByChargeIdsResult, 'debit_date' | 'business_id' | 'debit_timestamp'>,
+  WithRequired<IGetTransactionsByChargeIdsResult, 'debit_date' | 'business_id'>,
   'currency'
-> & { currency: Currency };
+> & {
+  currency: Currency;
+  /** The day the transaction is valued at: the debit date override, else the debit time / date */
+  value_date: TimelessDateString;
+  /** What to look exchange rates up by: the same, but the exact time when there is one */
+  exchange_rate_date: TimelessDateString | Date;
+};
 
 type ValidationOptions = {
   skipBusinessId?: boolean;
@@ -90,12 +105,17 @@ export function validateTransactionRequiredVariables(
     );
   }
 
-  const debit_timestamp =
-    transaction.debit_date_override ?? transaction.debit_timestamp ?? transaction.debit_date;
+  const exchange_rate_date: TimelessDateString | Date =
+    transaction.debit_date_override ?? transaction.debit_timestamp ?? transaction.debit_date!;
+  const value_date =
+    exchange_rate_date instanceof Date
+      ? dateToTimelessDateString(exchange_rate_date)
+      : exchange_rate_date;
 
   return {
     ...transaction,
-    debit_timestamp,
+    value_date,
+    exchange_rate_date,
     currency: formatCurrency(transaction.currency),
   } as ValidateTransaction;
 }
@@ -120,7 +140,7 @@ export function generatePartialLedgerEntry(
   return {
     id: transaction.id,
     invoiceDate: transaction.event_date,
-    valueDate: transaction.debit_timestamp,
+    valueDate: transaction.value_date,
     currency: transaction.currency,
     creditAmount1: absForeignAmount,
     localCurrencyCreditAmount1: absAmount,
@@ -376,16 +396,14 @@ export async function multipleForeignCurrenciesBalanceEntries(
       if (!prev) {
         return curr;
       }
-      return prev.valueDate.getTime() > curr.valueDate.getTime() ? prev : curr;
+      return prev.valueDate > curr.valueDate ? prev : curr;
     });
 
-    const invoiceDate = new Date(
-      Math.min(
-        ...(useDocuments
-          ? documentEntries.map(entry => entry.invoiceDate.getTime())
-          : transactionEntries.map(entry => entry.valueDate.getTime())),
-      ),
-    );
+    const invoiceDate = minTimelessDate(
+      ...(useDocuments
+        ? documentEntries.map(entry => entry.invoiceDate)
+        : transactionEntries.map(entry => entry.valueDate)),
+    )!;
 
     // get the main foreign currency + diff in local currency
     let mainForeignCurrency: { amount: number; currency: Currency } | undefined = undefined;

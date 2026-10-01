@@ -1,5 +1,5 @@
 import type { Injector } from 'graphql-modules';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { minTimelessDate } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import {
   getChargeDocumentsMeta,
@@ -8,14 +8,10 @@ import {
 } from '../../charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 
-export function getMinDate(dates: (Date | null | undefined)[]): Date | null {
-  const filteredDates = dates.filter(Boolean) as Date[];
-
-  if (filteredDates.length === 0) {
-    return null;
-  }
-
-  return filteredDates.sort((dateA, dateB) => dateA.getTime() - dateB.getTime())[0];
+export function getMinDate(
+  dates: (TimelessDateString | null | undefined)[],
+): TimelessDateString | null {
+  return minTimelessDate(...dates);
 }
 
 export async function isChargeLocked(
@@ -49,12 +45,5 @@ export async function isChargeLocked(
     return false;
   }
 
-  if (
-    dateToTimelessDateString(chargeMinDate) &&
-    lockDate >= dateToTimelessDateString(chargeMinDate)
-  ) {
-    return true;
-  }
-
-  return false;
+  return lockDate >= chargeMinDate;
 }

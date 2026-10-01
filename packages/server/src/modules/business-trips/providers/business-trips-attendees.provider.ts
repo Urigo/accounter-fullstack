@@ -2,10 +2,10 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
-  DateOrString,
   IAddBusinessTripAttendeesParams,
   IAddBusinessTripAttendeesQuery,
   IGetBusinessTripsAttendeesByBusinessTripIdsQuery,
@@ -143,7 +143,7 @@ export class BusinessTripAttendeesProvider {
 
   public async getLastFlightByDateAndAttendeeId(params: {
     attendeeBusinessId: string;
-    date: DateOrString;
+    date: TimelessDateString;
   }) {
     return getLastFlightByDateAndAttendeeId.run(params, this.db);
   }

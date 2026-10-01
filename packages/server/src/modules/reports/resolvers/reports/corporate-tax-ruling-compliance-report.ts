@@ -8,7 +8,13 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { formatFinancialAmount, hashStringToInt } from '../../../../shared/helpers/index.js';
+import {
+  endOfTimelessYear,
+  formatFinancialAmount,
+  getTimelessDateYear,
+  hashStringToInt,
+  startOfTimelessYear,
+} from '../../../../shared/helpers/index.js';
 import type {
   CorporateTaxRulingComplianceReportProto,
   LedgerRecordsProto,
@@ -158,8 +164,8 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
     }
   });
 
-  const from = new Date(Math.min(...years), 0, 1);
-  const to = new Date(Math.max(...years) + 1, 0, 0);
+  const from = startOfTimelessYear(Math.min(...years));
+  const to = endOfTimelessYear(Math.max(...years));
   const [ledgerRecords, financialEntities] = await Promise.all([
     injector.get(LedgerProvider).getLedgerRecordsByDates({ fromDate: from, toDate: to }),
     injector.get(FinancialEntitiesProvider).getAllFinancialEntities(),
@@ -184,7 +190,7 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
   );
 
   ledgerRecords.map(record => {
-    const year = record.invoice_date.getFullYear();
+    const year = getTimelessDateYear(record.invoice_date);
     const reportAmounts = reportAmountsByYear.get(year);
 
     if (!reportAmounts) {
@@ -338,7 +344,7 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
     const ledgerRecords = successfulRes
       .map(res => res.records)
       .flat()
-      .filter(record => record.invoice_date.getFullYear() === year);
+      .filter(record => getTimelessDateYear(record.invoice_date) === year);
     return ledgerRecords;
   });
 

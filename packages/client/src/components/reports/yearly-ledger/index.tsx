@@ -1,5 +1,4 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { useQuery } from 'urql';
 import { flexRender, useTable, type ColumnDef, type Row } from '@tanstack/react-table';
 import {
@@ -93,10 +92,7 @@ const columns: ColumnDef<PaginatedTableFeaturesConfig, RowType>[] = [
     accessorKey: 'invoiceDate',
     header: 'Invoice Date',
     cell: ({ row }) => {
-      const date = new Date(row.getValue('invoiceDate'));
-      const formatted = format(date, 'yyyy-MM-dd');
-
-      return <div className="font-medium">{formatted}</div>;
+      return <div className="font-medium">{row.original.invoiceDate}</div>;
     },
   },
   {
@@ -104,10 +100,7 @@ const columns: ColumnDef<PaginatedTableFeaturesConfig, RowType>[] = [
     accessorKey: 'valueDate',
     header: 'Value Date',
     cell: ({ row }) => {
-      const date = new Date(row.getValue('valueDate'));
-      const formatted = format(date, 'yyyy-MM-dd');
-
-      return <div className="font-medium">{formatted}</div>;
+      return <div className="font-medium">{row.original.valueDate}</div>;
     },
   },
   {

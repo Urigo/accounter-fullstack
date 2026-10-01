@@ -1,6 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DynamicReportCommentsProvider } from '../dynamic-report-comments.provider.js';
+import {
+  DynamicReportCommentsProvider,
+  type AddCommentParams,
+} from '../dynamic-report-comments.provider.js';
 
 const pgTypedRuntimeMock = vi.hoisted(() => {
   const runMocks = {
@@ -69,7 +72,7 @@ const threadParams = {
   nodeKind: 'leaf',
   nodeLabel: 'Cash',
 };
-const commentParams = {
+const commentParams: AddCommentParams['comment'] = {
   authorId: 'user-1',
   content: 'hello',
   fromDate: '2025-01-01',

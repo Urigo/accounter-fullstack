@@ -1,6 +1,6 @@
-import { lastDayOfMonth } from 'date-fns';
 import type { Currency } from '../../../shared/enums.js';
-import type { LedgerProto } from '../../../shared/types/index.js';
+import { endOfTimelessMonth } from '../../../shared/helpers/index.js';
+import type { LedgerProto, TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import type { IGetSalaryRecordsByChargeIdsResult } from '../../salaries/types.js';
@@ -10,7 +10,7 @@ function generateEntryRaw(
   accountId: string,
   amount: number,
   month: string,
-  transactionDate: Date,
+  transactionDate: TimelessDateString,
   ownerId: string,
   isCreditor: boolean,
   chargeId: string,
@@ -88,7 +88,7 @@ export function generateEntriesFromSalaryRecords(
       accountId,
       amount,
       month,
-      lastDayOfMonth(new Date(`${month}-01`)),
+      endOfTimelessMonth(`${month}-01` as TimelessDateString),
       charge.owner_id,
       isCreditor,
       chargeId,

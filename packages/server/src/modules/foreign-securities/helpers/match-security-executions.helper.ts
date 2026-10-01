@@ -1,6 +1,7 @@
 import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { formatCurrency } from '../../../shared/helpers/amount.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/misc.js';
+import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { tryToSecurityTradeType } from './security-execution-enums.helper.js';
 
 /**
@@ -29,8 +30,8 @@ export type MatchableTransaction = {
   amount: string;
   /** The raw column value; `accounter_schema.currency` is a string union, not the enum. */
   currency: string;
-  debit_date: Date | null;
-  debit_date_override: Date | null;
+  debit_date: TimelessDateString | null;
+  debit_date_override: TimelessDateString | null;
   account_id: string;
 };
 
@@ -40,8 +41,8 @@ export type MatchableExecution = {
   bank_number: number;
   branch_number: number;
   account_number: number;
-  trade_date: Date;
-  value_date: Date | null;
+  trade_date: TimelessDateString;
+  value_date: TimelessDateString | null;
   trade_type: string;
   trade_currency: string | null;
   settlement_currency: string | null;
@@ -116,16 +117,8 @@ function parseDecimal(raw: string): DecimalValue | null {
 }
 
 /** The transaction's effective debit date — an override wins, as everywhere else. */
-function effectiveDebitDate(transaction: MatchableTransaction): Date | null {
+function effectiveDebitDate(transaction: MatchableTransaction): TimelessDateString | null {
   return transaction.debit_date_override ?? transaction.debit_date;
-}
-
-/**
- * Both sides are calendar dates stored as `DATE` and parsed back to *local* midnight, so
- * comparing the raw timestamps drifts across a DST boundary. The timeless string is the day.
- */
-function sameDay(a: Date, b: Date): boolean {
-  return dateToTimelessDateString(a) === dateToTimelessDateString(b);
 }
 
 /**
@@ -170,7 +163,7 @@ function matchesTransaction(
   }
 
   const debitDate = effectiveDebitDate(transaction);
-  if (!debitDate || !execution.value_date || !sameDay(execution.value_date, debitDate)) {
+  if (!debitDate || execution.value_date !== debitDate) {
     return false;
   }
 
@@ -225,7 +218,7 @@ export function matchExecutionsToTransactions<
   const takenTransactionIds = new Set<string>();
 
   const ordered = [...executions].sort(
-    (a, b) => a.trade_date.getTime() - b.trade_date.getTime() || a.id.localeCompare(b.id),
+    (a, b) => compareTimelessDates(a.trade_date, b.trade_date) || a.id.localeCompare(b.id),
   );
 
   for (const execution of ordered) {
@@ -270,7 +263,7 @@ export function matchSecurityExecutions<TExecution extends MatchableExecution>(
   }
 
   for (const group of matchedBySecurity.values()) {
-    group.sort((a, b) => a.trade_date.getTime() - b.trade_date.getTime());
+    group.sort((a, b) => compareTimelessDates(a.trade_date, b.trade_date));
   }
 
   return matchedBySecurity;

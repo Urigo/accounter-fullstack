@@ -1,9 +1,5 @@
 import type { DynamicReportNode } from '../../../__generated__/types.js';
 import { errorSimplifier } from '../../../shared/errors.js';
-import {
-  dateToTimelessDateString,
-  optionalDateToTimelessDateString,
-} from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
 import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
@@ -304,16 +300,16 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     id: snapshot => snapshot.id,
     createdAt: snapshot => snapshot.created_at,
     createdBy: snapshot => snapshot.created_by,
-    fromDate: snapshot => dateToTimelessDateString(snapshot.from_date),
-    toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
+    fromDate: snapshot => snapshot.from_date,
+    toDate: snapshot => snapshot.to_date,
     scopeOwnerId: snapshot => snapshot.scope_owner_id,
   },
   DynamicReportSnapshot: {
     id: snapshot => snapshot.id,
     createdAt: snapshot => snapshot.created_at,
     createdBy: snapshot => snapshot.created_by,
-    fromDate: snapshot => dateToTimelessDateString(snapshot.from_date),
-    toDate: snapshot => dateToTimelessDateString(snapshot.to_date),
+    fromDate: snapshot => snapshot.from_date,
+    toDate: snapshot => snapshot.to_date,
     scopeOwnerId: snapshot => snapshot.scope_owner_id,
     tree: snapshot => parseSnapshotTree(snapshot.tree) as DynamicReportNode[],
     values: snapshot => {
@@ -353,8 +349,8 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     created: report => report.created_at,
     updated: report => report.updated_at,
     isLocked: report => report.is_locked ?? false,
-    fromDate: report => optionalDateToTimelessDateString(report.from_date),
-    toDate: report => optionalDateToTimelessDateString(report.to_date),
+    fromDate: report => report.from_date,
+    toDate: report => report.to_date,
     snapshots: async (report, _args, { injector }) => {
       const snapshots = await injector
         .get(DynamicReportProvider)

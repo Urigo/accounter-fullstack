@@ -41,10 +41,6 @@ vi.mock('../../admin-context/providers/admin-context.provider.js', () => ({
   AdminContextProvider: class {},
 }));
 
-vi.mock('../../../shared/helpers/index.js', () => ({
-  dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
-}));
-
 const createMockProvider = (mockChargesProvider?: {
     getChargesByFilters?: (filters: any) => Promise<any[]>;
     getChargeByIdLoader?: { load: (id: string) => Promise<any>};
@@ -110,8 +106,8 @@ function createCharge(id: string, ownerId: string) {
   return {
     id,
     owner_id: ownerId,
-    transactions_min_event_date: new Date('2024-01-15'),
-    transactions_max_event_date: new Date('2024-01-15'),
+    transactions_min_event_date: '2024-01-15',
+    transactions_max_event_date: '2024-01-15',
   };
 }
 
@@ -125,7 +121,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
           charge_id: sourceChargeId,
           amount: "100",
           currency: 'USD',
-          event_date: new Date('2024-01-15'),
+          event_date: '2024-01-15',
         }),
       ];
 
@@ -135,7 +131,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
           charge_id: candidateCharge1Id,
           total_amount: 100,
           currency_code: 'USD',
-          date: new Date('2024-01-15'),
+          date: '2024-01-15',
         }),
       ];
 
@@ -145,7 +141,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
           charge_id: candidateCharge2Id,
           total_amount: 110,
           currency_code: 'USD',
-          date: new Date('2024-01-16'),
+          date: '2024-01-16',
         }),
       ];
 
@@ -207,7 +203,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
           charge_id: sourceChargeId,
           total_amount: 200,
           currency_code: 'USD',
-          date: new Date('2024-02-15'),
+          date: '2024-02-15',
         }),
       ];
 
@@ -217,7 +213,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
           charge_id: candidateCharge1Id,
           amount: "200",
           currency: 'USD',
-          event_date: new Date('2024-02-15'),
+          event_date: '2024-02-15',
         }),
       ];
 
@@ -227,7 +223,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
           charge_id: candidateCharge2Id,
           amount: "195",
           currency: 'USD',
-          event_date: new Date('2024-02-16'),
+          event_date: '2024-02-16',
         }),
       ];
 
@@ -419,7 +415,7 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
 
     it('should handle date window filtering correctly', async () => {
       const sourceChargeId = 'tx-charge-1';
-      const sourceDate = new Date('2024-06-15');
+      const sourceDate = '2024-06-15';
 
       const withinWindowId = 'doc-charge-within';
       const outsideWindowId = 'doc-charge-outside';
@@ -429,9 +425,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
           load: vi.fn(() => Promise.resolve(createCharge(sourceChargeId, ADMIN_BUSINESS_ID))),
         },
         getChargesByFilters: vi.fn(params => {
-          // Verify date window parameters
-          expect(params.fromAnyDate).toBeDefined();
-          expect(params.toAnyDate).toBeDefined();
+          // Verify date window parameters (±12 months around the source date)
+          expect(params.fromAnyDate).toBe('2023-06-15');
+          expect(params.toAnyDate).toBe('2025-06-15');
           return Promise.resolve([
             createCharge(withinWindowId, ADMIN_BUSINESS_ID),
             createCharge(outsideWindowId, ADMIN_BUSINESS_ID),
@@ -457,13 +453,13 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
             if (id === withinWindowId) {
               // Within 12-month window
               return Promise.resolve([
-                createMockDocument({ date: new Date('2024-06-20') }),
+                createMockDocument({ date: '2024-06-20' }),
               ]);
             }
             if (id === outsideWindowId) {
               // Outside 12-month window
               return Promise.resolve([
-                createMockDocument({ date: new Date('2025-07-15') }),
+                createMockDocument({ date: '2025-07-15' }),
               ]);
             }
             return Promise.resolve([]);
