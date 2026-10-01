@@ -1,5 +1,6 @@
 import { Injector } from 'graphql-modules';
 import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
@@ -382,7 +383,7 @@ function calculateEffectiveTaxableAmount(
 async function sumAccommodatedNightsOnPreviousConsecutiveTrips(
   injector: Injector,
   attendeeId: string,
-  arrival: Date,
+  arrival: TimelessDateString,
 ): Promise<number> {
   let attendeePreviousTrip: IGetLastFlightByDateAndAttendeeIdResult | undefined;
   [attendeePreviousTrip] = await injector

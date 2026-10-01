@@ -49,12 +49,12 @@ export default gql`
     decreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
-    minEventDate: DateTime
-    minDebitDate: DateTime
-    minDocumentsDate: DateTime
-    maxEventDate: DateTime
-    maxDebitDate: DateTime
-    maxDocumentsDate: DateTime
+    minEventDate: TimelessDate
+    minDebitDate: TimelessDate
+    minDocumentsDate: TimelessDate
+    maxEventDate: TimelessDate
+    maxDebitDate: TimelessDate
+    maxDocumentsDate: TimelessDate
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean

@@ -54,7 +54,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'tx-charge-1',
             amount: '100',
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
             business_id: BUSINESS_A,
           }),
         ],
@@ -69,7 +69,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'doc-charge-1',
             total_amount: 100,
             currency_code: 'USD',
-            date: new Date('2024-01-15'),
+            date: '2024-01-15',
             creditor_id: BUSINESS_A,
             debtor_id: USER_ID,
           }),
@@ -92,7 +92,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'tx-charge-1',
             amount: '100',
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
           }),
         ],
         documents: [],
@@ -108,7 +108,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'doc-charge-1',
             total_amount: 100,
             currency_code: 'USD',
-            date: new Date('2024-01-15'),
+            date: '2024-01-15',
           }),
         ],
       });
@@ -129,7 +129,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'doc-charge-1',
             total_amount: 200,
             currency_code: 'EUR',
-            date: new Date('2024-02-10'),
+            date: '2024-02-10',
           }),
         ],
       });
@@ -141,7 +141,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'tx-charge-1',
             amount: '200',
             currency: 'EUR',
-            event_date: new Date('2024-02-10'),
+            event_date: '2024-02-10',
           }),
         ],
         documents: [],
@@ -164,7 +164,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'tx-charge-1',
             amount: "100",
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
           }),
         ],
         documents: [],
@@ -178,7 +178,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'doc-charge-1',
             total_amount: 100,
             currency_code: 'USD',
-            date: new Date('2024-01-15'),
+            date: '2024-01-15',
           }),
         ],
       });
@@ -191,7 +191,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'doc-charge-2',
             total_amount: 100,
             currency_code: 'USD',
-            date: new Date('2024-01-15'),
+            date: '2024-01-15',
           }),
         ],
       });
@@ -239,7 +239,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'tx-charge-1',
             amount: "100",
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
           }),
         ],
         documents: [],
@@ -254,7 +254,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'doc-charge-1',
             total_amount: 500, // Very different amount
             currency_code: 'EUR', // Different currency
-            date: new Date('2024-01-15'),
+            date: '2024-01-15',
           }),
         ],
       });
@@ -288,7 +288,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'tx-charge-1',
             amount: "100",
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
           }),
         ],
         documents: [],
@@ -303,7 +303,7 @@ describe('processChargeForAutoMatch', () => {
             charge_id: 'doc-charge-1',
             total_amount: 105, // Small difference
             currency_code: 'USD',
-            date: new Date('2024-01-16'), // One day off
+            date: '2024-01-16', // One day off
           }),
         ],
       });
@@ -381,7 +381,7 @@ describe('processChargeForAutoMatch', () => {
           createMockTransaction({
             amount: "100",
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
           }),
         ],
         documents: [],
@@ -396,7 +396,7 @@ describe('processChargeForAutoMatch', () => {
             createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
             }),
           ],
         }),
@@ -408,7 +408,7 @@ describe('processChargeForAutoMatch', () => {
             createMockDocument({
               total_amount: 110,
               currency_code: 'USD',
-              date: new Date('2024-01-20'),
+              date: '2024-01-20',
             }),
           ],
         }),
@@ -420,7 +420,7 @@ describe('processChargeForAutoMatch', () => {
             createMockDocument({
               total_amount: 200,
               currency_code: 'EUR',
-              date: new Date('2024-02-15'),
+              date: '2024-02-15',
             }),
           ],
         }),

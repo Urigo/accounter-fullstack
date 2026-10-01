@@ -1,10 +1,11 @@
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { IGetLedgerRecordsByIdsResult } from '../types.js';
 
 export function getLedgerMeta(records: IGetLedgerRecordsByIdsResult[]) {
-  let ledgerMinValueDate: Date | null = null;
-  let ledgerMinInvoiceDate: Date | null = null;
-  let ledgerMaxValueDate: Date | null = null;
-  let ledgerMaxInvoiceDate: Date | null = null;
+  let ledgerMinValueDate: TimelessDateString | null = null;
+  let ledgerMinInvoiceDate: TimelessDateString | null = null;
+  let ledgerMaxValueDate: TimelessDateString | null = null;
+  let ledgerMaxInvoiceDate: TimelessDateString | null = null;
 
   records.map(ledger => {
     ledgerMinValueDate ??= ledger.value_date;

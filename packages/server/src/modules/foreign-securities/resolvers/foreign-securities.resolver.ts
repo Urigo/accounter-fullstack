@@ -2,10 +2,6 @@ import { Currency } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
 import {
-  dateToTimelessDateString,
-  optionalDateToTimelessDateString,
-} from '../../../shared/helpers/misc.js';
-import {
   toSecurityPaymentType,
   toSecurityTradeType,
   toSecurityTransactionType,
@@ -68,10 +64,10 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
   },
   SecurityExecution: {
     id: execution => execution.id,
-    tradeDate: execution => dateToTimelessDateString(execution.trade_date),
-    valueDate: execution => optionalDateToTimelessDateString(execution.value_date),
-    settlementDate: execution => optionalDateToTimelessDateString(execution.settlement_date),
-    paymentDate: execution => optionalDateToTimelessDateString(execution.payment_date),
+    tradeDate: execution => execution.trade_date,
+    valueDate: execution => execution.value_date,
+    settlementDate: execution => execution.settlement_date,
+    paymentDate: execution => execution.payment_date,
     tradeType: execution => toSecurityTradeType(execution.trade_type),
     transactionType: execution => toSecurityTransactionType(execution.transaction_type),
     // The source uses '' for "not applicable"; null is the honest representation.

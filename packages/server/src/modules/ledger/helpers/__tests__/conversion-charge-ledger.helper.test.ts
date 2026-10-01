@@ -6,8 +6,8 @@ import { aggregateConversionSideEntries } from '../conversion-charge-ledger.help
 function makeEntry(overrides: Partial<LedgerProto> = {}): LedgerProto {
   return {
     id: 'entry-1',
-    invoiceDate: new Date('2024-11-27'),
-    valueDate: new Date('2024-11-27'),
+    invoiceDate: '2024-11-27',
+    valueDate: '2024-11-27',
     currency: Currency.Ils,
     localCurrencyCreditAmount1: 100,
     localCurrencyDebitAmount1: 100,

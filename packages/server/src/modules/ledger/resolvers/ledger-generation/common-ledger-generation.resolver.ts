@@ -6,7 +6,11 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import { formatStringifyAmount } from '../../../../shared/helpers/index.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import type {
+  LedgerProto,
+  StrictLedgerProto,
+  TimelessDateString,
+} from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import {
   calculateTotalAmount,
@@ -76,7 +80,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
     }
 
-    const dates = new Set<number>();
+    const dates = new Set<TimelessDateString>();
     const currencies = new Set<currency>();
 
     const [{ invoiceCount, receiptCount }, formattedChargeAmount] = await Promise.all([
@@ -181,7 +185,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
             );
             accountingLedgerEntries.push(ledgerEntry);
             updateLedgerBalance(ledgerEntry);
-            dates.add(ledgerEntry.valueDate.getTime());
+            dates.add(ledgerEntry.valueDate);
             currencies.add(ledgerEntry.currency);
           })
           .catch(e => {
@@ -223,7 +227,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
         financialAccountLedgerEntries.push(ledgerEntry);
         updateLedgerBalance(ledgerEntry);
-        dates.add(ledgerEntry.valueDate.getTime());
+        dates.add(ledgerEntry.valueDate);
         currencies.add(ledgerEntry.currency);
       });
 
@@ -248,7 +252,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
           updateLedgerBalance(ledgerEntry);
-          dates.add(ledgerEntry.valueDate.getTime());
+          dates.add(ledgerEntry.valueDate);
           currencies.add(ledgerEntry.currency);
         });
       });
@@ -262,7 +266,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
         updateLedgerBalance(entry);
-        dates.add(entry.valueDate.getTime());
+        dates.add(entry.valueDate);
         currencies.add(entry.currency);
       });
     });

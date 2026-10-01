@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { z } from 'zod';
 import type { DynamicReportNodeKind } from '../../../__generated__/types.js';
 import { TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../shared/constants.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 
 /** Upper bound on a message, in UTF-16 code units after trimming. Mirrored by a DB CHECK. */
 export const MAX_COMMENT_LENGTH = 10_000;
@@ -18,7 +19,10 @@ export const MAX_NODE_LABEL_LENGTH = 500;
 /** Same shape-only uuid check as `dynamicReportSnapshotInput`: see the note there. */
 const uuidShaped = z.string().regex(UUID_REGEX, 'Invalid UUID');
 
-const timelessDate = z.string().regex(TIMELESS_DATE_REGEX, 'Date must be in format yyyy-mm-dd');
+const timelessDate = z
+  .string()
+  .regex(TIMELESS_DATE_REGEX, 'Date must be in format yyyy-mm-dd')
+  .transform(date => date as TimelessDateString);
 
 const commentContent = z
   .string()

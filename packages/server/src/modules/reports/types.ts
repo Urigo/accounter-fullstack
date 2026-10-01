@@ -1,7 +1,7 @@
 import type { AccountantStatus, Shaam6111Data } from '../../__generated__/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '../ledger/types.js';
 
-export type { DateOrString, currency } from './__generated__/balance-report.types.js';
+export type { currency } from './__generated__/balance-report.types.js';
 export type * from './__generated__/types.js';
 export type * from './__generated__/dynamic-report.types.js';
 export type * from './__generated__/dynamic-report-comments.types.js';

@@ -28,8 +28,8 @@ export default gql`
   type SingleSidedLedgerRecord {
     id: ID!
     amount: FinancialAmount!
-    invoiceDate: DateTime!
-    valueDate: DateTime!
+    invoiceDate: TimelessDate!
+    valueDate: TimelessDate!
     description: String
     reference: String
     counterParty: FinancialEntity

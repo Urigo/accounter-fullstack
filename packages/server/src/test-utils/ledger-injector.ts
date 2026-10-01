@@ -26,6 +26,7 @@ import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-ex
 import { TransactionsProvider } from '../modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
 import type { Currency } from '../shared/enums.js';
+import type { TimelessDateString } from '../shared/types/index.js';
 
 export type ModuleContextLike = {
   injector: Injector;
@@ -50,7 +51,7 @@ class SimpleInjector implements Injector {
 export type ExchangeRateMockFn = (
   baseCurrency: Currency,
   quoteCurrency: Currency,
-  date: Date,
+  date: TimelessDateString | Date,
 ) => Promise<number>;
 
 export function createLedgerTestContext(options: {

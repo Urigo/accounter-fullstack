@@ -2,7 +2,8 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { dateToTimelessDateString } from '../../../shared/helpers/misc.js';
+import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
@@ -343,7 +344,7 @@ export class ForeignSecuritiesProvider {
     // worth fetching. A transaction with no debit date can never pair up.
     const valueDates = transactions
       .map(transaction => transaction.debit_date_override ?? transaction.debit_date)
-      .filter((date): date is Date => date != null);
+      .filter((date): date is TimelessDateString => date != null);
     if (valueDates.length === 0) {
       return new Map();
     }
@@ -572,9 +573,7 @@ export class ForeignSecuritiesProvider {
     for (const [index, { executions, transactionByExecutionId }] of histories.entries()) {
       const securityBusinessId = businessIds[index]!;
       for (const execution of executions) {
-        // Both sides are calendar dates; the timeless string compares as the day, which the raw
-        // Date does not once a DST boundary is between them.
-        const tradeDate = dateToTimelessDateString(execution.trade_date);
+        const tradeDate = execution.trade_date;
         if (filters.fromTradeDate && tradeDate < filters.fromTradeDate) {
           continue;
         }
@@ -600,7 +599,7 @@ export class ForeignSecuritiesProvider {
     // about what page 1 is.
     matched.sort(
       (a, b) =>
-        b.execution.trade_date.getTime() - a.execution.trade_date.getTime() ||
+        compareTimelessDates(b.execution.trade_date, a.execution.trade_date) ||
         b.execution.id.localeCompare(a.execution.id),
     );
 

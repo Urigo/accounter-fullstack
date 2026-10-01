@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { CountryCode } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { getTransactionMatchedAmount } from '../helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
@@ -99,8 +100,8 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
         return null;
       }
 
-      let fromDate: Date | undefined;
-      let toDate: Date | undefined;
+      let fromDate: TimelessDateString | undefined;
+      let toDate: TimelessDateString | undefined;
 
       attendees.map(attendee => {
         const { arrival, departure } = attendee;
@@ -119,8 +120,8 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       }
 
       return {
-        start: dateToTimelessDateString(fromDate),
-        end: dateToTimelessDateString(toDate),
+        start: fromDate,
+        end: toDate,
       };
     },
     purpose: dbBusinessTrip => dbBusinessTrip.trip_purpose,

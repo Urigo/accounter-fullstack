@@ -1,17 +1,19 @@
-import {
-  addDays,
-  differenceInDays,
-  getDaysInYear,
-  getYear,
-  isAfter,
-  isBefore,
-  isSameYear,
-  startOfYear,
-} from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
+import {
+  addDaysToTimelessDate,
+  differenceInTimelessDays,
+  endOfTimelessYear,
+  getTimelessDateYear,
+  startOfTimelessYear,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
+
+function daysInYear(year: number): number {
+  return differenceInTimelessDays(startOfTimelessYear(year + 1), startOfTimelessYear(year));
+}
 
 /**
  * Calculates depreciation amounts for accounting purposes
@@ -25,9 +27,9 @@ import { DepreciationProvider } from '../../depreciation/providers/depreciation.
 export function calculateDepreciation(
   depreciationRate: number,
   value: number,
-  activationDate: Date,
+  activationDate: TimelessDateString,
   calculationYear: number,
-  depreciationEndDate?: Date,
+  depreciationEndDate?: TimelessDateString,
 ): {
   yearlyDepreciationAmount: number;
   yearlyDepreciationRate: number;
@@ -40,7 +42,7 @@ export function calculateDepreciation(
   // Calculate end date if not provided
   if (!depreciationEndDate) {
     const yearsToFullDepreciation = 1 / normalizedRate;
-    const activationYear = getYear(activationDate);
+    const activationYear = getTimelessDateYear(activationDate);
     const fullDepreciationYear = activationYear + Math.ceil(yearsToFullDepreciation);
 
     // Calculate proportional days for the fractional year
@@ -48,27 +50,30 @@ export function calculateDepreciation(
     const fractionalYear = yearsToFullDepreciation - fullYears;
 
     if (fractionalYear > 0) {
-      const daysInFinalYear = getDaysInYear(new Date(fullDepreciationYear, 0, 1));
+      const daysInFinalYear = daysInYear(fullDepreciationYear);
       const daysToAdd = Math.ceil(fractionalYear * daysInFinalYear);
-      depreciationEndDate = addDays(new Date(fullDepreciationYear, 0, 1), daysToAdd - 1);
+      depreciationEndDate = addDaysToTimelessDate(
+        startOfTimelessYear(fullDepreciationYear),
+        daysToAdd - 1,
+      );
     } else {
-      depreciationEndDate = new Date(fullDepreciationYear, 0, 0); // Last day of previous year
+      depreciationEndDate = endOfTimelessYear(fullDepreciationYear - 1); // Last day of previous year
     }
   }
 
   // Create calculation date as December 31st of the calculation year
-  const calculationDate = new Date(calculationYear, 11, 31);
-  const startOfCalculationYear = startOfYear(calculationDate);
+  const calculationDate = endOfTimelessYear(calculationYear);
+  const startOfCalculationYear = startOfTimelessYear(calculationYear);
 
   // If calculation date is before activation date, no depreciation applies
-  if (isAfter(activationDate, calculationDate)) {
+  if (activationDate > calculationDate) {
     return { yearlyDepreciationAmount: 0, yearlyDepreciationRate: 0, pastDepreciationAmount: 0 };
   }
 
   // If depreciation ended before the calculation year, no yearly depreciation
-  if (isBefore(depreciationEndDate, startOfCalculationYear)) {
+  if (depreciationEndDate < startOfCalculationYear) {
     // Calculate total depreciation up to the end date
-    const totalYearsActive = differenceInDays(depreciationEndDate, activationDate) / 365.25;
+    const totalYearsActive = differenceInTimelessDays(depreciationEndDate, activationDate) / 365.25;
     const totalDepreciation = Math.min(
       valueAmount,
       Math.round(valueAmount * normalizedRate * totalYearsActive),
@@ -85,10 +90,9 @@ export function calculateDepreciation(
   const annualDepreciationAmount = Math.round(valueAmount * normalizedRate);
 
   // Handle different cases for calculation
-  const activationYear = getYear(activationDate);
-  const effectiveEndDate = isBefore(depreciationEndDate, calculationDate)
-    ? depreciationEndDate
-    : calculationDate;
+  const activationYear = getTimelessDateYear(activationDate);
+  const effectiveEndDate =
+    depreciationEndDate < calculationDate ? depreciationEndDate : calculationDate;
 
   // Calculate past depreciation (up to the start of calculation year)
   let pastDepreciationAmount = 0;
@@ -114,10 +118,11 @@ export function calculateDepreciation(
 
   if (activationYear === calculationYear) {
     // Asset activated during calculation year
-    const daysInYear = getDaysInYear(calculationDate);
-    const daysActive = differenceInDays(effectiveEndDate, activationDate) + 1;
-    yearlyDepreciationAmount = Math.round(annualDepreciationAmount * (daysActive / daysInYear));
-  } else if (isSameYear(depreciationEndDate, calculationDate)) {
+    const daysActive = differenceInTimelessDays(effectiveEndDate, activationDate) + 1;
+    yearlyDepreciationAmount = Math.round(
+      annualDepreciationAmount * (daysActive / daysInYear(calculationYear)),
+    );
+  } else if (getTimelessDateYear(depreciationEndDate) === calculationYear) {
     // Use remaining value for the year if depreciation ends this year
     yearlyDepreciationAmount = Math.max(0, valueAmount - pastDepreciationAmount);
   } else {
@@ -138,14 +143,11 @@ export function calculateDepreciation(
 }
 
 export async function calculateDepreciationAmount(injector: Injector, year: number) {
-  const yearBeginning = new Date(year, 0, 1);
-  const yearEnd = new Date(year, 11, 31);
-
   const depreciationRecords = await injector
     .get(DepreciationProvider)
     .getDepreciationRecordsByDates({
-      fromDate: yearBeginning,
-      toDate: yearEnd,
+      fromDate: startOfTimelessYear(year),
+      toDate: endOfTimelessYear(year),
     });
 
   let rndDepreciationYearlyAmount = 0;

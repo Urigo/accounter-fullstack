@@ -1,9 +1,12 @@
-import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { QueryVatReportArgs, ResolversTypes } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  endOfTimelessMonth,
+  getTimelessDateDay,
+  startOfTimelessMonth,
+} from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
@@ -53,12 +56,8 @@ export const getVatRecords = async (
     const docsChargesIDs = new Set<string>();
     const reportIssuerId = filters?.financialEntityId;
 
-    const fromDate = filters?.monthDate
-      ? dateToTimelessDateString(startOfMonth(new Date(filters.monthDate)))
-      : undefined;
-    const toDate = filters?.monthDate
-      ? dateToTimelessDateString(lastDayOfMonth(new Date(filters.monthDate)))
-      : undefined;
+    const fromDate = filters?.monthDate ? startOfTimelessMonth(filters.monthDate) : undefined;
+    const toDate = filters?.monthDate ? endOfTimelessMonth(filters.monthDate) : undefined;
 
     // get all documents by date filters
     const relevantDocumentsPromise = injector
@@ -71,9 +70,8 @@ export const getVatRecords = async (
         documents.filter(doc => {
           // filter documents with vat_report_date_override outside of the date range
           if (doc.vat_report_date_override) {
-            const isBeforeFromDate =
-              fromDate && doc.vat_report_date_override < startOfDay(fromDate);
-            const isAfterToDate = toDate && doc.vat_report_date_override > endOfDay(toDate);
+            const isBeforeFromDate = fromDate && doc.vat_report_date_override < fromDate;
+            const isAfterToDate = toDate && doc.vat_report_date_override > toDate;
             if (isBeforeFromDate || isAfterToDate) {
               return false;
             }
@@ -245,12 +243,10 @@ export const getVatRecords = async (
       }
     }
 
-    response.income = response.income.sort(
-      (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
-    );
-    response.expenses = response.expenses.sort(
-      (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
-    );
+    const documentDay = (record: RawVatReportRecord) =>
+      record.documentDate ? getTimelessDateDay(record.documentDate) : 0;
+    response.income = response.income.sort((a, b) => documentDay(b) - documentDay(a));
+    response.expenses = response.expenses.sort((a, b) => documentDay(b) - documentDay(a));
 
     return response;
   } catch (e) {

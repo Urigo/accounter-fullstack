@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { Document, Transaction } from '../types.js';
 import {
   isValidDocumentForMatching,
@@ -120,116 +121,116 @@ describe('Candidate Filter', () => {
   });
 
   describe('isWithinDateWindow', () => {
-    const referenceDate = new Date('2024-06-15');
+    const referenceDate = '2024-06-15';
 
     it('should include same date', () => {
-      const candidateDate = new Date('2024-06-15');
+      const candidateDate = '2024-06-15';
       expect(isWithinDateWindow(candidateDate, referenceDate)).toBe(true);
     });
 
     it('should include date 11 months before', () => {
-      const candidateDate = new Date('2023-07-15');
+      const candidateDate = '2023-07-15';
       expect(isWithinDateWindow(candidateDate, referenceDate)).toBe(true);
     });
 
     it('should include date 11 months after', () => {
-      const candidateDate = new Date('2025-05-15');
+      const candidateDate = '2025-05-15';
       expect(isWithinDateWindow(candidateDate, referenceDate)).toBe(true);
     });
 
     it('should include date exactly 12 months before', () => {
-      const candidateDate = new Date('2023-06-15');
+      const candidateDate = '2023-06-15';
       expect(isWithinDateWindow(candidateDate, referenceDate)).toBe(true);
     });
 
     it('should include date exactly 12 months after', () => {
-      const candidateDate = new Date('2025-06-15');
+      const candidateDate = '2025-06-15';
       expect(isWithinDateWindow(candidateDate, referenceDate)).toBe(true);
     });
 
     it('should exclude date 12 months + 1 day before', () => {
-      const candidateDate = new Date('2023-06-14');
+      const candidateDate = '2023-06-14';
       expect(isWithinDateWindow(candidateDate, referenceDate)).toBe(false);
     });
 
     it('should exclude date 12 months + 1 day after', () => {
-      const candidateDate = new Date('2025-06-16');
+      const candidateDate = '2025-06-16';
       expect(isWithinDateWindow(candidateDate, referenceDate)).toBe(false);
     });
 
     it('should handle different years', () => {
-      const candidateDate2023 = new Date('2023-09-01'); // 9+ months before
-      const candidateDate2025 = new Date('2025-03-01'); // 8+ months after
+      const candidateDate2023 = '2023-09-01'; // 9+ months before
+      const candidateDate2025 = '2025-03-01'; // 8+ months after
 
       expect(isWithinDateWindow(candidateDate2023, referenceDate)).toBe(true);
       expect(isWithinDateWindow(candidateDate2025, referenceDate)).toBe(true);
     });
 
     it('should handle edge cases around month boundaries - end of month', () => {
-      const refDate = new Date('2024-01-31');
-      const candidate11MonthsLater = new Date('2024-12-31'); // Exactly 11 months
+      const refDate = '2024-01-31';
+      const candidate11MonthsLater = '2024-12-31'; // Exactly 11 months
 
       expect(isWithinDateWindow(candidate11MonthsLater, refDate)).toBe(true);
     });
 
     it('should handle edge cases around month boundaries - February leap year', () => {
-      const refDate = new Date('2024-02-29'); // Leap year
-      const candidate = new Date('2023-03-01'); // Just over 12 months before
+      const refDate = '2024-02-29'; // Leap year
+      const candidate = '2023-03-01'; // Just over 12 months before
 
       expect(isWithinDateWindow(candidate, refDate)).toBe(true);
     });
 
     it('should work with custom window - 6 months', () => {
-      const candidateDate3MonthsBefore = new Date('2024-03-15');
-      const candidateDate7MonthsBefore = new Date('2023-11-15');
+      const candidateDate3MonthsBefore = '2024-03-15';
+      const candidateDate7MonthsBefore = '2023-11-15';
 
       expect(isWithinDateWindow(candidateDate3MonthsBefore, referenceDate, 6)).toBe(true);
       expect(isWithinDateWindow(candidateDate7MonthsBefore, referenceDate, 6)).toBe(false);
     });
 
     it('should work with custom window - 3 months', () => {
-      const candidateDate2MonthsAfter = new Date('2024-08-15');
-      const candidateDate4MonthsAfter = new Date('2024-10-15');
+      const candidateDate2MonthsAfter = '2024-08-15';
+      const candidateDate4MonthsAfter = '2024-10-15';
 
       expect(isWithinDateWindow(candidateDate2MonthsAfter, referenceDate, 3)).toBe(true);
       expect(isWithinDateWindow(candidateDate4MonthsAfter, referenceDate, 3)).toBe(false);
     });
 
     it('should handle month boundary edge case - 12 months exactly', () => {
-      const refDate = new Date('2024-01-15');
-      const candidate12MonthsAfter = new Date('2025-01-15');
-      const candidateJustOver12Months = new Date('2025-01-16');
+      const refDate = '2024-01-15';
+      const candidate12MonthsAfter = '2025-01-15';
+      const candidateJustOver12Months = '2025-01-16';
 
       expect(isWithinDateWindow(candidate12MonthsAfter, refDate)).toBe(true);
       expect(isWithinDateWindow(candidateJustOver12Months, refDate)).toBe(false);
     });
 
     it('should handle year transitions', () => {
-      const refDate = new Date('2024-01-01');
-      const candidateDate = new Date('2023-01-01'); // Exactly 12 months before
+      const refDate = '2024-01-01';
+      const candidateDate = '2023-01-01'; // Exactly 12 months before
 
       expect(isWithinDateWindow(candidateDate, refDate)).toBe(true);
     });
 
     it('should be inclusive on boundary dates', () => {
-      const refDate = new Date('2024-06-15');
-      const minBoundary = new Date('2023-06-15'); // -12 months
-      const maxBoundary = new Date('2025-06-15'); // +12 months
+      const refDate = '2024-06-15';
+      const minBoundary = '2023-06-15'; // -12 months
+      const maxBoundary = '2025-06-15'; // +12 months
 
       expect(isWithinDateWindow(minBoundary, refDate)).toBe(true);
       expect(isWithinDateWindow(maxBoundary, refDate)).toBe(true);
     });
 
-    it('should handle dates with time components', () => {
-      const refDate = new Date('2024-06-15T10:30:00');
-      const candidateDate = new Date('2024-06-15T23:59:59');
+    it('should handle dates derived from instants with time components', () => {
+      const refDate = dateToTimelessDateString(new Date('2024-06-15T10:30:00'));
+      const candidateDate = dateToTimelessDateString(new Date('2024-06-15T23:59:59'));
 
       expect(isWithinDateWindow(candidateDate, refDate)).toBe(true);
     });
 
     it('should work with very small window - 1 month', () => {
-      const candidateDate1MonthBefore = new Date('2024-05-15');
-      const candidateDate2MonthsBefore = new Date('2024-04-15');
+      const candidateDate1MonthBefore = '2024-05-15';
+      const candidateDate2MonthsBefore = '2024-04-15';
 
       expect(isWithinDateWindow(candidateDate1MonthBefore, referenceDate, 1)).toBe(true);
       expect(isWithinDateWindow(candidateDate2MonthsBefore, referenceDate, 1)).toBe(false);

@@ -1,5 +1,4 @@
 import { useCallback, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { LedgerCsvFieldsFragmentDoc, type LedgerCsvFieldsFragment } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { DownloadCSVButton } from '../../common/index.js';
@@ -83,8 +82,8 @@ const dataRow: DataStructure<
     key: 'Counterparty',
     valueFn: record => sanitizeString(record.counterParty?.name ?? ''),
   },
-  { key: 'Invoice Date', valueFn: record => format(record.invoiceDate, 'yyyy-MM-dd') },
-  { key: 'Value Date', valueFn: record => format(record.valueDate, 'yyyy-MM-dd') },
+  { key: 'Invoice Date', valueFn: record => record.invoiceDate },
+  { key: 'Value Date', valueFn: record => record.valueDate },
   {
     key: 'Reference',
     valueFn: record => (record.reference ? `"${sanitizeString(record.reference)}"` : ''),

@@ -5,7 +5,11 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import type {
+  LedgerProto,
+  StrictLedgerProto,
+  TimelessDateString,
+} from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -53,6 +57,8 @@ export const generateLedgerRecordsForConversion: ResolverFn<
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const miscLedgerEntries: LedgerProto[] = [];
     let baseEntry: LedgerProto | undefined = undefined;
+    // by transaction ID: the exact debit time for crypto rows, which the entries' days drop
+    const exchangeRateDates = new Map<string, TimelessDateString | Date>();
     let quoteEntry: LedgerProto | undefined = undefined;
 
     // Get all transactions
@@ -68,7 +74,9 @@ export const generateLedgerRecordsForConversion: ResolverFn<
     // for each transaction, create a ledger record
     const mainTransactionsPromises = mainTransactions.map(async transaction => {
       try {
-        const { currency, valueDate } = validateTransactionBasicVariables(transaction);
+        const { currency, valueDate, exchangeRateDate } =
+          validateTransactionBasicVariables(transaction);
+        exchangeRateDates.set(transaction.id, exchangeRateDate);
 
         let amount = Number(transaction.amount);
         let foreignAmount: number | undefined = undefined;
@@ -77,7 +85,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           // get exchange rate for currency
           const exchangeRate = await injector
             .get(ExchangeProvider)
-            .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+            .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
 
           foreignAmount = amount;
           // calculate amounts in ILS
@@ -180,7 +188,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
 
         try {
           const isSupplementalFee = isSupplementalFeeTransaction(transaction, financialAccounts);
-          const { currency, valueDate, transactionBusinessId } =
+          const { currency, valueDate, exchangeRateDate, transactionBusinessId } =
             validateTransactionBasicVariables(transaction);
 
           let amount = Number(transaction.amount);
@@ -193,7 +201,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
             // get exchange rate for currency
             const exchangeRate = await injector
               .get(ExchangeProvider)
-              .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+              .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
 
             foreignAmount = amount;
             // calculate amounts in ILS
@@ -278,7 +286,11 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         [quoteEntry.currency, baseEntry.currency].map(currency =>
           injector
             .get(ExchangeProvider)
-            .getExchangeRates(currency as Currency, defaultLocalCurrency, baseEntry!.valueDate),
+            .getExchangeRates(
+              currency as Currency,
+              defaultLocalCurrency,
+              exchangeRateDates.get(baseEntry!.id) ?? baseEntry!.valueDate,
+            ),
         ),
       );
       const directRate = quoteRate / baseRate;

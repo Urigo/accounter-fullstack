@@ -5,11 +5,9 @@ import {
   type PositionExecution,
 } from '../security-position.helper.js';
 
-const date = (value: string) => new Date(`${value}T00:00:00`);
-
 function execution(overrides: Partial<PositionExecution> = {}): PositionExecution {
   return {
-    trade_date: date('2024-03-10'),
+    trade_date: '2024-03-10',
     trade_type: 'קניה',
     nv: '10',
     net_value_trade_currency: '-1000.00',
@@ -82,9 +80,9 @@ describe('calculateSecurityPosition', () => {
 
   it('reports the span the derivation is based on, whatever order rows arrive in', () => {
     const position = calculateSecurityPosition([
-      execution({ trade_date: date('2024-06-01') }),
-      execution({ trade_date: date('2023-02-15') }),
-      execution({ trade_date: date('2024-01-20') }),
+      execution({ trade_date: '2024-06-01' }),
+      execution({ trade_date: '2023-02-15' }),
+      execution({ trade_date: '2024-01-20' }),
     ]);
 
     expect(position.historyStartDate).toBe('2023-02-15');

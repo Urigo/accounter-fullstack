@@ -10,9 +10,10 @@ import type {
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
-import { formatValue } from '../helpers/utils.helper.js';
+import { formatValue, toCalendarDate } from '../helpers/utils.helper.js';
 import type {
   IFetchOtsarHahayalCreditCardByKeysQuery,
   IFetchOtsarHahayalCreditCardByKeysResult,
@@ -265,7 +266,7 @@ const OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS: Array<{
 }> = [
   { key: 'masked_pan', incoming: t => t.maskedPan },
   { key: 'billing_period', incoming: t => t.dealGroup },
-  { key: 'charge_date', incoming: t => t.chargeDate },
+  { key: 'charge_date', incoming: t => toCalendarDate(t.chargeDate) },
   { key: 'charge_amount', incoming: t => t.chargeAmount },
   { key: 'wallet_type', incoming: t => t.walletType },
   { key: 'charge_currency', incoming: t => t.chargeCurrency },
@@ -535,8 +536,8 @@ export class OtsarHahayalScraperIngestionProvider {
       .filter((n): n is number => n !== null);
     const branches = transactions.map(t => t.branch ?? null).filter((n): n is number => n !== null);
     const dates = transactions
-      .map(t => (t.date ? new Date(t.date) : null))
-      .filter((d): d is Date => d !== null);
+      .map(t => (t.date ? toCalendarDate(t.date) : null))
+      .filter((d): d is TimelessDateString => d !== null);
     const references = transactions
       .map(t => t.reference ?? null)
       .filter((r): r is string => r !== null);
@@ -551,8 +552,8 @@ export class OtsarHahayalScraperIngestionProvider {
       const key = [
         row.account,
         row.branch,
-        row.date ? dateToTimelessDateString(row.date) : '',
-        row.value_date ? dateToTimelessDateString(row.value_date) : '',
+        row.date,
+        row.value_date,
         row.reference,
         row.description,
       ].join('_');
@@ -568,13 +569,13 @@ export class OtsarHahayalScraperIngestionProvider {
       currency: t.currency,
       openingBalance: t.openingBalance,
       balance: t.balance ?? null,
-      valueDate: t.valueDate,
+      valueDate: toCalendarDate(t.valueDate),
       credit: t.credit,
       debit: t.debit,
       description: t.description,
       sp: t.sp ?? null,
       reference: t.reference,
-      date: t.date,
+      date: toCalendarDate(t.date),
       subTransactions: t.subTransactions,
       ownerId: businessId,
     }));
@@ -586,7 +587,7 @@ export class OtsarHahayalScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.date ? dateToTimelessDateString(r.date) : null,
+      date: r.date,
       description: r.description ?? null,
       amount: Number(r.debit) === 0 ? String(r.credit) : String(-Number(r.debit)),
       account: String(r.account),
@@ -597,8 +598,8 @@ export class OtsarHahayalScraperIngestionProvider {
       const key = [
         t.account,
         t.branch,
-        t.date ? dateToTimelessDateString(new Date(t.date)) : '',
-        t.valueDate ? dateToTimelessDateString(new Date(t.valueDate)) : '',
+        t.date ? toCalendarDate(t.date) : '',
+        t.valueDate ? toCalendarDate(t.valueDate) : '',
         t.reference,
         t.description,
       ].join('_');
@@ -634,7 +635,7 @@ export class OtsarHahayalScraperIngestionProvider {
 
     const resourceIds = [...new Set(transactions.map(t => t.resourceId))];
     const cardTypes = [...new Set(transactions.map(t => t.cardType))];
-    const dates = transactions.map(t => new Date(t.date));
+    const dates = transactions.map(t => toCalendarDate(t.date));
 
     const existing = await fetchOtsarHahayalCreditCardByKeys.run(
       { resourceIds, cardTypes, dates },
@@ -646,8 +647,8 @@ export class OtsarHahayalScraperIngestionProvider {
       const key = [
         row.resource_id,
         row.card_type,
-        row.date ? dateToTimelessDateString(row.date) : '',
-        row.charge_date ? dateToTimelessDateString(row.charge_date) : '',
+        row.date,
+        row.charge_date,
         row.deal_amount,
         row.deal_currency,
         row.name,
@@ -664,8 +665,8 @@ export class OtsarHahayalScraperIngestionProvider {
       maskedPan: t.maskedPan,
       cardType: t.cardType,
       dealGroup: t.dealGroup,
-      date: t.date,
-      chargeDate: t.chargeDate,
+      date: toCalendarDate(t.date),
+      chargeDate: toCalendarDate(t.chargeDate),
       name: t.name,
       dealAmount: t.dealAmount,
       chargeAmount: t.chargeAmount,
@@ -684,7 +685,7 @@ export class OtsarHahayalScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.date ? dateToTimelessDateString(r.date) : null,
+      date: r.date,
       description: r.name ?? null,
       amount: r.charge_amount == null ? null : String(-Number(r.charge_amount)),
       account: r.resource_id ?? null,
@@ -695,8 +696,8 @@ export class OtsarHahayalScraperIngestionProvider {
       const key = [
         t.resourceId,
         t.cardType,
-        t.date,
-        t.chargeDate,
+        toCalendarDate(t.date),
+        toCalendarDate(t.chargeDate),
         t.dealAmount,
         t.dealCurrency,
         t.name,

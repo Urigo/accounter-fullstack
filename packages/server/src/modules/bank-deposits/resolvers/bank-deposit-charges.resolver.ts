@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { BankDepositChargesProvider } from '../providers/bank-deposit-charges.provider.js';
 import { BankDepositsProvider } from '../providers/bank-deposits.provider.js';
@@ -101,7 +102,7 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
 
         const currencies = new Set<Currency>();
         const accountIds = new Set<string>();
-        let openDate: Date | null = null;
+        let openDate: TimelessDateString | null = null;
         transactions.map(t => {
           currencies.add(t.currency as Currency);
           if (t.account_id) {

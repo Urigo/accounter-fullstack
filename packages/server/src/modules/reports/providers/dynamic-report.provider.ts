@@ -3,6 +3,7 @@ import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
@@ -135,8 +136,8 @@ type TransactionClient = Parameters<Parameters<TenantAwareDBClient['transaction'
 export type ComparableSnapshotKey = {
   ownerId: string;
   templateName: string;
-  fromDate: string;
-  toDate: string;
+  fromDate: TimelessDateString;
+  toDate: TimelessDateString;
   scopeOwnerId: string;
 };
 

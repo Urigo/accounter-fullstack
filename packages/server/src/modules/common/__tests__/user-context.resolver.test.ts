@@ -49,7 +49,7 @@ const adminContext = {
   financialAccounts: { internalWalletsIds: ['wallet-1', 'wallet-2'] },
   bankDeposits: { bankDepositBusinessId: null },
   foreignSecurities: { foreignSecuritiesBusinessId: 'foreign-securities-1' },
-} as AdminContextFixture;
+} as unknown as AdminContextFixture;
 
 const authContext = {
   authType: 'jwt',

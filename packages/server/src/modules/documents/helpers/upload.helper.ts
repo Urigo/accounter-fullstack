@@ -1,6 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
-import { hashStringToInt } from '../../../shared/helpers/index.js';
+import { hashStringToInt, timelessDateFromParts } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnthropicProvider } from '../../app-providers/anthropic.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
@@ -60,7 +61,7 @@ export type OcrData = {
   counterpartyId?: string;
   documentType: DocumentType;
   serial?: string;
-  date?: Date;
+  date?: TimelessDateString;
   amount?: number;
   currency?: Currency;
   vat?: number;
@@ -129,10 +130,12 @@ export async function getOcrData(
     return typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
   };
 
-  const validateDate = (value?: string): Date | undefined => {
-    if (!value) return undefined;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? undefined : date;
+  const validateDate = (value?: string): TimelessDateString | undefined => {
+    const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return undefined;
+    const date = timelessDateFromParts(Number(match[1]), Number(match[2]), Number(match[3]));
+    // a day that does not exist (e.g. 2026-02-30) rolls over, so it no longer matches the input
+    return date === value ? date : undefined;
   };
 
   if (isSensitive) {

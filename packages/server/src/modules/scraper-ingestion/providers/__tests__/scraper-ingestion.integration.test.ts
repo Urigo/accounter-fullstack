@@ -13,6 +13,7 @@ import type {
   PoalimSwiftTransactionInput,
 } from '../../../../__generated__/types.js';
 import { Currency } from '../../../../shared/enums.js';
+import type { TimelessDateString } from '../../../../shared/types/index.js';
 import type { AuthContextProvider } from '../../../auth/providers/auth-context.provider.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
@@ -56,7 +57,7 @@ beforeAll(async () => {
   const fiatExchangeProvider = new FiatExchangeProvider(dbProvider);
   // Stub the DataLoader so it returns null for any date (no pre-existing rates in test DB)
   fiatExchangeProvider.getExchangeRatesByDatesLoader = {
-    loadMany: async (dates: readonly Date[]) => dates.map(() => null),
+    loadMany: async (dates: readonly TimelessDateString[]) => dates.map(() => null),
   } as unknown as typeof fiatExchangeProvider.getExchangeRatesByDatesLoader;
   provider = new ScraperIngestionProvider(dbClient, fiatExchangeProvider);
 

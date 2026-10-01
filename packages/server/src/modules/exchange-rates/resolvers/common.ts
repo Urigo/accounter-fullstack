@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import { formatCurrency } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
@@ -19,7 +19,7 @@ export const commonTransactionFields:
         return null;
       }
 
-      return dateToTimelessDateString(transaction.debit_date_override || transaction.debit_date);
+      return transaction.debit_date_override || transaction.debit_date;
     } catch (e) {
       const message = 'Error fetching transaction debit date';
       console.error(message, e);
@@ -36,7 +36,7 @@ export const commonTransactionFields:
         return null;
       }
 
-      return dateToTimelessDateString(transaction.event_date);
+      return transaction.event_date;
     } catch (e) {
       const message = 'Error fetching transaction event date';
       console.error(message, e);

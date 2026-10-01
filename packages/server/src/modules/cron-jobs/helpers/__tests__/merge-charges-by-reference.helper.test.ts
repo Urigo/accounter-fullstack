@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { TimelessDateString } from '../../../../shared/types/index.js';
 import type { IGetChargesByIdsResult } from '../../../charges/types.js';
 import type { IGetReferenceMergeCandidatesResult } from '../../types.js';
 import { buildMergeChargesByTransactionReferencePlan } from '../merge-charges-by-reference.helper.js';
@@ -28,7 +29,7 @@ function buildCandidate(
   id: string,
   chargeId: string,
   reference: string,
-  eventDate: string,
+  eventDate: TimelessDateString,
   overrides: Partial<IGetReferenceMergeCandidatesResult> = {},
 ): IGetReferenceMergeCandidatesResult {
   return {
@@ -45,7 +46,7 @@ function buildCandidate(
     debit_date: null,
     debit_date_override: null,
     debit_timestamp: null,
-    event_date: new Date(eventDate),
+    event_date: eventDate,
     is_fee: false,
     origin_key: 'origin-key',
     origin_user_description: null,
@@ -72,10 +73,10 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-d', { created_at: new Date('2026-01-04T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-a', 'charge-a', 'REF-1', '2026-01-01T10:00:00.000Z'),
-      buildCandidate('tx-b', 'charge-b', 'REF-1', '2026-01-01T14:00:00.000Z'),
-      buildCandidate('tx-c', 'charge-c', 'REF-1', '2026-03-15T10:00:00.000Z'),
-      buildCandidate('tx-d', 'charge-d', 'REF-1', '2026-03-15T14:00:00.000Z'),
+      buildCandidate('tx-a', 'charge-a', 'REF-1', '2026-01-01'),
+      buildCandidate('tx-b', 'charge-b', 'REF-1', '2026-01-01'),
+      buildCandidate('tx-c', 'charge-c', 'REF-1', '2026-03-15'),
+      buildCandidate('tx-d', 'charge-d', 'REF-1', '2026-03-15'),
     ];
 
     const result = buildMergeChargesByTransactionReferencePlan({
@@ -104,10 +105,10 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-b', { created_at: new Date('2026-01-02T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-a', 'charge-a', 'REF-2', '2026-01-01T10:00:00.000Z', {
+      buildCandidate('tx-a', 'charge-a', 'REF-2', '2026-01-01', {
         source_description: 'payment for vendor abc',
       }),
-      buildCandidate('tx-b', 'charge-b', 'REF-2', '2026-01-20T10:00:00.000Z', {
+      buildCandidate('tx-b', 'charge-b', 'REF-2', '2026-01-20', {
         source_description: 'vendor abc',
       }),
     ];
@@ -137,10 +138,10 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-fee', 'charge-fee', 'REF-3', '2026-01-01T10:00:00.000Z', {
+      buildCandidate('tx-fee', 'charge-fee', 'REF-3', '2026-01-01', {
         is_fee: true,
       }),
-      buildCandidate('tx-main', 'charge-main', 'REF-3', '2026-01-01T12:00:00.000Z', {
+      buildCandidate('tx-main', 'charge-main', 'REF-3', '2026-01-01', {
         is_fee: false,
       }),
     ];
@@ -170,12 +171,12 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-1', 'charge-main-1', 'REF-4', '2026-01-01T10:00:00.000Z'),
-      buildCandidate('tx-2', 'charge-target', 'REF-4', '2026-01-01T11:00:00.000Z', {
+      buildCandidate('tx-1', 'charge-main-1', 'REF-4', '2026-01-01'),
+      buildCandidate('tx-2', 'charge-target', 'REF-4', '2026-01-01', {
         is_fee: true,
       }),
-      buildCandidate('tx-3', 'charge-main-2', 'REF-5', '2026-01-02T10:00:00.000Z'),
-      buildCandidate('tx-4', 'charge-target', 'REF-5', '2026-01-02T11:00:00.000Z', {
+      buildCandidate('tx-3', 'charge-main-2', 'REF-5', '2026-01-02'),
+      buildCandidate('tx-4', 'charge-target', 'REF-5', '2026-01-02', {
         is_fee: true,
       }),
     ];
@@ -203,17 +204,17 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-c', { created_at: new Date('2026-01-03T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-a-ref-a', 'charge-a', 'REF-A', '2026-01-01T10:00:00.000Z', {
+      buildCandidate('tx-a-ref-a', 'charge-a', 'REF-A', '2026-01-01', {
         amount: '500.00',
       }),
-      buildCandidate('tx-b-ref-a', 'charge-b', 'REF-A', '2026-01-01T11:00:00.000Z', {
+      buildCandidate('tx-b-ref-a', 'charge-b', 'REF-A', '2026-01-01', {
         amount: '-10.00',
         is_fee: true,
       }),
-      buildCandidate('tx-b-ref-b', 'charge-b', 'REF-B', '2026-01-02T10:00:00.000Z', {
+      buildCandidate('tx-b-ref-b', 'charge-b', 'REF-B', '2026-01-02', {
         amount: '650.00',
       }),
-      buildCandidate('tx-c-ref-b', 'charge-c', 'REF-B', '2026-01-02T11:00:00.000Z', {
+      buildCandidate('tx-c-ref-b', 'charge-c', 'REF-B', '2026-01-02', {
         amount: '-12.00',
         is_fee: true,
       }),
@@ -240,11 +241,11 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-july', { created_at: new Date('2026-07-01T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-june', 'charge-june', 'REF-6', '2026-06-01T10:00:00.000Z', {
+      buildCandidate('tx-june', 'charge-june', 'REF-6', '2026-06-01', {
         amount: '-2500.00',
         source_description: 'standing order recurring service payment',
       }),
-      buildCandidate('tx-july', 'charge-july', 'REF-6', '2026-07-01T10:00:00.000Z', {
+      buildCandidate('tx-july', 'charge-july', 'REF-6', '2026-07-01', {
         amount: '-2500.00',
         source_description: 'standing order recurring service payment',
       }),
@@ -265,12 +266,12 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-income-2', { created_at: new Date('2026-04-25T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-income-1', 'charge-income-1', 'REF-7', '2026-04-19T10:00:00.000Z', {
+      buildCandidate('tx-income-1', 'charge-income-1', 'REF-7', '2026-04-19', {
         currency: 'EUR',
         amount: '1000.00',
         source_description: 'incoming transfer from customer alpha',
       }),
-      buildCandidate('tx-income-2', 'charge-income-2', 'REF-7', '2026-04-25T10:00:00.000Z', {
+      buildCandidate('tx-income-2', 'charge-income-2', 'REF-7', '2026-04-25', {
         currency: 'EUR',
         amount: '1100.00',
         source_description: 'incoming transfer from customer alpha',
@@ -292,11 +293,11 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-principal', { created_at: new Date('2026-07-06T00:00:01.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-interest', 'charge-interest', 'REF-8', '2026-07-06T10:00:00.000Z', {
+      buildCandidate('tx-interest', 'charge-interest', 'REF-8', '2026-07-06', {
         amount: '0.02',
         source_description: 'deposit interest credit',
       }),
-      buildCandidate('tx-principal', 'charge-principal', 'REF-8', '2026-07-06T10:00:00.000Z', {
+      buildCandidate('tx-principal', 'charge-principal', 'REF-8', '2026-07-06', {
         amount: '395.04',
         source_description: 'deposit withdrawal principal',
       }),
@@ -323,12 +324,12 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-client-b', { created_at: new Date('2026-08-16T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-client-a', 'charge-client-a', 'REF-10', '2026-08-15T10:00:00.000Z', {
+      buildCandidate('tx-client-a', 'charge-client-a', 'REF-10', '2026-08-15', {
         currency: 'USD',
         amount: '1492.50',
         source_description: 'incoming transfer client alpha',
       }),
-      buildCandidate('tx-client-b', 'charge-client-b', 'REF-10', '2026-08-16T10:00:00.000Z', {
+      buildCandidate('tx-client-b', 'charge-client-b', 'REF-10', '2026-08-16', {
         currency: 'USD',
         amount: '3292.50',
         source_description: 'incoming transfer client beta',
@@ -351,19 +352,19 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-month-3', { created_at: new Date('2026-03-04T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-month-1', 'charge-month-1', 'REF-11', '2026-01-06T10:00:00.000Z', {
+      buildCandidate('tx-month-1', 'charge-month-1', 'REF-11', '2026-01-06', {
         currency: 'ILS',
         amount: '8985.50',
         source_description: 'rtgs incoming payment customer omega',
         counter_account: '912-799-705101',
       }),
-      buildCandidate('tx-month-2', 'charge-month-2', 'REF-11', '2026-02-04T10:00:00.000Z', {
+      buildCandidate('tx-month-2', 'charge-month-2', 'REF-11', '2026-02-04', {
         currency: 'ILS',
         amount: '8795.75',
         source_description: 'rtgs incoming payment customer omega',
         counter_account: '912-799-705101',
       }),
-      buildCandidate('tx-month-3', 'charge-month-3', 'REF-11', '2026-03-04T10:00:00.000Z', {
+      buildCandidate('tx-month-3', 'charge-month-3', 'REF-11', '2026-03-04', {
         currency: 'ILS',
         amount: '8859.00',
         source_description: 'rtgs incoming payment customer omega',
@@ -387,19 +388,19 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-repeat-3', { created_at: new Date('2026-11-12T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-repeat-1', 'charge-repeat-1', 'REF-12', '2026-10-02T10:00:00.000Z', {
+      buildCandidate('tx-repeat-1', 'charge-repeat-1', 'REF-12', '2026-10-02', {
         currency: 'ILS',
         amount: '9147.75',
         source_description: 'rtgs incoming payment customer omega',
         counter_account: '912-799-705101',
       }),
-      buildCandidate('tx-repeat-2', 'charge-repeat-2', 'REF-12', '2026-10-28T10:00:00.000Z', {
+      buildCandidate('tx-repeat-2', 'charge-repeat-2', 'REF-12', '2026-10-28', {
         currency: 'ILS',
         amount: '9233.50',
         source_description: 'rtgs incoming payment customer omega',
         counter_account: '912-799-705101',
       }),
-      buildCandidate('tx-repeat-3', 'charge-repeat-3', 'REF-12', '2026-11-12T10:00:00.000Z', {
+      buildCandidate('tx-repeat-3', 'charge-repeat-3', 'REF-12', '2026-11-12', {
         currency: 'ILS',
         amount: '9146.50',
         source_description: 'rtgs incoming payment customer omega',
@@ -422,24 +423,24 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       buildCharge('charge-swift-2', { created_at: new Date('2026-02-09T00:00:00.000Z') }),
     ];
     const candidates = [
-      buildCandidate('tx-swift-fee-1', 'charge-swift-1', 'SWIFT-REF-1', '2026-02-17T10:00:00.000Z', {
+      buildCandidate('tx-swift-fee-1', 'charge-swift-1', 'SWIFT-REF-1', '2026-02-17', {
         currency: 'USD',
         amount: '-25.00',
         is_fee: true,
         source_description: 'swift fee vendor invoice 40430',
         counter_account: 'SWIFT',
       }),
-      buildCandidate('tx-transfer-1', 'charge-swift-1', 'REF-13', '2026-02-17T10:00:00.000Z', {
+      buildCandidate('tx-transfer-1', 'charge-swift-1', 'REF-13', '2026-02-17', {
         currency: 'USD',
         amount: '2575.00',
         source_description: 'incoming transfer vendor alpha',
       }),
-      buildCandidate('tx-transfer-2', 'charge-swift-2', 'REF-13', '2026-02-09T10:00:00.000Z', {
+      buildCandidate('tx-transfer-2', 'charge-swift-2', 'REF-13', '2026-02-09', {
         currency: 'USD',
         amount: '2575.00',
         source_description: 'incoming transfer vendor alpha',
       }),
-      buildCandidate('tx-swift-fee-2', 'charge-swift-2', 'SWIFT-REF-2', '2026-02-09T10:00:00.000Z', {
+      buildCandidate('tx-swift-fee-2', 'charge-swift-2', 'SWIFT-REF-2', '2026-02-09', {
         currency: 'USD',
         amount: '-25.00',
         is_fee: true,
@@ -471,22 +472,22 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-conversion-1-usd', 'charge-conversion-1', 'CONV-10086', '2026-07-15T10:00:00.000Z', {
+      buildCandidate('tx-conversion-1-usd', 'charge-conversion-1', 'CONV-10086', '2026-07-15', {
         currency: 'USD',
         amount: '-115945.91',
         source_description: 'conversion',
       }),
-      buildCandidate('tx-conversion-1-eur', 'charge-conversion-1', 'CONV-10086', '2026-07-15T10:00:00.000Z', {
+      buildCandidate('tx-conversion-1-eur', 'charge-conversion-1', 'CONV-10086', '2026-07-15', {
         currency: 'EUR',
         amount: '99000.00',
         source_description: 'conversion',
       }),
-      buildCandidate('tx-conversion-2-eur', 'charge-conversion-2', 'CONV-10086', '2026-06-26T10:00:00.000Z', {
+      buildCandidate('tx-conversion-2-eur', 'charge-conversion-2', 'CONV-10086', '2026-06-26', {
         currency: 'EUR',
         amount: '101000.00',
         source_description: 'conversion',
       }),
-      buildCandidate('tx-conversion-2-usd', 'charge-conversion-2', 'CONV-10086', '2026-06-26T10:00:00.000Z', {
+      buildCandidate('tx-conversion-2-usd', 'charge-conversion-2', 'CONV-10086', '2026-06-26', {
         currency: 'USD',
         amount: '-118935.56',
         source_description: 'conversion',
@@ -514,23 +515,23 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-securities-payment-a', 'charge-securities-a', 'SEC-REF-A', '2026-03-04T10:00:00.000Z', {
+      buildCandidate('tx-securities-payment-a', 'charge-securities-a', 'SEC-REF-A', '2026-03-04', {
         currency: 'USD',
         amount: '2178.66',
         source_description: 'securities settlement payment batch',
       }),
-      buildCandidate('tx-securities-fee-a', 'charge-securities-a', 'SEC-FEE-REF', '2026-03-04T10:00:00.000Z', {
+      buildCandidate('tx-securities-fee-a', 'charge-securities-a', 'SEC-FEE-REF', '2026-03-04', {
         currency: 'ILS',
         amount: '-33.48',
         is_fee: true,
         source_description: 'securities settlement payment fee',
       }),
-      buildCandidate('tx-securities-payment-b', 'charge-securities-b', 'SEC-REF-B', '2026-02-05T10:00:00.000Z', {
+      buildCandidate('tx-securities-payment-b', 'charge-securities-b', 'SEC-REF-B', '2026-02-05', {
         currency: 'USD',
         amount: '2640.09',
         source_description: 'securities settlement payment batch',
       }),
-      buildCandidate('tx-securities-fee-b', 'charge-securities-b', 'SEC-FEE-REF', '2026-02-05T10:00:00.000Z', {
+      buildCandidate('tx-securities-fee-b', 'charge-securities-b', 'SEC-FEE-REF', '2026-02-05', {
         currency: 'ILS',
         amount: '-40.74',
         is_fee: true,
@@ -559,14 +560,14 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-securities-fee', 'charge-securities-fee', '79915674', '2026-07-07T10:00:00.000Z', {
+      buildCandidate('tx-securities-fee', 'charge-securities-fee', '79915674', '2026-07-07', {
         currency: 'ILS',
         amount: '-88.80',
         is_fee: true,
         source_origin: 'POALIM',
         source_description: 'fsec payment fee',
       }),
-      buildCandidate('tx-securities-main', 'charge-securities-main', '3901767', '2026-07-07T10:00:00.000Z', {
+      buildCandidate('tx-securities-main', 'charge-securities-main', '3901767', '2026-07-07', {
         currency: 'USD',
         amount: '4521.61',
         source_origin: 'POALIM',
@@ -599,14 +600,14 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-securities-fee', 'charge-securities-fee', '79915674', '2026-07-07T10:00:00.000Z', {
+      buildCandidate('tx-securities-fee', 'charge-securities-fee', '79915674', '2026-07-07', {
         currency: 'ILS',
         amount: '-88.80',
         is_fee: true,
         source_origin: 'POALIM',
         source_description: 'ני"עז עמ קניה FSEC BUY FEE',
       }),
-      buildCandidate('tx-securities-main', 'charge-securities-main', '3901767', '2026-07-07T10:00:00.000Z', {
+      buildCandidate('tx-securities-main', 'charge-securities-main', '3901767', '2026-07-07', {
         currency: 'USD',
         amount: '4521.61',
         source_origin: 'POALIM',
@@ -639,14 +640,14 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-foreign-fee', 'charge-foreign-fee', '12345678', '2026-08-09T10:00:00.000Z', {
+      buildCandidate('tx-foreign-fee', 'charge-foreign-fee', '12345678', '2026-08-09', {
         currency: 'ILS',
         amount: '-41.20',
         is_fee: true,
         source_origin: 'POALIM',
         source_description: 'ניעז עמ תשלום fsec pymnt fee',
       }),
-      buildCandidate('tx-foreign-main', 'charge-foreign-main', '7654321', '2026-08-09T10:00:00.000Z', {
+      buildCandidate('tx-foreign-main', 'charge-foreign-main', '7654321', '2026-08-09', {
         currency: 'USD',
         amount: '3120.55',
         source_origin: 'POALIM',
@@ -679,14 +680,14 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-fsec-fee', 'charge-fsec-fee', '88997766', '2026-09-02T10:00:00.000Z', {
+      buildCandidate('tx-fsec-fee', 'charge-fsec-fee', '88997766', '2026-09-02', {
         currency: 'ILS',
         amount: '-37.45',
         is_fee: true,
         source_origin: 'POALIM',
         source_description: 'ניעז עמ תשלום fsec pymnt fee',
       }),
-      buildCandidate('tx-fsec-main', 'charge-fsec-main', '2233445', '2026-09-02T10:00:00.000Z', {
+      buildCandidate('tx-fsec-main', 'charge-fsec-main', '2233445', '2026-09-02', {
         currency: 'USD',
         amount: '4270.00',
         source_origin: 'POALIM',
@@ -719,14 +720,14 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-origin-fee', 'charge-origin-fee', '90112233', '2026-10-02T10:00:00.000Z', {
+      buildCandidate('tx-origin-fee', 'charge-origin-fee', '90112233', '2026-10-02', {
         currency: 'ILS',
         amount: '-18.00',
         is_fee: true,
         source_origin: 'POALIM_ILS',
         source_description: 'ניעז עמ תשלום fsec pymnt fee',
       }),
-      buildCandidate('tx-origin-main', 'charge-origin-main', '3322110', '2026-10-02T10:00:00.000Z', {
+      buildCandidate('tx-origin-main', 'charge-origin-main', '3322110', '2026-10-02', {
         currency: 'USD',
         amount: '1810.00',
         source_origin: 'POALIM_ILS',
@@ -753,14 +754,14 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-date-fee', 'charge-date-fee', '77123456', '2026-11-01T10:00:00.000Z', {
+      buildCandidate('tx-date-fee', 'charge-date-fee', '77123456', '2026-11-01', {
         currency: 'ILS',
         amount: '-21.00',
         is_fee: true,
         source_origin: 'POALIM',
         source_description: 'ניעז עמ תשלום fsec pymnt fee',
       }),
-      buildCandidate('tx-date-main', 'charge-date-main', '4411002', '2026-11-03T10:00:00.000Z', {
+      buildCandidate('tx-date-main', 'charge-date-main', '4411002', '2026-11-03', {
         currency: 'USD',
         amount: '2205.50',
         source_origin: 'POALIM',
@@ -787,27 +788,27 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-action-a-main', 'charge-action-a', '3900138', '2026-12-02T10:00:00.000Z', {
+      buildCandidate('tx-action-a-main', 'charge-action-a', '3900138', '2026-12-02', {
         currency: 'USD',
         amount: '78.55',
         source_origin: 'POALIM',
         source_description: 'ניע"ז תשלומים 0077448736',
       }),
-      buildCandidate('tx-action-a-fee', 'charge-action-a', '77448736', '2026-12-02T10:00:00.000Z', {
+      buildCandidate('tx-action-a-fee', 'charge-action-a', '77448736', '2026-12-02', {
         currency: 'ILS',
         amount: '-9.10',
         is_fee: true,
         source_origin: 'POALIM',
         source_description: 'ניעז עמ תשלום fsec pymnt fee',
       }),
-      buildCandidate('tx-action-b-fee', 'charge-action-b', '1501588', '2026-12-02T10:00:00.000Z', {
+      buildCandidate('tx-action-b-fee', 'charge-action-b', '1501588', '2026-12-02', {
         currency: 'USD',
         amount: '-75.38',
         is_fee: true,
         source_origin: 'POALIM',
         source_description: 'ניע"ז עמ קניה 0077448736',
       }),
-      buildCandidate('tx-action-b-main', 'charge-action-b', '1501588', '2026-12-02T10:00:00.000Z', {
+      buildCandidate('tx-action-b-main', 'charge-action-b', '1501588', '2026-12-02', {
         currency: 'USD',
         amount: '-75379.79',
         source_origin: 'POALIM',
@@ -844,28 +845,28 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
       }),
     ];
     const candidates = [
-      buildCandidate('tx-conversion-base', 'charge-conversion', 'REF-9', '2026-03-02T10:00:00.000Z', {
+      buildCandidate('tx-conversion-base', 'charge-conversion', 'REF-9', '2026-03-02', {
         currency: 'EUR',
         amount: '1000.00',
         source_description: 'conversion batch 26',
       }),
-      buildCandidate('tx-conversion-quote', 'charge-conversion', 'REF-9', '2026-03-02T10:00:00.000Z', {
+      buildCandidate('tx-conversion-quote', 'charge-conversion', 'REF-9', '2026-03-02', {
         currency: 'USD',
         amount: '-1180.00',
         source_description: 'conversion batch 26',
       }),
-      buildCandidate('tx-transfer', 'charge-transfer', 'REF-9', '2026-03-02T10:00:00.000Z', {
+      buildCandidate('tx-transfer', 'charge-transfer', 'REF-9', '2026-03-02', {
         currency: 'EUR',
         amount: '-1000.00',
         source_description: 'fx transfer batch 26',
       }),
-      buildCandidate('tx-fee-a', 'charge-fee-a', 'REF-9', '2026-03-02T10:00:00.000Z', {
+      buildCandidate('tx-fee-a', 'charge-fee-a', 'REF-9', '2026-03-02', {
         currency: 'ILS',
         amount: '-2.00',
         is_fee: true,
         source_description: 'fx transfer commission batch 26',
       }),
-      buildCandidate('tx-fee-b', 'charge-fee-b', 'REF-9', '2026-03-05T10:00:00.000Z', {
+      buildCandidate('tx-fee-b', 'charge-fee-b', 'REF-9', '2026-03-05', {
         currency: 'EUR',
         amount: '-10.00',
         is_fee: true,

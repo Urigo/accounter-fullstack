@@ -120,7 +120,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
   it('adds an error when description contains multiple months', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: -100,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
     vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
@@ -168,7 +168,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
   it('adds an error when transactions amount is missing for VAT validation', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: null,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
     vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
@@ -190,7 +190,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
   it('adds an error when VAT amount does not match transactions sum', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: -100,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
     vi.mocked(getVatRecords).mockResolvedValue({
@@ -215,7 +215,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
   it('does not add VAT mismatch validation errors when amounts match', async () => {
     vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
       transactionsAmount: -120,
-      transactionsMinDebitDate: new Date('2026-05-10T00:00:00.000Z'),
+      transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
     vi.mocked(getVatRecords).mockResolvedValue({

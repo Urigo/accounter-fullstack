@@ -1,9 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
-import {
-  formatFinancialAmount,
-  optionalDateToTimelessDateString,
-} from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -31,8 +28,8 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         }
         return res;
       }),
-  date: DbTripExpense => optionalDateToTimelessDateString(DbTripExpense.date),
-  valueDate: DbTripExpense => optionalDateToTimelessDateString(DbTripExpense.value_date),
+  date: DbTripExpense => DbTripExpense.date,
+  valueDate: DbTripExpense => DbTripExpense.value_date,
   amount: async (DbTripExpense, _, { injector }) => {
     const { defaultCryptoConversionFiatCurrency } = await injector
       .get(AdminContextProvider)

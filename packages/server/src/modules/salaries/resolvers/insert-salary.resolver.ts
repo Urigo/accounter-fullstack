@@ -1,5 +1,5 @@
-import { format } from 'date-fns';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { normalizeSalaryMonth } from '../helpers/salary-month.helper.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types.js';
 
@@ -26,10 +26,7 @@ export const insertSalaryRecords: SalariesModule.MutationResolvers['insertSalary
       hourlyRate: salaryRecord.hourlyRate ?? null,
       hours: salaryRecord.hours ?? null,
       jobPercentage: salaryRecord.jobPercentage ?? null,
-      month:
-        salaryRecord.month && salaryRecord.month.length !== 7
-          ? format(new Date(salaryRecord.month), 'yyyy-MM')
-          : salaryRecord.month,
+      month: salaryRecord.month ? normalizeSalaryMonth(salaryRecord.month) : salaryRecord.month,
       pensionEmployeeAmount: salaryRecord.pensionEmployeeAmount ?? null,
       pensionEmployeePercentage: salaryRecord.pensionEmployeePercentage ?? null,
       pensionEmployerAmount: salaryRecord.pensionEmployerAmount ?? null,

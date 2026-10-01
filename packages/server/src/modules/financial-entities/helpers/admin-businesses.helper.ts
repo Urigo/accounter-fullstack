@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import type { TimelessDateString } from '../../../shared/types/index.js';
+
+const timelessDateSchema = z.iso.date().transform(date => date as TimelessDateString);
 
 const yearlyIdSchema = z
   .object({
@@ -9,7 +12,7 @@ const yearlyIdSchema = z
 
 const taxAdvanceRateSchema = z
   .object({
-    date: z.iso.date(),
+    date: timelessDateSchema,
     rate: z.number().min(0).max(1),
   })
   .strict();
@@ -17,7 +20,7 @@ const taxAdvanceRateSchema = z
 export const adminBusinessUpdateSchema = z
   .object({
     id: z.uuid(),
-    businessRegistrationStartDate: z.iso.date().optional(),
+    businessRegistrationStartDate: timelessDateSchema.optional(),
     companyTaxId: z.string().optional(),
     advanceTaxRates: z.array(taxAdvanceRateSchema).optional(),
     taxAdvancesIds: z.array(yearlyIdSchema).optional(),

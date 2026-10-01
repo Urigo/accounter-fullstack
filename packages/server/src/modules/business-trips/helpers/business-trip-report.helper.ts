@@ -5,6 +5,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { CountryCode, Currency } from '../../../shared/enums.js';
 import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { getTransactionDebitDate } from '../../transactions/helpers/debit-date.helper.js';
@@ -31,8 +32,8 @@ export type SummaryCategoryData = Partial<
 export type SummaryData = Record<BusinessTripSummaryCategories, SummaryCategoryData>;
 export type AttendeeInfo = {
   name: string;
-  arrival: Date | null;
-  departure: Date | null;
+  arrival: TimelessDateString | null;
+  departure: TimelessDateString | null;
   daysCount: number;
   nightsCount: number;
 };
@@ -80,7 +81,7 @@ export function getExpenseCoreData(
 ): {
   amount: number;
   currency: Currency;
-  date: Date;
+  date: TimelessDateString;
 } {
   if (tripExpense.payed_by_employee) {
     if (!tripExpense.currency || !tripExpense.amount || !tripExpense.date) {
@@ -91,7 +92,7 @@ export function getExpenseCoreData(
     return {
       amount: Number(tripExpense.amount),
       currency: formatCurrency(tripExpense.currency),
-      date: new Date(tripExpense.date),
+      date: tripExpense.date,
     };
   }
   if (!tripExpense.currency || !tripExpense.amount || !tripExpense.value_date) {
@@ -102,7 +103,7 @@ export function getExpenseCoreData(
   return {
     amount: Number(tripExpense.amount),
     currency: formatCurrency(tripExpense.currency),
-    date: new Date(tripExpense.value_date),
+    date: tripExpense.value_date,
   };
 }
 
@@ -110,7 +111,7 @@ async function getDefaultCurrenciesAmountsAndExchangeRate(
   injector: Injector,
   currency: Currency,
   amount: number,
-  date: Date,
+  date: TimelessDateString | Date,
 ) {
   const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = await injector
     .get(AdminContextProvider)

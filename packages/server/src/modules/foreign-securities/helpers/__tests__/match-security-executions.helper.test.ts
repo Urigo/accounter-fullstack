@@ -18,9 +18,6 @@ const accountTuples = new Map([
   [OTHER_ACCOUNT_ID, OTHER_ACCOUNT],
 ]);
 
-// Dates are constructed the way `DATE` columns come back from node-postgres: local midnight.
-const date = (value: string) => new Date(`${value}T00:00:00`);
-
 /** A buy: the account is debited on the execution's value date. */
 function transaction(overrides: Partial<MatchableTransaction> = {}): MatchableTransaction {
   return {
@@ -28,7 +25,7 @@ function transaction(overrides: Partial<MatchableTransaction> = {}): MatchableTr
     charge_id: 'c1',
     amount: '-1000.00',
     currency: 'USD',
-    debit_date: date('2024-03-12'),
+    debit_date: '2024-03-12',
     debit_date_override: null,
     account_id: ACCOUNT_ID,
     ...overrides,
@@ -42,8 +39,8 @@ function execution(overrides: Partial<MatchableExecution> = {}): MatchableExecut
     bank_number: ACCOUNT.bankNumber,
     branch_number: ACCOUNT.branchNumber,
     account_number: ACCOUNT.accountNumber,
-    trade_date: date('2024-03-10'),
-    value_date: date('2024-03-12'),
+    trade_date: '2024-03-10',
+    value_date: '2024-03-12',
     trade_type: 'קניה',
     trade_currency: 'דולר ארה"ב',
     settlement_currency: null,
@@ -68,12 +65,12 @@ describe('matchExecutionsToTransactions', () => {
   });
 
   it('requires the value date to be the effective debit date, not the trade date', () => {
-    expect(match([transaction({ debit_date: date('2024-03-10') })], [execution()]).size).toBe(0);
+    expect(match([transaction({ debit_date: '2024-03-10' })], [execution()]).size).toBe(0);
   });
 
   it('prefers a debit date override, as everywhere else', () => {
     const matched = match(
-      [transaction({ debit_date: date('2024-03-31'), debit_date_override: date('2024-03-12') })],
+      [transaction({ debit_date: '2024-03-31', debit_date_override: '2024-03-12' })],
       [execution()],
     );
 
@@ -220,8 +217,8 @@ describe('matchExecutionsToTransactions', () => {
   });
 
   it('consumes executions oldest first, whatever order they arrive in', () => {
-    const older = execution({ id: 'e-late-id', trade_date: date('2024-03-08') });
-    const newer = execution({ id: 'e-early-id', trade_date: date('2024-03-10') });
+    const older = execution({ id: 'e-late-id', trade_date: '2024-03-08' });
+    const newer = execution({ id: 'e-early-id', trade_date: '2024-03-10' });
 
     const matched = match([transaction()], [newer, older]);
 
@@ -260,8 +257,8 @@ describe('matchSecurityExecutions', () => {
     const matched = matchSecurityExecutions(
       [transaction({ id: 't1' }), transaction({ id: 't2' })],
       [
-        execution({ id: 'e-newer', trade_date: date('2024-03-11') }),
-        execution({ id: 'e-older', trade_date: date('2024-03-09') }),
+        execution({ id: 'e-newer', trade_date: '2024-03-11' }),
+        execution({ id: 'e-older', trade_date: '2024-03-09' }),
       ],
       accountTuples,
     );

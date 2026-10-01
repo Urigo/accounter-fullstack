@@ -12,6 +12,7 @@ import {
   RLS_TEST_ROLE,
 } from '../../../../__tests__/helpers/rls-role.js';
 import { testDbConfig } from '../../../../__tests__/helpers/test-db-config.js';
+import { pgTypeParsers } from '../../../../shared/helpers/pg-type-parsers.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
@@ -23,7 +24,10 @@ import { TimelessDateScalar } from '../../../common/resolvers/timeless-date.js';
 import { dynamicReportCommentsResolver } from '../../resolvers/dynamic-report-comments.resolver.js';
 import { dynamicReportResolver } from '../../resolvers/dynamic-report.resolver.js';
 import commentsTypeDefs from '../../typeDefs/dynamic-report-comments.graphql.js';
-import { DynamicReportCommentsProvider } from '../dynamic-report-comments.provider.js';
+import {
+  DynamicReportCommentsProvider,
+  type AddCommentParams,
+} from '../dynamic-report-comments.provider.js';
 import { DynamicReportProvider } from '../dynamic-report.provider.js';
 
 let pool: Pool;
@@ -426,7 +430,7 @@ beforeAll(async () => {
   });
   // A superuser may SET ROLE to anyone, so every connection of this pool drops to the RLS role
   // before its first statement (pg runs a client's queries in order).
-  rlsPool = new Pool({ ...testDbConfig, max: 4 });
+  rlsPool = new Pool({ ...testDbConfig, max: 4, types: pgTypeParsers });
   rlsPool.on('connect', client => {
     void client.query(`SET ROLE ${RLS_TEST_ROLE}`);
   });
@@ -997,7 +1001,7 @@ describe('tenant isolation', () => {
       nodeKind: 'leaf',
       nodeLabel: 'Cash',
     });
-    const commentBy = (authorId: string, content = 'hello') => ({
+    const commentBy = (authorId: string, content = 'hello'): AddCommentParams['comment'] => ({
       authorId,
       content,
       fromDate: '2025-01-01',

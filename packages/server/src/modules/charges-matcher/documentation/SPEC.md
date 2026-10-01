@@ -229,7 +229,7 @@ interface Transaction {
   amount: string // numeric in DB, returned as string, converted to number
   business_id: string | null // UUID
   currency: string | null
-  event_date: Date // Used for date matching (always)
+  event_date: TimelessDateString // 'yyyy-mm-dd', used for date matching (always)
   source_description: string | null
   is_fee: boolean // Excluded if true
   // Other fields exist but not used in matching
@@ -245,7 +245,7 @@ interface Document {
   creditor_id: string | null // UUID
   debtor_id: string | null // UUID
   currency_code: string | null
-  date: Date | null
+  date: TimelessDateString | null // 'yyyy-mm-dd'
   total_amount: number | null // double precision in DB, returned as number
   type: DocumentType
   serial_number: string | null
@@ -310,7 +310,7 @@ interface AggregatedData {
   amount: number
   currency: string | null
   businessId: string | null
-  date: Date
+  date: TimelessDateString
   description: string
   side?: 'debtor' | 'creditor' // Only for documents
 }
@@ -617,8 +617,8 @@ ranking to catch timing mismatches.
 
 ```typescript
 function calculateDateConfidence(
-  transactionDate: Date,
-  documentDate: Date,
+  transactionDate: TimelessDateString,
+  documentDate: TimelessDateString,
   isGentleEligible: boolean = false // All gating conditions met
 ): number {
   const daysDiff = calculateDaysDifference(transactionDate, documentDate) // Date-only, absolute
@@ -668,17 +668,8 @@ Gating is performed in `match-scorer.provider.ts` before calling the date confid
 // Check all gating conditions
 const typeIsEligible = document.type === 'INVOICE' || document.type === 'PROFORMA'
 
-const docDate = new Date(
-  document.date.getFullYear(),
-  document.date.getMonth(),
-  document.date.getDate()
-)
-const txDate = new Date(
-  transactionDate.getFullYear(),
-  transactionDate.getMonth(),
-  transactionDate.getDate()
-)
-const dateIsEligible = docDate.getTime() <= txDate.getTime()
+// Both are 'yyyy-mm-dd' strings, which compare chronologically
+const dateIsEligible = document.date <= transactionDate
 
 const status = await injector
   .get(IssuedDocumentsProvider)
@@ -1304,8 +1295,8 @@ __tests__/
 **Filter Parameters Used:**
 
 - `ownerIds`: Array of UUID - filter by admin business
-- `fromAnyDate`: Date | null - earliest transaction/document date
-- `toAnyDate`: Date | null - latest transaction/document date
+- `fromAnyDate`: TimelessDateString | null - earliest transaction/document date
+- `toAnyDate`: TimelessDateString | null - latest transaction/document date
 - Additional filters applied in-memory (is_fee, matched status)
 
 **Database Fields Accessed:**
@@ -1375,7 +1366,7 @@ export interface AggregatedData {
   amount: number
   currency: string | null
   businessId: string | null
-  date: Date
+  date: TimelessDateString
   description: string
 }
 ```

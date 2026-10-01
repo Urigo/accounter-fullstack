@@ -1,5 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { CorporateTaxesProvider } from '../providers/corporate-taxes.provider.js';
 import type { CorporateTaxesModule } from '../types.js';
 
@@ -24,10 +23,9 @@ export const corporateTaxesResolvers: CorporateTaxesModule.Resolvers = {
     },
   },
   CorporateTax: {
-    id: corporateTax =>
-      `${corporateTax.corporate_id}|${dateToTimelessDateString(corporateTax.date)}`,
+    id: corporateTax => `${corporateTax.corporate_id}|${corporateTax.date}`,
     corporateId: corporateTax => corporateTax.corporate_id,
-    date: corporateTax => dateToTimelessDateString(corporateTax.date),
+    date: corporateTax => corporateTax.date,
     taxRate: corporateTax => Number(corporateTax.tax_rate),
   },
 };

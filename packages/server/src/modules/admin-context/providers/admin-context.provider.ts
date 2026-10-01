@@ -2,11 +2,7 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import {
-  formatCurrency,
-  optionalDateToTimelessDateString,
-  resolveWriteTargetBusinessId,
-} from '../../../shared/helpers/index.js';
+import { formatCurrency, resolveWriteTargetBusinessId } from '../../../shared/helpers/index.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
@@ -355,8 +351,8 @@ export class AdminContextProvider {
       ownerId: rawContext.owner_id,
       defaultTaxCategoryId: rawContext.default_tax_category_id,
       locality: rawContext.locality,
-      ledgerLock: optionalDateToTimelessDateString(rawContext.ledger_lock) ?? undefined,
-      dateEstablished: optionalDateToTimelessDateString(rawContext.date_established) ?? undefined,
+      ledgerLock: rawContext.ledger_lock ?? undefined,
+      dateEstablished: rawContext.date_established ?? undefined,
       initialAccounterYear: rawContext.initial_accounter_year ?? undefined,
 
       authorities: {

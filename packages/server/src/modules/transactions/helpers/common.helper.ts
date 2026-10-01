@@ -1,21 +1,39 @@
 import type { Currency } from '../../../shared/enums.js';
+import {
+  dateToTimelessDateString,
+  maxTimelessDate,
+  minTimelessDate,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { IGetTransactionsByIdsResult } from '../types.js';
 import { isTransactionsValid } from './validation.helper.js';
 
-export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[]) {
+export type TransactionsMeta = {
+  transactionsCount: number;
+  transactionsAmount: number | null;
+  transactionsCurrencies: Currency[];
+  transactionsCurrency: Currency | null;
+  invalidTransactions: boolean;
+  transactionsMinDebitDate: TimelessDateString | null;
+  transactionsMinEventDate: TimelessDateString | null;
+  transactionsMaxDebitDate: TimelessDateString | null;
+  transactionsMaxEventDate: TimelessDateString | null;
+};
+
+export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[]): TransactionsMeta {
   let transactionsAmount: number | null = null;
   const currenciesSet = new Set<Currency>();
   let invalidTransactions = false;
-  let transactionsMinDebitDate: Date | null = null;
-  let transactionsMinEventDate: Date | null = null;
-  let transactionsMaxDebitDate: Date | null = null;
-  let transactionsMaxEventDate: Date | null = null;
+  let transactionsMinDebitDate: TimelessDateString | null = null;
+  let transactionsMinEventDate: TimelessDateString | null = null;
+  let transactionsMaxDebitDate: TimelessDateString | null = null;
+  let transactionsMaxEventDate: TimelessDateString | null = null;
 
   const hasFee = transactions.some(t => t.is_fee);
   const onlyFee = transactions.every(t => t.is_fee);
   const hasSomeFeeTransactions = hasFee && !onlyFee;
 
-  transactions.map(t => {
+  for (const t of transactions) {
     if ((hasSomeFeeTransactions && !t.is_fee) || !hasSomeFeeTransactions) {
       const amountAsNumber = Number(t.amount);
       const amount = Number.isNaN(amountAsNumber) ? null : amountAsNumber;
@@ -25,42 +43,22 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
         currenciesSet.add(t.currency as Currency);
       }
     }
-    if (t.debit_timestamp) {
-      transactionsMinDebitDate ??= t.debit_timestamp;
-      if (transactionsMinDebitDate > t.debit_timestamp) {
-        transactionsMinDebitDate = t.debit_timestamp;
-      }
 
-      transactionsMaxDebitDate ??= t.debit_timestamp;
-      if (transactionsMaxDebitDate < t.debit_timestamp) {
-        transactionsMaxDebitDate = t.debit_timestamp;
-      }
-    } else if (t.debit_date) {
-      transactionsMinDebitDate ??= t.debit_date;
-      if (transactionsMinDebitDate > t.debit_date) {
-        transactionsMinDebitDate = t.debit_date;
-      }
+    // debit_timestamp (set for crypto rows) takes precedence over debit_date, the same way
+    // `Transaction.effectiveDate` derives its day from it
+    const debitDate = t.debit_timestamp
+      ? dateToTimelessDateString(t.debit_timestamp)
+      : t.debit_date;
+    transactionsMinDebitDate = minTimelessDate(transactionsMinDebitDate, debitDate);
+    transactionsMaxDebitDate = maxTimelessDate(transactionsMaxDebitDate, debitDate);
 
-      transactionsMaxDebitDate ??= t.debit_date;
-      if (transactionsMaxDebitDate < t.debit_date) {
-        transactionsMaxDebitDate = t.debit_date;
-      }
-    }
-
-    transactionsMinEventDate ??= t.event_date;
-    if (transactionsMinEventDate > t.event_date) {
-      transactionsMinEventDate = t.event_date;
-    }
-
-    transactionsMaxEventDate ??= t.event_date;
-    if (transactionsMaxEventDate < t.event_date) {
-      transactionsMaxEventDate = t.event_date;
-    }
+    transactionsMinEventDate = minTimelessDate(transactionsMinEventDate, t.event_date);
+    transactionsMaxEventDate = maxTimelessDate(transactionsMaxEventDate, t.event_date);
 
     if (!isTransactionsValid(t)) {
       invalidTransactions = true;
     }
-  });
+  }
 
   const transactionsCurrencies = Array.from(currenciesSet);
   const transactionsCurrency =

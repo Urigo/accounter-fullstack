@@ -1,8 +1,12 @@
-import { endOfDay, startOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString, hashStringToInt } from '../../../shared/helpers/index.js';
+import {
+  addDaysToTimelessDate,
+  hashStringToInt,
+  timelessDateToUtcDate,
+  utcDateToTimelessDate,
+} from '../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { DeelClientProvider } from '../../app-providers/deel/deel-client.provider.js';
@@ -58,13 +62,16 @@ export async function getDeelEmployeeId(
     .getEmployeeIdByDocumentIdLoader.load(document.id);
 
   if (!employeeId && document.date && document.type) {
-    // figure out through deel records
+    // figure out through deel records: Deel documents carry the UTC day of the invoice's
+    // `issued_at` instant (see `uploadDeelInvoice`)
+    const dayStart = timelessDateToUtcDate(document.date);
+    const nextDayStart = timelessDateToUtcDate(addDaysToTimelessDate(document.date, 1));
     const records = await injector
       .get(DeelInvoicesProvider)
-      .getInvoicesByIssueDates(startOfDay(document.date), endOfDay(document.date));
+      .getInvoicesByIssueDates(dayStart, new Date(nextDayStart.getTime() - 1));
 
     const matchingRecord = records.find(r => {
-      if (dateToTimelessDateString(r.issued_at) !== dateToTimelessDateString(document.date!)) {
+      if (utcDateToTimelessDate(r.issued_at) !== document.date) {
         return false;
       }
       if (r.label !== document.serial_number) {
@@ -194,7 +201,8 @@ export async function uploadDeelInvoice(
             ? DocumentType.CreditInvoice
             : DocumentType.Invoice,
       serialNumber: match.label,
-      date: match.issued_at,
+      // the UTC day of the `issued_at` instant, as Postgres used to cast the raw string
+      date: utcDateToTimelessDate(new Date(match.issued_at)),
       amount: Number(match.breakdown_total_payment_currency),
       currencyCode: match.breakdown_payment_currency as Currency,
       vat: Number(match.vat_total),

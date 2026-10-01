@@ -10,7 +10,6 @@ import type {
   MaxTransactionInput,
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { FiatExchangeProvider } from '../../exchange-rates/providers/fiat-exchange.provider.js';
@@ -502,7 +501,7 @@ export class ScraperIngestionProvider {
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.purchase_date ? dateToTimelessDateString(r.purchase_date) : null,
+      date: r.purchase_date ?? null,
       description: r.merchant_name ?? null,
       amount: r.actual_payment_amount == null ? null : String(r.actual_payment_amount),
       account: String(r.card_index),
@@ -529,25 +528,20 @@ export class ScraperIngestionProvider {
     const validated = validateRates(rates);
 
     const existing = await this.exchangeRates.getExchangeRatesByDatesLoader
-      .loadMany(rates.map(r => new Date(r.exchangeDate)))
+      .loadMany(rates.map(r => r.exchangeDate))
       .then(res =>
         res.filter((r): r is IGetExchangeRatesByDatesResult => r !== null && !(r instanceof Error)),
       );
-    const existingByDate = new Map(
-      existing.map(row => [
-        row.exchange_date ? dateToTimelessDateString(row.exchange_date) : null,
-        row,
-      ]),
-    );
+    const existingByDate = new Map(existing.map(row => [row.exchange_date, row]));
 
     const result = await uploadCurrencyRates.run({ rates: validated }, this.db);
     const insertedDates = result
-      .map(r => (r.exchange_date ? dateToTimelessDateString(r.exchange_date) : undefined))
+      .map(r => r.exchange_date)
       .filter((date): date is TimelessDateString => !!date);
     const insertedDatesSet = new Set(insertedDates);
 
     const insertedRates: InsertedTransactionSummary[] = result.map(r => {
-      const date = dateToTimelessDateString(r.exchange_date!);
+      const date = r.exchange_date!;
       const description = (['usd', 'eur', 'gbp', 'cad', 'jpy', 'aud', 'sek'] as const)
         .filter(c => r[c] != null)
         .map(c => `${c.toUpperCase()}=${r[c]}`)
@@ -564,12 +558,9 @@ export class ScraperIngestionProvider {
     const changedRates: ChangedTransaction[] = [];
     for (const r of validated) {
       if (!r.exchangeDate) continue;
-      const date = dateToTimelessDateString(new Date(r.exchangeDate));
+      const date = r.exchangeDate;
       const existingRow = existingByDate.get(date);
-      if (
-        existingRow?.exchange_date &&
-        !insertedDatesSet.has(dateToTimelessDateString(existingRow.exchange_date))
-      ) {
+      if (existingRow?.exchange_date && !insertedDatesSet.has(existingRow.exchange_date)) {
         const changedFields = diffExchangeRatesRow(existingRow, r);
         if (changedFields.length > 0) {
           changedRates.push({ id: date, changedFields });

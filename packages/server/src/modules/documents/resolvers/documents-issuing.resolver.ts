@@ -1,12 +1,13 @@
-import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import {
+  addMonthsToTimelessDate,
   dateToTimelessDateString,
-  timelessDateStringToLocalDate,
+  endOfTimelessMonth,
+  startOfTimelessMonth,
 } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
@@ -194,7 +195,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         // footer: ____,
         type,
         date: documentDate,
-        dueDate: dateToTimelessDateString(endOfMonth(new Date())),
+        dueDate: endOfTimelessMonth(dateToTimelessDateString(new Date())),
         language: 'ENGLISH',
         currency: (transactionsCurrency ||
           documentsCurrency ||
@@ -349,7 +350,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         // footer: ____,
         type,
         date: documentDate,
-        dueDate: dateToTimelessDateString(endOfMonth(new Date())),
+        dueDate: endOfTimelessMonth(dateToTimelessDateString(new Date())),
         language: 'ENGLISH',
         currency: (documentsCurrency || defaultCryptoConversionFiatCurrency) as Currency,
         vatType,
@@ -441,10 +442,10 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       }
 
       const today = issueMonth
-        ? addMonths(timelessDateStringToLocalDate(issueMonth), 1)
-        : new Date();
-      const monthStart = dateToTimelessDateString(startOfMonth(today));
-      const monthEnd = dateToTimelessDateString(endOfMonth(today));
+        ? addMonthsToTimelessDate(issueMonth, 1)
+        : dateToTimelessDateString(new Date());
+      const monthStart = startOfTimelessMonth(today);
+      const monthEnd = endOfTimelessMonth(today);
 
       const description = buildContractDocumentDescription(contract, issueMonth);
 

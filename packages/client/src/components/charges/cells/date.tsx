@@ -1,5 +1,8 @@
 import { type ReactElement } from 'react';
 import { format } from 'date-fns';
+import { timelessDateStringToLocalDate, type TimelessDateString } from '@/helpers/index.js';
+
+type ChargeDate = TimelessDateString | null | undefined;
 
 export function getDateProps({
   minDebitDate,
@@ -9,33 +12,29 @@ export function getDateProps({
   maxEventDate,
   maxDocumentsDate,
 }: {
-  // GraphQL DateTime scalars are typed as `Date` by codegen but arrive as ISO strings at runtime,
-  // so accept both and normalize to `Date` below.
-  minDebitDate: string | Date | null;
-  minEventDate: string | Date | null;
-  minDocumentsDate: string | Date | null;
-  maxDebitDate: string | Date | null;
-  maxEventDate: string | Date | null;
-  maxDocumentsDate: string | Date | null;
+  minDebitDate: ChargeDate;
+  minEventDate: ChargeDate;
+  minDocumentsDate: ChargeDate;
+  maxDebitDate: ChargeDate;
+  maxEventDate: ChargeDate;
+  maxDocumentsDate: ChargeDate;
 }): DateProps | undefined {
   if (!minDocumentsDate && !minEventDate && !minDebitDate) {
     return undefined;
   }
-  const minTimestamps = [minDocumentsDate, minEventDate, minDebitDate]
-    .filter(Boolean)
-    .map(d => new Date(d!).getTime());
-  const maxTimestamps = [maxDocumentsDate, maxEventDate, maxDebitDate]
-    .filter(Boolean)
-    .map(d => new Date(d!).getTime());
-  const mostMinDate = minTimestamps.length > 0 ? new Date(Math.min(...minTimestamps)) : undefined;
-  const mostMaxDate = maxTimestamps.length > 0 ? new Date(Math.max(...maxTimestamps)) : undefined;
+  const isDate = (date: ChargeDate): date is TimelessDateString => !!date;
+  // `yyyy-mm-dd` strings sort chronologically
+  const minDates = [minDocumentsDate, minEventDate, minDebitDate].filter(isDate).sort();
+  const maxDates = [maxDocumentsDate, maxEventDate, maxDebitDate].filter(isDate).sort();
+  const mostMinDate = minDates[0];
+  const mostMaxDate = maxDates[maxDates.length - 1];
 
   const displayDate = minDocumentsDate || minEventDate || minDebitDate;
 
   return {
-    date: displayDate ? new Date(displayDate) : undefined,
-    mostMinDate,
-    mostMaxDate,
+    date: displayDate ? timelessDateStringToLocalDate(displayDate) : undefined,
+    mostMinDate: mostMinDate ? timelessDateStringToLocalDate(mostMinDate) : undefined,
+    mostMaxDate: mostMaxDate ? timelessDateStringToLocalDate(mostMaxDate) : undefined,
   };
 }
 

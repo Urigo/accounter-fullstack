@@ -1,5 +1,4 @@
 import { SecurityTradeType } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/misc.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { toSecurityTradeType } from './security-execution-enums.helper.js';
 
@@ -22,7 +21,7 @@ const QUANTITY_DIRECTION: Record<SecurityTradeType, -1 | 0 | 1> = {
 };
 
 export type PositionExecution = {
-  trade_date: Date;
+  trade_date: TimelessDateString;
   trade_type: string;
   nv: string | null;
   net_value_trade_currency: string | null;
@@ -85,8 +84,8 @@ export function calculateSecurityPosition(
   let totalBought = 0;
   let totalSold = 0;
   let currency: string | null = null;
-  let historyStart: Date | null = null;
-  let lastExecution: Date | null = null;
+  let historyStart: TimelessDateString | null = null;
+  let lastExecution: TimelessDateString | null = null;
 
   for (const execution of executions) {
     const tradeType = toSecurityTradeType(execution.trade_type);
@@ -118,7 +117,7 @@ export function calculateSecurityPosition(
     totalBought,
     totalSold,
     currency,
-    historyStartDate: historyStart ? dateToTimelessDateString(historyStart) : null,
-    lastExecutionDate: lastExecution ? dateToTimelessDateString(lastExecution) : null,
+    historyStartDate: historyStart,
+    lastExecutionDate: lastExecution,
   };
 }

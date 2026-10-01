@@ -14,7 +14,7 @@ describe('Document Aggregator', () => {
     creditor_id: USER_ID, // Default: user is creditor
     debtor_id: 'business-1', // Default: business is debtor
     currency_code: 'USD',
-    date: new Date('2024-01-15'),
+    date: '2024-01-15',
     total_amount: 100,
     type: 'INVOICE',
     serial_number: null,
@@ -31,7 +31,7 @@ describe('Document Aggregator', () => {
         creditor_id: USER_ID,
         debtor_id: 'business-1',
         type: 'INVOICE',
-        date: new Date('2024-01-15'),
+        date: '2024-01-15',
         serial_number: 'INV-001',
       });
 
@@ -40,7 +40,7 @@ describe('Document Aggregator', () => {
       expect(result.amount).toBe(150.5); // Positive: business is debtor
       expect(result.currency).toBe('USD');
       expect(result.businessId).toBe('business-1');
-      expect(result.date).toEqual(new Date('2024-01-15'));
+      expect(result.date).toBe('2024-01-15');
       expect(result.type).toBe('INVOICE');
       expect(result.description).toBe('INV-001');
     });
@@ -354,37 +354,37 @@ describe('Document Aggregator', () => {
   describe('Date Selection', () => {
     it('should select latest date', () => {
       const documents = [
-        createDocument({ date: new Date('2024-01-10') }),
-        createDocument({ date: new Date('2024-03-15') }), // Latest
-        createDocument({ date: new Date('2024-02-20') }),
+        createDocument({ date: '2024-01-10' }),
+        createDocument({ date: '2024-03-15' }), // Latest
+        createDocument({ date: '2024-02-20' }),
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.date).toEqual(new Date('2024-03-15'));
+      expect(result.date).toBe('2024-03-15');
     });
 
     it('should handle dates spanning years', () => {
       const documents = [
-        createDocument({ date: new Date('2023-12-31') }),
-        createDocument({ date: new Date('2024-02-01') }), // Latest
-        createDocument({ date: new Date('2024-01-15') }),
+        createDocument({ date: '2023-12-31' }),
+        createDocument({ date: '2024-02-01' }), // Latest
+        createDocument({ date: '2024-01-15' }),
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.date).toEqual(new Date('2024-02-01'));
+      expect(result.date).toBe('2024-02-01');
     });
 
     it('should handle same date for all documents', () => {
       const documents = [
-        createDocument({ date: new Date('2024-01-15') }),
-        createDocument({ date: new Date('2024-01-15') }),
+        createDocument({ date: '2024-01-15' }),
+        createDocument({ date: '2024-01-15' }),
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.date).toEqual(new Date('2024-01-15'));
+      expect(result.date).toBe('2024-01-15');
     });
 
     it('should throw error when all dates are null', () => {
@@ -401,13 +401,13 @@ describe('Document Aggregator', () => {
     it('should handle mix of null and valid dates', () => {
       const documents = [
         createDocument({ date: null }),
-        createDocument({ date: new Date('2024-01-15') }),
-        createDocument({ date: new Date('2024-02-20') }), // Latest
+        createDocument({ date: '2024-01-15' }),
+        createDocument({ date: '2024-02-20' }), // Latest
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.date).toEqual(new Date('2024-02-20'));
+      expect(result.date).toBe('2024-02-20');
     });
   });
 
@@ -543,7 +543,7 @@ describe('Document Aggregator', () => {
           type: 'INVOICE', // Will be filtered out
           creditor_id: USER_ID,
           debtor_id: 'business-abc',
-          date: new Date('2024-01-15'),
+          date: '2024-01-15',
           serial_number: 'INV-2024-001',
           currency_code: 'USD',
         }),
@@ -552,7 +552,7 @@ describe('Document Aggregator', () => {
           type: 'RECEIPT',
           creditor_id: USER_ID,
           debtor_id: 'business-abc',
-          date: new Date('2024-01-20'),
+          date: '2024-01-20',
           serial_number: 'REC-2024-001',
           currency_code: 'EUR', // Different currency but will be filtered
         }),
@@ -561,7 +561,7 @@ describe('Document Aggregator', () => {
           type: 'CREDIT_INVOICE', // Will be filtered out
           creditor_id: USER_ID,
           debtor_id: 'business-abc',
-          date: new Date('2024-01-25'),
+          date: '2024-01-25',
           serial_number: 'CRD-2024-001',
           currency_code: 'USD',
         }),
@@ -570,7 +570,7 @@ describe('Document Aggregator', () => {
           type: 'INVOICE_RECEIPT',
           creditor_id: USER_ID,
           debtor_id: 'business-abc',
-          date: new Date('2024-01-23'), // Latest
+          date: '2024-01-23', // Latest
           serial_number: 'REC-2024-002',
           currency_code: 'EUR', // Different currency but will be filtered
         }),
@@ -581,7 +581,7 @@ describe('Document Aggregator', () => {
       expect(result.amount).toBe(600); // 500 + 100
       expect(result.currency).toBe('EUR');
       expect(result.businessId).toBe('business-abc');
-      expect(result.date).toEqual(new Date('2024-01-23')); // Latest among receipts
+      expect(result.date).toBe('2024-01-23'); // Latest among receipts
       expect(result.type).toBe('RECEIPT'); // First receipt type
       expect(result.description).not.toContain('INV-2024-001'); // Invoice excluded
       expect(result.description).not.toContain('CRD-2024-001'); // Credit-Invoice excluded

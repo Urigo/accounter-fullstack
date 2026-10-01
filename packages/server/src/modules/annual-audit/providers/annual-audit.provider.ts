@@ -1,5 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { getTimelessDateYear } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { DynamicReportProvider } from '../../reports/providers/dynamic-report.provider.js';
@@ -136,7 +137,7 @@ export class AnnualAuditProvider {
       };
     }
 
-    const establishedYear = new Date(dateEstablished).getFullYear();
+    const establishedYear = getTimelessDateYear(dateEstablished);
     const userType = this.classifyUserType(year, initialAccounterYear, establishedYear);
 
     if (userType === 'ERROR') {

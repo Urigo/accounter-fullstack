@@ -1,6 +1,6 @@
 import { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { getTimelessDateMonth, getTimelessDateYear } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { VatProvider } from '../../vat/providers/vat.provider.js';
@@ -56,8 +56,8 @@ export async function validateDocumentAllocation(
       // cannot validate without date, amount and currency
       return false;
     }
-    const docYear = document.date.getFullYear();
-    const docMonth = document.date.getMonth() + 1; // getMonth is zero-based
+    const docYear = getTimelessDateYear(document.date);
+    const docMonth = getTimelessDateMonth(document.date);
 
     const { defaultLocalCurrency } = await injector
       .get(AdminContextProvider)
@@ -152,9 +152,7 @@ export async function getDocumentValidationInfo(
   let vatValid: boolean;
   let vatMessage: string | null = null;
   const vatRate = document.date
-    ? await injector
-        .get(VatProvider)
-        .getVatValueByDateLoader.load(dateToTimelessDateString(document.date))
+    ? await injector.get(VatProvider).getVatValueByDateLoader.load(document.date)
     : null;
   // a falsy vat_amount (0 / null) means there is no VAT to validate, matching
   // validateDocumentVat's own `!document.vat_amount` short-circuit — so the VAT

@@ -1,7 +1,11 @@
 import type { Injector } from 'graphql-modules';
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
-import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+import { formatCurrency, maxTimelessDate } from '../../../shared/helpers/index.js';
+import type {
+  LedgerProto,
+  StrictLedgerProto,
+  TimelessDateString,
+} from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import {
@@ -80,9 +84,7 @@ export async function ledgerEntryFromDocument(
         ? inputVatTaxCategoryId
         : adjustedOutputVatTaxCategoryId;
 
-    const vatValue = await injector
-      .get(VatProvider)
-      .getVatValueByDateLoader.load(dateToTimelessDateString(document.date));
+    const vatValue = await injector.get(VatProvider).getVatValueByDateLoader.load(document.date);
 
     if (!vatValue) {
       throw new LedgerError(`VAT value is missing for document ID=${document.id}`);
@@ -218,7 +220,7 @@ export async function ledgerEntryFromMainTransaction(
   businessId?: string,
   gotRelevantDocuments = false,
 ): Promise<StrictLedgerProto> {
-  const { currency, valueDate, transactionBusinessId } =
+  const { currency, valueDate, exchangeRateDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 
   let mainAccountId: string = transactionBusinessId;
@@ -260,7 +262,7 @@ export async function ledgerEntryFromMainTransaction(
     // get exchange rate for currency
     const exchangeRate = await injector
       .get(ExchangeProvider)
-      .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+      .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
 
     foreignAmount = amount;
     // calculate amounts in ILS
@@ -373,11 +375,6 @@ export function isRefundCharge(description?: string | null): boolean {
   );
 }
 
-export function getExchangeDates(financialAccountLedgerEntries: LedgerProto[]): Date {
-  const timeValue = Math.max(
-    ...financialAccountLedgerEntries.map(entry => entry.valueDate.getTime()),
-  );
-  const date = new Date(timeValue);
-
-  return date;
+export function getExchangeDates(financialAccountLedgerEntries: LedgerProto[]): TimelessDateString {
+  return maxTimelessDate(...financialAccountLedgerEntries.map(entry => entry.valueDate))!;
 }

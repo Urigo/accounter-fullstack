@@ -82,7 +82,7 @@ export async function getEntriesFromFeeTransaction(
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const isSupplementalFee = isSupplementalFeeTransaction(transaction, financialAccounts);
-  const { currency, valueDate, transactionBusinessId } =
+  const { currency, valueDate, exchangeRateDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 
   let amount = Number(transaction.amount);
@@ -92,7 +92,7 @@ export async function getEntriesFromFeeTransaction(
     // get exchange rate for currency
     const exchangeRate = await injector
       .get(ExchangeProvider)
-      .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+      .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
 
     foreignAmount = amount;
     // calculate amounts in ILS

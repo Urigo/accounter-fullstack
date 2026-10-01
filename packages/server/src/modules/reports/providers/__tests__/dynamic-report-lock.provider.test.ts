@@ -71,7 +71,7 @@ vi.mock('@pgtyped/runtime', () => ({
   sql: pgTypedRuntimeMock.sql,
 }));
 
-import { DynamicReportProvider } from '../dynamic-report.provider.js';
+import { DynamicReportProvider, type ComparableSnapshotKey } from '../dynamic-report.provider.js';
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -152,7 +152,7 @@ describe('DynamicReportProvider — lock/unlock guards', () => {
   // The previous comparable snapshot must be read on the transaction client, after the template's
   // row lock is taken and before the insert, so concurrent saves stamp against the row they follow.
 
-  const snapshotKey = {
+  const snapshotKey: ComparableSnapshotKey = {
     ownerId: 'owner-1',
     templateName: 'my-template',
     fromDate: '2024-01-01',

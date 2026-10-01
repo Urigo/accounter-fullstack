@@ -5,7 +5,11 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import type {
+  LedgerProto,
+  StrictLedgerProto,
+  TimelessDateString,
+} from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { validateTransactionAgainstBusinessTrips } from '../../../business-trips/helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../../../business-trips/providers/business-trips-attendees.provider.js';
@@ -161,7 +165,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const accountingLedgerEntries: LedgerProto[] = [];
 
-    const dates = new Set<number>();
+    const dates = new Set<TimelessDateString>();
     const currencies = new Set<currency>();
 
     // generate ledger from transactions
@@ -176,7 +180,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
         updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
-        dates.add(entry.valueDate.getTime());
+        dates.add(entry.valueDate);
         currencies.add(entry.currency);
       });
     });
@@ -216,7 +220,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
               .getExchangeRates(
                 transaction.currency,
                 defaultLocalCurrency,
-                transaction.debit_timestamp,
+                transaction.exchange_rate_date,
               );
           }
 
@@ -259,7 +263,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
         financialAccountLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-        dates.add(ledgerEntry.valueDate.getTime());
+        dates.add(ledgerEntry.valueDate);
         currencies.add(ledgerEntry.currency);
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -289,7 +293,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
       feeFinancialAccountLedgerEntries.push(...ledgerEntries);
       ledgerEntries.map(ledgerEntry => {
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-        dates.add(ledgerEntry.valueDate.getTime());
+        dates.add(ledgerEntry.valueDate);
         currencies.add(ledgerEntry.currency);
       });
     });
@@ -327,7 +331,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           .then(ledgerEntry => {
             accountingLedgerEntries.push(ledgerEntry);
             updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-            dates.add(ledgerEntry.valueDate.getTime());
+            dates.add(ledgerEntry.valueDate);
             currencies.add(ledgerEntry.currency);
           })
           .catch(e => {
@@ -428,7 +432,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
             accountingLedgerEntries.push(ledgerEntry);
             updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-            dates.add(ledgerEntry.valueDate.getTime());
+            dates.add(ledgerEntry.valueDate);
             currencies.add(ledgerEntry.currency);
           },
         );

@@ -302,9 +302,12 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       try {
         if (ledgerLock) {
           const minDate = getMinDate(
-            balanceRecords.map(record => [new Date(record.invoiceDate), record.valueDate]).flat(),
+            balanceRecords.flatMap(record => [
+              record.invoiceDate,
+              dateToTimelessDateString(record.valueDate),
+            ]),
           );
-          if (minDate && dateToTimelessDateString(minDate) <= ledgerLock) {
+          if (minDate && minDate <= ledgerLock) {
             throw new GraphQLError('Cannot generate balance charge for locked period');
           }
         }

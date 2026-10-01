@@ -2,7 +2,8 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { dateToTimelessDateString, reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
@@ -154,7 +155,7 @@ export class BankDepositChargesProvider {
       let currentBalance = 0;
       let totalInterest = 0;
       let totalDeposit = 0;
-      let potentialCloseDate: Date | null = null;
+      let potentialCloseDate: TimelessDateString | null = null;
       const transactionIds: string[] = [];
       for (const tx of transactions) {
         if (!tx.id) continue;
@@ -176,9 +177,7 @@ export class BankDepositChargesProvider {
 
       depositIdToMetadataMap.set(depositId, {
         id: depositId,
-        potentialCloseDate: potentialCloseDate
-          ? dateToTimelessDateString(potentialCloseDate)
-          : null,
+        potentialCloseDate,
         currentBalance,
         totalInterest,
         totalDeposit,
@@ -211,10 +210,7 @@ export class BankDepositChargesProvider {
   public async getAllDepositsWithMetadata(): Promise<Array<BankDepositMetadataProto>> {
     const transactionRows = await getAllDepositsWithTransactions.run(undefined, this.db);
 
-    const depositMap = new Map<
-      string,
-      Omit<BankDepositMetadataProto, 'potentialCloseDate'> & { potentialCloseDate: Date | null }
-    >();
+    const depositMap = new Map<string, BankDepositMetadataProto>();
 
     const interestTransactionIds = identifyInterestTransactionIds(transactionRows, {
       getId: r => r.id,
@@ -256,9 +252,7 @@ export class BankDepositChargesProvider {
 
     return Array.from(depositMap.values()).map(deposit => ({
       id: deposit.id,
-      potentialCloseDate: deposit.potentialCloseDate
-        ? dateToTimelessDateString(deposit.potentialCloseDate)
-        : null,
+      potentialCloseDate: deposit.potentialCloseDate,
       currentBalance: deposit.currentBalance,
       totalInterest: deposit.totalInterest,
       totalDeposit: deposit.totalDeposit,
@@ -341,7 +335,7 @@ export class BankDepositChargesProvider {
     const accountId = [...accountIds][0] ?? null;
 
     // Derive open_date from the earliest debit_date, falling back to event_date
-    const openDate = transactions.reduce<Date | null>((min, t) => {
+    const openDate = transactions.reduce<TimelessDateString | null>((min, t) => {
       const d = t.debit_date ?? t.event_date;
       if (!d) return min;
       return min === null || d < min ? d : min;

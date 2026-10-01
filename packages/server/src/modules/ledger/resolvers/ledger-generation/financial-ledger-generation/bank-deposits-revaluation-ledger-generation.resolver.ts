@@ -1,4 +1,3 @@
-import { sub } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type {
   Maybe,
@@ -8,7 +7,7 @@ import type {
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import { Currency } from '../../../../../shared/enums.js';
-import { dateToTimelessDateString, formatCurrency } from '../../../../../shared/helpers/index.js';
+import { addDaysToTimelessDate, formatCurrency } from '../../../../../shared/helpers/index.js';
 import type {
   CurrencySum,
   LedgerProto,
@@ -73,7 +72,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
 
     const revaluationDate = `${year}-12-31` as TimelessDateString;
 
-    const cumulativeDate = dateToTimelessDateString(sub(new Date(revaluationDate), { days: 1 }));
+    const cumulativeDate = addDaysToTimelessDate(revaluationDate, -1);
     const bankDepositsCumulativeBalance = await businessTransactionsSumFromLedgerRecords(
       {},
       {
@@ -112,7 +111,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
       currencies.map(currency =>
         injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, defaultLocalCurrency, new Date(revaluationDate))
+          .getExchangeRates(currency, defaultLocalCurrency, revaluationDate)
           .then(rates => exchangeRates.set(currency, rates)),
       ),
     );
@@ -145,8 +144,8 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
 
         const ledgerEntry: LedgerProto = {
           id: EMPTY_UUID,
-          invoiceDate: new Date(revaluationDate),
-          valueDate: new Date(revaluationDate),
+          invoiceDate: revaluationDate,
+          valueDate: revaluationDate,
           currency: defaultLocalCurrency,
           isCreditorCounterparty,
           ...(isCreditorCounterparty
