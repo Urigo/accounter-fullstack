@@ -10,13 +10,13 @@
 
 # Monorepo Structure
 
-Yarn Berry (v4) monorepo with 18 packages under `packages/`:
+Yarn Berry (v4) monorepo with 20 packages under `packages/`:
 
 - **Core**: `server` (GraphQL API), `client` (React SPA), `migrations` (Postgres DDL/DML)
 - **Scrapers**: `modern-poalim-scraper`, `etana-scraper`, `etherscan-scraper`, `kraken-scraper`,
   `israeli-vat-scraper`
-- **Integrations**: `green-invoice-graphql`, `hashavshevet-mesh`, `payper-mesh`, `deel` (via server
-  app-providers)
+- **Integrations**: `green-invoice-graphql` (GraphQL Mesh v1 client for the Green Invoice REST API),
+  `deel` (via server app-providers)
 - **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
   pipeline)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
@@ -26,16 +26,23 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
 - **Deprecated**: `scraper-local-app` (legacy CLI scrape runner; superseded by `scraper-app` — kept
   only for rollback until `scraper-app` is fully in production use), `gmail-listener` (legacy
   single-inbox email listener; superseded by `email-ingestion-gateway` — kept only for rollback
-  during cutover), `old-accounter` (excluded from workspaces)
+  during cutover), `old-accounter` (excluded from workspaces), `hashavshevet-mesh` and `payper-mesh`
+  (GraphQL Mesh v0 clients with no consumers; excluded from workspaces)
 
 ## Frozen packages
 
-`gmail-listener`, `scraper-local-app` and `old-accounter` are frozen: **no dependency upgrades**
-(Renovate is disabled for them in `renovate.json`), **not part of the monorepo build**, and **not
-published or deployed**. Do not bump their dependencies or add them back to build scripts.
+`gmail-listener`, `scraper-local-app`, `old-accounter`, `hashavshevet-mesh` and `payper-mesh` are
+frozen: **no dependency upgrades** (Renovate is disabled for them in `renovate.json`), **not part of
+the monorepo build**, and **not published or deployed**. Do not bump their dependencies or add them
+back to build scripts.
 
-- All three have no dependents and no source imports anywhere. Build them by hand
-  (`yarn workspace <name> build`) if a rollback ever needs them.
+- None of them has dependents or source imports anywhere. Build `gmail-listener` or
+  `scraper-local-app` by hand (`yarn workspace <name> build`) if a rollback ever needs them.
+- `old-accounter`, `hashavshevet-mesh` and `payper-mesh` are excluded from the Yarn workspaces, so
+  their dependencies are not in the root lockfile. The two Mesh packages keep their own GraphQL Mesh
+  v0 dependencies and build tooling; to build one, run
+  `touch yarn.lock && yarn install && yarn build` inside its directory. Do not add them back to
+  `workspaces`.
 - `gmail-listener` is still covered by root `yarn generate` (it has its own GraphQL client under
   `src/gql/`), so it stays typecheckable for a rollback. Its server-side GraphQL surface lives in
   `packages/server/src/modules/email-ingestion` behind a deprecated re-export shim.

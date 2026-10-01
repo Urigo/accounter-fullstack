@@ -6,7 +6,9 @@
   "workspaces": {
     "packages": [
       "packages/*",
-      "!packages/old-accounter"
+      "!packages/old-accounter",
+      "!packages/hashavshevet-mesh",
+      "!packages/payper-mesh"
     ]
   },
   "packageManager": "yarn@4.18.1",
@@ -16,7 +18,7 @@
   "scripts": {
     "build": "yarn generate && yarn build:tools && yarn build:main",
     "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server --include @accounter/scraper-app --include @accounter/mcp-server --include @accounter/email-ingestion-gateway run build",
-    "build:tools": "yarn workspaces foreach --all --parallel --include @accounter/etana-scraper --include @accounter/etherscan-scraper --include @accounter/green-invoice-graphql --include @accounter/hashavshevet-mesh --include @accounter/israeli-vat-scraper --include @accounter/kraken-scraper --include @accounter/payper-mesh --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build",
+    "build:tools": "yarn workspaces foreach --all --parallel --include @accounter/etana-scraper --include @accounter/etherscan-scraper --include @accounter/green-invoice-graphql --include @accounter/israeli-vat-scraper --include @accounter/kraken-scraper --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build",
     "changeset:publish": "node scripts/changeset-publish.mjs",
     "db:migrate": "yarn migration:run",
     "encrypt-password": "node scripts/encrypt-password.mjs",
@@ -29,7 +31,6 @@
     "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint --cache --cache-location node_modules/.cache/.eslintcache .",
     "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn setup",
-    "mesh:artifacts-rename": "yarn node ./scripts/mesh-artifacts-rename.mjs",
     "migration:check-conflicts": "node --import ./scripts/register-esm.js ./scripts/check-migration-conflicts.ts",
     "mock:client": "concurrently -c magenta,cyan -n MOCK,CLIENT \"yarn mock:server\" \"ALLOW_DEV_AUTH=1 DEV_AUTH_USER_ID=00000000-0000-0000-0000-000000000000 yarn workspace @accounter/client dev\"",
     "mock:server": "node scripts/graphql-mock-server.mjs",
@@ -62,6 +63,7 @@
     "@graphql-codegen/schema-ast": "6.1.0",
     "@graphql-codegen/typescript": "6.1.0",
     "@graphql-codegen/typescript-graphql-request": "7.1.0",
+    "@graphql-codegen/typescript-operations": "6.1.7",
     "@graphql-codegen/typescript-resolvers": "6.1.0",
     "@graphql-eslint/eslint-plugin": "4.4.1",
     "@graphql-hive/cli": "0.66.0",
@@ -91,7 +93,6 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-sonarjs": "4.2.1",
     "eslint-plugin-unicorn": "76.0.0",
-    "glob": "13.0.6",
     "globals": "17.12.0",
     "graphql": "16.14.2",
     "graphql-yoga": "5.24.1",

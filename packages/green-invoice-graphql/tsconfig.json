@@ -1,9 +1,13 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "./src"
+    // Type-checking program only (editor, ESLint) — `tsconfig.build.json` is what bob emits from.
+    // It also covers the compose/codegen configs and generation scripts outside `src`, so `rootDir`
+    // spans the package; the build config pins it back to `src`.
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/green-invoice-graphql.tsbuildinfo",
+    "noEmit": true,
+    "rootDir": "."
   },
-  "include": ["src"],
+  "include": ["src", "scripts", "mesh.config.ts", "codegen.ts"],
   "exclude": ["**/node_modules", "**/dist"]
 }

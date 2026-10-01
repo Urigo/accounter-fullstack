@@ -116,6 +116,11 @@ jobs:
         shell: bash
         run: yarn generate:graphql
 
+      # The Green Invoice SDK is generated (git-ignored) and its unit tests import it. Composing
+      # reads only the package's local JSON schemas, so this needs no network access.
+      - name: Generate Green Invoice SDK
+        run: yarn workspace @accounter/green-invoice-graphql generate
+
       # The gateway's wire types are derived from `src/gql/`, and the guards in
       # `server-client.ts` only bite when something actually compiles the package.
       # Nothing else in CI typechecks it — lint and vitest both skip type checking —

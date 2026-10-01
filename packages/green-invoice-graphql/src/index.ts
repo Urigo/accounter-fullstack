@@ -1,4 +1,5 @@
-import { getMeshSDK, Sdk } from './mesh-artifacts/index.js';
+import type { Sdk } from './__generated__/sdk.js';
+import { getMeshSDK } from './mesh-client.js';
 
 async function obtainAccessToken(id: string, secret: string) {
   try {
@@ -33,9 +34,10 @@ export const init = async (
 ): Promise<{ sdk: Sdk; authToken: string }> => {
   const greenInvoiceToken = await obtainAccessToken(id, secret);
 
-  const sdk = await getMeshSDK({ authToken: greenInvoiceToken });
+  const sdk = getMeshSDK({ authToken: greenInvoiceToken });
 
   return { sdk, authToken: greenInvoiceToken };
 };
 
-export * from './mesh-artifacts/index.js';
+export * from './__generated__/sdk.js';
+export { getMeshSDK, type GreenInvoiceContext } from './mesh-client.js';
