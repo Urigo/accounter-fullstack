@@ -1,6 +1,6 @@
 {
   "name": "@accounter/email-ingestion-gateway",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Cloudflare Email to Server ingestion gateway for multi-tenant email document ingestion",
   "repository": {
