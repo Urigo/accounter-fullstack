@@ -10,9 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@whatwg-node/fetch": "0.12.0",
+    "@whatwg-node/fetch": "0.12.1",
     "diary": "0.4.5",
-    "dotenv": "18.0.4",
+    "dotenv": "18.0.5",
     "pg-promise": "12.7.1"
   },
   "devDependencies": {
