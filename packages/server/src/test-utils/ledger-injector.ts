@@ -5,6 +5,15 @@ import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../modules/app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../modules/auth/providers/auth-context.provider.js';
+import { BusinessTripAttendeesProvider } from '../modules/business-trips/providers/business-trips-attendees.provider.js';
+import { BusinessTripEmployeePaymentsProvider } from '../modules/business-trips/providers/business-trips-employee-payments.provider.js';
+import { BusinessTripAccommodationsExpensesProvider } from '../modules/business-trips/providers/business-trips-expenses-accommodations.provider.js';
+import { BusinessTripCarRentalExpensesProvider } from '../modules/business-trips/providers/business-trips-expenses-car-rental.provider.js';
+import { BusinessTripFlightsExpensesProvider } from '../modules/business-trips/providers/business-trips-expenses-flights.provider.js';
+import { BusinessTripOtherExpensesProvider } from '../modules/business-trips/providers/business-trips-expenses-other.provider.js';
+import { BusinessTripExpensesTransactionsMatchProvider } from '../modules/business-trips/providers/business-trips-expenses-transactions-match.provider.js';
+import { BusinessTripTravelAndSubsistenceExpensesProvider } from '../modules/business-trips/providers/business-trips-expenses-travel-and-subsistence.provider.js';
+import { BusinessTripExpensesProvider } from '../modules/business-trips/providers/business-trips-expenses.provider.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { ChargesAuthorizationProvider } from '../modules/charges/providers/charges-authorization.provider.js';
@@ -171,6 +180,31 @@ export function createLedgerTestContext(options: {
       }
       case BusinessTripsProvider:
         return new BusinessTripsProvider(tenantAwareDB, adminContextProvider);
+      case BusinessTripAttendeesProvider:
+        return new BusinessTripAttendeesProvider(
+          tenantAwareDB,
+          adminContextProvider,
+          new BusinessTripsProvider(tenantAwareDB, adminContextProvider),
+        );
+      case BusinessTripEmployeePaymentsProvider:
+        return new BusinessTripEmployeePaymentsProvider(tenantAwareDB, adminContextProvider);
+      case BusinessTripExpensesTransactionsMatchProvider:
+        return new BusinessTripExpensesTransactionsMatchProvider(
+          tenantAwareDB,
+          adminContextProvider,
+        );
+      case BusinessTripExpensesProvider:
+        return new BusinessTripExpensesProvider(
+          tenantAwareDB,
+          adminContextProvider,
+          new BusinessTripsProvider(tenantAwareDB, adminContextProvider),
+          new BusinessTripFlightsExpensesProvider(tenantAwareDB, adminContextProvider),
+          new BusinessTripAccommodationsExpensesProvider(tenantAwareDB, adminContextProvider),
+          new BusinessTripTravelAndSubsistenceExpensesProvider(tenantAwareDB, adminContextProvider),
+          new BusinessTripOtherExpensesProvider(tenantAwareDB, adminContextProvider),
+          new BusinessTripCarRentalExpensesProvider(tenantAwareDB, adminContextProvider),
+          new TransactionsProvider(tenantAwareDB),
+        );
       case SecurityBusinessesProvider: {
         const businessesProvider = new BusinessesProvider(tenantAwareDB, adminContextProvider);
         const taxCategoriesProvider = new TaxCategoriesProvider(
