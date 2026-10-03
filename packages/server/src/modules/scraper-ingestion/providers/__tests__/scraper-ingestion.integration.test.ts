@@ -76,14 +76,34 @@ afterAll(async () => {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-async function truncate(table: string) {
-  await pool.query(`TRUNCATE TABLE accounter_schema.${table} CASCADE`);
+/**
+ * Clear a table this suite owns, without disturbing anything else running
+ * against the shared test database.
+ *
+ * This used to be `TRUNCATE ... CASCADE`, which was destructive in two ways for
+ * a suite that runs in parallel with every other integration file:
+ *
+ *  - CASCADE empties the *whole* referencing table, not just referencing rows.
+ *    `max_creditcard_transactions` is referenced by `transactions_raw_list`,
+ *    which cascades on to `transactions` — so this `beforeEach` silently wiped
+ *    the rows other suites (e.g. the ledger scenarios) had just inserted,
+ *    surfacing there as an unbalanced ledger rather than as an error here.
+ *  - TRUNCATE takes an ACCESS EXCLUSIVE lock on every table it touches. Two
+ *    files reaching the same tables in different orders deadlock.
+ *
+ * DELETE takes row-level locks and honours foreign keys instead of bulldozing
+ * them. The rows removed are the ones this suite inserted: it disables the
+ * triggers on these tables, so its inserts never propagate to
+ * `transactions_raw_list` in the first place.
+ */
+async function clearTable(table: string) {
+  await pool.query(`DELETE FROM accounter_schema.${table}`);
 }
 
 // ── Cal ───────────────────────────────────────────────────────────────────────
 
 describe('uploadCalTransactions', () => {
-  beforeEach(() => truncate('cal_creditcard_transactions'));
+  beforeEach(() => clearTable('cal_creditcard_transactions'));
 
   const baseTx: CalTransactionInput = {
     trnIntId: 'CAL-TXN-001',
@@ -118,7 +138,7 @@ describe('uploadCalTransactions', () => {
 // ── Discount ──────────────────────────────────────────────────────────────────
 
 describe('uploadDiscountTransactions', () => {
-  beforeEach(() => truncate('bank_discount_transactions'));
+  beforeEach(() => clearTable('bank_discount_transactions'));
 
   const baseTx: DiscountTransactionInput = {
     urn: 'DISCOUNT-URN-001',
@@ -152,7 +172,7 @@ describe('uploadDiscountTransactions', () => {
 // ── Max ───────────────────────────────────────────────────────────────────────
 
 describe('uploadMaxTransactions', () => {
-  beforeEach(() => truncate('max_creditcard_transactions'));
+  beforeEach(() => clearTable('max_creditcard_transactions'));
 
   const baseTx: MaxTransactionInput = {
     uid: 'MAX-UID-001',
@@ -231,7 +251,7 @@ describe('uploadMaxTransactions', () => {
 // ── Currency Rates ────────────────────────────────────────────────────────────
 
 describe('uploadCurrencyRates', () => {
-  beforeEach(() => truncate('exchange_rates'));
+  beforeEach(() => clearTable('exchange_rates'));
 
   const baseRate = {
     exchangeDate: '2024-01-15' as const,

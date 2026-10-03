@@ -1,4 +1,5 @@
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import { PendingInvitationsProvider } from '../../auth/providers/pending-invitations.provider.js';
 import type { CommonModule } from '../types.js';
 
 /**
@@ -20,6 +21,9 @@ export const viewerResolvers: CommonModule.Resolvers = {
           email: authContext.user.email || null,
           emailVerified: authContext.user.emailVerified,
           status: 'ACTIVE',
+          // Already inside a workspace: any further invitations are claimed
+          // through the emailed link, not through this screen.
+          pendingInvitations: [],
         };
       }
 
@@ -30,10 +34,26 @@ export const viewerResolvers: CommonModule.Resolvers = {
         return null;
       }
 
+      if (!identity.emailVerified || !identity.email) {
+        // An unverified address proves nothing about who the caller is, so it
+        // must never be matched against invitations.
+        return {
+          email: identity.email,
+          emailVerified: identity.emailVerified,
+          status: 'EMAIL_UNVERIFIED',
+          pendingInvitations: [],
+        };
+      }
+
+      const pendingInvitations = await injector
+        .get(PendingInvitationsProvider)
+        .getPendingInvitationsByVerifiedEmail(identity.email);
+
       return {
         email: identity.email,
-        emailVerified: identity.emailVerified,
-        status: identity.emailVerified ? 'NO_WORKSPACE' : 'EMAIL_UNVERIFIED',
+        emailVerified: true,
+        status: 'NO_WORKSPACE',
+        pendingInvitations,
       };
     },
   },
