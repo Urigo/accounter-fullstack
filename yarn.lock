@@ -79,7 +79,7 @@ __metadata:
     "@storybook/addon-a11y": "npm:10.6.1"
     "@storybook/react-vite": "npm:10.6.1"
     "@tailwindcss/vite": "npm:4.3.3"
-    "@tanstack/react-table": "npm:9.2.5"
+    "@tanstack/react-table": "npm:9.2.6"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
     "@types/react": "npm:19.3.0"
@@ -9919,15 +9919,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-table@npm:9.2.5":
-  version: 9.2.5
-  resolution: "@tanstack/react-table@npm:9.2.5"
+"@tanstack/react-table@npm:9.2.6":
+  version: 9.2.6
+  resolution: "@tanstack/react-table@npm:9.2.6"
   dependencies:
     "@tanstack/react-store": "npm:^0.11.2"
-    "@tanstack/table-core": "npm:9.2.5"
+    "@tanstack/table-core": "npm:9.2.6"
   peerDependencies:
     react: ">=18"
-  checksum: 10c0/58dc57b59758f24bd7b179fd748581c60f0b87a5c19d8f6688315da23e8a7cc59a912367bb49f75ab3030897742ca366b0e0bec089ee6573a4315eb56d2fffa0
+  checksum: 10c0/cd270379c52df81ff8182aff9a10f68defe8610162ccc603d6629e62eace4c2d515b7517a6a4728423dc9fd69110deb158c1f4b598f5436ade719db876862200
   languageName: node
   linkType: hard
 
@@ -9938,12 +9938,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/table-core@npm:9.2.5":
-  version: 9.2.5
-  resolution: "@tanstack/table-core@npm:9.2.5"
+"@tanstack/table-core@npm:9.2.6":
+  version: 9.2.6
+  resolution: "@tanstack/table-core@npm:9.2.6"
   dependencies:
     "@tanstack/store": "npm:^0.11.2"
-  checksum: 10c0/d5e20cf0dfe72d5ba0bc979d11038ae2566c7d0fc09f5aace13522bc33bdc5c28552d1fffd3acdca0e5d2902c7ccd96a4fe2518e5ddb155fed59278f6c89fa4e
+  checksum: 10c0/6834b8501981fb670cf99a18c5b0480d11f5deb5ad19739c0d3c0acb9f6990135623d7674c7bdbfb6b03c11cddfa8af9d98ba2d7a098f48446f2af66dffff244
   languageName: node
   linkType: hard
 
