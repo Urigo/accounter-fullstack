@@ -394,7 +394,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.12.0"
     ai: "npm:7.0.118"
     async-mutex: "npm:0.5.0"
-    auth0: "npm:7.2.0"
+    auth0: "npm:7.3.0"
     basic-auth: "npm:3.0.0"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.11.0"
@@ -11872,14 +11872,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"auth0@npm:7.2.0":
-  version: 7.2.0
-  resolution: "auth0@npm:7.2.0"
+"auth0@npm:7.3.0":
+  version: 7.3.0
+  resolution: "auth0@npm:7.3.0"
   dependencies:
     auth0-legacy: "npm:auth0@^4.37.1"
     jose: "npm:^5.0.0"
     uuid: "npm:^11.1.1"
-  checksum: 10c0/b5b11692093025963eebcabaf6f10aad970b36fe0b32c9292668db6ef324a8eb1d1ac5c94d5abd897157815021c7b16de83720f582003c816733e4f9865ca3b9
+  checksum: 10c0/287b22dcf2f90cc598e28412686e65bb8dc9f48a2dc4c08ed2315f2eaaa3d6197fac118264fb0131e3673260e5595fdbce743f0e1a7763f184404dacf41e277f
   languageName: node
   linkType: hard
 
