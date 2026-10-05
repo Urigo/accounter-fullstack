@@ -18,18 +18,19 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of sixteen read-only tools
+Accounter GraphQL server; a curated registry of seventeen read-only tools
 (`accounter_list_business_memberships`, `accounter_explain_terminology`, `accounter_search_charges`,
 `accounter_get_charges`, `accounter_get_transactions`, `accounter_get_documents`,
 `accounter_get_ledger_records`, `accounter_list_clients`, `accounter_get_contracts`,
 `accounter_list_security_holdings`, `accounter_get_security_executions`, `accounter_list_tags`,
 `accounter_list_tax_categories`, `accounter_list_sort_codes`, `accounter_list_businesses`,
-`accounter_balance_report`) each gated by strict input validation, a per-tool authorization policy,
-and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
-client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
-per-`tools/call` rate limiting; in-process operational metrics (request/outcome counters, a latency
-histogram, auth-failure counters) exposed at `GET /metrics`; and OpenTelemetry tracing exported to
-Grafana Tempo (opt-in), correlated with the backend via `traceparent` and `X-Correlation-Id`.
+`accounter_balance_report`, `accounter_vat_report`) each gated by strict input validation, a
+per-tool authorization policy, and business-scope narrowing forwarded upstream as
+`x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
+propagation, sanitized errors); a unified error taxonomy; per-`tools/call` rate limiting; in-process
+operational metrics (request/outcome counters, a latency histogram, auth-failure counters) exposed
+at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
+backend via `traceparent` and `X-Correlation-Id`.
 
 Phase 2 (write scope) has landed its first two tools — `accounter_update_charges_tags` and
 `accounter_upload_documents` — behind the `MCP_ENABLE_WRITE_TOOLS` flag, which is **off by
@@ -72,7 +73,7 @@ Every business-scoped tool follows one convention, so the model learns it once:
 
 - **Discover, then scope.** `accounter_list_business_memberships` returns
   `{ memberBusinessId, name, role }`. Pass those ids back as `memberBusinessIds` (or, for the
-  balance report, the singular required `memberBusinessId`).
+  balance and VAT reports, the singular required `memberBusinessId`).
 - **The name is the access axis, deliberately.** These are the businesses the caller is a _member
   of_; they become the upstream `byOwners` / `ownerIDs` owner predicate. They are not the charge
   filter `byBusinesses` or the documents filter `businessIds`, which are _counterparty_ predicates —
@@ -83,14 +84,14 @@ Every business-scoped tool follows one convention, so the model learns it once:
   dropped.
 - **The resolved scope is forwarded upstream** as `x-business-scope`, so RLS on the Accounter server
   is the actual enforcement point (see [Identity & tenant scope](#identity--tenant-scope)).
-- **Every row is owner-tagged.** Charges, transactions, documents, balance rows, tags, tax
-  categories and directory rows all carry `ownerId` (charges also carry `ownerName`), so a result
-  spanning several memberships can be grouped, sorted, and attributed instead of silently merged.
-  Nested rows count: the `transactions` and `documents` inside a charge are tagged too. Transactions
-  get theirs from `Transaction.ownerId` on the GraphQL server (added for this — the type previously
-  had no owner); documents inherit theirs from their charge; balance rows carry the single business
-  the report ran for. `ownerId` is `null` only when there is genuinely nothing to attribute to (a
-  document with no charge), which means "unknown", not "yours".
+- **Every row is owner-tagged.** Charges, transactions, documents, balance and VAT report rows,
+  tags, tax categories and directory rows all carry `ownerId` (charges also carry `ownerName`), so a
+  result spanning several memberships can be grouped, sorted, and attributed instead of silently
+  merged. Nested rows count: the `transactions` and `documents` inside a charge are tagged too.
+  Transactions get theirs from `Transaction.ownerId` on the GraphQL server (added for this — the
+  type previously had no owner); documents inherit theirs from their charge; balance and VAT report
+  rows carry the single business the report ran for. `ownerId` is `null` only when there is
+  genuinely nothing to attribute to (a document with no charge), which means "unknown", not "yours".
 - **The response echoes `scope.memberBusinessIds`.** A widened scope is visible in the payload
   instead of being inferred, and the charges summary text names the business count when it is
   greater than one.
@@ -104,20 +105,22 @@ scope, because it _is_ the scope.
   A caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
   point; to browse the full business directory use `accounter_list_businesses`.
 - **`accounter_explain_terminology`** — the connector's **glossary**: what charges, transactions,
-  documents, ledger records, businesses and tax categories actually mean in Accounter, including the
-  distinctions that are not inferable from the schema (a charge is an aggregate, not a bank charge;
-  `byOwners` is the owner predicate while `byBusinesses` is the counterparty one; `INTERNAL` and
-  `CONVERSION` charges double-count in spend totals; ledger slot 2 is the VAT split; only _business_
-  entities are required to balance). Called with no arguments it returns a one-line index of every
-  term; `terms` looks up specific ones (matching canonical names, enum tokens, GraphQL type names
-  and field names, case- and separator-insensitive, with a substring fallback) and `topics` returns
-  a whole area in full. An unmatched term is reported under `unmatched` with suggestions rather than
-  failing the call. Like discovery it is **pure** — static content, no upstream call, no
-  `x-business-scope` — and unlike every other tool it needs **no business scope** at all
-  (`requiresBusinessScope: false`, `dataClassification: 'public'`), so a caller with zero
-  memberships can still read it. Content is pinned to the package's own enum constants by
-  `terminology-contract.test.ts`, so a charge type added upstream fails the suite instead of quietly
-  going undefined.
+  documents, ledger records, businesses, tax categories and the VAT report actually mean in
+  Accounter, including the distinctions that are not inferable from the schema (a charge is an
+  aggregate, not a bank charge; `byOwners` is the owner predicate while `byBusinesses` is the
+  counterparty one; `INTERNAL` and `CONVERSION` charges double-count in spend totals; ledger slot 2
+  is the VAT split; only _business_ entities are required to balance). Called with no arguments it
+  returns a one-line index of every term; `terms` looks up specific ones (matching canonical names,
+  enum tokens, GraphQL type names and field names, case- and separator-insensitive, with a substring
+  fallback) and `topics` returns a whole area in full — `charge`, `transaction`, `document`,
+  `ledger`, `entity` (businesses, tax categories, sort codes), `scope` (owner vs counterparty,
+  memberships) and `report` (the VAT report's rows, amounts, PCN874 record types and filed totals).
+  An unmatched term is reported under `unmatched` with suggestions rather than failing the call.
+  Like discovery it is **pure** — static content, no upstream call, no `x-business-scope` — and
+  unlike every other tool it needs **no business scope** at all (`requiresBusinessScope: false`,
+  `dataClassification: 'public'`), so a caller with zero memberships can still read it. Content is
+  pinned to the package's own enum constants by `terminology-contract.test.ts`, so a charge type
+  added upstream fails the suite instead of quietly going undefined.
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Accepts optional `memberBusinessIds` (subset of memberships) plus **every
   `ChargeFilter` predicate upstream honors**, flat: `fromDate`/`toDate` (overlap — any
@@ -252,6 +255,25 @@ scope, because it _is_ the scope.
   `memberBusinessId`. Requires `business_owner`/`accountant` role; rows are capped at 1000 with a
   `truncated` flag. Every row carries `ownerId` — the one business the report ran for, which the
   response also reports once alongside the echoed `scope`.
+- **`accounter_vat_report`** — the **monthly VAT report** for **exactly one** of your businesses,
+  selected by the required singular `memberBusinessId` and a `month` (`YYYY-MM`, forwarded upstream
+  as `monthDate: YYYY-MM-01`). A thin forwarder of the upstream `vatReport` query: which documents
+  qualify, income vs expense, the VAT figures and the missing-info verdict are all computed
+  server-side. Each call returns one required `section` — `income` (sales documents), `expenses`
+  (input documents), or `missingInfo` (charges in the month that still fail validation, each with
+  its upstream `missing` reasons verbatim) — sliced by `offset` (default 0) and `limit` (≤ 500,
+  default 500), because upstream has no paging. Income/expense rows are one per **document** (a
+  charge can appear on several) and forward every `VatReportRecord` field, amounts normalized; a
+  null amount usually means zero, since upstream drops zero values. Every call, whatever the
+  section, also returns `counts` for all three sections and `summary`, the month's PCN874 header
+  totals as filed (whole month, local currency; `totalVat` positive = to pay, negative = refund) —
+  the figure to report rather than a sum of rows. Rows carry `ownerId`. Its payload cap is its own,
+  **120 KB** (`VAT_REPORT_MAX_RESULT_BYTES`), instead of the shared 60 KB one, because every page
+  re-runs an expensive report; a truncated result says which `offset` to request next. The upstream
+  call is **long-running** (it validates every charge in the month), so it runs on
+  `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` and a timeout is not retried in-process. `chargesType` is not
+  exposed (the upstream filter is inverted, #4604). Requires `business_owner`/`accountant` role;
+  `accounter_explain_terminology` topic `report` explains the fields.
 
 The two **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
 [Write tools](#write-tools) for the rules they all share.
@@ -280,6 +302,12 @@ correlation id, the caller's `Authorization` bearer token, and the resolved read
 `x-business-scope`, and **sanitized** upstream errors (no stack traces or internal details). Phase 1
 is read-only: mutations/subscriptions are refused, and there is **no** generic "execute anything"
 surface — tools use typed read-only wrappers via `createReadOperation`.
+
+A tool may mark a call **long-running** (`{ longRunning: true }`), which swaps the ordinary
+`GRAPHQL_UPSTREAM_TIMEOUT_MS` budget for `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS`. Two calls use it today:
+document ingestion (a write: fetch, upload and OCR) and the VAT report (a read that validates every
+charge in the month). A long-running read is still retried on 5xx and network failures, but not on a
+timeout — a retry would multiply an already long wait.
 
 ## Identity & tenant scope
 
@@ -556,7 +584,7 @@ process to exit immediately with a clear error. Secrets are supplied via the env
 | `MCP_ENABLE_WRITE_TOOLS`           | no       | `0`                      | Expose mutating (write) tools (`1` on / `0` off)                   |
 | `AUTH0_JWKS_URL`                   | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
 | `GRAPHQL_UPSTREAM_TIMEOUT_MS`      | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
-| `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` | no       | `300000`                 | Budget for long-running calls (document ingestion: fetch + OCR)    |
+| `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` | no       | `300000`                 | Budget for long-running calls (document ingestion, VAT report)     |
 | `MCP_RATE_LIMIT_CONFIG`            | no       | `''` (defaults)          | Optional rate-limit override spec (parsed by the limiter later)    |
 | `OTEL_ENABLED`                     | no       | `0`                      | Enable OpenTelemetry tracing (`1` on / `0` off)                    |
 | `OTEL_SERVICE_NAME`                | no       | `accounter-mcp-server`   | `service.name` resource attribute                                  |
@@ -656,15 +684,15 @@ The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream m
 
 ## Troubleshooting
 
-| Symptom                                                                         | Likely cause / fix                                                                                                                                                                                                                                                                                                                                            |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Process exits at startup with `[env] Invalid environment …`                     | A required env var is missing/malformed. The printed report lists each offending key; fix and restart. Required: `MCP_PUBLIC_BASE_URL`, `AUTH0_ISSUER_URL`, `AUTH0_AUDIENCE`, `GRAPHQL_UPSTREAM_URL`.                                                                                                                                                         |
-| `POST /mcp` returns `401` with no `error`                                       | No bearer token. The `WWW-Authenticate` header points at the metadata document.                                                                                                                                                                                                                                                                               |
-| `POST /mcp` returns `401` with `error="invalid_token"`                          | Token failed verification (signature/JWKS, `iss`, `aud`, or expiry). Confirm the token's audience matches `AUTH0_AUDIENCE` and the issuer matches `AUTH0_ISSUER_URL`.                                                                                                                                                                                         |
-| `/mcp` and `/.well-known/...` return `404` (`/health` + `/metrics` still `200`) | The kill-switch is on (`MCP_ENABLED=0`) — only the MCP transport and its OAuth metadata route are disabled; `/health` and `/metrics` stay up. Set `MCP_ENABLED=1`.                                                                                                                                                                                            |
-| Tool result `isError: true`, code `UPSTREAM_ERROR`/`TIMEOUT_ERROR`              | The Accounter GraphQL server was unreachable/slow. Check `GRAPHQL_UPSTREAM_URL` and `GRAPHQL_UPSTREAM_TIMEOUT_MS` (uploads use `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS`); read timeouts are retried (bounded), 4xx/GraphQL errors are not, and a timed-out **write** is reported non-retryable — it may still be in progress upstream, so verify before re-sending. |
-| Tool result code `AUTHORIZATION_ERROR`                                          | The caller lacks a required role, requested a business outside their memberships, or has no memberships. Verify the token's scopes and the server-side `business_users` rows.                                                                                                                                                                                 |
-| Tool result code `RATE_LIMIT_ERROR` with `retryAfterMs`                         | Per-`{user, scope, tool}` window exceeded. Back off for `retryAfterMs`, or tune `MCP_RATE_LIMIT_CONFIG`.                                                                                                                                                                                                                                                      |
+| Symptom                                                                         | Likely cause / fix                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Process exits at startup with `[env] Invalid environment …`                     | A required env var is missing/malformed. The printed report lists each offending key; fix and restart. Required: `MCP_PUBLIC_BASE_URL`, `AUTH0_ISSUER_URL`, `AUTH0_AUDIENCE`, `GRAPHQL_UPSTREAM_URL`.                                                                                                                                                                      |
+| `POST /mcp` returns `401` with no `error`                                       | No bearer token. The `WWW-Authenticate` header points at the metadata document.                                                                                                                                                                                                                                                                                            |
+| `POST /mcp` returns `401` with `error="invalid_token"`                          | Token failed verification (signature/JWKS, `iss`, `aud`, or expiry). Confirm the token's audience matches `AUTH0_AUDIENCE` and the issuer matches `AUTH0_ISSUER_URL`.                                                                                                                                                                                                      |
+| `/mcp` and `/.well-known/...` return `404` (`/health` + `/metrics` still `200`) | The kill-switch is on (`MCP_ENABLED=0`) — only the MCP transport and its OAuth metadata route are disabled; `/health` and `/metrics` stay up. Set `MCP_ENABLED=1`.                                                                                                                                                                                                         |
+| Tool result `isError: true`, code `UPSTREAM_ERROR`/`TIMEOUT_ERROR`              | The Accounter GraphQL server was unreachable/slow. Check `GRAPHQL_UPSTREAM_URL` and `GRAPHQL_UPSTREAM_TIMEOUT_MS` (uploads and the VAT report: `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS`); read timeouts are retried (bounded) unless long-running, 4xx/GraphQL errors never are, and a timed-out **write** is non-retryable — it may still be running upstream, so verify first. |
+| Tool result code `AUTHORIZATION_ERROR`                                          | The caller lacks a required role, requested a business outside their memberships, or has no memberships. Verify the token's scopes and the server-side `business_users` rows.                                                                                                                                                                                              |
+| Tool result code `RATE_LIMIT_ERROR` with `retryAfterMs`                         | Per-`{user, scope, tool}` window exceeded. Back off for `retryAfterMs`, or tune `MCP_RATE_LIMIT_CONFIG`.                                                                                                                                                                                                                                                                   |
 
 ## Write tools
 
@@ -759,11 +787,11 @@ apply.
 - There is no generic "run any query" surface: every capability is a curated tool with a strict
   input schema, and the upstream client's read and write paths are separately guarded.
 - Responses are **bounded** (date ranges ≤ 1096 days, page sizes ≤ 500, list caps of 200–1000
-  depending on the tool, a 60KB payload-size guard — every cap is an exported `MAX_*` constant so
-  the suite asserts it rather than this file being the record) — very large result sets are
-  truncated with a `truncated`/`continuation` hint rather than streamed in full. Inline uploads are
-  bounded too: ≤ 10 documents, 256KB per file and 512KB per call once decoded, against a MIME
-  allowlist. Inline base64 is only viable for small files at all — see
+  depending on the tool, a 60KB payload-size guard — 120KB for `accounter_vat_report` — every cap is
+  an exported `MAX_*` constant so the suite asserts it rather than this file being the record) —
+  very large result sets are truncated with a `truncated`/`continuation` hint rather than streamed
+  in full. Inline uploads are bounded too: ≤ 10 documents, 256KB per file and 512KB per call once
+  decoded, against a MIME allowlist. Inline base64 is only viable for small files at all — see
   [Why inline upload is small](#why-inline-upload-is-small).
 - Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
   limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).

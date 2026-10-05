@@ -23,7 +23,7 @@ import {
  * and it cannot live in per-tool `description` strings, which every caller pays
  * for on every `tools/list` and which cannot carry concepts spanning tools.
  *
- * Two properties make this tool unlike the other eleven:
+ * Two properties make this tool unlike the other eighteen:
  *
  * 1. It is **pure**. The handler never touches `context.client`, so there is no
  *    upstream call and no `x-business-scope` header. `scope-forwarding.test.ts`
