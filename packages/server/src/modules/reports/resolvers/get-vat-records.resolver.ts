@@ -1,4 +1,4 @@
-import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
+import { endOfDay, lastDayOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { QueryVatReportArgs } from '../../../__generated__/types.js';
@@ -16,6 +16,7 @@ import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper
 import {
   adjustTaxRecord,
   isVatReportRelevantDocument,
+  vatReportMonthStart,
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
 import type { VatReportRecords } from '../types.js';
@@ -53,12 +54,10 @@ export const getVatRecords = async (
     const docsChargesIDs = new Set<string>();
     const reportIssuerId = filters?.financialEntityId;
 
-    const fromDate = filters?.monthDate
-      ? dateToTimelessDateString(startOfMonth(new Date(filters.monthDate)))
-      : undefined;
-    const toDate = filters?.monthDate
-      ? dateToTimelessDateString(lastDayOfMonth(new Date(filters.monthDate)))
-      : undefined;
+    const monthStart = filters?.monthDate ? vatReportMonthStart(filters.monthDate) : undefined;
+    const monthEnd = monthStart ? lastDayOfMonth(monthStart) : undefined;
+    const fromDate = monthStart ? dateToTimelessDateString(monthStart) : undefined;
+    const toDate = monthEnd ? dateToTimelessDateString(monthEnd) : undefined;
 
     // get all documents by date filters
     const relevantDocumentsPromise = injector
@@ -71,9 +70,8 @@ export const getVatRecords = async (
         documents.filter(doc => {
           // filter documents with vat_report_date_override outside of the date range
           if (doc.vat_report_date_override) {
-            const isBeforeFromDate =
-              fromDate && doc.vat_report_date_override < startOfDay(fromDate);
-            const isAfterToDate = toDate && doc.vat_report_date_override > endOfDay(toDate);
+            const isBeforeFromDate = monthStart && doc.vat_report_date_override < monthStart;
+            const isAfterToDate = monthEnd && doc.vat_report_date_override > endOfDay(monthEnd);
             if (isBeforeFromDate || isAfterToDate) {
               return false;
             }

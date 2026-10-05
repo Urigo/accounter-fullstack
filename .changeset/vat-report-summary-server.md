@@ -25,3 +25,10 @@ fetches it. It is a lazy field resolver, so queries that do not select `summary`
 
 The totals carry over the header's current coverage: entry types it does not handle yet (for example
 `S2`, `Y` and `R`) are left out of the summary just as they are left out of the file.
+
+Fixed along the way: the VAT report and the PCN874 file parsed the requested month with
+`new Date(monthDate)`, which reads a date-only string as UTC midnight. On a server west of UTC that
+is the previous local day, so a first-of-month request covered the month before, and the PCN874
+file could even be stamped with the previous month. The month is now read from the date string's
+year and month (`vatReportMonthStart`), for the report's date range, its VAT-date-override bounds,
+and the PCN874 file. Servers at UTC or east of it are unaffected.

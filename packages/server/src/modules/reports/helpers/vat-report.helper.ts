@@ -3,6 +3,7 @@ import type { AccountantStatus, Pcn874RecordType } from '../../../__generated__/
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { DocumentType, type Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
   getChargeDocumentsMeta,
@@ -47,6 +48,18 @@ export type RawVatReportRecord = {
   allocationNumber?: string | null;
   pcn874RecordType?: Pcn874RecordType;
 };
+
+/**
+ * Local midnight on the first day of the month `monthDate` falls in.
+ *
+ * Built from the string's year and month, never through `new Date(monthDate)`: that parses a
+ * date-only string as UTC midnight, which west of UTC is the previous local day, so the first of a
+ * month would land in the month before it.
+ */
+export function vatReportMonthStart(monthDate: TimelessDateString): Date {
+  const [year, month] = monthDate.split('-').map(Number);
+  return new Date(year, month - 1, 1);
+}
 
 /**
  * Determines whether a document should be considered by the VAT report.

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ExtendedPCNTransaction,
   getEntryTypeByRecord,
@@ -790,6 +790,68 @@ describe('pcn.helper', () => {
           expect(summaryCall[2]).toEqual({ includeChargeBuckets: false });
         },
       );
+    });
+  });
+
+  describe('month handling west of UTC (TZ=America/New_York)', () => {
+    let previousTimeZone: string | undefined;
+
+    beforeEach(() => {
+      previousTimeZone = process.env.TZ;
+      process.env.TZ = 'America/New_York';
+      vi.mocked(getVatRecords).mockReset();
+      vi.mocked(getVatRecords).mockResolvedValue({
+        income: [createMockVatRecord({ documentDate: new Date(2024, 0, 10) })],
+        expenses: [],
+        missingInfo: [],
+        differentMonthDoc: [],
+        businessTrips: [],
+      });
+    });
+
+    afterEach(() => {
+      if (previousTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = previousTimeZone;
+      }
+    });
+
+    it.each(['2024-01-01', '2024-01-15', '2024-01-31'] as const)(
+      'files %s as January',
+      async rawMonthDate => {
+        const result = await getPcn874String(createMockInjector(), FIXED_BUSINESS_ID, rawMonthDate);
+
+        expect(result.monthDate).toBe('2024-01-01');
+        expect(result.reportMonth).toBe('202401');
+        expect(result.reportContent.slice(10, 16)).toBe('202401');
+        expect(vi.mocked(getVatRecords).mock.calls[0][0].filters?.monthDate).toBe('2024-01-01');
+      },
+    );
+
+    it('refetches a filtered summary for the same month as the PCN874 file', async () => {
+      const injector = createMockInjector();
+
+      await getVatReportSummaryRecords(
+        {
+          income: [],
+          expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+          filters: {
+            monthDate: '2024-01-01',
+            financialEntityId: FIXED_BUSINESS_ID,
+            chargesType: 'INCOME',
+          },
+        },
+        injector,
+      );
+      await getPcn874String(injector, FIXED_BUSINESS_ID, '2024-01-01');
+
+      const [summaryCall, pcnCall] = vi.mocked(getVatRecords).mock.calls;
+      expect(summaryCall).toEqual(pcnCall);
+      expect(summaryCall[0].filters?.monthDate).toBe('2024-01-01');
     });
   });
 
