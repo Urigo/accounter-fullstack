@@ -427,6 +427,9 @@ describe('integration — shadow mode', () => {
       verifier: makeVerifier(),
       featureFlags: { v2Enabled: true, shadowMode: true },
       serverClient,
+      // The orchestration outlives the test in shadow mode: the real treatment would launch
+      // Chromium in the background and log during worker teardown.
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
@@ -454,6 +457,9 @@ describe('integration — shadow mode', () => {
       verifier: makeVerifier(),
       featureFlags: { v2Enabled: true, shadowMode: true },
       serverClient,
+      // The orchestration outlives the test in shadow mode: the real treatment would launch
+      // Chromium in the background and log during worker teardown.
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
