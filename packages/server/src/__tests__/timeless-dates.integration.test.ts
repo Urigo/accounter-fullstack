@@ -42,6 +42,30 @@ import { TEST_TIMEZONES, useTimezone } from './helpers/timezones.js';
  */
 vi.mock('graphql', () => createRequire(import.meta.url)('graphql'));
 
+/*
+ * The app imports these workspace packages, which only exist once built (the Green Invoice SDK is
+ * even generated), and the test job does not build them. Nothing here reaches Green Invoice or the
+ * SHAAM generators, so each is replaced by a stub whose every export is an inert function.
+ */
+const unbuiltPackageStub = vi.hoisted(
+  () => () =>
+    new Proxy(
+      {},
+      {
+        has: () => true,
+        get: (_, key) =>
+          key === 'then'
+            ? undefined
+            : () => {
+                throw new Error(`${String(key)} is stubbed in the timeless dates test`);
+              },
+      },
+    ),
+);
+vi.mock('@accounter/green-invoice-graphql', unbuiltPackageStub);
+vi.mock('@accounter/shaam-uniform-format-generator', unbuiltPackageStub);
+vi.mock('@accounter/shaam6111-generator', unbuiltPackageStub);
+
 const ADMIN_ID = makeUUID('business', 'Admin Business');
 const USER_ID = makeUUID('user', 'timeless-dates-user');
 const SUPPLIER_ID = makeUUID('business', 'timeless-dates-supplier');
