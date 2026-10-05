@@ -234,6 +234,7 @@ export default [
               'UserContext',
               'VatReportResult',
               'VatReportRecord',
+              'VatReportSummary',
               'VacationDays',
               'ValidationData',
               'YearlyLedgerReportFinancialEntityInfo',

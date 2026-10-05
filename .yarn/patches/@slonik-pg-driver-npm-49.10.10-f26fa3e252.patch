@@ -1,13 +1,12 @@
 diff --git a/dist/factories/createPgDriverFactory.js b/dist/factories/createPgDriverFactory.js
-index 619704a0e66402c1831ad71f3191b160062df1a8..4ab5e8b46a258672142bb0c3b4801c129344e5da 100644
+index 619704a0e66402c1831ad71f3191b160062df1a8..fd3c7aee684366ab1254a781098fd977490ef332 100644
 --- a/dist/factories/createPgDriverFactory.js
 +++ b/dist/factories/createPgDriverFactory.js
-@@ -235,7 +235,8 @@ export const createPgDriverFactory = () => {
+@@ -235,7 +235,7 @@ export const createPgDriverFactory = () => {
                              });
                          }
                          if (Array.isArray(result)) {
 -                            throw new InvalidInputError("Must not use multiple statements in a single query.");
-+                            // throw new InvalidInputError("Must not use multiple statements in a single query.");
 +                            result = result[result.length - 1];
                          }
                          return {

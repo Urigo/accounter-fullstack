@@ -9,6 +9,8 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteDocumentParams,
   IDeleteDocumentQuery,
+  IFillDocumentFromOcrParams,
+  IFillDocumentFromOcrQuery,
   IGetAllDocumentsParams,
   IGetAllDocumentsQuery,
   IGetAllDocumentsResult,
@@ -304,6 +306,54 @@ type IGetAdjustedDocumentsByExtendedFiltersParams = Optional<
   missingInfo?: boolean | null;
 };
 
+/**
+ * Fill a document's empty columns from an OCR pass, without ever overwriting what is already there.
+ *
+ * Deliberately not expressed as `updateDocument` with pre-filtered parameters. Re-OCR reads the
+ * document, spends minutes downloading and extracting, and only then writes; deciding which columns
+ * are blank from that stale pre-OCR read would let an accountant who filled a field in the meantime
+ * be silently overwritten. Here the decision is part of the statement, so it is made against the row
+ * as it is at write time.
+ *
+ * Note the COALESCE argument order is the reverse of `updateDocument`'s: the column comes first, so
+ * it wins and the parameter only ever lands in a NULL. `type` cannot use that rule — it is never
+ * NULL — so UNPROCESSED stands in for "no type yet", which is the state re-OCR exists to resolve.
+ *
+ * The WHERE clause repeats the same conditions so that a pass with nothing to contribute matches no
+ * rows at all, rather than touching `updated_at` and re-flagging the charge for accountant review.
+ */
+const fillDocumentFromOcr = sql<IFillDocumentFromOcrQuery>`
+  UPDATE accounter_schema.documents
+  SET
+    serial_number = COALESCE(serial_number, $serialNumber::text),
+    date = COALESCE(date, $date::date),
+    total_amount = COALESCE(total_amount, $totalAmount::double precision),
+    currency_code = COALESCE(currency_code, $currencyCode::accounter_schema.currency),
+    vat_amount = COALESCE(vat_amount, $vatAmount::double precision),
+    allocation_number = COALESCE(allocation_number, $allocationNumber::varchar),
+    description = COALESCE(description, $description::text),
+    remarks = COALESCE(remarks, $remarks::text),
+    creditor_id = COALESCE(creditor_id, $creditorId::uuid),
+    debtor_id = COALESCE(debtor_id, $debtorId::uuid),
+    type = CASE WHEN type = 'UNPROCESSED' THEN COALESCE($type::accounter_schema.document_type, type) ELSE type END,
+    updated_at = NOW()
+  WHERE id = $documentId::uuid
+    AND (
+      (serial_number IS NULL AND $serialNumber::text IS NOT NULL)
+      OR (date IS NULL AND $date::date IS NOT NULL)
+      OR (total_amount IS NULL AND $totalAmount::double precision IS NOT NULL)
+      OR (currency_code IS NULL AND $currencyCode::accounter_schema.currency IS NOT NULL)
+      OR (vat_amount IS NULL AND $vatAmount::double precision IS NOT NULL)
+      OR (allocation_number IS NULL AND $allocationNumber::varchar IS NOT NULL)
+      OR (description IS NULL AND $description::text IS NOT NULL)
+      OR (remarks IS NULL AND $remarks::text IS NOT NULL)
+      OR (creditor_id IS NULL AND $creditorId::uuid IS NOT NULL)
+      OR (debtor_id IS NULL AND $debtorId::uuid IS NOT NULL)
+      OR (type = 'UNPROCESSED' AND $type::accounter_schema.document_type IS NOT NULL AND $type::accounter_schema.document_type <> 'UNPROCESSED')
+    )
+  RETURNING *;
+`;
+
 const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
   UPDATE accounter_schema.documents
   SET charge_id = $assertChargeID
@@ -491,6 +541,29 @@ export class DocumentsProvider {
     }
     const totalAmount = params.totalAmount == null ? undefined : Math.abs(params.totalAmount); // ensure amount is positive, as the sign is determined by debtor/creditor
     return updateDocument.run({ ...params, totalAmount }, this.db);
+  }
+
+  /**
+   * Fill blank columns from an OCR pass. Returns the updated row, or nothing at all when the pass
+   * had nothing the document was missing — see {@link fillDocumentFromOcr} for why that distinction
+   * is made in SQL rather than by the caller.
+   */
+  public async fillDocumentFromOcr(params: IFillDocumentFromOcrParams) {
+    if (params.documentId) {
+      const document = await this.getDocumentsByIdLoader.load(params.documentId);
+      if (document?.charge_id) {
+        this.getDocumentsByChargeIdLoader.clear(document.charge_id);
+      }
+      await this.invalidateById(params.documentId);
+    }
+    const totalAmount = params.totalAmount == null ? undefined : Math.abs(params.totalAmount); // ensure amount is positive, as the sign is determined by debtor/creditor
+    const result = await fillDocumentFromOcr.run({ ...params, totalAmount }, this.db);
+    // The write happened after the invalidation above, so anything that read the document in
+    // between re-cached the pre-write row. Clear again rather than leave the stale copy behind.
+    if (params.documentId) {
+      this.getDocumentsByIdLoader.clear(params.documentId);
+    }
+    return result;
   }
 
   public async deleteDocument(params: IDeleteDocumentParams) {

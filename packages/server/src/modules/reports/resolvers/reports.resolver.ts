@@ -10,7 +10,6 @@ import {
   journalEntriesForUniformFormat,
 } from '../helpers/uniform-format.helper.js';
 import type { ReportsModule } from '../types.js';
-import { getVatRecords } from './get-vat-records.resolver.js';
 import {
   corporateTaxRulingComplianceReport,
   corporateTaxRulingComplianceReportDifferences,
@@ -22,11 +21,12 @@ import {
   reportCommentarySubRecordMapper,
 } from './reports/profit-and-loss-report.resolver.js';
 import { taxReport, taxReportYearMapper } from './reports/tax-report.js';
+import { vatReport, vatReportResultMapper } from './reports/vat-report.resolver.js';
 import { yearlyLedgerReport } from './reports/yearly-ledger-report.resolver.js';
 
 export const reportsResolvers: ReportsModule.Resolvers = {
   Query: {
-    vatReport: (_, args, { injector }) => getVatRecords(args, injector),
+    vatReport,
     profitAndLossReport,
     taxReport,
     corporateTaxRulingComplianceReport,
@@ -87,6 +87,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
       };
     },
   },
+  VatReportResult: vatReportResultMapper,
   VatReportRecord: {
     allocationNumber: raw => raw.allocationNumber ?? null,
     documentId: raw => raw.documentId,

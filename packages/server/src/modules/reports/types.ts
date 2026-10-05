@@ -1,5 +1,11 @@
-import type { AccountantStatus, Shaam6111Data } from '../../__generated__/types.js';
+import type {
+  AccountantStatus,
+  Shaam6111Data,
+  VatReportFilter,
+} from '../../__generated__/types.js';
+import type { IGetChargesByIdsResult } from '../charges/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '../ledger/types.js';
+import type { RawVatReportRecord } from './helpers/vat-report.helper.js';
 
 export type { currency } from './__generated__/balance-report.types.js';
 export type * from './__generated__/types.js';
@@ -85,6 +91,23 @@ export type TaxReportYearProto = {
   specialTaxableIncome: CommentaryProto;
   specialTaxRate: number;
   annualTaxExpense: number;
+};
+
+/** The records `getVatRecords` builds for one month. */
+export type VatReportRecords = {
+  income: RawVatReportRecord[];
+  expenses: RawVatReportRecord[];
+  missingInfo: IGetChargesByIdsResult[];
+  differentMonthDoc: IGetChargesByIdsResult[];
+  businessTrips: IGetChargesByIdsResult[];
+};
+
+/**
+ * Parent of the `VatReportResult` field resolvers. Carries the filters the report was requested
+ * with, so `summary` can tell whether `income`/`expenses` cover the whole month.
+ */
+export type VatReportResultProto = VatReportRecords & {
+  filters?: VatReportFilter | null;
 };
 
 export type Shaam6111ReportProto = {

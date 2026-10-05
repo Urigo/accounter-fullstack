@@ -10,6 +10,7 @@ import {
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { getVatRecords } from '../resolvers/get-vat-records.resolver.js';
+import type { VatReportResultProto } from '../types.js';
 import type { RawVatReportRecord } from './vat-report.helper.js';
 
 type GeneratorParameters = Parameters<typeof pcnGenerator>;
@@ -19,13 +20,18 @@ type Transaction = GeneratorParameters[1][number];
 export type ExtendedPCNTransaction = Omit<Transaction, 'totalVat'> &
   Required<Pick<Transaction, 'totalVat'>> & { isProperty: boolean };
 
-export const getHeaderDataFromRecords = (
-  transactions: ExtendedPCNTransaction[],
-  licensedDealerId: string,
-  reportMonth = '',
-  generationDate?: string,
-) => {
-  let derivedReportMonth: string = reportMonth;
+/**
+ * The PCN874 header figures that describe the month's records, i.e. everything in the header
+ * except who is filing and when. Amounts are whole local-currency units, as filed.
+ */
+export type Pcn874Totals = Omit<Header, 'licensedDealerId' | 'reportMonth' | 'generationDate'>;
+
+/**
+ * Sums PCN874 transactions into the header totals. This is the single definition of those
+ * figures: the header written into the PCN874 file and the VAT report `summary` both come from
+ * here, so they cannot disagree.
+ */
+export const getPcn874Totals = (transactions: ExtendedPCNTransaction[]): Pcn874Totals => {
   let taxableSalesAmount = 0;
   let taxableSalesVat = 0;
   let salesRecordCount = 0;
@@ -80,18 +86,11 @@ export const getHeaderDataFromRecords = (
         console.debug(`Transaction EntryType  ${t.entryType} is not implemented yet`);
       }
     }
-
-    if (t.invoiceDate.substring(0, 6) > derivedReportMonth) {
-      derivedReportMonth = t.invoiceDate.substring(0, 6);
-    }
   }
 
   const totalVat = taxableSalesVat - otherInputsVat - equipmentInputsVat;
 
-  const header: Header = {
-    licensedDealerId,
-    reportMonth: reportMonth || derivedReportMonth,
-    generationDate,
+  return {
     taxableSalesAmount,
     taxableSalesVat,
     salesRecordCount,
@@ -100,6 +99,27 @@ export const getHeaderDataFromRecords = (
     equipmentInputsVat,
     inputsCount,
     totalVat,
+  };
+};
+
+export const getHeaderDataFromRecords = (
+  transactions: ExtendedPCNTransaction[],
+  licensedDealerId: string,
+  reportMonth = '',
+  generationDate?: string,
+) => {
+  let derivedReportMonth: string = reportMonth;
+  for (const t of transactions) {
+    if (t.invoiceDate.substring(0, 6) > derivedReportMonth) {
+      derivedReportMonth = t.invoiceDate.substring(0, 6);
+    }
+  }
+
+  const header: Header = {
+    licensedDealerId,
+    reportMonth: reportMonth || derivedReportMonth,
+    generationDate,
+    ...getPcn874Totals(transactions),
   };
 
   return header;
@@ -209,7 +229,7 @@ export function getTotalVAT(t: RawVatReportRecord): number {
   return Math.round(Math.abs(Number(t.roundedVATToAdd ?? 0)));
 }
 
-const transactionsFromVatReportRecords = (
+export const transactionsFromVatReportRecords = (
   vatRecords: RawVatReportRecord[],
 ): ExtendedPCNTransaction[] => {
   const transactions: ExtendedPCNTransaction[] = [];
@@ -236,6 +256,44 @@ const transactionsFromVatReportRecords = (
   return transactions.sort((a, b) => a.invoiceDate.localeCompare(b.invoiceDate));
 };
 
+/**
+ * The records a PCN874 file is built from: the business's whole month, with no charge-type
+ * filter and without the VAT report screen's charge buckets.
+ */
+export async function getPcn874VatRecords(
+  injector: Injector,
+  businessId: string,
+  monthDate: TimelessDateString,
+): Promise<RawVatReportRecord[]> {
+  const { income, expenses } = await getVatRecords(
+    { filters: { monthDate, financialEntityId: businessId } },
+    injector,
+    { includeChargeBuckets: false },
+  );
+  return [...income, ...expenses];
+}
+
+/**
+ * Records behind the VAT report `summary`. The summary is the filed figure, so it always covers
+ * the same unfiltered month as the PCN874 file. A report requested without a charge-type filter
+ * already holds exactly those records and they are reused; a filtered one holds only part of the
+ * month, so the month is fetched again the way `getPcn874String` fetches it.
+ */
+export async function getVatReportSummaryRecords(
+  report: VatReportResultProto,
+  injector: Injector,
+): Promise<RawVatReportRecord[]> {
+  const { filters } = report;
+  if (!filters?.chargesType || filters.chargesType === 'ALL') {
+    return [...report.income, ...report.expenses];
+  }
+  return getPcn874VatRecords(
+    injector,
+    filters.financialEntityId,
+    startOfTimelessMonth(filters.monthDate),
+  );
+}
+
 export async function getPcn874String(
   injector: Injector,
   businessId: string,
@@ -248,17 +306,10 @@ export async function getPcn874String(
   if (!financialEntity?.vat_number) {
     throw new Error(`Business entity ${businessId} has no VAT number`);
   }
-  const vatRecords = await getVatRecords(
-    { filters: { monthDate, financialEntityId: businessId } },
-    injector,
-    { includeChargeBuckets: false },
-  );
+  const vatRecords = await getPcn874VatRecords(injector, businessId, monthDate);
   const reportMonth = getTimelessDateYearMonth(monthDate).replace('-', '');
   const reportContent = generatePcnFromVatRecords(
-    [
-      ...(vatRecords.income as RawVatReportRecord[]),
-      ...(vatRecords.expenses as RawVatReportRecord[]),
-    ],
+    vatRecords,
     financialEntity.vat_number,
     reportMonth,
   );

@@ -1,12 +1,15 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ExtendedPCNTransaction,
   getEntryTypeByRecord,
   getHeaderDataFromRecords,
   getPcn874String,
+  getPcn874Totals,
   getReferenceForTransaction,
   getTotalVAT,
   getVatIdForTransaction,
+  getVatReportSummaryRecords,
+  transactionsFromVatReportRecords,
 } from '../pcn.helper.js';
 import { EntryType, validatePcn874 } from '@accounter/pcn874-generator';
 import type { RawVatReportRecord } from '../vat-report.helper.js';
@@ -15,6 +18,7 @@ import { getVatRecords } from '../../resolvers/get-vat-records.resolver.js';
 import { IGetChargesByIdsResult } from '../../../charges/types.js';
 import { TimelessDateString } from '../../../../shared/types/index.js';
 import type { Injector } from 'graphql-modules';
+import type { VatReportResultProto } from '../../types.js';
 
 type GetVatRecordsResponse = {
       income: Array<RawVatReportRecord>;
@@ -602,6 +606,253 @@ describe('pcn.helper', () => {
           expect(result.otherInputsVat).toBe(153);
         });
       });
+    });
+  });
+
+  describe('PCN874 totals (VAT report summary)', () => {
+    const createPcnRecord = (
+      overrides: Partial<ExtendedPCNTransaction> = {},
+    ): ExtendedPCNTransaction => ({
+      entryType: EntryType.SALE_REGULAR,
+      vatId: '123456789',
+      invoiceDate: '20240115',
+      refGroup: '0000',
+      refNumber: '1',
+      totalVat: 170,
+      invoiceSum: 1000,
+      isProperty: false,
+      allocationNumber: undefined,
+      ...overrides,
+    });
+
+    // One record of every shape the header distinguishes, including credit notes and the entry
+    // types the header does not handle yet (S2, Y, R), which are left out of every total.
+    const mixedMonth = [
+      createPcnRecord({ entryType: EntryType.SALE_REGULAR, invoiceSum: 1000, totalVat: 170 }),
+      createPcnRecord({ entryType: EntryType.SALE_REGULAR, invoiceSum: -500, totalVat: 85 }),
+      createPcnRecord({ entryType: EntryType.SALE_UNIDENTIFIED_CUSTOMER, invoiceSum: 200, totalVat: 34 }),
+      createPcnRecord({ entryType: EntryType.SALE_UNIDENTIFIED_CUSTOMER, invoiceSum: 300, totalVat: 0 }),
+      createPcnRecord({ entryType: EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT, invoiceSum: 400, totalVat: 0 }),
+      createPcnRecord({ entryType: EntryType.SALE_ZERO_OR_EXEMPT, invoiceSum: 600, totalVat: 0 }),
+      createPcnRecord({ entryType: EntryType.SALE_EXPORT, invoiceSum: 5000, totalVat: 0 }),
+      createPcnRecord({ entryType: EntryType.INPUT_REGULAR, invoiceSum: 500, totalVat: 85 }),
+      createPcnRecord({ entryType: EntryType.INPUT_REGULAR, invoiceSum: 3000, totalVat: 510, isProperty: true }),
+      createPcnRecord({ entryType: EntryType.INPUT_REGULAR, invoiceSum: -100, totalVat: 17 }),
+      createPcnRecord({ entryType: EntryType.INPUT_PETTY_CASH, invoiceSum: 100, totalVat: 17 }),
+      createPcnRecord({ entryType: EntryType.INPUT_IMPORT, invoiceSum: 3000, totalVat: 510 }),
+    ];
+
+    const identityFields = (header: ReturnType<typeof getHeaderDataFromRecords>) => {
+      const { licensedDealerId: _, reportMonth: __, generationDate: ___, ...totals } = header;
+      return totals;
+    };
+
+    it('locks the current header definition of every total', () => {
+      vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+      expect(getPcn874Totals(mixedMonth)).toEqual({
+        taxableSalesAmount: 1000 - 500 + 200,
+        taxableSalesVat: 170 - 85 + 34,
+        salesRecordCount: 5,
+        zeroValOrExemptSalesCount: 300 + 400,
+        otherInputsVat: 85 - 17 + 17,
+        equipmentInputsVat: 510,
+        inputsCount: 4,
+        totalVat: 170 - 85 + 34 - (85 - 17 + 17) - 510,
+      });
+    });
+
+    it('is exactly the header minus who files and when', () => {
+      vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+      const header = getHeaderDataFromRecords(mixedMonth, FIXED_VAT_NUMBER, '202401', '20240201');
+      expect(getPcn874Totals(mixedMonth)).toEqual(identityFields(header));
+      expect(header.licensedDealerId).toBe(FIXED_VAT_NUMBER);
+      expect(header.reportMonth).toBe('202401');
+      expect(header.generationDate).toBe('20240201');
+    });
+
+    it('does not need a licensed dealer id', () => {
+      expect(getPcn874Totals([])).toEqual({
+        taxableSalesAmount: 0,
+        taxableSalesVat: 0,
+        salesRecordCount: 0,
+        zeroValOrExemptSalesCount: 0,
+        otherInputsVat: 0,
+        equipmentInputsVat: 0,
+        inputsCount: 0,
+        totalVat: 0,
+      });
+    });
+
+    it('still derives the header report month from the latest record when none is given', () => {
+      const header = getHeaderDataFromRecords(
+        [
+          createPcnRecord({ invoiceDate: '20240115' }),
+          createPcnRecord({ invoiceDate: '20240302' }),
+          createPcnRecord({ invoiceDate: '20240220' }),
+        ],
+        FIXED_VAT_NUMBER,
+      );
+      expect(header.reportMonth).toBe('202403');
+    });
+
+    it('builds the totals from VAT report records the way the PCN874 file does', () => {
+      const records = [
+        createMockVatRecord({ localAmountBeforeVAT: 1000.4, roundedVATToAdd: 170 }),
+        createMockVatRecord({
+          isExpense: true,
+          pcn874RecordType: EntryType.INPUT_REGULAR,
+          isProperty: true,
+          localAmountBeforeVAT: 2999.6,
+          roundedVATToAdd: 510,
+        }),
+        createMockVatRecord({ documentDate: null, localAmountBeforeVAT: 99_999 }),
+      ];
+      vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+      expect(getPcn874Totals(transactionsFromVatReportRecords(records))).toEqual({
+        taxableSalesAmount: 1000,
+        taxableSalesVat: 170,
+        salesRecordCount: 1,
+        zeroValOrExemptSalesCount: 0,
+        otherInputsVat: 0,
+        equipmentInputsVat: 510,
+        inputsCount: 1,
+        totalVat: 170 - 510,
+      });
+    });
+
+    describe('getVatReportSummaryRecords', () => {
+      const income = [createMockVatRecord({ localAmountBeforeVAT: 1000 })];
+      const expenses = [createMockVatRecord({ isExpense: true, localAmountBeforeVAT: 500 })];
+      const report = (filters: VatReportResultProto['filters']): VatReportResultProto => ({
+        income,
+        expenses,
+        missingInfo: [],
+        differentMonthDoc: [],
+        businessTrips: [],
+        filters,
+      });
+
+      it.each([
+        ['no filters', null],
+        ['no charge type', { monthDate: FIXED_REPORT_MONTH, financialEntityId: FIXED_BUSINESS_ID }],
+        [
+          'charge type ALL',
+          {
+            monthDate: FIXED_REPORT_MONTH,
+            financialEntityId: FIXED_BUSINESS_ID,
+            chargesType: 'ALL' as const,
+          },
+        ],
+      ] as const)('reuses the report records when they cover the whole month (%s)', async (_, filters) => {
+        vi.mocked(getVatRecords).mockClear();
+
+        const records = await getVatReportSummaryRecords(report(filters), createMockInjector());
+
+        expect(records).toEqual([...income, ...expenses]);
+        expect(getVatRecords).not.toHaveBeenCalled();
+      });
+
+      it.each(['INCOME', 'EXPENSE'] as const)(
+        'refetches the unfiltered month exactly like the PCN874 file when filtered by %s',
+        async chargesType => {
+          const unfilteredMonth = [
+            createMockVatRecord({ localAmountBeforeVAT: 1000 }),
+            createMockVatRecord({ localAmountBeforeVAT: 2000 }),
+            createMockVatRecord({ isExpense: true, localAmountBeforeVAT: 500 }),
+          ];
+          vi.mocked(getVatRecords).mockReset();
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: unfilteredMonth.slice(0, 2),
+            expenses: unfilteredMonth.slice(2),
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          });
+          const injector = createMockInjector();
+
+          const records = await getVatReportSummaryRecords(
+            report({
+              monthDate: FIXED_REPORT_MONTH,
+              financialEntityId: FIXED_BUSINESS_ID,
+              chargesType,
+            }),
+            injector,
+          );
+          await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+          expect(records).toEqual(unfilteredMonth);
+          expect(getVatRecords).toHaveBeenCalledTimes(2);
+          const [summaryCall, pcnCall] = vi.mocked(getVatRecords).mock.calls;
+          expect(summaryCall).toEqual(pcnCall);
+          expect(summaryCall[0].filters?.chargesType).toBeUndefined();
+          expect(summaryCall[2]).toEqual({ includeChargeBuckets: false });
+        },
+      );
+    });
+  });
+
+  describe('month handling west of UTC (TZ=America/New_York)', () => {
+    let previousTimeZone: string | undefined;
+
+    beforeEach(() => {
+      previousTimeZone = process.env.TZ;
+      process.env.TZ = 'America/New_York';
+      vi.mocked(getVatRecords).mockReset();
+      vi.mocked(getVatRecords).mockResolvedValue({
+        income: [createMockVatRecord({ documentDate: '2024-01-10' })],
+        expenses: [],
+        missingInfo: [],
+        differentMonthDoc: [],
+        businessTrips: [],
+      });
+    });
+
+    afterEach(() => {
+      if (previousTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = previousTimeZone;
+      }
+    });
+
+    it.each(['2024-01-01', '2024-01-15', '2024-01-31'] as const)(
+      'files %s as January',
+      async rawMonthDate => {
+        const result = await getPcn874String(createMockInjector(), FIXED_BUSINESS_ID, rawMonthDate);
+
+        expect(result.monthDate).toBe('2024-01-01');
+        expect(result.reportMonth).toBe('202401');
+        expect(result.reportContent.slice(10, 16)).toBe('202401');
+        expect(vi.mocked(getVatRecords).mock.calls[0][0].filters?.monthDate).toBe('2024-01-01');
+      },
+    );
+
+    it('refetches a filtered summary for the same month as the PCN874 file', async () => {
+      const injector = createMockInjector();
+
+      await getVatReportSummaryRecords(
+        {
+          income: [],
+          expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+          filters: {
+            monthDate: '2024-01-01',
+            financialEntityId: FIXED_BUSINESS_ID,
+            chargesType: 'INCOME',
+          },
+        },
+        injector,
+      );
+      await getPcn874String(injector, FIXED_BUSINESS_ID, '2024-01-01');
+
+      const [summaryCall, pcnCall] = vi.mocked(getVatRecords).mock.calls;
+      expect(summaryCall).toEqual(pcnCall);
+      expect(summaryCall[0].filters?.monthDate).toBe('2024-01-01');
     });
   });
 
