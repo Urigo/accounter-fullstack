@@ -88,8 +88,12 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: graphql-cache
         with:
+          # Every `generate:graphql` output must be listed: on an exact cache hit the generate
+          # step is skipped, so anything missing here is absent for the rest of the job (the
+          # server's base types in `src/__generated__` were, breaking runtime enum imports).
           path: |
             schema.graphql
+            packages/server/src/__generated__
             packages/server/src/modules/**/__generated__
             packages/client/src/gql
             packages/email-ingestion-gateway/src/gql
