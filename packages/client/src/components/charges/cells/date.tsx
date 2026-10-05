@@ -1,6 +1,5 @@
 import { type ReactElement } from 'react';
-import { format } from 'date-fns';
-import { timelessDateStringToLocalDate, type TimelessDateString } from '@/helpers/index.js';
+import { formatTimelessDate, type TimelessDateString } from '@/helpers/index.js';
 
 type ChargeDate = TimelessDateString | null | undefined;
 
@@ -32,25 +31,25 @@ export function getDateProps({
   const displayDate = minDocumentsDate || minEventDate || minDebitDate;
 
   return {
-    date: displayDate ? timelessDateStringToLocalDate(displayDate) : undefined,
-    mostMinDate: mostMinDate ? timelessDateStringToLocalDate(mostMinDate) : undefined,
-    mostMaxDate: mostMaxDate ? timelessDateStringToLocalDate(mostMaxDate) : undefined,
+    date: displayDate ?? undefined,
+    mostMinDate,
+    mostMaxDate,
   };
 }
 
 export type DateProps = {
-  date?: Date;
-  mostMinDate?: Date;
-  mostMaxDate?: Date;
+  date?: TimelessDateString;
+  mostMinDate?: TimelessDateString;
+  mostMaxDate?: TimelessDateString;
 };
 
 export const DateCell = ({ date, mostMinDate, mostMaxDate }: DateProps): ReactElement => {
   return (
     <>
-      <div>{date && format(date, 'dd/MM/yy')}</div>
-      {mostMinDate && mostMaxDate && mostMinDate.getTime() !== mostMaxDate.getTime() ? (
+      <div>{date && formatTimelessDate(date)}</div>
+      {mostMinDate && mostMaxDate && mostMinDate !== mostMaxDate ? (
         <div className="text-xs text-gray-500">
-          ({format(mostMinDate, 'dd/MM/yy')} - {format(mostMaxDate, 'dd/MM/yy')})
+          ({formatTimelessDate(mostMinDate)} - {formatTimelessDate(mostMaxDate)})
         </div>
       ) : null}
     </>

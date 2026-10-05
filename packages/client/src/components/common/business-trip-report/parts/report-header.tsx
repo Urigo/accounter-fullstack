@@ -1,8 +1,9 @@
 import type { ReactElement } from 'react';
-import { differenceInDays, format, setHours } from 'date-fns';
+import { differenceInDays, setHours } from 'date-fns';
 import { ROUTES } from '@/router/routes.js';
 import { BusinessTripReportHeaderFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
+import { formatTimelessDate } from '../../../../helpers/dates.js';
 import { CopyToClipboardButton } from '../../index.js';
 import { AccountantApproval } from '../buttons/accountant-approval.js';
 import { BusinessTripToggleMenu } from './business-trip-toggle-menu.js';
@@ -55,15 +56,11 @@ export const ReportHeader = ({ data, onChange }: Props): ReactElement => {
       </div>
       <div className="col-span-12 min-[992px]:col-span-6 min-[1200px]:col-span-3 min-[1408px]:col-span-2">
         From Date:
-        <div className="text-lg">
-          {dates?.start ? format(new Date(dates.start), 'dd/MM/yy') : 'Missing'}
-        </div>
+        <div className="text-lg">{dates?.start ? formatTimelessDate(dates.start) : 'Missing'}</div>
       </div>
       <div className="col-span-12 min-[992px]:col-span-6 min-[1200px]:col-span-3 min-[1408px]:col-span-2">
         To Date:
-        <div className="text-lg">
-          {dates?.end ? format(new Date(dates.end), 'dd/MM/yy') : 'Missing'}
-        </div>
+        <div className="text-lg">{dates?.end ? formatTimelessDate(dates.end) : 'Missing'}</div>
       </div>
       <div className="col-span-12 min-[992px]:col-span-6 min-[1200px]:col-span-3 min-[1408px]:col-span-2">
         Destination:

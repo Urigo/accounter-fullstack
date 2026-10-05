@@ -1,7 +1,7 @@
 import { type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { TransactionsTableDebitDateFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { formatTimelessDate } from '../../../helpers/index.js';
 import { TableCell } from '../../ui/table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -24,10 +24,10 @@ export const DebitDate = ({ data }: Props): ReactElement => {
   return (
     <TableCell>
       <div className="flex flex-col justify-center">
-        <div>{effectiveDate && format(new Date(effectiveDate), 'dd/MM/yy')}</div>
+        <div>{effectiveDate && formatTimelessDate(effectiveDate)}</div>
         {transaction.sourceEffectiveDate && (
           <div className="text-xs text-gray-500">
-            (Originally {format(new Date(transaction.sourceEffectiveDate), 'dd/MM/yy')})
+            (Originally {formatTimelessDate(transaction.sourceEffectiveDate)})
           </div>
         )}
       </div>

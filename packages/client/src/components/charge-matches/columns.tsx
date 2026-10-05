@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import type { ChargeType } from '@/helpers/index.js';
+import type { ChargeType, TimelessDateString } from '@/helpers/index.js';
 import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { DataTableColumnHeader, Score } from '../common/index.js';
 import { Checkbox } from '../ui/checkbox.js';
@@ -42,7 +42,7 @@ export const columns: ColumnDef<TableFeaturesConfig, ChargeMatchRow>[] = [
   {
     accessorKey: 'date',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-    cell: ({ row }) => <DateCell date={row.getValue<Date>('date')} />,
+    cell: ({ row }) => <DateCell date={row.getValue<TimelessDateString | undefined>('date')} />,
   },
   {
     accessorKey: 'amountRaw',

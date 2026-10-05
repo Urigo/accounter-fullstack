@@ -7,7 +7,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import type { ChargeType } from '@/helpers/charges.js';
-import { timelessDateStringToLocalDate } from '@/helpers/dates.js';
+import type { TimelessDateString } from '@/helpers/dates.js';
 import { tableFeaturesConfig } from '@/lib/table-features.js';
 import { ChargeMatchesTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
@@ -63,7 +63,7 @@ export interface ChargeMatchRow {
   id: string;
   confidenceScore: number;
   type: ChargeType;
-  date?: Date;
+  date?: TimelessDateString;
   amountRaw?: number;
   amountFormatted?: string;
   vatAmountRaw?: number;
@@ -97,7 +97,7 @@ function convertChargeMatchFragmentToTableRow(
     id: fragmentData.charge.id,
     confidenceScore: fragmentData.confidenceScore,
     type: fragmentData.charge.__typename!,
-    date: rawDate ? timelessDateStringToLocalDate(rawDate) : undefined,
+    date: rawDate,
     amountRaw: fragmentData.charge.totalAmount?.raw,
     amountFormatted: fragmentData.charge.totalAmount?.formatted,
     vatAmountRaw: fragmentData.charge.vat?.raw,

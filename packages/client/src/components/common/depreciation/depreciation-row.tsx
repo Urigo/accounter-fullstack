@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
@@ -10,6 +9,7 @@ import {
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import {
+  formatTimelessDate,
   relevantDataPicker,
   TIMELESS_DATE_REGEX,
   type MakeBoolean,
@@ -180,7 +180,7 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
                 )}
               />
             ) : (
-              <div>{format(new Date(depreciationRecord.activationDate), 'dd/MM/yy')}</div>
+              <div>{formatTimelessDate(depreciationRecord.activationDate)}</div>
             )}
           </div>
         </TableCell>

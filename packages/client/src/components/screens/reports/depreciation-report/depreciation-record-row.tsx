@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
 import {
   DepreciationReportRecordCoreFragmentDoc,
   type DepreciationReportScreenQuery,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
+import { formatTimelessDate } from '../../../../helpers/dates.js';
 import { formatStringifyAmount } from '../../../../helpers/numbers.js';
 import { TableCell, TableRow } from '../../../ui/table.js';
 
@@ -18,9 +18,11 @@ export const DepreciationRecordRow = ({ record }: Props): ReactElement => {
   return (
     <TableRow>
       <TableCell>{record.description}</TableCell>
-      <TableCell>{format(new Date(record.purchaseDate), 'dd/MM/yyyy')}</TableCell>
+      <TableCell>{formatTimelessDate(record.purchaseDate, 'dd/MM/yyyy')}</TableCell>
       <TableCell>
-        {record.activationDate ? format(new Date(record.activationDate), 'dd/MM/yyyy') : undefined}
+        {record.activationDate
+          ? formatTimelessDate(record.activationDate, 'dd/MM/yyyy')
+          : undefined}
       </TableCell>
       <TableCell>
         {summary.originalCost ? formatStringifyAmount(summary.originalCost, 0) : undefined}

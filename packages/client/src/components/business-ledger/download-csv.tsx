@@ -1,9 +1,8 @@
 import { useCallback, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { Currency } from '../../gql/graphql.js';
 import {
   currencyCodeToSymbol,
-  timelessDateStringToLocalDate,
+  formatTimelessDate,
   type TimelessDateString,
 } from '../../helpers/index.js';
 import { DownloadCSVButton } from '../common/index.js';
@@ -81,9 +80,7 @@ function handleLedgerRecord(ledgerRecord: ExtendedLedger, currencies: Array<Curr
   let ledgerRecordString = '';
 
   const sortingDate = ledgerRecord.invoiceDate ?? null;
-  const date = ledgerRecord.invoiceDate
-    ? format(timelessDateStringToLocalDate(ledgerRecord.invoiceDate), 'dd/MM/yy')
-    : null;
+  const date = ledgerRecord.invoiceDate ? formatTimelessDate(ledgerRecord.invoiceDate) : null;
   const ilsAmount = ledgerRecord.amount.raw;
   const { ilsBalance, reference, details } = ledgerRecord;
   const counterAccount = ledgerRecord.counterAccount?.name ?? '';

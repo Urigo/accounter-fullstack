@@ -14,6 +14,18 @@ export function timelessDateStringToLocalDate(date: TimelessDateString): Date {
   return new Date(year, month - 1, day);
 }
 
+/**
+ * Formats a `yyyy-mm-dd` calendar day for display (`dd/MM/yy` by default) straight from its parts,
+ * without going through a `Date`, so no timezone can move it to another day.
+ */
+export function formatTimelessDate(
+  date: TimelessDateString,
+  pattern: 'dd/MM/yy' | 'dd/MM/yyyy' = 'dd/MM/yy',
+): string {
+  const [year, month, day] = date.split('-');
+  return `${day}/${month}/${pattern === 'dd/MM/yy' ? year.slice(-2) : year}`;
+}
+
 type addZero<T> = T | 0;
 type oneToFour = 1 | 2 | 3 | 4;
 type oneToNine = oneToFour | 5 | 6 | 7 | 8 | 9;

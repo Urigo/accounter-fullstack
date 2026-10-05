@@ -17,4 +17,6 @@ shift with the server's or browser's timezone:
 - `TimelessDateString` is now the pattern `${number}-${number}-${number}` instead of a union of
   every day in 2000-2049, which kept server type-checking fast and allows earlier years.
 - Client: the charges table, charge matching, ledger tables and CSV exports read these fields as
-  calendar days.
+  calendar days, and every `dd/MM/yy` date cell (transactions, documents, business trips,
+  depreciation, bank deposits) formats the `yyyy-mm-dd` string directly through a shared
+  `formatTimelessDate` helper instead of `new Date(...)`, which showed the previous day west of UTC.

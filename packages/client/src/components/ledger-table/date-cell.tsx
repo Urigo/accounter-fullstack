@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
-import { timelessDateStringToLocalDate, type TimelessDateString } from '@/helpers/index.js';
+import { formatTimelessDate, type TimelessDateString } from '@/helpers/index.js';
 
 type Props = {
   date?: TimelessDateString | null;
@@ -8,12 +7,10 @@ type Props = {
 };
 
 export const DateCell = ({ date, diff }: Props): ReactElement => {
-  const formattedDate = date ? format(timelessDateStringToLocalDate(date), 'dd/MM/yy') : undefined;
+  const formattedDate = date ? formatTimelessDate(date) : undefined;
 
   // calculate diff date
-  const diffFormattedDate = diff
-    ? format(timelessDateStringToLocalDate(diff), 'dd/MM/yy')
-    : undefined;
+  const diffFormattedDate = diff ? formatTimelessDate(diff) : undefined;
   const isDiff = diffFormattedDate && formattedDate !== diffFormattedDate;
 
   return (

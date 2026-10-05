@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { type Control } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -13,6 +12,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
+import { formatTimelessDate } from '../../../../helpers/dates.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
 import { TableCell, TableHead } from '../../../ui/table.js';
 import { ComboBox, CurrencyInput, DatePickerInput } from '../../index.js';
@@ -160,10 +160,9 @@ export const CoreExpenseRow = ({
             </>
           ) : (
             <>
-              {businessTripExpense.date && format(new Date(businessTripExpense.date), 'dd/MM/yy')}
+              {businessTripExpense.date && formatTimelessDate(businessTripExpense.date)}
               <div className="text-sm text-gray-500">
-                {businessTripExpense.valueDate &&
-                  format(new Date(businessTripExpense.valueDate), 'dd/MM/yy')}
+                {businessTripExpense.valueDate && formatTimelessDate(businessTripExpense.valueDate)}
               </div>
             </>
           )}

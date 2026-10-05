@@ -242,6 +242,10 @@ sources:
             responseSchema: ../json-schemas/greenInvoice.json#/$defs/getBankTransactionsResponse
 codegen:
   ignoreEnumValuesFromSchema: false
+  scalars:
+    # Green Invoice dates are `yyyy-mm-dd` calendar days, typed like the server's `TimelessDateString`.
+    # `\x24` is `$`: mesh replaces dollar-brace placeholders in this file with env vars before parsing it.
+    Date: "`\x24{number}-\x24{number}-\x24{number}`"
 
 serve:
   browser: false

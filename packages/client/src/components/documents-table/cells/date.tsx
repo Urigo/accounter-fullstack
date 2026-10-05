@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
 import { DocumentType } from '../../../gql/graphql.js';
+import { formatTimelessDate } from '../../../helpers/index.js';
 import { Indicator } from '../../ui/indicator.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
@@ -14,7 +14,7 @@ export const DateCell = ({ document }: Props): ReactElement => {
   const shouldHaveDate = DocumentType.Other !== document.documentType;
   const isError = shouldHaveDate && !date;
 
-  const formattedDate = date ? format(new Date(date), 'dd/MM/yy') : 'Missing Data';
+  const formattedDate = date ? formatTimelessDate(date) : 'Missing Data';
   const dateContentValue = shouldHaveDate ? formattedDate : null;
 
   return (
