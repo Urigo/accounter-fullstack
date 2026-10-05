@@ -61,7 +61,7 @@ describe('glossary covers the enum vocabularies the tools advertise', () => {
   it.each(Object.values(Pcn874RecordType))('defines PCN874 record type %s', recordType => {
     const entry = GLOSSARY.find(item => item.term === 'pcn874-record-type');
     expect(entry?.summary).toMatch(new RegExp(`\\b${recordType}\\b`));
-    expect(entry?.detail).toMatch(new RegExp(`\\b${recordType} `));
+    expect(entry?.detail).toMatch(new RegExp(`\\b${recordType}\\b`));
   });
 
   it('defines the owner/counterparty filter pair that has already caused a scoping bug', () => {

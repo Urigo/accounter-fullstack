@@ -295,7 +295,7 @@ describe('vatReportTool — row shapes', () => {
     ]);
   });
 
-  it('preserves nulls on an expense row (null amount means zero upstream)', async () => {
+  it('preserves nulls on an expense row (upstream drops zero amounts)', async () => {
     const sparse = vatRecord('ex-9', {
       chargeAccountantStatus: null,
       documentId: null,

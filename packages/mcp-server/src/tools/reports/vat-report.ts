@@ -234,7 +234,8 @@ function toRecordRow(record: RawVatRecord, ownerId: string) {
     documentDate: record.documentDate ?? null,
     allocationNumber: record.allocationNumber ?? null,
     chargeDate: record.chargeDate ?? null,
-    // Upstream drops zero values, so a null amount below means zero.
+    // Upstream drops zero values, so a null amount below usually means zero;
+    // the exception (a zero-VAT document) is in the `vat-report-amounts` glossary entry.
     amount: normalizeAmount(record.amount),
     localAmount: normalizeAmount(record.localAmount),
     localVat: normalizeAmount(record.localVat),
@@ -377,7 +378,8 @@ export const vatReportTool: ToolDefinition<typeof vatReportInput> = {
     'reasons) — paged with `offset`/`limit`; `counts` gives the size of all three sections. ' +
     "`summary` is the month's PCN874 header totals as filed (whole month, local currency; " +
     '`totalVat` positive = to pay, negative = refund), returned on every call: prefer it over ' +
-    'summing rows. A null amount means zero. Every row carries the reported business as ' +
+    'summing rows. Null amounts usually mean zero (upstream drops zeros); see `vat-report-amounts` ' +
+    'for the exception. Every row carries the reported business as ' +
     '`ownerId`. For what the fields mean, call `accounter_explain_terminology` with topic ' +
     '`report`. Requires business owner or accountant role. ' +
     resultEnvelopeDescription('<section>') +
