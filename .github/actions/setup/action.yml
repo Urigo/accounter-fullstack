@@ -149,7 +149,8 @@ runs:
           'packages/gmail-listener/src/server-requests.ts',
           'packages/scraper-app/src/server/graphql/mutations.ts',
           'packages/email-ingestion-gateway/src/graphql/mutations.ts',
-          'packages/mcp-server/src/tools/*.ts', 'packages/mcp-server/src/upstream/*.ts') }}
+          'packages/mcp-server/src/tools/*.ts', 'packages/mcp-server/src/tools/reports/*.ts',
+          'packages/mcp-server/src/upstream/*.ts') }}
         restore-keys: |
           graphql-codegen-${{ runner.os }}-
 
