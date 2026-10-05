@@ -1,15 +1,10 @@
-import { format } from 'date-fns';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import {
-  formatTimelessDate,
-  timelessDateStringToLocalDate,
-  type TimelessDateString,
-} from '../dates.js';
+import { formatTimelessDate } from '../dates.js';
 
 // Browsers on either side of UTC, and the far ends of the offset range.
 const TIMEZONES = ['UTC', 'Asia/Jerusalem', 'America/New_York', 'Asia/Tokyo', 'Pacific/Pago_Pago'];
 
-describe.each(TIMEZONES)('timeless date helpers with TZ=%s', timeZone => {
+describe.each(TIMEZONES)('formatTimelessDate with TZ=%s', timeZone => {
   let previous: string | undefined;
   beforeAll(() => {
     previous = process.env['TZ'];
@@ -20,17 +15,13 @@ describe.each(TIMEZONES)('timeless date helpers with TZ=%s', timeZone => {
     else process.env['TZ'] = previous;
   });
 
-  it.each(['2026-05-01', '2026-01-01', '2025-12-31', '2024-02-29'] as TimelessDateString[])(
-    'shows %s as that same day',
-    day => {
-      const date = timelessDateStringToLocalDate(day);
-      expect(format(date, 'yyyy-MM-dd')).toBe(day);
-    },
-  );
-
-  it('formats a day as dd/MM/yy or dd/MM/yyyy', () => {
+  it('formats a day as dd/MM/yy', () => {
     expect(formatTimelessDate('2026-05-01')).toBe('01/05/26');
+    expect(formatTimelessDate('2026-01-01')).toBe('01/01/26');
     expect(formatTimelessDate('2025-12-31')).toBe('31/12/25');
+  });
+
+  it('formats a day as dd/MM/yyyy', () => {
     expect(formatTimelessDate('2024-02-29', 'dd/MM/yyyy')).toBe('29/02/2024');
   });
 });

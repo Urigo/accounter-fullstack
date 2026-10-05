@@ -5,16 +5,6 @@ export function formatTimelessDateString(date: Date): TimelessDateString {
 }
 
 /**
- * Parses a `yyyy-mm-dd` calendar day as local midnight, so formatting it in the browser shows that
- * same day. `new Date('yyyy-mm-dd')` reads it as UTC midnight instead, which is the previous day
- * anywhere west of UTC.
- */
-export function timelessDateStringToLocalDate(date: TimelessDateString): Date {
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-/**
  * Formats a `yyyy-mm-dd` calendar day for display (`dd/MM/yy` by default) straight from its parts,
  * without going through a `Date`, so no timezone can move it to another day.
  */
