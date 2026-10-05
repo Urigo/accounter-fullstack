@@ -82,132 +82,81 @@ const vatReportInput = z.object({
 
 type VatReportInput = z.infer<typeof vatReportInput>;
 
+// `income` and `expenses` are both `VatReportRecord` lists, so they share one
+// selection via a fragment in this same literal (codegen resolves it; only
+// `${}` interpolation would not be). Amounts stay inline: a record mixes
+// `FinancialAmount` and `FinancialIntAmount`, which one fragment cannot cover.
 const VAT_REPORT_QUERY = /* GraphQL */ `
+  fragment McpVatReportRecordFields on VatReportRecord {
+    chargeAccountantStatus
+    chargeId
+    documentId
+    business {
+      id
+      name
+    }
+    vatNumber
+    image
+    documentSerial
+    documentDate
+    allocationNumber
+    chargeDate
+    amount {
+      raw
+      formatted
+      currency
+    }
+    localAmount {
+      raw
+      formatted
+      currency
+    }
+    localVat {
+      raw
+      formatted
+      currency
+    }
+    foreignVat {
+      raw
+      formatted
+      currency
+    }
+    foreignVatAfterDeduction {
+      raw
+      formatted
+      currency
+    }
+    localVatAfterDeduction {
+      raw
+      formatted
+      currency
+    }
+    roundedLocalVatAfterDeduction {
+      raw
+      formatted
+      currency
+    }
+    taxReducedLocalAmount {
+      raw
+      formatted
+      currency
+    }
+    taxReducedForeignAmount {
+      raw
+      formatted
+      currency
+    }
+    recordType
+    isProperty
+  }
+
   query McpVatReport($filters: VatReportFilter) {
     vatReport(filters: $filters) {
       income {
-        chargeAccountantStatus
-        chargeId
-        documentId
-        business {
-          id
-          name
-        }
-        vatNumber
-        image
-        documentSerial
-        documentDate
-        allocationNumber
-        chargeDate
-        amount {
-          raw
-          formatted
-          currency
-        }
-        localAmount {
-          raw
-          formatted
-          currency
-        }
-        localVat {
-          raw
-          formatted
-          currency
-        }
-        foreignVat {
-          raw
-          formatted
-          currency
-        }
-        foreignVatAfterDeduction {
-          raw
-          formatted
-          currency
-        }
-        localVatAfterDeduction {
-          raw
-          formatted
-          currency
-        }
-        roundedLocalVatAfterDeduction {
-          raw
-          formatted
-          currency
-        }
-        taxReducedLocalAmount {
-          raw
-          formatted
-          currency
-        }
-        taxReducedForeignAmount {
-          raw
-          formatted
-          currency
-        }
-        recordType
-        isProperty
+        ...McpVatReportRecordFields
       }
       expenses {
-        chargeAccountantStatus
-        chargeId
-        documentId
-        business {
-          id
-          name
-        }
-        vatNumber
-        image
-        documentSerial
-        documentDate
-        allocationNumber
-        chargeDate
-        amount {
-          raw
-          formatted
-          currency
-        }
-        localAmount {
-          raw
-          formatted
-          currency
-        }
-        localVat {
-          raw
-          formatted
-          currency
-        }
-        foreignVat {
-          raw
-          formatted
-          currency
-        }
-        foreignVatAfterDeduction {
-          raw
-          formatted
-          currency
-        }
-        localVatAfterDeduction {
-          raw
-          formatted
-          currency
-        }
-        roundedLocalVatAfterDeduction {
-          raw
-          formatted
-          currency
-        }
-        taxReducedLocalAmount {
-          raw
-          formatted
-          currency
-        }
-        taxReducedForeignAmount {
-          raw
-          formatted
-          currency
-        }
-        recordType
-        isProperty
+        ...McpVatReportRecordFields
       }
       missingInfo {
         __typename
