@@ -6,6 +6,8 @@ import { searchChargesTool } from '../charges.js';
 import { chargeTypeFromTypename, normalizeAmount } from '../entity-shapes.js';
 import { executeRegisteredTool } from '../execute.js';
 import { balanceReportTool } from '../reports/balance-report.js';
+import { vatReportTool } from '../reports/vat-report.js';
+import { vatReportData } from './vat-report-fixtures.js';
 
 const PRINCIPAL: AuthPrincipal = {
   subject: 'user-1',
@@ -138,5 +140,23 @@ describe('one money shape, across every tool that emits money', () => {
     const [row] = (result.structuredContent as { rows: Array<{ amount: object }> }).rows;
     expect(Object.keys(row!.amount)).toEqual(MONEY_KEYS);
     expect(row!.amount).toEqual({ value: 10, formatted: '10.00', currency: 'ILS' });
+  });
+
+  it('vat_report emits the shared shape, on rows and on the summary', async () => {
+    const result = await executeRegisteredTool({
+      tool: vatReportTool,
+      rawArgs: { memberBusinessId: 'b1', month: '2026-03', section: 'income' },
+      auth: authContext(),
+      correlationId: 'c',
+      authorization: 'Bearer t',
+      client: clientReturning(vatReportData()),
+    });
+
+    const structured = result.structuredContent as {
+      income: Array<{ localVat: object }>;
+      summary: { totalVat: object };
+    };
+    expect(Object.keys(structured.income[0]!.localVat)).toEqual(MONEY_KEYS);
+    expect(Object.keys(structured.summary.totalVat)).toEqual(MONEY_KEYS);
   });
 });

@@ -33,6 +33,9 @@ const LIST_TOOLS: ReadonlyArray<readonly [tool: string, itemsKey: string]> = [
   ['accounter_list_sort_codes', 'sortCodes'],
   ['accounter_list_businesses', 'businesses'],
   ['accounter_balance_report', 'rows'],
+  // Keyed by the requested `section`; checked here by `income`, and the test
+  // below checks the other two sections are named as well.
+  ['accounter_vat_report', 'income'],
 ];
 
 function describedBy(name: string): string {
@@ -89,6 +92,15 @@ describe('tool descriptions document their own result', () => {
     // hand-rolls the sentence and drifts from what the envelope really carries.
     for (const field of ['returnedCount', 'totalCount', 'truncated', 'continuation']) {
       expect(description, `${name} does not document \`${field}\``).toContain(`\`${field}\``);
+    }
+  });
+
+  // The VAT report's items key is whichever `section` was requested, so its
+  // description must name all three — not just the one `LIST_TOOLS` checks.
+  it('accounter_vat_report names every key its rows can arrive under', () => {
+    const description = describedBy('accounter_vat_report');
+    for (const section of ['income', 'expenses', 'missingInfo']) {
+      expect(description).toContain(`\`${section}\``);
     }
   });
 

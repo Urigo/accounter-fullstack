@@ -361,6 +361,7 @@ describe('dispatchMcpRequest — registry integration', () => {
     expect(names).toContain('accounter_list_businesses');
     expect(names).toContain('accounter_search_charges');
     expect(names).toContain('accounter_balance_report');
+    expect(names).toContain('accounter_vat_report');
   });
 
   it('lists only allowlisted tools when the allowlist is non-empty', async () => {

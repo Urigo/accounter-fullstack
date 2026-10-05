@@ -6,6 +6,7 @@ import { LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME } from '../businesses.js';
 import { executeRegisteredTool } from '../execute.js';
 import { toolRegistry } from '../registry-instance.js';
 import { EXPLAIN_TERMINOLOGY_TOOL_NAME } from '../terminology.js';
+import { vatReportData } from './vat-report-fixtures.js';
 
 /**
  * The cross-cutting guard: iterate the *production registry* rather than a
@@ -96,6 +97,7 @@ function dataFor(query: string): unknown {
   if (query.includes('taxCategories')) return { taxCategories: [] };
   if (query.includes('allBusinesses')) return { allBusinesses: { nodes: [] } };
   if (query.includes('transactionsForBalanceReport')) return { transactionsForBalanceReport: [] };
+  if (query.includes('vatReport(')) return vatReportData();
   return {};
 }
 
@@ -127,6 +129,7 @@ function capturingClient() {
  */
 const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_balance_report: { memberBusinessId: B1, fromDate: '2026-01-01', toDate: '2026-03-01' },
+  accounter_vat_report: { memberBusinessId: B1, month: '2026-03', section: 'income' },
   accounter_get_charges: { chargeIds: ['c1'] },
   accounter_get_transactions: { transactionIds: ['t1'] },
   accounter_get_documents: { documentIds: ['d1'] },
