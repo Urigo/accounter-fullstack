@@ -1,30 +1,39 @@
-import { useMemo, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Card } from '@/components/ui/card.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
-import { Currency, VatReportSummaryFieldsFragmentDoc } from '../../../gql/graphql.js';
+import { VatReportSummaryFieldsFragmentDoc, type Currency } from '../../../gql/graphql.js';
 import { formatAmountWithCurrency } from '../../../helpers/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment VatReportSummaryFields on VatReportResult {
-    expenses {
-      roundedLocalVatAfterDeduction {
+    summary {
+      taxableSalesAmount {
         raw
+        currency
       }
-      taxReducedLocalAmount {
+      taxableSalesVat {
         raw
+        currency
       }
-      recordType
-      isProperty
-    }
-    income {
-      roundedLocalVatAfterDeduction {
+      salesRecordCount
+      zeroValOrExemptSalesAmount {
         raw
+        currency
       }
-      taxReducedLocalAmount {
+      otherInputsVat {
         raw
+        currency
       }
-      recordType
+      equipmentInputsVat {
+        raw
+        currency
+      }
+      inputsCount
+      totalVat {
+        raw
+        currency
+      }
     }
   }
 `;
@@ -33,73 +42,64 @@ type Props = {
   data?: FragmentType<typeof VatReportSummaryFieldsFragmentDoc>;
 };
 
-export const ReportSummary = ({ data }: Props): ReactElement => {
-  const vatReport = getFragmentData(VatReportSummaryFieldsFragmentDoc, data);
-  // Calculate totals
-  const inputDocuments = useMemo(() => vatReport?.expenses ?? [], [vatReport?.expenses]);
-  const salesDocuments = useMemo(() => vatReport?.income ?? [], [vatReport?.income]);
-  const taxableSalesTotal = useMemo(
-    () => salesDocuments.reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0),
-    [salesDocuments],
-  );
-  const taxableSalesVAT = useMemo(
-    () =>
-      salesDocuments.reduce((sum, doc) => sum + (doc.roundedLocalVatAfterDeduction?.raw ?? 0), 0),
-    [salesDocuments],
-  );
-  const zeroExemptSales = useMemo(
-    () =>
-      salesDocuments
-        .filter(doc => (doc.roundedLocalVatAfterDeduction?.raw ?? 0) === 0)
-        .reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0),
-    [salesDocuments],
-  );
-  const equipmentInputs = useMemo(
-    () =>
-      inputDocuments
-        .filter(doc => doc.isProperty)
-        .reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0),
-    [inputDocuments],
-  );
-  const totalVAT = useMemo(
-    () =>
-      taxableSalesVAT -
-      inputDocuments.reduce((sum, doc) => sum + (doc.roundedLocalVatAfterDeduction?.raw ?? 0), 0),
-    [taxableSalesVAT, inputDocuments],
-  );
+type Amount = { raw: number; currency: Currency };
+
+const formatAmount = ({ raw, currency }: Amount): string => formatAmountWithCurrency(raw, currency);
+
+/** Positive total VAT is payable, negative is refundable, and a zero balance is neither. */
+const getTotalVatHint = (totalVat: number): string | undefined => {
+  if (totalVat > 0) {
+    return 'to pay';
+  }
+  if (totalVat < 0) {
+    return 'to receive';
+  }
+  return undefined;
+};
+
+/**
+ * The month's totals as filed in the PCN874 header. Computed by the server from the same records and
+ * the same definitions as the PCN874 file, so the card shows what is filed rather than its own
+ * reduction over the report rows. It covers the whole month, whatever the charge-type filter.
+ */
+export const ReportSummary = ({ data }: Props): ReactElement | null => {
+  const summary = getFragmentData(VatReportSummaryFieldsFragmentDoc, data)?.summary;
+  if (!summary) {
+    return null;
+  }
+
+  const figures: Array<{ label: string; value: string; hint?: string }> = [
+    { label: 'Taxable Sales Amount', value: formatAmount(summary.taxableSalesAmount) },
+    { label: 'Taxable Sales VAT', value: formatAmount(summary.taxableSalesVat) },
+    { label: 'Zero / Exempt Sales', value: formatAmount(summary.zeroValOrExemptSalesAmount) },
+    { label: 'Sales Records', value: summary.salesRecordCount.toString() },
+    { label: 'Other Inputs VAT', value: formatAmount(summary.otherInputsVat) },
+    { label: 'Equipment Inputs VAT', value: formatAmount(summary.equipmentInputsVat) },
+    { label: 'Input Records', value: summary.inputsCount.toString() },
+    {
+      label: 'Total VAT',
+      value: formatAmount(summary.totalVat),
+      hint: getTotalVatHint(summary.totalVat.raw),
+    },
+  ];
 
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Report Summary</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Taxable Sales Total</p>
-          <p className="text-2xl font-bold">
-            {formatAmountWithCurrency(taxableSalesTotal, Currency.Ils)}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Taxable Sales VAT</p>
-          <p className="text-2xl font-bold">
-            {formatAmountWithCurrency(taxableSalesVAT, Currency.Ils)}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Zero / Exempt Sales</p>
-          <p className="text-2xl font-bold">
-            {formatAmountWithCurrency(zeroExemptSales, Currency.Ils)}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Equipment Inputs</p>
-          <p className="text-2xl font-bold">
-            {formatAmountWithCurrency(equipmentInputs, Currency.Ils)}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Total VAT Amount</p>
-          <p className="text-2xl font-bold">{formatAmountWithCurrency(totalVAT, Currency.Ils)}</p>
-        </div>
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold">Report Summary</h2>
+        <p className="text-sm text-muted-foreground">
+          As filed in the PCN874 header, for the whole month (not affected by the charge type
+          filter)
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {figures.map(({ label, value, hint }) => (
+          <div key={label} className="space-y-1">
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <p className="text-2xl font-bold">{value}</p>
+            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+          </div>
+        ))}
       </div>
     </Card>
   );
