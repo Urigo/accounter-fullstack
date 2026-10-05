@@ -1,7 +1,7 @@
 import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
-import type { QueryVatReportArgs, ResolversTypes } from '../../../__generated__/types.js';
+import type { QueryVatReportArgs } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -16,9 +16,9 @@ import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper
 import {
   adjustTaxRecord,
   isVatReportRelevantDocument,
-  type RawVatReportRecord,
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
+import type { VatReportRecords } from '../types.js';
 
 export type GetVatRecordsOptions = {
   /**
@@ -35,19 +35,19 @@ export const getVatRecords = async (
   { filters }: Partial<QueryVatReportArgs>,
   injector: Injector,
   options: GetVatRecordsOptions = {},
-): Promise<ResolversTypes['VatReportResult']> => {
+): Promise<VatReportRecords> => {
   const { includeChargeBuckets = true } = options;
   const {
     authorities: { vatReportExcludedBusinessNames },
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   try {
-    const response = {
-      income: [] as Array<RawVatReportRecord>,
-      expenses: [] as Array<RawVatReportRecord>,
-      missingInfo: [] as Array<ResolversTypes['Charge']>,
-      differentMonthDoc: [] as Array<ResolversTypes['Charge']>,
-      businessTrips: [] as Array<ResolversTypes['Charge']>,
+    const response: VatReportRecords = {
+      income: [],
+      expenses: [],
+      missingInfo: [],
+      differentMonthDoc: [],
+      businessTrips: [],
     };
 
     const docsChargesIDs = new Set<string>();

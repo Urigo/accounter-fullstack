@@ -181,6 +181,7 @@ const config: CodegenConfig = {
           TaxReportYear: '../modules/reports/types.js#TaxReportYearProto',
           Unprocessed: '../modules/documents/types.js#IGetAllDocumentsResult',
           VatReportRecord: '../modules/reports/helpers/vat-report.helper.js#RawVatReportRecord',
+          VatReportResult: '../modules/reports/types.js#VatReportResultProto',
         },
       },
       plugins: ['typescript', 'typescript-resolvers'],

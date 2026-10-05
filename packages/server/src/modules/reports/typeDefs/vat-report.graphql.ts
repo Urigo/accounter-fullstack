@@ -21,6 +21,28 @@ export default gql`
     missingInfo: [Charge!]!
     differentMonthDoc: [Charge!]!
     businessTrips: [Charge!]!
+    " month totals as filed in the PCN874 header, in local currency. Covers the whole month: chargesType does not apply "
+    summary: VatReportSummary!
+  }
+
+  " monthly VAT report totals, matching the PCN874 file header "
+  type VatReportSummary {
+    " total taxable sales, excluding VAT (S1 and L1 records with VAT) "
+    taxableSalesAmount: FinancialAmount!
+    " total VAT on taxable sales "
+    taxableSalesVat: FinancialAmount!
+    " number of sales records the header counts "
+    salesRecordCount: Int!
+    " total zero-value / exempt sales (L2 records and L1 records without VAT) "
+    zeroValOrExemptSalesAmount: FinancialAmount!
+    " total VAT on non-equipment inputs "
+    otherInputsVat: FinancialAmount!
+    " total VAT on equipment (property) inputs "
+    equipmentInputsVat: FinancialAmount!
+    " number of input records the header counts "
+    inputsCount: Int!
+    " VAT to pay (positive) or receive (negative): taxableSalesVat - otherInputsVat - equipmentInputsVat "
+    totalVat: FinancialAmount!
   }
 
   " Vat report record "
