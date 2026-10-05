@@ -109,10 +109,20 @@ describe('VAT report summary card', () => {
   it('says whether the total VAT is to pay or to receive', () => {
     render({ summary });
     expect(container.textContent).toContain('to pay');
+    expect(container.textContent).not.toContain('to receive');
 
     render({ summary: { ...summary, totalVat: ils(-476) } });
     expect(figures()['Total VAT']).toBe('₪ -476.00');
     expect(container.textContent).toContain('to receive');
+    expect(container.textContent).not.toContain('to pay');
+  });
+
+  it('says neither for a zero VAT balance', () => {
+    render({ summary: { ...summary, totalVat: ils(0) } });
+
+    expect(figures()['Total VAT']).toBe('₪ 0.00');
+    expect(container.textContent).not.toContain('to pay');
+    expect(container.textContent).not.toContain('to receive');
   });
 
   it('renders nothing until the report has loaded', () => {

@@ -46,6 +46,17 @@ type Amount = { raw: number; currency: Currency };
 
 const formatAmount = ({ raw, currency }: Amount): string => formatAmountWithCurrency(raw, currency);
 
+/** Positive total VAT is payable, negative is refundable, and a zero balance is neither. */
+const getTotalVatHint = (totalVat: number): string | undefined => {
+  if (totalVat > 0) {
+    return 'to pay';
+  }
+  if (totalVat < 0) {
+    return 'to receive';
+  }
+  return undefined;
+};
+
 /**
  * The month's totals as filed in the PCN874 header. Computed by the server from the same records and
  * the same definitions as the PCN874 file, so the card shows what is filed rather than its own
@@ -68,7 +79,7 @@ export const ReportSummary = ({ data }: Props): ReactElement | null => {
     {
       label: 'Total VAT',
       value: formatAmount(summary.totalVat),
-      hint: summary.totalVat.raw < 0 ? 'to receive' : 'to pay',
+      hint: getTotalVatHint(summary.totalVat.raw),
     },
   ];
 
