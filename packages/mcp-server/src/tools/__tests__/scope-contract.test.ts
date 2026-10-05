@@ -17,7 +17,7 @@ import {
   listTaxCategoriesTool,
 } from '../lookups.js';
 import type { ToolExecutionContext, ToolResult } from '../registry.js';
-import { balanceReportTool } from '../reports.js';
+import { balanceReportTool } from '../reports/balance-report.js';
 import { getSecurityExecutionsTool, listSecurityHoldingsTool } from '../securities.js';
 import { getTransactionsTool } from '../transaction-details.js';
 import {

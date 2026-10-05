@@ -5,7 +5,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { searchChargesTool } from '../charges.js';
 import { chargeTypeFromTypename, normalizeAmount } from '../entity-shapes.js';
 import { executeRegisteredTool } from '../execute.js';
-import { balanceReportTool } from '../reports.js';
+import { balanceReportTool } from '../reports/balance-report.js';
 
 const PRINCIPAL: AuthPrincipal = {
   subject: 'user-1',
