@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Currency, DocumentType } from '../../../../shared/enums.js';
 import type { IGetDocumentsByFiltersResult } from '../../../documents/types.js';
 import {
   calculateMonthlyVatTotalAmount,
   isVatReportRelevantDocument,
   isWithinMonthlyVatAmountTolerance,
+  vatReportMonthStart,
   type RawVatReportRecord,
 } from '../vat-report.helper.js';
 
@@ -96,3 +97,39 @@ describe('isVatReportRelevantDocument', () => {
     expect(isVatReportRelevantDocument(createDocument({ debtor_id: null }))).toBe(false);
   });
 });
+
+describe.each(['UTC', 'Asia/Jerusalem', 'America/New_York', 'Pacific/Honolulu'])(
+  'vatReportMonthStart (TZ=%s)',
+  timeZone => {
+    let previousTimeZone: string | undefined;
+
+    beforeEach(() => {
+      previousTimeZone = process.env.TZ;
+      process.env.TZ = timeZone;
+    });
+
+    afterEach(() => {
+      if (previousTimeZone === undefined) {
+        delete process.env.TZ;
+      } else {
+        process.env.TZ = previousTimeZone;
+      }
+    });
+
+    it.each(['2024-01-01', '2024-01-15', '2024-01-31'] as const)(
+      'puts %s in January, at local midnight on the 1st',
+      monthDate => {
+        const start = vatReportMonthStart(monthDate);
+
+        // `new Date('2024-01-01')` is December 31 west of UTC; the month start must not follow it.
+        expect([start.getFullYear(), start.getMonth(), start.getDate()]).toEqual([2024, 0, 1]);
+        expect([start.getHours(), start.getMinutes()]).toEqual([0, 0]);
+      },
+    );
+
+    it('handles the first of a month after a year boundary', () => {
+      const start = vatReportMonthStart('2025-01-01');
+      expect([start.getFullYear(), start.getMonth(), start.getDate()]).toEqual([2025, 0, 1]);
+    });
+  },
+);
