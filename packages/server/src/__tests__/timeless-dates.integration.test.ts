@@ -438,9 +438,8 @@ async function cleanup() {
 }
 
 /**
- * (Re)inserts the fixture. Runs before every test, not once: other integration suites running in
- * parallel `TRUNCATE ... CASCADE` raw bank tables, which wipes `transactions` database-wide, so
- * rows inserted once could vanish between tests.
+ * (Re)inserts the fixture. Runs before every test rather than once, so no case depends on rows an
+ * earlier case (or another suite sharing the database) has changed.
  */
 async function seedFixture() {
   await removeFixture();
