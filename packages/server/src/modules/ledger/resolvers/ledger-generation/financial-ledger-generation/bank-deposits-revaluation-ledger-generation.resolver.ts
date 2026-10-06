@@ -7,7 +7,11 @@ import type {
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import { Currency } from '../../../../../shared/enums.js';
-import { addDaysToTimelessDate, formatCurrency } from '../../../../../shared/helpers/index.js';
+import {
+  addDaysToTimelessDate,
+  currentTenantYear,
+  formatCurrency,
+} from '../../../../../shared/helpers/index.js';
 import type {
   CurrencySum,
   LedgerProto,
@@ -63,7 +67,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
 
     const stringYear = matches[0];
     const year = Number(stringYear);
-    if (Number.isNaN(year) || year < 2000 || year > new Date().getFullYear()) {
+    if (Number.isNaN(year) || year < 2000 || year > currentTenantYear()) {
       return {
         __typename: 'CommonError',
         message: `Bank deposits revaluation charge description must include valid year (2000 - current year)`,

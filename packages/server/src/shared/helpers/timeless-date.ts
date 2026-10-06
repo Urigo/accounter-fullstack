@@ -42,8 +42,8 @@ export function timelessDateFromParts(
 
 /**
  * The calendar day a `Date` has in UTC. Meant for `Date`s built from calendar days in UTC (see
- * `timelessDateToUtcDate`); to turn a point in time into the day it falls on for the server, use
- * `dateToTimelessDateString`.
+ * `timelessDateToUtcDate`). To turn a point in time into the tenant's day it falls on, use
+ * `instantToTimelessDate`; for a Postgres `timestamp` value's stored day, `dateToTimelessDateString`.
  */
 export function utcDateToTimelessDate(date: Date): TimelessDateString {
   return `${pad(date.getUTCFullYear(), 4)}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}` as TimelessDateString;

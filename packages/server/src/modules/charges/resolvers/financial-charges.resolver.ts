@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { type Injector } from 'graphql-modules';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { getMinDate } from '../../ledger/helpers/ledger-lock.js';
@@ -304,7 +304,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
           const minDate = getMinDate(
             balanceRecords.flatMap(record => [
               record.invoiceDate,
-              dateToTimelessDateString(record.valueDate),
+              instantToTimelessDate(record.valueDate),
             ]),
           );
           if (minDate && minDate <= ledgerLock) {

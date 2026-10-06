@@ -407,8 +407,6 @@ const missingInfoSuggestions = async (
     };
   }
   if (description.includes('denelop')) {
-    const current = new Date();
-    current.setMonth(current.getMonth() - 1);
     return {
       business: '737df651-8e02-40dd-b749-228bad16f279',
     };
@@ -434,8 +432,6 @@ const missingInfoSuggestions = async (
     };
   }
   if (formatAmount(transaction.amount) === -12_000) {
-    const current = new Date();
-    current.setMonth(current.getMonth() - 1);
     return {
       business: 'd140fae3-f841-464c-84a7-c526c0123f36', //name: 'Saihajpreet Singh',
     };

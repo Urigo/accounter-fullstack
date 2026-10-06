@@ -12,7 +12,7 @@ import type {
   PoalimSwiftTransactionInput,
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
@@ -1524,7 +1524,7 @@ export class PoalimScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.as_of_date ? dateToTimelessDateString(r.as_of_date) : null,
+      date: r.as_of_date ? instantToTimelessDate(r.as_of_date) : null,
       description: r.eng_name ?? null,
       amount: null,
       account: `${r.branch_number}-${r.account_number}`,

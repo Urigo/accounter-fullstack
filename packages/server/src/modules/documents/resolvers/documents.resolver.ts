@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { DocumentType } from '../../../shared/enums.js';
-import { timelessDateStringToLocalDate } from '../../../shared/helpers/index.js';
+import { timelessDateToTenantInstant } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -38,12 +38,12 @@ import {
 } from './common.js';
 
 /**
- * Sort key for the "recent documents" queries: the document date (at server-local midnight, as it
- * compares against creation instants), falling back to when the document was created.
+ * Sort key for the "recent documents" queries: the document date (the instant it starts at for the
+ * tenant, as it compares against creation instants), falling back to when the document was created.
  */
 function recencyTime(document: { date: TimelessDateString | null; created_at: Date }): number {
   return (
-    document.date ? timelessDateStringToLocalDate(document.date) : document.created_at
+    document.date ? timelessDateToTenantInstant(document.date) : document.created_at
   ).getTime();
 }
 

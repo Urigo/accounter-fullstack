@@ -6,6 +6,7 @@ import type {
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import {
+  currentTenantYear,
   endOfTimelessYear,
   getTimelessDateYear,
   startOfTimelessYear,
@@ -57,7 +58,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
 
     const stringYear = matches[0];
     const year = Number(stringYear);
-    if (Number.isNaN(year) || year < 2000 || year > new Date().getFullYear()) {
+    if (Number.isNaN(year) || year < 2000 || year > currentTenantYear()) {
       return {
         __typename: 'CommonError',
         message: `Tax expenses charge description must include valid year (2000 - current year)`,

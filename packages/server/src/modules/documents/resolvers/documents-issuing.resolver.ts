@@ -5,9 +5,9 @@ import { Currency, DocumentType } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import {
   addMonthsToTimelessDate,
-  dateToTimelessDateString,
   endOfTimelessMonth,
   startOfTimelessMonth,
+  todayTimelessDate,
 } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
@@ -195,7 +195,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         // footer: ____,
         type,
         date: documentDate,
-        dueDate: endOfTimelessMonth(dateToTimelessDateString(new Date())),
+        dueDate: endOfTimelessMonth(todayTimelessDate()),
         language: 'ENGLISH',
         currency: (transactionsCurrency ||
           documentsCurrency ||
@@ -350,7 +350,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         // footer: ____,
         type,
         date: documentDate,
-        dueDate: endOfTimelessMonth(dateToTimelessDateString(new Date())),
+        dueDate: endOfTimelessMonth(todayTimelessDate()),
         language: 'ENGLISH',
         currency: (documentsCurrency || defaultCryptoConversionFiatCurrency) as Currency,
         vatType,

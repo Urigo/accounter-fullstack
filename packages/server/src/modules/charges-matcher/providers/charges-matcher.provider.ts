@@ -5,12 +5,12 @@
  * Integrates with existing modules: charges, transactions, and documents.
  */
 
-import { subYears } from 'date-fns';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import {
-  dateToTimelessDateString,
+  addYearsToTimelessDate,
   maxTimelessDate,
   minTimelessDate,
+  todayTimelessDate,
 } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -358,7 +358,7 @@ export class ChargesMatcherProvider {
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
 
     // Step 1: Load all charges for this user
-    const prevYear = dateToTimelessDateString(subYears(new Date(), 1));
+    const prevYear = addYearsToTimelessDate(todayTimelessDate(), -1);
     const allCharges = await this.chargesProvider.getChargesByFilters({
       ownerIds: [ownerId],
       fromAnyDate: prevYear,

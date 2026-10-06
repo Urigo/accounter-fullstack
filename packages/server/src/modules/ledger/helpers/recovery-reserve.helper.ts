@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { AVERAGE_MONTHLY_WORK_HOURS } from '../../../shared/constants.js';
 import {
+  currentTenantYear,
   differenceInTimelessYears,
   endOfTimelessMonth,
   endOfTimelessYear,
@@ -191,7 +192,7 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
 
     let dayValue = recoveryDayValueByYear.get(yearForRecoveryValue);
     // in case of no recovery day value for the year, try to get it from the previous year (yearly value is published in delay)
-    if (!dayValue && yearForRecoveryValue >= new Date().getFullYear()) {
+    if (!dayValue && yearForRecoveryValue >= currentTenantYear()) {
       dayValue = recoveryDayValueByYear.get(year);
     }
     if (!dayValue) {

@@ -9,7 +9,7 @@ import type {
   OtsarHahayalIlsTransactionInput,
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
@@ -410,9 +410,11 @@ export class OtsarHahayalScraperIngestionProvider {
         changedTransactions: [],
       };
 
+    // The scraper's raw `yyyy-mm-ddT00:00:00` strings, as inserted: Postgres reads them into the
+    // `timestamptz` columns the same way both times, whatever the server's timezone.
     const dateOfRegistrations = transactions
-      .map(t => (t.dateOfRegistration ? new Date(t.dateOfRegistration) : null))
-      .filter((d): d is Date => d !== null);
+      .map(t => t.dateOfRegistration ?? null)
+      .filter((d): d is string => d !== null);
     const accountNumbers = transactions
       .map(t => t.accountNumber ?? null)
       .filter((n): n is number => n !== null);
@@ -430,8 +432,8 @@ export class OtsarHahayalScraperIngestionProvider {
       const key = [
         row.account_number,
         row.branch_number,
-        row.date_of_registration ? dateToTimelessDateString(row.date_of_registration) : '',
-        row.date_of_business_day ? dateToTimelessDateString(row.date_of_business_day) : '',
+        row.date_of_registration ? instantToTimelessDate(row.date_of_registration) : '',
+        row.date_of_business_day ? instantToTimelessDate(row.date_of_business_day) : '',
         row.reference,
         row.origin_reference,
         formatValue(row.credit_amount, true),
@@ -482,7 +484,7 @@ export class OtsarHahayalScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.date_of_registration ? dateToTimelessDateString(r.date_of_registration) : null,
+      date: r.date_of_registration ? instantToTimelessDate(r.date_of_registration) : null,
       description: r.description ?? null,
       amount:
         Number(r.debit_amount) === 0 ? String(r.credit_amount) : String(-Number(r.debit_amount)),
@@ -494,8 +496,8 @@ export class OtsarHahayalScraperIngestionProvider {
       const key = [
         t.accountNumber,
         t.branchNumber,
-        t.dateOfRegistration ? dateToTimelessDateString(new Date(t.dateOfRegistration)) : '',
-        t.dateOfBusinessDay ? dateToTimelessDateString(new Date(t.dateOfBusinessDay)) : '',
+        t.dateOfRegistration ? toCalendarDate(t.dateOfRegistration) : '',
+        t.dateOfBusinessDay ? toCalendarDate(t.dateOfBusinessDay) : '',
         t.reference,
         t.originReference ?? '',
         formatValue(t.creditAmount, true),

@@ -14,11 +14,11 @@ import type {
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import {
   addMonthsToTimelessDate,
-  dateToTimelessDateString,
   endOfTimelessMonth,
   maxTimelessDate,
   startOfTimelessMonth,
-  timelessDateToUtcDate,
+  timelessDateToTenantInstant,
+  todayTimelessDate,
 } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
@@ -93,8 +93,8 @@ export async function getPaymentsFromTransactions(
             cardType: 'MASTERCARD', // TODO: add logic to support other card types
             cardNum: account.account_number,
             numPayments: 1,
-            // assuming first payment is the transaction date (Unix seconds, at its UTC midnight)
-            firstPayment: timelessDateToUtcDate(transaction.event_date).getTime() / 1000,
+            // assuming first payment is the transaction date (Unix seconds, at the tenant's midnight)
+            firstPayment: timelessDateToTenantInstant(transaction.event_date).getTime() / 1000,
           };
           break;
         case 'WIRE_TRANSFER':
@@ -254,10 +254,7 @@ export function getDocumentDateOutOfTransactions(
   transactions: IGetTransactionsByChargeIdsResult[],
 ): TimelessDateString | undefined {
   // the latest debit date; if there are none, use the current date
-  return (
-    maxTimelessDate(...transactions.map(tx => tx.debit_date)) ??
-    dateToTimelessDateString(new Date())
-  );
+  return maxTimelessDate(...transactions.map(tx => tx.debit_date)) ?? todayTimelessDate();
 }
 
 export async function deduceVatTypeFromBusiness(

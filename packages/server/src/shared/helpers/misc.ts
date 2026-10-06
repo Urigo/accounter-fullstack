@@ -209,7 +209,8 @@ export function getMonthFromDescription(
  *   timezone the server runs in.
  * - A `Date` built by `timelessDateStringToLocalDate`: returns that day (the two are inverses).
  * - An absolute instant (`timestamptz`, an external API time, `new Date()`): returns the day in the
- *   server's timezone, which is not necessarily the business's day.
+ *   server's timezone, which is not necessarily the tenant's. Use `instantToTimelessDate` (or
+ *   `todayTimelessDate`) from `./tenant-timezone.ts` for those.
  *
  * `utcDateToTimelessDate` is the UTC counterpart: it reads UTC getters and is the inverse of
  * `timelessDateToUtcDate`. Never mix the pairs: a local-midnight `Date` read in UTC is the previous

@@ -8,6 +8,7 @@ import type {
   TaxReportYearResolvers,
 } from '../../../../__generated__/types.js';
 import {
+  currentTenantYear,
   endOfTimelessYear,
   formatFinancialAmount,
   getTimelessDateYear,
@@ -33,7 +34,7 @@ export const taxReport: ResolverFn<
   referenceYears = referenceYears.filter(year => year !== reportYear);
   const years = [reportYear, ...referenceYears];
   years.map(year => {
-    if (year < 2000 || year > new Date().getFullYear()) {
+    if (year < 2000 || year > currentTenantYear()) {
       throw new GraphQLError('Invalid year');
     }
   });

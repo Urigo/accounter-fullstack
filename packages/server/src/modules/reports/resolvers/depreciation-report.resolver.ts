@@ -1,6 +1,7 @@
 // import { GraphQLError } from 'graphql';
 import { GraphQLError } from 'graphql';
 import {
+  currentTenantYear,
   endOfTimelessYear,
   getTimelessDateYear,
   startOfTimelessYear,
@@ -42,7 +43,7 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
       if (!year) {
         throw new GraphQLError('Year filter is required');
       }
-      if (typeof year !== 'number' || year < 2000 || year > new Date().getFullYear() + 5) {
+      if (typeof year !== 'number' || year < 2000 || year > currentTenantYear() + 5) {
         throw new GraphQLError('Invalid year provided');
       }
 

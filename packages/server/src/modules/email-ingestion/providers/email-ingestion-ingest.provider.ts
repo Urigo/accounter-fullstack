@@ -3,7 +3,7 @@ import { Injectable, Scope, type Injector } from 'graphql-modules';
 import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { DocumentType } from '../../../shared/enums.js';
-import { hashStringToInt } from '../../../shared/helpers/index.js';
+import { getTenantTimeZone, hashStringToInt } from '../../../shared/helpers/index.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
@@ -192,9 +192,10 @@ function buildEmailChargeDescription(args: {
   const subject = args.subject?.trim() || args.messageId;
   const sender = args.sender?.trim();
 
-  // Format in UTC (not the server-local `toDateString()`) so the same email
-  // yields the same description across dev/CI/prod. Mirrors the legacy
-  // `toDateString()` shape, e.g. "Wed Jun 24 2026".
+  // Format in the tenant's timezone (not the server-local `toDateString()`), so
+  // the date is the day the tenant received it and the same email yields the
+  // same description across dev/CI/prod. Mirrors the legacy `toDateString()`
+  // shape, e.g. "Wed Jun 24 2026".
   const receivedDate = args.receivedAt ? new Date(args.receivedAt) : null;
   const dateStr =
     receivedDate && !Number.isNaN(receivedDate.getTime())
@@ -204,7 +205,7 @@ function buildEmailChargeDescription(args: {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
-            timeZone: 'UTC',
+            timeZone: getTenantTimeZone(),
           })
           .replace(/,/g, '')
       : null;

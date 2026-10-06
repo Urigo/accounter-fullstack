@@ -4,7 +4,7 @@ import type {
   ResolversTypes,
 } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { todayTimelessDate } from '../../../shared/helpers/index.js';
 import { RawBusinessTransactionsSum } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -108,7 +108,7 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
         !includeRevaluation &&
         (ledger.description?.includes(REVALUATION_LEDGER_DESCRIPTION) ||
           ledger.description?.includes(BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION)) &&
-        (toDate || dateToTimelessDateString(new Date())) === ledger.invoice_date
+        (toDate || todayTimelessDate()) === ledger.invoice_date
       ) {
         continue;
       }

@@ -9,6 +9,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import {
+  currentTenantYear,
   endOfTimelessYear,
   formatFinancialAmount,
   getTimelessDateYear,
@@ -159,7 +160,7 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
   const { injector } = context;
   const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   years.map(year => {
-    if (year < 2000 || year > new Date().getFullYear()) {
+    if (year < 2000 || year > currentTenantYear()) {
       throw new GraphQLError('Invalid year');
     }
   });

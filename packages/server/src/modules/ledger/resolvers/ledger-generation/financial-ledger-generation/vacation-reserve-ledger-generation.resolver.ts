@@ -5,7 +5,7 @@ import type {
   ResolversTypes,
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
-import { endOfTimelessYear } from '../../../../../shared/helpers/index.js';
+import { currentTenantYear, endOfTimelessYear } from '../../../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
@@ -55,7 +55,7 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
 
     const stringYear = matches[0];
     const year = Number(stringYear);
-    if (Number.isNaN(year) || year < 2000 || year > new Date().getFullYear()) {
+    if (Number.isNaN(year) || year < 2000 || year > currentTenantYear()) {
       return {
         __typename: 'CommonError',
         message: `Vacation reserves charge description must include valid year (2000 - current year)`,

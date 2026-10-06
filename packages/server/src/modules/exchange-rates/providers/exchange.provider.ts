@@ -2,7 +2,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { Currency } from '../../../shared/enums.js';
 import {
   dateToTimelessDateString,
-  timelessDateStringToLocalDate,
+  timelessDateToTenantInstant,
 } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -27,7 +27,7 @@ export class ExchangeProvider {
    * @param date a calendar day, or a point in time (a `transactions.debit_timestamp` or
    * `misc_expenses.value_date`, both Postgres `timestamp` values). Fiat rates are daily, so an
    * instant is mapped to its stored calendar day; crypto rates are sampled by time, so a calendar
-   * day is taken as its local midnight, as before.
+   * day is taken as the instant it starts at for the tenant (its midnight in the tenant's timezone).
    */
   public async getExchangeRates(
     baseCurrency: Currency,
@@ -44,7 +44,7 @@ export class ExchangeProvider {
       await this.adminContextProvider.getVerifiedAdminContext();
 
     const day = typeof date === 'string' ? date : dateToTimelessDateString(date);
-    const instant = typeof date === 'string' ? timelessDateStringToLocalDate(date) : date;
+    const instant = typeof date === 'string' ? timelessDateToTenantInstant(date) : date;
 
     // adjust rate and convert to FIAT if base or quote are crypto
     const ifBaseIsCryptoAdjuster = async () => {
