@@ -17,8 +17,7 @@ shift with the server's or browser's timezone:
 - The tenant's calendar days are reckoned in `Asia/Jerusalem` (a `TENANT_TIMEZONE` constant, to be
   derived per tenant later) instead of the server's timezone: "today" (document dates and due
   dates, default VAT month, contract billing month, sync windows), current-year checks, the day of
-  absolute instants (Otsar Hahayal and Poalim securities dates, balance-charge value dates, email
-  receive dates) and the instant a day starts at (day-only crypto rate lookups, Green Invoice
+  absolute instants (Otsar Hahayal and Poalim securities dates, balance-charge value dates) and the instant a day starts at (day-only crypto rate lookups, Green Invoice
   `firstPayment`).
 - `TimelessDateString` is now the pattern `${number}-${number}-${number}` instead of a union of
   every day in 2000-2049, which kept server type-checking fast and allows earlier years.
