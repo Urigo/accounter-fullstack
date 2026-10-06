@@ -1,7 +1,11 @@
 import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import {
+  compareTimelessDates,
+  formatFinancialAmount,
+  minTimelessDate,
+} from '../../../shared/helpers/index.js';
 import type { BusinessTransactionProto } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -63,10 +67,10 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
 
         for (const record of ledgerRecords) {
           // re-filter ledger records by date (to prevent charge's out-of-range dates from affecting the sum)
-          if (!!fromDate && dateToTimelessDateString(record.invoice_date) < fromDate) {
+          if (!!fromDate && record.invoice_date < fromDate) {
             continue;
           }
-          if (!!toDate && dateToTimelessDateString(record.invoice_date) > toDate) {
+          if (!!toDate && record.invoice_date > toDate) {
             continue;
           }
 
@@ -135,29 +139,26 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           businessTransactions: rawTransactions.sort((a, b) => {
             const chargeA = charges.find(charge => charge.id === a.chargeId);
             const chargeB = charges.find(charge => charge.id === b.chargeId);
-            const dateA = Math.min(
-              ...([
-                chargeA?.documents_min_date?.getTime(),
-                chargeA?.transactions_min_event_date?.getTime(),
-              ].filter(Boolean) as number[]),
+            const dateA = minTimelessDate(
+              chargeA?.documents_min_date,
+              chargeA?.transactions_min_event_date,
             );
-            const dateB = Math.min(
-              ...([
-                chargeB?.documents_min_date?.getTime(),
-                chargeB?.transactions_min_event_date?.getTime(),
-              ].filter(Boolean) as number[]),
+            const dateB = minTimelessDate(
+              chargeB?.documents_min_date,
+              chargeB?.transactions_min_event_date,
             );
 
-            if (dateA < dateB) return -1;
-            if (dateA > dateB) return 1;
+            // charges without dates go last
+            if (dateA !== dateB) {
+              if (!dateA) return 1;
+              if (!dateB) return -1;
+              return compareTimelessDates(dateA, dateB);
+            }
 
             if (a.chargeId < b.chargeId) return -1;
             if (a.chargeId > b.chargeId) return 1;
 
-            if (a.date.getTime() < b.date.getTime()) return -1;
-            if (a.date.getTime() > b.date.getTime()) return 1;
-
-            return 0;
+            return compareTimelessDates(a.date, b.date);
           }),
         };
       } catch (e) {
@@ -263,7 +264,7 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         parent.currency,
       ),
 
-    invoiceDate: parent => dateToTimelessDateString(parent.date!),
+    invoiceDate: parent => parent.date,
     reference: parent => parent.reference ?? null,
     details: parent => parent.details ?? null,
     counterAccount: (parent, _, { injector }) =>

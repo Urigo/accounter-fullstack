@@ -9,6 +9,11 @@ import type {
 import { UUID_REGEX } from '../../../../shared/constants.js';
 import { ChargeTypeEnum } from '../../../../shared/enums.js';
 import { errorSimplifier } from '../../../../shared/errors.js';
+import {
+  addMonthsToTimelessDate,
+  timelessDateToUtcDate,
+  todayTimelessDate,
+} from '../../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../../auth/providers/scope.provider.js';
 import { suggestionDataSchema } from '../../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
@@ -25,6 +30,13 @@ import { missingConversionInfoSuggestions } from './conversion-suggeestions.reso
 import { missingMonthlyVatInfoSuggestions } from './monthly-vat-suggestions.resolver.js';
 
 export type Suggestion = Awaited<ResolversTypes['ChargeSuggestions']>;
+
+/** The tenant's previous month as `MM` or its full name, for suggested descriptions. */
+function previousTenantMonthName(month: '2-digit' | 'long'): string {
+  const previousMonth = addMonthsToTimelessDate(todayTimelessDate(), -1);
+  // a UTC-midnight `Date` of that day, formatted in UTC: the same calendar month
+  return timelessDateToUtcDate(previousMonth).toLocaleString('default', { month, timeZone: 'UTC' });
+}
 
 const missingInfoSuggestions: Resolver<
   Maybe<Suggestion>,
@@ -225,11 +237,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('דותן שמחה') || description.includes('שמחה דותן')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `${previousMonth}/2022 Salary`,
         tags: await injector
@@ -239,11 +247,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('גולדשטין אורי')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `${previousMonth}/2022 Salary`,
         tags: await injector
@@ -253,11 +257,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('גרדוש')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `${previousMonth}/2022 Salary`,
         tags: await injector
@@ -267,11 +267,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('תובל')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `${previousMonth}/2022 Salary`,
         tags: await injector
@@ -281,11 +277,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('מנורה מבטחים פנס')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Pension ${previousMonth}/2022`,
         tags: await injector
@@ -295,11 +287,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('פניקס אקסלנס')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Training Fund ${previousMonth}/2022`,
         tags: await injector
@@ -309,11 +297,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('מיטב דש גמל ופנס')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Pension ${previousMonth}/2022`,
         tags: await injector
@@ -323,11 +307,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('מגדל מקפת')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Pension ${previousMonth}/2022`,
         tags: await injector
@@ -337,11 +317,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('מגדל השתלמות')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Training Fund ${previousMonth}/2022`,
         tags: await injector
@@ -351,11 +327,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('ביטוח לאומי')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Social Security Deductions for Salaries ${previousMonth}/2022`,
         tags: await injector
@@ -365,9 +337,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('LANCE GLOBAL')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: 'long' });
+      const previousMonth = previousTenantMonthName('long');
       return {
         description: `The Guild Enterprise Support - ${previousMonth} 2022`,
         tags: await injector
@@ -381,11 +351,7 @@ const missingInfoSuggestions: Resolver<
         (description.includes('fbv') || description.includes('fv'))) ||
       description.includes('kamil kisiela')
     ) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Software Development and Consulting ${previousMonth}/23`,
         tags: await injector
@@ -395,9 +361,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('slava')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Web Development Services ${previousMonth}/23`,
         tags: await injector
@@ -407,9 +371,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('COURIER PLUS INC')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: 'long' });
+      const previousMonth = previousTenantMonthName('long');
       return {
         description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
         tags: await injector
@@ -419,9 +381,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('GOBRANDS')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: 'long' });
+      const previousMonth = previousTenantMonthName('long');
       return {
         description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
         tags: await injector
@@ -431,9 +391,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('MEDIC FIRST AI')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: 'long' });
+      const previousMonth = previousTenantMonthName('long');
       return {
         description: `GraphQL Hive Enterprise License - ${previousMonth} 2023`,
         tags: await injector
@@ -444,11 +402,7 @@ const missingInfoSuggestions: Resolver<
     }
     if (description.includes('מס הכנסה')) {
       const flag = description.includes('מס הכנסה ני');
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         tags: await injector
           .get(TagsProvider)
@@ -460,11 +414,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('המכס ומעמ-גביי תשלום') || description.includes('CUSTOM + V.A.T')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', {
-        month: '2-digit',
-      });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `VAT for ${previousMonth}/2022`,
         tags: await injector
@@ -581,9 +531,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('aleksandra')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Software Consulting Fees (${previousMonth}/2023)`,
         tags: await injector
@@ -593,9 +541,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (description.includes('denelop')) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `Software Development and Consulting ${previousMonth}/2023`,
         tags: await injector
@@ -605,9 +551,7 @@ const missingInfoSuggestions: Resolver<
       };
     }
     if (chargeAmount === -12_000) {
-      const current = new Date();
-      current.setMonth(current.getMonth() - 1);
-      const previousMonth = current.toLocaleString('default', { month: '2-digit' });
+      const previousMonth = previousTenantMonthName('2-digit');
       return {
         description: `${previousMonth}/2022`,
         tags: await injector

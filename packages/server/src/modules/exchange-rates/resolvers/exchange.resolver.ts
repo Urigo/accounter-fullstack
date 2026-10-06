@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import { formatCurrency } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
@@ -47,7 +47,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         .getVerifiedAdminContext();
       const exchangeRates = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(Currency.Grt, defaultLocalCurrency, new Date(timelessDate));
+        .getExchangeRates(Currency.Grt, defaultLocalCurrency, timelessDate);
       if (!exchangeRates) {
         return null;
       }
@@ -59,7 +59,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         .getVerifiedAdminContext();
       const exchangeRates = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(Currency.Eth, defaultLocalCurrency, new Date(timelessDate));
+        .getExchangeRates(Currency.Eth, defaultLocalCurrency, timelessDate);
       if (!exchangeRates) {
         return null;
       }
@@ -71,7 +71,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         .getVerifiedAdminContext();
       const exchangeRates = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(Currency.Usdc, defaultLocalCurrency, new Date(timelessDate));
+        .getExchangeRates(Currency.Usdc, defaultLocalCurrency, timelessDate);
       if (!exchangeRates) {
         return null;
       }
@@ -94,7 +94,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         return null;
       }
 
-      return dateToTimelessDateString(ratesDate);
+      return ratesDate;
     },
   },
   ConversionCharge: {

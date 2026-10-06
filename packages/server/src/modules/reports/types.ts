@@ -7,7 +7,7 @@ import type { IGetChargesByIdsResult } from '../charges/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '../ledger/types.js';
 import type { RawVatReportRecord } from './helpers/vat-report.helper.js';
 
-export type { DateOrString, currency } from './__generated__/balance-report.types.js';
+export type { currency } from './__generated__/balance-report.types.js';
 export type * from './__generated__/types.js';
 export type * from './__generated__/dynamic-report.types.js';
 export type * from './__generated__/dynamic-report-comments.types.js';

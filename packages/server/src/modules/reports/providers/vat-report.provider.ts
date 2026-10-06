@@ -1,8 +1,8 @@
 import DataLoader from 'dataloader';
-import { format } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
@@ -40,14 +40,14 @@ export class VatReportProvider {
   ) {}
 
   private async batchReportsByBusinessIdAndMonthDatesLoader(
-    businessAndDates: readonly [string, string][],
+    businessAndDates: readonly [string, TimelessDateString][],
   ) {
-    const businessIdsMap = new Map<string, Set<string>>();
+    const businessIdsMap = new Map<string, Set<TimelessDateString>>();
     businessAndDates.map(([businessId, monthDate]) => {
       if (businessIdsMap.has(businessId)) {
         businessIdsMap.get(businessId)?.add(monthDate);
       } else {
-        businessIdsMap.set(businessId, new Set<string>([monthDate]));
+        businessIdsMap.set(businessId, new Set<TimelessDateString>([monthDate]));
       }
     });
     const reports = (
@@ -62,42 +62,33 @@ export class VatReportProvider {
     ).flat();
     return businessAndDates.map(
       ([businessId, monthDate]) =>
-        reports.find(
-          report =>
-            report.business_id === businessId &&
-            format(report.month_date, 'yyyy-MM-dd') === monthDate,
-        )?.content,
+        reports.find(report => report.business_id === businessId && report.month_date === monthDate)
+          ?.content,
     );
   }
 
   public getReportByBusinessIdAndMonthDateLoader = new DataLoader(
-    (businessAndDates: readonly [string, string][]) =>
+    (businessAndDates: readonly [string, TimelessDateString][]) =>
       this.batchReportsByBusinessIdAndMonthDatesLoader(businessAndDates),
     { cacheKeyFn: ([businessId, monthDate]) => `${businessId}-${monthDate}` },
   );
 
   public async updateReport(params: IUpdateReportParams) {
     if (params.businessId && params.monthDate) {
-      await this.invalidateByBusinessIdAndMonth(
-        params.businessId,
-        format(params.monthDate, 'yyyy-MM-dd'),
-      );
+      await this.invalidateByBusinessIdAndMonth(params.businessId, params.monthDate);
     }
     return updateReport.run(params, this.db);
   }
 
   public async insertReport(params: IInsertReportParams) {
     if (params.businessId && params.monthDate) {
-      await this.invalidateByBusinessIdAndMonth(
-        params.businessId,
-        format(params.monthDate, 'yyyy-MM-dd'),
-      );
+      await this.invalidateByBusinessIdAndMonth(params.businessId, params.monthDate);
     }
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertReport.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
-  public async invalidateByBusinessIdAndMonth(businessId: string, monthDate: string) {
+  public async invalidateByBusinessIdAndMonth(businessId: string, monthDate: TimelessDateString) {
     this.getReportByBusinessIdAndMonthDateLoader.clear([businessId, monthDate]);
   }
 

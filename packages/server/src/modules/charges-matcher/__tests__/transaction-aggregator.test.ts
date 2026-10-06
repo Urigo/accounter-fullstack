@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { timelessDateFromParts } from '../../../shared/helpers/index.js';
 import {
   aggregateTransactions,
   type Transaction,
@@ -12,7 +13,7 @@ describe('Transaction Aggregator', () => {
     amount: "100",
     currency: 'USD',
     business_id: null,
-    event_date: new Date('2024-01-15'),
+    event_date: '2024-01-15',
     debit_date: null,
     source_description: 'Test transaction',
     is_fee: false,
@@ -26,7 +27,7 @@ describe('Transaction Aggregator', () => {
         amount: "150.5",
         currency: 'USD',
         business_id: 'business-1',
-        event_date: new Date('2024-01-15'),
+        event_date: '2024-01-15',
         source_description: 'Payment from client',
       });
 
@@ -36,7 +37,7 @@ describe('Transaction Aggregator', () => {
         amount: 150.5,
         currency: 'USD',
         businessId: 'business-1',
-        date: new Date('2024-01-15'),
+        date: '2024-01-15',
         debitDate: null,
         description: 'Payment from client',
       });
@@ -296,49 +297,65 @@ describe('Transaction Aggregator', () => {
   describe('Date Selection', () => {
     it('should select earliest event_date', () => {
       const transactions = [
-        createTransaction({ event_date: new Date('2024-03-15') }),
-        createTransaction({ event_date: new Date('2024-01-10') }), // Earliest
-        createTransaction({ event_date: new Date('2024-02-20') }),
+        createTransaction({ event_date: '2024-03-15' }),
+        createTransaction({ event_date: '2024-01-10' }), // Earliest
+        createTransaction({ event_date: '2024-02-20' }),
       ];
 
       const result = aggregateTransactions(transactions);
 
-      expect(result.date).toEqual(new Date('2024-01-10'));
+      expect(result.date).toBe('2024-01-10');
     });
 
     it('should select earliest from same month', () => {
       const transactions = [
-        createTransaction({ event_date: new Date('2024-01-20') }),
-        createTransaction({ event_date: new Date('2024-01-15') }), // Earliest
-        createTransaction({ event_date: new Date('2024-01-25') }),
+        createTransaction({ event_date: '2024-01-20' }),
+        createTransaction({ event_date: '2024-01-15' }), // Earliest
+        createTransaction({ event_date: '2024-01-25' }),
       ];
 
       const result = aggregateTransactions(transactions);
 
-      expect(result.date).toEqual(new Date('2024-01-15'));
+      expect(result.date).toBe('2024-01-15');
     });
 
     it('should handle dates spanning years', () => {
       const transactions = [
-        createTransaction({ event_date: new Date('2024-01-15') }),
-        createTransaction({ event_date: new Date('2023-12-31') }), // Earliest (previous year)
-        createTransaction({ event_date: new Date('2024-02-01') }),
+        createTransaction({ event_date: '2024-01-15' }),
+        createTransaction({ event_date: '2023-12-31' }), // Earliest (previous year)
+        createTransaction({ event_date: '2024-02-01' }),
       ];
 
       const result = aggregateTransactions(transactions);
 
-      expect(result.date).toEqual(new Date('2023-12-31'));
+      expect(result.date).toBe('2023-12-31');
+    });
+
+    it('should select earliest debit date, preferring debit_timestamp over debit_date', () => {
+      const transactions = [
+        createTransaction({ debit_date: '2024-01-20', debit_timestamp: null }),
+        createTransaction({
+          debit_date: '2024-01-25',
+          // Local time, so it falls on 2024-01-18 in any server time zone
+          debit_timestamp: new Date('2024-01-18T12:00:00'),
+        }),
+        createTransaction({ debit_date: null, debit_timestamp: null }),
+      ];
+
+      const result = aggregateTransactions(transactions);
+
+      expect(result.debitDate).toBe('2024-01-18');
     });
 
     it('should handle same date for all transactions', () => {
       const transactions = [
-        createTransaction({ event_date: new Date('2024-01-15') }),
-        createTransaction({ event_date: new Date('2024-01-15') }),
+        createTransaction({ event_date: '2024-01-15' }),
+        createTransaction({ event_date: '2024-01-15' }),
       ];
 
       const result = aggregateTransactions(transactions);
 
-      expect(result.date).toEqual(new Date('2024-01-15'));
+      expect(result.date).toBe('2024-01-15');
     });
   });
 
@@ -441,7 +458,7 @@ describe('Transaction Aggregator', () => {
           amount: "1000",
           currency: 'USD',
           business_id: 'client-abc',
-          event_date: new Date('2024-01-15'),
+          event_date: '2024-01-15',
           source_description: 'Invoice #123 payment',
           is_fee: false,
         }),
@@ -449,7 +466,7 @@ describe('Transaction Aggregator', () => {
           amount: "2.5",
           currency: 'USD',
           business_id: 'bank-xyz',
-          event_date: new Date('2024-01-15'),
+          event_date: '2024-01-15',
           source_description: 'Wire transfer fee',
           is_fee: true, // Should be excluded
         }),
@@ -457,7 +474,7 @@ describe('Transaction Aggregator', () => {
           amount: "500",
           currency: 'USD',
           business_id: 'client-abc',
-          event_date: new Date('2024-01-10'), // Earlier date
+          event_date: '2024-01-10', // Earlier date
           source_description: 'Partial payment',
           is_fee: false,
         }),
@@ -465,7 +482,7 @@ describe('Transaction Aggregator', () => {
           amount: "200",
           currency: 'USD',
           business_id: null, // Null business
-          event_date: new Date('2024-01-20'),
+          event_date: '2024-01-20',
           source_description: null, // Null description
           is_fee: false,
         }),
@@ -476,7 +493,7 @@ describe('Transaction Aggregator', () => {
       expect(result.amount).toBe(1700); // 1000 + 500 + 200 (fee excluded)
       expect(result.currency).toBe('USD');
       expect(result.businessId).toBe('client-abc'); // One non-null, one null
-      expect(result.date).toEqual(new Date('2024-01-10')); // Earliest
+      expect(result.date).toBe('2024-01-10'); // Earliest
       expect(result.description).toBe('Invoice #123 payment\nPartial payment'); // Fee desc excluded, null excluded
     });
 
@@ -497,7 +514,7 @@ describe('Transaction Aggregator', () => {
         createTransaction({
           amount: "10",
           currency: 'USD',
-          event_date: new Date(`2024-01-${(i % 28) + 1}`),
+          event_date: timelessDateFromParts(2024, 1, (i % 28) + 1),
         }),
       );
 
@@ -505,6 +522,7 @@ describe('Transaction Aggregator', () => {
 
       expect(result.amount).toBe(1000); // 100 × 10
       expect(result.currency).toBe('USD');
+      expect(result.date).toBe('2024-01-01');
     });
   });
 

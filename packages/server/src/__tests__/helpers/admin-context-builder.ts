@@ -1,7 +1,6 @@
 import type { PoolClient } from 'pg';
 import { qualifyTable } from './test-db-config.js';
 import type { AdminContext } from '../../modules/admin-context/types.js';
-import { optionalDateToTimelessDateString } from '../../shared/helpers/index.js';
 
 /**
  * Builds AdminContext from database user_context table.
@@ -52,10 +51,9 @@ export async function buildAdminContextFromDb(
     ownerId: adminBusinessId,
     defaultTaxCategoryId: dbContext.default_tax_category_id,
     locality: dbContext.locality || 'Israel',
-    ledgerLock: dbContext.ledger_lock 
-      ? dbContext.ledger_lock.toISOString().split('T')[0] 
-      : undefined,
-    dateEstablished: optionalDateToTimelessDateString(dbContext.date_established) ?? undefined,
+    // `date` columns come back as `yyyy-mm-dd` strings (see `pgTypeParsers`)
+    ledgerLock: dbContext.ledger_lock ?? undefined,
+    dateEstablished: dbContext.date_established ?? undefined,
     initialAccounterYear: dbContext.initial_accounter_year ?? undefined,
     authorities: {
       vatBusinessId: dbContext.vat_business_id,

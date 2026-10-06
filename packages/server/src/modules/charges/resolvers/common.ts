@@ -1,5 +1,5 @@
 import { errorSimplifier } from '../../../shared/errors.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
 import {
@@ -97,7 +97,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
         .getChargeSpreadByChargeIdLoader.load(DbCharge.id);
       return (
         spreadRecords?.map(record => ({
-          year: dateToTimelessDateString(record.year_of_relevance),
+          year: record.year_of_relevance,
           amount: record.amount ? Number(record.amount) : null,
         })) ?? null
       );

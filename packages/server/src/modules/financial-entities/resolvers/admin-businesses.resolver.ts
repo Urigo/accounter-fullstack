@@ -1,6 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
-import { TimelessDateString } from '../../../shared/types/index.js';
 import { taxAdvancesRatesSchema, yearlyIdsSchema } from '../helpers/admin-businesses.helper.js';
 import { AdminBusinessesProvider } from '../providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
@@ -80,7 +78,7 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       if (!admin.registration_date) {
         throw new GraphQLError(`Admin business ID="${admin.id}" has no registration date`);
       }
-      return dateToTimelessDateString(admin.registration_date);
+      return admin.registration_date;
     },
     business: async (admin, _, { injector }) => {
       const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(admin.id);
@@ -90,11 +88,7 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
       return business;
     },
     taxAdvancesAnnualIds: admin => yearlyIdsSchema.parse(admin.tax_advances_ids),
-    taxAdvancesRates: admin =>
-      taxAdvancesRatesSchema.parse(admin.advance_tax_rates) as Array<{
-        date: TimelessDateString;
-        rate: number;
-      }>,
+    taxAdvancesRates: admin => taxAdvancesRatesSchema.parse(admin.advance_tax_rates),
     withholdingTaxCompanyId: admin => admin.company_tax_id,
     withholdingTaxAnnualIds: admin => yearlyIdsSchema.parse(admin.withholding_tax_annual_ids),
     socialSecurityDeductionsId: admin => `${admin.company_tax_id}00`,

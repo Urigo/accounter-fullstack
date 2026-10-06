@@ -4,6 +4,7 @@ import { env } from '../environment.js';
 import { cleanupExpiredInvitations, type Logger } from '../jobs/cleanup-expired-invitations.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { Auth0ManagementProvider } from '../modules/auth/providers/auth0-management.provider.js';
+import { pgTypeParsers } from '../shared/helpers/pg-type-parsers.js';
 
 const { Pool } = pg;
 
@@ -38,6 +39,7 @@ async function runCleanup(): Promise<void> {
     database: env.postgres.db,
     ssl: env.postgres.ssl && { rejectUnauthorized: false },
     max: Math.min(env.postgres.max, 10),
+    types: pgTypeParsers,
   });
 
   const db = new DBProvider(pool);

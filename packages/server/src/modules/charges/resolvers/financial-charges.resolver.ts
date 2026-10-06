@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql';
 import { type Injector } from 'graphql-modules';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { getMinDate } from '../../ledger/helpers/ledger-lock.js';
@@ -302,9 +302,12 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       try {
         if (ledgerLock) {
           const minDate = getMinDate(
-            balanceRecords.map(record => [new Date(record.invoiceDate), record.valueDate]).flat(),
+            balanceRecords.flatMap(record => [
+              record.invoiceDate,
+              instantToTimelessDate(record.valueDate),
+            ]),
           );
-          if (minDate && dateToTimelessDateString(minDate) <= ledgerLock) {
+          if (minDate && minDate <= ledgerLock) {
             throw new GraphQLError('Cannot generate balance charge for locked period');
           }
         }

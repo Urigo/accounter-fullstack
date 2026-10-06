@@ -5,6 +5,12 @@ import type {
   ResolversTypes,
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
+import {
+  currentTenantYear,
+  endOfTimelessYear,
+  getTimelessDateYear,
+  startOfTimelessYear,
+} from '../../../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { FinancialEntitiesProvider } from '../../../../financial-entities/providers/financial-entities.provider.js';
@@ -52,18 +58,18 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
 
     const stringYear = matches[0];
     const year = Number(stringYear);
-    if (Number.isNaN(year) || year < 2000 || year > new Date().getFullYear()) {
+    if (Number.isNaN(year) || year < 2000 || year > currentTenantYear()) {
       return {
         __typename: 'CommonError',
         message: `Tax expenses charge description must include valid year (2000 - current year)`,
       };
     }
 
-    const from = new Date(year - 2, 0, 1, 0, 0, 1);
-    const to = new Date(year + 1, 0, 0);
-    const ledgerRecords = await injector
-      .get(LedgerProvider)
-      .getLedgerRecordsByDates({ fromDate: from, toDate: to });
+    const fromYear = year - 2;
+    const ledgerRecords = await injector.get(LedgerProvider).getLedgerRecordsByDates({
+      fromDate: startOfTimelessYear(fromYear),
+      toDate: endOfTimelessYear(year),
+    });
 
     const financialEntities = await injector
       .get(FinancialEntitiesProvider)
@@ -72,16 +78,12 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     const financialEntitiesDict = new Map(financialEntities.map(entity => [entity.id, entity]));
 
     const decoratedLedgerByYear = new Map<number, DecoratedLedgerRecord[]>();
-    for (let year = from.getFullYear(); year <= to.getFullYear(); year++) {
-      if (from.getFullYear() > to.getFullYear()) {
-        break;
-      }
-
-      decoratedLedgerByYear.set(year, []);
+    for (let ledgerYear = fromYear; ledgerYear <= year; ledgerYear++) {
+      decoratedLedgerByYear.set(ledgerYear, []);
     }
 
     ledgerRecords.map(record => {
-      const year = record.invoice_date.getFullYear();
+      const year = getTimelessDateYear(record.invoice_date);
       const [decoratedRecord] = decorateLedgerRecords([record], financialEntitiesDict);
       decoratedLedgerByYear.get(year)?.push(decoratedRecord);
     });
@@ -121,8 +123,8 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
 
     const ledgerEntry: LedgerProto = {
       id: EMPTY_UUID,
-      invoiceDate: new Date(year, 11, 31),
-      valueDate: new Date(year, 11, 31),
+      invoiceDate: endOfTimelessYear(year),
+      valueDate: endOfTimelessYear(year),
       currency: defaultLocalCurrency,
       isCreditorCounterparty: true,
       creditAccountID1: taxBusinessId,

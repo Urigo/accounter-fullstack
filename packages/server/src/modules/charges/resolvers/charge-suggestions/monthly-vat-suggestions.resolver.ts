@@ -1,6 +1,9 @@
-import { format } from 'date-fns';
 import type { Maybe, ResolverFn, ResolversParentTypes } from '../../../../__generated__/types.js';
-import { dateToTimelessDateString } from '../../../../shared/helpers/index.js';
+import {
+  getTimelessDateMonth,
+  getTimelessDateYear,
+  timelessDateFromParts,
+} from '../../../../shared/helpers/index.js';
 import {
   calculateMonthlyVatTotalAmount,
   isWithinMonthlyVatAmountTolerance,
@@ -24,19 +27,18 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
       return null;
     }
 
-    const transactionDate = (transactionsMinEventDate ??
-      transactionsMinDebitDate ??
-      null) as Date | null;
+    const transactionDate = transactionsMinEventDate ?? transactionsMinDebitDate;
     if (!transactionDate) {
       return null;
     }
 
-    const reportMonthDate = new Date(
-      transactionDate.getUTCFullYear(),
-      transactionDate.getUTCMonth() - 1,
+    // mid-month of the month before the transaction (month 0 rolls back to December)
+    const monthDate = timelessDateFromParts(
+      getTimelessDateYear(transactionDate),
+      getTimelessDateMonth(transactionDate) - 1,
       15,
     );
-    const monthDate = dateToTimelessDateString(reportMonthDate);
+    const [reportYear, reportMonth] = monthDate.split('-');
 
     const { income, expenses } = await getVatRecords(
       {
@@ -59,7 +61,7 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
     }
 
     return {
-      description: `VAT for ${format(reportMonthDate, 'MM/yyyy')}`,
+      description: `VAT for ${reportMonth}/${reportYear}`,
       tags: [],
     };
   } catch (error) {

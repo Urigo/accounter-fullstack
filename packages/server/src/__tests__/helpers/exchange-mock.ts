@@ -29,7 +29,7 @@ export function createMockExchangeRates(
   return async function getExchangeRates(
     baseCurrency: Currency,
     quoteCurrency: Currency,
-    _date: Date,
+    _date: Parameters<ExchangeProvider['getExchangeRates']>[2],
   ): Promise<number> {
     // Same currency always returns 1
     if (baseCurrency === quoteCurrency) {

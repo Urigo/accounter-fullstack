@@ -1,8 +1,8 @@
 import { type ReactElement } from 'react';
-import { format } from 'date-fns';
+import { formatTimelessDate, type TimelessDateString } from '@/helpers/index.js';
 
 type Props = {
-  date?: string;
+  date?: TimelessDateString;
 };
 
 export const DateCell = ({ date }: Props): ReactElement => {
@@ -10,9 +10,5 @@ export const DateCell = ({ date }: Props): ReactElement => {
     return <span className="text-sm text-gray-400">—</span>;
   }
 
-  return (
-    <span className="text-sm font-medium whitespace-nowrap">
-      {format(new Date(date), 'dd/MM/yy')}
-    </span>
-  );
+  return <span className="text-sm font-medium whitespace-nowrap">{formatTimelessDate(date)}</span>;
 };

@@ -18,5 +18,8 @@
     "ssl": {
       "rejectUnauthorized": false
     }
+  },
+  "typesOverrides": {
+    "date": "./src/shared/types/index.js#TimelessDateString"
   }
 }

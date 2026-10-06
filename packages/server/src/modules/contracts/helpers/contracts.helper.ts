@@ -1,6 +1,11 @@
-import { format, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import type { BillingCycle, Product, SubscriptionPlan } from '../../../__generated__/types.js';
-import { timelessDateStringToLocalDate } from '../../../shared/helpers/misc.js';
+import {
+  addMonthsToTimelessDate,
+  getTimelessDateYear,
+  timelessDateStringToLocalDate,
+  todayTimelessDate,
+} from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { IGetContractsByIdsResult } from '../types.js';
 
@@ -79,17 +84,15 @@ export function buildContractDocumentDescription(
   const productPlanName = `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)}`;
 
   if (normalizeBillingCycle(contract.billing_cycle) === 'ANNUAL') {
-    const start = format(contract.start_date, 'MMMM do, yyyy');
-    const end = format(contract.end_date, 'MMMM do, yyyy');
+    const start = format(timelessDateStringToLocalDate(contract.start_date), 'MMMM do, yyyy');
+    const end = format(timelessDateStringToLocalDate(contract.end_date), 'MMMM do, yyyy');
     return `${productPlanName} ${start} → ${end}`;
   }
 
-  // Parse `issueMonth` as local midnight so the local-time date-fns operations below don't shift
-  // across a timezone boundary. When no issue month is given, bill the previous month.
-  const billedDate = issueMonth
-    ? timelessDateStringToLocalDate(issueMonth)
-    : subMonths(new Date(), 1);
-  const year = billedDate.getFullYear();
-  const month = format(billedDate, 'MMMM');
+  // When no issue month is given, bill the tenant's previous month.
+  const billedMonth = issueMonth ?? addMonthsToTimelessDate(todayTimelessDate(), -1);
+  const year = getTimelessDateYear(billedMonth);
+  // local midnight of the day, read back with local-time `format`: the same calendar day
+  const month = format(timelessDateStringToLocalDate(billedMonth), 'MMMM');
   return `${productPlanName} - ${month} ${year}`;
 }

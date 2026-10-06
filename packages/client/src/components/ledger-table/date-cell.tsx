@@ -1,16 +1,16 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
+import { formatTimelessDate, type TimelessDateString } from '@/helpers/index.js';
 
 type Props = {
-  date?: Date | null;
-  diff?: Date | null;
+  date?: TimelessDateString | null;
+  diff?: TimelessDateString | null;
 };
 
 export const DateCell = ({ date, diff }: Props): ReactElement => {
-  const formattedDate = date ? format(new Date(date), 'dd/MM/yy') : undefined;
+  const formattedDate = date ? formatTimelessDate(date) : undefined;
 
   // calculate diff date
-  const diffFormattedDate = diff ? format(new Date(diff), 'dd/MM/yy') : undefined;
+  const diffFormattedDate = diff ? formatTimelessDate(diff) : undefined;
   const isDiff = diffFormattedDate && formattedDate !== diffFormattedDate;
 
   return (

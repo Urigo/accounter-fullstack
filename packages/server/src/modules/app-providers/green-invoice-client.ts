@@ -9,7 +9,7 @@ import {
   updateClient_mutationMutationVariables,
   type Sdk,
 } from '@accounter/green-invoice-graphql';
-import { dateToTimelessDateString } from '../../shared/helpers/index.js';
+import { todayTimelessDate } from '../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
 import { AdminContextProvider } from '../admin-context/providers/admin-context.provider.js';
@@ -124,8 +124,8 @@ export class GreenInvoiceClientProvider {
 
         const res = await sdk.searchExpenseDrafts_query({
           input: {
-            fromDate: dateToTimelessDateString(new Date()),
-            toDate: dateToTimelessDateString(new Date()),
+            fromDate: todayTimelessDate(),
+            toDate: todayTimelessDate(),
           },
         });
         if (

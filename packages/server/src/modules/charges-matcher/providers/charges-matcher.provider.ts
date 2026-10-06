@@ -5,9 +5,14 @@
  * Integrates with existing modules: charges, transactions, and documents.
  */
 
-import { subYears } from 'date-fns';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  addYearsToTimelessDate,
+  maxTimelessDate,
+  minTimelessDate,
+  todayTimelessDate,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -16,6 +21,7 @@ import { DocumentsProvider } from '../../documents/providers/documents.provider.
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { chargeRequiresMatch } from '../helpers/awaiting-match-queue.helper.js';
 import { classifyCandidateCharge } from '../helpers/candidate-classifier.helper.js';
+import { getDateWindow } from '../helpers/candidate-filter.helper.js';
 import { validateChargeIsUnmatched } from '../helpers/charge-validator.helper.js';
 import {
   ChargeType,
@@ -91,7 +97,7 @@ export class ChargesMatcherProvider {
     validateChargeIsUnmatched(sourceChargeWithData);
 
     // Step 4: Determine reference date and date window from source charge
-    let referenceDate: Date;
+    let referenceDate: TimelessDateString;
     const hasTransactions = sourceTransactions && sourceTransactions.length > 0;
     if (hasTransactions) {
       // Use earliest transaction event_date
@@ -105,15 +111,12 @@ export class ChargesMatcherProvider {
 
     // Step 5: Load candidate charges from database
     // Use 12-month window centered on reference date
-    const windowStart = new Date(referenceDate);
-    windowStart.setMonth(windowStart.getMonth() - 12);
-    const windowEnd = new Date(referenceDate);
-    windowEnd.setMonth(windowEnd.getMonth() + 12);
+    const { minDate: windowStart, maxDate: windowEnd } = getDateWindow(referenceDate, 12);
 
     const candidateCharges = await this.chargesProvider.getChargesByFilters({
       ownerIds: [ownerId],
-      fromAnyDate: dateToTimelessDateString(windowStart),
-      toAnyDate: dateToTimelessDateString(windowEnd),
+      fromAnyDate: windowStart,
+      toAnyDate: windowEnd,
     });
 
     // Step 6: Load transactions and documents for the candidate charges,
@@ -233,7 +236,7 @@ export class ChargesMatcherProvider {
         source,
       ): source is {
         chargeId: string;
-        referenceDate: Date;
+        referenceDate: TimelessDateString;
         sourceChargeData: TransactionCharge | DocumentCharge;
       } => source.referenceDate != null && source.sourceChargeData != null,
     );
@@ -251,18 +254,9 @@ export class ChargesMatcherProvider {
 
     // Union window covering every source's ±12-month window. A superset of each
     // per-source window; `findMatches` re-applies the per-source window in-memory.
-    let windowStart = new Date(validSources[0].referenceDate);
-    let windowEnd = new Date(validSources[0].referenceDate);
-    for (const { referenceDate } of validSources) {
-      if (referenceDate < windowStart) {
-        windowStart = new Date(referenceDate);
-      }
-      if (referenceDate > windowEnd) {
-        windowEnd = new Date(referenceDate);
-      }
-    }
-    windowStart.setMonth(windowStart.getMonth() - 12);
-    windowEnd.setMonth(windowEnd.getMonth() + 12);
+    const referenceDates = validSources.map(({ referenceDate }) => referenceDate);
+    const windowStart = getDateWindow(minTimelessDate(...referenceDates)!, 12).minDate;
+    const windowEnd = getDateWindow(maxTimelessDate(...referenceDates)!, 12).maxDate;
 
     // Single candidate-pool query + single hydration/classification for the batch.
     // Drop charge types that never require a document match (e.g. BANK_DEPOSIT,
@@ -270,8 +264,8 @@ export class ChargesMatcherProvider {
     // skipping them avoids loading their transactions/documents.
     const candidateCharges = await this.chargesProvider.getChargesByFilters({
       ownerIds: [ownerId],
-      fromAnyDate: dateToTimelessDateString(windowStart),
-      toAnyDate: dateToTimelessDateString(windowEnd),
+      fromAnyDate: windowStart,
+      toAnyDate: windowEnd,
     });
     const candidatePool = await this.hydrateCandidateCharges(
       candidateCharges.filter(chargeRequiresMatch),
@@ -364,7 +358,7 @@ export class ChargesMatcherProvider {
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
 
     // Step 1: Load all charges for this user
-    const prevYear = dateToTimelessDateString(subYears(new Date(), 1));
+    const prevYear = addYearsToTimelessDate(todayTimelessDate(), -1);
     const allCharges = await this.chargesProvider.getChargesByFilters({
       ownerIds: [ownerId],
       fromAnyDate: prevYear,

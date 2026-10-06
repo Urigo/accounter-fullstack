@@ -88,11 +88,19 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: graphql-cache
         with:
+          # Every `generate:graphql` output must be listed: on an exact cache hit the generate
+          # step is skipped, so anything missing here is absent for the rest of the job (the
+          # server's base types in `src/__generated__`, then `mcp-server/src/gql`, were, breaking
+          # the suites importing them). Mirrors `.github/actions/setup/action.yml`; keep them in sync.
           path: |
             schema.graphql
+            packages/server/src/__generated__
             packages/server/src/modules/**/__generated__
             packages/client/src/gql
+            packages/gmail-listener/src/gql
             packages/email-ingestion-gateway/src/gql
+            packages/mcp-server/src/gql
+            packages/scraper-app/src/server/gql
           # The gateway's own GraphQL documents are a codegen input, so they belong in
           # the key now that its `src/gql` is in the cached paths. Without them, editing
           # only `graphql/mutations.ts` is a cache hit and the typecheck below validates
@@ -107,7 +115,10 @@ jobs:
             'yarn.lock', 'packages/server/src/modules/*/typeDefs/*.graphql.ts',
             'packages/client/src/components/**/*.tsx', 'packages/client/src/hooks/**/*.ts',
             'packages/client/src/providers/**/*.tsx', 'packages/client/src/**/*.graphql.ts',
-            'packages/email-ingestion-gateway/src/graphql/mutations.ts') }}
+            'packages/gmail-listener/src/server-requests.ts',
+            'packages/scraper-app/src/server/graphql/mutations.ts',
+            'packages/email-ingestion-gateway/src/graphql/mutations.ts',
+            'packages/mcp-server/src/tools/*.ts', 'packages/mcp-server/src/upstream/*.ts') }}
           restore-keys: |
             graphql-codegen-${{ runner.os }}-
 
@@ -133,7 +144,8 @@ jobs:
             packages/migrations/src/**/*.types.ts
             packages/scraper-app/src/server/gql/index.ts
           key:
-            pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json', 'yarn.lock',
+            pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json',
+            'packages/server/pgconfig.json', 'yarn.lock',
             'packages/server/src/**/providers/*.provider.ts',
             'packages/server/src/plugins/admin-context-plugin.ts',
             'packages/scraper-app/src/server/graphql/mutations.ts') }}

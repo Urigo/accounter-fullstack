@@ -204,7 +204,7 @@ function buildEmailChargeDescription(args: {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
-            timeZone: 'UTC',
+            timeZone: 'UTC', // TODO: debug if this is the correct approach for tenant-localized dates
           })
           .replace(/,/g, '')
       : null;

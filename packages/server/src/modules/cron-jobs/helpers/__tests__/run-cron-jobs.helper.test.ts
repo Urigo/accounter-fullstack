@@ -60,7 +60,7 @@ function buildCandidate(
     debit_date: null,
     debit_date_override: null,
     debit_timestamp: null,
-    event_date: new Date(2026, 0, 10),
+    event_date: '2026-01-10',
     is_fee: false,
     origin_key: 'origin-key',
     origin_user_description: null,
@@ -116,10 +116,10 @@ describe('buildMergedChargeSnapshots', () => {
     const candidates = [
       buildCandidate('t1', 'charge-a', {
         amount: '-100.5',
-        event_date: new Date(2026, 1, 3),
+        event_date: '2026-02-03',
         source_description: 'Bank transfer',
       }),
-      buildCandidate('t2', 'charge-a', { amount: '-4.5', event_date: new Date(2026, 1, 1) }),
+      buildCandidate('t2', 'charge-a', { amount: '-4.5', event_date: '2026-02-01' }),
       buildCandidate('t3', 'charge-b', { amount: '10', currency: 'USD' }),
       buildCandidate('t4', 'charge-b', { amount: '10', currency: 'EUR' }),
     ];
@@ -168,7 +168,7 @@ describe('runCronJobs', () => {
           ]),
         calculateCreditcardDebitDate: vi
           .fn()
-          .mockResolvedValue([{ id: 'cc-1', debit_date_override: new Date(2026, 2, 2) }]),
+          .mockResolvedValue([{ id: 'cc-1', debit_date_override: '2026-03-02' }]),
       },
       charges,
     );

@@ -58,7 +58,7 @@ const events: CronJobsRunEvent[] = [
     baseCharge: {
       id: 'charge-a',
       userDescription: 'Supplier payment',
-      minEventDate: new Date('2026-01-10T00:00:00.000Z'),
+      minEventDate: '2026-01-10',
       totalAmount: { formatted: '₪ -100.00' },
       counterparty: { id: 'business-1', name: 'Acme Ltd' },
     },

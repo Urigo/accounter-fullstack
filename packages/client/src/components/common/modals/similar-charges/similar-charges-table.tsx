@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { format } from 'date-fns';
 import { flexRender, useTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
 import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/fragment-masking.js';
 import { SimilarChargesTableFragmentDoc } from '../../../../gql/graphql.js';
-import { getChargeTypeName } from '../../../../helpers/index.js';
+import { getChargeTypeName, type TimelessDateString } from '../../../../helpers/index.js';
 import { useBatchUpdateCharges } from '../../../../hooks/use-batch-update-charges.js';
 import { Button } from '../../../ui/button.js';
 import { Card } from '../../../ui/card.js';
@@ -69,7 +68,7 @@ export type SimilarCharge = {
   id: string;
   chargeType: string;
   counterpartyName?: string;
-  date?: Date;
+  date?: TimelessDateString;
   amountRaw?: number;
   amountFormatted?: string;
   vatAmountRaw?: number;
@@ -120,8 +119,8 @@ const columns: ColumnDef<TableFeaturesConfig, SimilarCharge>[] = [
     accessorKey: 'date',
     header: 'Date',
     cell: ({ row }) => {
-      const date = row.getValue('date') as Date | undefined;
-      return <div>{date ? format(new Date(date), 'yyyy-MM-dd') : 'Missing'}</div>;
+      const date = row.getValue('date') as TimelessDateString | undefined;
+      return <div>{date ?? 'Missing'}</div>;
     },
   },
   {

@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { errorSimplifier } from '../../../shared/errors.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
 import { BusinessUsersProvider } from '../../auth/providers/business-users.provider.js';
@@ -166,8 +165,8 @@ export const dynamicReportCommentsResolver: ReportsModule.Resolvers = {
       displayName(injector, comment.author_id, comment.owner_id),
     isMine: async (comment, _args, { injector }) =>
       isCommentByUser(comment, await getActingUserId(injector)),
-    fromDate: comment => dateToTimelessDateString(comment.from_date),
-    toDate: comment => dateToTimelessDateString(comment.to_date),
+    fromDate: comment => comment.from_date,
+    toDate: comment => comment.to_date,
     scopeOwnerId: comment => comment.scope_owner_id,
   },
 };

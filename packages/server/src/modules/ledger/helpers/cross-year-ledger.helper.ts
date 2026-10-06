@@ -1,5 +1,10 @@
 import type { Injector } from 'graphql-modules';
 import type { Currency } from '../../../shared/enums.js';
+import {
+  endOfTimelessYear,
+  getTimelessDateYear,
+  startOfTimelessYear,
+} from '../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import type { AdminContext } from '../../admin-context/types.js';
@@ -157,7 +162,9 @@ export async function handleCrossYearLedgerEntries(
   ) {
     if (
       documentsMinDate &&
-      !spreadRecords.some(r => r.year_of_relevance.getFullYear() === documentsMinDate.getFullYear())
+      !spreadRecords.some(
+        r => getTimelessDateYear(r.year_of_relevance) === getTimelessDateYear(documentsMinDate),
+      )
     ) {
       spreadRecords.push({
         owner_id: charge.owner_id,
@@ -205,15 +212,15 @@ export async function handleCrossYearLedgerEntries(
         defaultAmounts;
       const yearDate = spreadRecord.year_of_relevance;
       if (
-        adjustedEntry.invoiceDate.getFullYear() === yearDate.getFullYear() &&
-        adjustedEntry.valueDate.getFullYear() === yearDate.getFullYear()
+        getTimelessDateYear(adjustedEntry.invoiceDate) === getTimelessDateYear(yearDate) &&
+        getTimelessDateYear(adjustedEntry.valueDate) === getTimelessDateYear(yearDate)
       ) {
         crossYearEntries.push({ ...adjustedEntry, ...amounts });
         continue;
       }
 
       const isYearOfRelevancePrior =
-        adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
+        getTimelessDateYear(adjustedEntry.invoiceDate) > getTimelessDateYear(yearDate);
       const mediateTaxCategory =
         !!adjustedEntry.isCreditorCounterparty === !!adjustedEntry.isCreditInvoice
           ? isYearOfRelevancePrior
@@ -224,8 +231,8 @@ export async function handleCrossYearLedgerEntries(
             : expensesInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
-        ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
-        : { invoiceDate: new Date(yearDate.getFullYear(), 0, 1) };
+        ? { invoiceDate: endOfTimelessYear(yearDate) }
+        : { invoiceDate: startOfTimelessYear(yearDate) };
       crossYearEntries.push(
         {
           // first chronological entry
@@ -259,15 +266,15 @@ export async function handleCrossYearLedgerEntries(
       crossYearEntries.push(...vatEntries);
 
       if (
-        adjustedEntry.invoiceDate.getFullYear() === yearDate.getFullYear() &&
-        adjustedEntry.valueDate.getFullYear() === yearDate.getFullYear()
+        getTimelessDateYear(adjustedEntry.invoiceDate) === getTimelessDateYear(yearDate) &&
+        getTimelessDateYear(adjustedEntry.valueDate) === getTimelessDateYear(yearDate)
       ) {
         crossYearEntries.push(adjustedEntry);
         continue;
       }
 
       const isYearOfRelevancePrior =
-        adjustedEntry.invoiceDate.getFullYear() > yearDate.getFullYear();
+        getTimelessDateYear(adjustedEntry.invoiceDate) > getTimelessDateYear(yearDate);
       const mediateTaxCategory =
         !!adjustedEntry.isCreditorCounterparty === !!adjustedEntry.isCreditInvoice
           ? isYearOfRelevancePrior
@@ -278,8 +285,8 @@ export async function handleCrossYearLedgerEntries(
             : expensesInAdvanceTaxCategoryId;
 
       const yearOfRelevanceDates = isYearOfRelevancePrior
-        ? { invoiceDate: new Date(yearDate.getFullYear(), 11, 31) }
-        : { invoiceDate: new Date(yearDate.getFullYear(), 0, 1) };
+        ? { invoiceDate: endOfTimelessYear(yearDate) }
+        : { invoiceDate: startOfTimelessYear(yearDate) };
       crossYearEntries.push(
         {
           // first chronological entry

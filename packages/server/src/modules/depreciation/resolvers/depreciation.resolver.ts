@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { calculateTotalAmount } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -233,8 +233,7 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
       }
       return formatFinancialAmount(amount.raw * -1, amount.currency);
     },
-    activationDate: dbDepreciationRecord =>
-      dateToTimelessDateString(dbDepreciationRecord.activation_date),
+    activationDate: dbDepreciationRecord => dbDepreciationRecord.activation_date,
     category: async (dbDepreciationRecord, _, { injector }) => {
       return injector
         .get(DepreciationCategoriesProvider)

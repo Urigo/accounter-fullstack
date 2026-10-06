@@ -1,4 +1,3 @@
-import { endOfDay } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type {
   Maybe,
@@ -8,7 +7,7 @@ import type {
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import type { Currency } from '../../../../../shared/enums.js';
-import { dateToTimelessDateString, formatCurrency } from '../../../../../shared/helpers/index.js';
+import { formatCurrency } from '../../../../../shared/helpers/index.js';
 import type { LedgerProto, TimelessDateString } from '../../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../../exchange-rates/providers/exchange.provider.js';
@@ -76,7 +75,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
       foreignAccounts.map(({ currency }) => currency as Currency),
     );
 
-    const cumulativeDate = dateToTimelessDateString(endOfDay(new Date(revaluationDate)));
+    const cumulativeDate = revaluationDate;
     const accountsCumulativeBalancePromise = businessTransactionsSumFromLedgerRecords(
       {},
       {
@@ -96,7 +95,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
       ...Array.from(currencies).map(async currency => {
         const rates = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, defaultLocalCurrency, new Date(revaluationDate));
+          .getExchangeRates(currency, defaultLocalCurrency, revaluationDate);
         exchangeRates.set(currency, rates);
       }),
     ]);
@@ -144,8 +143,8 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
 
       const ledgerEntry: LedgerProto = {
         id: EMPTY_UUID,
-        invoiceDate: new Date(revaluationDate),
-        valueDate: new Date(revaluationDate),
+        invoiceDate: revaluationDate,
+        valueDate: revaluationDate,
         currency: defaultLocalCurrency,
         isCreditorCounterparty,
         ...(isCreditorCounterparty

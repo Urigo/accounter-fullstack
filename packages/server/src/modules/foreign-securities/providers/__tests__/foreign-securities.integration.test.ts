@@ -9,7 +9,7 @@ import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js'
 import type { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import type { FinancialBankAccountsProvider } from '../../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import type { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
-import { dateToTimelessDateString } from '../../../../shared/helpers/misc.js';
+import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { ForeignSecuritiesProvider, MAX_CHARGE_LINK_SECURITIES } from '../foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../security-businesses.provider.js';
 
@@ -82,13 +82,13 @@ type StubTransaction = {
   source_description: string | null;
   amount?: string;
   currency?: string;
-  debit_date?: Date | null;
-  debit_date_override?: Date | null;
+  debit_date?: TimelessDateString | null;
+  debit_date_override?: TimelessDateString | null;
   account_id?: string;
 };
 
 /** The day the fixtures settle on: execution value date and transaction debit date alike. */
-const VALUE_DATE = '2024-03-12';
+const VALUE_DATE: TimelessDateString = '2024-03-12';
 
 /**
  * The provider reads only the identity, description, account and date/amount fields off each
@@ -113,7 +113,7 @@ function withDefaults(chargeId: string, transaction: StubTransaction) {
     charge_id: chargeId,
     amount: '-1000.00',
     currency: 'USD',
-    debit_date: new Date(`${VALUE_DATE}T00:00:00`),
+    debit_date: VALUE_DATE,
     debit_date_override: null,
     account_id: ACCOUNT_ID,
     ...transaction,
@@ -632,7 +632,7 @@ describe('getExecutionsBySecurityBusiness', () => {
     // which is what the position derivation reads its currency and start date off.
     expect(
       executionsByBusinessId.get(APPLE_BUSINESS_ID)?.map(execution => execution.trade_date),
-    ).toEqual([new Date('2024-01-05T00:00:00'), new Date('2024-03-10T00:00:00')]);
+    ).toEqual(['2024-01-05', '2024-03-10']);
     expect(executionsByBusinessId.get(MSFT_BUSINESS_ID)).toHaveLength(1);
   });
 
@@ -818,7 +818,7 @@ describe('getSecurityExecutionsPage', () => {
 
     const result = await page();
 
-    expect(result.nodes.map(node => dateToTimelessDateString(node.execution.trade_date))).toEqual([
+    expect(result.nodes.map(node => node.execution.trade_date)).toEqual([
       '2024-06-01',
       '2024-03-01',
       '2024-01-01',
@@ -905,7 +905,7 @@ describe('getSecurityExecutionsPage', () => {
     });
 
     expect(bounded.totalRecords).toBe(1);
-    expect(dateToTimelessDateString(bounded.nodes[0]!.execution.trade_date)).toBe('2024-05-15');
+    expect(bounded.nodes[0]!.execution.trade_date).toBe('2024-05-15');
   });
 
   it('filters on the bank own labels for trade and transaction type', async () => {

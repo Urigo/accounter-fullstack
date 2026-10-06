@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { dateToTimelessDateString, getCacheInstance } from '../../../shared/helpers/index.js';
+import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type { IGetAllVatValuesQuery, IGetAllVatValuesResult } from '../types.js';
@@ -38,7 +38,7 @@ export class VatProvider {
     const vatValues = await this.getAllVatValues();
 
     return dates.map(date => {
-      const record = vatValues.find(value => dateToTimelessDateString(value.date) <= date);
+      const record = vatValues.find(value => value.date <= date);
       const value = record ? Number(record.percentage) : null;
       return value;
     });

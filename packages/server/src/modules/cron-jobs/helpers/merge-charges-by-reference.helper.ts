@@ -1,9 +1,10 @@
 import { normalizeNumericReference } from '../../../shared/helpers/numeric-reference.js';
+import { differenceInTimelessDays } from '../../../shared/helpers/timeless-date.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import type { IGetReferenceMergeCandidatesResult } from '../types.js';
 
-const WIDE_DATE_DIFF_MILLISECONDS = 2_592_000_000; // 30 days
-const ACCEPTABLE_DATE_DIFF_MILLISECONDS = 86_400_000; // 1 day
+const WIDE_DATE_DIFF_DAYS = 30;
+const ACCEPTABLE_DATE_DIFF_DAYS = 1;
 const MIN_DESCRIPTION_LENGTH = 5;
 const REPEATED_PAYMENT_MIN_DAYS = 7;
 const AMOUNT_EPSILON = 0.01;
@@ -234,10 +235,7 @@ function isPotentialMatch(left: CandidateWithCharge, right: CandidateWithCharge)
   }
 
   if (isForeignSecuritiesCrossReferencePair(left, right)) {
-    const isSameEventDate = isSameUtcDate(
-      left.transaction.event_date,
-      right.transaction.event_date,
-    );
+    const isSameEventDate = left.transaction.event_date === right.transaction.event_date;
 
     if (!isSameEventDate) {
       return false;
@@ -249,15 +247,11 @@ function isPotentialMatch(left: CandidateWithCharge, right: CandidateWithCharge)
   const leftTransaction = left.transaction;
   const rightTransaction = right.transaction;
 
-  const leftTime = leftTransaction.event_date.getTime();
-  const rightTime = rightTransaction.event_date.getTime();
-  const diffInMilliseconds = Math.abs(leftTime - rightTime);
+  const diffInDays = Math.abs(
+    differenceInTimelessDays(leftTransaction.event_date, rightTransaction.event_date),
+  );
 
-  if (
-    leftTransaction.is_fee &&
-    rightTransaction.is_fee &&
-    diffInMilliseconds > ACCEPTABLE_DATE_DIFF_MILLISECONDS
-  ) {
+  if (leftTransaction.is_fee && rightTransaction.is_fee && diffInDays > ACCEPTABLE_DATE_DIFF_DAYS) {
     return false;
   }
 
@@ -265,7 +259,7 @@ function isPotentialMatch(left: CandidateWithCharge, right: CandidateWithCharge)
     return false;
   }
 
-  if (diffInMilliseconds <= ACCEPTABLE_DATE_DIFF_MILLISECONDS) {
+  if (diffInDays <= ACCEPTABLE_DATE_DIFF_DAYS) {
     return true;
   }
 
@@ -273,12 +267,12 @@ function isPotentialMatch(left: CandidateWithCharge, right: CandidateWithCharge)
     return false;
   }
 
-  const isWithinWideRange = diffInMilliseconds <= WIDE_DATE_DIFF_MILLISECONDS;
+  const isWithinWideRange = diffInDays <= WIDE_DATE_DIFF_DAYS;
   if (!isWithinWideRange) {
     return false;
   }
 
-  if (isFeeAssociationMatch(leftTransaction, rightTransaction, diffInMilliseconds)) {
+  if (isFeeAssociationMatch(leftTransaction, rightTransaction, diffInDays)) {
     return true;
   }
 
@@ -296,7 +290,7 @@ function isPotentialMatch(left: CandidateWithCharge, right: CandidateWithCharge)
     return false;
   }
 
-  if (isLikelyRecurringPayment(leftTransaction, rightTransaction, diffInMilliseconds)) {
+  if (isLikelyRecurringPayment(leftTransaction, rightTransaction, diffInDays)) {
     return false;
   }
 
@@ -317,14 +311,6 @@ function isForeignSecuritiesCrossReferencePair(
   return (
     isForeignSecuritiesAliasCandidate(leftTransaction, left.charge) &&
     isForeignSecuritiesAliasCandidate(rightTransaction, right.charge)
-  );
-}
-
-function isSameUtcDate(left: Date, right: Date) {
-  return (
-    left.getUTCFullYear() === right.getUTCFullYear() &&
-    left.getUTCMonth() === right.getUTCMonth() &&
-    left.getUTCDate() === right.getUTCDate()
   );
 }
 
@@ -354,9 +340,9 @@ function isConversionCandidate(candidate: CandidateWithCharge) {
 function isFeeAssociationMatch(
   left: IGetReferenceMergeCandidatesResult,
   right: IGetReferenceMergeCandidatesResult,
-  diffInMilliseconds: number,
+  diffInDays: number,
 ) {
-  if (diffInMilliseconds > FEE_ASSOCIATION_MAX_DAYS * ACCEPTABLE_DATE_DIFF_MILLISECONDS) {
+  if (diffInDays > FEE_ASSOCIATION_MAX_DAYS) {
     return false;
   }
 
@@ -366,9 +352,9 @@ function isFeeAssociationMatch(
 function isLikelyRecurringPayment(
   left: IGetReferenceMergeCandidatesResult,
   right: IGetReferenceMergeCandidatesResult,
-  diffInMilliseconds: number,
+  diffInDays: number,
 ) {
-  if (!isLikelyRepeatedPaymentInterval(diffInMilliseconds)) {
+  if (!isLikelyRepeatedPaymentInterval(diffInDays)) {
     return false;
   }
 
@@ -450,8 +436,7 @@ function isLikelyDistinctSameReferencePayment(
   return relativeDiff > WIDE_WINDOW_SAME_DIRECTION_MAX_RELATIVE_AMOUNT_DIFF;
 }
 
-function isLikelyRepeatedPaymentInterval(diffInMilliseconds: number) {
-  const diffInDays = diffInMilliseconds / ACCEPTABLE_DATE_DIFF_MILLISECONDS;
+function isLikelyRepeatedPaymentInterval(diffInDays: number) {
   return diffInDays >= REPEATED_PAYMENT_MIN_DAYS;
 }
 

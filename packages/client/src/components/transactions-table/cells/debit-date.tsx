@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
+import { formatTimelessDate } from '../../../helpers/index.js';
 import type { TransactionsTableRowType } from '../columns.js';
 
 type Props = {
@@ -11,10 +11,10 @@ export const DebitDate = ({ transaction }: Props): ReactElement => {
 
   return (
     <div className="flex flex-col justify-center">
-      <div>{effectiveDate && format(new Date(effectiveDate), 'dd/MM/yy')}</div>
+      <div>{effectiveDate && formatTimelessDate(effectiveDate)}</div>
       {transaction.sourceEffectiveDate && (
         <div className="text-xs text-gray-500">
-          (Originally {format(new Date(transaction.sourceEffectiveDate), 'dd/MM/yy')})
+          (Originally {formatTimelessDate(transaction.sourceEffectiveDate)})
         </div>
       )}
     </div>

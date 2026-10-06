@@ -46,6 +46,11 @@ import {
   YesNo,
 } from '@accounter/shaam6111-generator';
 import type * as SchemaTypes from '../../../__generated__/types.js';
+import {
+  endOfTimelessYear,
+  getTimelessDateYear,
+  timelessDateFromParts,
+} from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -579,8 +584,8 @@ export async function getShaam6111Data(
     throw new Error(`Invalid year. Must be between 2000 and 2100. Received: ${year}`);
   }
 
-  const fromDate = new Date(1990, 0, 1, 0, 0, 0, 1); // TODO: maybe take company init date as from date
-  const toDate = new Date(year + 1, 0, 0);
+  const fromDate = timelessDateFromParts(1990, 1, 1); // TODO: maybe take company init date as from date
+  const toDate = endOfTimelessYear(year);
   const ledgerRecordsPromise = injector
     .get(LedgerProvider)
     .getLedgerRecordsByDates({ fromDate, toDate });
@@ -607,7 +612,7 @@ export async function getShaam6111Data(
 
   const decoratedLedgerByYear = new Map<number, DecoratedLedgerRecord[]>();
   ledgerRecords.map(record => {
-    const year = record.invoice_date.getFullYear();
+    const year = getTimelessDateYear(record.invoice_date);
     const [decoratedRecord] = decorateLedgerRecords([record], financialEntitiesDict);
     if (!decoratedLedgerByYear.has(year)) {
       decoratedLedgerByYear.set(year, []);

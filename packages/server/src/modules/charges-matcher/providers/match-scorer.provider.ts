@@ -1,5 +1,6 @@
 import type { Injector } from 'graphql-modules';
 import { DocumentType } from '../../../shared/enums.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { IGetIssuedDocumentsStatusByChargeIdsResult } from '../../documents/__generated__/issued-documents.types.js';
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
@@ -33,7 +34,7 @@ import { aggregateTransactions } from './transaction-aggregator.js';
 export function selectTransactionDate(
   transaction: AggregatedTransaction,
   documentType: DocumentType,
-): Date {
+): TimelessDateString {
   switch (documentType) {
     case DocumentType.Invoice:
     case DocumentType.CreditInvoice:
@@ -139,7 +140,7 @@ export async function scoreMatch(
 async function calculateScoreWithDate(
   transaction: Omit<AggregatedTransaction, 'debitDate'>,
   document: Omit<AggregatedDocument, 'businessIsCreditor'>,
-  transactionDate: Date,
+  transactionDate: TimelessDateString,
   chargeId: string,
   injector: Injector,
 ): Promise<MatchScore> {
@@ -175,17 +176,7 @@ async function calculateScoreWithDate(
       document.type === DocumentType.Invoice || document.type === DocumentType.Proforma;
 
     // Date-only comparison: doc.date <= transactionDate
-    const docDate = new Date(
-      document.date.getFullYear(),
-      document.date.getMonth(),
-      document.date.getDate(),
-    );
-    const txDate = new Date(
-      transactionDate.getFullYear(),
-      transactionDate.getMonth(),
-      transactionDate.getDate(),
-    );
-    const dateIsEligible = docDate.getTime() <= txDate.getTime();
+    const dateIsEligible = document.date <= transactionDate;
 
     // Status gating via DataLoader
     let statusIsEligible: boolean;

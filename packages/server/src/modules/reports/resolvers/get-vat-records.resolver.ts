@@ -1,9 +1,12 @@
-import { endOfDay, lastDayOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { QueryVatReportArgs } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  endOfTimelessMonth,
+  getTimelessDateDay,
+  startOfTimelessMonth,
+} from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
@@ -16,7 +19,7 @@ import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper
 import {
   adjustTaxRecord,
   isVatReportRelevantDocument,
-  vatReportMonthStart,
+  type RawVatReportRecord,
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
 import type { VatReportRecords } from '../types.js';
@@ -54,10 +57,8 @@ export const getVatRecords = async (
     const docsChargesIDs = new Set<string>();
     const reportIssuerId = filters?.financialEntityId;
 
-    const monthStart = filters?.monthDate ? vatReportMonthStart(filters.monthDate) : undefined;
-    const monthEnd = monthStart ? lastDayOfMonth(monthStart) : undefined;
-    const fromDate = monthStart ? dateToTimelessDateString(monthStart) : undefined;
-    const toDate = monthEnd ? dateToTimelessDateString(monthEnd) : undefined;
+    const fromDate = filters?.monthDate ? startOfTimelessMonth(filters.monthDate) : undefined;
+    const toDate = filters?.monthDate ? endOfTimelessMonth(filters.monthDate) : undefined;
 
     // get all documents by date filters
     const relevantDocumentsPromise = injector
@@ -70,8 +71,8 @@ export const getVatRecords = async (
         documents.filter(doc => {
           // filter documents with vat_report_date_override outside of the date range
           if (doc.vat_report_date_override) {
-            const isBeforeFromDate = monthStart && doc.vat_report_date_override < monthStart;
-            const isAfterToDate = monthEnd && doc.vat_report_date_override > endOfDay(monthEnd);
+            const isBeforeFromDate = fromDate && doc.vat_report_date_override < fromDate;
+            const isAfterToDate = toDate && doc.vat_report_date_override > toDate;
             if (isBeforeFromDate || isAfterToDate) {
               return false;
             }
@@ -243,12 +244,10 @@ export const getVatRecords = async (
       }
     }
 
-    response.income = response.income.sort(
-      (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
-    );
-    response.expenses = response.expenses.sort(
-      (a, b) => (b.documentDate?.getDate() ?? 0) - (a.documentDate?.getDate() ?? 0),
-    );
+    const documentDay = (record: RawVatReportRecord) =>
+      record.documentDate ? getTimelessDateDay(record.documentDate) : 0;
+    response.income = response.income.sort((a, b) => documentDay(b) - documentDay(a));
+    response.expenses = response.expenses.sort((a, b) => documentDay(b) - documentDay(a));
 
     return response;
   } catch (e) {

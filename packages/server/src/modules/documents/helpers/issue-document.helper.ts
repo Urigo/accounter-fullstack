@@ -1,4 +1,3 @@
-import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
@@ -14,8 +13,12 @@ import type {
 } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import {
-  dateToTimelessDateString,
-  timelessDateStringToLocalDate,
+  addMonthsToTimelessDate,
+  endOfTimelessMonth,
+  maxTimelessDate,
+  startOfTimelessMonth,
+  timelessDateToTenantInstant,
+  todayTimelessDate,
 } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
@@ -90,7 +93,8 @@ export async function getPaymentsFromTransactions(
             cardType: 'MASTERCARD', // TODO: add logic to support other card types
             cardNum: account.account_number,
             numPayments: 1,
-            firstPayment: transaction.event_date.getTime() / 1000, // assuming first payment is the transaction date
+            // assuming first payment is the transaction date (Unix seconds, at the tenant's midnight)
+            firstPayment: timelessDateToTenantInstant(transaction.event_date).getTime() / 1000, // TODO: make sure Green Invoice uses this timestamp correctly, add some tests to validate our side
           };
           break;
         case 'WIRE_TRANSFER':
@@ -129,7 +133,7 @@ export async function getPaymentsFromTransactions(
       const payment: DocumentPaymentRecord = {
         currency: transaction.currency as Currency,
         currencyRate: undefined,
-        date: dateToTimelessDateString(transaction.debit_date ?? transaction.event_date),
+        date: transaction.debit_date ?? transaction.event_date,
         price: Number(transaction.amount),
         type,
         transactionId: transaction.id,
@@ -249,17 +253,8 @@ export function getLinkedDocumentsAttributes(
 export function getDocumentDateOutOfTransactions(
   transactions: IGetTransactionsByChargeIdsResult[],
 ): TimelessDateString | undefined {
-  const debitDates = transactions.map(tx => tx.debit_date).filter(Boolean) as Date[];
-
-  // if no debit dates, use current date
-  if (!debitDates.length) return dateToTimelessDateString(new Date());
-
-  // Sort dates and take the first one
-  const sortedDates = [...debitDates].sort((a, b) => b.getTime() - a.getTime());
-  const firstDate = sortedDates[0];
-
-  // Return the date in the required format
-  return dateToTimelessDateString(firstDate);
+  // the latest debit date; if there are none, use the current date
+  return maxTimelessDate(...transactions.map(tx => tx.debit_date)) ?? todayTimelessDate();
 }
 
 export async function deduceVatTypeFromBusiness(
@@ -320,9 +315,9 @@ export const convertContractToDraft = async (
     throw new GraphQLError(`Green invoice match not found for business ID="${contract.client_id}"`);
   }
 
-  const today = issueMonth ? addMonths(timelessDateStringToLocalDate(issueMonth), 1) : new Date();
-  const monthStart = dateToTimelessDateString(startOfMonth(today));
-  const monthEnd = dateToTimelessDateString(endOfMonth(today));
+  const nextMonth = addMonthsToTimelessDate(issueMonth, 1);
+  const monthStart = startOfTimelessMonth(nextMonth);
+  const monthEnd = endOfTimelessMonth(nextMonth);
 
   const description = buildContractDocumentDescription(contract, issueMonth);
 

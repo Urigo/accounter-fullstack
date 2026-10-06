@@ -52,7 +52,7 @@ export type BusinessTransactionProto = {
   isCredit: boolean;
   ownerID: string;
   foreignAmount: number;
-  date: Date;
+  date: TimelessDateString;
   reference?: string;
   chargeId: string;
 };
@@ -89,15 +89,18 @@ export type AccounterContext = YogaInitialContext & {
   executionInFlight?: boolean;
 };
 
-type addZero<T> = T | 0;
-type oneToFour = 1 | 2 | 3 | 4;
-type oneToNine = oneToFour | 5 | 6 | 7 | 8 | 9;
-type d = addZero<oneToNine>;
-type YYYY = `20${addZero<oneToFour>}${d}`;
-type MM = `0${oneToNine}` | `1${0 | 1 | 2}`;
-type DD = `${0}${oneToNine}` | `${1 | 2}${d}` | `3${0 | 1}`;
-
-export declare type TimelessDateString = `${YYYY}-${MM}-${DD}`;
+/**
+ * A calendar day, `yyyy-mm-dd`, with no time of day and no timezone (#4560).
+ *
+ * Postgres `date` columns (see `pgTypeParsers` and pgtyped's `typesOverrides`) and the GraphQL
+ * `TimelessDate` scalar carry this type end to end; the scalar validates the exact format at the
+ * API boundary.
+ *
+ * A pattern rather than a union of every valid day: a union of that size (tens of thousands of
+ * literals) makes type-checking every expression that touches a date dramatically slower, and
+ * would cap the years it can hold.
+ */
+export declare type TimelessDateString = `${number}-${number}-${number}`;
 
 export type * from './ledger.js';
 export type * from './utils.js';

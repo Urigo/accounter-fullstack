@@ -62,7 +62,7 @@ describe('Single-Match Provider', () => {
           createMockTransaction({
             amount: "100",
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
           }),
         ]);
 
@@ -71,14 +71,14 @@ describe('Single-Match Provider', () => {
             createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
             }),
           ]),
           createDocCharge('doc-charge-2', [
             createMockDocument({
               total_amount: 110,
               currency_code: 'USD',
-              date: new Date('2024-01-16'),
+              date: '2024-01-16',
             }),
           ]),
         ];
@@ -113,7 +113,7 @@ describe('Single-Match Provider', () => {
           createMockDocument({
             total_amount: 100,
             currency_code: 'USD',
-            date: new Date('2024-01-15'),
+            date: '2024-01-15',
           }),
         ]);
 
@@ -122,14 +122,14 @@ describe('Single-Match Provider', () => {
             createMockTransaction({
               amount: "100",
               currency: 'USD',
-              event_date: new Date('2024-01-15'),
+              event_date: '2024-01-15',
             }),
           ]),
           createTxCharge('tx-charge-2', [
             createMockTransaction({
               amount: "90",
               currency: 'USD',
-              event_date: new Date('2024-01-16'),
+              event_date: '2024-01-16',
             }),
           ]),
         ];
@@ -241,15 +241,15 @@ describe('Single-Match Provider', () => {
 
       it('should return empty array when all candidates outside date window', async () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createMockTransaction({ event_date: new Date('2024-01-15') }),
+          createMockTransaction({ event_date: '2024-01-15' }),
         ]);
 
         const candidateCharges = [
           createDocCharge('doc-charge-1', [
-            createMockDocument({ date: new Date('2023-01-01') }), // 1 year before
+            createMockDocument({ date: '2023-01-01' }), // 1 year before
           ]),
           createDocCharge('doc-charge-2', [
-            createMockDocument({ date: new Date('2025-02-01') }), // 1 year after
+            createMockDocument({ date: '2025-02-01' }), // 1 year after
           ]),
         ];
 
@@ -335,7 +335,7 @@ describe('Single-Match Provider', () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
           createMockTransaction({
             amount: "100",
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
           }),
         ]);
 
@@ -344,19 +344,19 @@ describe('Single-Match Provider', () => {
           createDocCharge('doc-charge-far', [
             createMockDocument({
               total_amount: 100,
-              date: new Date('2024-01-05'), // 10 days away
+              date: '2024-01-05', // 10 days away
             }),
           ]),
           createDocCharge('doc-charge-close', [
             createMockDocument({
               total_amount: 100,
-              date: new Date('2024-01-14'), // 1 day away
+              date: '2024-01-14', // 1 day away
             }),
           ]),
           createDocCharge('doc-charge-medium', [
             createMockDocument({
               total_amount: 100,
-              date: new Date('2024-01-10'), // 5 days away
+              date: '2024-01-10', // 5 days away
             }),
           ]),
         ];
@@ -370,12 +370,12 @@ describe('Single-Match Provider', () => {
 
       it('should include dateProximity in results', async () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createMockTransaction({ event_date: new Date('2024-01-15') }),
+          createMockTransaction({ event_date: '2024-01-15' }),
         ]);
 
         const candidateCharges = [
           createDocCharge('doc-charge-1', [
-            createMockDocument({ date: new Date('2024-01-14') }), // 1 day
+            createMockDocument({ date: '2024-01-14' }), // 1 day
           ]),
         ];
 
@@ -388,15 +388,15 @@ describe('Single-Match Provider', () => {
     describe('Date Window Filtering', () => {
       it('should filter candidates outside 12-month window by default', async () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createMockTransaction({ event_date: new Date('2024-01-15') }),
+          createMockTransaction({ event_date: '2024-01-15' }),
         ]);
 
         const candidateCharges = [
           createDocCharge('doc-inside', [
-            createMockDocument({ date: new Date('2024-06-15') }), // 5 months
+            createMockDocument({ date: '2024-06-15' }), // 5 months
           ]),
           createDocCharge('doc-outside', [
-            createMockDocument({ date: new Date('2025-02-15') }), // 13 months
+            createMockDocument({ date: '2025-02-15' }), // 13 months
           ]),
         ];
 
@@ -408,15 +408,15 @@ describe('Single-Match Provider', () => {
 
       it('should respect custom dateWindowMonths option', async () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createMockTransaction({ event_date: new Date('2024-01-15') }),
+          createMockTransaction({ event_date: '2024-01-15' }),
         ]);
 
         const candidateCharges = [
           createDocCharge('doc-inside', [
-            createMockDocument({ date: new Date('2024-03-15') }), // 2 months
+            createMockDocument({ date: '2024-03-15' }), // 2 months
           ]),
           createDocCharge('doc-outside', [
-            createMockDocument({ date: new Date('2024-05-15') }), // 4 months
+            createMockDocument({ date: '2024-05-15' }), // 4 months
           ]),
         ];
 
@@ -430,12 +430,12 @@ describe('Single-Match Provider', () => {
 
       it('should include candidates on exact window boundary', async () => {
         const sourceCharge = createTxCharge('tx-charge-1', [
-          createMockTransaction({ event_date: new Date('2024-01-15') }),
+          createMockTransaction({ event_date: '2024-01-15' }),
         ]);
 
         const candidateCharges = [
           createDocCharge('doc-boundary', [
-            createMockDocument({ date: new Date('2025-01-15') }), // Exactly 12 months
+            createMockDocument({ date: '2025-01-15' }), // Exactly 12 months
           ]),
         ];
 
@@ -494,7 +494,7 @@ describe('Single-Match Provider', () => {
           createMockTransaction({
             amount: "100",
             currency: 'USD',
-            event_date: new Date('2024-01-15'),
+            event_date: '2024-01-15',
             business_id: BUSINESS_A,
           }),
         ]);
@@ -505,7 +505,7 @@ describe('Single-Match Provider', () => {
             createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               creditor_id: BUSINESS_A,
               debtor_id: USER_ID,
             }),
@@ -515,7 +515,7 @@ describe('Single-Match Provider', () => {
             createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
-              date: new Date('2024-01-20'), // 5 days off
+              date: '2024-01-20', // 5 days off
               creditor_id: BUSINESS_A,
               debtor_id: USER_ID,
             }),
@@ -525,7 +525,7 @@ describe('Single-Match Provider', () => {
             createMockDocument({
               total_amount: 100.5,
               currency_code: 'USD',
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               creditor_id: BUSINESS_A,
               debtor_id: USER_ID,
             }),
@@ -535,7 +535,7 @@ describe('Single-Match Provider', () => {
             createMockDocument({
               total_amount: 100,
               currency_code: 'USD',
-              date: new Date('2024-01-15'),
+              date: '2024-01-15',
               creditor_id: BUSINESS_B, // Different business
               debtor_id: USER_ID,
             }),

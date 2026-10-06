@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { NoOptionalField, TimelessDateString } from '../../../shared/types/index.js';
 import type { IGetTransactionsByIdsResult } from '../../transactions/types.js';
 import { FiatExchangeProvider } from '../providers/fiat-exchange.provider.js';
@@ -45,7 +44,7 @@ export function defineConversionBaseAndQuote(transactions: Array<IGetTransaction
     throw new GraphQLError('Conversion charges must have a base and a quote transactions');
   }
 
-  if (baseTransaction.debit_date.getTime() !== quoteTransaction.debit_date.getTime()) {
+  if (baseTransaction.debit_date !== quoteTransaction.debit_date) {
     throw new GraphQLError('Conversion transactions must have matching value dates');
   }
 
@@ -87,21 +86,17 @@ export function getRateForCurrency(
 }
 
 export function getClosestRateForDate(
-  date: string | Date,
+  date: TimelessDateString,
   rates: Array<IGetExchangeRatesByDatesResult>,
 ) {
-  const sortedRates = rates.sort((a, b) => {
-    return (b.exchange_date?.getTime() ?? 0) - (a.exchange_date?.getTime() ?? 0);
-  });
-
-  const stringifiedDate = dateToTimelessDateString(new Date(date));
-
-  const exchangeRate = sortedRates.find(
-    rate => dateToTimelessDateString(rate.exchange_date!) <= stringifiedDate,
+  const sortedRates = rates.sort((a, b) =>
+    (b.exchange_date ?? '').localeCompare(a.exchange_date ?? ''),
   );
 
+  const exchangeRate = sortedRates.find(rate => rate.exchange_date && rate.exchange_date <= date);
+
   if (!exchangeRate) {
-    throw new Error(`No exchange rate for date ${stringifiedDate}`);
+    throw new Error(`No exchange rate for date ${date}`);
   }
   return exchangeRate;
 }
@@ -117,7 +112,7 @@ export async function getFiatExchangeRate(
 ) {
   const exchangeRates = await injector
     .get(FiatExchangeProvider)
-    .getExchangeRatesByDatesLoader.load(new Date(timelessDate));
+    .getExchangeRatesByDatesLoader.load(timelessDate);
   if (!exchangeRates?.[currency]) {
     return null;
   }

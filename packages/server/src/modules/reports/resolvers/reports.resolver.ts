@@ -1,10 +1,5 @@
 import { generateUniformFormatReport } from '@accounter/shaam-uniform-format-generator';
-import {
-  dateToTimelessDateString,
-  formatFinancialAmount,
-  formatFinancialIntAmount,
-  optionalDateToTimelessDateString,
-} from '../../../shared/helpers/index.js';
+import { formatFinancialAmount, formatFinancialIntAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -106,8 +101,8 @@ export const reportsResolvers: ReportsModule.Resolvers = {
             .getFinancialEntityByIdLoader.load(raw.businessId)
             .then(res => res ?? null)
         : null,
-    chargeDate: raw => dateToTimelessDateString(raw.chargeDate),
-    documentDate: raw => optionalDateToTimelessDateString(raw.documentDate),
+    chargeDate: raw => raw.chargeDate,
+    documentDate: raw => raw.documentDate,
     documentSerial: raw => raw.documentSerial,
     image: raw => raw.documentUrl,
     localAmount: async (raw, _, { injector }) => {

@@ -37,7 +37,7 @@ const merge: CronJobsRunEvent = {
   baseCharge: {
     id: 'charge-a',
     userDescription: null,
-    minEventDate: new Date('2026-01-10'),
+    minEventDate: '2026-01-10',
     totalAmount: { formatted: '₪ 10.00' },
     counterparty: null,
   },

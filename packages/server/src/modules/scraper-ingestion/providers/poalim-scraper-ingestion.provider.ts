@@ -12,8 +12,7 @@ import type {
   PoalimSwiftTransactionInput,
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
-import { TIMELESS_DATE_REGEX } from '../../../shared/constants.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
@@ -1061,28 +1060,11 @@ const POALIM_SECURITIES_TRANSACTIONS_NUMERIC_FIELDS: (keyof IFetchPoalimSecuriti
   ] as const;
 
 /**
- * Takes the calendar date off one of the bank's timestamps.
- *
- * The strings are `2024-01-15T00:00:00.0000000+02:00` — a calendar date dressed as an
- * instant, with the Israel offset of that date. Postgres reads the leading date when
- * casting one into a DATE column, so this must too: converting through `Date` would
- * shift the day for any server not running on Israel time.
- *
- * Anything whose leading ten characters are not a real calendar date is passed through
- * untouched — including the bank's `0001-01-01` no-execution sentinel, which is outside
- * the range `TIMELESS_DATE_REGEX` accepts — so Postgres reports it rather than this
- * helper inventing a date.
- */
-function toCalendarDate(value: string): TimelessDateString | string {
-  const candidate = value.slice(0, 10);
-  return TIMELESS_DATE_REGEX.test(candidate) ? (candidate as TimelessDateString) : value;
-}
-
-/**
  * The executions response carries no per-row id, so identity is the natural key the
- * dedup index is built on. Existing rows come back from pg as `Date`/`string`
- * (NUMERIC) while incoming rows are the bank's date strings and JS numbers, so both
- * sides are normalised to the same canonical form before being joined into a key.
+ * dedup index is built on. Existing rows come back from pg with NUMERIC columns as
+ * strings while incoming rows carry JS numbers, so both sides are normalised to the same
+ * canonical form before being joined into a key. Dates are calendar-date strings on both
+ * sides (the validator takes the day off the bank's timestamps).
  */
 function securityTransactionKeyOf(row: {
   bank_number?: number | null | void;
@@ -1092,12 +1074,12 @@ function securityTransactionKeyOf(row: {
   account_number?: number | null | void;
   accountNumber?: number | null | void;
   security?: string | null | void;
-  trade_date?: Date | string | null | void;
-  tradeDate?: Date | string | null | void;
-  value_date?: Date | string | null | void;
-  valueDate?: Date | string | null | void;
-  settlement_date?: Date | string | null | void;
-  settlementDate?: Date | string | null | void;
+  trade_date?: TimelessDateString | null | void;
+  tradeDate?: TimelessDateString | null | void;
+  value_date?: TimelessDateString | null | void;
+  valueDate?: TimelessDateString | null | void;
+  settlement_date?: TimelessDateString | null | void;
+  settlementDate?: TimelessDateString | null | void;
   trade_type?: string | null | void;
   tradeType?: string | null | void;
   transaction_type?: string | null | void;
@@ -1109,21 +1091,14 @@ function securityTransactionKeyOf(row: {
   netValueTradeCurrency?: number | string | null | void;
   payment_type?: string | null | void;
   paymentType?: string | null | void;
-  payment_date?: Date | string | null | void;
-  paymentDate?: Date | string | null | void;
-  ex_date?: Date | string | null | void;
-  exDate?: Date | string | null | void;
-  cancel_date?: Date | string | null | void;
-  cancelDate?: Date | string | null | void;
+  payment_date?: TimelessDateString | null | void;
+  paymentDate?: TimelessDateString | null | void;
+  ex_date?: TimelessDateString | null | void;
+  exDate?: TimelessDateString | null | void;
+  cancel_date?: TimelessDateString | null | void;
+  cancelDate?: TimelessDateString | null | void;
 }): string {
-  const date = (value: Date | string | null | void) => {
-    if (value == null) return '';
-    // Calendar dates, not instants: the columns are DATE, and the bank's strings
-    // are midnight with the Israel offset of that date. Comparing them as instants
-    // would put an incoming "2024-01-15T00:00:00+02:00" an hour or two before the
-    // stored day and never match the row it belongs to.
-    return value instanceof Date ? dateToTimelessDateString(value) : toCalendarDate(value);
-  };
+  const date = (value: TimelessDateString | null | void) => value ?? '';
   const num = (value: number | string | null | void) =>
     value == null ? '' : String(Number(value));
   const text = (value: string | null | void) => value ?? '';
@@ -1296,8 +1271,8 @@ export class PoalimScraperIngestionProvider {
     const validated = validatePoalimIlsTransactions(transactions);
 
     const eventDates = validated
-      .map(t => (t.eventDate ? new Date(t.eventDate) : null))
-      .filter((d): d is Date => d !== null);
+      .map(t => t.eventDate || null)
+      .filter((d): d is TimelessDateString => d !== null);
     const accountNumbers = validated
       .map(t => t.accountNumber ?? null)
       .filter((n): n is number => n !== null);
@@ -1313,7 +1288,7 @@ export class PoalimScraperIngestionProvider {
     type ConflictKey = `${string}_${string}_${string}_${string}`;
     const existingByKey = new Map<ConflictKey, IFetchPoalimIlsByKeysResult>();
     for (const row of existing) {
-      const key: ConflictKey = `${row.event_date ? dateToTimelessDateString(row.event_date) : ''}_${row.serial_number}_${row.account_number}_${row.branch_number}`;
+      const key: ConflictKey = `${row.event_date ?? ''}_${row.serial_number}_${row.account_number}_${row.branch_number}`;
       existingByKey.set(key, row);
     }
 
@@ -1326,7 +1301,7 @@ export class PoalimScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: dateToTimelessDateString(r.event_date),
+      date: r.event_date,
       description: r.activity_description,
       amount: r.event_amount,
       account: String(r.account_number),
@@ -1334,7 +1309,7 @@ export class PoalimScraperIngestionProvider {
 
     const changedTransactions: ChangedTransaction[] = [];
     for (const t of validated) {
-      const key: ConflictKey = `${t.eventDate ? dateToTimelessDateString(new Date(t.eventDate)) : ''}_${t.serialNumber}_${t.accountNumber}_${t.branchNumber}`;
+      const key: ConflictKey = `${t.eventDate || ''}_${t.serialNumber}_${t.accountNumber}_${t.branchNumber}`;
       const existingRow = existingByKey.get(key);
       if (existingRow && !insertedIdSet.has(existingRow.id)) {
         const changedFields = diffPoalimIlsRow(existingRow, t);
@@ -1368,8 +1343,8 @@ export class PoalimScraperIngestionProvider {
     const validated = validatePoalimForeignTransactions(transactions);
 
     const executingDates = validated
-      .map(t => (t.executingDate ? new Date(t.executingDate) : null))
-      .filter((d): d is Date => d !== null);
+      .map(t => t.executingDate || null)
+      .filter((d): d is TimelessDateString => d !== null);
     const accountNumbers = validated
       .map(t => t.accountNumber ?? null)
       .filter((n): n is number => n !== null);
@@ -1385,7 +1360,7 @@ export class PoalimScraperIngestionProvider {
     type ForeignKey = `${string}_${string}_${string}_${string}`;
     const existingByKey = new Map<ForeignKey, IFetchPoalimForeignByKeysResult>();
     for (const row of existing) {
-      const key: ForeignKey = `${row.executing_date ? dateToTimelessDateString(row.executing_date) : ''}_${row.account_number}_${row.branch_number}_${row.event_number}`;
+      const key: ForeignKey = `${row.executing_date ?? ''}_${row.account_number}_${row.branch_number}_${row.event_number}`;
       existingByKey.set(key, row);
     }
 
@@ -1396,7 +1371,7 @@ export class PoalimScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.executing_date ? dateToTimelessDateString(r.executing_date) : null,
+      date: r.executing_date ?? null,
       description: r.activity_description ?? null,
       amount: r.event_amount == null ? null : String(r.event_amount),
       account: r.account_number == null ? null : String(r.account_number),
@@ -1404,7 +1379,7 @@ export class PoalimScraperIngestionProvider {
 
     const changedTransactions: ChangedTransaction[] = [];
     for (const t of validated) {
-      const key: ForeignKey = `${t.executingDate ? dateToTimelessDateString(new Date(t.executingDate)) : ''}_${t.accountNumber}_${t.branchNumber}_${t.eventNumber}`;
+      const key: ForeignKey = `${t.executingDate || ''}_${t.accountNumber}_${t.branchNumber}_${t.eventNumber}`;
       const existingRow = existingByKey.get(key);
       if (existingRow && !insertedIdSet.has(existingRow.id)) {
         const changedFields = diffPoalimForeignRow(existingRow, t);
@@ -1549,7 +1524,7 @@ export class PoalimScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.as_of_date ? dateToTimelessDateString(r.as_of_date) : null,
+      date: r.as_of_date ? instantToTimelessDate(r.as_of_date) : null,
       description: r.eng_name ?? null,
       amount: null,
       account: `${r.branch_number}-${r.account_number}`,
@@ -1610,12 +1585,9 @@ export class PoalimScraperIngestionProvider {
     const securities = validated
       .map(t => t.security ?? null)
       .filter((s): s is string => s !== null);
-    // Passed as calendar-date strings rather than `Date`s: a `Date` is serialised
-    // as a UTC instant, which lands on the previous day once Postgres casts it to
-    // the DATE column and would match nothing.
     const tradeDates = validated
-      .map(t => (t.tradeDate ? toCalendarDate(String(t.tradeDate)) : null))
-      .filter((d): d is TimelessDateString | string => d !== null);
+      .map(t => t.tradeDate || null)
+      .filter((d): d is TimelessDateString => d !== null);
 
     // Coarse fetch on the indexed prefix of the dedup key; the full key — which
     // includes nullable corporate-action dates — is matched in memory below.
@@ -1636,7 +1608,7 @@ export class PoalimScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.trade_date ? dateToTimelessDateString(r.trade_date) : null,
+      date: r.trade_date ?? null,
       description: [r.trade_type, r.eng_name].filter(Boolean).join(' — ') || null,
       amount: r.net_value_trade_currency == null ? null : String(r.net_value_trade_currency),
       account: `${r.branch_number}-${r.account_number}`,

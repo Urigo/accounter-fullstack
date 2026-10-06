@@ -3,7 +3,7 @@
 // build artifact, so a *value* import of it makes this module — and every test
 // that reaches it — fail to resolve whenever codegen has not run.
 import { TransactionDirection } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
@@ -19,7 +19,7 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
     injector
       .get(TransactionsProvider)
       .transactionByIdLoader.load(transactionId)
-      .then(res => dateToTimelessDateString(res.event_date)),
+      .then(res => res.event_date),
   effectiveDate: async (transactionId, __dirname, { injector }) => {
     const transaction = await injector
       .get(TransactionsProvider)
@@ -30,7 +30,7 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
     const transaction = await injector
       .get(TransactionsProvider)
       .transactionByIdLoader.load(transactionId);
-    const date = transaction.debit_date ? dateToTimelessDateString(transaction.debit_date) : null;
+    const date = transaction.debit_date;
     if (date && date !== effectiveDateSupplement(transaction)) {
       return date;
     }

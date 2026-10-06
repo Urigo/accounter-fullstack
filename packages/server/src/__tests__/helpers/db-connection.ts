@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { pgTypeParsers } from '../../shared/helpers/pg-type-parsers.js';
 import { assertTestDatabaseIsLocal, testDbConfig } from './test-db-config.js';
 import { debugLog, emitMetrics } from './diagnostics.js';
 import { TestDbConnectionError } from './errors.js';
@@ -23,6 +24,9 @@ export async function connectTestDb(): Promise<Pool> {
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
+      // The same `date` parsing as the server's pool, so providers under test see what they see
+      // in production.
+      types: pgTypeParsers,
     });
 
   const attempts = 3;

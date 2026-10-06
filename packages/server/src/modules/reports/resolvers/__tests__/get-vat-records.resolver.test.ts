@@ -26,7 +26,7 @@ const OWNER_ID = 'owner-1';
 const SUPPLIER_ID = 'supplier-1';
 
 /** An expense invoice whose VAT report date is overridden to `override`. */
-function expenseInvoice(id: string, override: Date) {
+function expenseInvoice(id: string, override: TimelessDateString) {
   return {
     id,
     charge_id: `charge-${id}`,
@@ -109,10 +109,10 @@ describe.each(['UTC', 'Asia/Jerusalem', 'America/New_York'])('getVatRecords (TZ=
 
   it('keeps documents whose VAT date override falls inside the month, first and last day included', async () => {
     const { injector } = createInjector([
-      expenseInvoice('dec-31', new Date(2023, 11, 31)),
-      expenseInvoice('jan-01', new Date(2024, 0, 1)),
-      expenseInvoice('jan-31', new Date(2024, 0, 31)),
-      expenseInvoice('feb-01', new Date(2024, 1, 1)),
+      expenseInvoice('dec-31', '2023-12-31'),
+      expenseInvoice('jan-01', '2024-01-01'),
+      expenseInvoice('jan-31', '2024-01-31'),
+      expenseInvoice('feb-01', '2024-02-01'),
     ]);
 
     const { expenses, income } = await getVatRecords(

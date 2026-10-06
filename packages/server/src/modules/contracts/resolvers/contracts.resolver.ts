@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { normalizeDocumentType } from '../../documents/resolvers/common.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
@@ -161,8 +161,8 @@ export const contractsResolvers: ContractsModule.Resolvers = {
         });
     },
     purchaseOrders: dbContract => dbContract.purchase_orders, //String[]
-    startDate: dbContract => dateToTimelessDateString(dbContract.start_date), //TimelessDate!
-    endDate: dbContract => dateToTimelessDateString(dbContract.end_date), //TimelessDate!
+    startDate: dbContract => dbContract.start_date, //TimelessDate!
+    endDate: dbContract => dbContract.end_date, //TimelessDate!
     remarks: dbContract => dbContract.remarks, //String
     amount: dbContract => formatFinancialAmount(dbContract.amount, dbContract.currency), //FinancialAmount!
     documentType: dbContract => normalizeDocumentType(dbContract.document_type), //DocumentType!

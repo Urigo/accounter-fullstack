@@ -1,31 +1,37 @@
 import { describe, expect, it } from 'vitest';
+import {
+  addDaysToTimelessDate,
+  dateToTimelessDateString,
+  utcDateToTimelessDate,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { calculateDateConfidence } from '../helpers/date-confidence.helper.js';
 
 describe('calculateDateConfidence', () => {
   describe('client-aware flag', () => {
     it('returns 1.0 for client same-business on same day', () => {
-      const date = new Date('2024-01-15');
+      const date = '2024-01-15';
       const result = calculateDateConfidence(date, date, true);
       expect(result).toBe(1.0);
     });
 
     it('returns 1.0 for client same-business 30 days apart', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-01-31');
+      const date1 = '2024-01-01';
+      const date2 = '2024-01-31';
       const result = calculateDateConfidence(date1, date2, true);
       expect(result).toBe(1.0);
     });
 
     it('returns 1.0 for client same-business 365 days apart', () => {
-      const date1 = new Date('2023-01-01');
-      const date2 = new Date('2024-01-01');
+      const date1 = '2023-01-01';
+      const date2 = '2024-01-01';
       const result = calculateDateConfidence(date1, date2, true);
       expect(result).toBe(1.0);
     });
 
     it('uses standard degradation when not a client match', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-01-31');
+      const date1 = '2024-01-01';
+      const date2 = '2024-01-31';
       const result = calculateDateConfidence(date1, date2, false);
       expect(result).toBe(0.0);
     });
@@ -33,21 +39,21 @@ describe('calculateDateConfidence', () => {
 
   describe('same day', () => {
     it('should return 1.0 for identical dates', () => {
-      const date = new Date('2024-01-15T10:30:00Z');
+      const date = utcDateToTimelessDate(new Date('2024-01-15T10:30:00Z'));
       const result = calculateDateConfidence(date, date);
       expect(result).toBe(1.0);
     });
 
-    it('should return 1.0 for same day with different times', () => {
-      const date1 = new Date('2024-01-15T08:00:00Z');
-      const date2 = new Date('2024-01-15T18:30:00Z');
+    it('should return 1.0 for instants on the same day with different times', () => {
+      const date1 = utcDateToTimelessDate(new Date('2024-01-15T08:00:00Z'));
+      const date2 = utcDateToTimelessDate(new Date('2024-01-15T18:30:00Z'));
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(1.0);
     });
 
-    it('should return 1.0 for same day at different hours', () => {
-      const date1 = new Date('2024-01-15T00:00:00');
-      const date2 = new Date('2024-01-15T23:59:59');
+    it('should return 1.0 for local instants on the same day at different hours', () => {
+      const date1 = dateToTimelessDateString(new Date('2024-01-15T00:00:00'));
+      const date2 = dateToTimelessDateString(new Date('2024-01-15T23:59:59'));
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(1.0);
     });
@@ -55,53 +61,53 @@ describe('calculateDateConfidence', () => {
 
   describe('specific day differences', () => {
     it('should return ~0.97 for 1 day difference', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-16');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-16';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBeCloseTo(0.97, 2);
       expect(result).toBe(0.97);
     });
 
     it('should return ~0.77 for 7 days difference', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-22');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-22';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBeCloseTo(0.77, 2);
       expect(result).toBe(0.77);
     });
 
     it('should return 0.5 for 15 days difference', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-30');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-30';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.5);
     });
 
     it('should return ~0.03 for 29 days difference', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-01-30');
+      const date1 = '2024-01-01';
+      const date2 = '2024-01-30';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBeCloseTo(0.03, 2);
       expect(result).toBe(0.03);
     });
 
     it('should return 0.0 for exactly 30 days difference', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-01-31');
+      const date1 = '2024-01-01';
+      const date2 = '2024-01-31';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.0);
     });
 
     it('should return 0.0 for 100 days difference', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-04-10');
+      const date1 = '2024-01-01';
+      const date2 = '2024-04-10';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.0);
     });
 
     it('should return 0.0 for 365 days difference', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2025-01-01');
+      const date1 = '2024-01-01';
+      const date2 = '2025-01-01';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.0);
     });
@@ -109,8 +115,8 @@ describe('calculateDateConfidence', () => {
 
   describe('order independence', () => {
     it('should return same result regardless of parameter order', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-25');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-25';
 
       const result1 = calculateDateConfidence(date1, date2);
       const result2 = calculateDateConfidence(date2, date1);
@@ -119,16 +125,16 @@ describe('calculateDateConfidence', () => {
     });
 
     it('should work with date2 before date1', () => {
-      const date1 = new Date('2024-01-30');
-      const date2 = new Date('2024-01-15');
+      const date1 = '2024-01-30';
+      const date2 = '2024-01-15';
 
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.5);
     });
 
     it('should handle various orderings with same result', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-01-08');
+      const date1 = '2024-01-01';
+      const date2 = '2024-01-08';
 
       expect(calculateDateConfidence(date1, date2)).toBe(
         calculateDateConfidence(date2, date1),
@@ -153,9 +159,8 @@ describe('calculateDateConfidence', () => {
       ];
 
       testCases.forEach(({ days, expected }) => {
-        const date1 = new Date('2024-01-01');
-        const date2 = new Date(date1);
-        date2.setDate(date1.getDate() + days);
+        const date1: TimelessDateString = '2024-01-01';
+        const date2 = addDaysToTimelessDate(date1, days);
 
         const result = calculateDateConfidence(date1, date2);
         expect(result).toBe(expected);
@@ -163,11 +168,11 @@ describe('calculateDateConfidence', () => {
     });
 
     it('should verify degradation is proportional', () => {
-      const date1 = new Date('2024-01-01');
+      const date1 = '2024-01-01';
 
-      const result5Days = calculateDateConfidence(date1, new Date('2024-01-06'));
-      const result10Days = calculateDateConfidence(date1, new Date('2024-01-11'));
-      const result20Days = calculateDateConfidence(date1, new Date('2024-01-21'));
+      const result5Days = calculateDateConfidence(date1, '2024-01-06');
+      const result10Days = calculateDateConfidence(date1, '2024-01-11');
+      const result20Days = calculateDateConfidence(date1, '2024-01-21');
 
       // Verify the relationship: each 5 days reduces confidence by ~0.17
       expect(result5Days - result10Days).toBeCloseTo(0.16, 1);
@@ -176,40 +181,47 @@ describe('calculateDateConfidence', () => {
   });
 
   describe('different time zones', () => {
-    it('should handle dates with different time zones correctly', () => {
-      // Same calendar day in different time zones
-      const date1 = new Date('2024-01-15T23:00:00-05:00'); // Eastern time
-      const date2 = new Date('2024-01-15T20:00:00-08:00'); // Pacific time
+    it('should handle instants from different time zones correctly', () => {
+      // The same instant written in different time zones falls on the same UTC calendar day
+      const date1 = utcDateToTimelessDate(new Date('2024-01-15T23:00:00-05:00')); // Eastern time
+      const date2 = utcDateToTimelessDate(new Date('2024-01-15T20:00:00-08:00')); // Pacific time
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(1.0);
     });
 
     it('should calculate difference based on UTC calendar dates', () => {
-      const date1 = new Date('2024-01-15T02:00:00+02:00');
-      const date2 = new Date('2024-01-16T02:00:00+02:00');
+      const date1 = utcDateToTimelessDate(new Date('2024-01-15T02:00:00+02:00'));
+      const date2 = utcDateToTimelessDate(new Date('2024-01-16T02:00:00+02:00'));
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.97);
+    });
+
+    it('should count whole calendar days across DST transitions', () => {
+      // Spring forward in the US (2024-03-10) and Israel (2024-03-29), fall back in the US (2024-11-03)
+      expect(calculateDateConfidence('2024-03-09', '2024-03-11')).toBe(0.93);
+      expect(calculateDateConfidence('2024-03-28', '2024-03-30')).toBe(0.93);
+      expect(calculateDateConfidence('2024-11-02', '2024-11-04')).toBe(0.93);
     });
   });
 
   describe('leap years', () => {
     it('should handle leap year dates correctly', () => {
-      const date1 = new Date('2024-02-28');
-      const date2 = new Date('2024-02-29'); // Leap day
+      const date1 = '2024-02-28';
+      const date2 = '2024-02-29'; // Leap day
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.97);
     });
 
     it('should calculate across leap day correctly', () => {
-      const date1 = new Date('2024-02-15');
-      const date2 = new Date('2024-03-16'); // 30 days later (leap year)
+      const date1 = '2024-02-15';
+      const date2 = '2024-03-16'; // 30 days later (leap year)
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.0);
     });
 
     it('should handle non-leap year February', () => {
-      const date1 = new Date('2023-02-01');
-      const date2 = new Date('2023-03-03'); // 30 days later (non-leap year)
+      const date1 = '2023-02-01';
+      const date2 = '2023-03-03'; // 30 days later (non-leap year)
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.0);
     });
@@ -217,15 +229,15 @@ describe('calculateDateConfidence', () => {
 
   describe('month boundaries', () => {
     it('should handle dates across month boundaries', () => {
-      const date1 = new Date('2024-01-31');
-      const date2 = new Date('2024-02-15');
+      const date1 = '2024-01-31';
+      const date2 = '2024-02-15';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.5);
     });
 
     it('should handle dates across year boundaries', () => {
-      const date1 = new Date('2023-12-25');
-      const date2 = new Date('2024-01-09');
+      const date1 = '2023-12-25';
+      const date2 = '2024-01-09';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.5);
     });
@@ -233,22 +245,22 @@ describe('calculateDateConfidence', () => {
 
   describe('edge cases', () => {
     it('should handle very old dates', () => {
-      const date1 = new Date('1990-01-01');
-      const date2 = new Date('1990-01-16');
+      const date1 = '1990-01-01';
+      const date2 = '1990-01-16';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.5);
     });
 
     it('should handle future dates', () => {
-      const date1 = new Date('2030-06-15');
-      const date2 = new Date('2030-06-30');
+      const date1 = '2030-06-15';
+      const date2 = '2030-06-30';
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.5);
     });
 
-    it('should handle dates at different times of day', () => {
-      const date1 = new Date('2024-01-15T10:00:00');
-      const date2 = new Date('2024-01-22T14:00:00');
+    it('should handle local instants at different times of day', () => {
+      const date1 = dateToTimelessDateString(new Date('2024-01-15T10:00:00'));
+      const date2 = dateToTimelessDateString(new Date('2024-01-22T14:00:00'));
       const result = calculateDateConfidence(date1, date2);
       expect(result).toBe(0.77);
     });
@@ -256,8 +268,8 @@ describe('calculateDateConfidence', () => {
 
   describe('precision and rounding', () => {
     it('should round to exactly 2 decimal places', () => {
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-01-02');
+      const date1 = '2024-01-01';
+      const date2 = '2024-01-02';
       const result = calculateDateConfidence(date1, date2);
 
       // Check that result has at most 2 decimal places
@@ -265,11 +277,11 @@ describe('calculateDateConfidence', () => {
     });
 
     it('should return values between 0.0 and 1.0', () => {
-      const testDates = [
-        [new Date('2024-01-01'), new Date('2024-01-01')], // 0 days
-        [new Date('2024-01-01'), new Date('2024-01-11')], // 10 days
-        [new Date('2024-01-01'), new Date('2024-01-21')], // 20 days
-        [new Date('2024-01-01'), new Date('2024-02-01')], // 31 days
+      const testDates: Array<[TimelessDateString, TimelessDateString]> = [
+        ['2024-01-01', '2024-01-01'], // 0 days
+        ['2024-01-01', '2024-01-11'], // 10 days
+        ['2024-01-01', '2024-01-21'], // 20 days
+        ['2024-01-01', '2024-02-01'], // 31 days
       ];
 
       testDates.forEach(([d1, d2]) => {
@@ -281,8 +293,8 @@ describe('calculateDateConfidence', () => {
 
     it('should handle fractional day calculations correctly', () => {
       // 2 days difference
-      const date1 = new Date('2024-01-01');
-      const date2 = new Date('2024-01-03');
+      const date1 = '2024-01-01';
+      const date2 = '2024-01-03';
       const result = calculateDateConfidence(date1, date2);
 
       // 1 - (2/30) = 1 - 0.0667 = 0.9333, rounded to 0.93
@@ -293,10 +305,10 @@ describe('calculateDateConfidence', () => {
   describe('return value validation', () => {
     it('should only return 0.0, 1.0, or values rounded to 2 decimals', () => {
       const results = [
-        calculateDateConfidence(new Date('2024-01-01'), new Date('2024-01-01')), // 1.0
-        calculateDateConfidence(new Date('2024-01-01'), new Date('2024-01-02')), // 0.97
-        calculateDateConfidence(new Date('2024-01-01'), new Date('2024-01-16')), // 0.5
-        calculateDateConfidence(new Date('2024-01-01'), new Date('2024-02-01')), // 0.0
+        calculateDateConfidence('2024-01-01', '2024-01-01'), // 1.0
+        calculateDateConfidence('2024-01-01', '2024-01-02'), // 0.97
+        calculateDateConfidence('2024-01-01', '2024-01-16'), // 0.5
+        calculateDateConfidence('2024-01-01', '2024-02-01'), // 0.0
       ];
 
       results.forEach(result => {
@@ -306,8 +318,8 @@ describe('calculateDateConfidence', () => {
     });
 
     it('should maintain consistency across multiple calls', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-25');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-25';
 
       const result1 = calculateDateConfidence(date1, date2);
       const result2 = calculateDateConfidence(date1, date2);

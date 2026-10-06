@@ -1,6 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { Currency } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -53,7 +54,8 @@ export async function generateMiscExpensesLedger(
       localCurrencyCreditAmount1: Math.abs(amount),
       localCurrencyDebitAmount1: Math.abs(amount),
       description: expense.description ?? undefined,
-      valueDate: expense.value_date,
+      // `misc_expenses.value_date` is a `timestamp`; the ledger keeps the day it falls on
+      valueDate: dateToTimelessDateString(expense.value_date),
       invoiceDate: expense.invoice_date,
       isCreditorCounterparty: true,
     };

@@ -6,6 +6,8 @@
  * validation, amount summation, date selection, and description concatenation.
  */
 
+import { dateToTimelessDateString, minTimelessDate } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { currency } from '../../transactions/types.js';
 import type { AggregatedTransaction } from '../types.js';
 
@@ -19,8 +21,8 @@ export interface Transaction {
   amount: string; // numeric in DB
   currency: currency; // Currency type
   business_id: string | null; // UUID or null
-  event_date: Date;
-  debit_date: Date | null;
+  event_date: TimelessDateString;
+  debit_date: TimelessDateString | null;
   debit_timestamp: Date | null;
   source_description: string | null;
   is_fee: boolean | null;
@@ -49,10 +51,10 @@ export interface Transaction {
  *
  * @example
  * const aggregated = aggregateTransactions([
- *   { amount: 100, currency: 'USD', business_id: 'b1', event_date: new Date('2024-01-15'), ... },
- *   { amount: 50, currency: 'USD', business_id: 'b1', event_date: new Date('2024-01-20'), ... }
+ *   { amount: 100, currency: 'USD', business_id: 'b1', event_date: '2024-01-15', ... },
+ *   { amount: 50, currency: 'USD', business_id: 'b1', event_date: '2024-01-20', ... }
  * ]);
- * // Returns: { amount: 150, currency: 'USD', businessId: 'b1', date: Date('2024-01-15'), ... }
+ * // Returns: { amount: 150, currency: 'USD', businessId: 'b1', date: '2024-01-15', ... }
  */
 export function aggregateTransactions(transactions: Transaction[]): AggregatedTransaction {
   // Validate non-empty input
@@ -98,19 +100,13 @@ export function aggregateTransactions(transactions: Transaction[]): AggregatedTr
   const businessId = uniqueBusinessIds.size === 1 ? Array.from(uniqueBusinessIds)[0] : null;
 
   // Get earliest event_date
-  const earliestDate = nonFeeTransactions.reduce((earliest, t) => {
-    return t.event_date < earliest ? t.event_date : earliest;
-  }, nonFeeTransactions[0].event_date);
+  const earliestDate = minTimelessDate(...nonFeeTransactions.map(t => t.event_date))!;
 
-  // Get earliest debit_date
-  const earliestDebitDate = nonFeeTransactions.reduce(
-    (earliest, t) => {
-      const debitDate = t.debit_timestamp ?? t.debit_date;
-      if (debitDate === null) return earliest;
-      if (earliest === null) return debitDate;
-      return debitDate < earliest ? debitDate : earliest;
-    },
-    null as Date | null,
+  // Get earliest debit date (the day debit_timestamp falls on, falling back to debit_date)
+  const earliestDebitDate = minTimelessDate(
+    ...nonFeeTransactions.map(t =>
+      t.debit_timestamp ? dateToTimelessDateString(t.debit_timestamp) : t.debit_date,
+    ),
   );
 
   // Concatenate descriptions with line breaks, filtering out nulls

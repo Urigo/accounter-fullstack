@@ -6,8 +6,14 @@
  */
 
 import type { Injector } from 'graphql-modules';
+import {
+  differenceInTimelessDays,
+  maxTimelessDate,
+  minTimelessDate,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { isWithinDateWindow } from '../helpers/candidate-filter.helper.js';
-import type { DocumentCharge, TransactionCharge } from '../types.js';
+import type { Document, DocumentCharge, Transaction, TransactionCharge } from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
 import { scoreMatch } from './match-scorer.provider.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
@@ -92,6 +98,20 @@ function validateSourceAggregation(
 }
 
 /**
+ * Earliest event_date among transactions
+ */
+function getEarliestEventDate(transactions: Transaction[]): TimelessDateString | null {
+  return minTimelessDate(...transactions.map(tx => tx.event_date));
+}
+
+/**
+ * Latest non-null date among documents
+ */
+function getLatestDocumentDate(documents: Document[]): TimelessDateString | null {
+  return maxTimelessDate(...documents.map(doc => doc.date));
+}
+
+/**
  * Calculate date proximity between transaction and document charges
  * Used for tie-breaking when confidence scores are equal
  *
@@ -100,20 +120,11 @@ function validateSourceAggregation(
  * @returns Number of days between earliest transaction date and latest document date
  */
 function calculateDateProximity(txCharge: TransactionCharge, docCharge: DocumentCharge): number {
-  // Get earliest transaction event_date
-  const earliestTxDate = txCharge.transactions.reduce((earliest, tx) => {
-    return tx.event_date < earliest ? tx.event_date : earliest;
-  }, txCharge.transactions[0].event_date);
-
-  // Get latest document date
-  const latestDocDate = docCharge.documents.reduce((latest, doc) => {
-    if (!doc.date) return latest;
-    return doc.date > latest ? doc.date : latest;
-  }, docCharge.documents[0].date!);
+  const earliestTxDate = getEarliestEventDate(txCharge.transactions)!;
+  const latestDocDate = getLatestDocumentDate(docCharge.documents)!;
 
   // Calculate day difference
-  const diffMs = Math.abs(earliestTxDate.getTime() - latestDocDate.getTime());
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return Math.abs(differenceInTimelessDays(earliestTxDate, latestDocDate));
 }
 
 /**
@@ -152,33 +163,23 @@ export async function findMatches(
   });
 
   // Step 4: Get source date for window filtering
-  let sourceDate: Date;
-  if (isSourceTransaction) {
-    // Use earliest event_date from transactions
-    sourceDate = sourceCharge.transactions.reduce((earliest, tx) => {
-      return tx.event_date < earliest ? tx.event_date : earliest;
-    }, sourceCharge.transactions[0].event_date);
-  } else {
-    // Use latest date from documents
-    sourceDate = sourceCharge.documents.reduce((latest, doc) => {
-      if (!doc.date) return latest;
-      return doc.date > latest ? doc.date : latest;
-    }, sourceCharge.documents[0].date!);
-  }
+  // (earliest event_date from transactions, or latest date from documents;
+  // validated non-null by the source aggregation above)
+  const sourceDate = (
+    isSourceTransaction
+      ? getEarliestEventDate(sourceCharge.transactions)
+      : getLatestDocumentDate(sourceCharge.documents)
+  )!;
 
   // Step 5: Filter candidates by date window
   const windowFilteredCandidates = complementaryCandidates.filter(candidate => {
-    let candidateDate: Date;
+    const candidateDate = isTransactionCharge(candidate)
+      ? getEarliestEventDate(candidate.transactions)
+      : getLatestDocumentDate(candidate.documents);
 
-    if (isTransactionCharge(candidate)) {
-      candidateDate = candidate.transactions.reduce((earliest, tx) => {
-        return tx.event_date < earliest ? tx.event_date : earliest;
-      }, candidate.transactions[0].event_date);
-    } else {
-      candidateDate = candidate.documents.reduce((latest, doc) => {
-        if (!doc.date) return latest;
-        return doc.date > latest ? doc.date : latest;
-      }, candidate.documents[0].date!);
+    // Candidates without any date can't fall within the window
+    if (!candidateDate) {
+      return false;
     }
 
     return isWithinDateWindow(sourceDate, candidateDate, dateWindowMonths);

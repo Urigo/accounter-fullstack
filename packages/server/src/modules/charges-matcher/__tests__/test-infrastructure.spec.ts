@@ -136,29 +136,29 @@ describe('Charges Matcher - Test Infrastructure', () => {
 
   describe('Date Helpers', () => {
     it('should calculate days difference correctly', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-20');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-20';
 
       expect(daysDifference(date1, date2)).toBe(5);
     });
 
     it('should handle same dates', () => {
-      const date = new Date('2024-01-15');
+      const date = '2024-01-15';
 
       expect(daysDifference(date, date)).toBe(0);
     });
 
     it('should calculate difference regardless of order', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-10');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-10';
 
       expect(daysDifference(date1, date2)).toBe(5);
       expect(daysDifference(date2, date1)).toBe(5);
     });
 
     it('should check if dates are within N days', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-01-20');
+      const date1 = '2024-01-15';
+      const date2 = '2024-01-20';
 
       expect(isWithinDays(date1, date2, 5)).toBe(true);
       expect(isWithinDays(date1, date2, 4)).toBe(false);
@@ -166,9 +166,9 @@ describe('Charges Matcher - Test Infrastructure', () => {
     });
 
     it('should handle 12-month window check', () => {
-      const date1 = new Date('2024-01-15');
-      const date2 = new Date('2024-12-15');
-      const date3 = new Date('2025-02-15');
+      const date1 = '2024-01-15';
+      const date2 = '2024-12-15';
+      const date3 = '2025-02-15';
 
       expect(isWithinDays(date1, date2, 365)).toBe(true);
       expect(isWithinDays(date1, date3, 365)).toBe(false);

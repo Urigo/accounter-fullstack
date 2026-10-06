@@ -9,7 +9,8 @@ import { AuthContextProvider } from '../../../auth/providers/auth-context.provid
 import type { Auth0ManagementProvider } from '../../../auth/providers/auth0-management.provider.js';
 import { BusinessUsersProvider } from '../../../auth/providers/business-users.provider.js';
 import { dynamicReportResolver } from '../../resolvers/dynamic-report.resolver.js';
-import { DynamicReportProvider } from '../dynamic-report.provider.js';
+import type { IInsertSnapshotParams } from '../../types.js';
+import { DynamicReportProvider, type ComparableSnapshotKey } from '../dynamic-report.provider.js';
 
 let pool: Pool;
 
@@ -62,7 +63,7 @@ async function cleanup() {
   );
 }
 
-const snapshotKey = {
+const snapshotKey: ComparableSnapshotKey = {
   ownerId: TEST_OWNER_ID,
   templateName: TEMPLATE_NAME,
   fromDate: '2025-01-01',
@@ -70,7 +71,7 @@ const snapshotKey = {
   scopeOwnerId: TEST_OWNER_ID,
 };
 
-const baseSnapshot = {
+const baseSnapshot: Omit<IInsertSnapshotParams, 'leafFingerprints' | 'leafApprovals'> = {
   ownerId: TEST_OWNER_ID,
   templateName: TEMPLATE_NAME,
   fromDate: '2025-01-01',

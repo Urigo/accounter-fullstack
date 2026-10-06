@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import {
   MissingChargeInfo,
   TableDocumentsRowFieldsFragmentDoc,
@@ -8,6 +7,8 @@ import {
   type TransactionForTransactionsTableFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData } from '../../gql/index.js';
+import { TIMELESS_DATE_REGEX } from '../../helpers/consts.js';
+import type { TimelessDateString } from '../../helpers/dates.js';
 
 // Pure CSV-building logic for the charges export, kept free of React/urql/barrel imports so it can
 // be unit-tested in isolation (the component barrel drags heavy deps like pdfjs into the test env).
@@ -148,14 +149,10 @@ export function escapeCsvField(value: string): string {
   return value;
 }
 
-function formatDate(date?: string | Date | null): string {
-  if (!date) {
-    return '';
-  }
-  // Guard against malformed values: `format` throws `RangeError: Invalid time value` on an Invalid
-  // Date, which would abort the whole CSV export.
-  const parsedDate = new Date(date);
-  return Number.isNaN(parsedDate.getTime()) ? '' : format(parsedDate, 'yyyy-MM-dd');
+function formatDate(date?: TimelessDateString | null): string {
+  // Already `yyyy-mm-dd`: going through `new Date()` would shift it a day west of UTC. Malformed
+  // values become empty rather than abort the whole CSV export.
+  return date && TIMELESS_DATE_REGEX.test(date) ? date : '';
 }
 
 function formatNumber(value?: number | null): string {

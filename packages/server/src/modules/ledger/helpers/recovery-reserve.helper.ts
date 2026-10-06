@@ -1,7 +1,17 @@
-import { differenceInYears, endOfDay, endOfMonth, endOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { AVERAGE_MONTHLY_WORK_HOURS } from '../../../shared/constants.js';
+import {
+  currentTenantYear,
+  differenceInTimelessYears,
+  endOfTimelessMonth,
+  endOfTimelessYear,
+  getTimelessDateDay,
+  getTimelessDateMonth,
+  getTimelessDateYear,
+  timelessDateFromParts,
+} from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
 import { RecoveryProvider } from '../../salaries/providers/recovery.provider.js';
@@ -38,31 +48,33 @@ function recoveryDaysPerYearsOfExperience(years: number) {
 function calculateMonthPart(
   year: number,
   month: number,
-  startDate: Date,
-  endDate: Date | null,
+  startDate: TimelessDateString,
+  endDate: TimelessDateString | null,
 ): [number, number] {
-  const isAnniversaryMonth = startDate.getMonth() + 1;
+  const daysInMonth = (date: TimelessDateString) => getTimelessDateDay(endOfTimelessMonth(date));
+  const isAnniversaryMonth = getTimelessDateMonth(startDate);
   const isTerminationMonth =
-    endDate && endDate.getFullYear() === year && endDate.getMonth() + 1 === month;
+    endDate && getTimelessDateYear(endDate) === year && getTimelessDateMonth(endDate) === month;
   if (isAnniversaryMonth) {
     if (isTerminationMonth) {
       // case both anniversary month and termination month
-      const isPreAnniversaryTermination = endDate.getDate() < startDate.getDate();
-      const tillTerminationPart = (endDate.getDate() - 1) / endOfMonth(endDate).getDate();
+      const isPreAnniversaryTermination =
+        getTimelessDateDay(endDate) < getTimelessDateDay(startDate);
+      const tillTerminationPart = (getTimelessDateDay(endDate) - 1) / daysInMonth(endDate);
       if (isPreAnniversaryTermination) {
         return [tillTerminationPart, 0];
       }
 
       const inBetweenPart =
-        (endDate.getDate() - startDate.getDate()) / endOfMonth(endDate).getDate();
+        (getTimelessDateDay(endDate) - getTimelessDateDay(startDate)) / daysInMonth(endDate);
       return [tillTerminationPart - inBetweenPart, inBetweenPart];
     }
 
-    const part1 = (startDate.getDate() - 1) / endOfMonth(startDate).getDate();
+    const part1 = (getTimelessDateDay(startDate) - 1) / daysInMonth(startDate);
     return [part1, 1 - part1];
   }
   if (isTerminationMonth) {
-    const part1 = (endDate.getDate() - 1) / endOfMonth(endDate).getDate();
+    const part1 = (getTimelessDateDay(endDate) - 1) / daysInMonth(endDate);
     return [part1, 0];
   }
 
@@ -112,8 +124,8 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
   const employeeMap = new Map<
     string,
     {
-      startDate: Date;
-      endDate: Date | null;
+      startDate: TimelessDateString;
+      endDate: TimelessDateString | null;
       payedRecoveryAmount: number;
       totalRecoveryAmount: number;
       salaries: Record<number, Record<number, IGetSalaryRecordsByDatesResult>>;
@@ -122,13 +134,10 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
   >();
 
   for (const employee of employees) {
-    if (employee.start_work_date!.getFullYear() > year) {
+    if (getTimelessDateYear(employee.start_work_date!) > year) {
       continue;
     }
-    if (
-      employee.end_work_date &&
-      employee.end_work_date.getTime() < endOfYear(new Date(`${year}-01-01`)).getTime()
-    ) {
+    if (employee.end_work_date && employee.end_work_date <= endOfTimelessYear(year)) {
       continue;
     }
     employeeMap.set(employee.business_id, {
@@ -148,16 +157,14 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
     }
     const employee = employeeMap.get(salaryRecord.employee_id)!;
     // skip if salary record outside of employee's employment dates
-    if (employee.startDate.getTime() > endOfMonth(new Date(`${salaryRecord.month}-01`)).getTime()) {
+    const salaryMonthStart = `${salaryRecord.month}-01` as TimelessDateString;
+    if (employee.startDate > endOfTimelessMonth(salaryMonthStart)) {
       console.log(
         `salary record of employee ${employee.employee.first_name} before start date - ${employee.startDate}`,
       );
       continue;
     }
-    if (
-      employee.endDate &&
-      employee.endDate.getTime() < new Date(`${salaryRecord.month}-01`).getTime()
-    ) {
+    if (employee.endDate && employee.endDate < salaryMonthStart) {
       console.log(
         `salary record of employee ${employee.employee.first_name} after end date - ${employee.endDate}`,
       );
@@ -185,18 +192,18 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
 
     let dayValue = recoveryDayValueByYear.get(yearForRecoveryValue);
     // in case of no recovery day value for the year, try to get it from the previous year (yearly value is published in delay)
-    if (!dayValue && yearForRecoveryValue >= new Date().getFullYear()) {
+    if (!dayValue && yearForRecoveryValue >= currentTenantYear()) {
       dayValue = recoveryDayValueByYear.get(year);
     }
     if (!dayValue) {
       throw new GraphQLError(`No recovery day value for year ${yearForRecoveryValue}`);
     }
 
-    const isAnniversaryMonth = employee.startDate.getMonth() + 1 === month;
+    const isAnniversaryMonth = getTimelessDateMonth(employee.startDate) === month;
     const isLastSalary =
       employee.endDate &&
-      employee.endDate.getFullYear() === year &&
-      employee.endDate.getMonth() + 1 === month;
+      getTimelessDateYear(employee.endDate) === year &&
+      getTimelessDateMonth(employee.endDate) === month;
     const isHourlyPayed =
       Number.isNaN(Number(salaryRecord.job_percentage)) ||
       Number(salaryRecord.job_percentage) === 0;
@@ -206,8 +213,10 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
       : [1, 0];
 
     const yearsWorked =
-      differenceInYears(endOfMonth(new Date(`${year}-${month}-01`)), employee.startDate) +
-      (isAnniversaryMonth && !isHourlyPayed ? 0 : 1);
+      differenceInTimelessYears(
+        endOfTimelessMonth(timelessDateFromParts(year, month, 1)),
+        employee.startDate,
+      ) + (isAnniversaryMonth && !isHourlyPayed ? 0 : 1);
     const recoveryDays = recoveryDaysPerYearsOfExperience(yearsWorked) / 12;
     const jobPercentage = isHourlyPayed
       ? Number(salaryRecord.hours) / AVERAGE_MONTHLY_WORK_HOURS
@@ -238,7 +247,7 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
   }
 
   const prevRecoveryReserveAmount = recoveryLedgerRecords.reduce((acc, record) => {
-    if (endOfDay(record.value_date).getTime() >= new Date(year, 11, 31).getTime()) {
+    if (record.value_date >= endOfTimelessYear(year)) {
       return acc;
     }
     let factor = 0;

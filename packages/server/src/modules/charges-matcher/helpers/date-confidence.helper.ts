@@ -1,22 +1,14 @@
+import { differenceInTimelessDays } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
+
 /**
- * Calculate the absolute difference in days between two dates
- * Ignores time components by comparing only the date parts
+ * Calculate the absolute difference in calendar days between two dates
  * @param date1 - First date
  * @param date2 - Second date
  * @returns Absolute difference in days
  */
-function calculateDaysDifference(date1: Date, date2: Date): number {
-  // Create new dates with time set to midnight to ignore time components
-  const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
-  const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
-
-  // Calculate difference in milliseconds
-  const diffMs = Math.abs(d1.getTime() - d2.getTime());
-
-  // Convert to days
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  return diffDays;
+function calculateDaysDifference(date1: TimelessDateString, date2: TimelessDateString): number {
+  return Math.abs(differenceInTimelessDays(date1, date2));
 }
 
 /**
@@ -33,8 +25,8 @@ function calculateDaysDifference(date1: Date, date2: Date): number {
  * @returns Confidence score from 0.0 (30+ days) to 1.0 (same day for non-client, always for client)
  */
 export function calculateDateConfidence(
-  date1: Date,
-  date2: Date,
+  date1: TimelessDateString,
+  date2: TimelessDateString,
   isGentleEligible: boolean = false,
 ): number {
   // Gentle client-eligible scoring: slight preference for earlier within 365 days

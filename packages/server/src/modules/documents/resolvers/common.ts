@@ -1,8 +1,5 @@
 import { DocumentType } from '../../../shared/enums.js';
-import {
-  formatFinancialAmount,
-  optionalDateToTimelessDateString,
-} from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { getDocumentValidationInfo } from '../helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type { document_type, DocumentsModule } from '../types.js';
@@ -59,7 +56,7 @@ export const commonFinancialDocumentsFields:
   | DocumentsModule.UnprocessedResolvers
   | DocumentsModule.OtherDocumentResolvers = {
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
-  date: documentRoot => optionalDateToTimelessDateString(documentRoot.date),
+  date: documentRoot => documentRoot.date,
   amount: documentRoot =>
     documentRoot.total_amount == null
       ? null
@@ -68,8 +65,7 @@ export const commonFinancialDocumentsFields:
     documentRoot.vat_amount == null
       ? null
       : formatFinancialAmount(documentRoot.vat_amount, documentRoot.currency_code),
-  vatReportDateOverride: documentRoot =>
-    optionalDateToTimelessDateString(documentRoot.vat_report_date_override),
+  vatReportDateOverride: documentRoot => documentRoot.vat_report_date_override,
   noVatAmount: documentRoot =>
     documentRoot.no_vat_amount ? Number(documentRoot.no_vat_amount) : null,
   allocationNumber: documentRoot => documentRoot.allocation_number,

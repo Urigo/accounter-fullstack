@@ -1,7 +1,7 @@
 import type { IGetAllBusinessTripsResult } from './__generated__/business-trips.types.js';
 
 export type * from './__generated__/types.js';
-export type { DateOrString, accountant_status } from './__generated__/business-trips.types.js';
+export type { accountant_status } from './__generated__/business-trips.types.js';
 export type * from './__generated__/business-trips.types.js';
 export type { Json } from './__generated__/business-trips-attendees.types.js';
 export type * from './__generated__/business-trips-attendees.types.js';

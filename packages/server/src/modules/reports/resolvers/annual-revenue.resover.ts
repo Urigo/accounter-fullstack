@@ -1,7 +1,10 @@
-import { endOfYear, startOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import {
+  endOfTimelessYear,
+  formatFinancialAmount,
+  startOfTimelessYear,
+} from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
@@ -55,13 +58,12 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
       const incomeTaxCategories = await injector
         .get(TaxCategoriesProvider)
         .taxCategoriesBySortCodeLoader.load(810);
-      const date = new Date(year, 6, 1);
       const records = await injector.get(AnnualRevenueReportProvider).getNormalizedRevenueRecords({
         incomeTaxCategoriesIDs: incomeTaxCategories.map(tc => tc.id),
         incomeToCollectId: targetAdminContext.crossYear.incomeToCollectTaxCategoryId,
         ownerId,
-        fromDate: dateToTimelessDateString(startOfYear(date)),
-        toDate: dateToTimelessDateString(endOfYear(date)),
+        fromDate: startOfTimelessYear(year),
+        toDate: endOfTimelessYear(year),
       });
 
       // Normalize records (client, amount local currency, amount default foreign currency)
@@ -92,7 +94,7 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
             id: record.id ?? '',
             chargeId: record.charge_id!,
             businessId: record.business_id!,
-            date: dateToTimelessDateString(record.date!),
+            date: record.date!,
             description: record.description ?? null,
             reference: record.reference ?? null,
             amountIls,

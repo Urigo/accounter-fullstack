@@ -3,6 +3,45 @@ import { TestDatabase } from './helpers/db-setup.js';
 import { seedAdminCore } from '../../scripts/seed-admin-context.js';
 import { UUID_REGEX } from '../shared/constants.js';
 
+/** SQLSTATE `serialization_failure` */
+const SERIALIZATION_FAILURE = '40001';
+
+function isSerializationFailure(error: unknown): boolean {
+  for (let current = error; current; current = (current as { cause?: unknown }).cause) {
+    if ((current as { code?: unknown }).code === SERIALIZATION_FAILURE) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Runs `fn` in a test transaction, and again in a fresh one when Postgres aborts it with a
+ * serialization failure, which is how REPEATABLE READ transactions are meant to be used.
+ *
+ * Parallel suites seed the same admin rows and commit them (`seedAdminOnce`). When one of those
+ * commits lands on a row after this transaction took its snapshot, this transaction's upsert of
+ * that row fails with "could not serialize access due to concurrent update".
+ */
+async function withRetriedTransaction(
+  db: TestDatabase,
+  fn: Parameters<TestDatabase['withTransaction']>[0],
+  maxAttempts = 5,
+): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await db.withTransaction(fn);
+      return;
+    } catch (error) {
+      if (attempt >= maxAttempts || !isSerializationFailure(error)) {
+        throw error;
+      }
+      // the parallel seeds run once per suite, at startup: back off past them
+      await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+    }
+  }
+}
+
 describe('seedAdminCore integration', () => {
   let db: TestDatabase;
 
@@ -118,11 +157,13 @@ describe('seedAdminCore integration', () => {
   });
 
   it('should be idempotent (safe to call multiple times)', async () => {
-    await db.withTransaction(async client => {
+    await withRetriedTransaction(db, async client => {
       // Snapshot isolation: parallel suites commit writes/deletes to
       // financial_entities mid-test under READ COMMITTED, shifting the global
       // count between the two reads below. REPEATABLE READ pins both counts to
       // one snapshot while this transaction's own seed writes stay visible.
+      // The price is a serialization failure when a parallel suite commits a
+      // write to a row this seed then upserts, hence the retry.
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
 
       // Call seed twice in same transaction

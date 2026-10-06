@@ -1,5 +1,4 @@
 import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
-import { optionalDateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { IGetBusinessesByIdsResult } from '../../financial-entities/types.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
@@ -45,10 +44,8 @@ export const businessTripAttendeesResolvers: BusinessTripsModule.Resolvers = {
     name: dbBusinessTripAttendee => dbBusinessTripAttendee.name,
     business: dbBusinessTripAttendee =>
       dbBusinessTripAttendee as unknown as IGetBusinessesByIdsResult, // TODO: temporary type casting, should be fixed later
-    arrivalDate: dbBusinessTripAttendee =>
-      optionalDateToTimelessDateString(dbBusinessTripAttendee.arrival),
-    departureDate: dbBusinessTripAttendee =>
-      optionalDateToTimelessDateString(dbBusinessTripAttendee.departure),
+    arrivalDate: dbBusinessTripAttendee => dbBusinessTripAttendee.arrival,
+    departureDate: dbBusinessTripAttendee => dbBusinessTripAttendee.departure,
     flights: async (dbBusinessTripAttendee, _, { injector }) =>
       injector
         .get(BusinessTripFlightsExpensesProvider)

@@ -2,6 +2,7 @@ import type { Injector } from 'graphql-modules';
 import { describe, expect, it, vi } from 'vitest';
 import { DocumentType } from '../../../shared/enums.js';
 import {
+  getOcrData,
   releaseDbConnectionForExternalWork,
   resolveOwnerSideFromUuids,
   type OcrData,
@@ -122,5 +123,28 @@ describe('releaseDbConnectionForExternalWork', () => {
     } as unknown as Injector;
 
     await expect(releaseDbConnectionForExternalWork(injector)).resolves.toBeUndefined();
+  });
+});
+
+describe('getOcrData', () => {
+  async function ocrDateFor(date: string | null) {
+    const provider = {
+      releaseIdleConnection: vi.fn().mockResolvedValue(undefined),
+      extractInvoiceDetails: vi.fn().mockResolvedValue({ type: DocumentType.Invoice, date }),
+    };
+    const injector = { get: () => provider } as unknown as Injector;
+    const data = await getOcrData(injector, new Blob(['invoice']), false, { businesses: [] });
+    return data.date;
+  }
+
+  it('keeps the recognized issue date as the same calendar day', async () => {
+    // as a `Date` it used to be UTC midnight, stored as the previous day west of UTC
+    await expect(ocrDateFor('2026-06-30')).resolves.toBe('2026-06-30');
+  });
+
+  it('drops missing and impossible dates', async () => {
+    await expect(ocrDateFor(null)).resolves.toBeUndefined();
+    await expect(ocrDateFor('2026-02-30')).resolves.toBeUndefined();
+    await expect(ocrDateFor('2026-13-01')).resolves.toBeUndefined();
   });
 });

@@ -9,7 +9,13 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
+import {
+  currentTenantYear,
+  endOfTimelessYear,
+  formatFinancialAmount,
+  getTimelessDateYear,
+  startOfTimelessYear,
+} from '../../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
@@ -30,13 +36,13 @@ export const profitAndLossReport: ResolverFn<
   referenceYears = referenceYears.filter(year => year !== reportYear);
   const years = [reportYear, ...referenceYears];
   years.map(year => {
-    if (year < 2000 || year > new Date().getFullYear()) {
+    if (year < 2000 || year > currentTenantYear()) {
       throw new GraphQLError('Invalid year');
     }
   });
 
-  const from = new Date(Math.min(...years), 0, 1);
-  const to = new Date(Math.max(...years) + 1, 0, 0);
+  const from = startOfTimelessYear(Math.min(...years));
+  const to = endOfTimelessYear(Math.max(...years));
   const ledgerRecordsPromise = await injector
     .get(LedgerProvider)
     .getLedgerRecordsByDates({ fromDate: from, toDate: to });
@@ -57,7 +63,7 @@ export const profitAndLossReport: ResolverFn<
   );
 
   ledgerRecords.map(record => {
-    const year = record.invoice_date.getFullYear();
+    const year = getTimelessDateYear(record.invoice_date);
     ledgerByYear.get(year)?.push(record);
   });
 

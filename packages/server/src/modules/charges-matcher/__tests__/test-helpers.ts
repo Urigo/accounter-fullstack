@@ -1,3 +1,5 @@
+import { differenceInTimelessDays } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import type {
   Transaction,
   Document,
@@ -20,8 +22,8 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
     source_id: 'source-1',
     source_description: 'Test transaction',
     currency: 'USD' as currency,
-    event_date: new Date('2024-01-15'),
-    debit_date: new Date('2024-01-16'),
+    event_date: '2024-01-15',
+    debit_date: '2024-01-16',
     debit_date_override: null,
     debit_timestamp: new Date('2024-01-16T10:00:00Z'),
     amount: '100.00',
@@ -51,7 +53,7 @@ export function createMockDocument(overrides: Partial<Document> = {}): Document 
     creditor_id: 'business-a',
     debtor_id: 'user-123',
     currency_code: 'USD' as currency,
-    date: new Date('2024-01-14'),
+    date: '2024-01-14',
     total_amount: 100.0,
     type: 'RECEIPT' as document_type,
     vat_amount: 17.0,
@@ -83,8 +85,8 @@ export function createMockAggregatedTransaction(
     amount: 100.0,
     currency: 'USD' as currency,
     businessId: 'business-a',
-    date: new Date('2024-01-15'),
-    debitDate: new Date('2024-01-16'),
+    date: '2024-01-15',
+    debitDate: '2024-01-16',
     description: 'Test transaction',
   };
 
@@ -101,7 +103,7 @@ export function createMockAggregatedDocument(
     amount: 100.0,
     currency: 'USD' as currency,
     businessId: 'business-a',
-    date: new Date('2024-01-14'),
+    date: '2024-01-14',
     description: 'INV-001',
     type: 'INVOICE' as document_type,
     businessIsCreditor: false,
@@ -163,16 +165,17 @@ export function isValidConfidenceScore(score: number): boolean {
 /**
  * Helper to check if a date is within N days of another date
  */
-export function isWithinDays(date1: Date, date2: Date, days: number): boolean {
-  const diffMs = Math.abs(date1.getTime() - date2.getTime());
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  return diffDays <= days;
+export function isWithinDays(
+  date1: TimelessDateString,
+  date2: TimelessDateString,
+  days: number,
+): boolean {
+  return daysDifference(date1, date2) <= days;
 }
 
 /**
  * Helper to calculate days difference between two dates
  */
-export function daysDifference(date1: Date, date2: Date): number {
-  const diffMs = Math.abs(date1.getTime() - date2.getTime());
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+export function daysDifference(date1: TimelessDateString, date2: TimelessDateString): number {
+  return Math.abs(differenceInTimelessDays(date1, date2));
 }

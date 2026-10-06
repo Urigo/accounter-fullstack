@@ -25,7 +25,6 @@ import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbala
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '../modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
-import type { Currency } from '../shared/enums.js';
 
 export type ModuleContextLike = {
   injector: Injector;
@@ -47,11 +46,8 @@ class SimpleInjector implements Injector {
   }
 }
 
-export type ExchangeRateMockFn = (
-  baseCurrency: Currency,
-  quoteCurrency: Currency,
-  date: Date,
-) => Promise<number>;
+/** A stand-in for `ExchangeProvider.getExchangeRates`, with the same signature */
+export type ExchangeRateMockFn = ExchangeProvider['getExchangeRates'];
 
 export function createLedgerTestContext(options: {
   pool: Pool;

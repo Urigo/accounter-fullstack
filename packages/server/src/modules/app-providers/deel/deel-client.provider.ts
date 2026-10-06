@@ -1,8 +1,8 @@
-import { addHours, subYears } from 'date-fns';
+import { addHours } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { addYearsToTimelessDate, todayTimelessDate } from '../../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment, TimelessDateString } from '../../../shared/types/index.js';
 import { ProviderCredentialsProvider } from '../../provider-credentials/providers/provider-credentials.provider.js';
@@ -60,8 +60,8 @@ export class DeelClientProvider {
         currencies?: Currency;
         entities?: 'company' | 'individual';
       } = {
-        date_from: dateToTimelessDateString(subYears(new Date(), 1)),
-        date_to: dateToTimelessDateString(new Date()),
+        date_from: addYearsToTimelessDate(todayTimelessDate(), -1),
+        date_to: todayTimelessDate(),
       };
       const url = new URL(`${this.host}/payments`);
       Object.entries(queryVars).map(([key, value]) => {
@@ -139,7 +139,7 @@ export class DeelClientProvider {
       } = {
         limit: 50,
         offset: 0,
-        issued_from_date: dateToTimelessDateString(subYears(new Date(), 1)),
+        issued_from_date: addYearsToTimelessDate(todayTimelessDate(), -1),
       };
       for (let i = 0; i < 10; i++) {
         const url = new URL(`${this.host}/invoices`);

@@ -1,6 +1,8 @@
 import type { Injector } from 'graphql-modules';
+import { TIMELESS_DATE_REGEX } from '../../../shared/constants.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnthropicProvider } from '../../app-providers/anthropic.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
@@ -60,7 +62,7 @@ export type OcrData = {
   counterpartyId?: string;
   documentType: DocumentType;
   serial?: string;
-  date?: Date;
+  date?: TimelessDateString;
   amount?: number;
   currency?: Currency;
   vat?: number;
@@ -129,10 +131,9 @@ export async function getOcrData(
     return typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
   };
 
-  const validateDate = (value?: string): Date | undefined => {
-    if (!value) return undefined;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? undefined : date;
+  const validateDate = (value?: string): TimelessDateString | undefined => {
+    // the shared regex also rejects days that do not exist (e.g. 2026-02-30)
+    return value && TIMELESS_DATE_REGEX.test(value) ? (value as TimelessDateString) : undefined;
   };
 
   if (isSensitive) {

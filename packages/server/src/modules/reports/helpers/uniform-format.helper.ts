@@ -1,4 +1,3 @@
-import { subDays } from 'date-fns';
 import { GraphQLResolveInfo } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type {
@@ -8,7 +7,7 @@ import type {
   JournalEntry,
 } from '@accounter/shaam-uniform-format-generator';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { addDaysToTimelessDate, dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { isCryptoCurrency } from '../../exchange-rates/helpers/exchange.helper.js';
@@ -75,7 +74,7 @@ export async function journalEntriesForUniformFormat(
       | 'transactionLineNumber'
     > = {
       id: record.id,
-      date: dateToTimelessDateString(record.invoice_date),
+      date: record.invoice_date,
       description: record.description ?? '',
       transactionNumber: Number(record.id.replace(/\D/g, '').slice(-10)),
       batchNumber: 1,
@@ -84,7 +83,7 @@ export async function journalEntriesForUniformFormat(
       // "referenceDocumentType": '',
       referenceDocument2: undefined,
       // "referenceDocumentType2": '',
-      valueDate: dateToTimelessDateString(record.value_date),
+      valueDate: record.value_date,
       currencyCode: isCrypto ? 'ILS' : (record.currency as unknown as CurrencyCode),
       transactionAmount: Math.max(
         Math.abs(Number(record.credit_local_amount1)),
@@ -212,7 +211,7 @@ export async function accountsForUniformFormat(
     {
       filters: {
         ownerIds: [ownerId],
-        toDate: dateToTimelessDateString(subDays(new Date(fromDate), 1)),
+        toDate: addDaysToTimelessDate(fromDate, -1),
         includeRevaluation: true,
       },
     },

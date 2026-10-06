@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import type {
   Maybe,
   ResolverFn,
@@ -6,8 +5,11 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import {
-  dateToTimelessDateString,
+  endOfTimelessMonth,
   getMonthFromDescription,
+  getTimelessDateYearMonth,
+  timelessDateFromParts,
+  todayTimelessDate,
 } from '../../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
@@ -77,9 +79,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
     // get VAT relevant records
     const vatRecordsPromises = (vatDates ?? []).map(async vatDate => {
-      const [year, month] = (vatDate ?? format(new Date(), 'yyyy-MM')).split('-').map(Number);
-      const ledgerDate = new Date(year, month, 0);
-      const monthDate = dateToTimelessDateString(new Date(year, month - 1, 15));
+      const [year, month] = (vatDate ?? getTimelessDateYearMonth(todayTimelessDate()))
+        .split('-')
+        .map(Number);
+      const ledgerDate = endOfTimelessMonth(timelessDateFromParts(year, month, 1));
+      const monthDate = timelessDateFromParts(year, month, 15);
 
       const { income, expenses } = await getVatRecords(
         { filters: { financialEntityId: charge.owner_id, monthDate } },
@@ -162,7 +166,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
             .getExchangeRates(
               transaction.currency,
               defaultLocalCurrency,
-              transaction.debit_timestamp,
+              transaction.exchange_rate_date,
             );
         }
 

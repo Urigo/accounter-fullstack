@@ -4,7 +4,8 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
-import type { LedgerProto } from '../../../../shared/types/index.js';
+import { maxTimelessDate } from '../../../../shared/helpers/index.js';
+import type { LedgerProto, TimelessDateString } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -45,7 +46,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     // validate ledger records are balanced
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
-    const dates = new Set<number>();
+    const dates = new Set<TimelessDateString>();
     const currencies = new Set<currency>();
 
     // generate ledger from transactions
@@ -81,7 +82,8 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     // create a ledger record for main transactions
     const mainFinancialAccountLedgerEntriesPromises = mainTransactions.map(async transaction => {
       try {
-        const { currency, valueDate } = validateTransactionBasicVariables(transaction);
+        const { currency, valueDate, exchangeRateDate } =
+          validateTransactionBasicVariables(transaction);
 
         let amount = Number(transaction.amount);
         let foreignAmount: number | undefined = undefined;
@@ -90,7 +92,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           // get exchange rate for currency
           const exchangeRate = await injector
             .get(ExchangeProvider)
-            .getExchangeRates(currency, defaultLocalCurrency, valueDate);
+            .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
 
           foreignAmount = amount;
           // calculate amounts in ILS
@@ -130,7 +132,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
         mainFinancialAccountLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-        dates.add(valueDate.getTime());
+        dates.add(valueDate);
         currencies.add(currency);
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -167,7 +169,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-          dates.add(ledgerEntry.valueDate.getTime());
+          dates.add(ledgerEntry.valueDate);
           currencies.add(ledgerEntry.currency);
         });
       } catch (e) {
@@ -185,7 +187,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
         updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
-        dates.add(entry.valueDate.getTime());
+        dates.add(entry.valueDate);
         currencies.add(entry.currency);
       });
     });
@@ -218,14 +220,12 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
         const isCreditorCounterparty = balanceSum > 0;
 
-        const latestDate = new Date(
-          Math.max(
-            originEntry.valueDate.getTime(),
-            originEntry.invoiceDate.getTime(),
-            destinationEntry.valueDate.getTime(),
-            destinationEntry.invoiceDate.getTime(),
-          ),
-        );
+        const latestDate = maxTimelessDate(
+          originEntry.valueDate,
+          originEntry.invoiceDate,
+          destinationEntry.valueDate,
+          destinationEntry.invoiceDate,
+        )!;
 
         const ledgerEntry: LedgerProto = {
           id: destinationEntry.id, // NOTE: this field is dummy

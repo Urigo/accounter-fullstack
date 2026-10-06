@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -169,7 +169,7 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
     },
     amount: dbExpense => formatFinancialAmount(dbExpense.amount, dbExpense.currency),
     description: dbExpense => dbExpense.description,
-    invoiceDate: dbExpense => dateToTimelessDateString(dbExpense.invoice_date),
+    invoiceDate: dbExpense => dbExpense.invoice_date,
     valueDate: dbExpense => dbExpense.value_date,
   },
   BankDepositCharge: commonChargeFields,

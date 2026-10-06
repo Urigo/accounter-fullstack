@@ -63,7 +63,11 @@ afterAll(async () => {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 async function truncate(table: string) {
-  await pool.query(`TRUNCATE TABLE accounter_schema.${table} CASCADE`);
+  // DELETE, not TRUNCATE ... CASCADE: the raw bank tables are referenced by
+  // transactions_raw_list, which `transactions` references in turn, so a cascading truncate
+  // empties those for every integration suite running concurrently (and takes ACCESS EXCLUSIVE
+  // locks on them). Triggers are disabled in beforeAll, so no dependent rows exist here.
+  await pool.query(`DELETE FROM accounter_schema.${table}`);
 }
 
 // ── Isracard ──────────────────────────────────────────────────────────────────

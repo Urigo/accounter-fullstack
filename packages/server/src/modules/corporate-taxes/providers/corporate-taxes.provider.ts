@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { compareTimelessDates } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
@@ -96,13 +97,12 @@ export class CorporateTaxesProvider {
     const corporateIds = [...new Set(taxRates.map(t => t.corporateId))];
     const rates = (await Promise.all(corporateIds.map(id => this.getAllCorporateTaxes(id)))).flat();
 
-    return taxRates.map(({ date, corporateId }) => {
-      const time = new Date(date).getTime();
-      return rates
+    return taxRates.map(({ date, corporateId }) =>
+      rates
         .filter(rate => rate.corporate_id === corporateId)
-        .sort((a, b) => b.date.getTime() - a.date.getTime())
-        .find(rate => rate.date.getTime() <= time);
-    });
+        .sort((a, b) => compareTimelessDates(b.date, a.date))
+        .find(rate => rate.date <= date),
+    );
   }
 
   public getCorporateTaxesByDateLoader = new DataLoader(

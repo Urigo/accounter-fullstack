@@ -33,6 +33,7 @@ vi.mock('../../resolvers/get-vat-records.resolver.js', () => ({
 }));
 
 const FIXED_DATE = new Date('2024-01-15');
+const FIXED_DAY: TimelessDateString = '2024-01-15';
 const FIXED_REPORT_MONTH = '2024-01-15';
 const FIXED_VAT_NUMBER = '123456789';
 const FIXED_BUSINESS_ID = 'test-business-123';
@@ -52,12 +53,12 @@ function createMockVatRecord(overrides?: Partial<RawVatReportRecord>): RawVatRep
     foreignAmountBeforeVAT: 0,
     businessId: FIXED_BUSINESS_ID,
     chargeAccountantStatus: 'PENDING',
-    chargeDate: FIXED_DATE,
+    chargeDate: FIXED_DAY,
     chargeId: `charge-${Math.random().toString(36).substring(7)}`,
     currencyCode: Currency.Ils,
     documentAmount: '1170',
     documentId: `doc-${Math.random().toString(36).substring(7)}`,
-    documentDate: FIXED_DATE,
+    documentDate: FIXED_DAY,
     documentSerial: 'INV-001',
     documentUrl: null,
     eventLocalAmount: 1000,
@@ -801,7 +802,7 @@ describe('pcn.helper', () => {
       process.env.TZ = 'America/New_York';
       vi.mocked(getVatRecords).mockReset();
       vi.mocked(getVatRecords).mockResolvedValue({
-        income: [createMockVatRecord({ documentDate: new Date(2024, 0, 10) })],
+        income: [createMockVatRecord({ documentDate: '2024-01-10' })],
         expenses: [],
         missingInfo: [],
         differentMonthDoc: [],
@@ -1042,7 +1043,7 @@ describe('pcn.helper', () => {
         it('should skip records with missing document dates', async () => {
           const vatRecords = [
             createMockVatRecord({ documentDate: null }),
-            createMockVatRecord({ documentDate: FIXED_DATE }),
+            createMockVatRecord({ documentDate: FIXED_DAY }),
           ];
 
           const business = createMockBusiness();

@@ -71,7 +71,7 @@ const mergedCharges: CronJobsRunEvent[] = [
     baseCharge: {
       id: 'charge-acme',
       userDescription: 'Monthly hosting',
-      minEventDate: new Date('2026-09-03T00:00:00.000Z'),
+      minEventDate: '2026-09-03',
       totalAmount: { formatted: '$ -1,212.00' },
       counterparty: { id: 'business-acme', name: 'Acme Cloud Ltd' },
     },
@@ -90,7 +90,7 @@ const mergedCharges: CronJobsRunEvent[] = [
     baseCharge: {
       id: 'charge-securities',
       userDescription: null,
-      minEventDate: new Date('2026-09-10T00:00:00.000Z'),
+      minEventDate: '2026-09-10',
       totalAmount: { formatted: '$ 25,000.00' },
       counterparty: { id: 'business-broker', name: 'Interactive Brokers' },
     },

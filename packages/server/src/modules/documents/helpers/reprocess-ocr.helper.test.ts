@@ -78,7 +78,7 @@ function ocrParams(
     file: null,
     documentType: DocumentType.Invoice,
     serialNumber: 'INV-42',
-    date: new Date('2026-03-01'),
+    date: '2026-03-01',
     amount: 1170,
     currencyCode: Currency.Ils,
     vat: 170,
@@ -101,7 +101,7 @@ function filledRow(overrides: Partial<IGetAllDocumentsResult> = {}): IGetAllDocu
   return unprocessedRow({
     type: DocumentType.Invoice,
     serial_number: 'INV-42',
-    date: new Date('2026-03-01'),
+    date: '2026-03-01',
     total_amount: 1170,
     currency_code: Currency.Ils,
     vat_amount: 170,

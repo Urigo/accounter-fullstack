@@ -18,7 +18,7 @@ vi.mock('../get-vat-records.resolver.js', () => ({
 const BUSINESS_ID = 'test-business-123';
 const VAT_NUMBER = '123456789';
 const MONTH = '2024-01-15';
-const DOCUMENT_DATE = new Date('2024-01-15');
+const DOCUMENT_DATE = '2024-01-15';
 
 type AnyResolver = (parent: unknown, args: unknown, context: unknown, info: unknown) => unknown;
 const summaryResolver = vatReportResultMapper.summary as unknown as AnyResolver;
