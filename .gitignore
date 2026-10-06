@@ -11,8 +11,6 @@ schema.graphql
 .vitest/
 coverage/
 docker/.*
-**/.mesh
-**/mesh-artifacts
 .bob/
 .DS_Store
 
