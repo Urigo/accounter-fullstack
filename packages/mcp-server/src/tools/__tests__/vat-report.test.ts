@@ -184,14 +184,14 @@ describe('vatReportTool — sections, counts and summary', () => {
   });
 
   const EXPECTED_SUMMARY = {
-    taxableSalesAmount: { value: 1000, formatted: '₪1,000.00', currency: 'ILS' },
-    taxableSalesVat: { value: 170, formatted: '₪170.00', currency: 'ILS' },
+    taxableSalesAmount: { value: 1000, currency: 'ILS' },
+    taxableSalesVat: { value: 170, currency: 'ILS' },
     salesRecordCount: 1,
-    zeroValOrExemptSalesAmount: { value: 0, formatted: '₪0.00', currency: 'ILS' },
-    otherInputsVat: { value: 51, formatted: '₪51.00', currency: 'ILS' },
-    equipmentInputsVat: { value: 0, formatted: '₪0.00', currency: 'ILS' },
+    zeroValOrExemptSalesAmount: { value: 0, currency: 'ILS' },
+    otherInputsVat: { value: 51, currency: 'ILS' },
+    equipmentInputsVat: { value: 0, currency: 'ILS' },
     inputsCount: 1,
-    totalVat: { value: 119, formatted: '₪119.00', currency: 'ILS' },
+    totalVat: { value: 119, currency: 'ILS' },
   };
 
   it.each([
@@ -242,12 +242,34 @@ describe('vatReportTool — sections, counts and summary', () => {
   it('words a negative totalVat as a refund', async () => {
     const summary = {
       ...vatReportData().vatReport.summary,
-      totalVat: { raw: -42, formatted: '-₪42.00', currency: 'ILS' },
+      totalVat: { raw: -42, currency: 'ILS' },
     };
     const { client } = clientReturning(vatReportData({ summary }));
     const result = await run(client, args());
 
-    expect(result.content[0]!.text).toMatch(/total VAT -₪42\.00 refund/);
+    expect(result.content[0]!.text).toMatch(/total VAT ₪42\.00 refund/);
+  });
+
+  it('words a zero totalVat as nothing to pay or refund', async () => {
+    const summary = {
+      ...vatReportData().vatReport.summary,
+      totalVat: { raw: 0, currency: 'ILS' },
+    };
+    const { client } = clientReturning(vatReportData({ summary }));
+    const result = await run(client, args());
+
+    expect(result.content[0]!.text).toMatch(/total VAT ₪0\.00 \(nothing to pay or refund\)/);
+  });
+
+  it('falls back to the currency code when Intl does not know it', async () => {
+    const summary = {
+      ...vatReportData().vatReport.summary,
+      totalVat: { raw: 1234.5, currency: 'USDC' },
+    };
+    const { client } = clientReturning(vatReportData({ summary }));
+    const result = await run(client, args());
+
+    expect(result.content[0]!.text).toMatch(/total VAT 1,234\.50 USDC to pay/);
   });
 
   it('tolerates absent buckets and summary from upstream', async () => {
@@ -280,14 +302,14 @@ describe('vatReportTool — row shapes', () => {
         documentDate: '2026-03-04',
         allocationNumber: '123456789',
         chargeDate: '2026-03-05',
-        amount: { value: 1170, formatted: '₪1,170.00', currency: 'ILS' },
-        localAmount: { value: 1170, formatted: '₪1,170.00', currency: 'ILS' },
-        localVat: { value: 170, formatted: '₪170.00', currency: 'ILS' },
+        amount: { value: 1170, currency: 'ILS' },
+        localAmount: { value: 1170, currency: 'ILS' },
+        localVat: { value: 170, currency: 'ILS' },
         foreignVat: null,
         foreignVatAfterDeduction: null,
-        localVatAfterDeduction: { value: 170, formatted: '₪170.00', currency: 'ILS' },
-        roundedLocalVatAfterDeduction: { value: 170, formatted: '₪170', currency: 'ILS' },
-        taxReducedLocalAmount: { value: 1000, formatted: '₪1,000', currency: 'ILS' },
+        localVatAfterDeduction: { value: 170, currency: 'ILS' },
+        roundedLocalVatAfterDeduction: { value: 170, currency: 'ILS' },
+        taxReducedLocalAmount: { value: 1000, currency: 'ILS' },
         taxReducedForeignAmount: null,
         recordType: 'S1',
         isProperty: false,
@@ -311,8 +333,8 @@ describe('vatReportTool — row shapes', () => {
       localVatAfterDeduction: null,
       roundedLocalVatAfterDeduction: null,
       taxReducedLocalAmount: null,
-      foreignVat: { raw: 17, formatted: '$17.00', currency: 'USD' },
-      foreignVatAfterDeduction: { raw: 11.33, formatted: '$11.33', currency: 'USD' },
+      foreignVat: { raw: 17, currency: 'USD' },
+      foreignVatAfterDeduction: { raw: 11.33, currency: 'USD' },
       recordType: 'T',
       isProperty: true,
     });
@@ -337,8 +359,8 @@ describe('vatReportTool — row shapes', () => {
       roundedLocalVatAfterDeduction: null,
       taxReducedLocalAmount: null,
       taxReducedForeignAmount: null,
-      foreignVat: { value: 17, formatted: '$17.00', currency: 'USD' },
-      foreignVatAfterDeduction: { value: 11.33, formatted: '$11.33', currency: 'USD' },
+      foreignVat: { value: 17, currency: 'USD' },
+      foreignVatAfterDeduction: { value: 11.33, currency: 'USD' },
       recordType: 'T',
       isProperty: true,
     });
@@ -371,7 +393,7 @@ describe('vatReportTool — row shapes', () => {
         description: 'Charge mi-1',
         minEventDate: '2026-03-10T00:00:00.000Z',
         minDocumentsDate: null,
-        amount: { value: -250, formatted: '₪-250.00', currency: 'ILS' },
+        amount: { value: -250, currency: 'ILS' },
         counterparty: { id: 'biz-mi-1', name: 'Vendor mi-1' },
         accountantStatus: 'UNAPPROVED',
         // Forwarded verbatim, in upstream order.

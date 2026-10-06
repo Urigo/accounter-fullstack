@@ -131,7 +131,6 @@ const TRANSACTIONS_QUERY_DOCUMENT = /* GraphQL */ `
     direction
     amount {
       raw
-      formatted
       currency
     }
     sourceDescription

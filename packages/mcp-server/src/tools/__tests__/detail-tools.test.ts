@@ -90,8 +90,8 @@ const chargeFixture = {
       userDescription: 'Coffee supplies',
       owner: { id: B1, name: 'Acme' },
       counterparty: { id: 'cp1', name: 'Beans Ltd' },
-      totalAmount: { raw: -120, formatted: '₪-120.00', currency: 'ILS' },
-      vat: { raw: -17, formatted: '₪-17.00', currency: 'ILS' },
+      totalAmount: { raw: -120, currency: 'ILS' },
+      vat: { raw: -17, currency: 'ILS' },
       withholdingTax: null,
       minEventDate: '2026-01-05',
       maxEventDate: '2026-01-05',
@@ -120,7 +120,7 @@ const chargeFixture = {
           eventDate: '2026-01-05',
           effectiveDate: '2026-01-06',
           direction: 'DEBIT',
-          amount: { raw: -120, formatted: '₪-120.00', currency: 'ILS' },
+          amount: { raw: -120, currency: 'ILS' },
           sourceDescription: 'CARD 1234',
           isFee: false,
           counterparty: { id: 'cp1', name: 'Beans Ltd' },
@@ -134,8 +134,8 @@ const chargeFixture = {
           documentType: 'INVOICE',
           serialNumber: 'INV-1',
           date: '2026-01-04',
-          amount: { raw: -120, formatted: '₪-120.00', currency: 'ILS' },
-          vat: { raw: -17, formatted: '₪-17.00', currency: 'ILS' },
+          amount: { raw: -120, currency: 'ILS' },
+          vat: { raw: -17, currency: 'ILS' },
           creditor: { id: 'cp1', name: 'Beans Ltd' },
           debtor: { id: B1, name: 'Acme' },
           description: 'Monthly beans',
@@ -177,7 +177,7 @@ describe('getChargesTool', () => {
     expect(charge.id).toBe('c1');
     expect(charge.ownerId).toBe(B1);
     expect(charge.counterparty).toEqual({ id: 'cp1', name: 'Beans Ltd' });
-    expect(charge.totalAmount).toEqual({ value: -120, formatted: '₪-120.00', currency: 'ILS' });
+    expect(charge.totalAmount).toEqual({ value: -120, currency: 'ILS' });
     expect(charge.tags).toEqual([{ id: 't1', name: 'office' }]);
     expect(charge.transactions[0]).toMatchObject({
       id: 'tx1',
@@ -271,8 +271,8 @@ describe('getChargesTool', () => {
                   paymentType: null,
                   quantity: 10,
                   tradePrice: 100,
-                  netValue: { raw: -1000, formatted: '$-1,000.00', currency: 'USD' },
-                  tradeCommission: { raw: 5, formatted: '$5.00', currency: 'USD' },
+                  netValue: { raw: -1000, currency: 'USD' },
+                  tradeCommission: { raw: 5, currency: 'USD' },
                   israelTaxValue: null,
                 },
               ],
@@ -546,7 +546,7 @@ describe('getChargesTool', () => {
           ...chargeFixture.chargesByIDs[0],
           id: 'c2',
           __typename: 'CommonCharge',
-          totalAmount: { raw: 5000, formatted: '₪5,000.00', currency: 'ILS' },
+          totalAmount: { raw: 5000, currency: 'ILS' },
         },
       ],
     });
@@ -636,7 +636,7 @@ describe('getTransactionsTool', () => {
         eventDate: '2026-01-05',
         effectiveDate: '2026-01-06',
         direction: 'DEBIT',
-        amount: { raw: -120, formatted: '₪-120.00', currency: 'ILS' },
+        amount: { raw: -120, currency: 'ILS' },
         sourceDescription: 'CARD 1234',
         isFee: false,
         counterparty: { id: 'cp1', name: 'Beans Ltd' },
@@ -743,7 +743,7 @@ describe('getTransactionsTool', () => {
             eventDate: '2026-02-01',
             effectiveDate: '2026-02-02',
             direction: 'CREDIT',
-            amount: { raw: 50, formatted: '₪50.00', currency: 'ILS' },
+            amount: { raw: 50, currency: 'ILS' },
             sourceDescription: 'Bank transfer',
             isFee: false,
             counterparty: { id: 'cp2', name: 'Client Ltd' },
@@ -852,8 +852,8 @@ describe('getDocumentsTool', () => {
       documentType: 'INVOICE',
       serialNumber: 'INV-1',
       date: '2026-01-04',
-      amount: { raw: -120, formatted: '₪-120.00', currency: 'ILS' },
-      vat: { raw: -17, formatted: '₪-17.00', currency: 'ILS' },
+      amount: { raw: -120, currency: 'ILS' },
+      vat: { raw: -17, currency: 'ILS' },
       creditor: { id: 'cp1', name: 'Beans Ltd' },
       debtor: { id: B1, name: 'Acme' },
       description: 'Monthly beans',
@@ -888,7 +888,7 @@ describe('getDocumentsTool', () => {
       ownerId: B1,
       fileUrl: 'https://files/d1.pdf',
     });
-    expect(structured.documents[0]!.vat).toEqual({ value: -17, formatted: '₪-17.00', currency: 'ILS' });
+    expect(structured.documents[0]!.vat).toEqual({ value: -17, currency: 'ILS' });
   });
 
   it('drops a document whose owning charge is outside scope', async () => {

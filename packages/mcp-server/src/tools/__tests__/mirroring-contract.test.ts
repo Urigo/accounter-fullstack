@@ -156,7 +156,7 @@ describe('row data actually reaches the model', () => {
               ownerId: 'b1',
               userDescription: 'donation',
               owner: { id: 'b1', name: 'The Guild' },
-              totalAmount: { raw: -180, formatted: '-180.00', currency: 'ILS' },
+              totalAmount: { raw: -180, currency: 'ILS' },
               minEventDate: '2026-03-11',
             },
           ],

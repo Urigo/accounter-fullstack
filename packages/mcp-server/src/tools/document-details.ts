@@ -146,12 +146,10 @@ const DOCUMENTS_QUERY_DOCUMENT = /* GraphQL */ `
       date
       amount {
         raw
-        formatted
         currency
       }
       vat {
         raw
-        formatted
         currency
       }
       creditor {
@@ -168,12 +166,10 @@ const DOCUMENTS_QUERY_DOCUMENT = /* GraphQL */ `
       date
       amount {
         raw
-        formatted
         currency
       }
       vat {
         raw
-        formatted
         currency
       }
       creditor {
@@ -190,12 +186,10 @@ const DOCUMENTS_QUERY_DOCUMENT = /* GraphQL */ `
       date
       amount {
         raw
-        formatted
         currency
       }
       vat {
         raw
-        formatted
         currency
       }
       creditor {

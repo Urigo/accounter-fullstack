@@ -103,47 +103,38 @@ const VAT_REPORT_QUERY = /* GraphQL */ `
     chargeDate
     amount {
       raw
-      formatted
       currency
     }
     localAmount {
       raw
-      formatted
       currency
     }
     localVat {
       raw
-      formatted
       currency
     }
     foreignVat {
       raw
-      formatted
       currency
     }
     foreignVatAfterDeduction {
       raw
-      formatted
       currency
     }
     localVatAfterDeduction {
       raw
-      formatted
       currency
     }
     roundedLocalVatAfterDeduction {
       raw
-      formatted
       currency
     }
     taxReducedLocalAmount {
       raw
-      formatted
       currency
     }
     taxReducedForeignAmount {
       raw
-      formatted
       currency
     }
     recordType
@@ -166,7 +157,6 @@ const VAT_REPORT_QUERY = /* GraphQL */ `
         minDocumentsDate
         totalAmount {
           raw
-          formatted
           currency
         }
         counterparty {
@@ -181,34 +171,28 @@ const VAT_REPORT_QUERY = /* GraphQL */ `
       summary {
         taxableSalesAmount {
           raw
-          formatted
           currency
         }
         taxableSalesVat {
           raw
-          formatted
           currency
         }
         salesRecordCount
         zeroValOrExemptSalesAmount {
           raw
-          formatted
           currency
         }
         otherInputsVat {
           raw
-          formatted
           currency
         }
         equipmentInputsVat {
           raw
-          formatted
           currency
         }
         inputsCount
         totalVat {
           raw
-          formatted
           currency
         }
       }
@@ -289,13 +273,24 @@ function describeTotalVat(summary: ReturnType<typeof toSummary>): string {
   if (!totalVat) {
     return 'total VAT unavailable';
   }
+  // The sign is carried by the wording, so the amount is printed unsigned.
+  const amount = formatMoney(Math.abs(totalVat.value), totalVat.currency);
   if (totalVat.value > 0) {
-    return `total VAT ${totalVat.formatted} to pay`;
+    return `total VAT ${amount} to pay`;
   }
   if (totalVat.value < 0) {
-    return `total VAT ${totalVat.formatted} refund`;
+    return `total VAT ${amount} refund`;
   }
-  return `total VAT ${totalVat.formatted} (nothing to pay or refund)`;
+  return `total VAT ${amount} (nothing to pay or refund)`;
+}
+
+function formatMoney(value: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
+  } catch {
+    // Not an ISO 4217 code `Intl` knows (e.g. a crypto ticker).
+    return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+  }
 }
 
 async function handler(input: VatReportInput, context: ToolExecutionContext): Promise<ToolResult> {

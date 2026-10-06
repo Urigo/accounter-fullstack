@@ -46,7 +46,7 @@ const CHARGES_RESPONSE = {
           // Owner is selected since Phase 5; keep the fixture representative so
           // the latency budget is measured against the real payload shape.
           owner: { id: BUSINESS, name: 'Acme Ltd' },
-          totalAmount: { raw: -12.5, formatted: '-12.50', currency: 'ILS' },
+          totalAmount: { raw: -12.5, currency: 'ILS' },
           minEventDate: '2026-01-05',
         },
       ],

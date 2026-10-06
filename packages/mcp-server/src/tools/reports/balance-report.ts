@@ -46,7 +46,6 @@ const BALANCE_REPORT_QUERY = /* GraphQL */ `
       description
       amount {
         raw
-        formatted
         currency
       }
     }

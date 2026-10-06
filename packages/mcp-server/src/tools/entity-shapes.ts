@@ -18,24 +18,24 @@
  * passed straight through without a codegen dependency in this module.
  */
 
-/** Money as returned by the API's `FinancialAmount`. */
+/** Money as selected from the API's `FinancialAmount`. */
 export interface RawAmount {
   raw: number;
-  formatted: string;
   currency: string;
 }
 
-/** Normalized money: `value` is the numeric amount, plus display + currency. */
+/**
+ * Normalized money: the numeric `value` plus its currency code. The API's
+ * `formatted` display string is deliberately not selected — it is derivable
+ * from these two and only costs payload bytes and model context.
+ */
 export interface NormalizedAmount {
   value: number;
-  formatted: string;
   currency: string;
 }
 
 export function normalizeAmount(amount: RawAmount | null | undefined): NormalizedAmount | null {
-  return amount
-    ? { value: amount.raw, formatted: amount.formatted, currency: amount.currency }
-    : null;
+  return amount ? { value: amount.raw, currency: amount.currency } : null;
 }
 
 /** A referenced financial entity (owner, counterparty, creditor, debtor). */

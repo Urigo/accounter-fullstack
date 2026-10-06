@@ -7,7 +7,6 @@
 
 const ils = (raw: number) => ({
   raw,
-  formatted: `₪${raw.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
   currency: 'ILS',
 });
 
@@ -30,8 +29,8 @@ export function vatRecord(id: string, overrides: Record<string, unknown> = {}) {
     foreignVat: null,
     foreignVatAfterDeduction: null,
     localVatAfterDeduction: ils(170),
-    roundedLocalVatAfterDeduction: { raw: 170, formatted: '₪170', currency: 'ILS' },
-    taxReducedLocalAmount: { raw: 1000, formatted: '₪1,000', currency: 'ILS' },
+    roundedLocalVatAfterDeduction: { raw: 170, currency: 'ILS' },
+    taxReducedLocalAmount: { raw: 1000, currency: 'ILS' },
     taxReducedForeignAmount: null,
     recordType: 'S1',
     isProperty: false,
@@ -88,8 +87,8 @@ export function vatReportData(
           localAmount: ils(351),
           localVat: ils(51),
           localVatAfterDeduction: ils(51),
-          roundedLocalVatAfterDeduction: { raw: 51, formatted: '₪51', currency: 'ILS' },
-          taxReducedLocalAmount: { raw: 300, formatted: '₪300', currency: 'ILS' },
+          roundedLocalVatAfterDeduction: { raw: 51, currency: 'ILS' },
+          taxReducedLocalAmount: { raw: 300, currency: 'ILS' },
         }),
       ],
       missingInfo: [missingInfoCharge('mi-1')],

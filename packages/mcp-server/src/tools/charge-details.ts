@@ -141,7 +141,6 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     direction
     amount {
       raw
-      formatted
       currency
     }
     sourceDescription
@@ -166,12 +165,10 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
       date
       amount {
         raw
-        formatted
         currency
       }
       vat {
         raw
-        formatted
         currency
       }
       creditor {
@@ -188,12 +185,10 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
       date
       amount {
         raw
-        formatted
         currency
       }
       vat {
         raw
-        formatted
         currency
       }
       creditor {
@@ -210,12 +205,10 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
       date
       amount {
         raw
-        formatted
         currency
       }
       vat {
         raw
-        formatted
         currency
       }
       creditor {
@@ -250,17 +243,14 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     }
     totalAmount {
       raw
-      formatted
       currency
     }
     vat {
       raw
-      formatted
       currency
     }
     withholdingTax {
       raw
-      formatted
       currency
     }
     minEventDate
@@ -321,17 +311,14 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
           tradePrice
           netValue {
             raw
-            formatted
             currency
           }
           tradeCommission {
             raw
-            formatted
             currency
           }
           israelTaxValue {
             raw
-            formatted
             currency
           }
         }

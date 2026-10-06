@@ -56,7 +56,7 @@ const contract = {
   plan: null,
   purchaseOrders: ['PO-1'],
   remarks: null,
-  amount: { raw: 1000, formatted: '$1,000.00', currency: 'USD' },
+  amount: { raw: 1000, currency: 'USD' },
   client: { id: 'client-1', originalBusiness: { id: 'biz-9', name: 'Acme' } },
 };
 
@@ -85,7 +85,7 @@ describe('getContractsTool — successful read', () => {
         plan: null,
         purchaseOrders: ['PO-1'],
         remarks: null,
-        amount: { value: 1000, formatted: '$1,000.00', currency: 'USD' },
+        amount: { value: 1000, currency: 'USD' },
       },
     ]);
     expect(structured.totalCount).toBe(1);

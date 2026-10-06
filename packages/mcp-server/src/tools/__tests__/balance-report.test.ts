@@ -48,7 +48,7 @@ function row(id: string) {
     date: '2026-01-05',
     isFee: false,
     description: 'x',
-    amount: { raw: 10, formatted: '₪10', currency: 'ILS' },
+    amount: { raw: 10, currency: 'ILS' },
   };
 }
 
@@ -121,7 +121,7 @@ describe('balanceReportTool — valid report', () => {
         date: '2026-01-05',
         isFee: false,
         description: 'x',
-        amount: { value: 10, formatted: '₪10', currency: 'ILS' },
+        amount: { value: 10, currency: 'ILS' },
       },
     ]);
   });
