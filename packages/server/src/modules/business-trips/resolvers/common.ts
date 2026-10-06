@@ -131,10 +131,10 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
         if (!match) {
           return;
         }
-        const { currency, valueDate } = validateTransactionBasicVariables(transaction);
+        const { currency, exchangeRateDate } = validateTransactionBasicVariables(transaction);
         const exchangeRate = await injector
           .get(ExchangeProvider)
-          .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, valueDate);
+          .getExchangeRates(currency, defaultCryptoConversionFiatCurrency, exchangeRateDate);
         const amount = Number(match.amount || transaction.amount);
         totalAmount += amount * exchangeRate;
       }),

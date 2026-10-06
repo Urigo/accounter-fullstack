@@ -24,9 +24,10 @@ export class ExchangeProvider {
   /**
    * The rate to convert `baseCurrency` into `quoteCurrency` on `date`.
    *
-   * @param date a calendar day, or a point in time (e.g. a crypto transaction's timestamp). Fiat
-   * rates are daily, so an instant is mapped to the day it falls on for the server; crypto rates
-   * are sampled by time, so a calendar day is taken as its local midnight, as before.
+   * @param date a calendar day, or a point in time (a `transactions.debit_timestamp` or
+   * `misc_expenses.value_date`, both Postgres `timestamp` values). Fiat rates are daily, so an
+   * instant is mapped to its stored calendar day; crypto rates are sampled by time, so a calendar
+   * day is taken as its local midnight, as before.
    */
   public async getExchangeRates(
     baseCurrency: Currency,

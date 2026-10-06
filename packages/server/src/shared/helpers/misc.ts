@@ -202,11 +202,19 @@ export function getMonthFromDescription(
 }
 
 /**
- * The calendar day a point in time falls on in the server's local timezone.
+ * The calendar day of a `Date`, read with local-time getters (the server's timezone).
  *
- * Use it for real instants (`timestamp` / `timestamptz` values) and for `Date`s built at local
- * midnight (`timelessDateStringToLocalDate`). Date-only values should never become a `Date` in the
- * first place: keep them as `TimelessDateString` (see `./timeless-date.ts`).
+ * - A Postgres `timestamp` (without time zone) value: node-pg builds its `Date` from the stored
+ *   wall-clock fields in local time, so this returns the stored day (SQL `value::date`) whatever
+ *   timezone the server runs in.
+ * - A `Date` built by `timelessDateStringToLocalDate`: returns that day (the two are inverses).
+ * - An absolute instant (`timestamptz`, an external API time, `new Date()`): returns the day in the
+ *   server's timezone, which is not necessarily the business's day.
+ *
+ * `utcDateToTimelessDate` is the UTC counterpart: it reads UTC getters and is the inverse of
+ * `timelessDateToUtcDate`. Never mix the pairs: a local-midnight `Date` read in UTC is the previous
+ * day east of UTC, and a UTC-midnight `Date` read locally is the previous day west of it.
+ * Date-only values should not become a `Date` at all: keep them as `TimelessDateString`.
  */
 export function dateToTimelessDateString(date: Date): TimelessDateString {
   return format(date, 'yyyy-MM-dd') as TimelessDateString;

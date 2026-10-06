@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import { formatCurrency } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
@@ -94,7 +94,7 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
         return null;
       }
 
-      return typeof ratesDate === 'string' ? ratesDate : dateToTimelessDateString(ratesDate);
+      return ratesDate;
     },
   },
   ConversionCharge: {

@@ -1,6 +1,5 @@
 import type { Currency } from '../../shared/enums.js';
 import type { ExchangeProvider } from '../../modules/exchange-rates/providers/exchange.provider.js';
-import type { TimelessDateString } from '../../shared/types/index.js';
 
 /**
  * Configuration for a mocked exchange rate.
@@ -30,7 +29,7 @@ export function createMockExchangeRates(
   return async function getExchangeRates(
     baseCurrency: Currency,
     quoteCurrency: Currency,
-    _date: TimelessDateString | Date,
+    _date: Parameters<ExchangeProvider['getExchangeRates']>[2],
   ): Promise<number> {
     // Same currency always returns 1
     if (baseCurrency === quoteCurrency) {

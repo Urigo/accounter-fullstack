@@ -50,8 +50,9 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
       `Transaction reference "${transaction.source_reference}" is missing debit date for currency ${currency}`,
     );
   }
-  // `debit_timestamp` (crypto rows only) is the exact time of the transfer: the ledger records the
-  // day it falls on, and exchange rates are looked up at the time itself.
+  // `debit_timestamp` (set for crypto and MAX credit-card rows) is the exact time of the transaction:
+  // the ledger records its stored calendar day, and exchange rates are looked up at the time itself
+  // (crypto rates are sampled by time; fiat rates only use the day).
   const valueDate = transaction.debit_timestamp
     ? dateToTimelessDateString(transaction.debit_timestamp)
     : debitDate;

@@ -318,11 +318,9 @@ export const convertContractToDraft = async (
     throw new GraphQLError(`Green invoice match not found for business ID="${contract.client_id}"`);
   }
 
-  const today = issueMonth
-    ? addMonthsToTimelessDate(issueMonth, 1)
-    : dateToTimelessDateString(new Date());
-  const monthStart = startOfTimelessMonth(today);
-  const monthEnd = endOfTimelessMonth(today);
+  const nextMonth = addMonthsToTimelessDate(issueMonth, 1);
+  const monthStart = startOfTimelessMonth(nextMonth);
+  const monthEnd = endOfTimelessMonth(nextMonth);
 
   const description = buildContractDocumentDescription(contract, issueMonth);
 

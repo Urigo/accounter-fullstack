@@ -441,11 +441,9 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         );
       }
 
-      const today = issueMonth
-        ? addMonthsToTimelessDate(issueMonth, 1)
-        : dateToTimelessDateString(new Date());
-      const monthStart = startOfTimelessMonth(today);
-      const monthEnd = endOfTimelessMonth(today);
+      const nextMonth = addMonthsToTimelessDate(issueMonth, 1);
+      const monthStart = startOfTimelessMonth(nextMonth);
+      const monthEnd = endOfTimelessMonth(nextMonth);
 
       const description = buildContractDocumentDescription(contract, issueMonth);
 
