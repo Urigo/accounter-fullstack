@@ -11,6 +11,13 @@ fixes. When the timezone a provider's date carries is not proven, the case is fl
 check** (M-1 … M-12) instead of being given a guessed answer, and it should only be fixed once that
 check is done.
 
+**Updated after [#4592](https://github.com/Urigo/accounter-fullstack/pull/4592)**, which keeps
+date-only values as `TimelessDateString` on the server. Server code no longer turns days into JS
+`Date`s, and several cases below are fixed by it. #4592 did not touch scraper-app,
+modern-poalim-scraper, the standalone crypto scrapers, the database triggers or the client issuing
+form, so the cases that live there are unchanged. The summary marks each case's status after #4592,
+and [What #4592 changed](#what-4592-changed) lists them.
+
 Covered:
 
 - every scraper-app source: Bank Hapoalim, Isracard, Amex, Cal, Discount, Max and Otsar Hahayal (all
@@ -40,8 +47,8 @@ value). The crypto rate source under `app-providers` is CoinMarketCap, covered a
     - the answer depends on where the request came from.
 
 Turning an instant into a day also needs a timezone: a debit timestamp into a debit date, or an
-invoice time into a document date. The doc records which clock does that today. Which zone _should_
-define the day is a decision, listed as M-12.
+invoice time into a document date. The doc records which zone does that today. Which zone _should_
+define the day is a decision, listed as M-12; #4592 made part of it in code (see M-12).
 
 ## How a source's timezone is established
 
@@ -67,9 +74,9 @@ Marks used on every case (a case can carry several):
 
 ## The clocks our code can depend on
 
-Nothing in the repo pins a timezone. A repo-wide search finds no `TZ`, `PGTZ`, session `TimeZone`,
-pg `parseInputDatesAsUTC` or pg type parser, and no scraper calls Puppeteer's
-`page.emulateTimezone`. So each of these four clocks is whatever its machine has:
+Nothing in the repo pins a machine's timezone. A repo-wide search finds no `TZ`, `PGTZ` or session
+`TimeZone` setting, and no scraper calls Puppeteer's `page.emulateTimezone`. So each of these four
+clocks is whatever its machine has:
 
 - **Scraper machine.** scraper-app and its Chromium run on the user's own computer. This is the
   "requester location": the same scrape run from Tel Aviv and from New York can request different
@@ -80,6 +87,23 @@ pg `parseInputDatesAsUTC` or pg type parser, and no scraper calls Puppeteer's
 - **Browser:** only matters where a client form feeds a provider, e.g. Green Invoice document
   issuing.
 
+Since #4592, server code depends on the server process's clock much less:
+
+- The server's connections read `date` columns as `yyyy-mm-dd` strings: `pgTypeParsers`
+  (`packages/server/src/shared/helpers/pg-type-parsers.ts`), passed as `types` at
+  `packages/server/src/index.ts:60`, with pgtyped typing them `TimelessDateString`
+  (`packages/server/pgconfig.json:22-24`).
+- Day arithmetic works on those strings and does not depend on any timezone
+  (`packages/server/src/shared/helpers/timeless-date.ts`).
+- Where server code turns an instant into a day, or asks which day is "today", it now uses a
+  **tenant timezone** through `packages/server/src/shared/helpers/tenant-timezone.ts`. That is the
+  constant `TENANT_TIMEZONE = 'Asia/Jerusalem'` (`packages/server/src/shared/constants.ts:9`),
+  documented as "a constant for now, as every tenant is Israeli", meant to come from `user_context`
+  later. It is a fixed reference, not a machine clock.
+
+What still depends on the server process: `timestamp` (without time zone) values, which node-pg
+reads in the process zone, and any remaining `Date` built from a day.
+
 ## Conversion rules
 
 These are the behaviours of our own stack that the cases refer to. Each was run with Node's `TZ`, or
@@ -88,30 +112,32 @@ the Postgres session `TimeZone`, set to `UTC`, `Asia/Jerusalem`, `America/New_Yo
 and Node 22. CI and the dev compose file use Postgres 18, so re-run the probes in the
 [appendix](#appendix-probes) there before relying on R1–R6 and R11.
 
-| Rule | Behaviour                                                                                                                                                                                                         | Observed                                                                                                                                                                                                    |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1   | A `'yyyy-mm-dd'` string into a `date` column keeps the day.                                                                                                                                                       | `2024-01-15` in every session zone.                                                                                                                                                                         |
-| R2   | node-pg sends a JS `Date` parameter as **process-local time with an offset**. pg-promise, used by the Kraken, Etherscan and Etana scrapers, calls the same serializer (`pgUtils.prepareValue`).                   | `new Date('2024-01-15')` is sent as `2024-01-15T02:00:00.000+02:00` (Jerusalem) and as `2024-01-14T19:00:00.000-05:00` (New York).                                                                          |
-| R3   | A string with a time, with or without an offset or `Z`, cast to `date`, keeps the **date part as written** and drops the rest. Together with R2, a `Date` sent into a `date` column stores the process-local day. | `2024-01-15T00:00:00+02:00` and `2024-01-15T00:00:00` give `2024-01-15`, and `2024-01-14T22:00:00Z` gives `2024-01-14`, in every session zone.                                                              |
-| R4   | A string with an offset, cast to `timestamp` (without time zone), drops the offset.                                                                                                                               | `2024-01-14T22:00:00Z` gives `2024-01-14 22:00:00`.                                                                                                                                                         |
-| R5   | A string with no offset, cast to `timestamptz`, is read in the **DB session zone**.                                                                                                                               | `2024-01-15T00:00:00` is `00:00Z` (UTC), `22:00Z` on the 14th (Jerusalem), `05:00Z` (New York), `15:00Z` on the 14th (Tokyo).                                                                               |
-| R6   | `timestamptz::date`, and `to_timestamp(epoch)` stored into a `timestamp` column, both follow the **DB session zone**.                                                                                             | Epoch `1705271400` (`2024-01-14T22:30Z`) gives day 14 in UTC and New York, and day 15 in Jerusalem and Tokyo.                                                                                               |
-| R7   | node-pg reads `date` as process-local midnight, `timestamp` as process-local wall-clock time, and `timestamptz` as the exact instant.                                                                             | The `timestamp` `2024-01-15 00:30` is read as `00:30Z` in UTC and as `22:30Z` on the 14th in Jerusalem.                                                                                                     |
-| R8   | `new Date('yyyy-mm-dd')` is UTC midnight. `new Date('yyyy-mm-ddT00:00:00')` (no offset) and `new Date(y, m, d)` are process-local. Impossible dates roll over instead of failing.                                 | `new Date('2024-01-15')` falls on the 14th in New York. `new Date('2026-02-30')` gives 2 March.                                                                                                             |
-| R9   | date-fns v4 `format`, `startOfMonth`, `addMonths` and `parse(…, new Date())` work in process-local time, and a string argument goes through `new Date(str)` (R8).                                                 | `startOfMonth('2024-01-01')` gives `2023-12-01` in New York.                                                                                                                                                |
-| R10  | `toISOString()` and `getUTC*` give the UTC day.                                                                                                                                                                   | Local midnight on the 15th gives `2024-01-14` in Jerusalem and Tokyo.                                                                                                                                       |
-| R11  | `to_date(text, 'DD/MM/YYYY')` does not depend on timezone, but it does depend on the input's shape.                                                                                                               | `15/01/2024`, `05/01/2024` and `5/1/2024` parse correctly. `15/01/24` gives **`0024-01-15`**, with no error. `2024-01-15`, `20240115` and `2024-01-15T00:00:00` raise `date/time field value out of range`. |
-| R12  | The scraper's Chromium runs in the scraper machine's zone, because nothing calls `page.emulateTimezone`.                                                                                                          | Not probed. Covered by M-1.                                                                                                                                                                                 |
+| Rule | Behaviour                                                                                                                                                                                                                                                                                                    | Observed                                                                                                                                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1   | A `'yyyy-mm-dd'` string into a `date` column keeps the day.                                                                                                                                                                                                                                                  | `2024-01-15` in every session zone.                                                                                                                                                                           |
+| R2   | node-pg sends a JS `Date` parameter as **process-local time with an offset**. pg-promise, used by the Kraken, Etherscan and Etana scrapers, calls the same serializer (`pgUtils.prepareValue`).                                                                                                              | `new Date('2024-01-15')` is sent as `2024-01-15T02:00:00.000+02:00` (Jerusalem) and as `2024-01-14T19:00:00.000-05:00` (New York).                                                                            |
+| R3   | A string with a time, with or without an offset or `Z`, cast to `date`, keeps the **date part as written** and drops the rest. Together with R2, a `Date` sent into a `date` column stores the process-local day.                                                                                            | `2024-01-15T00:00:00+02:00` and `2024-01-15T00:00:00` give `2024-01-15`, and `2024-01-14T22:00:00Z` gives `2024-01-14`, in every session zone.                                                                |
+| R4   | A string with an offset, cast to `timestamp` (without time zone), drops the offset.                                                                                                                                                                                                                          | `2024-01-14T22:00:00Z` gives `2024-01-14 22:00:00`.                                                                                                                                                           |
+| R5   | A string with no offset, cast to `timestamptz`, is read in the **DB session zone**.                                                                                                                                                                                                                          | `2024-01-15T00:00:00` is `00:00Z` (UTC), `22:00Z` on the 14th (Jerusalem), `05:00Z` (New York), `15:00Z` on the 14th (Tokyo).                                                                                 |
+| R6   | `timestamptz::date`, and `to_timestamp(epoch)` stored into a `timestamp` column, both follow the **DB session zone**.                                                                                                                                                                                        | Epoch `1705271400` (`2024-01-14T22:30Z`) gives day 14 in UTC and New York, and day 15 in Jerusalem and Tokyo.                                                                                                 |
+| R7   | Reading results. **Server connections** (with `pgTypeParsers`): `date` comes back as the `yyyy-mm-dd` string. **Other connections** (the standalone scrapers, seed scripts): `date` is process-local midnight. Everywhere, `timestamp` is process-local wall-clock time and `timestamptz` the exact instant. | The `timestamp` `2024-01-15 00:30` is read as `00:30Z` in UTC and as `22:30Z` on the 14th in Jerusalem. The server-side `date` parsing is covered by `packages/server/src/__tests__/pg-type-parsers.test.ts`. |
+| R8   | `new Date('yyyy-mm-dd')` is UTC midnight. `new Date('yyyy-mm-ddT00:00:00')` (no offset) and `new Date(y, m, d)` are process-local. Impossible dates roll over instead of failing.                                                                                                                            | `new Date('2024-01-15')` falls on the 14th in New York. `new Date('2026-02-30')` gives 2 March.                                                                                                               |
+| R9   | date-fns v4 `format`, `startOfMonth`, `addMonths` and `parse(…, new Date())` work in process-local time, and a string argument goes through `new Date(str)` (R8).                                                                                                                                            | `startOfMonth('2024-01-01')` gives `2023-12-01` in New York.                                                                                                                                                  |
+| R10  | `toISOString()` and `getUTC*` give the UTC day.                                                                                                                                                                                                                                                              | Local midnight on the 15th gives `2024-01-14` in Jerusalem and Tokyo.                                                                                                                                         |
+| R11  | `to_date(text, 'DD/MM/YYYY')` does not depend on timezone, but it does depend on the input's shape.                                                                                                                                                                                                          | `15/01/2024`, `05/01/2024` and `5/1/2024` parse correctly. `15/01/24` gives **`0024-01-15`**, with no error. `2024-01-15`, `20240115` and `2024-01-15T00:00:00` raise `date/time field value out of range`.   |
+| R12  | The scraper's Chromium runs in the scraper machine's zone, because nothing calls `page.emulateTimezone`.                                                                                                                                                                                                     | Not probed. Covered by M-1.                                                                                                                                                                                   |
+| R13  | The tenant-timezone helpers (`instantToTimelessDate`, `todayTimelessDate`, `timelessDateToTenantInstant`) use `TENANT_TIMEZONE`, whatever the process zone is.                                                                                                                                               | Same results under `TZ=UTC` and `TZ=America/New_York` (OTS-1 run below). Also covered by `packages/server/src/shared/helpers/__tests__/tenant-timezone.test.ts`.                                              |
 
-Two shared helpers in `packages/server/src/shared/helpers/misc.ts` show up in many cases:
+Shared helpers that show up in many cases:
 
-- `dateToTimelessDateString` (`packages/server/src/shared/helpers/misc.ts:200-202`) is
-  `format(date, 'yyyy-MM-dd')`, in process-local time.
-- `timelessDateStringToLocalDate` (`packages/server/src/shared/helpers/misc.ts:211-214`) builds
-  process-local midnight.
-
-Together they round-trip in every zone. Fed a UTC-midnight `Date` instead,
-`dateToTimelessDateString(new Date('2024-01-15'))` gives `2024-01-14` in New York (R8 + R9).
+- `toCalendarDate` (`packages/server/src/modules/scraper-ingestion/helpers/utils.helper.ts:27-30`)
+  keeps the first ten characters of a bank date string when they are a real calendar date. Since
+  #4592 the scraper-ingestion validators run it on the Poalim and Max dates.
+- `dateToTimelessDateString` (`packages/server/src/shared/helpers/misc.ts:220`) is
+  `format(date, 'yyyy-MM-dd')` in process-local time. Since #4592 it is meant only for `timestamp`
+  values, whose stored day it returns in any zone.
+- `timelessDateStringToLocalDate` (`packages/server/src/shared/helpers/misc.ts:231`) builds
+  process-local midnight. The two round-trip in every zone.
 
 ## Summary
 
@@ -119,52 +145,73 @@ Priority: **P1** means the stored data can be wrong or missing today in a realis
 Israel-time or western scraper machine). **P2** means it is wrong only under a server, DB or scraper
 clock that nothing pins, or it is blocked on a manual check. **P3** means only reports, change
 detection or labels are affected. The "Check" column is A, B, "range" for the request windows, or
-"?" when the value's meaning is not known yet.
+"?" when the value's meaning is not known yet. "After #4592" is the case's status since that PR.
 
-| Case   | Source and field                                                                  | Check | Evidence    | Marks    | What can go wrong                                                                                                              | Manual check | Priority |
-| ------ | --------------------------------------------------------------------------------- | ----- | ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------ | -------- |
-| WIN-1  | scraper-app UI default "from" date                                                | range | Our clock   | ⚠️       | The scraper machine's clock: Israel and Tokyo send the previous day.                                                           | —            | P3       |
-| WIN-2  | scraper-app server range parse                                                    | range | Our clock   | ⚠️       | The scraper machine's clock: `new Date('yyyy-mm-dd')` (R8) feeds WIN-3 to WIN-8.                                               | —            | P2       |
-| WIN-3  | Isracard / Amex / Cal / Discount month lists                                      | range | Our clock   | ⚠️       | West of UTC, a custom range ending on the 1st **drops its last month**, and every range gets an extra month at the start.      | —            | P2       |
-| WIN-4  | Poalim account window                                                             | range | Our clock   | ⚠️       | UTC days: between 00:00 and 02:00/03:00 Israel time the end date is yesterday.                                                 | —            | P3       |
-| WIN-5  | Poalim securities window                                                          | range | Our clock   | ⚠️       | West of UTC both ends move a day earlier: an extra day at the start, and a custom end loses its last day.                      | —            | P2       |
-| WIN-6  | Max month list                                                                    | range | Our clock   | ⚠️       | West of UTC one extra month at the start.                                                                                      | —            | P3       |
-| WIN-7  | Otsar ILS / foreign range                                                         | range | Our clock   | ⚠️       | West of UTC a custom range **drops its last day** and starts a day early.                                                      | —            | P2       |
-| WIN-8  | Bank of Israel "today" and range filter                                           | range | Our clock   | ⚠️       | The edge days follow the scraper machine's clock.                                                                              | —            | P3       |
-| WIN-9  | Bank answers vs the machine's zone                                                | B     | None        | 🔍       | Whether any bank's response changes with the scraper machine's zone (R12).                                                     | M-1          | P2       |
-| POA-1  | Poalim ILS `eventDate`, `valueDate`                                               | A     | Shape       | ✅ ⚠️    | Stored correctly. The change report breaks on a server west of UTC.                                                            | —            | P3       |
-| POA-2  | Poalim foreign `executingDate`, `valueDate`, `validityDate`                       | A     | Shape       | ✅ ⚠️    | Same as POA-1.                                                                                                                 | —            | P3       |
-| POA-3  | Poalim SWIFT `formattedStartDate`                                                 | A     | Claimed UTC | 🔍       | Stored as the UTC date part. Is the `Z` real UTC, or Israel midnight?                                                          | M-2          | P2       |
-| POA-4  | Poalim securities info `-AsOfDate`                                                | B     | Offset      | ✅ ⚠️ 🔍 | Stored correctly when the offset is present, but the schema doesn't require one. The summary label uses the server's clock.    | M-3          | P3       |
-| POA-5  | Poalim securities transaction dates                                               | A     | Offset      | ✅       | The reference pattern.                                                                                                         | —            | —        |
-| ISR-1  | Isracard / Amex `fullPurchaseDate`, `fullPurchaseDateOutbound`, `fullPaymentDate` | A     | Shape       | ✅ 🐞 🔍 | `dd/mm/yyyy` is fine. `dd/mm/yy`, which the schema allows, becomes year 0024 (R11).                                            | M-4          | P2       |
-| CAL-1  | Cal `trnPurchaseDate`, `debCrdDate`                                               | A     | None        | 🔍       | The trigger only accepts `dd/mm/yyyy`; any other shape is rejected (R11).                                                      | M-5          | P1       |
-| DSC-1  | Discount `OperationDate`, `ValueDate`                                             | A     | None        | 🔍       | Same as CAL-1.                                                                                                                 | M-6          | P1       |
-| MAX-1  | Max `purchaseDate`, `paymentDate`, `processingDate`                               | A     | None        | ✅ 🔍    | Fine if the time is always `00:00:00`. The schema does not force that.                                                         | M-7          | P3       |
-| MAX-2  | Max installment `purchaseDate` rewrite                                            | A     | Our clock   | ⚠️       | **A day early on machines east of UTC, Israel included.** Duplicates when machines in different zones scrape the same account. | —            | P1       |
-| MAX-3  | Max `debit_timestamp`                                                             | B     | None        | 🔍       | Combines the debit date with the purchase time of day, and has no zone.                                                        | M-7          | P3       |
-| OTS-1  | Otsar ILS `dateOfBusinessDay`, `dateOfRegistration`                               | A     | Shape       | ⚠️       | Stored as `timestamptz`. The day and the dedup key depend on the DB session; the lookups depend on the server.                 | —            | P2       |
-| OTS-2  | Otsar foreign `valueDate`, `date`                                                 | A     | Shape       | ⚠️       | Excel-serial values come out a day early on a machine west of UTC. The lookups depend on the server.                           | —            | P2       |
-| OTS-3  | Otsar credit card month request (`date`, `chargeDate`)                            | A     | Shape       | ✅ ⚠️ 🐞 | West of UTC it **requests the previous billing month**. The change report always flags `charge_date`.                          | —            | P1       |
-| BOI-1  | Bank of Israel `@_TIME_PERIOD`                                                    | A     | Shape       | ✅ ⚠️    | Stored correctly. The change report breaks on a server west of UTC.                                                            | —            | P3       |
-| GI-1   | Green Invoice `documentDate`                                                      | A     | Contract    | ✅       | A string from end to end.                                                                                                      | —            | —        |
-| GI-2   | Green Invoice `creationDate`, `lastUpdateDate`                                    | B     | Epoch       | ✅       | Only used for sorting and filtering.                                                                                           | —            | —        |
-| GI-3   | Green Invoice `payment[].date`                                                    | A     | None        | ✅       | Passed through as a string to the issuing draft.                                                                               | —            | —        |
-| GI-4   | Dates we send when issuing (they come back as GI-1)                               | A     | Our clock   | ⚠️ 🔍    | "Today" defaults follow the server's or the browser's clock. `firstPayment` gets a unix time.                                  | M-10, M-12   | P2       |
-| DEEL-1 | Deel `issued_at` (into `deel_invoices` and `documents.date`)                      | B     | Claimed UTC | 🔍 ⚠️    | A fixed +7h "fix" is applied on top of an unverified source claim.                                                             | M-8          | P2       |
-| DEEL-2 | Deel `due_date`                                                                   | B     | Claimed UTC | 🔍 🐞    | Same as DEEL-1. An empty value becomes `"Invalid Date"`, which Postgres rejects.                                               | M-8          | P2       |
-| DEEL-3 | Deel `created_at`, `paid_at`, `approve_date`                                      | B     | Claimed UTC | 🔍 🐞    | Stored as sent. An empty `paid_at` is rejected by Postgres.                                                                    | M-8          | P2       |
-| DEEL-4 | Deel `contract_start_date`, and `addDeelContract`                                 | A     | Claimed UTC | ⚠️ 🔍    | A day stored as `timestamptz`. Our own `TimelessDate` input is read in the DB session zone (R5).                               | M-8          | P3       |
-| DEEL-5 | Deel receipt `timezone`                                                           | —     | Offset      | —        | Ignored today. Input for M-8.                                                                                                  | M-8          | —        |
-| DEEL-6 | Deel invoice lookup by document date                                              | A     | Our clock   | ⚠️       | Matches only when the server's day equals the stored UTC day.                                                                  | —            | P3       |
-| HSV-1  | Hashavshevet                                                                      | —     | —           | —        | Not wired up; no dates arrive.                                                                                                 | —            | —        |
-| ANT-1  | Anthropic OCR `date`                                                              | A     | None        | ⚠️ 🐞    | A day early on a server west of UTC. Impossible dates roll over (R8).                                                          | —            | P2       |
-| CMC-1  | CoinMarketCap rate points                                                         | B     | Epoch       | ⚠️ 🔍    | The window and the stored key follow the server's clock and the caller's style.                                                | M-12         | P2       |
-| KRK-1  | Kraken ledger and trade time                                                      | B     | Epoch       | ⚠️ 🔍    | Wall-clock time and the transaction day follow the DB session.                                                                 | M-12         | P2       |
-| ETH-1  | Etherscan `timeStamp`                                                             | B     | Epoch       | ⚠️ 🔍    | Two different clocks for one row: the DB session and the scraper machine.                                                      | M-12         | P2       |
-| ETA-1  | Etana CSV time                                                                    | ?     | None        | ⚠️ 🔍    | Unknown format, parsed in the scraper machine's zone.                                                                          | M-9          | P2       |
-| EML-1  | Email `receivedAt`                                                                | B     | Our clock   | ✅ 🔍    | The instant is right. The description label shows the UTC day.                                                                 | M-12         | P3       |
-| MCP-1  | MCP server date arguments                                                         | A     | Shape       | ✅       | Strict calendar-date validation, forwarded as strings.                                                                         | —            | —        |
+| Case   | Source and field                                                                  | Check | Evidence    | After #4592  | Marks    | What can go wrong now                                                                                                           | Manual check | Priority |
+| ------ | --------------------------------------------------------------------------------- | ----- | ----------- | ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------ | -------- |
+| WIN-1  | scraper-app UI default "from" date                                                | range | Our clock   | unchanged    | ⚠️       | The scraper machine's clock: Israel and Tokyo send the previous day.                                                            | —            | P3       |
+| WIN-2  | scraper-app server range parse                                                    | range | Our clock   | unchanged    | ⚠️       | The scraper machine's clock: `new Date('yyyy-mm-dd')` (R8) feeds WIN-3 to WIN-8.                                                | —            | P2       |
+| WIN-3  | Isracard / Amex / Cal / Discount month lists                                      | range | Our clock   | unchanged    | ⚠️       | West of UTC, a custom range ending on the 1st **drops its last month**, and every range gets an extra month at the start.       | —            | P2       |
+| WIN-4  | Poalim account window                                                             | range | Our clock   | unchanged    | ⚠️       | UTC days: between 00:00 and 02:00/03:00 Israel time the end date is yesterday.                                                  | —            | P3       |
+| WIN-5  | Poalim securities window                                                          | range | Our clock   | unchanged    | ⚠️       | West of UTC both ends move a day earlier: an extra day at the start, and a custom end loses its last day.                       | —            | P2       |
+| WIN-6  | Max month list                                                                    | range | Our clock   | unchanged    | ⚠️       | West of UTC one extra month at the start.                                                                                       | —            | P3       |
+| WIN-7  | Otsar ILS / foreign range                                                         | range | Our clock   | unchanged    | ⚠️       | West of UTC a custom range **drops its last day** and starts a day early.                                                       | —            | P2       |
+| WIN-8  | Bank of Israel "today" and range filter                                           | range | Our clock   | unchanged    | ⚠️       | The edge days follow the scraper machine's clock.                                                                               | —            | P3       |
+| WIN-9  | Bank answers vs the machine's zone                                                | B     | None        | unchanged    | 🔍       | Whether any bank's response changes with the scraper machine's zone (R12).                                                      | M-1          | P2       |
+| POA-1  | Poalim ILS `eventDate`, `valueDate`                                               | A     | Shape       | fixed        | ✅       | Nothing found. The change report now compares date strings.                                                                     | —            | —        |
+| POA-2  | Poalim foreign `executingDate`, `valueDate`, `validityDate`                       | A     | Shape       | fixed        | ✅       | Same as POA-1.                                                                                                                  | —            | —        |
+| POA-3  | Poalim SWIFT `formattedStartDate`                                                 | A     | Claimed UTC | unchanged    | 🔍       | Stored as the UTC date part. Is the `Z` real UTC, or Israel midnight?                                                           | M-2          | P2       |
+| POA-4  | Poalim securities info `-AsOfDate`                                                | B     | Offset      | partly fixed | ✅ 🔍    | Stored correctly when the offset is present, but the schema doesn't require one. The summary label now uses the tenant's day.   | M-3          | P3       |
+| POA-5  | Poalim securities transaction dates                                               | A     | Offset      | unchanged    | ✅       | The reference pattern; the server now applies it in its validator too.                                                          | —            | —        |
+| ISR-1  | Isracard / Amex `fullPurchaseDate`, `fullPurchaseDateOutbound`, `fullPaymentDate` | A     | Shape       | unchanged    | ✅ 🐞 🔍 | `dd/mm/yyyy` is fine. `dd/mm/yy`, which the schema allows, becomes year 0024 (R11).                                             | M-4          | P2       |
+| CAL-1  | Cal `trnPurchaseDate`, `debCrdDate`                                               | A     | None        | unchanged    | 🔍       | The trigger only accepts `dd/mm/yyyy`; any other shape is rejected (R11).                                                       | M-5          | P1       |
+| DSC-1  | Discount `OperationDate`, `ValueDate`                                             | A     | None        | unchanged    | 🔍       | Same as CAL-1.                                                                                                                  | M-6          | P1       |
+| MAX-1  | Max `purchaseDate`, `paymentDate`, `processingDate`                               | A     | None        | unchanged    | ✅ 🔍    | Fine if the time is always `00:00:00`. The schema does not force that.                                                          | M-7          | P3       |
+| MAX-2  | Max installment `purchaseDate` rewrite                                            | A     | Our clock   | unchanged    | ⚠️       | **A day early on machines east of UTC, Israel included.** Duplicates when machines in different zones scrape the same account.  | —            | P1       |
+| MAX-3  | Max `debit_timestamp`                                                             | B     | None        | unchanged    | 🔍       | Combines the debit date with the purchase time of day, and has no zone.                                                         | M-7          | P3       |
+| OTS-1  | Otsar ILS `dateOfBusinessDay`, `dateOfRegistration`                               | A     | Shape       | partly fixed | ⚠️       | Stored as `timestamptz`. The dedup key follows the DB session; keys and labels break when the DB session is east of Israel.     | —            | P2       |
+| OTS-2  | Otsar foreign `valueDate`, `date`                                                 | A     | Shape       | partly fixed | ⚠️       | Excel-serial values come out a day early on a scraper machine west of UTC. The server lookups are fixed.                        | —            | P2       |
+| OTS-3  | Otsar credit card month request (`date`, `chargeDate`)                            | A     | Shape       | partly fixed | ✅ ⚠️    | West of UTC it **requests the previous billing month**. The always-changed `charge_date` report is fixed.                       | —            | P1       |
+| BOI-1  | Bank of Israel `@_TIME_PERIOD`                                                    | A     | Shape       | fixed        | ✅       | Nothing found on the server. The range filter is WIN-8.                                                                         | —            | —        |
+| GI-1   | Green Invoice `documentDate`                                                      | A     | Contract    | unchanged    | ✅       | A string from end to end.                                                                                                       | —            | —        |
+| GI-2   | Green Invoice `creationDate`, `lastUpdateDate`                                    | B     | Epoch       | unchanged    | ✅       | Only used for sorting and filtering.                                                                                            | —            | —        |
+| GI-3   | Green Invoice `payment[].date`                                                    | A     | None        | unchanged    | ✅       | Passed through as a string to the issuing draft.                                                                                | —            | —        |
+| GI-4   | Dates we send when issuing (they come back as GI-1)                               | A     | Our clock   | partly fixed | ⚠️ 🔍    | The server's "today" is now the tenant's day. The client's payment default is still the UTC day. `firstPayment` is a unix time. | M-10         | P3       |
+| DEEL-1 | Deel `issued_at` (into `deel_invoices` and `documents.date`)                      | B     | Claimed UTC | unchanged    | 🔍 ⚠️    | A fixed +7h "fix" is applied on top of an unverified source claim.                                                              | M-8          | P2       |
+| DEEL-2 | Deel `due_date`                                                                   | B     | Claimed UTC | unchanged    | 🔍 🐞    | Same as DEEL-1. An empty value becomes `"Invalid Date"`, which Postgres rejects.                                                | M-8          | P2       |
+| DEEL-3 | Deel `created_at`, `paid_at`, `approve_date`                                      | B     | Claimed UTC | unchanged    | 🔍 🐞    | Stored as sent. An empty `paid_at` is rejected by Postgres.                                                                     | M-8          | P2       |
+| DEEL-4 | Deel `contract_start_date`, and `addDeelContract`                                 | A     | Claimed UTC | unchanged    | ⚠️ 🔍    | A day stored as `timestamptz`. Our own `TimelessDate` input is read in the DB session zone (R5).                                | M-8          | P3       |
+| DEEL-5 | Deel receipt `timezone`                                                           | —     | Offset      | unchanged    | —        | Ignored today. Input for M-8.                                                                                                   | M-8          | —        |
+| DEEL-6 | Deel invoice lookup by document date                                              | A     | Our clock   | fixed        | ✅       | Nothing found. Both sides now use the UTC day.                                                                                  | —            | —        |
+| HSV-1  | Hashavshevet                                                                      | —     | —           | unchanged    | —        | Not wired up; no dates arrive.                                                                                                  | —            | —        |
+| ANT-1  | Anthropic OCR `date`                                                              | A     | None        | fixed        | ✅       | Nothing found. The string is kept and impossible dates are rejected.                                                            | —            | —        |
+| CMC-1  | CoinMarketCap rate points                                                         | B     | Epoch       | partly fixed | ⚠️ 🔍    | Day callers now agree. `timestamp` inputs and the zone-less storage keys still follow the server's and DB's clocks.             | M-12         | P2       |
+| KRK-1  | Kraken ledger and trade time                                                      | B     | Epoch       | unchanged    | ⚠️ 🔍    | Wall-clock time and the transaction day follow the DB session.                                                                  | M-12         | P2       |
+| ETH-1  | Etherscan `timeStamp`                                                             | B     | Epoch       | unchanged    | ⚠️ 🔍    | Two different clocks for one row: the DB session and the scraper machine.                                                       | M-12         | P2       |
+| ETA-1  | Etana CSV time                                                                    | ?     | None        | unchanged    | ⚠️ 🔍    | Unknown format, parsed in the scraper machine's zone.                                                                           | M-9          | P2       |
+| EML-1  | Email `receivedAt`                                                                | B     | Our clock   | unchanged    | ✅ 🔍    | The instant is right. The description label shows the UTC day.                                                                  | M-12         | P3       |
+| MCP-1  | MCP server date arguments                                                         | A     | Shape       | unchanged    | ✅       | Strict calendar-date validation, forwarded as strings.                                                                          | —            | —        |
+
+## What #4592 changed
+
+- **Fixed:**
+  - POA-1, POA-2 and BOI-1: the change reports compare date strings instead of `new Date(day)`.
+  - DEEL-6: the invoice lookup compares UTC days on both sides.
+  - ANT-1: the OCR date stays a string, and impossible dates are rejected.
+- **Partly fixed:**
+  - POA-4: the summary label uses the tenant's day.
+  - OTS-1: the server's zone no longer matters, but the DB session's still does.
+  - OTS-2: the server lookups are fixed; the scraper's Excel-serial path is not.
+  - OTS-3: the always-changed `charge_date` report is fixed; the billing-month request is not.
+  - GI-4: the server's "today" defaults use the tenant's day; the client default and `firstPayment`
+    are unchanged.
+  - CMC-1: callers that pass a day agree; `timestamp` inputs and the storage keys are unchanged.
+- **Unchanged,** because #4592 left their code alone: everything in scraper-app and
+  modern-poalim-scraper (WIN-1 to WIN-9, MAX-2, the scraper side of OTS-2 and OTS-3), the triggers
+  (POA-3, ISR-1, CAL-1, DSC-1, MAX-3), the standalone crypto scrapers (KRK-1, ETH-1, ETA-1), and the
+  Deel source questions (DEEL-1 to DEEL-5).
+- **Decided in code:** #4592 introduced `TENANT_TIMEZONE`, which answers part of M-12 for the
+  server; see M-12.
 
 ## Manual checks
 
@@ -206,7 +253,8 @@ changes. Store any captured sample redacted, as a test fixture.
   `yyyymmdd`. Waits on it: DSC-1.
 - **M-7 Max times.**
   - Is the time part of `purchaseDate`, `paymentDate` and `processingDate` ever anything other than
-    `00:00:00`?
+    `00:00:00`? Since #4592 the server keeps only the date part (`toCalendarDate`), so a real time
+    would be dropped there rather than by Postgres.
   - Which zone is `purchaseTime` (`HH:MM`) in?
   - What should `debit_timestamp` mean for Max?
   - Waits on it: MAX-1, MAX-3.
@@ -217,29 +265,36 @@ changes. Store any captured sample redacted, as a test fixture.
   - Decides: whether the code comment "Deel API returning PST dates as UTC dates" is true. If it is
     true, a fixed +7h is right only in US summer time (PDT is UTC−7) and an hour short in winter
     (PST is UTC−8). If it is false, the +7h shifts correct values.
-  - Also decide whether `contract_start_date` is a day or an instant.
+  - Also decide whether `contract_start_date` is a day or an instant, and which day a Deel document
+    should carry (today: the UTC day of the shifted `issued_at`).
   - Waits on it: DEEL-1 to DEEL-4.
 - **M-9 Etana CSV time column.** Capture the raw column-3 value: its format, and whether it has an
   offset. Waits on it: ETA-1.
 - **M-10 Green Invoice `firstPayment`.** The Green Invoice schema describes it as "Credit card's
-  first payment", a number with the example `10`. Our code sends a unix time there. Check the Green
+  first payment", a number with the example `10`. Our code sends a unix time there (since #4592, of
+  the tenant's midnight, with a TODO to confirm Green Invoice reads it correctly). Check the Green
   Invoice API docs to see whether it is an amount or a date. Waits on it: GI-4.
 - **M-11 Production clocks.** Read the production server's `TZ` and the database's `TimeZone` (the
-  same open question as in the inventory). The ⚠️ server and DB-session cases depend on them in
-  different ways:
-  - some break only west of UTC (POA-1, POA-2, BOI-1, ANT-1);
-  - some break whenever the zone isn't UTC (CMC-1);
-  - some break whenever the server and DB zones differ, or the DB zone changes (OTS-1).
-- **M-12 Which zone defines the day?** This is a decision, not a payload check. When an instant
-  becomes a day, which zone should decide the day? This applies to:
-  - the Kraken and Etherscan transaction day
-  - the day a CoinMarketCap sample counts for
-  - the Deel `issued_at` used as `documents.date`
-  - the Max `debit_timestamp`
-  - the email description label
-  - "today" as a default document date
+  same open question as in the inventory). After #4592 fewer cases depend on them:
+  - the server zone: CMC-1 (crypto `timestamp` inputs and storage keys);
+  - the DB session zone: OTS-1 (keys and labels when it is east of Israel, duplicates when it
+    changes), KRK-1, ETH-1 (`event_date`), DEEL-4 (`addDeelContract`).
+- **M-12 Which zone defines the day?** When an instant becomes a day, which zone should decide it?
+  #4592 answered part of this in code with `TENANT_TIMEZONE` (`Asia/Jerusalem`, a constant meant to
+  become per-tenant later).
+  - **Now the tenant's zone:**
+    - "today" defaults (GI-4, the Deel request windows, Green Invoice's unused draft search)
+    - the Poalim securities summary label (POA-4) and the Otsar ILS keys and summary (OTS-1)
+    - the instant a day's crypto rate is sampled at (CMC-1), and Green Invoice `firstPayment`
+  - **Still decided elsewhere,** and open:
+    - the Kraken and Etherscan transaction day: the DB session, in the triggers
+    - the Deel `issued_at` used as `documents.date`: the UTC day
+    - the Max `debit_timestamp`: no zone at all
+    - the email description label: the UTC day, with a TODO at that line
+    - which sample a day's crypto rate should use: today, the last point at or before the tenant's
+      midnight that starts the day, so effectively the close of the previous day
 
-  Waits on it: CMC-1, KRK-1, ETH-1, EML-1, GI-4.
+  Waits on it: CMC-1, KRK-1, ETH-1, EML-1, DEEL-1.
 
 ## Cases
 
@@ -247,7 +302,8 @@ changes. Store any captured sample redacted, as a test fixture.
 
 #### Scrape windows: what we ask the provider for
 
-These decide which rows arrive at all. All of them run on the scraper machine.
+These decide which rows arrive at all. All of them run on the scraper machine, and #4592 changed
+none of them.
 
 - **WIN-1: UI default "from" date.** `packages/scraper-app/src/ui/screens/run.tsx:91-93` builds
   local midnight _months_ ago, then sends `toISOString().split('T')[0]`, which is the UTC day (R10).
@@ -304,31 +360,30 @@ These decide which rows arrive at all. All of them run on the scraper machine.
     Evidence: shape.
   - Path: `convertNumberDateToString` slices the digits
     (`packages/scraper-app/src/server/utils.ts:13-22`, called at
-    `packages/scraper-app/src/server/graphql/mutations.ts:450,471`). The result goes into `date`
-    columns (R1). The trigger sets both `event_date` and `debit_date` from
+    `packages/scraper-app/src/server/graphql/mutations.ts:450,471`). The server's validator passes
+    the result through `toCalendarDate`
+    (`packages/server/src/modules/scraper-ingestion/helpers/validators.helper.ts:43,51`), and it
+    goes into `date` columns (R1). The trigger sets both `event_date` and `debit_date` from
     `new.event_date::text::date`
     (`packages/migrations/src/actions/2026-07-08T17-00-00.poalim-ils-trigger-fix.ts:81-82`). ✅
   - The `formatted*` strings, `expandedEventDate` and `originalEventCreateDate` are stored as
     received and not converted.
-  - Change report:
-    - The server looks up existing rows with `new Date(eventDate)`, which is UTC midnight (R8), and
-      builds its match keys with `dateToTimelessDateString` on the same value
-      (`packages/server/src/modules/scraper-ingestion/providers/poalim-scraper-ingestion.provider.ts:1299,1337`).
-    - On a server west of UTC, the lookup asks for the previous day (R2 + R3) and the keys don't
-      match, so `changedTransactions` misses changes.
-    - Inserts are unaffected, because deduplication uses the unique index on the stored values.
-    - ⚠️ server.
+  - Change report: since #4592 the lookup and both match keys use the date strings
+    (`packages/server/src/modules/scraper-ingestion/providers/poalim-scraper-ingestion.provider.ts:1273-1275,1291,1312`),
+    so they no longer depend on the server's zone. ✅
 - **POA-2: foreign `executingDate`, `valueDate`, `validityDate`.**
   - Raw: integer `yyyymmdd`
     (`packages/modern-poalim-scraper/src/zod-schemas/hapoalim-foreign-transactions-business-schema.ts:98,113-114`,
     `packages/modern-poalim-scraper/src/zod-schemas/hapoalim-foreign-transactions-personal-schema.ts:61,73-74`).
-  - Path: the same slicing (`packages/scraper-app/src/server/graphql/mutations.ts:573,586-587`), and
-    the trigger does `::text::date`
+  - Path: the same slicing (`packages/scraper-app/src/server/graphql/mutations.ts:573,586-587`) and
+    `toCalendarDate`
+    (`packages/server/src/modules/scraper-ingestion/helpers/validators.helper.ts:108,110,129`). The
+    trigger does `::text::date`
     (`packages/migrations/src/actions/2026-07-06T17-00-00.enhance-conversion-recognition.ts:83-84`).
     ✅
-  - The change report has the same issue as POA-1
-    (`packages/server/src/modules/scraper-ingestion/providers/poalim-scraper-ingestion.provider.ts:1371,1407`).
-    ⚠️ server.
+  - The change report uses date strings too since #4592
+    (`packages/server/src/modules/scraper-ingestion/providers/poalim-scraper-ingestion.provider.ts:1345-1347,1363,1382`).
+    ✅
 - **POA-3: SWIFT `formattedStartDate`.**
   - Raw: an ISO datetime that must end in `Z` (`z.string().datetime()`,
     `packages/modern-poalim-scraper/src/zod-schemas/swift-transactions-schema.ts:23`). Evidence:
@@ -346,9 +401,9 @@ These decide which rows arrive at all. All of them run on the scraper machine.
   - Stored in `as_of_date TIMESTAMPTZ`
     (`packages/migrations/src/actions/2026-08-11T12-00-00.add-poalim-securities-table.ts:23`). ✅
     when the offset is present; 🔍 M-3.
-  - The upload summary formats it with `dateToTimelessDateString`
-    (`packages/server/src/modules/scraper-ingestion/providers/poalim-scraper-ingestion.provider.ts:1552`).
-    ⚠️ server; label only.
+  - The upload summary now shows the tenant's day of that instant, `instantToTimelessDate`
+    (`packages/server/src/modules/scraper-ingestion/providers/poalim-scraper-ingestion.provider.ts:1527`),
+    instead of the server's.
 - **POA-5: securities transaction dates**, which include `TradeDate`, `ValueDate` and
   `ExecutionDate`.
   - Raw: .NET timestamps such as `2026-08-11T00:00:00.0000000+03:00`. The schema comment records
@@ -359,11 +414,10 @@ These decide which rows arrive at all. All of them run on the scraper machine.
     Evidence: offset.
   - Stored in `date` columns, so the bank's date part is kept (R3); see
     `packages/migrations/src/actions/2026-08-14T10-00-00.poalim-securities-transactions-calendar-dates.ts`.
-  - The server compares them as strings with `toCalendarDate`
-    (`packages/server/src/modules/scraper-ingestion/providers/poalim-scraper-ingestion.provider.ts:1076-1079,1616-1618`).
+  - Since #4592 the server takes the date part itself, in the validator
+    (`packages/server/src/modules/scraper-ingestion/helpers/validators.helper.ts:233-244,308-309`),
+    and compares them as strings.
   - ✅ This is the **reference pattern** for the other cases.
-  - One inaccuracy: the comment at `:1613-1615` says a `Date` "is serialised as a UTC instant"; it
-    is actually sent as local time with an offset (R2). The conclusion it draws still holds.
 - Poalim deposits: modern-poalim-scraper has schemas for them, but scraper-app doesn't upload them.
 
 #### Isracard and Amex
@@ -415,9 +469,11 @@ These decide which rows arrive at all. All of them run on the scraper machine.
   - Raw: ISO datetimes without an offset, e.g. `2024-01-01T00:00:00`. The schema is
     `z.iso.datetime({ local: true })`, which doesn't force midnight
     (`packages/scraper-app/src/server/payload-schemas/max.schema.ts:32,95,101`).
-  - Stored in `date` columns, which keep the date part as written (R3); see
-    `packages/migrations/src/actions/2025-01-21T21-50-26.add-max-creditcard-source.ts:47,82,88`. The
-    trigger copies them into `event_date` / `debit_date`
+  - Since #4592 the server's validator keeps only the date part with `toCalendarDate`
+    (`packages/server/src/modules/scraper-ingestion/helpers/validators.helper.ts:438,488,494`). The
+    values go into `date` columns
+    (`packages/migrations/src/actions/2025-01-21T21-50-26.add-max-creditcard-source.ts:47,82,88`),
+    and the trigger copies them into `event_date` / `debit_date`
     (`packages/migrations/src/actions/2026-02-19T17-00-00.update-scraper-triggers-according-to-rls-restrictions.ts:478-479`).
   - ✅ if the time is always midnight; 🔍 M-7.
 - **MAX-2: installment purchase date.**
@@ -425,8 +481,8 @@ These decide which rows arrive at all. All of them run on the scraper machine.
     (`packages/modern-poalim-scraper/src/scrapers/max.ts:115-129`, called from `prepareTransactions`
     at `:386-391`) runs `new Date(purchaseDate)` (process-local, R8), then `addMonths`, then
     `toISOString()` (R10).
-  - The result keeps its `Z` through the payload schema and goes into the `date` column, which keeps
-    the UTC date part (R3).
+  - The result keeps its `Z` through the payload schema. The server's `toCalendarDate` keeps its
+    first ten characters, which are already the UTC day, so #4592 doesn't change the outcome.
   - Observed for `2024-01-15T00:00:00`, third installment, expected `2024-03-15`:
 
     | Scraper machine zone | Sent                       | Stored       |
@@ -461,14 +517,21 @@ These decide which rows arrive at all. All of them run on the scraper machine.
   - The trigger casts them back with `::DATE`
     (`packages/migrations/src/actions/2026-06-02T10-00-00.otsar-hahayal-fee-flagging.ts:73-74`) in
     the same session, so the day survives (R6).
-  - Check A fails on the column type, though:
-    - The unique dedup index includes both `timestamptz` values
-      (`packages/migrations/src/actions/2026-05-18T12-00-00.add-otsar-hahayal-tables.ts:55-56`). So
+  - Since #4592 the server no longer uses its own zone here:
+    - The lookup sends the raw strings, which Postgres reads the same way as on insert
+      (`packages/server/src/modules/scraper-ingestion/providers/otsar-hahayal-scraper-ingestion.provider.ts:413-417`).
+    - Incoming rows are keyed by their literal date, with `toCalendarDate` (`:499-500`).
+    - Stored rows are keyed, and the summary labelled, by the tenant's day of the stored instant,
+      with `instantToTimelessDate` (`:435-436,487`).
+  - What's left depends on the DB session zone:
+    - The two keys agree only when the session's midnight falls on the same day in Israel. Checked
+      with the repo's helpers under both `TZ=UTC` and `TZ=America/New_York`: they match for session
+      zones UTC, Jerusalem, New York and Pago Pago, and not for Tokyo or Kiritimati, where the
+      change report misses rows and the summary shows the previous day.
+    - The unique dedup index still includes both `timestamptz` values
+      (`packages/migrations/src/actions/2026-05-18T12-00-00.add-otsar-hahayal-tables.ts:55-56`), so
       a re-scrape after the DB session zone changes stores duplicates.
-    - The server's lookups and keys use `new Date(…)` in the server's zone
-      (`packages/server/src/modules/scraper-ingestion/providers/otsar-hahayal-scraper-ingestion.provider.ts:413,496-497`),
-      so the change report breaks whenever the server and DB zones differ.
-  - ⚠️ DB session, ⚠️ server.
+  - ⚠️ DB session.
 - **OTS-2: foreign `valueDate`, `date`.**
   - Raw: an Excel serial number, or a `dd/MM/yyyy` string.
   - Path: `toTimelessDate`
@@ -478,9 +541,9 @@ These decide which rows arrive at all. All of them run on the scraper machine.
     York. ⚠️ scraper machine.
   - The string path (`:40`) is ✅. The values are stored as `DATE`
     (`packages/migrations/src/actions/2026-05-18T12-00-00.add-otsar-hahayal-tables.ts:78,84`).
-  - The server's change lookups use `new Date('yyyy-mm-dd')`
-    (`packages/server/src/modules/scraper-ingestion/providers/otsar-hahayal-scraper-ingestion.provider.ts:538,600-601`).
-    ⚠️ server.
+  - The server's change lookups use `toCalendarDate` strings since #4592
+    (`packages/server/src/modules/scraper-ingestion/providers/otsar-hahayal-scraper-ingestion.provider.ts:541,603-604`).
+    ✅
 - **OTS-3: credit card `date`, `chargeDate`, and the billing-month request.**
   - Raw: `yyyy-mm-dd`
     (`packages/modern-poalim-scraper/src/scrapers/otsar-hahayal/schemas.ts:690-691`), stored as
@@ -493,13 +556,10 @@ These decide which rows arrive at all. All of them run on the scraper machine.
       That runs `new Date('yyyy-mm-01')` (R9), so in New York every month asks for the one before.
     - For 1 Jan – 31 Mar it requests November to February: **March is never fetched.** ⚠️ scraper
       machine.
-  - 🐞 The change report compares `String(Date)` with `'yyyy-mm-dd'`
-    (`packages/server/src/modules/scraper-ingestion/providers/otsar-hahayal-scraper-ingestion.provider.ts:268`,
-    `packages/server/src/modules/scraper-ingestion/helpers/utils.helper.ts:1-8`), so `charge_date`
-    always shows as changed.
-  - The change lookup uses `new Date('yyyy-mm-dd')`
-    (`packages/server/src/modules/scraper-ingestion/providers/otsar-hahayal-scraper-ingestion.provider.ts:637`).
-    ⚠️ server.
+  - The change report is fixed since #4592: the stored `charge_date` comes back as a string (R7) and
+    is compared with `toCalendarDate(t.chargeDate)`
+    (`packages/server/src/modules/scraper-ingestion/providers/otsar-hahayal-scraper-ingestion.provider.ts:269`),
+    and the lookup uses strings (`:640`). ✅
 
 #### Bank of Israel exchange rates (scraper-app)
 
@@ -510,9 +570,9 @@ These decide which rows arrive at all. All of them run on the scraper machine.
     passed as `CurrencyRateInput.exchangeDate: TimelessDate!`
     (`packages/server/src/modules/scraper-ingestion/typeDefs/scraper-ingestion.graphql.ts:593-594`),
     and stored in `exchange_rates.exchange_date date`. ✅
-  - The change report uses `new Date(r.exchangeDate)`
-    (`packages/server/src/modules/scraper-ingestion/providers/scraper-ingestion.provider.ts:532,567`).
-    ⚠️ server.
+  - The change report uses the date strings since #4592
+    (`packages/server/src/modules/scraper-ingestion/providers/scraper-ingestion.provider.ts:531,561`).
+    ✅
   - The range filter has the WIN-8 issue.
 
 ### app-providers
@@ -539,27 +599,25 @@ These decide which rows arrive at all. All of them run on the scraper machine.
 - **GI-3: `payment[].date`.** A plain string, passed through into the issuing draft
   (`DocumentDraft`, GraphQL `String`). ✅ No conversion is applied.
 - **GI-4: dates we send when issuing.** These come back to us as GI-1.
-  - The issuing inputs `date`, `dueDate` and `payment.date` are GraphQL `String`, so they are not
-    validated
+  - The issuing inputs `date`, `dueDate` and `payment.date` are still GraphQL `String`, so they are
+    not validated
     (`packages/server/src/modules/documents/typeDefs/documents-issuing.graphql.ts:54-55,87,165-166,225`).
-  - The server fills "today" in its own zone:
-    - `getDocumentDateOutOfTransactions` falls back to `dateToTimelessDateString(new Date())`
-      (`packages/server/src/modules/documents/helpers/issue-document.helper.ts:255`).
-    - `dueDate` uses `endOfMonth(new Date())`
-      (`packages/server/src/modules/documents/resolvers/documents-issuing.resolver.ts:197,352`).
-    - ⚠️ server.
-  - The client defaults a new payment row to `new Date().toISOString().split('T')[0]`
+  - Since #4592 the server's "today" is the tenant's day, `todayTimelessDate()`:
+    - the document date falls back to it when no transaction has a debit date
+      (`packages/server/src/modules/documents/helpers/issue-document.helper.ts:257`);
+    - `dueDate` is `endOfTimelessMonth(todayTimelessDate())`
+      (`packages/server/src/modules/documents/resolvers/documents-issuing.resolver.ts:198,353`).
+  - The client still defaults a new payment row to `new Date().toISOString().split('T')[0]`
     (`packages/client/src/components/common/forms/issue-document/payment-form.tsx:45`), which is the
-    UTC day (R10). ⚠️ browser.
-  - Payment dates taken from transactions use `dateToTimelessDateString(debit_date ?? event_date)`
-    on pg `date` values
-    (`packages/server/src/modules/documents/helpers/issue-document.helper.ts:132`). ✅
-  - `firstPayment` is filled with `transaction.event_date.getTime() / 1000`
-    (`packages/server/src/modules/documents/helpers/issue-document.helper.ts:93`), the unix time of
-    a server-local midnight. The schema describes the field as "Credit card's first payment", a
-    number with the example `10`
+    UTC day (R10): between 00:00 and 03:00 Israel time it is yesterday. ⚠️ browser.
+  - Payment dates taken from transactions are the stored day strings
+    (`packages/server/src/modules/documents/helpers/issue-document.helper.ts:136`). ✅
+  - `firstPayment` is filled with the unix time of the tenant's midnight on the transaction's event
+    date, `timelessDateToTenantInstant(event_date).getTime() / 1000`
+    (`packages/server/src/modules/documents/helpers/issue-document.helper.ts:97`), next to a TODO
+    asking to confirm Green Invoice reads it correctly. The schema describes the field as "Credit
+    card's first payment", a number with the example `10`
     (`packages/green-invoice-graphql/json-schemas/greenInvoice.json:2541-2545`). 🔍 M-10.
-  - Which zone "today" should be is part of M-12.
 
 #### Deel
 
@@ -572,9 +630,9 @@ These decide which rows arrive at all. All of them run on the scraper machine.
       `Tue, 24 May 2022 16:38:46 GMT`. Postgres reads that correctly.
     - It goes into `deel_invoices.issued_at timestamptz`
       (`packages/migrations/src/actions/2025-03-19T12-05-43.deel-api-tables.ts:21`).
-    - It also goes, as the same string, into `documents.date`
-      (`packages/server/src/modules/deel/helpers/deel.helper.ts:197`), which keeps its UTC date part
-      (R3).
+    - The document gets the UTC day of that shifted instant, now written out explicitly as
+      `utcDateToTimelessDate(new Date(match.issued_at))`
+      (`packages/server/src/modules/deel/helpers/deel.helper.ts:205`). Same result as before #4592.
   - 🔍 M-8. ⚠️ The fixed offset ignores daylight-saving time; see M-8.
 - **DEEL-2: `due_date`.** Same path
   (`packages/server/src/modules/app-providers/deel/schemas.ts:22-23`,
@@ -583,7 +641,7 @@ These decide which rows arrive at all. All of them run on the scraper machine.
   a `NOT NULL timestamptz` column.
 - **DEEL-3: `created_at`, `paid_at`, `approve_date`.**
   - Stored as sent in `timestamptz`
-    (`packages/server/src/modules/deel/helpers/deel.helper.ts:249,261,278`). 🔍 M-8.
+    (`packages/server/src/modules/deel/helpers/deel.helper.ts:257,269,286`). 🔍 M-8.
   - 🐞 `paid_at` may be `''` (`packages/server/src/modules/app-providers/deel/schemas.ts:74-75`) and
     is not turned into null, so Postgres rejects it for the `NOT NULL` column
     (`packages/migrations/src/actions/2025-03-19T12-05-43.deel-api-tables.ts:23`).
@@ -600,17 +658,12 @@ These decide which rows arrive at all. All of them run on the scraper machine.
 - **DEEL-5: receipt `timezone`** ("Timezone offset in ISO 8601 format",
   `packages/server/src/modules/app-providers/deel/schemas.ts:332-335`). Parsed but not used. It is
   the best available hint for M-8.
-- **DEEL-6: invoice lookup.**
-  - `getDeelEmployeeId` queries invoices between the local `startOfDay` / `endOfDay` of the
-    document's date.
-  - It then compares `dateToTimelessDateString(r.issued_at)` (the server-local day) with that date
-    (`packages/server/src/modules/deel/helpers/deel.helper.ts:64,67`), which is the UTC day from
-    DEEL-1.
-  - ⚠️ server.
-- The outbound windows `date_from`, `date_to` and `issued_from_date` are computed from "today" in
-  the server's zone (today, and a year before it)
-  (`packages/server/src/modules/app-providers/deel/deel-client.provider.ts:63-64,142`). ⚠️ server;
-  only the edge days are affected.
+- **DEEL-6: invoice lookup.** Since #4592 `getDeelEmployeeId` queries the UTC day of the document's
+  date and compares `utcDateToTimelessDate(r.issued_at)` with it
+  (`packages/server/src/modules/deel/helpers/deel.helper.ts:67-74`), the same UTC day DEEL-1 stores.
+  ✅
+- The outbound windows `date_from`, `date_to` and `issued_from_date` now come from the tenant's
+  "today" (`packages/server/src/modules/app-providers/deel/deel-client.provider.ts:63-64,142`). ✅
 
 #### Hashavshevet
 
@@ -624,19 +677,19 @@ These decide which rows arrive at all. All of them run on the scraper machine.
 #### Anthropic (OCR)
 
 - **ANT-1: `date` extracted from a document.**
-  - Raw: whatever the model returns, checked only against `^\d{4}-\d{2}-\d{2}$`
+  - Raw: whatever the model returns, checked against `^\d{4}-\d{2}-\d{2}$`
     (`packages/server/src/modules/app-providers/anthropic.ts:59-65`). Evidence: none, but the value
     is meant as a day.
-  - Path: `validateDate` does `new Date(value)`, which is UTC midnight (R8)
-    (`packages/server/src/modules/documents/helpers/upload.helper.ts:132-136,165`). The `Date` is
-    then sent into `documents.date` (`:266`), which stores the process-local day (R2 + R3).
-  - Observed: `2024-01-15` is stored as `2024-01-15` in UTC, Jerusalem and Tokyo, and as
-    `2024-01-14` in New York. ⚠️ server.
-  - 🐞 `new Date('2026-02-30')` gives 2 March instead of failing, so an impossible date is moved
-    rather than rejected.
+  - Since #4592, `validateDate` keeps the string and checks it with `TIMELESS_DATE_REGEX`, which
+    also rejects days that don't exist
+    (`packages/server/src/modules/documents/helpers/upload.helper.ts:134-137,166`). The string goes
+    into `documents.date` (`:267`, R1).
+  - So the stored day no longer depends on the server's zone, and `2026-02-30` is dropped instead of
+    becoming 2 March. #4592 added tests for both
+    (`packages/server/src/modules/documents/helpers/upload.helper.test.ts:129-150`). ✅
   - The same path serves file uploads
-    (`packages/server/src/modules/documents/resolvers/documents.resolver.ts:112,149`), imports from
-    URLs and Google Drive (`:193,305`), and email ingestion
+    (`packages/server/src/modules/documents/resolvers/documents.resolver.ts:122,159`), imports from
+    URLs and Google Drive (`:203,315`), and email ingestion
     (`packages/server/src/modules/email-ingestion/providers/email-ingestion-ingest.provider.ts:620,772`).
 
 #### CoinMarketCap ("coinbase")
@@ -647,19 +700,24 @@ These decide which rows arrive at all. All of them run on the scraper machine.
   - Request window: `to = date.getTime() / 1000` and `from = to − 23h`
     (`packages/server/src/modules/exchange-rates/providers/crypto-exchange.provider.ts:100-102`).
     The last point at or before `to` is used.
-  - The callers' `date` differs in kind:
-    - the exchange-rate resolver passes `new Date(timelessDate)`, which is UTC midnight
-      (`packages/server/src/modules/exchange-rates/resolvers/exchange.resolver.ts:50,62,74`);
-    - ledger generation passes pg `date` values, which are local midnight, e.g.
-      `packages/server/src/modules/ledger/helpers/common-charge-ledger.helper.ts:109`.
-  - In Jerusalem those two windows are two hours apart, so the same calendar day can get different
-    samples.
+  - The instant passed in, since #4592
+    (`packages/server/src/modules/exchange-rates/providers/exchange.provider.ts:46-47`):
+    - A **day** becomes the tenant's midnight that starts it. The exchange-rate resolver
+      (`packages/server/src/modules/exchange-rates/resolvers/exchange.resolver.ts:50,62,74`) and
+      ledger generation for documents
+      (`packages/server/src/modules/ledger/helpers/common-charge-ledger.helper.ts:111`) now both
+      pass days, so they get the same window. Before #4592 they were two hours apart in Jerusalem.
+    - A **`timestamp` value** is used as node-pg reads it, in the server's zone (R7). Ledger
+      generation passes `debit_timestamp` when a transaction has one
+      (`packages/server/src/modules/ledger/helpers/utils.helper.ts:59`), which is the case for the
+      crypto rows of KRK-1 and ETH-1, whose wall-clock time the DB session wrote.
   - Storage: the rate is stored with `date` and `sample_date` as `timestamp` without time zone
     (`packages/migrations/src/actions/2024-01-29T13-15-23.initial.ts:778,784`), so it keeps the
     server-local wall-clock time (R2 + R4). It is looked up by exact `date = $date` and cached by
     `date.getTime()`
     (`packages/server/src/modules/exchange-rates/providers/crypto-exchange.provider.ts:19-23,183-184`).
-  - ⚠️ server. Which day a sample belongs to is part of M-12.
+  - ⚠️ server, and the DB session for `debit_timestamp`. Which sample a day should use is part of
+    M-12.
 
 #### Google Drive and Cloudinary
 
@@ -668,6 +726,8 @@ No date fields. Drive is asked for `id,name,mimeType,kind`
 folder listing uses the default fields. Documents fetched from Drive go through ANT-1.
 
 ### Other sources
+
+#4592 changed none of these.
 
 - **KRK-1: Kraken** (a standalone scraper that writes straight to the DB).
   - Raw: unix time. It is converted in SQL with `to_timestamp($n)`
@@ -702,8 +762,9 @@ folder listing uses the default fields. Documents fetched from Drive go through 
   - `receivedAt` is set by our own Cloudflare worker as `new Date().toISOString()`
     (`packages/email-ingestion-gateway/src/worker.ts:251`) and forwarded as a string. ✅
   - It is only used in the charge description, formatted with `timeZone: 'UTC'`
-    (`packages/server/src/modules/email-ingestion/providers/email-ingestion-ingest.provider.ts:195-210`),
-    so the label shows the UTC day. M-12.
+    (`packages/server/src/modules/email-ingestion/providers/email-ingestion-ingest.provider.ts:198-210`),
+    so the label shows the UTC day. That line now carries a TODO about tenant-localized dates, and
+    #4592 added `getTenantTimeZone()` for exactly this kind of call; the choice is still M-12.
   - Document dates from email come from ANT-1.
   - The `Date:` line of forwarded messages is parsed but deliberately not sent
     (`packages/email-ingestion-gateway/src/server-client.ts:87-90`).
@@ -722,36 +783,37 @@ folder listing uses the default fields. Documents fetched from Drive go through 
 
 ## Test plan
 
-Nothing here is implemented yet. It describes the tests each fix should land with, and the setup
-they need.
+Nothing here is implemented yet, except where a case notes a test #4592 added. It describes the
+tests each remaining fix should land with, and the setup they need.
 
 ### 1. Run the same tests in several timezones
 
-- Add four projects to the root `vitest.config.ts`: `tz-utc`, `tz-jerusalem`, `tz-new-york` and
-  `tz-tokyo`.
-  - Each sets `test.env: { TZ: … }` and `include: ['packages/**/*.tz.test.ts']`.
-  - None of them gets a `globalSetup`, so they run without a database, like the `client` project.
-  - Exclude `**/*.tz.test.ts` from `unit`, so these tests don't also run in the host zone.
-- Add a guard test that fails when the zone didn't apply:
-  - `Intl.DateTimeFormat().resolvedOptions().timeZone` must match the project.
-  - The January / July `getTimezoneOffset()` values must be `0/0` (UTC), `-120/-180` (Jerusalem),
-    `300/240` (New York) and `-540/-540` (Tokyo).
-  - If `test.env` turns out to apply too late, set `process.env.TZ` at the top of a per-project
-    setup file instead. The guard shows which one works.
-- Scripts and CI:
-  - Add `test:tz` (`vitest run --project 'tz-*'`), and add the projects to `test` and
-    `test:integration`.
-  - CI picks them up on PRs through `yarn test:integration`
-    (`.github/workflows/server-tests.yml:167`). The push-to-main command lists its projects
-    explicitly (`:181`), so they have to be added there.
-- Optional: add the extremes `Pacific/Kiritimati` (+14) and `Pacific/Pago_Pago` (−11). They catch
-  code that only breaks more than three hours away from UTC.
+#4592 added the building blocks in `packages/server/src/__tests__/helpers/timezones.ts`:
+
+- `TEST_TIMEZONES` (`:12-19`): `UTC`, `Asia/Jerusalem`, `America/New_York`, `Asia/Tokyo`,
+  `Pacific/Kiritimati` and `Pacific/Pago_Pago`.
+- `useTimezone(zone)` (`:42`) sets `process.env.TZ` for one `describe` block, and
+  `withTimezone(zone, fn)` (`:29`) for one call. Node re-reads `TZ` whenever it is assigned, so this
+  works inside one process.
+- The pattern, as in `packages/server/src/__tests__/timeless-dates.integration.test.ts:515-516`:
+  `describe.each(TEST_TIMEZONES)('… TZ=%s', timeZone => { useTimezone(timeZone); … })`.
+
+How to use them for the intake tests:
+
+- Server-side cases (scraper ingestion, Green Invoice, Deel, OCR, CoinMarketCap): use the helpers as
+  they are.
+- scraper-app and modern-poalim-scraper can't import the server's test helpers. Copy the helper, or
+  move it to a shared test location.
+- The helpers only switch the process zone. The DB session zone needs `SET TIME ZONE` on the
+  connection (section 3).
+- This replaces the earlier idea of one vitest project per zone.
 
 ### 2. How to write the expectations
 
 - **⚠️ cases:** the expected value is the same in every zone, e.g. "the stored day is the day the
   provider sent". That needs no assumption about the source. The test fails in the zones where our
   code shifts the value today, and passes after the fix.
+- **Cases fixed by #4592:** the same kind of test, which should pass today, as a regression guard.
 - **🔍 cases:** no test until the manual check is done. Then store the redacted sample as a fixture
   and take the expected value from it. The existing scraper tests use synthetic fixtures only; keep
   that rule for anything not captured this way.
@@ -764,19 +826,23 @@ they need.
 ### 3. Database rules and triggers
 
 - **Rules:** add one integration test that runs the R1, R3–R6 and R11 probes from the appendix under
-  `SET TIME ZONE` for each of the four zones.
-- **Triggers:** every scraper-ingestion integration test disables triggers today:
+  `SET TIME ZONE` for each zone in `TEST_TIMEZONES`.
+- **Triggers:** every scraper-ingestion integration test still disables triggers:
   - `packages/server/src/modules/scraper-ingestion/providers/__tests__/poalim-scraper-ingestion.integration.test.ts:111`
   - `packages/server/src/modules/scraper-ingestion/providers/__tests__/isracard-amex-scraper-ingestion.integration.test.ts:52`
   - `packages/server/src/modules/scraper-ingestion/providers/__tests__/otsar-hahayal-scraper-ingestion.integration.test.ts:52`
-  - `packages/server/src/modules/scraper-ingestion/providers/__tests__/scraper-ingestion.integration.test.ts:66`
+  - `packages/server/src/modules/scraper-ingestion/providers/__tests__/scraper-ingestion.integration.test.ts:67`
 
   So none of the raw-row → `transactions` date conversions is covered. Add tests with triggers
   enabled that insert one raw row per source and check `transactions.event_date`, `debit_date` and
   `debit_timestamp`, under each session zone.
 
-- **Node side:** R2 and R7 need the integration project run once under a non-UTC `TZ`, e.g.
-  `TZ=America/New_York yarn test:integration` in a nightly job, because it needs Postgres.
+- **Node side:** combine the process-zone helpers from section 1 with these DB tests, so the
+  server's reads (R7) and the session's casts are covered together.
+- **Not covered by #4592's end-to-end test:** it checks charges, transactions, documents, ledger
+  records, filters, mutations, the VAT report and the admin context
+  (`packages/server/src/__tests__/timeless-dates.integration.test.ts`), but no provider intake. The
+  intake tests below can join it, or follow its pattern.
 
 ### 4. Existing tests that already depend on the host zone
 
@@ -785,49 +851,52 @@ they need.
   `packages/scraper-app/src/server/scrapers/__tests__/amex.test.ts:62-66`).
   - They all pass under `TZ=UTC`. Under `TZ=America/New_York`, 4 of their 14 tests fail, because the
     scrapers fetch an extra December 2023 (WIN-3). For example, Amex fails with
-    `expected "vi.fn()" to be called 3 times, but got 4 times`.
+    `expected "vi.fn()" to be called 3 times, but got 4 times`. #4592's notes record the same:
+    scraper-app's tests are timezone-dependent, and that package is unchanged.
   - Command:
     `TZ=America/New_York yarn vitest run --config vitest.config.ts src/server/scrapers/__tests__/isracard.test.ts src/server/scrapers/__tests__/amex.test.ts`,
     run from `packages/scraper-app`.
 - `packages/server/src/shared/helpers/__tests__/misc.test.ts:14` is titled "regardless of timezone",
   but it only runs in the host zone.
 
-Moving these into the matrix unchanged makes them show the bug instead of hiding it.
+Moving these under `TEST_TIMEZONES` unchanged makes them show the bug instead of hiding it.
 
 ### 5. Per-case tests
 
 "Module-private" means the function would need an `export`, or to move into a helper, before it can
 be tested directly.
 
-| Test      | Case         | Level                                           | Blocked by                               | What it asserts                                                                                                                 |
-| --------- | ------------ | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| T-WIN-3   | WIN-3        | unit, mocked scraper (as in `isracard.test.ts`) | `buildMonthList` is module-private       | The same month list in every zone, for ranges that end on the 1st and on the last day.                                          |
-| T-WIN-7   | WIN-7        | unit, mocked page                               | —                                        | The Otsar `startDate` / `endDate` request strings for 1 Jan – 31 Mar.                                                           |
-| T-WIN-4/5 | WIN-4, WIN-5 | unit, fake timers                               | —                                        | The Poalim window at 00:30 Israel time, and the securities `ddMMyyyy` strings.                                                  |
-| T-POA-1   | POA-1, POA-2 | unit, plus integration under New York           | —                                        | `convertNumberDateToString`, and the change report finding an existing row.                                                     |
-| T-POA-5   | POA-5        | unit                                            | `toCalendarDate` is module-private       | Keeps the date part, and leaves `0001-01-01…` untouched.                                                                        |
-| T-ISR-1   | ISR-1        | trigger integration                             | M-4, for the expectation on `dd/mm/yy`   | `dd/mm/yyyy` gives the day.                                                                                                     |
-| T-CAL-1   | CAL-1        | trigger integration                             | M-5                                      | The real raw shape gives the day.                                                                                               |
-| T-DSC-1   | DSC-1        | trigger integration                             | M-6                                      | As T-CAL-1.                                                                                                                     |
-| T-MAX-2   | MAX-2        | unit                                            | `fixInstallments` is module-private      | `2024-01-15T00:00:00`, third installment, gives `2024-03-15` in every zone. Also covers month ends (31 Jan + 1) and DST months. |
-| T-OTS-1   | OTS-1        | trigger integration, all session zones          | —                                        | `2024-01-15T00:00:00` gives day 15. A second upload under another session zone does not duplicate.                              |
-| T-OTS-2   | OTS-2        | unit                                            | `toTimelessDate` is module-private       | Serial `45306` and `15/01/2024` both give `2024-01-15`.                                                                         |
-| T-OTS-3   | OTS-3        | unit, mocked `page.evaluate`                    | —                                        | Month `2024-01-01` requests `2024-01-01`. `charge_date` is not reported as changed.                                             |
-| T-BOI-1   | BOI-1        | integration under New York                      | —                                        | The change report finds the existing rate.                                                                                      |
-| T-GI-1    | GI-1         | unit                                            | —                                        | The Mesh `Date` scalar keeps `2024-01-15`, and the document row gets `2024-01-15`.                                              |
-| T-GI-4    | GI-4         | unit, fake timers                               | M-10, M-12                               | The "today" defaults at 23:30 and at 00:30 Israel time.                                                                         |
-| T-DEEL    | DEEL-1 to 4  | unit, mocked fetch                              | M-8                                      | The sample's instants and days, plus empty `due_date` / `paid_at`.                                                              |
-| T-ANT-1   | ANT-1        | unit                                            | `validateDate` lives inside `getOcrData` | `2024-01-15` is stored as `2024-01-15`, and `2026-02-30` is rejected.                                                           |
-| T-CMC-1   | CMC-1        | unit, mocked CoinMarketCap                      | M-12                                     | Both caller styles use one window and one stored key for the same day.                                                          |
-| T-KRK/ETH | KRK-1, ETH-1 | integration                                     | M-12                                     | The transaction day of a trade made between 22:00 and 00:00 UTC.                                                                |
-| T-ETA-1   | ETA-1        | unit                                            | M-9                                      | The real CSV value gives the right day.                                                                                         |
-| T-EML-1   | EML-1        | unit                                            | M-12                                     | The day in the description label.                                                                                               |
+| Test      | Case         | Level                                           | Blocked by                             | What it asserts                                                                                                                          | Today                             |
+| --------- | ------------ | ----------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| T-WIN-3   | WIN-3        | unit, mocked scraper (as in `isracard.test.ts`) | `buildMonthList` is module-private     | The same month list in every zone, for ranges that end on the 1st and on the last day.                                                   | fails west of UTC                 |
+| T-WIN-7   | WIN-7        | unit, mocked page                               | —                                      | The Otsar `startDate` / `endDate` request strings for 1 Jan – 31 Mar.                                                                    | fails west of UTC                 |
+| T-WIN-4/5 | WIN-4, WIN-5 | unit, fake timers                               | —                                      | The Poalim window at 00:30 Israel time, and the securities `ddMMyyyy` strings.                                                           | fails                             |
+| T-POA-1   | POA-1, POA-2 | unit, plus integration under every zone         | —                                      | `convertNumberDateToString`, and the change report finding an existing row.                                                              | should pass (#4592)               |
+| T-POA-5   | POA-5        | unit                                            | —                                      | `toCalendarDate` keeps the date part, and leaves `0001-01-01…` untouched. It is exported since #4592.                                    | should pass                       |
+| T-ISR-1   | ISR-1        | trigger integration                             | M-4, for the expectation on `dd/mm/yy` | `dd/mm/yyyy` gives the day.                                                                                                              | passes for `dd/mm/yyyy`           |
+| T-CAL-1   | CAL-1        | trigger integration                             | M-5                                    | The real raw shape gives the day.                                                                                                        | unknown                           |
+| T-DSC-1   | DSC-1        | trigger integration                             | M-6                                    | As T-CAL-1.                                                                                                                              | unknown                           |
+| T-MAX-2   | MAX-2        | unit                                            | `fixInstallments` is module-private    | `2024-01-15T00:00:00`, third installment, gives `2024-03-15` in every zone. Also covers month ends (31 Jan + 1) and DST months.          | fails east of UTC                 |
+| T-OTS-1   | OTS-1        | trigger integration, every session zone         | —                                      | `2024-01-15T00:00:00` gives day 15, the change report finds the row, and a second upload under another session zone does not duplicate.  | fails for sessions east of Israel |
+| T-OTS-2   | OTS-2        | unit                                            | `toTimelessDate` is module-private     | Serial `45306` and `15/01/2024` both give `2024-01-15`.                                                                                  | fails west of UTC                 |
+| T-OTS-3   | OTS-3        | unit, mocked `page.evaluate`                    | —                                      | Month `2024-01-01` requests `2024-01-01`. `charge_date` is not reported as changed.                                                      | month request fails west of UTC   |
+| T-BOI-1   | BOI-1        | integration under every zone                    | —                                      | The change report finds the existing rate.                                                                                               | should pass (#4592)               |
+| T-GI-1    | GI-1         | unit                                            | —                                      | The Mesh `Date` scalar keeps `2024-01-15`, and the document row gets `2024-01-15`.                                                       | should pass                       |
+| T-GI-4    | GI-4         | unit, fake timers                               | M-10, for `firstPayment`               | The server's "today" defaults are the tenant's day at 23:30 and at 00:30 Israel time, in every process zone. The client default as well. | server passes; client fails       |
+| T-DEEL    | DEEL-1 to 4  | unit, mocked fetch                              | M-8                                    | The sample's instants and days, plus empty `due_date` / `paid_at`.                                                                       | blocked                           |
+| T-DEEL-6  | DEEL-6       | integration under every zone                    | —                                      | The document finds its invoice.                                                                                                          | should pass (#4592)               |
+| T-ANT-1   | ANT-1        | unit                                            | —                                      | Covered by `upload.helper.test.ts` (#4592). Can move under `TEST_TIMEZONES`.                                                             | passes                            |
+| T-CMC-1   | CMC-1        | unit, mocked CoinMarketCap                      | M-12, for `timestamp` inputs           | A day gives the same window and stored key in every process zone.                                                                        | day inputs should pass            |
+| T-KRK/ETH | KRK-1, ETH-1 | integration                                     | M-12                                   | The transaction day of a trade made between 22:00 and 00:00 UTC.                                                                         | blocked                           |
+| T-ETA-1   | ETA-1        | unit                                            | M-9                                    | The real CSV value gives the right day.                                                                                                  | blocked                           |
+| T-EML-1   | EML-1        | unit                                            | M-12                                   | The day in the description label.                                                                                                        | blocked                           |
 
 ### 6. Order
 
 Start with the P1 cases: MAX-2 and OTS-3, which store wrong or missing data from ordinary machines,
-and M-5 / M-6, since Cal or Discount rows may be rejected today. M-1 and M-11 decide how much the ⚠️
-cases matter in practice, so they are worth doing early too.
+and M-5 / M-6, since Cal or Discount rows may be rejected today. All three are in packages #4592 did
+not touch. M-1 and M-11 decide how much the remaining ⚠️ cases matter in practice, so they are worth
+doing early too.
 
 ## Related findings outside intake
 
@@ -839,10 +908,7 @@ These don't involve dates arriving from a provider, so they belong to the invent
 - The uniform-format generator combines `toISOString()` for the date with `toTimeString()` for the
   time (`packages/shaam-uniform-format-generator/src/api/generate-report.ts:108-109`), mixing UTC
   and local time.
-- `entryDate` formats `created_at` in the server's zone
-  (`packages/server/src/modules/reports/helpers/uniform-format.helper.ts:97`).
-- The fiat exchange-rate helpers parse `new Date(timelessDate)`
-  (`packages/server/src/modules/exchange-rates/helpers/exchange.helper.ts:97,120`).
+- Fixed by #4592: the fiat exchange-rate helpers no longer parse `new Date(timelessDate)`.
 
 ## Appendix: probes
 
@@ -879,3 +945,8 @@ console.log(format(startOfMonth('2024-01-01'), 'yyyy-MM-dd')) // R9, OTS-3
 console.log(addMonths(new Date('2024-01-15T00:00:00'), 2).toISOString()) // MAX-2
 console.log(format(new Date((45306 - 25_569) * 86_400_000), 'yyyy-MM-dd')) // OTS-2
 ```
+
+OTS-1 keys: run `TZ=<zone> yarn tsx <script>` from the repo root, with a script that calls
+`timelessDateToTenantInstant('2024-01-15', dbZone)` (midnight in the DB session zone) and then
+`instantToTimelessDate` on the result (the tenant's day), from
+`packages/server/src/shared/helpers/tenant-timezone.ts`.
