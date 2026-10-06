@@ -94,7 +94,7 @@ export async function getPaymentsFromTransactions(
             cardNum: account.account_number,
             numPayments: 1,
             // assuming first payment is the transaction date (Unix seconds, at the tenant's midnight)
-            firstPayment: timelessDateToTenantInstant(transaction.event_date).getTime() / 1000,
+            firstPayment: timelessDateToTenantInstant(transaction.event_date).getTime() / 1000, // TODO: make sure Green Invoice uses this timestamp correctly, add some tests to validate our side
           };
           break;
         case 'WIRE_TRANSFER':
