@@ -49,6 +49,12 @@ export interface LedgerProto {
   invoiceDate: TimelessDateString;
   reference?: string;
   valueDate: TimelessDateString;
+  /**
+   * What the local amounts were priced at, when that is finer than `valueDate`: crypto rows are
+   * priced at their exact debit time. Never stored; it tells apart same-day entries that may carry
+   * different exchange rates (see `exchangeRatePointKey`).
+   */
+  exchangeRateDate?: TimelessDateString | Date;
   currency: Currency;
   isCreditorCounterparty: boolean;
   isCreditInvoice?: boolean;

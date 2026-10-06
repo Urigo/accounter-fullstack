@@ -56,6 +56,7 @@ export async function generateMiscExpensesLedger(
       description: expense.description ?? undefined,
       // `misc_expenses.value_date` is a `timestamp`; the ledger keeps the day it falls on
       valueDate: dateToTimelessDateString(expense.value_date),
+      exchangeRateDate: expense.value_date,
       invoiceDate: expense.invoice_date,
       isCreditorCounterparty: true,
     };

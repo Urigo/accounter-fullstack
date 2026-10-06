@@ -107,6 +107,7 @@ export async function getEntriesFromFeeTransaction(
     id: transaction.id,
     invoiceDate: transaction.event_date,
     valueDate,
+    exchangeRateDate,
     currency,
     creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
     localCurrencyCreditAmount1: Math.abs(amount),

@@ -5,7 +5,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import { maxTimelessDate } from '../../../../shared/helpers/index.js';
-import type { LedgerProto, TimelessDateString } from '../../../../shared/types/index.js';
+import type { LedgerProto } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -17,6 +17,7 @@ import {
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
 import {
+  exchangeRatePointKey,
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
   isTransactionsOppositeSign,
@@ -46,7 +47,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     // validate ledger records are balanced
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
-    const dates = new Set<TimelessDateString>();
+    const dates = new Set<string>();
     const currencies = new Set<currency>();
 
     // generate ledger from transactions
@@ -110,6 +111,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
           id: transaction.id,
           invoiceDate: transaction.event_date,
           valueDate,
+          exchangeRateDate,
           currency,
           ...(isCreditorCounterparty
             ? {
@@ -132,7 +134,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
         mainFinancialAccountLedgerEntries.push(ledgerEntry);
         updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-        dates.add(valueDate);
+        dates.add(exchangeRatePointKey(ledgerEntry));
         currencies.add(currency);
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -169,7 +171,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
           updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
-          dates.add(ledgerEntry.valueDate);
+          dates.add(exchangeRatePointKey(ledgerEntry));
           currencies.add(ledgerEntry.currency);
         });
       } catch (e) {
@@ -187,7 +189,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
         updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
-        dates.add(entry.valueDate);
+        dates.add(exchangeRatePointKey(entry));
         currencies.add(entry.currency);
       });
     });

@@ -277,6 +277,7 @@ export async function ledgerEntryFromMainTransaction(
     id: transaction.id,
     invoiceDate: transaction.event_date,
     valueDate,
+    exchangeRateDate,
     currency,
     creditAccountID1: isCreditorCounterparty ? mainAccountId : accountTaxCategoryId,
     creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
