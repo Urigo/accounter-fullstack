@@ -49,7 +49,7 @@ function run(client: UpstreamGraphQLClient, auth: McpAuthContext, rawArgs: unkno
   });
 }
 
-const amount = (raw: number) => ({ raw, formatted: `₪${raw}`, currency: 'ILS' });
+const amount = (raw: number) => ({ raw, currency: 'ILS' });
 
 function record(id: string) {
   return {
@@ -97,14 +97,14 @@ describe('getLedgerRecordsTool — successful read', () => {
         reference: 'ref-1',
         debit1: {
           account: { id: 'fe1', name: 'Expenses' },
-          amount: { value: 12.5, formatted: '₪12.5', currency: 'ILS' },
-          localCurrencyAmount: { value: 12.5, formatted: '₪12.5', currency: 'ILS' },
+          amount: { value: 12.5, currency: 'ILS' },
+          localCurrencyAmount: { value: 12.5, currency: 'ILS' },
         },
         debit2: { account: null, amount: null, localCurrencyAmount: null },
         credit1: {
           account: { id: 'fe2', name: 'Bank' },
-          amount: { value: 12.5, formatted: '₪12.5', currency: 'ILS' },
-          localCurrencyAmount: { value: 12.5, formatted: '₪12.5', currency: 'ILS' },
+          amount: { value: 12.5, currency: 'ILS' },
+          localCurrencyAmount: { value: 12.5, currency: 'ILS' },
         },
         credit2: { account: null, amount: null, localCurrencyAmount: null },
       },

@@ -400,7 +400,7 @@ describe('echoed effective scope', () => {
             date: '2026-01-05',
             isFee: false,
             description: 'x',
-            amount: { raw: 10, formatted: '10', currency: 'ILS' },
+            amount: { raw: 10, currency: 'ILS' },
           },
         ],
       }),

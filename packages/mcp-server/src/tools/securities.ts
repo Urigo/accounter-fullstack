@@ -103,17 +103,14 @@ const LIST_SECURITY_HOLDINGS_QUERY = /* GraphQL */ `
         quantity
         averageCost {
           raw
-          formatted
           currency
         }
         totalBought {
           raw
-          formatted
           currency
         }
         totalSold {
           raw
-          formatted
           currency
         }
         historyStartDate
@@ -428,17 +425,14 @@ const GET_SECURITY_EXECUTIONS_QUERY = /* GraphQL */ `
           tradePrice
           netValue {
             raw
-            formatted
             currency
           }
           tradeCommission {
             raw
-            formatted
             currency
           }
           israelTaxValue {
             raw
-            formatted
             currency
           }
         }

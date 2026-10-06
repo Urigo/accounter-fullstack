@@ -71,15 +71,15 @@ describe('one money shape, across every tool that emits money', () => {
    */
   // Declared in emission order, and compared in order: the mirrored `content`
   // block is `JSON.stringify(structuredContent)`, so key order is a real
-  // property of what the model reads, not just an implementation detail. The
-  // changeset claims the emitted JSON is unchanged — this is what backs it.
-  const MONEY_KEYS = ['value', 'formatted', 'currency'];
+  // property of what the model reads, not just an implementation detail.
+  // `formatted` is deliberately absent: it is derivable from these two (#4627).
+  const MONEY_KEYS = ['value', 'currency'];
 
   it('normalizeAmount defines exactly the expected keys', () => {
-    const amount = normalizeAmount({ raw: -180, formatted: '-180.00', currency: 'ILS' });
+    const amount = normalizeAmount({ raw: -180, currency: 'ILS' });
 
     expect(Object.keys(amount!)).toEqual(MONEY_KEYS);
-    expect(amount).toEqual({ value: -180, formatted: '-180.00', currency: 'ILS' });
+    expect(amount).toEqual({ value: -180, currency: 'ILS' });
   });
 
   it('maps a missing amount to null rather than an empty object', () => {
@@ -102,7 +102,7 @@ describe('one money shape, across every tool that emits money', () => {
               ownerId: 'b1',
               userDescription: 'x',
               owner: { id: 'b1', name: 'Acme' },
-              totalAmount: { raw: -180, formatted: '-180.00', currency: 'ILS' },
+              totalAmount: { raw: -180, currency: 'ILS' },
               minEventDate: '2026-03-11',
             },
           ],
@@ -113,7 +113,7 @@ describe('one money shape, across every tool that emits money', () => {
 
     const [charge] = (result.structuredContent as { charges: Array<{ amount: object }> }).charges;
     expect(Object.keys(charge!.amount)).toEqual(MONEY_KEYS);
-    expect(charge!.amount).toEqual({ value: -180, formatted: '-180.00', currency: 'ILS' });
+    expect(charge!.amount).toEqual({ value: -180, currency: 'ILS' });
   });
 
   it('balance_report emits the shared shape', async () => {
@@ -131,7 +131,7 @@ describe('one money shape, across every tool that emits money', () => {
             date: '2026-01-05',
             isFee: false,
             description: 'x',
-            amount: { raw: 10, formatted: '10.00', currency: 'ILS' },
+            amount: { raw: 10, currency: 'ILS' },
           },
         ],
       }),
@@ -139,7 +139,7 @@ describe('one money shape, across every tool that emits money', () => {
 
     const [row] = (result.structuredContent as { rows: Array<{ amount: object }> }).rows;
     expect(Object.keys(row!.amount)).toEqual(MONEY_KEYS);
-    expect(row!.amount).toEqual({ value: 10, formatted: '10.00', currency: 'ILS' });
+    expect(row!.amount).toEqual({ value: 10, currency: 'ILS' });
   });
 
   it('vat_report emits the shared shape, on rows and on the summary', async () => {

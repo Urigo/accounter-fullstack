@@ -103,42 +103,34 @@ const GET_LEDGER_RECORDS_QUERY = /* GraphQL */ `
       reference
       debitAmount1 {
         raw
-        formatted
         currency
       }
       debitAmount2 {
         raw
-        formatted
         currency
       }
       creditAmount1 {
         raw
-        formatted
         currency
       }
       creditAmount2 {
         raw
-        formatted
         currency
       }
       localCurrencyDebitAmount1 {
         raw
-        formatted
         currency
       }
       localCurrencyDebitAmount2 {
         raw
-        formatted
         currency
       }
       localCurrencyCreditAmount1 {
         raw
-        formatted
         currency
       }
       localCurrencyCreditAmount2 {
         raw
-        formatted
         currency
       }
       debitAccount1 {

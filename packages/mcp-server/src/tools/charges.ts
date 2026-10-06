@@ -116,7 +116,6 @@ const SEARCH_CHARGES_QUERY = /* GraphQL */ `
         }
         totalAmount {
           raw
-          formatted
           currency
         }
         minEventDate

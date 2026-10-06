@@ -70,7 +70,6 @@ const GET_CONTRACTS_QUERY = /* GraphQL */ `
       remarks
       amount {
         raw
-        formatted
         currency
       }
       client {

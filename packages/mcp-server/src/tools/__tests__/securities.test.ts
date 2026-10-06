@@ -56,7 +56,6 @@ const runTool = (tool: ToolDefinition<any>, client: UpstreamGraphQLClient, rawAr
 
 const amount = (raw: number, currency: string) => ({
   raw,
-  formatted: `${raw} ${currency}`,
   currency,
 });
 
