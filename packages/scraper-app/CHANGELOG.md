@@ -1,5 +1,13 @@
 # @accounter/scraper-app
 
+## 0.0.4
+
+### Patch Changes
+
+- [#4571](https://github.com/Urigo/accounter-fullstack/pull/4571) [`d394530`](https://github.com/Urigo/accounter-fullstack/commit/d394530d88cdc1243de19bd7a804acdc3fb26eac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@fastify/websocket@11.3.3` ↗︎](https://www.npmjs.com/package/@fastify/websocket/v/11.3.3) (from `11.3.1`, in `dependencies`)
+    - Updated dependency [`fast-xml-parser@5.11.2` ↗︎](https://www.npmjs.com/package/fast-xml-parser/v/5.11.2) (from `5.11.1`, in `dependencies`)
+
 ## 0.0.3
 
 ### Patch Changes

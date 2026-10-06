@@ -1,5 +1,101 @@
 # @accounter/client
 
+## 1.1.0
+
+### Minor Changes
+
+- [#4471](https://github.com/Urigo/accounter-fullstack/pull/4471) [`2e9364d`](https://github.com/Urigo/accounter-fullstack/commit/2e9364d8d4654fe4c2216e70dac487f51780d135) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add a re-run OCR action for documents stuck on `UNPROCESSED`.
+  
+  A batch of documents was inserted with `type = 'UNPROCESSED'` and no extracted information at all —
+  no amount, date, serial or counterparty — because the email-ingestion path catches every OCR failure
+  and falls back to `UNPROCESSED` (`email-ingestion-ingest.provider.ts`). The document is still
+  inserted and the ingest still reports `INSERTED` with its idempotency key persisted, so replaying
+  the source email answers `DUPLICATE` and cannot recover it. The Cloudinary `file_url` survives,
+  though, which is enough to extract from the file again.
+  
+  New mutations `reprocessDocumentOcr(documentId)` and `batchReprocessDocumentsOcr(documentIds)`
+  re-fetch that stored file through the existing SSRF-hardened `fetchRemoteDocument`, run it back
+  through `getOcrData`, and report which fields were filled. Surfaced in the client as a "Re-run OCR"
+  item in the document actions menu and, on the documents screen, a bulk button over the unprocessed
+  documents currently listed (pair it with the "Invalid documents only" filter).
+  
+  The write is additive on purpose: a column is filled only where the document is empty, so a value an
+  accountant corrected by hand is never overwritten. The exception is `documentType`, which is replaced
+  only while the document is still `UNPROCESSED`. A pass that extracts nothing new writes nothing at
+  all, rather than bumping `updated_at` and dragging the charge's accountant approval back to `PENDING`
+  for no gain.
+  
+  That rule is enforced by the UPDATE statement rather than by the caller. Minutes pass between reading
+  a document and writing it back, and deciding which columns are blank from the pre-OCR read would mean
+  overwriting a field an accountant filled during the extraction, using a decision made before they
+  touched it. `COALESCE(column, $param)` — the reverse of the usual argument order — makes "never
+  overwrite" a property of the statement, and repeating the conditions in its `WHERE` clause keeps a
+  pass with nothing to contribute from matching any row at all.
+  
+  The document's owner is checked against the request's write target up front. Reads span the whole
+  business scope while writes are pinned to one business, so the all-documents screen can list a row
+  this request cannot write to; catching that late would mean paying for a download and an OCR call
+  first.
+  
+  The documents table gains a selection column, keyed by document id so a selection survives paging,
+  sorting and filtering, and a batch menu beside it offering "Re-run OCR" and "Delete" over the
+  selected rows. It also gains an opt-in `preview` column showing each document's stored image,
+  hidden by default because it costs one image request per visible row.
+  
+  When the stored original cannot be sent to OCR — the two MIME allowlists in play disagree in both
+  directions, so a GIF is refused by the fetch layer and a HEIC is refused by the model — the Cloudinary
+  `.jpg` derivative is used instead rather than failing.
+  
+  Two limits worth knowing. Nothing in the schema records whether OCR ever ran, failed, or was
+  deliberately skipped, so the action cannot tell a recoverable failure from a document that will
+  always be unreadable — retrying the latter costs an OCR pass and changes nothing. And the mutation
+  holds the request open for the whole extraction (tens of seconds per document, no job queue in this
+  server), which is why a batch is capped at 20 documents and runs three at a time.
+
+- [#4610](https://github.com/Urigo/accounter-fullstack/pull/4610) [`915b906`](https://github.com/Urigo/accounter-fullstack/commit/915b906c13b6668d49e94c817914c64a40929ad4) Thanks [@gilgardosh](https://github.com/gilgardosh)! - The VAT report summary card now shows the server's `summary`: the month's totals exactly as filed in
+  the PCN874 header.
+  
+  The card used to reduce the report rows itself, with its own definitions: taxable sales included
+  zero-VAT rows, "Equipment Inputs" was the pre-VAT amount of property expenses, and the total VAT
+  subtracted every expense row, including the entry types the PCN874 header leaves out. It now reads
+  `VatReportResult.summary` and computes nothing on its own.
+  
+  Labels follow the PCN874 meaning of each figure. "Taxable Sales Total" is now "Taxable Sales
+  Amount", "Equipment Inputs" is now "Equipment Inputs VAT" (a VAT amount, as filed), and "Total VAT
+  Amount" is now "Total VAT", marked as to pay or to receive. The card also shows "Other Inputs VAT"
+  and the sales and input record counts, and takes the currency from the server instead of assuming
+  ILS.
+  
+  Expect the numbers to change for some months. That is intended: where the card and the generated
+  PCN874 file disagreed, the card now shows what is filed. The summary always covers the whole month,
+  so it no longer changes with the charge type filter, and the card says so.
+
+### Patch Changes
+
+- [#4571](https://github.com/Urigo/accounter-fullstack/pull/4571) [`d394530`](https://github.com/Urigo/accounter-fullstack/commit/d394530d88cdc1243de19bd7a804acdc3fb26eac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@auth0/auth0-react@2.28.2` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.28.2) (from `2.28.0`, in `dependencies`)
+    - Updated dependency [`@tanstack/react-table@9.2.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/9.2.5) (from `9.2.4`, in `dependencies`)
+    - Updated dependency [`dotenv@18.0.5` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.5) (from `18.0.4`, in `dependencies`)
+    - Updated dependency [`react-day-picker@10.0.2` ↗︎](https://www.npmjs.com/package/react-day-picker/v/10.0.2) (from `10.0.1`, in `dependencies`)
+
+- [#4587](https://github.com/Urigo/accounter-fullstack/pull/4587) [`5520c9a`](https://github.com/Urigo/accounter-fullstack/commit/5520c9a303d38e3056183cc194914ac447bf9454) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`lucide-react@1.49.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.49.0) (from `1.48.0`, in `dependencies`)
+
+- [#4588](https://github.com/Urigo/accounter-fullstack/pull/4588) [`51ad19b`](https://github.com/Urigo/accounter-fullstack/commit/51ad19b3a67265cb64aeae1e1453ac69b73c0eeb) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`html2canvas-pro@2.5.1` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.5.1) (from `2.4.5`, in `dependencies`)
+
+- [#4593](https://github.com/Urigo/accounter-fullstack/pull/4593) [`dc1d52f`](https://github.com/Urigo/accounter-fullstack/commit/dc1d52f91eb54398fc55620a188c8c79760aae4f) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@auth0/auth0-react@2.28.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.28.0) (from `2.27.0`, in `dependencies`)
+
+- [#4597](https://github.com/Urigo/accounter-fullstack/pull/4597) [`474239d`](https://github.com/Urigo/accounter-fullstack/commit/474239da1aac5ea507fd5feccddbf603e44fca8d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`pdfjs-dist@6.4.299` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/6.4.299) (from `6.3.289`, in `dependencies`)
+
+- [#4598](https://github.com/Urigo/accounter-fullstack/pull/4598) [`0d4ffe6`](https://github.com/Urigo/accounter-fullstack/commit/0d4ffe68419de4c4fab8e2a2e5c4cb873800ccc6) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`simple-icons@16.34.0` ↗︎](https://www.npmjs.com/package/simple-icons/v/16.34.0) (from `16.33.0`, in `dependencies`)
+
+- [#4599](https://github.com/Urigo/accounter-fullstack/pull/4599) [`a73eb6a`](https://github.com/Urigo/accounter-fullstack/commit/a73eb6acfe3f61f96f84e1c7967caf4007288109) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`lucide-react@1.51.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.51.0) (from `1.49.0`, in `dependencies`)
+
 ## 1.0.0
 
 ### Major Changes

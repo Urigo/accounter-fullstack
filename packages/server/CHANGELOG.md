@@ -1,5 +1,105 @@
 # @accounter/server
 
+## 0.3.0
+
+### Minor Changes
+
+- [#4471](https://github.com/Urigo/accounter-fullstack/pull/4471) [`2e9364d`](https://github.com/Urigo/accounter-fullstack/commit/2e9364d8d4654fe4c2216e70dac487f51780d135) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add a re-run OCR action for documents stuck on `UNPROCESSED`.
+  
+  A batch of documents was inserted with `type = 'UNPROCESSED'` and no extracted information at all —
+  no amount, date, serial or counterparty — because the email-ingestion path catches every OCR failure
+  and falls back to `UNPROCESSED` (`email-ingestion-ingest.provider.ts`). The document is still
+  inserted and the ingest still reports `INSERTED` with its idempotency key persisted, so replaying
+  the source email answers `DUPLICATE` and cannot recover it. The Cloudinary `file_url` survives,
+  though, which is enough to extract from the file again.
+  
+  New mutations `reprocessDocumentOcr(documentId)` and `batchReprocessDocumentsOcr(documentIds)`
+  re-fetch that stored file through the existing SSRF-hardened `fetchRemoteDocument`, run it back
+  through `getOcrData`, and report which fields were filled. Surfaced in the client as a "Re-run OCR"
+  item in the document actions menu and, on the documents screen, a bulk button over the unprocessed
+  documents currently listed (pair it with the "Invalid documents only" filter).
+  
+  The write is additive on purpose: a column is filled only where the document is empty, so a value an
+  accountant corrected by hand is never overwritten. The exception is `documentType`, which is replaced
+  only while the document is still `UNPROCESSED`. A pass that extracts nothing new writes nothing at
+  all, rather than bumping `updated_at` and dragging the charge's accountant approval back to `PENDING`
+  for no gain.
+  
+  That rule is enforced by the UPDATE statement rather than by the caller. Minutes pass between reading
+  a document and writing it back, and deciding which columns are blank from the pre-OCR read would mean
+  overwriting a field an accountant filled during the extraction, using a decision made before they
+  touched it. `COALESCE(column, $param)` — the reverse of the usual argument order — makes "never
+  overwrite" a property of the statement, and repeating the conditions in its `WHERE` clause keeps a
+  pass with nothing to contribute from matching any row at all.
+  
+  The document's owner is checked against the request's write target up front. Reads span the whole
+  business scope while writes are pinned to one business, so the all-documents screen can list a row
+  this request cannot write to; catching that late would mean paying for a download and an OCR call
+  first.
+  
+  The documents table gains a selection column, keyed by document id so a selection survives paging,
+  sorting and filtering, and a batch menu beside it offering "Re-run OCR" and "Delete" over the
+  selected rows. It also gains an opt-in `preview` column showing each document's stored image,
+  hidden by default because it costs one image request per visible row.
+  
+  When the stored original cannot be sent to OCR — the two MIME allowlists in play disagree in both
+  directions, so a GIF is refused by the fetch layer and a HEIC is refused by the model — the Cloudinary
+  `.jpg` derivative is used instead rather than failing.
+  
+  Two limits worth knowing. Nothing in the schema records whether OCR ever ran, failed, or was
+  deliberately skipped, so the action cannot tell a recoverable failure from a document that will
+  always be unreadable — retrying the latter costs an OCR pass and changes nothing. And the mutation
+  holds the request open for the whole extraction (tens of seconds per document, no job queue in this
+  server), which is why a batch is capped at 20 documents and runs three at a time.
+
+- [#4609](https://github.com/Urigo/accounter-fullstack/pull/4609) [`9487ae5`](https://github.com/Urigo/accounter-fullstack/commit/9487ae5d527bf879fbcf010552120e2ae8a369ec) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add `VatReportResult.summary`, the monthly VAT totals as filed in the PCN874 header.
+  
+  Until now the VAT report's totals existed only on the client, as a reduction over the report rows
+  whose definitions differ from the PCN874 file: taxable sales included zero-VAT rows, "equipment
+  inputs" was a pre-VAT amount where the file reports VAT, and other inputs VAT and the record counts
+  were not computed at all. Any other consumer (the MCP connector, API users) would have had to
+  re-implement that logic, and would still disagree with what was filed.
+  
+  The new `summary: VatReportSummary!` field mirrors the PCN874 header: `taxableSalesAmount`,
+  `taxableSalesVat`, `salesRecordCount`, `zeroValOrExemptSalesAmount`, `otherInputsVat`,
+  `equipmentInputsVat`, `inputsCount` and `totalVat`, amounts as `FinancialAmount` in the local
+  currency. It goes through the PCN874 path itself rather than a parallel implementation: the header
+  totals are factored out of `getHeaderDataFromRecords` into `getPcn874Totals`, which no longer needs a
+  licensed dealer id, and both the file header and the summary are built from it over the records
+  `transactionsFromVatReportRecords` produces.
+  
+  The summary is the filed figure, so it always covers the whole month and ignores the `chargesType`
+  filter. When the report is requested without one, its own income and expenses already are that
+  month and are reused; when it is filtered, the month is fetched again exactly as `getPcn874String`
+  fetches it. It is a lazy field resolver, so queries that do not select `summary` pay nothing for it.
+  
+  The totals carry over the header's current coverage: entry types it does not handle yet (for example
+  `S2`, `Y` and `R`) are left out of the summary just as they are left out of the file.
+  
+  Fixed along the way: the VAT report and the PCN874 file parsed the requested month with
+  `new Date(monthDate)`, which reads a date-only string as UTC midnight. On a server west of UTC that
+  is the previous local day, so a first-of-month request covered the month before, and the PCN874
+  file could even be stamped with the previous month. The month is now read from the date string's
+  year and month (`vatReportMonthStart`), for the report's date range, its VAT-date-override bounds,
+  and the PCN874 file. Servers at UTC or east of it are unaffected.
+
+### Patch Changes
+
+- [#4571](https://github.com/Urigo/accounter-fullstack/pull/4571) [`d394530`](https://github.com/Urigo/accounter-fullstack/commit/d394530d88cdc1243de19bd7a804acdc3fb26eac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.71` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.71) (from `4.0.65`, in `dependencies`)
+    - Updated dependency [`@graphql-hive/yoga@0.49.7` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.7) (from `0.49.6`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@12.0.3` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/12.0.3) (from `12.0.1`, in `dependencies`)
+    - Updated dependency [`@whatwg-node/fetch@0.12.1` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.12.1) (from `0.12.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.127` ↗︎](https://www.npmjs.com/package/ai/v/7.0.127) (from `7.0.118`, in `dependencies`)
+    - Updated dependency [`dotenv@18.0.5` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.5) (from `18.0.4`, in `dependencies`)
+    - Updated dependency [`pg@8.23.1` ↗︎](https://www.npmjs.com/package/pg/v/8.23.1) (from `8.23.0`, in `dependencies`)
+
+- [#4589](https://github.com/Urigo/accounter-fullstack/pull/4589) [`9f62301`](https://github.com/Urigo/accounter-fullstack/commit/9f6230174015dd423047d703f55f13647a5efc37) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`auth0@7.3.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.3.0) (from `7.2.0`, in `dependencies`)
+
+- [#4595](https://github.com/Urigo/accounter-fullstack/pull/4595) [`a5767e0`](https://github.com/Urigo/accounter-fullstack/commit/a5767e0992e9a4e1ae4325853602f9e683ed1790) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`googleapis@183.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/183.0.0) (from `182.0.0`, in `dependencies`)
+
 ## 0.2.0
 
 ### Minor Changes
