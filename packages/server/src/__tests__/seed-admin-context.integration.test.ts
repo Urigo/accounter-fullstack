@@ -3,6 +3,18 @@ import { TestDatabase } from './helpers/db-setup.js';
 import { seedAdminCore } from '../../scripts/seed-admin-context.js';
 import { UUID_REGEX } from '../shared/constants.js';
 
+const MAX_SERIALIZATION_ATTEMPTS = 3;
+
+/** Whether `error`, or an error in its `cause` chain, is a Postgres serialization failure. */
+function isSerializationFailure(error: unknown): boolean {
+  for (let current = error; current; current = (current as { cause?: unknown }).cause) {
+    if ((current as { code?: unknown }).code === '40001') {
+      return true;
+    }
+  }
+  return false;
+}
+
 describe('seedAdminCore integration', () => {
   let db: TestDatabase;
 
@@ -118,40 +130,52 @@ describe('seedAdminCore integration', () => {
   });
 
   it('should be idempotent (safe to call multiple times)', async () => {
-    await db.withTransaction(async client => {
-      // Snapshot isolation: parallel suites commit writes/deletes to
-      // financial_entities mid-test under READ COMMITTED, shifting the global
-      // count between the two reads below. REPEATABLE READ pins both counts to
-      // one snapshot while this transaction's own seed writes stay visible.
-      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    // REPEATABLE READ aborts with a serialization failure when a parallel suite writes a row this
+    // transaction then writes too (e.g. another suite re-seeding the admin business), so retry the
+    // whole transaction on one, as Postgres advises.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await db.withTransaction(async client => {
+          // Snapshot isolation: parallel suites commit writes/deletes to
+          // financial_entities mid-test under READ COMMITTED, shifting the global
+          // count between the two reads below. REPEATABLE READ pins both counts to
+          // one snapshot while this transaction's own seed writes stay visible.
+          await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
 
-      // Call seed twice in same transaction
-      await seedAdminCore(client);
+          // Call seed twice in same transaction
+          await seedAdminCore(client);
 
-      // Count entities before second call
-      const countBefore = await client.query(
-        `SELECT COUNT(*) as count FROM accounter_schema.financial_entities`,
-      );
-      const entitiesBeforeSecondCall = parseInt(countBefore.rows[0].count);
+          // Count entities before second call
+          const countBefore = await client.query(
+            `SELECT COUNT(*) as count FROM accounter_schema.financial_entities`,
+          );
+          const entitiesBeforeSecondCall = parseInt(countBefore.rows[0].count);
 
-      // Second call should reuse existing entities
-      await seedAdminCore(client);
+          // Second call should reuse existing entities
+          await seedAdminCore(client);
 
-      // Count entities after second call - should be same
-      const countAfter = await client.query(
-        `SELECT COUNT(*) as count FROM accounter_schema.financial_entities`,
-      );
-      const entitiesAfterSecondCall = parseInt(countAfter.rows[0].count);
+          // Count entities after second call - should be same
+          const countAfter = await client.query(
+            `SELECT COUNT(*) as count FROM accounter_schema.financial_entities`,
+          );
+          const entitiesAfterSecondCall = parseInt(countAfter.rows[0].count);
 
-      // Idempotent: no new entities created on second call
-      expect(entitiesAfterSecondCall).toBe(entitiesBeforeSecondCall);
+          // Idempotent: no new entities created on second call
+          expect(entitiesAfterSecondCall).toBe(entitiesBeforeSecondCall);
 
-      // Verify only one user_context exists
-      const userContextCount = await client.query(
-        `SELECT COUNT(*) as count FROM accounter_schema.user_context`,
-      );
-      expect(userContextCount.rows[0].count).toBe('1');
-    });
+          // Verify only one user_context exists
+          const userContextCount = await client.query(
+            `SELECT COUNT(*) as count FROM accounter_schema.user_context`,
+          );
+          expect(userContextCount.rows[0].count).toBe('1');
+        });
+        return;
+      } catch (error) {
+        if (attempt >= MAX_SERIALIZATION_ATTEMPTS || !isSerializationFailure(error)) {
+          throw error;
+        }
+      }
+    }
   });
 
   it('should not leak data between tests (transactional isolation)', async () => {
