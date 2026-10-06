@@ -8,6 +8,7 @@ import {
   formatFinancialAmount,
   getCurrencySymbol,
   minTimelessDate,
+  timelessDateToTenantInstant,
 } from '../../../shared/helpers/index.js';
 import type {
   LedgerBalanceInfoType,
@@ -18,6 +19,7 @@ import type {
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
+import { isCryptoCurrency } from '../../exchange-rates/helpers/exchange.helper.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import type { IGetFinancialEntitiesByIdsResult } from '../../financial-entities/types.js';
@@ -75,16 +77,21 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
 }
 
 /**
- * Identifies the point an entry was priced at: its exact exchange-rate time when it has one, else
- * its day. Entries with different keys may carry different exchange rates, so an imbalance between
- * them can be an exchange-rate difference. Two crypto rows on the same day at different times get
- * different keys.
+ * Identifies the point an entry was priced at, the way `ExchangeProvider.getExchangeRates` prices
+ * it: crypto by time (a day taken as the tenant's midnight), fiat and local currency by day. Entries
+ * with different keys may carry different exchange rates, so an imbalance between them can be an
+ * exchange-rate difference. Two crypto rows on the same day at different times get different keys;
+ * a fiat row and a timed misc expense on the same day do not.
  */
 export function exchangeRatePointKey(
-  entry: Pick<LedgerProto, 'valueDate' | 'exchangeRateDate'>,
+  entry: Pick<LedgerProto, 'valueDate' | 'exchangeRateDate' | 'currency'>,
 ): string {
   const date = entry.exchangeRateDate ?? entry.valueDate;
-  return typeof date === 'string' ? date : date.toISOString();
+  if (isCryptoCurrency(entry.currency)) {
+    const instant = typeof date === 'string' ? timelessDateToTenantInstant(date) : date;
+    return instant.toISOString();
+  }
+  return typeof date === 'string' ? date : dateToTimelessDateString(date);
 }
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> };

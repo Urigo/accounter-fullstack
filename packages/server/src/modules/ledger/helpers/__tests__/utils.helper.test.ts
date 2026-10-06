@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TEST_TIMEZONES, useTimezone } from '../../../../__tests__/helpers/timezones.js';
 import { Currency } from '../../../../shared/enums.js';
+import { timelessDateToTenantInstant } from '../../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import {
   at,
@@ -100,31 +101,55 @@ describe.each(TEST_TIMEZONES)('ledger transaction dates (TZ=%s)', timeZone => {
   });
 
   describe('exchangeRatePointKey', () => {
-    it('tells apart same-day entries priced at different times', () => {
-      const withdrawal = { valueDate: DAY, exchangeRateDate: at(DAY, 10, 15) };
-      const deposit = { valueDate: DAY, exchangeRateDate: at(DAY, 10, 42, 30) };
+    it('tells apart same-day crypto entries priced at different times', () => {
+      const withdrawal = { currency: Currency.Grt, valueDate: DAY, exchangeRateDate: at(DAY, 10, 15) };
+      const deposit = { currency: Currency.Grt, valueDate: DAY, exchangeRateDate: at(DAY, 10, 42, 30) };
 
       expect(exchangeRatePointKey(withdrawal)).not.toBe(exchangeRatePointKey(deposit));
     });
 
-    it('matches entries priced at the same instant', () => {
-      const fee = { valueDate: DAY, exchangeRateDate: at(DAY, 10, 15) };
-      const feePaidByShareholder = { valueDate: DAY, exchangeRateDate: at(DAY, 10, 15) };
+    it('matches crypto entries priced at the same instant', () => {
+      const fee = { currency: Currency.Eth, valueDate: DAY, exchangeRateDate: at(DAY, 10, 15) };
+      const feePaidByShareholder = {
+        currency: Currency.Eth,
+        valueDate: DAY,
+        exchangeRateDate: at(DAY, 10, 15),
+      };
 
       expect(exchangeRatePointKey(fee)).toBe(exchangeRatePointKey(feePaidByShareholder));
     });
 
-    it('falls back to the day, so day-only entries on the same day match', () => {
-      const invoice = { valueDate: DAY };
-      const fiatPayment = { valueDate: DAY, exchangeRateDate: DAY };
+    it("matches a crypto day and a crypto time at the tenant's midnight, which get the same rate", () => {
+      const invoice = { currency: Currency.Usdc, valueDate: DAY };
+      const paymentAtMidnight = {
+        currency: Currency.Usdc,
+        valueDate: DAY,
+        exchangeRateDate: timelessDateToTenantInstant(DAY),
+      };
 
-      expect(exchangeRatePointKey(invoice)).toBe(DAY);
-      expect(exchangeRatePointKey(fiatPayment)).toBe(DAY);
+      expect(exchangeRatePointKey(invoice)).toBe(exchangeRatePointKey(paymentAtMidnight));
     });
 
-    it('tells apart day-only entries on different days', () => {
-      expect(exchangeRatePointKey({ valueDate: DAY })).not.toBe(
-        exchangeRatePointKey({ valueDate: OVERRIDE_DAY }),
+    it('keys fiat and local currency by day, whatever the time of day', () => {
+      const fiatTransfer = { currency: Currency.Usd, valueDate: DAY, exchangeRateDate: DAY };
+      const timedMiscExpense = {
+        currency: Currency.Ils,
+        valueDate: DAY,
+        exchangeRateDate: at(DAY, 15, 39),
+      };
+      const timedFiatRow = { currency: Currency.Usd, valueDate: DAY, exchangeRateDate: at(DAY, 23, 50) };
+
+      expect(exchangeRatePointKey(fiatTransfer)).toBe(DAY);
+      expect(exchangeRatePointKey(timedMiscExpense)).toBe(DAY);
+      expect(exchangeRatePointKey(timedFiatRow)).toBe(DAY);
+    });
+
+    it('tells apart entries on different days', () => {
+      expect(exchangeRatePointKey({ currency: Currency.Usd, valueDate: DAY })).not.toBe(
+        exchangeRatePointKey({ currency: Currency.Usd, valueDate: OVERRIDE_DAY }),
+      );
+      expect(exchangeRatePointKey({ currency: Currency.Eth, valueDate: DAY })).not.toBe(
+        exchangeRatePointKey({ currency: Currency.Eth, valueDate: OVERRIDE_DAY }),
       );
     });
   });

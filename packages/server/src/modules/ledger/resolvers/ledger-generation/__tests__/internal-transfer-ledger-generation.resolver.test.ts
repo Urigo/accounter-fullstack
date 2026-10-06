@@ -501,6 +501,34 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForInternalTransfer (TZ=%s)'
       expect(Number(errors[0].replace('Total ledger balance is ', ''))).toBeCloseTo(36, 6);
     });
 
+    it('still reports a same-day mismatch when a misc expense with a time of day sits on that day', async () => {
+      // `misc_expenses.value_date` is a timestamp, but local and fiat amounts are priced by the day:
+      // the expense adds no rate point, so the USD mismatch must not pass as an exchange difference
+      const { injector } = makeInjector({
+        transactions: fiatLegs({
+          currency: Currency.Usd,
+          withdrawalAmount: '-1000',
+          depositAmount: '990',
+        }),
+        miscExpenses: [
+          buildMiscExpense({
+            amount: '100',
+            currency: Currency.Ils,
+            value_date: at(DAY, 15, 39),
+          }),
+        ],
+        rates: [[Currency.Usd, DAY, 3.6]],
+      });
+
+      const { records, balance, errors } = await generate(injector);
+
+      expect(exchangeRecords(records)).toEqual([]);
+      expect(balance?.isBalanced).toBe(false);
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toMatch(/^Total ledger balance is /);
+      expect(Number(errors[0].replace('Total ledger balance is ', ''))).toBeCloseTo(36, 6);
+    });
+
     it('books the rate difference between legs on different days, dated by the later one', async () => {
       const { injector } = makeInjector({
         transactions: fiatLegs({
