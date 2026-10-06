@@ -6,7 +6,7 @@ import { executeRegisteredTool } from '../execute.js';
 import { MAX_TOOL_RESULT_BYTES } from '../output.js';
 import type { ToolResult } from '../registry.js';
 import { explainTerminologyTool, MAX_REQUESTED_TERMS } from '../terminology.js';
-import { GLOSSARY } from '../terminology-data.js';
+import { GLOSSARY, GLOSSARY_TOPICS } from '../terminology-data.js';
 
 /**
  * Behavioral suite for the glossary tool, driven through the real
@@ -140,7 +140,7 @@ describe('accounter_explain_terminology — term lookup', () => {
   it('returns entries in glossary order regardless of request order', async () => {
     const { result } = await run({ terms: ['owner', 'charge'] });
 
-    // `charge` is in the first topic block, `owner` in the last.
+    // `charge` is in the first topic block, `owner` in a later one.
     expect(termsIn(result)).toEqual(['charge', 'owner']);
   });
 
@@ -215,6 +215,60 @@ describe('accounter_explain_terminology — topics', () => {
   });
 });
 
+describe('accounter_explain_terminology — report topic', () => {
+  const REPORT_TERMS = [
+    'vat-report',
+    'vat-report-record',
+    'vat-report-direction',
+    'vat-report-date',
+    'vat-report-amounts',
+    'vat-report-summary',
+    'pcn874-record-type',
+    'vat-report-missing-info',
+  ];
+
+  it('returns every VAT report term, in full, for topics: [report]', async () => {
+    const { result, structured } = await run({ topics: ['report'] });
+
+    expect(result.isError).toBeUndefined();
+    expect(termsIn(result)).toEqual(REPORT_TERMS);
+    expect(structured.truncated).toBe(false);
+    expect(structured.terms?.every(item => typeof item.detail === 'string')).toBe(true);
+  });
+
+  it.each([
+    ['VatReportRecord', 'vat-report-record'],
+    ['recordType', 'pcn874-record-type'],
+    ['Pcn874RecordType', 'pcn874-record-type'],
+    ['S2', 'pcn874-record-type'],
+    ['VatReportSummary', 'vat-report-summary'],
+    ['totalVat', 'vat-report-summary'],
+    ['roundedLocalVatAfterDeduction', 'vat-report-amounts'],
+    ['vat_report_date_override', 'vat-report-date'],
+    ['vatReport', 'vat-report'],
+    ['דוח מע"מ', 'vat-report'],
+    ['chargeAccountantStatus', 'accountant-status'],
+  ])('resolves the alias %s to %s', async (alias, term) => {
+    const { result } = await run({ terms: [alias] });
+
+    expect(termsIn(result)).toEqual([term]);
+  });
+
+  it('keeps `missingInfo` on charge validation, which links to the VAT report section', async () => {
+    const { structured } = await run({ terms: ['missingInfo'] });
+
+    const [entry] = (structured.terms ?? []) as Array<{ term: string; seeAlso?: string[] }>;
+    expect(entry?.term).toBe('charge-validation');
+    expect(entry?.seeAlso).toContain('vat-report-missing-info');
+  });
+
+  it('unions an alias lookup with the report topic without duplicating', async () => {
+    const { result } = await run({ terms: ['VatReportRecord', 'charge'], topics: ['report'] });
+
+    expect(termsIn(result)).toEqual(['charge', ...REPORT_TERMS]);
+  });
+});
+
 describe('accounter_explain_terminology — contract', () => {
   it('rejects unknown input fields', async () => {
     const { result, structured } = await run({ term: 'charge' });
@@ -251,9 +305,8 @@ describe('accounter_explain_terminology — contract', () => {
   });
 
   it('fits the whole glossary in one full-detail response', async () => {
-    const { result, structured } = await run({
-      topics: ['charge', 'transaction', 'document', 'ledger', 'entity', 'scope'],
-    });
+    // Every topic, so a newly added topic is covered by the size guard too.
+    const { result, structured } = await run({ topics: [...GLOSSARY_TOPICS] });
 
     expect(structured.terms).toHaveLength(GLOSSARY.length);
     expect(structured.truncated).toBe(false);

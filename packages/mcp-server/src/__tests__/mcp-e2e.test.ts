@@ -2,6 +2,7 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { TokenVerificationError, type AuthPrincipal } from '../auth/token.js';
+import { vatReportData } from '../tools/__tests__/vat-report-fixtures.js';
 
 /**
  * End-to-end integration / security tests.
@@ -235,6 +236,9 @@ function upstreamData(query: string, authorization?: string): unknown {
       ],
     };
   }
+  if (query.includes('vatReport(')) {
+    return vatReportData();
+  }
   if (query.includes('batchUpdateChargesTags')) {
     return {
       batchUpdateChargesTags: {
@@ -403,6 +407,7 @@ describe('authenticated tool invocation', () => {
         'accounter_list_tax_categories',
         'accounter_list_sort_codes',
         'accounter_balance_report',
+        'accounter_vat_report',
         'accounter_list_security_holdings',
         'accounter_get_security_executions',
         'accounter_list_clients',
@@ -598,6 +603,29 @@ describe('authenticated tool invocation', () => {
     expect(result.isError).toBeUndefined();
     const { rows } = result.structuredContent as { rows: unknown[] };
     expect(rows).toHaveLength(1);
+  });
+
+  it('runs the VAT report as a long-running read for a caller who holds the role', async () => {
+    fakeUpstreamClient.query.mockClear();
+    const result = await callTool(
+      'accounter_vat_report',
+      { memberBusinessId: AUTHORIZED_BUSINESS, month: '2026-03', section: 'expenses' },
+      'owner-token',
+    );
+    expect(result.isError).toBeUndefined();
+    const structured = result.structuredContent as {
+      expenses: unknown[];
+      counts: Record<string, number>;
+    };
+    expect(structured.expenses).toHaveLength(1);
+    expect(structured.counts).toEqual({ income: 1, expenses: 1, missingInfo: 1 });
+
+    const vatCall = fakeUpstreamClient.query.mock.calls.find(([request]) =>
+      request.query.includes('vatReport('),
+    );
+    expect(vatCall).toBeDefined();
+    // The third argument is the per-call options the real client takes.
+    expect((vatCall as unknown[])[2]).toEqual({ longRunning: true });
   });
 });
 

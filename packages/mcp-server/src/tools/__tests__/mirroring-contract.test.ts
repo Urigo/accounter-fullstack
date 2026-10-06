@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
@@ -122,9 +122,16 @@ describe('structured payloads are mirrored into content', () => {
   it('no tool builds a result payload by hand', () => {
     const HAND_ROLLED_CONTENT = /\bcontent\s*:\s*\[/;
     const toolsDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-    const offenders = readdirSync(toolsDir)
-      .filter(file => file.endsWith('.ts') && file !== 'output.ts')
-      .filter(file => HAND_ROLLED_CONTENT.test(readFileSync(join(toolsDir, file), 'utf8')));
+    // Recursive, so tools in subfolders (`reports/`) are checked too; the test
+    // suites themselves are not tools and build fixtures freely.
+    const toolFiles = readdirSync(toolsDir, { recursive: true, encoding: 'utf8' })
+      .filter(file => !file.split(sep).includes('__tests__'))
+      .filter(file => file.endsWith('.ts') && file !== 'output.ts');
+    // The scan must actually reach the subfolders, or it passes vacuously there.
+    expect(toolFiles).toContain(join('reports', 'vat-report.ts'));
+    const offenders = toolFiles.filter(file =>
+      HAND_ROLLED_CONTENT.test(readFileSync(join(toolsDir, file), 'utf8')),
+    );
 
     expect(
       offenders,

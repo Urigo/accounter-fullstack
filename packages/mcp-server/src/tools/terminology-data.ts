@@ -7,20 +7,24 @@
  *
  * Scope is deliberately **core domain modelling**: what a charge/transaction/
  * document/ledger record *is* in this system, and the distinctions a model
- * cannot infer from the GraphQL schema alone. Israeli tax-*reporting* machinery
- * (PCN874, the SHAAM uniform format, Form 6111, Hashavshevet, Green Invoice) is
- * out of scope here; VAT appears only where it is part of the core shape — an
- * amount on a charge/document, and the second ledger account slot.
+ * cannot infer from the GraphQL schema alone. Report outputs that a tool
+ * exposes are in scope too (the `report` topic covers `accounter_vat_report`:
+ * its rows, amounts, PCN874 record types and header totals), because a model
+ * reading them needs the same help. Tax-reporting machinery no tool exposes
+ * stays out: generating or filing PCN874, the SHAAM uniform format, Form 6111,
+ * Hashavshevet, Green Invoice.
  *
  * Every entry is written for a reader who has just seen the term in a tool
  * result or an input schema and needs to know what it means and what it is
  * *not*. Prefer stating the trap over restating the field name.
  *
- * Budget: at 69 entries the index is ~11 KB and the full glossary ~41 KB against
- * the 60 KB `MAX_TOOL_RESULT_BYTES` guard, so there is room for roughly 30 more
- * before a request for every topic starts truncating. `terminology.test.ts`
- * asserts the whole glossary still fits in one response, so overshooting fails
- * the suite rather than silently dropping the last entries.
+ * Budget: at 77 entries the index is ~12.3 KB and the full glossary ~55.0 KB
+ * against the 60 KB `MAX_TOOL_RESULT_BYTES` guard (measured as the serialized
+ * `structuredContent`), leaving ~5 KB: room for a handful of short entries
+ * before a request for every topic starts truncating. Trim existing details
+ * before adding more. `terminology.test.ts` asserts the whole glossary still
+ * fits in one response, so overshooting fails the suite rather than silently
+ * dropping the last entries.
  */
 
 /** Topic buckets. Also the `topics` filter vocabulary and the index ordering. */
@@ -31,6 +35,7 @@ export const GLOSSARY_TOPICS = [
   'ledger',
   'entity',
   'scope',
+  'report',
 ] as const;
 
 export type GlossaryTopic = (typeof GLOSSARY_TOPICS)[number];
@@ -155,7 +160,7 @@ const CHARGE_ENTRIES: readonly GlossaryEntry[] = [
     detail:
       'Not the VAT amount on an ordinary charge — this is the standalone monthly settlement: output VAT collected minus input VAT reclaimed, reconciled against the actual bank transaction to the tax authority. The reported month is encoded in the charge user description rather than in a dedicated field.',
     aliases: ['MonthlyVatCharge', 'monthly vat'],
-    seeAlso: ['charge-type', 'charge-vat', 'ledger-vat-split'],
+    seeAlso: ['charge-type', 'charge-vat', 'ledger-vat-split', 'vat-report-summary'],
   },
   {
     term: 'bank-deposit-charge',
@@ -216,8 +221,15 @@ const CHARGE_ENTRIES: readonly GlossaryEntry[] = [
       'APPROVED / PENDING / UNAPPROVED review state — PENDING specifically means "was approved, then the data changed".',
     detail:
       'UNAPPROVED means never reviewed. APPROVED means an accountant signed off. PENDING is the non-obvious one: it is a DOWNGRADE from APPROVED, applied automatically whenever a mutation changes what the charge is composed of. So PENDING is not "awaiting first review" — it is "was reviewed, then something moved underneath it". Tag-only edits and explicit approval edits deliberately do not trigger the downgrade.',
-    aliases: ['accountantApproval', 'AccountantStatus', 'APPROVED', 'PENDING', 'UNAPPROVED'],
-    seeAlso: ['charge', 'charge-validation'],
+    aliases: [
+      'accountantApproval',
+      'AccountantStatus',
+      'chargeAccountantStatus',
+      'APPROVED',
+      'PENDING',
+      'UNAPPROVED',
+    ],
+    seeAlso: ['charge', 'charge-validation', 'vat-report-record'],
     tools: ['accounter_search_charges', 'accounter_get_charges'],
   },
   {
@@ -239,7 +251,7 @@ const CHARGE_ENTRIES: readonly GlossaryEntry[] = [
     detail:
       'The rules are conditional, not uniform. Documents are NOT required for salary, internal-transfer, dividend, conversion, monthly-VAT, credit-card-bank, financial, business-trip, bank-deposit or foreign-securities charges, nor for businesses marked as not requiring invoices. VAT is skipped for foreign counterparties, VAT-exempt dealers, and charges flagged as optional-VAT. So "missing documents" appearing on a COMMON charge is meaningful, while its absence on a payroll charge says nothing.',
     aliases: ['validationData', 'missingInfo', 'MissingChargeInfo'],
-    seeAlso: ['charge', 'accountant-status', 'charge-vat'],
+    seeAlso: ['charge', 'accountant-status', 'charge-vat', 'vat-report-missing-info'],
     tools: ['accounter_search_charges', 'accounter_get_charges'],
   },
   {
@@ -260,7 +272,7 @@ const CHARGE_ENTRIES: readonly GlossaryEntry[] = [
     detail:
       'Derived rather than entered, and only present when the charge has documents carrying VAT — many legitimately have none. The VAT rate is date-versioned in the database and has changed over time, so never assume a fixed percentage when reconciling: use the amounts as given.',
     aliases: ['vat', 'vatAmount'],
-    seeAlso: ['charge', 'property-charge', 'ledger-vat-split', 'document'],
+    seeAlso: ['charge', 'property-charge', 'ledger-vat-split', 'document', 'vat-report-amounts'],
   },
   {
     term: 'property-charge',
@@ -268,9 +280,9 @@ const CHARGE_ENTRIES: readonly GlossaryEntry[] = [
     summary:
       'A charge covering equipment or property (pahat/tziyud), where only two thirds of the VAT is reclaimable.',
     detail:
-      'Charges flagged as property represent capital equipment rather than consumables. Two consequences: the reclaimable input VAT is reduced to two thirds, and the charge feeds the depreciation schedule instead of being expensed in full. A charge is reported as property when it has at least one depreciation record attached.',
+      'Charges flagged as property represent capital equipment rather than consumables. Two consequences: the reclaimable input VAT is reduced to two thirds, and the charge feeds the depreciation schedule instead of being expensed in full. A charge is reported as property when it has at least one depreciation record attached. In the VAT report the 2/3 cut follows the flag, but `isProperty` and equipment totals follow depreciation records.',
     aliases: ['property', 'decreasedVAT', 'is_property'],
-    seeAlso: ['charge', 'charge-vat'],
+    seeAlso: ['charge', 'charge-vat', 'vat-report-amounts'],
   },
 ];
 
@@ -454,7 +466,7 @@ const DOCUMENT_ENTRIES: readonly GlossaryEntry[] = [
     detail:
       'Reverses part or all of an earlier invoice. It counts as an invoice for presence checks, but its accounting direction is inverted: a credit invoice swaps which side of the VAT accounts the amount lands on relative to an ordinary invoice between the same two parties. Expect negative-looking effects on totals.',
     aliases: ['CREDIT_INVOICE', 'credit note', 'חשבונית זיכוי'],
-    seeAlso: ['document-type', 'invoice', 'ledger-vat-split'],
+    seeAlso: ['document-type', 'invoice', 'ledger-vat-split', 'vat-report-direction'],
   },
   {
     term: 'proforma',
@@ -471,7 +483,7 @@ const DOCUMENT_ENTRIES: readonly GlossaryEntry[] = [
     summary: 'The party being paid — the one issuing the invoice and recognising income.',
     detail:
       'On a document, creditor and debtor name the two sides. If YOU are the creditor, the document is income; if you are the debtor, it is an expense. Direction is decided by comparing the debtor to the charge owner, which is why a document with both parties missing cannot be classified at all and shows up as missing counterparty information.',
-    seeAlso: ['debtor', 'document', 'owner', 'counterparty'],
+    seeAlso: ['debtor', 'document', 'owner', 'counterparty', 'vat-report-direction'],
     tools: ['accounter_get_documents'],
   },
   {
@@ -480,7 +492,7 @@ const DOCUMENT_ENTRIES: readonly GlossaryEntry[] = [
     summary: 'The party who owes — the one receiving the invoice and recognising an expense.',
     detail:
       'The mirror of creditor. When the debtor is your own business the charge is an expense and the counterparty is the creditor. Credit invoices invert this test, so do not read the debtor field alone as "this is an expense".',
-    seeAlso: ['creditor', 'document', 'credit-invoice', 'owner'],
+    seeAlso: ['creditor', 'document', 'credit-invoice', 'owner', 'vat-report-direction'],
     tools: ['accounter_get_documents'],
   },
   {
@@ -511,9 +523,9 @@ const DOCUMENT_ENTRIES: readonly GlossaryEntry[] = [
     summary:
       'The Israeli invoice allocation number (mispar haktzaa), required above amount thresholds that tighten each year.',
     detail:
-      'A number obtained from the tax authority that must appear on qualifying invoices for the input VAT to be reclaimable. The requirement is phased in by date and pre-VAT amount, with the threshold falling over successive years, so whether a given document needs one depends on both its date and its size. A missing required allocation number invalidates the document and blocks ledger generation for its charge.',
+      'A number obtained from the tax authority that must appear on qualifying invoices for the input VAT to be reclaimable. The requirement is phased in by date and pre-VAT amount, with the threshold falling over successive years, so whether a given document needs one depends on both its date and its size. A missing required allocation number invalidates the document, blocks ledger generation for its charge, and fails validation as DOCUMENTS.',
     aliases: ['allocationNumber', 'מספר הקצאה', 'israel invoice'],
-    seeAlso: ['document', 'charge-validation'],
+    seeAlso: ['document', 'charge-validation', 'vat-report-missing-info'],
   },
 ];
 
@@ -837,6 +849,101 @@ const SCOPE_ENTRIES: readonly GlossaryEntry[] = [
   },
 ];
 
+const REPORT_ENTRIES: readonly GlossaryEntry[] = [
+  {
+    term: 'vat-report',
+    topic: 'report',
+    summary:
+      'Monthly VAT report: the invoices behind the VAT filing, plus charges failing validation.',
+    detail:
+      'Counts INVOICE, INVOICE_RECEIPT and CREDIT_INVOICE documents on a charge, naming both parties, VAT-dated in the month. Charges touching the VAT, tax or social-security authorities give no income/expense rows. Rows carry the reported business as `ownerId`. A charge in no section may be in an unexposed bucket (other-month invoice, business trip).',
+    aliases: ['PCN874', 'דוח מע"מ'],
+    seeAlso: ['vat-report-record', 'vat-report-summary', 'vat-report-missing-info'],
+    tools: ['accounter_vat_report'],
+  },
+  {
+    term: 'vat-report-record',
+    topic: 'report',
+    summary: 'A VAT report income/expense row: one DOCUMENT, not one charge.',
+    detail:
+      'A charge with several invoices in the month has several rows, so count charges by distinct `chargeId`. `business` is the document counterparty (your side is `ownerId`); `vatNumber` is its tax id.',
+    seeAlso: ['vat-report-amounts', 'pcn874-record-type'],
+  },
+  {
+    term: 'vat-report-direction',
+    topic: 'report',
+    summary: 'Income (output VAT) or expense (input VAT), by the business side on the document.',
+    detail:
+      'Expense: the business is debtor and VAT is non-zero (zero-VAT purchases never appear). Income: the business is creditor, VAT is set (zero allowed: zero-rated/exempt sales appear), the total is positive, and the charge description lacks "refund"/"reimbursement". A CREDIT_INVOICE swaps the sides and negates every figure but `amount`.',
+    aliases: ['output VAT', 'input VAT', 'עסקאות', 'תשומות'],
+    seeAlso: ['creditor', 'debtor', 'credit-invoice'],
+  },
+  {
+    term: 'vat-report-date',
+    topic: 'report',
+    summary: "A document's VAT month: its VAT-report date override, else its document date.",
+    detail:
+      "`documentDate` may fall outside the month. `chargeDate` is the charge's earliest transaction event date (else earliest document date): neither the VAT date nor the charge main date. `missingInfo` covers charges dated wholly in the month plus those pulled in by a qualifying document.",
+    aliases: ['vat_report_date_override', 'chargeDate'],
+    seeAlso: ['charge-main-date'],
+  },
+  {
+    term: 'vat-report-amounts',
+    topic: 'report',
+    summary: 'Money fields on a VAT report row, in document and local currency.',
+    detail:
+      '`amount`: document total incl. VAT. `localVat`/`foreignVat`: document VAT, one set by currency, unconverted. `*VatAfterDeduction`: reclaimable VAT (2/3 for property); `foreign*` is in document currency, set for local documents too. `roundedLocalVatAfterDeduction`: whole units, as filed. `localAmount`: local-currency total. `taxReduced*Amount`: pre-VAT, whole units. Null usually means zero (zeros are dropped), but a zero-VAT document derives only `taxReducedLocalAmount`, so its null `localAmount` is not zero.',
+    aliases: [
+      'localVat',
+      'foreignVat',
+      'localVatAfterDeduction',
+      'foreignVatAfterDeduction',
+      'roundedLocalVatAfterDeduction',
+      'taxReducedLocalAmount',
+      'taxReducedForeignAmount',
+    ],
+    seeAlso: ['property-charge', 'vat-report-direction'],
+  },
+  {
+    term: 'vat-report-summary',
+    topic: 'report',
+    summary: "The month's PCN874 header totals as filed, in whole local-currency units.",
+    detail:
+      '`totalVat` > 0 means pay, < 0 refund. `equipmentInputsVat` is input VAT on charges with depreciation records. Quote these over row sums. Caveat: only S1, L1, L2, T and K records count; other types (S2, export, import, self-invoice, Palestinian, single document by law) are in the rows but not the totals. Flag such rows; never adjust totals.',
+    aliases: [
+      'summary',
+      'totalVat',
+      'taxableSalesAmount',
+      'taxableSalesVat',
+      'zeroValOrExemptSalesAmount',
+      'otherInputsVat',
+      'equipmentInputsVat',
+    ],
+    seeAlso: ['pcn874-record-type'],
+    tools: ['accounter_vat_report'],
+  },
+  {
+    term: 'pcn874-record-type',
+    topic: 'report',
+    summary:
+      'PCN874 entry type of a row (`recordType`): S1 S2 L1 L2 M Y I sales, T K R P H C inputs.',
+    detail:
+      'S1/S2 identified-customer sale, L1/L2 unidentified (2 = zero-rated or exempt); M self-invoice sale; Y export; I Palestinian customer; T regular input; K petty cash; R import; P Palestinian supplier; H single document by law; C self-invoice input. A counterparty override wins; else expenses are T and income is S for a local counterparty with a VAT number, otherwise L. So a foreign customer is L even with a `vatNumber`; M, Y, I, R, P, H, C need an override.',
+    aliases: ['recordType', 'S1', 'S2', 'L1', 'L2'],
+    seeAlso: ['vat-report-summary'],
+  },
+  {
+    term: 'vat-report-missing-info',
+    topic: 'report',
+    summary: '`missingInfo`: charges in the VAT month failing validation, with `missing` reasons.',
+    detail:
+      'Any failing reason counts, even ones that change no VAT figure (TAGS, DESCRIPTION): a to-do list, not a filing verdict. Business-trip charges never appear.',
+    aliases: ['filing readiness'],
+    seeAlso: ['charge-validation', 'allocation-number'],
+    tools: ['accounter_vat_report'],
+  },
+];
+
 /** The full glossary, ordered by topic so index mode reads coherently. */
 export const GLOSSARY: readonly GlossaryEntry[] = [
   ...CHARGE_ENTRIES,
@@ -845,4 +952,5 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
   ...LEDGER_ENTRIES,
   ...ENTITY_ENTRIES,
   ...SCOPE_ENTRIES,
+  ...REPORT_ENTRIES,
 ];

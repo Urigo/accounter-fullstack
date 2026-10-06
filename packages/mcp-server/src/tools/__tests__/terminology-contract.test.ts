@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Pcn874RecordType } from '../../gql/index.js';
 import { ACCOUNTANT_STATUSES, CHARGE_TYPES } from '../charge-filters.js';
 import { KNOWN_CHARGE_TYPENAMES } from '../entity-shapes.js';
 import { toolRegistry } from '../registry-instance.js';
@@ -54,6 +55,14 @@ describe('glossary covers the enum vocabularies the tools advertise', () => {
       expect(resolves(slot)).toBe(true);
     },
   );
+
+  // `recordType` on a VAT report row: a value added upstream fails here instead
+  // of arriving undefined.
+  it.each(Object.values(Pcn874RecordType))('defines PCN874 record type %s', recordType => {
+    const entry = GLOSSARY.find(item => item.term === 'pcn874-record-type');
+    expect(entry?.summary).toMatch(new RegExp(`\\b${recordType}\\b`));
+    expect(entry?.detail).toMatch(new RegExp(`\\b${recordType}\\b`));
+  });
 
   it('defines the owner/counterparty filter pair that has already caused a scoping bug', () => {
     expect(resolves('byOwners')).toBe(true);

@@ -1,14 +1,16 @@
 import { z } from 'zod';
-import type { McpBalanceReportQuery, McpBalanceReportQueryVariables } from '../gql/index.js';
-import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
-import { normalizeAmount } from './entity-shapes.js';
-import { ToolInputError } from './execute.js';
-import { resultEnvelopeDescription, shapeListResult } from './output.js';
-import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import type { McpBalanceReportQuery, McpBalanceReportQueryVariables } from '../../gql/index.js';
+import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from '../dates.js';
+import { normalizeAmount } from '../entity-shapes.js';
+import { ToolInputError } from '../execute.js';
+import { resultEnvelopeDescription, shapeListResult } from '../output.js';
+import type { ToolDefinition, ToolExecutionContext, ToolResult } from '../registry.js';
+import { SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX } from '../scope-input.js';
+import { assertMemberBusiness, memberBusinessIdInput } from './shared.js';
 
 /**
- * Tool 3: a selected read-only report (spec §8.2).
+ * Tool 3: a selected read-only report (spec §8.2). Report tools live under
+ * `tools/reports/`; the pieces they share are in `reports/shared.ts`.
  *
  * Phase 1 exposes one report — the balance report — for a single authorized
  * business over a bounded date range. Output rows are capped to avoid large
@@ -22,14 +24,7 @@ export const MAX_REPORT_DATE_RANGE_DAYS = 1096; // ~3 years
 export const MAX_REPORT_ROWS = 1000;
 
 const balanceReportInput = z.object({
-  memberBusinessId: z
-    .string()
-    .min(1)
-    .describe(
-      'The business to report on — must be one of the businesses you are a member of. ' +
-        'Unlike the list tools this report covers exactly one business, so the id is required. ' +
-        'Use accounter_list_business_memberships to discover ids.',
-    ),
+  memberBusinessId: memberBusinessIdInput,
   fromDate: TIMELESS_DATE.describe('Start of the reporting period (YYYY-MM-DD).'),
   toDate: TIMELESS_DATE.describe('End of the reporting period (YYYY-MM-DD).'),
   reportType: z
@@ -78,19 +73,7 @@ async function handler(
 ): Promise<ToolResult> {
   assertDateRange(input);
 
-  // Report on the business the caller actually asked for. Deriving the owner
-  // from the scope instead (`readScope.memberBusinessIds[0]`) happens to agree today
-  // only because the policy narrows the scope to exactly this one business — it
-  // would silently report on the wrong business the moment the scope can hold
-  // more than one entry.
-  //
-  // The membership check is defense in depth: the policy has already verified
-  // this business is in scope, so a mismatch means the two disagree, and a
-  // business-scoped tool must never reach upstream with an unauthorized owner.
-  const ownerId = input.memberBusinessId;
-  if (!context.readScope.memberBusinessIds.includes(ownerId)) {
-    throw new ToolInputError('No authorized business in scope for this report');
-  }
+  const ownerId = assertMemberBusiness(context, input.memberBusinessId);
 
   const variables: McpBalanceReportQueryVariables = {
     fromDate: input.fromDate,

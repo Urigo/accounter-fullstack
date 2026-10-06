@@ -11,6 +11,7 @@ import { toolRegistry } from '../registry-instance.js';
 import { updateChargesTagsTool } from '../tags-write.js';
 import { explainTerminologyTool } from '../terminology.js';
 import type { ToolDefinition, ToolResult } from '../registry.js';
+import { vatReportData } from './vat-report-fixtures.js';
 
 /**
  * The cross-cutting guard for usage logging: iterate the *production registry*
@@ -82,6 +83,7 @@ function dataFor(query: string): unknown {
   if (query.includes('taxCategories')) return { taxCategories: [] };
   if (query.includes('allBusinesses')) return { allBusinesses: { nodes: [] } };
   if (query.includes('transactionsForBalanceReport')) return { transactionsForBalanceReport: [] };
+  if (query.includes('vatReport(')) return vatReportData();
   return {};
 }
 
@@ -104,6 +106,7 @@ function client() {
 /** Minimal valid arguments per tool; everything else is optional. */
 const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_balance_report: { memberBusinessId: B1, fromDate: '2026-01-01', toDate: '2026-03-01' },
+  accounter_vat_report: { memberBusinessId: B1, month: '2026-03', section: 'income' },
   accounter_get_charges: { chargeIds: ['c1'] },
   accounter_get_transactions: { transactionIds: ['t1'] },
   accounter_get_documents: { documentIds: ['d1'] },

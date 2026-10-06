@@ -13,7 +13,8 @@ import {
   listTaxCategoriesTool,
 } from './lookups.js';
 import { ToolRegistry } from './registry.js';
-import { balanceReportTool } from './reports.js';
+import { balanceReportTool } from './reports/balance-report.js';
+import { vatReportTool } from './reports/vat-report.js';
 import { getSecurityExecutionsTool, listSecurityHoldingsTool } from './securities.js';
 import { updateChargesTagsTool } from './tags-write.js';
 import { explainTerminologyTool } from './terminology.js';
@@ -67,6 +68,8 @@ toolRegistry.register(listSortCodesTool);
 // The full business directory sits with the other reference-data lookups.
 toolRegistry.register(listBusinessesTool);
 toolRegistry.register(balanceReportTool);
+// The VAT report is the other single-business report, so it sits with it.
+toolRegistry.register(vatReportTool);
 
 // Write tools last. Registration order is the order the model sees, and reads
 // are what it should reach for first — a tool that changes data should not be

@@ -3,7 +3,7 @@ import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { executeRegisteredTool } from '../execute.js';
-import { balanceReportTool, MAX_REPORT_DATE_RANGE_DAYS, MAX_REPORT_ROWS } from '../reports.js';
+import { balanceReportTool, MAX_REPORT_DATE_RANGE_DAYS, MAX_REPORT_ROWS } from '../reports/balance-report.js';
 
 /**
  * The caller's business role is the membership `roleId` resolved upstream — the

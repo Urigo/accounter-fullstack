@@ -15,6 +15,9 @@ const config: CodegenConfig = {
     './packages/scraper-app/src/server/graphql/mutations.ts',
     './packages/email-ingestion-gateway/src/graphql/mutations.ts',
     './packages/mcp-server/src/tools/*.ts',
+    // Report tools live one level down (`tools/reports/`); `*.ts` above does not
+    // descend, and `**` would also sweep in the `__tests__` fixtures.
+    './packages/mcp-server/src/tools/reports/*.ts',
     // The membership bootstrap issues its own query outside src/tools, so it
     // needs listing explicitly — otherwise it is the one MCP document nothing
     // validates against the schema.

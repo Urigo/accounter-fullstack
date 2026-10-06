@@ -101,7 +101,7 @@ export interface UpstreamClientConfig {
   fetchImpl?: typeof fetch;
 }
 
-/** Per-call knobs a tool may set on a write. */
+/** Per-call knobs a tool may set on a read or a write. */
 export interface UpstreamCallOptions {
   /**
    * This operation is expected to take far longer than an ordinary request, and
@@ -113,6 +113,13 @@ export interface UpstreamCallOptions {
    * comfortably past the default budget, which is sized for a database read. On
    * the default budget the client gave up mid-upload every time while upstream
    * carried on working, so the caller saw nothing but timeouts.
+   *
+   * Reads can be long-running too: the monthly VAT report validates every charge
+   * in the month before it answers. A long-running read is still retried on the
+   * transient failures an ordinary read retries (5xx, network), but **not** on a
+   * timeout — re-sending a request that already used the whole long budget would
+   * multiply the wait (up to `1 + maxRetries` times) for an answer that is
+   * unlikely to come any faster.
    */
   longRunning?: boolean;
 }
@@ -205,7 +212,11 @@ export class UpstreamGraphQLClient {
    * propagation, and error sanitization. Internal engine — tools use typed
    * wrappers ({@link createReadOperation}), not this method directly.
    */
-  async query<TData>(request: GraphQLRequest, context: UpstreamRequestContext): Promise<TData> {
+  async query<TData>(
+    request: GraphQLRequest,
+    context: UpstreamRequestContext,
+    options?: UpstreamCallOptions,
+  ): Promise<TData> {
     assertReadOnly(request.query);
     return this.execute<TData>(
       () => ({
@@ -218,6 +229,7 @@ export class UpstreamGraphQLClient {
       }),
       context,
       this.maxRetries,
+      options,
     );
   }
 
@@ -343,7 +355,15 @@ export class UpstreamGraphQLClient {
             );
           }
           const isRetryable = error instanceof UpstreamError && error.retryable;
-          if (!isRetryable || attempt >= maxRetries) {
+          // A long-running call that timed out has already spent the long
+          // budget; retrying it in-process would multiply the wait. The error
+          // keeps its own `retryable` flag, so a caller can still decide to ask
+          // again.
+          const isLongTimeout =
+            options?.longRunning === true &&
+            error instanceof UpstreamError &&
+            error.code === 'TIMEOUT_ERROR';
+          if (!isRetryable || isLongTimeout || attempt >= maxRetries) {
             throw error;
           }
           attempt += 1;

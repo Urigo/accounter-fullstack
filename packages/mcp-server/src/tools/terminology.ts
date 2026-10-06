@@ -23,7 +23,7 @@ import {
  * and it cannot live in per-tool `description` strings, which every caller pays
  * for on every `tools/list` and which cannot carry concepts spanning tools.
  *
- * Two properties make this tool unlike the other eleven:
+ * Two properties make this tool unlike the other eighteen:
  *
  * 1. It is **pure**. The handler never touches `context.client`, so there is no
  *    upstream call and no `x-business-scope` header. `scope-forwarding.test.ts`
@@ -94,7 +94,8 @@ const explainTerminologyInput = z.object({
     .optional()
     .describe(
       'Return every term in these topics, in full. Topics are `charge`, `transaction`, `document`, ' +
-        '`ledger`, `entity` (businesses, tax categories, sort codes) and `scope` (owner vs counterparty, memberships).',
+        '`ledger`, `entity` (businesses, tax categories, sort codes), `scope` (owner vs counterparty, memberships) ' +
+        'and `report` (the VAT report: rows, amounts, PCN874 record types, filed totals).',
     ),
 });
 
@@ -346,7 +347,7 @@ export const explainTerminologyTool: ToolDefinition<typeof explainTerminologyInp
   name: EXPLAIN_TERMINOLOGY_TOOL_NAME,
   description:
     'Explain Accounter domain terminology — what charges, transactions, documents, ledger records, ' +
-    'businesses and tax categories actually mean in this system, including the distinctions that are ' +
+    'businesses, tax categories and VAT report fields actually mean in this system, including the distinctions that are ' +
     'not inferable from the schema (a "charge" is an aggregate grouping transactions + documents + ' +
     'ledger records, not a bank charge; `byOwners` selects your business while `byBusinesses` selects ' +
     'the counterparty; `INTERNAL`/`CONVERSION` charges are money moving between your own accounts and ' +

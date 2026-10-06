@@ -17,13 +17,15 @@ import {
   listTaxCategoriesTool,
 } from '../lookups.js';
 import type { ToolExecutionContext, ToolResult } from '../registry.js';
-import { balanceReportTool } from '../reports.js';
+import { balanceReportTool } from '../reports/balance-report.js';
+import { vatReportTool } from '../reports/vat-report.js';
 import { getSecurityExecutionsTool, listSecurityHoldingsTool } from '../securities.js';
 import { getTransactionsTool } from '../transaction-details.js';
 import {
   SCOPE_DESCRIPTION_SUFFIX,
   SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
 } from '../scope-input.js';
+import { vatReportData } from './vat-report-fixtures.js';
 
 /**
  * Cross-tool contract for Phase 5: one uniform scoping input, owner-tagged rows,
@@ -71,6 +73,7 @@ const BUSINESS_SCOPED_TOOLS = [
   listSortCodesTool,
   listBusinessesTool,
   balanceReportTool,
+  vatReportTool,
 ];
 
 // The full-directory tool uses its own accurate scope clause, not the shared
@@ -97,12 +100,15 @@ describe('uniform business-scope input', () => {
     },
   );
 
-  // The single-business report must NOT claim an optional `memberBusinessIds` or
-  // per-row `ownerId` — it has neither. It still points at discovery.
-  it('balance report uses the single-business clause, not the list-tool one', () => {
-    expect(balanceReportTool.description).toContain(SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX);
-    expect(balanceReportTool.description).not.toContain(SCOPE_DESCRIPTION_SUFFIX);
-  });
+  // The single-business reports must NOT claim an optional `memberBusinessIds`
+  // — they take exactly one business. They still point at discovery.
+  it.each([balanceReportTool, vatReportTool].map(tool => [tool.name, tool] as const))(
+    '%s uses the single-business clause, not the list-tool one',
+    (_name, tool) => {
+      expect(tool.description).toContain(SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX);
+      expect(tool.description).not.toContain(SCOPE_DESCRIPTION_SUFFIX);
+    },
+  );
 
   it.each(BUSINESS_SCOPED_TOOLS.map(tool => [tool.name, tool] as const))(
     '%s points at the discovery tool',
@@ -269,6 +275,24 @@ describe('echoed effective scope', () => {
     expect(structured.scope).toEqual({ memberBusinessIds: ['b2'] });
   });
 
+  it('VAT report echoes the resolved scope alongside its memberBusinessId', async () => {
+    const result = await executeRegisteredTool({
+      tool: vatReportTool,
+      rawArgs: { memberBusinessId: 'b2', month: '2026-03', section: 'income' },
+      auth: authContext(['b1', 'b2']),
+      correlationId: 'c',
+      client: clientReturning(vatReportData()),
+      authorization: 'Bearer t',
+    });
+
+    const structured = result.structuredContent as {
+      memberBusinessId: string;
+      scope: { memberBusinessIds: string[] };
+    };
+    expect(structured.memberBusinessId).toBe('b2');
+    expect(structured.scope).toEqual({ memberBusinessIds: ['b2'] });
+  });
+
   /**
    * Owner tagging, across **every** row-producing tool.
    *
@@ -386,6 +410,29 @@ describe('echoed effective scope', () => {
     const rows = (result.structuredContent as { rows: Array<{ ownerId?: string }> }).rows;
     expect(rows[0]?.ownerId).toBe('b2');
   });
+
+  // Same rule as the balance report, for every section: each row names the one
+  // business the report ran for (`business` on a VAT row is the counterparty).
+  it.each(['income', 'expenses', 'missingInfo'] as const)(
+    'VAT report %s rows carry the reported business as ownerId',
+    async section => {
+      const result = await executeRegisteredTool({
+        tool: vatReportTool,
+        rawArgs: { memberBusinessId: 'b2', month: '2026-03', section },
+        auth: authContext(['b1', 'b2']),
+        correlationId: 'c',
+        client: clientReturning(vatReportData()),
+        authorization: 'Bearer t',
+      });
+
+      expect(result.isError).toBeUndefined();
+      const rows = (result.structuredContent as Record<string, unknown>)[section] as Array<{
+        ownerId?: string;
+      }>;
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.ownerId).toBe('b2');
+    },
+  );
 
   // The nested children of a charge are rows too: a model reading them out of a
   // multi-business charge list must be able to attribute them without walking

@@ -185,6 +185,76 @@ describe('UpstreamGraphQLClient.query — timeout & retries', () => {
   });
 });
 
+describe('UpstreamGraphQLClient.query — long-running reads', () => {
+  const abortingFetch = () =>
+    vi.fn(async () => {
+      throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+    });
+
+  function longClient(fetchImpl: unknown, maxRetries = 2) {
+    return new UpstreamGraphQLClient({
+      endpoint: ENDPOINT,
+      timeoutMs: 1000,
+      longRunningTimeoutMs: 300_000,
+      maxRetries,
+      fetchImpl: fetchImpl as typeof fetch,
+    });
+  }
+
+  it('gives a long-running read the larger budget', async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    try {
+      const fetchImpl = vi.fn(async () => jsonResponse({ data: { ok: 1 } }));
+      await longClient(fetchImpl).query({ query: 'query { ok }' }, ctx, { longRunning: true });
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 300_000);
+      expect(setTimeoutSpy).not.toHaveBeenCalledWith(expect.any(Function), 1000);
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
+  it('keeps the ordinary budget for a read that does not ask for more', async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    try {
+      const fetchImpl = vi.fn(async () => jsonResponse({ data: { ok: 1 } }));
+      await longClient(fetchImpl).query({ query: 'query { ok }' }, ctx);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
+      expect(setTimeoutSpy).not.toHaveBeenCalledWith(expect.any(Function), 300_000);
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
+  });
+
+  it('does not retry a long-running read that timed out', async () => {
+    // It already spent the whole long budget; retrying would multiply the wait.
+    const fetchImpl = abortingFetch();
+    await expect(
+      longClient(fetchImpl, 2).query({ query: 'query { x }' }, ctx, { longRunning: true }),
+    ).rejects.toMatchObject({ code: 'TIMEOUT_ERROR', retryable: true });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('still retries an ordinary read that timed out', async () => {
+    const fetchImpl = abortingFetch();
+    await expect(
+      longClient(fetchImpl, 2).query({ query: 'query { x }' }, ctx),
+    ).rejects.toMatchObject({ code: 'TIMEOUT_ERROR' });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it('still retries a long-running read on a transient 5xx', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({}, 503))
+      .mockResolvedValueOnce(jsonResponse({ data: { ok: 1 } }));
+    const result = await longClient(fetchImpl, 2).query({ query: 'query { ok }' }, ctx, {
+      longRunning: true,
+    });
+    expect(result).toEqual({ ok: 1 });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('UpstreamGraphQLClient.query — GraphQL errors', () => {
   it('sanitizes GraphQL errors and does not retry them', async () => {
     const fetchImpl = vi.fn(async () =>

@@ -304,11 +304,14 @@ jq -r 'select(.event=="mcp_initialize" and .protocolVersionMismatch)
 
 1. Check the Accounter GraphQL server health and network path (`GRAPHQL_UPSTREAM_URL`).
 2. Timeouts on reads are bounded-retried; persistent 5xx exhaust retries then surface as errors.
-   Consider raising `GRAPHQL_UPSTREAM_TIMEOUT_MS` only if the upstream is legitimately slow.
-   Document ingestion is exempt from that budget — it downloads the file, uploads it to Cloudinary
-   and OCRs it before writing, and runs on `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` (default 5 min). A
-   timed-out **write** is reported as non-retryable on purpose: giving up says nothing about what
-   upstream did with it, so it must be verified before being sent again rather than duplicated.
+   Consider raising `GRAPHQL_UPSTREAM_TIMEOUT_MS` only if the upstream is legitimately slow. Two
+   calls are exempt from that budget and run on `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` (default 5 min):
+   document ingestion, which downloads the file, uploads it to Cloudinary and OCRs it before
+   writing, and the VAT report (`accounter_vat_report`), which validates every charge in the month
+   before it answers. That long-running read is not retried on a timeout, since a retry would
+   multiply the wait; slow VAT reports point at the upstream month, not the connector. A timed-out
+   **write** is reported as non-retryable on purpose: giving up says nothing about what upstream did
+   with it, so it must be verified before being sent again rather than duplicated.
 3. 4xx/GraphQL-level errors are **not** retried — investigate the upstream, not the connector.
 
 ### C. Elevated `RATE_LIMIT_ERROR`

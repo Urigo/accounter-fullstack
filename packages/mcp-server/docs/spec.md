@@ -607,7 +607,9 @@ Risk: operational blind spots
 
 ## 16) Open Questions (Resolve Before Coding Freeze)
 
-- Which exact read-only report operations are included in MVP?
+- Which exact read-only report operations are included in MVP? — resolved: two, each for exactly one
+  member business — the balance report (`accounter_balance_report`) and the monthly VAT report
+  (`accounter_vat_report`).
 - Should business scope selection be explicit tool input or inferred default only in phase 1?
 - Do we need connector-level feature flags per tenant for staged rollout?
 - What is the exact SLO target for tool latency?
