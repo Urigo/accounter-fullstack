@@ -709,8 +709,11 @@ none of them.
       pass days, so they get the same window. Before #4592 they were two hours apart in Jerusalem.
     - A **`timestamp` value** is used as node-pg reads it, in the server's zone (R7). Ledger
       generation passes `debit_timestamp` when a transaction has one
-      (`packages/server/src/modules/ledger/helpers/utils.helper.ts:59`), which is the case for the
+      (`packages/server/src/modules/ledger/helpers/utils.helper.ts:61`), which is the case for the
       crypto rows of KRK-1 and ETH-1, whose wall-clock time the DB session wrote.
+    - [#4626](https://github.com/Urigo/accounter-fullstack/pull/4626) added `exchangeRatePointKey`,
+      which keys crypto ledger entries the same way: by that instant, with a day taken as the
+      tenant's midnight (`packages/server/src/modules/ledger/helpers/utils.helper.ts:86`).
   - Storage: the rate is stored with `date` and `sample_date` as `timestamp` without time zone
     (`packages/migrations/src/actions/2024-01-29T13-15-23.initial.ts:778,784`), so it keeps the
     server-local wall-clock time (R2 + R4). It is looked up by exact `date = $date` and cached by
@@ -772,7 +775,7 @@ folder listing uses the default fields. Documents fetched from Drive go through 
   - Date arguments must match a strict `YYYY-MM-DD` (`TIMELESS_DATE`,
     `packages/mcp-server/src/tools/dates.ts:16-38`).
   - `parseCalendarDate` (same file) rejects impossible dates by round-tripping the parts through
-    `Date.UTC`, e.g. in `packages/mcp-server/src/tools/charges.ts:169,176`.
+    `Date.UTC`, e.g. in `packages/mcp-server/src/tools/charges.ts:168,175`.
   - The value is forwarded as a string. ✅
 - **Not wired up, or rollback only:**
   - `israeli-vat-scraper` has no consumers. Its `parseDate` treats the 1-based month as a JS month
