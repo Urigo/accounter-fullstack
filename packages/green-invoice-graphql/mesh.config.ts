@@ -233,12 +233,18 @@ export const composeConfig = defineConfig({
         ],
       }),
     },
+    // `queryStringOptions` is only typed at source level, and the file-upload and open-banking APIs
+    // need conflicting options (`jsonStringify` would JSON-encode `valueDate`), so each lives in its
+    // own subgraph.
     {
-      sourceHandler: loadJSONSchemaSubgraph('GreenInvoiceNew', {
+      sourceHandler: loadJSONSchemaSubgraph('GreenInvoiceFileUpload', {
         endpoint: 'https://apigw.greeninvoice.co.il',
         operationHeaders: {
           Authorization: 'Bearer {context.authToken}',
           'Content-Type': 'application/json',
+        },
+        queryStringOptions: {
+          jsonStringify: true,
         },
         operations: [
           {
@@ -266,17 +272,27 @@ export const composeConfig = defineConfig({
                 required: ['source'],
               },
             },
-            // @ts-expect-error -- per-operation `queryStringOptions` is honored by @omnigraph/json-schema
-            // (it replaces the source-level one), but its operation type doesn't declare it yet
-            queryStringOptions: {
-              jsonStringify: true,
-            },
             queryParamArgMap: {
               context: 'context',
               data: 'data',
             },
             responseSchema: schemaRef('getFileUploadUrlResponse'),
           },
+        ],
+      }),
+    },
+    {
+      sourceHandler: loadJSONSchemaSubgraph('GreenInvoiceOpenBanking', {
+        endpoint: 'https://apigw.greeninvoice.co.il',
+        operationHeaders: {
+          Authorization: 'Bearer {context.authToken}',
+          'Content-Type': 'application/json',
+        },
+        queryStringOptions: {
+          indices: true,
+          arrayFormat: 'brackets',
+        },
+        operations: [
           {
             type: 'Query',
             field: 'getBankTransactions',
@@ -304,12 +320,6 @@ export const composeConfig = defineConfig({
               bookingStatus: {
                 type: 'string',
               },
-            },
-            // @ts-expect-error -- per-operation `queryStringOptions` is honored by @omnigraph/json-schema
-            // (it replaces the source-level one), but its operation type doesn't declare it yet
-            queryStringOptions: {
-              indices: true,
-              arrayFormat: 'brackets',
             },
             queryParamArgMap: {
               valueDate: 'valueDate',

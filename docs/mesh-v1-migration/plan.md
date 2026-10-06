@@ -20,10 +20,13 @@ Verified locally:
 
 Where the implementation differs from the plan:
 
-- **Per-operation `queryStringOptions`:** `@omnigraph/json-schema` honors it at runtime but its
-  operation type doesn't declare it. The two uses in `mesh.config.ts` carry a documented
-  `@ts-expect-error`, which will start failing (and so prompt its removal) once upstream adds the
-  type.
+- **Source-level `queryStringOptions`:** `@omnigraph/json-schema` only types `queryStringOptions` at
+  source level (mirroring v0's config schema, which rejected it per operation). `getFileUploadUrl`
+  and `getBankTransactions` need conflicting options (`jsonStringify` would JSON-encode
+  `valueDate`), so the v0 `GreenInvoiceNew` source becomes two subgraphs, `GreenInvoiceFileUpload`
+  and `GreenInvoiceOpenBanking`, each with its own source-level options. This carries over the fix
+  from #4625. Only the subgraph names in the supergraph change; the emitted `@httpOperation`
+  query-string options, the SDK and the requests are identical.
 - **tsconfig split:** the package tsconfig is split like the server's. `tsconfig.build.json` (used
   by bob) emits `src`, and `tsconfig.json` also covers `mesh.config.ts`, `codegen.ts` and
   `scripts/`. Without that, type-aware ESLint rejects the root-level configs.
@@ -303,7 +306,8 @@ export const composeConfig = defineConfig({
         ]
       })
     }
-    // GreenInvoiceNew (apigw.greeninvoice.co.il): getFileUploadUrl, getBankTransactions
+    // GreenInvoiceFileUpload (apigw.greeninvoice.co.il): getFileUploadUrl
+    // GreenInvoiceOpenBanking (apigw.greeninvoice.co.il): getBankTransactions
   ]
 })
 ```
