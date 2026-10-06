@@ -177,13 +177,18 @@ sources:
                 nullable: false
             responseSchema: ../json-schemas/greenInvoice.json#/$defs/deleteClientResponse
 
-  - name: GreenInvoiceNew
+  # `queryStringOptions` is only valid at handler level in the Mesh config schema, and the
+  # file-upload and open-banking APIs need conflicting options (`jsonStringify` would JSON-encode
+  # `valueDate`), so each lives in its own source.
+  - name: GreenInvoiceFileUpload
     handler:
       jsonSchema:
         endpoint: 'https://apigw.greeninvoice.co.il'
         operationHeaders:
           Authorization: Bearer {context.authToken}
           Content-Type: application/json
+        queryStringOptions:
+          jsonStringify: true
         operations:
           - type: Query
             field: getFileUploadUrl
@@ -203,13 +208,22 @@ sources:
                     type: string
                 required:
                   - source
-            queryStringOptions:
-              jsonStringify: true
             queryParamArgMap:
               context: context
               data: data
             responseSchema: ../json-schemas/greenInvoice.json#/$defs/getFileUploadUrlResponse
 
+  - name: GreenInvoiceOpenBanking
+    handler:
+      jsonSchema:
+        endpoint: 'https://apigw.greeninvoice.co.il'
+        operationHeaders:
+          Authorization: Bearer {context.authToken}
+          Content-Type: application/json
+        queryStringOptions:
+          indices: true
+          arrayFormat: brackets
+        operations:
           - type: Query
             field: getBankTransactions
             path: /open-banking/v2/transactions
@@ -231,9 +245,6 @@ sources:
                 type: number
               bookingStatus:
                 type: string
-            queryStringOptions:
-              indices: true
-              arrayFormat: brackets
             queryParamArgMap:
               valueDate: valueDate
               from: from
