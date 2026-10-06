@@ -26,7 +26,7 @@ const config: CodegenConfig = {
           EmailAddress: 'string',
           UUID: 'string',
           NonEmptyString: 'string',
-          Date: 'string',
+          Date: '`\x24{number}-\x24{number}-\x24{number}`',
           NonNegativeFloat: 'number',
           NonNegativeInt: 'number',
           PositiveFloat: 'number',
