@@ -74,6 +74,19 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
   };
 }
 
+/**
+ * Identifies the point an entry was priced at: its exact exchange-rate time when it has one, else
+ * its day. Entries with different keys may carry different exchange rates, so an imbalance between
+ * them can be an exchange-rate difference. Two crypto rows on the same day at different times get
+ * different keys.
+ */
+export function exchangeRatePointKey(
+  entry: Pick<LedgerProto, 'valueDate' | 'exchangeRateDate'>,
+): string {
+  const date = entry.exchangeRateDate ?? entry.valueDate;
+  return typeof date === 'string' ? date : date.toISOString();
+}
+
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: NonNullable<T[P]> };
 export type ValidateTransaction = Omit<
   WithRequired<IGetTransactionsByChargeIdsResult, 'debit_date' | 'business_id'>,
@@ -142,6 +155,7 @@ export function generatePartialLedgerEntry(
     id: transaction.id,
     invoiceDate: transaction.event_date,
     valueDate: transaction.value_date,
+    exchangeRateDate: transaction.exchange_rate_date,
     currency: transaction.currency,
     creditAmount1: absForeignAmount,
     localCurrencyCreditAmount1: absAmount,
