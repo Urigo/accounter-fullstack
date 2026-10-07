@@ -332,7 +332,7 @@ __metadata:
     "@envelop/core": "npm:5.6.1"
     "@envelop/generic-auth": "npm:11.2.1"
     "@envelop/graphql-modules": "npm:9.2.1"
-    "@google-cloud/pubsub": "npm:6.1.0"
+    "@google-cloud/pubsub": "npm:6.2.0"
     "@graphql-hive/yoga": "npm:0.49.7"
     "@graphql-tools/utils": "npm:12.0.3"
     "@graphql-yoga/plugin-defer-stream": "npm:3.24.1"
@@ -2261,9 +2261,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/pubsub@npm:6.1.0":
-  version: 6.1.0
-  resolution: "@google-cloud/pubsub@npm:6.1.0"
+"@google-cloud/pubsub@npm:6.2.0":
+  version: 6.2.0
+  resolution: "@google-cloud/pubsub@npm:6.2.0"
   dependencies:
     "@google-cloud/paginator": "npm:^7.0.0"
     "@google-cloud/precise-date": "npm:^6.0.0"
@@ -2283,7 +2283,7 @@ __metadata:
     lodash.snakecase: "npm:^4.1.1"
     long: "npm:^5.3.1"
     p-defer: "npm:^3.0.0"
-  checksum: 10c0/84422b48965cba4ca86671178a37f8136707d5685f0234912ced87d766284ee0db555bab532aeaf235e229578e998ef4c1d2356aa6b9daa6a9058416a69694bb
+  checksum: 10c0/d399a1a739717a7016ff253fd159280e712935a63f601ff9f13182a3ad558b982f5210d0585162c85e386b6dbd5c1f4760cea64ab77776e2e82a1037223cd8f2
   languageName: node
   linkType: hard
 
