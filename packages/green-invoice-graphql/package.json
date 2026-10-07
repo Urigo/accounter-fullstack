@@ -54,17 +54,17 @@
     "test": "node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
   "dependencies": {
-    "@graphql-mesh/fusion-runtime": "1.12.1",
+    "@graphql-mesh/fusion-runtime": "1.12.2",
     "@graphql-mesh/transport-rest": "0.12.2",
     "graphql": "16.14.2"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "7.4.1",
+    "@graphql-codegen/cli": "7.4.4",
     "@graphql-codegen/typescript": "5.0.10",
     "@graphql-codegen/typescript-generic-sdk": "5.0.1",
     "@graphql-codegen/typescript-operations": "5.1.0",
     "@graphql-mesh/compose-cli": "1.8.2",
-    "@graphql-tools/utils": "12.0.1",
+    "@graphql-tools/utils": "12.0.3",
     "@omnigraph/json-schema": "0.112.4",
     "bob-the-bundler": "7.0.1",
     "rimraf": "6.1.3"
