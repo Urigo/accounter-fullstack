@@ -93,7 +93,7 @@
     "typescript": "6.0.3",
     "vite": "8.3.2",
     "vite-plugin-node-polyfills": "0.28.0",
-    "wrangler": "4.147.0"
+    "wrangler": "4.149.0"
   },
   "overrides": {
     "react-is": "19.3.0"
