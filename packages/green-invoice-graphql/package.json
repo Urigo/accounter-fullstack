@@ -60,9 +60,9 @@
   },
   "devDependencies": {
     "@graphql-codegen/cli": "7.4.1",
-    "@graphql-codegen/typescript": "5.0.10",
+    "@graphql-codegen/typescript": "6.1.2",
     "@graphql-codegen/typescript-generic-sdk": "5.0.1",
-    "@graphql-codegen/typescript-operations": "5.1.0",
+    "@graphql-codegen/typescript-operations": "6.1.10",
     "@graphql-mesh/compose-cli": "1.8.2",
     "@graphql-tools/utils": "12.0.1",
     "@omnigraph/json-schema": "0.112.4",
