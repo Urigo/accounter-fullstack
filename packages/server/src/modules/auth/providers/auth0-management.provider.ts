@@ -3,6 +3,35 @@ import { Inject, Injectable, Scope } from 'graphql-modules';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment } from '../../../shared/types/index.js';
 
+const DATABASE_CONNECTION = 'Username-Password-Authentication';
+const REGISTERED_BY_ACCOUNTER = 'accounter';
+
+type Auth0UserSummary = {
+  user_id?: string;
+  created_at?: unknown;
+  identities?: { connection?: string }[];
+};
+
+/**
+ * Deterministically choose one Auth0 user among those sharing an email: prefer a
+ * database-connection user, otherwise the oldest one (ties broken by user id).
+ */
+function pickUserForEmail(users: Auth0UserSummary[]): string | null {
+  const candidates = users
+    .filter((user): user is Auth0UserSummary & { user_id: string } => !!user.user_id)
+    .sort((a, b) => {
+      const aCreated = typeof a.created_at === 'string' ? a.created_at : '';
+      const bCreated = typeof b.created_at === 'string' ? b.created_at : '';
+      return aCreated.localeCompare(bCreated) || a.user_id.localeCompare(b.user_id);
+    });
+
+  const databaseUser = candidates.find(user =>
+    user.identities?.some(identity => identity.connection === DATABASE_CONNECTION),
+  );
+
+  return (databaseUser ?? candidates[0])?.user_id ?? null;
+}
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -48,10 +77,7 @@ export class Auth0ManagementProvider {
     const client = this.getClient();
     try {
       const users = await client.users.listUsersByEmail({ email });
-      if (users?.length > 0) {
-        return users[0].user_id ?? null;
-      }
-      return null;
+      return users?.length > 0 ? pickUserForEmail(users) : null;
     } catch (error) {
       console.error(`Failed to get Auth0 user by email ${email}:`, error);
       throw new Error(`Failed to get Auth0 user by email: ${(error as Error).message}`, {
@@ -110,25 +136,56 @@ export class Auth0ManagementProvider {
     }
   }
 
-  async createBlockedUser(email: string, password?: string): Promise<string> {
+  /**
+   * Whether an Auth0 user is an unused invitation placeholder: provisioned by
+   * Accounter (see `createBlockedUser`) and never logged in. Only such users may be
+   * deleted by invitation cleanup. Lookup failures return false, so callers leave
+   * the account alone when in doubt.
+   */
+  async isUnusedInvitationUser(auth0UserId: string): Promise<boolean> {
+    const client = this.getClient();
+
+    try {
+      const user = await client.users.get(auth0UserId);
+      const loginsCount = typeof user?.logins_count === 'number' ? user.logins_count : 0;
+      return (
+        user?.app_metadata?.registered_by === REGISTERED_BY_ACCOUNTER &&
+        loginsCount === 0 &&
+        !user?.last_login
+      );
+    } catch (error) {
+      console.error(`Failed to inspect Auth0 user ${auth0UserId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Return the Auth0 user for `email`, creating a blocked one if none exists.
+   * `created` tells the caller whether the user was created by this call; a user
+   * that already existed was not created here and must never be cleaned up.
+   */
+  async createBlockedUser(
+    email: string,
+    password?: string,
+  ): Promise<{ userId: string; created: boolean }> {
     const client = this.getClient();
 
     const existingUserId = await this.getUserByEmail(email);
     if (existingUserId) {
-      return existingUserId;
+      return { userId: existingUserId, created: false };
     }
 
     const temporaryPassword = password || this.generateTemporaryPassword();
 
     try {
       const user = await client.users.create({
-        connection: 'Username-Password-Authentication',
+        connection: DATABASE_CONNECTION,
         email,
         password: temporaryPassword,
         email_verified: false,
         blocked: true,
         app_metadata: {
-          registered_by: 'accounter',
+          registered_by: REGISTERED_BY_ACCOUNTER,
         },
       });
 
@@ -136,7 +193,7 @@ export class Auth0ManagementProvider {
         throw new Error('Auth0 did not return a user ID');
       }
 
-      return user.user_id;
+      return { userId: user.user_id, created: true };
     } catch (error) {
       console.error('Failed to create Auth0 user:', error);
       throw new Error(`Failed to create Auth0 user: ${(error as Error).message}`, { cause: error });

@@ -146,12 +146,15 @@ export class InvitationsProvider {
     email,
     roleId,
     auth0UserId,
+    auth0UserCreated,
     invitedByUserId,
     ownerId,
   }: {
     email: string;
     roleId: string;
     auth0UserId: string;
+    /** Whether the Auth0 user was created for this invitation (vs. an existing user). */
+    auth0UserCreated: boolean;
     invitedByUserId: string;
     ownerId: string;
   }) {
@@ -165,7 +168,7 @@ export class InvitationsProvider {
         email,
         roleId,
         tokenHash,
-        auth0UserCreated: true,
+        auth0UserCreated,
         auth0UserId,
         invitedByUserId,
         invitedByBusinessId: ownerId,

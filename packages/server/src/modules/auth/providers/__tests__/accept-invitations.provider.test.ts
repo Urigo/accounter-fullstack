@@ -11,6 +11,8 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     insertAcceptedBusinessUserRun: vi.fn(),
     updateBusinessUserAuth0IdRun: vi.fn(),
     insertAuditLogRun: vi.fn(),
+    isAuth0UserReferencedElsewhereRun: vi.fn(),
+    deleteInvitationPlaceholderUserRun: vi.fn(),
   };
 
   const sql = vi.fn((strings: TemplateStringsArray) => {
@@ -39,6 +41,13 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
       query.includes('SET auth0_user_id = $auth0UserId')
     ) {
       return { run: runMocks.updateBusinessUserAuth0IdRun };
+    }
+
+    if (query.includes('AS "referenced!"')) {
+      return { run: runMocks.isAuth0UserReferencedElsewhereRun };
+    }
+    if (query.includes('DELETE FROM accounter_schema.business_users')) {
+      return { run: runMocks.deleteInvitationPlaceholderUserRun };
     }
 
      throw new Error(`Unexpected SQL in test: ${query}`);
@@ -78,6 +87,8 @@ const [
   getUserIdByAuth0UserIdRun,
   insertAcceptedBusinessUserRun,
   updateBusinessUserAuth0IdRun,
+  isAuth0UserReferencedElsewhereRun,
+  deleteInvitationPlaceholderUserRun,
 ] = [
   pgTypedRuntimeMock.runMocks.updateInvitationAcceptanceRun,
   pgTypedRuntimeMock.runMocks.getInvitationForAcceptanceRun,
@@ -85,6 +96,8 @@ const [
   pgTypedRuntimeMock.runMocks.getUserIdByAuth0UserIdRun,
   pgTypedRuntimeMock.runMocks.insertAcceptedBusinessUserRun,
   pgTypedRuntimeMock.runMocks.updateBusinessUserAuth0IdRun,
+  pgTypedRuntimeMock.runMocks.isAuth0UserReferencedElsewhereRun,
+  pgTypedRuntimeMock.runMocks.deleteInvitationPlaceholderUserRun,
 ];
 
 function activeInvitation(overrides: Partial<Record<string, unknown>> = {}) {
@@ -95,6 +108,7 @@ function activeInvitation(overrides: Partial<Record<string, unknown>> = {}) {
     role_id: 'employee',
     email: 'invitee@example.com',
     auth0_user_id: 'auth0|invitee',
+    auth0_user_created: true,
     accepted_at: null,
     expires_at: new Date(Date.now() + 60_000).toISOString(),
     ...overrides,
@@ -107,6 +121,7 @@ describe('AcceptInvitationsProvider', () => {
   let auth0ManagementProvider: {
     unblockUser: ReturnType<typeof vi.fn>;
     deleteUser: ReturnType<typeof vi.fn>;
+    isUnusedInvitationUser: ReturnType<typeof vi.fn>;
   };
   let provider: AcceptInvitationsProvider;
 
@@ -129,7 +144,11 @@ describe('AcceptInvitationsProvider', () => {
     auth0ManagementProvider = {
       unblockUser: vi.fn().mockResolvedValue(undefined),
       deleteUser: vi.fn().mockResolvedValue(undefined),
+      isUnusedInvitationUser: vi.fn().mockResolvedValue(true),
     };
+
+    isAuth0UserReferencedElsewhereRun.mockResolvedValue([{ referenced: false }]);
+    deleteInvitationPlaceholderUserRun.mockResolvedValue([]);
 
     provider = new AcceptInvitationsProvider(dbProvider as any, auth0ManagementProvider as any, {log: () => {void 0}} as any);
   });
@@ -172,6 +191,14 @@ describe('AcceptInvitationsProvider', () => {
     expect(updateBusinessUserAuth0IdRun).not.toHaveBeenCalled();
     expect(auth0ManagementProvider.deleteUser).toHaveBeenCalledWith('auth0|invitee');
     expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
+    expect(updateInvitationAcceptanceRun).toHaveBeenCalledWith(
+      { id: 'inv-1', userId: 'existing-user' },
+      dbClient,
+    );
+    expect(deleteInvitationPlaceholderUserRun).toHaveBeenCalledWith(
+      { userId: 'invited-user', ownerId: 'business-1' },
+      dbClient,
+    );
     expect(dbClient.release).toHaveBeenCalledOnce();
   });
 
@@ -195,6 +222,65 @@ describe('AcceptInvitationsProvider', () => {
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'COMMIT');
     expect(auth0ManagementProvider.deleteUser).toHaveBeenCalledWith('auth0|invitee');
     expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
+    expect(deleteInvitationPlaceholderUserRun).not.toHaveBeenCalled();
+  });
+
+  it('does not delete an Auth0 user the invitation did not create when accepted with another account', async () => {
+    getInvitationForAcceptanceRun.mockResolvedValue([
+      activeInvitation({ auth0_user_id: 'auth0|existing', auth0_user_created: false }),
+    ]);
+    getUserIdByAuth0UserIdRun.mockResolvedValue([{ user_id: 'existing-user' }]);
+    insertAcceptedBusinessUserRun.mockResolvedValue([]);
+    updateInvitationAcceptanceRun.mockResolvedValue([]);
+
+    await provider.acceptInvitation('token-existing', 'auth0|caller', 'invitee@example.com');
+
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
+    expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
+    expect(dbClient.query).toHaveBeenNthCalledWith(2, 'COMMIT');
+  });
+
+  it('does not unblock an Auth0 user the invitation did not create', async () => {
+    getInvitationForAcceptanceRun.mockResolvedValue([
+      activeInvitation({ auth0_user_id: 'auth0|existing', auth0_user_created: false }),
+    ]);
+    getUserIdByAuth0UserIdRun.mockResolvedValue([{ user_id: 'existing-user' }]);
+    insertAcceptedBusinessUserRun.mockResolvedValue([]);
+    updateInvitationAcceptanceRun.mockResolvedValue([]);
+
+    await provider.acceptInvitation('token-existing', 'auth0|existing', 'invitee@example.com');
+
+    expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('does not delete an invitation-created Auth0 user that has been used', async () => {
+    auth0ManagementProvider.isUnusedInvitationUser.mockResolvedValue(false);
+    getInvitationForAcceptanceRun.mockResolvedValue([activeInvitation()]);
+    getUserIdByAuth0UserIdRun.mockResolvedValue([]);
+    updateBusinessUserAuth0IdRun.mockResolvedValue([]);
+    updateInvitationAcceptanceRun.mockResolvedValue([]);
+
+    await provider.acceptInvitation('token-used', 'auth0|caller', 'invitee@example.com');
+
+    expect(auth0ManagementProvider.isUnusedInvitationUser).toHaveBeenCalledWith('auth0|invitee');
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('does not delete an invitation-created Auth0 user still referenced elsewhere', async () => {
+    isAuth0UserReferencedElsewhereRun.mockResolvedValue([{ referenced: true }]);
+    getInvitationForAcceptanceRun.mockResolvedValue([activeInvitation()]);
+    getUserIdByAuth0UserIdRun.mockResolvedValue([]);
+    updateBusinessUserAuth0IdRun.mockResolvedValue([]);
+    updateInvitationAcceptanceRun.mockResolvedValue([]);
+
+    await provider.acceptInvitation('token-shared', 'auth0|caller', 'invitee@example.com');
+
+    expect(isAuth0UserReferencedElsewhereRun).toHaveBeenCalledWith(
+      { auth0UserId: 'auth0|invitee', invitationId: 'inv-1' },
+      dbClient,
+    );
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
   });
 
   it('uses invitation auth0_user_id when caller is unauthenticated', async () => {

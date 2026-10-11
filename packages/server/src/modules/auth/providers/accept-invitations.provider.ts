@@ -10,10 +10,12 @@ import {
   mapAuth0Error,
 } from '../helpers/invitations.helper.js';
 import type {
+  IDeleteInvitationPlaceholderUserQuery,
   IGetInvitationByTokenQuery,
   IGetInvitationForAcceptanceQuery,
   IGetUserIdByAuth0UserIdQuery,
   IInsertAcceptedBusinessUserQuery,
+  IIsAuth0UserReferencedElsewhereQuery,
   IUpdateBusinessUserAuth0IdQuery,
   IUpdateInvitationAcceptanceQuery,
 } from '../types.js';
@@ -21,12 +23,12 @@ import { Auth0ManagementProvider } from './auth0-management.provider.js';
 
 const updateInvitationAcceptance = sql<IUpdateInvitationAcceptanceQuery>`
   UPDATE accounter_schema.invitations
-  SET accepted_at = NOW()
+  SET accepted_at = NOW(), user_id = $userId
   WHERE id = $id;
 `;
 
 const getInvitationForAcceptance = sql<IGetInvitationForAcceptanceQuery>`
-  SELECT id, user_id, business_id, role_id, email, auth0_user_id, accepted_at, expires_at
+  SELECT id, user_id, business_id, role_id, email, auth0_user_id, auth0_user_created, accepted_at, expires_at
   FROM accounter_schema.invitations
   WHERE token_hash = $tokenHash
     AND accepted_at IS NULL
@@ -57,6 +59,29 @@ const updateBusinessUserAuth0Id = sql<IUpdateBusinessUserAuth0IdQuery>`
   SET auth0_user_id = $auth0UserId, updated_at = NOW()
   WHERE user_id = $userId
     AND business_id = $ownerId;
+`;
+
+// Removes the pending placeholder membership created alongside the invitation, once
+// the invitation has been accepted by a user who already had a membership elsewhere.
+// Guarded by `auth0_user_id IS NULL` so an accepted member is never deleted.
+const deleteInvitationPlaceholderUser = sql<IDeleteInvitationPlaceholderUserQuery>`
+  DELETE FROM accounter_schema.business_users
+  WHERE user_id = $userId
+    AND business_id = $ownerId
+    AND auth0_user_id IS NULL;
+`;
+
+const isAuth0UserReferencedElsewhere = sql<IIsAuth0UserReferencedElsewhereQuery>`
+  SELECT (
+    EXISTS (
+      SELECT 1 FROM accounter_schema.invitations
+      WHERE auth0_user_id = $auth0UserId AND id <> $invitationId
+    )
+    OR EXISTS (
+      SELECT 1 FROM accounter_schema.business_users
+      WHERE auth0_user_id = $auth0UserId
+    )
+  ) AS "referenced!";
 `;
 
 @Injectable({
@@ -174,10 +199,23 @@ export class AcceptInvitationsProvider {
         await assignAuth0UserToInvitedUser();
       }
 
-      if (invitation.auth0_user_id) {
+      // Only an Auth0 user created for this invitation is ours to unblock or delete.
+      // A user that already existed when the invitation was issued is left untouched.
+      if (invitation.auth0_user_id && invitation.auth0_user_created) {
         try {
           if (auth0UserId && auth0UserId !== invitation.auth0_user_id) {
-            await this.auth0ManagementProvider.deleteUser(invitation.auth0_user_id);
+            // Accepted with a different account: the placeholder is no longer needed,
+            // unless it has been used or is still referenced elsewhere.
+            const [{ referenced }] = await isAuth0UserReferencedElsewhere.run(
+              { auth0UserId: invitation.auth0_user_id, invitationId: invitation.id },
+              client,
+            );
+            if (
+              !referenced &&
+              (await this.auth0ManagementProvider.isUnusedInvitationUser(invitation.auth0_user_id))
+            ) {
+              await this.auth0ManagementProvider.deleteUser(invitation.auth0_user_id);
+            }
           } else {
             await this.auth0ManagementProvider.unblockUser(invitation.auth0_user_id);
           }
@@ -186,7 +224,16 @@ export class AcceptInvitationsProvider {
         }
       }
 
-      await updateInvitationAcceptance.run({ id: invitation.id }, client);
+      await updateInvitationAcceptance.run({ id: invitation.id, userId }, client);
+
+      if (userId !== invitation.user_id) {
+        // The invitation now points at the existing user, so the placeholder can go
+        // without cascading to the invitation row.
+        await deleteInvitationPlaceholderUser.run(
+          { userId: invitation.user_id, ownerId: invitation.business_id },
+          client,
+        );
+      }
 
       await this.auditLogsProvider.log(
         {

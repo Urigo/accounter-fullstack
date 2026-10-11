@@ -71,10 +71,84 @@ describe('Auth0ManagementProvider', () => {
 
     mockClient.users.listUsersByEmail.mockResolvedValue([{ user_id: existingUserId }]);
 
-    const userId = await service.createBlockedUser(email);
+    const result = await service.createBlockedUser(email);
 
-    expect(userId).toBe(existingUserId);
+    expect(result).toEqual({ userId: existingUserId, created: false });
     expect(mockClient.users.create).not.toHaveBeenCalled();
+  });
+
+  it('prefers the database-connection user when several users share an email', async () => {
+    mockClient.users.listUsersByEmail.mockResolvedValue([
+      {
+        user_id: 'google-oauth2|older',
+        created_at: '2024-01-01T00:00:00.000Z',
+        identities: [{ connection: 'google-oauth2' }],
+      },
+      {
+        user_id: 'auth0|newer',
+        created_at: '2025-01-01T00:00:00.000Z',
+        identities: [{ connection: 'Username-Password-Authentication' }],
+      },
+    ]);
+
+    await expect(service.getUserByEmail('multi@example.com')).resolves.toBe('auth0|newer');
+  });
+
+  it('picks the oldest user when no database-connection user shares the email', async () => {
+    mockClient.users.listUsersByEmail.mockResolvedValue([
+      {
+        user_id: 'google-oauth2|newer',
+        created_at: '2025-01-01T00:00:00.000Z',
+        identities: [{ connection: 'google-oauth2' }],
+      },
+      {
+        user_id: 'github|older',
+        created_at: '2024-01-01T00:00:00.000Z',
+        identities: [{ connection: 'github' }],
+      },
+    ]);
+
+    await expect(service.getUserByEmail('multi@example.com')).resolves.toBe('github|older');
+  });
+
+  describe('isUnusedInvitationUser', () => {
+    it('is true for a never-used user provisioned by accounter', async () => {
+      mockClient.users.get.mockResolvedValue({
+        user_id: 'auth0|placeholder',
+        logins_count: 0,
+        app_metadata: { registered_by: 'accounter' },
+      });
+
+      await expect(service.isUnusedInvitationUser('auth0|placeholder')).resolves.toBe(true);
+    });
+
+    it('is false for a user that has logged in', async () => {
+      mockClient.users.get.mockResolvedValue({
+        user_id: 'auth0|placeholder',
+        logins_count: 3,
+        last_login: '2026-01-01T00:00:00.000Z',
+        app_metadata: { registered_by: 'accounter' },
+      });
+
+      await expect(service.isUnusedInvitationUser('auth0|placeholder')).resolves.toBe(false);
+    });
+
+    it('is false for a user not provisioned by accounter', async () => {
+      mockClient.users.get.mockResolvedValue({
+        user_id: 'google-oauth2|someone',
+        logins_count: 0,
+        app_metadata: {},
+      });
+
+      await expect(service.isUnusedInvitationUser('google-oauth2|someone')).resolves.toBe(false);
+    });
+
+    it('is false when the lookup fails', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      mockClient.users.get.mockRejectedValue(new Error('Not found'));
+
+      await expect(service.isUnusedInvitationUser('auth0|missing')).resolves.toBe(false);
+    });
   });
 
   it('should create a blocked user with temporary password', async () => {
@@ -86,9 +160,9 @@ describe('Auth0ManagementProvider', () => {
       user_id: mockUserId,
     });
 
-    const userId = await service.createBlockedUser(email);
+    const result = await service.createBlockedUser(email);
 
-    expect(userId).toBe(mockUserId);
+    expect(result).toEqual({ userId: mockUserId, created: true });
     expect(mockClient.users.create).toHaveBeenCalledWith(
       expect.objectContaining({
         connection: 'Username-Password-Authentication',

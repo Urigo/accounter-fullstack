@@ -33,7 +33,28 @@ export async function cleanupExpiredInvitations(
     for (const invitation of expired) {
       try {
         if (invitation.auth0_user_created && invitation.auth0_user_id) {
-          await auth0.deleteUser(invitation.auth0_user_id);
+          // Delete only an unused placeholder this invitation created: never a user that
+          // existed beforehand, has logged in, or is still referenced by another
+          // invitation or membership (Auth0 users are reused across invitations).
+          const {
+            rows: [{ referenced }],
+          } = await client.query<{ referenced: boolean }>(
+            `SELECT (
+               EXISTS (
+                 SELECT 1 FROM accounter_schema.invitations
+                 WHERE auth0_user_id = $1 AND id <> $2
+               )
+               OR EXISTS (
+                 SELECT 1 FROM accounter_schema.business_users
+                 WHERE auth0_user_id = $1
+               )
+             ) AS referenced`,
+            [invitation.auth0_user_id, invitation.id],
+          );
+
+          if (!referenced && (await auth0.isUnusedInvitationUser(invitation.auth0_user_id))) {
+            await auth0.deleteUser(invitation.auth0_user_id);
+          }
         }
 
         await client.query('BEGIN');
