@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   businessNodesToRows,
-  filterBusinessRows,
   formatLocality,
+  isBusinessUnused,
   mergeBusinessUsage,
   type BusinessRow,
-  type BusinessRowFilters,
   type BusinessTableRow,
 } from '../business-rows.js';
 
@@ -43,16 +42,6 @@ function makeTableRow(overrides: Partial<BusinessTableRow>): BusinessTableRow {
     ...overrides,
   };
 }
-
-const NO_FILTERS: BusinessRowFilters = {
-  name: '',
-  client: false,
-  admin: false,
-  inactive: false,
-  unusedOnly: false,
-  sortCode: '',
-  taxCategory: '',
-};
 
 describe('businessNodesToRows', () => {
   it('keeps only LtdFinancialEntity nodes and maps core, categorization and tag fields', () => {
@@ -165,36 +154,10 @@ describe('mergeBusinessUsage', () => {
   });
 });
 
-describe('filterBusinessRows', () => {
-  it('filters by name / hebrew name substring (case-insensitive)', () => {
-    const rows = [
-      makeTableRow({ id: 'a', name: 'Acme Ltd', hebrewName: null }),
-      makeTableRow({ id: 'b', name: 'Other', hebrewName: 'אקמה' }),
-      makeTableRow({ id: 'c', name: 'Nope' }),
-    ];
-    expect(filterBusinessRows(rows, { ...NO_FILTERS, name: 'acme' }).map(row => row.id)).toEqual([
-      'a',
-    ]);
-    expect(filterBusinessRows(rows, { ...NO_FILTERS, name: 'אקמה' }).map(row => row.id)).toEqual([
-      'b',
-    ]);
-  });
-
-  it('filters by the client flag', () => {
-    const rows = [makeTableRow({ id: 'a', isClient: true }), makeTableRow({ id: 'b' })];
-    expect(filterBusinessRows(rows, { ...NO_FILTERS, client: true }).map(row => row.id)).toEqual([
-      'a',
-    ]);
-  });
-
-  it('filters inactive businesses', () => {
-    const rows = [makeTableRow({ id: 'a', isActive: false }), makeTableRow({ id: 'b' })];
-    expect(filterBusinessRows(rows, { ...NO_FILTERS, inactive: true }).map(row => row.id)).toEqual([
-      'a',
-    ]);
-  });
-
-  it('keeps only rows whose four usage counts are all zero for "unused only"', () => {
+// Name, flag, sort code and tax category filtering moved server-side (`allBusinesses(filters:)`);
+// "unused only" stays in the browser, as a plain filter over this predicate.
+describe('isBusinessUnused', () => {
+  it('is true only once all four usage counts are loaded and zero', () => {
     const rows = [
       makeTableRow({ id: 'used', totalTransactions: 3 }),
       makeTableRow({ id: 'unused' }),
@@ -206,32 +169,7 @@ describe('filterBusinessRows', () => {
         totalLedgerRecords: null,
       }),
     ];
-    expect(filterBusinessRows(rows, { ...NO_FILTERS, unusedOnly: true }).map(row => row.id)).toEqual(
-      ['unused'],
-    );
-  });
-
-  it('filters by sort-code key or name, and by tax-category substrings', () => {
-    const rows = [
-      makeTableRow({
-        id: 'a',
-        sortCodeKey: 310,
-        sortCodeName: 'לקוחות חול',
-        taxCategoryName: 'Income',
-      }),
-      makeTableRow({ id: 'b', sortCodeKey: 200, sortCodeName: 'ספקים', taxCategoryName: 'Expense' }),
-    ];
-    // by key
-    expect(filterBusinessRows(rows, { ...NO_FILTERS, sortCode: '310' }).map(row => row.id)).toEqual([
-      'a',
-    ]);
-    // by name (case-insensitive substring)
-    expect(
-      filterBusinessRows(rows, { ...NO_FILTERS, sortCode: 'לקוחות' }).map(row => row.id),
-    ).toEqual(['a']);
-    expect(
-      filterBusinessRows(rows, { ...NO_FILTERS, taxCategory: 'exp' }).map(row => row.id),
-    ).toEqual(['b']);
+    expect(rows.filter(isBusinessUnused).map(row => row.id)).toEqual(['unused']);
   });
 });
 

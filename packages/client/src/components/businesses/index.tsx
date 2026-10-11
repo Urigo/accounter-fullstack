@@ -1,4 +1,4 @@
-import { Fragment, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { Fragment, useContext, useEffect, useMemo, type ReactElement } from 'react';
 import { Building2, ChevronDown } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -31,16 +31,21 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from '../ui/empty.js';
+import { LoadingOverlay } from '../ui/overlay.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { BatchUpdateBusinessesDialog } from './batch-update-dialog.js';
 import {
   businessNodesToRows,
-  filterBusinessRows,
+  isBusinessUnused,
   mergeBusinessUsage,
-  type BusinessRowFilters,
   type BusinessTableMeta,
 } from './business-rows.js';
-import { BusinessesFilters } from './businesses-filters.js';
+import {
+  BusinessesFilters,
+  hasActiveFilters,
+  toServerFilter,
+  useBusinessesFilter,
+} from './businesses-filters/index.js';
 import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
 import { TableScrollContainer } from './table-scroll-container.js';
 import {
@@ -53,12 +58,12 @@ import {
 const EMPTY_ROW_SELECTION: RowSelectionState = {};
 const EMPTY_SORTING: SortingState = [];
 
-// Fetch all businesses (no server pagination) so filtering/sorting/pagination are all client-side
-// and apply across the whole set, not just one page. The resolver already loads them all in memory.
+// Filtering is server-side (see the filters toolbar), but the matching set is fetched whole, with
+// no server pagination, so sorting and pagination stay client-side and apply across all of it.
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllBusinessesForScreen {
-    allBusinesses {
+  query AllBusinessesForScreen($filters: BusinessFilter) {
+    allBusinesses(filters: $filters) {
       nodes {
         __typename
         id
@@ -118,8 +123,16 @@ const EMPTY_SORTING: SortingState = [];
 export const Businesses = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
 
+  // Persisted in the URL. `unusedOnly` is applied below, in the browser; the rest goes upstream.
+  const [filter, setFilter] = useBusinessesFilter();
+  const serverFilter = useMemo(() => toServerFilter(filter), [filter]);
+  const filtered = hasActiveFilters(filter);
+
+  // urql keeps the previous `data` while a new filter loads, so the table stays on screen under
+  // a loading overlay instead of collapsing to a skeleton on every apply.
   const [{ data, fetching, error }, refetch] = useQuery({
     query: AllBusinessesForScreenDocument,
+    variables: { filters: serverFilter },
   });
 
   const rows = useMemo(
@@ -144,19 +157,9 @@ export const Businesses = (): ReactElement => {
     EMPTY_SORTING,
     reviveSorting,
   );
-  const [filters, setFilters] = useState<BusinessRowFilters>({
-    name: '',
-    client: false,
-    admin: false,
-    inactive: false,
-    unusedOnly: false,
-    sortCode: '',
-    taxCategory: '',
-  });
-
   // Usage counts are lazy: fetched once a usage column is enabled or "unused only" is on.
   const businessIds = useMemo(() => rows.map(row => row.id), [rows]);
-  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]) || filters.unusedOnly;
+  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]) || !!filter.unusedOnly;
   const [{ data: usageData, fetching: usageFetching }] = useQuery({
     query: BusinessesUsageDocument,
     variables: { ids: businessIds },
@@ -167,7 +170,11 @@ export const Businesses = (): ReactElement => {
     () => mergeBusinessUsage(rows, usageData?.businessesUsage ?? []),
     [rows, usageData],
   );
-  const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
+  // Rows whose counts haven't loaded yet are excluded: they are not known to be unused.
+  const filteredRows = useMemo(
+    () => (filter.unusedOnly ? tableRows.filter(isBusinessUnused) : tableRows),
+    [tableRows, filter.unusedOnly],
+  );
 
   const table = useTable({
     features: paginatedTableFeaturesConfig,
@@ -194,13 +201,14 @@ export const Businesses = (): ReactElement => {
     } as BusinessTableMeta,
   });
 
-  // Derive selected ids from `rows` and `rowSelection` (keyed by row id via getRowId), avoiding
-  // the unstable `table` object. Deliberately the *unfiltered* row set: a row selected under one
-  // filter stays selected when the filter changes (and is still checked once it is visible
-  // again). Ids of rows that no longer exist at all drop out on their own.
+  // Read straight off `rowSelection` (keyed by row id via getRowId), avoiding the unstable `table`
+  // object. Deliberately not intersected with the loaded rows: filtering is server-side, so a row
+  // selected under one filter is absent from the next result, yet stays selected — merge and
+  // batch-update still act on it, and it is checked again once a filter shows it. Deleting a
+  // business deselects it (see business-row-actions).
   const selectedIds = useMemo(
-    () => rows.filter(row => rowSelection[row.id]).map(row => row.id),
-    [rows, rowSelection],
+    () => Object.keys(rowSelection).filter(id => rowSelection[id]),
+    [rowSelection],
   );
 
   // Footer
@@ -220,8 +228,8 @@ export const Businesses = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessesFilters
-          filters={filters}
-          setFilters={setFilters}
+          filter={filter}
+          setFilter={setFilter}
           usageLoading={usageEnabled && usageFetching}
         />
         <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
@@ -238,8 +246,8 @@ export const Businesses = (): ReactElement => {
     setFiltersContext,
     selectedIds,
     refetch,
-    filters,
-    setFilters,
+    filter,
+    setFilter,
     setRowSelection,
     usageEnabled,
     usageFetching,
@@ -247,8 +255,8 @@ export const Businesses = (): ReactElement => {
 
   return (
     <PageLayout
-      title={`Businesses (${rows.length})`}
-      description="All businesses"
+      title={`Businesses (${filteredRows.length})`}
+      description={filtered ? 'Businesses matching the filters' : 'All businesses'}
       headerActions={
         <div className="flex items-center py-4 gap-4">
           <InsertBusiness description="" onAdd={() => refetch()} />
@@ -310,11 +318,11 @@ export const Businesses = (): ReactElement => {
           <AlertTitle>Failed to load businesses</AlertTitle>
           <AlertDescription>{error.message}</AlertDescription>
         </Alert>
-      ) : fetching ? (
+      ) : fetching && !data ? (
         <div className="rounded-md border p-4">
           <TableSkeleton columns={8} rows={10} />
         </div>
-      ) : rows.length === 0 ? (
+      ) : rows.length === 0 && !filtered ? (
         <Empty className="py-8 sm:py-12">
           <EmptyMedia>
             <Building2 className="size-8 sm:size-10 text-muted-foreground" />
@@ -328,7 +336,8 @@ export const Businesses = (): ReactElement => {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="space-y-4">
+        <div className="relative space-y-4">
+          <LoadingOverlay visible={fetching} className="z-10 rounded-md" />
           <TableScrollContainer className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
