@@ -12,10 +12,8 @@ import {
 } from '../helpers/business-suggestion-data-schema.helper.js';
 import { updateSuggestions } from '../helpers/businesses.helper.js';
 import { updateSingleBusiness } from '../helpers/update-business.helper.js';
-import { filterBusinessByName } from '../helpers/utils.helper.js';
 import { BusinessesOperationProvider } from '../providers/businesses-operation.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
-import { ClientsProvider } from '../providers/clients.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
@@ -44,29 +42,17 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
       return businesses as IGetBusinessesByIdsResult[];
     },
-    allBusinesses: async (_, { page, limit, name, isClient }, { injector }) => {
-      const businesses = await injector.get(BusinessesProvider).getAllBusinesses();
-
-      // Resolved once for the whole call, not per row: `getAllClients()` is
-      // operation-memoized and RLS-scoped, so this costs at most one extra query.
-      // Applying the predicate *here* — ahead of the count and the slice — is the
-      // entire point of accepting it as an argument: `pageInfo` then describes the
-      // filtered directory and every page comes back full. A caller filtering an
-      // already-sliced page could do neither.
-      const clientBusinessIds =
-        isClient == null
-          ? null
-          : new Set(
-              (await injector.get(ClientsProvider).getAllClients()).map(
-                client => client.business_id,
-              ),
-            );
-
-      const filteredBusinesses = businesses.filter(
-        business =>
-          filterBusinessByName(business, name) &&
-          (clientBusinessIds === null || clientBusinessIds.has(business.id) === isClient),
-      );
+    allBusinesses: async (_, { page, limit, name, isClient, filters }, { injector }) => {
+      // Every predicate is applied in SQL, *ahead of* the count and the slice — the entire
+      // point of accepting them as arguments: `pageInfo` then describes the filtered directory
+      // and every page comes back full. A caller filtering an already-sliced page could do
+      // neither. The top-level `name` / `isClient` arguments predate `filters` and stay for
+      // existing callers; a field set in `filters` wins over its same-named argument.
+      const filteredBusinesses = await injector.get(BusinessesProvider).getBusinessesByFilters({
+        ...filters,
+        name: filters?.name ?? name,
+        isClient: filters?.isClient ?? isClient,
+      });
 
       page ??= 0;
       let pageBusinesses = filteredBusinesses.sort((a, b) =>

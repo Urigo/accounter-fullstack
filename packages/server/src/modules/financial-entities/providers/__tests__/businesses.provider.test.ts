@@ -74,3 +74,40 @@ describe('BusinessesProvider (RLS path)', () => {
     expect(query.mock.calls.length).toBe(1);
   });
 });
+
+describe('BusinessesProvider.getBusinessesByFilters', () => {
+  it('sends a blank name as no name, and upper-cases country codes', async () => {
+    const { provider, query } = createProvider([]);
+
+    await provider.getBusinessesByFilters({ name: '   ', countries: ['isr', 'Usa'] });
+
+    expect(query).toHaveBeenCalledTimes(1);
+    const [, values] = query.mock.calls[0];
+    expect(values).toContain('ISR');
+    expect(values).toContain('USA');
+    expect(values).not.toContain('isr');
+    expect(values).not.toContain('   ');
+  });
+
+  it('carries no manual owner filter — RLS scopes it', async () => {
+    const { provider, query } = createProvider([]);
+
+    await provider.getBusinessesByFilters({ isClient: true });
+
+    const [queryText] = query.mock.calls[0];
+    expect(queryText).toContain('FROM accounter_schema.businesses');
+    expect(queryText).not.toMatch(/owner_id\s*=/);
+  });
+
+  it('primes the by-id loader with the rows it returns', async () => {
+    const { provider, query } = createProvider([
+      { id: 'business-a', name: 'Business A', owner_id: 'owner-a' },
+    ]);
+
+    await provider.getBusinessesByFilters({});
+    const loaded = await provider.getBusinessByIdLoader.load('business-a');
+
+    expect(loaded).toEqual(expect.objectContaining({ name: 'Business A' }));
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+});

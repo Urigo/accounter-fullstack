@@ -10,6 +10,8 @@ import type {
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,
   IGetBusinessByEmailQuery,
+  IGetBusinessesByFiltersParams,
+  IGetBusinessesByFiltersQuery,
   IGetBusinessesByIdsQuery,
   IInsertBusinessesParams,
   IInsertBusinessesQuery,
@@ -30,6 +32,48 @@ const getAllBusinesses = sql<IGetAllBusinessesQuery>`
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
+
+// Every predicate is optional: a null scalar or a zero `is*` flag short-circuits it. The tax
+// category and sort code predicates each OR a list match with a "has none" match, so a caller can
+// ask for "category X or uncategorized" in one go. The EXISTS sub-queries carry no owner predicate
+// of their own: RLS already scopes every joined table to the current business scope, which is also
+// how the `taxCategory` / `isClient` / `isAdmin` field resolvers read them. `strpos` rather than
+// ILIKE keeps user-typed `%` / `_` literal.
+const getBusinessesByFilters = sql<IGetBusinessesByFiltersQuery>`
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
+    FROM accounter_schema.businesses b
+    INNER JOIN accounter_schema.financial_entities fe
+      USING (id)
+    WHERE ($name::TEXT IS NULL
+        OR strpos(lower(fe.name), lower($name::TEXT)) > 0
+        OR strpos(lower(b.hebrew_name), lower($name::TEXT)) > 0)
+      AND (($isTaxCategoryIds = 0 AND $withoutTaxCategory::BOOLEAN IS NOT TRUE)
+        OR ($isTaxCategoryIds = 1 AND EXISTS (
+          SELECT 1
+          FROM accounter_schema.business_tax_category_match tcm
+          WHERE tcm.business_id = b.id
+            AND tcm.tax_category_id IN $$taxCategoryIds
+        ))
+        OR ($withoutTaxCategory::BOOLEAN IS TRUE AND NOT EXISTS (
+          SELECT 1
+          FROM accounter_schema.business_tax_category_match tcm
+          WHERE tcm.business_id = b.id
+        )))
+      AND (($isSortCodes = 0 AND $withoutSortCode::BOOLEAN IS NOT TRUE)
+        OR ($isSortCodes = 1 AND fe.sort_code IN $$sortCodes)
+        OR ($withoutSortCode::BOOLEAN IS TRUE AND fe.sort_code IS NULL))
+      AND ($isCountries = 0 OR b.country IN $$countries)
+      AND ($isClient::BOOLEAN IS NULL OR EXISTS (
+        SELECT 1
+        FROM accounter_schema.clients c
+        WHERE c.business_id = b.id
+      ) = $isClient::BOOLEAN)
+      AND ($isActive::BOOLEAN IS NULL OR fe.is_active = $isActive::BOOLEAN)
+      AND ($isAdmin::BOOLEAN IS NULL OR EXISTS (
+        SELECT 1
+        FROM accounter_schema.businesses_admin ba
+        WHERE ba.id = b.id
+      ) = $isAdmin::BOOLEAN);`;
 
 // Match a business by a recognition email in suggestion_data.emails. A stored
 // entry may be a wildcard pattern (e.g. `*@cloudflare.com`) for suppliers that
@@ -251,6 +295,18 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
   RETURNING id;
 `;
 
+export type BusinessesFiltersParams = {
+  name?: string | null;
+  taxCategoryIds?: readonly string[] | null;
+  withoutTaxCategory?: boolean | null;
+  sortCodes?: readonly number[] | null;
+  withoutSortCode?: boolean | null;
+  countries?: readonly string[] | null;
+  isClient?: boolean | null;
+  isActive?: boolean | null;
+  isAdmin?: boolean | null;
+};
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -288,6 +344,38 @@ export class BusinessesProvider {
       return businesses;
     });
     return this.allBusinessesCache;
+  }
+
+  public getBusinessesByFilters(params: BusinessesFiltersParams) {
+    const name = params.name?.trim() || null;
+    const taxCategoryIds = params.taxCategoryIds?.filter(Boolean) ?? [];
+    const sortCodes = params.sortCodes?.filter(code => code != null) ?? [];
+    // The CountryCode scalar matches case-insensitively, while the column holds upper-case codes.
+    const countries = params.countries?.filter(Boolean).map(code => code.toUpperCase()) ?? [];
+
+    const fullParams: IGetBusinessesByFiltersParams = {
+      name,
+      // pgtyped requires a non-empty array for `IN $$list`; the matching `is*` flag
+      // short-circuits the predicate, so the placeholder is never compared.
+      isTaxCategoryIds: taxCategoryIds.length ? 1 : 0,
+      taxCategoryIds: taxCategoryIds.length ? [...taxCategoryIds] : [null],
+      withoutTaxCategory: params.withoutTaxCategory ?? null,
+      isSortCodes: sortCodes.length ? 1 : 0,
+      sortCodes: sortCodes.length ? [...sortCodes] : [null],
+      withoutSortCode: params.withoutSortCode ?? null,
+      isCountries: countries.length ? 1 : 0,
+      countries: countries.length ? countries : [null],
+      isClient: params.isClient ?? null,
+      isActive: params.isActive ?? null,
+      isAdmin: params.isAdmin ?? null,
+    };
+
+    return getBusinessesByFilters.run(fullParams, this.db).then(businesses => {
+      for (const business of businesses) {
+        this.getBusinessByIdLoader.prime(business.id, business);
+      }
+      return businesses;
+    });
   }
 
   public getBusinessByEmail(email: string) {
