@@ -109,6 +109,18 @@ export const invitationsResolvers: AuthModule.Resolvers = {
       const auth0UserId = authContext?.user?.auth0UserId ?? jwtIdentity?.auth0UserId ?? null;
       const authenticatedUserEmail = authContext?.user?.email ?? jwtIdentity?.email ?? null;
 
+      // Only a signed-in end user can accept an invitation, for themselves. API keys and the
+      // gateway control-plane identity carry no Auth0 subject, and are rejected explicitly too.
+      if (
+        !auth0UserId ||
+        authContext?.authType === 'apiKey' ||
+        authContext?.authType === 'gatewayControlPlane'
+      ) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
       const normalizedToken = token.trim();
       if (!normalizedToken) {
         throw invalidTokenError();

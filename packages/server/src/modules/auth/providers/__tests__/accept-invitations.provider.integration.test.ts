@@ -164,6 +164,27 @@ describe('AcceptInvitationsProvider (integration): existing member invited to a 
     expect(auth0.deleteUser).not.toHaveBeenCalled();
   });
 
+  it('rejects a call without an authenticated user and changes nothing', async () => {
+    const invitationId = await seedInvitation(EXISTING_AUTH0_USER_ID, false);
+
+    await expect(
+      createProvider().acceptInvitation(TOKEN, null as unknown as string, null),
+    ).rejects.toMatchObject({ extensions: { code: 'TOKEN_INVALID' } });
+
+    expect(await getSecondBusinessMembers()).toEqual([
+      { user_id: PLACEHOLDER_USER_ID, auth0_user_id: null },
+    ]);
+    const {
+      rows: [invitation],
+    } = await pool.query<{ user_id: string; accepted_at: Date | null }>(
+      'SELECT user_id, accepted_at FROM accounter_schema.invitations WHERE id = $1',
+      [invitationId],
+    );
+    expect(invitation).toEqual({ user_id: PLACEHOLDER_USER_ID, accepted_at: null });
+    expect(auth0.unblockUser).not.toHaveBeenCalled();
+    expect(auth0.deleteUser).not.toHaveBeenCalled();
+  });
+
   it('removes an unused placeholder Auth0 user the invitation created', async () => {
     await seedInvitation(PLACEHOLDER_AUTH0_USER_ID, true);
 

@@ -84,9 +84,13 @@ export class AcceptInvitationsProvider {
 
   public async acceptInvitation(
     token: string,
-    auth0UserId: string | null,
+    auth0UserId: string,
     authenticatedUserEmail: string | null,
   ) {
+    if (!auth0UserId) {
+      throw invalidTokenError();
+    }
+
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const client = await this.dbProvider.pool.connect();
 
@@ -116,33 +120,26 @@ export class AcceptInvitationsProvider {
       }
 
       const invitation = activeInvitationResult[0];
-      const effectiveAuth0UserId = auth0UserId ?? invitation.auth0_user_id;
 
-      if (!effectiveAuth0UserId) {
-        throw invalidTokenError();
+      // The accepting user can claim only an invitation for their own email.
+      const normalizedInvitationEmail = invitation.email?.trim().toLowerCase();
+      let normalizedAuthenticatedEmail = authenticatedUserEmail?.trim().toLowerCase() ?? null;
+
+      // Access tokens for custom APIs often omit `email` claims.
+      // In that case, resolve the primary email from Auth0 profile for comparison.
+      if (!normalizedAuthenticatedEmail) {
+        const identity = await this.auth0ManagementProvider.getUserEmailById(auth0UserId);
+        if (identity?.emailVerified && identity.email) {
+          normalizedAuthenticatedEmail = identity.email.trim().toLowerCase();
+        }
       }
 
-      // Defense in depth: authenticated users can claim only invitations for their own email.
-      if (auth0UserId) {
-        const normalizedInvitationEmail = invitation.email?.trim().toLowerCase();
-        let normalizedAuthenticatedEmail = authenticatedUserEmail?.trim().toLowerCase() ?? null;
-
-        // Access tokens for custom APIs often omit `email` claims.
-        // In that case, resolve the primary email from Auth0 profile for comparison.
-        if (!normalizedAuthenticatedEmail) {
-          const identity = await this.auth0ManagementProvider.getUserEmailById(auth0UserId);
-          if (identity?.emailVerified && identity.email) {
-            normalizedAuthenticatedEmail = identity.email.trim().toLowerCase();
-          }
-        }
-
-        if (
-          !normalizedInvitationEmail ||
-          !normalizedAuthenticatedEmail ||
-          normalizedInvitationEmail !== normalizedAuthenticatedEmail
-        ) {
-          throw invalidTokenError();
-        }
+      if (
+        !normalizedInvitationEmail ||
+        !normalizedAuthenticatedEmail ||
+        normalizedInvitationEmail !== normalizedAuthenticatedEmail
+      ) {
+        throw invalidTokenError();
       }
 
       if (!invitation.user_id) {
@@ -152,7 +149,7 @@ export class AcceptInvitationsProvider {
       const assignAuth0UserToInvitedUser = async () => {
         await updateBusinessUserAuth0Id.run(
           {
-            auth0UserId: effectiveAuth0UserId,
+            auth0UserId,
             userId: invitation.user_id,
             ownerId: invitation.business_id,
           },
@@ -162,25 +159,20 @@ export class AcceptInvitationsProvider {
 
       let userId: string;
 
-      if (auth0UserId) {
-        const existingUserResult = await getUserIdByAuth0UserId.run({ auth0UserId }, client);
+      const existingUserResult = await getUserIdByAuth0UserId.run({ auth0UserId }, client);
 
-        if (existingUserResult.length > 0) {
-          userId = existingUserResult[0].user_id;
+      if (existingUserResult.length > 0) {
+        userId = existingUserResult[0].user_id;
 
-          await insertAcceptedBusinessUser.run(
-            {
-              userId,
-              auth0UserId: effectiveAuth0UserId,
-              ownerId: invitation.business_id,
-              roleId: invitation.role_id,
-            },
-            client,
-          );
-        } else {
-          userId = invitation.user_id;
-          await assignAuth0UserToInvitedUser();
-        }
+        await insertAcceptedBusinessUser.run(
+          {
+            userId,
+            auth0UserId,
+            ownerId: invitation.business_id,
+            roleId: invitation.role_id,
+          },
+          client,
+        );
       } else {
         userId = invitation.user_id;
         await assignAuth0UserToInvitedUser();
@@ -192,7 +184,7 @@ export class AcceptInvitationsProvider {
       const invitationAuth0UserId = invitation.auth0_user_id;
       if (invitationAuth0UserId) {
         try {
-          if (auth0UserId && auth0UserId !== invitationAuth0UserId) {
+          if (auth0UserId !== invitationAuth0UserId) {
             // Accepted with a different account: the placeholder is no longer needed,
             // unless it has been used or is still referenced elsewhere.
             if (
@@ -227,12 +219,12 @@ export class AcceptInvitationsProvider {
         {
           ownerId: invitation.business_id,
           userId,
-          auth0UserId: effectiveAuth0UserId,
+          auth0UserId,
           action: 'INVITATION_ACCEPTED',
           entity: 'Invitation',
           entityId: invitation.id,
           details: {
-            auth0_user_id: effectiveAuth0UserId,
+            auth0_user_id: auth0UserId,
             business_id: invitation.business_id,
             role_id: invitation.role_id,
           },
