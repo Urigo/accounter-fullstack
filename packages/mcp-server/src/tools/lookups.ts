@@ -357,16 +357,23 @@ export const listSortCodesTool: ToolDefinition<typeof listSortCodesInput> = {
 const listBusinessesInput = z.object({
   memberBusinessIds: memberBusinessIdsInput,
   nameContains,
-  activeOnly: z.boolean().optional().default(false).describe('Return only active businesses.'),
+  activeOnly: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      'Return only active businesses. Applied upstream before paging, so `pagination` and ' +
+        '`totalCount` count active businesses only.',
+    ),
   isClient: z
     .boolean()
     .optional()
     .describe(
       'Return only businesses that are clients (true), or only those that are not (false). Omit ' +
-        'for both. Unlike `activeOnly`, this is a real upstream predicate applied before paging, ' +
-        'so `pagination` and `totalCount` describe the filtered directory and no page comes back ' +
-        'short on account of it. To enumerate clients *with* their emails and integrations, use ' +
-        '`accounter_list_clients` instead of paging this directory.',
+        'for both. Applied upstream before paging, so `pagination` and `totalCount` describe the ' +
+        'filtered directory and no page comes back short on account of it. To enumerate clients ' +
+        '*with* their emails and integrations, use `accounter_list_clients` instead of paging this ' +
+        'directory.',
     ),
   limit,
   // `allBusinesses(page:)` is the third upstream argument, and pinning it to the
@@ -381,28 +388,31 @@ const listBusinessesInput = z.object({
     .default(1)
     .describe(
       '1-based page of the directory, each `limit` rows long. Upstream pages a name-ordered ' +
-        'directory, so `activeOnly`/`nameContains` narrowing happens within the page and a page can ' +
-        'come back short. Read `pagination.totalPages` to walk it.',
+        'directory after applying `activeOnly`, `isClient` and a broad `nameContains` match (which ' +
+        'also matches Hebrew names); only the stricter English-name `nameContains` check runs ' +
+        'within the page, so a page can come back short when it drops rows. Read ' +
+        '`pagination.totalPages` to walk it.',
     ),
 });
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
-// `name` is forwarded to the upstream `allBusinesses(name:)` filter so the
-// server narrows the directory before it is serialized, rather than shipping the
-// whole businesses table on every call. The client-side `filterSortCap` below
-// still runs: upstream matches Hebrew names too, so it re-applies the stricter
-// English-name predicate and owns the deterministic sort + size cap that all the
-// lookups share.
+// `nameContains`, `isClient` and `activeOnly` are all forwarded in the upstream
+// `allBusinesses(filters:)` input, which the server applies in SQL ahead of the
+// count and the page slice, rather than shipping the whole businesses table on
+// every call. `isClient` and `activeOnly` are exact there, so the handler does
+// not re-check them. The client-side `filterSortCap` below still runs: upstream
+// matches Hebrew names too, so it re-applies the stricter English-name predicate
+// and owns the deterministic sort + size cap that all the lookups share.
 //
 // That local pass shapes the *returned rows* only. `totalCount` and `pagination`
-// come from upstream `pageInfo`, which counts the broader upstream name match
-// across the whole directory — so it can exceed the rows on this page, both
-// because later pages exist and because `activeOnly`/the English-name predicate
-// dropped rows from this one. That is the intended reading: the counts describe
-// what upstream holds, `returnedCount` describes what came back.
+// come from upstream `pageInfo`, which counts the filtered directory under the
+// broader upstream name match — so it can exceed the rows on this page, both
+// because later pages exist and because the English-name predicate dropped rows
+// from this one. That is the intended reading: the counts describe what upstream
+// holds, `returnedCount` describes what came back.
 const LIST_BUSINESSES_QUERY = /* GraphQL */ `
-  query McpListBusinesses($name: String, $page: Int, $limit: Int, $isClient: Boolean) {
-    allBusinesses(name: $name, page: $page, limit: $limit, isClient: $isClient) {
+  query McpListBusinesses($page: Int, $limit: Int, $filters: BusinessFilter) {
+    allBusinesses(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
         name
@@ -482,23 +492,24 @@ async function listBusinessesHandler(
     {
       query: LIST_BUSINESSES_QUERY,
       variables: {
-        name: input.nameContains ?? null,
         // Upstream slices `[page * limit, (page + 1) * limit]`, so it is 0-based.
         page: input.page - 1,
         limit: input.limit,
-        // Null rather than undefined: an omitted `isClient` must reach upstream
-        // as "no predicate", and `null` is what the resolver tests for.
-        isClient: input.isClient ?? null,
+        // Null rather than undefined for every field: an omitted filter must reach
+        // upstream as "no predicate", and `null` is what the SQL tests for.
+        // `activeOnly: false` means "active or not", never "inactive only".
+        filters: {
+          name: input.nameContains ?? null,
+          isClient: input.isClient ?? null,
+          isActive: input.activeOnly ? true : null,
+        },
       },
     },
     context.upstream,
   );
 
   const allBusinesses = data.allBusinesses?.nodes ?? [];
-  const activeFiltered = input.activeOnly
-    ? allBusinesses.filter(business => business.isActive)
-    : allBusinesses;
-  const { rows, total } = filterSortCap(activeFiltered, input.nameContains, input.limit);
+  const { rows, total } = filterSortCap(allBusinesses, input.nameContains, input.limit);
   const businesses = rows.map(business => ({
     id: business.id,
     name: business.name,
@@ -508,12 +519,12 @@ async function listBusinessesHandler(
     taxCategory: rawBusinessTaxCategory(business),
   }));
 
-  // `totalRecords` counts upstream's whole (name-filtered) directory rather than
-  // this page, so report it as the total and let `pagination` say where in that
+  // `totalRecords` counts upstream's whole filtered directory rather than this
+  // page, so report it as the total and let `pagination` say where in that
   // directory we are; `total` from the local pass is the fallback for an upstream
   // that returns no `pageInfo`. The upstream count is deliberately *not* narrowed
-  // by the local `activeOnly`/English-name filtering — it would then describe
-  // neither the page nor the directory. `shapeListResult` clamps it up to the
+  // by the local English-name filtering — it would then describe neither the page
+  // nor the directory. `shapeListResult` clamps it up to the
   // rows on hand, so `totalCount` can never read below `returnedCount`.
   const pageInfo = data.allBusinesses?.pageInfo;
   const totalPages = pageInfo?.totalPages ?? 1;

@@ -241,15 +241,15 @@ scope, because it _is_ the scope.
 - **`accounter_list_businesses`** — list the full business directory (id, name, `ownerId`, active
   flag, `isClient`, and the matched `taxCategory` as `{ id, name }`, or `null` when the business has
   none mapped) — every business visible to the caller, not just their memberships — optionally
-  filtered by name (forwarded to the upstream `allBusinesses(name:)` filter), active status, client
-  status, or `memberBusinessIds`, and paginated with `limit` + 1-based `page` (forwarded as the
-  upstream `limit`/`page` args; the response echoes `pagination`). Same deterministic sort + cap.
-  Note that `activeOnly`/`nameContains` narrowing happens within the fetched page, so a page can
-  come back short — `isClient` is the exception, forwarded to the upstream
-  `allBusinesses(isClient:)` predicate so counts and paging describe the filtered directory. Use
-  `accounter_list_business_memberships` instead for just the caller's own memberships and roles, and
-  `accounter_list_clients` to enumerate clients with their emails and integrations rather than
-  paging this directory for them.
+  filtered by name, active status, client status, or `memberBusinessIds`, and paginated with
+  `limit` + 1-based `page` (forwarded as the upstream `limit`/`page` args; the response echoes
+  `pagination`). Same deterministic sort + cap. `nameContains`, `activeOnly` and `isClient` are
+  forwarded in the upstream `allBusinesses(filters:)` input, applied before paging, so counts and
+  paging describe the filtered directory. The upstream name match also covers Hebrew names, so the
+  stricter English-name `nameContains` check is re-applied within the fetched page, and a page can
+  come back short when it drops rows. Use `accounter_list_business_memberships` instead for just the
+  caller's own memberships and roles, and `accounter_list_clients` to enumerate clients with their
+  emails and integrations rather than paging this directory for them.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
   your businesses over a bounded date range (≤ 1096 days), selected by the required singular
   `memberBusinessId`. Requires `business_owner`/`accountant` role; rows are capped at 1000 with a

@@ -156,14 +156,20 @@ describe('generated schema contract', () => {
     expect(typeBlock(loadSchema(), 'LtdFinancialEntity')).toMatch(/^ {2}taxCategory: TaxCategory$/m);
   });
 
-  // The flag is only useful as a filter if upstream can apply it before paging.
-  // Filtering an already-sliced page would report "the clients on page 1" while
-  // reading as "the clients".
-  it('allBusinesses accepts an isClient predicate', () => {
-    // Matched up to the return type rather than with a `[^)]*` run: the
-    // argument's own description contains parentheses.
+  // The flags are only useful as filters if upstream can apply them before
+  // paging. Filtering an already-sliced page would report "the clients on page
+  // 1" while reading as "the clients".
+  it('allBusinesses accepts a BusinessFilter input', () => {
+    // Matched up to the return type rather than with a `[^)]*` run: argument
+    // descriptions may contain parentheses.
     const args = loadSchema().match(/allBusinesses\([\s\S]*?\): PaginatedBusinesses/);
-    expect(args?.[0]).toContain('isClient: Boolean');
+    expect(args?.[0]).toMatch(/^\s+filters: BusinessFilter$/m);
+  });
+
+  it('BusinessFilter carries the fields accounter_list_businesses sends', () => {
+    expect(inputFields(loadSchema(), 'BusinessFilter')).toEqual(
+      expect.arrayContaining(['name', 'isClient', 'isActive']),
+    );
   });
 
   /**

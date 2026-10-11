@@ -316,12 +316,54 @@ describe('listBusinessesTool', () => {
     expect(structured.totalCount).toBe(1);
   });
 
-  it('filters to active businesses when activeOnly is set', async () => {
-    const result = await runTool(listBusinessesTool, client(), authContext(['b1']), {
+  // `activeOnly` used to be applied to the returned page, so pages came back
+  // short and the counts included inactive rows. It is now an upstream predicate
+  // like `isClient`, applied before paging.
+  it('forwards activeOnly upstream as filters.isActive rather than filtering the page locally', async () => {
+    let sentInit: RequestInit | undefined;
+    const capturing = clientReturning(
+      { allBusinesses: { nodes: [{ id: '1', name: 'apple', ownerId: 'o1', isActive: false }] } },
+      init => (sentInit = init),
+    );
+    const result = await runTool(listBusinessesTool, capturing, authContext(['b1']), {
       activeOnly: true,
     });
-    const rows = (result.structuredContent as { businesses: Array<{ name: string }> }).businesses;
-    expect(rows.map(b => b.name)).toEqual(['Banana', 'Zebra']);
+
+    const { variables } = JSON.parse(sentInit!.body as string) as {
+      variables: { filters: Record<string, unknown> };
+    };
+    expect(variables.filters.isActive).toBe(true);
+    // Everything upstream returned survives — the handler adds no second pass.
+    expect((result.structuredContent as { businesses: unknown[] }).businesses).toHaveLength(1);
+  });
+
+  // `activeOnly: false` is "active or not", so it must not become
+  // `isActive: false`, which upstream reads as "inactive only".
+  it('sends filters.isActive as null when activeOnly is omitted or false', async () => {
+    for (const input of [{}, { activeOnly: false }]) {
+      let sentInit: RequestInit | undefined;
+      const capturing = clientReturning({ allBusinesses: { nodes: [] } }, init => (sentInit = init));
+      await runTool(listBusinessesTool, capturing, authContext(['b1']), input);
+
+      const { variables } = JSON.parse(sentInit!.body as string) as {
+        variables: { filters: Record<string, unknown> };
+      };
+      expect(variables.filters.isActive).toBeNull();
+    }
+  });
+
+  it('forwards nameContains upstream as filters.name', async () => {
+    let sentInit: RequestInit | undefined;
+    const capturing = clientReturning({ allBusinesses: { nodes: [] } }, init => (sentInit = init));
+    await runTool(listBusinessesTool, capturing, authContext(['b1']), { nameContains: 'acme' });
+
+    const { variables } = JSON.parse(sentInit!.body as string) as {
+      variables: Record<string, unknown> & { filters: Record<string, unknown> };
+    };
+    expect(variables.filters.name).toBe('acme');
+    // The deprecated top-level arguments are no longer sent.
+    expect(variables).not.toHaveProperty('name');
+    expect(variables).not.toHaveProperty('isClient');
   });
 
   it('enforces business scope (denies a caller with no memberships)', async () => {
@@ -368,7 +410,7 @@ describe('listBusinessesTool', () => {
     expect(query).toContain('taxCategory');
   });
 
-  // `isClient` is a real upstream predicate, unlike `activeOnly`: it must reach
+  // `isClient` is a real upstream predicate: it must reach
   // the server so paging and counts describe the filtered directory. Filtering
   // the returned page instead would silently answer a narrower question.
   it('forwards isClient upstream rather than filtering the page locally', async () => {
@@ -382,14 +424,14 @@ describe('listBusinessesTool', () => {
     });
 
     const { variables } = JSON.parse(sentInit!.body as string) as {
-      variables: Record<string, unknown>;
+      variables: { filters: Record<string, unknown> };
     };
-    expect(variables.isClient).toBe(true);
+    expect(variables.filters.isClient).toBe(true);
     // Everything upstream returned survives — the handler adds no second pass.
     expect((result.structuredContent as { businesses: unknown[] }).businesses).toHaveLength(1);
   });
 
-  it('sends isClient as null when omitted, so upstream applies no predicate', async () => {
+  it('sends filters.isClient and filters.name as null when omitted, so upstream applies no predicate', async () => {
     let sentInit: RequestInit | undefined;
     const capturing = clientReturning(
       { allBusinesses: { nodes: [] } },
@@ -398,9 +440,10 @@ describe('listBusinessesTool', () => {
     await runTool(listBusinessesTool, capturing, authContext(['b1']), {});
 
     const { variables } = JSON.parse(sentInit!.body as string) as {
-      variables: Record<string, unknown>;
+      variables: { filters: Record<string, unknown> };
     };
-    expect(variables.isClient).toBeNull();
+    expect(variables.filters.isClient).toBeNull();
+    expect(variables.filters.name).toBeNull();
   });
 
   // `allBusinesses(page:, limit:)` used to be left unset, so the directory was
@@ -426,6 +469,7 @@ describe('listBusinessesTool', () => {
       .variables;
     expect(variables.page).toBe(1);
     expect(variables.limit).toBe(2);
+    expect(variables).toHaveProperty('filters');
 
     // `totalRecords` covers the whole directory, not the page, so the model can
     // tell how much it has not seen; `pagination` is reported 1-based.
