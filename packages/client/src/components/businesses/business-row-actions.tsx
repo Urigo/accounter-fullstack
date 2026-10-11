@@ -37,6 +37,12 @@ export function BusinessRowActions({ row, table }: BusinessRowActionsProps): Rea
     const deleted = await deleteBusiness({ businessId: row.id });
     if (deleted) {
       setOpen(false);
+      // Selection outlives the loaded rows (it survives filter changes), so a deleted business
+      // would otherwise linger in it and reach the next merge or batch update.
+      table.setRowSelection(selection => {
+        const { [row.id]: _deleted, ...rest } = selection;
+        return rest;
+      });
       meta?.refetchBusinesses?.();
     }
   };

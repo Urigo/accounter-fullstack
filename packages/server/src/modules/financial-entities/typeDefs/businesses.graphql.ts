@@ -7,10 +7,34 @@ export default gql`
     allBusinesses(
       page: Int
       limit: Int
-      name: String
+      name: String @deprecated(reason: "Use filters.name")
       " narrow to businesses that are (true) or are not (false) clients; omit for both "
-      isClient: Boolean
+      isClient: Boolean @deprecated(reason: "Use filters.isClient")
+      " filters applied before paging. A field present here, even as null, overrides the deprecated argument of the same name "
+      filters: BusinessFilter
     ): PaginatedBusinesses @requiresAuth
+  }
+
+  " filters for the businesses directory. Omitted fields don't filter; set fields are AND-ed "
+  input BusinessFilter {
+    " case-insensitive substring of the business name or Hebrew name "
+    name: String
+    " businesses linked to any of these tax categories (OR-ed with withoutTaxCategory) "
+    taxCategoryIds: [UUID!]
+    " true: also match businesses with no linked tax category (OR-ed with taxCategoryIds) "
+    withoutTaxCategory: Boolean
+    " businesses under any of these sort code keys (OR-ed with withoutSortCode) "
+    sortCodes: [Int!]
+    " true: also match businesses with no sort code (OR-ed with sortCodes) "
+    withoutSortCode: Boolean
+    " businesses located in any of these countries "
+    countries: [CountryCode!]
+    " narrow to businesses that are (true) or are not (false) clients; omit for both "
+    isClient: Boolean
+    " narrow to active (true) or inactive (false) businesses; omit for both "
+    isActive: Boolean
+    " narrow to admin (true) or non-admin (false) businesses; omit for both "
+    isAdmin: Boolean
   }
 
   " represent a financial entity of any type that may hold financial accounts (company, business, individual) "
