@@ -1,16 +1,13 @@
 import { useEffect, useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
 import { ListFilter, Search } from 'lucide-react';
+import { normalizeFilter } from '../../../router/routes.js';
 import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.js';
 import { Input } from '../../ui/input.js';
 import { Spinner } from '../../ui/spinner.js';
 import { BusinessesFiltersForm } from './businesses-filters-form.js';
-import {
-  countActiveFilters,
-  normalizeBusinessesFilter,
-  type BusinessesPageFilter,
-} from './schema.js';
+import { countActiveFilters, type BusinessesPageFilter } from './schema.js';
 
 export { useBusinessesFilter } from './use-businesses-filter.js';
 export { hasActiveFilters, toServerFilter, type BusinessesPageFilter } from './schema.js';
@@ -42,7 +39,7 @@ export function BusinessesFilters({
     const timeout = setTimeout(() => {
       const name = inputName.trim() || undefined;
       setFilter(prev =>
-        (prev.name ?? undefined) === name ? prev : normalizeBusinessesFilter({ ...prev, name }),
+        (prev.name ?? undefined) === name ? prev : normalizeFilter({ ...prev, name }),
       );
     }, NAME_DEBOUNCE_MS);
     return () => {

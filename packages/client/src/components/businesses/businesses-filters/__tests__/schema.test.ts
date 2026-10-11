@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { encodeFilters } from '@/router/routes.js';
+import { decodeFilters, encodeFilters, normalizeFilter } from '@/router/routes.js';
 import {
-  areFiltersEqual,
+  businessesPageFilterSchema,
   countActiveFilters,
   filterToFormValues,
   formValuesToFilter,
   hasActiveFilters,
   NONE_OPTION_VALUE,
-  normalizeBusinessesFilter,
-  parseBusinessesFilterParam,
   toServerFilter,
   type BusinessesPageFilter,
 } from '../schema.js';
@@ -29,7 +27,10 @@ const FULL_FILTER: BusinessesPageFilter = {
   unusedOnly: true,
 };
 
-describe('parseBusinessesFilterParam', () => {
+const parseBusinessesFilterParam = (param: string | null) =>
+  decodeFilters(param, businessesPageFilterSchema);
+
+describe('decoding the businesses filter param', () => {
   it('round-trips a filter through its URL encoding', () => {
     expect(parseBusinessesFilterParam(encodeFilters(FULL_FILTER))).toEqual(FULL_FILTER);
   });
@@ -56,7 +57,7 @@ describe('parseBusinessesFilterParam', () => {
 describe('form mapping', () => {
   it('round-trips every dialog field', () => {
     const { name: _name, ...dialogFields } = FULL_FILTER;
-    expect(normalizeBusinessesFilter(formValuesToFilter(filterToFormValues(FULL_FILTER)))).toEqual(
+    expect(normalizeFilter(formValuesToFilter(filterToFormValues(FULL_FILTER)))).toEqual(
       dialogFields,
     );
   });
@@ -77,12 +78,12 @@ describe('form mapping', () => {
   });
 
   it('collapses every unset state to undefined, but keeps a tri-state "No"', () => {
-    const filter = normalizeBusinessesFilter(
+    const filter = normalizeFilter(
       formValuesToFilter({ taxCategories: [], countries: [], unusedOnly: false, isClient: false }),
     );
     expect(filter).toEqual({ isClient: false });
-    expect(normalizeBusinessesFilter(formValuesToFilter({}))).toEqual({});
-    expect(encodeFilters(normalizeBusinessesFilter(formValuesToFilter({})))).toBeNull();
+    expect(normalizeFilter(formValuesToFilter({}))).toEqual({});
+    expect(encodeFilters(normalizeFilter(formValuesToFilter({})))).toBeNull();
   });
 });
 
@@ -112,17 +113,5 @@ describe('toServerFilter', () => {
   it('strips the browser-only unusedOnly flag', () => {
     const { unusedOnly: _unusedOnly, ...serverFields } = FULL_FILTER;
     expect(toServerFilter(FULL_FILTER)).toEqual(serverFields);
-  });
-});
-
-describe('areFiltersEqual', () => {
-  it('ignores key order and unset values', () => {
-    expect(
-      areFiltersEqual(
-        { isClient: true, name: 'acme', countries: [] },
-        { name: 'acme', isClient: true, taxCategoryIds: undefined },
-      ),
-    ).toBe(true);
-    expect(areFiltersEqual({ isClient: true }, { isClient: false })).toBe(false);
   });
 });

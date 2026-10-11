@@ -18,7 +18,7 @@ export type BusinessesPageFilter = BusinessFilter & { unusedOnly?: boolean | nul
 
 // Validated as tightly as the server's scalars, so a hand-edited link falls back to no filter
 // instead of failing the whole directory query.
-const businessesPageFilterSchema = z.object({
+export const businessesPageFilterSchema = z.object({
   name: z.string().optional(),
   taxCategoryIds: z.array(z.guid()).optional(),
   withoutTaxCategory: z.boolean().optional(),
@@ -31,71 +31,11 @@ const businessesPageFilterSchema = z.object({
   unusedOnly: z.boolean().optional(),
 });
 
-/** Drops `null` / `undefined` entries, so they neither fail parsing nor read as active. */
+/** Drops `null` / `undefined` entries, so the server input carries no explicit nulls. */
 function withoutNullish<T extends object>(value: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(value).filter(([, entry]) => entry != null),
   ) as Partial<T>;
-}
-
-const FILTER_KEYS = [
-  'name',
-  'taxCategoryIds',
-  'withoutTaxCategory',
-  'sortCodes',
-  'withoutSortCode',
-  'countries',
-  'isClient',
-  'isActive',
-  'isAdmin',
-  'unusedOnly',
-] as const satisfies readonly (keyof BusinessesPageFilter)[];
-
-/**
- * The canonical form of a filter: a fixed key order with unset values (nullish, blank, empty
- * lists) dropped. Every filter the page stores goes through it, so two equal filters encode to
- * the same URL string — which is what the equality checks guarding re-renders, re-queries and
- * history entries compare.
- */
-export function normalizeBusinessesFilter(filter: BusinessesPageFilter): BusinessesPageFilter {
-  const normalized: Record<string, unknown> = {};
-  for (const key of FILTER_KEYS) {
-    const value = filter[key];
-    if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) {
-      continue;
-    }
-    normalized[key] = value;
-  }
-  return normalized as BusinessesPageFilter;
-}
-
-/** Whether two filters are the same, regardless of key order or unset values. */
-export function areFiltersEqual(a: BusinessesPageFilter, b: BusinessesPageFilter): boolean {
-  return (
-    JSON.stringify(normalizeBusinessesFilter(a)) === JSON.stringify(normalizeBusinessesFilter(b))
-  );
-}
-
-/**
- * Reads the applied filter back from its URL parameter.
- *
- * The parameter is untrusted (a stale or hand-edited link), so anything that doesn't parse —
- * malformed JSON, a wrong shape — falls back to no filter rather than to an error page.
- */
-export function parseBusinessesFilterParam(param: string | null): BusinessesPageFilter {
-  if (!param) {
-    return {};
-  }
-  try {
-    const raw: unknown = JSON.parse(decodeURIComponent(param));
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-      return {};
-    }
-    const parsed = businessesPageFilterSchema.safeParse(withoutNullish(raw));
-    return parsed.success ? normalizeBusinessesFilter(parsed.data) : {};
-  } catch {
-    return {};
-  }
 }
 
 /** Strips the client-only `unusedOnly`, leaving the input the `allBusinesses` query takes. */
