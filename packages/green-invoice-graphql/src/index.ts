@@ -39,5 +39,6 @@ export const init = async (
   return { sdk, authToken: greenInvoiceToken };
 };
 
+export * from './__generated__/types.js';
 export * from './__generated__/sdk.js';
 export { getMeshSDK, type GreenInvoiceContext } from './mesh-client.js';
