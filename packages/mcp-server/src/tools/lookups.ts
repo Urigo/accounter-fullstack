@@ -5,6 +5,7 @@ import type {
   McpListTagsQuery,
   McpListTaxCategoriesQuery,
 } from '../gql/index.js';
+import { optionalNonEmptyStringArray } from './charge-filters.js';
 import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
@@ -354,7 +355,20 @@ export const listSortCodesTool: ToolDefinition<typeof listSortCodesInput> = {
 // Businesses (full directory)
 // ---------------------------------------------------------------------------
 
-const listBusinessesInput = z.object({
+/** Upper bound on each list-valued directory filter, matching the other id-filter caps. */
+export const MAX_BUSINESS_FILTER_VALUES = 50;
+
+/**
+ * `BusinessFilter` fields this tool exposes under a different input name. The
+ * schema-contract suite checks every other `BusinessFilter` field is exposed
+ * as-is, so a field added upstream fails the suite instead of going unreachable.
+ */
+export const LIST_BUSINESSES_FILTER_ALIASES = {
+  name: 'nameContains',
+  isActive: 'activeOnly',
+} as const;
+
+export const listBusinessesInput = z.object({
   memberBusinessIds: memberBusinessIdsInput,
   nameContains,
   activeOnly: z
@@ -375,6 +389,57 @@ const listBusinessesInput = z.object({
         '*with* their emails and integrations, use `accounter_list_clients` instead of paging this ' +
         'directory.',
     ),
+  isAdmin: z
+    .boolean()
+    .optional()
+    .describe(
+      'Return only admin businesses — the businesses an owner manages in Accounter, as opposed to ' +
+        'counterparties — (true), or only non-admin ones (false). Omit for both.',
+    ),
+  taxCategoryIds: optionalNonEmptyStringArray(MAX_BUSINESS_FILTER_VALUES)
+    .optional()
+    .describe(
+      'Return only businesses matched to one of these tax categories (ids from ' +
+        '`accounter_list_tax_categories`). OR-ed with `withoutTaxCategory`.',
+    ),
+  withoutTaxCategory: z
+    .boolean()
+    .optional()
+    .describe(
+      'true: also return businesses with no tax category mapped — on its own, only those. OR-ed ' +
+        'with `taxCategoryIds`. Use it to find businesses that still need categorizing.',
+    ),
+  sortCodes: z
+    .preprocess(
+      value => (Array.isArray(value) && value.length === 0 ? undefined : value),
+      z.array(z.number().int()).min(1).max(MAX_BUSINESS_FILTER_VALUES).optional(),
+    )
+    .optional()
+    .describe(
+      'Return only businesses under one of these sort codes, by numeric `key` (see ' +
+        '`accounter_list_sort_codes`). OR-ed with `withoutSortCode`.',
+    ),
+  withoutSortCode: z
+    .boolean()
+    .optional()
+    .describe(
+      'true: also return businesses with no sort code — on its own, only those. OR-ed with ' +
+        '`sortCodes`.',
+    ),
+  countries: z
+    .preprocess(
+      value => (Array.isArray(value) && value.length === 0 ? undefined : value),
+      z
+        .array(z.string().regex(/^[A-Za-z]{3}$/, 'must be an ISO 3166-1 alpha-3 country code'))
+        .min(1)
+        .max(MAX_BUSINESS_FILTER_VALUES)
+        .optional(),
+    )
+    .optional()
+    .describe(
+      'Return only businesses located in one of these countries, as ISO 3166-1 alpha-3 codes ' +
+        '(e.g. `ISR`, `USA`), in any case.',
+    ),
   limit,
   // `allBusinesses(page:)` is the third upstream argument, and pinning it to the
   // first page made the directory unwalkable past `limit` rows with no way to
@@ -388,19 +453,18 @@ const listBusinessesInput = z.object({
     .default(1)
     .describe(
       '1-based page of the directory, each `limit` rows long. Upstream pages a name-ordered ' +
-        'directory after applying `activeOnly`, `isClient` and a broad `nameContains` match (which ' +
-        'also matches Hebrew names); only the stricter English-name `nameContains` check runs ' +
-        'within the page, so a page can come back short when it drops rows. Read ' +
+        'directory after applying every filter, with a broad `nameContains` match (which also ' +
+        'matches Hebrew names); only the stricter English-name `nameContains` check runs within ' +
+        'the page, so a page can come back short when it drops rows. Read ' +
         '`pagination.totalPages` to walk it.',
     ),
 });
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
-// `nameContains`, `isClient` and `activeOnly` are all forwarded in the upstream
-// `allBusinesses(filters:)` input, which the server applies in SQL ahead of the
-// count and the page slice, rather than shipping the whole businesses table on
-// every call. `isClient` and `activeOnly` are exact there, so the handler does
-// not re-check them. The client-side `filterSortCap` below still runs: upstream
+// Every filter is forwarded in the upstream `allBusinesses(filters:)` input,
+// which the server applies in SQL ahead of the count and the page slice, rather
+// than shipping the whole businesses table on every call. All but the name match
+// are exact there, so the handler does not re-check them. The client-side `filterSortCap` below still runs: upstream
 // matches Hebrew names too, so it re-applies the stricter English-name predicate
 // and owns the deterministic sort + size cap that all the lookups share.
 //
@@ -502,6 +566,12 @@ async function listBusinessesHandler(
           name: input.nameContains ?? null,
           isClient: input.isClient ?? null,
           isActive: input.activeOnly ? true : null,
+          isAdmin: input.isAdmin ?? null,
+          taxCategoryIds: input.taxCategoryIds ?? null,
+          withoutTaxCategory: input.withoutTaxCategory ?? null,
+          sortCodes: input.sortCodes ?? null,
+          withoutSortCode: input.withoutSortCode ?? null,
+          countries: input.countries ?? null,
         },
       },
     },
@@ -564,7 +634,7 @@ const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
-    'List the full business directory — every business visible to you, not just the ones you are a member of — optionally filtered by name, active status, or client status, with `limit`/`page` pagination over the name-ordered directory. Each row is `{ id, name, ownerId, isActive, isClient, taxCategory }`, where `taxCategory` is the `{ id, name }` of the tax category the business is matched to, or `null` when no tax category is mapped to it. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
+    'List the full business directory — every business visible to you, not just the ones you are a member of — optionally filtered by name, active, client or admin status, tax category, sort code, or country (each applied before paging), with `limit`/`page` pagination over the name-ordered directory. Each row is `{ id, name, ownerId, isActive, isClient, taxCategory }`, where `taxCategory` is the `{ id, name }` of the tax category the business is matched to, or `null` when no tax category is mapped to it. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
     resultEnvelopeDescription('businesses') +
     ' ' +
     DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,

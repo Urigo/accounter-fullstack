@@ -16,6 +16,7 @@ import {
   documentsFiltersInput,
 } from '../document-details.js';
 import { KNOWN_CHARGE_TYPENAMES } from '../entity-shapes.js';
+import { LIST_BUSINESSES_FILTER_ALIASES, listBusinessesInput } from '../lookups.js';
 import { transactionFiltersInput } from '../transaction-details.js';
 
 /**
@@ -166,11 +167,6 @@ describe('generated schema contract', () => {
     expect(args?.[0]).toMatch(/^\s+filters: BusinessFilter$/m);
   });
 
-  it('BusinessFilter carries the fields accounter_list_businesses sends', () => {
-    expect(inputFields(loadSchema(), 'BusinessFilter')).toEqual(
-      expect.arrayContaining(['name', 'isClient', 'isActive']),
-    );
-  });
 
   /**
    * The connector reads a client's Green Invoice id through
@@ -247,6 +243,22 @@ describe('tool inputs cover the upstream filter inputs', () => {
       field => !exposed.has(aliases[field] ?? field),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('accounter_list_businesses accepts every BusinessFilter field', () => {
+    const exposed = new Set(Object.keys(listBusinessesInput.shape));
+    const aliases: Record<string, string> = { ...LIST_BUSINESSES_FILTER_ALIASES };
+    const missing = inputFields(loadSchema(), 'BusinessFilter').filter(
+      field => !exposed.has(aliases[field] ?? field),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('every list_businesses alias names a real BusinessFilter field', () => {
+    const schemaFields = new Set(inputFields(loadSchema(), 'BusinessFilter'));
+    for (const upstreamField of Object.keys(LIST_BUSINESSES_FILTER_ALIASES)) {
+      expect(schemaFields.has(upstreamField)).toBe(true);
+    }
   });
 
   it('accounter_get_transactions accepts every TransactionsFilters field', () => {

@@ -352,6 +352,62 @@ describe('listBusinessesTool', () => {
     }
   });
 
+  it('forwards the category, sort code, country and admin filters upstream', async () => {
+    let sentInit: RequestInit | undefined;
+    const capturing = clientReturning({ allBusinesses: { nodes: [] } }, init => (sentInit = init));
+    await runTool(listBusinessesTool, capturing, authContext(['b1']), {
+      isAdmin: false,
+      taxCategoryIds: ['tc1', 'tc2'],
+      withoutTaxCategory: true,
+      sortCodes: [100, 200],
+      withoutSortCode: false,
+      countries: ['isr', 'USA'],
+    });
+
+    const { variables } = JSON.parse(sentInit!.body as string) as {
+      variables: { filters: Record<string, unknown> };
+    };
+    expect(variables.filters).toMatchObject({
+      isAdmin: false,
+      taxCategoryIds: ['tc1', 'tc2'],
+      withoutTaxCategory: true,
+      sortCodes: [100, 200],
+      withoutSortCode: false,
+      // Passed through as given: upstream matches country codes case-insensitively.
+      countries: ['isr', 'USA'],
+    });
+  });
+
+  it('sends omitted and empty list filters as null', async () => {
+    let sentInit: RequestInit | undefined;
+    const capturing = clientReturning({ allBusinesses: { nodes: [] } }, init => (sentInit = init));
+    await runTool(listBusinessesTool, capturing, authContext(['b1']), {
+      taxCategoryIds: [],
+      sortCodes: [],
+      countries: [],
+    });
+
+    const { variables } = JSON.parse(sentInit!.body as string) as {
+      variables: { filters: Record<string, unknown> };
+    };
+    expect(variables.filters).toMatchObject({
+      isAdmin: null,
+      taxCategoryIds: null,
+      withoutTaxCategory: null,
+      sortCodes: null,
+      withoutSortCode: null,
+      countries: null,
+    });
+  });
+
+  it('rejects a country that is not an alpha-3 code', async () => {
+    const result = await runTool(listBusinessesTool, client(), authContext(['b1']), {
+      countries: ['IL'],
+    });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+  });
+
   it('forwards nameContains upstream as filters.name', async () => {
     let sentInit: RequestInit | undefined;
     const capturing = clientReturning({ allBusinesses: { nodes: [] } }, init => (sentInit = init));
