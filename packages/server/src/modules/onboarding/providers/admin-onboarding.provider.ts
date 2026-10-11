@@ -265,7 +265,8 @@ export class AdminOnboardingProvider {
       // Expire any standing invitations so insertInvitation can create a fresh one
       await expireActiveInvitations.run({ businessId: adminEntityId, email: ownerEmail }, client);
 
-      const auth0UserId = await this.auth0Management.createBlockedUser(ownerEmail);
+      const { userId: auth0UserId, created: auth0UserCreated } =
+        await this.auth0Management.createBlockedUser(ownerEmail);
 
       await this.businessUsersProvider.insertBusinessUser({
         userId: superAdmin.userId,
@@ -278,6 +279,7 @@ export class AdminOnboardingProvider {
         email: ownerEmail,
         roleId: ownerRole,
         auth0UserId,
+        auth0UserCreated,
         invitedByUserId: superAdmin.userId,
         ownerId: adminEntityId,
       });

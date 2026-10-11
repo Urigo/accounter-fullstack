@@ -59,34 +59,44 @@ export const invitationsResolvers: AuthModule.Resolvers = {
         });
       }
 
-      let auth0UserId: string;
+      let auth0User: { userId: string; created: boolean };
       try {
-        auth0UserId = await injector
-          .get(Auth0ManagementProvider)
-          .createBlockedUser(normalizedEmail);
+        auth0User = await injector.get(Auth0ManagementProvider).createBlockedUser(normalizedEmail);
       } catch (error) {
         throw mapAuth0Error(error);
       }
+      const auth0UserId = auth0User.userId;
 
       try {
         return await injector.get(InvitationsProvider).insertInvitation({
           email: normalizedEmail,
           roleId,
           auth0UserId,
+          auth0UserCreated: auth0User.created,
           invitedByUserId,
           ownerId: businessId,
         });
       } catch (error) {
-        // If DB operations fail, attempt to clean up the created Auth0 user to prevent dangling resources.
-        await injector
-          .get(Auth0ManagementProvider)
-          .deleteUser(auth0UserId)
-          .catch(cleanupError => {
-            console.error(
-              `Failed to cleanup Auth0 user ${auth0UserId} after DB error:`,
-              cleanupError,
-            );
-          });
+        // An Auth0 user that existed before this invitation is not ours to clean up.
+        if (!auth0User.created) {
+          throw error;
+        }
+        // If DB operations fail, attempt to clean up the created Auth0 user to prevent dangling
+        // resources, unless a concurrent invitation has meanwhile reused it.
+        const auth0Management = injector.get(Auth0ManagementProvider);
+        try {
+          const stillNeeded =
+            (await injector.get(InvitationsProvider).isAuth0UserReferenced(auth0UserId)) ||
+            !(await auth0Management.isUnusedInvitationUser(auth0UserId));
+          if (!stillNeeded) {
+            await auth0Management.deleteUser(auth0UserId);
+          }
+        } catch (cleanupError) {
+          console.error(
+            `Failed to cleanup Auth0 user ${auth0UserId} after DB error:`,
+            cleanupError,
+          );
+        }
         // Re-throw the original error to ensure the GraphQL operation fails correctly.
         throw error;
       }

@@ -10,6 +10,7 @@ import {
   mapAuth0Error,
 } from '../helpers/invitations.helper.js';
 import type {
+  IDeleteInvitationPlaceholderUserQuery,
   IGetInvitationByTokenQuery,
   IGetInvitationForAcceptanceQuery,
   IGetUserIdByAuth0UserIdQuery,
@@ -18,15 +19,16 @@ import type {
   IUpdateInvitationAcceptanceQuery,
 } from '../types.js';
 import { Auth0ManagementProvider } from './auth0-management.provider.js';
+import { isAuth0UserReferenced } from './auth0-user-references.provider.js';
 
 const updateInvitationAcceptance = sql<IUpdateInvitationAcceptanceQuery>`
   UPDATE accounter_schema.invitations
-  SET accepted_at = NOW()
+  SET accepted_at = NOW(), user_id = $userId
   WHERE id = $id;
 `;
 
 const getInvitationForAcceptance = sql<IGetInvitationForAcceptanceQuery>`
-  SELECT id, user_id, business_id, role_id, email, auth0_user_id, accepted_at, expires_at
+  SELECT id, user_id, business_id, role_id, email, auth0_user_id, auth0_user_created, accepted_at, expires_at
   FROM accounter_schema.invitations
   WHERE token_hash = $tokenHash
     AND accepted_at IS NULL
@@ -57,6 +59,16 @@ const updateBusinessUserAuth0Id = sql<IUpdateBusinessUserAuth0IdQuery>`
   SET auth0_user_id = $auth0UserId, updated_at = NOW()
   WHERE user_id = $userId
     AND business_id = $ownerId;
+`;
+
+// Removes the pending placeholder membership created alongside the invitation, once
+// the invitation has been accepted by a user who already had a membership elsewhere.
+// Guarded by `auth0_user_id IS NULL` so an accepted member is never deleted.
+const deleteInvitationPlaceholderUser = sql<IDeleteInvitationPlaceholderUserQuery>`
+  DELETE FROM accounter_schema.business_users
+  WHERE user_id = $userId
+    AND business_id = $ownerId
+    AND auth0_user_id IS NULL;
 `;
 
 @Injectable({
@@ -174,19 +186,42 @@ export class AcceptInvitationsProvider {
         await assignAuth0UserToInvitedUser();
       }
 
-      if (invitation.auth0_user_id) {
+      // Only an invitation placeholder is ours to unblock or delete: an Auth0 user this
+      // invitation created, or an unused one provisioned by an earlier invitation and
+      // reused here. Any other existing account is left untouched.
+      const invitationAuth0UserId = invitation.auth0_user_id;
+      if (invitationAuth0UserId) {
         try {
-          if (auth0UserId && auth0UserId !== invitation.auth0_user_id) {
-            await this.auth0ManagementProvider.deleteUser(invitation.auth0_user_id);
-          } else {
-            await this.auth0ManagementProvider.unblockUser(invitation.auth0_user_id);
+          if (auth0UserId && auth0UserId !== invitationAuth0UserId) {
+            // Accepted with a different account: the placeholder is no longer needed,
+            // unless it has been used or is still referenced elsewhere.
+            if (
+              !(await isAuth0UserReferenced(client, invitationAuth0UserId, invitation.id)) &&
+              (await this.auth0ManagementProvider.isUnusedInvitationUser(invitationAuth0UserId))
+            ) {
+              await this.auth0ManagementProvider.deleteUser(invitationAuth0UserId);
+            }
+          } else if (
+            invitation.auth0_user_created ||
+            (await this.auth0ManagementProvider.isUnusedInvitationUser(invitationAuth0UserId))
+          ) {
+            await this.auth0ManagementProvider.unblockUser(invitationAuth0UserId);
           }
         } catch (error) {
           throw mapAuth0Error(error);
         }
       }
 
-      await updateInvitationAcceptance.run({ id: invitation.id }, client);
+      await updateInvitationAcceptance.run({ id: invitation.id, userId }, client);
+
+      if (userId !== invitation.user_id) {
+        // The invitation now points at the existing user, so the placeholder can go
+        // without cascading to the invitation row.
+        await deleteInvitationPlaceholderUser.run(
+          { userId: invitation.user_id, ownerId: invitation.business_id },
+          client,
+        );
+      }
 
       await this.auditLogsProvider.log(
         {

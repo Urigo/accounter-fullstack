@@ -18,6 +18,7 @@ import type {
   IListInvitationsQuery,
 } from '../types.js';
 import { AuthContextProvider } from './auth-context.provider.js';
+import { isAuth0UserReferenced } from './auth0-user-references.provider.js';
 import { BusinessUsersProvider } from './business-users.provider.js';
 
 const INVITATION_EXPIRATION_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -146,12 +147,15 @@ export class InvitationsProvider {
     email,
     roleId,
     auth0UserId,
+    auth0UserCreated,
     invitedByUserId,
     ownerId,
   }: {
     email: string;
     roleId: string;
     auth0UserId: string;
+    /** Whether the Auth0 user was created for this invitation (vs. an existing user). */
+    auth0UserCreated: boolean;
     invitedByUserId: string;
     ownerId: string;
   }) {
@@ -165,7 +169,7 @@ export class InvitationsProvider {
         email,
         roleId,
         tokenHash,
-        auth0UserCreated: true,
+        auth0UserCreated,
         auth0UserId,
         invitedByUserId,
         invitedByBusinessId: ownerId,
@@ -238,6 +242,11 @@ export class InvitationsProvider {
    * re-invite), so deleting it here could break unrelated tenants.
    * Returns false when no matching pending invitation exists in the current business.
    */
+  /** Whether any invitation or business membership references the Auth0 user. */
+  public isAuth0UserReferenced(auth0UserId: string): Promise<boolean> {
+    return isAuth0UserReferenced(this.db, auth0UserId);
+  }
+
   public async revokeInvitation(invitationId: string): Promise<boolean> {
     const authContext = await this.requireBusinessOwner();
     const ownerId = authContext.tenant.businessId;
