@@ -6,6 +6,7 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { paginateBusinesses, resolveBusinessesFilters } from '../helpers/all-businesses.helper.js';
 import {
   SuggestionData,
   suggestionDataSchema,
@@ -46,36 +47,12 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       // Every predicate is applied in SQL, *ahead of* the count and the slice — the entire
       // point of accepting them as arguments: `pageInfo` then describes the filtered directory
       // and every page comes back full. A caller filtering an already-sliced page could do
-      // neither. The top-level `name` / `isClient` arguments predate `filters` and are deprecated;
-      // they stay until the MCP server, which still sends them, moves to `filters`. A field
-      // *present* in `filters` wins over its argument even when it is an explicit null — GraphQL
-      // keeps an omitted input field distinct from a null one, so `??` would wrongly fall back.
-      const filteredBusinesses = await injector.get(BusinessesProvider).getBusinessesByFilters({
-        ...filters,
-        name: filters && 'name' in filters ? filters.name : name,
-        isClient: filters && 'isClient' in filters ? filters.isClient : isClient,
-      });
+      // neither.
+      const filteredBusinesses = await injector
+        .get(BusinessesProvider)
+        .getBusinessesByFilters(resolveBusinessesFilters({ name, isClient, filters }));
 
-      page ??= 0;
-      let pageBusinesses = filteredBusinesses.sort((a, b) =>
-        a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
-      );
-
-      // handle pagination
-      if (limit) {
-        pageBusinesses = filteredBusinesses.slice(page * limit, (page + 1) * limit);
-      }
-
-      return {
-        __typename: 'PaginatedBusinesses',
-        nodes: pageBusinesses,
-        pageInfo: {
-          totalPages: limit ? Math.ceil(filteredBusinesses.length / limit) : 1,
-          totalRecords: filteredBusinesses.length,
-          currentPage: page,
-          pageSize: limit,
-        },
-      };
+      return paginateBusinesses(filteredBusinesses, page, limit);
     },
   },
   Mutation: {
