@@ -204,9 +204,9 @@ __metadata:
   resolution: "@accounter/green-invoice-graphql@workspace:packages/green-invoice-graphql"
   dependencies:
     "@graphql-codegen/cli": "npm:7.4.6"
-    "@graphql-codegen/typescript": "npm:5.0.10"
+    "@graphql-codegen/typescript": "npm:6.1.2"
     "@graphql-codegen/typescript-generic-sdk": "npm:5.0.1"
-    "@graphql-codegen/typescript-operations": "npm:5.1.0"
+    "@graphql-codegen/typescript-operations": "npm:6.1.10"
     "@graphql-mesh/compose-cli": "npm:1.8.2"
     "@graphql-mesh/fusion-runtime": "npm:1.12.3"
     "@graphql-mesh/transport-rest": "npm:0.12.2"
@@ -2321,19 +2321,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/schema-ast@npm:^5.0.2":
-  version: 5.0.2
-  resolution: "@graphql-codegen/schema-ast@npm:5.0.2"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^6.3.0"
-    "@graphql-tools/utils": "npm:^11.0.0"
-    tslib: "npm:^2.8.0"
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/9e3ad22cc98bdf7209aaefc45c57948ea1569de6dce9d64650cf1e3f1fa9276aeff67244d78d69141c914de2a98c047caf928e0946acba85ff1fb560a6b1a3e9
-  languageName: node
-  linkType: hard
-
 "@graphql-codegen/schema-ast@npm:^6.1.0":
   version: 6.1.0
   resolution: "@graphql-codegen/schema-ast@npm:6.1.0"
@@ -2393,25 +2380,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/typescript-operations@npm:5.1.0":
-  version: 5.1.0
-  resolution: "@graphql-codegen/typescript-operations@npm:5.1.0"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^6.3.0"
-    "@graphql-codegen/typescript": "npm:^5.0.10"
-    "@graphql-codegen/visitor-plugin-common": "npm:^6.3.0"
-    auto-bind: "npm:~4.0.0"
-    tslib: "npm:^2.8.0"
-  peerDependencies:
-    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-    graphql-sock: ^1.0.0
-  peerDependenciesMeta:
-    graphql-sock:
-      optional: true
-  checksum: 10c0/66ce141a86d826d559dd2e1992a4f2140080e95f1b060ed4af2e633e3305d0756249a10f11a1f72cdc6bc150aed9a481dfaed4194a16445b03e96b30f19b1204
-  languageName: node
-  linkType: hard
-
 "@graphql-codegen/typescript-operations@npm:6.1.10, @graphql-codegen/typescript-operations@npm:^6.1.10":
   version: 6.1.10
   resolution: "@graphql-codegen/typescript-operations@npm:6.1.10"
@@ -2448,21 +2416,6 @@ __metadata:
     graphql-sock:
       optional: true
   checksum: 10c0/e478dbd04638a43cf0c61e25e698afd35f2ab64b84564fa99d84f874d8c7f0442f6e6a74a71ae0b8f984c4ac99db1a88ca3445f17f65e53f71ed37a198fe5f33
-  languageName: node
-  linkType: hard
-
-"@graphql-codegen/typescript@npm:5.0.10, @graphql-codegen/typescript@npm:^5.0.10":
-  version: 5.0.10
-  resolution: "@graphql-codegen/typescript@npm:5.0.10"
-  dependencies:
-    "@graphql-codegen/plugin-helpers": "npm:^6.3.0"
-    "@graphql-codegen/schema-ast": "npm:^5.0.2"
-    "@graphql-codegen/visitor-plugin-common": "npm:^6.3.0"
-    auto-bind: "npm:~4.0.0"
-    tslib: "npm:^2.8.0"
-  peerDependencies:
-    graphql: ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/efb3c0053f9196635355a86c34b66feaa6cfa4ab7e2e091dd4a21f59e696acb0a15eb38b76e7063e5d5cc39532b072a038e26cae041ce9990c8f9408b4db408b
   languageName: node
   linkType: hard
 
