@@ -136,8 +136,12 @@ export const ReportOutputSchema = z.object({
 });
 
 // TypeScript types
+// typescript-eslint >=8.71.1 falsely reports exported type aliases that shadow a lib.dom global
+// (`DocumentType`, `Document`) as unused. Renaming them would break the public API.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type DocumentType = z.infer<typeof DocumentTypeEnum>;
 export type BusinessMetadata = z.infer<typeof BusinessMetadataSchema>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type Document = z.infer<typeof DocumentSchema>;
 export type JournalEntry = z.infer<typeof JournalEntrySchema>;
 export type Account = z.infer<typeof AccountSchema>;
