@@ -82,6 +82,10 @@ export class AcceptInvitationsProvider {
     private auditLogsProvider: AuditLogsProvider,
   ) {}
 
+  /**
+   * Accept an invitation for the signed-in caller. `authenticatedUserEmail` must be a
+   * verified email (or null, in which case it is resolved from the Auth0 profile).
+   */
   public async acceptInvitation(
     token: string,
     auth0UserId: string,

@@ -154,6 +154,7 @@ describe('acceptInvitation resolver', () => {
     mockAuthProvider.getJwtIdentity.mockResolvedValueOnce({
       auth0UserId: 'auth0|new-invitee',
       email: 'new.invitee@example.com',
+      emailVerified: true,
     });
 
     await acceptInvitation({}, { token: 'token-5' }, createContext(), mockInfo);
@@ -162,6 +163,47 @@ describe('acceptInvitation resolver', () => {
       'token-5',
       'auth0|new-invitee',
       'new.invitee@example.com',
+    );
+  });
+
+  it('does not pass an unverified email claim to the provider', async () => {
+    mockAuthProvider.getAuthContext.mockResolvedValueOnce({
+      authType: 'jwt',
+      user: {
+        userId: 'caller-user-id',
+        roleId: 'employee',
+        email: 'invitee@example.com',
+        permissions: [],
+        emailVerified: false,
+        permissionsVersion: 1,
+        auth0UserId: 'auth0|caller-123',
+      },
+      tenant: { businessId: 'business-123', roleId: 'employee' },
+    });
+
+    await acceptInvitation({}, { token: 'token-6' }, createContext(), mockInfo);
+
+    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith(
+      'token-6',
+      'auth0|caller-123',
+      null,
+    );
+  });
+
+  it('does not pass an unverified email claim for a user without memberships yet', async () => {
+    mockAuthProvider.getAuthContext.mockResolvedValueOnce(null);
+    mockAuthProvider.getJwtIdentity.mockResolvedValueOnce({
+      auth0UserId: 'auth0|new-invitee',
+      email: 'new.invitee@example.com',
+      emailVerified: false,
+    });
+
+    await acceptInvitation({}, { token: 'token-7' }, createContext(), mockInfo);
+
+    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith(
+      'token-7',
+      'auth0|new-invitee',
+      null,
     );
   });
 

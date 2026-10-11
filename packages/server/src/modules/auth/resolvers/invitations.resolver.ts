@@ -106,8 +106,11 @@ export const invitationsResolvers: AuthModule.Resolvers = {
       const authContext = await authContextProvider.getAuthContext();
       const jwtIdentity = authContext ? null : await authContextProvider.getJwtIdentity();
 
-      const auth0UserId = authContext?.user?.auth0UserId ?? jwtIdentity?.auth0UserId ?? null;
-      const authenticatedUserEmail = authContext?.user?.email ?? jwtIdentity?.email ?? null;
+      const identity = authContext?.user ?? jwtIdentity;
+      const auth0UserId = identity?.auth0UserId ?? null;
+      // Pass the email only when the token marks it verified. Otherwise the provider
+      // resolves the verified email from the Auth0 profile instead.
+      const authenticatedUserEmail = (identity?.emailVerified && identity.email) || null;
 
       // Only a signed-in end user can accept an invitation, for themselves. API keys and the
       // gateway control-plane identity carry no Auth0 subject, and are rejected explicitly too.
