@@ -672,14 +672,13 @@ export class EmailIngestionIngestProvider {
         return params;
       };
 
-      // Flat fan-out. Coalescing the OCR prompt's cached prefix is `PromptCacheGate`'s
-      // job now (see AnthropicProvider), and it does it better than staggering the
-      // batch here could: emails for one tenant arrive a median ~1.4s apart as
-      // separate requests, so most of the cache writes this used to pay for were
-      // being raced between concurrent emails, which a within-batch stagger cannot
-      // see. The gate also skips the wait entirely once the prefix is warm, where
-      // serializing the first document bought nothing and cost a full OCR round
-      // trip against the gateway's non-retried 30s ingest timeout.
+      // Flat fan-out. Extraction carries no cached prefix, so there is nothing to
+      // coalesce here; the catalog only rides on the business-match call, and
+      // `PromptCacheGate` (see AnthropicProvider) coalesces those across concurrent
+      // emails, which a within-batch stagger could not see — a tenant's batches
+      // arrive as separate requests seconds apart. Serializing documents here would
+      // only add an OCR round trip against the gateway's non-retried 30s ingest
+      // timeout.
       // The `await` is load-bearing: a bare `return Promise.all(...)` returns before
       // the promise settles, so the catch below never sees a rejection and a prep
       // failure escapes raw instead of becoming an UPLOAD_FAILED quarantine.

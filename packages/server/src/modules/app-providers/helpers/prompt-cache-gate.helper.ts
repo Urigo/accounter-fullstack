@@ -8,11 +8,11 @@ import { createHash } from 'node:crypto';
  * same prefix issued at once therefore all miss and all write their own copy,
  * paying the write premium N times instead of once.
  *
- * Production ingest logs show why that matters here: documents do not arrive at
- * a steady rate, they arrive in bursts — a median of ~1.4s between consecutive
- * emails inside a burst, against gaps of several hours between bursts. Almost
- * every document therefore lands while a sibling request for the same tenant is
- * still in flight, and the cache only ever amortizes within a burst.
+ * Production gateway logs show why that matters here: documents do not arrive at
+ * a steady rate. A high-volume tenant's arrive mostly in batches of emails
+ * seconds apart, separated by gaps of hours, so a cache miss in a batch tends to
+ * land while a sibling request for the same tenant is still in flight, and the
+ * cache only ever amortizes within a batch.
  *
  * So the first caller on a cold prefix runs alone while the others wait for it,
  * and once the prefix is known warm nobody waits at all. Both mistakes this can
@@ -155,7 +155,10 @@ export class PromptCacheGate {
       const result = await call();
       const entry = this.touch(key, this.now());
       if (observedCacheActivity(result)) {
-        entry.warmUntil = startedAt + this.ttlMs - this.safetyMarginMs;
+        // Never moved backwards: a slow call that started before a faster sibling
+        // can finish after it, and its older start must not shorten the window the
+        // sibling's read already extended.
+        entry.warmUntil = Math.max(entry.warmUntil, startedAt + this.ttlMs - this.safetyMarginMs);
       } else if (gate === 'warmed') {
         // We held the lock and still cached nothing, so this prefix is below the
         // model's minimum cacheable length. That is a property of these exact

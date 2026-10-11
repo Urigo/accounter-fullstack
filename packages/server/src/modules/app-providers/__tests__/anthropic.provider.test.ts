@@ -14,6 +14,7 @@ const mockedGenerateText = vi.mocked(generateText);
 
 const VENDOR_ID = '00000000-0000-0000-0000-00000000000a';
 const CUSTOMER_ID = '00000000-0000-0000-0000-00000000000b';
+const UNKNOWN_ID = '00000000-0000-0000-0000-0000000000ff';
 
 function business(id: string, name: string): BusinessMatchData {
   return { id, name, hebrew_name: null, vat_number: null, suggestion_data: null, locality: null };
@@ -36,12 +37,18 @@ function modelReturns(output: Record<string, unknown>) {
   return { output, usage } as unknown as Awaited<ReturnType<typeof generateText>>;
 }
 
-/** The system prompt a given generateText call was issued with. */
-function systemPromptOf(callIndex: number): string {
-  const { messages } = mockedGenerateText.mock.calls[callIndex]![0] as {
-    messages: Array<{ role: string; content: unknown }>;
-  };
-  return String(messages.find(m => m.role === 'system')?.content);
+type SentMessage = { role: string; content: unknown; providerOptions?: unknown };
+
+function messagesOf(callIndex: number): SentMessage[] {
+  return (mockedGenerateText.mock.calls[callIndex]![0] as { messages: SentMessage[] }).messages;
+}
+
+function systemOf(callIndex: number): SentMessage {
+  return messagesOf(callIndex).find(m => m.role === 'system')!;
+}
+
+function userOf(callIndex: number): SentMessage {
+  return messagesOf(callIndex).find(m => m.role === 'user')!;
 }
 
 describe('AnthropicProvider.extractInvoiceDetails', () => {
@@ -55,78 +62,150 @@ describe('AnthropicProvider.extractInvoiceDetails', () => {
     vi.restoreAllMocks();
   });
 
-  describe('when the catalog-bearing request fails', () => {
-    it('retries without the catalog and keeps the extracted fields', async () => {
-      mockedGenerateText
-        .mockRejectedValueOnce(new Error('grammar too complex'))
-        .mockResolvedValueOnce(
-          modelReturns({
-            type: DocumentType.Invoice,
-            issuer: 'Some Unknown Supplier',
-            fullAmount: 117,
-            // The retry never saw the catalog, so a UUID here could only be a guess.
-            issuerMatch: VENDOR_ID,
-          }),
-        );
-
-      const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
-
-      expect(mockedGenerateText).toHaveBeenCalledTimes(2);
-      expect(systemPromptOf(0)).toContain('KNOWN BUSINESSES');
-      expect(systemPromptOf(1)).not.toContain('KNOWN BUSINESSES');
-      expect(result.fullAmount).toBe(117);
-      expect(result.type).toBe(DocumentType.Invoice);
-      expect(result.suggestedIssuer).toBeNull();
-    });
-
-    it('rejects when the catalog-free retry fails too', async () => {
-      mockedGenerateText
-        .mockRejectedValueOnce(new Error('first failure'))
-        .mockRejectedValueOnce(new Error('second failure'));
-
-      await expect(new AnthropicProvider().extractInvoiceDetails(pdf(), catalog)).rejects.toThrow(
-        'Failed to extract document details: second failure',
+  describe('extraction', () => {
+    it('sends the document without the catalog or a cache breakpoint', async () => {
+      mockedGenerateText.mockResolvedValueOnce(
+        modelReturns({ type: DocumentType.Invoice, issuer: 'Vendor Ltd', recipient: 'Customer Inc' }),
       );
+
+      await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
+
+      expect(String(systemOf(0).content)).not.toContain('KNOWN BUSINESSES');
+      expect(systemOf(0).providerOptions).toBeUndefined();
+      expect(userOf(0).content).toEqual([expect.objectContaining({ type: 'file' })]);
     });
 
-    it('does not retry an identical request when there is no catalog to drop', async () => {
+    it('rejects when the extraction request fails', async () => {
       mockedGenerateText.mockRejectedValueOnce(new Error('api down'));
 
-      await expect(new AnthropicProvider().extractInvoiceDetails(pdf(), [])).rejects.toThrow(
+      await expect(new AnthropicProvider().extractInvoiceDetails(pdf(), catalog)).rejects.toThrow(
         'Failed to extract document details: api down',
       );
       expect(mockedGenerateText).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('model match', () => {
-    it('is not accepted for a side the document does not have', async () => {
+  describe('match call', () => {
+    it('is skipped when the deterministic matcher resolves both sides', async () => {
       mockedGenerateText.mockResolvedValueOnce(
-        modelReturns({
-          type: DocumentType.Invoice,
-          issuer: 'Some Unknown Supplier',
-          // No recipient was extracted, yet the model offered a catalog entry for it.
-          recipientMatch: CUSTOMER_ID,
-        }),
+        modelReturns({ type: DocumentType.Invoice, issuer: 'Vendor Ltd', recipient: 'Customer Inc' }),
       );
 
       const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
 
+      expect(mockedGenerateText).toHaveBeenCalledTimes(1);
+      expect(result.suggestedIssuer).toBe(VENDOR_ID);
+      expect(result.suggestedRecipient).toBe(CUSTOMER_ID);
+    });
+
+    it('is skipped for a non-financial document', async () => {
+      mockedGenerateText.mockResolvedValueOnce(
+        modelReturns({ type: DocumentType.Other, issuer: 'Some Unknown Supplier' }),
+      );
+
+      const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
+
+      expect(mockedGenerateText).toHaveBeenCalledTimes(1);
+      expect(result.suggestedIssuer).toBeNull();
+    });
+
+    it('is skipped when there is no catalog to match against', async () => {
+      mockedGenerateText.mockResolvedValueOnce(
+        modelReturns({ type: DocumentType.Invoice, issuer: 'Some Unknown Supplier' }),
+      );
+
+      await new AnthropicProvider().extractInvoiceDetails(pdf(), []);
+
+      expect(mockedGenerateText).toHaveBeenCalledTimes(1);
+    });
+
+    it('is skipped when the unresolved side has no extracted name', async () => {
+      mockedGenerateText.mockResolvedValueOnce(
+        modelReturns({ type: DocumentType.Invoice, issuer: 'Vendor Ltd', recipient: '' }),
+      );
+
+      const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
+
+      expect(mockedGenerateText).toHaveBeenCalledTimes(1);
       expect(result.suggestedRecipient).toBeNull();
     });
 
-    it('is accepted for an extracted side the deterministic matcher left unresolved', async () => {
-      mockedGenerateText.mockResolvedValueOnce(
-        modelReturns({
-          type: DocumentType.Invoice,
-          issuer: 'Some Unknown Supplier',
-          recipient: 'A name matchBusiness cannot resolve',
-          recipientMatch: CUSTOMER_ID,
-        }),
-      );
+    it('sends the cached catalog and only the unresolved party, never the document', async () => {
+      mockedGenerateText
+        .mockResolvedValueOnce(
+          modelReturns({
+            type: DocumentType.Invoice,
+            issuer: 'Some Unknown Supplier',
+            issuerVatNumber: '514000000',
+            recipient: 'Customer Inc',
+            description: 'Annual subscription',
+          }),
+        )
+        .mockResolvedValueOnce(modelReturns({ issuerMatch: VENDOR_ID }));
 
       const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
 
+      expect(mockedGenerateText).toHaveBeenCalledTimes(2);
+      expect(String(systemOf(1).content)).toContain(`${VENDOR_ID}|Vendor Ltd`);
+      expect(systemOf(1).providerOptions).toEqual({
+        anthropic: { cacheControl: { type: 'ephemeral', ttl: '5m' } },
+      });
+
+      const userTurn = userOf(1).content;
+      expect(typeof userTurn).toBe('string');
+      expect(userTurn).toContain('Unmatched issuer: "Some Unknown Supplier"');
+      expect(userTurn).toContain('514000000');
+      expect(userTurn).toContain('Annual subscription');
+      // Resolved deterministically, so not asked about.
+      expect(userTurn).not.toContain('recipient');
+
+      expect(result.suggestedIssuer).toBe(VENDOR_ID);
+      expect(result.suggestedRecipient).toBe(CUSTOMER_ID);
+    });
+
+    it('ignores a match for a side it was not asked about', async () => {
+      mockedGenerateText
+        .mockResolvedValueOnce(
+          modelReturns({ type: DocumentType.Invoice, issuer: 'Some Unknown Supplier' }),
+        )
+        // No recipient was extracted, yet the model offered a catalog entry for it.
+        .mockResolvedValueOnce(modelReturns({ recipientMatch: CUSTOMER_ID }));
+
+      const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
+
+      expect(result.suggestedIssuer).toBeNull();
+      expect(result.suggestedRecipient).toBeNull();
+    });
+
+    it('rejects a UUID that is not in the catalog', async () => {
+      mockedGenerateText
+        .mockResolvedValueOnce(
+          modelReturns({ type: DocumentType.Invoice, issuer: 'Some Unknown Supplier' }),
+        )
+        .mockResolvedValueOnce(modelReturns({ issuerMatch: UNKNOWN_ID }));
+
+      const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
+
+      expect(result.suggestedIssuer).toBeNull();
+    });
+
+    it('keeps the extraction and the deterministic match when it fails', async () => {
+      mockedGenerateText
+        .mockResolvedValueOnce(
+          modelReturns({
+            type: DocumentType.Invoice,
+            issuer: 'Some Unknown Supplier',
+            recipient: 'Customer Inc',
+            fullAmount: 117,
+          }),
+        )
+        .mockRejectedValueOnce(new Error('overloaded'));
+
+      const result = await new AnthropicProvider().extractInvoiceDetails(pdf(), catalog);
+
+      expect(result.fullAmount).toBe(117);
+      expect(result.type).toBe(DocumentType.Invoice);
+      expect(result.suggestedIssuer).toBeNull();
       expect(result.suggestedRecipient).toBe(CUSTOMER_ID);
     });
   });

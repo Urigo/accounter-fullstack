@@ -16,21 +16,20 @@ import { PromptCacheGate } from './helpers/prompt-cache-gate.helper.js';
 const MODEL_ID = 'claude-sonnet-5';
 
 /**
- * TTL for the cached prompt prefix (instructions + business catalog).
+ * TTL for the cached match prefix (match instructions + business catalog).
  *
- * The default 5 minutes, not the hour, because the arrival pattern is bursty
- * rather than steady. Measured over a week of production ingest logs: documents
- * cluster into bursts with a median of ~1.4s between consecutive emails, and
- * those bursts are separated by gaps of several hours. So the cache only ever
- * amortizes *within* a burst — five minutes covers that with room to spare, and
- * an hour does not come close to spanning the gap to the next one.
+ * The default 5 minutes, not the hour, because arrival is bursty rather than
+ * steady. Measured over a week of production gateway logs: a high-volume tenant's
+ * documents land mostly in batches of emails seconds apart, separated by gaps of
+ * hours, and a low-volume tenant almost never has two documents within five
+ * minutes at all. So the cache only ever amortizes *within* a batch — five
+ * minutes covers that with room to spare, and an hour does not come close to
+ * spanning the gap to the next one.
  *
  * That makes the hour a pure surcharge: it costs 2x base input per write against
- * 1.25x for five minutes, to avoid a handful of writes it cannot actually avoid.
- * At the observed burst shape the 5m TTL is ~25% cheaper on catalog tokens for
- * both a high-volume and a low-volume tenant.
+ * 1.25x for five minutes, to avoid writes it cannot actually avoid.
  *
- * Reads refresh the entry's timer for free, so a long burst stays warm on one
+ * Reads refresh the entry's timer for free, so a long batch stays warm on one
  * write. Keep CACHE_TTL_MS in step with CACHE_TTL — the gate below uses it to
  * decide when the entry has expired.
  */
@@ -38,11 +37,12 @@ const CACHE_TTL = '5m' as const;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 /**
- * How long a caller will wait for another request to warm a cold prefix.
+ * How long a match call will wait for another request to warm a cold prefix.
  *
  * Bounded well inside the email gateway's 30s ingest timeout, which is
  * deliberately not retried: on expiry every waiter proceeds and pays its own
- * cache write, which is more expensive but never stalls an ingest.
+ * cache write, which is more expensive but never stalls an ingest. Only match
+ * calls are gated — extraction never waits on the gate.
  */
 const CACHE_GATE_MAX_WAIT_MS = 10 * 1000;
 
@@ -121,11 +121,12 @@ const documentDataSchema = z.object({
   description: z
     .string()
     .describe('Additional description or remarks. Return empty string if missing.'),
-  // Business matching, folded into the extraction schema so one call does both.
-  // `.optional()` rather than `.nullable()` on purpose: per rule 1 above it keeps
-  // the grammar cheap, and it lets the model omit a side it cannot match without
-  // failing schema validation — preserving the property that a failed match
-  // degrades the result instead of failing the whole extraction.
+});
+
+// `.optional()` rather than `.nullable()`, per rule 1 above: it keeps the grammar
+// cheap, and it lets the model omit a side it cannot match without failing schema
+// validation.
+const businessMatchSchema = z.object({
   issuerMatch: z
     .string()
     .optional()
@@ -141,11 +142,12 @@ const documentDataSchema = z.object({
 });
 
 type DocumentData = z.infer<typeof documentDataSchema>;
+type BusinessMatch = z.infer<typeof businessMatchSchema>;
 
-export type DocumentDataWithMatches = Omit<
-  DocumentData,
-  'type' | 'currency' | 'issuerMatch' | 'recipientMatch'
-> & {
+/** A party the deterministic matcher could not resolve, as extracted from the document. */
+type UnresolvedParty = { name: string; vatNumber: string };
+
+export type DocumentDataWithMatches = Omit<DocumentData, 'type' | 'currency'> & {
   type?: DocumentType;
   currency?: Currency;
   suggestedIssuer: string | null;
@@ -153,9 +155,9 @@ export type DocumentDataWithMatches = Omit<
 };
 
 /**
- * The static half of the cached prefix. A module constant, deliberately: anything
- * interpolated in here (a date, a filename, a tenant id) would sit ahead of the
- * catalog in the prefix and invalidate it on every request.
+ * Extraction instructions. They carry no catalog and no cache breakpoint: on
+ * their own they sit far below the model's minimum cacheable prefix, so there
+ * is nothing to write.
  */
 const EXTRACTION_INSTRUCTIONS = stripIndent(`You extract structured data from financial documents.
 
@@ -171,10 +173,17 @@ const EXTRACTION_INSTRUCTIONS = stripIndent(`You extract structured data from fi
 
     Omit any field whose value is missing or not present on the document; allocation number is optional.`);
 
+/**
+ * The static half of the cached match prefix. A module constant, deliberately:
+ * anything interpolated in here (a date, a filename, a tenant id) would sit ahead
+ * of the catalog in the prefix and invalidate it on every request.
+ */
 const MATCHING_INSTRUCTIONS =
-  stripIndent(`Additionally, match the document's issuer and recipient against the KNOWN BUSINESSES catalog below.
+  stripIndent(`You match the parties of a financial document against the KNOWN BUSINESSES catalog below.
 
-    Set \`issuerMatch\` / \`recipientMatch\` to the UUID of the closest matching business, copied verbatim from the catalog. Omit a field entirely when there is no confident match. Do not guess, and never invent a UUID that is not in the catalog.
+    The user message lists the issuer and/or recipient that could not be matched automatically, as extracted from the document: the name, the VAT or registration number when present, and the document's description for context.
+
+    Set \`issuerMatch\` / \`recipientMatch\` to the UUID of the closest matching business, copied verbatim from the catalog. Omit a field entirely when there is no confident match, and for any party that is not listed. Do not guess, and never invent a UUID that is not in the catalog.
 
     KNOWN BUSINESSES (format: UUID|name):`);
 
@@ -199,46 +208,9 @@ function isSupportedFileType(value: string): value is SupportedFileType {
   return SUPPORTED_FILE_TYPES.includes(value as SupportedFileType);
 }
 
-/**
- * Build the system prompt: static instructions first, then the tenant's business
- * catalog. Ordering is load-bearing. Prompt caching is a prefix match, so content
- * is only reusable if everything ahead of it is byte-identical — stable content
- * has to physically precede volatile content. Instructions never change, the
- * catalog changes only when the tenant's businesses do, and the document (the one
- * genuinely per-request payload) stays out of here entirely, in the user turn
- * behind the cache breakpoint.
- */
-function buildSystemPrompt(businesses: BusinessMatchData[]): string {
-  if (businesses.length === 0) {
-    return EXTRACTION_INSTRUCTIONS;
-  }
-  return `${EXTRACTION_INSTRUCTIONS}\n\n${MATCHING_INSTRUCTIONS}\n${serializeBusinessCatalog(businesses)}`;
-}
-
-/**
- * The request messages: the system prompt, then the document in the user turn.
- * `cache` places the breakpoint on the system block. Everything up to and
- * including it — the instructions and the whole business catalog — is written
- * once per tenant and read back at 0.1x on every later document, for as long as
- * the TTL holds. The document sits after it and is processed fresh, which is
- * correct: it differs every time and there is nothing to reuse.
- */
-function buildMessages(
-  systemPrompt: string,
-  fileData: string,
-  fileType: string,
-  { cache }: { cache: boolean },
-): ModelMessage[] {
+function buildExtractionMessages(fileData: string, fileType: string): ModelMessage[] {
   return [
-    {
-      role: 'system',
-      content: systemPrompt,
-      ...(cache && {
-        providerOptions: {
-          anthropic: { cacheControl: { type: 'ephemeral', ttl: CACHE_TTL } },
-        },
-      }),
-    },
+    { role: 'system', content: EXTRACTION_INSTRUCTIONS },
     {
       role: 'user',
       content: [{ type: 'file', data: fileData, mediaType: fileType }],
@@ -246,12 +218,66 @@ function buildMessages(
   ];
 }
 
-function requestDocumentData(messages: ModelMessage[]) {
+/**
+ * Build the match system prompt: static instructions first, then the tenant's
+ * business catalog. Ordering is load-bearing. Prompt caching is a prefix match, so
+ * content is only reusable if everything ahead of it is byte-identical — stable
+ * content has to physically precede volatile content. Instructions never change,
+ * and the catalog changes only when the tenant's businesses do.
+ */
+function buildMatchSystemPrompt(businesses: BusinessMatchData[]): string {
+  return `${MATCHING_INSTRUCTIONS}\n${serializeBusinessCatalog(businesses)}`;
+}
+
+/**
+ * The match request: the cached system prompt, then the unresolved parties in the
+ * user turn. The breakpoint on the system block means the instructions and the
+ * whole catalog are written once per tenant and read back at 0.1x by every later
+ * match within the TTL. The user turn is the only per-document payload, and it
+ * is a few lines of extracted text — the document itself is never re-sent.
+ */
+function buildMatchMessages(
+  systemPrompt: string,
+  unresolved: { issuer?: UnresolvedParty; recipient?: UnresolvedParty },
+  description: string,
+): ModelMessage[] {
+  const lines: string[] = [];
+  for (const [side, party] of Object.entries(unresolved)) {
+    if (party) {
+      const vat = party.vatNumber ? ` (VAT/registration number: ${party.vatNumber})` : '';
+      lines.push(`Unmatched ${side}: ${JSON.stringify(party.name)}${vat}`);
+    }
+  }
+  if (description) {
+    lines.push(`Document description: ${JSON.stringify(description)}`);
+  }
+  return [
+    {
+      role: 'system',
+      content: systemPrompt,
+      providerOptions: {
+        anthropic: { cacheControl: { type: 'ephemeral', ttl: CACHE_TTL } },
+      },
+    },
+    { role: 'user', content: lines.join('\n') },
+  ];
+}
+
+function generateDocumentData(messages: ModelMessage[]) {
   return generateText({
     model: anthropic(MODEL_ID),
     output: Output.object({ schema: documentDataSchema }),
     messages,
     experimental_telemetry: { isEnabled: true, functionId: 'ocr-extract-invoice' },
+  });
+}
+
+function generateBusinessMatch(messages: ModelMessage[]) {
+  return generateText({
+    model: anthropic(MODEL_ID),
+    output: Output.object({ schema: businessMatchSchema }),
+    messages,
+    experimental_telemetry: { isEnabled: true, functionId: 'ocr-match-business' },
   });
 }
 
@@ -266,7 +292,7 @@ function extractionError(err: unknown): Error {
 })
 export class AnthropicProvider {
   /**
-   * Coordinates concurrent OCR calls that share one cached prefix. Correctness
+   * Coordinates concurrent match calls that share one cached prefix. Correctness
    * rests on this provider being a singleton: one gate per process, shared by
    * every caller — the email ingest path and the interactive upload path alike.
    */
@@ -281,6 +307,19 @@ export class AnthropicProvider {
     return Buffer.from(buffer).toString('base64');
   }
 
+  /**
+   * Extract the document's fields, then resolve its issuer and recipient against
+   * the tenant's businesses.
+   *
+   * The catalog is attached only when it can earn its place: on a financial
+   * document with a named side the deterministic matcher could not resolve.
+   * Riding on every request instead would bill it for documents that can never
+   * use it — rendered email bodies, non-financial documents, and documents
+   * `matchBusiness` resolves on its own — and production arrival is too sparse
+   * for the cache to amortize that: one tenant almost never has two documents
+   * within the TTL, so nearly every request would pay the write premium for
+   * nothing.
+   */
   async extractInvoiceDetails(
     fileOrBlob: File | Blob,
     businesses?: BusinessMatchData[],
@@ -294,65 +333,70 @@ export class AnthropicProvider {
     const fileData = await this.fileToBase64(fileOrBlob);
     const businessList = businesses ?? [];
 
-    const {
-      output: draft,
-      usage,
-      gate,
-      catalogFallback,
-    } = await this.requestExtraction(businessList, fileData, fileType);
+    const { output: draft, usage: extractionUsage } = await generateDocumentData(
+      buildExtractionMessages(fileData, fileType),
+    ).catch(err => {
+      throw extractionError(err);
+    });
+    logOcrUsage('extract', extractionUsage, {
+      tenantId: owner?.id,
+      documentType: draft.type,
+    });
 
-    // The deterministic matcher stays primary and the model's suggestion is the
-    // fallback, exactly as before the two calls were merged: `matchBusiness` keys
-    // off VAT numbers and normalized names, which is more trustworthy than a
-    // judgement call. The model only gets consulted for a side it left unresolved.
+    // The deterministic matcher stays primary: it keys off VAT numbers and
+    // normalized names, which is more trustworthy than a judgement call. The
+    // model is only consulted for a side it left unresolved.
     let suggestedIssuer = matchBusiness(draft.issuer, draft.issuerVatNumber, businessList);
     let suggestedRecipient = matchBusiness(draft.recipient, draft.recipientVatNumber, businessList);
 
-    // Kept to report whether the catalog earned its place on this document. The
-    // catalog rides on every request now, so the open question is what share of
-    // documents the deterministic matcher cannot resolve on its own — see the
-    // `modelMatchUsed` note on logCacheUsage.
-    const deterministicIssuer = suggestedIssuer;
-    const deterministicRecipient = suggestedRecipient;
+    // Scoped to financial documents: a delivery note or a bank letter has no
+    // meaningful issuer/recipient to resolve, and a match accepted there would feed
+    // `applyForeignCounterpartyVatDefault` and the counterparty resolution for a
+    // document that has no counterparty.
+    if (businessList.length > 0 && draft.type != null && FINANCIAL_DOC_TYPES.has(draft.type)) {
+      // Only a side the document actually has: a match for a side with no
+      // extracted name could only be a guess.
+      const unresolved = {
+        issuer:
+          suggestedIssuer === null && draft.issuer
+            ? { name: draft.issuer, vatNumber: draft.issuerVatNumber }
+            : undefined,
+        recipient:
+          suggestedRecipient === null && draft.recipient
+            ? { name: draft.recipient, vatNumber: draft.recipientVatNumber }
+            : undefined,
+      };
 
-    // Scoped to financial documents, as the separate match call was: a delivery note
-    // or a bank letter has no meaningful issuer/recipient to resolve, and a match
-    // accepted there would feed `applyForeignCounterpartyVatDefault` and the
-    // counterparty resolution for a document that has no counterparty.
-    //
-    // Skipped after a catalog fallback: that request never saw the catalog, so any
-    // UUID it returned could only be a guess.
-    if (
-      !catalogFallback &&
-      businessList.length > 0 &&
-      draft.type != null &&
-      FINANCIAL_DOC_TYPES.has(draft.type)
-    ) {
-      // Validated against the catalog so a hallucinated UUID can never reach the
-      // document pipeline as a creditor/debtor.
-      const knownId = (id: string | undefined): string | null =>
-        id && businessList.some(b => b.id === id) ? id : null;
+      if (unresolved.issuer || unresolved.recipient) {
+        const match = await this.matchUnresolvedParties(
+          businessList,
+          unresolved,
+          draft.description,
+        );
+        if (match) {
+          // Validated against the catalog so a hallucinated UUID can never reach
+          // the document pipeline as a creditor/debtor.
+          const knownId = (id: string | undefined): string | null =>
+            id && businessList.some(b => b.id === id) ? id : null;
 
-      // Only for a side the document actually has, as the separate match call only
-      // asked about extracted names. A document with no recipient would otherwise
-      // pick up whatever catalog entry the model offered, and feed it into
-      // counterparty resolution and the foreign-VAT default.
-      if (draft.issuer) {
-        suggestedIssuer ??= knownId(draft.issuerMatch);
-      }
-      if (draft.recipient) {
-        suggestedRecipient ??= knownId(draft.recipientMatch);
+          if (unresolved.issuer) {
+            suggestedIssuer = knownId(match.output.issuerMatch);
+          }
+          if (unresolved.recipient) {
+            suggestedRecipient = knownId(match.output.recipientMatch);
+          }
+
+          logOcrUsage('match', match.usage, {
+            tenantId: owner?.id,
+            catalogSize: businessList.length,
+            gate: match.gate,
+            modelMatchUsed:
+              (!!unresolved.issuer && suggestedIssuer !== null) ||
+              (!!unresolved.recipient && suggestedRecipient !== null),
+          });
+        }
       }
     }
-
-    logCacheUsage(usage, businessList.length, {
-      tenantId: owner?.id,
-      gate,
-      catalogFallback,
-      modelMatchUsed:
-        (deterministicIssuer === null && suggestedIssuer !== null) ||
-        (deterministicRecipient === null && suggestedRecipient !== null),
-    });
 
     const vatAmount = applyForeignCounterpartyVatDefault(
       draft.vatAmount,
@@ -369,10 +413,8 @@ export class AnthropicProvider {
       ? (draft.currency as Currency)
       : undefined;
 
-    const { issuerMatch: _issuerMatch, recipientMatch: _recipientMatch, ...rest } = draft;
-
     return {
-      ...rest,
+      ...draft,
       vatAmount,
       type: validatedType,
       currency: validatedCurrency,
@@ -382,35 +424,24 @@ export class AnthropicProvider {
   }
 
   /**
-   * One gated, catalog-bearing request, with a catalog-free retry if it fails.
-   *
-   * Before the extraction and matching calls were merged, a failed match call was
-   * swallowed after extraction had already succeeded. `.optional()` on the match
-   * fields covers a match the model *omits*, not a request that *fails*, so this
-   * restores the rest: when the combined request fails, re-issue exactly what the
-   * standalone extraction call used to send — the instructions without the catalog
-   * — and throw only if that fails too. A failed match still never costs the
-   * extraction; the price is one extra call, on the failure path only.
+   * One gated, catalog-bearing match request. Returns null if it fails: a failed
+   * match never costs the extraction, it just leaves the unresolved sides
+   * unresolved.
    */
-  private async requestExtraction(
+  private async matchUnresolvedParties(
     businessList: BusinessMatchData[],
-    fileData: string,
-    fileType: string,
-  ): Promise<{
-    output: DocumentData;
-    usage: LanguageModelUsage;
-    gate: CacheGateOutcome | null;
-    catalogFallback: boolean;
-  }> {
-    const systemPrompt = buildSystemPrompt(businessList);
+    unresolved: { issuer?: UnresolvedParty; recipient?: UnresolvedParty },
+    description: string,
+  ): Promise<{ output: BusinessMatch; usage: LanguageModelUsage; gate: CacheGateOutcome } | null> {
+    const systemPrompt = buildMatchSystemPrompt(businessList);
     try {
       // Under the gate: a cache entry is not readable until the request that writes
-      // it responds, so without this every document of a burst writes its own copy
-      // of the catalog. The gate lets one call warm a cold prefix while its
-      // siblings wait, and lets everyone through untouched once it is warm.
+      // it responds, so without this every miss in a batch writes its own copy of
+      // the catalog. The gate lets one call warm a cold prefix while its siblings
+      // wait, and lets everyone through untouched once it is warm.
       const { result, gate } = await this.cacheGate.run(
         systemPrompt,
-        () => requestDocumentData(buildMessages(systemPrompt, fileData, fileType, { cache: true })),
+        () => generateBusinessMatch(buildMatchMessages(systemPrompt, unresolved, description)),
         // Warmth is recorded from what the response actually reports, never from an
         // assumption that the write landed. Both counters zero means the prefix
         // never reached the model's minimum cacheable length.
@@ -418,31 +449,20 @@ export class AnthropicProvider {
           (u?.inputTokenDetails?.cacheReadTokens ?? 0) > 0 ||
           (u?.inputTokenDetails?.cacheWriteTokens ?? 0) > 0,
       );
-      return { output: result.output, usage: result.usage, gate, catalogFallback: false };
+      return { output: result.output, usage: result.usage, gate };
     } catch (err) {
-      // With no catalog, the retry would send the identical request.
-      if (businessList.length === 0) {
-        throw extractionError(err);
-      }
       console.warn(
-        `anthropic.ocr: catalog-bearing request failed, retrying without the catalog: ${
+        `anthropic.ocr: business match request failed, keeping the deterministic match: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );
-      // Ungated and uncached: the instructions alone sit far below the model's
-      // minimum cacheable prefix, so there is nothing to write or coordinate.
-      const fallback = await requestDocumentData(
-        buildMessages(buildSystemPrompt([]), fileData, fileType, { cache: false }),
-      ).catch(fallbackErr => {
-        throw extractionError(fallbackErr);
-      });
-      return { output: fallback.output, usage: fallback.usage, gate: null, catalogFallback: true };
+      return null;
     }
   }
 }
 
 /**
- * Record what the prompt cache actually did.
+ * Record what each OCR call cost, and what the prompt cache actually did.
  *
  * The expensive failure mode of prompt caching is silent: a change to prompt
  * assembly stops the prefix matching, every request quietly pays full price, and
@@ -450,9 +470,14 @@ export class AnthropicProvider {
  * truth that caching is working, so they get logged on every call rather than
  * measured once at setup.
  *
- * Healthy steady state is `cacheReadTokens` covering the catalog on all but the
- * first document of a TTL window. A persistent `cacheReadTokens: 0` with a
- * non-empty catalog means something ahead of the breakpoint is varying per
+ * `call` is `extract` for every document and `match` only when the catalog was
+ * sent. Match lines over extract lines with a financial `documentType`, per
+ * tenant, is the deterministic matcher's miss rate — the quantity that decides
+ * what the catalog costs.
+ *
+ * On match calls, healthy steady state is `cacheReadTokens` covering the catalog
+ * on all but the first match of a TTL window. A persistent `cacheReadTokens: 0`
+ * with a non-empty catalog means something ahead of the breakpoint is varying per
  * request. Both zero means the prefix never reached the model's 1024-token
  * minimum, which is expected for a small tenant and harmless.
  *
@@ -460,34 +485,28 @@ export class AnthropicProvider {
  * the bill, because a 5-minute write is 1.25x base input against 2x for an hour
  * — tracking hit rate alone reads that as a regression.
  *
- * `modelMatchUsed` answers the question the cost model cannot: the catalog now
- * accompanies every document, so what matters is the share of documents where
- * the model's match actually resolved a side `matchBusiness` could not. `gate`
- * reports how the call was scheduled, so a collapse in cache reads can be told
- * apart from a gate that stopped coalescing. `catalogFallback` marks a document
- * extracted by the catalog-free retry — `gate` is null there, since that request
- * is not gated — and a rising rate of it means the catalog request is failing.
+ * `gate` reports how a match call was scheduled, so a collapse in cache reads can
+ * be told apart from a gate that stopped coalescing. `modelMatchUsed` says whether
+ * the model resolved a side the deterministic matcher could not.
  */
-function logCacheUsage(
+function logOcrUsage(
+  call: 'extract' | 'match',
   usage: LanguageModelUsage,
-  catalogSize: number,
   context: {
     tenantId?: string;
-    gate: CacheGateOutcome | null;
-    catalogFallback: boolean;
-    modelMatchUsed: boolean;
+    documentType?: string;
+    catalogSize?: number;
+    gate?: CacheGateOutcome;
+    modelMatchUsed?: boolean;
   },
 ): void {
   try {
     console.info(
       JSON.stringify({
         msg: 'anthropic.ocr.usage',
+        call,
         model: MODEL_ID,
-        tenantId: context.tenantId,
-        catalogSize,
-        gate: context.gate,
-        catalogFallback: context.catalogFallback,
-        modelMatchUsed: context.modelMatchUsed,
+        ...context,
         inputTokens: usage?.inputTokens,
         outputTokens: usage?.outputTokens,
         cacheReadTokens: usage?.inputTokenDetails?.cacheReadTokens,

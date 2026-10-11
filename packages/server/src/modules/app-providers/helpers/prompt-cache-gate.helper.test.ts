@@ -131,6 +131,26 @@ describe('PromptCacheGate', () => {
     expect(result.result).toBe('second');
   });
 
+  it('does not let a slow call that started earlier shorten the warm window', async () => {
+    let clock = 1_000_000;
+    const gate = makeGate({ now: () => clock });
+
+    await gate.run('prefix', () => Promise.resolve('warm-up'), cached);
+
+    // A starts first and responds last; B starts later and responds first.
+    clock += 60_000;
+    const slow = controllable();
+    const runA = gate.run('prefix', () => slow.promise, cached);
+    clock += 120_000;
+    await gate.run('prefix', () => Promise.resolve('b'), cached);
+    slow.resolve('a');
+    await runA;
+
+    // Past A's window (measured from A's older start) but inside B's: still warm.
+    clock = 1_000_000 + 60_000 + TTL_MS - SAFETY_MARGIN_MS + 50_000;
+    expect((await gate.run('prefix', () => Promise.resolve('c'), cached)).gate).toBe('warm');
+  });
+
   it('lets waiters through when the warming call outlives maxWaitMs', async () => {
     const gate = makeGate({ maxWaitMs: 20 });
     const warmer = controllable();
