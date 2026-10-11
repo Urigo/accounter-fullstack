@@ -15,11 +15,11 @@ import type {
   IGetInvitationForAcceptanceQuery,
   IGetUserIdByAuth0UserIdQuery,
   IInsertAcceptedBusinessUserQuery,
-  IIsAuth0UserReferencedElsewhereQuery,
   IUpdateBusinessUserAuth0IdQuery,
   IUpdateInvitationAcceptanceQuery,
 } from '../types.js';
 import { Auth0ManagementProvider } from './auth0-management.provider.js';
+import { isAuth0UserReferenced } from './auth0-user-references.provider.js';
 
 const updateInvitationAcceptance = sql<IUpdateInvitationAcceptanceQuery>`
   UPDATE accounter_schema.invitations
@@ -69,19 +69,6 @@ const deleteInvitationPlaceholderUser = sql<IDeleteInvitationPlaceholderUserQuer
   WHERE user_id = $userId
     AND business_id = $ownerId
     AND auth0_user_id IS NULL;
-`;
-
-const isAuth0UserReferencedElsewhere = sql<IIsAuth0UserReferencedElsewhereQuery>`
-  SELECT (
-    EXISTS (
-      SELECT 1 FROM accounter_schema.invitations
-      WHERE auth0_user_id = $auth0UserId AND id <> $invitationId
-    )
-    OR EXISTS (
-      SELECT 1 FROM accounter_schema.business_users
-      WHERE auth0_user_id = $auth0UserId
-    )
-  ) AS "referenced!";
 `;
 
 @Injectable({
@@ -199,25 +186,26 @@ export class AcceptInvitationsProvider {
         await assignAuth0UserToInvitedUser();
       }
 
-      // Only an Auth0 user created for this invitation is ours to unblock or delete.
-      // A user that already existed when the invitation was issued is left untouched.
-      if (invitation.auth0_user_id && invitation.auth0_user_created) {
+      // Only an invitation placeholder is ours to unblock or delete: an Auth0 user this
+      // invitation created, or an unused one provisioned by an earlier invitation and
+      // reused here. Any other existing account is left untouched.
+      const invitationAuth0UserId = invitation.auth0_user_id;
+      if (invitationAuth0UserId) {
         try {
-          if (auth0UserId && auth0UserId !== invitation.auth0_user_id) {
+          if (auth0UserId && auth0UserId !== invitationAuth0UserId) {
             // Accepted with a different account: the placeholder is no longer needed,
             // unless it has been used or is still referenced elsewhere.
-            const [{ referenced }] = await isAuth0UserReferencedElsewhere.run(
-              { auth0UserId: invitation.auth0_user_id, invitationId: invitation.id },
-              client,
-            );
             if (
-              !referenced &&
-              (await this.auth0ManagementProvider.isUnusedInvitationUser(invitation.auth0_user_id))
+              !(await isAuth0UserReferenced(client, invitationAuth0UserId, invitation.id)) &&
+              (await this.auth0ManagementProvider.isUnusedInvitationUser(invitationAuth0UserId))
             ) {
-              await this.auth0ManagementProvider.deleteUser(invitation.auth0_user_id);
+              await this.auth0ManagementProvider.deleteUser(invitationAuth0UserId);
             }
-          } else {
-            await this.auth0ManagementProvider.unblockUser(invitation.auth0_user_id);
+          } else if (
+            invitation.auth0_user_created ||
+            (await this.auth0ManagementProvider.isUnusedInvitationUser(invitationAuth0UserId))
+          ) {
+            await this.auth0ManagementProvider.unblockUser(invitationAuth0UserId);
           }
         } catch (error) {
           throw mapAuth0Error(error);

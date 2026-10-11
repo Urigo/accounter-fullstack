@@ -1,5 +1,6 @@
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { Auth0ManagementProvider } from '../modules/auth/providers/auth0-management.provider.js';
+import { isAuth0UserReferenced } from '../modules/auth/providers/auth0-user-references.provider.js';
 import { insertAuditLog } from '../modules/common/providers/audit-logs.provider.js';
 
 export interface Logger {
@@ -20,11 +21,10 @@ export async function cleanupExpiredInvitations(
     const { rows: expired } = await client.query<{
       id: string;
       auth0_user_id: string | null;
-      auth0_user_created: boolean;
       user_id: string;
       business_id: string;
     }>(
-      `SELECT id, auth0_user_id, auth0_user_created, user_id, business_id
+      `SELECT id, auth0_user_id, user_id, business_id
        FROM accounter_schema.invitations
        WHERE accepted_at IS NULL
          AND expires_at < NOW()`,
@@ -32,29 +32,16 @@ export async function cleanupExpiredInvitations(
 
     for (const invitation of expired) {
       try {
-        if (invitation.auth0_user_created && invitation.auth0_user_id) {
-          // Delete only an unused placeholder this invitation created: never a user that
-          // existed beforehand, has logged in, or is still referenced by another
-          // invitation or membership (Auth0 users are reused across invitations).
-          const {
-            rows: [{ referenced }],
-          } = await client.query<{ referenced: boolean }>(
-            `SELECT (
-               EXISTS (
-                 SELECT 1 FROM accounter_schema.invitations
-                 WHERE auth0_user_id = $1 AND id <> $2
-               )
-               OR EXISTS (
-                 SELECT 1 FROM accounter_schema.business_users
-                 WHERE auth0_user_id = $1
-               )
-             ) AS referenced`,
-            [invitation.auth0_user_id, invitation.id],
-          );
-
-          if (!referenced && (await auth0.isUnusedInvitationUser(invitation.auth0_user_id))) {
-            await auth0.deleteUser(invitation.auth0_user_id);
-          }
+        // Delete only an unused invitation placeholder: never a user that existed beforehand
+        // or has logged in. The decision rests on the user's live state rather than on
+        // `auth0_user_created`, because placeholders are reused by later invitations: when
+        // several expired invitations share one, whichever is cleaned up last removes it.
+        if (
+          invitation.auth0_user_id &&
+          !(await isAuth0UserReferenced(client, invitation.auth0_user_id, invitation.id)) &&
+          (await auth0.isUnusedInvitationUser(invitation.auth0_user_id))
+        ) {
+          await auth0.deleteUser(invitation.auth0_user_id);
         }
 
         await client.query('BEGIN');

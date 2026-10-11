@@ -81,16 +81,22 @@ export const invitationsResolvers: AuthModule.Resolvers = {
         if (!auth0User.created) {
           throw error;
         }
-        // If DB operations fail, attempt to clean up the created Auth0 user to prevent dangling resources.
-        await injector
-          .get(Auth0ManagementProvider)
-          .deleteUser(auth0UserId)
-          .catch(cleanupError => {
-            console.error(
-              `Failed to cleanup Auth0 user ${auth0UserId} after DB error:`,
-              cleanupError,
-            );
-          });
+        // If DB operations fail, attempt to clean up the created Auth0 user to prevent dangling
+        // resources, unless a concurrent invitation has meanwhile reused it.
+        const auth0Management = injector.get(Auth0ManagementProvider);
+        try {
+          const stillNeeded =
+            (await injector.get(InvitationsProvider).isAuth0UserReferenced(auth0UserId)) ||
+            !(await auth0Management.isUnusedInvitationUser(auth0UserId));
+          if (!stillNeeded) {
+            await auth0Management.deleteUser(auth0UserId);
+          }
+        } catch (cleanupError) {
+          console.error(
+            `Failed to cleanup Auth0 user ${auth0UserId} after DB error:`,
+            cleanupError,
+          );
+        }
         // Re-throw the original error to ensure the GraphQL operation fails correctly.
         throw error;
       }

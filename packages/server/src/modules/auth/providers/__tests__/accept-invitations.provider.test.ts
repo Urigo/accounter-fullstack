@@ -225,7 +225,8 @@ describe('AcceptInvitationsProvider', () => {
     expect(deleteInvitationPlaceholderUserRun).not.toHaveBeenCalled();
   });
 
-  it('does not delete an Auth0 user the invitation did not create when accepted with another account', async () => {
+  it('does not delete an existing Auth0 user when accepted with another account', async () => {
+    auth0ManagementProvider.isUnusedInvitationUser.mockResolvedValue(false);
     getInvitationForAcceptanceRun.mockResolvedValue([
       activeInvitation({ auth0_user_id: 'auth0|existing', auth0_user_created: false }),
     ]);
@@ -240,7 +241,8 @@ describe('AcceptInvitationsProvider', () => {
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'COMMIT');
   });
 
-  it('does not unblock an Auth0 user the invitation did not create', async () => {
+  it('does not unblock an existing Auth0 user the invitation did not create', async () => {
+    auth0ManagementProvider.isUnusedInvitationUser.mockResolvedValue(false);
     getInvitationForAcceptanceRun.mockResolvedValue([
       activeInvitation({ auth0_user_id: 'auth0|existing', auth0_user_created: false }),
     ]);
@@ -251,6 +253,20 @@ describe('AcceptInvitationsProvider', () => {
     await provider.acceptInvitation('token-existing', 'auth0|existing', 'invitee@example.com');
 
     expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('unblocks an unused placeholder reused from an earlier invitation', async () => {
+    getInvitationForAcceptanceRun.mockResolvedValue([
+      activeInvitation({ auth0_user_id: 'auth0|placeholder', auth0_user_created: false }),
+    ]);
+    updateBusinessUserAuth0IdRun.mockResolvedValue([]);
+    updateInvitationAcceptanceRun.mockResolvedValue([]);
+
+    await provider.acceptInvitation('token-reused', null, null);
+
+    expect(auth0ManagementProvider.isUnusedInvitationUser).toHaveBeenCalledWith('auth0|placeholder');
+    expect(auth0ManagementProvider.unblockUser).toHaveBeenCalledWith('auth0|placeholder');
     expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
   });
 
@@ -277,7 +293,7 @@ describe('AcceptInvitationsProvider', () => {
     await provider.acceptInvitation('token-shared', 'auth0|caller', 'invitee@example.com');
 
     expect(isAuth0UserReferencedElsewhereRun).toHaveBeenCalledWith(
-      { auth0UserId: 'auth0|invitee', invitationId: 'inv-1' },
+      { auth0UserId: 'auth0|invitee', excludeInvitationId: 'inv-1' },
       dbClient,
     );
     expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();

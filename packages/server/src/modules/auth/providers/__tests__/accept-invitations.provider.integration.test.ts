@@ -132,6 +132,8 @@ beforeEach(async () => {
 
 describe('AcceptInvitationsProvider (integration): existing member invited to a second business', () => {
   it('adds the membership, retires the placeholder and leaves the existing Auth0 user alone', async () => {
+    // A real account in use, not an invitation placeholder.
+    auth0.isUnusedInvitationUser.mockResolvedValue(false);
     const invitationId = await seedInvitation(EXISTING_AUTH0_USER_ID, false);
 
     const result = await createProvider().acceptInvitation(

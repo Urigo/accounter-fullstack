@@ -8,12 +8,12 @@ type QueryResult<T = unknown> = {
   rowCount?: number;
 };
 
-// Answers every query after the expired-invitations selector; `referencedAuth0UserIds`
-// controls the result of the "Auth0 user referenced elsewhere" check.
-function answerQueries(referencedAuth0UserIds: string[] = []) {
+// Answers every query after the expired-invitations selector; `isReferenced` decides the
+// result of the "Auth0 user referenced elsewhere" check.
+function answerQueries(isReferenced: (auth0UserId: string) => boolean = () => false) {
   return async (query: string, values?: unknown[]): Promise<QueryResult> => {
-    if (query.includes('AS referenced')) {
-      return { rows: [{ referenced: referencedAuth0UserIds.includes(values?.[0] as string) }] };
+    if (query.includes('"referenced!"')) {
+      return { rows: [{ referenced: isReferenced(values?.[0] as string) }] };
     }
     return { rows: [], rowCount: 1 };
   };
@@ -116,7 +116,57 @@ describe('cleanupExpiredInvitations', () => {
     expect(auth0.deleteUser).not.toHaveBeenCalled();
   });
 
-  it('does not delete an Auth0 user the invitation did not create', async () => {
+  it('removes an unused placeholder reused from an earlier invitation', async () => {
+    mockQuery
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'inv-reused',
+            auth0_user_id: 'auth0|placeholder',
+            auth0_user_created: false,
+            user_id: 'user-reused',
+          },
+        ],
+      })
+      .mockImplementation(answerQueries());
+
+    const result = await cleanupExpiredInvitations(db, auth0, logger);
+
+    expect(result).toEqual({ deleted: 1, errors: 0 });
+    expect(auth0.deleteUser).toHaveBeenCalledWith('auth0|placeholder');
+  });
+
+  it('removes a placeholder shared by two expired invitations once both are cleaned up', async () => {
+    // The first invitation still sees the second one; the second sees nothing left.
+    let remainingReferences = 1;
+    mockQuery
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 'inv-creator',
+            auth0_user_id: 'auth0|shared',
+            auth0_user_created: true,
+            user_id: 'user-creator',
+          },
+          {
+            id: 'inv-reused',
+            auth0_user_id: 'auth0|shared',
+            auth0_user_created: false,
+            user_id: 'user-reused',
+          },
+        ],
+      })
+      .mockImplementation(answerQueries(() => remainingReferences-- > 0));
+
+    const result = await cleanupExpiredInvitations(db, auth0, logger);
+
+    expect(result).toEqual({ deleted: 2, errors: 0 });
+    expect(auth0.deleteUser).toHaveBeenCalledTimes(1);
+    expect(auth0.deleteUser).toHaveBeenCalledWith('auth0|shared');
+  });
+
+  it('does not delete an existing Auth0 user that is not an unused placeholder', async () => {
+    mockIsUnusedInvitationUser.mockResolvedValue(false);
     mockQuery
       .mockResolvedValueOnce({
         rows: [
@@ -170,12 +220,12 @@ describe('cleanupExpiredInvitations', () => {
           },
         ],
       })
-      .mockImplementation(answerQueries(['auth0|shared']));
+      .mockImplementation(answerQueries(auth0UserId => auth0UserId === 'auth0|shared'));
 
     const result = await cleanupExpiredInvitations(db, auth0, logger);
 
     expect(result).toEqual({ deleted: 1, errors: 0 });
-    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('AS referenced'), [
+    expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('"referenced!"'), [
       'auth0|shared',
       'inv-shared',
     ]);

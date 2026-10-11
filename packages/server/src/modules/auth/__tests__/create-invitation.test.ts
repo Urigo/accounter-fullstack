@@ -25,10 +25,12 @@ describe('createInvitation resolver', () => {
   let mockAuth0ManagementProvider: {
     createBlockedUser: ReturnType<typeof vi.fn>;
     deleteUser: ReturnType<typeof vi.fn>;
+    isUnusedInvitationUser: ReturnType<typeof vi.fn>;
   };
   let mockInvitationsProvider: {
     getInvitationByEmailLoader: { load: ReturnType<typeof vi.fn> };
     insertInvitation: ReturnType<typeof vi.fn>;
+    isAuth0UserReferenced: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -56,6 +58,7 @@ describe('createInvitation resolver', () => {
         .fn()
         .mockResolvedValue({ userId: 'auth0|new-user-123', created: true }),
       deleteUser: vi.fn().mockResolvedValue(undefined),
+      isUnusedInvitationUser: vi.fn().mockResolvedValue(true),
     };
 
     mockInvitationsProvider = {
@@ -69,6 +72,7 @@ describe('createInvitation resolver', () => {
         expiresAt: new Date('2030-01-01T00:00:00.000Z'),
         token: 'invitation-token-abc',
       }),
+      isAuth0UserReferenced: vi.fn().mockResolvedValue(false),
     };
   });
 
@@ -173,6 +177,24 @@ describe('createInvitation resolver', () => {
     const call = mockInvitationsProvider.insertInvitation.mock.calls[0][0];
     expect(call.auth0UserId).toBe('auth0|existing-user');
     expect(call.auth0UserCreated).toBe(false);
+  });
+
+  it('does not delete a created Auth0 user that a concurrent invitation reused', async () => {
+    const dbError = new Error('DB insert failed');
+    mockInvitationsProvider.insertInvitation.mockRejectedValueOnce(dbError);
+    mockInvitationsProvider.isAuth0UserReferenced.mockResolvedValueOnce(true);
+
+    await expect(
+      createInvitation(
+        {},
+        { email: 'new.user@example.com', roleId: 'employee' },
+        createContext(),
+        mockInfo,
+      ),
+    ).rejects.toBe(dbError);
+
+    expect(mockInvitationsProvider.isAuth0UserReferenced).toHaveBeenCalledWith('auth0|new-user-123');
+    expect(mockAuth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
   });
 
   it('does not delete an existing Auth0 user when DB insert fails', async () => {
