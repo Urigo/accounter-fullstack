@@ -1,11 +1,15 @@
 import { useState, type ReactElement } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { ChargeSortByField } from '../../../gql/graphql.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
+import { encodeFilters } from '../../../router/routes.js';
 import { AllCharges } from './all-charges.js';
 
-// The screen pauses its charges query until a filter exists, so seed the URL
-// with an empty filter object to make it fetch on mount.
-const initialEntry = `/charges?chargesFilters=${encodeURIComponent(JSON.stringify({}))}`;
+// The screen pauses its charges query until a filter is applied, so seed the URL with
+// a sort-only filter (what "Clear all" applies) to make it fetch on mount.
+const initialEntry = `/charges?${new URLSearchParams({
+  chargesFilters: encodeFilters({ sortBy: { field: ChargeSortByField.Date, asc: false } })!,
+})}`;
 
 // Minimal stand-in for the dashboard layout: the screen injects its filters bar
 // into FiltersContext (the app renders it in the footer); here it renders above

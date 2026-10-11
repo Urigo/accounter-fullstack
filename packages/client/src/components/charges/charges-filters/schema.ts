@@ -67,6 +67,56 @@ export const chargeFilterFormSchema = z
 
 export type ChargeFilterFormValues = z.infer<typeof chargeFilterFormSchema>;
 
+/** URL query parameter the applied filter is persisted under, shared by every charges screen. */
+export const CHARGES_FILTER_PARAM = 'chargesFilters';
+
+const timelessDateString = z.custom<TimelessDateString>(
+  value => typeof value === 'string' && TIMELESS_DATE_REGEX.test(value),
+);
+
+/**
+ * The applied filter as read back from the URL: every `ChargeFilter` field, typed as the server
+ * takes it, so a stale or hand-edited link falls back to no filter instead of failing the query.
+ * It covers the fields the form doesn't edit too (`fromDate`, `businessTrip`, ...), so a link
+ * carrying them keeps them. Looser than the form schema on purpose: no free-text minimum, no date
+ * order — those are input hints, not what makes a filter valid.
+ */
+export const chargeFilterUrlSchema: z.ZodType<ChargeFilter> = z.object({
+  accountantStatus: z.array(z.enum(AccountantStatus)).optional(),
+  businessTrip: z.string().optional(),
+  byBusinessTrips: z.array(z.string()).optional(),
+  byBusinesses: z.array(z.string()).optional(),
+  byChargeTypes: z.array(z.enum(ChargeType)).optional(),
+  byFinancialAccounts: z.array(z.string()).optional(),
+  byOwners: z.array(z.string()).optional(),
+  byTags: z.array(z.string()).optional(),
+  chargesType: z.enum(ChargeFilterType).optional(),
+  excludedBusinesses: z.array(z.string()).optional(),
+  excludedFinancialAccounts: z.array(z.string()).optional(),
+  excludedFreeText: z.string().optional(),
+  excludedTags: z.array(z.string()).optional(),
+  freeText: z.string().optional(),
+  fromAnyDate: timelessDateString.optional(),
+  fromDate: timelessDateString.optional(),
+  sortBy: z
+    .object({
+      field: z.enum(ChargeSortByField),
+      asc: z.boolean().optional(),
+    })
+    .optional(),
+  toAnyDate: timelessDateString.optional(),
+  toDate: timelessDateString.optional(),
+  unbalanced: z.boolean().optional(),
+  withMissingCounterparty: z.boolean().optional(),
+  withOpenDocuments: z.boolean().optional(),
+  withoutDocuments: z.boolean().optional(),
+  withoutInvoice: z.boolean().optional(),
+  withoutLedger: z.boolean().optional(),
+  withoutReceipt: z.boolean().optional(),
+  withoutTags: z.boolean().optional(),
+  withoutTransactions: z.boolean().optional(),
+});
+
 /**
  * Seeds the form from an applied filter.
  *

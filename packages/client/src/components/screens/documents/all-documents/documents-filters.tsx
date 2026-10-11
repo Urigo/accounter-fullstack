@@ -1,9 +1,8 @@
 import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
 import { format, sub } from 'date-fns';
-import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { encodeFilters } from '@/router/routes.js';
+import { areFiltersEqual, normalizeFilter } from '@/router/routes.js';
 import {
   DocumentType,
   type DocumentsFilters as DocumentsFiltersType,
@@ -16,7 +15,6 @@ import {
 } from '../../../../helpers/index.js';
 import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesses.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
-import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { DatePickerInput, PopUpModal, SimpleGrid } from '../../../common/index.js';
 import { NegatableMultiSelect } from '../../../common/inputs/negatable-multi-select.js';
@@ -315,24 +313,15 @@ export function DocumentsFilters({
   initiallyOpened = false,
 }: DocumentsFiltersProps): ReactElement {
   const [opened, setOpened] = useState(initiallyOpened);
-  const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
-  const { get, set } = useUrlQuery();
-
-  // update url on filter change
-  useEffect(() => {
-    const newFilter = encodeFilters(filter);
-    const oldFilter = get('documentsFilters');
-    if (newFilter !== oldFilter) {
-      set('documentsFilters', newFilter);
-    }
-  }, [filter, get, set]);
+  // Derived rather than held in state, so it stays correct when `filter` changes from outside the
+  // modal (browser back / forward, a deep link).
+  const isFiltered = !isObjectEmpty(filter);
 
   const onSetFilter = useCallback(
     (newFilter: DocumentsFiltersType) => {
-      // looks for actual changes before triggering update
-      if (!equal(newFilter, filter)) {
-        setFilter(newFilter);
-        setIsFiltered(!isObjectEmpty(newFilter));
+      // Only a real change: the screen re-queries on every new filter object.
+      if (!areFiltersEqual(newFilter, filter)) {
+        setFilter(normalizeFilter(newFilter));
       }
     },
     [filter, setFilter],
