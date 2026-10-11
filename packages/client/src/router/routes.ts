@@ -6,6 +6,7 @@
  * - <Link to={ROUTES.REPORTS.TAX(2024)}>Tax Report</Link>
  */
 
+import type { z } from 'zod';
 import type { DynamicReportFiltersType } from '@/components/reports/dynamic-report/index.js';
 import type { TrialBalanceReportFilters } from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
 import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from '@/components/screens/reports/depreciation-report/depreciation-report-filters-utils.js';
@@ -14,6 +15,57 @@ import { isObjectEmpty } from '@/helpers/form.js';
 
 export function encodeFilters(filter?: Record<string, unknown> | null): string | null {
   return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
+function isUnsetFilterValue(value: unknown): boolean {
+  return value == null || value === '' || (Array.isArray(value) && value.length === 0);
+}
+
+/**
+ * The canonical form of a filter: top-level keys sorted, unset values (nullish, blank, empty
+ * lists) dropped. `encodeFilters` output depends on key order, so filters should go through this
+ * before they are stored — two equal filters then encode to the same URL string, and don't push
+ * an extra history entry or re-run a query.
+ */
+export function normalizeFilter<T extends object>(filter: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(filter)
+      .filter(([, value]) => !isUnsetFilterValue(value))
+      // Object keys are unique, so no two compare equal.
+      .sort(([a], [b]) => (a < b ? -1 : 1)),
+  ) as Partial<T>;
+}
+
+/** Whether two filters are the same, regardless of key order or unset values. */
+export function areFiltersEqual<T extends object>(a: T, b: T): boolean {
+  return JSON.stringify(normalizeFilter(a)) === JSON.stringify(normalizeFilter(b));
+}
+
+/**
+ * Reads a filter back from its `encodeFilters` URL parameter.
+ *
+ * The parameter is untrusted (a stale or hand-edited link), so anything that doesn't parse —
+ * malformed JSON, a wrong shape — falls back to no filter rather than to an error page. Unset
+ * values are dropped before validation, so a `null` doesn't fail an `.optional()` field.
+ */
+export function decodeFilters<T extends object>(
+  param: string | null | undefined,
+  schema: z.ZodType<T>,
+  normalize: (filter: T) => Partial<T> = normalizeFilter,
+): Partial<T> {
+  if (!param) {
+    return {};
+  }
+  try {
+    const raw: unknown = JSON.parse(decodeURIComponent(param));
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return {};
+    }
+    const parsed = schema.safeParse(normalizeFilter(raw));
+    return parsed.success ? normalize(parsed.data) : {};
+  } catch {
+    return {};
+  }
 }
 
 export function getAllChargesParams(filter?: ChargeFilter | null, page?: number): string {

@@ -12,6 +12,7 @@ import { useAllCountries } from '../../../hooks/use-get-countries.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { areFiltersEqual, normalizeFilter } from '../../../router/routes.js';
 import type { NegatableMultiSelectOption } from '../../common/inputs/negatable-multi-select.js';
 import { Button } from '../../ui/button.js';
 import { DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog.js';
@@ -27,13 +28,11 @@ import { Switch } from '../../ui/switch.js';
 import { clearFilterForm } from './clear-filter-form.js';
 import { MultiSelectField } from './multi-select-field.js';
 import {
-  areFiltersEqual,
   businessesFilterFormSchema,
   countActiveFilters,
   filterToFormValues,
   formValuesToFilter,
   NONE_OPTION_VALUE,
-  normalizeBusinessesFilter,
   type BusinessesFilterFormValues,
   type BusinessesPageFilter,
 } from './schema.js';
@@ -149,7 +148,7 @@ export function BusinessesFiltersForm({
   const onSubmit: SubmitHandler<BusinessesFilterFormValues> = values => {
     setFilter(prev => {
       // The name search belongs to the toolbar; carry it over untouched.
-      const next = normalizeBusinessesFilter({ ...formValuesToFilter(values), name: prev.name });
+      const next = normalizeFilter({ ...formValuesToFilter(values), name: prev.name });
       // Keep the current object when nothing changed, so the query variables stay stable.
       return areFiltersEqual(next, prev) ? prev : next;
     });
