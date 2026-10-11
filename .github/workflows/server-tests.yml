@@ -109,7 +109,9 @@ jobs:
           # client documents), so keep it in sync with codegen.ts. List each extension
           # separately: `hashFiles` has no brace expansion, so a `*.{ts,tsx}` pattern
           # matches nothing and client-only changes (e.g. a new document) hit a stale
-          # cache and skip codegen.
+          # cache and skip codegen. Key and `path:` both match the setup action's, so the
+          # two share entries. A `path:` drift stays safe: actions/cache also versions
+          # entries by `path:`, so the two would simply stop sharing.
           key:
             graphql-codegen-${{ runner.os }}-${{ hashFiles('codegen.ts', 'graphql.config.js',
             'yarn.lock', 'packages/server/src/modules/*/typeDefs/*.graphql.ts',
@@ -118,7 +120,8 @@ jobs:
             'packages/gmail-listener/src/server-requests.ts',
             'packages/scraper-app/src/server/graphql/mutations.ts',
             'packages/email-ingestion-gateway/src/graphql/mutations.ts',
-            'packages/mcp-server/src/tools/*.ts', 'packages/mcp-server/src/upstream/*.ts') }}
+            'packages/mcp-server/src/tools/*.ts', 'packages/mcp-server/src/tools/reports/*.ts',
+            'packages/mcp-server/src/upstream/*.ts') }}
           restore-keys: |
             graphql-codegen-${{ runner.os }}-
 
@@ -144,16 +147,17 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: pgtyped-cache
         with:
+          # pgtyped outputs only. GraphQL codegen outputs (e.g. scraper-app's `src/server/gql`)
+          # belong in the GraphQL cache above: restored here, an exact hit would overwrite the
+          # freshly generated copy with one keyed without the server schema.
           path: |
             packages/server/src/**/*.types.ts
             packages/migrations/src/**/*.types.ts
-            packages/scraper-app/src/server/gql/index.ts
           key:
             pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json',
             'packages/server/pgconfig.json', 'yarn.lock',
             'packages/server/src/**/providers/*.provider.ts',
-            'packages/server/src/plugins/admin-context-plugin.ts',
-            'packages/scraper-app/src/server/graphql/mutations.ts') }}
+            'packages/server/src/plugins/admin-context-plugin.ts') }}
           restore-keys: |
             pgtyped-${{ runner.os }}-
 
