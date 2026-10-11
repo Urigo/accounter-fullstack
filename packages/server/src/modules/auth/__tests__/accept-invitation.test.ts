@@ -109,13 +109,102 @@ describe('acceptInvitation resolver', () => {
     expect(mockAcceptInvitationsProvider.acceptInvitation).not.toHaveBeenCalled();
   });
 
-  it('unauthenticated user delegates with null auth0UserId', async () => {
+  it('rejects an unauthenticated caller with UNAUTHENTICATED', async () => {
     mockAuthProvider.getAuthContext.mockResolvedValueOnce(null);
     mockAuthProvider.getJwtIdentity.mockResolvedValueOnce(null);
 
-    await acceptInvitation({}, { token: 'token-3' }, createContext(), mockInfo);
+    await expect(
+      acceptInvitation({}, { token: 'token-3' }, createContext(), mockInfo),
+    ).rejects.toSatisfy(error => {
+      return error instanceof GraphQLError && error.extensions?.code === 'UNAUTHENTICATED';
+    });
 
-    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith('token-3', null, null);
+    expect(mockAcceptInvitationsProvider.acceptInvitation).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['apiKey', 'api-key:key-1', 'api_key_role'],
+    ['gatewayControlPlane', 'gateway-control-plane', 'gateway_control_plane'],
+  ])('rejects a %s caller with UNAUTHENTICATED', async (authType, userId, roleId) => {
+    mockAuthProvider.getAuthContext.mockResolvedValueOnce({
+      authType,
+      user: {
+        userId,
+        roleId,
+        email: '',
+        permissions: [],
+        emailVerified: true,
+        permissionsVersion: 0,
+        auth0UserId: null,
+      },
+      tenant: { businessId: 'business-123' },
+    });
+
+    await expect(
+      acceptInvitation({}, { token: 'token-4' }, createContext(), mockInfo),
+    ).rejects.toSatisfy(error => {
+      return error instanceof GraphQLError && error.extensions?.code === 'UNAUTHENTICATED';
+    });
+
+    expect(mockAcceptInvitationsProvider.acceptInvitation).not.toHaveBeenCalled();
+  });
+
+  it('accepts for a signed-in user without memberships yet', async () => {
+    mockAuthProvider.getAuthContext.mockResolvedValueOnce(null);
+    mockAuthProvider.getJwtIdentity.mockResolvedValueOnce({
+      auth0UserId: 'auth0|new-invitee',
+      email: 'new.invitee@example.com',
+      emailVerified: true,
+    });
+
+    await acceptInvitation({}, { token: 'token-5' }, createContext(), mockInfo);
+
+    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith(
+      'token-5',
+      'auth0|new-invitee',
+      'new.invitee@example.com',
+    );
+  });
+
+  it('does not pass an unverified email claim to the provider', async () => {
+    mockAuthProvider.getAuthContext.mockResolvedValueOnce({
+      authType: 'jwt',
+      user: {
+        userId: 'caller-user-id',
+        roleId: 'employee',
+        email: 'invitee@example.com',
+        permissions: [],
+        emailVerified: false,
+        permissionsVersion: 1,
+        auth0UserId: 'auth0|caller-123',
+      },
+      tenant: { businessId: 'business-123', roleId: 'employee' },
+    });
+
+    await acceptInvitation({}, { token: 'token-6' }, createContext(), mockInfo);
+
+    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith(
+      'token-6',
+      'auth0|caller-123',
+      null,
+    );
+  });
+
+  it('does not pass an unverified email claim for a user without memberships yet', async () => {
+    mockAuthProvider.getAuthContext.mockResolvedValueOnce(null);
+    mockAuthProvider.getJwtIdentity.mockResolvedValueOnce({
+      auth0UserId: 'auth0|new-invitee',
+      email: 'new.invitee@example.com',
+      emailVerified: false,
+    });
+
+    await acceptInvitation({}, { token: 'token-7' }, createContext(), mockInfo);
+
+    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith(
+      'token-7',
+      'auth0|new-invitee',
+      null,
+    );
   });
 
   it('passes through GraphQLError from provider', async () => {
