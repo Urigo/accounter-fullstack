@@ -164,8 +164,8 @@ export class GreenInvoiceClientProvider {
       const emptyDraft = {
         expense: {
           documentType: '_405', // "receipt on donation" which is not supported, resulting in unprocessed document
-          number: undefined,
-          date: undefined,
+          number: null,
+          date: null,
           amount: 0,
           currency: defaultLocalCurrency,
           vat: 0,
@@ -287,7 +287,7 @@ export class GreenInvoiceClientProvider {
 
       const { id } = client as _DOLLAR_defs_getClientResponse;
       if (id) {
-        this.clientLoader.prime(id, client as _DOLLAR_defs_getClientResponse);
+        this.clientLoader.prime(id, client);
       }
       return client as _DOLLAR_defs_getClientResponse;
     } catch (error) {
@@ -312,7 +312,7 @@ export class GreenInvoiceClientProvider {
 
       const { id } = client as _DOLLAR_defs_getClientResponse;
       if (id) {
-        this.clientLoader.prime(id, client as _DOLLAR_defs_getClientResponse);
+        this.clientLoader.prime(id, client);
       }
       return client as _DOLLAR_defs_getClientResponse;
     } catch (error) {
