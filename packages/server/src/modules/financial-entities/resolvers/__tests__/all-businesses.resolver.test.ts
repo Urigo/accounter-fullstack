@@ -73,6 +73,28 @@ describe('Query.allBusinesses', () => {
     );
   });
 
+  it('lets an explicit null in filters clear its same-named argument', async () => {
+    const { getBusinessesByFilters } = await callAllBusinesses(
+      { name: 'acme', isClient: true, filters: { name: null, isClient: null } },
+      [],
+    );
+
+    expect(getBusinessesByFilters).toHaveBeenCalledWith(
+      expect.objectContaining({ name: null, isClient: null }),
+    );
+  });
+
+  it('falls back to the argument when filters omits the field', async () => {
+    const { getBusinessesByFilters } = await callAllBusinesses(
+      { name: 'acme', isClient: true, filters: { isActive: true } },
+      [],
+    );
+
+    expect(getBusinessesByFilters).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'acme', isClient: true, isActive: true }),
+    );
+  });
+
   it('sorts by name and pages the filtered set, counting it whole', async () => {
     const rows = [
       { id: '3', name: 'charlie' },

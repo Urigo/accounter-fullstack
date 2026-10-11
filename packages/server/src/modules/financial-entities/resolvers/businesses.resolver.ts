@@ -46,12 +46,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
       // Every predicate is applied in SQL, *ahead of* the count and the slice — the entire
       // point of accepting them as arguments: `pageInfo` then describes the filtered directory
       // and every page comes back full. A caller filtering an already-sliced page could do
-      // neither. The top-level `name` / `isClient` arguments predate `filters` and stay for
-      // existing callers; a field set in `filters` wins over its same-named argument.
+      // neither. The top-level `name` / `isClient` arguments predate `filters` and are deprecated;
+      // they stay until the MCP server, which still sends them, moves to `filters`. A field
+      // *present* in `filters` wins over its argument even when it is an explicit null — GraphQL
+      // keeps an omitted input field distinct from a null one, so `??` would wrongly fall back.
       const filteredBusinesses = await injector.get(BusinessesProvider).getBusinessesByFilters({
         ...filters,
-        name: filters?.name ?? name,
-        isClient: filters?.isClient ?? isClient,
+        name: filters && 'name' in filters ? filters.name : name,
+        isClient: filters && 'isClient' in filters ? filters.isClient : isClient,
       });
 
       page ??= 0;
