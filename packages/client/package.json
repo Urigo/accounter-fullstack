@@ -33,7 +33,7 @@
     "@emotion/styled": "11.14.1",
     "@hookform/resolvers": "5.9.1",
     "@minoru/react-dnd-treeview": "3.5.4",
-    "@mui/material": "9.4.0",
+    "@mui/material": "9.5.0",
     "@mui/x-charts": "8.29.3",
     "@tanstack/react-table": "9.2.6",
     "@urql/exchange-auth": "3.0.0",
