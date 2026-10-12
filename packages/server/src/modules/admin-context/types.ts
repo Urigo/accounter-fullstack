@@ -69,14 +69,11 @@ export type AdminContext = {
   };
 
   foreignSecurities: {
-    /**
-     * From `securities_context` (falling back to the legacy
-     * `user_context.foreign_securities_business_id` column, until it is deprecated)
-     */
+    /** From `securities_context` (the `foreign_securities_business_id` column is deprecated) */
     foreignSecuritiesBusinessId: string | null;
     /**
-     * `taxCategories.FOREIGN_SECURITIES_FEES` (falling back to the legacy
-     * `user_context.foreign_securities_fees_category_id` column, until it is deprecated)
+     * `taxCategories.FOREIGN_SECURITIES_FEES` of `securities_context` (the
+     * `foreign_securities_fees_category_id` column is deprecated)
      */
     foreignSecuritiesFeesCategoryId: string | null;
     /** From `securities_context`: the sort code new securities tax categories are created under */

@@ -208,7 +208,7 @@ describe('AdminContextProvider.updateSecuritiesContext', () => {
     });
   });
 
-  it('reads the foreign securities business and fees category from the legacy columns while securities_context lacks them', async () => {
+  it('ignores the deprecated foreign securities columns', async () => {
     await pool.query(
       `UPDATE accounter_schema.user_context
        SET foreign_securities_business_id = $1, foreign_securities_fees_category_id = $2
@@ -219,14 +219,13 @@ describe('AdminContextProvider.updateSecuritiesContext', () => {
     const context = await createProvider().getVerifiedAdminContext();
 
     expect(context.foreignSecurities).toMatchObject({
-      foreignSecuritiesBusinessId: ownerId,
-      foreignSecuritiesFeesCategoryId: ownTaxCategoryId,
-      taxCategories: { FOREIGN_SECURITIES_FEES: ownTaxCategoryId },
+      foreignSecuritiesBusinessId: null,
+      foreignSecuritiesFeesCategoryId: null,
+      taxCategories: {},
     });
-    expect(context.financialAccounts.internalWalletsIds).toContain(ownerId);
   });
 
-  it('mirrors a legacy updateAdminContext change into securities_context', async () => {
+  it('stores the deprecated updateAdminContext inputs in securities_context only', async () => {
     await createProvider().updateSecuritiesContext({
       taxCategories: [{ key: 'FOREIGN_SECURITIES_FEES', taxCategoryId: FEES_PLACEHOLDER_ID }],
     });
@@ -239,5 +238,11 @@ describe('AdminContextProvider.updateSecuritiesContext', () => {
     expect(await storedSecuritiesContext()).toEqual({
       taxCategories: { foreignSecuritiesFees: ownTaxCategoryId },
     });
+    const { rows } = await pool.query(
+      `SELECT foreign_securities_fees_category_id
+       FROM accounter_schema.user_context WHERE owner_id = $1`,
+      [ownerId],
+    );
+    expect(rows[0].foreign_securities_fees_category_id).toBeNull();
   });
 });
