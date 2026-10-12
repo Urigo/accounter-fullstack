@@ -5,6 +5,7 @@ import type {
   McpListTagsQuery,
   McpListTaxCategoriesQuery,
 } from '../gql/index.js';
+import { optionalNonEmptyStringArray } from './charge-filters.js';
 import { resultEnvelopeDescription, shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
@@ -354,19 +355,90 @@ export const listSortCodesTool: ToolDefinition<typeof listSortCodesInput> = {
 // Businesses (full directory)
 // ---------------------------------------------------------------------------
 
-const listBusinessesInput = z.object({
+/** Upper bound on each list-valued directory filter, matching the other id-filter caps. */
+export const MAX_BUSINESS_FILTER_VALUES = 50;
+
+/**
+ * `BusinessFilter` fields this tool exposes under a different input name. The
+ * schema-contract suite checks every other `BusinessFilter` field is exposed
+ * as-is, so a field added upstream fails the suite instead of going unreachable.
+ */
+export const LIST_BUSINESSES_FILTER_ALIASES = {
+  name: 'nameContains',
+  isActive: 'activeOnly',
+} as const;
+
+export const listBusinessesInput = z.object({
   memberBusinessIds: memberBusinessIdsInput,
   nameContains,
-  activeOnly: z.boolean().optional().default(false).describe('Return only active businesses.'),
+  activeOnly: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      'Return only active businesses. Applied upstream before paging, so `pagination` and ' +
+        '`totalCount` count active businesses only.',
+    ),
   isClient: z
     .boolean()
     .optional()
     .describe(
       'Return only businesses that are clients (true), or only those that are not (false). Omit ' +
-        'for both. Unlike `activeOnly`, this is a real upstream predicate applied before paging, ' +
-        'so `pagination` and `totalCount` describe the filtered directory and no page comes back ' +
-        'short on account of it. To enumerate clients *with* their emails and integrations, use ' +
-        '`accounter_list_clients` instead of paging this directory.',
+        'for both. Applied upstream before paging, so `pagination` and `totalCount` describe the ' +
+        'filtered directory and no page comes back short on account of it. To enumerate clients ' +
+        '*with* their emails and integrations, use `accounter_list_clients` instead of paging this ' +
+        'directory.',
+    ),
+  isAdmin: z
+    .boolean()
+    .optional()
+    .describe(
+      'Return only admin businesses — the businesses an owner manages in Accounter, as opposed to ' +
+        'counterparties — (true), or only non-admin ones (false). Omit for both.',
+    ),
+  taxCategoryIds: optionalNonEmptyStringArray(MAX_BUSINESS_FILTER_VALUES)
+    .optional()
+    .describe(
+      'Return only businesses matched to one of these tax categories (ids from ' +
+        '`accounter_list_tax_categories`). OR-ed with `withoutTaxCategory`.',
+    ),
+  withoutTaxCategory: z
+    .boolean()
+    .optional()
+    .describe(
+      'true: also return businesses with no tax category mapped — on its own, only those. OR-ed ' +
+        'with `taxCategoryIds`. Use it to find businesses that still need categorizing.',
+    ),
+  sortCodes: z
+    .preprocess(
+      value => (Array.isArray(value) && value.length === 0 ? undefined : value),
+      z.array(z.number().int()).min(1).max(MAX_BUSINESS_FILTER_VALUES).optional(),
+    )
+    .optional()
+    .describe(
+      'Return only businesses under one of these sort codes, by numeric `key` (see ' +
+        '`accounter_list_sort_codes`). OR-ed with `withoutSortCode`.',
+    ),
+  withoutSortCode: z
+    .boolean()
+    .optional()
+    .describe(
+      'true: also return businesses with no sort code — on its own, only those. OR-ed with ' +
+        '`sortCodes`.',
+    ),
+  countries: z
+    .preprocess(
+      value => (Array.isArray(value) && value.length === 0 ? undefined : value),
+      z
+        .array(z.string().regex(/^[A-Za-z]{3}$/, 'must be an ISO 3166-1 alpha-3 country code'))
+        .min(1)
+        .max(MAX_BUSINESS_FILTER_VALUES)
+        .optional(),
+    )
+    .optional()
+    .describe(
+      'Return only businesses located in one of these countries, as ISO 3166-1 alpha-3 codes ' +
+        '(e.g. `ISR`, `USA`), in any case.',
     ),
   limit,
   // `allBusinesses(page:)` is the third upstream argument, and pinning it to the
@@ -381,28 +453,30 @@ const listBusinessesInput = z.object({
     .default(1)
     .describe(
       '1-based page of the directory, each `limit` rows long. Upstream pages a name-ordered ' +
-        'directory, so `activeOnly`/`nameContains` narrowing happens within the page and a page can ' +
-        'come back short. Read `pagination.totalPages` to walk it.',
+        'directory after applying every filter, with a broad `nameContains` match (which also ' +
+        'matches Hebrew names); only the stricter English-name `nameContains` check runs within ' +
+        'the page, so a page can come back short when it drops rows. Read ' +
+        '`pagination.totalPages` to walk it.',
     ),
 });
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
-// `name` is forwarded to the upstream `allBusinesses(name:)` filter so the
-// server narrows the directory before it is serialized, rather than shipping the
-// whole businesses table on every call. The client-side `filterSortCap` below
-// still runs: upstream matches Hebrew names too, so it re-applies the stricter
-// English-name predicate and owns the deterministic sort + size cap that all the
-// lookups share.
+// Every filter is forwarded in the upstream `allBusinesses(filters:)` input,
+// which the server applies in SQL ahead of the count and the page slice, rather
+// than shipping the whole businesses table on every call. All but the name match
+// are exact there, so the handler does not re-check them. The client-side `filterSortCap` below still runs: upstream
+// matches Hebrew names too, so it re-applies the stricter English-name predicate
+// and owns the deterministic sort + size cap that all the lookups share.
 //
 // That local pass shapes the *returned rows* only. `totalCount` and `pagination`
-// come from upstream `pageInfo`, which counts the broader upstream name match
-// across the whole directory — so it can exceed the rows on this page, both
-// because later pages exist and because `activeOnly`/the English-name predicate
-// dropped rows from this one. That is the intended reading: the counts describe
-// what upstream holds, `returnedCount` describes what came back.
+// come from upstream `pageInfo`, which counts the filtered directory under the
+// broader upstream name match — so it can exceed the rows on this page, both
+// because later pages exist and because the English-name predicate dropped rows
+// from this one. That is the intended reading: the counts describe what upstream
+// holds, `returnedCount` describes what came back.
 const LIST_BUSINESSES_QUERY = /* GraphQL */ `
-  query McpListBusinesses($name: String, $page: Int, $limit: Int, $isClient: Boolean) {
-    allBusinesses(name: $name, page: $page, limit: $limit, isClient: $isClient) {
+  query McpListBusinesses($page: Int, $limit: Int, $filters: BusinessFilter) {
+    allBusinesses(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
         name
@@ -482,23 +556,30 @@ async function listBusinessesHandler(
     {
       query: LIST_BUSINESSES_QUERY,
       variables: {
-        name: input.nameContains ?? null,
         // Upstream slices `[page * limit, (page + 1) * limit]`, so it is 0-based.
         page: input.page - 1,
         limit: input.limit,
-        // Null rather than undefined: an omitted `isClient` must reach upstream
-        // as "no predicate", and `null` is what the resolver tests for.
-        isClient: input.isClient ?? null,
+        // Null rather than undefined for every field: an omitted filter must reach
+        // upstream as "no predicate", and `null` is what the SQL tests for.
+        // `activeOnly: false` means "active or not", never "inactive only".
+        filters: {
+          name: input.nameContains ?? null,
+          isClient: input.isClient ?? null,
+          isActive: input.activeOnly ? true : null,
+          isAdmin: input.isAdmin ?? null,
+          taxCategoryIds: input.taxCategoryIds ?? null,
+          withoutTaxCategory: input.withoutTaxCategory ?? null,
+          sortCodes: input.sortCodes ?? null,
+          withoutSortCode: input.withoutSortCode ?? null,
+          countries: input.countries ?? null,
+        },
       },
     },
     context.upstream,
   );
 
   const allBusinesses = data.allBusinesses?.nodes ?? [];
-  const activeFiltered = input.activeOnly
-    ? allBusinesses.filter(business => business.isActive)
-    : allBusinesses;
-  const { rows, total } = filterSortCap(activeFiltered, input.nameContains, input.limit);
+  const { rows, total } = filterSortCap(allBusinesses, input.nameContains, input.limit);
   const businesses = rows.map(business => ({
     id: business.id,
     name: business.name,
@@ -508,12 +589,12 @@ async function listBusinessesHandler(
     taxCategory: rawBusinessTaxCategory(business),
   }));
 
-  // `totalRecords` counts upstream's whole (name-filtered) directory rather than
-  // this page, so report it as the total and let `pagination` say where in that
+  // `totalRecords` counts upstream's whole filtered directory rather than this
+  // page, so report it as the total and let `pagination` say where in that
   // directory we are; `total` from the local pass is the fallback for an upstream
   // that returns no `pageInfo`. The upstream count is deliberately *not* narrowed
-  // by the local `activeOnly`/English-name filtering — it would then describe
-  // neither the page nor the directory. `shapeListResult` clamps it up to the
+  // by the local English-name filtering — it would then describe neither the page
+  // nor the directory. `shapeListResult` clamps it up to the
   // rows on hand, so `totalCount` can never read below `returnedCount`.
   const pageInfo = data.allBusinesses?.pageInfo;
   const totalPages = pageInfo?.totalPages ?? 1;
@@ -553,7 +634,7 @@ const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
-    'List the full business directory — every business visible to you, not just the ones you are a member of — optionally filtered by name, active status, or client status, with `limit`/`page` pagination over the name-ordered directory. Each row is `{ id, name, ownerId, isActive, isClient, taxCategory }`, where `taxCategory` is the `{ id, name }` of the tax category the business is matched to, or `null` when no tax category is mapped to it. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
+    'List the full business directory — every business visible to you, not just the ones you are a member of — optionally filtered by name, active, client or admin status, tax category, sort code, or country (each applied before paging), with `limit`/`page` pagination over the name-ordered directory. Each row is `{ id, name, ownerId, isActive, isClient, taxCategory }`, where `taxCategory` is the `{ id, name }` of the tax category the business is matched to, or `null` when no tax category is mapped to it. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
     resultEnvelopeDescription('businesses') +
     ' ' +
     DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,

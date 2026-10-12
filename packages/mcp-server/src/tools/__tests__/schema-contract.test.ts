@@ -16,6 +16,7 @@ import {
   documentsFiltersInput,
 } from '../document-details.js';
 import { KNOWN_CHARGE_TYPENAMES } from '../entity-shapes.js';
+import { LIST_BUSINESSES_FILTER_ALIASES, listBusinessesInput } from '../lookups.js';
 import { transactionFiltersInput } from '../transaction-details.js';
 
 /**
@@ -156,15 +157,16 @@ describe('generated schema contract', () => {
     expect(typeBlock(loadSchema(), 'LtdFinancialEntity')).toMatch(/^ {2}taxCategory: TaxCategory$/m);
   });
 
-  // The flag is only useful as a filter if upstream can apply it before paging.
-  // Filtering an already-sliced page would report "the clients on page 1" while
-  // reading as "the clients".
-  it('allBusinesses accepts an isClient predicate', () => {
-    // Matched up to the return type rather than with a `[^)]*` run: the
-    // argument's own description contains parentheses.
+  // The flags are only useful as filters if upstream can apply them before
+  // paging. Filtering an already-sliced page would report "the clients on page
+  // 1" while reading as "the clients".
+  it('allBusinesses accepts a BusinessFilter input', () => {
+    // Matched up to the return type rather than with a `[^)]*` run: argument
+    // descriptions may contain parentheses.
     const args = loadSchema().match(/allBusinesses\([\s\S]*?\): PaginatedBusinesses/);
-    expect(args?.[0]).toContain('isClient: Boolean');
+    expect(args?.[0]).toMatch(/^\s+filters: BusinessFilter$/m);
   });
+
 
   /**
    * The connector reads a client's Green Invoice id through
@@ -241,6 +243,22 @@ describe('tool inputs cover the upstream filter inputs', () => {
       field => !exposed.has(aliases[field] ?? field),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('accounter_list_businesses accepts every BusinessFilter field', () => {
+    const exposed = new Set(Object.keys(listBusinessesInput.shape));
+    const aliases: Record<string, string> = { ...LIST_BUSINESSES_FILTER_ALIASES };
+    const missing = inputFields(loadSchema(), 'BusinessFilter').filter(
+      field => !exposed.has(aliases[field] ?? field),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('every list_businesses alias names a real BusinessFilter field', () => {
+    const schemaFields = new Set(inputFields(loadSchema(), 'BusinessFilter'));
+    for (const upstreamField of Object.keys(LIST_BUSINESSES_FILTER_ALIASES)) {
+      expect(schemaFields.has(upstreamField)).toBe(true);
+    }
   });
 
   it('accounter_get_transactions accepts every TransactionsFilters field', () => {
