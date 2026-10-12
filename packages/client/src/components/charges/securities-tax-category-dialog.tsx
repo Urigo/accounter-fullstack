@@ -48,6 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs.js';
 
 /** How each securities tax category is named, also as the default name of a new one */
 export const SECURITIES_TAX_CATEGORY_LABELS: Record<SecuritiesTaxCategoryKey, string> = {
+  FOREIGN_SECURITIES_FEES: 'Foreign securities fees',
   FOREIGN_DIVIDEND_INCOME: 'Foreign dividend income',
   LOCAL_DIVIDEND_INCOME: 'Local dividend income',
   DIVIDEND_WITHHOLDING_TAX: 'Dividend withholding tax',
