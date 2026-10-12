@@ -1,0 +1,164 @@
+import { z } from 'zod';
+import type { SecuritiesTaxCategoryKey } from '../../../__generated__/types.js';
+
+/**
+ * `accounter_schema.user_context.securities_context`: the tenant's securities ledger
+ * configuration, kept as jsonb so new securities tax categories can be added without a column
+ * each. Stored shape (camelCase keys, every field optional):
+ *
+ *   { "sortCode": 990, "taxCategories": { "foreignDividendIncome": "<uuid>", ... } }
+ *
+ * jsonb carries no foreign keys, so ids are validated on write (see `updateSecuritiesContext`)
+ * and a dangling one surfaces at ledger time as an unbalanced or unknown account.
+ */
+
+const SECURITIES_TAX_CATEGORIES = {
+  FOREIGN_DIVIDEND_INCOME: { field: 'foreignDividendIncome', label: 'Foreign dividend income' },
+  LOCAL_DIVIDEND_INCOME: { field: 'localDividendIncome', label: 'Local dividend income' },
+  DIVIDEND_WITHHOLDING_TAX: { field: 'dividendWithholdingTax', label: 'Dividend withholding tax' },
+  FOREIGN_BOND_INTEREST_INCOME: {
+    field: 'foreignBondInterestIncome',
+    label: 'Foreign bond interest income',
+  },
+  LOCAL_BOND_INTEREST_INCOME: {
+    field: 'localBondInterestIncome',
+    label: 'Local bond interest income',
+  },
+  BOND_WITHHOLDING_TAX: { field: 'bondWithholdingTax', label: 'Bond withholding tax' },
+  FOREIGN_SECURITIES_SALE_GAIN: {
+    field: 'foreignSecuritiesSaleGain',
+    label: 'Gain from sale of foreign securities',
+  },
+  FOREIGN_SECURITIES_SALE_LOSS: {
+    field: 'foreignSecuritiesSaleLoss',
+    label: 'Loss from sale of foreign securities',
+  },
+} as const satisfies Record<SecuritiesTaxCategoryKey, { field: string; label: string }>;
+
+export const SECURITIES_TAX_CATEGORY_KEYS = Object.keys(
+  SECURITIES_TAX_CATEGORIES,
+) as SecuritiesTaxCategoryKey[];
+
+/** The human name of a securities tax category, as ledger errors and new categories call it */
+export function securitiesTaxCategoryLabel(key: SecuritiesTaxCategoryKey): string {
+  return SECURITIES_TAX_CATEGORIES[key].label;
+}
+
+export type SecuritiesTaxCategoryIds = Partial<Record<SecuritiesTaxCategoryKey, string>>;
+
+export type SecuritiesContext = {
+  /** The sort code new securities tax categories are created under */
+  sortCode: number | null;
+  taxCategories: SecuritiesTaxCategoryIds;
+};
+
+export const EMPTY_SECURITIES_CONTEXT: Readonly<SecuritiesContext> = Object.freeze({
+  sortCode: null,
+  taxCategories: Object.freeze({}),
+});
+
+type StoredTaxCategoryField = (typeof SECURITIES_TAX_CATEGORIES)[SecuritiesTaxCategoryKey]['field'];
+
+export type StoredSecuritiesContext = {
+  sortCode?: number;
+  taxCategories: Partial<Record<StoredTaxCategoryField, string>>;
+};
+
+const sortCodeSchema = z.number().int().positive();
+const taxCategoryIdSchema = z.guid();
+
+// Per-field `.catch` so one bad value degrades that field alone: this is read by
+// `getVerifiedAdminContext`, which nearly every request goes through, so it must never throw.
+const storedSecuritiesContextSchema = z.object({
+  sortCode: sortCodeSchema.nullish().catch(null),
+  taxCategories: z
+    .object(
+      Object.fromEntries(
+        SECURITIES_TAX_CATEGORY_KEYS.map(key => [
+          SECURITIES_TAX_CATEGORIES[key].field,
+          taxCategoryIdSchema.optional().catch(undefined),
+        ]),
+      ),
+    )
+    .nullish()
+    .catch(null),
+});
+
+/** Lenient read of the stored jsonb: unknown keys are ignored and bad values dropped */
+export function parseStoredSecuritiesContext(input: unknown): SecuritiesContext {
+  if (input == null) {
+    return { sortCode: null, taxCategories: {} };
+  }
+  const { data, success, error } = storedSecuritiesContextSchema.safeParse(input);
+  if (!success) {
+    // Reached only when the value is not an object at all — the per-field `.catch` above
+    // absorbs everything else.
+    console.error(`Ignoring unparsable stored securities context: ${error}`);
+    return { sortCode: null, taxCategories: {} };
+  }
+
+  const taxCategories: SecuritiesTaxCategoryIds = {};
+  for (const key of SECURITIES_TAX_CATEGORY_KEYS) {
+    const id = data.taxCategories?.[SECURITIES_TAX_CATEGORIES[key].field];
+    if (id) {
+      taxCategories[key] = id;
+    }
+  }
+  return { sortCode: data.sortCode ?? null, taxCategories };
+}
+
+/** The stored jsonb shape of a context, leaving unset fields out */
+export function serializeSecuritiesContext(context: SecuritiesContext): StoredSecuritiesContext {
+  const taxCategories: StoredSecuritiesContext['taxCategories'] = {};
+  for (const key of SECURITIES_TAX_CATEGORY_KEYS) {
+    const id = context.taxCategories[key];
+    if (id) {
+      taxCategories[SECURITIES_TAX_CATEGORIES[key].field] = id;
+    }
+  }
+  return context.sortCode == null
+    ? { taxCategories }
+    : { sortCode: context.sortCode, taxCategories };
+}
+
+const securitiesContextPatchSchema = z.object({
+  sortCode: sortCodeSchema.nullish(),
+  taxCategories: z
+    .array(
+      z.object({
+        key: z.enum(SECURITIES_TAX_CATEGORY_KEYS as [SecuritiesTaxCategoryKey]),
+        taxCategoryId: taxCategoryIdSchema.nullable(),
+      }),
+    )
+    .nullish(),
+});
+
+/**
+ * A change to the context. An omitted field is left as is; `null` clears it — `sortCode: null`
+ * forgets the sort code, `taxCategoryId: null` unassigns that key.
+ */
+export type SecuritiesContextPatch = z.infer<typeof securitiesContextPatchSchema>;
+
+/** Strict validation for the write path: throws on anything malformed */
+export function parseSecuritiesContextPatch(input: unknown): SecuritiesContextPatch {
+  return securitiesContextPatchSchema.parse(input);
+}
+
+export function mergeSecuritiesContext(
+  current: SecuritiesContext,
+  patch: SecuritiesContextPatch,
+): SecuritiesContext {
+  const taxCategories: SecuritiesTaxCategoryIds = { ...current.taxCategories };
+  for (const { key, taxCategoryId } of patch.taxCategories ?? []) {
+    if (taxCategoryId) {
+      taxCategories[key] = taxCategoryId;
+    } else {
+      delete taxCategories[key];
+    }
+  }
+
+  return {
+    sortCode: patch.sortCode === undefined ? current.sortCode : patch.sortCode,
+    taxCategories,
+  };
+}

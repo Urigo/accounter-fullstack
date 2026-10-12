@@ -6,6 +6,12 @@ import { formatCurrency, resolveWriteTargetBusinessId } from '../../../shared/he
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import {
+  mergeSecuritiesContext,
+  parseStoredSecuritiesContext,
+  serializeSecuritiesContext,
+  type SecuritiesContextPatch,
+} from '../helpers/securities-context.helper.js';
 import type {
   AdminContext,
   IGetAdminContextsQuery,
@@ -13,6 +19,7 @@ import type {
   IGetSecurityBusinessIdsQuery,
   IUpdateAdminContextParams,
   IUpdateAdminContextQuery,
+  IUpdateSecuritiesContextQuery,
 } from '../types.js';
 
 const getAdminContexts = sql<IGetAdminContextsQuery>`
@@ -302,6 +309,17 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
   RETURNING *;
 `;
 
+/**
+ * Replaces the whole jsonb document: the caller merges the change into the current value first
+ * (see `updateSecuritiesContext`), so a patch never has to be expressed in SQL.
+ */
+const updateSecuritiesContext = sql<IUpdateSecuritiesContextQuery>`
+  UPDATE accounter_schema.user_context
+  SET securities_context = $securitiesContext!
+  WHERE owner_id = $ownerId!
+  RETURNING *;
+`;
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -380,6 +398,7 @@ export class AdminContextProvider {
       foreignSecurities: {
         foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
         foreignSecuritiesFeesCategoryId: rawContext.foreign_securities_fees_category_id,
+        ...parseStoredSecuritiesContext(rawContext.securities_context),
       },
       dividends: {
         dividendWithholdingTaxBusinessId: rawContext.dividend_withholding_tax_business_id,
@@ -562,6 +581,46 @@ export class AdminContextProvider {
       return normalizedContext;
     }
     return null;
+  }
+
+  /**
+   * Applies a change to the tenant's securities context. Read, merged and written back whole, from
+   * the stored row rather than the request cache, so a value saved earlier in the same operation
+   * is not lost.
+   */
+  public async updateSecuritiesContext(patch: SecuritiesContextPatch): Promise<AdminContext> {
+    const ownerId = await this.resolveOwnerIdForRequest();
+
+    const [current] = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
+    if (!current) {
+      throw new GraphQLError('Admin context not found for the authenticated user.', {
+        extensions: { code: 'FORBIDDEN' },
+      });
+    }
+
+    const securitiesContext = mergeSecuritiesContext(
+      parseStoredSecuritiesContext(current.securities_context),
+      patch,
+    );
+
+    this.cachedContext = null;
+    this.cachedContextInitializing = null;
+    this.adminContextByOwnerIdLoader.clear(ownerId);
+
+    const [updated] = await updateSecuritiesContext.run(
+      { ownerId, securitiesContext: serializeSecuritiesContext(securitiesContext) },
+      this.db,
+    );
+    if (!updated) {
+      throw new GraphQLError('Error updating securities context');
+    }
+
+    const normalizedContext = await this.withOwnSecurityBusinesses(
+      this.normalizeContext(updated),
+      ownerId,
+    );
+    this.cachedContext = normalizedContext;
+    return normalizedContext;
   }
 
   private async batchAdminContextsByOwnerIds(ownerIds: readonly string[]) {

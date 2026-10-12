@@ -1,8 +1,24 @@
 import { GraphQLError } from 'graphql';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { fetchBusiness, fetchTaxCategory } from '../helpers/admin-context.helper.js';
+import {
+  parseSecuritiesContextPatch,
+  SECURITIES_TAX_CATEGORY_KEYS,
+  securitiesTaxCategoryLabel,
+  type SecuritiesContextPatch,
+} from '../helpers/securities-context.helper.js';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
-import type { AdminContextModule } from '../types.js';
+import type { AdminContext, AdminContextModule, SecuritiesContextProto } from '../types.js';
+
+function toSecuritiesContextProto(context: AdminContext): SecuritiesContextProto {
+  return {
+    ownerId: context.ownerId,
+    sortCode: context.foreignSecurities.sortCode,
+    taxCategories: context.foreignSecurities.taxCategories,
+  };
+}
 
 export const adminContextResolvers: AdminContextModule.Resolvers = {
   Query: {
@@ -46,6 +62,85 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           console.error(JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error updating admin context`);
         }),
+    updateSecuritiesContext: async (_, { input }, { injector }) => {
+      let patch: SecuritiesContextPatch;
+      try {
+        patch = parseSecuritiesContextPatch(input);
+      } catch (e) {
+        throw new GraphQLError(`Invalid securities context: ${(e as Error).message}`);
+      }
+
+      // jsonb has no foreign keys: make sure every id is a tax category this tenant can see, and
+      // the sort code one of its sort codes, before storing them.
+      const assignments = (patch.taxCategories ?? []).filter(
+        (assignment): assignment is { key: typeof assignment.key; taxCategoryId: string } =>
+          !!assignment.taxCategoryId,
+      );
+      const taxCategories = await Promise.all(
+        assignments.map(({ taxCategoryId }) =>
+          injector.get(TaxCategoriesProvider).taxCategoryByIdLoader.load(taxCategoryId),
+        ),
+      );
+      const unknown = assignments.filter((_, index) => !taxCategories[index]);
+      if (unknown.length) {
+        throw new GraphQLError(
+          `Tax category not found: ${unknown
+            .map(
+              ({ key, taxCategoryId }) =>
+                `${securitiesTaxCategoryLabel(key)} (ID="${taxCategoryId}")`,
+            )
+            .join(', ')}`,
+        );
+      }
+
+      if (patch.sortCode != null) {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        const sortCode = await injector
+          .get(SortCodesProvider)
+          .getSortCodesByIdLoader.load({ key: patch.sortCode, ownerId });
+        if (!sortCode) {
+          throw new GraphQLError(`Sort code ${patch.sortCode} not found`);
+        }
+      }
+
+      try {
+        const context = await injector.get(AdminContextProvider).updateSecuritiesContext(patch);
+        return toSecuritiesContextProto(context);
+      } catch (e) {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        console.error('Error updating securities context', e);
+        throw new GraphQLError('Error updating securities context');
+      }
+    },
+  },
+  SecuritiesContext: {
+    id: parent => `${parent.ownerId}-securities-context`,
+    sortCode: async (parent, _, { injector }) =>
+      parent.sortCode == null
+        ? null
+        : injector
+            .get(SortCodesProvider)
+            .getSortCodesByIdLoader.load({ key: parent.sortCode, ownerId: parent.ownerId })
+            .then(sortCode => sortCode ?? null),
+    taxCategories: parent =>
+      SECURITIES_TAX_CATEGORY_KEYS.map(key => ({
+        ownerId: parent.ownerId,
+        key,
+        taxCategoryId: parent.taxCategories[key] ?? null,
+      })),
+  },
+  SecuritiesTaxCategoryAssignment: {
+    id: parent => `${parent.ownerId}-securities-${parent.key}`,
+    key: parent => parent.key,
+    taxCategory: async (parent, _, { injector }) =>
+      parent.taxCategoryId
+        ? injector
+            .get(TaxCategoriesProvider)
+            .taxCategoryByIdLoader.load(parent.taxCategoryId)
+            .then(taxCategory => taxCategory ?? null)
+        : null,
   },
   AdminContextInfo: {
     id: dbAdminContext => dbAdminContext.ownerId,
@@ -479,5 +574,6 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
             dbAdminContext.foreignSecurities.foreignSecuritiesFeesCategoryId,
           )
         : null,
+    securitiesContext: dbAdminContext => toSecuritiesContextProto(dbAdminContext),
   },
 };
