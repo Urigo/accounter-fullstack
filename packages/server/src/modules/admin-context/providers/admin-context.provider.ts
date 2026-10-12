@@ -16,6 +16,7 @@ import type {
   AdminContext,
   IGetAdminContextsQuery,
   IGetAdminContextsResult,
+  IGetSecuritiesContextForUpdateQuery,
   IGetSecurityBusinessIdsQuery,
   IUpdateAdminContextParams,
   IUpdateAdminContextQuery,
@@ -309,6 +310,14 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
   RETURNING *;
 `;
 
+/** Locks the row, so concurrent patches of the jsonb document apply one after the other */
+const getSecuritiesContextForUpdate = sql<IGetSecuritiesContextForUpdateQuery>`
+  SELECT securities_context
+  FROM accounter_schema.user_context
+  WHERE owner_id = $ownerId!
+  FOR UPDATE;
+`;
+
 /**
  * Replaces the whole jsonb document: the caller merges the change into the current value first
  * (see `updateSecuritiesContext`), so a patch never has to be expressed in SQL.
@@ -585,32 +594,35 @@ export class AdminContextProvider {
 
   /**
    * Applies a change to the tenant's securities context. Read, merged and written back whole, from
-   * the stored row rather than the request cache, so a value saved earlier in the same operation
-   * is not lost.
+   * the stored row rather than the request cache, and with the row locked for the duration: two
+   * requests patching different keys at once must not overwrite each other.
    */
   public async updateSecuritiesContext(patch: SecuritiesContextPatch): Promise<AdminContext> {
     const ownerId = await this.resolveOwnerIdForRequest();
-
-    const [current] = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
-    if (!current) {
-      throw new GraphQLError('Admin context not found for the authenticated user.', {
-        extensions: { code: 'FORBIDDEN' },
-      });
-    }
-
-    const securitiesContext = mergeSecuritiesContext(
-      parseStoredSecuritiesContext(current.securities_context),
-      patch,
-    );
 
     this.cachedContext = null;
     this.cachedContextInitializing = null;
     this.adminContextByOwnerIdLoader.clear(ownerId);
 
-    const [updated] = await updateSecuritiesContext.run(
-      { ownerId, securitiesContext: serializeSecuritiesContext(securitiesContext) },
-      this.db,
-    );
+    const updated = await this.db.transaction(async client => {
+      const [current] = await getSecuritiesContextForUpdate.run({ ownerId }, client);
+      if (!current) {
+        throw new GraphQLError('Admin context not found for the authenticated user.', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const securitiesContext = mergeSecuritiesContext(
+        parseStoredSecuritiesContext(current.securities_context),
+        patch,
+      );
+
+      const [row] = await updateSecuritiesContext.run(
+        { ownerId, securitiesContext: serializeSecuritiesContext(securitiesContext) },
+        client,
+      );
+      return row;
+    });
     if (!updated) {
       throw new GraphQLError('Error updating securities context');
     }
