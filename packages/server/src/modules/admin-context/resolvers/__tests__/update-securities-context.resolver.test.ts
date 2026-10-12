@@ -21,6 +21,7 @@ const OTHER_OWNERS_BUSINESS_ID = '0190a1b2-0000-7000-8000-000000000004';
 function makeInjector() {
   const adminContextProvider = {
     getVerifiedAdminContext: vi.fn(async () => ({ ownerId: OWNER_ID })),
+    updateAdminContext: vi.fn(async () => ({ ownerId: OWNER_ID })),
     updateSecuritiesContext: vi.fn(async () => ({
       ownerId: OWNER_ID,
       foreignSecurities: { foreignSecuritiesBusinessId: null, sortCode: 990, taxCategories: {} },
@@ -144,5 +145,60 @@ describe('Mutation.updateSecuritiesContext', () => {
     expect(adminContextProvider.updateSecuritiesContext).toHaveBeenCalledWith({
       taxCategories: [{ key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null }],
     });
+  });
+});
+
+const updateAdminContext = (injector: Injector, context: Record<string, unknown>) =>
+  (
+    adminContextResolvers.Mutation!.updateAdminContext as unknown as (
+      parent: unknown,
+      args: unknown,
+      context: unknown,
+    ) => Promise<unknown>
+  )({}, { context: { ownerId: OWNER_ID, ...context } }, { injector });
+
+describe('Mutation.updateAdminContext (deprecated foreign securities inputs)', () => {
+  it("passes the business's own ids through", async () => {
+    const { injector, adminContextProvider } = makeInjector();
+
+    await updateAdminContext(injector, {
+      foreignSecuritiesBusinessId: OWN_BUSINESS_ID,
+      foreignSecuritiesFeesCategoryId: OWN_TAX_CATEGORY_ID,
+    });
+
+    expect(adminContextProvider.updateAdminContext).toHaveBeenCalledWith(
+      expect.objectContaining({
+        foreignSecuritiesBusinessId: OWN_BUSINESS_ID,
+        foreignSecuritiesFeesCategoryId: OWN_TAX_CATEGORY_ID,
+      }),
+    );
+  });
+
+  it("refuses another business's tax category as the fees category", async () => {
+    const { injector, adminContextProvider } = makeInjector();
+
+    await expect(
+      updateAdminContext(injector, {
+        foreignSecuritiesFeesCategoryId: OTHER_OWNERS_TAX_CATEGORY_ID,
+      }),
+    ).rejects.toThrow('Tax category not found in this business: Foreign securities fees');
+    expect(adminContextProvider.updateAdminContext).not.toHaveBeenCalled();
+  });
+
+  it("refuses another business's business as the foreign securities business", async () => {
+    const { injector, adminContextProvider } = makeInjector();
+
+    await expect(
+      updateAdminContext(injector, { foreignSecuritiesBusinessId: OTHER_OWNERS_BUSINESS_ID }),
+    ).rejects.toThrow('Foreign securities business not found in this business');
+    expect(adminContextProvider.updateAdminContext).not.toHaveBeenCalled();
+  });
+
+  it('checks nothing for an update that leaves them out', async () => {
+    const { injector, adminContextProvider } = makeInjector();
+
+    await updateAdminContext(injector, { locality: 'ISR' });
+
+    expect(adminContextProvider.updateAdminContext).toHaveBeenCalled();
   });
 });
