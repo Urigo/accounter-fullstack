@@ -69,7 +69,15 @@ export type AdminContext = {
   };
 
   foreignSecurities: {
+    /**
+     * From `securities_context` (falling back to the legacy
+     * `user_context.foreign_securities_business_id` column, until it is deprecated)
+     */
     foreignSecuritiesBusinessId: string | null;
+    /**
+     * `taxCategories.FOREIGN_SECURITIES_FEES` (falling back to the legacy
+     * `user_context.foreign_securities_fees_category_id` column, until it is deprecated)
+     */
     foreignSecuritiesFeesCategoryId: string | null;
     /** From `securities_context`: the sort code new securities tax categories are created under */
     sortCode: number | null;
@@ -114,6 +122,7 @@ export type AdminContext = {
 /** `SecuritiesContext` GraphQL parent: the tenant's securities ledger configuration */
 export type SecuritiesContextProto = {
   ownerId: string;
+  foreignSecuritiesBusinessId: string | null;
   sortCode: number | null;
   taxCategories: SecuritiesTaxCategoryIds;
 };
