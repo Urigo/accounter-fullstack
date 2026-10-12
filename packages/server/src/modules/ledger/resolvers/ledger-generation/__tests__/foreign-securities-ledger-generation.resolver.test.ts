@@ -57,6 +57,7 @@ const BANK_BUSINESS_ID = 'business-bank';
 const FEES_TAX_CATEGORY_ID = 'tax-category-securities-fees';
 
 const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
+  FOREIGN_SECURITIES_FEES: FEES_TAX_CATEGORY_ID,
   FOREIGN_DIVIDEND_INCOME: 'tax-category-foreign-dividend-income',
   LOCAL_DIVIDEND_INCOME: 'tax-category-local-dividend-income',
   DIVIDEND_WITHHOLDING_TAX: 'tax-category-dividend-withholding-tax',
@@ -235,7 +236,8 @@ function makeInjector(scenario: Scenario) {
             defaultLocalCurrency: Currency.Ils,
             foreignSecurities: {
               foreignSecuritiesBusinessId: null,
-              foreignSecuritiesFeesCategoryId: FEES_TAX_CATEGORY_ID,
+              foreignSecuritiesFeesCategoryId: (scenario.taxCategories ?? TAX_CATEGORIES)
+                .FOREIGN_SECURITIES_FEES,
               sortCode: null,
               taxCategories: scenario.taxCategories ?? TAX_CATEGORIES,
             },
@@ -986,6 +988,21 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
     });
 
     expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_INCOME']);
+  });
+
+  it('names a missing fees category, so it can be set from the charge', async () => {
+    const { FOREIGN_SECURITIES_FEES: _, ...taxCategories } = TAX_CATEGORIES;
+
+    const { records, errors, missingSecuritiesTaxCategories } = await generate({
+      transactions: [feeTransaction],
+      taxCategories,
+    });
+
+    expect(records).toEqual([]);
+    expect(errors).toEqual([
+      expect.stringContaining('Missing securities tax category "Foreign securities fees"'),
+    ]);
+    expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_SECURITIES_FEES']);
   });
 
   it('generates the fee entries of a charge with no main transaction instead of failing', async () => {

@@ -3,16 +3,27 @@ import type { SecuritiesTaxCategoryKey } from '../../../__generated__/types.js';
 
 /**
  * `accounter_schema.user_context.securities_context`: the tenant's securities ledger
- * configuration, kept as jsonb so new securities tax categories can be added without a column
- * each. Stored shape (camelCase keys, every field optional):
+ * configuration, kept as jsonb so new securities settings can be added without a column each.
+ * Stored shape (camelCase keys, every field optional):
  *
- *   { "sortCode": 990, "taxCategories": { "foreignDividendIncome": "<uuid>", ... } }
+ *   {
+ *     "foreignSecuritiesBusinessId": "<uuid>",
+ *     "sortCode": 990,
+ *     "taxCategories": { "foreignSecuritiesFees": "<uuid>", "foreignDividendIncome": "<uuid>", ... }
+ *   }
+ *
+ * It supersedes the legacy `user_context.foreign_securities_business_id` and
+ * `user_context.foreign_securities_fees_category_id` columns: their values were copied in when
+ * the column was added, and until the columns are deprecated they are only read as a fallback
+ * (see `withLegacySecuritiesColumns`).
  *
  * jsonb carries no foreign keys, so ids are validated on write (see `updateSecuritiesContext`)
  * and a dangling one surfaces at ledger time as an unbalanced or unknown account.
  */
 
 const SECURITIES_TAX_CATEGORIES = {
+  // formerly `user_context.foreign_securities_fees_category_id`
+  FOREIGN_SECURITIES_FEES: { field: 'foreignSecuritiesFees', label: 'Foreign securities fees' },
   FOREIGN_DIVIDEND_INCOME: { field: 'foreignDividendIncome', label: 'Foreign dividend income' },
   LOCAL_DIVIDEND_INCOME: { field: 'localDividendIncome', label: 'Local dividend income' },
   DIVIDEND_WITHHOLDING_TAX: { field: 'dividendWithholdingTax', label: 'Dividend withholding tax' },
@@ -47,36 +58,50 @@ export function securitiesTaxCategoryLabel(key: SecuritiesTaxCategoryKey): strin
 export type SecuritiesTaxCategoryIds = Partial<Record<SecuritiesTaxCategoryKey, string>>;
 
 export type SecuritiesContext = {
+  /**
+   * The general foreign-securities business (formerly
+   * `user_context.foreign_securities_business_id`)
+   */
+  foreignSecuritiesBusinessId: string | null;
   /** The sort code new securities tax categories are created under */
   sortCode: number | null;
   taxCategories: SecuritiesTaxCategoryIds;
 };
 
 export const EMPTY_SECURITIES_CONTEXT: Readonly<SecuritiesContext> = Object.freeze({
+  foreignSecuritiesBusinessId: null,
   sortCode: null,
   taxCategories: Object.freeze({}),
+});
+
+const emptySecuritiesContext = (): SecuritiesContext => ({
+  foreignSecuritiesBusinessId: null,
+  sortCode: null,
+  taxCategories: {},
 });
 
 type StoredTaxCategoryField = (typeof SECURITIES_TAX_CATEGORIES)[SecuritiesTaxCategoryKey]['field'];
 
 export type StoredSecuritiesContext = {
+  foreignSecuritiesBusinessId?: string;
   sortCode?: number;
   taxCategories: Partial<Record<StoredTaxCategoryField, string>>;
 };
 
 const sortCodeSchema = z.number().int().positive();
-const taxCategoryIdSchema = z.guid();
+const idSchema = z.guid();
 
 // Per-field `.catch` so one bad value degrades that field alone: this is read by
 // `getVerifiedAdminContext`, which nearly every request goes through, so it must never throw.
 const storedSecuritiesContextSchema = z.object({
+  foreignSecuritiesBusinessId: idSchema.nullish().catch(null),
   sortCode: sortCodeSchema.nullish().catch(null),
   taxCategories: z
     .object(
       Object.fromEntries(
         SECURITIES_TAX_CATEGORY_KEYS.map(key => [
           SECURITIES_TAX_CATEGORIES[key].field,
-          taxCategoryIdSchema.optional().catch(undefined),
+          idSchema.optional().catch(undefined),
         ]),
       ),
     )
@@ -87,14 +112,14 @@ const storedSecuritiesContextSchema = z.object({
 /** Lenient read of the stored jsonb: unknown keys are ignored and bad values dropped */
 export function parseStoredSecuritiesContext(input: unknown): SecuritiesContext {
   if (input == null) {
-    return { sortCode: null, taxCategories: {} };
+    return emptySecuritiesContext();
   }
   const { data, success, error } = storedSecuritiesContextSchema.safeParse(input);
   if (!success) {
     // Reached only when the value is not an object at all — the per-field `.catch` above
     // absorbs everything else.
     console.error(`Ignoring unparsable stored securities context: ${error}`);
-    return { sortCode: null, taxCategories: {} };
+    return emptySecuritiesContext();
   }
 
   const taxCategories: SecuritiesTaxCategoryIds = {};
@@ -104,7 +129,38 @@ export function parseStoredSecuritiesContext(input: unknown): SecuritiesContext 
       taxCategories[key] = id;
     }
   }
-  return { sortCode: data.sortCode ?? null, taxCategories };
+  return {
+    foreignSecuritiesBusinessId: data.foreignSecuritiesBusinessId ?? null,
+    sortCode: data.sortCode ?? null,
+    taxCategories,
+  };
+}
+
+/**
+ * The legacy `user_context` columns `securities_context` supersedes. Their values were copied into
+ * it by the migration that added it; they are read only to fill a key the jsonb lacks, until the
+ * columns are deprecated.
+ */
+export type LegacySecuritiesColumns = {
+  foreign_securities_business_id: string | null;
+  foreign_securities_fees_category_id: string | null;
+};
+
+/** Fills what the stored context lacks from the legacy columns; the stored value wins */
+export function withLegacySecuritiesColumns(
+  context: SecuritiesContext,
+  legacy: LegacySecuritiesColumns,
+): SecuritiesContext {
+  const feesTaxCategoryId =
+    context.taxCategories.FOREIGN_SECURITIES_FEES ?? legacy.foreign_securities_fees_category_id;
+  return {
+    ...context,
+    foreignSecuritiesBusinessId:
+      context.foreignSecuritiesBusinessId ?? legacy.foreign_securities_business_id,
+    taxCategories: feesTaxCategoryId
+      ? { ...context.taxCategories, FOREIGN_SECURITIES_FEES: feesTaxCategoryId }
+      : context.taxCategories,
+  };
 }
 
 /** The stored jsonb shape of a context, leaving unset fields out */
@@ -116,18 +172,23 @@ export function serializeSecuritiesContext(context: SecuritiesContext): StoredSe
       taxCategories[SECURITIES_TAX_CATEGORIES[key].field] = id;
     }
   }
-  return context.sortCode == null
-    ? { taxCategories }
-    : { sortCode: context.sortCode, taxCategories };
+  return {
+    ...(context.foreignSecuritiesBusinessId
+      ? { foreignSecuritiesBusinessId: context.foreignSecuritiesBusinessId }
+      : {}),
+    ...(context.sortCode == null ? {} : { sortCode: context.sortCode }),
+    taxCategories,
+  };
 }
 
 const securitiesContextPatchSchema = z.object({
+  foreignSecuritiesBusinessId: idSchema.nullish(),
   sortCode: sortCodeSchema.nullish(),
   taxCategories: z
     .array(
       z.object({
         key: z.enum(SECURITIES_TAX_CATEGORY_KEYS as [SecuritiesTaxCategoryKey]),
-        taxCategoryId: taxCategoryIdSchema.nullable(),
+        taxCategoryId: idSchema.nullable(),
       }),
     )
     .nullish(),
@@ -158,6 +219,10 @@ export function mergeSecuritiesContext(
   }
 
   return {
+    foreignSecuritiesBusinessId:
+      patch.foreignSecuritiesBusinessId === undefined
+        ? current.foreignSecuritiesBusinessId
+        : patch.foreignSecuritiesBusinessId,
     sortCode: patch.sortCode === undefined ? current.sortCode : patch.sortCode,
     taxCategories,
   };

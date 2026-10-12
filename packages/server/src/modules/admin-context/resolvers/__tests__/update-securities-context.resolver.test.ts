@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Injector } from 'graphql-modules';
+import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
 import { SortCodesProvider } from '../../../sort-codes/providers/sort-codes.provider.js';
 import { AdminContextProvider } from '../../providers/admin-context.provider.js';
@@ -14,13 +15,15 @@ const OWNER_ID = 'owner-business';
 const OTHER_OWNER_ID = 'other-business-in-scope';
 const OWN_TAX_CATEGORY_ID = '0190a1b2-0000-7000-8000-000000000001';
 const OTHER_OWNERS_TAX_CATEGORY_ID = '0190a1b2-0000-7000-8000-000000000002';
+const OWN_BUSINESS_ID = '0190a1b2-0000-7000-8000-000000000003';
+const OTHER_OWNERS_BUSINESS_ID = '0190a1b2-0000-7000-8000-000000000004';
 
 function makeInjector() {
   const adminContextProvider = {
     getVerifiedAdminContext: vi.fn(async () => ({ ownerId: OWNER_ID })),
     updateSecuritiesContext: vi.fn(async () => ({
       ownerId: OWNER_ID,
-      foreignSecurities: { sortCode: 990, taxCategories: {} },
+      foreignSecurities: { foreignSecuritiesBusinessId: null, sortCode: 990, taxCategories: {} },
     })),
   };
   const taxCategories = new Map([
@@ -33,6 +36,18 @@ function makeInjector() {
     [
       TaxCategoriesProvider,
       { taxCategoryByIdLoader: { load: async (id: string) => taxCategories.get(id) } },
+    ],
+    [
+      BusinessesProvider,
+      {
+        getBusinessByIdLoader: {
+          load: async (id: string) =>
+            ({
+              [OWN_BUSINESS_ID]: { id, owner_id: OWNER_ID },
+              [OTHER_OWNERS_BUSINESS_ID]: { id, owner_id: OTHER_OWNER_ID },
+            })[id],
+        },
+      },
     ],
     [
       SortCodesProvider,
@@ -49,7 +64,11 @@ function makeInjector() {
 
 const updateSecuritiesContext = (
   injector: Injector,
-  input: { sortCode?: number | null; taxCategories?: { key: string; taxCategoryId: string | null }[] },
+  input: {
+    foreignSecuritiesBusinessId?: string | null;
+    sortCode?: number | null;
+    taxCategories?: { key: string; taxCategoryId: string | null }[];
+  },
 ) =>
   (
     adminContextResolvers.Mutation!.updateSecuritiesContext as unknown as (
@@ -84,6 +103,25 @@ describe('Mutation.updateSecuritiesContext', () => {
         ],
       }),
     ).rejects.toThrow('Tax category not found in this business: Foreign dividend income');
+    expect(adminContextProvider.updateSecuritiesContext).not.toHaveBeenCalled();
+  });
+
+  it("stores the business's own foreign securities business", async () => {
+    const { injector, adminContextProvider } = makeInjector();
+
+    await updateSecuritiesContext(injector, { foreignSecuritiesBusinessId: OWN_BUSINESS_ID });
+
+    expect(adminContextProvider.updateSecuritiesContext).toHaveBeenCalledWith({
+      foreignSecuritiesBusinessId: OWN_BUSINESS_ID,
+    });
+  });
+
+  it("refuses another business's business as the foreign securities business", async () => {
+    const { injector, adminContextProvider } = makeInjector();
+
+    await expect(
+      updateSecuritiesContext(injector, { foreignSecuritiesBusinessId: OTHER_OWNERS_BUSINESS_ID }),
+    ).rejects.toThrow('Foreign securities business not found in this business');
     expect(adminContextProvider.updateSecuritiesContext).not.toHaveBeenCalled();
   });
 

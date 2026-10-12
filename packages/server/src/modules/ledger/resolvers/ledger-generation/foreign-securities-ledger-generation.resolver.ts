@@ -239,7 +239,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
   const {
     ownerId,
     defaultLocalCurrency,
-    foreignSecurities: { foreignSecuritiesFeesCategoryId, taxCategories },
+    foreignSecurities: { taxCategories },
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const errors: Set<string> = new Set();
@@ -326,10 +326,16 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     // create a ledger record for fee transactions
     const feeTransactionsPromises = feeTransactions.map(async transaction => {
-      if (!foreignSecuritiesFeesCategoryId) {
-        errors.add(`Foreign securities fees category ID is missing`);
+      const ids = requireTaxCategories(
+        ['FOREIGN_SECURITIES_FEES'],
+        taxCategories,
+        errors,
+        missingTaxCategories,
+      );
+      if (!ids) {
         return;
       }
+      const foreignSecuritiesFeesCategoryId = ids.FOREIGN_SECURITIES_FEES;
 
       try {
         // for each transaction, create a ledger record
