@@ -119,6 +119,8 @@ function SecuritiesTaxCategoryForm({
   const [selectedTaxCategoryId, setSelectedTaxCategoryId] = useState<string | null>(null);
   const [rememberSortCode, setRememberSortCode] = useState(true);
   const [fetchingSortCodes, setFetchingSortCodes] = useState(false);
+  // kept once created, so retrying after a failed save does not create a second one
+  const [createdTaxCategoryId, setCreatedTaxCategoryId] = useState<string | null>(null);
 
   const { userContext } = useContext(UserContext);
   const { selectableTaxCategories, fetching: fetchingTaxCategories } = useGetTaxCategories();
@@ -153,19 +155,31 @@ function SecuritiesTaxCategoryForm({
     if (!saved) {
       return;
     }
-    await regenerateLedgerRecords([chargeId]);
+    // stay open on failure, so the user can retry; the hook already reported the error
+    const regenerated = await regenerateLedgerRecords([chargeId]);
+    if (!regenerated) {
+      return;
+    }
     onSaved();
   }
 
   const onCreate = handleSubmit(async fields => {
     const parsedSortCode = fields.sortCode == null ? undefined : Number(fields.sortCode);
-    const created = await insertTaxCategory({
-      fields: { ...fields, sortCode: parsedSortCode },
-    });
-    if (!created?.id) {
-      return;
+    let taxCategoryId = createdTaxCategoryId;
+    if (!taxCategoryId) {
+      const created = await insertTaxCategory({
+        fields: { ...fields, sortCode: parsedSortCode },
+      });
+      if (!created?.id) {
+        return;
+      }
+      taxCategoryId = created.id;
+      setCreatedTaxCategoryId(taxCategoryId);
     }
-    await assign(created.id, rememberSortCode && showRememberSortCode ? parsedSortCode : undefined);
+    await assign(
+      taxCategoryId,
+      rememberSortCode && showRememberSortCode ? parsedSortCode : undefined,
+    );
   });
 
   return (
@@ -222,7 +236,7 @@ function SecuritiesTaxCategoryForm({
             )}
             <DialogFooter>
               <Button type="submit" disabled={busy || fetchingSortCodes}>
-                Create and save
+                {createdTaxCategoryId ? 'Retry saving' : 'Create and save'}
               </Button>
             </DialogFooter>
           </form>
