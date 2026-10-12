@@ -129,8 +129,15 @@ function effectiveDebitDate(transaction: MatchableTransaction): TimelessDateStri
  * The feed spells its currencies out in Hebrew; `formatCurrency` knows those labels, and the
  * nullable form keeps an unrecognized one from throwing mid-match.
  */
-function executionAmountInCurrency(
-  execution: MatchableExecution,
+export function executionAmountInCurrency(
+  execution: Pick<
+    MatchableExecution,
+    | 'trade_currency'
+    | 'settlement_currency'
+    | 'net_value_trade_currency'
+    | 'net_value_settlement_currency'
+    | 'net_value_nis'
+  >,
   currency: Currency,
 ): string | null {
   // `formatCurrency` reads a missing label as ILS, which would make every unreported

@@ -85,6 +85,7 @@ type StubTransaction = {
   debit_date?: TimelessDateString | null;
   debit_date_override?: TimelessDateString | null;
   account_id?: string;
+  is_fee?: boolean;
 };
 
 /** The day the fixtures settle on: execution value date and transaction debit date alike. */
@@ -601,6 +602,122 @@ describe('getChargeSecurities — matched executions', () => {
 });
 
 /** This suite's own buckets out of a tenant-wide result. See the note on ISINs above. */
+describe('getChargeExecutionsByTransactionId', () => {
+  const DIVIDEND = 'דבידנד תשלום';
+  const CORPORATE_ACTIONS = 'תשלומים ואירועי חברה';
+
+  it('maps each matched transaction to the execution behind it', async () => {
+    await insertExecution({
+      security: '5129523',
+      tradeType: DIVIDEND,
+      transactionType: CORPORATE_ACTIONS,
+      netValueTradeCurrency: '50.00',
+      nv: '0',
+    });
+    const provider = createProvider([
+      { id: 't1', source_description: 'ניע"ז תשלומים 0005129523', amount: '50.00' },
+      { id: 't2', source_description: 'ניע"ז תשלומים 0005129523', amount: '75.00' },
+    ]);
+
+    const executions = await provider.getChargeExecutionsByTransactionId(CHARGE_ID, TEST_OWNER_ID);
+
+    expect([...executions.keys()]).toEqual(['t1']);
+    expect(executions.get('t1')?.trade_type).toBe(DIVIDEND);
+    expect(executions.get('t1')).toHaveProperty('issuer_country_code');
+    expect(executions.get('t1')).toHaveProperty('foreign_tax_value_settlement_currency');
+  });
+
+  it('leaves fees out of the pairing, so one cannot take the real cash leg', async () => {
+    await insertExecution({
+      security: '5129523',
+      tradeType: DIVIDEND,
+      transactionType: CORPORATE_ACTIONS,
+      netValueTradeCurrency: '50.00',
+      nv: '0',
+    });
+    const provider = createProvider([
+      {
+        id: 'fee',
+        source_description: 'fee 0005129523',
+        amount: '50.00',
+        is_fee: true,
+      },
+      { id: 't1', source_description: 'ניע"ז תשלומים 0005129523', amount: '50.00' },
+    ]);
+
+    const executions = await provider.getChargeExecutionsByTransactionId(CHARGE_ID, TEST_OWNER_ID);
+
+    expect([...executions.keys()]).toEqual(['t1']);
+  });
+
+  it("ignores another owner's execution of the same key", async () => {
+    await insertExecution({
+      ownerId: OTHER_OWNER_ID,
+      security: '5129523',
+      tradeType: DIVIDEND,
+      transactionType: CORPORATE_ACTIONS,
+      netValueTradeCurrency: '50.00',
+      nv: '0',
+    });
+    const provider = createProvider([
+      { id: 't1', source_description: 'ניע"ז תשלומים 0005129523', amount: '50.00' },
+    ]);
+
+    const executions = await provider.getChargeExecutionsByTransactionId(CHARGE_ID, TEST_OWNER_ID);
+
+    expect(executions.size).toBe(0);
+  });
+
+  it('is empty when no description carries a security key', async () => {
+    const provider = createProvider([{ id: 't1', source_description: 'no key here' }]);
+
+    const executions = await provider.getChargeExecutionsByTransactionId(CHARGE_ID, TEST_OWNER_ID);
+
+    expect(executions.size).toBe(0);
+  });
+});
+
+describe('getSecurityAccountHistory', () => {
+  const ACCOUNT = {
+    bank_number: BANK_NUMBER,
+    branch_number: BRANCH_NUMBER,
+    account_number: ACCOUNT_NUMBER,
+  };
+
+  it("returns every key of the security business in the execution's account, oldest first", async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'ZZ0000000101',
+      securityKeys: ['5129523', '5129524'],
+    });
+    await insertExecution({ security: '5129523', tradeDate: '2024-05-01', nv: '3' });
+    await insertExecution({ security: '5129524', tradeDate: '2024-01-01', nv: '7' });
+    // the same security in another of the tenant's portfolios
+    await insertExecution({ security: '5129523', tradeDate: '2024-02-01', accountNumber: 100001 });
+
+    const history = await createProvider([]).getSecurityAccountHistory(
+      { security: '5129523', ...ACCOUNT },
+      TEST_OWNER_ID,
+    );
+
+    expect(history.map(execution => [execution.trade_date, execution.nv])).toEqual([
+      ['2024-01-01', '7'],
+      ['2024-05-01', '3'],
+    ]);
+  });
+
+  it('is empty when the key belongs to no security business', async () => {
+    await insertExecution({ security: '5129523' });
+
+    const history = await createProvider([]).getSecurityAccountHistory(
+      { security: '5129523', ...ACCOUNT },
+      TEST_OWNER_ID,
+    );
+
+    expect(history).toEqual([]);
+  });
+});
+
 function ownedBuckets<T>(byBusinessId: Map<string, T[]>): T[][] {
   return SECURITY_BUSINESS_IDS.map(id => byBusinessId.get(id)).filter(
     (bucket): bucket is T[] => bucket !== undefined,
