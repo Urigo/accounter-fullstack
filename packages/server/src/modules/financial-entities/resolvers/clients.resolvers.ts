@@ -6,7 +6,7 @@ import {
   updateGreenInvoiceClient,
 } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
 import { parseStoredClientIntegrations } from '../helpers/clients.helper.js';
-import { dedupeList } from '../helpers/list-input-validation.helper.js';
+import { dedupeCaseInsensitive } from '../helpers/list-input-validation.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {
@@ -64,7 +64,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
       }
       const adjustedFields: IUpdateClientParams = {
         businessId,
-        emails: fields.emails ? dedupeList(fields.emails) : undefined,
+        emails: fields.emails ? dedupeCaseInsensitive(fields.emails) : undefined,
         newBusinessId: fields.newBusinessId,
         generatedDocumentType: fields.generatedDocumentType,
         integrations: updatedIntegrations,
@@ -97,7 +97,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
       try {
         const newClient: IInsertClientParams = {
           businessId: fields.businessId,
-          emails: fields.emails ? dedupeList(fields.emails) : [],
+          emails: fields.emails ? dedupeCaseInsensitive(fields.emails) : [],
           generatedDocumentType: fields.generatedDocumentType,
           integrations: fields.integrations ?? {},
         };

@@ -39,8 +39,8 @@ import { Textarea } from '@/components/ui/textarea.js';
 import { DocumentType } from '@/gql/graphql.js';
 import { pcn874RecordEnum } from '@/helpers/index.js';
 import {
-  duplicateEntryError,
-  hasNoDuplicateEntries,
+  duplicateEmailError,
+  hasNoDuplicateEmails,
   hasNoPhraseOverlap,
   phraseConflictError,
 } from '@/helpers/list-input-validation.js';
@@ -65,7 +65,7 @@ const businessFormSchema = z
     zipCode: z.string().optional(),
     generalContacts: z
       .array(z.email())
-      .refine(hasNoDuplicateEntries, { message: 'Contacts must be unique' }),
+      .refine(hasNoDuplicateEmails, { message: 'Contacts must be unique' }),
     website: z.url().optional().or(z.literal('')),
     phone: z.string().optional(),
     taxCategory: z.string().optional(),
@@ -80,7 +80,7 @@ const businessFormSchema = z
     }),
     emailAddresses: z
       .array(z.email())
-      .refine(hasNoDuplicateEntries, { message: 'Emails must be unique' }),
+      .refine(hasNoDuplicateEmails, { message: 'Emails must be unique' }),
   })
   .refine(
     data => {
@@ -242,7 +242,7 @@ function ContactInformationSection({ form }: SectionProps) {
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
-      const conflict = duplicateEntryError(currentContacts, newContact);
+      const conflict = duplicateEmailError(currentContacts, newContact);
       if (conflict) {
         form.setError('generalContacts', { type: 'manual', message: conflict });
         return;
@@ -681,7 +681,7 @@ function AutoMatchingSection({ form }: SectionProps) {
   const addEmail = () => {
     if (newEmail.trim()) {
       const currentEmails = getValues('emailAddresses') ?? [];
-      const conflict = duplicateEntryError(currentEmails, newEmail);
+      const conflict = duplicateEmailError(currentEmails, newEmail);
       if (conflict) {
         form.setError('emailAddresses', { type: 'manual', message: conflict });
         return;

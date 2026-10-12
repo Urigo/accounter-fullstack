@@ -45,7 +45,11 @@ import {
   relevantDataPicker,
   type MakeBoolean,
 } from '@/helpers/index.js';
-import { duplicateEntryError, phraseConflictError } from '@/helpers/list-input-validation.js';
+import {
+  duplicateEmailError,
+  duplicateExactError,
+  phraseConflictError,
+} from '@/helpers/list-input-validation.js';
 import { useGetTags } from '@/hooks/use-get-tags.js';
 import { useGetTaxCategories } from '@/hooks/use-get-tax-categories.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
@@ -641,7 +645,7 @@ function AutoMatchingConfigurationSubSection({ form }: SubSectionProps) {
   const addEmail = () => {
     if (newEmail.trim()) {
       const currentEmails = form.getValues('emails') ?? [];
-      const conflict = duplicateEntryError(currentEmails, newEmail);
+      const conflict = duplicateEmailError(currentEmails, newEmail);
       if (conflict) {
         form.setError('emails', { type: 'manual', message: conflict });
         return;
@@ -796,7 +800,7 @@ function GmailConfigurationSubSection({ form }: SubSectionProps) {
   const addLink = () => {
     if (newLink.trim()) {
       const currentLinks = form.getValues('internalLinks') ?? [];
-      const conflict = duplicateEntryError(currentLinks, newLink);
+      const conflict = duplicateExactError(currentLinks, newLink);
       if (conflict) {
         form.setError('internalLinks', { type: 'manual', message: conflict });
         return;

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isValidWildcardEmailPattern } from './email-pattern.helper.js';
-import { cleanPhrases, dedupeList } from './list-input-validation.helper.js';
+import { dedupeCaseInsensitive, dedupeExact } from './list-input-validation.helper.js';
 
 // A recognition email is either a concrete address or a wildcard pattern
 // (e.g. `*@cloudflare.com`) for suppliers that send from a unique address per
@@ -57,22 +57,21 @@ export const suggestionDataSchema = z
 export type SuggestionData = z.infer<typeof suggestionDataSchema>;
 
 /**
- * Defensively clean the list fields of a suggestion-data object before it is
- * persisted: drop duplicate recognition emails / internal email links
- * (case-insensitive) and duplicate or substring-overlapping phrases (keeping the
- * more specific phrase). The UI blocks these conflicts up front with a clear
- * message; this is the write-path safety net that also self-heals legacy data
- * and keeps automated merges from storing redundant entries. Shape validation is
- * still performed by the caller via `suggestionDataSchema`.
+ * Drop redundant entries from the list fields of a suggestion-data object
+ * before it is persisted, without changing what matches: recognition emails are
+ * de-duplicated case-insensitively, phrases and internal email links only when
+ * repeated exactly (see list-input-validation.helper.ts). This is the write-path
+ * safety net behind the UI checks; it also covers merges and legacy data. Shape
+ * validation is still performed by the caller via `suggestionDataSchema`.
  */
 export function normalizeSuggestionListData(data: SuggestionData): SuggestionData {
   const normalized: SuggestionData = { ...data };
-  normalized.phrases &&= cleanPhrases(normalized.phrases);
-  normalized.emails &&= dedupeList(normalized.emails);
+  normalized.phrases &&= dedupeExact(normalized.phrases);
+  normalized.emails &&= dedupeCaseInsensitive(normalized.emails);
   if (normalized.emailListener?.internalEmailLinks) {
     normalized.emailListener = {
       ...normalized.emailListener,
-      internalEmailLinks: dedupeList(normalized.emailListener.internalEmailLinks),
+      internalEmailLinks: dedupeExact(normalized.emailListener.internalEmailLinks),
     };
   }
   return normalized;

@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select.js';
 import { DocumentType } from '@/gql/graphql.js';
 import { getDocumentNameFromType } from '@/helpers/index.js';
-import { duplicateEntryError, hasNoDuplicateEntries } from '@/helpers/list-input-validation.js';
+import { duplicateEmailError, hasNoDuplicateEmails } from '@/helpers/list-input-validation.js';
 import { useInsertClient } from '@/hooks/use-insert-client.js';
 import { Badge } from '../ui/badge';
 
@@ -39,7 +39,7 @@ const clientFormSchema = z.object({
   businessId: z.uuid().optional(),
   emails: z
     .array(z.email())
-    .refine(hasNoDuplicateEntries, { message: 'Emails must be unique' })
+    .refine(hasNoDuplicateEmails, { message: 'Emails must be unique' })
     .optional(),
   generatedDocumentType: z.enum(Object.values(DocumentType)),
 });
@@ -84,7 +84,7 @@ export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: P
   const addEmail = () => {
     if (newEmail.trim()) {
       const currentEmails = form.getValues('emails') ?? [];
-      const conflict = duplicateEntryError(currentEmails, newEmail);
+      const conflict = duplicateEmailError(currentEmails, newEmail);
       if (conflict) {
         form.setError('emails', { type: 'manual', message: conflict });
         return;

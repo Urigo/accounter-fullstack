@@ -30,7 +30,7 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { dirtyFieldMarker, relevantDataPicker, type MakeBoolean } from '@/helpers/index.js';
-import { duplicateEntryError, hasNoDuplicateEntries } from '@/helpers/list-input-validation.js';
+import { duplicateEmailError, hasNoDuplicateEmails } from '@/helpers/list-input-validation.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
@@ -78,11 +78,11 @@ const contactInfoSchema = z.object({
   website: z.url('Invalid URL').optional().or(z.literal('')),
   generalContacts: z
     .array(z.email())
-    .refine(hasNoDuplicateEntries, { message: 'Contacts must be unique' })
+    .refine(hasNoDuplicateEmails, { message: 'Contacts must be unique' })
     .optional(),
   billingEmails: z
     .array(z.email())
-    .refine(hasNoDuplicateEntries, { message: 'Billing emails must be unique' })
+    .refine(hasNoDuplicateEmails, { message: 'Billing emails must be unique' })
     .optional(),
 });
 
@@ -194,7 +194,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
-      const conflict = duplicateEntryError(currentContacts, newContact);
+      const conflict = duplicateEmailError(currentContacts, newContact);
       if (conflict) {
         form.setError('generalContacts', { type: 'manual', message: conflict });
         return;
@@ -217,7 +217,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const addBillingEmail = (currentEmails: string[]) => {
     if (newBillingEmail.trim()) {
-      const conflict = duplicateEntryError(currentEmails, newBillingEmail);
+      const conflict = duplicateEmailError(currentEmails, newBillingEmail);
       if (conflict) {
         form.setError('billingEmails', { type: 'manual', message: conflict });
         return;
