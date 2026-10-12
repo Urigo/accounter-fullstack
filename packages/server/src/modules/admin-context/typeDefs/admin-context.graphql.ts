@@ -11,6 +11,56 @@ export default gql`
     updateAdminContext(context: AdminContextInput!): AdminContextInfo!
       @requiresAuth
       @requiresRole(role: "business_owner")
+    " set or clear the tenant's securities tax categories and sort code "
+    updateSecuritiesContext(input: SecuritiesContextInput!): SecuritiesContext!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+  }
+
+  " the tax categories securities income, withheld tax and redemption gains are booked to "
+  enum SecuritiesTaxCategoryKey {
+    FOREIGN_SECURITIES_FEES
+    FOREIGN_DIVIDEND_INCOME
+    LOCAL_DIVIDEND_INCOME
+    DIVIDEND_WITHHOLDING_TAX
+    FOREIGN_BOND_INTEREST_INCOME
+    LOCAL_BOND_INTEREST_INCOME
+    BOND_WITHHOLDING_TAX
+    FOREIGN_SECURITIES_SALE_GAIN
+    FOREIGN_SECURITIES_SALE_LOSS
+  }
+
+  " the tenant's securities ledger configuration "
+  type SecuritiesContext {
+    id: ID!
+    " the general foreign-securities business "
+    foreignSecuritiesBusiness: Business
+    " the sort code new securities tax categories are created under "
+    sortCode: SortCode
+    " one entry per key, with a null tax category for an unassigned one "
+    taxCategories: [SecuritiesTaxCategoryAssignment!]!
+  }
+
+  " a securities tax category key and the tax category assigned to it "
+  type SecuritiesTaxCategoryAssignment {
+    id: ID!
+    key: SecuritiesTaxCategoryKey!
+    taxCategory: TaxCategory
+  }
+
+  " input variables for updateSecuritiesContext; omitted fields are left as they are "
+  input SecuritiesContextInput {
+    " null clears the stored business "
+    foreignSecuritiesBusinessId: UUID
+    " null clears the stored sort code "
+    sortCode: Int
+    taxCategories: [SecuritiesTaxCategoryAssignmentInput!]
+  }
+
+  " a tax category to assign to a securities key; a null taxCategoryId unassigns it "
+  input SecuritiesTaxCategoryAssignmentInput {
+    key: SecuritiesTaxCategoryKey!
+    taxCategoryId: UUID
   }
 
   " input variables for updateAdminContext "
@@ -78,7 +128,9 @@ export default gql`
     dividendTaxCategoryId: UUID
     salaryExcessExpensesTaxCategoryId: UUID
     ledgerLock: TimelessDate
+    " legacy: stored in securities_context (prefer updateSecuritiesContext) "
     foreignSecuritiesBusinessId: UUID
+    " legacy: stored in securities_context as FOREIGN_SECURITIES_FEES (prefer updateSecuritiesContext) "
     foreignSecuritiesFeesCategoryId: UUID
     dateEstablished: TimelessDate
     initialAccounterYear: Int
@@ -150,8 +202,11 @@ export default gql`
     dividendTaxCategory: TaxCategory
     salaryExcessExpensesTaxCategory: TaxCategory!
     ledgerLock: TimelessDate
+    " read from securities_context, as securitiesContext.foreignSecuritiesBusiness "
     foreignSecuritiesBusiness: Business
+    " read from securities_context, as the FOREIGN_SECURITIES_FEES securities tax category "
     foreignSecuritiesFeesCategory: TaxCategory
+    securitiesContext: SecuritiesContext!
     dateEstablished: TimelessDate
     initialAccounterYear: Int
   }

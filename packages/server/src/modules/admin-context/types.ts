@@ -1,5 +1,7 @@
+import type { SecuritiesTaxCategoryKey } from '../../__generated__/types.js';
 import { Currency } from '../../shared/enums.js';
 import type { TimelessDateString } from '../../shared/types/index.js';
+import type { SecuritiesTaxCategoryIds } from './helpers/securities-context.helper.js';
 
 export type * from './__generated__/types.js';
 export type * from './__generated__/admin-context.types.js';
@@ -67,8 +69,20 @@ export type AdminContext = {
   };
 
   foreignSecurities: {
+    /**
+     * From `securities_context` (falling back to the legacy
+     * `user_context.foreign_securities_business_id` column, until it is deprecated)
+     */
     foreignSecuritiesBusinessId: string | null;
+    /**
+     * `taxCategories.FOREIGN_SECURITIES_FEES` (falling back to the legacy
+     * `user_context.foreign_securities_fees_category_id` column, until it is deprecated)
+     */
     foreignSecuritiesFeesCategoryId: string | null;
+    /** From `securities_context`: the sort code new securities tax categories are created under */
+    sortCode: number | null;
+    /** From `securities_context`: the tax categories securities income, tax and gains go to */
+    taxCategories: SecuritiesTaxCategoryIds;
   };
   salaries: {
     zkufotExpensesTaxCategoryId: string | null;
@@ -103,4 +117,19 @@ export type AdminContext = {
     gnmDepreciationExpensesTaxCategoryId: string | null;
     marketingDepreciationExpensesTaxCategoryId: string | null;
   };
+};
+
+/** `SecuritiesContext` GraphQL parent: the tenant's securities ledger configuration */
+export type SecuritiesContextProto = {
+  ownerId: string;
+  foreignSecuritiesBusinessId: string | null;
+  sortCode: number | null;
+  taxCategories: SecuritiesTaxCategoryIds;
+};
+
+/** `SecuritiesTaxCategoryAssignment` GraphQL parent */
+export type SecuritiesTaxCategoryAssignmentProto = {
+  ownerId: string;
+  key: SecuritiesTaxCategoryKey;
+  taxCategoryId: string | null;
 };

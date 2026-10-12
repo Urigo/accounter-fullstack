@@ -386,7 +386,7 @@ export function ChargeExtendedInfo({
         ChargeExpansionFieldsFragmentDoc,
         ChargesTableErrorsFieldsFragmentDoc,
         charge,
-      ) && <ChargeErrors data={charge} />}
+      ) && <ChargeErrors data={charge} onChange={onExtendedChange} />}
       {charge ? (
         <div className="flex flex-row">
           <Accordion
