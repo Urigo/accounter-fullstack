@@ -70,8 +70,10 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
         throw new GraphQLError(`Invalid securities context: ${(e as Error).message}`);
       }
 
-      // jsonb has no foreign keys: make sure every id is a tax category this tenant can see, and
-      // the sort code one of its sort codes, before storing them.
+      // jsonb has no foreign keys: make sure every id is a tax category of the business being
+      // configured — not merely one the request can read, which in a multi-business scope spans
+      // other businesses too — and the sort code one of its sort codes, before storing them.
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       const assignments = (patch.taxCategories ?? []).filter(
         (assignment): assignment is { key: typeof assignment.key; taxCategoryId: string } =>
           !!assignment.taxCategoryId,
@@ -81,10 +83,10 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           injector.get(TaxCategoriesProvider).taxCategoryByIdLoader.load(taxCategoryId),
         ),
       );
-      const unknown = assignments.filter((_, index) => !taxCategories[index]);
+      const unknown = assignments.filter((_, index) => taxCategories[index]?.owner_id !== ownerId);
       if (unknown.length) {
         throw new GraphQLError(
-          `Tax category not found: ${unknown
+          `Tax category not found in this business: ${unknown
             .map(
               ({ key, taxCategoryId }) =>
                 `${securitiesTaxCategoryLabel(key)} (ID="${taxCategoryId}")`,
@@ -94,7 +96,6 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
       }
 
       if (patch.sortCode != null) {
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
         const sortCode = await injector
           .get(SortCodesProvider)
           .getSortCodesByIdLoader.load({ key: patch.sortCode, ownerId });
