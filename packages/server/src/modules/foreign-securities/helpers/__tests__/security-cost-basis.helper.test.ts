@@ -74,6 +74,7 @@ describe('calculateFifoCostBasis', () => {
     expect(result.missingUnits).toBe(0);
     expect(result.unknownCostUnits).toBe(0);
     expect(result.historyStartDate).toBe('2024-01-10');
+    expect(result.openingPositionUnknown).toBe(false);
   });
 
   it('consumes the oldest lots first, splitting a lot when needed', () => {
@@ -232,6 +233,45 @@ describe('calculateFifoCostBasis', () => {
     );
 
     expect(result.unknownCostUnits).toBe(10);
+    expect(result.coveredUnits).toBe(0);
+  });
+
+  it('flags a history that starts mid-position, ahead of every observed lot', () => {
+    // units held from before the scraped history: 5 of them are sold before any buy is seen, so
+    // an opening holding of unknown size and cost comes first in FIFO order
+    const target = redemption('r1', '2025-03-01', 10, 1100);
+
+    const result = calculateFifoCostBasis(
+      [sell('s1', '2024-01-05', 5, 500), buy('b1', '2024-02-10', 10, 1000), target],
+      target,
+      Currency.Usd,
+    );
+
+    expect(result.openingPositionUnknown).toBe(true);
+  });
+
+  it('does not flag sales the observed lots cover', () => {
+    const target = redemption('r1', '2025-03-01', 5, 550);
+
+    const result = calculateFifoCostBasis(
+      [buy('b1', '2024-01-10', 10, 1000), sell('s1', '2024-02-10', 5, 600), target],
+      target,
+      Currency.Usd,
+    );
+
+    expect(result.openingPositionUnknown).toBe(false);
+  });
+
+  it('takes nothing out for a cancelled redemption', () => {
+    const target = { ...redemption('r1', '2025-03-01', 10, 1100), is_cancel_transaction: 'כן' };
+
+    const result = calculateFifoCostBasis(
+      [buy('b1', '2024-01-10', 10, 1000), target],
+      target,
+      Currency.Usd,
+    );
+
+    expect(result.redeemedUnits).toBe(0);
     expect(result.coveredUnits).toBe(0);
   });
 

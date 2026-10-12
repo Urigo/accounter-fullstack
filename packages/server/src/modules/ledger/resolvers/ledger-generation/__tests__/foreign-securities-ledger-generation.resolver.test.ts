@@ -890,6 +890,34 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(errors[0]).toContain('350');
     });
 
+    it('keeps the base entry when the history starts mid-position', async () => {
+      // 5 units sold before any purchase was scraped: an older holding comes first in FIFO
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [
+          buildExecution({
+            id: 'execution-sell',
+            trade_type: TRADE_TYPES.sell,
+            transaction_type: TRADE_TYPES.sell,
+            trade_date: '2023-01-10',
+            value_date: '2023-01-10',
+            nv: '5',
+            net_value_trade_currency: '500',
+            net_value_settlement_currency: '500',
+          }),
+          buyExecution('execution-buy', '2023-06-10', 10, 900),
+          redemption,
+        ],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([expect.stringContaining('starts mid-position')]);
+    });
+
     it('keeps the base entry when the redeemed units came in with no known cost', async () => {
       const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
       const redemption = redemptionExecution(10, 1000);
