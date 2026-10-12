@@ -98,6 +98,12 @@ function costBasisProblem(
   if (costBasis.redeemedUnits === 0) {
     return `The redemption of ${security} on ${redeemed} reports no redeemed units, so its purchase cost cannot be found.${bankNote}`;
   }
+  if (costBasis.openingPositionUnknown) {
+    const history = costBasis.historyStartDate
+      ? ` (it starts on ${costBasis.historyStartDate})`
+      : '';
+    return `Could not determine the purchase cost of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed}: the scraped securities history of this account${history} starts mid-position — units were sold or transferred out before as many were seen bought, so an earlier holding of unknown cost comes first. Scrape older securities transactions of this account to complete it.${bankNote}`;
+  }
   if (costBasis.missingUnits > 0) {
     const history = costBasis.historyStartDate
       ? `the scraped securities history of this account starts on ${costBasis.historyStartDate}`
