@@ -49,6 +49,12 @@ export type FifoCostBasis = {
   missingUnits: number;
   /** The earliest ingested execution: the history is only complete from this day on */
   historyStartDate: TimelessDateString | null;
+  /**
+   * Units went out before as many were seen coming in: the history starts mid-position, with an
+   * opening holding of unknown size and cost ahead of every observed lot in FIFO order — so no
+   * lot after it can be taken as the definitive cost of what is redeemed.
+   */
+  openingPositionUnknown: boolean;
 };
 
 const CANCELLED = 'כן';
@@ -108,6 +114,7 @@ export function calculateFifoCostBasis(
   const live = history.filter(execution => execution.is_cancel_transaction !== CANCELLED);
 
   const lots: Lot[] = [];
+  let openingPositionUnknown = false;
   const earlier = live
     .filter(
       execution => execution.id !== redemption.id && compareExecutions(execution, redemption) < 0,
@@ -129,16 +136,21 @@ export function calculateFifoCostBasis(
       case 'ADD_WITHOUT_COST':
         lots.push({ units, unitCost: null });
         break;
-      case 'CONSUME':
-        // more taken out than the history put in means it starts mid-life: nothing to drain
-        takeUnits(lots, units);
+      case 'CONSUME': {
+        // more taken out than the history put in means it starts mid-position
+        const taken = takeUnits(lots, units).reduce((sum, lot) => sum + lot.units, 0);
+        if (units - taken > UNITS_EPSILON) {
+          openingPositionUnknown = true;
+        }
         break;
+      }
       case 'NONE':
         break;
     }
   }
 
-  const redeemedUnits = toUnits(redemption.nv);
+  // a cancelled execution takes nothing out
+  const redeemedUnits = redemption.is_cancel_transaction === CANCELLED ? 0 : toUnits(redemption.nv);
   let costForeign = 0;
   let coveredUnits = 0;
   let unknownCostUnits = 0;
@@ -167,5 +179,6 @@ export function calculateFifoCostBasis(
     unknownCostUnits,
     missingUnits: missingUnits > UNITS_EPSILON ? missingUnits : 0,
     historyStartDate,
+    openingPositionUnknown,
   };
 }
