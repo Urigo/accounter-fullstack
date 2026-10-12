@@ -1,13 +1,15 @@
 import { GraphQLError } from 'graphql';
-import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
-import { fetchBusiness, fetchTaxCategory } from '../helpers/admin-context.helper.js';
+import {
+  fetchBusiness,
+  fetchTaxCategory,
+  validateSecuritiesContextPatch,
+} from '../helpers/admin-context.helper.js';
 import {
   parseSecuritiesContextPatch,
   SECURITIES_TAX_CATEGORY_KEYS,
-  securitiesTaxCategoryLabel,
   type SecuritiesContextPatch,
 } from '../helpers/securities-context.helper.js';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
@@ -45,8 +47,22 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
         }),
   },
   Mutation: {
-    updateAdminContext: (_, { context }, { injector }) =>
-      injector
+    updateAdminContext: async (_, { context }, { injector }) => {
+      // the foreign-securities inputs are stored in securities_context, which has no foreign keys:
+      // validate them the way updateSecuritiesContext does
+      await validateSecuritiesContextPatch(injector, {
+        foreignSecuritiesBusinessId: context.foreignSecuritiesBusinessId,
+        taxCategories: context.foreignSecuritiesFeesCategoryId
+          ? [
+              {
+                key: 'FOREIGN_SECURITIES_FEES',
+                taxCategoryId: context.foreignSecuritiesFeesCategoryId,
+              },
+            ]
+          : undefined,
+      });
+
+      return injector
         .get(AdminContextProvider)
         .updateAdminContext({
           ...context,
@@ -63,7 +79,8 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           }
           console.error(JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error updating admin context`);
-        }),
+        });
+    },
     updateSecuritiesContext: async (_, { input }, { injector }) => {
       let patch: SecuritiesContextPatch;
       try {
@@ -72,50 +89,7 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
         throw new GraphQLError(`Invalid securities context: ${(e as Error).message}`);
       }
 
-      // jsonb has no foreign keys: make sure every id is a tax category of the business being
-      // configured — not merely one the request can read, which in a multi-business scope spans
-      // other businesses too — and the sort code one of its sort codes, before storing them.
-      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-      const assignments = (patch.taxCategories ?? []).filter(
-        (assignment): assignment is { key: typeof assignment.key; taxCategoryId: string } =>
-          !!assignment.taxCategoryId,
-      );
-      const taxCategories = await Promise.all(
-        assignments.map(({ taxCategoryId }) =>
-          injector.get(TaxCategoriesProvider).taxCategoryByIdLoader.load(taxCategoryId),
-        ),
-      );
-      const unknown = assignments.filter((_, index) => taxCategories[index]?.owner_id !== ownerId);
-      if (unknown.length) {
-        throw new GraphQLError(
-          `Tax category not found in this business: ${unknown
-            .map(
-              ({ key, taxCategoryId }) =>
-                `${securitiesTaxCategoryLabel(key)} (ID="${taxCategoryId}")`,
-            )
-            .join(', ')}`,
-        );
-      }
-
-      if (patch.foreignSecuritiesBusinessId) {
-        const business = await injector
-          .get(BusinessesProvider)
-          .getBusinessByIdLoader.load(patch.foreignSecuritiesBusinessId);
-        if (business?.owner_id !== ownerId) {
-          throw new GraphQLError(
-            `Foreign securities business not found in this business: ID="${patch.foreignSecuritiesBusinessId}"`,
-          );
-        }
-      }
-
-      if (patch.sortCode != null) {
-        const sortCode = await injector
-          .get(SortCodesProvider)
-          .getSortCodesByIdLoader.load({ key: patch.sortCode, ownerId });
-        if (!sortCode) {
-          throw new GraphQLError(`Sort code ${patch.sortCode} not found`);
-        }
-      }
+      await validateSecuritiesContextPatch(injector, patch);
 
       try {
         const context = await injector.get(AdminContextProvider).updateSecuritiesContext(patch);
