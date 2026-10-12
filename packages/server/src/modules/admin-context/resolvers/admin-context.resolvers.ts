@@ -576,7 +576,7 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
     ledgerLock: dbAdminContext => dbAdminContext.ledgerLock ?? null,
     dateEstablished: dbAdminContext => dbAdminContext.dateEstablished ?? null,
     initialAccounterYear: dbAdminContext => dbAdminContext.initialAccounterYear ?? null,
-    // populated from securities_context (see `normalizeContext`), not the legacy columns
+    // deprecated in the schema; populated from securities_context (see `normalizeContext`)
     foreignSecuritiesBusiness: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.foreignSecurities.foreignSecuritiesBusinessId
         ? fetchBusiness(

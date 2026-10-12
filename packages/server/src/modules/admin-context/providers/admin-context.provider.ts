@@ -10,7 +10,6 @@ import {
   mergeSecuritiesContext,
   parseStoredSecuritiesContext,
   serializeSecuritiesContext,
-  withLegacySecuritiesColumns,
   type SecuritiesContextPatch,
 } from '../helpers/securities-context.helper.js';
 import type {
@@ -287,15 +286,8 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $ledgerLock,
       ledger_lock
     ),
-    -- legacy: superseded by securities_context, where updateAdminContext mirrors these two
-    foreign_securities_business_id = COALESCE(
-      $foreignSecuritiesBusinessId,
-      foreign_securities_business_id
-    ),
-    foreign_securities_fees_category_id = COALESCE(
-      $foreignSecuritiesFeesCategoryId,
-      foreign_securities_fees_category_id
-    ),
+    -- foreign_securities_business_id and foreign_securities_fees_category_id are deprecated:
+    -- superseded by securities_context, where updateAdminContext writes them instead
     date_established = COALESCE(
       $dateEstablished,
       date_established
@@ -347,12 +339,9 @@ export class AdminContextProvider {
   ) {}
 
   public normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
-    // The foreign-securities business and fees category come from `securities_context`; the
-    // legacy columns it supersedes only fill in what it lacks, until they are deprecated.
-    const securities = withLegacySecuritiesColumns(
-      parseStoredSecuritiesContext(rawContext.securities_context),
-      rawContext,
-    );
+    // The foreign-securities business and fees category come from `securities_context` alone: the
+    // `foreign_securities_*` columns it superseded are deprecated and no longer read.
+    const securities = parseStoredSecuritiesContext(rawContext.securities_context);
     const dividendPaymentBusinessIds = [
       '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
       '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
@@ -584,23 +573,27 @@ export class AdminContextProvider {
     return context;
   }
 
-  public async updateAdminContext(params: IUpdateAdminContextParams): Promise<AdminContext | null> {
+  public async updateAdminContext({
+    foreignSecuritiesBusinessId,
+    foreignSecuritiesFeesCategoryId,
+    ...params
+  }: IUpdateAdminContextParams & {
+    /** @deprecated stored in `securities_context`; use `updateSecuritiesContext` */
+    foreignSecuritiesBusinessId?: string | null;
+    /** @deprecated stored in `securities_context`; use `updateSecuritiesContext` */
+    foreignSecuritiesFeesCategoryId?: string | null;
+  }): Promise<AdminContext | null> {
     const ownerId = await this.resolveOwnerIdForRequest();
 
-    // The legacy foreign-securities columns are superseded by `securities_context`, which is what
-    // gets read: mirror a change to them there, or it would be shadowed by the stored value.
-    if (params.foreignSecuritiesBusinessId || params.foreignSecuritiesFeesCategoryId) {
+    // The deprecated foreign-securities inputs are stored in `securities_context`, not in the
+    // `foreign_securities_*` columns they used to write.
+    if (foreignSecuritiesBusinessId || foreignSecuritiesFeesCategoryId) {
       await this.updateSecuritiesContext({
-        ...(params.foreignSecuritiesBusinessId
-          ? { foreignSecuritiesBusinessId: params.foreignSecuritiesBusinessId }
-          : {}),
-        ...(params.foreignSecuritiesFeesCategoryId
+        ...(foreignSecuritiesBusinessId ? { foreignSecuritiesBusinessId } : {}),
+        ...(foreignSecuritiesFeesCategoryId
           ? {
               taxCategories: [
-                {
-                  key: 'FOREIGN_SECURITIES_FEES',
-                  taxCategoryId: params.foreignSecuritiesFeesCategoryId,
-                },
+                { key: 'FOREIGN_SECURITIES_FEES', taxCategoryId: foreignSecuritiesFeesCategoryId },
               ],
             }
           : {}),

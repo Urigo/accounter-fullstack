@@ -12,10 +12,9 @@ import type { SecuritiesTaxCategoryKey } from '../../../__generated__/types.js';
  *     "taxCategories": { "foreignSecuritiesFees": "<uuid>", "foreignDividendIncome": "<uuid>", ... }
  *   }
  *
- * It supersedes the legacy `user_context.foreign_securities_business_id` and
- * `user_context.foreign_securities_fees_category_id` columns: their values were copied in when
- * the column was added, and until the columns are deprecated they are only read as a fallback
- * (see `withLegacySecuritiesColumns`).
+ * It supersedes the deprecated `user_context.foreign_securities_business_id` and
+ * `user_context.foreign_securities_fees_category_id` columns, whose values were copied in; those are
+ * no longer read or written.
  *
  * jsonb carries no foreign keys, so ids are validated on write (see `updateSecuritiesContext`)
  * and a dangling one surfaces at ledger time as an unbalanced or unknown account.
@@ -133,33 +132,6 @@ export function parseStoredSecuritiesContext(input: unknown): SecuritiesContext 
     foreignSecuritiesBusinessId: data.foreignSecuritiesBusinessId ?? null,
     sortCode: data.sortCode ?? null,
     taxCategories,
-  };
-}
-
-/**
- * The legacy `user_context` columns `securities_context` supersedes. Their values were copied into
- * it by the migration that added it; they are read only to fill a key the jsonb lacks, until the
- * columns are deprecated.
- */
-export type LegacySecuritiesColumns = {
-  foreign_securities_business_id: string | null;
-  foreign_securities_fees_category_id: string | null;
-};
-
-/** Fills what the stored context lacks from the legacy columns; the stored value wins */
-export function withLegacySecuritiesColumns(
-  context: SecuritiesContext,
-  legacy: LegacySecuritiesColumns,
-): SecuritiesContext {
-  const feesTaxCategoryId =
-    context.taxCategories.FOREIGN_SECURITIES_FEES ?? legacy.foreign_securities_fees_category_id;
-  return {
-    ...context,
-    foreignSecuritiesBusinessId:
-      context.foreignSecuritiesBusinessId ?? legacy.foreign_securities_business_id,
-    taxCategories: feesTaxCategoryId
-      ? { ...context.taxCategories, FOREIGN_SECURITIES_FEES: feesTaxCategoryId }
-      : context.taxCategories,
   };
 }
 

@@ -128,10 +128,12 @@ export default gql`
     dividendTaxCategoryId: UUID
     salaryExcessExpensesTaxCategoryId: UUID
     ledgerLock: TimelessDate
-    " legacy: stored in securities_context (prefer updateSecuritiesContext) "
     foreignSecuritiesBusinessId: UUID
-    " legacy: stored in securities_context as FOREIGN_SECURITIES_FEES (prefer updateSecuritiesContext) "
+      @deprecated(reason: "Use updateSecuritiesContext(input: { foreignSecuritiesBusinessId })")
     foreignSecuritiesFeesCategoryId: UUID
+      @deprecated(
+        reason: "Use updateSecuritiesContext with the FOREIGN_SECURITIES_FEES tax category"
+      )
     dateEstablished: TimelessDate
     initialAccounterYear: Int
   }
@@ -202,10 +204,12 @@ export default gql`
     dividendTaxCategory: TaxCategory
     salaryExcessExpensesTaxCategory: TaxCategory!
     ledgerLock: TimelessDate
-    " read from securities_context, as securitiesContext.foreignSecuritiesBusiness "
     foreignSecuritiesBusiness: Business
-    " read from securities_context, as the FOREIGN_SECURITIES_FEES securities tax category "
+      @deprecated(reason: "Use securitiesContext.foreignSecuritiesBusiness")
     foreignSecuritiesFeesCategory: TaxCategory
+      @deprecated(
+        reason: "Use the FOREIGN_SECURITIES_FEES entry of securitiesContext.taxCategories"
+      )
     securitiesContext: SecuritiesContext!
     dateEstablished: TimelessDate
     initialAccounterYear: Int
