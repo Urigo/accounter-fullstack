@@ -6,6 +6,7 @@ import {
   updateGreenInvoiceClient,
 } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
 import { parseStoredClientIntegrations } from '../helpers/clients.helper.js';
+import { dedupeCaseInsensitive } from '../helpers/list-input-validation.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {
@@ -61,9 +62,12 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
           ...updatedIntegrations,
         };
       }
+      // De-duplicated once and used for both the local row and the Green Invoice
+      // sync, so the two cannot drift apart.
+      const emails = fields.emails ? dedupeCaseInsensitive(fields.emails) : undefined;
       const adjustedFields: IUpdateClientParams = {
         businessId,
-        emails: fields.emails ? [...fields.emails] : undefined,
+        emails,
         newBusinessId: fields.newBusinessId,
         generatedDocumentType: fields.generatedDocumentType,
         integrations: updatedIntegrations,
@@ -82,7 +86,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
           });
 
         // update green invoice client if needed
-        await updateGreenInvoiceClient(businessId, injector, undefined, fields);
+        await updateGreenInvoiceClient(businessId, injector, undefined, { ...fields, emails });
 
         return updatedClient;
       } catch (e) {
@@ -96,7 +100,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
       try {
         const newClient: IInsertClientParams = {
           businessId: fields.businessId,
-          emails: fields.emails ? [...fields.emails] : [],
+          emails: fields.emails ? dedupeCaseInsensitive(fields.emails) : [],
           generatedDocumentType: fields.generatedDocumentType,
           integrations: fields.integrations ?? {},
         };
