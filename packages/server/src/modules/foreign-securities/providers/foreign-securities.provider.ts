@@ -84,7 +84,12 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     real_profit_loss_nis,
     payment_type,
     symbol,
-    isin
+    isin,
+    issuer_country_code,
+    foreign_tax_value_settlement_currency,
+    israel_tax_value_by_payments_settlement_currency,
+    capital_tax_value_settlement_currency,
+    is_cancel_transaction
   FROM accounter_schema.poalim_securities_transactions
   WHERE security = ANY($securities!)
     AND bank_number = ANY($bankNumbers!)
@@ -137,6 +142,11 @@ const getSecurityExecutionsByBusinessIds = sql<IGetSecurityExecutionsByBusinessI
     t.payment_type,
     t.symbol,
     t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
     si.business_id AS security_business_id
   FROM accounter_schema.poalim_securities_transactions t
   INNER JOIN accounter_schema.security_identifiers si
@@ -198,6 +208,11 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
     t.payment_type,
     t.symbol,
     t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
     si.business_id AS security_business_id,
     COUNT(*) OVER () AS total_count
   FROM accounter_schema.poalim_securities_transactions t
@@ -324,20 +339,23 @@ export class ForeignSecuritiesProvider {
   }
 
   /**
-   * Ingested portfolio executions matched to the charge's transactions, grouped by security
-   * key. Returns an empty map when the charge touches no resolvable Poalim account, so a
-   * charge whose accounts predate the bank-account backfill degrades to "no activity" rather
-   * than erroring.
+   * The executions that could pair with the given transactions, plus the Poalim identity of each
+   * account they touch. Null when the transactions touch no resolvable Poalim account or carry no
+   * debit date, so a charge whose accounts predate the bank-account backfill degrades to "no
+   * activity" rather than erroring.
    */
-  private async getMatchedExecutions(
+  private async getCandidateExecutions(
     transactions: readonly MatchableTransaction[],
     securityKeys: readonly string[],
-  ): Promise<Map<string, SecurityExecutionRow[]>> {
+  ): Promise<{
+    candidates: SecurityExecutionRow[];
+    accountTuples: Map<string, AccountTuple>;
+  } | null> {
     const accountTuples = await this.getAccountTuples([
       ...new Set(transactions.map(transaction => transaction.account_id)),
     ]);
     if (accountTuples.size === 0) {
-      return new Map();
+      return null;
     }
 
     // An execution settles on the day its cash leg is debited, so those are the only days
@@ -346,7 +364,7 @@ export class ForeignSecuritiesProvider {
       .map(transaction => transaction.debit_date_override ?? transaction.debit_date)
       .filter((date): date is TimelessDateString => date != null);
     if (valueDates.length === 0) {
-      return new Map();
+      return null;
     }
 
     const tuples = [...accountTuples.values()];
@@ -361,7 +379,134 @@ export class ForeignSecuritiesProvider {
       this.db,
     );
 
-    return matchSecurityExecutions(transactions, candidates, accountTuples);
+    return { candidates, accountTuples };
+  }
+
+  /**
+   * Ingested portfolio executions matched to the charge's transactions, grouped by security
+   * key. Empty when the charge touches no resolvable Poalim account — see
+   * {@link getCandidateExecutions}.
+   */
+  private async getMatchedExecutions(
+    transactions: readonly MatchableTransaction[],
+    securityKeys: readonly string[],
+  ): Promise<Map<string, SecurityExecutionRow[]>> {
+    const candidateExecutions = await this.getCandidateExecutions(transactions, securityKeys);
+    if (!candidateExecutions) {
+      return new Map();
+    }
+
+    return matchSecurityExecutions(
+      transactions,
+      candidateExecutions.candidates,
+      candidateExecutions.accountTuples,
+    );
+  }
+
+  /** Memo for {@link getChargeExecutionsByTransactionId}; the provider lives for one operation. */
+  private chargeExecutionsCache = new Map<string, Promise<Map<string, SecurityExecutionRow>>>();
+
+  /**
+   * The execution behind each of a charge's main (non-fee) transactions, keyed by transaction id —
+   * what the ledger needs to tell a dividend from a redemption. A transaction without an entry has
+   * no matching ingested execution.
+   *
+   * Fees are left out of the pairing: it is greedy and one-to-one, and a fee is never the cash leg
+   * of an execution, so letting one compete could only take a match away from the real one.
+   * Executions of other owners in the request's business scope are left out too — the bank's key
+   * is only unique within one owner.
+   */
+  public getChargeExecutionsByTransactionId(
+    chargeId: string,
+    ownerId: string,
+  ): Promise<Map<string, SecurityExecutionRow>> {
+    const cacheKey = ownedKey(ownerId, chargeId);
+    let cached = this.chargeExecutionsCache.get(cacheKey);
+    if (!cached) {
+      cached = this.loadChargeExecutionsByTransactionId(chargeId, ownerId);
+      this.chargeExecutionsCache.set(cacheKey, cached);
+    }
+    return cached;
+  }
+
+  private async loadChargeExecutionsByTransactionId(
+    chargeId: string,
+    ownerId: string,
+  ): Promise<Map<string, SecurityExecutionRow>> {
+    const transactions = (
+      await this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId)
+    ).filter(transaction => !transaction.is_fee);
+
+    const securityKeys = [
+      ...new Set(
+        transactions.flatMap(transaction => extractSecurityKeys(transaction.source_description)),
+      ),
+    ];
+    if (securityKeys.length === 0) {
+      return new Map();
+    }
+
+    const candidateExecutions = await this.getCandidateExecutions(transactions, securityKeys);
+    if (!candidateExecutions) {
+      return new Map();
+    }
+
+    const transactionByExecutionId = matchExecutionsToTransactions(
+      transactions,
+      candidateExecutions.candidates.filter(execution => execution.owner_id === ownerId),
+      candidateExecutions.accountTuples,
+    );
+
+    const executionsById = new Map(
+      candidateExecutions.candidates.map(execution => [execution.id, execution]),
+    );
+    const executionByTransactionId = new Map<string, SecurityExecutionRow>();
+    for (const [executionId, transaction] of transactionByExecutionId) {
+      const execution = executionsById.get(executionId);
+      if (execution) {
+        executionByTransactionId.set(transaction.id, execution);
+      }
+    }
+    return executionByTransactionId;
+  }
+
+  /**
+   * Every ingested execution of an execution's security in the same portfolio account, oldest
+   * first — the history a redemption's FIFO purchase cost is replayed from.
+   *
+   * Addressed through the security business, so every Poalim key the ISIN is known by counts, and
+   * narrowed to the execution's own bank/branch/account: a position is held per account, and the
+   * same security held in two of a tenant's portfolios must not share lots. Empty when the key
+   * belongs to no security business.
+   */
+  public async getSecurityAccountHistory(
+    execution: Pick<
+      SecurityExecutionRow,
+      'security' | 'bank_number' | 'branch_number' | 'account_number'
+    >,
+    ownerId: string,
+  ): Promise<SecurityExecutionRow[]> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return [];
+    }
+
+    const executions = await getSecurityExecutionsByBusinessIds.run(
+      { businessIds: [securityBusiness.id] },
+      this.db,
+    );
+    return executions.filter(
+      row =>
+        row.owner_id === ownerId &&
+        row.bank_number === execution.bank_number &&
+        row.branch_number === execution.branch_number &&
+        row.account_number === execution.account_number,
+    );
   }
 
   /**
