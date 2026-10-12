@@ -216,15 +216,20 @@ await flushNotifications(deadlineMs)
   the footer.
 - **Payloads = closed allowlist of ids/enums** (stack text is third-party-bound, and the first stack
   line is the error message): alerts carry `err.name/code/statusCode/sqlState`, ≤3 frames built from
-  `^\s+at ` lines only, fingerprint, `requestId`, `trace_id`, `correlationId` (mandatory — they are
-  the pivot from Slack to the log line). `email-ingestion.quarantined`: `tenantId`, `reasonCode`,
-  `auditId`, `correlationId` only. `tenant.created`: tenant name + `adminEntityId` + `createdBy`
-  (local operator id). `invitation.accepted`: `businessId`, `roleId`, `userId`, `invitationId`.
-  Never tokens, emails, Auth0 ids, SQL (`lastQuery`), subjects/filenames. `format.ts`: one
-  `escapeMrkdwn()` (`&`,`<`,`>`) on every dynamic value before our own markup; the mention token is
-  the only raw `<…>`; limits enforced (section ≤2900, ≤10 fields ≤1900, header ≤150 static, blocks
-  ≤50, no empty text objects; truncate → escape → re-check); neutralize ``` in stacks; always send
-  top-level `text` fallback. Golden tests: `<!channel>`, `<!subteam^X>`, `<https://evil|x>` inert.
+  `^\s+at ` lines only, fingerprint, plus `requestId`, `trace_id` and `correlationId` **when
+  present** (they are the pivot from Slack to the log line for request-scoped alerts such as
+  `graphql.internal-error`). Background alerts (`server.crashed`, scheduled `job.failed`,
+  `db.pool.saturated`, `db.connection.leaked`) run outside any HTTP request, so those fields are
+  optional and are omitted rather than fabricated; their pivot is the `event` name plus the
+  fingerprint, searched in the logs around the alert time. `email-ingestion.quarantined`:
+  `tenantId`, `reasonCode`, `auditId`, `correlationId` only. `tenant.created`: tenant name +
+  `adminEntityId` + `createdBy` (local operator id). `invitation.accepted`: `businessId`, `roleId`,
+  `userId`, `invitationId`. Never tokens, emails, Auth0 ids, SQL (`lastQuery`), subjects/filenames.
+  `format.ts`: one `escapeMrkdwn()` (`&`,`<`,`>`) on every dynamic value before our own markup; the
+  mention token is the only raw `<…>`; limits enforced (section ≤2900, ≤10 fields ≤1900, header ≤150
+  static, blocks ≤50, no empty text objects; truncate → escape → re-check); neutralize ``` in
+  stacks; always send top-level `text` fallback. Golden tests: `<!channel>`, `<!subteam^X>`,
+  `<https://evil|x>` inert.
 - **Delivery:** `fetch` POST, explicit `Content-Type: application/json`, `redirect: 'error'`,
   `AbortSignal.timeout(3000)`, always `await res.text()` (success = 200 `ok`, plain text). Queue per
   webhook URL, bounded 100, concurrency 1, ≥1.1 s spacing, coalesce by fingerprint (count, not
