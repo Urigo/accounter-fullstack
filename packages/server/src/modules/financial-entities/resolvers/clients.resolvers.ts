@@ -62,9 +62,12 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
           ...updatedIntegrations,
         };
       }
+      // De-duplicated once and used for both the local row and the Green Invoice
+      // sync, so the two cannot drift apart.
+      const emails = fields.emails ? dedupeCaseInsensitive(fields.emails) : undefined;
       const adjustedFields: IUpdateClientParams = {
         businessId,
-        emails: fields.emails ? dedupeCaseInsensitive(fields.emails) : undefined,
+        emails,
         newBusinessId: fields.newBusinessId,
         generatedDocumentType: fields.generatedDocumentType,
         integrations: updatedIntegrations,
@@ -83,7 +86,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
           });
 
         // update green invoice client if needed
-        await updateGreenInvoiceClient(businessId, injector, undefined, fields);
+        await updateGreenInvoiceClient(businessId, injector, undefined, { ...fields, emails });
 
         return updatedClient;
       } catch (e) {
