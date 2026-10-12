@@ -15,7 +15,7 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  * mirrored legacy writes) is copied in once more first, without overwriting a key already set.
  */
 export default {
-  name: '2026-10-12T10-00-00.deprecate-legacy-foreign-securities-columns.sql',
+  name: '2026-10-11T13-00-00.deprecate-legacy-foreign-securities-columns.sql',
   run: async ({ connection }) => {
     // The backfill runs with no tenant session, so FORCE RLS would hide every row from it.
     await connection.query(sql.unsafe`
