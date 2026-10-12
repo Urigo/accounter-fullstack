@@ -10,6 +10,7 @@ import {
   mergeSecuritiesContext,
   parseStoredSecuritiesContext,
   serializeSecuritiesContext,
+  withLegacySecuritiesColumns,
   type SecuritiesContextPatch,
 } from '../helpers/securities-context.helper.js';
 import type {
@@ -286,6 +287,7 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $ledgerLock,
       ledger_lock
     ),
+    -- legacy: superseded by securities_context, where updateAdminContext mirrors these two
     foreign_securities_business_id = COALESCE(
       $foreignSecuritiesBusinessId,
       foreign_securities_business_id
@@ -345,6 +347,12 @@ export class AdminContextProvider {
   ) {}
 
   public normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
+    // The foreign-securities business and fees category come from `securities_context`; the
+    // legacy columns it supersedes only fill in what it lacks, until they are deprecated.
+    const securities = withLegacySecuritiesColumns(
+      parseStoredSecuritiesContext(rawContext.securities_context),
+      rawContext,
+    );
     const dividendPaymentBusinessIds = [
       '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
       '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
@@ -405,9 +413,10 @@ export class AdminContextProvider {
           rawContext.bank_deposit_interest_income_tax_category_id,
       },
       foreignSecurities: {
-        foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
-        foreignSecuritiesFeesCategoryId: rawContext.foreign_securities_fees_category_id,
-        ...parseStoredSecuritiesContext(rawContext.securities_context),
+        foreignSecuritiesBusinessId: securities.foreignSecuritiesBusinessId,
+        foreignSecuritiesFeesCategoryId: securities.taxCategories.FOREIGN_SECURITIES_FEES ?? null,
+        sortCode: securities.sortCode,
+        taxCategories: securities.taxCategories,
       },
       dividends: {
         dividendWithholdingTaxBusinessId: rawContext.dividend_withholding_tax_business_id,
@@ -436,7 +445,7 @@ export class AdminContextProvider {
         etanaBusinessId: rawContext.etana_business_id,
         krakenBusinessId: rawContext.kraken_business_id,
         etherScanBusinessId: rawContext.etherscan_business_id,
-        foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
+        foreignSecuritiesBusinessId: securities.foreignSecuritiesBusinessId,
         bankAccountIds,
         creditCardIds,
         internalWalletsIds: [
@@ -445,7 +454,7 @@ export class AdminContextProvider {
           rawContext.etana_business_id,
           rawContext.kraken_business_id,
           rawContext.etherscan_business_id,
-          rawContext.foreign_securities_business_id,
+          securities.foreignSecuritiesBusinessId,
         ].filter(Boolean) as string[],
       },
       salaries: {
@@ -577,6 +586,26 @@ export class AdminContextProvider {
 
   public async updateAdminContext(params: IUpdateAdminContextParams): Promise<AdminContext | null> {
     const ownerId = await this.resolveOwnerIdForRequest();
+
+    // The legacy foreign-securities columns are superseded by `securities_context`, which is what
+    // gets read: mirror a change to them there, or it would be shadowed by the stored value.
+    if (params.foreignSecuritiesBusinessId || params.foreignSecuritiesFeesCategoryId) {
+      await this.updateSecuritiesContext({
+        ...(params.foreignSecuritiesBusinessId
+          ? { foreignSecuritiesBusinessId: params.foreignSecuritiesBusinessId }
+          : {}),
+        ...(params.foreignSecuritiesFeesCategoryId
+          ? {
+              taxCategories: [
+                {
+                  key: 'FOREIGN_SECURITIES_FEES',
+                  taxCategoryId: params.foreignSecuritiesFeesCategoryId,
+                },
+              ],
+            }
+          : {}),
+      });
+    }
 
     this.cachedContext = null;
 

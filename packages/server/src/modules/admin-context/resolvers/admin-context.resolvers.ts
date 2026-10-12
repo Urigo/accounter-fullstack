@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
@@ -15,6 +16,7 @@ import type { AdminContext, AdminContextModule, SecuritiesContextProto } from '.
 function toSecuritiesContextProto(context: AdminContext): SecuritiesContextProto {
   return {
     ownerId: context.ownerId,
+    foreignSecuritiesBusinessId: context.foreignSecurities.foreignSecuritiesBusinessId,
     sortCode: context.foreignSecurities.sortCode,
     taxCategories: context.foreignSecurities.taxCategories,
   };
@@ -95,6 +97,17 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
         );
       }
 
+      if (patch.foreignSecuritiesBusinessId) {
+        const business = await injector
+          .get(BusinessesProvider)
+          .getBusinessByIdLoader.load(patch.foreignSecuritiesBusinessId);
+        if (business?.owner_id !== ownerId) {
+          throw new GraphQLError(
+            `Foreign securities business not found in this business: ID="${patch.foreignSecuritiesBusinessId}"`,
+          );
+        }
+      }
+
       if (patch.sortCode != null) {
         const sortCode = await injector
           .get(SortCodesProvider)
@@ -118,6 +131,10 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
   },
   SecuritiesContext: {
     id: parent => `${parent.ownerId}-securities-context`,
+    foreignSecuritiesBusiness: async (parent, _, { injector }) =>
+      parent.foreignSecuritiesBusinessId
+        ? fetchBusiness(injector, 'foreignSecuritiesBusiness', parent.foreignSecuritiesBusinessId)
+        : null,
     sortCode: async (parent, _, { injector }) =>
       parent.sortCode == null
         ? null
@@ -559,6 +576,7 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
     ledgerLock: dbAdminContext => dbAdminContext.ledgerLock ?? null,
     dateEstablished: dbAdminContext => dbAdminContext.dateEstablished ?? null,
     initialAccounterYear: dbAdminContext => dbAdminContext.initialAccounterYear ?? null,
+    // populated from securities_context (see `normalizeContext`), not the legacy columns
     foreignSecuritiesBusiness: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.foreignSecurities.foreignSecuritiesBusinessId
         ? fetchBusiness(

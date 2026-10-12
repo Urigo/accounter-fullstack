@@ -19,6 +19,7 @@ export default gql`
 
   " the tax categories securities income, withheld tax and redemption gains are booked to "
   enum SecuritiesTaxCategoryKey {
+    FOREIGN_SECURITIES_FEES
     FOREIGN_DIVIDEND_INCOME
     LOCAL_DIVIDEND_INCOME
     DIVIDEND_WITHHOLDING_TAX
@@ -32,6 +33,8 @@ export default gql`
   " the tenant's securities ledger configuration "
   type SecuritiesContext {
     id: ID!
+    " the general foreign-securities business "
+    foreignSecuritiesBusiness: Business
     " the sort code new securities tax categories are created under "
     sortCode: SortCode
     " one entry per key, with a null tax category for an unassigned one "
@@ -47,6 +50,8 @@ export default gql`
 
   " input variables for updateSecuritiesContext; omitted fields are left as they are "
   input SecuritiesContextInput {
+    " null clears the stored business "
+    foreignSecuritiesBusinessId: UUID
     " null clears the stored sort code "
     sortCode: Int
     taxCategories: [SecuritiesTaxCategoryAssignmentInput!]
@@ -123,7 +128,9 @@ export default gql`
     dividendTaxCategoryId: UUID
     salaryExcessExpensesTaxCategoryId: UUID
     ledgerLock: TimelessDate
+    " legacy: stored in securities_context (prefer updateSecuritiesContext) "
     foreignSecuritiesBusinessId: UUID
+    " legacy: stored in securities_context as FOREIGN_SECURITIES_FEES (prefer updateSecuritiesContext) "
     foreignSecuritiesFeesCategoryId: UUID
     dateEstablished: TimelessDate
     initialAccounterYear: Int
@@ -195,7 +202,9 @@ export default gql`
     dividendTaxCategory: TaxCategory
     salaryExcessExpensesTaxCategory: TaxCategory!
     ledgerLock: TimelessDate
+    " read from securities_context, as securitiesContext.foreignSecuritiesBusiness "
     foreignSecuritiesBusiness: Business
+    " read from securities_context, as the FOREIGN_SECURITIES_FEES securities tax category "
     foreignSecuritiesFeesCategory: TaxCategory
     securitiesContext: SecuritiesContext!
     dateEstablished: TimelessDate
