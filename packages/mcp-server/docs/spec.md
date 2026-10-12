@@ -133,6 +133,12 @@ Hosted Claude redirect URI to allow:
 
 - https://claude.ai/api/mcp/auth_callback
 
+Cursor redirect URIs to allow, on a separate Auth0 application (one application per client family;
+see [`connecting-clients.md`](./connecting-clients.md)):
+
+- http://localhost:8787/callback
+- cursor://anysphere.cursor-mcp/oauth/callback
+
 If Claude Code support is added later, also support loopback callback patterns as a separate phase.
 
 ## 6.4 Token and Scope Model

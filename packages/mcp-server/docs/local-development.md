@@ -90,6 +90,9 @@ API → Application access → User-delegated access**.
 > Do not reuse the API's auto-created _"Accounter API (Test Application)"_ — it is coupled to the
 > API object and is an M2M client, not a web application.
 
+This application is for Claude only. Other MCP hosts (Cursor, …) get their own application with
+their own callback URLs; see [`connecting-clients.md`](./connecting-clients.md).
+
 ## 5. Add the connector in Claude Desktop
 
 **Settings → Connectors → Add custom connector**

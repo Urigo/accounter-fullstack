@@ -10,6 +10,8 @@ See the design docs:
   implementation plan
 - [`docs/operations-runbook.md`](./docs/operations-runbook.md) — incident handling, metrics, log
   queries, rollback
+- [`docs/connecting-clients.md`](./docs/connecting-clients.md) — connecting MCP clients other than
+  Claude (Cursor): one Auth0 application per client family, setup and troubleshooting
 - [`docs/submission-checklist.md`](./docs/submission-checklist.md) — connector submission readiness
 
 ## Status
@@ -360,6 +362,9 @@ clients can discover the authorization server:
 
 The document is fully config-driven (no hardcoded URLs). `bearer_methods_supported: ["header"]`
 signals that tokens are accepted only via the `Authorization` header, never query params.
+
+Each MCP client family (Claude, Cursor, …) logs in through its own pre-registered Auth0 application
+with exact callback URLs. See [`docs/connecting-clients.md`](./docs/connecting-clients.md).
 
 ## Observability
 

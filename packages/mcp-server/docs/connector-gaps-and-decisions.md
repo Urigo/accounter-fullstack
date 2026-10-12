@@ -88,6 +88,10 @@ user-delegated grant on the Accounter API to the new app, update the connector's
 Claude Desktop, and restore the test application's original name. Best paired with any other change
 that already requires re-granting API access.
 
+The same shape is now the policy for every MCP client family (one Regular Web Application each, see
+[`connecting-clients.md`](./connecting-clients.md)). When this gap is resolved, record the Claude
+app's settings in that guide's tenant configuration record.
+
 ## Recorded findings (not gaps)
 
 Things learned while building a tool that are worth not re-deriving.
