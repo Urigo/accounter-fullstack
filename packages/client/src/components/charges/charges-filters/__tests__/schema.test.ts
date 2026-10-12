@@ -165,12 +165,17 @@ describe('counts', () => {
 });
 
 describe('chargeFilterUrlSchema', () => {
+  // The server types every id here as a UUID, so the URL schema does too.
+  const OWNER = '0a7c6c3e-1111-4f1a-9a55-1b2c3d4e5f60';
+  const BUSINESS = '0a7c6c3e-2222-4f1a-9a55-1b2c3d4e5f60';
+  const TRIP = '0a7c6c3e-3333-4f1a-9a55-1b2c3d4e5f60';
+
   const decode = (filter: Record<string, unknown>) =>
     decodeFilters(encodeFilters(filter), chargeFilterUrlSchema);
 
   it('reads back the links other screens build (annual audit step 1)', () => {
     const link = {
-      byOwners: ['owner-1'],
+      byOwners: [OWNER],
       fromAnyDate: '2025-01-01',
       toAnyDate: '2025-12-31',
       accountantStatus: [AccountantStatus.Pending, AccountantStatus.Unapproved],
@@ -181,8 +186,8 @@ describe('chargeFilterUrlSchema', () => {
 
   it('round-trips every field the form applies', () => {
     const filter = formValuesToFilter({
-      ...defaults,
-      byBusinesses: ['biz-1'],
+      ...buildDefaultFormValues({ adminBusinessId: OWNER, withDefaultDateRange: true }),
+      byBusinesses: [BUSINESS],
       excludedTags: ['tag-1'],
       chargesType: ChargeFilterType.Expense,
       byChargeTypes: [ChargeType.Common],
@@ -195,7 +200,7 @@ describe('chargeFilterUrlSchema', () => {
   });
 
   it('keeps the fields the form does not edit', () => {
-    const filter = { fromDate: '2025-01-01', toDate: '2025-02-01', businessTrip: 'trip-1' };
+    const filter = { fromDate: '2025-01-01', toDate: '2025-02-01', businessTrip: TRIP };
     expect(decode(filter)).toEqual(filter);
   });
 
@@ -209,8 +214,18 @@ describe('chargeFilterUrlSchema', () => {
     expect(decode({ fromAnyDate: '2025-13-01' })).toEqual({});
     expect(decode({ chargesType: 'SIDEWAYS' })).toEqual({});
     expect(decode({ accountantStatus: ['MAYBE'] })).toEqual({});
-    expect(decode({ byOwners: 'owner-1' })).toEqual({});
+    expect(decode({ byOwners: OWNER })).toEqual({});
+    expect(decode({ byOwners: ['owner-1'] })).toEqual({});
+    expect(decode({ excludedBusinesses: [BUSINESS, 'not-a-uuid'] })).toEqual({});
+    expect(decode({ businessTrip: 'trip-1' })).toEqual({});
     expect(decode({ sortBy: { field: 'COLOR' } })).toEqual({});
+  });
+
+  it('takes tags as plain strings, as the server does', () => {
+    expect(decode({ byTags: ['tag-1'], excludedTags: ['tag-2'] })).toEqual({
+      byTags: ['tag-1'],
+      excludedTags: ['tag-2'],
+    });
   });
 
   it('does not apply the form-only rules', () => {

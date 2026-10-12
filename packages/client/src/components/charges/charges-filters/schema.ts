@@ -76,23 +76,23 @@ const timelessDateString = z.custom<TimelessDateString>(
 
 /**
  * The applied filter as read back from the URL: every `ChargeFilter` field, typed as the server
- * takes it, so a stale or hand-edited link falls back to no filter instead of failing the query.
- * It covers the fields the form doesn't edit too (`fromDate`, `businessTrip`, ...), so a link
- * carrying them keeps them. Looser than the form schema on purpose: no free-text minimum, no date
+ * takes it (ids as UUIDs, tags as plain strings), so a stale or hand-edited link falls back to no
+ * filter instead of failing the query. It covers the fields the form doesn't edit too
+ * (`fromDate`, `businessTrip`, ...), so a link carrying them keeps them. Looser than the form schema on purpose: no free-text minimum, no date
  * order — those are input hints, not what makes a filter valid.
  */
 export const chargeFilterUrlSchema: z.ZodType<ChargeFilter> = z.object({
   accountantStatus: z.array(z.enum(AccountantStatus)).optional(),
-  businessTrip: z.string().optional(),
-  byBusinessTrips: z.array(z.string()).optional(),
-  byBusinesses: z.array(z.string()).optional(),
+  businessTrip: z.guid().optional(),
+  byBusinessTrips: z.array(z.guid()).optional(),
+  byBusinesses: z.array(z.guid()).optional(),
   byChargeTypes: z.array(z.enum(ChargeType)).optional(),
-  byFinancialAccounts: z.array(z.string()).optional(),
-  byOwners: z.array(z.string()).optional(),
+  byFinancialAccounts: z.array(z.guid()).optional(),
+  byOwners: z.array(z.guid()).optional(),
   byTags: z.array(z.string()).optional(),
   chargesType: z.enum(ChargeFilterType).optional(),
-  excludedBusinesses: z.array(z.string()).optional(),
-  excludedFinancialAccounts: z.array(z.string()).optional(),
+  excludedBusinesses: z.array(z.guid()).optional(),
+  excludedFinancialAccounts: z.array(z.guid()).optional(),
   excludedFreeText: z.string().optional(),
   excludedTags: z.array(z.string()).optional(),
   freeText: z.string().optional(),

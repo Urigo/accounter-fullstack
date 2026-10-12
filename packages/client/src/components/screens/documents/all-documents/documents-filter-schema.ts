@@ -12,17 +12,17 @@ const timelessDateString = z.custom<TimelessDateString>(
 
 /**
  * The applied filter as read back from the URL: every `DocumentsFilters` field, typed as the
- * server takes it, so a stale or hand-edited link falls back to no filter instead of failing the
- * query.
+ * server takes it (ids as UUIDs), so a stale or hand-edited link falls back to no filter instead
+ * of failing the query.
  */
 export const documentsFilterUrlSchema: z.ZodType<DocumentsFilters> = z.object({
-  businessIDs: z.array(z.string()).optional(),
-  chargeIDs: z.array(z.string()).optional(),
+  businessIDs: z.array(z.guid()).optional(),
+  chargeIDs: z.array(z.guid()).optional(),
   freeText: z.string().optional(),
   fromDate: timelessDateString.optional(),
   missingCounterparty: z.boolean().optional(),
   missingInfo: z.boolean().optional(),
-  ownerIDs: z.array(z.string()).optional(),
+  ownerIDs: z.array(z.guid()).optional(),
   toDate: timelessDateString.optional(),
   type: z.array(z.enum(DocumentType)).optional(),
   unmatched: z.boolean().optional(),
