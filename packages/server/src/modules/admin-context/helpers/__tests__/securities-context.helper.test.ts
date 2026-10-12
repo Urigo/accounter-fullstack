@@ -6,6 +6,7 @@ import {
   parseStoredSecuritiesContext,
   SECURITIES_TAX_CATEGORY_KEYS,
   serializeSecuritiesContext,
+  withLegacySecuritiesColumns,
 } from '../securities-context.helper.js';
 
 /*
@@ -17,6 +18,8 @@ import {
 const DIVIDEND_INCOME_ID = '0190a1b2-0000-7000-8000-000000000001';
 const WITHHOLDING_ID = '0190a1b2-0000-7000-8000-000000000002';
 const GAIN_ID = '0190a1b2-0000-7000-8000-000000000003';
+const BUSINESS_ID = '0190a1b2-0000-7000-8000-000000000004';
+const FEES_ID = '0190a1b2-0000-7000-8000-000000000005';
 
 describe('parseStoredSecuritiesContext', () => {
   it('reads the stored shape into keyed tax categories', () => {
@@ -29,6 +32,7 @@ describe('parseStoredSecuritiesContext', () => {
     });
 
     expect(context).toEqual({
+      foreignSecuritiesBusinessId: null,
       sortCode: 990,
       taxCategories: {
         FOREIGN_DIVIDEND_INCOME: DIVIDEND_INCOME_ID,
@@ -46,6 +50,7 @@ describe('parseStoredSecuritiesContext', () => {
   it('drops bad values one field at a time instead of failing', () => {
     const context = parseStoredSecuritiesContext({
       sortCode: 'not a number',
+      foreignSecuritiesBusinessId: 'not-a-uuid',
       taxCategories: {
         foreignDividendIncome: 'not-a-uuid',
         localDividendIncome: 42,
@@ -55,6 +60,7 @@ describe('parseStoredSecuritiesContext', () => {
     });
 
     expect(context).toEqual({
+      foreignSecuritiesBusinessId: null,
       sortCode: null,
       taxCategories: { FOREIGN_SECURITIES_SALE_GAIN: GAIN_ID },
     });
@@ -72,6 +78,7 @@ describe('serializeSecuritiesContext', () => {
   it('writes the stored shape back, leaving unset keys out', () => {
     expect(
       serializeSecuritiesContext({
+        foreignSecuritiesBusinessId: null,
         sortCode: 990,
         taxCategories: { BOND_WITHHOLDING_TAX: WITHHOLDING_ID },
       }),
@@ -87,7 +94,7 @@ describe('serializeSecuritiesContext', () => {
         `0190a1b2-0000-7000-8000-${String(index).padStart(12, '0')}`,
       ]),
     );
-    const context = { sortCode: 123, taxCategories };
+    const context = { foreignSecuritiesBusinessId: BUSINESS_ID, sortCode: 123, taxCategories };
 
     expect(parseStoredSecuritiesContext(serializeSecuritiesContext(context))).toEqual(context);
   });
@@ -135,6 +142,7 @@ describe('parseSecuritiesContextPatch', () => {
 
 describe('mergeSecuritiesContext', () => {
   const current = {
+    foreignSecuritiesBusinessId: BUSINESS_ID,
     sortCode: 990,
     taxCategories: {
       FOREIGN_DIVIDEND_INCOME: DIVIDEND_INCOME_ID,
@@ -151,6 +159,7 @@ describe('mergeSecuritiesContext', () => {
         ],
       }),
     ).toEqual({
+      foreignSecuritiesBusinessId: BUSINESS_ID,
       sortCode: 990,
       taxCategories: {
         FOREIGN_DIVIDEND_INCOME: DIVIDEND_INCOME_ID,
@@ -165,11 +174,68 @@ describe('mergeSecuritiesContext', () => {
     expect(mergeSecuritiesContext(current, { sortCode: null }).sortCode).toBeNull();
   });
 
+  it('keeps the foreign securities business unless the patch sets or clears it', () => {
+    const other = '0190a1b2-0000-7000-8000-000000000099';
+    expect(mergeSecuritiesContext(current, {}).foreignSecuritiesBusinessId).toBe(BUSINESS_ID);
+    expect(
+      mergeSecuritiesContext(current, { foreignSecuritiesBusinessId: other })
+        .foreignSecuritiesBusinessId,
+    ).toBe(other);
+    expect(
+      mergeSecuritiesContext(current, { foreignSecuritiesBusinessId: null })
+        .foreignSecuritiesBusinessId,
+    ).toBeNull();
+  });
+
   it('does not mutate the current context', () => {
     mergeSecuritiesContext(current, {
       taxCategories: [{ key: 'FOREIGN_DIVIDEND_INCOME', taxCategoryId: null }],
     });
 
     expect(current.taxCategories.FOREIGN_DIVIDEND_INCOME).toBe(DIVIDEND_INCOME_ID);
+  });
+});
+
+describe('withLegacySecuritiesColumns', () => {
+  it('fills the business and fees category from the legacy columns when unset', () => {
+    expect(
+      withLegacySecuritiesColumns(
+        { foreignSecuritiesBusinessId: null, sortCode: null, taxCategories: {} },
+        {
+          foreign_securities_business_id: BUSINESS_ID,
+          foreign_securities_fees_category_id: FEES_ID,
+        },
+      ),
+    ).toEqual({
+      foreignSecuritiesBusinessId: BUSINESS_ID,
+      sortCode: null,
+      taxCategories: { FOREIGN_SECURITIES_FEES: FEES_ID },
+    });
+  });
+
+  it('prefers what securities_context stores', () => {
+    const stored = {
+      foreignSecuritiesBusinessId: BUSINESS_ID,
+      sortCode: 990,
+      taxCategories: { FOREIGN_SECURITIES_FEES: FEES_ID },
+    };
+
+    expect(
+      withLegacySecuritiesColumns(stored, {
+        foreign_securities_business_id: '0190a1b2-0000-7000-8000-0000000000aa',
+        foreign_securities_fees_category_id: '0190a1b2-0000-7000-8000-0000000000bb',
+      }),
+    ).toEqual(stored);
+  });
+
+  it('leaves the context as is with empty legacy columns', () => {
+    const stored = { foreignSecuritiesBusinessId: null, sortCode: null, taxCategories: {} };
+
+    expect(
+      withLegacySecuritiesColumns(stored, {
+        foreign_securities_business_id: null,
+        foreign_securities_fees_category_id: null,
+      }),
+    ).toEqual(stored);
   });
 });

@@ -17,10 +17,12 @@ import { AdminContextProvider } from '../admin-context.provider.js';
 let pool: Pool;
 let ownerId: string;
 let originalSecuritiesContext: unknown;
+let ownTaxCategoryId: string;
 
 const DIVIDEND_INCOME_ID = '0190a1b2-0000-7000-8000-0000000000d1';
 const WITHHOLDING_ID = '0190a1b2-0000-7000-8000-0000000000d2';
 const GAIN_ID = '0190a1b2-0000-7000-8000-0000000000d3';
+const FEES_PLACEHOLDER_ID = '0190a1b2-0000-7000-8000-0000000000d4';
 
 function createMockAuthContextProvider(businessId: string): AuthContextProvider {
   return {
@@ -71,19 +73,51 @@ beforeAll(async () => {
   );
   ownerId = rows[0].owner_id;
   originalSecuritiesContext = rows[0].securities_context;
+
+  const legacy = await pool.query(
+    `SELECT foreign_securities_business_id, foreign_securities_fees_category_id
+     FROM accounter_schema.user_context WHERE owner_id = $1`,
+    [ownerId],
+  );
+  originalLegacyColumns = {
+    businessId: legacy.rows[0].foreign_securities_business_id,
+    feesCategoryId: legacy.rows[0].foreign_securities_fees_category_id,
+  };
+
+  // the legacy columns are foreign keys: use a real tax category of the owner
+  const taxCategory = await pool.query(
+    'SELECT id FROM accounter_schema.tax_categories WHERE owner_id = $1 LIMIT 1',
+    [ownerId],
+  );
+  ownTaxCategoryId = taxCategory.rows[0].id;
 });
+
+let originalLegacyColumns: { businessId: string | null; feesCategoryId: string | null };
 
 beforeEach(async () => {
   await pool.query(
-    `UPDATE accounter_schema.user_context SET securities_context = '{}' WHERE owner_id = $1`,
+    `UPDATE accounter_schema.user_context
+     SET securities_context = '{}',
+         foreign_securities_business_id = NULL,
+         foreign_securities_fees_category_id = NULL
+     WHERE owner_id = $1`,
     [ownerId],
   );
 });
 
 afterAll(async () => {
   await pool.query(
-    'UPDATE accounter_schema.user_context SET securities_context = $2 WHERE owner_id = $1',
-    [ownerId, originalSecuritiesContext],
+    `UPDATE accounter_schema.user_context
+     SET securities_context = $2,
+         foreign_securities_business_id = $3,
+         foreign_securities_fees_category_id = $4
+     WHERE owner_id = $1`,
+    [
+      ownerId,
+      originalSecuritiesContext,
+      originalLegacyColumns.businessId,
+      originalLegacyColumns.feesCategoryId,
+    ],
   );
   // Do NOT close the pool here — it is shared with other suites and torn down by global setup.
 });
@@ -171,6 +205,39 @@ describe('AdminContextProvider.updateSecuritiesContext', () => {
         foreignDividendIncome: DIVIDEND_INCOME_ID,
         foreignSecuritiesSaleGain: GAIN_ID,
       },
+    });
+  });
+
+  it('reads the foreign securities business and fees category from the legacy columns while securities_context lacks them', async () => {
+    await pool.query(
+      `UPDATE accounter_schema.user_context
+       SET foreign_securities_business_id = $1, foreign_securities_fees_category_id = $2
+       WHERE owner_id = $1`,
+      [ownerId, ownTaxCategoryId],
+    );
+
+    const context = await createProvider().getVerifiedAdminContext();
+
+    expect(context.foreignSecurities).toMatchObject({
+      foreignSecuritiesBusinessId: ownerId,
+      foreignSecuritiesFeesCategoryId: ownTaxCategoryId,
+      taxCategories: { FOREIGN_SECURITIES_FEES: ownTaxCategoryId },
+    });
+    expect(context.financialAccounts.internalWalletsIds).toContain(ownerId);
+  });
+
+  it('mirrors a legacy updateAdminContext change into securities_context', async () => {
+    await createProvider().updateSecuritiesContext({
+      taxCategories: [{ key: 'FOREIGN_SECURITIES_FEES', taxCategoryId: FEES_PLACEHOLDER_ID }],
+    });
+
+    const context = await createProvider().updateAdminContext({
+      foreignSecuritiesFeesCategoryId: ownTaxCategoryId,
+    } as never);
+
+    expect(context?.foreignSecurities.foreignSecuritiesFeesCategoryId).toBe(ownTaxCategoryId);
+    expect(await storedSecuritiesContext()).toEqual({
+      taxCategories: { foreignSecuritiesFees: ownTaxCategoryId },
     });
   });
 });
