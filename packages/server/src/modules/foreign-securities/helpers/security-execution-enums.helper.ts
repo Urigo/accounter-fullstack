@@ -43,6 +43,7 @@ const PAYMENT_TYPES: Record<string, SecurityPaymentType> = {
   פקיעה: SecurityPaymentType.Expiration,
   'איחוד מניות': SecurityPaymentType.ShareConsolidation,
   'הצעת רכש כפויה': SecurityPaymentType.CompulsoryTenderOffer,
+  'איחוד/הפחתת הון': SecurityPaymentType.ConsolidationOrCapitalReduction,
 };
 
 function translate<T>(map: Record<string, T>, raw: string, field: string, zodConstant: string): T {

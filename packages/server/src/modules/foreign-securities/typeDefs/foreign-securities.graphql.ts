@@ -85,6 +85,7 @@ export default gql`
     EXPIRATION
     SHARE_CONSOLIDATION
     COMPULSORY_TENDER_OFFER
+    CONSOLIDATION_OR_CAPITAL_REDUCTION
   }
 
   " Static reference details of a security held in a Poalim trading account "

@@ -62,6 +62,7 @@ export enum SecurityTransactionType {
 
 export enum SecurityPaymentType {
   CompulsoryTenderOffer = 'COMPULSORY_TENDER_OFFER',
+  ConsolidationOrCapitalReduction = 'CONSOLIDATION_OR_CAPITAL_REDUCTION',
   Dividend = 'DIVIDEND',
   DividendInKind = 'DIVIDEND_IN_KIND',
   Expiration = 'EXPIRATION',

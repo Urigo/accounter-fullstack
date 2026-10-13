@@ -173,6 +173,22 @@ describe('HapoalimSecuritiesTransactionsSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it.each([
+    'דיבידנד',
+    'דיבידנד בעין',
+    'ריבית',
+    'פידיון',
+    'פקיעה',
+    'איחוד מניות',
+    'הצעת רכש כפויה',
+    'איחוד/הפחתת הון',
+  ])('accepts a corporate action with PaymentType %s', PaymentType => {
+    const result = HapoalimSecuritiesTransactionsSchema.safeParse(
+      response([{ ...dividend, PaymentType }]),
+    );
+    expect(result.success).toBe(true);
+  });
+
   it('accepts a two-sided deposit transfer', () => {
     const result = HapoalimSecuritiesTransactionsSchema.safeParse(response([transfer]));
     expect(result.success).toBe(true);
