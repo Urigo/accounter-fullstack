@@ -142,6 +142,9 @@ export function DockedViewerPanel({
     }
     // No text selection or image drag while resizing.
     event.preventDefault();
+    // `preventDefault` also stops the handle taking focus; focus it so the arrow keys work after a
+    // mouse drag without tabbing back to it.
+    event.currentTarget.focus({ preventScroll: true });
     const { pointerId } = event;
     event.currentTarget.setPointerCapture?.(pointerId);
 

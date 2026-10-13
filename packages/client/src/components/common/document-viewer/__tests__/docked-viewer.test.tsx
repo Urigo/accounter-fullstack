@@ -284,6 +284,30 @@ describe('DockedDocumentViewer', () => {
     expect(aria()[0]).toBe('50');
   });
 
+  it('a pointerdown focuses the separator, so arrow keys work after a drag', () => {
+    openDoc();
+    const section = region()!;
+    section.getBoundingClientRect = () => ({ width: 684 }) as DOMRect;
+    trigger.focus();
+
+    act(() => {
+      separator().dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          pointerId: 1,
+          clientX: 756,
+        }),
+      );
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+    });
+    expect(document.activeElement).toBe(separator());
+
+    key(document.activeElement!, { key: 'ArrowLeft' });
+    expect(width(section)).toBe('clamp(420px, 52%, 100% - 480px)');
+  });
+
   it('dragging the separator sets the width from the pointer, clamped', () => {
     openDoc();
     const section = region()!;
