@@ -61,6 +61,7 @@ describe('toSecurityPaymentType', () => {
     ['פקיעה', SecurityPaymentType.Expiration],
     ['איחוד מניות', SecurityPaymentType.ShareConsolidation],
     ['הצעת רכש כפויה', SecurityPaymentType.CompulsoryTenderOffer],
+    ['איחוד/הפחתת הון', SecurityPaymentType.ConsolidationOrCapitalReduction],
   ])('maps every value the scraper accepts: %s', (raw, expected) => {
     expect(toSecurityPaymentType(raw)).toBe(expected);
   });
