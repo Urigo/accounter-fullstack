@@ -2,7 +2,11 @@ import { act, useState, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DocumentViewer } from '../document-viewer.js';
-import { DocumentEditSplit, EDIT_SPLIT_FORM_WIDTH_VAR } from '../edit-split-layout.js';
+import {
+  DocumentEditSplit,
+  EDIT_SPLIT_FORM_WIDTH_VAR,
+  SPLIT_MEDIA_QUERY,
+} from '../edit-split-layout.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -28,7 +32,7 @@ beforeEach(() => {
   wide = true;
   resizeCallbacks = new Set();
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query === '(min-width: 1024px)' ? wide : false,
+    matches: query === SPLIT_MEDIA_QUERY ? wide : false,
     media: query,
     addEventListener: () => {},
     removeEventListener: () => {},
@@ -128,21 +132,51 @@ describe('DocumentEditSplit', () => {
 
   it('Hide collapses the viewer to a strip and Show restores it, moving focus', () => {
     render();
+    const viewer = query('[data-slot="document-viewer"]');
+    const image = viewer.querySelector('img');
     click('button[aria-label="Hide document"]');
     const strip = query('[data-slot="edit-split-viewer"]');
     expect(strip.hasAttribute('data-hidden')).toBe(true);
     expect(strip.hasAttribute('data-vaul-no-drag')).toBe(true);
-    expect(container.querySelector('[data-slot="document-viewer"]')).toBeNull();
+    // The viewer stays mounted inside a hidden wrapper, so Show doesn't reset zoom or reload.
+    expect(query('[data-slot="edit-split-viewer-content"]').hidden).toBe(true);
+    expect(query('[data-slot="document-viewer"]')).toBe(viewer);
     expect(container.querySelector('[role="separator"]')).toBeNull();
-    const show = query<HTMLButtonElement>('[data-slot="edit-split-viewer"] button');
-    expect(show.textContent).toBe('Show document');
+    const show = [...strip.querySelectorAll('button')].find(
+      b => b.textContent === 'Show document',
+    )!;
     expect(document.activeElement).toBe(show);
     // The form takes the full width.
     expect(query('[data-slot="edit-split-form"]').className).not.toContain('lg:w-');
 
     act(() => show.click());
-    expect(container.querySelector('[data-slot="document-viewer"]')).not.toBeNull();
+    expect(query('[data-slot="edit-split-viewer-content"]').hidden).toBe(false);
+    expect(query('[data-slot="document-viewer"]')).toBe(viewer);
+    expect(viewer.querySelector('img')).toBe(image);
+    expect(container.textContent).not.toContain('Show document');
     expect(document.activeElement).toBe(query('button[aria-label="Hide document"]'));
+  });
+
+  it('puts the viewer first in the DOM and reverses the row, so tab order matches both layouts', () => {
+    render();
+    const panes = [...splitRoot().children].map(el => el.getAttribute('data-slot'));
+    expect(panes).toEqual(['edit-split-viewer', 'edit-split-form']);
+    expect(splitRoot().className).toContain('flex-col');
+    expect(splitRoot().className).toContain('lg:flex-row-reverse');
+  });
+
+  it('a pointer press on the separator focuses it, so the arrow keys work after a drag', () => {
+    render();
+    const separator = query('[role="separator"]');
+    act(() => {
+      separator.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 720 }),
+      );
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+    });
+    expect(document.activeElement).toBe(separator);
+    key(separator, { key: 'ArrowLeft' });
+    expect(formWidth()).toBe('clamp(320px, 48%, 100% - 320px)');
   });
 
   it('arrow keys on the separator move the split, Enter and double-click reset it', () => {

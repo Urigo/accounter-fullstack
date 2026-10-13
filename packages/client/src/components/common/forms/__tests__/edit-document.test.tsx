@@ -56,7 +56,7 @@ beforeEach(() => {
   useQueryMock.mockReturnValue([{ data: { documentById: DOCUMENT }, fetching: false }]);
   updateDocumentMock.mockResolvedValue(undefined);
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query === '(min-width: 1024px)',
+    matches: query === '(min-width: 64rem)',
     media: query,
     addEventListener: () => {},
     removeEventListener: () => {},

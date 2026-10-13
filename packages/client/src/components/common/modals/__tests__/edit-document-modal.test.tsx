@@ -70,6 +70,20 @@ describe('EditDocumentModal', () => {
     expect(useDocumentViewer.getState().suspendCount).toBe(0);
   });
 
+  it('leaves the default bottom sheet at the house height', async () => {
+    const { PopUpDrawer } = await import('../drawer.js');
+    act(() =>
+      root.render(
+        <PopUpDrawer position="bottom" opened>
+          <div>body</div>
+        </PopUpDrawer>,
+      ),
+    );
+    const content = document.body.querySelector('[data-slot="drawer-content"]');
+    expect(content?.className).toContain('data-[vaul-drawer-direction=bottom]:max-h-[80vh]');
+    expect(content?.className).not.toContain('h-[90vh]');
+  });
+
   it('remounts the form for another document', () => {
     render('doc-1');
     render('doc-2');

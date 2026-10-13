@@ -335,17 +335,44 @@ describe('DockedDocumentViewer', () => {
     expect(width(section)).toBe('clamp(420px, 64.91%, 100% - 480px)');
   });
 
-  it('hides while suspended and comes back with the same document', () => {
+  it('stays mounted but hidden while suspended, and comes back as it was', () => {
+    openDoc();
+    const section = region()!;
+    section.getBoundingClientRect = () => ({ width: 684 }) as DOMRect;
+    key(separator(), { key: 'ArrowLeft' });
+    expect(width(section)).toBe('clamp(420px, 52%, 100% - 480px)');
+    const viewer = section.querySelector('[data-slot="document-viewer"]');
+
+    let resume: () => void = () => {};
+    act(() => {
+      resume = useDocumentViewer.getState().suspend();
+    });
+    // The same element, hidden (`display: none`, so it takes no width) rather than unmounted.
+    expect(region()).toBe(section);
+    expect(section.hidden).toBe(true);
+    expect(useDocumentViewer.getState().current?.id).toBe('doc-1');
+
+    act(() => resume());
+    expect(region()).toBe(section);
+    expect(section.hidden).toBe(false);
+    expect(section.querySelector('[data-slot="document-viewer"]')).toBe(viewer);
+    // The dragged width survived.
+    expect(width(section)).toBe('clamp(420px, 52%, 100% - 480px)');
+  });
+
+  it('ignores Esc while suspended', () => {
     openDoc();
     let resume: () => void = () => {};
     act(() => {
       resume = useDocumentViewer.getState().suspend();
     });
-    expect(region()).toBeNull();
+    const event = key(separator(), { key: 'Escape' });
+    expect(event.defaultPrevented).toBe(false);
     expect(useDocumentViewer.getState().current?.id).toBe('doc-1');
 
     act(() => resume());
-    expect(region()?.getAttribute('aria-label')).toBe('Document viewer: Tax Invoice 1042');
+    key(separator(), { key: 'Escape' });
+    expect(useDocumentViewer.getState().current).toBeNull();
   });
 
   it('hides the fallback drawer while suspended', () => {
@@ -354,10 +381,15 @@ describe('DockedDocumentViewer', () => {
     dialog.append(trigger);
     document.body.append(dialog);
     openDoc();
+    const drawerState = (): string | null | undefined =>
+      document.body.querySelector('[data-slot="drawer-content"]')?.getAttribute('data-state');
+    expect(drawerState()).toBe('open');
     act(() => {
       useDocumentViewer.getState().suspend();
     });
-    expect(document.body.querySelector('[data-slot="document-viewer"]')).toBeNull();
+    // Closed (happy-dom never finishes vaul's exit animation, so the node may linger).
+    expect(drawerState() ?? 'closed').toBe('closed');
+    expect(useDocumentViewer.getState().placement).toBe('fallback');
   });
 
   it('uses the drawer instead of docking when opened from a dialog', () => {

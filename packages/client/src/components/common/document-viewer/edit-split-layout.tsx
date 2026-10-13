@@ -25,8 +25,12 @@ import {
 /** Holds the form pane's `clamp()` width expression. */
 export const EDIT_SPLIT_FORM_WIDTH_VAR = '--edit-split-form';
 
-/** Side by side from here up; stacked (viewer above the form) below. Tailwind's `lg`. */
-const SPLIT_MEDIA_QUERY = '(min-width: 1024px)';
+/**
+ * Side by side from here up; stacked (viewer above the form) below. Tailwind's `lg` is `64rem`, so
+ * this is in rem too: with a larger default font size, a pixel query would disagree with the
+ * `lg:` classes and put the handle and Expand inside the stacked layout.
+ */
+export const SPLIT_MEDIA_QUERY = '(min-width: 64rem)';
 
 /** What the split hands its viewer, to wire into `DocumentViewer`'s header actions. */
 export interface EditSplitViewerControls {
@@ -147,6 +151,8 @@ export function DocumentEditSplit({
     }
     // No text selection or image drag while resizing.
     event.preventDefault();
+    // `preventDefault` also stops the handle taking focus; focus it so the arrow keys work next.
+    event.currentTarget.focus({ preventScroll: true });
     const { pointerId } = event;
     event.currentTarget.setPointerCapture?.(pointerId);
 
@@ -198,10 +204,75 @@ export function DocumentEditSplit({
     <div
       ref={rootRef}
       data-slot="edit-split"
-      className={cn('relative flex min-h-0 flex-1 flex-col-reverse lg:flex-row', className)}
+      // The viewer comes first in the DOM, as it does on screen when stacked; side by side,
+      // `row-reverse` puts it on the right, so the visual and tab orders match in both layouts.
+      className={cn('relative flex min-h-0 flex-1 flex-col lg:flex-row-reverse', className)}
       // A custom property, so the whole `clamp()` reaches the browser as written.
       style={{ [EDIT_SPLIT_FORM_WIDTH_VAR]: editSplitFormWidthStyle(ratio) } as CSSProperties}
     >
+      <div
+        ref={viewerPaneRef}
+        data-vaul-no-drag
+        data-slot="edit-split-viewer"
+        data-hidden={hidden ? '' : undefined}
+        className={cn(
+          'flex shrink-0 border-b lg:border-b-0 lg:border-l',
+          hidden
+            ? 'h-10 items-center px-2 lg:h-auto lg:w-10 lg:flex-col lg:px-0 lg:py-2'
+            : 'h-[45vh] flex-col lg:h-auto lg:min-w-80 lg:flex-1 lg:shrink',
+          // Expanded, the viewer is positioned against the split, not this spacer.
+          !hidden && !expanded && 'relative',
+        )}
+      >
+        {hidden && (
+          <Tooltip content="Show document" asChild>
+            <Button ref={showButtonRef} variant="ghost" size="sm" onClick={show}>
+              <PanelRightOpen className="size-4" />
+              <span className="lg:sr-only">Show document</span>
+            </Button>
+          </Tooltip>
+        )}
+        {sideBySide && !hidden && !expanded && (
+          // A focusable separator is an ARIA widget (a window splitter), which jsx-a11y doesn't
+          // model.
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize document pane"
+            aria-controls={formPaneId}
+            aria-valuenow={separatorValue.now}
+            aria-valuemin={separatorValue.min}
+            aria-valuemax={separatorValue.max}
+            aria-valuetext={`Form ${separatorValue.now}% wide`}
+            // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- see above
+            tabIndex={0}
+            data-dragging={dragging || undefined}
+            className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none hover:bg-blue-500/20 focus-visible:bg-blue-500/30 focus-visible:outline-none data-dragging:bg-blue-500/30"
+            onPointerDown={onHandlePointerDown}
+            onKeyDown={onHandleKeyDown}
+            onDoubleClick={() => setRatio(null)}
+          />
+        )}
+        {/* Stays mounted while hidden, so Show brings back the same zoom and scroll without
+            reloading the image. */}
+        <div
+          data-slot="edit-split-viewer-content"
+          hidden={hidden}
+          className={cn(
+            'flex min-h-0 flex-1 flex-col',
+            expanded && 'absolute inset-0 z-10 border-l bg-white shadow-xl dark:bg-gray-950',
+          )}
+        >
+          <ViewerSlot
+            render={viewer}
+            onHide={hide}
+            onToggleExpand={sideBySide ? (): void => setWantsExpanded(e => !e) : undefined}
+            expanded={expanded}
+          />
+        </div>
+      </div>
+
       <div
         ref={formPaneRef}
         id={formPaneId}
@@ -214,70 +285,6 @@ export function DocumentEditSplit({
       >
         {form}
       </div>
-
-      {hidden ? (
-        <div
-          data-vaul-no-drag
-          data-slot="edit-split-viewer"
-          data-hidden=""
-          className="flex h-10 shrink-0 items-center border-b px-2 lg:h-auto lg:w-10 lg:flex-col lg:border-b-0 lg:border-l lg:px-0 lg:py-2"
-        >
-          <Tooltip content="Show document" asChild>
-            <Button ref={showButtonRef} variant="ghost" size="sm" onClick={show}>
-              <PanelRightOpen className="size-4" />
-              <span className="lg:sr-only">Show document</span>
-            </Button>
-          </Tooltip>
-        </div>
-      ) : (
-        <div
-          ref={viewerPaneRef}
-          data-vaul-no-drag
-          data-slot="edit-split-viewer"
-          className={cn(
-            'flex h-[45vh] shrink-0 flex-col border-b lg:h-auto lg:min-w-80 lg:flex-1 lg:shrink lg:border-b-0 lg:border-l',
-            // Expanded, the viewer is positioned against the split, not this spacer.
-            !expanded && 'relative',
-          )}
-        >
-          {sideBySide && !expanded && (
-            // A focusable separator is an ARIA widget (a window splitter), which jsx-a11y doesn't
-            // model.
-            // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize document pane"
-              aria-controls={formPaneId}
-              aria-valuenow={separatorValue.now}
-              aria-valuemin={separatorValue.min}
-              aria-valuemax={separatorValue.max}
-              aria-valuetext={`Form ${separatorValue.now}% wide`}
-              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- see above
-              tabIndex={0}
-              data-dragging={dragging || undefined}
-              className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none hover:bg-blue-500/20 focus-visible:bg-blue-500/30 focus-visible:outline-none data-dragging:bg-blue-500/30"
-              onPointerDown={onHandlePointerDown}
-              onKeyDown={onHandleKeyDown}
-              onDoubleClick={() => setRatio(null)}
-            />
-          )}
-          <div
-            data-slot="edit-split-viewer-content"
-            className={cn(
-              'flex min-h-0 flex-1 flex-col',
-              expanded && 'absolute inset-0 z-10 border-l bg-white shadow-xl dark:bg-gray-950',
-            )}
-          >
-            <ViewerSlot
-              render={viewer}
-              onHide={hide}
-              onToggleExpand={sideBySide ? (): void => setWantsExpanded(e => !e) : undefined}
-              expanded={expanded}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
