@@ -1,4 +1,4 @@
-import { useContext, useMemo, type FormEvent, type ReactElement } from 'react';
+import { useContext, useId, useMemo, type FormEvent, type ReactElement } from 'react';
 import { useForm, useFormContext, type FieldError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Currency, LedgerRecordOperation } from '../../../../gql/graphql.js';
@@ -53,9 +53,12 @@ type LineProps = {
 
 function LedgerLineFields({ side, label, entities, fetchingEntities }: LineProps): ReactElement {
   const { control } = useFormContext<LedgerRecordFormInput>();
+  const entityId = useId();
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 items-start">
-      <Label className="sm:pt-2">{label}</Label>
+      <Label htmlFor={entityId} className="sm:pt-2">
+        {label}
+      </Label>
       <FormField
         control={control}
         name={`${side}Entity1`}
@@ -64,6 +67,7 @@ function LedgerLineFields({ side, label, entities, fetchingEntities }: LineProps
             <FormControl>
               <ComboBox
                 {...field}
+                id={entityId}
                 data={entities}
                 value={field.value ?? null}
                 onChange={value => field.onChange(value ?? '')}
