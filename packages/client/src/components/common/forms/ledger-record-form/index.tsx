@@ -172,15 +172,17 @@ export function LedgerRecordForm({
                 <FormLabel>Currency</FormLabel>
                 {/* CurrencyCodeInput has a top margin for label-less rows; this one has a label */}
                 <div className="*:mt-0">
-                  <CurrencyCodeInput
-                    name={field.name}
-                    value={field.value ?? ''}
-                    onChange={value => {
-                      const next = value as Currency;
-                      field.onChange(next);
-                      onCurrencyChange(next);
-                    }}
-                  />
+                  <FormControl>
+                    <CurrencyCodeInput
+                      name={field.name}
+                      value={field.value ?? ''}
+                      onChange={value => {
+                        const next = value as Currency;
+                        field.onChange(next);
+                        onCurrencyChange(next);
+                      }}
+                    />
+                  </FormControl>
                 </div>
                 <FormMessage />
               </FormItem>

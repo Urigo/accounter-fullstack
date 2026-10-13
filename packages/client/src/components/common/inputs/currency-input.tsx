@@ -31,17 +31,31 @@ type CurrencyCodeProps = {
   disabled?: boolean;
   name?: string;
   form?: string;
+  /** Forwarded to the select trigger, so a `<label htmlFor>` or `FormControl` can point at it */
+  id?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
 };
 
 export const CurrencyCodeInput = forwardRef<HTMLButtonElement, CurrencyCodeProps>(
-  function CurrencyCodeInput({ label, value, onChange, disabled, name, form }) {
+  function CurrencyCodeInput({
+    label,
+    value,
+    onChange,
+    disabled,
+    name,
+    form,
+    id,
+    'aria-describedby': ariaDescribedBy,
+    'aria-invalid': ariaInvalid,
+  }) {
     // Portal into the surrounding modal layer when there is one — see `usePortalContainer`.
     const portalContainer = usePortalContainer();
     return (
       <div className="bottom-0 mt-6">
         {label && <Label className="sr-only">{label}</Label>}
         <Select value={value} onValueChange={onChange} disabled={disabled} name={name} form={form}>
-          <SelectTrigger>
+          <SelectTrigger id={id} aria-describedby={ariaDescribedBy} aria-invalid={ariaInvalid}>
             <SelectValue placeholder="Currency" />
           </SelectTrigger>
           <SelectContent container={portalContainer}>
