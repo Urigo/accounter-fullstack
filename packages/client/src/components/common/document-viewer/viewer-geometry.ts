@@ -182,3 +182,39 @@ export function doubleClickTarget(
   }
   return { mode: 'custom', zoom: DOUBLE_CLICK_ZOOM };
 }
+
+/** Touch inertia: how far back the release velocity looks. */
+export const INERTIA_WINDOW_MS = 100;
+/** A finger held still this long before lifting releases with no momentum. */
+export const INERTIA_HOLD_MS = 50;
+/** Velocity (px/ms) kept per 16ms frame. */
+export const INERTIA_FRICTION = 0.95;
+/** Below this speed (px/ms) the glide stops. */
+export const INERTIA_MIN_SPEED = 0.02;
+
+/** One finger position during a touch pan, with its `performance.now()` time. */
+export type PanSample = Point & { t: number };
+
+/**
+ * The pointer's velocity in px/ms over the last {@link INERTIA_WINDOW_MS} before release at `now`.
+ * Zero when there is too little to measure, or when the finger rested before lifting.
+ */
+export function releaseVelocity(samples: readonly PanSample[], now: number): Point {
+  const recent = samples.filter(s => now - s.t <= INERTIA_WINDOW_MS);
+  const first = recent[0];
+  const last = recent.at(-1);
+  if (!first || !last || last === first || now - last.t > INERTIA_HOLD_MS) {
+    return { x: 0, y: 0 };
+  }
+  const dt = last.t - first.t;
+  if (dt <= 0) {
+    return { x: 0, y: 0 };
+  }
+  return { x: (last.x - first.x) / dt, y: (last.y - first.y) / dt };
+}
+
+/** The velocity after `dtMs` of friction, frame-rate independent. */
+export function decayVelocity(v: Point, dtMs: number): Point {
+  const k = INERTIA_FRICTION ** (dtMs / 16);
+  return { x: v.x * k, y: v.y * k };
+}

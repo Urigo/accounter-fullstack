@@ -105,7 +105,7 @@ describe('DocumentActionsMenu', () => {
     expect(getViewerTrigger()).toBe(menuTrigger());
   });
 
-  it('View Image falls back to the drawer when the menu sits inside a dialog', () => {
+  it('View Image opens the overlay sheet when the menu sits inside a dialog', () => {
     render(
       <div role="dialog">
         <DocumentActionsMenu document={makeDocument()} />
@@ -113,7 +113,7 @@ describe('DocumentActionsMenu', () => {
     );
     selectItem('View Image');
 
-    expect(useDocumentViewer.getState().placement).toBe('fallback');
+    expect(useDocumentViewer.getState().placement).toBe('overlay');
     expect(getViewerTrigger()).toBe(menuTrigger());
   });
 
