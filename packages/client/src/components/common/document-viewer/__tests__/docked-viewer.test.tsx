@@ -335,6 +335,31 @@ describe('DockedDocumentViewer', () => {
     expect(width(section)).toBe('clamp(420px, 64.91%, 100% - 480px)');
   });
 
+  it('hides while suspended and comes back with the same document', () => {
+    openDoc();
+    let resume: () => void = () => {};
+    act(() => {
+      resume = useDocumentViewer.getState().suspend();
+    });
+    expect(region()).toBeNull();
+    expect(useDocumentViewer.getState().current?.id).toBe('doc-1');
+
+    act(() => resume());
+    expect(region()?.getAttribute('aria-label')).toBe('Document viewer: Tax Invoice 1042');
+  });
+
+  it('hides the fallback drawer while suspended', () => {
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.append(trigger);
+    document.body.append(dialog);
+    openDoc();
+    act(() => {
+      useDocumentViewer.getState().suspend();
+    });
+    expect(document.body.querySelector('[data-slot="document-viewer"]')).toBeNull();
+  });
+
   it('uses the drawer instead of docking when opened from a dialog', () => {
     const dialog = document.createElement('div');
     dialog.setAttribute('role', 'dialog');

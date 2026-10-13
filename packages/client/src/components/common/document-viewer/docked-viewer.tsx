@@ -245,14 +245,16 @@ export function DockedViewerPanel({
 /**
  * The dashboard's single document viewer, connected to `useDocumentViewer`. Docks as a column when
  * the placement allows and otherwise falls back to the PR 1 drawer, which the Overlay replaces in
- * PR 4.
+ * PR 4. Renders nothing while suspended (the edit sheet shows the scan itself), keeping `current`
+ * so the viewer comes back when the sheet closes.
  */
-export function DockedDocumentViewer(): ReactElement {
+export function DockedDocumentViewer(): ReactElement | null {
   const current = useDocumentViewer(s => s.current);
   const placement = useDocumentViewer(s => s.placement);
   const expanded = useDocumentViewer(s => s.expanded);
   const close = useDocumentViewer(s => s.close);
   const setExpanded = useDocumentViewer(s => s.setExpanded);
+  const suspended = useDocumentViewer(s => s.suspendCount > 0);
 
   // ✕ and Esc hand focus back to the trigger. Opening never moves focus.
   const requestClose = useCallback((): void => {
@@ -267,6 +269,10 @@ export function DockedDocumentViewer(): ReactElement {
     (): void => setExpanded(!useDocumentViewer.getState().expanded),
     [setExpanded],
   );
+
+  if (suspended) {
+    return null;
+  }
 
   return (
     <>
