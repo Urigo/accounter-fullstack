@@ -2,7 +2,7 @@ import { act, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Row } from '@tanstack/react-table';
-import type { TableFeaturesConfig } from '@/lib/table-features.js';
+import type { AnyTable, TableFeaturesConfig } from '@/lib/table-features.js';
 import {
   getViewerTrigger,
   resetDocumentViewerStore,
@@ -11,7 +11,7 @@ import {
 import { Files } from '../cells/files.js';
 import { Preview } from '../cells/preview.js';
 import type { DocumentsTableRowType } from '../columns.js';
-import { DocumentsTableRow } from '../data-table.js';
+import { DocumentsTableRow, useReconcileViewerRows } from '../data-table.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -175,5 +175,59 @@ describe('DocumentsTableRow', () => {
     act(() => open({ id: 'doc-2', imageUrl: null, fileUrl: 'https://e.com/b.pdf', title: 'B' }));
     expect(rowFor(0).hasAttribute('data-viewing')).toBe(false);
     expect(rowFor(1).hasAttribute('data-viewing')).toBe(true);
+  });
+});
+
+/** Only `getRowModel()`, which the sibling helpers read. */
+function fakeTable(docs: DocumentsTableRowType[]): AnyTable<DocumentsTableRowType> {
+  return {
+    getRowModel: () => ({ rows: docs.map(original => ({ id: original.id, original })) }),
+  } as unknown as AnyTable<DocumentsTableRowType>;
+}
+
+describe.each([
+  ['Preview', Preview],
+  ['Files', Files],
+])('%s cell siblings', (_, Cell) => {
+  it('opens with the table rows as siblings, leaving out those with nothing attached', () => {
+    const docs = [makeDocument('doc-1'), makeDocument('doc-empty', null), makeDocument('doc-3')];
+    render(<Cell document={docs[0]} table={fakeTable(docs)} />);
+    act(() => imageButton().click());
+    expect(useDocumentViewer.getState().siblings?.map(s => s.id)).toEqual(['doc-1', 'doc-3']);
+  });
+
+  it('opens with no siblings outside a table', () => {
+    render(<Cell document={makeDocument('doc-1')} />);
+    act(() => imageButton().click());
+    expect(useDocumentViewer.getState().siblings).toBeNull();
+  });
+});
+
+describe('useReconcileViewerRows', () => {
+  function Rows({ ids }: { ids: string[] }): null {
+    useReconcileViewerRows(ids);
+    return null;
+  }
+
+  const entry = (id: string) => ({
+    id,
+    imageUrl: `https://example.com/${id}.jpg`,
+    fileUrl: null,
+    title: id,
+  });
+
+  it('drops the siblings when the current document leaves the rows, not on first render', () => {
+    const siblings = ['a', 'b', 'c'].map(entry);
+    act(() => useDocumentViewer.getState().open(siblings[1], { siblings }));
+    render(<Rows ids={['x', 'y']} />);
+    // First render only records: another table mounting must not drop our snapshot.
+    expect(useDocumentViewer.getState().siblings).toHaveLength(3);
+
+    render(<Rows ids={['a', 'b', 'c']} />);
+    render(<Rows ids={['c', 'b', 'a']} />);
+    expect(useDocumentViewer.getState().siblings).toHaveLength(3);
+
+    render(<Rows ids={['c', 'a']} />);
+    expect(useDocumentViewer.getState().siblings).toBeNull();
   });
 });

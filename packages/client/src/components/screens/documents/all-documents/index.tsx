@@ -75,16 +75,17 @@ export const DocumentsReport = (): ReactElement => {
     [refetchDocuments],
   );
 
-  const { table, editDocumentId, closeEditDocument } = usePaginatedDocumentsTable({
-    documentsProps,
-    onChange: onDocumentChange,
-    withChargeLink: true,
-    withSelection: true,
-    // This screen hosts a `DataTablePagination`, so it is one of the few documents tables that
-    // opts into paging. 100 is the largest size that bar offers, so its size `Select` renders the
-    // value rather than showing blank.
-    pageSize: 100,
-  });
+  const { table, editDocumentId, editSiblingIds, closeEditDocument, navigateEditDocument } =
+    usePaginatedDocumentsTable({
+      documentsProps,
+      onChange: onDocumentChange,
+      withChargeLink: true,
+      withSelection: true,
+      // This screen hosts a `DataTablePagination`, so it is one of the few documents tables that
+      // opts into paging. 100 is the largest size that bar offers, so its size `Select` renders the
+      // value rather than showing blank.
+      pageSize: 100,
+    });
 
   // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:
   // the effect would re-run on every render, and setting the filters context re-renders this
@@ -141,6 +142,8 @@ export const DocumentsReport = (): ReactElement => {
       />
       <EditDocumentModal
         documentId={editDocumentId}
+        siblingIds={editSiblingIds}
+        onNavigate={navigateEditDocument}
         onDone={closeEditDocument}
         onChange={onDocumentChange}
       />

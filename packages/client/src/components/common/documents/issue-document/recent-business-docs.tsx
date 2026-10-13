@@ -10,7 +10,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import { columns, type DocumentsTableRowType } from '../../../documents-table/columns.js';
-import { DocumentsTableRow } from '../../../documents-table/data-table.js';
+import { DocumentsTableRow, useReconcileViewerRows } from '../../../documents-table/data-table.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import {
   Table,
@@ -56,7 +56,8 @@ export function RecentBusinessDocs({
   linkedDocumentIds,
   limit,
 }: RecentBusinessDocsProps) {
-  const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
+  /** The document in the edit sheet, and this table's row ids when it opened, for Save & next. */
+  const [editing, setEditing] = useState<{ id: string; siblingIds?: string[] } | null>(null);
   const [{ data, fetching }] = useQuery({
     query: RecentBusinessIssuedDocumentsDocument,
     variables: {
@@ -76,7 +77,7 @@ export function RecentBusinessDocs({
           return {
             ...(doc as RowType),
             onUpdate: () => {},
-            editDocument: () => setEditDocumentId(doc.id),
+            editDocument: (siblingIds?: string[]) => setEditing({ id: doc.id, siblingIds }),
           };
         })
         .filter((row): row is RowType => !!row) ?? [],
@@ -102,6 +103,7 @@ export function RecentBusinessDocs({
     >[],
     state: {},
   });
+  useReconcileViewerRows(table.getRowModel().rows.map(row => row.id));
 
   return (
     <Card>
@@ -154,8 +156,10 @@ export function RecentBusinessDocs({
         )}
       </CardContent>
       <EditDocumentModal
-        documentId={editDocumentId}
-        onDone={(): void => setEditDocumentId(undefined)}
+        documentId={editing?.id}
+        siblingIds={editing?.siblingIds}
+        onNavigate={id => setEditing(prev => (prev ? { ...prev, id } : { id }))}
+        onDone={(): void => setEditing(null)}
         onChange={() => {}}
       />
     </Card>

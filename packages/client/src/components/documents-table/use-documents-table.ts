@@ -49,7 +49,8 @@ function useDocumentsTableCore({
   withChargeLink = false,
   withSelection = false,
 }: UseDocumentsTableOptions) {
-  const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
+  /** The document in the edit sheet, and the table's row ids when it opened, for Save & next. */
+  const [editing, setEditing] = useState<{ id: string; siblingIds?: string[] } | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   // `preview` starts hidden: it costs one image request per visible row, which is real weight on a
   // table that routinely lists hundreds of documents. The Columns menu turns it on per session.
@@ -101,7 +102,7 @@ function useDocumentsTableCore({
     () =>
       documents.map(document => ({
         ...document,
-        editDocument: (): void => setEditDocumentId(document.id),
+        editDocument: (siblingIds?: string[]): void => setEditing({ id: document.id, siblingIds }),
         onUpdate: onChange ?? ((): void => {}),
         onChargeDeleted,
       })),
@@ -115,7 +116,12 @@ function useDocumentsTableCore({
       : allColumns;
   }, [columnIds, withChargeLink, withSelection]);
 
-  const closeEditDocument = useCallback((): void => setEditDocumentId(undefined), []);
+  const closeEditDocument = useCallback((): void => setEditing(null), []);
+  /** Save & next: the same sheet moves to `id`, keeping the row ids it opened with. */
+  const navigateEditDocument = useCallback(
+    (id: string): void => setEditing(prev => (prev ? { ...prev, id } : { id })),
+    [],
+  );
 
   return {
     data,
@@ -126,8 +132,10 @@ function useDocumentsTableCore({
     setColumnVisibility,
     rowSelection,
     setRowSelection,
-    editDocumentId,
+    editDocumentId: editing?.id,
+    editSiblingIds: editing?.siblingIds,
     closeEditDocument,
+    navigateEditDocument,
   };
 }
 

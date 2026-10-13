@@ -33,6 +33,8 @@ function fireResize(): void {
 }
 
 beforeEach(() => {
+  // Sizes and the hidden pane are remembered in `localStorage`; each test starts from defaults.
+  localStorage.clear();
   resetDocumentViewerStore();
   resizeCallbacks = new Set();
   useSidebar.setState({ isMinimized: true });
@@ -385,5 +387,108 @@ describe('DockedDocumentViewer', () => {
     expect(region()).toBeNull();
     // No drawer any more: the overlay host, mounted separately, shows it.
     expect(document.body.querySelector('[data-slot="document-viewer"]')).toBeNull();
+  });
+});
+
+describe('DockedDocumentViewer stepper', () => {
+  const siblings: DocumentViewerEntry[] = ['s1', 's2', 's3'].map(id => ({
+    id,
+    imageUrl: `https://example.com/${id}.jpg`,
+    fileUrl: null,
+    title: `Receipt ${id}`,
+  }));
+
+  function stepper(): Element | null {
+    return container.querySelector('[data-slot="document-viewer-stepper"]');
+  }
+
+  function openWith(entry: DocumentViewerEntry, list: DocumentViewerEntry[] | null): void {
+    act(() => useDocumentViewer.getState().open(entry, { trigger, siblings: list }));
+  }
+
+  it('shows the position among the siblings, and steps in place', () => {
+    openWith(siblings[1], siblings);
+    expect(stepper()?.textContent).toContain('2/3');
+
+    const next = container.querySelector<HTMLButtonElement>('button[aria-label="Next document"]');
+    act(() => next?.click());
+    expect(useDocumentViewer.getState().current?.id).toBe('s3');
+    expect(region()?.getAttribute('aria-label')).toBe('Document viewer: Receipt s3');
+    expect(stepper()?.textContent).toContain('3/3');
+    expect(useDocumentViewer.getState().placement).toBe('docked');
+  });
+
+  it('steps with [ and ] from anywhere on the page', () => {
+    openWith(siblings[0], siblings);
+    key(document.body, { key: ']', code: 'BracketRight' });
+    expect(useDocumentViewer.getState().current?.id).toBe('s2');
+    key(document.body, { key: '[', code: 'BracketLeft' });
+    expect(useDocumentViewer.getState().current?.id).toBe('s1');
+  });
+
+  it('hides without siblings, with fewer than two, or once reconcile drops them', () => {
+    openWith(siblings[0], null);
+    expect(stepper()).toBeNull();
+    openWith(siblings[0], siblings.slice(0, 1));
+    expect(stepper()).toBeNull();
+
+    openWith(siblings[0], siblings);
+    expect(stepper()).not.toBeNull();
+    act(() => useDocumentViewer.getState().reconcileRowIds(['s1', 's2', 's3'], ['s2', 's3']));
+    expect(stepper()).toBeNull();
+    expect(region()).not.toBeNull();
+  });
+
+  it('takes no keys while suspended by the edit sheet', () => {
+    openWith(siblings[0], siblings);
+    let resume = (): void => {};
+    act(() => {
+      resume = useDocumentViewer.getState().suspend();
+    });
+    expect(useDocumentViewer.getState().keyboardOwners).toEqual([]);
+    key(document.body, { key: ']', code: 'BracketRight' });
+    expect(useDocumentViewer.getState().current?.id).toBe('s1');
+    act(() => resume());
+    key(document.body, { key: ']', code: 'BracketRight' });
+    expect(useDocumentViewer.getState().current?.id).toBe('s2');
+  });
+});
+
+describe('DockedDocumentViewer remembered width', () => {
+  it('reads a stored ratio back and stores a key press', () => {
+    localStorage.setItem('accounter:document-viewer:docked-ratio', '0.6');
+    act(() => root.render(<></>));
+    act(() => root.render(<DockedDocumentViewer />));
+    openDoc();
+    expect(width(region())).toBe('clamp(420px, 60%, 100% - 480px)');
+
+    act(() => root.render(<></>));
+    localStorage.setItem('accounter:document-viewer:docked-ratio', '"wide"');
+    act(() => root.render(<DockedDocumentViewer />));
+    expect(width(region())).toBe('clamp(420px, max(50%, 41rem), 100% - 480px)');
+  });
+
+  it('commits a drag to storage on release only', () => {
+    openDoc();
+    const handle = separator();
+    act(() => {
+      handle.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 800 }),
+      );
+    });
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 700 }));
+    });
+    // Live while dragging, not yet stored.
+    expect(width(region())).toBe(
+      `clamp(420px, ${Math.round(((1440 - 700) / 1368) * 10000) / 100}%, 100% - 480px)`,
+    );
+    expect(localStorage.getItem('accounter:document-viewer:docked-ratio')).toBe('null');
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX: 700 }));
+    });
+    expect(Number(localStorage.getItem('accounter:document-viewer:docked-ratio'))).toBeCloseTo(
+      (1440 - 700) / 1368,
+    );
   });
 });

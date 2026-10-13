@@ -1,4 +1,11 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ReactElement,
+  type Ref,
+} from 'react';
 import {
   ExternalLink,
   FileQuestionMark,
@@ -8,16 +15,27 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react';
+import type { KeyboardRank } from '@/hooks/use-document-viewer.js';
 import { useMediaQuery } from '@/hooks/use-media-query.js';
 import { cn } from '@/lib/utils.js';
 import { Alert, AlertDescription, AlertTitle } from '../../ui/alert.js';
 import { Button } from '../../ui/button.js';
 import { Tooltip } from '../tooltip.js';
 import { isSafeHttpUrl } from './source.js';
-import type { DocumentViewerSource, LoupeSize } from './types.js';
+import type { DocumentViewerSource, FitMode, LoupeSize } from './types.js';
+import { useViewerShortcuts } from './use-viewer-shortcuts.js';
 import { useViewerZoom } from './use-viewer-zoom.js';
 import { ViewerCanvas } from './viewer-canvas.js';
+import { ViewerStepper } from './viewer-stepper.js';
 import { ViewerToolbar } from './viewer-toolbar.js';
+
+/** The `‹ 3/12 ›` stepper's position and action; see `ViewerStepper`. */
+export interface DocumentViewerStepper {
+  /** Zero-based position of the document shown. */
+  index: number;
+  total: number;
+  onStep(delta: 1 | -1): void;
+}
 
 export interface DocumentViewerProps {
   source: DocumentViewerSource;
@@ -36,7 +54,26 @@ export interface DocumentViewerProps {
   onToggleExpand?: (trigger: HTMLElement) => void;
   /** Whether the viewer is currently expanded; drives the Expand action's state. */
   expanded?: boolean;
+  /**
+   * Shows the `‹ 3/12 ›` stepper in the header and binds `[`/`]` to it. The embedded viewer never
+   * gets one: stepping there would drop the form's unsaved edits (Save & next steps instead).
+   */
+  stepper?: DocumentViewerStepper;
+  /**
+   * Takes part in the keyboard shortcuts with this rank (docked 0, embedded 1, overlay 2); only
+   * the topmost viewer listens. Leave it out for no shortcuts.
+   */
+  keyboardRank?: KeyboardRank | null;
   className?: string;
+}
+
+/** What the viewer's shortcuts reach in the keyed body. */
+interface ViewerBodyHandle {
+  ready(): boolean;
+  zoomIn(): void;
+  zoomOut(): void;
+  setFitMode(mode: FitMode): void;
+  rotate(): void;
 }
 
 /** How long a zoom level must hold before it is announced to screen readers. */
@@ -78,6 +115,7 @@ function EmptyState({ message, href }: { message: string; href: string | null })
 }
 
 interface ViewerBodyProps {
+  ref?: Ref<ViewerBodyHandle>;
   imageUrl: string;
   title: string;
   href: string | null;
@@ -90,6 +128,7 @@ interface ViewerBodyProps {
 
 /** Toolbar and canvas for one image. Keyed by the document, so a swap starts from loading. */
 function ViewerBody({
+  ref,
   imageUrl,
   title,
   href,
@@ -102,6 +141,17 @@ function ViewerBody({
   const viewer = useViewerZoom();
   const { status, zoom, mode } = viewer.state;
   const [announcement, setAnnouncement] = useState('');
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  const { zoomIn, zoomOut, setFitMode, rotate } = viewer;
+  useImperativeHandle(
+    ref,
+    () => ({ ready: () => statusRef.current === 'ready', zoomIn, zoomOut, setFitMode, rotate }),
+    [zoomIn, zoomOut, setFitMode, rotate],
+  );
 
   useEffect(() => {
     if (status !== 'ready') {
@@ -124,6 +174,7 @@ function ViewerBody({
         onZoomOut={viewer.zoomOut}
         onZoomChange={viewer.setZoom}
         onFitModeChange={viewer.setFitMode}
+        onRotate={viewer.rotate}
         showMagnifier={showMagnifier}
         magnifierOn={magnifierOn}
         onMagnifierChange={onMagnifierChange}
@@ -168,6 +219,8 @@ export function DocumentViewer({
   closeVariant = 'close',
   onToggleExpand,
   expanded = false,
+  stepper,
+  keyboardRank,
   className,
 }: DocumentViewerProps): ReactElement {
   // Above the keyed body, so the magnifier choice survives a document swap. Not persisted.
@@ -175,6 +228,38 @@ export function DocumentViewer({
   const [loupeSize, setLoupeSize] = useState<LoupeSize>('md');
   const touchOnly = useMediaQuery('(hover: none)');
   const href = originalHref(source);
+  const bodyRef = useRef<ViewerBodyHandle | null>(null);
+
+  /**
+   * Runs `action` on the body once its image is ready; `false` (key not handled) otherwise. Only
+   * ever called from a keydown handler, never while rendering.
+   */
+  const withReadyBody = (action: (body: ViewerBodyHandle) => void): boolean => {
+    const body = bodyRef.current;
+    if (!body?.ready()) {
+      return false;
+    }
+    action(body);
+    return true;
+  };
+  const step = (delta: 1 | -1): boolean => {
+    if (!stepper || stepper.index + delta < 0 || stepper.index + delta >= stepper.total) {
+      return false;
+    }
+    stepper.onStep(delta);
+    return true;
+  };
+
+  useViewerShortcuts(keyboardRank, {
+    zoomIn: () => withReadyBody(body => body.zoomIn()),
+    zoomOut: () => withReadyBody(body => body.zoomOut()),
+    fitWidth: () => withReadyBody(body => body.setFitMode('width')),
+    actual: () => withReadyBody(body => body.setFitMode('actual')),
+    rotate: () => withReadyBody(body => body.rotate()),
+    magnifier: () => !touchOnly && withReadyBody(() => setMagnifierOn(on => !on)),
+    previous: () => step(-1),
+    next: () => step(1),
+  });
 
   return (
     <div
@@ -195,6 +280,9 @@ export function DocumentViewer({
             <p className="truncate text-sm text-gray-500 dark:text-gray-400">{source.subtitle}</p>
           )}
         </div>
+        {stepper && (
+          <ViewerStepper index={stepper.index} total={stepper.total} onStep={stepper.onStep} />
+        )}
         <div className="flex shrink-0 items-center gap-1">
           {onToggleExpand && (
             <Tooltip content={expanded ? 'Restore width' : 'Expand'} asChild>
@@ -234,6 +322,7 @@ export function DocumentViewer({
 
       {source.imageUrl ? (
         <ViewerBody
+          ref={bodyRef}
           key={documentKey}
           imageUrl={source.imageUrl}
           title={source.title}

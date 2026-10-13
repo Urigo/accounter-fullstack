@@ -79,6 +79,9 @@ export const DocumentsGallery = ({
           </div>
           <EditDocumentModal
             documentId={openModal}
+            // Save & next follows the carousel's order.
+            siblingIds={additionalDocuments.map(doc => doc.id)}
+            onNavigate={setOpenModal}
             onDone={(): void => setOpenModal(undefined)}
             onChange={onChange}
             onChargeDeleted={onChargeDeleted}
