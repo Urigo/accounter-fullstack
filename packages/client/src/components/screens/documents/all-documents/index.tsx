@@ -11,6 +11,7 @@ import {
   EditDocumentModal,
   UploadDocumentsModal,
 } from '../../../common/index.js';
+import { useReconcileViewerRows } from '../../../documents-table/data-table.js';
 import { DocumentsDataTable, usePaginatedDocumentsTable } from '../../../documents-table/index.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import { AccounterBarSpinner } from '../../../ui/accounter-spinner.js';
@@ -75,21 +76,27 @@ export const DocumentsReport = (): ReactElement => {
     [refetchDocuments],
   );
 
-  const { table, editDocumentId, closeEditDocument } = usePaginatedDocumentsTable({
-    documentsProps,
-    onChange: onDocumentChange,
-    withChargeLink: true,
-    withSelection: true,
-    // This screen hosts a `DataTablePagination`, so it is one of the few documents tables that
-    // opts into paging. 100 is the largest size that bar offers, so its size `Select` renders the
-    // value rather than showing blank.
-    pageSize: 100,
-  });
+  const { table, editDocumentId, editSiblingIds, closeEditDocument, navigateEditDocument } =
+    usePaginatedDocumentsTable({
+      documentsProps,
+      onChange: onDocumentChange,
+      withChargeLink: true,
+      withSelection: true,
+      // This screen hosts a `DataTablePagination`, so it is one of the few documents tables that
+      // opts into paging. 100 is the largest size that bar offers, so its size `Select` renders the
+      // value rather than showing blank.
+      pageSize: 100,
+    });
 
   // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:
   // the effect would re-run on every render, and setting the filters context re-renders this
   // screen, looping forever ("Maximum update depth exceeded"). Depend instead on the pagination
   // primitives the bar actually reads.
+  // The table below is swapped for a spinner while fetching, so it remounts with nothing to compare
+  // against; reconciling here, where the screen stays mounted, still sees a delete or a filter drop
+  // the document shown. `null` while fetching: rows unknown, not emptied.
+  useReconcileViewerRows(fetching ? null : table.getRowModel().rows.map(row => row.id));
+
   const { pageIndex, pageSize } = table.state.pagination;
   const pageCount = table.getPageCount();
 
@@ -141,6 +148,8 @@ export const DocumentsReport = (): ReactElement => {
       />
       <EditDocumentModal
         documentId={editDocumentId}
+        siblingIds={editSiblingIds}
+        onNavigate={navigateEditDocument}
         onDone={closeEditDocument}
         onChange={onDocumentChange}
       />

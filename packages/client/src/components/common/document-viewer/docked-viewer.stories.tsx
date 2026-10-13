@@ -29,19 +29,23 @@ const ENTRY: DocumentViewerEntry = {
  */
 function WorkArea({
   initialExpanded = false,
+  withStepper = false,
   className,
 }: {
   initialExpanded?: boolean;
+  /** Shows the `‹ 3/12 ›` stepper, stepping a local index (no store, so stories don't leak). */
+  withStepper?: boolean;
   className?: string;
 }): ReactElement {
   const [expanded, setExpanded] = useState(initialExpanded);
+  const [index, setIndex] = useState(2);
   return (
     <div className={cn('relative flex h-180 overflow-hidden border bg-gray-100', className)}>
       <div className="z-0 my-20 flex-1 overflow-scroll px-10">
         <table className="w-240 bg-white text-sm">
           <tbody>
             {Array.from({ length: 12 }, (_, i) => (
-              <tr key={i} className={cn('border-b', i === 2 && 'bg-blue-50')}>
+              <tr key={i} className={cn('border-b', i === index && 'bg-blue-50')}>
                 <td className="p-2">0{(i % 9) + 1}/10/2026</td>
                 <td className="p-2">Tax Invoice {1040 + i}</td>
                 <td className="p-2">Acme Ltd</td>
@@ -56,6 +60,15 @@ function WorkArea({
         expanded={expanded}
         onToggleExpand={() => setExpanded(e => !e)}
         onClose={() => {}}
+        stepper={
+          withStepper
+            ? {
+                index,
+                total: 12,
+                onStep: delta => setIndex(i => Math.min(11, Math.max(0, i + delta))),
+              }
+            : undefined
+        }
       />
     </div>
   );
@@ -82,4 +95,9 @@ export const Expanded: Story = {
 /** A 900px work area: the column holds its 420px minimum and the page column keeps 480px. */
 export const AtMinimum: Story = {
   args: { className: 'w-225' },
+};
+
+/** Opened from a table: the stepper walks its rows, and the highlight follows. */
+export const WithStepper: Story = {
+  args: { className: 'w-342', withStepper: true },
 };

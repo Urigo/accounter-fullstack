@@ -8,10 +8,12 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { getViewerTrigger, useDocumentViewer } from '@/hooks/use-document-viewer.js';
+import { getViewerTrigger, KEYBOARD_RANK, useDocumentViewer } from '@/hooks/use-document-viewer.js';
 import { cn } from '@/lib/utils.js';
-import { DocumentViewer } from './document-viewer.js';
+import { DocumentViewer, type DocumentViewerStepper } from './document-viewer.js';
+import { DOCKED_RATIO_KEY, usePersistedRatio } from './persisted-sizes.js';
 import { clampDockedRatio, DOCKED_RATIO_STEP, dockedWidthStyle } from './placement.js';
+import { useViewerStepper } from './siblings.js';
 import type { DocumentViewerEntry } from './types.js';
 
 /** The docked column's `id`, for anything that needs to point at it. */
@@ -31,6 +33,8 @@ export interface DockedViewerPanelProps {
    * no width, so the page column has the whole work area meanwhile.
    */
   suspended?: boolean;
+  /** The `‹ 3/12 ›` stepper, when the viewer was opened from a table with siblings. */
+  stepper?: DocumentViewerStepper;
 }
 
 /** Whether an Esc keydown was already handled by something inside the viewer or above it. */
@@ -80,11 +84,20 @@ export function DockedViewerPanel({
   onToggleExpand,
   onClose,
   suspended = false,
+  stepper,
 }: DockedViewerPanelProps): ReactElement {
   const sectionRef = useRef<HTMLElement>(null);
   const endDragRef = useRef<(() => void) | null>(null);
-  /** The width as a ratio of the work area; `null` is the default width. Not persisted until PR 5. */
-  const [ratio, setRatio] = useState<number | null>(null);
+  /**
+   * The width as a ratio of the work area; `null` is the default width. Remembered per browser:
+   * one ratio suits a laptop and a 4K monitor alike, and the pixel minimums still clamp it.
+   */
+  const {
+    ratio,
+    preview: previewRatio,
+    commit: commitRatio,
+    set: setRatio,
+  } = usePersistedRatio(DOCKED_RATIO_KEY);
   const [dragging, setDragging] = useState(false);
 
   // Esc closes only when it comes from inside the viewer. A native listener, because the section is
@@ -163,7 +176,7 @@ export function DockedViewerPanel({
       if (!rect || rect.width <= 0) {
         return;
       }
-      setRatio(clampDockedRatio((rect.right - e.clientX) / rect.width, rect.width));
+      previewRatio(clampDockedRatio((rect.right - e.clientX) / rect.width, rect.width));
     };
     const onEnd = (e: PointerEvent): void => {
       if (e.pointerId === pointerId) {
@@ -176,6 +189,8 @@ export function DockedViewerPanel({
       window.removeEventListener('pointercancel', onEnd);
       endDragRef.current = null;
       setDragging(false);
+      // Stored once, on release: storage is written on every state change.
+      commitRatio();
     };
 
     endDragRef.current?.();
@@ -241,6 +256,9 @@ export function DockedViewerPanel({
         onClose={onClose}
         onToggleExpand={onToggleExpand}
         expanded={expanded}
+        stepper={stepper}
+        // Hidden, the column takes no keys; the edit sheet's own viewer has them.
+        keyboardRank={suspended ? null : KEYBOARD_RANK.docked}
         // No z-index: the page column is a `z-0` stacking context earlier in the tree, so the
         // positioned viewer already paints over it, and a `z-10` would also cover the sidebar's
         // collapse chevron, which overhangs into the work area.
@@ -263,6 +281,9 @@ export function DockedDocumentViewer(): ReactElement | null {
   const close = useDocumentViewer(s => s.close);
   const setExpanded = useDocumentViewer(s => s.setExpanded);
   const suspended = useDocumentViewer(s => s.suspendCount > 0);
+  // Only while this column is what shows the document: not under the overlay, and not while the
+  // edit sheet suspends it, so neither the stepper nor its preload runs for a hidden viewer.
+  const stepper = useViewerStepper(placement === 'docked' && !suspended ? current?.id : null);
 
   // ✕ and Esc hand focus back to the trigger. Opening never moves focus.
   const requestClose = useCallback((): void => {
@@ -289,6 +310,7 @@ export function DockedDocumentViewer(): ReactElement | null {
       onToggleExpand={toggleExpand}
       onClose={requestClose}
       suspended={suspended}
+      stepper={stepper}
     />
   );
 }
