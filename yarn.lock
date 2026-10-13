@@ -2472,18 +2472,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.66.0":
-  version: 0.66.0
-  resolution: "@graphql-hive/cli@npm:0.66.0"
+"@graphql-hive/cli@npm:0.67.0":
+  version: 0.67.0
+  resolution: "@graphql-hive/cli@npm:0.67.0"
   dependencies:
-    "@graphql-hive/core": "npm:0.23.0"
+    "@graphql-hive/core": "npm:0.23.1"
     "@graphql-inspector/core": "npm:^8.0.0"
-    "@graphql-tools/code-file-loader": "npm:^8.1.37"
-    "@graphql-tools/graphql-file-loader": "npm:^8.1.19"
-    "@graphql-tools/json-file-loader": "npm:^8.0.33"
-    "@graphql-tools/load": "npm:^8.1.16"
-    "@graphql-tools/url-loader": "npm:^9.1.7"
-    "@graphql-tools/utils": "npm:12.0.0"
+    "@graphql-tools/code-file-loader": "npm:^8.1.41"
+    "@graphql-tools/graphql-file-loader": "npm:^8.1.22"
+    "@graphql-tools/json-file-loader": "npm:^8.0.36"
+    "@graphql-tools/load": "npm:^8.1.19"
+    "@graphql-tools/url-loader": "npm:^9.1.12"
+    "@graphql-tools/utils": "npm:^12.0.3"
     "@graphql-typed-document-node/core": "npm:3.2.0"
     "@oclif/core": "npm:3.26.6"
     "@oclif/plugin-help": "npm:6.2.36"
@@ -2498,7 +2498,7 @@ __metadata:
     zod: "npm:^3.25.76"
   bin:
     hive: bin/run
-  checksum: 10c0/b91ddc83bb078d815c987dc7bf371a8668dfac54425d8cba92d546c694dab3a24a837f94fdc94b84eb0709ceebe85d0a45194aa5f17414bc89023495078f4df1
+  checksum: 10c0/9375c88a3ecb5d0a2290c9d81bde386d8eaebd31d3b6f7368f98263d425c99e1a06b74a418893c0950ab62182a758b5ff4cdcf349f4d65d6c4b881bdd199fa59
   languageName: node
   linkType: hard
 
@@ -2519,6 +2519,26 @@ __metadata:
   peerDependencies:
     graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
   checksum: 10c0/025d105dcb5af541b295545480bc7c8cb13e7cbf97517d654bb098b4134f3d52e22f81946401d262fe9113787b5ca1f7b340bb455ac7681bb42229a2176a39a7
+  languageName: node
+  linkType: hard
+
+"@graphql-hive/core@npm:0.23.1":
+  version: 0.23.1
+  resolution: "@graphql-hive/core@npm:0.23.1"
+  dependencies:
+    "@graphql-hive/logger": "npm:^1.1.0"
+    "@graphql-hive/signal": "npm:^2.0.0"
+    "@graphql-tools/utils": "npm:^12.0.3"
+    "@whatwg-node/fetch": "npm:^0.10.13"
+    async-retry: "npm:^1.3.3"
+    events: "npm:^3.3.0"
+    js-md5: "npm:0.8.3"
+    lodash.sortby: "npm:^4.7.0"
+    tiny-lru: "npm:^11.4.7"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+  checksum: 10c0/28f10c9b1f2cf6b42e7e7c94675c841b357cb1083009bdb54011d736d56258e6dd008fe65fb21918cb5b4ae48b6dbab32e7b0f9e58de084cfaea4a3063f547dc
   languageName: node
   linkType: hard
 
@@ -3475,20 +3495,6 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/82d5390f2da1d188027cc85e35f2ee5aa2229b9eac725c03eaad58acf9cb70990027f176c91f9446092d0274a50f35680d8a2e0c6a087da1f817d75db07748f5
-  languageName: node
-  linkType: hard
-
-"@graphql-tools/utils@npm:12.0.0":
-  version: 12.0.0
-  resolution: "@graphql-tools/utils@npm:12.0.0"
-  dependencies:
-    "@graphql-typed-document-node/core": "npm:^3.1.1"
-    "@whatwg-node/promise-helpers": "npm:^1.0.0"
-    cross-inspect: "npm:1.0.1"
-    tslib: "npm:^2.4.0"
-  peerDependencies:
-    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/b0a253266b221042520a1004ee2f432e104afaa3afc02a38644032be2b36a648beecc1fe1abed8e346c4958deea182f75ad7cdf42c9d90e40c473b72086c75ba
   languageName: node
   linkType: hard
 
@@ -10914,7 +10920,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:6.1.10"
     "@graphql-codegen/typescript-resolvers": "npm:6.1.1"
     "@graphql-eslint/eslint-plugin": "npm:4.4.1"
-    "@graphql-hive/cli": "npm:0.66.0"
+    "@graphql-hive/cli": "npm:0.67.0"
     "@graphql-inspector/cli": "npm:7.0.0"
     "@graphql-tools/mock": "npm:9.1.16"
     "@parcel/watcher": "npm:2.6.0"
