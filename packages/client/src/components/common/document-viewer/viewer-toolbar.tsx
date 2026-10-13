@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Minus, Plus, Search } from 'lucide-react';
 import { Button } from '../../ui/button.js';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.js';
@@ -55,6 +55,22 @@ function ZoomReadout({
 }): ReactElement {
   const [draft, setDraft] = useState<string | null>(null);
   const percent = Math.round(zoom * 100);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  // Closing the editor with Enter or Esc unmounts the focused input, so focus goes back to the
+  // readout button. A blur means focus already moved somewhere else, and stays there.
+  const restoreFocus = useRef(false);
+
+  const closeEditor = (refocus: boolean): void => {
+    restoreFocus.current = refocus;
+    setDraft(null);
+  };
+
+  useEffect(() => {
+    if (draft == null && restoreFocus.current) {
+      restoreFocus.current = false;
+      buttonRef.current?.focus();
+    }
+  }, [draft]);
 
   if (draft != null && !disabled) {
     return (
@@ -71,7 +87,7 @@ function ZoomReadout({
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onFocus={e => e.target.select()}
-        onBlur={() => setDraft(null)}
+        onBlur={() => closeEditor(false)}
         onKeyDown={e => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -79,9 +95,9 @@ function ZoomReadout({
             if (Number.isFinite(value) && value > 0) {
               onZoomChange(value / 100);
             }
-            setDraft(null);
+            closeEditor(true);
           } else if (e.key === 'Escape') {
-            setDraft(null);
+            closeEditor(true);
           }
         }}
       />
@@ -91,6 +107,7 @@ function ZoomReadout({
   return (
     <Tooltip content="Type a zoom level" asChild>
       <Button
+        ref={buttonRef}
         variant="ghost"
         size="sm"
         className="w-16 tabular-nums"

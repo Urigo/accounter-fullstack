@@ -200,6 +200,34 @@ describe('DocumentViewer', () => {
     expect(imageWidth()).toBeCloseTo(650, 6);
   });
 
+  it.each([
+    ['Enter', 'Zoom 150%, click to type a value'],
+    ['Escape', 'Zoom 26%, click to type a value'],
+  ])('returns focus to the readout after %s closes the editor', (key, readout) => {
+    render();
+    loadImage();
+    click(button('Zoom 26%, click to type a value'));
+    const input = container.querySelector<HTMLInputElement>('input[aria-label="Zoom percentage"]')!;
+    expect(document.activeElement).toBe(input);
+    typeInto(input, '150');
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    });
+    expect(document.activeElement).toBe(button(readout));
+  });
+
+  it('leaves focus where it went when the editor closes on blur', () => {
+    render();
+    loadImage();
+    click(button('Zoom 26%, click to type a value'));
+    const input = container.querySelector<HTMLInputElement>('input[aria-label="Zoom percentage"]')!;
+    act(() => {
+      scrollBox().focus();
+    });
+    expect(input.isConnected).toBe(false);
+    expect(document.activeElement).toBe(scrollBox());
+  });
+
   it('zooms on ctrl+wheel and leaves a plain wheel to scroll', () => {
     render();
     loadImage();
