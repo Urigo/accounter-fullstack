@@ -670,6 +670,47 @@ describe('deriveDocumentFromLedgerInput', () => {
     expect(derived).toMatchObject({ amount: 117, vat: 17, currencyCode: Currency.Usd });
   });
 
+  it('uses the foreign amounts for a foreign-currency income', () => {
+    const derived = deriveDocumentFromLedgerInput(
+      {
+        ...INCOME_INPUT,
+        currency: Currency.Eur,
+        debitLocalAmount1: 468,
+        debitForeignAmount1: 117,
+        creditLocalAmount1: 400,
+        creditForeignAmount1: 100,
+        creditLocalAmount2: 68,
+        creditForeignAmount2: 17,
+      },
+      CTX,
+    );
+    expect(derived).toMatchObject({
+      creditorId: OWNER_ID,
+      debtorId: 'customer',
+      amount: 117,
+      vat: 17,
+      currencyCode: Currency.Eur,
+    });
+  });
+
+  it('sets VAT to 0 for a foreign-currency record whose slot 2 is not a VAT category', () => {
+    const derived = deriveDocumentFromLedgerInput(
+      {
+        ...EXPENSE_INPUT,
+        currency: Currency.Usd,
+        debitLocalAmount1: 360,
+        debitForeignAmount1: 100,
+        creditLocalAmount1: 421.2,
+        creditForeignAmount1: 117,
+        debitEntity2: 'other-category',
+        debitLocalAmount2: 61.2,
+        debitForeignAmount2: 17,
+      },
+      CTX,
+    );
+    expect(derived).toMatchObject({ amount: 117, vat: 0, currencyCode: Currency.Usd });
+  });
+
   it('rejects a record with a business on both main sides', () => {
     expect(() =>
       deriveDocumentFromLedgerInput({ ...EXPENSE_INPUT, debitEntity1: 'customer' }, CTX),
@@ -682,9 +723,15 @@ describe('deriveDocumentFromLedgerInput', () => {
     ).toThrow('A document needs exactly one business among the main debit and credit entities');
   });
 
-  it('rejects a record whose counterparty is the charge owner', () => {
+  it('rejects an expense whose counterparty is the charge owner', () => {
     expect(() =>
       deriveDocumentFromLedgerInput({ ...EXPENSE_INPUT, creditEntity1: OWNER_ID }, CTX),
+    ).toThrow("A document's counterparty cannot be the charge owner");
+  });
+
+  it('rejects an income whose counterparty is the charge owner', () => {
+    expect(() =>
+      deriveDocumentFromLedgerInput({ ...INCOME_INPUT, debitEntity1: OWNER_ID }, CTX),
     ).toThrow("A document's counterparty cannot be the charge owner");
   });
 });

@@ -843,9 +843,10 @@ describe('insertManualLedgerRecord', () => {
 
     it('returns a CommonError and opens no transaction when the entity lookup fails', async () => {
       const { injector, dbClient, financialEntitiesProvider } = setupInsert();
+      const lookupError = new Error('lookup failed');
       financialEntitiesProvider.getFinancialEntityByIdLoader.loadMany.mockResolvedValueOnce([
         { id: 'expense-category', type: 'tax_category' },
-        new Error('lookup failed'),
+        lookupError,
       ]);
 
       const result = await insert(injector, DOCUMENT_INPUT, 'DOCUMENT');
@@ -854,6 +855,11 @@ describe('insertManualLedgerRecord', () => {
         __typename: 'CommonError',
         message: 'Financial entity with id supplier not found',
       });
+      // The lookup failure itself is logged, not lost
+      expect(console.error).toHaveBeenCalledWith(
+        'Failed to load financial entity ID="supplier"',
+        lookupError,
+      );
       expect(dbClient.transaction).not.toHaveBeenCalled();
     });
 

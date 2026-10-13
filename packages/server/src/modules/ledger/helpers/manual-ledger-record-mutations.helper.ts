@@ -99,8 +99,8 @@ function checkManualLedgerRecord(
 
 /**
  * Look up the types of the main debit and credit entities, then derive the document a DOCUMENT
- * ledger record represents. A missing entity or a derivation problem is returned as a
- * `CommonError`.
+ * ledger record represents. A missing entity, a failed lookup (logged) or a derivation problem is
+ * returned as a `CommonError`.
  */
 async function deriveDocument(
   injector: Injector,
@@ -114,6 +114,9 @@ async function deriveDocument(
   const entityTypes = new Map<string, string>();
   for (const [index, entity] of entities.entries()) {
     if (!entity || entity instanceof Error) {
+      if (entity instanceof Error) {
+        console.error(`Failed to load financial entity ID="${entityIds[index]}"`, entity);
+      }
       return {
         error: {
           __typename: 'CommonError',
@@ -216,9 +219,10 @@ export async function updateManualLedgerRecord(
 
 /**
  * Insert a manual ledger record under a charge, stored exactly as typed, together with the business
- * entity the chosen operation says it represents (a misc expense for MISC_EXPENSE, an INVOICE document for DOCUMENT). Both rows are
- * written in one DB transaction, so either both land or neither does. Every failure (missing or
- * locked charge, invalid input, a storage error) is returned as a `CommonError` rather than thrown.
+ * entity the chosen operation says it represents: a misc expense for MISC_EXPENSE, an INVOICE
+ * document for DOCUMENT. Both rows are written in one DB transaction, so either both land or
+ * neither does. Every failure (missing or locked charge, invalid input, a storage error) is
+ * returned as a `CommonError` rather than thrown.
  */
 export async function insertManualLedgerRecord(
   injector: Injector,
