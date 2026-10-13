@@ -20,10 +20,15 @@ import {
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
 import { Depreciation } from '../common/depreciation/index.js';
-import { BusinessTripSummarizedReport, PreviewDocumentModal, Tooltip } from '../common/index.js';
+import {
+  BusinessTripSummarizedReport,
+  EditLedgerRecordModal,
+  PreviewDocumentModal,
+  Tooltip,
+} from '../common/index.js';
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
-import { LedgerTable } from '../ledger-table/index.js';
+import { LedgerTable, type LedgerRecordRow } from '../ledger-table/index.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Button } from '../ui/button.js';
@@ -555,7 +560,9 @@ export function ChargeExtendedInfo({
                 onChange={onExtendedChange}
               />
               <AccordionContent>
-                {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
+                {ledgerRecordsAreReady && (
+                  <ChargeLedgerTable data={charge} onChange={onExtendedChange} />
+                )}
               </AccordionContent>
             </AccordionItem>
 
@@ -613,16 +620,24 @@ export function ChargeExtendedInfo({
 
 type ChargeLedgerTableProps = {
   data: FragmentType<typeof ChargeLedgerRecordsTableFieldsFragmentDoc>;
+  /** Called after a record was edited, to refresh the charge */
+  onChange: () => void;
 };
 
-export const ChargeLedgerTable = ({ data }: ChargeLedgerTableProps): ReactElement => {
+export const ChargeLedgerTable = ({ data, onChange }: ChargeLedgerTableProps): ReactElement => {
   const { ledger } = getFragmentData(ChargeLedgerRecordsTableFieldsFragmentDoc, data);
+  const [editingRecord, setEditingRecord] = useState<LedgerRecordRow | null>(null);
+  const onCloseEdit = useCallback(() => setEditingRecord(null), []);
 
   return (
-    <LedgerTable
-      ledgerRecordsData={ledger.records}
-      ledgerDiffData={ledger.validate?.differences}
-      matches={ledger.validate?.matches}
-    />
+    <>
+      <LedgerTable
+        ledgerRecordsData={ledger.records}
+        ledgerDiffData={ledger.validate?.differences}
+        matches={ledger.validate?.matches}
+        onEditRecord={setEditingRecord}
+      />
+      <EditLedgerRecordModal record={editingRecord} onClose={onCloseEdit} onDone={onChange} />
+    </>
   );
 };

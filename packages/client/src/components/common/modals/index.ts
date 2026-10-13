@@ -2,6 +2,7 @@ export * from './confirmation-modal.js';
 export * from './drawer.js';
 export * from './edit-charge-modal.js';
 export * from './edit-document-modal.js';
+export * from './edit-ledger-record-modal.js';
 export * from './edit-misc-expense-modal.js';
 export * from './edit-salary-record-modal.js';
 export * from './edit-sort-code.js';

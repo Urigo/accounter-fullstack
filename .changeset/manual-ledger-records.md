@@ -66,3 +66,11 @@ foreign-currency record needs a positive foreign amount on every filled line, th
 local totals across all lines must balance to within 0.005, and both dates must be after the
 ledger lock date. On success the dialog closes and the charge
 refreshes; if the server rejects the record, its error is shown and the dialog stays open.
+
+Edit ledger records from the charge view. The charge's ledger table has an "Actions" column with a
+pencil on every unlocked stored record (including ones the ledger check marks as "Diff" or
+"Deleted"); locked records and generated "New" rows have none, and other ledger tables stay
+read-only. The pencil opens the same form, without the operation, prefilled with the record's
+currency, dates, description, reference and all four lines. Saving checks the same rules and
+overwrites the record (its misc expense or document is not changed); the charge then refreshes, so
+the ledger check shows where the edit differs from the generated record.

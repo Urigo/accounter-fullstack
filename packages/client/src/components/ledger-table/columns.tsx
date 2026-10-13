@@ -1,5 +1,6 @@
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
+import { EMPTY_UUID } from '@/helpers/consts.js';
 import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { Badge } from '../ui/badge.js';
 import { Button } from '../ui/button.js';
@@ -444,3 +445,44 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, LedgerRecordRow>[]
     },
   },
 ];
+
+/**
+ * Whether a row is a stored record that can be edited: not locked, and not a generated record that
+ * was never stored ("New"). "Diff" and "Deleted" rows are stored records, so they qualify.
+ */
+function isEditableRecord(record: LedgerRecordRow): boolean {
+  return !record.locked && record.matchingStatus !== 'New' && record.id !== EMPTY_UUID;
+}
+
+/** The "Actions" column of an editable ledger table: a pencil on every editable row */
+export function editActionColumn(
+  onEditRecord: (record: LedgerRecordRow) => void,
+): ColumnDef<PaginatedTableFeaturesConfig, LedgerRecordRow> {
+  return {
+    id: 'actions',
+    header: 'Actions',
+    enableSorting: false,
+    cell: ({ row: { original } }) => {
+      if (!isEditableRecord(original)) {
+        return null;
+      }
+      return (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-7.5"
+          aria-label="Edit ledger record"
+          title="Edit ledger record"
+          onClick={event => {
+            // Keep the click from reaching row-level handlers of any table this one sits in
+            event.stopPropagation();
+            onEditRecord(original);
+          }}
+        >
+          <Pencil className="size-4" />
+        </Button>
+      );
+    },
+  };
+}
