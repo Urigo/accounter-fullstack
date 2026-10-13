@@ -12,17 +12,18 @@ import { qualifyTable } from '../../../__tests__/helpers/test-db-config.js';
 import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import { env } from '../../../environment.js';
 import { Currency } from '../../../shared/enums.js';
+import { LedgerLockError } from '../../../shared/errors.js';
 import type { AuthUser } from '../../../shared/types/auth.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
-import { AccountantApprovalProvider } from '../../accountant-approval/providers/accountant-approval.provider.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
+import { AccountantApprovalProvider } from '../../accountant-approval/providers/accountant-approval.provider.js';
+import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helper.js';
 import { ledgerRecordsGenerationFullMatchComparison } from '../helpers/ledgrer-storage.helper.js';
 import {
   insertManualLedgerRecord,
   updateManualLedgerRecord,
 } from '../helpers/manual-ledger-record-mutations.helper.js';
-import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 
@@ -39,6 +40,7 @@ import type { IGetLedgerRecordsByChargesIdsResult } from '../types.js';
 const OWNER_ID = makeUUID('business', 'manual-ledger-records-owner');
 const SUPPLIER_ID = makeUUID('business', 'manual-ledger-records-supplier');
 const EXPENSE_TAX_CATEGORY_ID = makeUUID('tax-category', 'manual-ledger-records-expense');
+const OTHER_TAX_CATEGORY_ID = makeUUID('tax-category', 'manual-ledger-records-other');
 /** Another business, outside this request's write target */
 const OTHER_OWNER_ID = makeUUID('business', 'manual-ledger-records-other-owner');
 const ADMIN_BUSINESS_ID = makeUUID('business', 'Admin Business');
@@ -233,13 +235,13 @@ describe('Manual ledger records (DB)', () => {
           ownerId: OWNER_ID,
         });
         await ensureBusinessForEntity(client, SUPPLIER_ID, { ownerId: OWNER_ID });
-        await ensureFinancialEntity(client, {
-          id: EXPENSE_TAX_CATEGORY_ID,
-          name: 'Manual Ledger Records Expense',
-          type: 'tax_category',
-          ownerId: OWNER_ID,
-        });
-        await ensureTaxCategoryForEntity(client, EXPENSE_TAX_CATEGORY_ID, { ownerId: OWNER_ID });
+        for (const [id, name] of [
+          [EXPENSE_TAX_CATEGORY_ID, 'Manual Ledger Records Expense'],
+          [OTHER_TAX_CATEGORY_ID, 'Manual Ledger Records Other'],
+        ] as const) {
+          await ensureFinancialEntity(client, { id, name, type: 'tax_category', ownerId: OWNER_ID });
+          await ensureTaxCategoryForEntity(client, id, { ownerId: OWNER_ID });
+        }
 
         chargeId = randomUUID();
         await client.query(
@@ -258,34 +260,56 @@ describe('Manual ledger records (DB)', () => {
   afterEach(async () => {
     vi.restoreAllMocks();
     await withClient(async client => {
-      const owners = [OWNER_ID, OTHER_OWNER_ID];
-      await client.query("SELECT set_config('app.current_business_id', $1, false)", [OWNER_ID]);
-      for (const table of ['ledger_records', 'documents', 'misc_expenses', 'charges']) {
-        await client.query(`DELETE FROM ${qualifyTable(table)} WHERE owner_id = ANY($1)`, [owners]);
+      // Each owner's rows are deleted with that owner as the current business, so the cleanup
+      // holds under row-level security too, not only for the superuser test role
+      const asOwner = (ownerId: string) =>
+        client.query("SELECT set_config('app.current_business_id', $1, false)", [ownerId]);
+      try {
+        // The other business's rows reference this suite's entities: delete them first
+        await asOwner(OTHER_OWNER_ID);
+        for (const table of ['ledger_records', 'charges']) {
+          await client.query(`DELETE FROM ${qualifyTable(table)} WHERE owner_id = $1`, [
+            OTHER_OWNER_ID,
+          ]);
+        }
+
+        await asOwner(OWNER_ID);
+        for (const table of [
+          'ledger_records',
+          'documents',
+          'misc_expenses',
+          'charges',
+          'user_context',
+        ]) {
+          await client.query(`DELETE FROM ${qualifyTable(table)} WHERE owner_id = $1`, [OWNER_ID]);
+        }
+        const ownedEntityIds = [SUPPLIER_ID, EXPENSE_TAX_CATEGORY_ID, OTHER_TAX_CATEGORY_ID];
+        await client.query(`DELETE FROM ${qualifyTable('tax_categories')} WHERE id = ANY($1)`, [
+          ownedEntityIds,
+        ]);
+        await client.query(`DELETE FROM ${qualifyTable('businesses')} WHERE id = $1`, [
+          SUPPLIER_ID,
+        ]);
+        await client.query(
+          `DELETE FROM ${qualifyTable('financial_entities')} WHERE id = ANY($1)`,
+          [ownedEntityIds],
+        );
+
+        // Each owner references itself both ways; unlink before deleting
+        for (const ownerId of [OTHER_OWNER_ID, OWNER_ID]) {
+          await asOwner(ownerId);
+          await client.query(
+            `UPDATE ${qualifyTable('financial_entities')} SET owner_id = NULL WHERE id = $1`,
+            [ownerId],
+          );
+          await client.query(`DELETE FROM ${qualifyTable('businesses')} WHERE id = $1`, [ownerId]);
+          await client.query(`DELETE FROM ${qualifyTable('financial_entities')} WHERE id = $1`, [
+            ownerId,
+          ]);
+        }
+      } finally {
+        await client.query("SELECT set_config('app.current_business_id', '', false)");
       }
-      await client.query(`DELETE FROM ${qualifyTable('user_context')} WHERE owner_id = $1`, [
-        OWNER_ID,
-      ]);
-      const ownedEntityIds = [SUPPLIER_ID, EXPENSE_TAX_CATEGORY_ID];
-      await client.query(`DELETE FROM ${qualifyTable('tax_categories')} WHERE id = ANY($1)`, [
-        ownedEntityIds,
-      ]);
-      await client.query(`DELETE FROM ${qualifyTable('businesses')} WHERE id = $1`, [
-        SUPPLIER_ID,
-      ]);
-      await client.query(`DELETE FROM ${qualifyTable('financial_entities')} WHERE id = ANY($1)`, [
-        ownedEntityIds,
-      ]);
-      // Each owner references itself both ways; unlink before deleting
-      await client.query(
-        `UPDATE ${qualifyTable('financial_entities')} SET owner_id = NULL WHERE id = ANY($1)`,
-        [owners],
-      );
-      await client.query(`DELETE FROM ${qualifyTable('businesses')} WHERE id = ANY($1)`, [owners]);
-      await client.query(`DELETE FROM ${qualifyTable('financial_entities')} WHERE id = ANY($1)`, [
-        owners,
-      ]);
-      await client.query("SELECT set_config('app.current_business_id', '', false)");
     });
   });
 
@@ -400,15 +424,46 @@ describe('Manual ledger records (DB)', () => {
     expect(await ledgerRowsOfCharge()).toEqual([]);
   });
 
-  it('updates a record: clearing slot 2 stores NULLs and a new invoice date persists', async () => {
-    const ledgerRecordId = await insertOrFail('MISC_EXPENSE', vatInvoiceInput());
+  it('updates a record: clearing slot 2 and foreign amounts stores NULLs, a new date persists', async () => {
+    // Every optional column set: both slot-2 lines, and foreign amounts on all four slots
+    const ledgerRecordId = await insertOrFail('MISC_EXPENSE', {
+      debitEntity1: EXPENSE_TAX_CATEGORY_ID,
+      debitLocalAmount1: 1000,
+      debitForeignAmount1: 270,
+      debitEntity2: inputVatTaxCategoryId,
+      debitLocalAmount2: 170,
+      debitForeignAmount2: 46,
+      creditEntity1: SUPPLIER_ID,
+      creditLocalAmount1: 1070,
+      creditForeignAmount1: 289,
+      creditEntity2: OTHER_TAX_CATEGORY_ID,
+      creditLocalAmount2: 100,
+      creditForeignAmount2: 27,
+      currency: Currency.Usd,
+      invoiceDate: date('2025-03-10'),
+      valueDate: date('2025-03-12'),
+      description: 'Four-line foreign record',
+      reference: 'REF-4',
+    });
+    const [seeded] = await ledgerRowsOfCharge();
+    expect(seeded).toMatchObject({
+      currency: Currency.Usd,
+      debit_foreign_amount1: 270,
+      credit_foreign_amount1: 289,
+      debit_entity2: inputVatTaxCategoryId,
+      debit_local_amount2: 170,
+      debit_foreign_amount2: 46,
+      credit_entity2: OTHER_TAX_CATEGORY_ID,
+      credit_local_amount2: 100,
+      credit_foreign_amount2: 27,
+    });
 
+    // The same record as a two-line local-currency record: optional values left out
     const result = await updateManualLedgerRecord(newContext().injector, {
       ledgerRecordId,
-      input: vatInvoiceInput({
+      input: miscExpenseInput({
         debitLocalAmount1: 1170,
-        debitEntity2: null,
-        debitLocalAmount2: null,
+        creditLocalAmount1: 1170,
         invoiceDate: date('2025-03-15'),
       }),
     });
@@ -418,7 +473,11 @@ describe('Manual ledger records (DB)', () => {
     expect(ledgerRows).toHaveLength(1);
     expect(ledgerRows[0]).toMatchObject({
       id: ledgerRecordId,
+      currency: LOCAL_CURRENCY,
       debit_local_amount1: 1170,
+      debit_foreign_amount1: null,
+      credit_local_amount1: 1170,
+      credit_foreign_amount1: null,
       debit_entity2: null,
       debit_local_amount2: null,
       debit_foreign_amount2: null,
@@ -427,6 +486,7 @@ describe('Manual ledger records (DB)', () => {
       credit_foreign_amount2: null,
       invoice_date: '2025-03-15',
       value_date: '2025-03-12',
+      reference1: null,
     });
   });
 
@@ -448,7 +508,7 @@ describe('Manual ledger records (DB)', () => {
       }),
     });
 
-    expect(result).toMatchObject({ __typename: 'CommonError' });
+    expect(result).toEqual({ __typename: 'CommonError', message: new LedgerLockError().message });
     expect(await ledgerRowsOfCharge()).toEqual([before]);
   });
 
@@ -591,7 +651,10 @@ describe('Manual ledger records (DB)', () => {
       });
 
       // The by-id record loader is scoped to the write-target owner, so the record reads as missing
-      expect(result).toMatchObject({ __typename: 'CommonError' });
+      expect(result).toEqual({
+        __typename: 'CommonError',
+        message: `Ledger record with id ${ledgerRecordId} not found`,
+      });
       const [row] = await queryRows<{ invoice_date: string }>(
         `SELECT invoice_date::text FROM ${qualifyTable('ledger_records')} WHERE id = $1`,
         [ledgerRecordId],
