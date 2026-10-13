@@ -41,3 +41,7 @@ the date is the invoice date. VAT is the slot-2 amount on the side opposite the 
 2 for an expense, credit 2 for an income) when that slot holds the input or output VAT tax category,
 and 0 otherwise. The insert is rejected when neither or both main entities are businesses, or when
 the counterparty is the charge owner.
+
+Every financial entity a manual ledger record references (both operations of an insert, and an
+edit) must belong to the business the request writes to; an entity of another business in the read
+scope is reported as not found in this business.

@@ -77,6 +77,30 @@ function trackDegrade(events: string[], isInTransaction: () => boolean) {
   });
 }
 
+/**
+ * A `FinancialEntitiesProvider` stub. Every ID is an entity of `ownerId` (a tax category unless
+ * `types` says otherwise), except `unknown-*` IDs, which don't exist, and `foreign-*` IDs, which
+ * belong to another business in the read scope.
+ */
+function makeEntitiesProvider(ownerId: string, types: Record<string, string> = {}) {
+  return {
+    getFinancialEntityByIdLoader: {
+      loadMany: vi.fn(
+        async (ids: readonly string[]): Promise<unknown[]> =>
+          ids.map(id =>
+            id.startsWith('unknown-')
+              ? undefined
+              : {
+                  id,
+                  type: types[id] ?? 'tax_category',
+                  owner_id: id.startsWith('foreign-') ? OTHER_BUSINESS_ID : ownerId,
+                },
+          ),
+      ),
+    },
+  };
+}
+
 const INPUT: LedgerRecordInput = {
   debitEntity1: 'debit-entity-1',
   debitLocalAmount1: 100,
@@ -148,11 +172,13 @@ function setup(
   const chargesProvider = {
     getChargeByIdLoader: { load: vi.fn(async () => charge) },
   };
+  const financialEntitiesProvider = makeEntitiesProvider(RECORD_OWNER_ID);
   const injector = makeInjector(
     new Map<unknown, unknown>([
       [TenantAwareDBClient, dbClient],
       [LedgerProvider, ledgerProvider],
       [ChargesProvider, chargesProvider],
+      [FinancialEntitiesProvider, financialEntitiesProvider],
       [
         AdminContextProvider,
         {
@@ -172,6 +198,7 @@ function setup(
     dbClient,
     ledgerProvider,
     chargesProvider,
+    financialEntitiesProvider,
     charge,
     updatedRow,
   };
@@ -349,6 +376,22 @@ describe('updateManualLedgerRecord', () => {
     consoleError.mockRestore();
   });
 
+  it('rejects an entity of another business in the read scope, and never updates', async () => {
+    const { injector, ledgerProvider, dbClient } = setup(buildRecord());
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: { ...INPUT, debitEntity1: 'foreign-entity' },
+    });
+
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: 'Financial entity with id foreign-entity not found in this business',
+    });
+    expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
+    expect(dbClient.transaction).not.toHaveBeenCalled();
+  });
+
   it('overwrites the record under its own owner, clearing absent slot-2 values', async () => {
     const { injector, ledgerProvider, charge, updatedRow } = setup(buildRecord());
 
@@ -456,10 +499,7 @@ describe('insertManualLedgerRecord', () => {
 
   const INPUT_VAT = 'input-vat-category';
   const OUTPUT_VAT = 'output-vat-category';
-  const ENTITY_TYPES: Record<string, string> = {
-    supplier: 'business',
-    'expense-category': 'tax_category',
-  };
+  const ENTITY_TYPES: Record<string, string> = { supplier: 'business' };
 
   function setupInsert({
     chargeExists = true,
@@ -486,14 +526,7 @@ describe('insertManualLedgerRecord', () => {
         return [documentRow];
       }),
     };
-    const financialEntitiesProvider = {
-      getFinancialEntityByIdLoader: {
-        loadMany: vi.fn(
-          async (ids: readonly string[]): Promise<unknown[]> =>
-            ids.map(id => (ENTITY_TYPES[id] ? { id, type: ENTITY_TYPES[id] } : undefined)),
-        ),
-      },
-    };
+    const financialEntitiesProvider = makeEntitiesProvider(OWNER_ID, ENTITY_TYPES);
     const ledgerProvider = {
       insertLedgerRecords: vi.fn(async (_params: unknown): Promise<unknown[]> => {
         events.push(`insertLedgerRecords:${isInTransaction() ? 'in' : 'out'}`);
@@ -744,6 +777,30 @@ describe('insertManualLedgerRecord', () => {
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
   });
 
+  it('rejects entities of another business, listing each, and writes nothing', async () => {
+    const { injector, dbClient, financialEntitiesProvider } = setupInsert();
+
+    const result = await insert(injector, {
+      ...INSERT_INPUT,
+      creditEntity1: 'foreign-supplier',
+      debitEntity2: 'foreign-vat-category',
+    });
+
+    expect(financialEntitiesProvider.getFinancialEntityByIdLoader.loadMany).toHaveBeenCalledWith([
+      'expense-category',
+      'foreign-supplier',
+      'foreign-vat-category',
+    ]);
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: [
+        'Financial entity with id foreign-supplier not found in this business',
+        'Financial entity with id foreign-vat-category not found in this business',
+      ].join('\n'),
+    });
+    expect(dbClient.transaction).not.toHaveBeenCalled();
+  });
+
   describe('DOCUMENT operation', () => {
     const DOCUMENT_INPUT: LedgerRecordInput = { ...INSERT_INPUT, debitEntity2: INPUT_VAT };
 
@@ -764,7 +821,7 @@ describe('insertManualLedgerRecord', () => {
       const result = await insert(injector, DOCUMENT_INPUT, 'DOCUMENT');
 
       expect(financialEntitiesProvider.getFinancialEntityByIdLoader.loadMany).toHaveBeenCalledWith(
-        ['expense-category', 'supplier'],
+        ['expense-category', 'supplier', INPUT_VAT],
       );
       expect(events).toEqual([
         'transaction:start',
@@ -824,6 +881,23 @@ describe('insertManualLedgerRecord', () => {
       expect(dbClient.transaction).not.toHaveBeenCalled();
     });
 
+    it('rejects a counterparty of another business in the read scope', async () => {
+      const { injector, dbClient, documentsProvider } = setupInsert();
+
+      const result = await insert(
+        injector,
+        { ...DOCUMENT_INPUT, creditEntity1: 'foreign-supplier' },
+        'DOCUMENT',
+      );
+
+      expect(result).toEqual({
+        __typename: 'CommonError',
+        message: 'Financial entity with id foreign-supplier not found in this business',
+      });
+      expect(dbClient.transaction).not.toHaveBeenCalled();
+      expect(documentsProvider.insertDocuments).not.toHaveBeenCalled();
+    });
+
     it('returns a CommonError and opens no transaction when an entity is missing', async () => {
       const { injector, dbClient } = setupInsert();
 
@@ -835,7 +909,7 @@ describe('insertManualLedgerRecord', () => {
 
       expect(result).toEqual({
         __typename: 'CommonError',
-        message: 'Financial entity with id unknown-entity not found',
+        message: 'Financial entity with id unknown-entity not found in this business',
       });
       expect(dbClient.transaction).not.toHaveBeenCalled();
       expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
@@ -845,15 +919,16 @@ describe('insertManualLedgerRecord', () => {
       const { injector, dbClient, financialEntitiesProvider } = setupInsert();
       const lookupError = new Error('lookup failed');
       financialEntitiesProvider.getFinancialEntityByIdLoader.loadMany.mockResolvedValueOnce([
-        { id: 'expense-category', type: 'tax_category' },
+        { id: 'expense-category', type: 'tax_category', owner_id: OWNER_ID },
         lookupError,
+        { id: INPUT_VAT, type: 'tax_category', owner_id: OWNER_ID },
       ]);
 
       const result = await insert(injector, DOCUMENT_INPUT, 'DOCUMENT');
 
       expect(result).toEqual({
         __typename: 'CommonError',
-        message: 'Financial entity with id supplier not found',
+        message: 'Financial entity with id supplier not found in this business',
       });
       // The lookup failure itself is logged, not lost
       expect(console.error).toHaveBeenCalledWith(
