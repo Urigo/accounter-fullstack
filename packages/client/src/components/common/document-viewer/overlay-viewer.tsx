@@ -13,7 +13,9 @@ import { useOverlayHistory } from './use-overlay-history.js';
  * `z-1001`, after the overlay, so a `z-1002` overlay would hide them.
  */
 const MODE_CLASSES: Record<OverlayMode, string> = {
-  fullscreen: 'fixed inset-0 z-1001 bg-white dark:bg-gray-950',
+  // There is no `Dialog.Overlay`, so no scroll lock. `touch-none` stops a drag on the header or
+  // toolbar from scrolling the page behind (iOS); taps still click, and the canvas pans in JS.
+  fullscreen: 'fixed inset-0 z-1001 touch-none overscroll-contain bg-white dark:bg-gray-950',
   sheet:
     'fixed inset-y-0 right-0 z-1001 w-1/2 min-w-105 border-l bg-white shadow-xl dark:bg-gray-950',
 };
@@ -40,8 +42,9 @@ export interface OverlayViewerFrameProps {
  * dialog below would take a click inside the overlay for an outside click and close. Esc closes
  * only the topmost layer.
  *
- * There is no `Dialog.Overlay`, so there is no Radix scroll lock either; the canvas's
- * `overscroll-contain` keeps a pan from scrolling the page behind.
+ * There is no `Dialog.Overlay`, so there is no Radix scroll lock either. The canvas's
+ * `overscroll-contain` keeps a pan from scrolling the page behind, and full screen the frame is
+ * `touch-none` too, for drags on the header and toolbar.
  *
  * Presentational: the host below connects it to the store and to history.
  */

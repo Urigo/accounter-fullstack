@@ -14,6 +14,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resetDocumentViewerStore, useDocumentViewer } from '../../../../hooks/use-document-viewer.js';
 import { useSidebar } from '../../../../hooks/use-sidebar.js';
+import { skipSameUrlRevalidation } from '../../../../router/should-revalidate.js';
 import type { DocumentViewerEntry } from '../types.js';
 import { isDocViewerState, useOverlayHistory } from '../use-overlay-history.js';
 
@@ -273,5 +274,83 @@ describe('useOverlayHistory with a data router', () => {
     expect(router.state.location.key).toBe(firstKey);
     expect(useDocumentViewer.getState().current).toBeNull();
     router.dispose();
+  });
+
+  /** A `/charges/:chargeId`-like route whose loader counts its runs. */
+  async function mountWithLoader(
+    shouldRevalidate?: typeof skipSameUrlRevalidation,
+  ): Promise<{ router: ReturnType<typeof createMemoryRouter>; loads: () => number }> {
+    let loads = 0;
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/charges/:chargeId',
+          loader: () => {
+            loads += 1;
+            return { charge: 'c1' };
+          },
+          shouldRevalidate,
+          element: (
+            <>
+              <LocationProbe />
+              <Harness />
+            </>
+          ),
+        },
+      ],
+      { initialEntries: ['/charges/c1'] },
+    );
+    await act(async () =>
+      root.render(
+        <StrictMode>
+          <RouterProvider router={router} />
+        </StrictMode>,
+      ),
+    );
+    return { router, loads: () => loads };
+  }
+
+  it("never re-runs the route's loader on open, ✕ or Back", async () => {
+    const { router, loads } = await mountWithLoader(skipSameUrlRevalidation);
+    const initial = loads();
+
+    await openDoc();
+    expect(isDocViewerState(router.state.location.state)).toBe(true);
+    await act(async () => requestClose());
+    expect(useDocumentViewer.getState().current).toBeNull();
+    await openDoc();
+    await act(async () => router.navigate(-1));
+    expect(useDocumentViewer.getState().current).toBeNull();
+
+    expect(loads()).toBe(initial);
+    router.dispose();
+  });
+
+  it('without the route guard, the same navigations would refetch (the guard is what matters)', async () => {
+    const { router, loads } = await mountWithLoader();
+    const initial = loads();
+    await openDoc();
+    await act(async () => requestClose());
+    expect(loads()).toBeGreaterThan(initial);
+    router.dispose();
+  });
+});
+
+describe('useOverlayHistory and the address bar', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('pushes the address-bar URL, keeping a parameter set with a bare pushState', async () => {
+    window.history.replaceState(null, '', '/documents?page=1');
+    await mount(['/documents?page=1']);
+    // What `useUrlQuery.set` does: the router doesn't hear about it.
+    window.history.pushState(null, '', '/documents?page=1&sort=date#top');
+    await openDoc();
+
+    expect(location.pathname + location.search + location.hash).toBe(
+      '/documents?page=1&sort=date#top',
+    );
+    expect(isDocViewerState(location.state)).toBe(true);
   });
 });

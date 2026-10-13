@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, type Location, type Path } from 'react-router-dom';
 
 /** The `history.state` flag that marks the entry the full-screen overlay pushed. */
 export type DocViewerState = { docViewer: true };
@@ -14,6 +14,21 @@ export function isDocViewerState(state: unknown): state is DocViewerState {
 
 function stateObject(state: unknown): Record<string, unknown> {
   return typeof state === 'object' && state !== null ? (state as Record<string, unknown>) : {};
+}
+
+/**
+ * The URL to push or replace: the address bar's, not the router's copy. `useUrlQuery.set` writes
+ * `history.pushState` directly, so the router's `location` can lag behind a just-set query
+ * parameter, and pushing it would drop that parameter from the address bar. The address bar is
+ * used only while it shows the router's page (it always does in the app; a memory router in tests
+ * leaves it elsewhere).
+ */
+function currentPath(location: Location): Partial<Path> {
+  const { pathname, search, hash } = window.location;
+  if (pathname === location.pathname) {
+    return { pathname, search, hash };
+  }
+  return { pathname: location.pathname, search: location.search, hash: location.hash };
 }
 
 /**
@@ -72,7 +87,11 @@ export function useOverlayHistory({ active, close }: UseOverlayHistoryOptions): 
     if (active && !flagged && phase === 'idle') {
       // The ref is set first: StrictMode's second run happens before the location updates.
       phaseRef.current = 'pushing';
-      navigate(location, { state: { ...stateObject(location.state), docViewer: true } });
+      // `preventScrollReset`: the page under the overlay keeps its scroll position.
+      navigate(currentPath(location), {
+        state: { ...stateObject(location.state), docViewer: true },
+        preventScrollReset: true,
+      });
       return;
     }
 
@@ -83,9 +102,10 @@ export function useOverlayHistory({ active, close }: UseOverlayHistoryOptions): 
         navigate(-1);
       } else if (phaseRef.current === 'idle' && clearedKeyRef.current !== location.key) {
         clearedKeyRef.current = location.key;
-        navigate(location, {
+        navigate(currentPath(location), {
           replace: true,
           state: { ...stateObject(location.state), docViewer: undefined },
+          preventScrollReset: true,
         });
       }
     }

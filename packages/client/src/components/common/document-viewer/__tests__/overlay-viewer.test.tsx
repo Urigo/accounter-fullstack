@@ -62,6 +62,16 @@ async function pressEscape(): Promise<void> {
   });
 }
 
+/**
+ * Radix's FocusScope moves focus on unmount from a `setTimeout(0)`, which `act` doesn't always wait
+ * for under load.
+ */
+async function flushFocusReturn(): Promise<void> {
+  await act(async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+}
+
 function makeTrigger(parent: HTMLElement = document.body): HTMLButtonElement {
   const trigger = document.createElement('button');
   trigger.textContent = 'thumbnail';
@@ -101,7 +111,7 @@ describe('OverlayViewerFrame', () => {
   });
 
   it.each([
-    ['fullscreen', ['fixed', 'inset-0', 'z-1001'], ['w-1/2']],
+    ['fullscreen', ['fixed', 'inset-0', 'z-1001', 'touch-none', 'overscroll-contain'], ['w-1/2']],
     ['sheet', ['fixed', 'inset-y-0', 'right-0', 'z-1001', 'w-1/2', 'min-w-105'], ['inset-0']],
   ] as const)('%s uses its classes', async (mode, present, absent) => {
     await act(async () =>
@@ -170,6 +180,7 @@ describe('OverlayDocumentViewer', () => {
 
     expect(useDocumentViewer.getState().current).toBeNull();
     expect(overlay()).toBeNull();
+    await flushFocusReturn();
     expect(document.activeElement).toBe(trigger);
   });
 
@@ -187,6 +198,7 @@ describe('OverlayDocumentViewer', () => {
     await act(async () => close?.click());
 
     expect(useDocumentViewer.getState().current).toBeNull();
+    await flushFocusReturn();
     expect(document.activeElement).toBe(trigger);
   });
 
@@ -198,6 +210,7 @@ describe('OverlayDocumentViewer', () => {
     trigger.remove();
     await pressEscape();
     expect(useDocumentViewer.getState().current).toBeNull();
+    await flushFocusReturn();
     expect(document.activeElement).not.toBe(trigger);
   });
 
@@ -239,6 +252,7 @@ describe('OverlayDocumentViewer', () => {
     expect(useDocumentViewer.getState().current).toBeNull();
     expect(modalOpen).toBe(true);
     expect(document.body.querySelector('[data-slot="dialog-content"]')).not.toBeNull();
+    await flushFocusReturn();
     expect(document.activeElement).toBe(trigger);
 
     // The next Esc belongs to the modal.
