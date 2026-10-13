@@ -34,6 +34,17 @@ export type LedgerRecordFormValues = {
   creditLocalAmount1: number;
 };
 
+export const TIMELESS_DATE_FORMAT_MESSAGE = 'Date must be in format yyyy-mm-dd';
+
+/**
+ * Whether the raw text of a date input is something the date picker cannot parse. The picker only
+ * reports empty or valid dates to the form, so without this check an edit from a valid date to an
+ * invalid one would leave the old date in the form and submit it.
+ */
+export function isUnparsableDateText(text: string): boolean {
+  return text.trim() !== '' && !TIMELESS_DATE_REGEX.test(text);
+}
+
 /**
  * What the form holds while it is being filled in: every field may still be empty, and dates are
  * plain strings until the schema checks their format.
@@ -71,7 +82,7 @@ export function buildLedgerRecordFormSchema({
   // which locks every record dated on or before it). yyyy-mm-dd strings compare chronologically.
   const timelessDate = z
     .string({ message: 'Date is required' })
-    .regex(TIMELESS_DATE_REGEX, 'Date must be in format yyyy-mm-dd')
+    .regex(TIMELESS_DATE_REGEX, TIMELESS_DATE_FORMAT_MESSAGE)
     .refine(date => !ledgerLock || date > ledgerLock, `Date must be after ${ledgerLock}`)
     .transform(date => date as TimelessDateString);
 

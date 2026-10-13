@@ -1,4 +1,4 @@
-import { useContext, useId, useMemo, type FormEvent, type ReactElement } from 'react';
+import { useContext, useId, useMemo, useRef, type FormEvent, type ReactElement } from 'react';
 import { useForm, useFormContext, type FieldError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Currency, LedgerRecordOperation } from '../../../../gql/graphql.js';
@@ -30,11 +30,16 @@ import { DatePickerInput } from '../../inputs/date-picker-input.js';
 import { NumberInput } from '../../inputs/number-input.js';
 import {
   buildLedgerRecordFormSchema,
+  isUnparsableDateText,
   LEDGER_BALANCE_ERROR_PATH,
+  TIMELESS_DATE_FORMAT_MESSAGE,
   type LedgerRecordFormInput,
   type LedgerRecordFormMode,
   type LedgerRecordFormValues,
 } from './schema.js';
+
+type DateFieldName = 'invoiceDate' | 'valueDate';
+const DATE_FIELDS: DateFieldName[] = ['invoiceDate', 'valueDate'];
 
 const OPERATION_OPTIONS: Array<{ value: LedgerRecordOperation; label: string }> = [
   { value: LedgerRecordOperation.MiscExpense, label: 'Misc expense' },
@@ -134,7 +139,11 @@ export function LedgerRecordForm({
     resolver: zodResolver(schema),
     defaultValues: { description: '', reference: '', ...defaultValues },
   });
-  const { control, handleSubmit, formState } = form;
+  const { control, handleSubmit, formState, setError } = form;
+
+  // Date fields whose input text the date picker can't parse. The picker keeps such text to itself,
+  // so the form still holds the last valid date; submitting must not send that stale value.
+  const unparsableDates = useRef<Set<DateFieldName>>(new Set());
 
   const { selectableFinancialEntities, fetching: fetchingEntities } = useGetFinancialEntities();
   const portalContainer = usePortalContainer();
@@ -144,15 +153,34 @@ export function LedgerRecordForm({
     LEDGER_BALANCE_ERROR_PATH
   ];
 
-  function onFormSubmit(event: FormEvent<HTMLFormElement>): void {
+  function onDateInput(name: DateFieldName, text: string): void {
+    if (isUnparsableDateText(text)) {
+      unparsableDates.current.add(name);
+    } else {
+      unparsableDates.current.delete(name);
+    }
+  }
+
+  async function onFormSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     // React bubbles events through portals: keep the submit from reaching any ancestor form
     event.stopPropagation();
-    void handleSubmit(onSubmit)(event);
+    await handleSubmit(values => {
+      if (unparsableDates.current.size > 0) {
+        return;
+      }
+      return onSubmit(values);
+    })(event);
+    // Set after validation, which replaces the form's errors with the schema's own
+    for (const name of DATE_FIELDS) {
+      if (unparsableDates.current.has(name)) {
+        setError(name, { type: 'format', message: TIMELESS_DATE_FORMAT_MESSAGE });
+      }
+    }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={onFormSubmit} className="flex flex-col gap-4">
+      <form onSubmit={event => void onFormSubmit(event)} className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {mode === 'insert' && (
             <FormField
@@ -199,6 +227,7 @@ export function LedgerRecordForm({
                     onChange={date => {
                       if (date !== field.value) field.onChange(date ?? undefined);
                     }}
+                    onInput={event => onDateInput('invoiceDate', event.currentTarget.value)}
                     aria-invalid={!!fieldState.error}
                   />
                 </FormControl>
@@ -218,6 +247,7 @@ export function LedgerRecordForm({
                     onChange={date => {
                       if (date !== field.value) field.onChange(date ?? undefined);
                     }}
+                    onInput={event => onDateInput('valueDate', event.currentTarget.value)}
                     aria-invalid={!!fieldState.error}
                   />
                 </FormControl>
