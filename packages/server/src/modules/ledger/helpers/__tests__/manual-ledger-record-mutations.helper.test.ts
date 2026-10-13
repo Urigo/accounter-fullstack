@@ -37,7 +37,40 @@ vi.mock('../ledger-lock.js', () => ({
 const RECORD_ID = 'ledger-record';
 const CHARGE_ID = 'charge';
 const RECORD_OWNER_ID = 'record-owner';
-const CONTEXT_OWNER_ID = 'context-owner';
+const OTHER_BUSINESS_ID = 'other-business';
+
+/**
+ * A `TenantAwareDBClient` stub whose `transaction(fn)` runs `fn` and logs start / commit / rollback
+ * to `events`; `isInTransaction()` lets provider stubs log whether they ran inside the callback.
+ */
+function makeTransactionClient(events: string[]) {
+  let inTransaction = false;
+  const dbClient = {
+    transaction: vi.fn(async (fn: (client: unknown) => Promise<unknown>) => {
+      events.push('transaction:start');
+      inTransaction = true;
+      try {
+        const result = await fn({});
+        events.push('transaction:commit');
+        return result;
+      } catch (e) {
+        events.push('transaction:rollback');
+        throw e;
+      } finally {
+        inTransaction = false;
+      }
+    }),
+  };
+  return { dbClient, isInTransaction: () => inTransaction };
+}
+
+/** Logs the degrade call (and whether it ran inside the transaction) to `events` */
+function trackDegrade(events: string[], isInTransaction: () => boolean) {
+  vi.mocked(degradeChargesAccountantApproval).mockImplementation(async () => {
+    events.push(`degrade:${isInTransaction() ? 'in' : 'out'}`);
+    return new Map();
+  });
+}
 
 const INPUT: LedgerRecordInput = {
   debitEntity1: 'debit-entity-1',
@@ -81,8 +114,13 @@ function buildRecord(
 
 function setup(
   record: IGetLedgerRecordsByIdsResult | undefined,
-  { ledgerLock }: { ledgerLock?: string } = {},
+  {
+    ledgerLock,
+    writeTargetOwnerId = RECORD_OWNER_ID,
+  }: { ledgerLock?: string; writeTargetOwnerId?: string } = {},
 ) {
+  const events: string[] = [];
+  const { dbClient, isInTransaction } = makeTransactionClient(events);
   const charge = { id: CHARGE_ID, accountant_status: 'PENDING' } as IGetChargesByIdsResult;
   const updatedRow = buildRecord({
     debit_entity1: INPUT.debitEntity1,
@@ -97,20 +135,24 @@ function setup(
   });
   const ledgerProvider = {
     getLedgerRecordsByIdLoader: { load: vi.fn(async () => record) },
-    updateLedgerRecord: vi.fn(async (_params: unknown) => [updatedRow]),
+    updateLedgerRecord: vi.fn(async (_params: unknown): Promise<unknown[]> => {
+      events.push(`updateLedgerRecord:${isInTransaction() ? 'in' : 'out'}`);
+      return [updatedRow];
+    }),
   };
   const chargesProvider = {
     getChargeByIdLoader: { load: vi.fn(async () => charge) },
   };
   const injector = makeInjector(
     new Map<unknown, unknown>([
+      [TenantAwareDBClient, dbClient],
       [LedgerProvider, ledgerProvider],
       [ChargesProvider, chargesProvider],
       [
         AdminContextProvider,
         {
           getVerifiedAdminContext: async () => ({
-            ownerId: CONTEXT_OWNER_ID,
+            ownerId: writeTargetOwnerId,
             defaultLocalCurrency: Currency.Ils,
             ledgerLock,
           }),
@@ -118,7 +160,16 @@ function setup(
       ],
     ]),
   );
-  return { injector, ledgerProvider, chargesProvider, charge, updatedRow };
+  return {
+    injector,
+    events,
+    isInTransaction,
+    dbClient,
+    ledgerProvider,
+    chargesProvider,
+    charge,
+    updatedRow,
+  };
 }
 
 describe('updateManualLedgerRecord', () => {
@@ -153,6 +204,24 @@ describe('updateManualLedgerRecord', () => {
     });
     expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+  });
+
+  it("returns a CommonError and never updates a record outside the request's write target", async () => {
+    const { injector, dbClient, ledgerProvider } = setup(buildRecord(), {
+      writeTargetOwnerId: OTHER_BUSINESS_ID,
+    });
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: INPUT,
+    });
+
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: `This ledger record belongs to business ${RECORD_OWNER_ID}, but this request can only write to business ${OTHER_BUSINESS_ID}. Narrow the business scope to the ledger record's business and try again.`,
+    });
+    expect(dbClient.transaction).not.toHaveBeenCalled();
+    expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
   });
 
   it('returns a CommonError listing every validation problem, and never updates', async () => {
@@ -309,6 +378,41 @@ describe('updateManualLedgerRecord', () => {
     expect(result).toEqual({ record: updatedRow, charge });
   });
 
+  it('updates the record and re-flags the charge in one transaction', async () => {
+    const { injector, events, isInTransaction } = setup(buildRecord());
+    trackDegrade(events, isInTransaction);
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: INPUT,
+    });
+
+    expect(events).toEqual([
+      'transaction:start',
+      'updateLedgerRecord:in',
+      'degrade:in',
+      'transaction:commit',
+    ]);
+    expect(result).not.toHaveProperty('__typename', 'CommonError');
+  });
+
+  it('rolls the update back and returns a CommonError when re-flagging the charge fails', async () => {
+    const { injector, events } = setup(buildRecord());
+    vi.mocked(degradeChargesAccountantApproval).mockRejectedValueOnce(new Error('db down'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: INPUT,
+    });
+
+    expect(events).toEqual(['transaction:start', 'updateLedgerRecord:in', 'transaction:rollback']);
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: `Failed to update ledger record ID="${RECORD_ID}"`,
+    });
+  });
+
   it('responds with the degraded charge when the update un-approves it', async () => {
     const { injector, updatedRow } = setup(buildRecord());
     const degradedCharge = {
@@ -345,40 +449,27 @@ describe('insertManualLedgerRecord', () => {
     reference: 'INV-1',
   };
 
-  function setupInsert({ chargeExists = true }: { chargeExists?: boolean } = {}) {
+  function setupInsert({
+    chargeExists = true,
+    writeTargetOwnerId = OWNER_ID,
+  }: { chargeExists?: boolean; writeTargetOwnerId?: string } = {}) {
     const charge = chargeExists
       ? ({ id: CHARGE_ID, owner_id: OWNER_ID } as IGetChargesByIdsResult)
       : undefined;
     const events: string[] = [];
-    let inTransaction = false;
+    const { dbClient, isInTransaction } = makeTransactionClient(events);
     const expenseRow = { id: 'misc-expense', charge_id: CHARGE_ID };
     const ledgerRow = buildRecord({ charge_id: CHARGE_ID, owner_id: OWNER_ID });
 
-    const dbClient = {
-      transaction: vi.fn(async (fn: (client: unknown) => Promise<unknown>) => {
-        events.push('transaction:start');
-        inTransaction = true;
-        try {
-          const result = await fn({});
-          events.push('transaction:commit');
-          return result;
-        } catch (e) {
-          events.push('transaction:rollback');
-          throw e;
-        } finally {
-          inTransaction = false;
-        }
-      }),
-    };
     const miscExpensesProvider = {
       insertExpense: vi.fn(async (_params: unknown): Promise<unknown[]> => {
-        events.push(`insertExpense:${inTransaction ? 'in' : 'out'}`);
+        events.push(`insertExpense:${isInTransaction() ? 'in' : 'out'}`);
         return [expenseRow];
       }),
     };
     const ledgerProvider = {
       insertLedgerRecords: vi.fn(async (_params: unknown): Promise<unknown[]> => {
-        events.push(`insertLedgerRecords:${inTransaction ? 'in' : 'out'}`);
+        events.push(`insertLedgerRecords:${isInTransaction() ? 'in' : 'out'}`);
         return [ledgerRow];
       }),
     };
@@ -395,7 +486,7 @@ describe('insertManualLedgerRecord', () => {
           AdminContextProvider,
           {
             getVerifiedAdminContext: async () => ({
-              ownerId: CONTEXT_OWNER_ID,
+              ownerId: writeTargetOwnerId,
               defaultLocalCurrency: Currency.Ils,
               ledgerLock: LEDGER_LOCK,
             }),
@@ -403,7 +494,16 @@ describe('insertManualLedgerRecord', () => {
         ],
       ]),
     );
-    return { injector, events, dbClient, miscExpensesProvider, ledgerProvider, charge, ledgerRow };
+    return {
+      injector,
+      events,
+      isInTransaction,
+      dbClient,
+      miscExpensesProvider,
+      ledgerProvider,
+      charge,
+      ledgerRow,
+    };
   }
 
   function insert(injector: ReturnType<typeof setupInsert>['injector'], input = INSERT_INPUT) {
@@ -431,6 +531,19 @@ describe('insertManualLedgerRecord', () => {
     });
     expect(dbClient.transaction).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+  });
+
+  it("returns a CommonError and writes nothing for a charge outside the request's write target", async () => {
+    const { injector, dbClient } = setupInsert({ writeTargetOwnerId: OTHER_BUSINESS_ID });
+
+    const result = await insert(injector);
+
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: `This charge belongs to business ${OWNER_ID}, but this request can only write to business ${OTHER_BUSINESS_ID}. Narrow the business scope to the charge's business and try again.`,
+    });
+    expect(isChargeLocked).not.toHaveBeenCalled();
+    expect(dbClient.transaction).not.toHaveBeenCalled();
   });
 
   it("returns a CommonError when the charge's ledger is locked", async () => {
@@ -466,9 +579,17 @@ describe('insertManualLedgerRecord', () => {
     expect(dbClient.transaction).not.toHaveBeenCalled();
   });
 
-  it('inserts the misc expense and then the typed ledger record in one transaction', async () => {
-    const { injector, events, miscExpensesProvider, ledgerProvider, charge, ledgerRow } =
-      setupInsert();
+  it('inserts the misc expense, then the typed ledger record, then re-flags the charge, in one transaction', async () => {
+    const {
+      injector,
+      events,
+      isInTransaction,
+      miscExpensesProvider,
+      ledgerProvider,
+      charge,
+      ledgerRow,
+    } = setupInsert();
+    trackDegrade(events, isInTransaction);
 
     const result = await insert(injector);
 
@@ -476,6 +597,7 @@ describe('insertManualLedgerRecord', () => {
       'transaction:start',
       'insertExpense:in',
       'insertLedgerRecords:in',
+      'degrade:in',
       'transaction:commit',
     ]);
     expect(miscExpensesProvider.insertExpense).toHaveBeenCalledWith({
@@ -543,6 +665,24 @@ describe('insertManualLedgerRecord', () => {
       message: `Failed to insert ledger record for charge ID="${CHARGE_ID}"`,
     });
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+  });
+
+  it('rolls both inserts back and returns a CommonError when re-flagging the charge fails', async () => {
+    const { injector, events } = setupInsert();
+    vi.mocked(degradeChargesAccountantApproval).mockRejectedValueOnce(new Error('db down'));
+
+    const result = await insert(injector);
+
+    expect(events).toEqual([
+      'transaction:start',
+      'insertExpense:in',
+      'insertLedgerRecords:in',
+      'transaction:rollback',
+    ]);
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: `Failed to insert ledger record for charge ID="${CHARGE_ID}"`,
+    });
   });
 
   it('rolls back when the misc expense insert returns no row', async () => {

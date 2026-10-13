@@ -11,6 +11,7 @@ import { degradeChargesAccountantApproval } from '../../accountant-approval/help
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { isChargeLocked } from './ledger-lock.js';
@@ -23,6 +24,48 @@ import {
 } from './manual-ledger-record.helper.js';
 
 type CommonError = { __typename: 'CommonError'; message: string };
+
+/**
+ * Re-flag a charge for accountant review as part of a manual ledger write, and return the charge in
+ * its fresh state: the degraded charge, else the already-loaded `charge`, else a reload. Call it
+ * inside the write's transaction, so a failure here rolls the write back instead of reporting an
+ * error for rows that were in fact saved.
+ */
+async function degradeAndLoadCharge(
+  injector: Injector,
+  chargeId: string,
+  charge?: IGetChargesByIdsResult,
+): Promise<IGetChargesByIdsResult> {
+  const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
+  const freshCharge =
+    degradedCharges.get(chargeId) ??
+    charge ??
+    (await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId));
+  if (!freshCharge) {
+    throw new Error(`Charge with id ${chargeId} not found`);
+  }
+  return freshCharge;
+}
+
+/**
+ * Row-level security only lets a request write rows of its write-target business (the admin
+ * context's owner), even when it reads several businesses; the admin context it validates against
+ * (local currency, ledger lock) is that business's too. Rejects a charge or record of any other
+ * business up front with an actionable message instead of a generic RLS failure.
+ */
+function writeTargetMismatchError(
+  subject: 'charge' | 'ledger record',
+  ownerId: string,
+  writeTargetOwnerId: string,
+): CommonError | null {
+  if (ownerId === writeTargetOwnerId) {
+    return null;
+  }
+  return {
+    __typename: 'CommonError',
+    message: `This ${subject} belongs to business ${ownerId}, but this request can only write to business ${writeTargetOwnerId}. Narrow the business scope to the ${subject}'s business and try again.`,
+  };
+}
 
 /**
  * Validate a manual ledger record against the form rules, then against the ledger provider's own
@@ -74,9 +117,20 @@ export async function updateManualLedgerRecord(
       };
     }
 
-    const { defaultLocalCurrency, ledgerLock } = await injector
-      .get(AdminContextProvider)
-      .getVerifiedAdminContext();
+    const {
+      ownerId: writeTargetOwnerId,
+      defaultLocalCurrency,
+      ledgerLock,
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+    const ownerError = writeTargetMismatchError(
+      'ledger record',
+      record.owner_id,
+      writeTargetOwnerId,
+    );
+    if (ownerError) {
+      return ownerError;
+    }
+
     const checked = checkManualLedgerRecord(
       input,
       { chargeId: record.charge_id, ownerId: record.owner_id },
@@ -87,32 +141,28 @@ export async function updateManualLedgerRecord(
     }
     const { params } = checked;
 
-    // Match the record's own owner, so a record of another business the user manages is updated
-    const [updatedRecord] = await ledgerProvider.updateLedgerRecord({
-      ...params,
-      ledgerId: record.id,
-      ownerId: record.owner_id,
+    // The update and the charge's re-flagging land together, or not at all
+    const result = await injector.get(TenantAwareDBClient).transaction(async () => {
+      // Match the record's own owner (checked above to be the write target)
+      const [updatedRecord] = await ledgerProvider.updateLedgerRecord({
+        ...params,
+        ledgerId: record.id,
+        ownerId: record.owner_id,
+      });
+      if (!updatedRecord) {
+        return null;
+      }
+      const charge = await degradeAndLoadCharge(injector, record.charge_id);
+      return { record: updatedRecord, charge };
     });
-    if (!updatedRecord) {
+    if (!result) {
       return {
         __typename: 'CommonError',
         message: `Ledger record with id ${ledgerRecordId} was not updated: it may have been locked or removed`,
       };
     }
 
-    const chargeId = record.charge_id;
-    const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
-    const charge =
-      degradedCharges.get(chargeId) ??
-      (await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId));
-    if (!charge) {
-      return {
-        __typename: 'CommonError',
-        message: `Charge with id ${chargeId} not found`,
-      };
-    }
-
-    return { record: updatedRecord, charge };
+    return result;
   } catch (e) {
     console.error(`Failed to update ledger record ID="${ledgerRecordId}"`, e);
     return {
@@ -145,9 +195,16 @@ export async function insertManualLedgerRecord(
       };
     }
 
-    const { defaultLocalCurrency, ledgerLock } = await injector
-      .get(AdminContextProvider)
-      .getVerifiedAdminContext();
+    const {
+      ownerId: writeTargetOwnerId,
+      defaultLocalCurrency,
+      ledgerLock,
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+    const ownerError = writeTargetMismatchError('charge', charge.owner_id, writeTargetOwnerId);
+    if (ownerError) {
+      return ownerError;
+    }
+
     if (await isChargeLocked(charge, injector, ledgerLock)) {
       return {
         __typename: 'CommonError',
@@ -193,8 +250,9 @@ export async function insertManualLedgerRecord(
     }
 
     // The providers share the request's TenantAwareDBClient, so their queries run on this
-    // transaction's connection; throwing inside the callback rolls both inserts back
-    const record = await injector.get(TenantAwareDBClient).transaction(async () => {
+    // transaction's connection; throwing inside the callback rolls every write back, including the
+    // charge's re-flagging
+    return await injector.get(TenantAwareDBClient).transaction(async () => {
       await insertEntity();
       const [ledgerRecord] = await injector.get(LedgerProvider).insertLedgerRecords({
         ledgerRecords: [{ ...params, chargeId, ownerId }],
@@ -202,11 +260,11 @@ export async function insertManualLedgerRecord(
       if (!ledgerRecord) {
         throw new Error('Ledger record was not inserted');
       }
-      return ledgerRecord;
+      return {
+        record: ledgerRecord,
+        charge: await degradeAndLoadCharge(injector, chargeId, charge),
+      };
     });
-
-    const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
-    return { record, charge: degradedCharges.get(chargeId) ?? charge };
   } catch (e) {
     console.error(`Failed to insert ledger record for charge ID="${chargeId}"`, e);
     return {

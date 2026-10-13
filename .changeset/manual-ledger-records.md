@@ -27,3 +27,7 @@ the amount is the credit slot-1 amount in the record's currency (slot 2, such as
 ledger record only). Either both are saved or neither is. The charge must not be locked, the input
 passes the same validation as an edit, and the mutation returns the new record with its charge (an
 approved charge is re-flagged for accountant review), or a `CommonError`.
+
+Both mutations save the ledger change and the charge's re-flagging in one transaction. They reject
+a charge or ledger record that belongs to a business other than the one the request writes to, with
+a message asking to narrow the business scope to that business.
