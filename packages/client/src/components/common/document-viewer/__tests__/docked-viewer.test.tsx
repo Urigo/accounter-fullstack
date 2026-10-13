@@ -21,9 +21,20 @@ const WORK_AREA = { left: 72, right: 1440, width: 1368 };
 let container: HTMLDivElement;
 let root: Root;
 let trigger: HTMLButtonElement;
+let resizeCallbacks = new Set<() => void>();
+
+/** Delivers a layout pass to every live `ResizeObserver`. */
+function fireResize(): void {
+  act(() => {
+    for (const callback of resizeCallbacks) {
+      callback();
+    }
+  });
+}
 
 beforeEach(() => {
   resetDocumentViewerStore();
+  resizeCallbacks = new Set();
   useSidebar.setState({ isMinimized: true });
   Object.defineProperty(document.documentElement, 'clientWidth', {
     configurable: true,
@@ -38,8 +49,13 @@ beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
     class {
-      observe(): void {}
-      disconnect(): void {}
+      constructor(private readonly callback: () => void) {}
+      observe(): void {
+        resizeCallbacks.add(this.callback);
+      }
+      disconnect(): void {
+        resizeCallbacks.delete(this.callback);
+      }
       unobserve(): void {}
     },
   );
@@ -210,6 +226,62 @@ describe('DockedDocumentViewer', () => {
       separator().dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     });
     expect(width(section)).toBe('clamp(420px, max(50%, 41rem), 100% - 480px)');
+  });
+
+  it('arrow keys step from the rendered width, not a stale chosen ratio', () => {
+    openDoc();
+    const section = region()!;
+    section.getBoundingClientRect = () => ({ width: 684 }) as DOMRect;
+    key(separator(), { key: 'ArrowLeft' });
+    expect(width(section)).toBe('clamp(420px, 52%, 100% - 480px)');
+
+    // The window shrank and the CSS clamp now holds the column at 420px of the same work area.
+    section.getBoundingClientRect = () => ({ width: 420 }) as DOMRect;
+    key(separator(), { key: 'ArrowLeft' });
+    // 420 / 1368 + 2%, not 52% + 2%.
+    expect(width(section)).toBe('clamp(420px, 32.7%, 100% - 480px)');
+  });
+
+  it('the separator reports its width as a percentage of the work area', () => {
+    openDoc();
+    const section = region()!;
+    const aria = (): (string | null)[] =>
+      ['aria-valuenow', 'aria-valuemin', 'aria-valuemax'].map(name =>
+        separator().getAttribute(name),
+      );
+
+    // Unmeasured: the default half of 0–100.
+    expect(aria()).toEqual(['50', '0', '100']);
+
+    // Laid out: 684px of 1368px. The bounds are 420px and 1368 − 480px.
+    section.getBoundingClientRect = () => ({ width: 684 }) as DOMRect;
+    fireResize();
+    expect(aria()).toEqual(['50', '31', '65']);
+    expect(separator().getAttribute('aria-valuetext')).toBe('Document viewer 50% wide');
+    expect(separator().getAttribute('aria-controls')).toBe('document-viewer');
+    expect(separator().getAttribute('aria-label')).toBe('Resize document viewer');
+
+    key(separator(), { key: 'ArrowLeft' });
+    expect(aria()[0]).toBe('52');
+
+    key(separator(), { key: 'Enter' });
+    expect(aria()[0]).toBe('50');
+
+    act(() => {
+      separator().dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, clientX: 756 }),
+      );
+    });
+    act(() => {
+      window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 840 }));
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
+    });
+    expect(aria()[0]).toBe('44');
+
+    act(() => {
+      separator().dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    });
+    expect(aria()[0]).toBe('50');
   });
 
   it('dragging the separator sets the width from the pointer, clamped', () => {

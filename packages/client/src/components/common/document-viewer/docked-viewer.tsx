@@ -39,6 +39,27 @@ function isEscapeHandledElsewhere(event: KeyboardEvent): boolean {
 }
 
 /**
+ * The resize handle's value: the docked column's width as a whole percentage of the work area,
+ * with the bounds the pixel minimums allow. A chosen ratio is reported at once, already clamped;
+ * the default width comes from layout. Unmeasured, it reports 50% of 0–100.
+ */
+export function separatorAria(
+  ratio: number | null,
+  layout: { area: number; width: number } | null,
+): { now: number; min: number; max: number } {
+  const area = layout?.area ?? 0;
+  const width = layout?.width ?? 0;
+  const percent = (value: number): number => Math.round(value * 100);
+  if (area <= 0) {
+    return { now: percent(ratio ?? 0.5), min: 0, max: 100 };
+  }
+  const min = clampDockedRatio(0, area);
+  const max = clampDockedRatio(1, area);
+  const now = clampDockedRatio(ratio ?? width / area, area);
+  return { now: percent(now), min: percent(min), max: percent(max) };
+}
+
+/**
  * The docked column: a labelled region beside the page column, resizable from its left edge.
  *
  * Its width is a CSS `clamp(420px, …, 100% - 480px)` of the work area (the flex row it sits in),
@@ -81,14 +102,38 @@ export function DockedViewerPanel({
   // A drag still in progress when the panel unmounts must not leave window listeners behind.
   useEffect(() => () => endDragRef.current?.(), []);
 
+  // The rendered widths, for the separator's ARIA value: the default width and the CSS clamp are
+  // only known once laid out. Updated whenever the column or the work area resizes.
+  const [layout, setLayout] = useState<{ area: number; width: number } | null>(null);
+  useEffect(() => {
+    const section = sectionRef.current;
+    const area = section?.parentElement;
+    if (!section || !area || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(() =>
+      setLayout({
+        area: area.getBoundingClientRect().width,
+        width: section.getBoundingClientRect().width,
+      }),
+    );
+    observer.observe(section);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, []);
+
+  const separatorValue = separatorAria(ratio, layout);
+
   const measure = (): { area: number; ratio: number } => {
     const section = sectionRef.current;
     const area = section?.parentElement?.getBoundingClientRect().width ?? 0;
-    if (ratio != null) {
-      return { area, ratio };
-    }
+    // The rendered width, not the chosen ratio: after a window resize the CSS clamp may hold the
+    // column at a minimum, and a key press must step from what is on screen.
     const width = section?.getBoundingClientRect().width ?? 0;
-    return { area, ratio: area > 0 && width > 0 ? width / area : 0.5 };
+    if (area > 0 && width > 0) {
+      return { area, ratio: width / area };
+    }
+    return { area, ratio: ratio ?? 0.5 };
   };
 
   const onHandlePointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -165,6 +210,10 @@ export function DockedViewerPanel({
           aria-orientation="vertical"
           aria-label="Resize document viewer"
           aria-controls={DOCKED_VIEWER_ID}
+          aria-valuenow={separatorValue.now}
+          aria-valuemin={separatorValue.min}
+          aria-valuemax={separatorValue.max}
+          aria-valuetext={`Document viewer ${separatorValue.now}% wide`}
           // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- see above
           tabIndex={0}
           data-dragging={dragging || undefined}

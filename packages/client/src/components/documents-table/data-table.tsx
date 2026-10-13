@@ -32,7 +32,10 @@ export function DocumentsTableRow<TData extends { id: string }>({
       data-viewing={viewing || undefined}
       className={cn(
         className,
-        viewing && 'bg-blue-50 hover:bg-blue-50 dark:bg-blue-950/40 dark:hover:bg-blue-950/40',
+        // The selected-state variants too: `TableRow`'s `data-[state=selected]:bg-gray-100` is more
+        // specific than a plain background, so a selected row would otherwise lose the highlight.
+        viewing &&
+          'bg-blue-50 hover:bg-blue-50 data-[state=selected]:bg-blue-50 dark:bg-blue-950/40 dark:hover:bg-blue-950/40 dark:data-[state=selected]:bg-blue-950/40',
       )}
     >
       {row.getVisibleCells().map(cell => (

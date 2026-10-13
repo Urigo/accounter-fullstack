@@ -92,6 +92,15 @@ export function DocumentActionsMenu({
     }
   }, [isViewing, viewerEntry, updateViewer]);
 
+  // A deleted document must not stay in the viewer. Done on delete success, not on unmount: a
+  // refetch remounts rows, and the row usually unmounts before the delete resolves anyway.
+  const onDocumentDeleted = useCallback((): void => {
+    const viewer = useDocumentViewer.getState();
+    if (viewer.current?.id === document.id) {
+      viewer.close();
+    }
+  }, [document.id]);
+
   return (
     <>
       <DropdownMenu>
@@ -219,6 +228,7 @@ export function DocumentActionsMenu({
       <DeleteDocumentButton
         documentId={document.id}
         onChange={document.onUpdate}
+        onDone={onDocumentDeleted}
         onChargeDeleted={document.onChargeDeleted}
         open={deleteOpen}
         setOpen={setDeleteOpen}

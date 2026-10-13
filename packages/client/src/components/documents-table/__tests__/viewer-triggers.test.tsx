@@ -31,11 +31,11 @@ function makeDocument(id: string, image: string | null = `https://example.com/${
 }
 
 /** Only what `DocumentsTableRow` touches. */
-function fakeRow(id: string): Row<TableFeaturesConfig, { id: string }> {
+function fakeRow(id: string, selected = false): Row<TableFeaturesConfig, { id: string }> {
   return {
     id,
     original: { id },
-    getIsSelected: () => false,
+    getIsSelected: () => selected,
     getVisibleCells: () => [],
   } as unknown as Row<TableFeaturesConfig, { id: string }>;
 }
@@ -143,6 +143,29 @@ describe('DocumentsTableRow', () => {
     expect(rowFor(1).hasAttribute('data-viewing')).toBe(false);
     // Selection keeps `data-state` to itself.
     expect(rowFor(0).getAttribute('data-state')).toBeNull();
+  });
+
+  it('keeps the highlight on a row that is also selected', () => {
+    render(
+      <table>
+        <tbody>
+          <DocumentsTableRow row={fakeRow('doc-1', true)} />
+        </tbody>
+      </table>,
+    );
+    expect(rowFor(0).getAttribute('data-state')).toBe('selected');
+    expect(rowFor(0).className).toContain('data-[state=selected]:bg-gray-100');
+
+    act(() =>
+      useDocumentViewer
+        .getState()
+        .open({ id: 'doc-1', imageUrl: 'https://example.com/a.jpg', fileUrl: null, title: 'A' }),
+    );
+    const classes = rowFor(0).className.split(/\s+/);
+    expect(classes).toContain('data-[state=selected]:bg-blue-50');
+    expect(classes).toContain('dark:data-[state=selected]:bg-blue-950/40');
+    expect(classes).not.toContain('data-[state=selected]:bg-gray-100');
+    expect(classes).not.toContain('dark:data-[state=selected]:bg-gray-800');
   });
 
   it('moves the highlight on a swap', () => {
