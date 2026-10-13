@@ -138,29 +138,55 @@ describe('updateManualLedgerRecord', () => {
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
   });
 
-  it('returns a CommonError when the params fail validation', async () => {
-    const { injector, ledgerProvider } = setup(buildRecord());
+  it('returns a CommonError listing every validation problem, and never updates', async () => {
+    const { injector, ledgerProvider } = setup(buildRecord(), { ledgerLock: '2025-02-28' });
 
     const result = await updateManualLedgerRecord(injector, {
       ledgerRecordId: RECORD_ID,
-      // a foreign amount on a local-currency record
-      input: { ...INPUT, debitForeignAmount1: 30 },
+      input: {
+        ...INPUT,
+        // a foreign amount on a local-currency record
+        debitForeignAmount1: 30,
+        // unbalanced
+        creditLocalAmount1: 117,
+        invoiceDate: '2025-02-28',
+      },
     });
 
     expect(result).toEqual({
       __typename: 'CommonError',
-      message: 'Ledger record foreign currency is missing',
+      message: [
+        'Debit 1: foreign amount is not allowed for ILS records',
+        'Debit and credit totals must be equal (debit 100, credit 117)',
+        'Invoice date must be after the ledger lock date (2025-02-28)',
+      ].join('\n'),
     });
     expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
   });
 
   it.each([
-    ['the invoice date is on the lock date', { invoiceDate: '2025-02-28' }],
-    ['the invoice date is before the lock date', { invoiceDate: '2025-01-15' }],
-    ['the value date is on the lock date', { valueDate: '2025-02-28' }],
-    ['the value date is before the lock date', { valueDate: '2025-01-15' }],
-  ] as const)('returns a CommonError and never updates when %s', async (_, dates) => {
+    [
+      'the invoice date is on the lock date',
+      { invoiceDate: '2025-02-28' },
+      'Invoice date must be after the ledger lock date (2025-02-28)',
+    ],
+    [
+      'the invoice date is before the lock date',
+      { invoiceDate: '2025-01-15' },
+      'Invoice date must be after the ledger lock date (2025-02-28)',
+    ],
+    [
+      'the value date is on the lock date',
+      { valueDate: '2025-02-28' },
+      'Value date must be after the ledger lock date (2025-02-28)',
+    ],
+    [
+      'the value date is before the lock date',
+      { valueDate: '2025-01-15' },
+      'Value date must be after the ledger lock date (2025-02-28)',
+    ],
+  ] as const)('returns a CommonError and never updates when %s', async (_, dates, message) => {
     const { injector, ledgerProvider } = setup(buildRecord(), { ledgerLock: '2025-02-28' });
 
     const result = await updateManualLedgerRecord(injector, {
@@ -168,10 +194,7 @@ describe('updateManualLedgerRecord', () => {
       input: { ...INPUT, ...dates },
     });
 
-    expect(result).toEqual({
-      __typename: 'CommonError',
-      message: new LedgerLockError().message,
-    });
+    expect(result).toEqual({ __typename: 'CommonError', message });
     expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
   });
