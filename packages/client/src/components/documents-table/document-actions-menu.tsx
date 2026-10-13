@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   CircleX,
   Copy,
@@ -14,6 +14,7 @@ import {
   Unlink,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
 import { ROUTES } from '@/router/routes.js';
 import { DocumentType } from '../../gql/graphql.js';
 import { writeToClipboard } from '../../helpers/index.js';
@@ -25,7 +26,6 @@ import {
 import {
   CloseDocumentButton,
   DeleteDocumentButton,
-  DocumentImageDrawer,
   PreviewDocumentModal,
   ReprocessDocumentOcrButton,
   UnlinkDocumentButton,
@@ -54,7 +54,13 @@ export function DocumentActionsMenu({
   document,
   withChargeLink = false,
 }: DocumentActionsMenuProps): ReactElement {
-  const [imageOpen, setImageOpen] = useState(false);
+  // The menu item is portaled to `document.body`, so the trigger button stands in for it when the
+  // viewer checks whether it was opened from inside a dialog.
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const isViewing = useDocumentViewer(s => s.current?.id === document.id);
+  const openViewer = useDocumentViewer(s => s.open);
+  const updateViewer = useDocumentViewer(s => s.update);
+  const viewerEntry = useMemo(() => toDocumentViewerEntry(document), [document]);
   const [closeDocumentOpen, setCloseDocumentOpen] = useState(false);
   const [issueDocumentOpen, setIssueDocumentOpen] = useState(false);
   const [unlinkOpen, setUnlinkOpen] = useState(false);
@@ -78,11 +84,20 @@ export function DocumentActionsMenu({
     writeToClipboard(document.id);
   }, [document.id]);
 
+  // The actions column can't be hidden, so this cell keeps the open viewer in step with the row:
+  // an edit saved in the sheet refreshes the docked document. `update` ignores unchanged entries.
+  useEffect(() => {
+    if (isViewing) {
+      updateViewer(viewerEntry);
+    }
+  }, [isViewing, viewerEntry, updateViewer]);
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            ref={menuTriggerRef}
             variant="ghost"
             size="icon"
             aria-label="Document actions"
@@ -119,7 +134,10 @@ export function DocumentActionsMenu({
           <DropdownMenuSeparator />
 
           <DropdownMenuLabel variant="section">Files</DropdownMenuLabel>
-          <DropdownMenuItem disabled={!document.image} onSelect={() => setImageOpen(true)}>
+          <DropdownMenuItem
+            disabled={!document.image}
+            onSelect={() => openViewer(viewerEntry, { trigger: menuTriggerRef.current })}
+          >
             <Image className="size-4" />
             View Image
           </DropdownMenuItem>
@@ -183,12 +201,6 @@ export function DocumentActionsMenu({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <DocumentImageDrawer
-        source={document.image ? toDocumentViewerEntry(document) : null}
-        opened={imageOpen}
-        onClose={(): void => setImageOpen(false)}
-      />
 
       <ReprocessDocumentOcrButton
         documentId={document.id}

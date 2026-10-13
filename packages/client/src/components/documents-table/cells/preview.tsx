@@ -1,7 +1,7 @@
-import { useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { ImageOff } from 'lucide-react';
+import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
 import { toDocumentViewerEntry } from '../../common/document-viewer/source.js';
-import { DocumentImageDrawer } from '../../common/index.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
@@ -23,7 +23,8 @@ function toHref(value?: string | URL | null): string | undefined {
  * backlog and needs to recognise documents at a glance rather than open them one by one.
  */
 export const Preview = ({ document }: Props): ReactElement => {
-  const [openImage, setOpenImage] = useState(false);
+  const isActive = useDocumentViewer(s => s.current?.id === document.id);
+  const toggle = useDocumentViewer(s => s.toggle);
   const src = toHref(document.image);
 
   if (!src) {
@@ -35,20 +36,15 @@ export const Preview = ({ document }: Props): ReactElement => {
   }
 
   return (
-    <>
-      <button
-        type="button"
-        className="block h-16 w-16 overflow-hidden rounded border hover:ring-2 hover:ring-ring"
-        onClick={() => setOpenImage(true)}
-        aria-label="Open document image"
-      >
-        <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
-      </button>
-      <DocumentImageDrawer
-        source={toDocumentViewerEntry(document)}
-        opened={openImage}
-        onClose={(): void => setOpenImage(false)}
-      />
-    </>
+    <button
+      type="button"
+      className="block h-16 w-16 overflow-hidden rounded border hover:ring-2 hover:ring-ring aria-expanded:ring-2 aria-expanded:ring-blue-500"
+      // Opens the shared viewer, or closes it when this document is the one shown.
+      onClick={e => toggle(toDocumentViewerEntry(document), { trigger: e.currentTarget })}
+      aria-label="Open document image"
+      aria-expanded={isActive}
+    >
+      <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+    </button>
   );
 };

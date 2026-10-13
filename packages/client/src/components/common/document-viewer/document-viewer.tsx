@@ -1,5 +1,12 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { ExternalLink, FileQuestionMark, TriangleAlert, X } from 'lucide-react';
+import {
+  ExternalLink,
+  FileQuestionMark,
+  Maximize2,
+  Minimize2,
+  TriangleAlert,
+  X,
+} from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query.js';
 import { cn } from '@/lib/utils.js';
 import { Alert, AlertDescription, AlertTitle } from '../../ui/alert.js';
@@ -16,6 +23,10 @@ export interface DocumentViewerProps {
   /** Identifies the document shown. A new key resets the canvas: loading state, zoom and scroll. */
   documentKey: string;
   onClose?: () => void;
+  /** Renders the Expand action, which widens the viewer over the work beside it and back. */
+  onToggleExpand?: () => void;
+  /** Whether the viewer is currently expanded; drives the Expand action's state. */
+  expanded?: boolean;
   className?: string;
 }
 
@@ -142,6 +153,8 @@ export function DocumentViewer({
   source,
   documentKey,
   onClose,
+  onToggleExpand,
+  expanded = false,
   className,
 }: DocumentViewerProps): ReactElement {
   // Above the keyed body, so the magnifier choice survives a document swap. Not persisted.
@@ -168,6 +181,21 @@ export function DocumentViewer({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {onToggleExpand && (
+            <Tooltip content={expanded ? 'Restore width' : 'Expand'} asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                // A toggle keeps one label; `aria-pressed` carries the state.
+                aria-label="Expand document viewer"
+                aria-pressed={expanded}
+                onClick={onToggleExpand}
+              >
+                {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+              </Button>
+            </Tooltip>
+          )}
           {href && <OpenOriginalButton href={href} variant="ghost" />}
           {onClose && (
             <Tooltip content="Close" asChild>
