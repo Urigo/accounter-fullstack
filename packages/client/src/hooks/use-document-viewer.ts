@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import {
   getViewportWidth,
@@ -21,6 +22,12 @@ interface DocumentViewerState {
   current: DocumentViewerEntry | null;
   placement: DocumentViewerPlacement | null;
   expanded: boolean;
+  /**
+   * How many surfaces are hiding the docked viewer right now (the edit sheet shows the same scan
+   * in its own split). While it is above 0 the docked column renders nothing but keeps `current`,
+   * so it comes back when the last one resumes.
+   */
+  suspendCount: number;
   /** Shows `entry`, swapping it in place if a document is already open. Re-resolves placement. */
   open(entry: DocumentViewerEntry, options?: OpenDocumentViewerOptions): void;
   /** Like `open`, but closes the viewer when `entry` is the document already shown. */
@@ -29,6 +36,8 @@ interface DocumentViewerState {
   update(entry: DocumentViewerEntry): void;
   close(): void;
   setExpanded(expanded: boolean): void;
+  /** Hides the docked viewer until the returned resume function runs. Resuming twice is a no-op. */
+  suspend(): () => void;
 }
 
 /**
@@ -63,6 +72,9 @@ const INITIAL_STATE = {
   expanded: false,
 } satisfies Pick<DocumentViewerState, 'current' | 'placement' | 'expanded'>;
 
+/** Kept apart from `INITIAL_STATE` so `close()` leaves it alone: suspension belongs to the sheet. */
+const INITIAL_SUSPEND = { suspendCount: 0 } satisfies Pick<DocumentViewerState, 'suspendCount'>;
+
 /**
  * The one document viewer of the dashboard. Call sites need no provider, so tables inside dialogs
  * and portals reach it too.
@@ -72,6 +84,7 @@ const INITIAL_STATE = {
  */
 export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
   ...INITIAL_STATE,
+  ...INITIAL_SUSPEND,
   open: (entry, options): void => {
     const trigger = options?.trigger ?? null;
     const placement = resolveViewerPlacement({
@@ -109,10 +122,36 @@ export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
     }
   },
   setExpanded: (expanded): void => set({ expanded }),
+  suspend: (): (() => void) => {
+    set(state => ({ suspendCount: state.suspendCount + 1 }));
+    let resumed = false;
+    return (): void => {
+      if (resumed) {
+        return;
+      }
+      resumed = true;
+      set(state => ({ suspendCount: Math.max(0, state.suspendCount - 1) }));
+    };
+  },
 }));
+
+/**
+ * Hides the docked viewer while `active` is true, for a surface that shows the document itself (the
+ * edit sheet). Takes `active` instead of being called conditionally, so a component can call it
+ * before an early return. Symmetric under StrictMode: the double mount ends at one suspension.
+ */
+export function useSuspendDockedViewer(active: boolean): void {
+  const suspend = useDocumentViewer(s => s.suspend);
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    return suspend();
+  }, [active, suspend]);
+}
 
 /** Back to closed, trigger forgotten. For tests and stories. */
 export function resetDocumentViewerStore(): void {
   setTrigger(null);
-  useDocumentViewer.setState(INITIAL_STATE);
+  useDocumentViewer.setState({ ...INITIAL_STATE, ...INITIAL_SUSPEND });
 }

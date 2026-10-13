@@ -26,6 +26,12 @@ export interface DockedViewerPanelProps {
   expanded: boolean;
   onToggleExpand: () => void;
   onClose: () => void;
+  /**
+   * Hidden (`display: none`) while another surface shows the document, such as the edit sheet.
+   * The panel stays mounted, so its width, zoom and scroll survive, and the hidden column takes
+   * no width, so the page column has the whole work area meanwhile.
+   */
+  suspended?: boolean;
 }
 
 /** Whether an Esc keydown was already handled by something inside the viewer or above it. */
@@ -74,6 +80,7 @@ export function DockedViewerPanel({
   expanded,
   onToggleExpand,
   onClose,
+  suspended = false,
 }: DockedViewerPanelProps): ReactElement {
   const sectionRef = useRef<HTMLElement>(null);
   const endDragRef = useRef<(() => void) | null>(null);
@@ -85,7 +92,8 @@ export function DockedViewerPanel({
   // a landmark, not a widget, and it must see the event's `defaultPrevented` as Radix left it.
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section) {
+    // Suspended, the column is hidden and must not act on keys at all.
+    if (!section || suspended) {
       return;
     }
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -97,7 +105,7 @@ export function DockedViewerPanel({
     };
     section.addEventListener('keydown', onKeyDown);
     return () => section.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, [onClose, suspended]);
 
   // A drag still in progress when the panel unmounts must not leave window listeners behind.
   useEffect(() => () => endDragRef.current?.(), []);
@@ -197,6 +205,7 @@ export function DockedViewerPanel({
       ref={sectionRef}
       id={DOCKED_VIEWER_ID}
       aria-label={`Document viewer: ${entry.title}`}
+      hidden={suspended}
       className={cn(
         'my-14 flex w-(--docked-width) shrink-0 flex-col border-l bg-white dark:bg-gray-950',
         // Expanded, the viewer is positioned against the work area, not this spacer.
@@ -245,7 +254,9 @@ export function DockedViewerPanel({
 /**
  * The dashboard's single document viewer, connected to `useDocumentViewer`. Docks as a column when
  * the placement allows and otherwise falls back to the PR 1 drawer, which the Overlay replaces in
- * PR 4.
+ * PR 4. Hidden while suspended (the edit sheet shows the scan itself): the docked panel stays
+ * mounted, keeping `current`, its width and its zoom, so it comes back as it was when the sheet
+ * closes.
  */
 export function DockedDocumentViewer(): ReactElement {
   const current = useDocumentViewer(s => s.current);
@@ -253,6 +264,7 @@ export function DockedDocumentViewer(): ReactElement {
   const expanded = useDocumentViewer(s => s.expanded);
   const close = useDocumentViewer(s => s.close);
   const setExpanded = useDocumentViewer(s => s.setExpanded);
+  const suspended = useDocumentViewer(s => s.suspendCount > 0);
 
   // ✕ and Esc hand focus back to the trigger. Opening never moves focus.
   const requestClose = useCallback((): void => {
@@ -276,9 +288,14 @@ export function DockedDocumentViewer(): ReactElement {
           expanded={expanded}
           onToggleExpand={toggleExpand}
           onClose={requestClose}
+          suspended={suspended}
         />
       )}
-      <DocumentImageDrawer source={current} opened={placement === 'fallback'} onClose={close} />
+      <DocumentImageDrawer
+        source={current}
+        opened={placement === 'fallback' && !suspended}
+        onClose={close}
+      />
     </>
   );
 }

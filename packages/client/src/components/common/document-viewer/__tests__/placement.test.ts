@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { SIDEBAR_WIDTH_PX } from '../../../../hooks/use-sidebar.js';
 import {
   clampDockedRatio,
+  clampEditSplitRatio,
   dockedWidthStyle,
+  editSplitFormWidthStyle,
+  editSplitSeparatorAria,
   resolveViewerPlacement,
   type ResolveViewerPlacementInput,
 } from '../placement.js';
@@ -80,5 +83,57 @@ describe('clampDockedRatio', () => {
   it('clamps to 0–1 when the work area is unmeasured', () => {
     expect(clampDockedRatio(1.4, 0)).toBe(1);
     expect(clampDockedRatio(0.52, 0)).toBe(0.52);
+  });
+});
+
+describe('editSplitFormWidthStyle', () => {
+  it.each([
+    [null, 'clamp(320px, 50%, 100% - 320px)'],
+    [0.42, 'clamp(320px, 42%, 100% - 320px)'],
+    [0.61234, 'clamp(320px, 61.23%, 100% - 320px)'],
+  ])('ratio %s → %s', (ratio, expected) => {
+    expect(editSplitFormWidthStyle(ratio)).toBe(expected);
+  });
+});
+
+describe('clampEditSplitRatio', () => {
+  it.each([
+    // [ratio, split width, expected]
+    [0.5, 1400, 0.5],
+    [0.1, 1400, 320 / 1400],
+    [0.95, 1400, 1080 / 1400],
+    [0.3, 600, 0.5], // both 320px minimums can't fit: stay even
+    [1.4, 0, 1], // unmeasured
+    [0.3, 0, 0.3],
+  ])('%s of %spx → %s', (ratio, width, expected) => {
+    expect(clampEditSplitRatio(ratio, width)).toBeCloseTo(expected);
+  });
+});
+
+describe('editSplitSeparatorAria', () => {
+  it('reports 50% of 0–100 while unmeasured', () => {
+    expect(editSplitSeparatorAria(null, null)).toEqual({ now: 50, min: 0, max: 100 });
+    expect(editSplitSeparatorAria(0.4, null)).toEqual({ now: 40, min: 0, max: 100 });
+  });
+
+  it('reads the default from layout, and a chosen ratio clamped', () => {
+    expect(editSplitSeparatorAria(null, { split: 1400, form: 700 })).toEqual({
+      now: 50,
+      min: 23,
+      max: 77,
+    });
+    expect(editSplitSeparatorAria(0.95, { split: 1400, form: 700 })).toEqual({
+      now: 77,
+      min: 23,
+      max: 77,
+    });
+  });
+
+  it('pins to 50% when both minimums cannot fit', () => {
+    expect(editSplitSeparatorAria(null, { split: 600, form: 320 })).toEqual({
+      now: 50,
+      min: 50,
+      max: 50,
+    });
   });
 });
