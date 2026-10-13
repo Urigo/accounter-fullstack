@@ -308,6 +308,11 @@ describe('validateManualLedgerRecord', () => {
         'Debit and credit totals must be equal (debit 100.006, credit 100)',
       ],
       [
+        'a difference just over the tolerance (0.0050004)',
+        { debitLocalAmount1: 100.0050004 },
+        'Debit and credit totals must be equal (debit 100.0050004, credit 100)',
+      ],
+      [
         'a difference of 0.006 the other way',
         { creditLocalAmount1: 100.006 },
         'Debit and credit totals must be equal (debit 100, credit 100.006)',

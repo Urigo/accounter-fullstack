@@ -9,11 +9,18 @@ import type { IGetChargesByIdsResult } from '../../../charges/types.js';
 import { LedgerProvider } from '../../providers/ledger.provider.js';
 import { makeInjector } from '../../resolvers/ledger-generation/__tests__/helpers/ledger-generation-mocks.js';
 import type { IGetLedgerRecordsByIdsResult } from '../../types.js';
+import { validateLedgerRecordParams } from '../ledger-validation.helper.js';
 import { updateManualLedgerRecord } from '../manual-ledger-record-mutations.helper.js';
 
 vi.mock('../../../accountant-approval/helpers/degrade-charges.helper.js', () => ({
   degradeChargesAccountantApproval: vi.fn(),
 }));
+
+// Real implementation by default; one test makes it throw to cover the provider-invariant guard
+vi.mock('../ledger-validation.helper.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../ledger-validation.helper.js')>();
+  return { ...actual, validateLedgerRecordParams: vi.fn(actual.validateLedgerRecordParams) };
+});
 
 /* All IDs, amounts and dates below are made up. */
 
@@ -160,6 +167,25 @@ describe('updateManualLedgerRecord', () => {
         'Debit and credit totals must be equal (debit 100, credit 117)',
         'Invoice date must be after the ledger lock date (2025-02-28)',
       ].join('\n'),
+    });
+    expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
+    expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+  });
+
+  it('returns a CommonError when the provider-invariant validation throws, and never updates', async () => {
+    const { injector, ledgerProvider } = setup(buildRecord());
+    vi.mocked(validateLedgerRecordParams).mockImplementationOnce(() => {
+      throw new Error('Ledger record must have an invoice date');
+    });
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: INPUT,
+    });
+
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: 'Ledger record must have an invoice date',
     });
     expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();

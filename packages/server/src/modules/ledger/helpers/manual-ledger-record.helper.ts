@@ -84,9 +84,12 @@ function isPresent<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
 }
 
-/** Drops float noise (e.g. `100.00500000000001`) so totals compare and print as entered */
+/** Absorbs float noise in the balance comparison; far below any real amount difference */
+const BALANCE_EPSILON = 1e-9;
+
+/** Drops float noise (e.g. `0.30000000000000004`) so totals print as entered */
 function roundAmount(amount: number): number {
-  return Math.round(amount * 1e6) / 1e6;
+  return Math.round(amount * 1e9) / 1e9;
 }
 
 /**
@@ -141,11 +144,12 @@ export function validateManualLedgerRecord(
       creditTotal += localAmount ?? 0;
     }
   }
-  debitTotal = roundAmount(debitTotal);
-  creditTotal = roundAmount(creditTotal);
-  if (roundAmount(Math.abs(debitTotal - creditTotal)) > LEDGER_BALANCE_TOLERANCE) {
+  // Binary floats make an exact 0.005 gap compute as e.g. 0.005000000000002558, so allow a tiny
+  // epsilon over the tolerance: the boundary stays inclusive and deterministic, while any real gap
+  // above it (even 0.0050004) still fails
+  if (Math.abs(debitTotal - creditTotal) > LEDGER_BALANCE_TOLERANCE + BALANCE_EPSILON) {
     errors.push(
-      `Debit and credit totals must be equal (debit ${debitTotal}, credit ${creditTotal})`,
+      `Debit and credit totals must be equal (debit ${roundAmount(debitTotal)}, credit ${roundAmount(creditTotal)})`,
     );
   }
 
