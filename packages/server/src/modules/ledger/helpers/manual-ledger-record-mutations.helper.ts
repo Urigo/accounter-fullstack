@@ -240,6 +240,12 @@ export async function insertManualLedgerRecord(
         };
         break;
       }
+      case 'DOCUMENT': {
+        return {
+          __typename: 'CommonError',
+          message: 'The DOCUMENT operation is not implemented yet',
+        };
+      }
       default: {
         const unknownOperation: never = operation;
         return {
