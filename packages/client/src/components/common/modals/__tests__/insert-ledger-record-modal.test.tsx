@@ -15,8 +15,9 @@ vi.mock('../../../../hooks/use-insert-ledger-record.js', () => ({
   useInsertLedgerRecord: () => ({ fetching: false, insertLedgerRecord }),
 }));
 
-const SUBMITTED_VALUES: LedgerRecordFormValues = {
+const LOCAL_VALUES: LedgerRecordFormValues = {
   operation: LedgerRecordOperation.Document,
+  currency: Currency.Usd,
   invoiceDate: '2026-03-15',
   valueDate: '2026-03-16',
   description: 'Consulting',
@@ -27,8 +28,10 @@ const SUBMITTED_VALUES: LedgerRecordFormValues = {
   creditLocalAmount1: 117,
 };
 
+let submittedValues: LedgerRecordFormValues = LOCAL_VALUES;
+
 // The real form needs the entities query; it has its own render test, and the schema and mapper
-// have theirs. This stub submits fixed values.
+// have theirs. This stub submits the values the test sets.
 vi.mock('../../forms/ledger-record-form/index.js', () => ({
   LedgerRecordForm: ({
     onSubmit,
@@ -39,7 +42,7 @@ vi.mock('../../forms/ledger-record-form/index.js', () => ({
       <button
         type="button"
         data-testid="stub-submit"
-        onClick={() => void onSubmit(SUBMITTED_VALUES)}
+        onClick={() => void onSubmit(submittedValues)}
       >
         submit
       </button>
@@ -59,6 +62,7 @@ describe('InsertLedgerRecordModal', () => {
 
   beforeEach(async () => {
     insertLedgerRecord.mockReset();
+    submittedValues = LOCAL_VALUES;
     onDone.mockReset();
     container = document.createElement('div');
     document.body.append(container);
@@ -114,6 +118,38 @@ describe('InsertLedgerRecordModal', () => {
     });
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(dialog()).toBeNull();
+  });
+
+  it('decides local vs. foreign by the user context local currency', async () => {
+    insertLedgerRecord.mockResolvedValue({ record: { id: 'record-1' } });
+
+    // USD is local: leftover foreign amounts are dropped
+    submittedValues = { ...LOCAL_VALUES, debitForeignAmount1: 9, creditForeignAmount1: 9 };
+    await openAndSubmit();
+    expect(insertLedgerRecord.mock.calls[0][0].input).toEqual(
+      expect.objectContaining({
+        currency: Currency.Usd,
+        debitForeignAmount1: null,
+        creditForeignAmount1: null,
+      }),
+    );
+
+    // ILS is foreign here: its foreign amounts are sent
+    submittedValues = {
+      ...LOCAL_VALUES,
+      currency: Currency.Ils,
+      debitForeignAmount1: 430,
+      creditForeignAmount1: 430,
+    };
+    await openAndSubmit();
+    expect(insertLedgerRecord.mock.calls[1][0].input).toEqual(
+      expect.objectContaining({
+        currency: Currency.Ils,
+        debitLocalAmount1: 117,
+        debitForeignAmount1: 430,
+        creditForeignAmount1: 430,
+      }),
+    );
   });
 
   it('keeps the dialog open when the server rejects the record', async () => {

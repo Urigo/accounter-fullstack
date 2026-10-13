@@ -1,5 +1,5 @@
-import { useContext, useId, useMemo, useRef, type FormEvent, type ReactElement } from 'react';
-import { useForm, useFormContext, type FieldError } from 'react-hook-form';
+import { useContext, useMemo, useRef, type FormEvent, type ReactElement } from 'react';
+import { useForm, useWatch, type FieldError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Currency, LedgerRecordOperation } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
-import { Label } from '../../../ui/label.js';
 import {
   Select,
   SelectContent,
@@ -25,11 +24,13 @@ import {
   SelectValue,
 } from '../../../ui/select.js';
 import { Spinner } from '../../../ui/spinner.js';
-import { ComboBox } from '../../inputs/combo-box.js';
+import { CurrencyCodeInput } from '../../inputs/currency-input.js';
 import { DatePickerInput } from '../../inputs/date-picker-input.js';
-import { NumberInput } from '../../inputs/number-input.js';
+import { LedgerSlotFields } from './ledger-slot-fields.js';
 import {
   buildLedgerRecordFormSchema,
+  FOREIGN_AMOUNT_FIELDS,
+  isForeignCurrency,
   isUnparsableDateText,
   LEDGER_BALANCE_ERROR_PATH,
   TIMELESS_DATE_FORMAT_MESSAGE,
@@ -48,69 +49,6 @@ const OPERATION_OPTIONS: Array<{ value: LedgerRecordOperation; label: string }> 
 
 /** Placeholder value of the not-yet-supported operation; it is never selectable */
 const TRANSACTION_OPERATION_PLACEHOLDER = 'TRANSACTION';
-
-type LineProps = {
-  side: 'debit' | 'credit';
-  label: string;
-  entities: Array<{ value: string; label: string }>;
-  fetchingEntities: boolean;
-};
-
-function LedgerLineFields({ side, label, entities, fetchingEntities }: LineProps): ReactElement {
-  const { control } = useFormContext<LedgerRecordFormInput>();
-  const entityId = useId();
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 items-start">
-      <Label htmlFor={entityId} className="sm:pt-2">
-        {label}
-      </Label>
-      <FormField
-        control={control}
-        name={`${side}Entity1`}
-        render={({ field }) => (
-          <FormItem>
-            <FormControl>
-              <ComboBox
-                {...field}
-                id={entityId}
-                data={entities}
-                value={field.value ?? null}
-                onChange={value => field.onChange(value ?? '')}
-                disabled={fetchingEntities}
-                placeholder={`${label} entity`}
-                formPart
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={control}
-        name={`${side}LocalAmount1`}
-        render={({ field }) => (
-          <FormItem>
-            <FormControl>
-              <NumberInput
-                ref={field.ref}
-                name={field.name}
-                onBlur={field.onBlur}
-                value={field.value ?? undefined}
-                onChange={value => field.onChange(value ?? undefined)}
-                aria-label={`${label} amount`}
-                placeholder="Amount"
-                hideControls
-                decimalScale={2}
-                min={0}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  );
-}
 
 type LedgerRecordFormProps = {
   mode: LedgerRecordFormMode;
@@ -137,9 +75,24 @@ export function LedgerRecordForm({
 
   const form = useForm<LedgerRecordFormInput, unknown, LedgerRecordFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { description: '', reference: '', ...defaultValues },
+    defaultValues: { currency: localCurrency, description: '', reference: '', ...defaultValues },
   });
-  const { control, handleSubmit, formState, setError } = form;
+  const { control, handleSubmit, formState, setError, setValue, clearErrors } = form;
+
+  const currency = useWatch({ control, name: 'currency' });
+  const showForeign = isForeignCurrency(currency, localCurrency);
+
+  function onCurrencyChange(next: Currency): void {
+    if (isForeignCurrency(next, localCurrency)) {
+      return;
+    }
+    // Back in the local currency the foreign inputs disappear: drop their values (and any errors
+    // on them) so nothing stale stays in the form. The mapper never sends them either.
+    for (const field of FOREIGN_AMOUNT_FIELDS) {
+      setValue(field, undefined, { shouldDirty: true });
+    }
+    clearErrors([...FOREIGN_AMOUNT_FIELDS]);
+  }
 
   // Date fields whose input text the date picker can't parse. The picker keeps such text to itself,
   // so the form still holds the last valid date; submitting must not send that stale value.
@@ -211,10 +164,28 @@ export function LedgerRecordForm({
               )}
             />
           )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="ledger-record-currency">Currency</Label>
-            <Input id="ledger-record-currency" value={localCurrency} readOnly disabled />
-          </div>
+          <FormField
+            control={control}
+            name="currency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Currency</FormLabel>
+                {/* CurrencyCodeInput has a top margin for label-less rows; this one has a label */}
+                <div className="*:mt-0">
+                  <CurrencyCodeInput
+                    name={field.name}
+                    value={field.value ?? ''}
+                    onChange={value => {
+                      const next = value as Currency;
+                      field.onChange(next);
+                      onCurrencyChange(next);
+                    }}
+                  />
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={control}
             name="invoiceDate"
@@ -284,15 +255,19 @@ export function LedgerRecordForm({
         </div>
 
         <div className="flex flex-col gap-2">
-          <LedgerLineFields
+          <LedgerSlotFields
             side="debit"
-            label="Debit"
+            index={1}
+            showForeign={showForeign}
+            required
             entities={selectableFinancialEntities}
             fetchingEntities={fetchingEntities}
           />
-          <LedgerLineFields
+          <LedgerSlotFields
             side="credit"
-            label="Credit"
+            index={1}
+            showForeign={showForeign}
+            required
             entities={selectableFinancialEntities}
             fetchingEntities={fetchingEntities}
           />

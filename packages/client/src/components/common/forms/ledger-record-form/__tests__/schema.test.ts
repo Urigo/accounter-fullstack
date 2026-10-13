@@ -13,6 +13,7 @@ const CREDIT_ENTITY = '22222222-2222-4222-8222-222222222222';
 function validValues(overrides: LedgerRecordFormInput = {}): LedgerRecordFormInput {
   return {
     operation: LedgerRecordOperation.MiscExpense,
+    currency: Currency.Ils,
     invoiceDate: '2026-03-15',
     valueDate: '2026-03-16',
     description: 'Office supplies',
@@ -165,11 +166,102 @@ describe('buildLedgerRecordFormSchema', () => {
       expect(issuePaths(result)).toEqual(['balance']);
     });
   });
+
+  describe('currency', () => {
+    it('is required', () => {
+      const result = insertSchema.safeParse({ ...validValues(), currency: undefined });
+      expect(issuePaths(result)).toContain('currency');
+    });
+
+    it('rejects a value outside Currency', () => {
+      const result = insertSchema.safeParse({ ...validValues(), currency: 'XYZ' });
+      expect(issuePaths(result)).toContain('currency');
+    });
+
+    describe('local currency', () => {
+      it('does not require foreign amounts', () => {
+        const result = insertSchema.safeParse(validValues());
+        expect(result.success).toBe(true);
+      });
+
+      it('ignores leftover foreign amounts, even invalid ones', () => {
+        const result = insertSchema.safeParse(
+          validValues({ debitForeignAmount1: -3, creditForeignAmount1: 0 }),
+        );
+        expect(result.success).toBe(true);
+      });
+    });
+
+    describe('foreign currency', () => {
+      const foreign = (overrides: LedgerRecordFormInput = {}): LedgerRecordFormInput =>
+        validValues({
+          currency: Currency.Usd,
+          debitForeignAmount1: 27,
+          creditForeignAmount1: 27,
+          ...overrides,
+        });
+
+      it('accepts positive foreign amounts on both main lines', () => {
+        const result = insertSchema.safeParse(foreign());
+        expect(result.success).toBe(true);
+      });
+
+      it('requires both foreign amounts', () => {
+        const result = insertSchema.safeParse(
+          foreign({ debitForeignAmount1: undefined, creditForeignAmount1: undefined }),
+        );
+        expect(result.success).toBe(false);
+        expect(issuePaths(result).sort()).toEqual(['creditForeignAmount1', 'debitForeignAmount1']);
+        expect(result.error?.issues[0].message).toBe('Foreign amount is required for USD records');
+      });
+
+      it.each([0, -5])('rejects a foreign amount of %s', amount => {
+        const result = insertSchema.safeParse(foreign({ creditForeignAmount1: amount }));
+        expect(issuePaths(result)).toEqual(['creditForeignAmount1']);
+        expect(result.error?.issues[0].message).toBe('Foreign amount must be greater than 0');
+      });
+
+      it('reports missing foreign amounts together with other field errors', () => {
+        const result = insertSchema.safeParse({
+          ...foreign({ debitEntity1: '', debitForeignAmount1: undefined }),
+          creditLocalAmount1: undefined,
+          valueDate: undefined,
+        });
+        expect(issuePaths(result)).toEqual(
+          expect.arrayContaining([
+            'debitEntity1',
+            'creditLocalAmount1',
+            'valueDate',
+            'debitForeignAmount1',
+          ]),
+        );
+      });
+
+      it('treats the local currency as configured, not as ILS', () => {
+        const usdLocalSchema = buildLedgerRecordFormSchema({
+          mode: 'insert',
+          localCurrency: Currency.Usd,
+          ledgerLock: null,
+        });
+        // USD is local here, so no foreign amounts are needed
+        expect(usdLocalSchema.safeParse(validValues({ currency: Currency.Usd })).success).toBe(
+          true,
+        );
+        // ...while ILS is now foreign and needs them
+        expect(issuePaths(usdLocalSchema.safeParse(validValues()))).toEqual(
+          expect.arrayContaining(['debitForeignAmount1', 'creditForeignAmount1']),
+        );
+      });
+    });
+  });
 });
 
 describe('formValuesToLedgerRecordInput', () => {
+  const toInput = (values: LedgerRecordFormInput) =>
+    formValuesToLedgerRecordInput(insertSchema.parse(values), { localCurrency: Currency.Ils });
+
   it('sends the local currency, slot-1 values, and nulls for slot 2 and foreign amounts', () => {
-    expect(formValuesToLedgerRecordInput(insertSchema.parse(validValues()), { localCurrency: Currency.Ils })).toEqual({
+    expect(toInput(validValues())).toEqual({
       debitEntity1: DEBIT_ENTITY,
       debitLocalAmount1: 100,
       debitForeignAmount1: null,
@@ -190,18 +282,48 @@ describe('formValuesToLedgerRecordInput', () => {
     });
   });
 
-  it('maps empty optional strings to null', () => {
-    const input = formValuesToLedgerRecordInput(
-      insertSchema.parse(validValues({ description: '', reference: '  ' })),
-      { localCurrency: Currency.Usd },
+  it('drops leftover foreign amounts for the local currency', () => {
+    const input = toInput(validValues({ debitForeignAmount1: 27, creditForeignAmount1: 27 }));
+    expect(input.currency).toBe(Currency.Ils);
+    expect(input.debitForeignAmount1).toBeNull();
+    expect(input.creditForeignAmount1).toBeNull();
+  });
+
+  it('sends the chosen foreign currency with its foreign amounts', () => {
+    const input = toInput(
+      validValues({ currency: Currency.Eur, debitForeignAmount1: 25, creditForeignAmount1: 25.5 }),
     );
+    expect(input).toEqual(
+      expect.objectContaining({
+        currency: Currency.Eur,
+        debitLocalAmount1: 100,
+        debitForeignAmount1: 25,
+        creditLocalAmount1: 100,
+        creditForeignAmount1: 25.5,
+        debitForeignAmount2: null,
+        creditForeignAmount2: null,
+      }),
+    );
+  });
+
+  it('decides "local" by the given local currency, not by ILS', () => {
+    const values = insertSchema.parse(
+      validValues({ currency: Currency.Ils, debitForeignAmount1: 27, creditForeignAmount1: 27 }),
+    );
+    // ILS is foreign when USD is the local currency, so its foreign amounts are kept
+    const input = formValuesToLedgerRecordInput(values, { localCurrency: Currency.Usd });
+    expect(input.currency).toBe(Currency.Ils);
+    expect(input.debitForeignAmount1).toBe(27);
+    expect(input.creditForeignAmount1).toBe(27);
+  });
+
+  it('maps empty optional strings to null', () => {
+    const input = toInput(validValues({ description: '', reference: '  ' }));
     expect(input.description).toBeNull();
     expect(input.reference).toBeNull();
-    expect(input.currency).toBe(Currency.Usd);
   });
 
   it('does not send the operation', () => {
-    const input = formValuesToLedgerRecordInput(insertSchema.parse(validValues()), { localCurrency: Currency.Ils });
-    expect(input).not.toHaveProperty('operation');
+    expect(toInput(validValues())).not.toHaveProperty('operation');
   });
 });
