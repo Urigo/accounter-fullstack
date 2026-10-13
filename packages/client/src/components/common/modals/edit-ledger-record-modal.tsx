@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, type ReactElement } from 'react';
+import { useCallback, useContext, useMemo, useState, type ReactElement } from 'react';
 import { Currency, type LedgerRecordsTableFieldsFragment } from '../../../gql/graphql.js';
 import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record.js';
 import { UserContext } from '../../../providers/user-provider.js';
@@ -31,9 +31,16 @@ export function EditLedgerRecordModal({ record, onClose, onDone }: Props): React
   const localCurrency = (userContext?.context.defaultLocalCurrency || Currency.Ils) as Currency;
   const { fetching, updateLedgerRecord } = useUpdateLedgerRecord();
 
+  // The last record shown, kept after `record` turns null so the form stays rendered while the
+  // dialog's close animation runs (instead of the body collapsing to empty)
+  const [shownRecord, setShownRecord] = useState(record);
+  if (record && record !== shownRecord) {
+    setShownRecord(record);
+  }
+
   const defaultValues = useMemo(
-    () => (record ? ledgerRecordToFormValues(record) : undefined),
-    [record],
+    () => (shownRecord ? ledgerRecordToFormValues(shownRecord) : undefined),
+    [shownRecord],
   );
 
   const onSubmit = useCallback(
@@ -70,10 +77,10 @@ export function EditLedgerRecordModal({ record, onClose, onDone }: Props): React
             Overwrites the stored record. The misc expense or document behind it is not changed.
           </DialogDescription>
         </DialogHeader>
-        {record && (
+        {shownRecord && (
           <LedgerRecordForm
             // A fresh form per record, so its default values are this record's
-            key={record.id}
+            key={shownRecord.id}
             mode="edit"
             defaultValues={defaultValues}
             submitting={fetching}

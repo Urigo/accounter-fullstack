@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { EMPTY_UUID } from '@/helpers/consts.js';
 import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
+import { Tooltip } from '../common/tooltip.js';
 import { Badge } from '../ui/badge.js';
 import { Button } from '../ui/button.js';
 import { AmountCell } from './amount-cell.js';
@@ -467,21 +468,22 @@ export function editActionColumn(
         return null;
       }
       return (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-7.5"
-          aria-label="Edit ledger record"
-          title="Edit ledger record"
-          onClick={event => {
-            // Keep the click from reaching row-level handlers of any table this one sits in
-            event.stopPropagation();
-            onEditRecord(original);
-          }}
-        >
-          <Pencil className="size-4" />
-        </Button>
+        <Tooltip content="Edit ledger record" asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7.5"
+            aria-label="Edit ledger record"
+            onClick={event => {
+              // Keep the click from reaching row-level handlers of any table this one sits in
+              event.stopPropagation();
+              onEditRecord(original);
+            }}
+          >
+            <Pencil className="size-4" />
+          </Button>
+        </Tooltip>
       );
     },
   };

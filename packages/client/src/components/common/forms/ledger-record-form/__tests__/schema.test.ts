@@ -725,6 +725,38 @@ describe('ledgerRecordToFormValues', () => {
     });
   });
 
+  it('drops stored foreign amounts of a local-currency record when it is saved', () => {
+    // The server rejects foreign amounts on a local-currency record, so a stored record that has
+    // them (e.g. from before that rule) must have them cleared by its first edit
+    const values = ledgerRecordToFormValues(
+      storedRecord({
+        debitAmount1: amount(27, Currency.Ils),
+        creditAmount1: amount(27, Currency.Ils),
+      }),
+    );
+    const parsed = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    }).safeParse(values);
+    expect(parsed.success).toBe(true);
+    const input = formValuesToLedgerRecordInput(parsed.data!, { localCurrency: Currency.Ils });
+    expect(input.debitForeignAmount1).toBeNull();
+    expect(input.creditForeignAmount1).toBeNull();
+  });
+
+  it('flags a foreign-currency record that is missing a main foreign amount', () => {
+    const parsed = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    }).safeParse(ledgerRecordToFormValues({ ...usdRecord, debitAmount1: null }));
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues.map(issue => issue.path.join('.'))).toEqual([
+      'debitForeignAmount1',
+    ]);
+  });
+
   it('passes the edit-mode schema and maps back to the stored values', () => {
     const editSchema = buildLedgerRecordFormSchema({
       mode: 'edit',
