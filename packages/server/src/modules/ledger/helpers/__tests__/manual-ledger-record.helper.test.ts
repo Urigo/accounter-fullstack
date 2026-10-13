@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { LedgerRecordInput } from '../../../../__generated__/types.js';
 import { TEST_TIMEZONES, useTimezone } from '../../../../__tests__/helpers/timezones.js';
-import { Currency } from '../../../../shared/enums.js';
+import { Currency, DocumentType } from '../../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../../shared/helpers/misc.js';
 import {
+  deriveDocumentFromLedgerInput,
   deriveMiscExpenseFromLedgerInput,
   LEDGER_BALANCE_TOLERANCE,
   ledgerRecordInputToParams,
@@ -482,5 +483,208 @@ describe('deriveMiscExpenseFromLedgerInput', () => {
         expect(dateToTimelessDateString(derived.valueDate)).toBe(valueDate);
       },
     );
+  });
+});
+
+describe('deriveDocumentFromLedgerInput', () => {
+  const OWNER_ID = 'charge-owner';
+  const INPUT_VAT = 'input-vat-category';
+  const OUTPUT_VAT = 'output-vat-category';
+
+  const ENTITY_TYPES = new Map<string, string>([
+    ['supplier', 'business'],
+    ['customer', 'business'],
+    [OWNER_ID, 'business'],
+    ['expense-category', 'tax_category'],
+    ['income-category', 'tax_category'],
+    ['other-category', 'tax_category'],
+    [INPUT_VAT, 'tax_category'],
+    [OUTPUT_VAT, 'tax_category'],
+  ]);
+
+  const CTX = {
+    ownerId: OWNER_ID,
+    localCurrency: Currency.Ils,
+    entityTypes: ENTITY_TYPES,
+    inputVatTaxCategoryId: INPUT_VAT,
+    outputVatTaxCategoryId: OUTPUT_VAT,
+  };
+
+  // Supplier invoice: expense 100 + VAT 17 (debit) against the supplier 117 (credit)
+  const EXPENSE_INPUT: LedgerRecordInput = {
+    debitEntity1: 'expense-category',
+    debitLocalAmount1: 100,
+    creditEntity1: 'supplier',
+    creditLocalAmount1: 117,
+    debitEntity2: INPUT_VAT,
+    debitLocalAmount2: 17,
+    currency: Currency.Ils,
+    invoiceDate: '2025-03-12',
+    valueDate: '2025-03-14',
+    description: 'Office supplies',
+    reference: 'INV-1',
+  };
+
+  // Customer invoice: the customer 117 (debit) against income 100 + VAT 17 (credit)
+  const INCOME_INPUT: LedgerRecordInput = {
+    debitEntity1: 'customer',
+    debitLocalAmount1: 117,
+    creditEntity1: 'income-category',
+    creditLocalAmount1: 100,
+    creditEntity2: OUTPUT_VAT,
+    creditLocalAmount2: 17,
+    currency: Currency.Ils,
+    invoiceDate: '2025-04-01',
+    valueDate: '2025-04-03',
+    description: 'Consulting',
+    reference: 'SO-7',
+  };
+
+  const NULL_DEFAULTS = {
+    image: null,
+    file: null,
+    vatReportDateOverride: null,
+    noVatAmount: null,
+    allocationNumber: null,
+    exchangeRateOverride: null,
+    fileHash: null,
+    remarks: null,
+  };
+
+  it('maps an expense: the credit-side business is the creditor and the owner the debtor', () => {
+    expect(deriveDocumentFromLedgerInput(EXPENSE_INPUT, CTX)).toEqual({
+      ...NULL_DEFAULTS,
+      documentType: DocumentType.Invoice,
+      creditorId: 'supplier',
+      debtorId: OWNER_ID,
+      amount: 117,
+      currencyCode: Currency.Ils,
+      vat: 17,
+      serialNumber: 'INV-1',
+      date: '2025-03-12',
+      description: 'Office supplies',
+    });
+  });
+
+  it('maps an income: the debit-side business is the debtor and the owner the creditor', () => {
+    expect(deriveDocumentFromLedgerInput(INCOME_INPUT, CTX)).toEqual({
+      ...NULL_DEFAULTS,
+      documentType: DocumentType.Invoice,
+      creditorId: OWNER_ID,
+      debtorId: 'customer',
+      amount: 117,
+      currencyCode: Currency.Ils,
+      vat: 17,
+      serialNumber: 'SO-7',
+      date: '2025-04-01',
+      description: 'Consulting',
+    });
+  });
+
+  it('reads VAT from the input VAT category on debit 2 of an expense', () => {
+    const derived = deriveDocumentFromLedgerInput(
+      { ...EXPENSE_INPUT, debitEntity2: INPUT_VAT, debitLocalAmount2: 17 },
+      CTX,
+    );
+    expect(derived.vat).toBe(17);
+  });
+
+  it('reads VAT from the output VAT category on credit 2 of an income', () => {
+    const derived = deriveDocumentFromLedgerInput(
+      { ...INCOME_INPUT, creditEntity2: OUTPUT_VAT, creditLocalAmount2: 17 },
+      CTX,
+    );
+    expect(derived.vat).toBe(17);
+  });
+
+  it('sets VAT to 0 when slot 2 holds another tax category', () => {
+    const derived = deriveDocumentFromLedgerInput(
+      { ...EXPENSE_INPUT, debitEntity2: 'other-category' },
+      CTX,
+    );
+    expect(derived.vat).toBe(0);
+  });
+
+  it('sets VAT to 0 when slot 2 is empty, and maps absent optional values to null', () => {
+    const derived = deriveDocumentFromLedgerInput(
+      {
+        debitEntity1: 'expense-category',
+        debitLocalAmount1: 100,
+        creditEntity1: 'supplier',
+        creditLocalAmount1: 100,
+        currency: Currency.Ils,
+        invoiceDate: '2025-03-12',
+        valueDate: '2025-03-14',
+      },
+      CTX,
+    );
+    expect(derived).toMatchObject({ vat: 0, serialNumber: null, description: null, amount: 100 });
+  });
+
+  it('never takes VAT from slot 2 on the counterparty side', () => {
+    // Expense: VAT category on credit 2 (the supplier's side) is not the document's VAT
+    const expense = deriveDocumentFromLedgerInput(
+      {
+        ...EXPENSE_INPUT,
+        debitEntity2: null,
+        debitLocalAmount2: null,
+        debitLocalAmount1: 117,
+        creditLocalAmount1: 100,
+        creditEntity2: INPUT_VAT,
+        creditLocalAmount2: 17,
+      },
+      CTX,
+    );
+    expect(expense.vat).toBe(0);
+
+    // Income: VAT category on debit 2 (the customer's side) is not the document's VAT
+    const income = deriveDocumentFromLedgerInput(
+      {
+        ...INCOME_INPUT,
+        creditEntity2: null,
+        creditLocalAmount2: null,
+        creditLocalAmount1: 117,
+        debitLocalAmount1: 100,
+        debitEntity2: OUTPUT_VAT,
+        debitLocalAmount2: 17,
+      },
+      CTX,
+    );
+    expect(income.vat).toBe(0);
+  });
+
+  it('uses the foreign amounts for a foreign-currency record', () => {
+    const derived = deriveDocumentFromLedgerInput(
+      {
+        ...EXPENSE_INPUT,
+        currency: Currency.Usd,
+        debitLocalAmount1: 360,
+        debitForeignAmount1: 100,
+        creditLocalAmount1: 421.2,
+        creditForeignAmount1: 117,
+        debitLocalAmount2: 61.2,
+        debitForeignAmount2: 17,
+      },
+      CTX,
+    );
+    expect(derived).toMatchObject({ amount: 117, vat: 17, currencyCode: Currency.Usd });
+  });
+
+  it('rejects a record with a business on both main sides', () => {
+    expect(() =>
+      deriveDocumentFromLedgerInput({ ...EXPENSE_INPUT, debitEntity1: 'customer' }, CTX),
+    ).toThrow('A document needs exactly one business among the main debit and credit entities');
+  });
+
+  it('rejects a record with no business on the main sides', () => {
+    expect(() =>
+      deriveDocumentFromLedgerInput({ ...EXPENSE_INPUT, creditEntity1: 'other-category' }, CTX),
+    ).toThrow('A document needs exactly one business among the main debit and credit entities');
+  });
+
+  it('rejects a record whose counterparty is the charge owner', () => {
+    expect(() =>
+      deriveDocumentFromLedgerInput({ ...EXPENSE_INPUT, creditEntity1: OWNER_ID }, CTX),
+    ).toThrow("A document's counterparty cannot be the charge owner");
   });
 });

@@ -12,14 +12,18 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { isChargeLocked } from './ledger-lock.js';
 import { validateLedgerRecordParams } from './ledger-validation.helper.js';
 import {
+  deriveDocumentFromLedgerInput,
   deriveMiscExpenseFromLedgerInput,
   ledgerRecordInputToParams,
   validateManualLedgerRecord,
+  type ManualLedgerRecordDocument,
   type ManualLedgerRecordParams,
 } from './manual-ledger-record.helper.js';
 
@@ -91,6 +95,44 @@ function checkManualLedgerRecord(
     };
   }
   return { params };
+}
+
+/**
+ * Look up the types of the main debit and credit entities, then derive the document a DOCUMENT
+ * ledger record represents. A missing entity or a derivation problem is returned as a
+ * `CommonError`.
+ */
+async function deriveDocument(
+  injector: Injector,
+  input: LedgerRecordInput,
+  ctx: Omit<Parameters<typeof deriveDocumentFromLedgerInput>[1], 'entityTypes'>,
+): Promise<{ document: ManualLedgerRecordDocument } | { error: CommonError }> {
+  const entityIds = [input.debitEntity1, input.creditEntity1];
+  const entities = await injector
+    .get(FinancialEntitiesProvider)
+    .getFinancialEntityByIdLoader.loadMany(entityIds);
+  const entityTypes = new Map<string, string>();
+  for (const [index, entity] of entities.entries()) {
+    if (!entity || entity instanceof Error) {
+      return {
+        error: {
+          __typename: 'CommonError',
+          message: `Financial entity with id ${entityIds[index]} not found`,
+        },
+      };
+    }
+    if (entity.type) {
+      entityTypes.set(entity.id, entity.type);
+    }
+  }
+
+  try {
+    return { document: deriveDocumentFromLedgerInput(input, { ...ctx, entityTypes }) };
+  } catch (e) {
+    return {
+      error: { __typename: 'CommonError', message: e instanceof Error ? e.message : String(e) },
+    };
+  }
 }
 
 /**
@@ -174,7 +216,7 @@ export async function updateManualLedgerRecord(
 
 /**
  * Insert a manual ledger record under a charge, stored exactly as typed, together with the business
- * entity the chosen operation says it represents (a misc expense for MISC_EXPENSE). Both rows are
+ * entity the chosen operation says it represents (a misc expense for MISC_EXPENSE, an INVOICE document for DOCUMENT). Both rows are
  * written in one DB transaction, so either both land or neither does. Every failure (missing or
  * locked charge, invalid input, a storage error) is returned as a `CommonError` rather than thrown.
  */
@@ -199,6 +241,7 @@ export async function insertManualLedgerRecord(
       ownerId: writeTargetOwnerId,
       defaultLocalCurrency,
       ledgerLock,
+      authorities,
     } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
     const ownerError = writeTargetMismatchError('charge', charge.owner_id, writeTargetOwnerId);
     if (ownerError) {
@@ -241,10 +284,25 @@ export async function insertManualLedgerRecord(
         break;
       }
       case 'DOCUMENT': {
-        return {
-          __typename: 'CommonError',
-          message: 'The DOCUMENT operation is not implemented yet',
+        const derived = await deriveDocument(injector, input, {
+          ownerId,
+          localCurrency: defaultLocalCurrency,
+          inputVatTaxCategoryId: authorities.inputVatTaxCategoryId,
+          outputVatTaxCategoryId: authorities.outputVatTaxCategoryId,
+        });
+        if ('error' in derived) {
+          return derived.error;
+        }
+        const { document } = derived;
+        insertEntity = async () => {
+          const [insertedDocument] = await injector
+            .get(DocumentsProvider)
+            .insertDocuments({ documents: [{ ...document, chargeId, ownerId }] });
+          if (!insertedDocument) {
+            throw new Error('Document was not inserted');
+          }
         };
+        break;
       }
       default: {
         const unknownOperation: never = operation;
