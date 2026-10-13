@@ -1,5 +1,6 @@
 ---
 '@accounter/server': patch
+'@accounter/client': patch
 ---
 
 Edit stored ledger records manually. A new `updateLedgerRecord(ledgerRecordId, input)` mutation
@@ -48,3 +49,12 @@ scope is reported as not found in this business.
 
 Both mutations are covered by database-backed integration tests: the stored rows, the rollback of
 every write when one fails, the lock rules, and a manual record matching the generated ledger.
+
+Add ledger records from the charge view. Every charge's ledger section is now shown, even before it
+has any records, and unless the charge's ledger is locked it has a "+" button next to "Regenerate
+Ledger". It opens a form to pick the operation (misc expense or document), the invoice and value
+dates, an optional description and reference, and a debit and a credit entity with their amounts in
+the local currency. The form checks the same rules as the server before submitting: both entities
+and positive amounts are required, the debit and credit amounts must balance to within 0.005, and
+both dates must be after the ledger lock date. On success the dialog closes and the charge
+refreshes; if the server rejects the record, its error is shown and the dialog stays open.

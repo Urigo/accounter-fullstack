@@ -22,6 +22,7 @@ import { useStableValue } from '../../hooks/use-stable-value.js';
 import { Depreciation } from '../common/depreciation/index.js';
 import {
   BusinessTripSummarizedReport,
+  InsertLedgerRecordModal,
   PreviewDocumentModal,
   RegenerateLedgerRecordsButton,
   Tooltip,
@@ -551,30 +552,31 @@ export function ChargeExtendedInfo({
               </AccordionItem>
             )}
 
-            {hasLedgerRecords && (
-              <AccordionItem value="ledger">
-                <AccordionTrigger
-                  disabled={!hasLedgerRecords}
-                  onClick={event => {
-                    event.stopPropagation();
-                  }}
-                >
-                  <div className="flex flex-row items-center gap-2 justify-start w-full">
-                    {!charge.metadata?.isLedgerLocked && (
+            {/* Always rendered, so a record can be added to a charge that has none yet */}
+            <AccordionItem value="ledger">
+              <AccordionTrigger
+                onClick={event => {
+                  event.stopPropagation();
+                }}
+              >
+                <div className="flex flex-row items-center gap-2 justify-start w-full">
+                  {!charge.metadata?.isLedgerLocked && (
+                    <>
                       <RegenerateLedgerRecordsButton
                         chargeId={charge.id}
                         onChange={onExtendedChange}
                         variant="outline"
                       />
-                    )}
-                    Ledger Records
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
-                </AccordionContent>
-              </AccordionItem>
-            )}
+                      <InsertLedgerRecordModal chargeId={charge.id} onDone={onExtendedChange} />
+                    </>
+                  )}
+                  Ledger Records
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
+              </AccordionContent>
+            </AccordionItem>
 
             {chargeType === 'BankDepositCharge' && (
               <AccordionItem value="bankDeposit">
