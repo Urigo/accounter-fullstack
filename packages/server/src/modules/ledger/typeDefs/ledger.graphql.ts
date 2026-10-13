@@ -23,6 +23,14 @@ export default gql`
     updateLedgerRecord(ledgerRecordId: UUID!, input: LedgerRecordInput!): UpdateLedgerRecordResult!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " insert a manual ledger record under a charge, together with the business entity it represents "
+    insertLedgerRecord(
+      chargeId: UUID!
+      operation: LedgerRecordOperation!
+      input: LedgerRecordInput!
+    ): InsertLedgerRecordResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " the account slots a ledger record holds financial entities in "
@@ -103,6 +111,22 @@ export default gql`
     valueDate: TimelessDate!
     description: String
     reference: String
+  }
+
+  " the business operation a manually inserted ledger record represents "
+  enum LedgerRecordOperation {
+    MISC_EXPENSE
+  }
+
+  " result type for insertLedgerRecord "
+  union InsertLedgerRecordResult = InsertLedgerRecordSuccessfulResult | CommonError
+
+  " result type for insertLedgerRecord" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type InsertLedgerRecordSuccessfulResult {
+    " the inserted ledger record "
+    record: LedgerRecord!
+    " the charge the record belongs to "
+    charge: Charge!
   }
 
   " result type for updateLedgerRecord "

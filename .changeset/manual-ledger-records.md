@@ -18,3 +18,12 @@ value dates must both be after the ledger lock date.
 
 `LedgerRecord` now exposes `locked` (whether the record is locked and can no longer be edited) and
 `currency` (the currency of its foreign amounts).
+
+Insert ledger records manually. A new
+`insertLedgerRecord(chargeId, operation: MISC_EXPENSE, input)` mutation stores the ledger record
+under the charge exactly as typed and, in the same database transaction, creates the misc expense
+it represents: the credit slot-1 entity is the creditor, the debit slot-1 entity the debtor, and
+the amount is the credit slot-1 amount in the record's currency (slot 2, such as VAT, stays on the
+ledger record only). Either both are saved or neither is. The charge must not be locked, the input
+passes the same validation as an edit, and the mutation returns the new record with its charge (an
+approved charge is re-flagged for accountant review), or a `CommonError`.

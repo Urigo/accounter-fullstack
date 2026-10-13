@@ -1,7 +1,9 @@
 import type { LedgerRecordInput } from '../../../__generated__/types.js';
 import type { Currency } from '../../../shared/enums.js';
+import { timelessDateStringToLocalDate } from '../../../shared/helpers/misc.js';
 import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
+import type { IInsertExpenseParams } from '../../misc-expenses/types.js';
 import type { IInsertLedgerRecordsParams } from '../types.js';
 
 /** The largest gap between the debit and credit local totals that still counts as balanced */
@@ -166,4 +168,39 @@ export function validateManualLedgerRecord(
   }
 
   return errors;
+}
+
+/** The misc expense a manual ledger record represents, before it is attached to a charge */
+export type ManualLedgerRecordMiscExpense = Omit<IInsertExpenseParams, 'chargeId' | 'ownerId'> & {
+  amount: number;
+  valueDate: Date;
+};
+
+/**
+ * Derive the misc expense backing a manual MISC_EXPENSE ledger record from its slot-1 line: the
+ * credit entity is the creditor, the debit entity the debtor, and the amount is the credit slot-1
+ * amount in the record's currency (the foreign amount for a foreign-currency record). Slot 2 (e.g.
+ * VAT) stays on the ledger record only.
+ */
+export function deriveMiscExpenseFromLedgerInput(
+  input: LedgerRecordInput,
+  ctx: { localCurrency: Currency },
+): ManualLedgerRecordMiscExpense {
+  const amount =
+    input.currency === ctx.localCurrency ? input.creditLocalAmount1 : input.creditForeignAmount1;
+  if (!isPresent(amount)) {
+    // Unreachable after `validateManualLedgerRecord`, which requires it
+    throw new Error(`Credit 1: foreign amount is required for ${input.currency} records`);
+  }
+  return {
+    creditorId: input.creditEntity1,
+    debtorId: input.debitEntity1,
+    amount,
+    currency: input.currency,
+    description: input.description ?? null,
+    invoiceDate: input.invoiceDate,
+    // A timestamp column: store local midnight so the ledger generator, which reads it back with
+    // `dateToTimelessDateString`, lands on the same calendar day in every timezone
+    valueDate: timelessDateStringToLocalDate(input.valueDate),
+  };
 }
