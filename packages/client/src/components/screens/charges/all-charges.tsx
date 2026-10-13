@@ -3,11 +3,12 @@ import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { ChargesTable } from '@/components/charges/charges-table.js';
-import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
+import { AllChargesDocument } from '../../../gql/graphql.js';
+import { isObjectEmpty } from '../../../helpers/form.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { useUrlPage } from '../../../hooks/use-url-page.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
-import { ChargesFilters } from '../../charges/charges-filters/index.js';
+import { ChargesFilters, useChargesFilter } from '../../charges/charges-filters/index.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
@@ -33,21 +34,10 @@ export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const { get } = useUrlQuery();
-  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
-  const uriFilters = get('chargesFilters');
-  const initialFilters = useMemo(() => {
-    if (uriFilters) {
-      try {
-        return JSON.parse(decodeURIComponent(uriFilters)) as ChargeFilter;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [uriFilters]);
-  const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
+  const [activePage, setActivePage] = useUrlPage();
+  const [filter, setFilter] = useChargesFilter();
+  // Nothing is fetched until a filter is applied — the list is too large to load unfiltered.
+  const isFilterApplied = !isObjectEmpty(filter);
 
   const [{ data, fetching }, fetchCharges] = useQuery({
     query: AllChargesDocument,
@@ -61,16 +51,17 @@ export const AllCharges = (): ReactElement => {
 
   // refetch charges on filter or page change
   useEffect(() => {
-    if (filter) {
+    if (isFilterApplied) {
       fetchCharges({ requestPolicy: 'network-only' });
     }
-  }, [filter, activePage, fetchCharges]);
+  }, [isFilterApplied, filter, activePage, fetchCharges]);
 
   // urql returns a fresh `data` object on every (re)fetch. Keep a stable,
   // deeply-equal reference for the charge nodes so the table and its rows only
   // re-render when the data actually changed — avoiding the "blink" when a
   // refetch returns identical results.
-  const chargeNodes = useStableValue(data?.allCharges?.nodes);
+  // Back to an entry with no filter: don't keep showing the last filter's results.
+  const chargeNodes = useStableValue(isFilterApplied ? data?.allCharges?.nodes : undefined);
 
   const resetMergeList = useCallback((): void => {
     setRowSelection({});
@@ -105,7 +96,7 @@ export const AllCharges = (): ReactElement => {
           activePage={activePage}
           setPage={setActivePage}
           totalPages={totalPages}
-          initiallyOpened={!filter}
+          initiallyOpened={!isFilterApplied}
         />
         <Tooltip content="Expand all accounts">
           <Button
@@ -127,6 +118,7 @@ export const AllCharges = (): ReactElement => {
   }, [
     totalPages,
     filter,
+    isFilterApplied,
     activePage,
     isAllOpened,
     setFiltersContext,

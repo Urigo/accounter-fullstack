@@ -8,9 +8,9 @@ import {
   type ChargeFilter,
   type ChargesLedgerValidationQuery,
 } from '../gql/graphql.js';
-import { useUrlQuery } from '../hooks/use-url-query.js';
+import { isObjectEmpty } from '../helpers/form.js';
 import { FiltersContext } from '../providers/filters-context.js';
-import { ChargesFilters } from './charges/charges-filters/index.js';
+import { ChargesFilters, useChargesFilter } from './charges/charges-filters/index.js';
 import { ChargesTable } from './charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
@@ -68,20 +68,8 @@ export const ChargesLedgerValidation = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const { get } = useUrlQuery();
-  const uriFilters = get('chargesFilters');
-  const initialFilters = useMemo(() => {
-    if (uriFilters) {
-      try {
-        return JSON.parse(decodeURIComponent(uriFilters)) as ChargeFilter;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [uriFilters]);
-  const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
+  const [filter, setFilter] = useChargesFilter();
+  const isFilterApplied = !isObjectEmpty(filter);
 
   const [{ data, fetching }, validateLedger] = useQuery({
     query: ChargesLedgerValidationDocument,
@@ -96,14 +84,12 @@ export const ChargesLedgerValidation = (): ReactElement => {
     setRowSelection({});
   }
 
-  const progress = data?.chargesWithLedgerChanges?.length
-    ? data.chargesWithLedgerChanges[data.chargesWithLedgerChanges.length - 1].progress
-    : 0;
+  // Back to an entry with no filter: don't keep showing the last filter's results.
+  const results = isFilterApplied ? data?.chargesWithLedgerChanges : undefined;
 
-  const flaggedCharges = useMemo(
-    () => getFlaggedCharges(data?.chargesWithLedgerChanges),
-    [data?.chargesWithLedgerChanges],
-  );
+  const progress = results?.length ? results[results.length - 1].progress : 0;
+
+  const flaggedCharges = useMemo(() => getFlaggedCharges(results), [results]);
 
   const onFilterChange = useCallback(
     (newFilter: ChargeFilter): void => {
@@ -113,10 +99,10 @@ export const ChargesLedgerValidation = (): ReactElement => {
   );
 
   useEffect(() => {
-    if (filter) {
+    if (isFilterApplied) {
       validateLedger();
     }
-  }, [filter, validateLedger]);
+  }, [isFilterApplied, filter, validateLedger]);
 
   // Derive the merge button's input from the row-selection map. Each selected charge gets an
   // `onChange` that refetches the list, so the table refreshes once a merge completes.

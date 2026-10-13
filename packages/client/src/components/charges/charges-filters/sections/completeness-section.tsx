@@ -70,7 +70,7 @@ function ToggleRow({
             )}
           </div>
           <FormControl>
-            {/* Controlled, so form.reset() from Reset / Clear all moves the switch. */}
+            {/* Controlled, so Reset / Clear all (resetFilterForm) move the switch. */}
             <Switch
               checked={checked}
               onCheckedChange={(next): void => field.onChange(next || undefined)}
