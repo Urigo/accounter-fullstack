@@ -105,81 +105,29 @@ const getLedgerBalanceToDate = sql<IGetLedgerBalanceToDateQuery>`
       AND entity_id IS NOT NULL
     GROUP BY entity_id;`;
 
+// A plain SET (no COALESCE) for every editable column, so an edit can clear an
+// optional value such as the second debit/credit slot. The charge, owner and
+// lock of a record are never changed here.
 const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   UPDATE accounter_schema.ledger_records
   SET
-  charge_id = COALESCE(
-    $chargeId,
-    charge_id
-  ),
-  credit_entity1 = COALESCE(
-    $creditEntity1,
-    credit_entity1
-  ),
-  credit_entity2 = COALESCE(
-    $creditEntity2,
-    credit_entity2
-  ),
-  credit_foreign_amount1 = COALESCE(
-    $creditForeignAmount1,
-    credit_foreign_amount1
-  ),
-  credit_foreign_amount2 = COALESCE(
-    $creditForeignAmount2,
-    credit_foreign_amount2
-  ),
-  credit_local_amount1 = COALESCE(
-    $creditLocalAmount1,
-    credit_local_amount1
-  ),
-  credit_local_amount2 = COALESCE(
-    $creditLocalAmount2,
-    credit_local_amount2
-  ),
-  currency = COALESCE(
-    $currency,
-    currency
-  ),
-  debit_entity1 = COALESCE(
-    $debitEntity1,
-    debit_entity1
-  ),
-  debit_entity2 = COALESCE(
-    $debitEntity2,
-    debit_entity2
-  ),
-  debit_foreign_amount1 = COALESCE(
-    $debitForeignAmount1,
-    debit_foreign_amount1
-  ),
-  debit_foreign_amount2 = COALESCE(
-    $debitForeignAmount2,
-    debit_foreign_amount2
-  ),
-  debit_local_amount1 = COALESCE(
-    $debitLocalAmount1,
-    debit_local_amount1
-  ),
-  debit_local_amount2 = COALESCE(
-    $debitLocalAmount2,
-    debit_local_amount2
-  ),
-  description = COALESCE(
-    $description,
-    description
-  ),
-  invoice_date = COALESCE(
-    $invoiceDate,
-    invoice_date
-  ),
-  reference1 = COALESCE(
-    $reference,
-    reference1
-  ),
-  value_date = COALESCE(
-    $valueDate,
-    value_date
-  )
+    credit_entity1 = $creditEntity1,
+    credit_entity2 = $creditEntity2,
+    credit_foreign_amount1 = $creditForeignAmount1,
+    credit_foreign_amount2 = $creditForeignAmount2,
+    credit_local_amount1 = $creditLocalAmount1,
+    credit_local_amount2 = $creditLocalAmount2,
+    currency = $currency,
+    debit_entity1 = $debitEntity1,
+    debit_entity2 = $debitEntity2,
+    debit_foreign_amount1 = $debitForeignAmount1,
+    debit_foreign_amount2 = $debitForeignAmount2,
+    debit_local_amount1 = $debitLocalAmount1,
+    debit_local_amount2 = $debitLocalAmount2,
+    description = $description,
+    invoice_date = $invoiceDate,
+    reference1 = $reference,
+    value_date = $valueDate
   WHERE
     id = $ledgerId
     AND owner_id = $ownerId

@@ -19,6 +19,10 @@ export default gql`
     lockLedgerRecords(date: TimelessDate!): Boolean!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " overwrite the content of a single unlocked ledger record "
+    updateLedgerRecord(ledgerRecordId: UUID!, input: LedgerRecordInput!): UpdateLedgerRecordResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " the account slots a ledger record holds financial entities in "
@@ -74,6 +78,42 @@ export default gql`
     valueDate: TimelessDate!
     description: String
     reference: String
+    " whether the record is locked (closed books) and can no longer be edited "
+    locked: Boolean!
+    " the currency of the record's foreign amounts "
+    currency: Currency!
+  }
+
+  " the editable content of a manual ledger record "
+  input LedgerRecordInput {
+    debitEntity1: UUID!
+    debitLocalAmount1: Float!
+    debitForeignAmount1: Float
+    creditEntity1: UUID!
+    creditLocalAmount1: Float!
+    creditForeignAmount1: Float
+    debitEntity2: UUID
+    debitLocalAmount2: Float
+    debitForeignAmount2: Float
+    creditEntity2: UUID
+    creditLocalAmount2: Float
+    creditForeignAmount2: Float
+    currency: Currency!
+    invoiceDate: TimelessDate!
+    valueDate: TimelessDate!
+    description: String
+    reference: String
+  }
+
+  " result type for updateLedgerRecord "
+  union UpdateLedgerRecordResult = UpdateLedgerRecordSuccessfulResult | CommonError
+
+  " result type for updateLedgerRecord" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type UpdateLedgerRecordSuccessfulResult {
+    " the updated ledger record "
+    record: LedgerRecord!
+    " the charge the record belongs to "
+    charge: Charge!
   }
 
   extend interface Charge {
