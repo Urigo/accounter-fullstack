@@ -41,8 +41,12 @@ const OWNER_ID = makeUUID('business', 'manual-ledger-records-owner');
 const SUPPLIER_ID = makeUUID('business', 'manual-ledger-records-supplier');
 const EXPENSE_TAX_CATEGORY_ID = makeUUID('tax-category', 'manual-ledger-records-expense');
 const OTHER_TAX_CATEGORY_ID = makeUUID('tax-category', 'manual-ledger-records-other');
+/** The suite owner's own input VAT category: record entities must belong to the write target */
+const INPUT_VAT_TAX_CATEGORY_ID = makeUUID('tax-category', 'manual-ledger-records-input-vat');
 /** Another business, outside this request's write target */
 const OTHER_OWNER_ID = makeUUID('business', 'manual-ledger-records-other-owner');
+/** A tax category of the other business */
+const FOREIGN_TAX_CATEGORY_ID = makeUUID('tax-category', 'manual-ledger-records-foreign');
 const ADMIN_BUSINESS_ID = makeUUID('business', 'Admin Business');
 
 const LOCAL_CURRENCY = Currency.Ils;
@@ -60,7 +64,6 @@ const date = (value: string) => value as TimelessDateString;
 
 describe('Manual ledger records (DB)', () => {
   let db: TestDatabase;
-  let inputVatTaxCategoryId: string;
   let chargeId: string;
 
   async function withClient<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -157,7 +160,7 @@ describe('Manual ledger records (DB)', () => {
     return {
       debitEntity1: EXPENSE_TAX_CATEGORY_ID,
       debitLocalAmount1: 1000,
-      debitEntity2: inputVatTaxCategoryId,
+      debitEntity2: INPUT_VAT_TAX_CATEGORY_ID,
       debitLocalAmount2: 170,
       creditEntity1: SUPPLIER_ID,
       creditLocalAmount1: 1170,
@@ -211,23 +214,7 @@ describe('Manual ledger records (DB)', () => {
           );
         }
 
-        // The owner's admin context: a copy of the seeded Admin Business's, without a ledger lock
-        const copied = await client.query<{ input_vat_tax_category_id: string }>(
-          `INSERT INTO ${qualifyTable('user_context')}
-           SELECT (jsonb_populate_record(
-             NULL::${qualifyTable('user_context')},
-             to_jsonb(uc) || jsonb_build_object('owner_id', $1::uuid, 'ledger_lock', NULL)
-           )).*
-           FROM ${qualifyTable('user_context')} uc
-           WHERE uc.owner_id = $2
-           RETURNING input_vat_tax_category_id`,
-          [OWNER_ID, ADMIN_BUSINESS_ID],
-        );
-        if (!copied.rows[0]) {
-          throw new Error('Seeded admin context not found');
-        }
-        inputVatTaxCategoryId = copied.rows[0].input_vat_tax_category_id;
-
+        // Every entity the records reference belongs to the suite owner
         await ensureFinancialEntity(client, {
           id: SUPPLIER_ID,
           name: 'Manual Ledger Records Supplier',
@@ -235,12 +222,34 @@ describe('Manual ledger records (DB)', () => {
           ownerId: OWNER_ID,
         });
         await ensureBusinessForEntity(client, SUPPLIER_ID, { ownerId: OWNER_ID });
-        for (const [id, name] of [
-          [EXPENSE_TAX_CATEGORY_ID, 'Manual Ledger Records Expense'],
-          [OTHER_TAX_CATEGORY_ID, 'Manual Ledger Records Other'],
+        for (const [id, name, ownerId] of [
+          [EXPENSE_TAX_CATEGORY_ID, 'Manual Ledger Records Expense', OWNER_ID],
+          [OTHER_TAX_CATEGORY_ID, 'Manual Ledger Records Other', OWNER_ID],
+          [INPUT_VAT_TAX_CATEGORY_ID, 'Manual Ledger Records Input VAT', OWNER_ID],
+          [FOREIGN_TAX_CATEGORY_ID, 'Manual Ledger Records Foreign', OTHER_OWNER_ID],
         ] as const) {
-          await ensureFinancialEntity(client, { id, name, type: 'tax_category', ownerId: OWNER_ID });
-          await ensureTaxCategoryForEntity(client, id, { ownerId: OWNER_ID });
+          await ensureFinancialEntity(client, { id, name, type: 'tax_category', ownerId });
+          await ensureTaxCategoryForEntity(client, id, { ownerId });
+        }
+
+        // The owner's admin context: a copy of the seeded Admin Business's, with the owner's own
+        // input VAT category and no ledger lock
+        const copied = await client.query(
+          `INSERT INTO ${qualifyTable('user_context')}
+           SELECT (jsonb_populate_record(
+             NULL::${qualifyTable('user_context')},
+             to_jsonb(uc) || jsonb_build_object(
+               'owner_id', $1::uuid,
+               'input_vat_tax_category_id', $3::uuid,
+               'ledger_lock', NULL
+             )
+           )).*
+           FROM ${qualifyTable('user_context')} uc
+           WHERE uc.owner_id = $2`,
+          [OWNER_ID, ADMIN_BUSINESS_ID, INPUT_VAT_TAX_CATEGORY_ID],
+        );
+        if (copied.rowCount !== 1) {
+          throw new Error('Seeded admin context not found');
         }
 
         chargeId = randomUUID();
@@ -272,6 +281,11 @@ describe('Manual ledger records (DB)', () => {
             OTHER_OWNER_ID,
           ]);
         }
+        for (const table of ['tax_categories', 'financial_entities']) {
+          await client.query(`DELETE FROM ${qualifyTable(table)} WHERE id = $1`, [
+            FOREIGN_TAX_CATEGORY_ID,
+          ]);
+        }
 
         await asOwner(OWNER_ID);
         for (const table of [
@@ -283,7 +297,12 @@ describe('Manual ledger records (DB)', () => {
         ]) {
           await client.query(`DELETE FROM ${qualifyTable(table)} WHERE owner_id = $1`, [OWNER_ID]);
         }
-        const ownedEntityIds = [SUPPLIER_ID, EXPENSE_TAX_CATEGORY_ID, OTHER_TAX_CATEGORY_ID];
+        const ownedEntityIds = [
+          SUPPLIER_ID,
+          EXPENSE_TAX_CATEGORY_ID,
+          OTHER_TAX_CATEGORY_ID,
+          INPUT_VAT_TAX_CATEGORY_ID,
+        ];
         await client.query(`DELETE FROM ${qualifyTable('tax_categories')} WHERE id = ANY($1)`, [
           ownedEntityIds,
         ]);
@@ -392,7 +411,7 @@ describe('Manual ledger records (DB)', () => {
     expect(ledgerRows[0]).toMatchObject({
       debit_entity1: EXPENSE_TAX_CATEGORY_ID,
       debit_local_amount1: 1000,
-      debit_entity2: inputVatTaxCategoryId,
+      debit_entity2: INPUT_VAT_TAX_CATEGORY_ID,
       debit_local_amount2: 170,
       credit_entity1: SUPPLIER_ID,
       credit_local_amount1: 1170,
@@ -430,7 +449,7 @@ describe('Manual ledger records (DB)', () => {
       debitEntity1: EXPENSE_TAX_CATEGORY_ID,
       debitLocalAmount1: 1000,
       debitForeignAmount1: 270,
-      debitEntity2: inputVatTaxCategoryId,
+      debitEntity2: INPUT_VAT_TAX_CATEGORY_ID,
       debitLocalAmount2: 170,
       debitForeignAmount2: 46,
       creditEntity1: SUPPLIER_ID,
@@ -450,7 +469,7 @@ describe('Manual ledger records (DB)', () => {
       currency: Currency.Usd,
       debit_foreign_amount1: 270,
       credit_foreign_amount1: 289,
-      debit_entity2: inputVatTaxCategoryId,
+      debit_entity2: INPUT_VAT_TAX_CATEGORY_ID,
       debit_local_amount2: 170,
       debit_foreign_amount2: 46,
       credit_entity2: OTHER_TAX_CATEGORY_ID,
@@ -660,6 +679,54 @@ describe('Manual ledger records (DB)', () => {
         [ledgerRecordId],
       );
       expect(row?.invoice_date).toBe('2025-03-10');
+    });
+
+    it.each([
+      ['MISC_EXPENSE', 'debitEntity1'],
+      ['DOCUMENT', 'debitEntity1'],
+      ['MISC_EXPENSE', 'creditEntity2'],
+    ] as const)(
+      "rejects a %s insert whose %s belongs to another business, writing nothing",
+      async (operation, slot) => {
+        const input =
+          slot === 'debitEntity1'
+            ? vatInvoiceInput({ debitEntity1: FOREIGN_TAX_CATEGORY_ID })
+            : miscExpenseInput({
+                debitLocalAmount1: 600,
+                creditEntity2: FOREIGN_TAX_CATEGORY_ID,
+                creditLocalAmount2: 100,
+              });
+
+        const result = await insertManualLedgerRecord(newContext().injector, {
+          chargeId,
+          operation,
+          input,
+        });
+
+        expect(result).toMatchObject({ __typename: 'CommonError' });
+        expect((result as { message: string }).message).toContain(
+          `Financial entity with id ${FOREIGN_TAX_CATEGORY_ID} not found in this business`,
+        );
+        expect(await ledgerRowsOfCharge()).toEqual([]);
+        expect(await miscExpensesOfCharge()).toEqual([]);
+        expect(await documentsOfCharge()).toEqual([]);
+      },
+    );
+
+    it('rejects an update that references an entity of another business', async () => {
+      const ledgerRecordId = await insertOrFail('MISC_EXPENSE', miscExpenseInput());
+      const [before] = await ledgerRowsOfCharge();
+
+      const result = await updateManualLedgerRecord(newContext().injector, {
+        ledgerRecordId,
+        input: miscExpenseInput({ debitEntity1: FOREIGN_TAX_CATEGORY_ID }),
+      });
+
+      expect(result).toMatchObject({ __typename: 'CommonError' });
+      expect((result as { message: string }).message).toContain(
+        `Financial entity with id ${FOREIGN_TAX_CATEGORY_ID} not found in this business`,
+      );
+      expect(await ledgerRowsOfCharge()).toEqual([before]);
     });
   });
 
