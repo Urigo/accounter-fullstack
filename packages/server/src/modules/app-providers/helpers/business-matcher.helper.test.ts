@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { BusinessMatchData, OwnerMatchInfo } from './business-matcher.helper.js';
-import { applyForeignCounterpartyVatDefault, matchBusiness } from './business-matcher.helper.js';
+import {
+  applyForeignCounterpartyVatDefault,
+  matchBusiness,
+  serializeBusinessCatalog,
+} from './business-matcher.helper.js';
 
 const OWNER_ID = '00000000-0000-0000-0000-000000000001';
 const LOCAL_BIZ_ID = '00000000-0000-0000-0000-000000000002';
@@ -165,5 +169,72 @@ describe('matchBusiness — extracted issuer names', () => {
 
   it('returns null on an empty business list (no matching possible)', () => {
     expect(matchBusiness('Anthropic, PBC', '123456789', [])).toBeNull();
+  });
+});
+
+describe('serializeBusinessCatalog', () => {
+  // This catalog is the cached prefix of the OCR prompt. Anthropic matches a cached
+  // prefix byte for byte, so a reordering here is not a cosmetic difference — it is
+  // a cache miss that costs full input price and reports no error. These tests are
+  // the only thing that would catch that regression before the bill does.
+  function withPriority(id: string, priority: number | undefined): BusinessMatchData {
+    return {
+      id,
+      name: `business-${id}`,
+      hebrew_name: null,
+      vat_number: null,
+      suggestion_data: priority == null ? null : { priority },
+      locality: null,
+    };
+  }
+
+  const a = withPriority('00000000-0000-0000-0000-0000000000aa', undefined);
+  const b = withPriority('00000000-0000-0000-0000-0000000000bb', undefined);
+  const c = withPriority('00000000-0000-0000-0000-0000000000cc', undefined);
+
+  it('is stable when equal-priority businesses arrive in a different order', () => {
+    expect(serializeBusinessCatalog([a, b, c])).toBe(serializeBusinessCatalog([c, a, b]));
+    expect(serializeBusinessCatalog([a, b, c])).toBe(serializeBusinessCatalog([b, c, a]));
+  });
+
+  it('is stable when businesses share an explicit priority', () => {
+    const x = withPriority('00000000-0000-0000-0000-0000000000dd', 5);
+    const y = withPriority('00000000-0000-0000-0000-0000000000ee', 5);
+    expect(serializeBusinessCatalog([x, y])).toBe(serializeBusinessCatalog([y, x]));
+  });
+
+  it('orders by priority descending, then id ascending', () => {
+    const high = withPriority('00000000-0000-0000-0000-0000000000ff', 10);
+    expect(
+      serializeBusinessCatalog([a, high, b])
+        .split('\n')
+        .map(line => line.split('|')[0]),
+    ).toEqual([high.id, a.id, b.id]);
+  });
+
+  it('does not mutate the caller array', () => {
+    const input = [c, a, b];
+    serializeBusinessCatalog(input);
+    expect(input).toEqual([c, a, b]);
+  });
+
+  it('emits one UUID|name line per business, falling back to the hebrew name', () => {
+    const hebrewOnly: BusinessMatchData = {
+      ...withPriority('00000000-0000-0000-0000-000000000111', undefined),
+      name: null,
+      hebrew_name: 'עסק',
+    };
+    const nameless: BusinessMatchData = {
+      ...withPriority('00000000-0000-0000-0000-000000000222', undefined),
+      name: null,
+      hebrew_name: null,
+    };
+    expect(serializeBusinessCatalog([hebrewOnly, nameless])).toBe(
+      `${hebrewOnly.id}|עסק\n${nameless.id}|`,
+    );
+  });
+
+  it('returns an empty string for no businesses', () => {
+    expect(serializeBusinessCatalog([])).toBe('');
   });
 });

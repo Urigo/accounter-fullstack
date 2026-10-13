@@ -1,0 +1,25 @@
+---
+"@accounter/client": patch
+---
+dependencies updates:
+  - Updated dependency [`@atlaskit/pragmatic-drag-and-drop@4.0.0` ↗︎](https://www.npmjs.com/package/@atlaskit/pragmatic-drag-and-drop/v/4.0.0) (from `3.1.0`, in `dependencies`)
+  - Updated dependency [`@atlaskit/pragmatic-drag-and-drop-hitbox@3.0.0` ↗︎](https://www.npmjs.com/package/@atlaskit/pragmatic-drag-and-drop-hitbox/v/3.0.0) (from `2.2.1`, in `dependencies`)
+  - Updated dependency [`@auth0/auth0-react@2.28.2` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.28.2) (from `2.27.0`, in `dependencies`)
+  - Updated dependency [`@mui/material@9.5.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/9.5.0) (from `9.4.0`, in `dependencies`)
+  - Updated dependency [`@tanstack/react-table@9.2.8` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/9.2.8) (from `9.2.4`, in `dependencies`)
+  - Updated dependency [`csv-parse@7.0.3` ↗︎](https://www.npmjs.com/package/csv-parse/v/7.0.3) (from `7.0.2`, in `dependencies`)
+  - Updated dependency [`dotenv@18.0.7` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.7) (from `18.0.2`, in `dependencies`)
+  - Updated dependency [`html2canvas-pro@2.5.2` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.5.2) (from `2.4.3`, in `dependencies`)
+  - Updated dependency [`lucide-react@1.52.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.52.0) (from `1.47.0`, in `dependencies`)
+  - Updated dependency [`pdfjs-dist@6.4.299` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/6.4.299) (from `6.3.289`, in `dependencies`)
+  - Updated dependency [`radix-ui@1.7.0` ↗︎](https://www.npmjs.com/package/radix-ui/v/1.7.0) (from `1.6.7`, in `dependencies`)
+  - Updated dependency [`react-day-picker@10.0.2` ↗︎](https://www.npmjs.com/package/react-day-picker/v/10.0.2) (from `10.0.1`, in `dependencies`)
+  - Updated dependency [`react-error-boundary@6.1.6` ↗︎](https://www.npmjs.com/package/react-error-boundary/v/6.1.6) (from `6.1.5`, in `dependencies`)
+  - Updated dependency [`react-hook-form@7.89.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.89.0) (from `7.88.0`, in `dependencies`)
+  - Updated dependency [`react-router-dom@7.18.4` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.18.4) (from `7.18.3`, in `dependencies`)
+  - Updated dependency [`simple-icons@16.34.0` ↗︎](https://www.npmjs.com/package/simple-icons/v/16.34.0) (from `16.32.0`, in `dependencies`)
+  - Removed dependency [`@mantine/carousel@6.0.22` ↗︎](https://www.npmjs.com/package/@mantine/carousel/v/6.0.22) (from `dependencies`)
+  - Removed dependency [`@mantine/core@6.0.22` ↗︎](https://www.npmjs.com/package/@mantine/core/v/6.0.22) (from `dependencies`)
+  - Removed dependency [`@mantine/dropzone@6.0.22` ↗︎](https://www.npmjs.com/package/@mantine/dropzone/v/6.0.22) (from `dependencies`)
+  - Removed dependency [`@mantine/hooks@6.0.22` ↗︎](https://www.npmjs.com/package/@mantine/hooks/v/6.0.22) (from `dependencies`)
+  - Removed dependency [`dayjs@1.11.23` ↗︎](https://www.npmjs.com/package/dayjs/v/1.11.23) (from `dependencies`)

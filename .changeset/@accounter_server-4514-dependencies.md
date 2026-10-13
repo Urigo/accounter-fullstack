@@ -1,0 +1,23 @@
+---
+"@accounter/server": patch
+---
+dependencies updates:
+  - Updated dependency [`@ai-sdk/anthropic@4.0.78` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.78) (from `4.0.53`, in `dependencies`)
+  - Updated dependency [`@envelop/generic-auth@11.2.3` ↗︎](https://www.npmjs.com/package/@envelop/generic-auth/v/11.2.3) (from `11.2.1`, in `dependencies`)
+  - Updated dependency [`@google-cloud/pubsub@6.2.0` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.2.0) (from `6.1.0`, in `dependencies`)
+  - Updated dependency [`@graphql-hive/yoga@0.49.7` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.7) (from `0.49.6`, in `dependencies`)
+  - Updated dependency [`@graphql-tools/utils@12.0.3` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/12.0.3) (from `12.0.1`, in `dependencies`)
+  - Updated dependency [`@graphql-yoga/plugin-defer-stream@3.24.4` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.24.4) (from `3.24.1`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.81.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.81.0) (from `0.80.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/exporter-trace-otlp-http@0.223.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http/v/0.223.0) (from `0.222.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/resources@2.12.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/resources/v/2.12.0) (from `2.11.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/sdk-node@0.223.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-node/v/0.223.0) (from `0.222.0`, in `dependencies`)
+  - Updated dependency [`@whatwg-node/fetch@0.12.1` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.12.1) (from `0.10.13`, in `dependencies`)
+  - Updated dependency [`ai@7.0.137` ↗︎](https://www.npmjs.com/package/ai/v/7.0.137) (from `7.0.99`, in `dependencies`)
+  - Updated dependency [`auth0@7.4.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.4.0) (from `7.2.0`, in `dependencies`)
+  - Updated dependency [`dotenv@18.0.7` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.7) (from `18.0.2`, in `dependencies`)
+  - Updated dependency [`googleapis@185.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/185.0.0) (from `181.0.0`, in `dependencies`)
+  - Updated dependency [`graphql-yoga@5.24.4` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.24.4) (from `5.24.1`, in `dependencies`)
+  - Updated dependency [`pg@8.23.1` ↗︎](https://www.npmjs.com/package/pg/v/8.23.1) (from `8.23.0`, in `dependencies`)
+  - Updated dependency [`playwright@1.64.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.0) (from `1.63.0`, in `dependencies`)
+  - Updated dependency [`uuid@14.0.3` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.3) (from `14.0.2`, in `dependencies`)
