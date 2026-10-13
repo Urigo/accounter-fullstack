@@ -1,12 +1,18 @@
 import { act, useState, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  getViewerTrigger,
+  resetDocumentViewerStore,
+  useDocumentViewer,
+} from '../../../../hooks/use-document-viewer.js';
 import { DocumentViewer } from '../document-viewer.js';
 import {
   DocumentEditSplit,
   EDIT_SPLIT_FORM_WIDTH_VAR,
   SPLIT_MEDIA_QUERY,
 } from '../edit-split-layout.js';
+import type { DocumentViewerEntry } from '../types.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -28,7 +34,15 @@ function fireResize(): void {
   });
 }
 
+const ENTRY: DocumentViewerEntry = {
+  id: 'doc-1',
+  imageUrl: 'https://example.com/scan.jpg',
+  fileUrl: null,
+  title: 'Invoice 1',
+};
+
 beforeEach(() => {
+  resetDocumentViewerStore();
   wide = true;
   resizeCallbacks = new Set();
   vi.stubGlobal('matchMedia', (query: string) => ({
@@ -61,10 +75,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function Harness({ initialHidden = false }: { initialHidden?: boolean }): ReactElement {
+function Harness({
+  initialHidden = false,
+  entry,
+}: {
+  initialHidden?: boolean;
+  entry?: DocumentViewerEntry;
+}): ReactElement {
   const [hidden, setHidden] = useState(initialHidden);
   return (
     <DocumentEditSplit
+      entry={entry}
       hidden={hidden}
       onHiddenChange={setHidden}
       form={<input aria-label="Serial" />}
@@ -322,7 +343,40 @@ describe('DocumentEditSplit', () => {
     ).toBe('false');
   });
 
-  it('stacked below lg: no separator and no Expand', () => {
+  it('stacked below lg, Expand opens the full-screen overlay with the button as trigger', () => {
+    wide = false;
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 800,
+    });
+    // The edit sheet is a vaul dialog.
+    render(
+      <div role="dialog">
+        <Harness entry={ENTRY} />
+      </div>,
+    );
+    const expand = query<HTMLButtonElement>('button[aria-label="Expand document viewer"]');
+    expect(expand.getAttribute('aria-pressed')).toBe('false');
+
+    act(() => expand.click());
+
+    expect(useDocumentViewer.getState()).toMatchObject({
+      current: ENTRY,
+      placement: 'overlay',
+      overlayMode: 'fullscreen',
+    });
+    expect(getViewerTrigger()).toBe(expand);
+    // The split itself doesn't change: nothing covers the form.
+    expect(expand.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('side by side, Expand stays in the sheet and never opens the overlay', () => {
+    render(<Harness entry={ENTRY} />);
+    act(() => query<HTMLButtonElement>('button[aria-label="Expand document viewer"]').click());
+    expect(useDocumentViewer.getState().current).toBeNull();
+  });
+
+  it('stacked below lg without an entry: no separator and no Expand', () => {
     wide = false;
     render();
     expect(container.querySelector('[role="separator"]')).toBeNull();

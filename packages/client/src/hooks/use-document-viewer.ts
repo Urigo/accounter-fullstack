@@ -4,11 +4,12 @@ import {
   getViewportWidth,
   resolveViewerPlacement,
   type DocumentViewerPlacement,
+  type OverlayMode,
 } from '../components/common/document-viewer/placement.js';
 import type { DocumentViewerEntry } from '../components/common/document-viewer/types.js';
 import { SIDEBAR_WIDTH_PX, useSidebar } from './use-sidebar.js';
 
-export type { DocumentViewerPlacement };
+export type { DocumentViewerPlacement, OverlayMode };
 
 export interface OpenDocumentViewerOptions {
   /**
@@ -21,6 +22,8 @@ export interface OpenDocumentViewerOptions {
 interface DocumentViewerState {
   current: DocumentViewerEntry | null;
   placement: DocumentViewerPlacement | null;
+  /** The overlay's shape while `placement` is `overlay`; `null` otherwise. */
+  overlayMode: OverlayMode | null;
   expanded: boolean;
   /**
    * How many surfaces are hiding the docked viewer right now (the edit sheet shows the same scan
@@ -69,8 +72,9 @@ function sameEntry(a: DocumentViewerEntry, b: DocumentViewerEntry): boolean {
 const INITIAL_STATE = {
   current: null,
   placement: null,
+  overlayMode: null,
   expanded: false,
-} satisfies Pick<DocumentViewerState, 'current' | 'placement' | 'expanded'>;
+} satisfies Pick<DocumentViewerState, 'current' | 'placement' | 'overlayMode' | 'expanded'>;
 
 /** Kept apart from `INITIAL_STATE` so `close()` leaves it alone: suspension belongs to the sheet. */
 const INITIAL_SUSPEND = { suspendCount: 0 } satisfies Pick<DocumentViewerState, 'suspendCount'>;
@@ -87,7 +91,7 @@ export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
   ...INITIAL_SUSPEND,
   open: (entry, options): void => {
     const trigger = options?.trigger ?? null;
-    const placement = resolveViewerPlacement({
+    const { placement, overlayMode } = resolveViewerPlacement({
       trigger,
       viewportWidth: getViewportWidth(),
       sidebarWidth: useSidebar.getState().isMinimized
@@ -98,6 +102,7 @@ export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
     set(state => ({
       current: entry,
       placement,
+      overlayMode,
       // A swap inside the docked column keeps it expanded; anything else starts collapsed.
       expanded: state.placement === 'docked' && placement === 'docked' && state.expanded,
     }));
