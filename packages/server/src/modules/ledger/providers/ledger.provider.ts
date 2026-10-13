@@ -107,7 +107,8 @@ const getLedgerBalanceToDate = sql<IGetLedgerBalanceToDateQuery>`
 
 // A plain SET (no COALESCE) for every editable column, so an edit can clear an
 // optional value such as the second debit/credit slot. The charge, owner and
-// lock of a record are never changed here.
+// lock of a record are never changed here, and a locked record is never matched,
+// even when it was locked after the caller's own lock check.
 const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   UPDATE accounter_schema.ledger_records
   SET
@@ -131,6 +132,7 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
   WHERE
     id = $ledgerId
     AND owner_id = $ownerId
+    AND locked IS NOT TRUE
   RETURNING *;
 `;
 

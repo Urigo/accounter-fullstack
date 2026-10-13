@@ -33,9 +33,17 @@ export async function updateManualLedgerRecord(
     }
 
     const params = ledgerRecordInputToParams(input);
-    const { defaultLocalCurrency } = await injector
+    const { defaultLocalCurrency, ledgerLock } = await injector
       .get(AdminContextProvider)
       .getVerifiedAdminContext();
+    // Never move a record into a closed period: both dates must be strictly after the lock date,
+    // matching `lockLedgerRecords`, which locks every record dated on or before it
+    if (ledgerLock && (input.invoiceDate <= ledgerLock || input.valueDate <= ledgerLock)) {
+      return {
+        __typename: 'CommonError',
+        message: new LedgerLockError().message,
+      };
+    }
     try {
       validateLedgerRecordParams(
         { ...params, chargeId: record.charge_id, ownerId: record.owner_id },
@@ -57,7 +65,7 @@ export async function updateManualLedgerRecord(
     if (!updatedRecord) {
       return {
         __typename: 'CommonError',
-        message: `Ledger record with id ${ledgerRecordId} was not updated`,
+        message: `Ledger record with id ${ledgerRecordId} was not updated: it may have been locked or removed`,
       };
     }
 

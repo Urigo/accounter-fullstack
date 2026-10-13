@@ -62,7 +62,10 @@ function buildRecord(
   } as IGetLedgerRecordsByIdsResult;
 }
 
-function setup(record: IGetLedgerRecordsByIdsResult | undefined) {
+function setup(
+  record: IGetLedgerRecordsByIdsResult | undefined,
+  { ledgerLock }: { ledgerLock?: string } = {},
+) {
   const charge = { id: CHARGE_ID, accountant_status: 'PENDING' } as IGetChargesByIdsResult;
   const updatedRow = buildRecord({
     debit_entity1: INPUT.debitEntity1,
@@ -92,6 +95,7 @@ function setup(record: IGetLedgerRecordsByIdsResult | undefined) {
           getVerifiedAdminContext: async () => ({
             ownerId: CONTEXT_OWNER_ID,
             defaultLocalCurrency: Currency.Ils,
+            ledgerLock,
           }),
         },
       ],
@@ -149,6 +153,39 @@ describe('updateManualLedgerRecord', () => {
     });
     expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['the invoice date is on the lock date', { invoiceDate: '2025-02-28' }],
+    ['the invoice date is before the lock date', { invoiceDate: '2025-01-15' }],
+    ['the value date is on the lock date', { valueDate: '2025-02-28' }],
+    ['the value date is before the lock date', { valueDate: '2025-01-15' }],
+  ] as const)('returns a CommonError and never updates when %s', async (_, dates) => {
+    const { injector, ledgerProvider } = setup(buildRecord(), { ledgerLock: '2025-02-28' });
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: { ...INPUT, ...dates },
+    });
+
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: new LedgerLockError().message,
+    });
+    expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
+    expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+  });
+
+  it('updates when both dates are after the lock date', async () => {
+    const { injector, ledgerProvider } = setup(buildRecord(), { ledgerLock: '2025-03-11' });
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: INPUT,
+    });
+
+    expect(ledgerProvider.updateLedgerRecord).toHaveBeenCalledTimes(1);
+    expect(result).not.toHaveProperty('__typename', 'CommonError');
   });
 
   it('returns a CommonError when the update matches no row', async () => {
