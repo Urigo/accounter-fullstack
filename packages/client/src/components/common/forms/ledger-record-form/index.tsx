@@ -1,9 +1,10 @@
-import { useContext, useMemo, useRef, type FormEvent, type ReactElement } from 'react';
+import { useContext, useMemo, useRef, useState, type FormEvent, type ReactElement } from 'react';
 import { useForm, useWatch, type FieldError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Currency, LedgerRecordOperation } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
+import { cn } from '../../../../lib/utils.js';
 import { usePortalContainer } from '../../../../providers/portal-container.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { Button } from '../../../ui/button.js';
@@ -29,14 +30,17 @@ import { DatePickerInput } from '../../inputs/date-picker-input.js';
 import { LedgerSlotFields } from './ledger-slot-fields.js';
 import {
   buildLedgerRecordFormSchema,
+  computeLedgerTotals,
   FOREIGN_AMOUNT_FIELDS,
   isForeignCurrency,
   isUnparsableDateText,
   LEDGER_BALANCE_ERROR_PATH,
+  ledgerSlotFieldNames,
   TIMELESS_DATE_FORMAT_MESSAGE,
   type LedgerRecordFormInput,
   type LedgerRecordFormMode,
   type LedgerRecordFormValues,
+  type LedgerSlotSide,
 } from './schema.js';
 
 type DateFieldName = 'invoiceDate' | 'valueDate';
@@ -49,6 +53,18 @@ const OPERATION_OPTIONS: Array<{ value: LedgerRecordOperation; label: string }> 
 
 /** Placeholder value of the not-yet-supported operation; it is never selectable */
 const TRANSACTION_OPERATION_PLACEHOLDER = 'TRANSACTION';
+
+const SLOT_SIDES: LedgerSlotSide[] = ['debit', 'credit'];
+
+const TOTAL_FORMAT = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatTotal(amount: number): string {
+  // Rounded first so float noise never shows as "-0.00"
+  return TOTAL_FORMAT.format(Math.round(amount * 100) / 100 || 0);
+}
 
 type LedgerRecordFormProps = {
   mode: LedgerRecordFormMode;
@@ -87,12 +103,40 @@ export function LedgerRecordForm({
       return;
     }
     // Back in the local currency the foreign inputs disappear: drop their values (and any errors
-    // on them) so nothing stale stays in the form. The mapper never sends them either.
+    // on them) so nothing stale stays in the form. The mapper never sends them either. `null`, not
+    // `undefined`, so the inputs don't re-mount with their default values in a foreign currency.
     for (const field of FOREIGN_AMOUNT_FIELDS) {
-      setValue(field, undefined, { shouldDirty: true });
+      setValue(field, null, { shouldDirty: true });
     }
     clearErrors([...FOREIGN_AMOUNT_FIELDS]);
   }
+
+  // Bumped when a secondary line is cleared, to re-mount its inputs: an amount input keeps showing
+  // its last number when its field is emptied from outside
+  const [clearedSlots, setClearedSlots] = useState<Record<LedgerSlotSide, number>>({
+    debit: 0,
+    credit: 0,
+  });
+
+  function clearSecondarySlot(side: LedgerSlotSide): void {
+    const { entity, localAmount, foreignAmount } = ledgerSlotFieldNames(side, 2);
+    for (const field of [entity, localAmount, foreignAmount]) {
+      setValue(field, null, { shouldDirty: true });
+    }
+    clearErrors([entity, localAmount, foreignAmount]);
+    setClearedSlots(previous => ({ ...previous, [side]: previous[side] + 1 }));
+  }
+
+  const [debitLocalAmount1, creditLocalAmount1, debitLocalAmount2, creditLocalAmount2] = useWatch({
+    control,
+    name: ['debitLocalAmount1', 'creditLocalAmount1', 'debitLocalAmount2', 'creditLocalAmount2'],
+  });
+  const totals = computeLedgerTotals({
+    debitLocalAmount1,
+    creditLocalAmount1,
+    debitLocalAmount2,
+    creditLocalAmount2,
+  });
 
   // Date fields whose input text the date picker can't parse. The picker keeps such text to itself,
   // so the form still holds the last valid date; submitting must not send that stale value.
@@ -257,24 +301,54 @@ export function LedgerRecordForm({
         </div>
 
         <div className="flex flex-col gap-2">
-          <LedgerSlotFields
-            side="debit"
-            index={1}
-            showForeign={showForeign}
-            required
-            entities={selectableFinancialEntities}
-            fetchingEntities={fetchingEntities}
-          />
-          <LedgerSlotFields
-            side="credit"
-            index={1}
-            showForeign={showForeign}
-            required
-            entities={selectableFinancialEntities}
-            fetchingEntities={fetchingEntities}
-          />
-          {balanceError?.message && (
-            <p role="alert" className="text-red-500 text-sm dark:text-red-900">
+          {SLOT_SIDES.map(side => (
+            <LedgerSlotFields
+              key={`${side}-1`}
+              side={side}
+              index={1}
+              showForeign={showForeign}
+              required
+              entities={selectableFinancialEntities}
+              fetchingEntities={fetchingEntities}
+            />
+          ))}
+          {SLOT_SIDES.map(side => (
+            <LedgerSlotFields
+              key={`${side}-2-${clearedSlots[side]}`}
+              side={side}
+              index={2}
+              showForeign={showForeign}
+              required={false}
+              entities={selectableFinancialEntities}
+              fetchingEntities={fetchingEntities}
+              onClear={() => clearSecondarySlot(side)}
+            />
+          ))}
+        </div>
+
+        <div data-testid="ledger-totals" className="flex flex-col gap-1 border-t pt-2 text-sm">
+          <dl className="flex flex-wrap justify-end gap-x-6 gap-y-1">
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Debit total</dt>
+              <dd className="tabular-nums">{formatTotal(totals.debit)}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Credit total</dt>
+              <dd className="tabular-nums">{formatTotal(totals.credit)}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Difference</dt>
+              <dd
+                data-testid="ledger-difference"
+                className={cn('tabular-nums', !totals.balanced && 'font-medium text-destructive')}
+              >
+                {formatTotal(totals.difference)}
+              </dd>
+            </div>
+          </dl>
+          {/* Set on submit and not re-checked as amounts change, so hidden once they balance */}
+          {balanceError?.message && !totals.balanced && (
+            <p role="alert" className="text-right text-destructive">
               {balanceError.message}
             </p>
           )}

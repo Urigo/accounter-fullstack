@@ -1,15 +1,18 @@
 import { useId, type ReactElement } from 'react';
+import { X } from 'lucide-react';
 import { useFormContext } from 'react-hook-form';
 import { cn } from '../../../../lib/utils.js';
+import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
 import { ComboBox } from '../../inputs/combo-box.js';
 import { NumberInput } from '../../inputs/number-input.js';
-import type { LedgerRecordFormInput } from './schema.js';
-
-type LedgerSlotSide = 'debit' | 'credit';
-/** Only the main lines exist so far; a secondary line is index 2 once the form has those fields */
-type LedgerSlotIndex = 1;
+import {
+  ledgerSlotFieldNames,
+  type LedgerRecordFormInput,
+  type LedgerSlotIndex,
+  type LedgerSlotSide,
+} from './schema.js';
 
 type Props = {
   side: LedgerSlotSide;
@@ -20,16 +23,23 @@ type Props = {
   required: boolean;
   entities: Array<{ value: string; label: string }>;
   fetchingEntities: boolean;
+  /** Renders a clear (×) action that empties the line */
+  onClear?: () => void;
 };
 
-function slotLabel(side: LedgerSlotSide): string {
-  return side === 'debit' ? 'Debit' : 'Credit';
+/** "Debit" / "Credit" for a main line, "Debit 2" / "Credit 2" for a secondary one */
+function slotLabel(side: LedgerSlotSide, index: LedgerSlotIndex): string {
+  const name = side === 'debit' ? 'Debit' : 'Credit';
+  return index === 1 ? name : `${name} ${index}`;
 }
 
 /**
  * One debit or credit line of `LedgerRecordForm`: its entity, local amount and, for a
  * foreign-currency record, foreign amount. Field names follow `LedgerRecordInput`
  * (`debitEntity1`, `creditLocalAmount2`, `debitForeignAmount1`, ...).
+ *
+ * An amount input does not follow its field back to empty (`NumberInput` ignores an empty `value`),
+ * so whoever clears a line programmatically re-mounts it (e.g. with a `key`).
  */
 export function LedgerSlotFields({
   side,
@@ -38,9 +48,11 @@ export function LedgerSlotFields({
   required,
   entities,
   fetchingEntities,
+  onClear,
 }: Props): ReactElement {
   const { control } = useFormContext<LedgerRecordFormInput>();
-  const label = slotLabel(side);
+  const label = slotLabel(side, index);
+  const fields = ledgerSlotFieldNames(side, index);
   const entityId = useId();
 
   return (
@@ -50,12 +62,24 @@ export function LedgerSlotFields({
         showForeign ? 'sm:grid-cols-4' : 'sm:grid-cols-3',
       )}
     >
-      <Label htmlFor={entityId} className="sm:pt-2">
-        {label}
-      </Label>
+      <div className="flex min-h-9 items-center justify-between gap-2">
+        <Label htmlFor={entityId}>{label}</Label>
+        {onClear && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Clear ${label}`}
+            title={`Clear ${label}`}
+            onClick={onClear}
+          >
+            <X />
+          </Button>
+        )}
+      </div>
       <FormField
         control={control}
-        name={`${side}Entity${index}`}
+        name={fields.entity}
         render={({ field }) => (
           <FormItem>
             <FormControl>
@@ -76,7 +100,7 @@ export function LedgerSlotFields({
       />
       <FormField
         control={control}
-        name={`${side}LocalAmount${index}`}
+        name={fields.localAmount}
         render={({ field }) => (
           <FormItem>
             <FormControl>
@@ -85,7 +109,8 @@ export function LedgerSlotFields({
                 name={field.name}
                 onBlur={field.onBlur}
                 value={field.value ?? undefined}
-                onChange={value => field.onChange(value ?? undefined)}
+                // An emptied amount is `null`, so a re-mount can't bring the default back
+                onChange={value => field.onChange(value ?? null)}
                 aria-label={`${label} amount`}
                 aria-required={required}
                 placeholder={showForeign ? 'Local amount' : 'Amount'}
@@ -101,7 +126,7 @@ export function LedgerSlotFields({
       {showForeign && (
         <FormField
           control={control}
-          name={`${side}ForeignAmount${index}`}
+          name={fields.foreignAmount}
           render={({ field }) => (
             <FormItem>
               <FormControl>
@@ -110,7 +135,7 @@ export function LedgerSlotFields({
                   name={field.name}
                   onBlur={field.onBlur}
                   value={field.value ?? undefined}
-                  onChange={value => field.onChange(value ?? undefined)}
+                  onChange={value => field.onChange(value ?? null)}
                   aria-label={`${label} foreign amount`}
                   aria-required={required}
                   placeholder="Foreign amount"
