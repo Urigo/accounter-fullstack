@@ -117,9 +117,12 @@ function useDocumentsTableCore({
   }, [columnIds, withChargeLink, withSelection]);
 
   const closeEditDocument = useCallback((): void => setEditing(null), []);
-  /** Save & next: the same sheet moves to `id`, keeping the row ids it opened with. */
+  /**
+   * Save & next: the same sheet moves to `id`, keeping the row ids it opened with. A closed sheet
+   * stays closed, so a save resolving after the sheet was dismissed can't reopen it.
+   */
   const navigateEditDocument = useCallback(
-    (id: string): void => setEditing(prev => (prev ? { ...prev, id } : { id })),
+    (id: string): void => setEditing(prev => (prev ? { ...prev, id } : prev)),
     [],
   );
 

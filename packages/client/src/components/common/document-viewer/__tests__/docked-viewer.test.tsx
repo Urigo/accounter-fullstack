@@ -454,6 +454,61 @@ describe('DockedDocumentViewer stepper', () => {
   });
 });
 
+describe('DockedDocumentViewer sibling preload', () => {
+  it('preloads the neighbours only while the column is shown', () => {
+    const preloaded: string[] = [];
+    vi.stubGlobal(
+      'Image',
+      class {
+        set src(value: string) {
+          preloaded.push(value);
+        }
+      },
+    );
+    const siblings: DocumentViewerEntry[] = ['p1', 'p2', 'p3'].map(id => ({
+      id,
+      imageUrl: `https://example.com/${id}.jpg`,
+      fileUrl: null,
+      title: id,
+    }));
+    let resume = (): void => {};
+    act(() => {
+      resume = useDocumentViewer.getState().suspend();
+    });
+    act(() => useDocumentViewer.getState().open(siblings[1], { trigger, siblings }));
+    // The edit sheet hides the column: no stepper, no preload.
+    expect(preloaded).toEqual([]);
+
+    act(() => resume());
+    expect(preloaded).toEqual(['https://example.com/p1.jpg', 'https://example.com/p3.jpg']);
+  });
+
+  it('leaves the overlay placement to the overlay host', () => {
+    const preloaded: string[] = [];
+    vi.stubGlobal(
+      'Image',
+      class {
+        set src(value: string) {
+          preloaded.push(value);
+        }
+      },
+    );
+    const siblings: DocumentViewerEntry[] = ['p1', 'p2'].map(id => ({
+      id,
+      imageUrl: `https://example.com/${id}.jpg`,
+      fileUrl: null,
+      title: id,
+    }));
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: 800,
+    });
+    act(() => useDocumentViewer.getState().open(siblings[0], { trigger, siblings }));
+    expect(useDocumentViewer.getState().placement).toBe('overlay');
+    expect(preloaded).toEqual([]);
+  });
+});
+
 describe('DockedDocumentViewer remembered width', () => {
   it('reads a stored ratio back and stores a key press', () => {
     localStorage.setItem('accounter:document-viewer:docked-ratio', '0.6');

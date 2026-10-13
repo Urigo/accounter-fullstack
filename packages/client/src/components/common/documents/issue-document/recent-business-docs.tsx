@@ -103,7 +103,8 @@ export function RecentBusinessDocs({
     >[],
     state: {},
   });
-  useReconcileViewerRows(table.getRowModel().rows.map(row => row.id));
+  // `null` while fetching: rows unknown, not emptied.
+  useReconcileViewerRows(fetching ? null : table.getRowModel().rows.map(row => row.id));
 
   return (
     <Card>
@@ -158,7 +159,7 @@ export function RecentBusinessDocs({
       <EditDocumentModal
         documentId={editing?.id}
         siblingIds={editing?.siblingIds}
-        onNavigate={id => setEditing(prev => (prev ? { ...prev, id } : { id }))}
+        onNavigate={id => setEditing(prev => (prev ? { ...prev, id } : prev))}
         onDone={(): void => setEditing(null)}
         onChange={() => {}}
       />

@@ -281,7 +281,9 @@ export function DockedDocumentViewer(): ReactElement | null {
   const close = useDocumentViewer(s => s.close);
   const setExpanded = useDocumentViewer(s => s.setExpanded);
   const suspended = useDocumentViewer(s => s.suspendCount > 0);
-  const stepper = useViewerStepper(current?.id);
+  // Only while this column is what shows the document: not under the overlay, and not while the
+  // edit sheet suspends it, so neither the stepper nor its preload runs for a hidden viewer.
+  const stepper = useViewerStepper(placement === 'docked' && !suspended ? current?.id : null);
 
   // ✕ and Esc hand focus back to the trigger. Opening never moves focus.
   const requestClose = useCallback((): void => {

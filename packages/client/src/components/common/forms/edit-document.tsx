@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactElement } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Link } from 'react-router-dom';
@@ -170,6 +170,22 @@ export const EditDocument = ({
   const { updateDocument, fetching } = useUpdateDocument();
   /** Save & next awaits its save, so it holds the buttons for the round trip. */
   const [savingNext, setSavingNext] = useState(false);
+  /**
+   * Set synchronously on click, before react-hook-form's async validation runs, so a double click
+   * can't start a second save before `savingNext` disables the button.
+   */
+  const savingNextRef = useRef(false);
+  /**
+   * Whether the sheet is still showing this document. A save that resolves after the sheet closed
+   * (or moved on) must not navigate: that would reopen it on the next document.
+   */
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const nextId = onNavigate ? nextSiblingId(siblingIds, documentId) : null;
 
   const onSubmit: SubmitHandler<UpdateDocumentFieldsInput> = data => {
@@ -193,21 +209,32 @@ export const EditDocument = ({
     }
     const dataToUpdate = relevantDataPicker(data, dirtyFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      setSavingNext(true);
-      let result: Awaited<ReturnType<typeof updateDocument>>;
-      try {
-        result = await updateDocument({ documentId, fields: dataToUpdate });
-      } finally {
-        setSavingNext(false);
-      }
+      const result = await updateDocument({ documentId, fields: dataToUpdate });
       // A failed save resolves empty, and the hook has already shown its toast: stay here, with
       // the edits intact, so they can be fixed and saved again.
       if (!result) {
         return;
       }
+      // The save went through, so the list refreshes even if the sheet closed meanwhile.
       onChange();
     }
-    onNavigate(nextId);
+    if (mountedRef.current) {
+      onNavigate(nextId);
+    }
+  };
+
+  const onSaveAndNextClick = (event: MouseEvent<HTMLButtonElement>): void => {
+    if (savingNextRef.current) {
+      return;
+    }
+    savingNextRef.current = true;
+    setSavingNext(true);
+    void handleSubmit(onSaveAndNext)(event).finally(() => {
+      savingNextRef.current = false;
+      if (mountedRef.current) {
+        setSavingNext(false);
+      }
+    });
   };
 
   const amountCurrency = watch('amount.currency');
@@ -274,7 +301,7 @@ export const EditDocument = ({
                   type="button"
                   variant="outline"
                   disabled={busy || !dirty || !nextId}
-                  onClick={handleSubmit(onSaveAndNext)}
+                  onClick={onSaveAndNextClick}
                 >
                   Save &amp; next
                   <ArrowRight className="size-4" />
@@ -295,7 +322,8 @@ export const EditDocument = ({
           onToggleExpand={onToggleExpand}
           expanded={expanded}
           // No stepper here: stepping the sheet would drop unsaved edits. Save & next steps.
-          keyboardRank={KEYBOARD_RANK.embedded}
+          // Hidden, the pane gives up the keys, so `+`, `0`, `R` and `M` aren't swallowed for nothing.
+          keyboardRank={viewerHidden ? null : KEYBOARD_RANK.embedded}
         />
       )}
     />

@@ -11,6 +11,7 @@ import {
   EditDocumentModal,
   UploadDocumentsModal,
 } from '../../../common/index.js';
+import { useReconcileViewerRows } from '../../../documents-table/data-table.js';
 import { DocumentsDataTable, usePaginatedDocumentsTable } from '../../../documents-table/index.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import { AccounterBarSpinner } from '../../../ui/accounter-spinner.js';
@@ -91,6 +92,11 @@ export const DocumentsReport = (): ReactElement => {
   // the effect would re-run on every render, and setting the filters context re-renders this
   // screen, looping forever ("Maximum update depth exceeded"). Depend instead on the pagination
   // primitives the bar actually reads.
+  // The table below is swapped for a spinner while fetching, so it remounts with nothing to compare
+  // against; reconciling here, where the screen stays mounted, still sees a delete or a filter drop
+  // the document shown. `null` while fetching: rows unknown, not emptied.
+  useReconcileViewerRows(fetching ? null : table.getRowModel().rows.map(row => row.id));
+
   const { pageIndex, pageSize } = table.state.pagination;
   const pageCount = table.getPageCount();
 

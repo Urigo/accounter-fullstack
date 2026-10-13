@@ -32,6 +32,9 @@ vi.mock('../modify-document-fields.js', () => ({
 }));
 
 const { EditDocument } = await import('../edit-document.js');
+const { resetDocumentViewerStore, useDocumentViewer } = await import(
+  '../../../../hooks/use-document-viewer.js'
+);
 
 const DOCUMENT = {
   __typename: 'Invoice',
@@ -59,6 +62,7 @@ const onDone = vi.fn<() => void>();
 const onChange = vi.fn<() => void>();
 
 beforeEach(() => {
+  resetDocumentViewerStore();
   // Sizes and the hidden pane are remembered in `localStorage`; each test starts from defaults.
   localStorage.clear();
   useQueryMock.mockReturnValue([{ data: { documentById: DOCUMENT }, fetching: false }]);
@@ -280,6 +284,67 @@ describe('EditDocument Save & next', () => {
     expect(save?.disabled).toBe(true);
     await act(async () => resolveSave({ __typename: 'UpdateDocumentSuccessfulResult' }));
     expect(onNavigate).toHaveBeenCalledWith('doc-2');
+  });
+});
+
+describe('EditDocument Save & next, review fixes', () => {
+  const onNavigate = vi.fn<(id: string) => void>();
+
+  function renderSheet(): void {
+    act(() =>
+      root.render(
+        <MemoryRouter>
+          <EditDocument
+            documentId="doc-1042"
+            onDone={onDone}
+            onChange={onChange}
+            siblingIds={['doc-1042', 'doc-2']}
+            onNavigate={onNavigate}
+          />
+        </MemoryRouter>,
+      ),
+    );
+  }
+
+  it('does not navigate when the sheet closed while the save was in flight', async () => {
+    let resolveSave: (value: unknown) => void = () => {};
+    updateDocumentMock.mockReturnValue(new Promise(resolve => (resolveSave = resolve)));
+    renderSheet();
+    typeInto('Serial', '1043');
+    await act(async () => {
+      saveAndNext()?.click();
+    });
+    // The user dismisses the sheet before the network answers.
+    act(() => root.render(<></>));
+    await act(async () => resolveSave({ __typename: 'UpdateDocumentSuccessfulResult' }));
+    expect(onNavigate).not.toHaveBeenCalled();
+    // The save did go through, so the list still refreshes.
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts one save on a double click', async () => {
+    let resolveSave: (value: unknown) => void = () => {};
+    updateDocumentMock.mockReturnValue(new Promise(resolve => (resolveSave = resolve)));
+    renderSheet();
+    typeInto('Serial', '1043');
+    const button = saveAndNext();
+    await act(async () => {
+      // Both clicks land before react-hook-form's async validation re-renders the button.
+      button?.click();
+      button?.click();
+    });
+    await act(async () => resolveSave({ __typename: 'UpdateDocumentSuccessfulResult' }));
+    expect(updateDocumentMock).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives up the keyboard while the viewer pane is hidden', () => {
+    renderSheet();
+    expect(useDocumentViewer.getState().keyboardOwners).toHaveLength(1);
+    act(() =>
+      container.querySelector<HTMLButtonElement>('button[aria-label="Hide document"]')?.click(),
+    );
+    expect(useDocumentViewer.getState().keyboardOwners).toEqual([]);
   });
 });
 

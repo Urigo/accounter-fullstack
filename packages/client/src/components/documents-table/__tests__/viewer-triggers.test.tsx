@@ -230,4 +230,46 @@ describe('useReconcileViewerRows', () => {
     render(<Rows ids={['c', 'a']} />);
     expect(useDocumentViewer.getState().siblings).toBeNull();
   });
+
+  function NullableRows({ ids }: { ids: string[] | null }): null {
+    useReconcileViewerRows(ids);
+    return null;
+  }
+
+  it('skips null (a refetch in flight) without reading it as emptied rows', () => {
+    const siblings = ['a', 'b', 'c'].map(entry);
+    act(() => useDocumentViewer.getState().open(siblings[1], { siblings }));
+    render(<NullableRows ids={['a', 'b', 'c']} />);
+    render(<NullableRows ids={null} />);
+    // The same result comes back: nothing to drop.
+    render(<NullableRows ids={['a', 'b', 'c']} />);
+    expect(useDocumentViewer.getState().siblings).toHaveLength(3);
+
+    render(<NullableRows ids={null} />);
+    // A refetch without the current document is compared with the ids from before it.
+    render(<NullableRows ids={['a', 'c']} />);
+    expect(useDocumentViewer.getState().siblings).toBeNull();
+  });
+
+  /**
+   * The all-documents screen: the table (which reconciles too) is swapped for a spinner while
+   * fetching, and the always-mounted screen reconciles with `null` meanwhile.
+   */
+  function Screen({ fetching, ids }: { fetching: boolean; ids: string[] }): ReactElement {
+    useReconcileViewerRows(fetching ? null : ids);
+    return fetching ? <p>Loading</p> : <Rows ids={ids} />;
+  }
+
+  it('reconciles across a table that unmounts while its screen refetches', () => {
+    const siblings = ['a', 'b', 'c'].map(entry);
+    act(() => useDocumentViewer.getState().open(siblings[1], { siblings }));
+    render(<Screen fetching={false} ids={['a', 'b', 'c']} />);
+    // A delete or a filter change: the screen refetches, the table unmounts...
+    render(<Screen fetching ids={['a', 'b', 'c']} />);
+    expect(useDocumentViewer.getState().siblings).toHaveLength(3);
+    // ...and remounts without the current document. Its own first render only records; the
+    // screen's hook still remembers the ids from before the fetch.
+    render(<Screen fetching={false} ids={['a', 'c']} />);
+    expect(useDocumentViewer.getState().siblings).toBeNull();
+  });
 });
