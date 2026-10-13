@@ -67,8 +67,8 @@
     "@graphql-codegen/typescript-resolvers": "6.1.1",
     "@graphql-eslint/eslint-plugin": "4.4.1",
     "@graphql-hive/cli": "0.67.0",
-    "@graphql-inspector/cli": "7.0.0",
-    "@graphql-tools/mock": "9.1.16",
+    "@graphql-inspector/cli": "7.0.1",
+    "@graphql-tools/mock": "9.1.17",
     "@parcel/watcher": "2.6.0",
     "@pgtyped/cli": "2.4.3",
     "@pgtyped/runtime": "2.4.2",
@@ -78,7 +78,7 @@
     "@types/pg": "8.23.1",
     "@typescript-eslint/eslint-plugin": "8.71.2",
     "@typescript-eslint/parser": "8.71.2",
-    "@vitest/coverage-v8": "5.0.3",
+    "@vitest/coverage-v8": "5.0.4",
     "bob-the-bundler": "7.0.1",
     "concurrently": "10.0.6",
     "dotenv": "18.0.7",
@@ -105,7 +105,7 @@
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "5.0.3"
+    "vitest": "5.0.4"
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^49.10.10": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch",
