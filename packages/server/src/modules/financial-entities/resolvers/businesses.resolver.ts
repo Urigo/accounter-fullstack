@@ -6,7 +6,7 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
-import { paginateBusinesses, resolveBusinessesFilters } from '../helpers/all-businesses.helper.js';
+import { paginateBusinesses } from '../helpers/all-businesses.helper.js';
 import {
   SuggestionData,
   suggestionDataSchema,
@@ -43,14 +43,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
       return businesses as IGetBusinessesByIdsResult[];
     },
-    allBusinesses: async (_, { page, limit, name, isClient, filters }, { injector }) => {
+    allBusinesses: async (_, { page, limit, filters }, { injector }) => {
       // Every predicate is applied in SQL, *ahead of* the count and the slice — the entire
       // point of accepting them as arguments: `pageInfo` then describes the filtered directory
       // and every page comes back full. A caller filtering an already-sliced page could do
       // neither.
       const filteredBusinesses = await injector
         .get(BusinessesProvider)
-        .getBusinessesByFilters(resolveBusinessesFilters({ name, isClient, filters }));
+        .getBusinessesByFilters(filters ?? {});
 
       return paginateBusinesses(filteredBusinesses, page, limit);
     },

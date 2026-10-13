@@ -7,10 +7,7 @@ export default gql`
     allBusinesses(
       page: Int
       limit: Int
-      name: String @deprecated(reason: "Use filters.name")
-      " narrow to businesses that are (true) or are not (false) clients; omit for both "
-      isClient: Boolean @deprecated(reason: "Use filters.isClient")
-      " filters applied before paging. A field present here, even as null, overrides the deprecated argument of the same name "
+      " filters applied before paging "
       filters: BusinessFilter
     ): PaginatedBusinesses @requiresAuth
   }
