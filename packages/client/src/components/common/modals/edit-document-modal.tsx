@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useSuspendDockedViewer } from '../../../hooks/use-document-viewer.js';
 import {
   CopyToClipboardButton,
   DeleteDocumentButton,
@@ -22,9 +23,13 @@ export const EditDocumentModal = ({
   onChargeDeleted,
   documentId,
 }: Props): ReactElement | null => {
+  // The sheet shows the scan in its own split, so the docked viewer hides while it is open. Called
+  // before the early return, so the closed path runs it too and resumes the docked viewer.
+  useSuspendDockedViewer(!!documentId);
   if (!documentId) return null;
   return (
     <PopUpDrawer
+      size="tall"
       modalSize="fit-content"
       position="bottom"
       opened={!!documentId}
@@ -53,7 +58,8 @@ export const EditDocumentModal = ({
         </div>
       }
     >
-      <EditDocument documentId={documentId} onDone={onDone} onChange={onChange} />
+      {/* Remounts per document, so the form never keeps another document's values. */}
+      <EditDocument key={documentId} documentId={documentId} onDone={onDone} onChange={onChange} />
     </PopUpDrawer>
   );
 };
