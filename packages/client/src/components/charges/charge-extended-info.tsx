@@ -22,13 +22,13 @@ import { useStableValue } from '../../hooks/use-stable-value.js';
 import { Depreciation } from '../common/depreciation/index.js';
 import {
   BusinessTripSummarizedReport,
+  EditLedgerRecordModal,
   PreviewDocumentModal,
-  RegenerateLedgerRecordsButton,
   Tooltip,
 } from '../common/index.js';
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
-import { LedgerTable } from '../ledger-table/index.js';
+import { LedgerTable, type LedgerRecordRow } from '../ledger-table/index.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Button } from '../ui/button.js';
@@ -44,6 +44,7 @@ import { ExchangeRates } from './extended-info/exchange-rates.js';
 import { ForeignSecuritiesInfo } from './extended-info/foreign-securities-info.js';
 import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.js';
 import { SalariesTable } from './extended-info/salaries-info.js';
+import { LedgerSectionHeader } from './ledger-section-header.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -551,30 +552,19 @@ export function ChargeExtendedInfo({
               </AccordionItem>
             )}
 
-            {hasLedgerRecords && (
-              <AccordionItem value="ledger">
-                <AccordionTrigger
-                  disabled={!hasLedgerRecords}
-                  onClick={event => {
-                    event.stopPropagation();
-                  }}
-                >
-                  <div className="flex flex-row items-center gap-2 justify-start w-full">
-                    {!charge.metadata?.isLedgerLocked && (
-                      <RegenerateLedgerRecordsButton
-                        chargeId={charge.id}
-                        onChange={onExtendedChange}
-                        variant="outline"
-                      />
-                    )}
-                    Ledger Records
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
-                </AccordionContent>
-              </AccordionItem>
-            )}
+            {/* Always rendered, so a record can be added to a charge that has none yet */}
+            <AccordionItem value="ledger">
+              <LedgerSectionHeader
+                chargeId={charge.id}
+                isLedgerLocked={!!charge.metadata?.isLedgerLocked}
+                onChange={onExtendedChange}
+              />
+              <AccordionContent>
+                {ledgerRecordsAreReady && (
+                  <ChargeLedgerTable data={charge} onChange={onExtendedChange} />
+                )}
+              </AccordionContent>
+            </AccordionItem>
 
             {chargeType === 'BankDepositCharge' && (
               <AccordionItem value="bankDeposit">
@@ -630,16 +620,24 @@ export function ChargeExtendedInfo({
 
 type ChargeLedgerTableProps = {
   data: FragmentType<typeof ChargeLedgerRecordsTableFieldsFragmentDoc>;
+  /** Called after a record was edited, to refresh the charge */
+  onChange: () => void;
 };
 
-export const ChargeLedgerTable = ({ data }: ChargeLedgerTableProps): ReactElement => {
+export const ChargeLedgerTable = ({ data, onChange }: ChargeLedgerTableProps): ReactElement => {
   const { ledger } = getFragmentData(ChargeLedgerRecordsTableFieldsFragmentDoc, data);
+  const [editingRecord, setEditingRecord] = useState<LedgerRecordRow | null>(null);
+  const onCloseEdit = useCallback(() => setEditingRecord(null), []);
 
   return (
-    <LedgerTable
-      ledgerRecordsData={ledger.records}
-      ledgerDiffData={ledger.validate?.differences}
-      matches={ledger.validate?.matches}
-    />
+    <>
+      <LedgerTable
+        ledgerRecordsData={ledger.records}
+        ledgerDiffData={ledger.validate?.differences}
+        matches={ledger.validate?.matches}
+        onEditRecord={setEditingRecord}
+      />
+      <EditLedgerRecordModal record={editingRecord} onClose={onCloseEdit} onDone={onChange} />
+    </>
   );
 };
