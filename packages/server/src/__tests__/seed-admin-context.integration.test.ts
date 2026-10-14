@@ -167,7 +167,7 @@ describe('seedAdminCore integration', () => {
       await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
 
       // Call seed twice in same transaction
-      await seedAdminCore(client);
+      const { adminEntityId } = await seedAdminCore(client);
 
       // Count entities before second call
       const countBefore = await client.query(
@@ -187,9 +187,11 @@ describe('seedAdminCore integration', () => {
       // Idempotent: no new entities created on second call
       expect(entitiesAfterSecondCall).toBe(entitiesBeforeSecondCall);
 
-      // Verify only one user_context exists
+      // Verify the admin has exactly one user_context. Scoped to the admin: parallel suites may
+      // commit admin contexts of their own businesses, which a global count would pick up.
       const userContextCount = await client.query(
-        `SELECT COUNT(*) as count FROM accounter_schema.user_context`,
+        `SELECT COUNT(*) as count FROM accounter_schema.user_context WHERE owner_id = $1`,
+        [adminEntityId],
       );
       expect(userContextCount.rows[0].count).toBe('1');
     });

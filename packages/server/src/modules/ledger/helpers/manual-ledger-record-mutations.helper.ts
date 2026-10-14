@@ -12,14 +12,18 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
+import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { isChargeLocked } from './ledger-lock.js';
 import { validateLedgerRecordParams } from './ledger-validation.helper.js';
 import {
+  deriveDocumentFromLedgerInput,
   deriveMiscExpenseFromLedgerInput,
   ledgerRecordInputToParams,
   validateManualLedgerRecord,
+  type ManualLedgerRecordDocument,
   type ManualLedgerRecordParams,
 } from './manual-ledger-record.helper.js';
 
@@ -94,6 +98,73 @@ function checkManualLedgerRecord(
 }
 
 /**
+ * Load every financial entity the record references and require each to belong to `ownerId`, the
+ * request's write target. Reads span the whole business scope, but RLS does not check the entity
+ * columns of a written row, so without this a record could point at another business's entities.
+ * Mirrors `validateSecuritiesContextPatch`: an entity of another business counts as not found.
+ * Returns the entities' types (for deriving a document), or a `CommonError`.
+ */
+async function loadOwnedEntityTypes(
+  injector: Injector,
+  input: LedgerRecordInput,
+  ownerId: string,
+): Promise<{ entityTypes: Map<string, string> } | { error: CommonError }> {
+  const entityIds = [
+    ...new Set(
+      [input.debitEntity1, input.creditEntity1, input.debitEntity2, input.creditEntity2].filter(
+        (id): id is string => !!id,
+      ),
+    ),
+  ];
+  const entities = await injector
+    .get(FinancialEntitiesProvider)
+    .getFinancialEntityByIdLoader.loadMany(entityIds);
+  const entityTypes = new Map<string, string>();
+  const unknownIds: string[] = [];
+  for (const [index, entityId] of entityIds.entries()) {
+    const entity = entities[index];
+    if (entity instanceof Error) {
+      console.error(`Failed to load financial entity ID="${entityId}"`, entity);
+    }
+    if (!entity || entity instanceof Error || entity.owner_id !== ownerId) {
+      unknownIds.push(entityId);
+      continue;
+    }
+    if (entity.type) {
+      entityTypes.set(entity.id, entity.type);
+    }
+  }
+  if (unknownIds.length > 0) {
+    return {
+      error: {
+        __typename: 'CommonError',
+        message: unknownIds
+          .map(id => `Financial entity with id ${id} not found in this business`)
+          .join('\n'),
+      },
+    };
+  }
+  return { entityTypes };
+}
+
+/**
+ * Derive the document a DOCUMENT ledger record represents. A derivation problem is returned as a
+ * `CommonError`.
+ */
+function deriveDocument(
+  input: LedgerRecordInput,
+  ctx: Parameters<typeof deriveDocumentFromLedgerInput>[1],
+): { document: ManualLedgerRecordDocument } | { error: CommonError } {
+  try {
+    return { document: deriveDocumentFromLedgerInput(input, ctx) };
+  } catch (e) {
+    return {
+      error: { __typename: 'CommonError', message: e instanceof Error ? e.message : String(e) },
+    };
+  }
+}
+
+/**
  * Overwrite the content of a single stored, unlocked ledger record. Every failure (missing or
  * locked record, invalid input, a storage error) is returned as a `CommonError` rather than thrown.
  */
@@ -140,6 +211,10 @@ export async function updateManualLedgerRecord(
       return checked.error;
     }
     const { params } = checked;
+    const owned = await loadOwnedEntityTypes(injector, input, record.owner_id);
+    if ('error' in owned) {
+      return owned.error;
+    }
 
     // The update and the charge's re-flagging land together, or not at all
     const result = await injector.get(TenantAwareDBClient).transaction(async () => {
@@ -174,9 +249,10 @@ export async function updateManualLedgerRecord(
 
 /**
  * Insert a manual ledger record under a charge, stored exactly as typed, together with the business
- * entity the chosen operation says it represents (a misc expense for MISC_EXPENSE). Both rows are
- * written in one DB transaction, so either both land or neither does. Every failure (missing or
- * locked charge, invalid input, a storage error) is returned as a `CommonError` rather than thrown.
+ * entity the chosen operation says it represents: a misc expense for MISC_EXPENSE, an INVOICE
+ * document for DOCUMENT. Both rows are written in one DB transaction, so either both land or
+ * neither does. Every failure (missing or locked charge, invalid input, a storage error) is
+ * returned as a `CommonError` rather than thrown.
  */
 export async function insertManualLedgerRecord(
   injector: Injector,
@@ -199,6 +275,7 @@ export async function insertManualLedgerRecord(
       ownerId: writeTargetOwnerId,
       defaultLocalCurrency,
       ledgerLock,
+      authorities,
     } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
     const ownerError = writeTargetMismatchError('charge', charge.owner_id, writeTargetOwnerId);
     if (ownerError) {
@@ -222,6 +299,10 @@ export async function insertManualLedgerRecord(
       return checked.error;
     }
     const { params } = checked;
+    const owned = await loadOwnedEntityTypes(injector, input, ownerId);
+    if ('error' in owned) {
+      return owned.error;
+    }
 
     // Derive the backing entity before opening the transaction, so it only holds the writes
     let insertEntity: () => Promise<void>;
@@ -236,6 +317,28 @@ export async function insertManualLedgerRecord(
             .insertExpense({ ...miscExpense, chargeId, ownerId });
           if (!expense) {
             throw new Error('Misc expense was not inserted');
+          }
+        };
+        break;
+      }
+      case 'DOCUMENT': {
+        const derived = deriveDocument(input, {
+          ownerId,
+          entityTypes: owned.entityTypes,
+          localCurrency: defaultLocalCurrency,
+          inputVatTaxCategoryId: authorities.inputVatTaxCategoryId,
+          outputVatTaxCategoryId: authorities.outputVatTaxCategoryId,
+        });
+        if ('error' in derived) {
+          return derived.error;
+        }
+        const { document } = derived;
+        insertEntity = async () => {
+          const [insertedDocument] = await injector
+            .get(DocumentsProvider)
+            .insertDocuments({ documents: [{ ...document, chargeId, ownerId }] });
+          if (!insertedDocument) {
+            throw new Error('Document was not inserted');
           }
         };
         break;
