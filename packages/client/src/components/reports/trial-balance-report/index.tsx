@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useQuery } from 'urql';
 import { TrialBalanceReportDocument } from '../../../gql/graphql.js';
@@ -8,6 +8,7 @@ import { Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
 import { Button } from '../../ui/button.js';
+import { TrialBalanceRefreshContext } from './trial-balance-refresh-context.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 import { TrialBalanceTable } from './trial-balance-table.js';
 
@@ -37,7 +38,8 @@ export const TrialBalanceReport = (): ReactElement => {
         ) as TrialBalanceReportFilters)
       : {},
   );
-  const [{ data, fetching }] = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+  const [{ data, fetching }, reexecuteQuery] = useQuery({
     query: TrialBalanceReportDocument,
     variables: {
       filters: {
@@ -48,6 +50,18 @@ export const TrialBalanceReport = (): ReactElement => {
       },
     },
   });
+  // A refresh after an insert keeps the table mounted, so expanded entities stay open; a filter
+  // change still shows the spinner
+  const refresh = useCallback(() => {
+    setRefreshing(true);
+    reexecuteQuery({ requestPolicy: 'network-only' });
+  }, [reexecuteQuery]);
+  useEffect(() => {
+    if (!fetching) {
+      setRefreshing(false);
+    }
+  }, [fetching]);
+
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
@@ -74,14 +88,16 @@ export const TrialBalanceReport = (): ReactElement => {
 
   return (
     <PageLayout title="Trial Balance Report" description="Trial balance report for all businesses">
-      {fetching || !businessTransactionsData ? (
+      {(fetching && !refreshing) || !businessTransactionsData ? (
         <AccounterBarSpinner className="self-center" />
       ) : (
-        <TrialBalanceTable
-          data={businessTransactionsData}
-          filter={filter}
-          isAllOpened={isAllOpened}
-        />
+        <TrialBalanceRefreshContext.Provider value={refresh}>
+          <TrialBalanceTable
+            data={businessTransactionsData}
+            filter={filter}
+            isAllOpened={isAllOpened}
+          />
+        </TrialBalanceRefreshContext.Provider>
       )}
     </PageLayout>
   );
