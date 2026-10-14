@@ -9,6 +9,7 @@ import { relevantDataPicker, type MakeBoolean } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Form } from '../../ui/form.js';
+import { toDocumentViewerEntry } from '../document-viewer/source.js';
 import { DocumentImageDrawer, SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
@@ -210,7 +211,7 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
             </div>
           </div>
           <DocumentImageDrawer
-            src={document.image}
+            source={document.image ? toDocumentViewerEntry(document) : null}
             opened={openImage}
             onClose={(): void => setOpenImage(false)}
           />
