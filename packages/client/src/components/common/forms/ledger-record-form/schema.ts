@@ -189,8 +189,9 @@ type BuildLedgerRecordFormSchemaOptions = {
   ledgerLock?: string | null;
 };
 
+/** Drops float noise (e.g. `0.30000000000000004`) so totals print as entered, like the server */
 function roundAmount(amount: number): number {
-  return Math.round(amount * 100) / 100;
+  return Math.round(amount * 1e9) / 1e9;
 }
 
 /** Whether a record in `currency` carries foreign amounts, i.e. is not in the local currency */

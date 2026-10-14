@@ -25,6 +25,11 @@ type Props = {
   fetchingEntities: boolean;
   /** Renders a clear (×) action that empties the line */
   onClear?: () => void;
+  /**
+   * Bump after emptying the line's fields from outside (e.g. `onClear`): the amount inputs
+   * re-mount so they show the empty value. Only they re-mount, so focus on × is kept.
+   */
+  clearCount?: number;
 };
 
 /** "Debit" / "Credit" for a main line, "Debit 2" / "Credit 2" for a secondary one */
@@ -39,7 +44,7 @@ function slotLabel(side: LedgerSlotSide, index: LedgerSlotIndex): string {
  * (`debitEntity1`, `creditLocalAmount2`, `debitForeignAmount1`, ...).
  *
  * An amount input does not follow its field back to empty (`NumberInput` ignores an empty `value`),
- * so whoever clears a line programmatically re-mounts it (e.g. with a `key`).
+ * so whoever clears a line programmatically bumps `clearCount` to re-mount them.
  */
 export function LedgerSlotFields({
   side,
@@ -49,6 +54,7 @@ export function LedgerSlotFields({
   entities,
   fetchingEntities,
   onClear,
+  clearCount = 0,
 }: Props): ReactElement {
   const { control } = useFormContext<LedgerRecordFormInput>();
   const label = slotLabel(side, index);
@@ -105,6 +111,7 @@ export function LedgerSlotFields({
           <FormItem>
             <FormControl>
               <NumberInput
+                key={clearCount}
                 ref={field.ref}
                 name={field.name}
                 onBlur={field.onBlur}
@@ -131,6 +138,7 @@ export function LedgerSlotFields({
             <FormItem>
               <FormControl>
                 <NumberInput
+                  key={clearCount}
                   ref={field.ref}
                   name={field.name}
                   onBlur={field.onBlur}

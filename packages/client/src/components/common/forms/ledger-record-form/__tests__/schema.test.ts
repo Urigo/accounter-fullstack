@@ -174,6 +174,10 @@ describe('buildLedgerRecordFormSchema', () => {
         validValues({ debitLocalAmount1: 100.0051, creditLocalAmount1: 100 }),
       );
       expect(issuePaths(result)).toEqual(['balance']);
+      // Totals print as entered (only float noise is rounded off), like the server's message
+      expect(result.error?.issues[0].message).toBe(
+        'Debit and credit totals must be equal (debit 100.0051, credit 100)',
+      );
     });
 
     it('balances across all four lines', () => {

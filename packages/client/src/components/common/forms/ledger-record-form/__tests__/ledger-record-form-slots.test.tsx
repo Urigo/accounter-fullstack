@@ -204,12 +204,39 @@ describe('LedgerRecordForm secondary lines', () => {
     await render({ ...BASE_VALUES, creditLocalAmount1: 99, valueDate: undefined });
     await submit();
     expect(onSubmit).not.toHaveBeenCalled();
-    expect(totals()).toContain('Debit and credit totals must be equal (debit 100, credit 99)');
+    expect(totals()).toContain('Debit and credit totals must be equal');
     expect(container.textContent).toContain('Date is required');
 
     // Once the amounts balance again, the stale message is not shown
     await type(amountInput('Credit amount'), '100');
     expect(totals()).not.toContain('must be equal');
+  });
+
+  it('does not show the numbers of the last submit in the balance message', async () => {
+    await render({ ...BASE_VALUES, creditLocalAmount1: 99 });
+    await submit();
+    expect(onSubmit).not.toHaveBeenCalled();
+    const alert = (): string | null =>
+      container.querySelector('[data-testid="ledger-totals"] [role="alert"]')?.textContent ?? null;
+    expect(alert()).toBe('Debit and credit totals must be equal');
+
+    // Still unbalanced, with new totals: the message carries no stale numbers
+    await type(amountInput('Credit amount'), '90');
+    expect(alert()).toBe('Debit and credit totals must be equal');
+    expect(totals()).not.toContain('99');
+    expect(totals()).toContain('Credit total90.00');
+  });
+
+  it('keeps keyboard focus on × after clearing a line', async () => {
+    await render(FULL_USD_VALUES);
+    const button = clearButton('Debit 2');
+    button!.focus();
+    expect(document.activeElement).toBe(button);
+
+    await click(button);
+    expect(button!.isConnected).toBe(true);
+    expect(document.activeElement).toBe(button);
+    expect(amountInput('Debit 2 amount')?.value).toBe('');
   });
 
   it('clears a secondary line with ×, and submits it cleared', async () => {

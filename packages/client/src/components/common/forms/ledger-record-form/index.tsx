@@ -111,8 +111,8 @@ export function LedgerRecordForm({
     clearErrors([...FOREIGN_AMOUNT_FIELDS]);
   }
 
-  // Bumped when a secondary line is cleared, to re-mount its inputs: an amount input keeps showing
-  // its last number when its field is emptied from outside
+  // Bumped when a secondary line is cleared, to re-mount its amount inputs: an amount input keeps
+  // showing its last number when its field is emptied from outside
   const [clearedSlots, setClearedSlots] = useState<Record<LedgerSlotSide, number>>({
     debit: 0,
     credit: 0,
@@ -314,7 +314,8 @@ export function LedgerRecordForm({
           ))}
           {SLOT_SIDES.map(side => (
             <LedgerSlotFields
-              key={`${side}-2-${clearedSlots[side]}`}
+              key={`${side}-2`}
+              clearCount={clearedSlots[side]}
               side={side}
               index={2}
               showForeign={showForeign}
@@ -346,10 +347,11 @@ export function LedgerRecordForm({
               </dd>
             </div>
           </dl>
-          {/* Set on submit and not re-checked as amounts change, so hidden once they balance */}
-          {balanceError?.message && !totals.balanced && (
+          {/* The error is set on submit and not re-checked as amounts change: it is hidden once
+              they balance, and its text leaves the numbers to the live totals above */}
+          {balanceError && !totals.balanced && (
             <p role="alert" className="text-right text-destructive">
-              {balanceError.message}
+              Debit and credit totals must be equal
             </p>
           )}
         </div>
