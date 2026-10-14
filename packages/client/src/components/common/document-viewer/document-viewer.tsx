@@ -1,0 +1,208 @@
+import { useEffect, useState, type ReactElement } from 'react';
+import { ExternalLink, FileQuestionMark, TriangleAlert, X } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/use-media-query.js';
+import { cn } from '@/lib/utils.js';
+import { Alert, AlertDescription, AlertTitle } from '../../ui/alert.js';
+import { Button } from '../../ui/button.js';
+import { Tooltip } from '../tooltip.js';
+import { isSafeHttpUrl } from './source.js';
+import type { DocumentViewerSource, LoupeSize } from './types.js';
+import { useViewerZoom } from './use-viewer-zoom.js';
+import { ViewerCanvas } from './viewer-canvas.js';
+import { ViewerToolbar } from './viewer-toolbar.js';
+
+export interface DocumentViewerProps {
+  source: DocumentViewerSource;
+  /** Identifies the document shown. A new key resets the canvas: loading state, zoom and scroll. */
+  documentKey: string;
+  onClose?: () => void;
+  className?: string;
+}
+
+/** How long a zoom level must hold before it is announced to screen readers. */
+const ANNOUNCE_DELAY_MS = 400;
+
+function originalHref(source: DocumentViewerSource): string | null {
+  const href = source.fileUrl ?? source.imageUrl;
+  return isSafeHttpUrl(href) ? href : null;
+}
+
+function OpenOriginalButton({
+  href,
+  variant = 'outline',
+}: {
+  href: string;
+  variant?: 'outline' | 'ghost';
+}): ReactElement {
+  return (
+    <Button variant={variant} size="sm" asChild>
+      <a href={href} target="_blank" rel="noreferrer">
+        <ExternalLink className="size-4" />
+        Open original
+      </a>
+    </Button>
+  );
+}
+
+function EmptyState({ message, href }: { message: string; href: string | null }): ReactElement {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-gray-100 p-6 text-center text-sm text-gray-600 dark:bg-gray-900 dark:text-gray-400">
+      <FileQuestionMark className="size-8 text-gray-400" />
+      <p>{message}</p>
+      {href && <OpenOriginalButton href={href} />}
+    </div>
+  );
+}
+
+interface ViewerBodyProps {
+  imageUrl: string;
+  title: string;
+  href: string | null;
+  showMagnifier: boolean;
+  magnifierOn: boolean;
+  onMagnifierChange(on: boolean): void;
+  loupeSize: LoupeSize;
+  onLoupeSizeChange(size: LoupeSize): void;
+}
+
+/** Toolbar and canvas for one image. Keyed by the document, so a swap starts from loading. */
+function ViewerBody({
+  imageUrl,
+  title,
+  href,
+  showMagnifier,
+  magnifierOn,
+  onMagnifierChange,
+  loupeSize,
+  onLoupeSizeChange,
+}: ViewerBodyProps): ReactElement {
+  const viewer = useViewerZoom();
+  const { status, zoom, mode } = viewer.state;
+  const [announcement, setAnnouncement] = useState('');
+
+  useEffect(() => {
+    if (status !== 'ready') {
+      return;
+    }
+    const timer = setTimeout(
+      () => setAnnouncement(`Zoom ${Math.round(zoom * 100)}%`),
+      ANNOUNCE_DELAY_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [status, zoom]);
+
+  return (
+    <>
+      <ViewerToolbar
+        disabled={status !== 'ready'}
+        zoom={zoom}
+        mode={mode}
+        onZoomIn={viewer.zoomIn}
+        onZoomOut={viewer.zoomOut}
+        onZoomChange={viewer.setZoom}
+        onFitModeChange={viewer.setFitMode}
+        showMagnifier={showMagnifier}
+        magnifierOn={magnifierOn}
+        onMagnifierChange={onMagnifierChange}
+        loupeSize={loupeSize}
+        onLoupeSizeChange={onLoupeSizeChange}
+      />
+      <ViewerCanvas
+        viewer={viewer}
+        src={imageUrl}
+        title={title}
+        magnifierOn={showMagnifier && magnifierOn}
+        loupeSize={loupeSize}
+        errorFallback={
+          <Alert variant="destructive" className="max-w-sm bg-white dark:bg-gray-950">
+            <TriangleAlert className="size-4" />
+            <AlertTitle>Couldn&apos;t load the document preview</AlertTitle>
+            <AlertDescription className="mt-2 flex flex-col items-start gap-2">
+              <span>The image may have moved or be temporarily unavailable.</span>
+              {href && <OpenOriginalButton href={href} />}
+            </AlertDescription>
+          </Alert>
+        }
+      />
+      <div aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
+    </>
+  );
+}
+
+/**
+ * A reading surface for a document scan: a header with the document's name and actions, a zoom
+ * toolbar, and a canvas that fits, zooms and pans the image without ever clipping it.
+ *
+ * `data-vaul-no-drag` sits on the root, not only the canvas, so neither a pan nor a drag across the
+ * toolbar's controls can start a drag on a surrounding vaul drawer.
+ */
+export function DocumentViewer({
+  source,
+  documentKey,
+  onClose,
+  className,
+}: DocumentViewerProps): ReactElement {
+  // Above the keyed body, so the magnifier choice survives a document swap. Not persisted.
+  const [magnifierOn, setMagnifierOn] = useState(false);
+  const [loupeSize, setLoupeSize] = useState<LoupeSize>('md');
+  const touchOnly = useMediaQuery('(hover: none)');
+  const href = originalHref(source);
+
+  return (
+    <div
+      data-vaul-no-drag
+      data-slot="document-viewer"
+      className={cn('flex h-full min-h-0 flex-col bg-white dark:bg-gray-950', className)}
+    >
+      <div className="flex items-start gap-2 border-b px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <Tooltip content={source.title} asChild>
+            <h2 className="truncate text-base font-semibold text-gray-950 dark:text-gray-50">
+              {source.title}
+            </h2>
+          </Tooltip>
+          {source.subtitle && (
+            <p className="truncate text-sm text-gray-500 dark:text-gray-400">{source.subtitle}</p>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {href && <OpenOriginalButton href={href} variant="ghost" />}
+          {onClose && (
+            <Tooltip content="Close" asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                aria-label="Close document viewer"
+                onClick={onClose}
+              >
+                <X className="size-4" />
+              </Button>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {source.imageUrl ? (
+        <ViewerBody
+          key={documentKey}
+          imageUrl={source.imageUrl}
+          title={source.title}
+          href={href}
+          showMagnifier={!touchOnly}
+          magnifierOn={magnifierOn}
+          onMagnifierChange={setMagnifierOn}
+          loupeSize={loupeSize}
+          onLoupeSizeChange={setLoupeSize}
+        />
+      ) : (
+        <EmptyState
+          message={source.fileUrl ? 'No preview for this file' : 'No image or file attached'}
+          href={href}
+        />
+      )}
+    </div>
+  );
+}

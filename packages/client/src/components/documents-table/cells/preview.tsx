@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { ImageOff } from 'lucide-react';
+import { toDocumentViewerEntry } from '../../common/document-viewer/source.js';
 import { DocumentImageDrawer } from '../../common/index.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
@@ -44,7 +45,7 @@ export const Preview = ({ document }: Props): ReactElement => {
         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
       </button>
       <DocumentImageDrawer
-        src={document.image}
+        source={toDocumentViewerEntry(document)}
         opened={openImage}
         onClose={(): void => setOpenImage(false)}
       />

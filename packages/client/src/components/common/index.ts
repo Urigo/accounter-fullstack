@@ -9,7 +9,6 @@ export * from './footer.js';
 export * from './forms/index.js';
 export * from './hover-handler.js';
 export * from './icon.js';
-export * from './image-magnifier.js';
 export * from './inputs/index.js';
 export * from './list-capsule.js';
 export * from './loaders/index.js';
