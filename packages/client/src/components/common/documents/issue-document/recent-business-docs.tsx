@@ -10,6 +10,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
 import { columns, type DocumentsTableRowType } from '../../../documents-table/columns.js';
+import { DocumentsTableRow } from '../../../documents-table/data-table.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import {
   Table,
@@ -127,24 +128,20 @@ export function RecentBusinessDocs({
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map(row => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                    className={
-                      row.original.issuedDocumentInfo?.externalId &&
-                      linkedDocumentIds.includes(row.original.issuedDocumentInfo.externalId)
-                        ? 'bg-blue-100'
-                        : ''
-                    }
-                  >
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                table
+                  .getRowModel()
+                  .rows.map(row => (
+                    <DocumentsTableRow
+                      key={row.id}
+                      row={row}
+                      className={
+                        row.original.issuedDocumentInfo?.externalId &&
+                        linkedDocumentIds.includes(row.original.issuedDocumentInfo.externalId)
+                          ? 'bg-blue-100'
+                          : undefined
+                      }
+                    />
+                  ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={table.options.columns.length} className="h-24 text-center">
