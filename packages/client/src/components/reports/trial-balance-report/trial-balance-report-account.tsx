@@ -1,10 +1,11 @@
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import type { TrialBalanceTableFieldsFragment } from '../../../gql/graphql.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { TableCell, TableRow } from '../../ui/table.js';
+import { TrialBalanceRefreshContext } from './trial-balance-refresh-context.js';
 import { TrialBalanceReportFilters } from './trial-balance-report-filters.js';
 
 export type ExtendedBusiness = Extract<
@@ -26,6 +27,7 @@ export const TrialBalanceReportBusiness = ({
   isAllOpened,
 }: Props): ReactElement => {
   const [isExtended, setIsExtended] = useState(isAllOpened);
+  const refreshReport = useContext(TrialBalanceRefreshContext);
   const rowTotal = record?.total?.raw ?? 0;
   const rowDebit = record?.debit?.raw ?? 0;
   const rowCredit = record?.credit?.raw ?? 0;
@@ -64,7 +66,11 @@ export const TrialBalanceReportBusiness = ({
       {(isExtended || isAllOpened) && (
         <TableRow>
           <TableCell colSpan={7}>
-            <BusinessExtendedInfo businessID={record.business?.id} filter={filter} />
+            <BusinessExtendedInfo
+              businessID={record.business?.id}
+              filter={filter}
+              onInsertLedgerRecord={refreshReport}
+            />
           </TableCell>
         </TableRow>
       )}
