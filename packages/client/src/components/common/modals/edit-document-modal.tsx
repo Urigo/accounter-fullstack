@@ -15,6 +15,13 @@ interface Props {
   onChange: () => void;
   /** Called when removing the document emptied its charge and the server deleted the charge too. */
   onChargeDeleted?: (chargeId: string) => void;
+  /**
+   * The source list's document ids, in its order, for Save & next. With `onNavigate`, the sheet
+   * offers Save & next, which saves and then asks to show the following id.
+   */
+  siblingIds?: string[];
+  /** Shows another document in the same sheet (Save & next). */
+  onNavigate?: (documentId: string) => void;
 }
 
 export const EditDocumentModal = ({
@@ -22,6 +29,8 @@ export const EditDocumentModal = ({
   onChange,
   onChargeDeleted,
   documentId,
+  siblingIds,
+  onNavigate,
 }: Props): ReactElement | null => {
   // The sheet shows the scan in its own split, so the docked viewer hides while it is open. Called
   // before the early return, so the closed path runs it too and resumes the docked viewer.
@@ -58,8 +67,16 @@ export const EditDocumentModal = ({
         </div>
       }
     >
-      {/* Remounts per document, so the form never keeps another document's values. */}
-      <EditDocument key={documentId} documentId={documentId} onDone={onDone} onChange={onChange} />
+      {/* Remounts per document, so the form never keeps another document's values; Save & next
+          relies on that for fresh defaults. */}
+      <EditDocument
+        key={documentId}
+        documentId={documentId}
+        onDone={onDone}
+        onChange={onChange}
+        siblingIds={siblingIds}
+        onNavigate={onNavigate}
+      />
     </PopUpDrawer>
   );
 };

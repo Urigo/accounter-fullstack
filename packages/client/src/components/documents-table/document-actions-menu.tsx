@@ -15,9 +15,11 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
+import type { AnyTable } from '@/lib/table-features.js';
 import { ROUTES } from '@/router/routes.js';
 import { DocumentType } from '../../gql/graphql.js';
 import { writeToClipboard } from '../../helpers/index.js';
+import { buildViewerSiblings, getRowIds } from '../common/document-viewer/siblings.js';
 import {
   isSafeHttpUrl,
   toDocumentViewerEntry,
@@ -44,6 +46,11 @@ import type { DocumentsTableRowType } from './columns.js';
 interface DocumentActionsMenuProps {
   document: DocumentsTableRowType;
   /**
+   * The table this menu sits in, from either feature set: View Image steps through its rows, and
+   * Edit Document hands their ids to Save & next.
+   */
+  table?: AnyTable<DocumentsTableRowType>;
+  /**
    * Show the items that navigate away to the document's charge. Hosts that already live inside a
    * charge (the charge screen's documents accordion, for instance) leave it off.
    */
@@ -52,6 +59,7 @@ interface DocumentActionsMenuProps {
 
 export function DocumentActionsMenu({
   document,
+  table,
   withChargeLink = false,
 }: DocumentActionsMenuProps): ReactElement {
   // The menu item is portaled to `document.body`, so the trigger button stands in for it when the
@@ -122,7 +130,9 @@ export function DocumentActionsMenu({
           onClick={event => event.stopPropagation()}
         >
           <DropdownMenuLabel variant="section">Document</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={document.editDocument}>
+          <DropdownMenuItem
+            onSelect={() => document.editDocument(table ? getRowIds(table) : undefined)}
+          >
             <Edit className="size-4" />
             Edit Document
           </DropdownMenuItem>
@@ -145,7 +155,12 @@ export function DocumentActionsMenu({
           <DropdownMenuLabel variant="section">Files</DropdownMenuLabel>
           <DropdownMenuItem
             disabled={!document.image}
-            onSelect={() => openViewer(viewerEntry, { trigger: menuTriggerRef.current })}
+            onSelect={() =>
+              openViewer(viewerEntry, {
+                trigger: menuTriggerRef.current,
+                siblings: table ? buildViewerSiblings(table) : null,
+              })
+            }
           >
             <Image className="size-4" />
             View Image

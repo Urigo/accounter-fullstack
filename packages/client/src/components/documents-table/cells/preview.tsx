@@ -1,11 +1,15 @@
 import type { ReactElement } from 'react';
 import { ImageOff } from 'lucide-react';
 import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
+import type { AnyTable } from '@/lib/table-features.js';
+import { buildViewerSiblings } from '../../common/document-viewer/siblings.js';
 import { toDocumentViewerEntry } from '../../common/document-viewer/source.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;
+  /** The table this cell sits in; the viewer steps through its rows. Either feature set. */
+  table?: AnyTable<DocumentsTableRowType>;
 };
 
 function toHref(value?: string | URL | null): string | undefined {
@@ -22,7 +26,7 @@ function toHref(value?: string | URL | null): string | undefined {
  * routinely lists hundreds of documents. It earns that cost when someone is working through a
  * backlog and needs to recognise documents at a glance rather than open them one by one.
  */
-export const Preview = ({ document }: Props): ReactElement => {
+export const Preview = ({ document, table }: Props): ReactElement => {
   const isActive = useDocumentViewer(s => s.current?.id === document.id);
   const toggle = useDocumentViewer(s => s.toggle);
   const src = toHref(document.image);
@@ -40,7 +44,12 @@ export const Preview = ({ document }: Props): ReactElement => {
       type="button"
       className="block h-16 w-16 overflow-hidden rounded border hover:ring-2 hover:ring-ring aria-expanded:ring-2 aria-expanded:ring-blue-500"
       // Opens the shared viewer, or closes it when this document is the one shown.
-      onClick={e => toggle(toDocumentViewerEntry(document), { trigger: e.currentTarget })}
+      onClick={e =>
+        toggle(toDocumentViewerEntry(document), {
+          trigger: e.currentTarget,
+          siblings: table ? buildViewerSiblings(table) : null,
+        })
+      }
       aria-label="Open document image"
       aria-expanded={isActive}
     >

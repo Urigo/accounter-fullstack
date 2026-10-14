@@ -42,6 +42,8 @@ const ENTRY: DocumentViewerEntry = {
 };
 
 beforeEach(() => {
+  // Sizes and the hidden pane are remembered in `localStorage`; each test starts from defaults.
+  localStorage.clear();
   resetDocumentViewerStore();
   wide = true;
   resizeCallbacks = new Set();
