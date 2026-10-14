@@ -17,6 +17,9 @@ import { FormControl } from '../../ui/form.js';
 import { Label } from '../../ui/label.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
+/** cmdk value of the `clearLabel` option; never an option of `data` */
+const CLEAR_OPTION_VALUE = '__combo-box-clear__';
+
 type Option = {
   value: string;
   label: string;
@@ -46,6 +49,11 @@ type ComboBoxProps = {
    */
   onBlur?: () => void;
   ref?: Ref<HTMLButtonElement>;
+  /**
+   * Opt-in: lists an extra first option with this label (e.g. "None") that clears the selection
+   * (`onChange(null)`), for an optional field whose choice can be undone.
+   */
+  clearLabel?: string;
 };
 
 export function ComboBox({
@@ -63,6 +71,7 @@ export function ComboBox({
   required,
   onBlur,
   ref,
+  clearLabel,
 }: ComboBoxProps) {
   const generatedId = React.useId();
   const triggerId = id ?? generatedId;
@@ -114,6 +123,7 @@ export function ComboBox({
               data={data}
               placeholder={placeholder}
               value={value}
+              clearLabel={clearLabel}
             />
           </PopoverContent>
         </Popover>
@@ -153,6 +163,7 @@ export function ComboBox({
               data={data}
               placeholder={placeholder}
               value={value}
+              clearLabel={clearLabel}
             />
           </div>
         </DrawerContent>
@@ -207,12 +218,14 @@ function OptionsList({
   placeholder,
   data,
   value,
+  clearLabel,
 }: {
   setOpen: (open: boolean) => void;
   onChange?: (option: string | null) => void;
   placeholder?: string;
   data: Array<Option>;
   value?: string | null;
+  clearLabel?: string;
 }) {
   return (
     <Command>
@@ -220,6 +233,20 @@ function OptionsList({
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup>
+          {clearLabel && (
+            <CommandItem
+              // Not an option value: this item's select handler doesn't look it up in `data`
+              value={CLEAR_OPTION_VALUE}
+              keywords={[clearLabel]}
+              onSelect={() => {
+                onChange?.(null);
+                setOpen(false);
+              }}
+            >
+              <span className="text-gray-500 dark:text-gray-400">{clearLabel}</span>
+              <Check className={cn('ml-auto', value ? 'opacity-0' : 'opacity-100')} />
+            </CommandItem>
+          )}
           {data.map(option => (
             <CommandItem
               key={option.value}

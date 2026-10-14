@@ -136,3 +136,68 @@ describe('ComboBox react-hook-form wiring', () => {
     expect(blurs).toBe(1);
   });
 });
+
+describe('ComboBox clearLabel', () => {
+  function options(): HTMLElement[] {
+    return [...document.querySelectorAll<HTMLElement>('[cmdk-item]')];
+  }
+
+  it('lists a first option that clears the selection', () => {
+    const changes: Array<string | null> = [];
+    act(() => {
+      root.render(
+        <ComboBox
+          data={DATA}
+          value="marketing"
+          clearLabel="None"
+          onChange={(value): void => {
+            changes.push(value);
+          }}
+        />,
+      );
+    });
+
+    act(() => trigger().click());
+    expect(options().map(option => option.textContent)).toEqual([
+      'None',
+      'Research & Development',
+      'Marketing',
+    ]);
+
+    act(() => options()[0].click());
+    expect(changes).toEqual([null]);
+  });
+
+  it('is not listed unless asked for', () => {
+    act(() => {
+      root.render(<ComboBox data={DATA} value="marketing" />);
+    });
+
+    act(() => trigger().click());
+    expect(options().map(option => option.textContent)).toEqual([
+      'Research & Development',
+      'Marketing',
+    ]);
+  });
+});
+
+describe('ComboBox triggerProps', () => {
+  it('lets a caller replace the minimum width, e.g. for a narrow grid column', () => {
+    act(() => {
+      root.render(
+        <ComboBox data={DATA} value="marketing" triggerProps={{ className: 'min-w-0' }} />,
+      );
+    });
+
+    expect(trigger().className).toContain('min-w-0');
+    expect(trigger().className).not.toContain('min-w-40');
+  });
+
+  it('keeps the minimum width by default', () => {
+    act(() => {
+      root.render(<ComboBox data={DATA} value="marketing" />);
+    });
+
+    expect(trigger().className).toContain('min-w-40');
+  });
+});
