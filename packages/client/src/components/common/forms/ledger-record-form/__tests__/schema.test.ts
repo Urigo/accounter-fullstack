@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { Currency, LedgerRecordOperation } from '../../../../../gql/graphql.js';
+import {
+  Currency,
+  LedgerRecordOperation,
+  type LedgerRecordsTableFieldsFragment,
+} from '../../../../../gql/graphql.js';
 import {
   buildLedgerRecordFormSchema,
   formValuesToLedgerRecordInput,
   LEDGER_BALANCE_TOLERANCE,
+  ledgerRecordToFormValues,
   type LedgerRecordFormInput,
 } from '../schema.js';
 
@@ -596,5 +601,191 @@ describe('formValuesToLedgerRecordInput', () => {
 
   it('does not send the operation', () => {
     expect(toInput(validValues())).not.toHaveProperty('operation');
+  });
+});
+
+describe('ledgerRecordToFormValues', () => {
+  const account = (id: string, name: string) =>
+    ({ __typename: 'LtdFinancialEntity', id, name }) as const;
+  const amount = (raw: number, currency: Currency) => ({
+    raw,
+    currency,
+    formatted: `${raw} ${currency}`,
+  });
+
+  /** A stored local-currency record with one line per side, as the ledger table holds it */
+  function storedRecord(
+    overrides: Partial<LedgerRecordsTableFieldsFragment> = {},
+  ): LedgerRecordsTableFieldsFragment {
+    return {
+      id: '44444444-4444-4444-8444-444444444444',
+      locked: false,
+      currency: Currency.Ils,
+      invoiceDate: '2026-03-15',
+      valueDate: '2026-03-16',
+      description: 'Office supplies',
+      reference: 'REF-1',
+      debitAccount1: account(DEBIT_ENTITY, 'Debit Co'),
+      creditAccount1: account(CREDIT_ENTITY, 'Credit Co'),
+      debitAccount2: null,
+      creditAccount2: null,
+      localCurrencyDebitAmount1: { raw: 100, formatted: '100 ILS' },
+      localCurrencyCreditAmount1: { raw: 100, formatted: '100 ILS' },
+      localCurrencyDebitAmount2: null,
+      localCurrencyCreditAmount2: null,
+      debitAmount1: null,
+      creditAmount1: null,
+      debitAmount2: null,
+      creditAmount2: null,
+      ...overrides,
+    };
+  }
+
+  /** A stored USD record with VAT on Debit 2 and a second credit line */
+  const usdRecord = storedRecord({
+    currency: Currency.Usd,
+    debitAccount2: account(VAT_ENTITY, 'Input VAT'),
+    creditAccount2: account(CREDIT_ENTITY, 'Credit Co'),
+    localCurrencyDebitAmount1: { raw: 100, formatted: '100 ILS' },
+    localCurrencyCreditAmount1: { raw: 100, formatted: '100 ILS' },
+    localCurrencyDebitAmount2: { raw: 17, formatted: '17 ILS' },
+    localCurrencyCreditAmount2: { raw: 17, formatted: '17 ILS' },
+    debitAmount1: amount(27, Currency.Usd),
+    creditAmount1: amount(27, Currency.Usd),
+    debitAmount2: amount(4.6, Currency.Usd),
+    creditAmount2: amount(4.6, Currency.Usd),
+  });
+
+  it('maps a local-currency record', () => {
+    expect(ledgerRecordToFormValues(storedRecord())).toEqual({
+      currency: Currency.Ils,
+      invoiceDate: '2026-03-15',
+      valueDate: '2026-03-16',
+      description: 'Office supplies',
+      reference: 'REF-1',
+      debitEntity1: DEBIT_ENTITY,
+      debitLocalAmount1: 100,
+      debitForeignAmount1: null,
+      creditEntity1: CREDIT_ENTITY,
+      creditLocalAmount1: 100,
+      creditForeignAmount1: null,
+      debitEntity2: null,
+      debitLocalAmount2: null,
+      debitForeignAmount2: null,
+      creditEntity2: null,
+      creditLocalAmount2: null,
+      creditForeignAmount2: null,
+    });
+  });
+
+  it('maps a foreign-currency record with both secondary lines', () => {
+    expect(ledgerRecordToFormValues(usdRecord)).toEqual({
+      currency: Currency.Usd,
+      invoiceDate: '2026-03-15',
+      valueDate: '2026-03-16',
+      description: 'Office supplies',
+      reference: 'REF-1',
+      debitEntity1: DEBIT_ENTITY,
+      debitLocalAmount1: 100,
+      debitForeignAmount1: 27,
+      creditEntity1: CREDIT_ENTITY,
+      creditLocalAmount1: 100,
+      creditForeignAmount1: 27,
+      debitEntity2: VAT_ENTITY,
+      debitLocalAmount2: 17,
+      debitForeignAmount2: 4.6,
+      creditEntity2: CREDIT_ENTITY,
+      creditLocalAmount2: 17,
+      creditForeignAmount2: 4.6,
+    });
+  });
+
+  it('maps an empty secondary line to nulls, and a missing description or reference to empty', () => {
+    const values = ledgerRecordToFormValues(
+      storedRecord({
+        currency: Currency.Eur,
+        description: null,
+        reference: null,
+        debitAmount1: amount(90, Currency.Eur),
+        creditAmount1: amount(90, Currency.Eur),
+      }),
+    );
+    expect(values).toMatchObject({
+      currency: Currency.Eur,
+      description: '',
+      reference: '',
+      debitForeignAmount1: 90,
+      creditForeignAmount1: 90,
+      debitEntity2: null,
+      debitLocalAmount2: null,
+      debitForeignAmount2: null,
+      creditEntity2: null,
+      creditLocalAmount2: null,
+      creditForeignAmount2: null,
+    });
+  });
+
+  it('drops stored foreign amounts of a local-currency record when it is saved', () => {
+    // The server rejects foreign amounts on a local-currency record, so a stored record that has
+    // them (e.g. from before that rule) must have them cleared by its first edit
+    const values = ledgerRecordToFormValues(
+      storedRecord({
+        debitAmount1: amount(27, Currency.Ils),
+        creditAmount1: amount(27, Currency.Ils),
+      }),
+    );
+    const parsed = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    }).safeParse(values);
+    expect(parsed.success).toBe(true);
+    const input = formValuesToLedgerRecordInput(parsed.data!, { localCurrency: Currency.Ils });
+    expect(input.debitForeignAmount1).toBeNull();
+    expect(input.creditForeignAmount1).toBeNull();
+  });
+
+  it('flags a foreign-currency record that is missing a main foreign amount', () => {
+    const parsed = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    }).safeParse(ledgerRecordToFormValues({ ...usdRecord, debitAmount1: null }));
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues.map(issue => issue.path.join('.'))).toEqual([
+      'debitForeignAmount1',
+    ]);
+  });
+
+  it('passes the edit-mode schema and maps back to the stored values', () => {
+    const editSchema = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    });
+    for (const record of [storedRecord(), usdRecord]) {
+      const parsed = editSchema.safeParse(ledgerRecordToFormValues(record));
+      expect(parsed.success).toBe(true);
+      const input = formValuesToLedgerRecordInput(parsed.data!, { localCurrency: Currency.Ils });
+      expect(input).toEqual({
+        currency: record.currency,
+        invoiceDate: record.invoiceDate,
+        valueDate: record.valueDate,
+        description: record.description,
+        reference: record.reference,
+        debitEntity1: record.debitAccount1?.id,
+        debitLocalAmount1: record.localCurrencyDebitAmount1.raw,
+        debitForeignAmount1: record.debitAmount1?.raw ?? null,
+        creditEntity1: record.creditAccount1?.id,
+        creditLocalAmount1: record.localCurrencyCreditAmount1.raw,
+        creditForeignAmount1: record.creditAmount1?.raw ?? null,
+        debitEntity2: record.debitAccount2?.id ?? null,
+        debitLocalAmount2: record.localCurrencyDebitAmount2?.raw ?? null,
+        debitForeignAmount2: record.debitAmount2?.raw ?? null,
+        creditEntity2: record.creditAccount2?.id ?? null,
+        creditLocalAmount2: record.localCurrencyCreditAmount2?.raw ?? null,
+        creditForeignAmount2: record.creditAmount2?.raw ?? null,
+      });
+    }
   });
 });

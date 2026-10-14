@@ -214,20 +214,20 @@ export function LedgerRecordForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Currency</FormLabel>
-                {/* CurrencyCodeInput has a top margin for label-less rows; this one has a label */}
-                <div className="*:mt-0">
-                  <FormControl>
-                    <CurrencyCodeInput
-                      name={field.name}
-                      value={field.value ?? ''}
-                      onChange={value => {
-                        const next = value as Currency;
-                        field.onChange(next);
-                        onCurrencyChange(next);
-                      }}
-                    />
-                  </FormControl>
-                </div>
+                <FormControl>
+                  <CurrencyCodeInput
+                    name={field.name}
+                    value={field.value ?? ''}
+                    onChange={value => {
+                      const next = value as Currency;
+                      field.onChange(next);
+                      onCurrencyChange(next);
+                    }}
+                    // Labelled here, so no label-row margin; as wide as the other inputs
+                    className="mt-0"
+                    triggerClassName="w-full"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -307,6 +307,7 @@ export function LedgerRecordForm({
               side={side}
               index={1}
               showForeign={showForeign}
+              currency={currency}
               required
               entities={selectableFinancialEntities}
               fetchingEntities={fetchingEntities}
@@ -319,6 +320,7 @@ export function LedgerRecordForm({
               side={side}
               index={2}
               showForeign={showForeign}
+              currency={currency}
               required={false}
               entities={selectableFinancialEntities}
               fetchingEntities={fetchingEntities}
