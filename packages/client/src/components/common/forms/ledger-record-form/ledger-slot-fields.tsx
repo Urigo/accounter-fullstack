@@ -1,6 +1,8 @@
 import { useId, type ReactElement } from 'react';
 import { X } from 'lucide-react';
 import { useFormContext } from 'react-hook-form';
+import type { Currency } from '../../../../gql/graphql.js';
+import { currencyCodeToSymbol } from '../../../../helpers/currency.js';
 import { cn } from '../../../../lib/utils.js';
 import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.js';
@@ -19,6 +21,8 @@ type Props = {
   index: LedgerSlotIndex;
   /** Show the foreign-amount input (the record is in a non-local currency) */
   showForeign: boolean;
+  /** The record's currency, whose symbol marks the foreign amount */
+  currency?: Currency | null;
   /** Whether the line must be filled in (the main lines) or may stay empty */
   required: boolean;
   entities: Array<{ value: string; label: string }>;
@@ -31,6 +35,13 @@ type Props = {
    */
   clearCount?: number;
 };
+
+/**
+ * A cell of the line's grid. `FormItem` is itself a grid whose implicit column grows to its
+ * content's min-content width, so a long entity name would push the cell over its neighbours;
+ * a `minmax(0, 1fr)` column keeps every cell at its share of the row.
+ */
+const CELL_CLASS = 'min-w-0 grid-cols-1';
 
 /** "Debit" / "Credit" for a main line, "Debit 2" / "Credit 2" for a secondary one */
 function slotLabel(side: LedgerSlotSide, index: LedgerSlotIndex): string {
@@ -50,6 +61,7 @@ export function LedgerSlotFields({
   side,
   index,
   showForeign,
+  currency,
   required,
   entities,
   fetchingEntities,
@@ -60,6 +72,7 @@ export function LedgerSlotFields({
   const label = slotLabel(side, index);
   const fields = ledgerSlotFieldNames(side, index);
   const entityId = useId();
+  const foreignSymbol = currency ? currencyCodeToSymbol(currency) : null;
 
   return (
     <div
@@ -87,7 +100,7 @@ export function LedgerSlotFields({
         control={control}
         name={fields.entity}
         render={({ field }) => (
-          <FormItem>
+          <FormItem className={CELL_CLASS}>
             <FormControl>
               <ComboBox
                 {...field}
@@ -97,6 +110,14 @@ export function LedgerSlotFields({
                 onChange={value => field.onChange(value ?? '')}
                 disabled={fetchingEntities}
                 placeholder={`${label} entity`}
+                // A secondary line is optional, so its entity can be unpicked
+                clearLabel={required ? undefined : 'None'}
+                triggerProps={{
+                  // Drop the trigger's minimum width so it fits a narrow column, and show a long
+                  // (truncated) name in full on hover
+                  className: 'min-w-0',
+                  title: entities.find(entity => entity.value === field.value)?.label,
+                }}
                 formPart
               />
             </FormControl>
@@ -108,7 +129,7 @@ export function LedgerSlotFields({
         control={control}
         name={fields.localAmount}
         render={({ field }) => (
-          <FormItem>
+          <FormItem className={CELL_CLASS}>
             <FormControl>
               <NumberInput
                 key={clearCount}
@@ -135,23 +156,41 @@ export function LedgerSlotFields({
           control={control}
           name={fields.foreignAmount}
           render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <NumberInput
-                  key={clearCount}
-                  ref={field.ref}
-                  name={field.name}
-                  onBlur={field.onBlur}
-                  value={field.value ?? undefined}
-                  onChange={value => field.onChange(value ?? null)}
-                  aria-label={`${label} foreign amount`}
-                  aria-required={required}
-                  placeholder="Foreign amount"
-                  hideControls
-                  decimalScale={2}
-                  min={0}
-                />
-              </FormControl>
+            <FormItem className={CELL_CLASS}>
+              {/* The record's currency symbol sits inside the input, like a suffix */}
+              <div className="relative">
+                <FormControl>
+                  <NumberInput
+                    key={clearCount}
+                    ref={field.ref}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    value={field.value ?? undefined}
+                    onChange={value => field.onChange(value ?? null)}
+                    aria-label={`${label} foreign amount`}
+                    aria-required={required}
+                    // Short, so the currency symbol beside it doesn't clip it in a narrow column
+                    placeholder="Foreign"
+                    // Room for the symbol. Only passed with one: NumberInput's own classes give way
+                    // to a `className`
+                    {...(foreignSymbol && {
+                      className: foreignSymbol.length > 2 ? 'pr-14' : 'pr-8',
+                    })}
+                    hideControls
+                    decimalScale={2}
+                    min={0}
+                  />
+                </FormControl>
+                {foreignSymbol && (
+                  <span
+                    data-testid="foreign-currency-symbol"
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-500 dark:text-gray-400"
+                  >
+                    {foreignSymbol}
+                  </span>
+                )}
+              </div>
               <FormMessage />
             </FormItem>
           )}

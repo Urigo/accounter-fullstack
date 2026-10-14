@@ -52,3 +52,8 @@ Insert and edit ledger records manually, from the API and from the charge view.
 - The pencil opens the same form without the operation, prefilled with the record's currency,
   dates, description, reference and all four lines. Saving overwrites the record, and the charge
   then refreshes, so the ledger check shows where the edit differs from the generated record.
+- In the add and edit forms, the currency select is as wide as the other inputs, and each foreign
+  amount shows the record currency's symbol. A long entity name is cut short with an ellipsis (the
+  full name shows on hover) instead of spilling over the amounts, so the columns keep their width.
+  The "Debit 2" and "Credit 2" entity pickers have a "None" option to unpick an entity; the main
+  lines stay required.
