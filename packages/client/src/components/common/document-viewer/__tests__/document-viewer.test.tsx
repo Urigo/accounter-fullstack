@@ -342,6 +342,22 @@ describe('DocumentViewer', () => {
     expect(imageWidth()).toBeCloseTo(custom, 6);
   });
 
+  it('ignores a resize to 0×0 (hidden but mounted) and keeps the zoom and scroll', () => {
+    render();
+    loadImage();
+    expect(imageWidth()).toBeCloseTo(650, 6);
+    scrollBox().scrollTop = 120;
+
+    setPane({ width: 0, height: 0 });
+    act(() => resizeCallbacks.forEach(cb => cb()));
+    expect(imageWidth()).toBeCloseTo(650, 6);
+    expect(scrollBox().scrollTop).toBe(120);
+
+    setPane({ width: 1016, height: 816 });
+    act(() => resizeCallbacks.forEach(cb => cb()));
+    expect(imageWidth()).toBeCloseTo(1000, 6);
+  });
+
   it('never upscales a small image at Fit width', () => {
     render();
     loadImage({ width: 300, height: 200 });

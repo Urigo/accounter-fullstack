@@ -4,6 +4,7 @@ import {
   FileQuestionMark,
   Maximize2,
   Minimize2,
+  PanelRightClose,
   TriangleAlert,
   X,
 } from 'lucide-react';
@@ -23,6 +24,11 @@ export interface DocumentViewerProps {
   /** Identifies the document shown. A new key resets the canvas: loading state, zoom and scroll. */
   documentKey: string;
   onClose?: () => void;
+  /**
+   * How `onClose` presents: `close` (✕) dismisses the viewer, `hide` (⇥) collapses it beside the
+   * work it sits in, as in the edit sheet.
+   */
+  closeVariant?: 'close' | 'hide';
   /** Renders the Expand action, which widens the viewer over the work beside it and back. */
   onToggleExpand?: () => void;
   /** Whether the viewer is currently expanded; drives the Expand action's state. */
@@ -153,6 +159,7 @@ export function DocumentViewer({
   source,
   documentKey,
   onClose,
+  closeVariant = 'close',
   onToggleExpand,
   expanded = false,
   className,
@@ -198,15 +205,19 @@ export function DocumentViewer({
           )}
           {href && <OpenOriginalButton href={href} variant="ghost" />}
           {onClose && (
-            <Tooltip content="Close" asChild>
+            <Tooltip content={closeVariant === 'hide' ? 'Hide document' : 'Close'} asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className="size-8"
-                aria-label="Close document viewer"
+                aria-label={closeVariant === 'hide' ? 'Hide document' : 'Close document viewer'}
                 onClick={onClose}
               >
-                <X className="size-4" />
+                {closeVariant === 'hide' ? (
+                  <PanelRightClose className="size-4" />
+                ) : (
+                  <X className="size-4" />
+                )}
               </Button>
             </Tooltip>
           )}

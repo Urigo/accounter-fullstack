@@ -82,6 +82,65 @@ export function clampDockedRatio(ratio: number, workAreaWidth: number): number {
   return Math.min(Math.max(ratio, min), max);
 }
 
+/** Each pane of the edit-sheet split keeps at least this much (`min-w-80`). */
+export const EDIT_PANE_MIN_PX = 320;
+
+/** The edit split's default: half the sheet for the form, half for the viewer. */
+export const DEFAULT_EDIT_SPLIT_RATIO = 0.5;
+
+/** One arrow-key press on the split handle moves it by 2% of the split's width. */
+export const EDIT_SPLIT_RATIO_STEP = 0.02;
+
+/**
+ * The form pane's CSS width in the edit split, as a share of the split. The `clamp()` keeps both
+ * panes at their minimum while the sheet resizes; the viewer pane takes the rest.
+ */
+export function editSplitFormWidthStyle(ratio: number | null): string {
+  const preferred = `${round((ratio ?? DEFAULT_EDIT_SPLIT_RATIO) * 100)}%`;
+  return `clamp(${EDIT_PANE_MIN_PX}px, ${preferred}, 100% - ${EDIT_PANE_MIN_PX}px)`;
+}
+
+/**
+ * Clamps the form pane's share of the edit split so both panes keep their minimum. When both can't
+ * fit, the split stays even. An unmeasured split (width 0) only clamps to 0–1.
+ */
+export function clampEditSplitRatio(ratio: number, splitWidth: number): number {
+  if (!Number.isFinite(splitWidth) || splitWidth <= 0) {
+    return Math.min(Math.max(ratio, 0), 1);
+  }
+  const min = EDIT_PANE_MIN_PX / splitWidth;
+  const max = (splitWidth - EDIT_PANE_MIN_PX) / splitWidth;
+  if (max < min) {
+    return DEFAULT_EDIT_SPLIT_RATIO;
+  }
+  return Math.min(Math.max(ratio, min), max);
+}
+
+/**
+ * The edit split handle's ARIA value: the form pane's width as a whole percentage of the split,
+ * with the bounds both pane minimums allow. Matches the docked column's `separatorAria`: a chosen
+ * ratio is reported at once, already clamped; the default comes from layout. Unmeasured, it
+ * reports 50% of 0–100.
+ */
+export function editSplitSeparatorAria(
+  ratio: number | null,
+  layout: { split: number; form: number } | null,
+): { now: number; min: number; max: number } {
+  const split = layout?.split ?? 0;
+  const form = layout?.form ?? 0;
+  const percent = (value: number): number => Math.round(value * 100);
+  if (split <= 0) {
+    return { now: percent(ratio ?? DEFAULT_EDIT_SPLIT_RATIO), min: 0, max: 100 };
+  }
+  const min = clampEditSplitRatio(0, split);
+  const max = clampEditSplitRatio(1, split);
+  const now = clampEditSplitRatio(
+    ratio ?? (form > 0 ? form / split : DEFAULT_EDIT_SPLIT_RATIO),
+    split,
+  );
+  return { now: percent(now), min: percent(min), max: percent(max) };
+}
+
 function round(value: number): number {
   return Math.round(value * 100) / 100;
 }

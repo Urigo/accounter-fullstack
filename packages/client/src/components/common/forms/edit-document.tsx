@@ -9,8 +9,10 @@ import { relevantDataPicker, type MakeBoolean } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { AccounterSpinner } from '../../ui/accounter-spinner.js';
 import { Form } from '../../ui/form.js';
+import { DocumentViewer } from '../document-viewer/document-viewer.js';
+import { DocumentEditSplit } from '../document-viewer/edit-split-layout.js';
 import { toDocumentViewerEntry } from '../document-viewer/source.js';
-import { DocumentImageDrawer, SimpleGrid } from '../index.js';
+import { SimpleGrid } from '../simple-grid.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -122,7 +124,8 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
     setValue,
     watch,
   } = formManager;
-  const [openImage, setOpenImage] = useState<boolean>(false);
+  /** The viewer pane collapsed to a strip. In memory only until PR 5 persists it. */
+  const [viewerHidden, setViewerHidden] = useState<boolean>(false);
 
   const { updateDocument, fetching } = useUpdateDocument();
 
@@ -148,75 +151,66 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
     setValue('vat.currency', amountCurrency);
   }, [setValue, amountCurrency]);
 
-  return (
-    <div className="flex flex-row">
-      {fetchingDocument && <AccounterSpinner className="my-5 self-center" />}
-      {!fetchingDocument && document && (
-        <>
-          <div className="px-5 w-4/5 h-max justify-items-center">
-            <Form {...formManager}>
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <SimpleGrid cols={4}>
-                  <ModifyDocumentFields document={document} formManager={formManager} />
+  if (fetchingDocument || !document) {
+    return (
+      <div className="flex justify-center">
+        {fetchingDocument && <AccounterSpinner className="my-5" />}
+      </div>
+    );
+  }
 
-                  <div className="space-y-2">
-                    <Label htmlFor="file">File</Label>
-                    <Link
-                      to={document?.file?.toString() || ''}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex flex-col items-center justify-center mt-5"
-                    >
-                      <Button variant="outline" className="w-full mb-2">
-                        Open File
-                      </Button>
-                    </Link>
-                  </div>
-                </SimpleGrid>
-                <div className="flex justify-center mt-5">
-                  <Button
-                    type="submit"
-                    variant="default"
-                    disabled={fetching || Object.keys(dirtyFields).length === 0}
-                  >
-                    Save
+  const viewerSource = toDocumentViewerEntry(document);
+
+  return (
+    <DocumentEditSplit
+      hidden={viewerHidden}
+      onHiddenChange={setViewerHidden}
+      form={
+        <Form {...formManager}>
+          <form onSubmit={handleSubmit(onSubmit)} className="px-5 pt-1">
+            {/* The grid's breakpoints follow the viewport, not this pane, so the column count
+                follows the viewer instead: two beside it, four once it is hidden. */}
+            <SimpleGrid cols={viewerHidden ? 4 : 2}>
+              <ModifyDocumentFields document={document} formManager={formManager} />
+
+              <div className="space-y-2">
+                <Label htmlFor="file">File</Label>
+                <Link
+                  to={document.file?.toString() || ''}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex flex-col items-center justify-center mt-5"
+                >
+                  <Button variant="outline" className="w-full mb-2">
+                    Open File
                   </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-          <div className=" w-1/5 h-max flex flex-col pr-5">
-            <div className="flex justify-center">
-              {/* Mantine's `Image` added placeholder handling this call site never asked for,
-                  but it also sized the scan: its `.image` rule is `display:block; width:100%`
-                  and its default props are `width="100%" height="auto"`. The grey box, the
-                  padding and the margin sat on the wrapper it rendered, not on the img — so
-                  `max-h-fit max-w-fit` were the leftovers of the wrapper, and on a bare img
-                  they are no-ops (`fit-content` on a replaced element is its intrinsic size).
-                  That left a multi-megapixel scan rendering at full resolution and blowing the
-                  modal out, so the width cap is explicit here now.
-                  The click target is a real button — it opens the scan in a drawer, and an img
-                  with an onClick is neither focusable nor keyboard-operable. */}
-              <button
-                type="button"
-                onClick={(): void => setOpenImage(!!document.image)}
-                className="w-full cursor-pointer bg-gray-300 p-5"
+                </Link>
+              </div>
+            </SimpleGrid>
+            {/* Sticky, so Save stays reachable however far the form pane scrolls. */}
+            <div className="sticky bottom-0 flex justify-center bg-white py-4 dark:bg-gray-950">
+              <Button
+                type="submit"
+                variant="default"
+                disabled={fetching || Object.keys(dirtyFields).length === 0}
               >
-                <img
-                  alt="Open document scan"
-                  src={document?.image?.toString()}
-                  className="block w-full h-auto"
-                />
-              </button>
+                Save
+              </Button>
             </div>
-          </div>
-          <DocumentImageDrawer
-            source={document.image ? toDocumentViewerEntry(document) : null}
-            opened={openImage}
-            onClose={(): void => setOpenImage(false)}
-          />
-        </>
+          </form>
+        </Form>
+      }
+      viewer={({ onHide, onToggleExpand, expanded }) => (
+        <DocumentViewer
+          source={viewerSource}
+          // A new image URL restarts the canvas, as a new document does.
+          documentKey={`${document.id}:${viewerSource.imageUrl ?? ''}`}
+          closeVariant="hide"
+          onClose={onHide}
+          onToggleExpand={onToggleExpand}
+          expanded={expanded}
+        />
       )}
-    </div>
+    />
   );
 };
