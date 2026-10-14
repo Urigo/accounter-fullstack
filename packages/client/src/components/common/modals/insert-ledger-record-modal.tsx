@@ -4,20 +4,16 @@ import { Currency } from '../../../gql/graphql.js';
 import { useInsertLedgerRecord } from '../../../hooks/use-insert-ledger-record.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { Button } from '../../ui/button.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../../ui/dialog.js';
+import { Dialog, DialogTrigger } from '../../ui/dialog.js';
+import { useLedgerFormLang } from '../forms/ledger-record-form/i18n.js';
 import { LedgerRecordForm } from '../forms/ledger-record-form/index.js';
 import {
   formValuesToLedgerRecordInput,
   type LedgerRecordFormValues,
 } from '../forms/ledger-record-form/schema.js';
+import { LEDGER_FORM_STRINGS } from '../forms/ledger-record-form/strings.js';
 import { Tooltip } from '../tooltip.js';
+import { LedgerRecordDialogContent } from './ledger-record-dialog-content.js';
 
 type Props = {
   /** The charge to add the record to; without one, the server creates a new charge for it */
@@ -41,7 +37,11 @@ export function InsertLedgerRecordModal({
   const { userContext } = useContext(UserContext);
   const localCurrency = (userContext?.context.defaultLocalCurrency || Currency.Ils) as Currency;
   const { fetching, insertLedgerRecord } = useInsertLedgerRecord();
-  const label = chargeId ? 'Add ledger record' : 'Add ledger record (new charge)';
+  const { strings } = useLedgerFormLang();
+  // The trigger sits among the app's English UI, so only the dialog follows the chosen language
+  const label = chargeId
+    ? LEDGER_FORM_STRINGS.en.insertTitle
+    : LEDGER_FORM_STRINGS.en.insertNewChargeTitle;
   const defaultValues = useMemo(
     () => (defaultEntityId ? { debitEntity1: defaultEntityId } : undefined),
     [defaultEntityId],
@@ -75,15 +75,10 @@ export function InsertLedgerRecordModal({
           </Button>
         </DialogTrigger>
       </Tooltip>
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Add ledger record</DialogTitle>
-          <DialogDescription>
-            {chargeId
-              ? 'Creates the ledger record together with the misc expense or document it represents.'
-              : 'Creates a new charge, with the ledger record and the misc expense or document it represents.'}
-          </DialogDescription>
-        </DialogHeader>
+      <LedgerRecordDialogContent
+        title={strings.insertTitle}
+        description={chargeId ? strings.insertDescription : strings.insertNewChargeDescription}
+      >
         {open && (
           <LedgerRecordForm
             mode="insert"
@@ -92,7 +87,7 @@ export function InsertLedgerRecordModal({
             onSubmit={onSubmit}
           />
         )}
-      </DialogContent>
+      </LedgerRecordDialogContent>
     </Dialog>
   );
 }

@@ -11,6 +11,7 @@ import {
   ledgerRecordToFormValues,
   type LedgerRecordFormInput,
 } from '../schema.js';
+import { LEDGER_FORM_STRINGS } from '../strings.js';
 
 const DEBIT_ENTITY = '11111111-1111-4111-8111-111111111111';
 const CREDIT_ENTITY = '22222222-2222-4222-8222-222222222222';
@@ -460,6 +461,40 @@ describe('buildLedgerRecordFormSchema', () => {
         );
       });
     });
+  });
+});
+
+describe('buildLedgerRecordFormSchema messages', () => {
+  it('reports its problems in the given language', () => {
+    const hebrewSchema = buildLedgerRecordFormSchema({
+      mode: 'insert',
+      localCurrency: Currency.Ils,
+      ledgerLock: '2026-03-31',
+      messages: LEDGER_FORM_STRINGS.he.messages,
+    });
+
+    const result = hebrewSchema.safeParse(
+      validValues({ operation: undefined, debitEntity1: '', currency: Currency.Usd }),
+    );
+
+    expect(result.success).toBe(false);
+    const messages = result.success ? [] : result.error.issues.map(issue => issue.message);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        'יש לבחור פעולה',
+        'יש לבחור ישות',
+        'התאריך חייב להיות אחרי 2026-03-31',
+      ]),
+    );
+  });
+
+  it('defines every message in both languages', () => {
+    expect(Object.keys(LEDGER_FORM_STRINGS.he.messages).sort()).toEqual(
+      Object.keys(LEDGER_FORM_STRINGS.en.messages).sort(),
+    );
+    expect(Object.keys(LEDGER_FORM_STRINGS.he).sort()).toEqual(
+      Object.keys(LEDGER_FORM_STRINGS.en).sort(),
+    );
   });
 });
 
