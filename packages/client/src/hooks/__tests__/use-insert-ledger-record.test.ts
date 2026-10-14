@@ -97,4 +97,17 @@ describe('useInsertLedgerRecord', () => {
     expect(options.description).toContain('with a new charge');
     expect(options.description).not.toContain('undefined');
   });
+
+  it('says the record was created on a new charge when inserting without a charge', async () => {
+    const success = { __typename: 'InsertLedgerRecordSuccessfulResult', record: { id: 'r-1' } };
+    mutateMock.mockResolvedValue({ data: { insertLedgerRecord: success } });
+    const { chargeId: _chargeId, ...withoutCharge } = VARIABLES;
+    const hook = await renderHook();
+
+    await expect(hook().insertLedgerRecord(withoutCharge)).resolves.toEqual(success);
+    expect(toastMock.success).toHaveBeenCalledWith(
+      'Success',
+      expect.objectContaining({ description: 'Ledger record created on a new charge' }),
+    );
+  });
 });
