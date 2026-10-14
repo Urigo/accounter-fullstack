@@ -29,6 +29,8 @@ export interface ViewerZoomState {
   natural: Size | null;
   zoom: number;
   mode: ZoomMode;
+  /** Clockwise, in degrees. Starts at 0 for every document and is never persisted. */
+  rotation: Rotation;
   /** Whether the page is larger than the pane on either axis, i.e. dragging would pan. */
   scrollable: boolean;
 }
@@ -47,6 +49,11 @@ export interface ViewerZoom {
   zoomByFactor(factor: number, client: Point): void;
   /** Double-click / double-tap: toggle between the current fit and 200% at a client point. */
   toggleAt(client: Point): void;
+  /**
+   * Turns the page 90° clockwise. A fit mode re-applies to the turned page; a custom zoom is kept,
+   * with the scroll re-clamped to the new extents.
+   */
+  rotate(): void;
   onImageLoad(): void;
   onImageError(): void;
 }
@@ -78,7 +85,6 @@ export function useViewerZoom(): ViewerZoom {
     zoom: 1,
     mode: INITIAL_MODE,
     lastFit: INITIAL_MODE,
-    // Rotate arrives in a later step; the geometry already accounts for it.
     rotation: 0,
   });
   const [state, setState] = useState<ViewerZoomState>({
@@ -86,6 +92,7 @@ export function useViewerZoom(): ViewerZoom {
     natural: null,
     zoom: 1,
     mode: INITIAL_MODE,
+    rotation: 0,
     scrollable: false,
   });
 
@@ -132,10 +139,11 @@ export function useViewerZoom(): ViewerZoom {
         m.lastFit = mode;
       }
       const scrollable = el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight;
+      const { rotation } = m;
       setState(s =>
-        s.zoom === zoom && s.mode === mode && s.scrollable === scrollable
+        s.zoom === zoom && s.mode === mode && s.scrollable === scrollable && s.rotation === rotation
           ? s
-          : { ...s, zoom, mode, scrollable },
+          : { ...s, zoom, mode, scrollable, rotation },
       );
     },
     [],
@@ -217,6 +225,25 @@ export function useViewerZoom(): ViewerZoom {
     },
     [applyZoom, resolveFit, toLocal],
   );
+
+  const rotate = useCallback((): void => {
+    const m = model.current;
+    if (!m.natural) {
+      return;
+    }
+    m.rotation = ((m.rotation + 90) % 360) as Rotation;
+    // The transform itself is rendered from state; `applyZoom` mirrors the rotation into it along
+    // with the page box's new (swapped) size.
+    if (m.mode === 'custom') {
+      // Same zoom, so `zoomAt` only re-clamps the scroll to the turned page's extents.
+      applyZoom(m.zoom, 'custom');
+      return;
+    }
+    const zoom = resolveFit(m.mode);
+    if (zoom != null) {
+      applyZoom(zoom, m.mode, undefined, true);
+    }
+  }, [applyZoom, resolveFit]);
 
   const onImageLoad = useCallback((): void => {
     const image = imageRef.current;
@@ -301,6 +328,7 @@ export function useViewerZoom(): ViewerZoom {
     setZoom,
     zoomByFactor,
     toggleAt,
+    rotate,
     onImageLoad,
     onImageError,
   };
