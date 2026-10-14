@@ -1,4 +1,12 @@
-import { useContext, useMemo, useRef, useState, type FormEvent, type ReactElement } from 'react';
+import {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from 'react';
 import { useForm, useWatch, type FieldError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Currency, LedgerRecordOperation } from '../../../../gql/graphql.js';
@@ -27,6 +35,7 @@ import {
 import { Spinner } from '../../../ui/spinner.js';
 import { CurrencyCodeInput } from '../../inputs/currency-input.js';
 import { DatePickerInput } from '../../inputs/date-picker-input.js';
+import { useLedgerFormLang } from './i18n.js';
 import { LedgerSlotFields } from './ledger-slot-fields.js';
 import {
   buildLedgerRecordFormSchema,
@@ -36,7 +45,6 @@ import {
   isUnparsableDateText,
   LEDGER_BALANCE_ERROR_PATH,
   ledgerSlotFieldNames,
-  TIMELESS_DATE_FORMAT_MESSAGE,
   type LedgerRecordFormInput,
   type LedgerRecordFormMode,
   type LedgerRecordFormValues,
@@ -46,10 +54,10 @@ import {
 type DateFieldName = 'invoiceDate' | 'valueDate';
 const DATE_FIELDS: DateFieldName[] = ['invoiceDate', 'valueDate'];
 
-const OPERATION_OPTIONS: Array<{ value: LedgerRecordOperation; label: string }> = [
-  { value: LedgerRecordOperation.MiscExpense, label: 'Misc expense' },
-  { value: LedgerRecordOperation.Document, label: 'Document' },
-];
+const OPERATIONS = [
+  { value: LedgerRecordOperation.MiscExpense, labelKey: 'operationMiscExpense' },
+  { value: LedgerRecordOperation.Document, labelKey: 'operationDocument' },
+] as const;
 
 /** Placeholder value of the not-yet-supported operation; it is never selectable */
 const TRANSACTION_OPERATION_PLACEHOLDER = 'TRANSACTION';
@@ -73,7 +81,11 @@ type LedgerRecordFormProps = {
   onSubmit: (values: LedgerRecordFormValues) => void | Promise<void>;
 };
 
-/** Create or edit a manual ledger record: its dates, texts, and debit and credit lines. */
+/**
+ * Create or edit a manual ledger record: its dates, texts, and debit and credit lines. Its texts
+ * and validation messages follow the language of the enclosing `LedgerFormLangProvider` (English
+ * without one); the layout's direction comes from the dialog around it.
+ */
 export function LedgerRecordForm({
   mode,
   defaultValues,
@@ -83,17 +95,19 @@ export function LedgerRecordForm({
   const { userContext } = useContext(UserContext);
   const localCurrency = (userContext?.context.defaultLocalCurrency || Currency.Ils) as Currency;
   const ledgerLock = userContext?.context.ledgerLock ?? null;
+  const { strings } = useLedgerFormLang();
+  const { messages } = strings;
 
   const schema = useMemo(
-    () => buildLedgerRecordFormSchema({ mode, localCurrency, ledgerLock }),
-    [mode, localCurrency, ledgerLock],
+    () => buildLedgerRecordFormSchema({ mode, localCurrency, ledgerLock, messages }),
+    [mode, localCurrency, ledgerLock, messages],
   );
 
   const form = useForm<LedgerRecordFormInput, unknown, LedgerRecordFormValues>({
     resolver: zodResolver(schema),
     defaultValues: { currency: localCurrency, description: '', reference: '', ...defaultValues },
   });
-  const { control, handleSubmit, formState, setError, setValue, clearErrors } = form;
+  const { control, handleSubmit, formState, setError, setValue, clearErrors, trigger } = form;
 
   const currency = useWatch({ control, name: 'currency' });
   const showForeign = isForeignCurrency(currency, localCurrency);
@@ -158,6 +172,29 @@ export function LedgerRecordForm({
     }
   }
 
+  /** Flag the dates whose text can't be parsed; call after validation, which replaces errors */
+  function setUnparsableDateErrors(): void {
+    for (const name of DATE_FIELDS) {
+      if (unparsableDates.current.has(name)) {
+        setError(name, { type: 'format', message: messages.dateFormat });
+      }
+    }
+  }
+
+  // Once errors are showing, re-validate in a newly picked language so they are translated too
+  const shownMessages = useRef(messages);
+  useEffect(() => {
+    if (shownMessages.current === messages) {
+      return;
+    }
+    shownMessages.current = messages;
+    if (formState.isSubmitted) {
+      void trigger().then(setUnparsableDateErrors);
+    }
+    // Only a language change re-validates; the other values are read at that moment
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
   async function onFormSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     // React bubbles events through portals: keep the submit from reaching any ancestor form
     event.stopPropagation();
@@ -168,11 +205,7 @@ export function LedgerRecordForm({
       return onSubmit(values);
     })(event);
     // Set after validation, which replaces the form's errors with the schema's own
-    for (const name of DATE_FIELDS) {
-      if (unparsableDates.current.has(name)) {
-        setError(name, { type: 'format', message: TIMELESS_DATE_FORMAT_MESSAGE });
-      }
-    }
+    setUnparsableDateErrors();
   }
 
   return (
@@ -185,21 +218,21 @@ export function LedgerRecordForm({
               name="operation"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Operation</FormLabel>
+                  <FormLabel>{strings.operation}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select operation" />
+                        <SelectValue placeholder={strings.selectOperation} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent container={portalContainer}>
-                      {OPERATION_OPTIONS.map(option => (
+                      {OPERATIONS.map(option => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {strings[option.labelKey]}
                         </SelectItem>
                       ))}
                       <SelectItem value={TRANSACTION_OPERATION_PLACEHOLDER} disabled>
-                        Transaction (coming soon)
+                        {strings.operationTransactionComingSoon}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -213,7 +246,7 @@ export function LedgerRecordForm({
             name="currency"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Currency</FormLabel>
+                <FormLabel>{strings.currency}</FormLabel>
                 <FormControl>
                   <CurrencyCodeInput
                     name={field.name}
@@ -237,7 +270,7 @@ export function LedgerRecordForm({
             name="invoiceDate"
             render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel>Invoice date</FormLabel>
+                <FormLabel>{strings.invoiceDate}</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     value={(field.value as TimelessDateString) || undefined}
@@ -257,7 +290,7 @@ export function LedgerRecordForm({
             name="valueDate"
             render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel>Value date</FormLabel>
+                <FormLabel>{strings.valueDate}</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     value={(field.value as TimelessDateString) || undefined}
@@ -277,7 +310,7 @@ export function LedgerRecordForm({
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel>{strings.description}</FormLabel>
                 <FormControl>
                   <Input {...field} value={field.value ?? ''} />
                 </FormControl>
@@ -290,7 +323,7 @@ export function LedgerRecordForm({
             name="reference"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Reference</FormLabel>
+                <FormLabel>{strings.reference}</FormLabel>
                 <FormControl>
                   <Input {...field} value={field.value ?? ''} />
                 </FormControl>
@@ -332,15 +365,15 @@ export function LedgerRecordForm({
         <div data-testid="ledger-totals" className="flex flex-col gap-1 border-t pt-2 text-sm">
           <dl className="flex flex-wrap justify-end gap-x-6 gap-y-1">
             <div className="flex gap-2">
-              <dt className="text-muted-foreground">Debit total</dt>
+              <dt className="text-muted-foreground">{strings.debitTotal}</dt>
               <dd className="tabular-nums">{formatTotal(totals.debit)}</dd>
             </div>
             <div className="flex gap-2">
-              <dt className="text-muted-foreground">Credit total</dt>
+              <dt className="text-muted-foreground">{strings.creditTotal}</dt>
               <dd className="tabular-nums">{formatTotal(totals.credit)}</dd>
             </div>
             <div className="flex gap-2">
-              <dt className="text-muted-foreground">Difference</dt>
+              <dt className="text-muted-foreground">{strings.difference}</dt>
               <dd
                 data-testid="ledger-difference"
                 className={cn('tabular-nums', !totals.balanced && 'font-medium text-destructive')}
@@ -352,8 +385,8 @@ export function LedgerRecordForm({
           {/* The error is set on submit and not re-checked as amounts change: it is hidden once
               they balance, and its text leaves the numbers to the live totals above */}
           {balanceError && !totals.balanced && (
-            <p role="alert" className="text-right text-destructive">
-              Debit and credit totals must be equal
+            <p role="alert" className="text-end text-destructive">
+              {strings.balanceError}
             </p>
           )}
         </div>
@@ -361,7 +394,7 @@ export function LedgerRecordForm({
         <div className="flex justify-end">
           <Button type="submit" disabled={submitting}>
             {submitting && <Spinner />}
-            {mode === 'insert' ? 'Add record' : 'Save'}
+            {mode === 'insert' ? strings.addRecord : strings.save}
           </Button>
         </div>
       </form>

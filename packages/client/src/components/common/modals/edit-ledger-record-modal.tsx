@@ -2,19 +2,15 @@ import { useCallback, useContext, useMemo, useState, type ReactElement } from 'r
 import { Currency, type LedgerRecordsTableFieldsFragment } from '../../../gql/graphql.js';
 import { useUpdateLedgerRecord } from '../../../hooks/use-update-ledger-record.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '../../ui/dialog.js';
+import { Dialog } from '../../ui/dialog.js';
+import { useLedgerFormLang } from '../forms/ledger-record-form/i18n.js';
 import { LedgerRecordForm } from '../forms/ledger-record-form/index.js';
 import {
   formValuesToLedgerRecordInput,
   ledgerRecordToFormValues,
   type LedgerRecordFormValues,
 } from '../forms/ledger-record-form/schema.js';
+import { LedgerRecordDialogContent } from './ledger-record-dialog-content.js';
 
 type Props = {
   /** The stored record to edit; the dialog is open while it is set */
@@ -30,6 +26,7 @@ export function EditLedgerRecordModal({ record, onClose, onDone }: Props): React
   const { userContext } = useContext(UserContext);
   const localCurrency = (userContext?.context.defaultLocalCurrency || Currency.Ils) as Currency;
   const { fetching, updateLedgerRecord } = useUpdateLedgerRecord();
+  const { strings } = useLedgerFormLang();
 
   // The last record shown, kept after `record` turns null so the form stays rendered while the
   // dialog's close animation runs (instead of the body collapsing to empty)
@@ -70,13 +67,7 @@ export function EditLedgerRecordModal({ record, onClose, onDone }: Props): React
         }
       }}
     >
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Edit ledger record</DialogTitle>
-          <DialogDescription>
-            Overwrites the stored record. The misc expense or document behind it is not changed.
-          </DialogDescription>
-        </DialogHeader>
+      <LedgerRecordDialogContent title={strings.editTitle} description={strings.editDescription}>
         {shownRecord && (
           <LedgerRecordForm
             // A fresh form per record, so its default values are this record's
@@ -87,7 +78,7 @@ export function EditLedgerRecordModal({ record, onClose, onDone }: Props): React
             onSubmit={onSubmit}
           />
         )}
-      </DialogContent>
+      </LedgerRecordDialogContent>
     </Dialog>
   );
 }

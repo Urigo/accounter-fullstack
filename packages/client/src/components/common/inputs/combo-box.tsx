@@ -1,5 +1,6 @@
 import React, { useMemo, type ComponentProps, type Ref } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
+import { Direction } from 'radix-ui';
 import { useMediaQuery } from '../../../hooks/use-media-query.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
@@ -87,6 +88,9 @@ export function ComboBox({
   // See https://github.com/emilkowalski/vaul/issues/496
   const portalContainer = usePortalContainer();
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  // A portaled popover leaves the DOM subtree that sets `dir`, so carry the text direction of an
+  // enclosing Radix DirectionProvider (e.g. a right-to-left dialog) over to its list
+  const dir = Direction.useDirection();
 
   const selectedOption = useMemo(() => {
     if (!value) return null;
@@ -113,7 +117,12 @@ export function ComboBox({
               {...triggerProps}
             />
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start" container={portalContainer}>
+          <PopoverContent
+            className="w-full p-0"
+            align="start"
+            container={portalContainer}
+            dir={dir}
+          >
             <OptionsList
               setOpen={setOpen}
               onChange={onChange}
@@ -152,7 +161,7 @@ export function ComboBox({
             {...triggerProps}
           />
         </DrawerTrigger>
-        <DrawerContent>
+        <DrawerContent dir={dir}>
           <div className="mt-4 border-t">
             <OptionsList
               setOpen={setOpen}
