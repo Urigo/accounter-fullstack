@@ -3,6 +3,7 @@ import {
   Currency,
   LedgerRecordOperation,
   type LedgerRecordInput,
+  type LedgerRecordsTableFieldsFragment,
 } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
@@ -34,9 +35,19 @@ export type LedgerRecordFormValues = {
   debitLocalAmount1: number;
   creditEntity1: string;
   creditLocalAmount1: number;
-  /** Required (> 0) in a foreign currency; ignored, and never sent, in the local currency */
-  debitForeignAmount1?: number;
-  creditForeignAmount1?: number;
+  /**
+   * Required (> 0) on every filled line in a foreign currency; ignored, and never sent, in the local
+   * currency. `null` is a cleared value (see `LedgerRecordFormInput`).
+   */
+  debitForeignAmount1?: number | null;
+  creditForeignAmount1?: number | null;
+  /** The optional secondary lines (e.g. VAT): a line is filled once its entity is picked */
+  debitEntity2?: string | null;
+  debitLocalAmount2?: number | null;
+  debitForeignAmount2?: number | null;
+  creditEntity2?: string | null;
+  creditLocalAmount2?: number | null;
+  creditForeignAmount2?: number | null;
 };
 
 export const TIMELESS_DATE_FORMAT_MESSAGE = 'Date must be in format yyyy-mm-dd';
@@ -53,11 +64,15 @@ export function isUnparsableDateText(text: string): boolean {
 /**
  * What the form holds while it is being filled in: every field may still be empty, and dates are
  * plain strings until the schema checks their format.
+ *
+ * The form clears a field to `null`, never to `undefined`: react-hook-form re-applies a field's
+ * default value when its input re-mounts while the field is `undefined`, which would bring a
+ * cleared (e.g. prefilled) value back on screen and into the submitted record.
  */
-export type LedgerRecordFormInput = Omit<
-  Partial<LedgerRecordFormValues>,
-  'invoiceDate' | 'valueDate'
-> & {
+export type LedgerRecordFormInput = {
+  [Field in Exclude<keyof LedgerRecordFormValues, 'invoiceDate' | 'valueDate'>]?:
+    LedgerRecordFormValues[Field] | null;
+} & {
   invoiceDate?: string;
   valueDate?: string;
 };
@@ -65,8 +80,109 @@ export type LedgerRecordFormInput = Omit<
 /** The form-level error path for an unbalanced record (not a field of its own) */
 export const LEDGER_BALANCE_ERROR_PATH = 'balance';
 
-/** Every foreign-amount field of the form (the main lines only, so far) */
-export const FOREIGN_AMOUNT_FIELDS = ['debitForeignAmount1', 'creditForeignAmount1'] as const;
+export type LedgerSlotSide = 'debit' | 'credit';
+/** 1 is a main line (required), 2 a secondary line (optional, e.g. VAT) */
+export type LedgerSlotIndex = 1 | 2;
+
+/** The form fields of one debit or credit line, named as in `LedgerRecordInput` */
+export function ledgerSlotFieldNames<Side extends LedgerSlotSide, Index extends LedgerSlotIndex>(
+  side: Side,
+  index: Index,
+) {
+  return {
+    entity: `${side}Entity${index}`,
+    localAmount: `${side}LocalAmount${index}`,
+    foreignAmount: `${side}ForeignAmount${index}`,
+  } as const satisfies Record<string, keyof LedgerRecordFormValues>;
+}
+
+/** Every line of the form, in the server's order: the main lines first, then the secondary ones */
+const LEDGER_SLOTS = [
+  { side: 'debit', main: true, ...ledgerSlotFieldNames('debit', 1) },
+  { side: 'credit', main: true, ...ledgerSlotFieldNames('credit', 1) },
+  { side: 'debit', main: false, ...ledgerSlotFieldNames('debit', 2) },
+  { side: 'credit', main: false, ...ledgerSlotFieldNames('credit', 2) },
+] as const;
+
+/** Every foreign-amount field of the form */
+export const FOREIGN_AMOUNT_FIELDS = LEDGER_SLOTS.map(slot => slot.foreignAmount);
+
+/** Every local-amount field of the form; the balance compares their debit and credit sums */
+const LOCAL_AMOUNT_FIELDS = LEDGER_SLOTS.map(slot => slot.localAmount);
+
+type LocalAmountField = (typeof LOCAL_AMOUNT_FIELDS)[number];
+
+/** The fields the line rules read: they run once these parsed, whatever else is wrong */
+const SLOT_RULE_FIELDS: ReadonlySet<PropertyKey> = new Set<keyof LedgerRecordFormValues>([
+  'currency',
+  ...FOREIGN_AMOUNT_FIELDS,
+  ...LEDGER_SLOTS.filter(slot => !slot.main).flatMap(slot => [slot.entity, slot.localAmount]),
+]);
+
+/** The fields the balance rule reads */
+const BALANCE_RULE_FIELDS: ReadonlySet<PropertyKey> = new Set<keyof LedgerRecordFormValues>(
+  LOCAL_AMOUNT_FIELDS,
+);
+
+export type LedgerTotals = {
+  debit: number;
+  credit: number;
+  /** Debit total minus credit total */
+  difference: number;
+  /** Whether the difference is within `LEDGER_BALANCE_TOLERANCE` */
+  balanced: boolean;
+};
+
+/**
+ * Sum the local amounts of both lines on each side, as the server's balance check does (an empty
+ * amount counts as 0). Shared by the schema and the form's live totals.
+ */
+export function computeLedgerTotals(
+  values: Partial<Record<LocalAmountField, number | null>>,
+): LedgerTotals {
+  let debit = 0;
+  let credit = 0;
+  for (const slot of LEDGER_SLOTS) {
+    const amount = values[slot.localAmount] ?? 0;
+    if (slot.side === 'debit') {
+      debit += amount;
+    } else {
+      credit += amount;
+    }
+  }
+  const difference = debit - credit;
+  return {
+    debit,
+    credit,
+    difference,
+    balanced: Math.abs(difference) <= LEDGER_BALANCE_TOLERANCE + BALANCE_EPSILON,
+  };
+}
+
+/**
+ * A `when` for a record-level refinement. zod skips refinements once any issue exists, which would
+ * hide them behind unrelated field errors; this runs one as long as the fields it reads parsed, so
+ * every problem shows at once.
+ */
+function whenParsed(fields: ReadonlySet<PropertyKey>) {
+  return ({
+    value,
+    issues,
+  }: {
+    value: unknown;
+    issues: ReadonlyArray<{ path?: PropertyKey[] }>;
+  }): boolean =>
+    typeof value === 'object' &&
+    value !== null &&
+    !issues.some(issue => {
+      const [field] = issue.path ?? [];
+      return field !== undefined && fields.has(field);
+    });
+}
+
+function isPresent<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
 
 type BuildLedgerRecordFormSchemaOptions = {
   mode: LedgerRecordFormMode;
@@ -74,13 +190,14 @@ type BuildLedgerRecordFormSchemaOptions = {
   ledgerLock?: string | null;
 };
 
+/** Drops float noise (e.g. `0.30000000000000004`) so totals print as entered, like the server */
 function roundAmount(amount: number): number {
-  return Math.round(amount * 100) / 100;
+  return Math.round(amount * 1e9) / 1e9;
 }
 
 /** Whether a record in `currency` carries foreign amounts, i.e. is not in the local currency */
 export function isForeignCurrency(
-  currency: Currency | undefined,
+  currency: Currency | null | undefined,
   localCurrency: Currency,
 ): boolean {
   return !!currency && currency !== localCurrency;
@@ -105,8 +222,11 @@ export function buildLedgerRecordFormSchema({
 
   const entity = z.string({ message: 'Entity is required' }).min(1, 'Entity is required');
   const amount = z.number({ message: 'Amount is required' }).gt(0, 'Amount must be greater than 0');
-  // Checked against the currency in the record-level refinement below
-  const foreignAmount = z.number({ message: 'Foreign amount must be a number' }).optional();
+  // The optional values are checked against the line's entity and the currency in the record-level
+  // refinements below
+  const optionalEntity = z.string().nullish();
+  const optionalAmount = z.number({ message: 'Amount must be a number' }).nullish();
+  const foreignAmount = z.number({ message: 'Foreign amount must be a number' }).nullish();
 
   const base = z.object({
     currency: z.enum(Currency, { message: 'Currency is required' }),
@@ -120,6 +240,12 @@ export function buildLedgerRecordFormSchema({
     creditLocalAmount1: amount,
     debitForeignAmount1: foreignAmount,
     creditForeignAmount1: foreignAmount,
+    debitEntity2: optionalEntity,
+    debitLocalAmount2: optionalAmount,
+    debitForeignAmount2: foreignAmount,
+    creditEntity2: optionalEntity,
+    creditLocalAmount2: optionalAmount,
+    creditForeignAmount2: foreignAmount,
   });
 
   // Edit mode has no operation: the record's entity already exists, so the key is dropped
@@ -133,73 +259,101 @@ export function buildLedgerRecordFormSchema({
   return shape
     .superRefine(
       (values, ctx) => {
-        // Matches the server: in a foreign currency every main line needs a positive foreign
-        // amount; in the local currency leftover foreign amounts are ignored here, and the mapper
-        // never sends them
-        if (!isForeignCurrency(values.currency, localCurrency)) {
-          return;
+        // Σ debit local (both lines) vs Σ credit local (both lines), like the server
+        const totals = computeLedgerTotals(values);
+        if (!totals.balanced) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [LEDGER_BALANCE_ERROR_PATH],
+            message: `Debit and credit totals must be equal (debit ${roundAmount(totals.debit)}, credit ${roundAmount(totals.credit)})`,
+          });
         }
-        for (const field of FOREIGN_AMOUNT_FIELDS) {
-          const value = values[field];
-          if (value === undefined) {
-            ctx.addIssue({
-              code: 'custom',
-              path: [field],
-              message: `Foreign amount is required for ${values.currency} records`,
-            });
-          } else if (value <= 0) {
-            ctx.addIssue({
-              code: 'custom',
-              path: [field],
-              message: 'Foreign amount must be greater than 0',
-            });
+      },
+      // Skipped while a main local amount is missing or invalid, as the totals mean nothing yet.
+      // Runs before the line rules, whose issues on the secondary amounts would otherwise skip it.
+      { when: whenParsed(BALANCE_RULE_FIELDS) },
+    )
+    .superRefine(
+      (values, ctx) => {
+        // Matches the server's per-line rules. The main lines' entity and local amount are
+        // required by the object shape; a secondary line is filled once it has an entity.
+        const foreign = isForeignCurrency(values.currency, localCurrency);
+        for (const slot of LEDGER_SLOTS) {
+          const filled = slot.main || !!values[slot.entity];
+          if (!filled) {
+            // An amount needs an entity. A leftover foreign amount in the local currency is never
+            // sent (see the mapper), so it does not count.
+            const localAmount = values[slot.localAmount];
+            const foreignAmount = foreign ? values[slot.foreignAmount] : null;
+            if (isPresent(localAmount) || isPresent(foreignAmount)) {
+              ctx.addIssue({
+                code: 'custom',
+                path: [slot.entity],
+                message: 'Entity is required when an amount is entered',
+              });
+            }
+            continue;
+          }
+
+          if (!slot.main) {
+            const localAmount = values[slot.localAmount];
+            if (!isPresent(localAmount)) {
+              ctx.addIssue({
+                code: 'custom',
+                path: [slot.localAmount],
+                message: 'Amount is required',
+              });
+            } else if (localAmount <= 0) {
+              ctx.addIssue({
+                code: 'custom',
+                path: [slot.localAmount],
+                message: 'Amount must be greater than 0',
+              });
+            }
+          }
+
+          // In a foreign currency every filled line needs a positive foreign amount; in the local
+          // currency leftover foreign amounts are ignored here, and the mapper never sends them
+          if (foreign) {
+            const foreignAmount = values[slot.foreignAmount];
+            if (!isPresent(foreignAmount)) {
+              ctx.addIssue({
+                code: 'custom',
+                path: [slot.foreignAmount],
+                message: `Foreign amount is required for ${values.currency} records`,
+              });
+            } else if (foreignAmount <= 0) {
+              ctx.addIssue({
+                code: 'custom',
+                path: [slot.foreignAmount],
+                message: 'Foreign amount must be greater than 0',
+              });
+            }
           }
         }
       },
-      {
-        // Run even while other fields are still invalid, so every problem shows at once; it only
-        // needs the currency and the foreign amounts themselves to have parsed
-        when: ({ value, issues }) =>
-          typeof value === 'object' &&
-          value !== null &&
-          !issues.some(issue => {
-            const [field] = issue.path ?? [];
-            return (
-              field === 'currency' ||
-              FOREIGN_AMOUNT_FIELDS.includes(field as (typeof FOREIGN_AMOUNT_FIELDS)[number])
-            );
-          }),
-      },
-    )
-    .superRefine((values, ctx) => {
-      const debitTotal = values.debitLocalAmount1;
-      const creditTotal = values.creditLocalAmount1;
-      if (Math.abs(debitTotal - creditTotal) > LEDGER_BALANCE_TOLERANCE + BALANCE_EPSILON) {
-        ctx.addIssue({
-          code: 'custom',
-          path: [LEDGER_BALANCE_ERROR_PATH],
-          message: `Debit and credit totals must be equal (debit ${roundAmount(debitTotal)}, credit ${roundAmount(creditTotal)})`,
-        });
-      }
-    });
+      { when: whenParsed(SLOT_RULE_FIELDS) },
+    );
 }
 
-function emptyToNull(value: string | undefined): string | null {
+function emptyToNull(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed || null;
 }
 
 /**
- * Map validated form values to the mutation's `LedgerRecordInput`. Only the main (slot-1) lines are
- * supported for now, so every secondary-line field is sent as `null`. Foreign amounts are sent only
- * for a foreign-currency record: in the local currency they are always `null`, even if the form
- * still holds stale ones, because the server rejects them there.
+ * Map validated form values to the mutation's `LedgerRecordInput`. An empty secondary line (no
+ * entity) is sent as `null`s. Foreign amounts are sent only for a foreign-currency record: in the
+ * local currency they are always `null`, even if the form still holds stale ones, because the
+ * server rejects them there.
  */
 export function formValuesToLedgerRecordInput(
   values: LedgerRecordFormValues,
   { localCurrency }: { localCurrency: Currency },
 ): LedgerRecordInput {
   const foreign = isForeignCurrency(values.currency, localCurrency);
+  const debit2 = secondaryLine(values, 'debit', foreign);
+  const credit2 = secondaryLine(values, 'credit', foreign);
   return {
     debitEntity1: values.debitEntity1,
     debitLocalAmount1: values.debitLocalAmount1,
@@ -207,16 +361,64 @@ export function formValuesToLedgerRecordInput(
     creditEntity1: values.creditEntity1,
     creditLocalAmount1: values.creditLocalAmount1,
     creditForeignAmount1: foreign ? (values.creditForeignAmount1 ?? null) : null,
-    debitEntity2: null,
-    debitLocalAmount2: null,
-    debitForeignAmount2: null,
-    creditEntity2: null,
-    creditLocalAmount2: null,
-    creditForeignAmount2: null,
+    debitEntity2: debit2.entity,
+    debitLocalAmount2: debit2.localAmount,
+    debitForeignAmount2: debit2.foreignAmount,
+    creditEntity2: credit2.entity,
+    creditLocalAmount2: credit2.localAmount,
+    creditForeignAmount2: credit2.foreignAmount,
     currency: values.currency,
     invoiceDate: values.invoiceDate,
     valueDate: values.valueDate,
     description: emptyToNull(values.description),
     reference: emptyToNull(values.reference),
+  };
+}
+
+/**
+ * Prefill values for editing a stored ledger record (`LedgerRecordForm` in edit mode). Entities come
+ * from the accounts, local amounts from the `localCurrency*` amounts and foreign amounts from the
+ * record's own amounts. An empty line or a missing foreign amount is `null` (a cleared value, see
+ * `LedgerRecordFormInput`), and a missing description or reference is ''.
+ */
+export function ledgerRecordToFormValues(
+  record: LedgerRecordsTableFieldsFragment,
+): LedgerRecordFormValues {
+  return {
+    currency: record.currency,
+    invoiceDate: record.invoiceDate,
+    valueDate: record.valueDate,
+    description: record.description ?? '',
+    reference: record.reference ?? '',
+    // A stored record always has both main entities; '' lets the form flag one that doesn't
+    debitEntity1: record.debitAccount1?.id ?? '',
+    debitLocalAmount1: record.localCurrencyDebitAmount1.raw,
+    debitForeignAmount1: record.debitAmount1?.raw ?? null,
+    creditEntity1: record.creditAccount1?.id ?? '',
+    creditLocalAmount1: record.localCurrencyCreditAmount1.raw,
+    creditForeignAmount1: record.creditAmount1?.raw ?? null,
+    debitEntity2: record.debitAccount2?.id ?? null,
+    debitLocalAmount2: record.localCurrencyDebitAmount2?.raw ?? null,
+    debitForeignAmount2: record.debitAmount2?.raw ?? null,
+    creditEntity2: record.creditAccount2?.id ?? null,
+    creditLocalAmount2: record.localCurrencyCreditAmount2?.raw ?? null,
+    creditForeignAmount2: record.creditAmount2?.raw ?? null,
+  };
+}
+
+function secondaryLine(
+  values: LedgerRecordFormValues,
+  side: LedgerSlotSide,
+  foreign: boolean,
+): { entity: string | null; localAmount: number | null; foreignAmount: number | null } {
+  const fields = ledgerSlotFieldNames(side, 2);
+  const entity = values[fields.entity];
+  if (!entity) {
+    return { entity: null, localAmount: null, foreignAmount: null };
+  }
+  return {
+    entity,
+    localAmount: values[fields.localAmount] ?? null,
+    foreignAmount: foreign ? (values[fields.foreignAmount] ?? null) : null,
   };
 }

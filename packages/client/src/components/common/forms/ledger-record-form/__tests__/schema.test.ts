@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { Currency, LedgerRecordOperation } from '../../../../../gql/graphql.js';
+import {
+  Currency,
+  LedgerRecordOperation,
+  type LedgerRecordsTableFieldsFragment,
+} from '../../../../../gql/graphql.js';
 import {
   buildLedgerRecordFormSchema,
   formValuesToLedgerRecordInput,
   LEDGER_BALANCE_TOLERANCE,
+  ledgerRecordToFormValues,
   type LedgerRecordFormInput,
 } from '../schema.js';
 
 const DEBIT_ENTITY = '11111111-1111-4111-8111-111111111111';
 const CREDIT_ENTITY = '22222222-2222-4222-8222-222222222222';
+const VAT_ENTITY = '33333333-3333-4333-8333-333333333333';
 
 function validValues(overrides: LedgerRecordFormInput = {}): LedgerRecordFormInput {
   return {
@@ -81,6 +87,15 @@ describe('buildLedgerRecordFormSchema', () => {
       const result = insertSchema.safeParse({ ...validValues(), [field]: undefined });
       expect(issuePaths(result)).toContain(field);
     });
+
+    it.each(['debitLocalAmount1', 'creditLocalAmount1'] as const)(
+      'requires %s when it was emptied (null)',
+      field => {
+        const result = insertSchema.safeParse(validValues({ [field]: null }));
+        expect(issuePaths(result)).toEqual([field]);
+        expect(result.error?.issues[0].message).toBe('Amount is required');
+      },
+    );
 
     it.each(['invoiceDate', 'valueDate'] as const)('requires a yyyy-mm-dd %s', field => {
       expect(issuePaths(insertSchema.safeParse({ ...validValues(), [field]: undefined }))).toContain(
@@ -164,6 +179,198 @@ describe('buildLedgerRecordFormSchema', () => {
         validValues({ debitLocalAmount1: 100.0051, creditLocalAmount1: 100 }),
       );
       expect(issuePaths(result)).toEqual(['balance']);
+      // Totals print as entered (only float noise is rounded off), like the server's message
+      expect(result.error?.issues[0].message).toBe(
+        'Debit and credit totals must be equal (debit 100.0051, credit 100)',
+      );
+    });
+
+    it('balances across all four lines', () => {
+      const result = insertSchema.safeParse(
+        validValues({
+          debitLocalAmount1: 100,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17,
+          creditLocalAmount1: 117,
+        }),
+      );
+      expect(result.success).toBe(true);
+
+      const creditSide = insertSchema.safeParse(
+        validValues({
+          debitLocalAmount1: 117,
+          creditLocalAmount1: 100,
+          creditEntity2: VAT_ENTITY,
+          creditLocalAmount2: 17,
+        }),
+      );
+      expect(creditSide.success).toBe(true);
+    });
+
+    it('rejects four lines that are off by 0.01', () => {
+      const result = insertSchema.safeParse(
+        validValues({
+          debitLocalAmount1: 100,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17.01,
+          creditLocalAmount1: 117,
+        }),
+      );
+      expect(issuePaths(result)).toEqual(['balance']);
+      expect(result.error?.issues[0].message).toBe(
+        'Debit and credit totals must be equal (debit 117.01, credit 117)',
+      );
+    });
+
+    it('is reported together with other field errors', () => {
+      const result = insertSchema.safeParse({
+        ...validValues({ debitLocalAmount1: 100, creditLocalAmount1: 99 }),
+        invoiceDate: undefined,
+      });
+      expect(issuePaths(result).sort()).toEqual(['balance', 'invoiceDate']);
+    });
+
+    it('is reported together with secondary-line errors', () => {
+      const result = insertSchema.safeParse(
+        validValues({ debitLocalAmount1: 100, creditLocalAmount1: 99, creditEntity2: VAT_ENTITY }),
+      );
+      expect(issuePaths(result).sort()).toEqual(['balance', 'creditLocalAmount2']);
+    });
+
+    it('is not checked while a main local amount is missing', () => {
+      const result = insertSchema.safeParse({ ...validValues(), creditLocalAmount1: undefined });
+      expect(issuePaths(result)).toEqual(['creditLocalAmount1']);
+    });
+  });
+
+  describe('secondary lines', () => {
+    it('are optional, whether left out or cleared', () => {
+      expect(insertSchema.safeParse(validValues()).success).toBe(true);
+      const cleared = insertSchema.safeParse(
+        validValues({
+          debitEntity2: null,
+          debitLocalAmount2: null,
+          debitForeignAmount2: null,
+          creditEntity2: '',
+          creditLocalAmount2: null,
+          creditForeignAmount2: null,
+        }),
+      );
+      expect(cleared.success).toBe(true);
+    });
+
+    it.each(['debit', 'credit'] as const)('%s 2: an entity needs an amount', side => {
+      const result = insertSchema.safeParse(validValues({ [`${side}Entity2`]: VAT_ENTITY }));
+      expect(issuePaths(result)).toEqual([`${side}LocalAmount2`]);
+      expect(result.error?.issues[0].message).toBe('Amount is required');
+    });
+
+    it.each([0, -5])('rejects a secondary amount of %s', amount => {
+      const result = insertSchema.safeParse(
+        validValues({
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: amount,
+          creditLocalAmount1: 100 + amount,
+        }),
+      );
+      expect(issuePaths(result)).toEqual(['debitLocalAmount2']);
+      expect(result.error?.issues[0].message).toBe('Amount must be greater than 0');
+    });
+
+    it.each(['debit', 'credit'] as const)(
+      '%s 2: an amount without an entity is reported on the entity',
+      side => {
+        const result = insertSchema.safeParse(
+          validValues({
+            [`${side}LocalAmount2`]: 17,
+            [side === 'debit' ? 'creditLocalAmount1' : 'debitLocalAmount1']: 117,
+          }),
+        );
+        expect(issuePaths(result)).toEqual([`${side}Entity2`]);
+        expect(result.error?.issues[0].message).toBe(
+          'Entity is required when an amount is entered',
+        );
+      },
+    );
+
+    it('reports a zero amount without an entity on the entity', () => {
+      const result = insertSchema.safeParse(validValues({ debitLocalAmount2: 0 }));
+      expect(issuePaths(result)).toEqual(['debitEntity2']);
+    });
+
+    it('reports secondary-line errors together with other field errors', () => {
+      const result = insertSchema.safeParse({
+        ...validValues({ debitEntity1: '', creditEntity2: VAT_ENTITY }),
+        valueDate: undefined,
+      });
+      expect(issuePaths(result).sort()).toEqual([
+        'creditLocalAmount2',
+        'debitEntity1',
+        'valueDate',
+      ]);
+    });
+
+    describe('in a foreign currency', () => {
+      const foreign = (overrides: LedgerRecordFormInput = {}): LedgerRecordFormInput =>
+        validValues({
+          currency: Currency.Usd,
+          debitForeignAmount1: 27,
+          creditForeignAmount1: 31.6,
+          creditLocalAmount1: 117,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17,
+          debitForeignAmount2: 4.6,
+          ...overrides,
+        });
+
+      it('accepts a filled secondary line with its foreign amount', () => {
+        expect(insertSchema.safeParse(foreign()).success).toBe(true);
+      });
+
+      it('requires a foreign amount on a filled secondary line', () => {
+        const result = insertSchema.safeParse(foreign({ debitForeignAmount2: undefined }));
+        expect(issuePaths(result)).toEqual(['debitForeignAmount2']);
+        expect(result.error?.issues[0].message).toBe('Foreign amount is required for USD records');
+      });
+
+      it('rejects a non-positive secondary foreign amount', () => {
+        const result = insertSchema.safeParse(foreign({ debitForeignAmount2: 0 }));
+        expect(issuePaths(result)).toEqual(['debitForeignAmount2']);
+        expect(result.error?.issues[0].message).toBe('Foreign amount must be greater than 0');
+      });
+
+      it('does not require foreign amounts on an empty secondary line', () => {
+        const result = insertSchema.safeParse(
+          foreign({
+            creditLocalAmount1: 100,
+            creditForeignAmount1: 27,
+            debitEntity2: null,
+            debitLocalAmount2: null,
+            debitForeignAmount2: null,
+          }),
+        );
+        expect(result.success).toBe(true);
+      });
+
+      it('reports a foreign amount without an entity on the entity', () => {
+        const result = insertSchema.safeParse(
+          foreign({ debitEntity2: '', debitLocalAmount2: null, creditLocalAmount1: 100 }),
+        );
+        expect(issuePaths(result)).toEqual(['debitEntity2']);
+      });
+    });
+
+    it('ignores leftover secondary foreign amounts in the local currency', () => {
+      const result = insertSchema.safeParse(
+        validValues({
+          creditLocalAmount1: 117,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17,
+          debitForeignAmount2: -1,
+          creditForeignAmount2: 3,
+        }),
+      );
+      expect(result.success).toBe(true);
     });
   });
 
@@ -317,6 +524,75 @@ describe('formValuesToLedgerRecordInput', () => {
     expect(input.creditForeignAmount1).toBe(27);
   });
 
+  it('nulls an empty secondary line, whether left out or cleared', () => {
+    const cleared = toInput(
+      validValues({
+        debitEntity2: '',
+        debitLocalAmount2: null,
+        debitForeignAmount2: null,
+        creditEntity2: null,
+        creditLocalAmount2: undefined,
+      }),
+    );
+    expect(cleared).toEqual(toInput(validValues()));
+    expect(cleared).toEqual(
+      expect.objectContaining({
+        debitEntity2: null,
+        debitLocalAmount2: null,
+        debitForeignAmount2: null,
+        creditEntity2: null,
+        creditLocalAmount2: null,
+        creditForeignAmount2: null,
+      }),
+    );
+  });
+
+  it('sends a filled secondary line without foreign amounts in the local currency', () => {
+    const input = toInput(
+      validValues({
+        creditLocalAmount1: 117,
+        debitEntity2: VAT_ENTITY,
+        debitLocalAmount2: 17,
+        debitForeignAmount2: 4.6,
+      }),
+    );
+    expect(input).toEqual(
+      expect.objectContaining({
+        debitEntity2: VAT_ENTITY,
+        debitLocalAmount2: 17,
+        debitForeignAmount2: null,
+        creditEntity2: null,
+        creditLocalAmount2: null,
+        creditForeignAmount2: null,
+      }),
+    );
+  });
+
+  it('sends a filled secondary line with its foreign amount in a foreign currency', () => {
+    const input = toInput(
+      validValues({
+        currency: Currency.Usd,
+        debitLocalAmount1: 117,
+        debitForeignAmount1: 31.6,
+        creditForeignAmount1: 27,
+        creditEntity2: VAT_ENTITY,
+        creditLocalAmount2: 17,
+        creditForeignAmount2: 4.6,
+      }),
+    );
+    expect(input).toEqual(
+      expect.objectContaining({
+        currency: Currency.Usd,
+        creditEntity2: VAT_ENTITY,
+        creditLocalAmount2: 17,
+        creditForeignAmount2: 4.6,
+        debitEntity2: null,
+        debitLocalAmount2: null,
+        debitForeignAmount2: null,
+      }),
+    );
+  });
+
   it('maps empty optional strings to null', () => {
     const input = toInput(validValues({ description: '', reference: '  ' }));
     expect(input.description).toBeNull();
@@ -325,5 +601,191 @@ describe('formValuesToLedgerRecordInput', () => {
 
   it('does not send the operation', () => {
     expect(toInput(validValues())).not.toHaveProperty('operation');
+  });
+});
+
+describe('ledgerRecordToFormValues', () => {
+  const account = (id: string, name: string) =>
+    ({ __typename: 'LtdFinancialEntity', id, name }) as const;
+  const amount = (raw: number, currency: Currency) => ({
+    raw,
+    currency,
+    formatted: `${raw} ${currency}`,
+  });
+
+  /** A stored local-currency record with one line per side, as the ledger table holds it */
+  function storedRecord(
+    overrides: Partial<LedgerRecordsTableFieldsFragment> = {},
+  ): LedgerRecordsTableFieldsFragment {
+    return {
+      id: '44444444-4444-4444-8444-444444444444',
+      locked: false,
+      currency: Currency.Ils,
+      invoiceDate: '2026-03-15',
+      valueDate: '2026-03-16',
+      description: 'Office supplies',
+      reference: 'REF-1',
+      debitAccount1: account(DEBIT_ENTITY, 'Debit Co'),
+      creditAccount1: account(CREDIT_ENTITY, 'Credit Co'),
+      debitAccount2: null,
+      creditAccount2: null,
+      localCurrencyDebitAmount1: { raw: 100, formatted: '100 ILS' },
+      localCurrencyCreditAmount1: { raw: 100, formatted: '100 ILS' },
+      localCurrencyDebitAmount2: null,
+      localCurrencyCreditAmount2: null,
+      debitAmount1: null,
+      creditAmount1: null,
+      debitAmount2: null,
+      creditAmount2: null,
+      ...overrides,
+    };
+  }
+
+  /** A stored USD record with VAT on Debit 2 and a second credit line */
+  const usdRecord = storedRecord({
+    currency: Currency.Usd,
+    debitAccount2: account(VAT_ENTITY, 'Input VAT'),
+    creditAccount2: account(CREDIT_ENTITY, 'Credit Co'),
+    localCurrencyDebitAmount1: { raw: 100, formatted: '100 ILS' },
+    localCurrencyCreditAmount1: { raw: 100, formatted: '100 ILS' },
+    localCurrencyDebitAmount2: { raw: 17, formatted: '17 ILS' },
+    localCurrencyCreditAmount2: { raw: 17, formatted: '17 ILS' },
+    debitAmount1: amount(27, Currency.Usd),
+    creditAmount1: amount(27, Currency.Usd),
+    debitAmount2: amount(4.6, Currency.Usd),
+    creditAmount2: amount(4.6, Currency.Usd),
+  });
+
+  it('maps a local-currency record', () => {
+    expect(ledgerRecordToFormValues(storedRecord())).toEqual({
+      currency: Currency.Ils,
+      invoiceDate: '2026-03-15',
+      valueDate: '2026-03-16',
+      description: 'Office supplies',
+      reference: 'REF-1',
+      debitEntity1: DEBIT_ENTITY,
+      debitLocalAmount1: 100,
+      debitForeignAmount1: null,
+      creditEntity1: CREDIT_ENTITY,
+      creditLocalAmount1: 100,
+      creditForeignAmount1: null,
+      debitEntity2: null,
+      debitLocalAmount2: null,
+      debitForeignAmount2: null,
+      creditEntity2: null,
+      creditLocalAmount2: null,
+      creditForeignAmount2: null,
+    });
+  });
+
+  it('maps a foreign-currency record with both secondary lines', () => {
+    expect(ledgerRecordToFormValues(usdRecord)).toEqual({
+      currency: Currency.Usd,
+      invoiceDate: '2026-03-15',
+      valueDate: '2026-03-16',
+      description: 'Office supplies',
+      reference: 'REF-1',
+      debitEntity1: DEBIT_ENTITY,
+      debitLocalAmount1: 100,
+      debitForeignAmount1: 27,
+      creditEntity1: CREDIT_ENTITY,
+      creditLocalAmount1: 100,
+      creditForeignAmount1: 27,
+      debitEntity2: VAT_ENTITY,
+      debitLocalAmount2: 17,
+      debitForeignAmount2: 4.6,
+      creditEntity2: CREDIT_ENTITY,
+      creditLocalAmount2: 17,
+      creditForeignAmount2: 4.6,
+    });
+  });
+
+  it('maps an empty secondary line to nulls, and a missing description or reference to empty', () => {
+    const values = ledgerRecordToFormValues(
+      storedRecord({
+        currency: Currency.Eur,
+        description: null,
+        reference: null,
+        debitAmount1: amount(90, Currency.Eur),
+        creditAmount1: amount(90, Currency.Eur),
+      }),
+    );
+    expect(values).toMatchObject({
+      currency: Currency.Eur,
+      description: '',
+      reference: '',
+      debitForeignAmount1: 90,
+      creditForeignAmount1: 90,
+      debitEntity2: null,
+      debitLocalAmount2: null,
+      debitForeignAmount2: null,
+      creditEntity2: null,
+      creditLocalAmount2: null,
+      creditForeignAmount2: null,
+    });
+  });
+
+  it('drops stored foreign amounts of a local-currency record when it is saved', () => {
+    // The server rejects foreign amounts on a local-currency record, so a stored record that has
+    // them (e.g. from before that rule) must have them cleared by its first edit
+    const values = ledgerRecordToFormValues(
+      storedRecord({
+        debitAmount1: amount(27, Currency.Ils),
+        creditAmount1: amount(27, Currency.Ils),
+      }),
+    );
+    const parsed = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    }).safeParse(values);
+    expect(parsed.success).toBe(true);
+    const input = formValuesToLedgerRecordInput(parsed.data!, { localCurrency: Currency.Ils });
+    expect(input.debitForeignAmount1).toBeNull();
+    expect(input.creditForeignAmount1).toBeNull();
+  });
+
+  it('flags a foreign-currency record that is missing a main foreign amount', () => {
+    const parsed = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    }).safeParse(ledgerRecordToFormValues({ ...usdRecord, debitAmount1: null }));
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues.map(issue => issue.path.join('.'))).toEqual([
+      'debitForeignAmount1',
+    ]);
+  });
+
+  it('passes the edit-mode schema and maps back to the stored values', () => {
+    const editSchema = buildLedgerRecordFormSchema({
+      mode: 'edit',
+      localCurrency: Currency.Ils,
+      ledgerLock: null,
+    });
+    for (const record of [storedRecord(), usdRecord]) {
+      const parsed = editSchema.safeParse(ledgerRecordToFormValues(record));
+      expect(parsed.success).toBe(true);
+      const input = formValuesToLedgerRecordInput(parsed.data!, { localCurrency: Currency.Ils });
+      expect(input).toEqual({
+        currency: record.currency,
+        invoiceDate: record.invoiceDate,
+        valueDate: record.valueDate,
+        description: record.description,
+        reference: record.reference,
+        debitEntity1: record.debitAccount1?.id,
+        debitLocalAmount1: record.localCurrencyDebitAmount1.raw,
+        debitForeignAmount1: record.debitAmount1?.raw ?? null,
+        creditEntity1: record.creditAccount1?.id,
+        creditLocalAmount1: record.localCurrencyCreditAmount1.raw,
+        creditForeignAmount1: record.creditAmount1?.raw ?? null,
+        debitEntity2: record.debitAccount2?.id ?? null,
+        debitLocalAmount2: record.localCurrencyDebitAmount2?.raw ?? null,
+        debitForeignAmount2: record.debitAmount2?.raw ?? null,
+        creditEntity2: record.creditAccount2?.id ?? null,
+        creditLocalAmount2: record.localCurrencyCreditAmount2?.raw ?? null,
+        creditForeignAmount2: record.creditAmount2?.raw ?? null,
+      });
+    }
   });
 });
