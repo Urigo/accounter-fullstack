@@ -6,6 +6,7 @@ import { dateToTimelessDateString } from '../../../../shared/helpers/misc.js';
 import {
   deriveDocumentFromLedgerInput,
   deriveMiscExpenseFromLedgerInput,
+  deriveNewChargeFromLedgerInput,
   LEDGER_BALANCE_TOLERANCE,
   ledgerRecordInputToParams,
   validateManualLedgerRecord,
@@ -483,6 +484,34 @@ describe('deriveMiscExpenseFromLedgerInput', () => {
         expect(dateToTimelessDateString(derived.valueDate)).toBe(valueDate);
       },
     );
+  });
+});
+
+describe('deriveNewChargeFromLedgerInput', () => {
+  it('describes the charge with the trimmed record description', () => {
+    expect(
+      deriveNewChargeFromLedgerInput({
+        ...MINIMAL_INPUT,
+        description: '  Office supplies  ',
+        reference: 'INV-1',
+      }),
+    ).toEqual({ userDescription: 'Office supplies' });
+  });
+
+  it('falls back to the trimmed reference when the description is missing or blank', () => {
+    expect(
+      deriveNewChargeFromLedgerInput({ ...MINIMAL_INPUT, reference: ' INV-1 ' }),
+    ).toEqual({ userDescription: 'INV-1' });
+    expect(
+      deriveNewChargeFromLedgerInput({ ...MINIMAL_INPUT, description: '   ', reference: 'INV-1' }),
+    ).toEqual({ userDescription: 'INV-1' });
+  });
+
+  it('leaves the charge without a description when neither is given', () => {
+    expect(deriveNewChargeFromLedgerInput(MINIMAL_INPUT)).toEqual({ userDescription: null });
+    expect(
+      deriveNewChargeFromLedgerInput({ ...MINIMAL_INPUT, description: null, reference: ' ' }),
+    ).toEqual({ userDescription: null });
   });
 });
 

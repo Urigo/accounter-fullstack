@@ -171,6 +171,19 @@ export function validateManualLedgerRecord(
   return errors;
 }
 
+/**
+ * Derive the charge a manual ledger record creates when it is inserted without one: it is described
+ * by the record's description, else its reference, else not at all. Everything else (status, owner)
+ * is left to the charge's defaults and the caller.
+ */
+export function deriveNewChargeFromLedgerInput(input: LedgerRecordInput): {
+  userDescription: string | null;
+} {
+  return {
+    userDescription: input.description?.trim() || input.reference?.trim() || null,
+  };
+}
+
 /** The misc expense a manual ledger record represents, before it is attached to a charge */
 export type ManualLedgerRecordMiscExpense = Omit<IInsertExpenseParams, 'chargeId' | 'ownerId'> & {
   amount: number;

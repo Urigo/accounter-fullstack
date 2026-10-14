@@ -23,9 +23,9 @@ export default gql`
     updateLedgerRecord(ledgerRecordId: UUID!, input: LedgerRecordInput!): UpdateLedgerRecordResult!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
-    " insert a manual ledger record under a charge, together with the business entity it represents "
+    " insert a manual ledger record under a charge (a new charge when chargeId is omitted), together with the business entity it represents "
     insertLedgerRecord(
-      chargeId: UUID!
+      chargeId: UUID
       operation: LedgerRecordOperation!
       input: LedgerRecordInput!
     ): InsertLedgerRecordResult!
