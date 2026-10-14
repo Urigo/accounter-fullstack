@@ -80,7 +80,10 @@ export function DocumentActionsMenu({
 
   return (
     <>
-      <DropdownMenu>
+      {/* Non-modal: a modal menu sets `pointer-events: none` on <body>, and the edit-document / image
+          drawers (vaul) mount while it is still set. Their Radix layer saves that value and puts it
+          back on close, which leaves the whole page unclickable. */}
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
