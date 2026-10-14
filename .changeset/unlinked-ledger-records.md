@@ -1,5 +1,6 @@
 ---
 '@accounter/server': patch
+'@accounter/client': patch
 ---
 
 Insert a manual ledger record without a charge.
@@ -11,3 +12,8 @@ Insert a manual ledger record without a charge.
   expense or document and the ledger record are saved on it. The charge, the entity and the record
   are saved together or not at all. The record is validated exactly as before, including the ledger
   lock date and entity ownership, before anything is written.
+
+**Client (`@accounter/client`)**
+
+- The business page's Ledger tab has a "+" that adds a ledger record on a new charge. Debit 1 starts
+  out as the business, and the tab refreshes once the record is saved.

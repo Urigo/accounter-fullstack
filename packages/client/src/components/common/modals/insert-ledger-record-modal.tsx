@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useMemo, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Currency } from '../../../gql/graphql.js';
 import { useInsertLedgerRecord } from '../../../hooks/use-insert-ledger-record.js';
@@ -20,17 +20,32 @@ import {
 import { Tooltip } from '../tooltip.js';
 
 type Props = {
-  chargeId: string;
-  /** Called after a record was inserted, to refresh the charge */
+  /** The charge to add the record to; without one, the server creates a new charge for it */
+  chargeId?: string;
+  /** A financial entity to prefill Debit 1 with, e.g. the business in view */
+  defaultEntityId?: string;
+  /** Called after a record was inserted, to refresh the host view */
   onDone: () => void;
 };
 
-/** "+" button that opens a dialog for manually adding a ledger record to a charge */
-export function InsertLedgerRecordModal({ chargeId, onDone }: Props): ReactElement {
+/**
+ * "+" button that opens a dialog for manually adding a ledger record to a charge, or, without a
+ * `chargeId`, to a new charge created with it
+ */
+export function InsertLedgerRecordModal({
+  chargeId,
+  defaultEntityId,
+  onDone,
+}: Props): ReactElement {
   const [open, setOpen] = useState(false);
   const { userContext } = useContext(UserContext);
   const localCurrency = (userContext?.context.defaultLocalCurrency || Currency.Ils) as Currency;
   const { fetching, insertLedgerRecord } = useInsertLedgerRecord();
+  const label = chargeId ? 'Add ledger record' : 'Add ledger record (new charge)';
+  const defaultValues = useMemo(
+    () => (defaultEntityId ? { debitEntity1: defaultEntityId } : undefined),
+    [defaultEntityId],
+  );
 
   const onSubmit = useCallback(
     async (values: LedgerRecordFormValues): Promise<void> => {
@@ -38,7 +53,7 @@ export function InsertLedgerRecordModal({ chargeId, onDone }: Props): ReactEleme
         return;
       }
       const result = await insertLedgerRecord({
-        chargeId,
+        ...(chargeId ? { chargeId } : {}),
         operation: values.operation,
         input: formValuesToLedgerRecordInput(values, { localCurrency }),
       });
@@ -53,9 +68,9 @@ export function InsertLedgerRecordModal({ chargeId, onDone }: Props): ReactEleme
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip content="Add ledger record" asChild>
+      <Tooltip content={label} asChild>
         <DialogTrigger asChild>
-          <Button variant="outline" size="icon" className="size-7.5" aria-label="Add ledger record">
+          <Button variant="outline" size="icon" className="size-7.5" aria-label={label}>
             <Plus className="size-5" />
           </Button>
         </DialogTrigger>
@@ -64,10 +79,19 @@ export function InsertLedgerRecordModal({ chargeId, onDone }: Props): ReactEleme
         <DialogHeader>
           <DialogTitle>Add ledger record</DialogTitle>
           <DialogDescription>
-            Creates the ledger record together with the misc expense or document it represents.
+            {chargeId
+              ? 'Creates the ledger record together with the misc expense or document it represents.'
+              : 'Creates a new charge, with the ledger record and the misc expense or document it represents.'}
           </DialogDescription>
         </DialogHeader>
-        {open && <LedgerRecordForm mode="insert" submitting={fetching} onSubmit={onSubmit} />}
+        {open && (
+          <LedgerRecordForm
+            mode="insert"
+            defaultValues={defaultValues}
+            submitting={fetching}
+            onSubmit={onSubmit}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
