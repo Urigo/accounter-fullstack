@@ -155,8 +155,42 @@ describe('useDocumentViewer', () => {
 
   it('resetDocumentViewerStore clears everything', () => {
     useDocumentViewer.getState().open(DOC_A, { trigger: document.createElement('button') });
+    useDocumentViewer.getState().suspend();
     resetDocumentViewerStore();
     expect(useDocumentViewer.getState().current).toBeNull();
+    expect(useDocumentViewer.getState().suspendCount).toBe(0);
     expect(getViewerTrigger()).toBeNull();
+  });
+});
+
+describe('useDocumentViewer suspend', () => {
+  it('counts suspensions and resumes', () => {
+    const resumeA = useDocumentViewer.getState().suspend();
+    const resumeB = useDocumentViewer.getState().suspend();
+    expect(useDocumentViewer.getState().suspendCount).toBe(2);
+    resumeA();
+    expect(useDocumentViewer.getState().suspendCount).toBe(1);
+    resumeB();
+    expect(useDocumentViewer.getState().suspendCount).toBe(0);
+  });
+
+  it('a resume function is idempotent', () => {
+    const resumeA = useDocumentViewer.getState().suspend();
+    useDocumentViewer.getState().suspend();
+    resumeA();
+    resumeA();
+    expect(useDocumentViewer.getState().suspendCount).toBe(1);
+  });
+
+  it('keeps the open document while suspended, and close() leaves the count alone', () => {
+    useDocumentViewer.getState().open(DOC_A);
+    const resume = useDocumentViewer.getState().suspend();
+    expect(useDocumentViewer.getState().current?.id).toBe('doc-a');
+    expect(useDocumentViewer.getState().placement).toBe('docked');
+
+    useDocumentViewer.getState().close();
+    expect(useDocumentViewer.getState().suspendCount).toBe(1);
+    resume();
+    expect(useDocumentViewer.getState().suspendCount).toBe(0);
   });
 });

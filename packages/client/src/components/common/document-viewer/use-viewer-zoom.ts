@@ -260,7 +260,9 @@ export function useViewerZoom(): ViewerZoom {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const m = model.current;
-        if (!m.natural) {
+        // A hidden viewer (`display: none`, kept mounted to keep its state) has no size; fitting or
+        // clamping against 0×0 would throw the zoom and scroll away. It resizes again when shown.
+        if (!m.natural || el.clientWidth === 0 || el.clientHeight === 0) {
           return;
         }
         if (m.mode === 'custom') {
