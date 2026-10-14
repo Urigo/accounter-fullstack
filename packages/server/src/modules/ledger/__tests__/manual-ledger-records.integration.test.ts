@@ -730,6 +730,193 @@ describe('Manual ledger records (DB)', () => {
     });
   });
 
+  describe('without a charge', () => {
+    /** The suite owner's charges other than the fixture charge: those the mutation created */
+    function newChargesOfOwner() {
+      return queryRows<{ id: string; user_description: string | null; accountant_status: string }>(
+        `SELECT id, user_description, accountant_status::text
+         FROM ${qualifyTable('charges')} WHERE owner_id = $1 AND id <> $2`,
+        [OWNER_ID, chargeId],
+      );
+    }
+
+    function rowsOfCharge(table: 'ledger_records' | 'misc_expenses' | 'documents', id: string) {
+      return queryRows<Record<string, string | number | null>>(
+        `SELECT * FROM ${qualifyTable(table)} WHERE charge_id = $1`,
+        [id],
+      );
+    }
+
+    /** The suite owner's misc expenses, documents and ledger records outside the fixture charge */
+    async function entityRowsOutsideFixtureCharge() {
+      const counts: Record<string, number> = {};
+      for (const table of ['misc_expenses', 'documents', 'ledger_records']) {
+        const [row] = await queryRows<{ count: number }>(
+          `SELECT count(*)::int AS count FROM ${qualifyTable(table)}
+           WHERE owner_id = $1 AND charge_id <> $2`,
+          [OWNER_ID, chargeId],
+        );
+        counts[table] = row?.count ?? 0;
+      }
+      return counts;
+    }
+
+    const NOTHING_WRITTEN = { misc_expenses: 0, documents: 0, ledger_records: 0 };
+
+    it('creates an unapproved charge described by the record, with its misc expense and record', async () => {
+      const result = await insertManualLedgerRecord(newContext().injector, {
+        operation: 'MISC_EXPENSE',
+        input: miscExpenseInput(),
+      });
+      expect(result).not.toHaveProperty('message');
+
+      const newCharges = await newChargesOfOwner();
+      expect(newCharges).toEqual([
+        {
+          id: expect.any(String),
+          user_description: 'Office supplies',
+          accountant_status: 'UNAPPROVED',
+        },
+      ]);
+      const newChargeId = newCharges[0]!.id;
+      expect((result as { charge: { id: string } }).charge.id).toBe(newChargeId);
+
+      const expenses = await rowsOfCharge('misc_expenses', newChargeId);
+      expect(expenses).toHaveLength(1);
+      expect(expenses[0]).toMatchObject({
+        owner_id: OWNER_ID,
+        creditor_id: SUPPLIER_ID,
+        debtor_id: EXPENSE_TAX_CATEGORY_ID,
+      });
+      const ledgerRows = await rowsOfCharge('ledger_records', newChargeId);
+      expect(ledgerRows).toHaveLength(1);
+      expect(ledgerRows[0]).toMatchObject({
+        id: (result as { record: { id: string } }).record.id,
+        owner_id: OWNER_ID,
+        debit_entity1: EXPENSE_TAX_CATEGORY_ID,
+        credit_entity1: SUPPLIER_ID,
+        description: 'Office supplies',
+      });
+
+      // Nothing was attached to the fixture charge
+      expect(await miscExpensesOfCharge()).toEqual([]);
+      expect(await ledgerRowsOfCharge()).toEqual([]);
+    });
+
+    it('creates a charge with the derived INVOICE and the record, described by the reference when there is no description', async () => {
+      const result = await insertManualLedgerRecord(newContext().injector, {
+        operation: 'DOCUMENT',
+        input: vatInvoiceInput({ description: null }),
+      });
+      expect(result).not.toHaveProperty('message');
+
+      const newCharges = await newChargesOfOwner();
+      expect(newCharges).toEqual([
+        { id: expect.any(String), user_description: 'INV-1001', accountant_status: 'UNAPPROVED' },
+      ]);
+      const newChargeId = newCharges[0]!.id;
+
+      const documents = await rowsOfCharge('documents', newChargeId);
+      expect(documents).toHaveLength(1);
+      expect(documents[0]).toMatchObject({
+        type: 'INVOICE',
+        owner_id: OWNER_ID,
+        creditor_id: SUPPLIER_ID,
+        debtor_id: OWNER_ID,
+        serial_number: 'INV-1001',
+      });
+      expect(Number(documents[0]!.total_amount)).toBe(1170);
+      expect(Number(documents[0]!.vat_amount)).toBe(170);
+      expect(await rowsOfCharge('misc_expenses', newChargeId)).toEqual([]);
+      const ledgerRows = await rowsOfCharge('ledger_records', newChargeId);
+      expect(ledgerRows).toHaveLength(1);
+      expect(ledgerRows[0]).toMatchObject({
+        owner_id: OWNER_ID,
+        debit_entity2: INPUT_VAT_TAX_CATEGORY_ID,
+        reference1: 'INV-1001',
+      });
+    });
+
+    it('rolls the new charge and its misc expense back when the ledger insert fails', async () => {
+      const context = newContext();
+      // Not mocked: the charge and the misc expense really are written inside the transaction first
+      const insertExpense = vi.spyOn(context.injector.get(MiscExpensesProvider), 'insertExpense');
+      const insertLedgerRecords = vi
+        .spyOn(context.injector.get(LedgerProvider), 'insertLedgerRecords')
+        .mockRejectedValue(new Error('simulated ledger insert failure'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await insertManualLedgerRecord(context.injector, {
+        operation: 'MISC_EXPENSE',
+        input: miscExpenseInput(),
+      });
+
+      expect(result).toEqual({
+        __typename: 'CommonError',
+        message: 'Failed to insert ledger record with a new charge',
+      });
+      await expect(insertExpense.mock.results[0]?.value).resolves.toHaveLength(1);
+      expect(insertLedgerRecords).toHaveBeenCalledOnce();
+      expect(await newChargesOfOwner()).toEqual([]);
+      expect(await entityRowsOutsideFixtureCharge()).toEqual(NOTHING_WRITTEN);
+    });
+
+    it('rolls the new charge and its document back when the ledger insert fails', async () => {
+      const context = newContext();
+      vi.spyOn(context.injector.get(LedgerProvider), 'insertLedgerRecords').mockRejectedValue(
+        new Error('simulated ledger insert failure'),
+      );
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await insertManualLedgerRecord(context.injector, {
+        operation: 'DOCUMENT',
+        input: vatInvoiceInput(),
+      });
+
+      expect(result).toMatchObject({ __typename: 'CommonError' });
+      expect(await newChargesOfOwner()).toEqual([]);
+      expect(await entityRowsOutsideFixtureCharge()).toEqual(NOTHING_WRITTEN);
+    });
+
+    it('rejects a record dated on the ledger lock date and creates no charge', async () => {
+      await withClient(client =>
+        client.query(
+          `UPDATE ${qualifyTable('user_context')} SET ledger_lock = '2025-03-10' WHERE owner_id = $1`,
+          [OWNER_ID],
+        ),
+      );
+
+      const result = await insertManualLedgerRecord(newContext().injector, {
+        operation: 'MISC_EXPENSE',
+        input: miscExpenseInput({ invoiceDate: date('2025-03-10') }),
+      });
+
+      expect(result).toMatchObject({ __typename: 'CommonError' });
+      expect((result as { message: string }).message).toContain('ledger lock date');
+      expect(await newChargesOfOwner()).toEqual([]);
+      expect(await entityRowsOutsideFixtureCharge()).toEqual(NOTHING_WRITTEN);
+    });
+
+    it('rejects an entity of another business and creates no charge', async () => {
+      const result = await insertManualLedgerRecord(newContext().injector, {
+        operation: 'MISC_EXPENSE',
+        input: miscExpenseInput({ debitEntity1: FOREIGN_TAX_CATEGORY_ID }),
+      });
+
+      expect(result).toMatchObject({ __typename: 'CommonError' });
+      expect((result as { message: string }).message).toContain(
+        `Financial entity with id ${FOREIGN_TAX_CATEGORY_ID} not found in this business`,
+      );
+      expect(await newChargesOfOwner()).toEqual([]);
+      expect(await entityRowsOutsideFixtureCharge()).toEqual(NOTHING_WRITTEN);
+      const [otherOwnerCharges] = await queryRows<{ count: number }>(
+        `SELECT count(*)::int AS count FROM ${qualifyTable('charges')} WHERE owner_id = $1`,
+        [OTHER_OWNER_ID],
+      );
+      expect(otherOwnerCharges?.count).toBe(0);
+    });
+  });
+
   describe('matching the generated ledger', () => {
     async function compareWithGenerated() {
       const context = newContext();

@@ -1,36 +1,51 @@
-import { useCallback, useContext, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useMemo, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Currency } from '../../../gql/graphql.js';
 import { useInsertLedgerRecord } from '../../../hooks/use-insert-ledger-record.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { Button } from '../../ui/button.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../../ui/dialog.js';
+import { Dialog, DialogTrigger } from '../../ui/dialog.js';
+import { useLedgerFormLang } from '../forms/ledger-record-form/i18n.js';
 import { LedgerRecordForm } from '../forms/ledger-record-form/index.js';
 import {
   formValuesToLedgerRecordInput,
   type LedgerRecordFormValues,
 } from '../forms/ledger-record-form/schema.js';
+import { LEDGER_FORM_STRINGS } from '../forms/ledger-record-form/strings.js';
 import { Tooltip } from '../tooltip.js';
+import { LedgerRecordDialogContent } from './ledger-record-dialog-content.js';
 
 type Props = {
-  chargeId: string;
-  /** Called after a record was inserted, to refresh the charge */
+  /** The charge to add the record to; without one, the server creates a new charge for it */
+  chargeId?: string;
+  /** A financial entity to prefill Debit 1 with, e.g. the business in view */
+  defaultEntityId?: string;
+  /** Called after a record was inserted, to refresh the host view */
   onDone: () => void;
 };
 
-/** "+" button that opens a dialog for manually adding a ledger record to a charge */
-export function InsertLedgerRecordModal({ chargeId, onDone }: Props): ReactElement {
+/**
+ * "+" button that opens a dialog for manually adding a ledger record to a charge, or, without a
+ * `chargeId`, to a new charge created with it
+ */
+export function InsertLedgerRecordModal({
+  chargeId,
+  defaultEntityId,
+  onDone,
+}: Props): ReactElement {
   const [open, setOpen] = useState(false);
   const { userContext } = useContext(UserContext);
   const localCurrency = (userContext?.context.defaultLocalCurrency || Currency.Ils) as Currency;
   const { fetching, insertLedgerRecord } = useInsertLedgerRecord();
+  const { strings } = useLedgerFormLang();
+  // The trigger sits among the app's English UI, so only the dialog follows the chosen language
+  const label = chargeId
+    ? LEDGER_FORM_STRINGS.en.insertTitle
+    : LEDGER_FORM_STRINGS.en.insertNewChargeTitle;
+  const defaultValues = useMemo(
+    () => (defaultEntityId ? { debitEntity1: defaultEntityId } : undefined),
+    [defaultEntityId],
+  );
 
   const onSubmit = useCallback(
     async (values: LedgerRecordFormValues): Promise<void> => {
@@ -38,7 +53,7 @@ export function InsertLedgerRecordModal({ chargeId, onDone }: Props): ReactEleme
         return;
       }
       const result = await insertLedgerRecord({
-        chargeId,
+        ...(chargeId ? { chargeId } : {}),
         operation: values.operation,
         input: formValuesToLedgerRecordInput(values, { localCurrency }),
       });
@@ -53,22 +68,26 @@ export function InsertLedgerRecordModal({ chargeId, onDone }: Props): ReactEleme
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Tooltip content="Add ledger record" asChild>
+      <Tooltip content={label} asChild>
         <DialogTrigger asChild>
-          <Button variant="outline" size="icon" className="size-7.5" aria-label="Add ledger record">
+          <Button variant="outline" size="icon" className="size-7.5" aria-label={label}>
             <Plus className="size-5" />
           </Button>
         </DialogTrigger>
       </Tooltip>
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Add ledger record</DialogTitle>
-          <DialogDescription>
-            Creates the ledger record together with the misc expense or document it represents.
-          </DialogDescription>
-        </DialogHeader>
-        {open && <LedgerRecordForm mode="insert" submitting={fetching} onSubmit={onSubmit} />}
-      </DialogContent>
+      <LedgerRecordDialogContent
+        title={strings.insertTitle}
+        description={chargeId ? strings.insertDescription : strings.insertNewChargeDescription}
+      >
+        {open && (
+          <LedgerRecordForm
+            mode="insert"
+            defaultValues={defaultValues}
+            submitting={fetching}
+            onSubmit={onSubmit}
+          />
+        )}
+      </LedgerRecordDialogContent>
     </Dialog>
   );
 }

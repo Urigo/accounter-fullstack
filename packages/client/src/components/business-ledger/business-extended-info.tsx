@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -17,6 +17,7 @@ import {
   type BusinessTransactionsFilter,
 } from '../../gql/graphql.js';
 import { Pagination } from '../common/index.js';
+import { InsertLedgerRecordModal } from '../common/modals/insert-ledger-record-modal.js';
 import { Button } from '../ui/button.js';
 import {
   DropdownMenu,
@@ -82,6 +83,11 @@ export type ExtendedLedger = Extract<
 interface Props {
   businessID: string;
   filter?: Pick<BusinessTransactionsFilter, 'fromDate' | 'ownerIds' | 'toDate'>;
+  /**
+   * Opts in to a "+" that inserts a ledger record (on a new charge) for this entity; called after
+   * a successful insert, once this view's own records are refetching, so the host can refresh too
+   */
+  onInsertLedgerRecord?: () => void;
 }
 
 const STORAGE_KEY_PREFIX = 'businessLedger';
@@ -90,7 +96,11 @@ const STORAGE_KEYS = {
   COLUMN_VISIBILITY: `${STORAGE_KEY_PREFIX}_columnVisibility`,
 } as const;
 
-export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElement {
+export function BusinessExtendedInfo({
+  businessID,
+  filter,
+  onInsertLedgerRecord,
+}: Props): ReactElement {
   // Load initial state from localStorage
   const [sorting, setSorting] = useState<SortingState>(() => {
     try {
@@ -117,7 +127,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   }, [sorting]);
 
   const { fromDate, ownerIds, toDate } = filter ?? {};
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, reexecuteQuery] = useQuery({
     query: BusinessLedgerInfoDocument,
     variables: {
       filters: {
@@ -128,6 +138,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
       },
     },
   });
+
+  const onLedgerRecordInserted = useCallback(() => {
+    reexecuteQuery({ requestPolicy: 'network-only' });
+    onInsertLedgerRecord?.();
+  }, [reexecuteQuery, onInsertLedgerRecord]);
 
   const ledgerRecords = useMemo(
     () =>
@@ -314,12 +329,17 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <DownloadCSV
-          ledgerRecords={extendedLedgerRecords}
-          businessName={businessName}
-          fromDate={filter?.fromDate ?? undefined}
-          toDate={filter?.toDate ?? undefined}
-        />
+        <div className="flex items-center gap-2">
+          {onInsertLedgerRecord && (
+            <InsertLedgerRecordModal defaultEntityId={businessID} onDone={onLedgerRecordInserted} />
+          )}
+          <DownloadCSV
+            ledgerRecords={extendedLedgerRecords}
+            businessName={businessName}
+            fromDate={filter?.fromDate ?? undefined}
+            toDate={filter?.toDate ?? undefined}
+          />
+        </div>
       </div>
       <div className="rounded-md border overflow-x-auto">
         <Table>

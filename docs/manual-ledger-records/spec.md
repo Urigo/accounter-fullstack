@@ -293,6 +293,65 @@ one `TenantAwareDBClient` transaction. If any write fails, none is kept.
   - The server rejecting a locked record edit, an insert on a locked charge, and an invalid record
     when called directly.
 
+### Ledger records without a charge
+
+A follow-up planned in [`unlinked-ledger-record.md`](./unlinked-ledger-record.md) and shipped as
+five stacked PRs: step 1 is based on the POC's step 10 branch, step 2 and step 3 on step 1, step 4
+on step 3, and step 5 on step 4.
+
+| Step | PR    | What it added                                                                                                                                                                                                  |
+| ---- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | #4712 | `insertLedgerRecord`'s `chargeId` is optional. Without it, a new charge of the write-target business is created in the same transaction as the backing entity and the record, so all three roll back together. |
+| 2    | #4713 | DB-backed tests for inserting without a charge: the stored charge and rows, rollback of the new charge, the lock date, and an entity of another business.                                                      |
+| 3    | #4714 | `InsertLedgerRecordModal` without a `chargeId` (with `defaultEntityId` prefilling Debit 1), and a "+" on the business page's Ledger tab that refetches the tab.                                                |
+| 4    | #4715 | An opt-in "+" in `BusinessExtendedInfo`, turned on only by the trial balance report's expanded entity rows. An insert refetches the expanded records and the report totals, keeping expanded rows open.        |
+| 5    | —     | Verification and this section.                                                                                                                                                                                 |
+
+Decisions (`unlinked-ledger-record.md` §1.4), as shipped:
+
+1. **One mutation with an optional `chargeId`**, not a second mutation. Making the argument optional
+   is a non-breaking schema change.
+2. **The new charge** belongs to the admin context's `ownerId` and is `UNAPPROVED`, with
+   `generateCharge`'s other defaults. Its `user_description` is the record's trimmed description,
+   else its trimmed reference, else `null`.
+3. **Debit 1 is prefilled** with the entity in view (the business, or the trial balance entity). The
+   user can change it.
+4. **Only the trial balance opts in** among `BusinessExtendedInfo`'s five hosts.
+5. **One changeset**, `.changeset/unlinked-ledger-records.md`, grown across the steps.
+
+Rule changes without a charge:
+
+- There is no charge to load, owner-check or lock-check.
+- The lock date and entity-ownership rules still apply, and are checked before anything is written.
+- The new charge isn't re-flagged for approval, since it starts out `UNAPPROVED`.
+
+Other choices made during implementation:
+
+- `validateLedgerRecordParams` reads only the record's content, so a record whose charge doesn't
+  exist yet passes an empty placeholder `chargeId` to it.
+- The "+" is not gated by business ownership, matching the business page's other actions. An entity
+  outside the write target is rejected by the server as "not found in this business", and the dialog
+  stays open.
+- Without a charge, the success toast reads "Ledger record created on a new charge". A record dated
+  outside the trial balance's range doesn't show in it.
+- Refreshing the trial balance after an insert keeps the table mounted rather than showing the
+  spinner, so expanded rows stay open. The trial balance provides its refresh through a small
+  context (`trial-balance-refresh-context.ts`) instead of drilling it through four components.
+
+Verification:
+
+- Unit, client and integration tests ran against a local Postgres, and the full
+  `yarn test:integration` passed twice.
+- Lint, prettier, the client type check, the server type check (except its 2 existing errors) and
+  `graphql:validate` all pass.
+- Real-browser QA of the two new entry points has **not** been run yet.
+
+Deferred:
+
+- "+" in the other `BusinessExtendedInfo` hosts (business ledger list and single views, business
+  balance section, dynamic report tree node).
+- Choosing an existing charge from those entry points instead of always creating one.
+
 ### Deferred
 
 - **The TRANSACTION operation.** It needs a manual transaction source, a migration and an account

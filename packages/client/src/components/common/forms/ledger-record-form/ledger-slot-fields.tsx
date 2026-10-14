@@ -9,6 +9,7 @@ import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form.
 import { Label } from '../../../ui/label.js';
 import { ComboBox } from '../../inputs/combo-box.js';
 import { NumberInput } from '../../inputs/number-input.js';
+import { useLedgerFormLang } from './i18n.js';
 import {
   ledgerSlotFieldNames,
   type LedgerRecordFormInput,
@@ -44,19 +45,14 @@ type Props = {
 const CELL_CLASS = 'min-w-0 grid-cols-1';
 
 /**
- * Right padding that keeps typed digits clear of the currency symbol drawn inside the input:
+ * End padding (right, or left in a right-to-left form) that keeps typed digits clear of the
+ * currency symbol drawn inside the input:
  * `$` / `€` (1 character), `C$` / `A$` / `kr` (2), `GRT` / `ETH` / `USDC` (3-4).
  */
 function symbolPadding(symbol: string): string {
-  if (symbol.length <= 1) return 'pr-8';
-  if (symbol.length === 2) return 'pr-10';
-  return 'pr-14';
-}
-
-/** "Debit" / "Credit" for a main line, "Debit 2" / "Credit 2" for a secondary one */
-function slotLabel(side: LedgerSlotSide, index: LedgerSlotIndex): string {
-  const name = side === 'debit' ? 'Debit' : 'Credit';
-  return index === 1 ? name : `${name} ${index}`;
+  if (symbol.length <= 1) return 'pe-8';
+  if (symbol.length === 2) return 'pe-10';
+  return 'pe-14';
 }
 
 /**
@@ -79,7 +75,8 @@ export function LedgerSlotFields({
   clearCount = 0,
 }: Props): ReactElement {
   const { control } = useFormContext<LedgerRecordFormInput>();
-  const label = slotLabel(side, index);
+  const { strings } = useLedgerFormLang();
+  const label = strings.slotLabel(strings[side], index);
   const fields = ledgerSlotFieldNames(side, index);
   const entityId = useId();
   const foreignSymbol = currency ? currencyCodeToSymbol(currency) : null;
@@ -98,8 +95,8 @@ export function LedgerSlotFields({
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={`Clear ${label}`}
-            title={`Clear ${label}`}
+            aria-label={strings.clearSlot(label)}
+            title={strings.clearSlot(label)}
             onClick={onClear}
           >
             <X />
@@ -119,9 +116,9 @@ export function LedgerSlotFields({
                 value={field.value ?? null}
                 onChange={value => field.onChange(value ?? '')}
                 disabled={fetchingEntities}
-                placeholder={`${label} entity`}
+                placeholder={strings.entityPlaceholder(label)}
                 // A secondary line is optional, so its entity can be unpicked
-                clearLabel={required ? undefined : 'None'}
+                clearLabel={required ? undefined : strings.noEntity}
                 triggerProps={{
                   // Drop the trigger's minimum width so it fits a narrow column, and show a long
                   // (truncated) name in full on hover
@@ -149,9 +146,11 @@ export function LedgerSlotFields({
                 value={field.value ?? undefined}
                 // An emptied amount is `null`, so a re-mount can't bring the default back
                 onChange={value => field.onChange(value ?? null)}
-                aria-label={`${label} amount`}
+                aria-label={strings.amountLabel(label)}
                 aria-required={required}
-                placeholder={showForeign ? 'Local amount' : 'Amount'}
+                placeholder={
+                  showForeign ? strings.localAmountPlaceholder : strings.amountPlaceholder
+                }
                 hideControls
                 decimalScale={2}
                 min={0}
@@ -167,7 +166,7 @@ export function LedgerSlotFields({
           name={fields.foreignAmount}
           render={({ field }) => (
             <FormItem className={CELL_CLASS}>
-              {/* The record's currency symbol sits inside the input, like a suffix */}
+              {/* The record's currency symbol sits inside the input, at its end, like a suffix */}
               <div className="relative">
                 <FormControl>
                   <NumberInput
@@ -177,10 +176,9 @@ export function LedgerSlotFields({
                     onBlur={field.onBlur}
                     value={field.value ?? undefined}
                     onChange={value => field.onChange(value ?? null)}
-                    aria-label={`${label} foreign amount`}
+                    aria-label={strings.foreignAmountLabel(label)}
                     aria-required={required}
-                    // Short, so the currency symbol beside it doesn't clip it in a narrow column
-                    placeholder="Foreign"
+                    placeholder={strings.foreignAmountPlaceholder}
                     // Room for the symbol. Only passed with one: NumberInput's own classes give way
                     // to a `className`
                     {...(foreignSymbol && { className: symbolPadding(foreignSymbol) })}
@@ -193,7 +191,7 @@ export function LedgerSlotFields({
                   <span
                     data-testid="foreign-currency-symbol"
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-gray-500 dark:text-gray-400"
+                    className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-sm text-gray-500 dark:text-gray-400"
                   >
                     {foreignSymbol}
                   </span>

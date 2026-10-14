@@ -7,6 +7,7 @@ import {
 } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
+import { LEDGER_FORM_STRINGS, type LedgerFormMessages } from './strings.js';
 
 /**
  * The largest gap allowed between the debit and credit local totals. Mirrors the server's
@@ -50,7 +51,7 @@ export type LedgerRecordFormValues = {
   creditForeignAmount2?: number | null;
 };
 
-export const TIMELESS_DATE_FORMAT_MESSAGE = 'Date must be in format yyyy-mm-dd';
+export const TIMELESS_DATE_FORMAT_MESSAGE = LEDGER_FORM_STRINGS.en.messages.dateFormat;
 
 /**
  * Whether the raw text of a date input is something the date picker cannot parse. The picker only
@@ -188,6 +189,8 @@ type BuildLedgerRecordFormSchemaOptions = {
   mode: LedgerRecordFormMode;
   localCurrency: Currency;
   ledgerLock?: string | null;
+  /** Validation messages, in the form's language. Defaults to English. */
+  messages?: LedgerFormMessages;
 };
 
 /** Drops float noise (e.g. `0.30000000000000004`) so totals print as entered, like the server */
@@ -211,25 +214,26 @@ export function buildLedgerRecordFormSchema({
   mode,
   localCurrency,
   ledgerLock,
+  messages = LEDGER_FORM_STRINGS.en.messages,
 }: BuildLedgerRecordFormSchemaOptions): z.ZodType<LedgerRecordFormValues, LedgerRecordFormInput> {
   // Both dates must be strictly after the lock date, matching the server (and `lockLedgerRecords`,
   // which locks every record dated on or before it). yyyy-mm-dd strings compare chronologically.
   const timelessDate = z
-    .string({ message: 'Date is required' })
-    .regex(TIMELESS_DATE_REGEX, TIMELESS_DATE_FORMAT_MESSAGE)
-    .refine(date => !ledgerLock || date > ledgerLock, `Date must be after ${ledgerLock}`)
+    .string({ message: messages.dateRequired })
+    .regex(TIMELESS_DATE_REGEX, messages.dateFormat)
+    .refine(date => !ledgerLock || date > ledgerLock, messages.dateAfterLock(ledgerLock ?? ''))
     .transform(date => date as TimelessDateString);
 
-  const entity = z.string({ message: 'Entity is required' }).min(1, 'Entity is required');
-  const amount = z.number({ message: 'Amount is required' }).gt(0, 'Amount must be greater than 0');
+  const entity = z.string({ message: messages.entityRequired }).min(1, messages.entityRequired);
+  const amount = z.number({ message: messages.amountRequired }).gt(0, messages.amountPositive);
   // The optional values are checked against the line's entity and the currency in the record-level
   // refinements below
   const optionalEntity = z.string().nullish();
-  const optionalAmount = z.number({ message: 'Amount must be a number' }).nullish();
-  const foreignAmount = z.number({ message: 'Foreign amount must be a number' }).nullish();
+  const optionalAmount = z.number({ message: messages.amountNumber }).nullish();
+  const foreignAmount = z.number({ message: messages.foreignAmountNumber }).nullish();
 
   const base = z.object({
-    currency: z.enum(Currency, { message: 'Currency is required' }),
+    currency: z.enum(Currency, { message: messages.currencyRequired }),
     invoiceDate: timelessDate,
     valueDate: timelessDate,
     description: z.string().optional(),
@@ -252,7 +256,7 @@ export function buildLedgerRecordFormSchema({
   const shape =
     mode === 'insert'
       ? base.extend({
-          operation: z.enum(LedgerRecordOperation, { message: 'Operation is required' }),
+          operation: z.enum(LedgerRecordOperation, { message: messages.operationRequired }),
         })
       : base;
 
@@ -265,7 +269,7 @@ export function buildLedgerRecordFormSchema({
           ctx.addIssue({
             code: 'custom',
             path: [LEDGER_BALANCE_ERROR_PATH],
-            message: `Debit and credit totals must be equal (debit ${roundAmount(totals.debit)}, credit ${roundAmount(totals.credit)})`,
+            message: messages.unbalanced(roundAmount(totals.debit), roundAmount(totals.credit)),
           });
         }
       },
@@ -289,7 +293,7 @@ export function buildLedgerRecordFormSchema({
               ctx.addIssue({
                 code: 'custom',
                 path: [slot.entity],
-                message: 'Entity is required when an amount is entered',
+                message: messages.entityRequiredWithAmount,
               });
             }
             continue;
@@ -301,13 +305,13 @@ export function buildLedgerRecordFormSchema({
               ctx.addIssue({
                 code: 'custom',
                 path: [slot.localAmount],
-                message: 'Amount is required',
+                message: messages.amountRequired,
               });
             } else if (localAmount <= 0) {
               ctx.addIssue({
                 code: 'custom',
                 path: [slot.localAmount],
-                message: 'Amount must be greater than 0',
+                message: messages.amountPositive,
               });
             }
           }
@@ -320,13 +324,13 @@ export function buildLedgerRecordFormSchema({
               ctx.addIssue({
                 code: 'custom',
                 path: [slot.foreignAmount],
-                message: `Foreign amount is required for ${values.currency} records`,
+                message: messages.foreignAmountRequired(values.currency),
               });
             } else if (foreignAmount <= 0) {
               ctx.addIssue({
                 code: 'custom',
                 path: [slot.foreignAmount],
-                message: 'Foreign amount must be greater than 0',
+                message: messages.foreignAmountPositive,
               });
             }
           }
