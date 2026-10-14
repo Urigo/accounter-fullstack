@@ -21,6 +21,7 @@ import { validateLedgerRecordParams } from './ledger-validation.helper.js';
 import {
   deriveDocumentFromLedgerInput,
   deriveMiscExpenseFromLedgerInput,
+  deriveNewChargeFromLedgerInput,
   ledgerRecordInputToParams,
   validateManualLedgerRecord,
   type ManualLedgerRecordDocument,
@@ -78,7 +79,7 @@ function writeTargetMismatchError(
  */
 function checkManualLedgerRecord(
   input: LedgerRecordInput,
-  { chargeId, ownerId }: { chargeId: string; ownerId: string },
+  { chargeId, ownerId }: { chargeId?: string; ownerId: string },
   ctx: { localCurrency: Currency; ledgerLock?: TimelessDateString | null },
 ): { params: ManualLedgerRecordParams } | { error: CommonError } {
   const validationErrors = validateManualLedgerRecord(input, ctx);
@@ -88,7 +89,9 @@ function checkManualLedgerRecord(
 
   const params = ledgerRecordInputToParams(input);
   try {
-    validateLedgerRecordParams({ ...params, chargeId, ownerId }, ctx.localCurrency);
+    // The provider check reads only the record's content; the charge ID is there to fill its param
+    // shape, so a record whose charge is not created yet passes an empty one
+    validateLedgerRecordParams({ ...params, chargeId: chargeId ?? '', ownerId }, ctx.localCurrency);
   } catch (e) {
     return {
       error: { __typename: 'CommonError', message: e instanceof Error ? e.message : String(e) },
@@ -250,9 +253,10 @@ export async function updateManualLedgerRecord(
 /**
  * Insert a manual ledger record under a charge, stored exactly as typed, together with the business
  * entity the chosen operation says it represents: a misc expense for MISC_EXPENSE, an INVOICE
- * document for DOCUMENT. Both rows are written in one DB transaction, so either both land or
- * neither does. Every failure (missing or locked charge, invalid input, a storage error) is
- * returned as a `CommonError` rather than thrown.
+ * document for DOCUMENT. Without a `chargeId`, a new charge of the request's write-target business
+ * is created for them. All rows are written in one DB transaction, so either all land or none does.
+ * Every failure (missing or locked charge, invalid input, a storage error) is returned as a
+ * `CommonError` rather than thrown.
  */
 export async function insertManualLedgerRecord(
   injector: Injector,
@@ -260,15 +264,19 @@ export async function insertManualLedgerRecord(
     chargeId,
     operation,
     input,
-  }: { chargeId: string; operation: LedgerRecordOperation; input: LedgerRecordInput },
+  }: { chargeId?: string | null; operation: LedgerRecordOperation; input: LedgerRecordInput },
 ): Promise<ResolversTypes['InsertLedgerRecordResult']> {
+  const chargeLabel = chargeId ? `for charge ID="${chargeId}"` : 'with a new charge';
   try {
-    const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-    if (!charge) {
-      return {
-        __typename: 'CommonError',
-        message: `Charge with id ${chargeId} not found`,
-      };
+    let charge: IGetChargesByIdsResult | undefined;
+    if (chargeId) {
+      charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      if (!charge) {
+        return {
+          __typename: 'CommonError',
+          message: `Charge with id ${chargeId} not found`,
+        };
+      }
     }
 
     const {
@@ -277,22 +285,25 @@ export async function insertManualLedgerRecord(
       ledgerLock,
       authorities,
     } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-    const ownerError = writeTargetMismatchError('charge', charge.owner_id, writeTargetOwnerId);
-    if (ownerError) {
-      return ownerError;
+    if (charge) {
+      const ownerError = writeTargetMismatchError('charge', charge.owner_id, writeTargetOwnerId);
+      if (ownerError) {
+        return ownerError;
+      }
+
+      if (await isChargeLocked(charge, injector, ledgerLock)) {
+        return {
+          __typename: 'CommonError',
+          message: "The charge's ledger is locked",
+        };
+      }
     }
 
-    if (await isChargeLocked(charge, injector, ledgerLock)) {
-      return {
-        __typename: 'CommonError',
-        message: "The charge's ledger is locked",
-      };
-    }
-
-    const ownerId = charge.owner_id;
+    // A new charge belongs to the write target, the only business this request can write to
+    const ownerId = charge?.owner_id ?? writeTargetOwnerId;
     const checked = checkManualLedgerRecord(
       input,
-      { chargeId, ownerId },
+      { chargeId: charge?.id ?? chargeId ?? undefined, ownerId },
       { localCurrency: defaultLocalCurrency, ledgerLock },
     );
     if ('error' in checked) {
@@ -305,13 +316,13 @@ export async function insertManualLedgerRecord(
     }
 
     // Derive the backing entity before opening the transaction, so it only holds the writes
-    let insertEntity: () => Promise<void>;
+    let insertEntity: (chargeId: string) => Promise<void>;
     switch (operation) {
       case 'MISC_EXPENSE': {
         const miscExpense = deriveMiscExpenseFromLedgerInput(input, {
           localCurrency: defaultLocalCurrency,
         });
-        insertEntity = async () => {
+        insertEntity = async chargeId => {
           const [expense] = await injector
             .get(MiscExpensesProvider)
             .insertExpense({ ...miscExpense, chargeId, ownerId });
@@ -333,7 +344,7 @@ export async function insertManualLedgerRecord(
           return derived.error;
         }
         const { document } = derived;
-        insertEntity = async () => {
+        insertEntity = async chargeId => {
           const [insertedDocument] = await injector
             .get(DocumentsProvider)
             .insertDocuments({ documents: [{ ...document, chargeId, ownerId }] });
@@ -353,26 +364,50 @@ export async function insertManualLedgerRecord(
     }
 
     // The providers share the request's TenantAwareDBClient, so their queries run on this
-    // transaction's connection; throwing inside the callback rolls every write back, including the
-    // charge's re-flagging
+    // transaction's connection; throwing inside the callback rolls every write back, including a
+    // new charge and an existing charge's re-flagging
     return await injector.get(TenantAwareDBClient).transaction(async () => {
-      await insertEntity();
+      if (!charge) {
+        const newCharge = await injector
+          .get(ChargesProvider)
+          .generateCharge({ ownerId, ...deriveNewChargeFromLedgerInput(input) });
+        if (!newCharge) {
+          throw new Error('Charge was not created');
+        }
+        const record = await insertEntityAndRecord(newCharge.id);
+        // A new charge is unapproved already, so there is nothing to re-flag; `generateCharge`
+        // primed the loader with it
+        const createdCharge = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.load(newCharge.id);
+        if (!createdCharge) {
+          throw new Error(`Charge with id ${newCharge.id} not found`);
+        }
+        return { record, charge: createdCharge };
+      }
+
+      const record = await insertEntityAndRecord(charge.id);
+      return {
+        record,
+        charge: await degradeAndLoadCharge(injector, charge.id, charge),
+      };
+    });
+
+    async function insertEntityAndRecord(targetChargeId: string) {
+      await insertEntity(targetChargeId);
       const [ledgerRecord] = await injector.get(LedgerProvider).insertLedgerRecords({
-        ledgerRecords: [{ ...params, chargeId, ownerId }],
+        ledgerRecords: [{ ...params, chargeId: targetChargeId, ownerId }],
       });
       if (!ledgerRecord) {
         throw new Error('Ledger record was not inserted');
       }
-      return {
-        record: ledgerRecord,
-        charge: await degradeAndLoadCharge(injector, chargeId, charge),
-      };
-    });
+      return ledgerRecord;
+    }
   } catch (e) {
-    console.error(`Failed to insert ledger record for charge ID="${chargeId}"`, e);
+    console.error(`Failed to insert ledger record ${chargeLabel}`, e);
     return {
       __typename: 'CommonError',
-      message: `Failed to insert ledger record for charge ID="${chargeId}"`,
+      message: `Failed to insert ledger record ${chargeLabel}`,
     };
   }
 }
