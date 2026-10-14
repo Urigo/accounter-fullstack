@@ -303,7 +303,7 @@ export async function insertManualLedgerRecord(
     const ownerId = charge?.owner_id ?? writeTargetOwnerId;
     const checked = checkManualLedgerRecord(
       input,
-      { chargeId: charge?.id ?? chargeId ?? undefined, ownerId },
+      { chargeId: charge?.id, ownerId },
       { localCurrency: defaultLocalCurrency, ledgerLock },
     );
     if ('error' in checked) {
