@@ -43,6 +43,16 @@ type Props = {
  */
 const CELL_CLASS = 'min-w-0 grid-cols-1';
 
+/**
+ * Right padding that keeps typed digits clear of the currency symbol drawn inside the input:
+ * `$` / `€` (1 character), `C$` / `A$` / `kr` (2), `GRT` / `ETH` / `USDC` (3-4).
+ */
+function symbolPadding(symbol: string): string {
+  if (symbol.length <= 1) return 'pr-8';
+  if (symbol.length === 2) return 'pr-10';
+  return 'pr-14';
+}
+
 /** "Debit" / "Credit" for a main line, "Debit 2" / "Credit 2" for a secondary one */
 function slotLabel(side: LedgerSlotSide, index: LedgerSlotIndex): string {
   const name = side === 'debit' ? 'Debit' : 'Credit';
@@ -173,9 +183,7 @@ export function LedgerSlotFields({
                     placeholder="Foreign"
                     // Room for the symbol. Only passed with one: NumberInput's own classes give way
                     // to a `className`
-                    {...(foreignSymbol && {
-                      className: foreignSymbol.length > 2 ? 'pr-14' : 'pr-8',
-                    })}
+                    {...(foreignSymbol && { className: symbolPadding(foreignSymbol) })}
                     hideControls
                     decimalScale={2}
                     min={0}

@@ -17,9 +17,6 @@ import { FormControl } from '../../ui/form.js';
 import { Label } from '../../ui/label.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
-/** cmdk value of the `clearLabel` option; never an option of `data` */
-const CLEAR_OPTION_VALUE = '__combo-box-clear__';
-
 type Option = {
   value: string;
   label: string;
@@ -227,17 +224,26 @@ function OptionsList({
   value?: string | null;
   clearLabel?: string;
 }) {
+  // cmdk highlights the first item on open, which would be the clear option, so open + Enter would
+  // clear the selection. With a clear option, open on the current selection instead (or on the
+  // first real option). The list mounts on open, so this is the starting point of every opening;
+  // cmdk moves it on typing and arrow keys.
+  const [highlighted, setHighlighted] = React.useState(
+    () => data.find(option => option.value === value)?.value ?? data[0]?.value ?? clearLabel ?? '',
+  );
+  const highlightProps = clearLabel ? { value: highlighted, onValueChange: setHighlighted } : {};
+
   return (
-    <Command>
+    <Command {...highlightProps}>
       <CommandInput placeholder={placeholder ?? 'Filter options...'} />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup>
           {clearLabel && (
             <CommandItem
-              // Not an option value: this item's select handler doesn't look it up in `data`
-              value={CLEAR_OPTION_VALUE}
-              keywords={[clearLabel]}
+              // Filters by its visible label only. Its select handler doesn't look the value up in
+              // `data`, so an option whose value happens to equal the label can't be picked instead.
+              value={clearLabel}
               onSelect={() => {
                 onChange?.(null);
                 setOpen(false);
