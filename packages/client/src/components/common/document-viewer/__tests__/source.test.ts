@@ -3,6 +3,7 @@ import { DocumentType } from '../../../../gql/graphql.js';
 import {
   hasViewerAttachment,
   isSafeHttpUrl,
+  previewImageUrl,
   toDocumentViewerEntry,
   toUrlString,
 } from '../source.js';
@@ -63,5 +64,45 @@ describe('toDocumentViewerEntry', () => {
     expect(hasViewerAttachment({ ...base, imageUrl: null, fileUrl: 'https://a.test/f' })).toBe(
       true,
     );
+  });
+});
+
+describe('previewImageUrl', () => {
+  const STORED = 'https://example.com/stored.jpg';
+
+  it('uses a typed http(s) URL, trimmed', () => {
+    expect(previewImageUrl(' https://example.com/new.jpg ', STORED)).toBe(
+      'https://example.com/new.jpg',
+    );
+    expect(previewImageUrl('http://example.com/new.jpg', STORED)).toBe('http://example.com/new.jpg');
+    expect(previewImageUrl(new URL('https://example.com/u.jpg'), STORED)).toBe(
+      'https://example.com/u.jpg',
+    );
+  });
+
+  it.each([
+    ['empty', ''],
+    ['half-typed', 'https://'],
+    ['relative', 'scan.jpg'],
+    ['javascript:', 'javascript:alert(1)'],
+    ['data:', 'data:image/png;base64,AAAA'],
+    ['undefined', undefined],
+    ['a number', 42],
+  ])('falls back to the stored image for %s', (_, value) => {
+    expect(previewImageUrl(value, STORED)).toBe(STORED);
+    expect(previewImageUrl(value, null)).toBeNull();
+  });
+
+  it('works where URL.canParse is missing', () => {
+    const canParse = URL.canParse;
+    Object.defineProperty(URL, 'canParse', { configurable: true, value: undefined });
+    try {
+      expect(previewImageUrl('https://example.com/new.jpg', STORED)).toBe(
+        'https://example.com/new.jpg',
+      );
+      expect(previewImageUrl('nope', STORED)).toBe(STORED);
+    } finally {
+      Object.defineProperty(URL, 'canParse', { configurable: true, value: canParse });
+    }
   });
 });

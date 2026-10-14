@@ -56,7 +56,7 @@ export function ViewerCanvas({
     onPanChange,
   });
 
-  const display = state.natural ? displaySize(state.natural, state.zoom, 0) : null;
+  const display = state.natural ? displaySize(state.natural, state.zoom, state.rotation) : null;
 
   return (
     <div ref={containerRef} data-status={state.status} className="relative min-h-0 flex-1">
@@ -123,7 +123,7 @@ export function ViewerCanvas({
                     ? {
                         width: state.natural.width * state.zoom,
                         height: state.natural.height * state.zoom,
-                        transform: 'translate(-50%, -50%) rotate(0deg)',
+                        transform: `translate(-50%, -50%) rotate(${state.rotation}deg)`,
                       }
                     : undefined
                 }
@@ -148,7 +148,7 @@ export function ViewerCanvas({
           src={src}
           natural={state.natural}
           zoom={state.zoom}
-          rotation={0}
+          rotation={state.rotation}
           size={loupeSize}
           pageRef={pageRef}
           containerRef={containerRef}

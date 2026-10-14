@@ -1,7 +1,8 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DocumentViewer } from '../document-viewer.js';
+import { KEYBOARD_RANK, resetDocumentViewerStore } from '@/hooks/use-document-viewer.js';
+import { DocumentViewer, type DocumentViewerProps } from '../document-viewer.js';
 import type { DocumentViewerSource, Size } from '../types.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -127,6 +128,21 @@ function typeInto(input: HTMLInputElement, value: string): void {
   act(() => {
     setter?.call(input, value);
     input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+
+/** An open menu's item by its label, ignoring the shortcut hint beside it. */
+function menuItem(name: string): HTMLElement | undefined {
+  return [...document.body.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find(el => {
+    const label = [...el.childNodes]
+      .filter(
+        node => !(node instanceof Element && node.matches('[data-slot="dropdown-menu-shortcut"]')),
+      )
+      .map(node => node.textContent)
+      .join('')
+      .trim();
+    return label === name;
   });
 }
 
@@ -385,10 +401,7 @@ describe('DocumentViewer', () => {
     act(() => {
       more.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
     });
-    const item = (name: string): HTMLElement | undefined =>
-      [...document.body.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find(
-        el => el.textContent?.trim() === name,
-      );
+    const item = (name: string): HTMLElement | undefined => menuItem(name);
     const magnifier = item('Magnifier');
     expect(magnifier?.getAttribute('role')).toBe('menuitemcheckbox');
     expect(magnifier?.getAttribute('aria-checked')).toBe('false');
@@ -404,11 +417,17 @@ describe('DocumentViewer', () => {
     ).toBe(true);
   });
 
-  it('has no ⋯ menu on touch-only devices, where the magnifier is hidden', () => {
+  it('keeps Rotate but no magnifier in the ⋯ menu on touch-only devices', () => {
     hoverNone = true;
     render();
     loadImage();
-    expect(container.querySelector('[aria-label="More view options"]')).toBeNull();
+    act(() => {
+      button('More view options').dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0 }),
+      );
+    });
+    expect(menuItem('Rotate')).toBeDefined();
+    expect(menuItem('Magnifier')).toBeUndefined();
   });
 
   it('condenses through container queries on the viewer root', () => {
@@ -417,6 +436,186 @@ describe('DocumentViewer', () => {
     expect(root?.classList.contains('@container')).toBe(true);
     // The fit modes keep their full names for assistive tech when the short labels show.
     expect(button('Fit page').textContent).toBe('PageFit page');
+  });
+});
+
+
+describe('DocumentViewer rotate, stepper and shortcuts', () => {
+  beforeEach(() => {
+    resetDocumentViewerStore();
+  });
+
+  function renderWith(props: Partial<DocumentViewerProps> = {}): void {
+    act(() =>
+      root.render(<DocumentViewer source={SOURCE} documentKey="doc-1" {...props} />),
+    );
+  }
+
+  function pageBox(): HTMLElement {
+    const page = canvasImage().parentElement;
+    if (!page) {
+      throw new Error('no page box');
+    }
+    return page;
+  }
+
+  function press(init: KeyboardEventInit, target: Element = scrollBox()): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
+    act(() => {
+      target.dispatchEvent(event);
+    });
+    return event;
+  }
+
+  it('rotates 90° per click, re-applying the fit mode to the turned page', () => {
+    renderWith();
+    loadImage();
+    expect(canvasImage().style.transform).toContain('rotate(0deg)');
+    expect(Number.parseFloat(pageBox().style.width)).toBeCloseTo(650);
+
+    click(button('Rotate'));
+    // Fit width of the turned A4: 650 / 3508. The page box is the rotated bounding box.
+    const zoom = 650 / 3508;
+    expect(canvasImage().style.transform).toContain('rotate(90deg)');
+    expect(imageWidth()).toBeCloseTo(2480 * zoom);
+    expect(Number.parseFloat(pageBox().style.width)).toBeCloseTo(650);
+    expect(Number.parseFloat(pageBox().style.height)).toBeCloseTo(2480 * zoom);
+    expect(button('Fit width').getAttribute('data-state')).toBe('on');
+
+    click(button('Rotate'));
+    click(button('Rotate'));
+    expect(canvasImage().style.transform).toContain('rotate(270deg)');
+    click(button('Rotate'));
+    expect(canvasImage().style.transform).toContain('rotate(0deg)');
+  });
+
+  it('keeps a custom zoom when rotating, swapping the page box', () => {
+    renderWith();
+    loadImage();
+    click(button('Zoom in'));
+    const width = imageWidth();
+    const page = { w: pageBox().style.width, h: pageBox().style.height };
+
+    click(button('Rotate'));
+    expect(imageWidth()).toBeCloseTo(width);
+    expect(pageBox().style.width).toBe(page.h);
+    expect(pageBox().style.height).toBe(page.w);
+    expect(button('Fit width').getAttribute('data-state')).toBe('off');
+  });
+
+  it('turns the loupe with the page', () => {
+    renderWith();
+    loadImage();
+    click(button('Magnifier'));
+    click(button('Rotate'));
+    const loupeImage = container.querySelector<HTMLImageElement>(
+      '[data-testid="document-viewer-loupe"] img',
+    );
+    expect(loupeImage?.style.transform).toContain('rotate(90deg)');
+  });
+
+  it('resets the rotation when the document changes', () => {
+    renderWith();
+    loadImage();
+    click(button('Rotate'));
+    renderWith({ documentKey: 'doc-2' });
+    loadImage();
+    expect(canvasImage().style.transform).toContain('rotate(0deg)');
+  });
+
+  it('puts Rotate in the ⋯ menu of a narrow viewer', () => {
+    renderWith();
+    loadImage();
+    expect(button('Rotate').classList.contains('@lg:inline-flex')).toBe(true);
+    act(() => {
+      button('More view options').dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0 }),
+      );
+    });
+    act(() => menuItem('Rotate')?.click());
+    expect(canvasImage().style.transform).toContain('rotate(90deg)');
+  });
+
+  it('shows the stepper position, disabled at either end', () => {
+    const onStep = vi.fn<(delta: 1 | -1) => void>();
+    renderWith({ stepper: { index: 2, total: 12, onStep } });
+    const stepper = container.querySelector('[data-slot="document-viewer-stepper"]');
+    expect(stepper?.textContent).toContain('3/12');
+    click(button('Previous document'));
+    click(button('Next document'));
+    expect(onStep.mock.calls).toEqual([[-1], [1]]);
+
+    renderWith({ stepper: { index: 0, total: 12, onStep } });
+    expect(button('Previous document').disabled).toBe(true);
+    expect(button('Next document').disabled).toBe(false);
+    renderWith({ stepper: { index: 11, total: 12, onStep } });
+    expect(button('Next document').disabled).toBe(true);
+  });
+
+  it('has no stepper without one', () => {
+    renderWith();
+    expect(container.querySelector('[data-slot="document-viewer-stepper"]')).toBeNull();
+  });
+
+  it('answers the shortcuts once the image is ready', () => {
+    renderWith({ keyboardRank: KEYBOARD_RANK.docked });
+    // Before the image size is known, zoom keys are left alone.
+    expect(press({ key: '+', code: 'Equal' }).defaultPrevented).toBe(false);
+
+    loadImage();
+    const fit = imageWidth();
+    expect(press({ key: '+', code: 'Equal', shiftKey: true }).defaultPrevented).toBe(true);
+    expect(imageWidth()).toBeGreaterThan(fit);
+    press({ key: '-', code: 'Minus' });
+    press({ key: '-', code: 'Minus' });
+    expect(imageWidth()).toBeLessThan(fit);
+    press({ key: '1', code: 'Digit1' });
+    expect(imageWidth()).toBe(2480);
+    press({ key: '0', code: 'Digit0' });
+    expect(imageWidth()).toBeCloseTo(fit);
+
+    // Hebrew layout: ר and צ on the R and M keys.
+    press({ key: 'ר', code: 'KeyR' });
+    expect(canvasImage().style.transform).toContain('rotate(90deg)');
+    press({ key: 'צ', code: 'KeyM' });
+    expect(button('Magnifier').getAttribute('data-state')).toBe('on');
+  });
+
+  it('steps with [ and ], and leaves them alone at the ends', () => {
+    const onStep = vi.fn<(delta: 1 | -1) => void>();
+    renderWith({ keyboardRank: KEYBOARD_RANK.docked, stepper: { index: 0, total: 3, onStep } });
+    expect(press({ key: '[', code: 'BracketLeft' }).defaultPrevented).toBe(false);
+    expect(press({ key: ']', code: 'BracketRight' }).defaultPrevented).toBe(true);
+    expect(onStep.mock.calls).toEqual([[1]]);
+  });
+
+  it('steps from a document with no preview, where there is no canvas', () => {
+    const onStep = vi.fn<(delta: 1 | -1) => void>();
+    renderWith({
+      source: { ...SOURCE, imageUrl: null },
+      keyboardRank: KEYBOARD_RANK.docked,
+      stepper: { index: 1, total: 3, onStep },
+    });
+    press({ key: '[', code: 'BracketLeft' }, document.body);
+    expect(onStep).toHaveBeenCalledWith(-1);
+    // Nothing to zoom or rotate.
+    expect(press({ key: 'r', code: 'KeyR' }, document.body).defaultPrevented).toBe(false);
+  });
+
+  it('ignores shortcuts without a keyboard rank', () => {
+    renderWith();
+    loadImage();
+    const fit = imageWidth();
+    expect(press({ key: '+', code: 'Equal' }).defaultPrevented).toBe(false);
+    expect(imageWidth()).toBe(fit);
+  });
+
+  it('shows each key in the tooltips', () => {
+    renderWith({ stepper: { index: 1, total: 3, onStep: () => {} } });
+    const fitTitle = (label: string): string | null | undefined =>
+      container.querySelector(`button[aria-label="${label}"]`)?.getAttribute('title');
+    expect(fitTitle('Fit width')).toContain('(0)');
+    expect(fitTitle('100%')).toContain('(1)');
   });
 });
 

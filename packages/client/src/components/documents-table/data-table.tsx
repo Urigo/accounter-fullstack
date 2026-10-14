@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useEffect, useRef, type ReactElement } from 'react';
 import { flexRender, type Row, type RowData, type Table as TableType } from '@tanstack/react-table';
 import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
 import type { AnyTable, TableFeaturesConfig } from '@/lib/table-features.js';
@@ -48,6 +48,34 @@ export function DocumentsTableRow<TData extends { id: string }>({
 }
 
 /**
+ * Tells the viewer when this table's rows change, so a sibling snapshot taken from it is dropped
+ * once the document shown leaves the table (a delete, a filter, another page). The first render
+ * only records the ids. Pass the ids of `getRowModel().rows`, in order.
+ *
+ * `null` means "rows unknown right now" (a refetch in flight) and is skipped without being
+ * recorded, so the first result after it is compared with the last ids before it. A screen that
+ * swaps its table for a spinner while fetching must call this from the always-mounted parent:
+ * inside the table it would remount with nothing recorded and never reconcile.
+ */
+export function useReconcileViewerRows(rowIds: readonly string[] | null): void {
+  const reconcile = useDocumentViewer(s => s.reconcileRowIds);
+  const prevRef = useRef<readonly string[] | null>(null);
+  // A string key, so a fresh array with the same ids doesn't re-run the effect.
+  const key = rowIds === null ? null : rowIds.join('\n');
+  useEffect(() => {
+    if (key === null) {
+      return;
+    }
+    const next = key === '' ? [] : key.split('\n');
+    const prev = prevRef.current;
+    prevRef.current = next;
+    if (prev) {
+      reconcile(prev, next);
+    }
+  }, [key, reconcile]);
+}
+
+/**
  * Presentational shell for the documents table, shared by `DocumentsTable` and by screens that
  * build the table themselves via `useDocumentsTable` so they can host their own toolbar.
  *
@@ -65,6 +93,8 @@ export function DocumentsDataTable<TData extends RowData & { id: string }>({
   // Visible leaf columns only: `getAllColumns()` counts hidden and group columns too, so the
   // empty-state cell would outspan the rendered header once a column is hidden.
   const columnCount = table.getVisibleLeafColumns().length;
+  const { rows } = table.getRowModel();
+  useReconcileViewerRows(rows.map(row => row.id));
 
   return (
     <Table>
@@ -82,8 +112,8 @@ export function DocumentsDataTable<TData extends RowData & { id: string }>({
         ))}
       </TableHeader>
       <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map(row => <DocumentsTableRow key={row.id} row={row} />)
+        {rows.length ? (
+          rows.map(row => <DocumentsTableRow key={row.id} row={row} />)
         ) : (
           <TableRow>
             <TableCell colSpan={columnCount} className="h-24 text-center">

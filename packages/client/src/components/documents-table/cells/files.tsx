@@ -1,6 +1,8 @@
 import type { ReactElement } from 'react';
 import { File, Image } from 'lucide-react';
 import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
+import type { AnyTable } from '@/lib/table-features.js';
+import { buildViewerSiblings } from '../../common/document-viewer/siblings.js';
 import { isSafeHttpUrl, toDocumentViewerEntry } from '../../common/document-viewer/source.js';
 import { SimpleGrid, Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
@@ -9,9 +11,11 @@ import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;
+  /** The table this cell sits in; the viewer steps through its rows. Either feature set. */
+  table?: AnyTable<DocumentsTableRowType>;
 };
 
-export const Files = ({ document }: Props): ReactElement => {
+export const Files = ({ document, table }: Props): ReactElement => {
   const isActive = useDocumentViewer(s => s.current?.id === document.id);
   const toggle = useDocumentViewer(s => s.toggle);
   const source = toDocumentViewerEntry(document);
@@ -33,7 +37,12 @@ export const Files = ({ document }: Props): ReactElement => {
                 aria-label="Open document image"
                 aria-expanded={isActive}
                 // Opens the shared viewer, or closes it when this document is the one shown.
-                onClick={e => toggle(source, { trigger: e.currentTarget })}
+                onClick={e =>
+                  toggle(source, {
+                    trigger: e.currentTarget,
+                    siblings: table ? buildViewerSiblings(table) : null,
+                  })
+                }
               >
                 <Image className="size-5" />
               </Button>

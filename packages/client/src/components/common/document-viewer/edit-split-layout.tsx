@@ -15,6 +15,7 @@ import { useMediaQuery } from '@/hooks/use-media-query.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '../../ui/button.js';
 import { Tooltip } from '../tooltip.js';
+import { EDIT_SPLIT_RATIO_KEY, usePersistedRatio } from './persisted-sizes.js';
 import {
   clampEditSplitRatio,
   DEFAULT_EDIT_SPLIT_RATIO,
@@ -88,8 +89,13 @@ export function DocumentEditSplit({
   /** Where focus goes once a Hide or Show has rendered; `null` on mount and for outside changes. */
   const focusAfterToggleRef = useRef<'show' | 'viewer' | null>(null);
   const formPaneId = useId();
-  /** The form pane's share of the split; `null` is the default 50/50. Not persisted until PR 5. */
-  const [ratio, setRatio] = useState<number | null>(null);
+  /** The form pane's share of the split; `null` is the default 50/50. Remembered per browser. */
+  const {
+    ratio,
+    preview: previewRatio,
+    commit: commitRatio,
+    set: setRatio,
+  } = usePersistedRatio(EDIT_SPLIT_RATIO_KEY);
   const [dragging, setDragging] = useState(false);
   const [wantsExpanded, setWantsExpanded] = useState(false);
   const sideBySide = useMediaQuery(SPLIT_MEDIA_QUERY);
@@ -185,7 +191,7 @@ export function DocumentEditSplit({
       if (!rect || rect.width <= 0) {
         return;
       }
-      setRatio(clampEditSplitRatio((e.clientX - rect.left) / rect.width, rect.width));
+      previewRatio(clampEditSplitRatio((e.clientX - rect.left) / rect.width, rect.width));
     };
     const onEnd = (e: PointerEvent): void => {
       if (e.pointerId === pointerId) {
@@ -198,6 +204,8 @@ export function DocumentEditSplit({
       window.removeEventListener('pointercancel', onEnd);
       endDragRef.current = null;
       setDragging(false);
+      // Stored once, on release: storage is written on every state change.
+      commitRatio();
     };
 
     endDragRef.current?.();

@@ -1,9 +1,10 @@
 import { useLayoutEffect, useRef, type ReactElement } from 'react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
-import { getViewerTrigger, useDocumentViewer } from '@/hooks/use-document-viewer.js';
+import { getViewerTrigger, KEYBOARD_RANK, useDocumentViewer } from '@/hooks/use-document-viewer.js';
 import { cn } from '@/lib/utils.js';
-import { DocumentViewer } from './document-viewer.js';
+import { DocumentViewer, type DocumentViewerStepper } from './document-viewer.js';
 import type { OverlayMode } from './placement.js';
+import { useViewerStepper } from './siblings.js';
 import type { DocumentViewerEntry } from './types.js';
 import { useOverlayHistory } from './use-overlay-history.js';
 
@@ -29,6 +30,8 @@ export interface OverlayViewerFrameProps {
   onClose: () => void;
   /** Gets focus back when the overlay closes, if it is still in the document. */
   returnFocusTo?: () => HTMLElement | null;
+  /** The `‹ 3/12 ›` stepper, when the viewer was opened from a table with siblings. */
+  stepper?: DocumentViewerStepper;
 }
 
 /**
@@ -54,6 +57,7 @@ export function OverlayViewerFrame({
   mode,
   onClose,
   returnFocusTo,
+  stepper,
 }: OverlayViewerFrameProps): ReactElement {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -107,6 +111,10 @@ export function OverlayViewerFrame({
               // A new image URL restarts the canvas, as a new document does.
               documentKey={`${entry.id}:${entry.imageUrl ?? ''}`}
               onClose={onClose}
+              stepper={stepper}
+              // Topmost: above the edit sheet's viewer and the docked one. The listener is on
+              // `document`, so keys pressed inside this modal's focus trap still reach it.
+              keyboardRank={KEYBOARD_RANK.overlay}
             />
           </DialogPrimitive.Content>
         )}
@@ -130,6 +138,8 @@ export function OverlayDocumentViewer(): ReactElement {
   const close = useDocumentViewer(s => s.close);
   const open = !!current && placement === 'overlay';
   const mode = overlayMode ?? 'fullscreen';
+  // Stepping swaps `current` in place: no placement change and no history entry (decision 13).
+  const stepper = useViewerStepper(open ? current?.id : null);
 
   const requestClose = useOverlayHistory({ active: open && mode === 'fullscreen', close });
 
@@ -150,6 +160,7 @@ export function OverlayDocumentViewer(): ReactElement {
       mode={mode}
       onClose={requestClose}
       returnFocusTo={() => returnFocusRef.current?.deref() ?? null}
+      stepper={stepper}
     />
   );
 }

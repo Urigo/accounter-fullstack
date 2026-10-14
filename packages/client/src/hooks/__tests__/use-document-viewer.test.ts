@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DocumentViewerEntry } from '../../components/common/document-viewer/types.js';
 import {
+  getTopKeyboardOwnerId,
   getViewerTrigger,
+  KEYBOARD_RANK,
   resetDocumentViewerStore,
   useDocumentViewer,
 } from '../use-document-viewer.js';
@@ -207,5 +209,133 @@ describe('useDocumentViewer suspend', () => {
     expect(useDocumentViewer.getState().suspendCount).toBe(1);
     resume();
     expect(useDocumentViewer.getState().suspendCount).toBe(0);
+  });
+});
+
+function doc(id: string): DocumentViewerEntry {
+  return { id, imageUrl: `https://example.com/${id}.jpg`, fileUrl: null, title: id };
+}
+
+const SIBLINGS = ['s1', 's2', 's3'].map(doc);
+
+describe('useDocumentViewer siblings', () => {
+  it('opens with a snapshot that later changes to the source list do not reach', () => {
+    const source = [...SIBLINGS];
+    useDocumentViewer.getState().open(SIBLINGS[1], { siblings: source });
+    source.reverse();
+    source.push(doc('s4'));
+    expect(useDocumentViewer.getState().siblings?.map(s => s.id)).toEqual(['s1', 's2', 's3']);
+  });
+
+  it('opens without siblings when none are passed, and close() drops them', () => {
+    useDocumentViewer.getState().open(SIBLINGS[0], { siblings: SIBLINGS });
+    useDocumentViewer.getState().open(DOC_A);
+    expect(useDocumentViewer.getState().siblings).toBeNull();
+
+    useDocumentViewer.getState().open(SIBLINGS[0], { siblings: SIBLINGS });
+    useDocumentViewer.getState().close();
+    expect(useDocumentViewer.getState().siblings).toBeNull();
+  });
+
+  it('steps within bounds, with no wrap-around', () => {
+    const { open, step } = useDocumentViewer.getState();
+    open(SIBLINGS[0], { siblings: SIBLINGS });
+    step(-1);
+    expect(useDocumentViewer.getState().current?.id).toBe('s1');
+    step(1);
+    step(1);
+    expect(useDocumentViewer.getState().current?.id).toBe('s3');
+    step(1);
+    expect(useDocumentViewer.getState().current?.id).toBe('s3');
+    step(-1);
+    expect(useDocumentViewer.getState().current?.id).toBe('s2');
+  });
+
+  it('steps without re-resolving the placement or collapsing an expanded column', () => {
+    const { open, step, setExpanded } = useDocumentViewer.getState();
+    open(SIBLINGS[0], { siblings: SIBLINGS });
+    setExpanded(true);
+    // Placement is decided at open time only: a narrower window now changes nothing.
+    setViewportWidth(800);
+    step(1);
+    const state = useDocumentViewer.getState();
+    expect(state.current?.id).toBe('s2');
+    expect(state.placement).toBe('docked');
+    expect(state.expanded).toBe(true);
+  });
+
+  it('does nothing without siblings, or when the current document is not among them', () => {
+    const { open, step } = useDocumentViewer.getState();
+    open(DOC_A);
+    step(1);
+    expect(useDocumentViewer.getState().current?.id).toBe('doc-a');
+    open(DOC_A, { siblings: SIBLINGS });
+    step(1);
+    expect(useDocumentViewer.getState().current?.id).toBe('doc-a');
+  });
+
+  it('reconcile drops the siblings once the current document leaves its table', () => {
+    const { open, reconcileRowIds } = useDocumentViewer.getState();
+    open(SIBLINGS[1], { siblings: SIBLINGS });
+    // Another table on the page changed: not ours.
+    reconcileRowIds(['x1', 'x2'], ['x1']);
+    // Ours was re-sorted: the current document is still there.
+    reconcileRowIds(['s1', 's2', 's3'], ['s3', 's2', 's1']);
+    expect(useDocumentViewer.getState().siblings).toHaveLength(3);
+
+    reconcileRowIds(['s3', 's2', 's1'], ['s3', 's1']);
+    expect(useDocumentViewer.getState().siblings).toBeNull();
+    // The document itself stays open; only the stepper goes.
+    expect(useDocumentViewer.getState().current?.id).toBe('s2');
+  });
+
+  it('update() refreshes the snapshot copy too', () => {
+    const { open, update, step } = useDocumentViewer.getState();
+    open(SIBLINGS[0], { siblings: SIBLINGS });
+    update({ ...SIBLINGS[0], title: 'Edited' });
+    step(1);
+    step(-1);
+    expect(useDocumentViewer.getState().current?.title).toBe('Edited');
+  });
+});
+
+describe('useDocumentViewer keyboard owners', () => {
+  it('the top owner is the highest rank, the latest one on a tie', () => {
+    expect(getTopKeyboardOwnerId([])).toBeNull();
+    expect(
+      getTopKeyboardOwnerId([
+        { id: 'docked', rank: KEYBOARD_RANK.docked },
+        { id: 'overlay', rank: KEYBOARD_RANK.overlay },
+        { id: 'embedded', rank: KEYBOARD_RANK.embedded },
+      ]),
+    ).toBe('overlay');
+    expect(
+      getTopKeyboardOwnerId([
+        { id: 'first', rank: KEYBOARD_RANK.embedded },
+        { id: 'second', rank: KEYBOARD_RANK.embedded },
+      ]),
+    ).toBe('second');
+  });
+
+  it('registers and unregisters owners; unregistering twice is a no-op', () => {
+    const { registerKeyboardOwner } = useDocumentViewer.getState();
+    const removeDocked = registerKeyboardOwner('docked', KEYBOARD_RANK.docked);
+    const removeEmbedded = registerKeyboardOwner('embedded', KEYBOARD_RANK.embedded);
+    expect(getTopKeyboardOwnerId(useDocumentViewer.getState().keyboardOwners)).toBe('embedded');
+
+    removeEmbedded();
+    removeEmbedded();
+    expect(useDocumentViewer.getState().keyboardOwners).toEqual([
+      { id: 'docked', rank: KEYBOARD_RANK.docked },
+    ]);
+    removeDocked();
+    expect(useDocumentViewer.getState().keyboardOwners).toEqual([]);
+  });
+
+  it('close() keeps the owners: they belong to the mounted viewers', () => {
+    useDocumentViewer.getState().registerKeyboardOwner('docked', KEYBOARD_RANK.docked);
+    useDocumentViewer.getState().open(DOC_A);
+    useDocumentViewer.getState().close();
+    expect(useDocumentViewer.getState().keyboardOwners).toHaveLength(1);
   });
 });

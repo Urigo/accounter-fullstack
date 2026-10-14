@@ -260,3 +260,75 @@ describe('OverlayDocumentViewer', () => {
     expect(modalOpen).toBe(false);
   });
 });
+
+describe('OverlayDocumentViewer shortcuts and stepper', () => {
+  const siblings: DocumentViewerEntry[] = ['s1', 's2'].map(id => ({
+    id,
+    imageUrl: `https://example.com/${id}.jpg`,
+    fileUrl: null,
+    title: `Receipt ${id}`,
+  }));
+
+  it('hears keys pressed inside the modal, and steps without touching history', async () => {
+    setViewportWidth(800);
+    let historyLength = 0;
+    function HistoryProbe(): null {
+      historyLength = window.history.length;
+      return null;
+    }
+    await renderHost(<HistoryProbe />);
+    await act(async () =>
+      useDocumentViewer.getState().open(siblings[0], { trigger: makeTrigger(), siblings }),
+    );
+    const dialog = overlay();
+    expect(dialog?.querySelector('[data-slot="document-viewer-stepper"]')?.textContent).toContain(
+      '1/2',
+    );
+    const lengthAfterOpen = historyLength;
+
+    // Focus is trapped inside the dialog; a key pressed there still reaches the shortcuts.
+    const canvas = dialog?.querySelector('[data-slot="document-viewer-canvas"]') ?? document.body;
+    const event = new KeyboardEvent('keydown', {
+      key: ']',
+      code: 'BracketRight',
+      bubbles: true,
+      cancelable: true,
+    });
+    await act(async () => {
+      canvas.dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(true);
+    expect(useDocumentViewer.getState().current?.id).toBe('s2');
+    expect(useDocumentViewer.getState().placement).toBe('overlay');
+    expect(overlay()?.querySelector('[data-slot="document-viewer-stepper"]')?.textContent).toContain(
+      '2/2',
+    );
+    expect(window.history.length).toBe(lengthAfterOpen);
+  });
+
+  it('owns the keyboard above any other viewer', async () => {
+    const docked = vi.fn<() => void>();
+    const { useViewerShortcuts } = await import('../use-viewer-shortcuts.js');
+    function DockedLike(): null {
+      useViewerShortcuts(0, { next: docked });
+      return null;
+    }
+    await renderHost(<DockedLike />);
+    const trigger = makeTrigger();
+    // A trigger inside a dialog opens the overlay sheet.
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.append(trigger);
+    document.body.append(dialog);
+    await act(async () => useDocumentViewer.getState().open(siblings[0], { trigger, siblings }));
+    expect(useDocumentViewer.getState().overlayMode).toBe('sheet');
+
+    await act(async () => {
+      document.body.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ']', code: 'BracketRight', bubbles: true }),
+      );
+    });
+    expect(useDocumentViewer.getState().current?.id).toBe('s2');
+    expect(docked).not.toHaveBeenCalled();
+  });
+});

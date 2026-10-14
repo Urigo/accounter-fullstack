@@ -43,3 +43,30 @@ export function isSafeHttpUrl(url: string | null): boolean {
     return false;
   }
 }
+
+/** `URL.canParse`, with a `new URL` fallback for browsers that predate it. */
+function canParseUrl(value: string): boolean {
+  if (typeof URL.canParse === 'function') {
+    return URL.canParse(value);
+  }
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The image the edit sheet's viewer shows while the Image URL field is being edited: the typed
+ * value once it parses as an absolute http(s) URL, the stored `image` otherwise (empty, half-typed,
+ * or another scheme).
+ */
+export function previewImageUrl(value: unknown, stored: string | null): string | null {
+  const url = typeof value === 'string' || value instanceof URL ? toUrlString(value) : null;
+  if (!url || !canParseUrl(url)) {
+    return stored;
+  }
+  const { protocol } = new URL(url);
+  return protocol === 'http:' || protocol === 'https:' ? url : stored;
+}

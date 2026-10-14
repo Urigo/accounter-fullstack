@@ -17,6 +17,20 @@ export interface OpenDocumentViewerOptions {
    * can't dock), and it gets focus back when the viewer closes with ✕ or Esc.
    */
   trigger?: HTMLElement | null;
+  /**
+   * The documents the viewer can step through, in the source table's current sort and filter
+   * order. A snapshot: later changes to the table don't reach it. Leave it out to show no stepper.
+   */
+  siblings?: readonly DocumentViewerEntry[] | null;
+}
+
+/** Keyboard owner ranks: the topmost kind of viewer wins the shortcuts. */
+export const KEYBOARD_RANK = { docked: 0, embedded: 1, overlay: 2 } as const;
+export type KeyboardRank = (typeof KEYBOARD_RANK)[keyof typeof KEYBOARD_RANK];
+
+export interface KeyboardOwner {
+  id: string;
+  rank: KeyboardRank;
 }
 
 interface DocumentViewerState {
@@ -25,6 +39,16 @@ interface DocumentViewerState {
   /** The overlay's shape while `placement` is `overlay`; `null` otherwise. */
   overlayMode: OverlayMode | null;
   expanded: boolean;
+  /**
+   * The documents `step` moves through, snapshotted at open time; `null` when the viewer was opened
+   * without any, or once a refetch dropped the current document from its table.
+   */
+  siblings: DocumentViewerEntry[] | null;
+  /**
+   * Every mounted viewer that wants the keyboard shortcuts, in registration order. Only the top one
+   * (highest rank, latest on a tie) listens; see {@link getTopKeyboardOwnerId}.
+   */
+  keyboardOwners: KeyboardOwner[];
   /**
    * How many surfaces are hiding the docked viewer right now (the edit sheet shows the same scan
    * in its own split). While it is above 0 the docked column renders nothing but keeps `current`,
@@ -41,6 +65,30 @@ interface DocumentViewerState {
   setExpanded(expanded: boolean): void;
   /** Hides the docked viewer until the returned resume function runs. Resuming twice is a no-op. */
   suspend(): () => void;
+  /**
+   * Shows the previous (-1) or next (1) sibling. No wrap-around, and no-op without siblings or at
+   * either end. It never re-resolves the placement and never touches history.
+   */
+  step(delta: 1 | -1): void;
+  /**
+   * Called by a documents table whose row ids changed. If the current document was among `prev`
+   * but is gone from `next` (deleted, filtered out, paged away), the sibling snapshot no longer
+   * matches the table, so it is dropped and the stepper hides instead of guessing.
+   */
+  reconcileRowIds(prev: readonly string[], next: readonly string[]): void;
+  /** Adds a keyboard owner; the returned function removes it again (idempotent). */
+  registerKeyboardOwner(id: string, rank: KeyboardRank): () => void;
+}
+
+/** The owner that gets the shortcuts: the highest rank, and the latest registered on a tie. */
+export function getTopKeyboardOwnerId(owners: readonly KeyboardOwner[]): string | null {
+  let top: KeyboardOwner | null = null;
+  for (const owner of owners) {
+    if (!top || owner.rank >= top.rank) {
+      top = owner;
+    }
+  }
+  return top?.id ?? null;
 }
 
 /**
@@ -74,10 +122,20 @@ const INITIAL_STATE = {
   placement: null,
   overlayMode: null,
   expanded: false,
-} satisfies Pick<DocumentViewerState, 'current' | 'placement' | 'overlayMode' | 'expanded'>;
+  siblings: null,
+} satisfies Pick<
+  DocumentViewerState,
+  'current' | 'placement' | 'overlayMode' | 'expanded' | 'siblings'
+>;
 
-/** Kept apart from `INITIAL_STATE` so `close()` leaves it alone: suspension belongs to the sheet. */
-const INITIAL_SUSPEND = { suspendCount: 0 } satisfies Pick<DocumentViewerState, 'suspendCount'>;
+/**
+ * Kept apart from `INITIAL_STATE` so `close()` leaves them alone: suspension belongs to the sheet,
+ * and keyboard owners to the mounted viewers.
+ */
+const INITIAL_MOUNTED = { suspendCount: 0, keyboardOwners: [] } satisfies Pick<
+  DocumentViewerState,
+  'suspendCount' | 'keyboardOwners'
+>;
 
 /**
  * The one document viewer of the dashboard. Call sites need no provider, so tables inside dialogs
@@ -88,7 +146,7 @@ const INITIAL_SUSPEND = { suspendCount: 0 } satisfies Pick<DocumentViewerState, 
  */
 export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
   ...INITIAL_STATE,
-  ...INITIAL_SUSPEND,
+  ...INITIAL_MOUNTED,
   open: (entry, options): void => {
     const trigger = options?.trigger ?? null;
     const { placement, overlayMode } = resolveViewerPlacement({
@@ -103,6 +161,7 @@ export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
       current: entry,
       placement,
       overlayMode,
+      siblings: options?.siblings ? [...options.siblings] : null,
       // A swap inside the docked column keeps it expanded; anything else starts collapsed.
       expanded: state.placement === 'docked' && placement === 'docked' && state.expanded,
     }));
@@ -117,7 +176,11 @@ export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
   update: (entry): void => {
     const { current } = get();
     if (current && current.id === entry.id && !sameEntry(current, entry)) {
-      set({ current: entry });
+      // The snapshot's copy too, so stepping away and back shows the fresh entry.
+      set(state => ({
+        current: entry,
+        siblings: state.siblings?.map(s => (s.id === entry.id ? entry : s)) ?? null,
+      }));
     }
   },
   close: (): void => {
@@ -136,6 +199,38 @@ export const useDocumentViewer = create<DocumentViewerState>()((set, get) => ({
       }
       resumed = true;
       set(state => ({ suspendCount: Math.max(0, state.suspendCount - 1) }));
+    };
+  },
+  step: (delta): void => {
+    const { current, siblings } = get();
+    if (!current || !siblings) {
+      return;
+    }
+    const index = siblings.findIndex(entry => entry.id === current.id);
+    const next = index === -1 ? undefined : siblings[index + delta];
+    if (next) {
+      set({ current: next });
+    }
+  },
+  reconcileRowIds: (prev, next): void => {
+    const { current, siblings } = get();
+    if (!current || !siblings) {
+      return;
+    }
+    if (prev.includes(current.id) && !next.includes(current.id)) {
+      set({ siblings: null });
+    }
+  },
+  registerKeyboardOwner: (id, rank): (() => void) => {
+    const owner: KeyboardOwner = { id, rank };
+    set(state => ({ keyboardOwners: [...state.keyboardOwners, owner] }));
+    return (): void => {
+      // By identity, so an unregister never removes a later registration under the same id.
+      set(state =>
+        state.keyboardOwners.includes(owner)
+          ? { keyboardOwners: state.keyboardOwners.filter(o => o !== owner) }
+          : state,
+      );
     };
   },
 }));
@@ -158,5 +253,5 @@ export function useSuspendDockedViewer(active: boolean): void {
 /** Back to closed, trigger forgotten. For tests and stories. */
 export function resetDocumentViewerStore(): void {
   setTrigger(null);
-  useDocumentViewer.setState({ ...INITIAL_STATE, ...INITIAL_SUSPEND });
+  useDocumentViewer.setState({ ...INITIAL_STATE, ...INITIAL_MOUNTED });
 }
