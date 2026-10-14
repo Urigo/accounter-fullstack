@@ -7,6 +7,7 @@ import { DashboardLayoutRoute } from './layouts/dashboard-layout.js';
 import { RootLayout } from './layouts/root-layout.js';
 import { businessLoader, chargeLoader } from './loaders/index.js';
 import { ROUTES } from './routes.js';
+import { skipSameUrlRevalidation } from './should-revalidate.js';
 
 /**
  * Lazy load page components for code splitting
@@ -344,6 +345,7 @@ export const routes: RouteObject[] = [
               {
                 path: ':chargeId',
                 loader: chargeLoader,
+                shouldRevalidate: skipSameUrlRevalidation,
                 element: withSuspense(Charge),
                 handle: {
                   title: 'Charge Details',
@@ -374,6 +376,7 @@ export const routes: RouteObject[] = [
               {
                 path: ':businessId',
                 loader: businessLoader,
+                shouldRevalidate: skipSameUrlRevalidation,
                 element: withSuspense(BusinessScreen),
                 handle: {
                   title: 'Business Details',

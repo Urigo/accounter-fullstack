@@ -4,6 +4,7 @@ import {
   clampScroll,
   clampZoom,
   contentOrigin,
+  decayVelocity,
   displaySize,
   doubleClickTarget,
   fitZoom,
@@ -11,11 +12,13 @@ import {
   MIN_ZOOM,
   normalizeWheelDeltaY,
   pinchZoomFactor,
+  releaseVelocity,
   rotatedSize,
   stepZoom,
   wheelZoomFactor,
   zoomAt,
   zoomBounds,
+  type PanSample,
 } from '../viewer-geometry.js';
 
 const A4: Size = { width: 2480, height: 3508 };
@@ -248,5 +251,48 @@ describe('doubleClickTarget', () => {
       mode: 'page',
       zoom: 0.2,
     });
+  });
+});
+
+describe('releaseVelocity', () => {
+  const swipe: PanSample[] = [
+    { x: 300, y: 500, t: 800 }, // older than the 100ms window at release
+    { x: 200, y: 500, t: 920 },
+    { x: 140, y: 470, t: 950 },
+    { x: 100, y: 450, t: 970 },
+  ];
+
+  it.each<[string, PanSample[], number, Point]>([
+    ['measures over the last 100ms only', swipe, 980, { x: -2, y: -1 }],
+    ['nothing after the finger rested before lifting', swipe, 1030, { x: 0, y: 0 }],
+    ['nothing from a single sample', [{ x: 1, y: 1, t: 10 }], 10, { x: 0, y: 0 }],
+    ['nothing from no samples', [], 10, { x: 0, y: 0 }],
+    [
+      'nothing when every sample has the same time',
+      [
+        { x: 0, y: 0, t: 5 },
+        { x: 10, y: 0, t: 5 },
+      ],
+      5,
+      { x: 0, y: 0 },
+    ],
+  ])('%s', (_, samples, now, expected) => {
+    const v = releaseVelocity(samples, now);
+    expect(v.x).toBeCloseTo(expected.x, 6);
+    expect(v.y).toBeCloseTo(expected.y, 6);
+  });
+});
+
+describe('decayVelocity', () => {
+  it('keeps 95% per 16ms frame, independent of the frame rate', () => {
+    const v = { x: 2, y: -1 };
+    expect(decayVelocity(v, 16).x).toBeCloseTo(1.9, 6);
+    const twice = decayVelocity(decayVelocity(v, 8), 8);
+    expect(twice.x).toBeCloseTo(decayVelocity(v, 16).x, 9);
+    expect(twice.y).toBeCloseTo(decayVelocity(v, 16).y, 9);
+  });
+
+  it('leaves the velocity alone over no time', () => {
+    expect(decayVelocity({ x: 3, y: 4 }, 0)).toEqual({ x: 3, y: 4 });
   });
 });

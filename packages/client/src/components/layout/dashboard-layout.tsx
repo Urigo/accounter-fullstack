@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useSidebar } from '../../hooks/use-sidebar.js';
 import { CloseViewerOnRouteChange } from '../common/document-viewer/close-viewer-on-route-change.js';
 import { DockedDocumentViewer } from '../common/document-viewer/docked-viewer.js';
+import { OverlayDocumentViewer } from '../common/document-viewer/overlay-viewer.js';
 import { Breadcrumbs } from './breadcrumbs.js';
 import { Footer } from './footer.js';
 import { Header } from './header.js';
@@ -36,6 +37,8 @@ export function DashboardLayout({ children, filtersContext }: DashboardLayoutPro
       </div>
       <Footer filtersContext={filtersContext} />
       <CloseViewerOnRouteChange />
+      {/* Portals to the body when open: full screen on phones, or a sheet above an open modal. */}
+      <OverlayDocumentViewer />
     </main>
   );
 }

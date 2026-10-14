@@ -1,15 +1,26 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { Minus, Plus, Search } from 'lucide-react';
+import { Ellipsis, Minus, Plus, Search } from 'lucide-react';
 import { Button } from '../../ui/button.js';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../ui/dropdown-menu.js';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.js';
 import { Toggle } from '../../ui/toggle.js';
 import { Tooltip } from '../tooltip.js';
 import type { FitMode, LoupeSize, ZoomMode } from './types.js';
 
-const FIT_MODES: { value: FitMode; label: string; tooltip: string }[] = [
-  { value: 'page', label: 'Fit page', tooltip: 'Show the whole page' },
-  { value: 'width', label: 'Fit width', tooltip: 'Fit the page to the pane width' },
-  { value: 'actual', label: '100%', tooltip: 'Natural size' },
+/** `short` is shown in a narrow viewer (under the `@md` container width). */
+const FIT_MODES: { value: FitMode; label: string; short: string; tooltip: string }[] = [
+  { value: 'page', label: 'Fit page', short: 'Page', tooltip: 'Show the whole page' },
+  { value: 'width', label: 'Fit width', short: 'Width', tooltip: 'Fit the page to the pane width' },
+  { value: 'actual', label: '100%', short: '100%', tooltip: 'Natural size' },
 ];
 
 const LOUPE_SIZES: { value: LoupeSize; label: string; name: string }[] = [
@@ -121,6 +132,72 @@ function ZoomReadout({
   );
 }
 
+/**
+ * The `⋯` menu of a narrow viewer (under the `@lg` container width), holding the controls the
+ * toolbar has no room for: the magnifier and its loupe size. Rotate joins it in PR 5.
+ */
+function MoreMenu({
+  disabled,
+  magnifierOn,
+  onMagnifierChange,
+  loupeSize,
+  onLoupeSizeChange,
+}: Pick<
+  ViewerToolbarProps,
+  'disabled' | 'magnifierOn' | 'onMagnifierChange' | 'loupeSize' | 'onLoupeSizeChange'
+>): ReactElement {
+  return (
+    <DropdownMenu>
+      <Tooltip content="More view options" asChild>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 @lg:hidden"
+            aria-label="More view options"
+            disabled={disabled}
+          >
+            <Ellipsis className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+      </Tooltip>
+      <DropdownMenuContent align="end" className="min-w-44">
+        <DropdownMenuCheckboxItem
+          checked={magnifierOn}
+          onCheckedChange={checked => onMagnifierChange(checked === true)}
+          // Keep the menu open, so the loupe size can be picked right after.
+          onSelect={event => event.preventDefault()}
+        >
+          <Search className="size-4" />
+          Magnifier
+        </DropdownMenuCheckboxItem>
+        {magnifierOn && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-gray-500">
+              Loupe size
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={loupeSize}
+              onValueChange={value => {
+                if (isLoupeSize(value)) {
+                  onLoupeSizeChange(value);
+                }
+              }}
+            >
+              {LOUPE_SIZES.map(option => (
+                <DropdownMenuRadioItem key={option.value} value={option.value}>
+                  {option.name}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function ViewerToolbar({
   disabled,
   zoom,
@@ -136,10 +213,12 @@ export function ViewerToolbar({
   onLoupeSizeChange,
 }: ViewerToolbarProps): ReactElement {
   return (
+    // Condenses through container queries on the viewer root (`@container`), so a narrow docked
+    // column or edit pane condenses as a phone does.
     <div
       role="toolbar"
       aria-label="Document viewer controls"
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-white px-3 py-1.5 dark:bg-gray-950"
+      className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b bg-white px-2 py-1.5 @md:gap-x-3 @md:px-3 dark:bg-gray-950"
     >
       <div className="flex items-center">
         <Tooltip content="Zoom out" asChild>
@@ -186,16 +265,30 @@ export function ViewerToolbar({
           <ToggleGroupItem
             key={fit.value}
             value={fit.value}
+            // One accessible name whichever label is showing.
+            aria-label={fit.label}
             title={fit.tooltip}
             className="px-2 text-xs"
           >
-            {fit.label}
+            <span className="@md:hidden">{fit.short}</span>
+            <span className="hidden @md:inline">{fit.label}</span>
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
 
       {showMagnifier && (
-        <div className="flex items-center gap-1">
+        <MoreMenu
+          disabled={disabled}
+          magnifierOn={magnifierOn}
+          onMagnifierChange={onMagnifierChange}
+          loupeSize={loupeSize}
+          onLoupeSizeChange={onLoupeSizeChange}
+        />
+      )}
+
+      {showMagnifier && (
+        // Inline from the `@lg` container width; below it, the `⋯` menu holds these.
+        <div className="hidden items-center gap-1 @lg:flex">
           {/* The span takes the tooltip trigger's `data-state`, which would otherwise overwrite
               the toggle's own `data-state="on"`. */}
           <Tooltip

@@ -39,10 +39,11 @@ afterEach(() => {
 
 describe('useDocumentViewer', () => {
   it('starts closed', () => {
-    const { current, placement, expanded } = useDocumentViewer.getState();
-    expect({ current, placement, expanded }).toEqual({
+    const { current, placement, overlayMode, expanded } = useDocumentViewer.getState();
+    expect({ current, placement, overlayMode, expanded }).toEqual({
       current: null,
       placement: null,
+      overlayMode: null,
       expanded: false,
     });
   });
@@ -51,6 +52,20 @@ describe('useDocumentViewer', () => {
     useDocumentViewer.getState().open(DOC_A);
     expect(useDocumentViewer.getState().current).toEqual(DOC_A);
     expect(useDocumentViewer.getState().placement).toBe('docked');
+    expect(useDocumentViewer.getState().overlayMode).toBeNull();
+  });
+
+  it('re-resolves the overlay mode on each open, and close() clears it', () => {
+    setViewportWidth(800);
+    useDocumentViewer.getState().open(DOC_A);
+    expect(useDocumentViewer.getState().overlayMode).toBe('fullscreen');
+
+    setViewportWidth(1440);
+    useDocumentViewer.getState().open(DOC_B);
+    expect(useDocumentViewer.getState()).toMatchObject({ placement: 'docked', overlayMode: null });
+
+    useDocumentViewer.getState().close();
+    expect(useDocumentViewer.getState().overlayMode).toBeNull();
   });
 
   it('swaps in place instead of stacking', () => {
@@ -63,13 +78,13 @@ describe('useDocumentViewer', () => {
     expect(useDocumentViewer.getState().expanded).toBe(true);
   });
 
-  it('falls back on a narrow screen', () => {
+  it('uses the fullscreen overlay on a narrow screen', () => {
     setViewportWidth(800);
     useDocumentViewer.getState().open(DOC_A);
-    expect(useDocumentViewer.getState().placement).toBe('fallback');
+    expect(useDocumentViewer.getState()).toMatchObject({ placement: 'overlay', overlayMode: 'fullscreen' });
   });
 
-  it('falls back when the trigger sits inside a dialog', () => {
+  it('uses the overlay sheet when the trigger sits inside a dialog', () => {
     const dialog = document.createElement('div');
     dialog.setAttribute('role', 'dialog');
     const button = document.createElement('button');
@@ -77,14 +92,14 @@ describe('useDocumentViewer', () => {
     document.body.append(dialog);
 
     useDocumentViewer.getState().open(DOC_A, { trigger: button });
-    expect(useDocumentViewer.getState().placement).toBe('fallback');
+    expect(useDocumentViewer.getState()).toMatchObject({ placement: 'overlay', overlayMode: 'sheet' });
   });
 
   it('reads the sidebar width at open time', () => {
     setViewportWidth(1100);
     useSidebar.setState({ isMinimized: false });
     useDocumentViewer.getState().open(DOC_A);
-    expect(useDocumentViewer.getState().placement).toBe('fallback');
+    expect(useDocumentViewer.getState()).toMatchObject({ placement: 'overlay', overlayMode: 'sheet' });
 
     useSidebar.setState({ isMinimized: true });
     useDocumentViewer.getState().open(DOC_B);

@@ -1,6 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import type { Point } from './types.js';
-import { normalizeWheelDeltaY, pinchZoomFactor, wheelZoomFactor } from './viewer-geometry.js';
+import {
+  decayVelocity,
+  INERTIA_MIN_SPEED,
+  INERTIA_WINDOW_MS,
+  normalizeWheelDeltaY,
+  pinchZoomFactor,
+  releaseVelocity,
+  wheelZoomFactor,
+  type PanSample,
+} from './viewer-geometry.js';
 
 /** Safari's trackpad pinch. Not part of `lib.dom`. */
 type GestureEvent = UIEvent & { scale: number; clientX: number; clientY: number };
@@ -15,13 +24,26 @@ export interface ViewerGestureHandlers {
 const PAN_THRESHOLD_PX = 3;
 const DOUBLE_TAP_MS = 300;
 const DOUBLE_TAP_PX = 24;
+/** A glide never outlasts about two seconds at 60fps, whatever the frame timing. */
+const INERTIA_MAX_FRAMES = 120;
 
 type Pan = {
   pointerId: number;
+  pointerType: string;
   start: Point;
   scroll: Point;
   active: boolean;
+  /** Recent positions of a touch pan, for the release velocity. */
+  samples: PanSample[];
 };
+
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Pointer, wheel and pinch handling for the canvas scroll box.
@@ -32,6 +54,9 @@ type Pan = {
  * - Safari reports a trackpad pinch through `gesture*` events instead. On touch devices Pointer
  *   Events drive the pinch, so there the gesture events are only cancelled, never applied.
  * - A primary-button drag pans by moving the scroll position. Two touch pointers pinch.
+ * - A touch pan glides on after release. The canvas is `touch-none`, which drops the browser's own
+ *   momentum, so a light inertia stands in: the last 100ms of velocity, decayed per frame. The next
+ *   press stops it, and it is off under `prefers-reduced-motion`.
  *
  * Drag tracking listens on `window` rather than relying on pointer capture, because vaul's own
  * `pointerdown` captures the pointer on the event target. Nothing here stops propagation: Radix's
@@ -62,6 +87,40 @@ export function useViewerGestures(
     let lastPointerType = '';
     let lastTap: { time: number; point: Point } | null = null;
     let listening = false;
+    let inertiaFrame = 0;
+
+    const stopInertia = (): void => {
+      if (inertiaFrame) {
+        cancelAnimationFrame(inertiaFrame);
+        inertiaFrame = 0;
+      }
+    };
+
+    const startInertia = (samples: PanSample[], now: number): void => {
+      let v = releaseVelocity(samples, now);
+      if (Math.hypot(v.x, v.y) < INERTIA_MIN_SPEED || prefersReducedMotion()) {
+        return;
+      }
+      let last = now;
+      let frames = 0;
+      const frame = (time: number): void => {
+        const dt = Math.max(0, time - last);
+        last = time;
+        frames += 1;
+        const before = { x: el.scrollLeft, y: el.scrollTop };
+        // The finger moved the page; scrolling runs the other way.
+        el.scrollLeft = before.x - v.x * dt;
+        el.scrollTop = before.y - v.y * dt;
+        v = decayVelocity(v, dt);
+        const stuck = el.scrollLeft === before.x && el.scrollTop === before.y && dt > 0;
+        if (Math.hypot(v.x, v.y) < INERTIA_MIN_SPEED || stuck || frames >= INERTIA_MAX_FRAMES) {
+          inertiaFrame = 0;
+          return;
+        }
+        inertiaFrame = requestAnimationFrame(frame);
+      };
+      inertiaFrame = requestAnimationFrame(frame);
+    };
 
     const touchDistance = (): number => {
       const [a, b] = [...touches.values()];
@@ -138,6 +197,14 @@ export function useViewerGestures(
       }
       el.scrollLeft = pan.scroll.x - dx;
       el.scrollTop = pan.scroll.y - dy;
+      if (pan.pointerType === 'touch') {
+        const t = performance.now();
+        pan.samples.push({ x: e.clientX, y: e.clientY, t });
+        // Only the newest window matters; keep the list short on a long pan.
+        while (pan.samples.length > 2 && t - (pan.samples[0]?.t ?? t) > INERTIA_WINDOW_MS) {
+          pan.samples.shift();
+        }
+      }
     };
 
     const stopListening = (): void => {
@@ -157,7 +224,11 @@ export function useViewerGestures(
       }
       if (pan && pan.pointerId === e.pointerId) {
         const wasPan = pan.active;
+        const { samples } = pan;
         endPan();
+        if (wasTouch && wasPan && !pinched && !cancelled && touches.size === 0) {
+          startInertia(samples, performance.now());
+        }
         if (wasTouch && !wasPan && !pinched && !cancelled) {
           const now = performance.now();
           const point = { x: e.clientX, y: e.clientY };
@@ -188,6 +259,8 @@ export function useViewerGestures(
     }
 
     const onPointerDown = (e: PointerEvent): void => {
+      // A new press catches the glide.
+      stopInertia();
       lastPointerType = e.pointerType;
       if (e.pointerType === 'touch') {
         touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -204,9 +277,11 @@ export function useViewerGestures(
       }
       pan = {
         pointerId: e.pointerId,
+        pointerType: e.pointerType,
         start: { x: e.clientX, y: e.clientY },
         scroll: { x: el.scrollLeft, y: el.scrollTop },
         active: false,
+        samples: [],
       };
       try {
         el.setPointerCapture?.(e.pointerId);
@@ -243,6 +318,7 @@ export function useViewerGestures(
       el.removeEventListener('pointerdown', onPointerDown);
       el.removeEventListener('dblclick', onDoubleClick);
       stopListening();
+      stopInertia();
       endPan();
     };
   }, [scrollRef, enabled]);
