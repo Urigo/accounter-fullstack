@@ -163,6 +163,7 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
 
   return (
     <DocumentEditSplit
+      entry={viewerSource}
       hidden={viewerHidden}
       onHiddenChange={setViewerHidden}
       form={

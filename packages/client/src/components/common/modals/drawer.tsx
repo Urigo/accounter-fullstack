@@ -7,21 +7,17 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../ui/drawe
 
 /**
  * - `default`: the house drawer width (`w-3/4 sm:max-w-sm`) and a padded body.
- * - `document`: for the document viewer. Full width on phones and half the viewport (at least
- *   420px) from `sm` up, with a flex body that gives its content a definite height to scroll in.
- * - `tall`: a bottom sheet of 90% of the viewport (the house sheet stops at 80%), with the same flex
- *   body. The height is definite, not just a maximum, so a short form can't collapse a pane beside
- *   it. For the edit-document split.
+ * - `tall`: a bottom sheet of 90% of the viewport (the house sheet stops at 80%), with a flex body
+ *   that gives its content a definite height to scroll in. The height is definite, not just a
+ *   maximum, so a short form can't collapse a pane beside it. For the edit-document split.
  */
-export type PopUpDrawerSize = 'default' | 'document' | 'tall';
+export type PopUpDrawerSize = 'default' | 'tall';
 
 // Overrides must reuse the exact `data-[vaul-drawer-direction=…]:` prefixes from `ui/drawer.tsx`:
 // tailwind-merge only dedupes identical variant prefixes, and the attribute variants are more
 // specific than a plain `w-full`.
 const SIZE_CLASSES: Record<PopUpDrawerSize, string | undefined> = {
   default: undefined,
-  document:
-    'data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:sm:w-1/2 data-[vaul-drawer-direction=right]:sm:min-w-105 data-[vaul-drawer-direction=right]:sm:max-w-none',
   // No core 90vh utility; this mirrors the house `max-h-[80vh]`.
   tall: 'data-[vaul-drawer-direction=bottom]:h-[90vh] data-[vaul-drawer-direction=bottom]:max-h-[90vh]',
 };
@@ -39,12 +35,6 @@ export interface PopUpDrawerProps {
   withCloseButton?: boolean;
   lockScroll?: boolean;
   size?: PopUpDrawerSize;
-  /**
-   * Render the header row. With `false`, the content brings its own header and only a visually
-   * hidden title (Radix requires one) is rendered, from `accessibleTitle`.
-   */
-  withHeader?: boolean;
-  accessibleTitle?: string;
   children?: ReactElement | ReactElement[];
 }
 
@@ -56,8 +46,6 @@ export const PopUpDrawer = ({
   withCloseButton = true,
   opened = false,
   size = 'default',
-  withHeader = true,
-  accessibleTitle,
   onClose = (): void => {
     return;
   },
@@ -66,17 +54,9 @@ export const PopUpDrawer = ({
   // into it instead of `document.body`. The drawer's Radix Dialog is always modal and traps focus,
   // so body-portaled overlays would otherwise be unusable inside the drawer.
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
-  const isDocument = size === 'document';
   const hasFlexBody = size !== 'default';
   return (
-    <Drawer
-      direction={position}
-      open={opened}
-      onClose={onClose}
-      modal={false}
-      // The document viewer pans on drag; only a dedicated handle (there is none) may drag it.
-      handleOnly={isDocument}
-    >
+    <Drawer direction={position} open={opened} onClose={onClose} modal={false}>
       <DrawerContent
         asChild
         withOverlay={withOverlay}
@@ -89,21 +69,17 @@ export const PopUpDrawer = ({
         }}
       >
         <div>
-          {withHeader ? (
-            <DrawerHeader className="flex flex-row justify-start">
-              <DrawerTitle />
-              <div className="flex flex-row justify-between w-full">
-                {title}
-                {withCloseButton && (
-                  <Button size="icon" className="size-6" variant="ghost" onClick={onClose}>
-                    <X className="size-4 text-gray-500" />
-                  </Button>
-                )}
-              </div>
-            </DrawerHeader>
-          ) : (
-            <DrawerTitle className="sr-only">{accessibleTitle}</DrawerTitle>
-          )}
+          <DrawerHeader className="flex flex-row justify-start">
+            <DrawerTitle />
+            <div className="flex flex-row justify-between w-full">
+              {title}
+              {withCloseButton && (
+                <Button size="icon" className="size-6" variant="ghost" onClick={onClose}>
+                  <X className="size-4 text-gray-500" />
+                </Button>
+              )}
+            </div>
+          </DrawerHeader>
           <div
             className={cn(
               hasFlexBody ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto w-full px-4 pb-4',

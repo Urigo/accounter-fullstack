@@ -62,6 +62,7 @@ export function ViewerCanvas({
     <div ref={containerRef} data-status={state.status} className="relative min-h-0 flex-1">
       <div
         ref={scrollRef}
+        data-slot="document-viewer-canvas"
         role="group"
         aria-label="Document image"
         // The canvas must be reachable by keyboard so arrow keys can scroll it.

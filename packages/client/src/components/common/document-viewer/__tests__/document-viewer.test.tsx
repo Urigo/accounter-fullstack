@@ -371,4 +371,177 @@ describe('DocumentViewer', () => {
     expect(button('Zoom in').disabled).toBe(true);
     expect(container.querySelector('[role="alert"]')).toBeNull();
   });
+
+  it('a narrow viewer keeps the magnifier in the ⋯ menu, with the loupe size', () => {
+    render();
+    loadImage();
+    // Both exist in the DOM; container queries pick one by the viewer's width.
+    const more = button('More view options');
+    expect(more.classList.contains('@lg:hidden')).toBe(true);
+    expect(
+      button('Magnifier').closest('.\\@lg\\:flex')?.classList.contains('hidden'),
+    ).toBe(true);
+
+    act(() => {
+      more.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+    });
+    const item = (name: string): HTMLElement | undefined =>
+      [...document.body.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find(
+        el => el.textContent?.trim() === name,
+      );
+    const magnifier = item('Magnifier');
+    expect(magnifier?.getAttribute('role')).toBe('menuitemcheckbox');
+    expect(magnifier?.getAttribute('aria-checked')).toBe('false');
+    expect(item('Large')).toBeUndefined();
+
+    act(() => magnifier?.click());
+    // Still open, so the size can be picked next; the toolbar toggle follows.
+    expect(item('Magnifier')?.getAttribute('aria-checked')).toBe('true');
+    expect(button('Magnifier').getAttribute('data-state')).toBe('on');
+    act(() => item('Large')?.click());
+    expect(
+      container.querySelector('[data-testid="document-viewer-loupe"]')?.classList.contains('size-80'),
+    ).toBe(true);
+  });
+
+  it('has no ⋯ menu on touch-only devices, where the magnifier is hidden', () => {
+    hoverNone = true;
+    render();
+    loadImage();
+    expect(container.querySelector('[aria-label="More view options"]')).toBeNull();
+  });
+
+  it('condenses through container queries on the viewer root', () => {
+    render();
+    const root = container.querySelector('[data-slot="document-viewer"]');
+    expect(root?.classList.contains('@container')).toBe(true);
+    // The fit modes keep their full names for assistive tech when the short labels show.
+    expect(button('Fit page').textContent).toBe('PageFit page');
+  });
+});
+
+describe('DocumentViewer touch inertia', () => {
+  let frames: FrameRequestCallback[];
+  let now: number;
+  let reducedMotion: boolean;
+
+  beforeEach(() => {
+    frames = [];
+    now = 1000;
+    reducedMotion = false;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb));
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      frames[id - 1] = () => {};
+    });
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)' ? reducedMotion : false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** Runs queued frames 16ms apart until none is left, or `limit` have run. */
+  function runFrames(limit = 500): number {
+    let ran = 0;
+    while (frames.length > 0 && ran < limit) {
+      const pending = frames;
+      frames = [];
+      for (const cb of pending) {
+        now += 16;
+        ran += 1;
+        act(() => cb(now));
+      }
+    }
+    return ran;
+  }
+
+  function touch(type: string, x: number, target: EventTarget = window): void {
+    act(() => {
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: 7,
+          pointerType: 'touch',
+          isPrimary: true,
+          clientX: x,
+          clientY: 400,
+          bubbles: true,
+        }),
+      );
+    });
+  }
+
+  /** A quick leftward swipe of 120px over 60ms, released at once. */
+  function swipe(): HTMLDivElement {
+    render();
+    loadImage();
+    const box = scrollBox();
+    box.scrollLeft = 1000;
+    touch('pointerdown', 400, box);
+    for (const x of [380, 340, 300, 280]) {
+      now += 15;
+      touch('pointermove', x);
+    }
+    touch('pointerup', 280);
+    return box;
+  }
+
+  it('a touch pan glides on after release, slowing to a stop', () => {
+    const box = swipe();
+    const released = box.scrollLeft;
+    expect(released).toBe(1120);
+
+    runFrames(1);
+    const firstStep = box.scrollLeft - released;
+    expect(firstStep).toBeGreaterThan(0);
+    runFrames(1);
+    const secondStep = box.scrollLeft - released - firstStep;
+    expect(secondStep).toBeGreaterThan(0);
+    expect(secondStep).toBeLessThan(firstStep);
+
+    runFrames();
+    expect(frames).toHaveLength(0);
+  });
+
+  it('a new press catches the glide', () => {
+    const box = swipe();
+    runFrames(1);
+    touch('pointerdown', 280, box);
+    const caught = box.scrollLeft;
+    runFrames();
+    expect(box.scrollLeft).toBe(caught);
+  });
+
+  it('does not glide under prefers-reduced-motion', () => {
+    reducedMotion = true;
+    const box = swipe();
+    runFrames();
+    expect(box.scrollLeft).toBe(1120);
+  });
+
+  it('a mouse drag does not glide', () => {
+    render();
+    loadImage();
+    const box = scrollBox();
+    box.scrollLeft = 1000;
+    const mouse = (type: string, x: number, target: EventTarget = window): void =>
+      act(() => {
+        target.dispatchEvent(
+          new PointerEvent(type, { pointerId: 1, pointerType: 'mouse', button: 0, clientX: x, bubbles: true }),
+        );
+      });
+    mouse('pointerdown', 400, box);
+    for (const x of [380, 340, 300]) {
+      now += 15;
+      mouse('pointermove', x);
+    }
+    mouse('pointerup', 300);
+    runFrames();
+    expect(box.scrollLeft).toBe(1100);
+  });
 });

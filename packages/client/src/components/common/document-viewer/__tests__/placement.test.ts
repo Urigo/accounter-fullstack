@@ -7,6 +7,7 @@ import {
   editSplitFormWidthStyle,
   editSplitSeparatorAria,
   resolveViewerPlacement,
+  type ResolvedViewerPlacement,
   type ResolveViewerPlacementInput,
 } from '../placement.js';
 
@@ -27,28 +28,55 @@ function inside(role: string): HTMLElement {
 
 const WIDE = { viewportWidth: 1440, sidebarWidth: SIDEBAR_WIDTH_PX.minimized };
 
+const DOCKED: ResolvedViewerPlacement = { placement: 'docked', overlayMode: null };
+const SHEET: ResolvedViewerPlacement = { placement: 'overlay', overlayMode: 'sheet' };
+const FULLSCREEN: ResolvedViewerPlacement = { placement: 'overlay', overlayMode: 'fullscreen' };
+
 describe('resolveViewerPlacement', () => {
-  it.each<[string, ResolveViewerPlacementInput, 'docked' | 'fallback']>([
-    ['wide screen, no trigger', { ...WIDE, trigger: null }, 'docked'],
-    ['wide screen, trigger omitted', WIDE, 'docked'],
-    ['viewport 1023', { viewportWidth: 1023, sidebarWidth: 72 }, 'fallback'],
-    ['viewport 1024, sidebar minimized', { viewportWidth: 1024, sidebarWidth: 72 }, 'docked'],
-    ['viewport 1100, sidebar expanded', { viewportWidth: 1100, sidebarWidth: 240 }, 'fallback'],
-    ['viewport 1140, sidebar expanded', { viewportWidth: 1140, sidebarWidth: 240 }, 'docked'],
-  ])('%s → %s', (_, input, expected) => {
-    expect(resolveViewerPlacement(input)).toBe(expected);
+  it.each<[string, ResolveViewerPlacementInput, ResolvedViewerPlacement]>([
+    ['wide screen, no trigger', { ...WIDE, trigger: null }, DOCKED],
+    ['wide screen, trigger omitted', WIDE, DOCKED],
+    ['viewport 1023', { viewportWidth: 1023, sidebarWidth: 72 }, FULLSCREEN],
+    ['viewport 1024, sidebar minimized', { viewportWidth: 1024, sidebarWidth: 72 }, DOCKED],
+    ['viewport 1100, sidebar expanded', { viewportWidth: 1100, sidebarWidth: 240 }, SHEET],
+    ['viewport 1140, sidebar expanded', { viewportWidth: 1140, sidebarWidth: 240 }, DOCKED],
+  ])('%s', (_, input, expected) => {
+    expect(resolveViewerPlacement(input)).toEqual(expected);
   });
 
-  it('falls back for a trigger inside a dialog', () => {
-    expect(resolveViewerPlacement({ ...WIDE, trigger: inside('dialog') })).toBe('fallback');
+  it('opens the overlay sheet for a trigger inside a dialog at 1440px', () => {
+    expect(resolveViewerPlacement({ ...WIDE, trigger: inside('dialog') })).toEqual(SHEET);
   });
 
-  it('falls back for a trigger inside an alertdialog', () => {
-    expect(resolveViewerPlacement({ ...WIDE, trigger: inside('alertdialog') })).toBe('fallback');
+  it('opens the overlay sheet for a trigger inside an alertdialog', () => {
+    expect(resolveViewerPlacement({ ...WIDE, trigger: inside('alertdialog') })).toEqual(SHEET);
+  });
+
+  it.each<[string, Element | null]>([
+    ['no trigger', null],
+    ['a page trigger', document.createElement('button')],
+    ['a dialog trigger', inside('dialog')],
+  ])('goes full screen at 800px with %s', (_, trigger) => {
+    expect(resolveViewerPlacement({ trigger, viewportWidth: 800, sidebarWidth: 72 })).toEqual(
+      FULLSCREEN,
+    );
+  });
+
+  it('detects a menu-trigger ref inside a dialog, though the menu item portals out', () => {
+    // The actions menu passes its `DropdownMenuTrigger` button, which stays in the dialog, rather
+    // than the item that was clicked, which portals to the body.
+    const menuButton = inside('dialog');
+    menuButton.setAttribute('aria-haspopup', 'menu');
+    const portaledItem = document.createElement('div');
+    portaledItem.setAttribute('role', 'menuitem');
+    document.body.append(portaledItem);
+
+    expect(resolveViewerPlacement({ ...WIDE, trigger: portaledItem })).toEqual(DOCKED);
+    expect(resolveViewerPlacement({ ...WIDE, trigger: menuButton })).toEqual(SHEET);
   });
 
   it('docks for a trigger outside any dialog', () => {
-    expect(resolveViewerPlacement({ ...WIDE, trigger: inside('region') })).toBe('docked');
+    expect(resolveViewerPlacement({ ...WIDE, trigger: inside('region') })).toEqual(DOCKED);
   });
 });
 

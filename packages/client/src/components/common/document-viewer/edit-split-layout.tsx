@@ -10,6 +10,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { PanelRightOpen } from 'lucide-react';
+import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
 import { useMediaQuery } from '@/hooks/use-media-query.js';
 import { cn } from '@/lib/utils.js';
 import { Button } from '../../ui/button.js';
@@ -21,6 +22,7 @@ import {
   editSplitFormWidthStyle,
   editSplitSeparatorAria,
 } from './placement.js';
+import type { DocumentViewerEntry } from './types.js';
 
 /** Holds the form pane's `clamp()` width expression. */
 export const EDIT_SPLIT_FORM_WIDTH_VAR = '--edit-split-form';
@@ -36,13 +38,20 @@ export const SPLIT_MEDIA_QUERY = '(min-width: 64rem)';
 export interface EditSplitViewerControls {
   /** Collapses the viewer pane to a strip; pass as `onClose` with `closeVariant="hide"`. */
   onHide: () => void;
-  /** Widens the viewer over the form and back. Absent when stacked (Expand comes with PR 4). */
-  onToggleExpand?: () => void;
+  /**
+   * Side by side, widens the viewer over the form and back. Stacked, opens the document in the
+   * full-screen overlay above the sheet, with the clicked button as the trigger. Absent when
+   * stacked without an `entry`.
+   */
+  onToggleExpand?: (trigger: HTMLElement) => void;
+  /** Whether the viewer covers the form. Always false when stacked. */
   expanded: boolean;
 }
 
 export interface DocumentEditSplitProps {
   form: ReactNode;
+  /** The document in the viewer pane. Stacked, Expand opens it in the overlay. */
+  entry?: DocumentViewerEntry;
   /** Renders the viewer pane's content, usually a `DocumentViewer`. */
   viewer: (controls: EditSplitViewerControls) => ReactElement;
   /** Whether the viewer pane is collapsed to a strip. Controlled: the form's grid follows it. */
@@ -60,10 +69,12 @@ export interface DocumentEditSplitProps {
  * drags the surrounding bottom sheet. Dragging the sheet's header still does.
  *
  * Expand covers the form with the viewer, the same overlay pattern as the docked column: the viewer
- * pane stays in the flow as a spacer, so the form keeps its scroll position.
+ * pane stays in the flow as a spacer, so the form keeps its scroll position. Stacked, Expand opens
+ * the full-screen overlay above the sheet instead.
  */
 export function DocumentEditSplit({
   form,
+  entry,
   viewer,
   hidden,
   onHiddenChange,
@@ -82,7 +93,8 @@ export function DocumentEditSplit({
   const [dragging, setDragging] = useState(false);
   const [wantsExpanded, setWantsExpanded] = useState(false);
   const sideBySide = useMediaQuery(SPLIT_MEDIA_QUERY);
-  // Stacked, there is no Expand; a hidden pane has nothing to expand.
+  const openViewer = useDocumentViewer(s => s.open);
+  // Stacked, Expand opens the overlay instead; a hidden pane has nothing to expand.
   const expanded = wantsExpanded && sideBySide && !hidden;
 
   // A drag still in progress when the split unmounts must not leave window listeners behind.
@@ -106,6 +118,15 @@ export function DocumentEditSplit({
     setWantsExpanded(false);
     onHiddenChange(true);
   };
+
+  let toggleExpand: EditSplitViewerControls['onToggleExpand'];
+  if (sideBySide) {
+    toggleExpand = (): void => setWantsExpanded(e => !e);
+  } else if (entry) {
+    // The trigger sits in the sheet's dialog, so this resolves to the overlay (full screen under
+    // 1024px), which hands focus back to it on close.
+    toggleExpand = (trigger): void => openViewer(entry, { trigger });
+  }
 
   const show = (): void => {
     focusAfterToggleRef.current = 'viewer';
@@ -267,7 +288,7 @@ export function DocumentEditSplit({
           <ViewerSlot
             render={viewer}
             onHide={hide}
-            onToggleExpand={sideBySide ? (): void => setWantsExpanded(e => !e) : undefined}
+            onToggleExpand={toggleExpand}
             expanded={expanded}
           />
         </div>

@@ -10,7 +10,6 @@ import {
 } from 'react';
 import { getViewerTrigger, useDocumentViewer } from '@/hooks/use-document-viewer.js';
 import { cn } from '@/lib/utils.js';
-import { DocumentImageDrawer } from '../document-image-drawer.js';
 import { DocumentViewer } from './document-viewer.js';
 import { clampDockedRatio, DOCKED_RATIO_STEP, dockedWidthStyle } from './placement.js';
 import type { DocumentViewerEntry } from './types.js';
@@ -252,13 +251,12 @@ export function DockedViewerPanel({
 }
 
 /**
- * The dashboard's single document viewer, connected to `useDocumentViewer`. Docks as a column when
- * the placement allows and otherwise falls back to the PR 1 drawer, which the Overlay replaces in
- * PR 4. Hidden while suspended (the edit sheet shows the scan itself): the docked panel stays
- * mounted, keeping `current`, its width and its zoom, so it comes back as it was when the sheet
- * closes.
+ * The dashboard's docked document viewer, connected to `useDocumentViewer`. Renders the column
+ * when the placement is `docked`; `OverlayDocumentViewer` covers the `overlay` placement. Hidden
+ * while suspended (the edit sheet shows the scan itself): the docked panel stays mounted, keeping
+ * `current`, its width and its zoom, so it comes back as it was when the sheet closes.
  */
-export function DockedDocumentViewer(): ReactElement {
+export function DockedDocumentViewer(): ReactElement | null {
   const current = useDocumentViewer(s => s.current);
   const placement = useDocumentViewer(s => s.placement);
   const expanded = useDocumentViewer(s => s.expanded);
@@ -280,22 +278,17 @@ export function DockedDocumentViewer(): ReactElement {
     [setExpanded],
   );
 
+  if (!current || placement !== 'docked') {
+    return null;
+  }
+
   return (
-    <>
-      {current && placement === 'docked' && (
-        <DockedViewerPanel
-          entry={current}
-          expanded={expanded}
-          onToggleExpand={toggleExpand}
-          onClose={requestClose}
-          suspended={suspended}
-        />
-      )}
-      <DocumentImageDrawer
-        source={current}
-        opened={placement === 'fallback' && !suspended}
-        onClose={close}
-      />
-    </>
+    <DockedViewerPanel
+      entry={current}
+      expanded={expanded}
+      onToggleExpand={toggleExpand}
+      onClose={requestClose}
+      suspended={suspended}
+    />
   );
 }
