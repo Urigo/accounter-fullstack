@@ -29,8 +29,11 @@ export interface DocumentViewerProps {
    * work it sits in, as in the edit sheet.
    */
   closeVariant?: 'close' | 'hide';
-  /** Renders the Expand action, which widens the viewer over the work beside it and back. */
-  onToggleExpand?: () => void;
+  /**
+   * Renders the Expand action, which widens the viewer over the work beside it and back, or opens
+   * it full screen. Gets the Expand button, to hand to `open()` as the trigger.
+   */
+  onToggleExpand?: (trigger: HTMLElement) => void;
   /** Whether the viewer is currently expanded; drives the Expand action's state. */
   expanded?: boolean;
   className?: string;
@@ -47,15 +50,18 @@ function originalHref(source: DocumentViewerSource): string | null {
 function OpenOriginalButton({
   href,
   variant = 'outline',
+  condensed = false,
 }: {
   href: string;
   variant?: 'outline' | 'ghost';
+  /** Icon only in a narrow viewer (under the `@md` container width); the label stays for AT. */
+  condensed?: boolean;
 }): ReactElement {
   return (
     <Button variant={variant} size="sm" asChild>
       <a href={href} target="_blank" rel="noreferrer">
         <ExternalLink className="size-4" />
-        Open original
+        <span className={cn(condensed && 'sr-only @md:not-sr-only')}>Open original</span>
       </a>
     </Button>
   );
@@ -174,7 +180,9 @@ export function DocumentViewer({
     <div
       data-vaul-no-drag
       data-slot="document-viewer"
-      className={cn('flex h-full min-h-0 flex-col bg-white dark:bg-gray-950', className)}
+      // A size container, so the header and toolbar condense to the viewer's width, not the
+      // viewport's: a narrow docked column or edit pane condenses as a phone does.
+      className={cn('@container flex h-full min-h-0 flex-col bg-white dark:bg-gray-950', className)}
     >
       <div className="flex items-start gap-2 border-b px-4 py-3">
         <div className="min-w-0 flex-1">
@@ -197,13 +205,13 @@ export function DocumentViewer({
                 // A toggle keeps one label; `aria-pressed` carries the state.
                 aria-label="Expand document viewer"
                 aria-pressed={expanded}
-                onClick={onToggleExpand}
+                onClick={event => onToggleExpand(event.currentTarget)}
               >
                 {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
               </Button>
             </Tooltip>
           )}
-          {href && <OpenOriginalButton href={href} variant="ghost" />}
+          {href && <OpenOriginalButton href={href} variant="ghost" condensed />}
           {onClose && (
             <Tooltip content={closeVariant === 'hide' ? 'Hide document' : 'Close'} asChild>
               <Button

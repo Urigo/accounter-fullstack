@@ -8,9 +8,22 @@ export const PAGE_MIN_PX = 480;
 /**
  * Where an opened document shows:
  * - `docked`: the column on the right of the dashboard layout.
- * - `fallback`: the PR 1 drawer, until the Overlay replaces it.
+ * - `overlay`: a modal layer above everything else, an open dialog included. {@link OverlayMode}
+ *   says which shape.
  */
-export type DocumentViewerPlacement = 'docked' | 'fallback';
+export type DocumentViewerPlacement = 'docked' | 'overlay';
+
+/**
+ * The overlay's shape:
+ * - `fullscreen`: the whole viewport, under 1024px. It owns a history entry, so Back closes it.
+ * - `sheet`: a full-height right sheet with no backdrop, from 1024px up wherever the viewer can't
+ *   dock (the trigger is inside a modal, or both docked minimums don't fit). A modal under it stays
+ *   visible on the left.
+ */
+export type OverlayMode = 'fullscreen' | 'sheet';
+
+export type ResolvedViewerPlacement =
+  { placement: 'docked'; overlayMode: null } | { placement: 'overlay'; overlayMode: OverlayMode };
 
 /** Any element inside one of these is in a modal layer, which would cover a docked column. */
 const MODAL_SELECTOR = '[role="dialog"],[role="alertdialog"]';
@@ -27,17 +40,18 @@ export function resolveViewerPlacement({
   trigger,
   viewportWidth,
   sidebarWidth,
-}: ResolveViewerPlacementInput): DocumentViewerPlacement {
-  if (trigger?.closest(MODAL_SELECTOR)) {
-    return 'fallback';
-  }
+}: ResolveViewerPlacementInput): ResolvedViewerPlacement {
   if (viewportWidth < DOCK_MIN_VIEWPORT_PX) {
-    return 'fallback';
+    // Phones and tablets get the whole screen, whether the trigger is in a modal or not.
+    return { placement: 'overlay', overlayMode: 'fullscreen' };
   }
-  if (viewportWidth - sidebarWidth < DOCKED_MIN_PX + PAGE_MIN_PX) {
-    return 'fallback';
+  if (
+    trigger?.closest(MODAL_SELECTOR) ||
+    viewportWidth - sidebarWidth < DOCKED_MIN_PX + PAGE_MIN_PX
+  ) {
+    return { placement: 'overlay', overlayMode: 'sheet' };
   }
-  return 'docked';
+  return { placement: 'docked', overlayMode: null };
 }
 
 /**

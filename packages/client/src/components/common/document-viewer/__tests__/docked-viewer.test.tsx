@@ -375,32 +375,15 @@ describe('DockedDocumentViewer', () => {
     expect(useDocumentViewer.getState().current).toBeNull();
   });
 
-  it('hides the fallback drawer while suspended', () => {
+  it('leaves a trigger inside a dialog to the overlay, rendering nothing itself', () => {
     const dialog = document.createElement('div');
     dialog.setAttribute('role', 'dialog');
     dialog.append(trigger);
     document.body.append(dialog);
     openDoc();
-    const drawerState = (): string | null | undefined =>
-      document.body.querySelector('[data-slot="drawer-content"]')?.getAttribute('data-state');
-    expect(drawerState()).toBe('open');
-    act(() => {
-      useDocumentViewer.getState().suspend();
-    });
-    // Closed (happy-dom never finishes vaul's exit animation, so the node may linger).
-    expect(drawerState() ?? 'closed').toBe('closed');
-    expect(useDocumentViewer.getState().placement).toBe('fallback');
-  });
-
-  it('uses the drawer instead of docking when opened from a dialog', () => {
-    const dialog = document.createElement('div');
-    dialog.setAttribute('role', 'dialog');
-    dialog.append(trigger);
-    document.body.append(dialog);
-    openDoc();
-    expect(useDocumentViewer.getState().placement).toBe('fallback');
+    expect(useDocumentViewer.getState().placement).toBe('overlay');
     expect(region()).toBeNull();
-    // The drawer portals to the body.
-    expect(document.body.querySelector('[data-slot="document-viewer"]')).not.toBeNull();
+    // No drawer any more: the overlay host, mounted separately, shows it.
+    expect(document.body.querySelector('[data-slot="document-viewer"]')).toBeNull();
   });
 });
