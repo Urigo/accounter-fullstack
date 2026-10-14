@@ -7,40 +7,27 @@ Insert and edit ledger records manually, from the API and from the charge view.
 
 **Server (`@accounter/server`)**
 
-- `insertLedgerRecord(chargeId, operation, input)` stores a ledger record under a charge exactly as
-  typed and, in the same database transaction, creates the entity it represents. Either both are
-  saved or neither is.
-  - `MISC_EXPENSE` creates a misc expense: the Credit 1 entity is the creditor, the Debit 1 entity
-    the debtor, and the amount is the Credit 1 amount in the record's currency. Slot 2 (such as VAT)
-    stays on the ledger record only.
-  - `DOCUMENT` creates an INVOICE. Its counterparty is the one slot-1 entity that is a business. On
-    the credit side the document is an expense (the counterparty is the creditor and the charge
-    owner the debtor), and on the debit side an income (the reverse). The total is the
-    counterparty's slot-1 amount in the record's currency, the serial number is the reference, and
-    the date is the invoice date. VAT is the slot-2 amount on the side opposite the counterparty
-    (Debit 2 for an expense, Credit 2 for an income) when that slot holds the input or output VAT
-    tax category, and 0 otherwise. The insert is rejected when neither or both slot-1 entities are
-    businesses, or when the counterparty is the charge owner.
-  - The charge's ledger must not be locked.
-- `updateLedgerRecord(ledgerRecordId, input)` overwrites one unlocked ledger record: its entities,
-  amounts, currency, dates, description and reference. Optional values left out of
-  `LedgerRecordInput`, such as Debit 2 / Credit 2, are cleared rather than kept. The record's charge,
-  owner and lock never change, and its misc expense or document is not touched.
-- Both mutations validate the record and report every problem at once, naming the slot (Debit 1,
-  Credit 1, Debit 2, Credit 2):
-  - each entity needs a local amount greater than 0, and every amount needs an entity;
-  - a foreign-currency record needs a foreign amount greater than 0 on each filled slot, and a
-    local-currency record may not carry foreign amounts;
-  - debit and credit local totals must balance to within 0.005;
-  - the invoice and value dates must both be after the ledger lock date.
-- Both mutations reject a charge or record that belongs to a business other than the one the request
-  writes to, with a message asking to narrow the business scope. Every financial entity the record
-  references must belong to that business too; an entity of another business is reported as not
-  found in this business.
-- Both mutations return the record with its charge, or a `CommonError`. They re-flag an approved
-  charge for accountant review in the same transaction as the ledger change.
-- `LedgerRecord` now exposes `locked` (whether the record can no longer be edited) and `currency`
-  (the currency of its foreign amounts).
+- New `insertLedgerRecord(chargeId, operation, input)` mutation. It stores a ledger record under a
+  charge exactly as typed, together with the entity the record represents: a misc expense
+  (`MISC_EXPENSE`) or an INVOICE document (`DOCUMENT`, with its counterparty and VAT taken from the
+  record). Either both are saved or neither is. A charge whose ledger is locked is rejected, and so
+  is a document whose counterparty can't be resolved or is the charge owner.
+- New `updateLedgerRecord(ledgerRecordId, input)` mutation. It overwrites one unlocked ledger
+  record: its entities, amounts, currency, dates, description and reference. Values left out, such
+  as Debit 2 / Credit 2, are cleared. The record's misc expense or document is not changed.
+- Both mutations validate the record and report every problem at once, naming the slot:
+  - every entity needs an amount greater than 0;
+  - a foreign-currency record needs foreign amounts, and a local-currency record can't have any;
+  - debits and credits must balance;
+  - both dates must be after the ledger lock date.
+- Both mutations write only to the business the request targets:
+  - `insertLedgerRecord` rejects a charge of another business, with a message asking to narrow the
+    business scope;
+  - `updateLedgerRecord` reports a record of another business as not found;
+  - a financial entity of another business is reported as not found in this business.
+- Both mutations return the record with its charge, or a `CommonError`. A successful change
+  re-flags an approved charge for accountant review.
+- `LedgerRecord` now exposes `locked` (whether the record can still be edited) and `currency`.
 
 **Client (`@accounter/client`)**
 

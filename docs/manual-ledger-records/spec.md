@@ -15,6 +15,8 @@ changes to regeneration or diff logic.
 
 ## Decisions (agreed in Q&A)
 
+Superseded in places by [_Implementation status_](#implementation-status) below.
+
 | #   | Topic            | Decision                                                                                                                                                                                                                                                                                              |
 | --- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | Insert model     | Save the ledger record **exactly as typed**, and also create the backing entity. There is no link column between them. If the regenerated ledger differs, the existing diff UI shows it.                                                                                                              |
@@ -198,22 +200,23 @@ Then run `yarn generate` to refresh the pgtyped and GraphQL types.
 
 ## Implementation status
 
-The POC shipped as ten stacked PRs. The plan is in [`prompt-plan.md`](./prompt-plan.md).
+The POC shipped as ten stacked PRs forming one linear chain, steps 1 → 10 (step 6 is based on step
+5). The plan is in [`prompt-plan.md`](./prompt-plan.md).
 
 ### What shipped
 
-| Step | PR    | What it added                                                                                                                                                                                                                                                                           |
-| ---- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | #4689 | `updateLedgerRecord(ledgerRecordId, input)`, `LedgerRecordInput`, and `locked` and `currency` on `LedgerRecord`. The provider's update SQL now uses a plain `SET`, so an edit can clear Debit 2 / Credit 2.                                                                             |
-| 2    | #4692 | `validateManualLedgerRecord` in `helpers/manual-ledger-record.helper.ts`. It reports every problem at once and names the slot.                                                                                                                                                          |
-| 3    | #4693 | `insertLedgerRecord(chargeId, operation: MISC_EXPENSE, input)`. The record and its misc expense are written in one transaction, from `helpers/manual-ledger-record-mutations.helper.ts`.                                                                                                |
-| 4    | #4695 | `operation: DOCUMENT`. It creates the INVOICE document: the counterparty comes from the slot-1 business, and the VAT from the opposite slot 2.                                                                                                                                          |
-| 5    | #4696 | DB-backed integration tests (`manual-ledger-records.integration.test.ts`) for both mutations. They cover stored rows, rollback, lock rules, approval re-flagging, other-business rejection and matching the generated ledger. This PR is stacked on step 4, in parallel with steps 6–9. |
-| 6    | #4701 | The client insert flow. The charge's ledger section always renders, with a "+" beside "Regenerate Ledger" that opens `LedgerRecordForm` (`components/common/forms/ledger-record-form/`) in `InsertLedgerRecordModal`. Includes the `useInsertLedgerRecord` hook.                        |
-| 7    | #4703 | A currency selector. A foreign currency adds a foreign amount to each line; switching back to the local currency clears them.                                                                                                                                                           |
-| 8    | #4705 | Optional Debit 2 / Credit 2 lines with a clear (×) action, plus live debit and credit totals and a difference that turns red while unbalanced.                                                                                                                                          |
-| 9    | #4708 | The edit flow. A pencil in an "Actions" column of the charge's ledger table (unlocked stored rows only, including Diff and Deleted rows) opens `EditLedgerRecordModal`, prefilled with every field. Includes the `useUpdateLedgerRecord` hook.                                          |
-| 10   | —     | End-to-end verification, this section, and the final changeset wording.                                                                                                                                                                                                                 |
+| Step | PR    | What it added                                                                                                                                                                                                                                                    |
+| ---- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | #4689 | `updateLedgerRecord(ledgerRecordId, input)`, `LedgerRecordInput`, and `locked` and `currency` on `LedgerRecord`. The provider's update SQL now uses a plain `SET`, so an edit can clear Debit 2 / Credit 2.                                                      |
+| 2    | #4692 | `validateManualLedgerRecord` in `helpers/manual-ledger-record.helper.ts`. It reports every problem at once and names the slot.                                                                                                                                   |
+| 3    | #4693 | `insertLedgerRecord(chargeId, operation: MISC_EXPENSE, input)`. The record and its misc expense are written in one transaction, from `helpers/manual-ledger-record-mutations.helper.ts`.                                                                         |
+| 4    | #4695 | `operation: DOCUMENT`. It creates the INVOICE document: the counterparty comes from the slot-1 business, and the VAT from the opposite slot 2.                                                                                                                   |
+| 5    | #4696 | DB-backed integration tests (`manual-ledger-records.integration.test.ts`) for both mutations. They cover stored rows, rollback, lock rules, approval re-flagging, other-business rejection and matching the generated ledger.                                    |
+| 6    | #4701 | The client insert flow. The charge's ledger section always renders, with a "+" beside "Regenerate Ledger" that opens `LedgerRecordForm` (`components/common/forms/ledger-record-form/`) in `InsertLedgerRecordModal`. Includes the `useInsertLedgerRecord` hook. |
+| 7    | #4703 | A currency selector. A foreign currency adds a foreign amount to each line; switching back to the local currency clears them.                                                                                                                                    |
+| 8    | #4705 | Optional Debit 2 / Credit 2 lines with a clear (×) action, plus live debit and credit totals and a difference that turns red while unbalanced.                                                                                                                   |
+| 9    | #4708 | The edit flow. A pencil in an "Actions" column of the charge's ledger table (unlocked stored rows only, including Diff and Deleted rows) opens `EditLedgerRecordModal`, prefilled with every field. Includes the `useUpdateLedgerRecord` hook.                   |
+| 10   | #4709 | End-to-end verification, this section, and the final changeset wording.                                                                                                                                                                                          |
 
 Small differences from the client section above: the form is a folder (`index.tsx`, `schema.ts`,
 `ledger-slot-fields.tsx`) rather than one file. The main lines are labelled "Debit" and "Credit",
@@ -239,8 +242,10 @@ and the secondary ones "Debit 2" and "Credit 2".
 
 - **Approval is degraded inside the write transaction**, not after commit. The ledger write, the
   backing entity and the charge's re-flagging to PENDING commit or roll back together.
-- **The charge or record owner must equal the write-target business.** A charge or record of another
-  business in the read scope is rejected with a message asking to narrow the business scope.
+- **The charge or record owner must equal the write-target business.** `insertLedgerRecord` rejects
+  a charge of another business in the read scope with a message asking to narrow the business scope.
+  `updateLedgerRecord` loads the record scoped to the write target, so a record of another business
+  is reported as "Ledger record with id … not found".
 - **Every referenced financial entity must be owned by the write-target business.** This covers the
   entities of both insert operations and of an edit. An entity of another business is reported as
   not found in this business.
@@ -248,11 +253,35 @@ and the secondary ones "Debit 2" and "Credit 2".
   Regenerate and "+" beside the trigger, so they aren't buttons nested in its `<button>`, and their
   dialogs don't toggle the section.
 
+### Derived entities (as shipped)
+
+Both inserts write the backing entity, the ledger record and the charge's approval re-flagging in
+one `TenantAwareDBClient` transaction. If any write fails, none is kept.
+
+- **`MISC_EXPENSE`:**
+  - creditor = the Credit 1 entity, debtor = the Debit 1 entity;
+  - amount = the Credit 1 amount in the record's currency (foreign if the record is in a foreign
+    currency, else local);
+  - invoice date, value date (midnight), currency and description come from the record;
+  - slot 2 stays on the ledger record only.
+- **`DOCUMENT`:** an `INVOICE`.
+  - The counterparty is the one slot-1 entity that is a business.
+    - On the credit side the document is an expense: creditor = counterparty, debtor = charge owner.
+    - On the debit side it is an income, the reverse.
+  - The total is the counterparty's slot-1 amount in the record's currency.
+  - The serial number is the reference, and the date is the invoice date.
+  - VAT is the slot-2 amount on the side opposite the counterparty (Debit 2 for an expense, Credit 2
+    for an income), when that slot holds the admin context's input or output VAT tax category.
+    Otherwise it is 0.
+  - The insert is rejected when neither or both slot-1 entities are businesses, or when the
+    counterparty is the charge owner.
+- An edit changes the ledger record only. Its misc expense or document is never touched.
+
 ### Verification (step 10)
 
 - All gates are green: `yarn generate`, `yarn lint`, `yarn prettier:check`, the server and client
-  type checks, `yarn test`, and `yarn graphql:validate`. With step 5 merged in locally,
-  `yarn test:integration` is green too.
+  type checks, `yarn test`, `yarn graphql:validate`, and `yarn test:integration` (which includes
+  step 5's DB tests).
 - Manual QA ran against the real app: `server:dev` and `client:dev` with the dev auth bypass
   (`ALLOW_DEV_AUTH=1`) on a demo-seeded database. Every item passed:
   - The five checks above.
