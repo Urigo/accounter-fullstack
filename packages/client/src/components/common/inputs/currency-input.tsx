@@ -35,6 +35,13 @@ type CurrencyCodeProps = {
   id?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
+  /**
+   * Merged over the wrapper's default top margin, which lines the select up with labelled inputs in
+   * label-less rows. A caller with its own label passes e.g. `mt-0`.
+   */
+  className?: string;
+  /** Classes for the select trigger, e.g. `w-full` to match the width of the other inputs */
+  triggerClassName?: string;
 };
 
 export const CurrencyCodeInput = forwardRef<HTMLButtonElement, CurrencyCodeProps>(
@@ -48,14 +55,21 @@ export const CurrencyCodeInput = forwardRef<HTMLButtonElement, CurrencyCodeProps
     id,
     'aria-describedby': ariaDescribedBy,
     'aria-invalid': ariaInvalid,
+    className,
+    triggerClassName,
   }) {
     // Portal into the surrounding modal layer when there is one — see `usePortalContainer`.
     const portalContainer = usePortalContainer();
     return (
-      <div className="bottom-0 mt-6">
+      <div className={cn('bottom-0 mt-6', className)}>
         {label && <Label className="sr-only">{label}</Label>}
         <Select value={value} onValueChange={onChange} disabled={disabled} name={name} form={form}>
-          <SelectTrigger id={id} aria-describedby={ariaDescribedBy} aria-invalid={ariaInvalid}>
+          <SelectTrigger
+            id={id}
+            aria-describedby={ariaDescribedBy}
+            aria-invalid={ariaInvalid}
+            className={triggerClassName}
+          >
             <SelectValue placeholder="Currency" />
           </SelectTrigger>
           <SelectContent container={portalContainer}>
