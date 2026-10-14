@@ -1,5 +1,23 @@
 # @accounter/scraper-app
 
+## 0.0.4
+
+### Patch Changes
+
+- [#4571](https://github.com/Urigo/accounter-fullstack/pull/4571) [`d394530`](https://github.com/Urigo/accounter-fullstack/commit/d394530d88cdc1243de19bd7a804acdc3fb26eac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@fastify/websocket@11.3.3` ↗︎](https://www.npmjs.com/package/@fastify/websocket/v/11.3.3) (from `11.3.1`, in `dependencies`)
+    - Updated dependency [`fast-xml-parser@5.11.2` ↗︎](https://www.npmjs.com/package/fast-xml-parser/v/5.11.2) (from `5.11.1`, in `dependencies`)
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@fastify/static@10.1.6` ↗︎](https://www.npmjs.com/package/@fastify/static/v/10.1.6) (from `10.1.5`, in `dependencies`)
+    - Updated dependency [`@fastify/websocket@11.3.4` ↗︎](https://www.npmjs.com/package/@fastify/websocket/v/11.3.4) (from `11.3.3`, in `dependencies`)
+
+- [#4687](https://github.com/Urigo/accounter-fullstack/pull/4687) [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Poalim securities transactions with the `איחוד/הפחתת הון` (consolidation / capital reduction)
+  payment type no longer fail schema validation. The value is accepted by the scraper schemas and
+  exposed in GraphQL as the new `SecurityPaymentType.CONSOLIDATION_OR_CAPITAL_REDUCTION` member.
+- Updated dependencies [[`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439), [`a4121e9`](https://github.com/Urigo/accounter-fullstack/commit/a4121e9614f49dfe7a023f1f65d9e6a13dc0ecac), [`0cec65f`](https://github.com/Urigo/accounter-fullstack/commit/0cec65f89583a24fd86ff49c884b555a51e6866a), [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee)]:
+  - @accounter/modern-poalim-scraper@0.11.1
+
 ## 0.0.3
 
 ### Patch Changes

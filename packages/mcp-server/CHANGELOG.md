@@ -1,5 +1,65 @@
 # @accounter/mcp-server
 
+## 0.2.0
+
+### Minor Changes
+
+- [#4628](https://github.com/Urigo/accounter-fullstack/pull/4628) [`7a612f4`](https://github.com/Urigo/accounter-fullstack/commit/7a612f43bce913e280ea77cd1fd3cd0cceeda365) Thanks [@gilgardosh](https://github.com/gilgardosh)! - **Breaking change to tool output:** drop `formatted` from the shared money shape. Every amount the
+  MCP tools return is now `{ value, currency }` instead of `{ value, formatted, currency }`. Any
+  consumer that reads `amount.formatted` must build the display string from `value` and `currency`
+  instead.
+  
+  `formatted` was the server's display string (e.g. `₪1,234.56`), which a model can rebuild from the
+  other two fields. It cost bytes on every amount: about 15% of an `accounter_vat_report` row, which
+  has nine amount fields. The connector no longer selects it from the API. `FinancialAmount.formatted`
+  stays in the server schema because the client uses it.
+  
+  The `accounter_vat_report` summary line now formats the total VAT itself, printing the unsigned
+  amount next to the "to pay" / "refund" wording (e.g. `total VAT ₪42.00 refund`, where it used to
+  print `-₪42.00`).
+
+- [#4655](https://github.com/Urigo/accounter-fullstack/pull/4655) [`5ad4449`](https://github.com/Urigo/accounter-fullstack/commit/5ad444987e4c7cb33579da1e8a6be028b67f1088) Thanks [@gilgardosh](https://github.com/gilgardosh)! - `accounter_list_businesses` now sends its filters through the `allBusinesses(filters:)` input
+  instead of the deprecated `name` / `isClient` arguments, and exposes every `BusinessFilter` field:
+  
+  - `taxCategoryIds` / `withoutTaxCategory`, to find businesses matched to given tax categories or
+    with none mapped
+  - `sortCodes` / `withoutSortCode`, by numeric sort code key
+  - `countries`, as ISO 3166-1 alpha-3 codes
+  - `isAdmin`, for the owner-managed businesses
+  
+  `activeOnly` is now applied upstream, before paging, as `filters.isActive`. It used to be applied to
+  the returned page, so pages could come back short and `totalCount` / `pagination` counted inactive
+  businesses. Both now describe active businesses only when `activeOnly` is set.
+
+- [#4623](https://github.com/Urigo/accounter-fullstack/pull/4623) [`8ae88db`](https://github.com/Urigo/accounter-fullstack/commit/8ae88db3564c004676f1867f3fe733a1fc362eb1) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Expose the monthly VAT report over the MCP connector as `accounter_vat_report`.
+  
+  The VAT report is the screen accountants and business owners use to prepare the monthly VAT filing,
+  and it was not reachable from the connector. The new tool is a thin forwarder of the server's
+  `vatReport` query for one member business and one month (`month: "YYYY-MM"`): which documents
+  qualify, income vs expense, the VAT figures, the filed totals and the validation reasons are all
+  computed server-side and passed through as-is, normalized into the connector's shared money and
+  entity shapes.
+  
+  **One section per call.** `section` picks `income`, `expenses` (one row per document, every
+  `VatReportRecord` field) or `missingInfo` (charges that still fail validation, with their `missing`
+  reasons), paged with `offset`/`limit`. Every call also returns `counts` for all three sections and
+  `summary`, the month's PCN874 header totals as filed (`totalVat` positive = to pay, negative =
+  refund), so a model can answer "what's the VAT for March?" from any first call. Rows carry the
+  reported business as `ownerId`, like the balance report.
+  
+  **Its own bounds.** The report validates every charge in the month, so the upstream read uses the
+  long-running budget (`GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS`) — reads can now opt into it, and a
+  long-running read is not retried after a timeout. Rows are wide, so this tool gets a 120 KB payload
+  cap; the shared 60 KB cap is unchanged for every other tool. The upstream `chargesType` filter is not
+  exposed until its inverted behaviour is fixed on the server.
+  
+  **Glossary.** `accounter_explain_terminology` gains a `report` topic covering the report, its rows,
+  how income vs expense is decided, the VAT date, every amount field, the summary (including which
+  PCN874 record types its totals leave out), the record types, and the missing-info section.
+  
+  The balance report moved to `tools/reports/` alongside it, and GraphQL codegen now covers that
+  folder.
+
 ## 0.1.0
 
 ### Minor Changes

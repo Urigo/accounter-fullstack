@@ -1,5 +1,46 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.9.0
+
+### Minor Changes
+
+- [#4632](https://github.com/Urigo/accounter-fullstack/pull/4632) [`0aecf53`](https://github.com/Urigo/accounter-fullstack/commit/0aecf535d624a3f4c233075e8fde6faac67f4053) Thanks [@renovate](https://github.com/apps/renovate)! - Generate the SDK with GraphQL Code Generator v6 (`typescript` 6, `typescript-operations` 6). Schema
+  types now live in their own generated module (still re-exported from the package root), and operation
+  result types follow the v6 nullability rules: a nullable field is typed `T | null` and is always
+  present, instead of optional (`field?: T | null`).
+
+- [#4592](https://github.com/Urigo/accounter-fullstack/pull/4592) [`66402a5`](https://github.com/Urigo/accounter-fullstack/commit/66402a500987c81b2d3fc530694b0f996430983c) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Type the Green Invoice `Date` scalar as a `yyyy-mm-dd` string pattern
+  (`` `${number}-${number}-${number}` ``) instead of `string`, matching the server's
+  `TimelessDateString`, so document dates need no type assertion downstream.
+
+- [#529](https://github.com/Urigo/accounter-fullstack/pull/529) [`abd0493`](https://github.com/Urigo/accounter-fullstack/commit/abd0493a80c7da683ac67ac268a45abec9e8f936) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Migrate from GraphQL Mesh v0 to v1. The REST API is now composed with `mesh-compose` into a supergraph,
+  the typed SDK is generated with GraphQL Code Generator, and operations run in-process through
+  `@graphql-mesh/fusion-runtime`. The public API is unchanged (`init`, `getMeshSDK`, `Sdk` and the
+  generated type names), and the runtime Mesh dependencies drop from eight packages to two.
+  `getMeshSDK` also accepts an optional `fetch` in its context, for example to run tests offline.
+  The `GreenInvoiceNew` source is split into `GreenInvoiceFileUpload` and `GreenInvoiceOpenBanking`
+  so that each sets its `queryStringOptions` at source level, the only level Mesh's config accepts
+  (this also removes the `Configuration file is not valid!` warnings v0's `mesh build` printed). The
+  query strings sent to the API are unchanged.
+
+### Patch Changes
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.12.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.12.3) (from `1.12.1`, in `dependencies`)
+
+- [#529](https://github.com/Urigo/accounter-fullstack/pull/529) [`abd0493`](https://github.com/Urigo/accounter-fullstack/commit/abd0493a80c7da683ac67ac268a45abec9e8f936) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Added dependency [`@graphql-mesh/fusion-runtime@1.12.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.12.1) (to `dependencies`)
+    - Added dependency [`@graphql-mesh/transport-rest@0.12.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transport-rest/v/0.12.2) (to `dependencies`)
+    - Removed dependency [`@graphql-mesh/config@0.111.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.111.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/cross-helpers@0.4.16` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cross-helpers/v/0.4.16) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/http@0.109.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.109.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/json-schema@0.112.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.112.4) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/runtime@0.109.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.109.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/store@0.107.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.107.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/types@0.107.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.107.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/utils@0.107.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.107.1) (from `dependencies`)
+    - Removed dependency [`path@0.12.7` ↗︎](https://www.npmjs.com/package/path/v/0.12.7) (from `dependencies`)
+
 ## 0.8.7
 
 ### Patch Changes

@@ -1,5 +1,211 @@
 # @accounter/client
 
+## 1.1.0
+
+### Minor Changes
+
+- [#4651](https://github.com/Urigo/accounter-fullstack/pull/4651) [`9a73cc9`](https://github.com/Urigo/accounter-fullstack/commit/9a73cc9e4477e3e747481e9a59bd1acce49c9260) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Filter the businesses directory server-side. `allBusinesses` takes a new `filters: BusinessFilter`
+  input, applied in SQL before the count and the page slice:
+  
+  - `name`: case-insensitive substring of the name or Hebrew name
+  - `taxCategoryIds` / `withoutTaxCategory` and `sortCodes` / `withoutSortCode`: a list match OR-ed
+    with a "has none" match, to find uncategorized businesses
+  - `countries` (the table's Locality), `isClient`, `isActive` and `isAdmin`
+  
+  `filters.name` and `filters.isClient` replace the top-level `name` and `isClient` arguments.
+  
+  The businesses page replaces its inline filter bar with a name search in the toolbar and a Filters
+  dialog (tax category, sort code and country multi-selects, Any / Yes / No for client, active and
+  admin, and "Unused only"). The applied filter is persisted in the `businessesFilters` URL parameter,
+  so filtered views can be linked to, reloaded, and walked with back / forward. A business selected
+  under one filter stays selected when a later filter hides it.
+
+- [#4471](https://github.com/Urigo/accounter-fullstack/pull/4471) [`2e9364d`](https://github.com/Urigo/accounter-fullstack/commit/2e9364d8d4654fe4c2216e70dac487f51780d135) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add a re-run OCR action for documents stuck on `UNPROCESSED`.
+  
+  A batch of documents was inserted with `type = 'UNPROCESSED'` and no extracted information at all —
+  no amount, date, serial or counterparty — because the email-ingestion path catches every OCR failure
+  and falls back to `UNPROCESSED` (`email-ingestion-ingest.provider.ts`). The document is still
+  inserted and the ingest still reports `INSERTED` with its idempotency key persisted, so replaying
+  the source email answers `DUPLICATE` and cannot recover it. The Cloudinary `file_url` survives,
+  though, which is enough to extract from the file again.
+  
+  New mutations `reprocessDocumentOcr(documentId)` and `batchReprocessDocumentsOcr(documentIds)`
+  re-fetch that stored file through the existing SSRF-hardened `fetchRemoteDocument`, run it back
+  through `getOcrData`, and report which fields were filled. Surfaced in the client as a "Re-run OCR"
+  item in the document actions menu and, on the documents screen, a bulk button over the unprocessed
+  documents currently listed (pair it with the "Invalid documents only" filter).
+  
+  The write is additive on purpose: a column is filled only where the document is empty, so a value an
+  accountant corrected by hand is never overwritten. The exception is `documentType`, which is replaced
+  only while the document is still `UNPROCESSED`. A pass that extracts nothing new writes nothing at
+  all, rather than bumping `updated_at` and dragging the charge's accountant approval back to `PENDING`
+  for no gain.
+  
+  That rule is enforced by the UPDATE statement rather than by the caller. Minutes pass between reading
+  a document and writing it back, and deciding which columns are blank from the pre-OCR read would mean
+  overwriting a field an accountant filled during the extraction, using a decision made before they
+  touched it. `COALESCE(column, $param)` — the reverse of the usual argument order — makes "never
+  overwrite" a property of the statement, and repeating the conditions in its `WHERE` clause keeps a
+  pass with nothing to contribute from matching any row at all.
+  
+  The document's owner is checked against the request's write target up front. Reads span the whole
+  business scope while writes are pinned to one business, so the all-documents screen can list a row
+  this request cannot write to; catching that late would mean paying for a download and an OCR call
+  first.
+  
+  The documents table gains a selection column, keyed by document id so a selection survives paging,
+  sorting and filtering, and a batch menu beside it offering "Re-run OCR" and "Delete" over the
+  selected rows. It also gains an opt-in `preview` column showing each document's stored image,
+  hidden by default because it costs one image request per visible row.
+  
+  When the stored original cannot be sent to OCR — the two MIME allowlists in play disagree in both
+  directions, so a GIF is refused by the fetch layer and a HEIC is refused by the model — the Cloudinary
+  `.jpg` derivative is used instead rather than failing.
+  
+  Two limits worth knowing. Nothing in the schema records whether OCR ever ran, failed, or was
+  deliberately skipped, so the action cannot tell a recoverable failure from a document that will
+  always be unreadable — retrying the latter costs an OCR pass and changes nothing. And the mutation
+  holds the request open for the whole extraction (tens of seconds per document, no job queue in this
+  server), which is why a batch is capped at 20 documents and runs three at a time.
+
+- [#4669](https://github.com/Urigo/accounter-fullstack/pull/4669) [`e12d29b`](https://github.com/Urigo/accounter-fullstack/commit/e12d29bd67edffd02220d0f45d502c29352c7f08) Thanks [@gilgardosh](https://github.com/gilgardosh)! - A charge's ledger errors now offer a quick-fix for each missing securities tax category (dividend
+  and bond interest income, withholding tax, gain/loss from sale of foreign securities): pick an
+  existing tax category, or create one under the securities sort code (optionally remembering that
+  sort code). The choice is saved for future securities charges and the charge's ledger is
+  regenerated with it.
+
+- [#4610](https://github.com/Urigo/accounter-fullstack/pull/4610) [`915b906`](https://github.com/Urigo/accounter-fullstack/commit/915b906c13b6668d49e94c817914c64a40929ad4) Thanks [@gilgardosh](https://github.com/gilgardosh)! - The VAT report summary card now shows the server's `summary`: the month's totals exactly as filed in
+  the PCN874 header.
+  
+  The card used to reduce the report rows itself, with its own definitions: taxable sales included
+  zero-VAT rows, "Equipment Inputs" was the pre-VAT amount of property expenses, and the total VAT
+  subtracted every expense row, including the entry types the PCN874 header leaves out. It now reads
+  `VatReportResult.summary` and computes nothing on its own.
+  
+  Labels follow the PCN874 meaning of each figure. "Taxable Sales Total" is now "Taxable Sales
+  Amount", "Equipment Inputs" is now "Equipment Inputs VAT" (a VAT amount, as filed), and "Total VAT
+  Amount" is now "Total VAT", marked as to pay or to receive. The card also shows "Other Inputs VAT"
+  and the sales and input record counts, and takes the currency from the server instead of assuming
+  ILS.
+  
+  Expect the numbers to change for some months. That is intended: where the card and the generated
+  PCN874 file disagreed, the card now shows what is filed. The summary always covers the whole month,
+  so it no longer changes with the charge type filter, and the card says so.
+
+### Patch Changes
+
+- [#4571](https://github.com/Urigo/accounter-fullstack/pull/4571) [`d394530`](https://github.com/Urigo/accounter-fullstack/commit/d394530d88cdc1243de19bd7a804acdc3fb26eac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@auth0/auth0-react@2.28.2` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.28.2) (from `2.28.0`, in `dependencies`)
+    - Updated dependency [`@tanstack/react-table@9.2.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/9.2.5) (from `9.2.4`, in `dependencies`)
+    - Updated dependency [`dotenv@18.0.5` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.5) (from `18.0.4`, in `dependencies`)
+    - Updated dependency [`react-day-picker@10.0.2` ↗︎](https://www.npmjs.com/package/react-day-picker/v/10.0.2) (from `10.0.1`, in `dependencies`)
+
+- [#4587](https://github.com/Urigo/accounter-fullstack/pull/4587) [`5520c9a`](https://github.com/Urigo/accounter-fullstack/commit/5520c9a303d38e3056183cc194914ac447bf9454) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`lucide-react@1.49.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.49.0) (from `1.48.0`, in `dependencies`)
+
+- [#4588](https://github.com/Urigo/accounter-fullstack/pull/4588) [`51ad19b`](https://github.com/Urigo/accounter-fullstack/commit/51ad19b3a67265cb64aeae1e1453ac69b73c0eeb) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`html2canvas-pro@2.5.1` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.5.1) (from `2.4.5`, in `dependencies`)
+
+- [#4593](https://github.com/Urigo/accounter-fullstack/pull/4593) [`dc1d52f`](https://github.com/Urigo/accounter-fullstack/commit/dc1d52f91eb54398fc55620a188c8c79760aae4f) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@auth0/auth0-react@2.28.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.28.0) (from `2.27.0`, in `dependencies`)
+
+- [#4597](https://github.com/Urigo/accounter-fullstack/pull/4597) [`474239d`](https://github.com/Urigo/accounter-fullstack/commit/474239da1aac5ea507fd5feccddbf603e44fca8d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`pdfjs-dist@6.4.299` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/6.4.299) (from `6.3.289`, in `dependencies`)
+
+- [#4598](https://github.com/Urigo/accounter-fullstack/pull/4598) [`0d4ffe6`](https://github.com/Urigo/accounter-fullstack/commit/0d4ffe68419de4c4fab8e2a2e5c4cb873800ccc6) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`simple-icons@16.34.0` ↗︎](https://www.npmjs.com/package/simple-icons/v/16.34.0) (from `16.33.0`, in `dependencies`)
+
+- [#4599](https://github.com/Urigo/accounter-fullstack/pull/4599) [`a73eb6a`](https://github.com/Urigo/accounter-fullstack/commit/a73eb6acfe3f61f96f84e1c7967caf4007288109) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`lucide-react@1.51.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.51.0) (from `1.49.0`, in `dependencies`)
+
+- [#4601](https://github.com/Urigo/accounter-fullstack/pull/4601) [`3743aff`](https://github.com/Urigo/accounter-fullstack/commit/3743aff712cf69e69333bbd4783ea30f1dd1fa97) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@tanstack/react-table@9.2.6` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/9.2.6) (from `9.2.5`, in `dependencies`)
+
+- [#4608](https://github.com/Urigo/accounter-fullstack/pull/4608) [`5dda59a`](https://github.com/Urigo/accounter-fullstack/commit/5dda59ac30a23d721d39e36fe80fd64f0df35944) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`lucide-react@1.52.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.52.0) (from `1.51.0`, in `dependencies`)
+
+- [#4624](https://github.com/Urigo/accounter-fullstack/pull/4624) [`dbf9882`](https://github.com/Urigo/accounter-fullstack/commit/dbf988287aef6cb34dc090923db2d4f35d9e6ced) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`radix-ui@1.7.0` ↗︎](https://www.npmjs.com/package/radix-ui/v/1.7.0) (from `1.6.7`, in `dependencies`)
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@tanstack/react-table@9.2.8` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/9.2.8) (from `9.2.6`, in `dependencies`)
+    - Updated dependency [`dotenv@18.0.7` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.7) (from `18.0.5`, in `dependencies`)
+    - Updated dependency [`html2canvas-pro@2.5.2` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.5.2) (from `2.5.1`, in `dependencies`)
+
+- [#4645](https://github.com/Urigo/accounter-fullstack/pull/4645) [`5097b5e`](https://github.com/Urigo/accounter-fullstack/commit/5097b5e719d058a7c84c0fe55a6d099289ec1e68) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@mui/material@9.5.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/9.5.0) (from `9.4.0`, in `dependencies`)
+
+- [#4650](https://github.com/Urigo/accounter-fullstack/pull/4650) [`17d79c9`](https://github.com/Urigo/accounter-fullstack/commit/17d79c9a794f164297bef2330e87062ce0bc5172) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`lucide-react@1.55.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.55.0) (from `1.52.0`, in `dependencies`)
+
+- [#4654](https://github.com/Urigo/accounter-fullstack/pull/4654) [`e75b439`](https://github.com/Urigo/accounter-fullstack/commit/e75b43955e8b161cbd859aeb4ef33d546e0ff69e) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`simple-icons@16.35.0` ↗︎](https://www.npmjs.com/package/simple-icons/v/16.35.0) (from `16.34.0`, in `dependencies`)
+
+- [#4656](https://github.com/Urigo/accounter-fullstack/pull/4656) [`d316b7b`](https://github.com/Urigo/accounter-fullstack/commit/d316b7bc167a0a0a0857ce937578e41510c51f35) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`react-hook-form@7.90.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.90.0) (from `7.89.0`, in `dependencies`)
+
+- [#4668](https://github.com/Urigo/accounter-fullstack/pull/4668) [`9666151`](https://github.com/Urigo/accounter-fullstack/commit/966615176f3ba7343ae267d244fd6cf8f21fe034) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`radix-ui@1.8.1` ↗︎](https://www.npmjs.com/package/radix-ui/v/1.8.1) (from `1.7.0`, in `dependencies`)
+
+- [#4683](https://github.com/Urigo/accounter-fullstack/pull/4683) [`088fa89`](https://github.com/Urigo/accounter-fullstack/commit/088fa89321fc57dac3766097a9fd3cdabb2042b9) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@tanstack/react-table@9.3.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-table/v/9.3.1) (from `9.2.8`, in `dependencies`)
+
+- [#4665](https://github.com/Urigo/accounter-fullstack/pull/4665) [`f762f79`](https://github.com/Urigo/accounter-fullstack/commit/f762f7986dcd7735b18c3d3c1aa18a2ad87098b7) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix back / forward and "Clear all" on the charges and documents pages.
+  
+  - **Back / forward** now restore the filter on All Charges, Missing Info, Ledger Validation,
+    Accountant Approvals and Documents, and on the two paginated charges screens (All Charges and
+    Missing Info) the page along with it. Before, going back after paging or re-filtering left the
+    list where it was, and could push a stale entry that wiped the forward history.
+  - **One history entry per change.** Applying a filter used to add two entries (one for the filter,
+    one for resetting the page), and Accountant Approvals added one just for being opened.
+  - **"Clear all" and "Reset" in the charges filters** now clear what they show. A dialog opened over
+    an applied filter used to keep fields like owners and the date range in the form state, so Apply
+    sent them again.
+  - Filters in the URL are validated when the page reads them, so a stale or hand-edited link falls
+    back to no filter instead of failing the query.
+  
+  On All Charges, Ledger Validation and Documents, going back to an entry with no filter shows the
+  unfiltered state again instead of the previous filter's results. On Documents this includes
+  "Clear", which now empties the list instead of loading every document, the same as opening the page
+  without a filter.
+
+- [#4720](https://github.com/Urigo/accounter-fullstack/pull/4720) [`5fa4a10`](https://github.com/Urigo/accounter-fullstack/commit/5fa4a102aa9fed02d7a67df831fcc4bd81216eea) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix the page becoming unclickable after closing a drawer (edit charge, insert document, edit
+  document, document image) opened from the charge or document actions menu. The menus are now
+  non-modal, so the drawer no longer restores a stale `pointer-events: none` on `<body>` when it
+  closes.
+
+- [#4657](https://github.com/Urigo/accounter-fullstack/pull/4657) [`f60c513`](https://github.com/Urigo/accounter-fullstack/commit/f60c5131d9f6cd86cfe3daa37d20752ca91b2f1a) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix back / forward on the businesses page filter. Going back to the entry the page was loaded on now
+  restores that entry's filter; it used to keep showing the newer one. Opening a link whose filter is
+  spelled differently from the page's own (another key order, `null` values, an invalid parameter) now
+  tidies the URL in place instead of adding a duplicate history entry.
+  
+  The URL filter handling behind it is now shared, so other pages can adopt it: `decodeFilters` next
+  to `encodeFilters`, `normalizeFilter` / `areFiltersEqual` for comparing filters regardless of key
+  order or unset values, and a `useUrlFilterState(param, schema)` hook.
+
+- [#4592](https://github.com/Urigo/accounter-fullstack/pull/4592) [`66402a5`](https://github.com/Urigo/accounter-fullstack/commit/66402a500987c81b2d3fc530694b0f996430983c) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Keep date-only values as `TimelessDateString` (`yyyy-mm-dd`) end to end, so calendar days no longer
+  shift with the server's or browser's timezone:
+  
+  - Postgres `date` / `date[]` columns are read as `yyyy-mm-dd` strings (custom node-pg type parsers)
+    and typed `TimelessDateString` by pgtyped (`typesOverrides`), instead of server-local `Date`s.
+  - `Charge.min/max{Event,Debit,Documents}Date` and `LedgerRecord` / `SingleSidedLedgerRecord`
+    `invoiceDate` / `valueDate` are now `TimelessDate` instead of `DateTime`: they return the day
+    (`2026-05-01`), not a timezone-dependent ISO timestamp.
+  - Server-side day arithmetic uses new timezone-independent helpers, fixing days that moved west of
+    UTC: VAT / PCN874 report months, document and bank-deposit date inputs, salary and reserve ledger
+    dates, revaluation dates, exchange-rate dates, corporate tax rates and more.
+  - The tenant's calendar days are reckoned in `Asia/Jerusalem` (a `TENANT_TIMEZONE` constant, to be
+    derived per tenant later) instead of the server's timezone: "today" (document dates and due
+    dates, default VAT month, contract billing month, sync windows), current-year checks, the day of
+    absolute instants (Otsar Hahayal and Poalim securities dates, balance-charge value dates) and the instant a day starts at (day-only crypto rate lookups, Green Invoice
+    `firstPayment`).
+  - `TimelessDateString` is now the pattern `${number}-${number}-${number}` instead of a union of
+    every day in 2000-2049, which kept server type-checking fast and allows earlier years.
+  - Client: the charges table, charge matching, ledger tables and CSV exports read these fields as
+    calendar days, and every `dd/MM/yy` date cell (transactions, documents, business trips,
+    depreciation, bank deposits) formats the `yyyy-mm-dd` string directly through a shared
+    `formatTimelessDate` helper instead of `new Date(...)`, which showed the previous day west of UTC.
+
 ## 1.0.0
 
 ### Major Changes

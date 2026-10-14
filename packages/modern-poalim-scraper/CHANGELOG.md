@@ -1,5 +1,22 @@
 # @accounter/modern-poalim-scraper
 
+## 0.11.1
+
+### Patch Changes
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`uuid@14.0.3` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.3) (from `14.0.2`, in `dependencies`)
+
+- [#4639](https://github.com/Urigo/accounter-fullstack/pull/4639) [`a4121e9`](https://github.com/Urigo/accounter-fullstack/commit/a4121e9614f49dfe7a023f1f65d9e6a13dc0ecac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.64.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.0) (from `1.63.0`, in `dependencies`)
+
+- [#4643](https://github.com/Urigo/accounter-fullstack/pull/4643) [`0cec65f`](https://github.com/Urigo/accounter-fullstack/commit/0cec65f89583a24fd86ff49c884b555a51e6866a) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.13.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.13.0) (from `25.12.0`, in `dependencies`)
+
+- [#4687](https://github.com/Urigo/accounter-fullstack/pull/4687) [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Poalim securities transactions with the `איחוד/הפחתת הון` (consolidation / capital reduction)
+  payment type no longer fail schema validation. The value is accepted by the scraper schemas and
+  exposed in GraphQL as the new `SecurityPaymentType.CONSOLIDATION_OR_CAPITAL_REDUCTION` member.
+
 ## 0.11.0
 
 ### Minor Changes
