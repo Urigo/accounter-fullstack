@@ -1,9 +1,10 @@
-import { useContext, useId, useMemo, useRef, type FormEvent, type ReactElement } from 'react';
-import { useForm, useFormContext, type FieldError } from 'react-hook-form';
+import { useContext, useMemo, useRef, useState, type FormEvent, type ReactElement } from 'react';
+import { useForm, useWatch, type FieldError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Currency, LedgerRecordOperation } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
+import { cn } from '../../../../lib/utils.js';
 import { usePortalContainer } from '../../../../providers/portal-container.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { Button } from '../../../ui/button.js';
@@ -16,7 +17,6 @@ import {
   FormMessage,
 } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
-import { Label } from '../../../ui/label.js';
 import {
   Select,
   SelectContent,
@@ -25,17 +25,22 @@ import {
   SelectValue,
 } from '../../../ui/select.js';
 import { Spinner } from '../../../ui/spinner.js';
-import { ComboBox } from '../../inputs/combo-box.js';
+import { CurrencyCodeInput } from '../../inputs/currency-input.js';
 import { DatePickerInput } from '../../inputs/date-picker-input.js';
-import { NumberInput } from '../../inputs/number-input.js';
+import { LedgerSlotFields } from './ledger-slot-fields.js';
 import {
   buildLedgerRecordFormSchema,
+  computeLedgerTotals,
+  FOREIGN_AMOUNT_FIELDS,
+  isForeignCurrency,
   isUnparsableDateText,
   LEDGER_BALANCE_ERROR_PATH,
+  ledgerSlotFieldNames,
   TIMELESS_DATE_FORMAT_MESSAGE,
   type LedgerRecordFormInput,
   type LedgerRecordFormMode,
   type LedgerRecordFormValues,
+  type LedgerSlotSide,
 } from './schema.js';
 
 type DateFieldName = 'invoiceDate' | 'valueDate';
@@ -49,67 +54,16 @@ const OPERATION_OPTIONS: Array<{ value: LedgerRecordOperation; label: string }> 
 /** Placeholder value of the not-yet-supported operation; it is never selectable */
 const TRANSACTION_OPERATION_PLACEHOLDER = 'TRANSACTION';
 
-type LineProps = {
-  side: 'debit' | 'credit';
-  label: string;
-  entities: Array<{ value: string; label: string }>;
-  fetchingEntities: boolean;
-};
+const SLOT_SIDES: LedgerSlotSide[] = ['debit', 'credit'];
 
-function LedgerLineFields({ side, label, entities, fetchingEntities }: LineProps): ReactElement {
-  const { control } = useFormContext<LedgerRecordFormInput>();
-  const entityId = useId();
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 items-start">
-      <Label htmlFor={entityId} className="sm:pt-2">
-        {label}
-      </Label>
-      <FormField
-        control={control}
-        name={`${side}Entity1`}
-        render={({ field }) => (
-          <FormItem>
-            <FormControl>
-              <ComboBox
-                {...field}
-                id={entityId}
-                data={entities}
-                value={field.value ?? null}
-                onChange={value => field.onChange(value ?? '')}
-                disabled={fetchingEntities}
-                placeholder={`${label} entity`}
-                formPart
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={control}
-        name={`${side}LocalAmount1`}
-        render={({ field }) => (
-          <FormItem>
-            <FormControl>
-              <NumberInput
-                ref={field.ref}
-                name={field.name}
-                onBlur={field.onBlur}
-                value={field.value ?? undefined}
-                onChange={value => field.onChange(value ?? undefined)}
-                aria-label={`${label} amount`}
-                placeholder="Amount"
-                hideControls
-                decimalScale={2}
-                min={0}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
-  );
+const TOTAL_FORMAT = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatTotal(amount: number): string {
+  // Rounded first so float noise never shows as "-0.00"
+  return TOTAL_FORMAT.format(Math.round(amount * 100) / 100 || 0);
 }
 
 type LedgerRecordFormProps = {
@@ -137,9 +91,52 @@ export function LedgerRecordForm({
 
   const form = useForm<LedgerRecordFormInput, unknown, LedgerRecordFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { description: '', reference: '', ...defaultValues },
+    defaultValues: { currency: localCurrency, description: '', reference: '', ...defaultValues },
   });
-  const { control, handleSubmit, formState, setError } = form;
+  const { control, handleSubmit, formState, setError, setValue, clearErrors } = form;
+
+  const currency = useWatch({ control, name: 'currency' });
+  const showForeign = isForeignCurrency(currency, localCurrency);
+
+  function onCurrencyChange(next: Currency): void {
+    if (isForeignCurrency(next, localCurrency)) {
+      return;
+    }
+    // Back in the local currency the foreign inputs disappear: drop their values (and any errors
+    // on them) so nothing stale stays in the form. The mapper never sends them either. `null`, not
+    // `undefined`, so the inputs don't re-mount with their default values in a foreign currency.
+    for (const field of FOREIGN_AMOUNT_FIELDS) {
+      setValue(field, null, { shouldDirty: true });
+    }
+    clearErrors([...FOREIGN_AMOUNT_FIELDS]);
+  }
+
+  // Bumped when a secondary line is cleared, to re-mount its amount inputs: an amount input keeps
+  // showing its last number when its field is emptied from outside
+  const [clearedSlots, setClearedSlots] = useState<Record<LedgerSlotSide, number>>({
+    debit: 0,
+    credit: 0,
+  });
+
+  function clearSecondarySlot(side: LedgerSlotSide): void {
+    const { entity, localAmount, foreignAmount } = ledgerSlotFieldNames(side, 2);
+    for (const field of [entity, localAmount, foreignAmount]) {
+      setValue(field, null, { shouldDirty: true });
+    }
+    clearErrors([entity, localAmount, foreignAmount]);
+    setClearedSlots(previous => ({ ...previous, [side]: previous[side] + 1 }));
+  }
+
+  const [debitLocalAmount1, creditLocalAmount1, debitLocalAmount2, creditLocalAmount2] = useWatch({
+    control,
+    name: ['debitLocalAmount1', 'creditLocalAmount1', 'debitLocalAmount2', 'creditLocalAmount2'],
+  });
+  const totals = computeLedgerTotals({
+    debitLocalAmount1,
+    creditLocalAmount1,
+    debitLocalAmount2,
+    creditLocalAmount2,
+  });
 
   // Date fields whose input text the date picker can't parse. The picker keeps such text to itself,
   // so the form still holds the last valid date; submitting must not send that stale value.
@@ -211,10 +208,30 @@ export function LedgerRecordForm({
               )}
             />
           )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="ledger-record-currency">Currency</Label>
-            <Input id="ledger-record-currency" value={localCurrency} readOnly disabled />
-          </div>
+          <FormField
+            control={control}
+            name="currency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Currency</FormLabel>
+                <FormControl>
+                  <CurrencyCodeInput
+                    name={field.name}
+                    value={field.value ?? ''}
+                    onChange={value => {
+                      const next = value as Currency;
+                      field.onChange(next);
+                      onCurrencyChange(next);
+                    }}
+                    // Labelled here, so no label-row margin; as wide as the other inputs
+                    className="mt-0"
+                    triggerClassName="w-full"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={control}
             name="invoiceDate"
@@ -284,21 +301,59 @@ export function LedgerRecordForm({
         </div>
 
         <div className="flex flex-col gap-2">
-          <LedgerLineFields
-            side="debit"
-            label="Debit"
-            entities={selectableFinancialEntities}
-            fetchingEntities={fetchingEntities}
-          />
-          <LedgerLineFields
-            side="credit"
-            label="Credit"
-            entities={selectableFinancialEntities}
-            fetchingEntities={fetchingEntities}
-          />
-          {balanceError?.message && (
-            <p role="alert" className="text-red-500 text-sm dark:text-red-900">
-              {balanceError.message}
+          {SLOT_SIDES.map(side => (
+            <LedgerSlotFields
+              key={`${side}-1`}
+              side={side}
+              index={1}
+              showForeign={showForeign}
+              currency={currency}
+              required
+              entities={selectableFinancialEntities}
+              fetchingEntities={fetchingEntities}
+            />
+          ))}
+          {SLOT_SIDES.map(side => (
+            <LedgerSlotFields
+              key={`${side}-2`}
+              clearCount={clearedSlots[side]}
+              side={side}
+              index={2}
+              showForeign={showForeign}
+              currency={currency}
+              required={false}
+              entities={selectableFinancialEntities}
+              fetchingEntities={fetchingEntities}
+              onClear={() => clearSecondarySlot(side)}
+            />
+          ))}
+        </div>
+
+        <div data-testid="ledger-totals" className="flex flex-col gap-1 border-t pt-2 text-sm">
+          <dl className="flex flex-wrap justify-end gap-x-6 gap-y-1">
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Debit total</dt>
+              <dd className="tabular-nums">{formatTotal(totals.debit)}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Credit total</dt>
+              <dd className="tabular-nums">{formatTotal(totals.credit)}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Difference</dt>
+              <dd
+                data-testid="ledger-difference"
+                className={cn('tabular-nums', !totals.balanced && 'font-medium text-destructive')}
+              >
+                {formatTotal(totals.difference)}
+              </dd>
+            </div>
+          </dl>
+          {/* The error is set on submit and not re-checked as amounts change: it is hidden once
+              they balance, and its text leaves the numbers to the live totals above */}
+          {balanceError && !totals.balanced && (
+            <p role="alert" className="text-right text-destructive">
+              Debit and credit totals must be equal
             </p>
           )}
         </div>

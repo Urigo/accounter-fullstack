@@ -16,7 +16,7 @@ import {
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { EMPTY_UUID } from '@/helpers/consts.js';
 import { paginatedTableFeaturesConfig } from '@/lib/table-features.js';
-import { columns } from './columns.js';
+import { columns, editActionColumn } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -45,18 +45,22 @@ import { columns } from './columns.js';
     creditAmount1 {
       formatted
       currency
+      raw
     }
     creditAmount2 {
       formatted
       currency
+      raw
     }
     debitAmount1 {
       formatted
       currency
+      raw
     }
     debitAmount2 {
       formatted
       currency
+      raw
     }
     localCurrencyCreditAmount1 {
       formatted
@@ -78,6 +82,8 @@ import { columns } from './columns.js';
     valueDate
     description
     reference
+    locked
+    currency
   }
 `;
 
@@ -106,14 +112,23 @@ type Props = {
   ledgerRecordsData: FragmentType<typeof LedgerRecordsTableFieldsFragmentDoc>[];
   ledgerDiffData?: FragmentType<typeof LedgerRecordsTableFieldsFragmentDoc>[];
   matches?: string[];
+  /** Adds an "Actions" column with an edit (pencil) button on every editable stored row */
+  onEditRecord?: (record: LedgerRecordRow) => void;
 };
 
 export const LedgerTable = ({
   ledgerRecordsData,
   ledgerDiffData,
   matches,
+  onEditRecord,
 }: Props): ReactElement => {
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  // The static `columns` stay as they are for the read-only tables
+  const tableColumns = useMemo(
+    () => (onEditRecord ? [...columns, editActionColumn(onEditRecord)] : columns),
+    [onEditRecord],
+  );
 
   const data = useMemo(() => {
     const records = ledgerRecordsData.map(recordData =>
@@ -146,7 +161,7 @@ export const LedgerTable = ({
   const table = useTable({
     features: paginatedTableFeaturesConfig,
     data,
-    columns,
+    columns: tableColumns,
     onSortingChange: setSorting,
     state: {
       sorting,
@@ -198,7 +213,7 @@ export const LedgerTable = ({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
+              <TableCell colSpan={tableColumns.length} className="h-24 text-center">
                 No results.
               </TableCell>
             </TableRow>
