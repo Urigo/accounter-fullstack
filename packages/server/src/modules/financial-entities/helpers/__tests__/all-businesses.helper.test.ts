@@ -1,5 +1,54 @@
 import { describe, expect, it } from 'vitest';
-import { paginateBusinesses } from '../all-businesses.helper.js';
+import type { BusinessesFiltersParams } from '../../providers/businesses.provider.js';
+import { paginateBusinesses, resolveBusinessesFilters } from '../all-businesses.helper.js';
+
+describe('resolveBusinessesFilters', () => {
+  it('passes the filters input through', () => {
+    const filters: BusinessesFiltersParams = {
+      taxCategoryIds: ['tc-1'],
+      withoutTaxCategory: true,
+      sortCodes: [100],
+      countries: ['ISR'],
+      isActive: true,
+      isAdmin: false,
+    };
+
+    expect(resolveBusinessesFilters({ filters })).toMatchObject(filters);
+  });
+
+  it('still honours the deprecated top-level name / isClient arguments', () => {
+    expect(resolveBusinessesFilters({ name: 'acme', isClient: true })).toMatchObject({
+      name: 'acme',
+      isClient: true,
+    });
+  });
+
+  it('lets a filters field win over its same-named argument', () => {
+    expect(
+      resolveBusinessesFilters({
+        name: 'from-arg',
+        isClient: true,
+        filters: { name: 'from-filter', isClient: false },
+      }),
+    ).toMatchObject({ name: 'from-filter', isClient: false });
+  });
+
+  it('lets an explicit null in filters clear its same-named argument', () => {
+    expect(
+      resolveBusinessesFilters({
+        name: 'acme',
+        isClient: true,
+        filters: { name: null, isClient: null },
+      }),
+    ).toMatchObject({ name: null, isClient: null });
+  });
+
+  it('falls back to the argument when filters omits the field', () => {
+    expect(
+      resolveBusinessesFilters({ name: 'acme', isClient: true, filters: { isActive: true } }),
+    ).toMatchObject({ name: 'acme', isClient: true, isActive: true });
+  });
+});
 
 describe('paginateBusinesses', () => {
   const rows = () => [
