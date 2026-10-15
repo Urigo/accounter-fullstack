@@ -68,11 +68,17 @@ export const INCOME_TAX_CATEGORY_KEYS = {
 >;
 
 export const WITHHOLDING_TAX_CATEGORY_KEYS = {
-  DIVIDEND: 'DIVIDEND_WITHHOLDING_TAX',
-  INTEREST: 'BOND_WITHHOLDING_TAX',
+  DIVIDEND: {
+    LOCAL: 'LOCAL_DIVIDEND_WITHHOLDING_TAX',
+    FOREIGN: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX',
+  },
+  INTEREST: { LOCAL: 'LOCAL_BOND_WITHHOLDING_TAX', FOREIGN: 'FOREIGN_BOND_WITHHOLDING_TAX' },
   // tax withheld on a redemption is withheld on a bond
-  REDEMPTION: 'BOND_WITHHOLDING_TAX',
-} as const satisfies Record<Exclude<SecuritiesExecutionKind, 'OTHER'>, SecuritiesTaxCategoryKey>;
+  REDEMPTION: { LOCAL: 'LOCAL_BOND_WITHHOLDING_TAX', FOREIGN: 'FOREIGN_BOND_WITHHOLDING_TAX' },
+} as const satisfies Record<
+  Exclude<SecuritiesExecutionKind, 'OTHER'>,
+  Record<SecurityLocality, SecuritiesTaxCategoryKey>
+>;
 
 export type WithheldTaxExecution = Pick<
   SecurityExecutionRow,

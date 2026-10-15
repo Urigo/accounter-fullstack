@@ -212,6 +212,7 @@ import migration_2026_09_28T10_00_00_dynamic_report_comments from './actions/202
 import migration_2026_09_28T10_30_00_rls_dynamic_report_comments from './actions/2026-09-28T10-30-00.rls-dynamic-report-comments.js';
 import migration_2026_10_11T12_00_00_add_securities_context_to_user_context from './actions/2026-10-11T12-00-00.add-securities-context-to-user-context.js';
 import migration_2026_10_11T13_00_00_deprecate_legacy_foreign_securities_columns from './actions/2026-10-11T13-00-00.deprecate-legacy-foreign-securities-columns.js';
+import migration_2026_10_15T12_00_00_split_securities_withholding_tax_categories from './actions/2026-10-15T12-00-00.split-securities-withholding-tax-categories.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -428,6 +429,7 @@ export const MIGRATIONS = [
   migration_2026_09_28T10_30_00_rls_dynamic_report_comments,
   migration_2026_10_11T12_00_00_add_securities_context_to_user_context,
   migration_2026_10_11T13_00_00_deprecate_legacy_foreign_securities_columns,
+  migration_2026_10_15T12_00_00_split_securities_withholding_tax_categories,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

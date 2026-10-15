@@ -48,10 +48,13 @@ describe('ChargeErrors', () => {
     render(
       chargeData(
         ['Missing securities tax category "Foreign dividend income"'],
-        ['FOREIGN_DIVIDEND_INCOME', 'DIVIDEND_WITHHOLDING_TAX'],
+        ['FOREIGN_DIVIDEND_INCOME', 'FOREIGN_DIVIDEND_WITHHOLDING_TAX'],
       ),
     );
 
-    expect(buttons()).toEqual(['Set Foreign dividend income', 'Set Dividend withholding tax']);
+    expect(buttons()).toEqual([
+      'Set Foreign dividend income',
+      'Set Foreign dividend withholding tax',
+    ]);
   });
 });

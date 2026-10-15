@@ -60,10 +60,12 @@ const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
   FOREIGN_SECURITIES_FEES: FEES_TAX_CATEGORY_ID,
   FOREIGN_DIVIDEND_INCOME: 'tax-category-foreign-dividend-income',
   LOCAL_DIVIDEND_INCOME: 'tax-category-local-dividend-income',
-  DIVIDEND_WITHHOLDING_TAX: 'tax-category-dividend-withholding-tax',
+  FOREIGN_DIVIDEND_WITHHOLDING_TAX: 'tax-category-foreign-dividend-withholding-tax',
+  LOCAL_DIVIDEND_WITHHOLDING_TAX: 'tax-category-local-dividend-withholding-tax',
   FOREIGN_BOND_INTEREST_INCOME: 'tax-category-foreign-bond-interest-income',
   LOCAL_BOND_INTEREST_INCOME: 'tax-category-local-bond-interest-income',
-  BOND_WITHHOLDING_TAX: 'tax-category-bond-withholding-tax',
+  FOREIGN_BOND_WITHHOLDING_TAX: 'tax-category-foreign-bond-withholding-tax',
+  LOCAL_BOND_WITHHOLDING_TAX: 'tax-category-local-bond-withholding-tax',
   FOREIGN_SECURITIES_SALE_GAIN: 'tax-category-foreign-securities-gain',
   FOREIGN_SECURITIES_SALE_LOSS: 'tax-category-foreign-securities-loss',
 };
@@ -501,7 +503,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           debit1: BANK_USD,
           debitForeign1: usd(1000).foreign,
           debitLocal1: usd(1000).local,
-          debit2: TAX_CATEGORIES.DIVIDEND_WITHHOLDING_TAX,
+          debit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
           debitForeign2: usd(250).foreign,
           debitLocal2: usd(250).local,
           credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
@@ -535,14 +537,14 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
           creditForeign1: usd(950).foreign,
           creditLocal1: usd(950).local,
-          credit2: TAX_CATEGORIES.DIVIDEND_WITHHOLDING_TAX,
+          credit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
           creditForeign2: usd(50).foreign,
           creditLocal2: usd(50).local,
         },
       ]);
     });
 
-    it('carries no foreign amounts for a dividend received in shekels', async () => {
+    it('books tax withheld on a local dividend to local dividend withholding tax, with no foreign amounts in shekels', async () => {
       const transaction = buildTransaction({
         id: 'transaction-dividend',
         amount: '400',
@@ -573,7 +575,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           debit1: BANK_ILS,
           debitForeign1: null,
           debitLocal1: 400,
-          debit2: TAX_CATEGORIES.DIVIDEND_WITHHOLDING_TAX,
+          debit2: TAX_CATEGORIES.LOCAL_DIVIDEND_WITHHOLDING_TAX,
           debitForeign2: null,
           debitLocal2: 100,
           credit1: TAX_CATEGORIES.LOCAL_DIVIDEND_INCOME,
@@ -606,7 +608,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
 
     it('names a missing withholding category only when tax was withheld', async () => {
       const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
-      const { DIVIDEND_WITHHOLDING_TAX: _, ...taxCategories } = TAX_CATEGORIES;
+      const { FOREIGN_DIVIDEND_WITHHOLDING_TAX: _, ...taxCategories } = TAX_CATEGORIES;
 
       const withoutTax = await generate({
         transactions: [transaction],
@@ -628,9 +630,9 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       });
       expect(withTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
       expect(withTax.errors).toEqual([
-        expect.stringContaining('Missing securities tax category "Dividend withholding tax"'),
+        expect.stringContaining('Missing securities tax category "Foreign dividend withholding tax"'),
       ]);
-      expect(withTax.missingSecuritiesTaxCategories).toEqual(['DIVIDEND_WITHHOLDING_TAX']);
+      expect(withTax.missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_WITHHOLDING_TAX']);
     });
 
     it('books the reported tax and reports it when gross minus net disagrees', async () => {
@@ -677,7 +679,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(recordOf(records, FEES_TAX_CATEGORY_ID)?.credit_entity1).toBe(BANK_ILS);
     });
 
-    it('books withheld tax to bond withholding tax, foreign and local alike', async () => {
+    it('books withheld tax to foreign or local bond withholding tax by the issuer', async () => {
       const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
       const taxed = {
         trade_gross_value_trade_currency: '1100',
@@ -699,15 +701,23 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         },
       });
 
-      for (const [{ records, errors }, incomeTaxCategoryId] of [
-        [foreign, TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME],
-        [local, TAX_CATEGORIES.LOCAL_BOND_INTEREST_INCOME],
+      for (const [{ records, errors }, incomeTaxCategoryId, withholdingTaxCategoryId] of [
+        [
+          foreign,
+          TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+          TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
+        ],
+        [
+          local,
+          TAX_CATEGORIES.LOCAL_BOND_INTEREST_INCOME,
+          TAX_CATEGORIES.LOCAL_BOND_WITHHOLDING_TAX,
+        ],
       ] as const) {
         expect(errors).toEqual([]);
         expect(records.map(summarize)).toEqual([
           {
             ...baseCashInRecord(1000),
-            debit2: TAX_CATEGORIES.BOND_WITHHOLDING_TAX,
+            debit2: withholdingTaxCategoryId,
             debitForeign2: usd(100).foreign,
             debitLocal2: usd(100).local,
             credit1: incomeTaxCategoryId,
@@ -733,7 +743,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(records.map(summarize)).toEqual([
         {
           ...baseCashInRecord(1000),
-          debit2: TAX_CATEGORIES.BOND_WITHHOLDING_TAX,
+          debit2: TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
           debitForeign2: usd(20).foreign,
           debitLocal2: usd(20).local,
           credit1: TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
@@ -826,7 +836,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
     });
 
-    it('books tax withheld on a redemption to bond withholding tax, with the gain on gross', async () => {
+    it('books tax withheld on a redemption to foreign bond withholding tax, with the gain on gross', async () => {
       // 1,050 gross, 50 withheld, 1,000 received; cost 900, so the gain is 150
       const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
       const redemption = redemptionExecution(10, 1000, {
@@ -844,7 +854,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(records.map(summarize)).toEqual([
         {
           ...baseCashInRecord(1000),
-          debit2: TAX_CATEGORIES.BOND_WITHHOLDING_TAX,
+          debit2: TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
           debitForeign2: usd(50).foreign,
           debitLocal2: usd(50).local,
           creditForeign1: usd(900).foreign,
@@ -854,6 +864,52 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           creditLocal2: usd(150).local,
         },
       ]);
+    });
+
+    it('books tax withheld on a redemption of a local bond to local bond withholding tax', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000, {
+        isin: 'IL0000000002',
+        issuer_country_code: 'IL',
+        trade_gross_value_trade_currency: '1050',
+        israel_tax_value_by_payments_settlement_currency: '50',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 900), redemption],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records[0].debit_entity2).toBe(TAX_CATEGORIES.LOCAL_BOND_WITHHOLDING_TAX);
+    });
+
+    it('needs the locality of a redeemed bond only when tax was withheld', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const unknownLocality = { isin: null, issuer_country_code: null };
+
+      const untaxed = redemptionExecution(10, 1000, unknownLocality);
+      const withoutTax = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: untaxed },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 1000), untaxed],
+      });
+      expect(withoutTax.errors).toEqual([]);
+      expect(withoutTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+
+      const taxed = redemptionExecution(10, 1000, {
+        ...unknownLocality,
+        trade_gross_value_trade_currency: '1050',
+        israel_tax_value_by_payments_settlement_currency: '50',
+      });
+      const withTax = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: taxed },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 900), taxed],
+      });
+      expect(withTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(withTax.errors).toEqual([expect.stringContaining('is local or foreign')]);
     });
 
     it('keeps the base entry for a loss with withheld tax, which needs a third debit', async () => {

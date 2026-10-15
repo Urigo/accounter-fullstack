@@ -33,6 +33,7 @@ import {
   getWithheldTax,
   INCOME_TAX_CATEGORY_KEYS,
   WITHHOLDING_TAX_CATEGORY_KEYS,
+  type SecurityLocality,
 } from '../../helpers/foreign-securities-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
@@ -154,19 +155,25 @@ async function securitiesLedgerEntry(params: {
         `Withheld tax of ${tax.withheld} ${cashCurrency} reported for transaction ${transactionDescription} does not match gross minus net (${tax.deduced} ${cashCurrency})`,
       );
     }
-    const withholdingKeys =
-      Math.abs(tax.withheld) >= MIN_AMOUNT ? [WITHHOLDING_TAX_CATEGORY_KEYS[kind]] : [];
-
-    if (kind === 'DIVIDEND' || kind === 'INTEREST') {
+    const hasWithheldTax = Math.abs(tax.withheld) >= MIN_AMOUNT;
+    const requireLocality = (): SecurityLocality => {
       const locality = getSecurityLocality(execution);
       if (!locality) {
         throw new LedgerError(
           `Cannot tell whether ${describeSecurity(execution)} of transaction ${transactionDescription} is local or foreign: its execution has no issuer country or ISIN`,
         );
       }
+      return locality;
+    };
+
+    if (kind === 'DIVIDEND' || kind === 'INTEREST') {
+      const locality = requireLocality();
       const incomeKey = INCOME_TAX_CATEGORY_KEYS[kind][locality];
+      const withholdingKey = hasWithheldTax
+        ? WITHHOLDING_TAX_CATEGORY_KEYS[kind][locality]
+        : undefined;
       const ids = requireTaxCategories(
-        [incomeKey, ...withholdingKeys],
+        withholdingKey ? [incomeKey, withholdingKey] : [incomeKey],
         taxCategories,
         errors,
         params.missingTaxCategories,
@@ -176,14 +183,16 @@ async function securitiesLedgerEntry(params: {
       }
       return buildIncomeEntry(baseEntry, {
         incomeTaxCategoryId: ids[incomeKey],
-        withholdingTaxCategoryId: withholdingKeys.length
-          ? ids[WITHHOLDING_TAX_CATEGORY_KEYS[kind]]
-          : undefined,
+        withholdingTaxCategoryId: withholdingKey ? ids[withholdingKey] : undefined,
         withheldTax: tax.withheld,
       });
     }
 
-    // a redemption
+    // a redemption: only withheld tax depends on locality, so a redemption without it books as is
+    // even when the execution has no issuer country or ISIN
+    const withholdingKeys = hasWithheldTax
+      ? [WITHHOLDING_TAX_CATEGORY_KEYS.REDEMPTION[requireLocality()]]
+      : [];
     const history = await injector
       .get(ForeignSecuritiesProvider)
       .getSecurityAccountHistory(execution, ownerId);
@@ -217,7 +226,7 @@ async function securitiesLedgerEntry(params: {
       withheldTax: tax.withheld,
       gainTaxCategoryId: taxCategories.FOREIGN_SECURITIES_SALE_GAIN,
       lossTaxCategoryId: taxCategories.FOREIGN_SECURITIES_SALE_LOSS,
-      withholdingTaxCategoryId: taxCategories.BOND_WITHHOLDING_TAX,
+      withholdingTaxCategoryId: withholdingKeys.length ? ids[withholdingKeys[0]] : undefined,
     });
   } catch (e) {
     errors.add(

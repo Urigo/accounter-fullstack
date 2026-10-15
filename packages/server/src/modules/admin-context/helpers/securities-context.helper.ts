@@ -25,7 +25,15 @@ const SECURITIES_TAX_CATEGORIES = {
   FOREIGN_SECURITIES_FEES: { field: 'foreignSecuritiesFees', label: 'Foreign securities fees' },
   FOREIGN_DIVIDEND_INCOME: { field: 'foreignDividendIncome', label: 'Foreign dividend income' },
   LOCAL_DIVIDEND_INCOME: { field: 'localDividendIncome', label: 'Local dividend income' },
-  DIVIDEND_WITHHOLDING_TAX: { field: 'dividendWithholdingTax', label: 'Dividend withholding tax' },
+  // formerly `dividendWithholdingTax`, which the migration moved here
+  FOREIGN_DIVIDEND_WITHHOLDING_TAX: {
+    field: 'foreignDividendWithholdingTax',
+    label: 'Foreign dividend withholding tax',
+  },
+  LOCAL_DIVIDEND_WITHHOLDING_TAX: {
+    field: 'localDividendWithholdingTax',
+    label: 'Local dividend withholding tax',
+  },
   FOREIGN_BOND_INTEREST_INCOME: {
     field: 'foreignBondInterestIncome',
     label: 'Foreign bond interest income',
@@ -34,7 +42,15 @@ const SECURITIES_TAX_CATEGORIES = {
     field: 'localBondInterestIncome',
     label: 'Local bond interest income',
   },
-  BOND_WITHHOLDING_TAX: { field: 'bondWithholdingTax', label: 'Bond withholding tax' },
+  // formerly `bondWithholdingTax`, which the migration moved here
+  FOREIGN_BOND_WITHHOLDING_TAX: {
+    field: 'foreignBondWithholdingTax',
+    label: 'Foreign bond withholding tax',
+  },
+  LOCAL_BOND_WITHHOLDING_TAX: {
+    field: 'localBondWithholdingTax',
+    label: 'Local bond withholding tax',
+  },
   FOREIGN_SECURITIES_SALE_GAIN: {
     field: 'foreignSecuritiesSaleGain',
     label: 'Gain from sale of foreign securities',
