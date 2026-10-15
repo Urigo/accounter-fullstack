@@ -466,7 +466,7 @@ function executionsPayload(overrides: { totalRecords?: number; totalPages?: numb
             tradePrice: 250,
             netValue: amount(2500, 'USD'),
             tradeCommission: amount(5, 'USD'),
-            israelTaxValue: amount(90, 'ILS'),
+            israelTaxValue: amount(90, 'USD'),
             foreignTaxValue: amount(12.5, 'USD'),
             israelTaxValueByPayments: null,
             capitalTaxValue: amount(0, 'USD'),
@@ -578,7 +578,7 @@ describe('accounter_get_security_executions', () => {
     const result = await runTool(getSecurityExecutionsTool, clientReturning(executionsPayload()), {});
     const structured = result.structuredContent as unknown as ExecutionsStructured;
     expect(structured.executions[0]).toMatchObject({
-      israelTaxValue: { value: 90, currency: 'ILS' },
+      israelTaxValue: { value: 90, currency: 'USD' },
       foreignTaxValue: { value: 12.5, currency: 'USD' },
       israelTaxValueByPayments: null,
       capitalTaxValue: { value: 0, currency: 'USD' },

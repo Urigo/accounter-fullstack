@@ -46,7 +46,7 @@ export default gql`
     netValueIls: FinancialAmount
     tradeCommission: FinancialAmount
     managementFees: FinancialAmount
-    " Source column israe_tax_value — the missing letter is the bank's. Reported in ILS, like its NIS-suffixed siblings. The tax withheld from the cash leg, per kind and in its own currency, is in the fields below "
+    " Israeli tax, in the trade currency. Source column israe_tax_value — the missing letter is the bank's. The tax withheld from the cash leg, per kind and in the settlement currency, is in the fields below "
     israelTaxValue: FinancialAmount
     " Tax withheld abroad, in the settlement currency; negative for a refund. Source column foreign_tax_value_settlement_currency "
     foreignTaxValue: FinancialAmount

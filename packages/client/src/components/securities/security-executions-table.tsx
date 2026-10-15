@@ -100,18 +100,18 @@ type TaxAmount = { raw: number; formatted: string } | null | undefined;
 const MIN_TAX_AMOUNT = 0.005;
 
 export type SecurityTaxLine = {
-  /** Which tax this is; null for the bank's lone ILS figure. */
+  /** Which tax this is; null for the bank's Israeli tax figure. */
   label: string | null;
   formatted: string;
-  /** The ILS figure shown under the per-kind amounts, which it does not add to. */
+  /** The bank's Israeli tax figure shown under the per-kind amounts, which it does not add to. */
   secondary?: boolean;
 };
 
 /**
  * The tax lines of one execution. The bank reports the tax withheld from the cash leg per kind
  * (foreign, Israeli, capital) in the settlement currency, which is what the ledger books, and
- * separately an Israeli tax figure in ILS. The per-kind amounts lead; the ILS figure follows when
- * it is non-zero, and stands alone, as it always did, on rows with no per-kind amount.
+ * separately an Israeli tax figure in the trade currency. The per-kind amounts lead; that figure
+ * follows when it is non-zero, and stands alone, as it always did, on rows with no per-kind amount.
  */
 export const securityTaxLines = (execution: {
   israelTaxValue?: TaxAmount;
@@ -130,12 +130,12 @@ export const securityTaxLines = (execution: {
     isSignificant(amount) ? [{ label, formatted: amount.formatted }] : [],
   );
 
-  const ils = execution.israelTaxValue;
+  const israelTax = execution.israelTaxValue;
   if (!withheld.length) {
-    return ils ? [{ label: null, formatted: ils.formatted }] : [];
+    return israelTax ? [{ label: null, formatted: israelTax.formatted }] : [];
   }
-  return isSignificant(ils)
-    ? [...withheld, { label: null, formatted: ils.formatted, secondary: true }]
+  return isSignificant(israelTax)
+    ? [...withheld, { label: null, formatted: israelTax.formatted, secondary: true }]
     : withheld;
 };
 
@@ -208,9 +208,9 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
               <TableCell className="whitespace-nowrap">
                 {securityTaxLines(execution).map(line => (
                   <div
-                    key={line.label ?? 'ils'}
+                    key={line.label ?? 'israel-tax'}
                     className={line.secondary ? 'text-xs text-gray-500' : undefined}
-                    title={line.label ? undefined : 'Israeli tax as the bank reports it, in ILS'}
+                    title={line.label ? undefined : 'Israeli tax as the bank reports it'}
                   >
                     {line.label && <span className="text-gray-500">{line.label} </span>}
                     {line.formatted}

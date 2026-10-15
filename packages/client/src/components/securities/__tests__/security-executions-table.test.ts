@@ -37,7 +37,7 @@ describe('securityTaxLines', () => {
   it('shows tax withheld abroad in the settlement currency', () => {
     expect(
       securityTaxLines({
-        israelTaxValue: amount(0, '₪'),
+        israelTaxValue: amount(0, '$'),
         foreignTaxValue: amount(6.75, '$'),
         israelTaxValueByPayments: amount(0, '$'),
         capitalTaxValue: null,
@@ -45,10 +45,10 @@ describe('securityTaxLines', () => {
     ).toEqual([{ label: 'Foreign', formatted: '$ 6.75' }]);
   });
 
-  it('lists each kind of withheld tax, then a non-zero ILS figure', () => {
+  it('lists each kind of withheld tax, then a non-zero Israeli tax figure', () => {
     expect(
       securityTaxLines({
-        israelTaxValue: amount(36.5, '₪'),
+        israelTaxValue: amount(36.5, '$'),
         foreignTaxValue: amount(15, '$'),
         israelTaxValueByPayments: amount(10, '$'),
         capitalTaxValue: amount(5, '$'),
@@ -57,7 +57,7 @@ describe('securityTaxLines', () => {
       { label: 'Foreign', formatted: '$ 15.00' },
       { label: 'Israel', formatted: '$ 10.00' },
       { label: 'Capital', formatted: '$ 5.00' },
-      { label: null, formatted: '₪ 36.50', secondary: true },
+      { label: null, formatted: '$ 36.50', secondary: true },
     ]);
   });
 
@@ -67,15 +67,15 @@ describe('securityTaxLines', () => {
     ]);
   });
 
-  it('falls back to the ILS figure alone when no withheld tax is reported', () => {
+  it('falls back to the Israeli tax figure alone when no withheld tax is reported', () => {
     expect(
       securityTaxLines({
-        israelTaxValue: amount(90, '₪'),
+        israelTaxValue: amount(90, '$'),
         foreignTaxValue: null,
         israelTaxValueByPayments: null,
         capitalTaxValue: null,
       }),
-    ).toEqual([{ label: null, formatted: '₪ 90.00' }]);
+    ).toEqual([{ label: null, formatted: '$ 90.00' }]);
   });
 
   it('renders nothing when no tax is reported at all', () => {

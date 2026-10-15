@@ -213,8 +213,8 @@ scope, because it _is_ the scope.
   sales, dividends, interest, redemptions, distributions and transfers, newest first, with dates,
   direction, quantity, unit price, net value, commission and tax — the tax withheld from the cash
   leg per kind (foreign, Israeli, capital) in the settlement currency, plus the bank's separate
-  Israeli-tax figure in ILS. Narrow by security (`securityBusinessIds`, `isins` or `symbols` — three
-  ways of naming one axis, so they union with each other), by trade date, and by
+  Israeli-tax figure in the trade currency. Narrow by security (`securityBusinessIds`, `isins` or
+  `symbols` — three ways of naming one axis, so they union with each other), by trade date, and by
   `tradeTypes`/`transactionTypes`. Really paginated upstream (1-based `page` here, 0-based there)
   with `pagination` echoed. `includeCharges` additionally resolves the charge each trade's cash
   movement landed on, and **requires naming the securities**: the pairing is greedy and one-to-one

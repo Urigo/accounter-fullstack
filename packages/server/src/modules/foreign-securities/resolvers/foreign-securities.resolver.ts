@@ -96,7 +96,7 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
       tradeCurrencyAmount(execution.trade_commission_value_trade_currency, execution),
     managementFees: execution =>
       tradeCurrencyAmount(execution.management_fees_value_trade_currency, execution),
-    israelTaxValue: execution => ilsAmount(execution.israe_tax_value),
+    israelTaxValue: execution => tradeCurrencyAmount(execution.israe_tax_value, execution),
     foreignTaxValue: execution =>
       settlementCurrencyAmount(execution.foreign_tax_value_settlement_currency, execution),
     israelTaxValueByPayments: execution =>

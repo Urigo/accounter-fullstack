@@ -587,7 +587,7 @@ export const getSecurityExecutionsTool: ToolDefinition<typeof getSecurityExecuti
   name: GET_SECURITY_EXECUTIONS_TOOL_NAME,
   description:
     'Fetch securities trade history - buys, sales, dividends, interest, redemptions and transfers - newest first, with dates, direction, quantity, unit price, net value, commission and tax. ' +
-    'Tax withheld from the cash leg comes per kind - `foreignTaxValue` (withheld abroad), `israelTaxValueByPayments` and `capitalTaxValue` - in the settlement currency, negative for a refund; `israelTaxValue` is a separate Israeli-tax figure the bank reports in ILS, not their total. ' +
+    'Tax withheld from the cash leg comes per kind - `foreignTaxValue` (withheld abroad), `israelTaxValueByPayments` and `capitalTaxValue` - in the settlement currency, negative for a refund; `israelTaxValue` is a separate Israeli-tax figure the bank reports in the trade currency, not their total. ' +
     'Narrow by security (securityBusinessIds, isins or symbols - these three union with each other, since they are three ways of naming the same thing), by trade date, and by kind. ' +
     "Amounts are in each security's own trade currency and are never converted, so do not add rows from different securities together. " +
     'Set `includeCharges` to also get the charge each trade cash movement landed on; that requires naming the securities, because the pairing is computed over a security whole history rather than a page. ' +
