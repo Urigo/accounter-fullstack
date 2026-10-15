@@ -1,11 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import {
-  getCurrentVaultPath,
-  getVault,
-  isLocked,
-  moveVaultFile,
-  updateVault,
-} from './vault-store.js';
+import { getVault, isLocked, updateVault } from './vault-store.js';
 import { SettingsSchema, type Settings } from './vault.js';
 
 function guardLocked(reply: { status(code: number): { send(body: unknown): unknown } }) {
@@ -27,16 +21,14 @@ export async function registerSettingsRoutes(app: FastifyInstance): Promise<void
     const parsed = SettingsSchema.partial().safeParse(req.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.issues });
 
-    const newPath = parsed.data.vaultPath;
-    if (newPath !== undefined && newPath !== getCurrentVaultPath()) {
-      try {
-        await moveVaultFile(newPath);
-      } catch {
-        return reply.status(500).send({ error: 'move-failed' });
-      }
-    }
+    // Zod 4's `.partial()` still fills in field defaults, so the parsed object carries every
+    // defaulted key. Apply only the keys the client sent, or saving one toggle resets the others.
+    const sent = new Set(Object.keys(req.body ?? {}));
+    const patch = Object.fromEntries(
+      Object.entries(parsed.data).filter(([key]) => sent.has(key)),
+    ) as Partial<Settings>;
 
-    await updateVault(v => ({ ...v, settings: { ...v.settings, ...parsed.data } }));
+    await updateVault(v => ({ ...v, settings: { ...v.settings, ...patch } }));
     return getVault().settings;
   });
 }

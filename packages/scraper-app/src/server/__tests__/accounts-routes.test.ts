@@ -1,21 +1,14 @@
-import { randomBytes } from 'node:crypto';
-import { rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { defaultVault, saveVaultFile } from '../vault.js';
-import { lockVault } from '../vault-store.js';
+import { defaultVault, encryptVault } from '../vault.js';
+import { closeVault, openVault } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
 
 const PASSWORD = 'test-password-123';
 
-let vaultPath: string;
 let app: FastifyInstance;
 
 beforeEach(async () => {
-  vaultPath = join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
-  process.env['VAULT_PATH'] = vaultPath;
 
   const vault = defaultVault();
   vault.accountRecords.push({
@@ -26,24 +19,16 @@ beforeEach(async () => {
     branchNumber: '700',
     status: 'pending',
   });
-  await saveVaultFile(vaultPath, vault, PASSWORD);
+  await openVault(await encryptVault(vault, PASSWORD), PASSWORD, 'test.vault');
 
   app = Fastify();
   await registerVaultRoutes(app);
   await app.ready();
-
-  await app.inject({
-    method: 'POST',
-    url: '/api/vault/unlock',
-    payload: { password: PASSWORD },
-  });
 });
 
 afterEach(async () => {
-  lockVault();
+  closeVault();
   await app.close();
-  await rm(vaultPath, { force: true });
-  delete process.env['VAULT_PATH'];
 });
 
 describe('GET /api/vault/accounts', () => {
@@ -57,7 +42,7 @@ describe('GET /api/vault/accounts', () => {
   });
 
   it('returns 401 when vault is locked', async () => {
-    lockVault();
+    closeVault();
     const res = await app.inject({ method: 'GET', url: '/api/vault/accounts' });
     expect(res.statusCode).toBe(401);
   });
@@ -85,18 +70,21 @@ describe('PUT /api/vault/accounts/:id', () => {
     expect((res.json() as Array<{ status: string }>)[0].status).toBe('ignored');
   });
 
-  it('persists across re-lock/unlock', async () => {
+  it('survives an export and re-open of the vault file', async () => {
     await app.inject({
       method: 'PUT',
       url: '/api/vault/accounts/acc-1',
       payload: { status: 'accepted' },
     });
 
-    lockVault();
+    const { blob } = (
+      await app.inject({ method: 'POST', url: '/api/vault/export' })
+    ).json() as { blob: string };
+    closeVault();
     await app.inject({
       method: 'POST',
-      url: '/api/vault/unlock',
-      payload: { password: PASSWORD },
+      url: '/api/vault/open',
+      payload: { blob, password: PASSWORD, fileName: 'test.vault' },
     });
 
     const res = await app.inject({ method: 'GET', url: '/api/vault/accounts' });
@@ -122,7 +110,7 @@ describe('PUT /api/vault/accounts/:id', () => {
   });
 
   it('returns 401 when vault is locked', async () => {
-    lockVault();
+    closeVault();
     const res = await app.inject({
       method: 'PUT',
       url: '/api/vault/accounts/acc-1',

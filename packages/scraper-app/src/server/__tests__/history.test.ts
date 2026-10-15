@@ -1,8 +1,15 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { appendRun, clearHistory, readHistory } from '../history.js';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  appendRun,
+  clearHistory,
+  clearSessionHistory,
+  readHistory,
+  readSessionHistory,
+  recordSessionRun,
+} from '../history.js';
 import type { RunRecord } from '../../shared/types.js';
 
 function makeRecord(i: number): RunRecord {
@@ -78,34 +85,20 @@ describe('clearHistory', () => {
   });
 });
 
-describe('saveHistory gate in websocket', () => {
-  it('does not call appendRun when saveHistory is false', async () => {
-    const spy = vi.spyOn(await import('../history.js'), 'appendRun').mockResolvedValue(undefined);
+describe('session history', () => {
+  afterEach(() => clearSessionHistory());
 
-    const { startRun } = await import('../scrape-runner.js');
-    const { _resetRunState } = await import('../scrape-runner.js');
-    _resetRunState();
+  it('keeps runs in memory, newest first, without touching any file', async () => {
+    recordSessionRun(makeRecord(1));
+    recordSessionRun(makeRecord(2));
+    expect(readSessionHistory().map(r => r.id)).toEqual(['run-2', 'run-1']);
+    expect(await readHistory(filePath)).toEqual([]);
+  });
 
-    const noopEmit = () => {};
-    const task = {
-      sourceId: 'test',
-      nickname: 'test',
-      type: 'discount',
-      run: async () => ({ inserted: 1, skipped: 0, insertedIds: [], insertedTransactions: [], changedTransactions: [] }),
-    };
-
-    const runRecord = await startRun([task], false, noopEmit);
-
-    // Simulate the saveHistory=false branch: appendRun should NOT be called
-    const saveHistory = false;
-    if (saveHistory) {
-      await appendRun(
-        { ...runRecord, startedAt: runRecord.startedAt.toISOString(), completedAt: runRecord.completedAt.toISOString(), sources: [] },
-        filePath,
-      );
-    }
-
-    expect(spy).not.toHaveBeenCalled();
-    spy.mockRestore();
+  it('caps the session buffer at 100 runs', () => {
+    for (let i = 1; i <= 120; i++) recordSessionRun(makeRecord(i));
+    const result = readSessionHistory();
+    expect(result).toHaveLength(100);
+    expect(result[0]!.id).toBe('run-120');
   });
 });

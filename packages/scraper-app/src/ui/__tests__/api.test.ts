@@ -1,64 +1,59 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, getEnvVaultPath, vaultDownload, vaultUpload } from '../lib/api.js';
+import { ApiError, saveSettings, vaultEvents, vaultExport, vaultOpen } from '../lib/api.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe('getEnvVaultPath', () => {
-  it('returns the path from the server', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ path: '/custom/.vault' }) }),
-    );
-    const result = await getEnvVaultPath();
-    expect(result.path).toBe('/custom/.vault');
-  });
-});
+function okFetch(body: unknown = { ok: true }) {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => body });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
 
-describe('vaultUpload', () => {
-  it('POSTs to /api/vault/upload with octet-stream', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
-    vi.stubGlobal('fetch', fetchMock);
-    const file = new File(['data'], 'vault');
-    await vaultUpload(file);
+describe('vaultOpen', () => {
+  it('POSTs the file contents, password and file name as JSON', async () => {
+    const fetchMock = okFetch();
+    await vaultOpen('BLOB', 'pw', 'mine.vault');
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/vault/upload',
+      '/api/vault/open',
       expect.objectContaining({
         method: 'POST',
-        headers: expect.objectContaining({ 'Content-Type': 'application/octet-stream' }),
+        body: JSON.stringify({ blob: 'BLOB', password: 'pw', fileName: 'mine.vault' }),
       }),
     );
   });
 
-  it('appends ?force=true when force=true', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
-    vi.stubGlobal('fetch', fetchMock);
-    await vaultUpload(new File(['d'], 'v'), true);
-    expect(fetchMock.mock.calls[0][0]).toContain('force=true');
-  });
-
-  it('throws ApiError with status 409 on conflict', async () => {
+  it('throws ApiError with the status on a wrong password', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
-        status: 409,
-        json: async () => ({ error: 'vault-already-exists' }),
+        status: 401,
+        json: async () => ({ error: 'wrong-password' }),
       }),
     );
-    await expect(vaultUpload(new File(['d'], 'v'))).rejects.toBeInstanceOf(ApiError);
+    const err = await vaultOpen('B', 'x', 'f').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(401);
   });
 });
 
-describe('vaultDownload', () => {
-  it('creates and clicks a download link', async () => {
-    const blob = new Blob(['data']);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => blob }));
-    const clickSpy = vi.fn();
-    vi.spyOn(document, 'createElement').mockReturnValue(
-      Object.assign(document.createElement('a'), { click: clickSpy }),
-    );
-    await vaultDownload('.vault');
-    expect(clickSpy).toHaveBeenCalled();
+describe('vault-changed events', () => {
+  it('fires after a request that edits the vault', async () => {
+    okFetch({});
+    const listener = vi.fn();
+    vaultEvents.addEventListener('vault-changed', listener);
+    await saveSettings({ showBrowser: true });
+    vaultEvents.removeEventListener('vault-changed', listener);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fire for session requests such as export', async () => {
+    okFetch({ blob: 'b', revision: 1, fileName: 'f' });
+    const listener = vi.fn();
+    vaultEvents.addEventListener('vault-changed', listener);
+    await vaultExport();
+    vaultEvents.removeEventListener('vault-changed', listener);
+    expect(listener).not.toHaveBeenCalled();
   });
 });

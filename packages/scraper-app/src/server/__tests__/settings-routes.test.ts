@@ -1,43 +1,24 @@
-import { randomBytes } from 'node:crypto';
-import { access, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { defaultVault, saveVaultFile } from '../vault.js';
-import { lockVault } from '../vault-store.js';
+import { defaultVault, encryptVault } from '../vault.js';
+import { closeVault, openVault } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
 
 const PASSWORD = 'test-password-123';
 
-function makeTmpPath() {
-  return join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
-}
-
-let vaultPath: string;
 let app: FastifyInstance;
 
 beforeEach(async () => {
-  vaultPath = makeTmpPath();
-  process.env['VAULT_PATH'] = vaultPath;
-  await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+  await openVault(await encryptVault(defaultVault(), PASSWORD), PASSWORD, 'test.vault');
 
   app = Fastify();
   await registerVaultRoutes(app);
   await app.ready();
-
-  await app.inject({
-    method: 'POST',
-    url: '/api/vault/unlock',
-    payload: { password: PASSWORD },
-  });
 });
 
 afterEach(async () => {
-  lockVault();
+  closeVault();
   await app.close();
-  await rm(vaultPath, { force: true });
-  delete process.env['VAULT_PATH'];
 });
 
 describe('GET /api/vault/settings', () => {
@@ -52,13 +33,29 @@ describe('GET /api/vault/settings', () => {
   });
 
   it('returns 401 when vault is locked', async () => {
-    lockVault();
+    closeVault();
     const res = await app.inject({ method: 'GET', url: '/api/vault/settings' });
     expect(res.statusCode).toBe(401);
   });
 });
 
 describe('PUT /api/vault/settings', () => {
+  it('saving one setting leaves the others untouched', async () => {
+    const put = (payload: Record<string, unknown>) =>
+      app.inject({ method: 'PUT', url: '/api/vault/settings', payload });
+
+    await put({ fetchBankOfIsraelRates: false });
+    let settings = (await put({ showBrowser: true })).json() as Record<string, unknown>;
+    expect(settings).toMatchObject({ showBrowser: true, fetchBankOfIsraelRates: false });
+
+    settings = (await put({ fetchBankOfIsraelRates: true })).json() as Record<string, unknown>;
+    expect(settings).toMatchObject({ showBrowser: true, fetchBankOfIsraelRates: true });
+
+    await put({ persistHistory: true, defaultDateRangeMonths: 6 });
+    settings = (await put({ concurrentScraping: true })).json() as Record<string, unknown>;
+    expect(settings).toMatchObject({ persistHistory: true, defaultDateRangeMonths: 6 });
+  });
+
   it('merges partial update and persists', async () => {
     const res = await app.inject({
       method: 'PUT',
@@ -82,18 +79,21 @@ describe('PUT /api/vault/settings', () => {
     expect(res.json()).toMatchObject({ apiKey: 'my-key' });
   });
 
-  it('survives re-lock and re-unlock (persisted to disk)', async () => {
+  it('survives an export and re-open of the vault file', async () => {
     await app.inject({
       method: 'PUT',
       url: '/api/vault/settings',
       payload: { serverUrl: 'https://persisted.example' },
     });
 
-    lockVault();
+    const { blob } = (
+      await app.inject({ method: 'POST', url: '/api/vault/export' })
+    ).json() as { blob: string };
+    closeVault();
     await app.inject({
       method: 'POST',
-      url: '/api/vault/unlock',
-      payload: { password: PASSWORD },
+      url: '/api/vault/open',
+      payload: { blob, password: PASSWORD, fileName: 'test.vault' },
     });
 
     const res = await app.inject({ method: 'GET', url: '/api/vault/settings' });
@@ -101,7 +101,7 @@ describe('PUT /api/vault/settings', () => {
   });
 
   it('returns 401 when vault is locked', async () => {
-    lockVault();
+    closeVault();
     const res = await app.inject({
       method: 'PUT',
       url: '/api/vault/settings',
@@ -120,53 +120,14 @@ describe('PUT /api/vault/settings', () => {
   });
 });
 
-describe('PUT /api/vault/settings — vaultPath change', () => {
-  let newPath: string;
-
-  beforeEach(() => {
-    newPath = makeTmpPath();
-  });
-
-  afterEach(async () => {
-    await rm(newPath, { force: true });
-  });
-
-  it('moves the vault file and returns updated settings when vaultPath changes', async () => {
+describe('PUT /api/vault/settings — vault file location', () => {
+  it('ignores a legacy vaultPath key instead of moving anything', async () => {
     const res = await app.inject({
       method: 'PUT',
       url: '/api/vault/settings',
-      payload: { vaultPath: newPath },
+      payload: { vaultPath: '/tmp/elsewhere.vault' },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().vaultPath).toBe(newPath);
-
-    const oldExists = await access(vaultPath).then(() => true).catch(() => false);
-    expect(oldExists).toBe(false);
-
-    const newExists = await access(newPath).then(() => true).catch(() => false);
-    expect(newExists).toBe(true);
-  });
-
-  it('returns 200 without moving anything when vaultPath is not in the payload', async () => {
-    await app.inject({
-      method: 'PUT',
-      url: '/api/vault/settings',
-      payload: { showBrowser: true },
-    });
-    const exists = await access(vaultPath).then(() => true).catch(() => false);
-    expect(exists).toBe(true);
-  });
-
-  it('returns 500 when destination file already exists', async () => {
-    await saveVaultFile(newPath, defaultVault(), 'other-password');
-    const res = await app.inject({
-      method: 'PUT',
-      url: '/api/vault/settings',
-      payload: { vaultPath: newPath },
-    });
-    expect(res.statusCode).toBe(500);
-    expect(res.json()).toMatchObject({ error: 'move-failed' });
-    const originalExists = await access(vaultPath).then(() => true).catch(() => false);
-    expect(originalExists).toBe(true);
+    expect(res.json()).not.toHaveProperty('vaultPath');
   });
 });

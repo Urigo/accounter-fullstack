@@ -1,35 +1,53 @@
-import { readFile, rename, writeFile } from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
+import type { VaultStatusResponse } from '../shared/types.js';
 import { registerAccountsRoutes } from './accounts-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
 import { registerSourcesRoutes } from './sources-routes.js';
-import { getVault, hasVaultFile, isLocked, lockVault, unlockVault } from './vault-store.js';
-import { defaultVault, getVaultPath, saveVaultFile } from './vault.js';
+import {
+  closeVault,
+  createVault,
+  exportVault,
+  getChanges,
+  getSessionInfo,
+  getVault,
+  isLocked,
+  markSaved,
+  openVault,
+} from './vault-store.js';
 
-type UnlockBody = { password: string };
+type OpenBody = { blob: string; password: string; fileName?: string };
 type CreateBody = { password: string; serverUrl: string; apiKey: string };
+type SavedBody = { revision: number; fileName?: string };
 
 export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
-  app.get('/api/vault/status', async () => ({
-    locked: isLocked(),
-    hasFile: await hasVaultFile(),
-  }));
+  app.get('/api/vault/status', async (): Promise<VaultStatusResponse> => {
+    if (isLocked()) return { state: 'empty' };
+    return { state: 'unlocked', ...getSessionInfo(), changes: getChanges() };
+  });
 
-  app.post<{ Body: UnlockBody }>(
-    '/api/vault/unlock',
+  // The vault file never touches this machine's disk: the browser sends its contents (already
+  // base64 text) and the server keeps the decrypted vault in memory for the session.
+  app.post<{ Body: OpenBody }>(
+    '/api/vault/open',
     {
+      bodyLimit: 10 * 1024 * 1024,
       schema: {
         body: {
           type: 'object',
-          required: ['password'],
-          properties: { password: { type: 'string' } },
+          required: ['blob', 'password'],
+          properties: {
+            blob: { type: 'string' },
+            password: { type: 'string' },
+            fileName: { type: 'string' },
+          },
         },
       },
     },
     async (req, reply) => {
-      const result = await unlockVault(req.body.password);
+      const { blob, password, fileName } = req.body;
+      const result = await openVault(blob, password, fileName ?? '');
       if (result === 'ok') return { ok: true };
-      const status = result === 'not-found' ? 404 : 401;
+      const status = result === 'wrong-password' ? 401 : 400;
       return reply.status(status).send({ error: result });
     },
   );
@@ -50,66 +68,46 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (req, reply) => {
-      if (await hasVaultFile()) return reply.status(409).send({ error: 'vault-already-exists' });
+      if (!isLocked()) return reply.status(409).send({ error: 'vault-already-open' });
       const { password, serverUrl, apiKey } = req.body;
-      lockVault();
-      const vault = defaultVault();
-      vault.settings.serverUrl = serverUrl;
-      vault.settings.apiKey = apiKey;
-      await saveVaultFile(getVaultPath(), vault, password);
-      const result = await unlockVault(password);
-      if (result !== 'ok') return reply.status(500).send({ error: result });
+      createVault(password, serverUrl, apiKey);
       return reply.status(201).send({ ok: true });
     },
   );
 
-  app.get('/api/vault/env-path', async () => ({
-    path: getVaultPath(),
-  }));
-
-  app.get('/api/vault/download', async (_req, reply) => {
-    try {
-      const fileBuffer = await readFile(getVaultPath());
-      reply.header('Content-Type', 'application/octet-stream');
-      reply.header('Content-Disposition', 'attachment; filename=".vault"');
-      return reply.send(fileBuffer);
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-        return reply.status(404).send({ error: 'no-vault-file' });
-      }
-      throw err;
-    }
+  app.get('/api/vault/changes', async (_req, reply) => {
+    if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
+    return getChanges();
   });
 
-  app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, (_req, body, done) =>
-    done(null, body),
-  );
+  app.post('/api/vault/export', async (_req, reply) => {
+    if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
+    return exportVault();
+  });
 
-  app.post<{ Querystring: { force?: string }; Body: Buffer }>(
-    '/api/vault/upload',
-    { config: { rawBody: false } },
+  app.post<{ Body: SavedBody }>(
+    '/api/vault/saved',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['revision'],
+          properties: { revision: { type: 'integer' }, fileName: { type: 'string' } },
+        },
+      },
+    },
     async (req, reply) => {
-      const force = req.query.force === 'true';
-      const vaultPath = getVaultPath();
-      try {
-        const exists = await hasVaultFile();
-        if (exists && !force) {
-          return reply.status(409).send({ error: 'vault-already-exists' });
-        }
-        await writeFile(vaultPath + '.tmp', req.body as Buffer);
-        await rename(vaultPath + '.tmp', vaultPath);
-        lockVault();
-        return reply.status(200).send({ ok: true });
-      } catch (err) {
-        req.log.error(err, 'Vault upload failed');
-        return reply.status(500).send({ error: 'write-failed' });
-      }
+      if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
+      // The baseline becomes exactly what was exported, so edits made while the save dialog was
+      // open still show as unsaved. A revision that doesn't match the latest export is ignored.
+      const ok = markSaved(req.body.revision, req.body.fileName);
+      return { ok, changes: getChanges() };
     },
   );
 
-  app.get('/api/vault/path', async (_req, reply) => {
-    if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
-    return { path: getVaultPath() };
+  app.post('/api/vault/close', async () => {
+    closeVault();
+    return { ok: true };
   });
 
   app.get('/api/vault/test-connection', async (_req, reply) => {

@@ -1,90 +1,153 @@
-import { randomBytes } from 'node:crypto';
-import { access, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { defaultVault, saveVaultFile } from '../vault.js';
-import { getCurrentVaultPath, lockVault, moveVaultFile, unlockVault } from '../vault-store.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { defaultVault, encryptVault, type Vault } from '../vault.js';
+import {
+  closeVault,
+  createVault,
+  exportVault,
+  getChanges,
+  getSessionInfo,
+  getVault,
+  isLocked,
+  markSaved,
+  openVault,
+  updateVault,
+} from '../vault-store.js';
+
+vi.mock('node:fs/promises', async importOriginal => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    writeFile: vi.fn(() => {
+      throw new Error('vault-store must not write files');
+    }),
+  };
+});
 
 const PASSWORD = 'test-password-123';
 
-function makeTmpPath() {
-  return join(tmpdir(), `vault-store-test-${randomBytes(4).toString('hex')}.vault`);
+function seeded(): Vault {
+  const vault = defaultVault();
+  vault.maxAccounts.push({ id: 'max-1', nickname: 'Personal', username: 'u', password: 'p' });
+  vault.accountRecords.push({
+    id: 'rec-1',
+    sourceId: 'max-1',
+    sourceType: 'max',
+    accountNumber: '1234',
+    status: 'pending',
+  });
+  return vault;
+}
+
+async function openSeeded() {
+  return openVault(await encryptVault(seeded(), PASSWORD), PASSWORD, 'mine.vault');
 }
 
 describe('vault-store', () => {
-  let vaultPath: string;
+  afterEach(() => closeVault());
 
-  beforeEach(async () => {
-    vaultPath = makeTmpPath();
-    await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+  it('opens a vault from its file contents', async () => {
+    expect(await openSeeded()).toBe('ok');
+    expect(isLocked()).toBe(false);
+    expect(getVault().maxAccounts[0]?.nickname).toBe('Personal');
+    expect(getSessionInfo()).toEqual({ origin: 'opened', fileName: 'mine.vault' });
+    expect(getChanges()).toEqual({ dirty: false, neverSaved: false, items: [] });
   });
 
-  afterEach(async () => {
-    lockVault();
-    await rm(vaultPath, { force: true });
-    delete process.env['VAULT_PATH'];
+  it('rejects a wrong password and leaves the store locked', async () => {
+    const blob = await encryptVault(seeded(), PASSWORD);
+    expect(await openVault(blob, 'nope', 'mine.vault')).toBe('wrong-password');
+    expect(isLocked()).toBe(true);
   });
 
-  it('getCurrentVaultPath returns env default before unlock', () => {
-    delete process.env['VAULT_PATH'];
-    expect(getCurrentVaultPath()).toBe('.vault');
+  it('rejects contents that are not a vault file', async () => {
+    expect(await openVault('not a vault', PASSWORD, 'x.txt')).toBe('invalid-file');
+    expect(await openVault('aGVsbG8=', PASSWORD, 'x.txt')).toBe('invalid-file');
   });
 
-  it('getCurrentVaultPath returns the path set at unlock', async () => {
-    process.env['VAULT_PATH'] = vaultPath;
-    await unlockVault(PASSWORD);
-    expect(getCurrentVaultPath()).toBe(vaultPath);
+  it('creates a new vault that has never been saved', () => {
+    createVault(PASSWORD, 'http://x/graphql', 'key');
+    expect(getSessionInfo().origin).toBe('new');
+    const changes = getChanges();
+    expect(changes).toMatchObject({ dirty: true, neverSaved: true });
   });
 
-  it('moveVaultFile moves the file and updates getCurrentVaultPath', async () => {
-    process.env['VAULT_PATH'] = vaultPath;
-    await unlockVault(PASSWORD);
-    const newPath = makeTmpPath();
-    try {
-      await moveVaultFile(newPath);
-      expect(getCurrentVaultPath()).toBe(newPath);
-      const exists = await access(newPath).then(() => true).catch(() => false);
-      expect(exists).toBe(true);
-    } finally {
-      await rm(newPath, { force: true });
-    }
+  it('updateVault changes memory only', async () => {
+    await openSeeded();
+    await updateVault(v => ({ ...v, settings: { ...v.settings, showBrowser: true } }));
+    expect(getVault().settings.showBrowser).toBe(true);
   });
 
-  it('moveVaultFile is a no-op when paths are the same', async () => {
-    process.env['VAULT_PATH'] = vaultPath;
-    await unlockVault(PASSWORD);
-    await expect(moveVaultFile(vaultPath)).resolves.not.toThrow();
+  it('throws when used while locked', async () => {
+    expect(() => getVault()).toThrow('Vault is locked');
+    await expect(updateVault(v => v)).rejects.toThrow('Vault is locked');
   });
 
-  it('moveVaultFile throws when vault is locked', async () => {
-    await expect(moveVaultFile('/some/path')).rejects.toThrow('Vault is locked');
+  describe('getChanges', () => {
+    it('reports edited and removed sources and accounts', async () => {
+      await openSeeded();
+      await updateVault(v => ({
+        ...v,
+        maxAccounts: [{ ...v.maxAccounts[0]!, password: 'changed' }],
+        accountRecords: [],
+      }));
+      expect(getChanges().items).toEqual([
+        { section: 'sources', kind: 'edited', id: 'max-1', sourceType: 'max', label: 'Personal' },
+        { section: 'accounts', kind: 'removed', id: 'rec-1', sourceType: 'max', label: '1234' },
+      ]);
+    });
+
+    it('reports discovered accounts with branch-prefixed labels', async () => {
+      await openSeeded();
+      await updateVault(v => ({
+        ...v,
+        accountRecords: [
+          ...v.accountRecords,
+          {
+            id: 'rec-2',
+            sourceId: 'p-1',
+            sourceType: 'poalim',
+            accountNumber: '555',
+            branchNumber: '700',
+            status: 'pending',
+          },
+        ],
+      }));
+      expect(getChanges().items).toEqual([
+        { section: 'accounts', kind: 'added', id: 'rec-2', sourceType: 'poalim', label: '700-555' },
+      ]);
+    });
+
+    it('is not fooled by a no-op update', async () => {
+      await openSeeded();
+      await updateVault(v => ({ ...v, settings: { ...v.settings } }));
+      expect(getChanges().dirty).toBe(false);
+    });
   });
 
-  it('moveVaultFile throws when destination already exists', async () => {
-    process.env['VAULT_PATH'] = vaultPath;
-    await unlockVault(PASSWORD);
-    const destPath = makeTmpPath();
-    await saveVaultFile(destPath, defaultVault(), PASSWORD);
-    try {
-      await expect(moveVaultFile(destPath)).rejects.toThrow('Destination already exists');
-    } finally {
-      await rm(destPath, { force: true });
-    }
-  });
+  describe('export and save', () => {
+    it('only clears the dirty state once the save is confirmed', async () => {
+      await openSeeded();
+      await updateVault(v => ({ ...v, settings: { ...v.settings, showBrowser: true } }));
+      const { revision } = await exportVault();
+      expect(getChanges().dirty).toBe(true);
+      expect(markSaved(revision)).toBe(true);
+      expect(getChanges().dirty).toBe(false);
+    });
 
-  it('moveVaultFile updates VAULT_PATH env so re-unlock uses the new path', async () => {
-    process.env['VAULT_PATH'] = vaultPath;
-    await unlockVault(PASSWORD);
-    const newPath = makeTmpPath();
-    try {
-      await moveVaultFile(newPath);
-      lockVault();
-      const result = await unlockVault(PASSWORD);
-      expect(result).toBe('ok');
-      expect(getCurrentVaultPath()).toBe(newPath);
-    } finally {
-      await rm(newPath, { force: true });
-    }
+    it('a new vault stops being "never saved" after its first save', async () => {
+      createVault(PASSWORD, '', '');
+      const { revision } = await exportVault();
+      markSaved(revision, 'picked-name.vault');
+      expect(getChanges()).toEqual({ dirty: false, neverSaved: false, items: [] });
+      expect(getSessionInfo().fileName).toBe('picked-name.vault');
+    });
+
+    it('ignores a confirmation for anything but the latest export', async () => {
+      await openSeeded();
+      const first = await exportVault();
+      await updateVault(v => ({ ...v, settings: { ...v.settings, showBrowser: true } }));
+      await exportVault();
+      expect(markSaved(first.revision)).toBe(false);
+    });
   });
 });

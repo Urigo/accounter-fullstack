@@ -17,7 +17,18 @@ const STUB_VAULT = {
 };
 
 vi.mock('../vault-store.js', () => ({ isLocked: () => false, getVault: () => STUB_VAULT }));
-vi.mock('../scrape-runner.js', () => ({ startRun: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../scrape-runner.js', () => ({
+  startRun: vi.fn().mockResolvedValue({
+    id: 'run-1',
+    startedAt: new Date(),
+    completedAt: new Date(),
+    totalInserted: 0,
+    totalSkipped: 0,
+    errorCount: 0,
+    sources: [],
+  }),
+  ERR_RUN_IN_PROGRESS: 'Run already in progress',
+}));
 
 let app: FastifyInstance;
 

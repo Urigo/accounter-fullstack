@@ -1,5 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useVaultChanges } from '../../contexts/vault-context.js';
 import { loadSettings, saveSettings, testConnection } from '../../lib/api.js';
+import { hasSectionChanges } from '../../lib/change-labels.js';
 import { AccountsTab } from './accounts-tab.js';
 import { SettingsTab } from './settings-tab.js';
 import { SourcesTab } from './sources-tab.js';
@@ -11,6 +13,16 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'accounts', label: 'Accounts' },
   { id: 'settings', label: 'Settings' },
 ];
+
+const UNSAVED_DOT = {
+  display: 'inline-block',
+  width: 7,
+  height: 7,
+  marginLeft: 6,
+  borderRadius: '50%',
+  verticalAlign: 'middle',
+  background: 'var(--unsaved, #b45309)',
+} as const;
 
 type TestResult = { ok: true; latencyMs: number } | { ok: false; error: string };
 
@@ -120,6 +132,7 @@ function ConnectionBar(): ReactElement {
 
 export function Config(): ReactElement {
   const [active, setActive] = useState<TabId>('sources');
+  const changes = useVaultChanges();
 
   return (
     <div>
@@ -144,6 +157,9 @@ export function Config(): ReactElement {
             }}
           >
             {t.label}
+            {hasSectionChanges(changes, t.id) && (
+              <span style={UNSAVED_DOT} aria-label="has unsaved changes" />
+            )}
           </button>
         ))}
       </nav>

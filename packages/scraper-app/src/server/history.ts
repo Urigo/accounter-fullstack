@@ -33,6 +33,21 @@ async function doAppend(record: RunRecord, filePath: string): Promise<void> {
   await writeFile(filePath, JSON.stringify(records, null, 2), 'utf8');
 }
 
+// Runs from this server session, newest last. Always kept; the file is opt-in.
+let sessionRuns: RunRecord[] = [];
+
+export function recordSessionRun(record: RunRecord): void {
+  sessionRuns = [...sessionRuns, record].slice(-MAX_RECORDS);
+}
+
+export function readSessionHistory(): RunRecord[] {
+  return [...sessionRuns].reverse();
+}
+
+export function clearSessionHistory(): void {
+  sessionRuns = [];
+}
+
 export function appendRun(record: RunRecord, filePath: string): Promise<void> {
   return enqueue(filePath, () => doAppend(record, filePath));
 }

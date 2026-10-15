@@ -17,7 +17,7 @@ import {
   type ScraperUploadResult,
   type UploadClient,
 } from './graphql/client.js';
-import { appendRun } from './history.js';
+import { appendRun, recordSessionRun } from './history.js';
 import { OtpManager } from './otp-manager.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
@@ -868,19 +868,18 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
               });
             }
 
-            const { saveHistory, historyFilePath } = vault.settings;
+            const { persistHistory, historyFilePath } = vault.settings;
             void startRun(tasks, vault.settings.concurrentScraping, emit)
               .then(async runRecord => {
-                if (saveHistory) {
+                const record = {
+                  ...runRecord,
+                  startedAt: runRecord.startedAt.toISOString(),
+                  completedAt: runRecord.completedAt.toISOString(),
+                };
+                recordSessionRun(record);
+                if (persistHistory) {
                   try {
-                    await appendRun(
-                      {
-                        ...runRecord,
-                        startedAt: runRecord.startedAt.toISOString(),
-                        completedAt: runRecord.completedAt.toISOString(),
-                      },
-                      historyFilePath,
-                    );
+                    await appendRun(record, historyFilePath);
                   } catch (err) {
                     app.log.error(err, '[ws] failed to append run history');
                   }
