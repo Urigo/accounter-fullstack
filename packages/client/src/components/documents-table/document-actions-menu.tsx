@@ -18,6 +18,11 @@ import { ROUTES } from '@/router/routes.js';
 import { DocumentType } from '../../gql/graphql.js';
 import { writeToClipboard } from '../../helpers/index.js';
 import {
+  isSafeHttpUrl,
+  toDocumentViewerEntry,
+  toUrlString,
+} from '../common/document-viewer/source.js';
+import {
   CloseDocumentButton,
   DeleteDocumentButton,
   DocumentImageDrawer,
@@ -45,13 +50,6 @@ interface DocumentActionsMenuProps {
   withChargeLink?: boolean;
 }
 
-function toHref(value?: string | URL | null): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-  return typeof value === 'string' ? value : value.href;
-}
-
 export function DocumentActionsMenu({
   document,
   withChargeLink = false,
@@ -64,7 +62,9 @@ export function DocumentActionsMenu({
   const [reprocessOcrOpen, setReprocessOcrOpen] = useState(false);
 
   const chargeId = document.charge?.id;
-  const fileHref = toHref(document.file);
+  // `file` is user-editable and may hold any scheme; only an http(s) URL becomes a link.
+  const fileUrl = toUrlString(document.file);
+  const fileHref = isSafeHttpUrl(fileUrl) ? fileUrl : undefined;
   const isOpenIssuedDocument =
     'issuedDocumentInfo' in document && document.issuedDocumentInfo?.status === 'OPEN';
 
@@ -188,7 +188,7 @@ export function DocumentActionsMenu({
       </DropdownMenu>
 
       <DocumentImageDrawer
-        src={document.image}
+        source={document.image ? toDocumentViewerEntry(document) : null}
         opened={imageOpen}
         onClose={(): void => setImageOpen(false)}
       />

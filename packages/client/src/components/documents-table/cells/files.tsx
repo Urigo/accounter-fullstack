@@ -1,5 +1,10 @@
 import { useState, type ReactElement } from 'react';
 import { File, Image } from 'lucide-react';
+import {
+  hasViewerAttachment,
+  isSafeHttpUrl,
+  toDocumentViewerEntry,
+} from '../../common/document-viewer/source.js';
 import { DocumentImageDrawer, SimpleGrid, Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Indicator } from '../../ui/indicator.js';
@@ -9,8 +14,12 @@ type Props = {
   document: DocumentsTableRowType;
 };
 
-export const Files = ({ document: { image, file } }: Props): ReactElement => {
+export const Files = ({ document }: Props): ReactElement => {
   const [openImage, setOpenImage] = useState<boolean>(false);
+  const source = toDocumentViewerEntry(document);
+  const image = source.imageUrl;
+  // `file` is user-editable and may hold any scheme; only an http(s) URL becomes a link.
+  const fileHref = isSafeHttpUrl(source.fileUrl) ? source.fileUrl : null;
 
   return (
     <>
@@ -30,14 +39,10 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
                 </Button>
               </Indicator>
             </Tooltip>
-            <Tooltip disabled={!file} content="Open File">
-              <Indicator inline size={12} disabled={!!file} color="red">
-                {file ? (
-                  <a
-                    href={typeof file === 'string' ? file : file.href}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+            <Tooltip disabled={!fileHref} content="Open File">
+              <Indicator inline size={12} disabled={!!source.fileUrl} color="red">
+                {fileHref ? (
+                  <a href={fileHref} target="_blank" rel="noreferrer">
                     <Button variant="ghost" size="icon" className="size-7.5">
                       <File className="size-5" />
                     </Button>
@@ -53,7 +58,7 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
         </div>
       </div>
       <DocumentImageDrawer
-        src={image}
+        source={hasViewerAttachment(source) ? source : null}
         opened={openImage}
         onClose={(): void => setOpenImage(false)}
       />
