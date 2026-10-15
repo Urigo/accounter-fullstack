@@ -18,6 +18,10 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { SecurityBusinessesProvider } from '../../foreign-securities/providers/security-businesses.provider.js';
 import type { SecurityBusinessDescriptors } from '../../foreign-securities/types.js';
+import {
+  assignSecurityTransactionOccurrences,
+  securityTransactionKeyOf,
+} from '../helpers/security-transaction-identity.helper.js';
 import { formatValue } from '../helpers/utils.helper.js';
 import {
   validatePoalimForeignTransactions,
@@ -386,7 +390,8 @@ const fetchPoalimSecuritiesTransactionsByKeys = sql<IFetchPoalimSecuritiesTransa
     israe_tax_value,
     foreign_tax_value_settlement_currency,
     capital_tax_value_settlement_currency,
-    is_cancel_transaction
+    is_cancel_transaction,
+    occurrence
   FROM accounter_schema.poalim_securities_transactions
   WHERE bank_number = ANY($bankNumbers!)
     AND branch_number = ANY($branchNumbers!)
@@ -395,6 +400,12 @@ const fetchPoalimSecuritiesTransactionsByKeys = sql<IFetchPoalimSecuritiesTransa
     AND trade_date = ANY($tradeDates!)
 `;
 
+/**
+ * Upserts on the dedup key, which leaves out the fields the bank restates as an execution
+ * settles (value/settlement dates, price, net value). A re-scrape of a known execution therefore
+ * overwrites it with the bank's latest figures instead of adding a second row; the WHERE skips the
+ * write when nothing changed. `inserted` tells new rows from updated ones in RETURNING.
+ */
 const uploadPoalimSecuritiesTransactions = sql<IUploadPoalimSecuritiesTransactionsQuery>`
   INSERT INTO accounter_schema.poalim_securities_transactions (
     owner_id,
@@ -483,7 +494,8 @@ const uploadPoalimSecuritiesTransactions = sql<IUploadPoalimSecuritiesTransactio
     executing_branch,
     financial_account_branch,
     financial_account_number,
-    account_name
+    account_name,
+    occurrence
   )
   VALUES $$transactions(
     ownerId,
@@ -572,7 +584,8 @@ const uploadPoalimSecuritiesTransactions = sql<IUploadPoalimSecuritiesTransactio
     executingBranch,
     financialAccountBranch,
     financialAccountNumber,
-    accountName
+    accountName,
+    occurrence
   )
   ON CONFLICT (
     owner_id,
@@ -581,19 +594,249 @@ const uploadPoalimSecuritiesTransactions = sql<IUploadPoalimSecuritiesTransactio
     account_number,
     security,
     trade_date,
-    value_date,
-    settlement_date,
     trade_type,
     transaction_type,
     nv,
-    trade_price,
-    net_value_trade_currency,
     payment_type,
     payment_date,
     ex_date,
-    cancel_date
-  ) DO NOTHING
-  RETURNING id, trade_date, trade_type, eng_name, net_value_trade_currency, branch_number, account_number;
+    cancel_date,
+    occurrence
+  ) DO UPDATE SET
+    value_date = EXCLUDED.value_date,
+    settlement_date = EXCLUDED.settlement_date,
+    trade_price = EXCLUDED.trade_price,
+    net_value_trade_currency = EXCLUDED.net_value_trade_currency,
+    isin = EXCLUDED.isin,
+    symbol = EXCLUDED.symbol,
+    symbol_osi = EXCLUDED.symbol_osi,
+    eng_name = EXCLUDED.eng_name,
+    heb_name = EXCLUDED.heb_name,
+    eng_name_full = EXCLUDED.eng_name_full,
+    heb_name_full = EXCLUDED.heb_name_full,
+    security_group = EXCLUDED.security_group,
+    security_sub_group = EXCLUDED.security_sub_group,
+    issue_currency = EXCLUDED.issue_currency,
+    issuer_country = EXCLUDED.issuer_country,
+    issuer_country_code = EXCLUDED.issuer_country_code,
+    issuer_exchange = EXCLUDED.issuer_exchange,
+    exchange_country = EXCLUDED.exchange_country,
+    is_tradable = EXCLUDED.is_tradable,
+    is_us_equity = EXCLUDED.is_us_equity,
+    is_jumbo = EXCLUDED.is_jumbo,
+    implied_asset_mult = EXCLUDED.implied_asset_mult,
+    expiry_date = EXCLUDED.expiry_date,
+    trade_currency = EXCLUDED.trade_currency,
+    settlement_currency = EXCLUDED.settlement_currency,
+    commissions_currency = EXCLUDED.commissions_currency,
+    payment_currency = EXCLUDED.payment_currency,
+    trade_gross_value_trade_currency = EXCLUDED.trade_gross_value_trade_currency,
+    trade_gross_value_nis = EXCLUDED.trade_gross_value_nis,
+    net_value_nis = EXCLUDED.net_value_nis,
+    net_value_settlement_currency = EXCLUDED.net_value_settlement_currency,
+    settlement_price = EXCLUDED.settlement_price,
+    trade_commission_percent = EXCLUDED.trade_commission_percent,
+    trade_commission_value_nis = EXCLUDED.trade_commission_value_nis,
+    trade_commission_value_trade_currency = EXCLUDED.trade_commission_value_trade_currency,
+    agent_commission_value_trade_currency = EXCLUDED.agent_commission_value_trade_currency,
+    management_fees_percent = EXCLUDED.management_fees_percent,
+    management_fees_value_nis = EXCLUDED.management_fees_value_nis,
+    management_fees_value_trade_currency = EXCLUDED.management_fees_value_trade_currency,
+    israe_tax_value = EXCLUDED.israe_tax_value,
+    israel_tax_percent = EXCLUDED.israel_tax_percent,
+    israel_tax_value_by_payments_settlement_currency = EXCLUDED.israel_tax_value_by_payments_settlement_currency,
+    foreign_tax_percent = EXCLUDED.foreign_tax_percent,
+    foreign_tax_value_settlement_currency = EXCLUDED.foreign_tax_value_settlement_currency,
+    capital_tax_percent = EXCLUDED.capital_tax_percent,
+    capital_tax_value_settlement_currency = EXCLUDED.capital_tax_value_settlement_currency,
+    post_deduction_tax_value_nis = EXCLUDED.post_deduction_tax_value_nis,
+    previous_actions_deductions = EXCLUDED.previous_actions_deductions,
+    post_action_deduction_balance = EXCLUDED.post_action_deduction_balance,
+    nominal_profit_loss_nis = EXCLUDED.nominal_profit_loss_nis,
+    nominal_profit_loss_linkage = EXCLUDED.nominal_profit_loss_linkage,
+    real_profit_loss_nis = EXCLUDED.real_profit_loss_nis,
+    accumulated_interest = EXCLUDED.accumulated_interest,
+    fund_plus_accumulated_inerest_value = EXCLUDED.fund_plus_accumulated_inerest_value,
+    peyment_pecentage = EXCLUDED.peyment_pecentage,
+    payment_linking_value = EXCLUDED.payment_linking_value,
+    ex_date_balance = EXCLUDED.ex_date_balance,
+    issue_currency_to_trade_currency_rate = EXCLUDED.issue_currency_to_trade_currency_rate,
+    trade_currnecy_rate = EXCLUDED.trade_currnecy_rate,
+    personal_currency_rate = EXCLUDED.personal_currency_rate,
+    payment_name = EXCLUDED.payment_name,
+    order_origin = EXCLUDED.order_origin,
+    order_type = EXCLUDED.order_type,
+    order_subject = EXCLUDED.order_subject,
+    ordered_nv = EXCLUDED.ordered_nv,
+    executed_nv = EXCLUDED.executed_nv,
+    ordered_value = EXCLUDED.ordered_value,
+    execution_date = EXCLUDED.execution_date,
+    last_tranaction_date = EXCLUDED.last_tranaction_date,
+    is_cancel_transaction = EXCLUDED.is_cancel_transaction,
+    executing_branch = EXCLUDED.executing_branch,
+    financial_account_branch = EXCLUDED.financial_account_branch,
+    financial_account_number = EXCLUDED.financial_account_number,
+    account_name = EXCLUDED.account_name
+  WHERE (
+    poalim_securities_transactions.value_date,
+    poalim_securities_transactions.settlement_date,
+    poalim_securities_transactions.trade_price,
+    poalim_securities_transactions.net_value_trade_currency,
+    poalim_securities_transactions.isin,
+    poalim_securities_transactions.symbol,
+    poalim_securities_transactions.symbol_osi,
+    poalim_securities_transactions.eng_name,
+    poalim_securities_transactions.heb_name,
+    poalim_securities_transactions.eng_name_full,
+    poalim_securities_transactions.heb_name_full,
+    poalim_securities_transactions.security_group,
+    poalim_securities_transactions.security_sub_group,
+    poalim_securities_transactions.issue_currency,
+    poalim_securities_transactions.issuer_country,
+    poalim_securities_transactions.issuer_country_code,
+    poalim_securities_transactions.issuer_exchange,
+    poalim_securities_transactions.exchange_country,
+    poalim_securities_transactions.is_tradable,
+    poalim_securities_transactions.is_us_equity,
+    poalim_securities_transactions.is_jumbo,
+    poalim_securities_transactions.implied_asset_mult,
+    poalim_securities_transactions.expiry_date,
+    poalim_securities_transactions.trade_currency,
+    poalim_securities_transactions.settlement_currency,
+    poalim_securities_transactions.commissions_currency,
+    poalim_securities_transactions.payment_currency,
+    poalim_securities_transactions.trade_gross_value_trade_currency,
+    poalim_securities_transactions.trade_gross_value_nis,
+    poalim_securities_transactions.net_value_nis,
+    poalim_securities_transactions.net_value_settlement_currency,
+    poalim_securities_transactions.settlement_price,
+    poalim_securities_transactions.trade_commission_percent,
+    poalim_securities_transactions.trade_commission_value_nis,
+    poalim_securities_transactions.trade_commission_value_trade_currency,
+    poalim_securities_transactions.agent_commission_value_trade_currency,
+    poalim_securities_transactions.management_fees_percent,
+    poalim_securities_transactions.management_fees_value_nis,
+    poalim_securities_transactions.management_fees_value_trade_currency,
+    poalim_securities_transactions.israe_tax_value,
+    poalim_securities_transactions.israel_tax_percent,
+    poalim_securities_transactions.israel_tax_value_by_payments_settlement_currency,
+    poalim_securities_transactions.foreign_tax_percent,
+    poalim_securities_transactions.foreign_tax_value_settlement_currency,
+    poalim_securities_transactions.capital_tax_percent,
+    poalim_securities_transactions.capital_tax_value_settlement_currency,
+    poalim_securities_transactions.post_deduction_tax_value_nis,
+    poalim_securities_transactions.previous_actions_deductions,
+    poalim_securities_transactions.post_action_deduction_balance,
+    poalim_securities_transactions.nominal_profit_loss_nis,
+    poalim_securities_transactions.nominal_profit_loss_linkage,
+    poalim_securities_transactions.real_profit_loss_nis,
+    poalim_securities_transactions.accumulated_interest,
+    poalim_securities_transactions.fund_plus_accumulated_inerest_value,
+    poalim_securities_transactions.peyment_pecentage,
+    poalim_securities_transactions.payment_linking_value,
+    poalim_securities_transactions.ex_date_balance,
+    poalim_securities_transactions.issue_currency_to_trade_currency_rate,
+    poalim_securities_transactions.trade_currnecy_rate,
+    poalim_securities_transactions.personal_currency_rate,
+    poalim_securities_transactions.payment_name,
+    poalim_securities_transactions.order_origin,
+    poalim_securities_transactions.order_type,
+    poalim_securities_transactions.order_subject,
+    poalim_securities_transactions.ordered_nv,
+    poalim_securities_transactions.executed_nv,
+    poalim_securities_transactions.ordered_value,
+    poalim_securities_transactions.execution_date,
+    poalim_securities_transactions.last_tranaction_date,
+    poalim_securities_transactions.is_cancel_transaction,
+    poalim_securities_transactions.executing_branch,
+    poalim_securities_transactions.financial_account_branch,
+    poalim_securities_transactions.financial_account_number,
+    poalim_securities_transactions.account_name
+  ) IS DISTINCT FROM (
+    EXCLUDED.value_date,
+    EXCLUDED.settlement_date,
+    EXCLUDED.trade_price,
+    EXCLUDED.net_value_trade_currency,
+    EXCLUDED.isin,
+    EXCLUDED.symbol,
+    EXCLUDED.symbol_osi,
+    EXCLUDED.eng_name,
+    EXCLUDED.heb_name,
+    EXCLUDED.eng_name_full,
+    EXCLUDED.heb_name_full,
+    EXCLUDED.security_group,
+    EXCLUDED.security_sub_group,
+    EXCLUDED.issue_currency,
+    EXCLUDED.issuer_country,
+    EXCLUDED.issuer_country_code,
+    EXCLUDED.issuer_exchange,
+    EXCLUDED.exchange_country,
+    EXCLUDED.is_tradable,
+    EXCLUDED.is_us_equity,
+    EXCLUDED.is_jumbo,
+    EXCLUDED.implied_asset_mult,
+    EXCLUDED.expiry_date,
+    EXCLUDED.trade_currency,
+    EXCLUDED.settlement_currency,
+    EXCLUDED.commissions_currency,
+    EXCLUDED.payment_currency,
+    EXCLUDED.trade_gross_value_trade_currency,
+    EXCLUDED.trade_gross_value_nis,
+    EXCLUDED.net_value_nis,
+    EXCLUDED.net_value_settlement_currency,
+    EXCLUDED.settlement_price,
+    EXCLUDED.trade_commission_percent,
+    EXCLUDED.trade_commission_value_nis,
+    EXCLUDED.trade_commission_value_trade_currency,
+    EXCLUDED.agent_commission_value_trade_currency,
+    EXCLUDED.management_fees_percent,
+    EXCLUDED.management_fees_value_nis,
+    EXCLUDED.management_fees_value_trade_currency,
+    EXCLUDED.israe_tax_value,
+    EXCLUDED.israel_tax_percent,
+    EXCLUDED.israel_tax_value_by_payments_settlement_currency,
+    EXCLUDED.foreign_tax_percent,
+    EXCLUDED.foreign_tax_value_settlement_currency,
+    EXCLUDED.capital_tax_percent,
+    EXCLUDED.capital_tax_value_settlement_currency,
+    EXCLUDED.post_deduction_tax_value_nis,
+    EXCLUDED.previous_actions_deductions,
+    EXCLUDED.post_action_deduction_balance,
+    EXCLUDED.nominal_profit_loss_nis,
+    EXCLUDED.nominal_profit_loss_linkage,
+    EXCLUDED.real_profit_loss_nis,
+    EXCLUDED.accumulated_interest,
+    EXCLUDED.fund_plus_accumulated_inerest_value,
+    EXCLUDED.peyment_pecentage,
+    EXCLUDED.payment_linking_value,
+    EXCLUDED.ex_date_balance,
+    EXCLUDED.issue_currency_to_trade_currency_rate,
+    EXCLUDED.trade_currnecy_rate,
+    EXCLUDED.personal_currency_rate,
+    EXCLUDED.payment_name,
+    EXCLUDED.order_origin,
+    EXCLUDED.order_type,
+    EXCLUDED.order_subject,
+    EXCLUDED.ordered_nv,
+    EXCLUDED.executed_nv,
+    EXCLUDED.ordered_value,
+    EXCLUDED.execution_date,
+    EXCLUDED.last_tranaction_date,
+    EXCLUDED.is_cancel_transaction,
+    EXCLUDED.executing_branch,
+    EXCLUDED.financial_account_branch,
+    EXCLUDED.financial_account_number,
+    EXCLUDED.account_name
+  )
+  RETURNING
+    id,
+    trade_date,
+    trade_type,
+    eng_name,
+    net_value_trade_currency,
+    branch_number,
+    account_number,
+    (xmax = 0) AS inserted;
 `;
 
 const uploadPoalimForeignTransactions = sql<IUploadPoalimForeignTransactionsQuery>`
@@ -1012,7 +1255,8 @@ function diffPoalimSecurityRow(
 /**
  * Only the fields that are *not* part of the dedup key can differ on a matched row —
  * everything in the key is, by definition, identical. These are the descriptive and
- * monetary fields the bank could restate after the fact.
+ * monetary fields the bank could restate after the fact, led by the ones it restates as
+ * an execution settles (value/settlement dates, price and net value).
  */
 const POALIM_SECURITIES_TRANSACTIONS_DIFF_FIELDS: Array<{
   key: keyof IFetchPoalimSecuritiesTransactionsByKeysResult;
@@ -1020,6 +1264,10 @@ const POALIM_SECURITIES_TRANSACTIONS_DIFF_FIELDS: Array<{
     t: IUploadPoalimSecuritiesTransactionsParams['transactions'][number],
   ) => string | number | boolean | null;
 }> = [
+  { key: 'value_date', incoming: t => t.valueDate ?? null },
+  { key: 'settlement_date', incoming: t => t.settlementDate ?? null },
+  { key: 'trade_price', incoming: t => t.tradePrice ?? null },
+  { key: 'net_value_trade_currency', incoming: t => t.netValueTradeCurrency ?? null },
   { key: 'isin', incoming: t => t.isin ?? null },
   { key: 'symbol', incoming: t => t.symbol ?? null },
   { key: 'eng_name', incoming: t => t.engName ?? null },
@@ -1049,6 +1297,8 @@ const POALIM_SECURITIES_TRANSACTIONS_DIFF_FIELDS: Array<{
 
 const POALIM_SECURITIES_TRANSACTIONS_NUMERIC_FIELDS: (keyof IFetchPoalimSecuritiesTransactionsByKeysResult)[] =
   [
+    'trade_price',
+    'net_value_trade_currency',
     'trade_gross_value_trade_currency',
     'trade_gross_value_nis',
     'net_value_nis',
@@ -1058,70 +1308,6 @@ const POALIM_SECURITIES_TRANSACTIONS_NUMERIC_FIELDS: (keyof IFetchPoalimSecuriti
     'foreign_tax_value_settlement_currency',
     'capital_tax_value_settlement_currency',
   ] as const;
-
-/**
- * The executions response carries no per-row id, so identity is the natural key the
- * dedup index is built on. Existing rows come back from pg with NUMERIC columns as
- * strings while incoming rows carry JS numbers, so both sides are normalised to the same
- * canonical form before being joined into a key. Dates are calendar-date strings on both
- * sides (the validator takes the day off the bank's timestamps).
- */
-function securityTransactionKeyOf(row: {
-  bank_number?: number | null | void;
-  bankNumber?: number | null | void;
-  branch_number?: number | null | void;
-  branchNumber?: number | null | void;
-  account_number?: number | null | void;
-  accountNumber?: number | null | void;
-  security?: string | null | void;
-  trade_date?: TimelessDateString | null | void;
-  tradeDate?: TimelessDateString | null | void;
-  value_date?: TimelessDateString | null | void;
-  valueDate?: TimelessDateString | null | void;
-  settlement_date?: TimelessDateString | null | void;
-  settlementDate?: TimelessDateString | null | void;
-  trade_type?: string | null | void;
-  tradeType?: string | null | void;
-  transaction_type?: string | null | void;
-  transactionType?: string | null | void;
-  nv?: number | string | null | void;
-  trade_price?: number | string | null | void;
-  tradePrice?: number | string | null | void;
-  net_value_trade_currency?: number | string | null | void;
-  netValueTradeCurrency?: number | string | null | void;
-  payment_type?: string | null | void;
-  paymentType?: string | null | void;
-  payment_date?: TimelessDateString | null | void;
-  paymentDate?: TimelessDateString | null | void;
-  ex_date?: TimelessDateString | null | void;
-  exDate?: TimelessDateString | null | void;
-  cancel_date?: TimelessDateString | null | void;
-  cancelDate?: TimelessDateString | null | void;
-}): string {
-  const date = (value: TimelessDateString | null | void) => value ?? '';
-  const num = (value: number | string | null | void) =>
-    value == null ? '' : String(Number(value));
-  const text = (value: string | null | void) => value ?? '';
-
-  return [
-    row.bank_number ?? row.bankNumber,
-    row.branch_number ?? row.branchNumber,
-    row.account_number ?? row.accountNumber,
-    text(row.security),
-    date(row.trade_date ?? row.tradeDate),
-    date(row.value_date ?? row.valueDate),
-    date(row.settlement_date ?? row.settlementDate),
-    text(row.trade_type ?? row.tradeType),
-    text(row.transaction_type ?? row.transactionType),
-    num(row.nv),
-    num(row.trade_price ?? row.tradePrice),
-    num(row.net_value_trade_currency ?? row.netValueTradeCurrency),
-    text(row.payment_type ?? row.paymentType),
-    date(row.payment_date ?? row.paymentDate),
-    date(row.ex_date ?? row.exDate),
-    date(row.cancel_date ?? row.cancelDate),
-  ].join('|');
-}
 
 function diffPoalimSecurityTransactionRow(
   existing: IFetchPoalimSecuritiesTransactionsByKeysResult,
@@ -1573,10 +1759,14 @@ export class PoalimScraperIngestionProvider {
         { extensions: { code: 'FORBIDDEN' } },
       );
     }
-    const validated = validatePoalimSecuritiesTransactions(transactions).map(t => ({
-      ...t,
-      ownerId: businessId,
-    }));
+    // The response has no per-execution id: executions of one scrape that agree on every
+    // dedup-key field are numbered apart (and exact repeats dropped) before they meet the index.
+    const validated = assignSecurityTransactionOccurrences(
+      validatePoalimSecuritiesTransactions(transactions).map(t => ({
+        ...t,
+        ownerId: businessId,
+      })),
+    );
 
     const isNumber = (value: number | null | void): value is number => typeof value === 'number';
     const bankNumbers = validated.map(t => t.bankNumber).filter(isNumber);
@@ -1601,8 +1791,10 @@ export class PoalimScraperIngestionProvider {
       existingByKey.set(securityTransactionKeyOf(row), row);
     }
 
-    const result: IUploadPoalimSecuritiesTransactionsResult[] =
-      await uploadPoalimSecuritiesTransactions.run({ transactions: validated }, this.db);
+    // RETURNING covers updated rows too (a restated execution); only the new ones count as inserted.
+    const result: IUploadPoalimSecuritiesTransactionsResult[] = (
+      await uploadPoalimSecuritiesTransactions.run({ transactions: validated }, this.db)
+    ).filter(r => r.inserted);
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 

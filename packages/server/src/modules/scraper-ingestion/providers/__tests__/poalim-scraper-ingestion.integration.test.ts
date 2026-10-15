@@ -628,6 +628,128 @@ describe('uploadPoalimSecuritiesTransactions', () => {
     );
   });
 
+  describe('restatement between scrape and settlement', () => {
+    const rowsOfSecurity = async () => {
+      const { rows } = await pool.query(
+        `SELECT id, value_date, settlement_date, trade_price, net_value_trade_currency, occurrence
+         FROM accounter_schema.poalim_securities_transactions
+         WHERE owner_id = $1 AND security = $2
+         ORDER BY occurrence, id`,
+        [TEST_OWNER_ID, baseTransaction.security],
+      );
+      return rows;
+    };
+
+    // A fund bought before its end-of-day price was fixed: the next scrape restates the price
+    // and net value and moves the value and settlement dates to the real settlement day.
+    const settled: PoalimSecurityTransactionInput = {
+      ...baseTransaction,
+      valueDate: '2024-01-18T00:00:00.0000000+02:00',
+      settlementDate: '2024-01-18T00:00:00.0000000+02:00',
+      tradePrice: 100.5,
+      netValueTradeCurrency: -1005,
+      tradeGrossValueTradeCurrency: 1005,
+    };
+
+    it('updates the existing row in place instead of inserting a second one', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+      const [before] = await rowsOfSecurity();
+
+      const result = await provider.uploadPoalimSecuritiesTransactions([settled]);
+
+      expect(result.inserted).toBe(0);
+      expect(result.skipped).toBe(1);
+      expect(result.changedTransactions).toEqual([
+        {
+          id: before.id,
+          changedFields: expect.arrayContaining([
+            { field: 'value_date', oldValue: '2024-01-16', newValue: '2024-01-18' },
+            { field: 'settlement_date', oldValue: '2024-01-17', newValue: '2024-01-18' },
+            { field: 'trade_price', oldValue: '100', newValue: '100.5' },
+            { field: 'net_value_trade_currency', oldValue: '-1000', newValue: '-1005' },
+          ]),
+        },
+      ]);
+
+      const rows = await rowsOfSecurity();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        id: before.id,
+        value_date: '2024-01-18',
+        settlement_date: '2024-01-18',
+        trade_price: '100.5',
+        net_value_trade_currency: '-1005',
+      });
+    });
+
+    it('restates a dividend whose value date moved', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([dividend]);
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        { ...dividend, valueDate: '2024-02-06T00:00:00.0000000+02:00' },
+      ]);
+
+      expect(result.inserted).toBe(0);
+      expect(await rowsOfSecurity()).toHaveLength(1);
+    });
+
+    it('keeps same-size executions of one scrape apart, and re-scrapes them in place', async () => {
+      const second = { ...baseTransaction, tradePrice: 101, netValueTradeCurrency: -1010 };
+
+      const first = await provider.uploadPoalimSecuritiesTransactions([baseTransaction, second]);
+      expect(first.inserted).toBe(2);
+
+      const again = await provider.uploadPoalimSecuritiesTransactions([
+        { ...second, valueDate: '2024-01-18T00:00:00.0000000+02:00' },
+        { ...baseTransaction, valueDate: '2024-01-18T00:00:00.0000000+02:00' },
+      ]);
+      expect(again.inserted).toBe(0);
+      expect(again.changedTransactions).toHaveLength(2);
+
+      const rows = await rowsOfSecurity();
+      expect(rows.map(row => [row.occurrence, row.trade_price, row.value_date])).toEqual([
+        [1, '100', '2024-01-18'],
+        [2, '101', '2024-01-18'],
+      ]);
+    });
+
+    it('collapses a row repeated verbatim within one payload', async () => {
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        baseTransaction,
+        baseTransaction,
+      ]);
+
+      expect(result.inserted).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(await rowsOfSecurity()).toHaveLength(1);
+    });
+
+    // A share consolidation moves units out of one security and into another on the same day:
+    // two actions, not a restatement, so both rows must survive.
+    it('keeps both legs of a consolidation', async () => {
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        {
+          ...dividend,
+          tradeType: 'העברה לחובת הפקדון',
+          paymentType: 'איחוד מניות',
+          nv: 12.5,
+          netValueTradeCurrency: 0,
+        },
+        {
+          ...dividend,
+          security: '7654321',
+          isin: 'US0000000002',
+          tradeType: 'העברה לזכות הפקדון',
+          paymentType: 'איחוד מניות',
+          nv: 12.5,
+          tradePrice: 110,
+          netValueTradeCurrency: 0,
+        },
+      ]);
+
+      expect(result.inserted).toBe(2);
+    });
+  });
+
   it('summarises inserted rows with the trade date, type and account', async () => {
     const result = await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
     expect(result.insertedTransactions[0]).toMatchObject({
