@@ -20,6 +20,7 @@ import { SecurityBusinessesProvider } from '../../foreign-securities/providers/s
 import type { SecurityBusinessDescriptors } from '../../foreign-securities/types.js';
 import {
   assignSecurityTransactionOccurrences,
+  dropRepeatedSecurityTransactions,
   securityTransactionKeyOf,
 } from '../helpers/security-transaction-identity.helper.js';
 import { formatValue } from '../helpers/utils.helper.js';
@@ -1759,9 +1760,7 @@ export class PoalimScraperIngestionProvider {
         { extensions: { code: 'FORBIDDEN' } },
       );
     }
-    // The response has no per-execution id: executions of one scrape that agree on every
-    // dedup-key field are numbered apart (and exact repeats dropped) before they meet the index.
-    const validated = assignSecurityTransactionOccurrences(
+    const deduplicated = dropRepeatedSecurityTransactions(
       validatePoalimSecuritiesTransactions(transactions).map(t => ({
         ...t,
         ownerId: businessId,
@@ -1769,13 +1768,13 @@ export class PoalimScraperIngestionProvider {
     );
 
     const isNumber = (value: number | null | void): value is number => typeof value === 'number';
-    const bankNumbers = validated.map(t => t.bankNumber).filter(isNumber);
-    const branchNumbers = validated.map(t => t.branchNumber).filter(isNumber);
-    const accountNumbers = validated.map(t => t.accountNumber).filter(isNumber);
-    const securities = validated
+    const bankNumbers = deduplicated.map(t => t.bankNumber).filter(isNumber);
+    const branchNumbers = deduplicated.map(t => t.branchNumber).filter(isNumber);
+    const accountNumbers = deduplicated.map(t => t.accountNumber).filter(isNumber);
+    const securities = deduplicated
       .map(t => t.security ?? null)
       .filter((s): s is string => s !== null);
-    const tradeDates = validated
+    const tradeDates = deduplicated
       .map(t => t.tradeDate || null)
       .filter((d): d is TimelessDateString => d !== null);
 
@@ -1790,6 +1789,11 @@ export class PoalimScraperIngestionProvider {
     for (const row of existing) {
       existingByKey.set(securityTransactionKeyOf(row), row);
     }
+
+    // The response has no per-execution id: executions sharing every other dedup-key field are
+    // told apart by `occurrence`, anchored to the stored rows so a partial or growing upload lands
+    // each execution on its own row.
+    const validated = assignSecurityTransactionOccurrences(deduplicated, existing);
 
     // RETURNING covers updated rows too (a restated execution); only the new ones count as inserted.
     const result: IUploadPoalimSecuritiesTransactionsResult[] = (

@@ -712,6 +712,40 @@ describe('uploadPoalimSecuritiesTransactions', () => {
       ]);
     });
 
+    // The scraper still uploads a truncated scrape (with a warning), so an upload can carry only
+    // some of a group's executions. Each must land on its own stored row.
+    it('updates the right execution from a partial re-upload', async () => {
+      const second = { ...baseTransaction, tradePrice: 101, netValueTradeCurrency: -1010 };
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction, second]);
+
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        { ...second, valueDate: '2024-01-18T00:00:00.0000000+02:00' },
+      ]);
+      expect(result.inserted).toBe(0);
+
+      const rows = await rowsOfSecurity();
+      expect(rows.map(row => [row.occurrence, row.trade_price, row.value_date])).toEqual([
+        [1, '100', '2024-01-16'],
+        [2, '101', '2024-01-18'],
+      ]);
+    });
+
+    it('adds an execution a later upload reports alongside a stored one', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        { ...baseTransaction, tradePrice: 99, netValueTradeCurrency: -990 },
+        baseTransaction,
+      ]);
+      expect(result.inserted).toBe(1);
+
+      const rows = await rowsOfSecurity();
+      expect(rows.map(row => [row.occurrence, row.trade_price])).toEqual([
+        [1, '100'],
+        [2, '99'],
+      ]);
+    });
+
     it('collapses a row repeated verbatim within one payload', async () => {
       const result = await provider.uploadPoalimSecuritiesTransactions([
         baseTransaction,
