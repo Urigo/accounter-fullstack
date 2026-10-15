@@ -210,7 +210,7 @@ __metadata:
     "@graphql-mesh/compose-cli": "npm:1.8.3"
     "@graphql-mesh/fusion-runtime": "npm:1.12.3"
     "@graphql-mesh/transport-rest": "npm:0.12.3"
-    "@graphql-tools/utils": "npm:12.0.4"
+    "@graphql-tools/utils": "npm:12.1.0"
     "@omnigraph/json-schema": "npm:0.112.5"
     bob-the-bundler: "npm:7.0.1"
     graphql: "npm:16.14.2"
@@ -334,7 +334,7 @@ __metadata:
     "@envelop/graphql-modules": "npm:9.2.1"
     "@google-cloud/pubsub": "npm:6.3.0"
     "@graphql-hive/yoga": "npm:0.49.8"
-    "@graphql-tools/utils": "npm:12.0.4"
+    "@graphql-tools/utils": "npm:12.1.0"
     "@graphql-yoga/plugin-defer-stream": "npm:3.24.4"
     "@opentelemetry/api": "npm:1.9.1"
     "@opentelemetry/auto-instrumentations-node": "npm:0.81.0"
@@ -3573,9 +3573,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/utils@npm:12.0.4, @graphql-tools/utils@npm:^12.0.4":
-  version: 12.0.4
-  resolution: "@graphql-tools/utils@npm:12.0.4"
+"@graphql-tools/utils@npm:12.1.0":
+  version: 12.1.0
+  resolution: "@graphql-tools/utils@npm:12.1.0"
   dependencies:
     "@graphql-typed-document-node/core": "npm:^3.1.1"
     "@whatwg-node/promise-helpers": "npm:^2.0.0"
@@ -3583,7 +3583,7 @@ __metadata:
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/778814487b4cc07aba428143ced4a7dd9ab367752dbb6aeedeea57bec0a7f1ccb24b8cccbf384a538be5e3c336557b6b77be01c4431e94fa4ad255b690a464cb
+  checksum: 10c0/a781650a9ccc524170ea04e485fb56f6ec357b2372787cd0056bd3bb0d4c38d10ae5bcbea598256353888dd96424b312e842ee47fc1eb3e6ebeb6bc1313203a3
   languageName: node
   linkType: hard
 
@@ -3626,6 +3626,20 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/fc7354849632bee78da7510ec3277deec8146d2b1629ce59b3b71c5304ed5da7466abed45fce53f2a735b58770afebb450067dfd006be2aedfeec962961d3e8a
+  languageName: node
+  linkType: hard
+
+"@graphql-tools/utils@npm:^12.0.4":
+  version: 12.0.4
+  resolution: "@graphql-tools/utils@npm:12.0.4"
+  dependencies:
+    "@graphql-typed-document-node/core": "npm:^3.1.1"
+    "@whatwg-node/promise-helpers": "npm:^2.0.0"
+    cross-inspect: "npm:1.0.1"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: 10c0/778814487b4cc07aba428143ced4a7dd9ab367752dbb6aeedeea57bec0a7f1ccb24b8cccbf384a538be5e3c336557b6b77be01c4431e94fa4ad255b690a464cb
   languageName: node
   linkType: hard
 
