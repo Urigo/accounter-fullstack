@@ -61,11 +61,16 @@ get a `New` / `Edited` tag in Config.
 
 - **Save to <file>** overwrites the file you opened. This needs a Chromium-based browser (File
   System Access API). In other browsers the button reads **Download updated vault**: save the
-  download over your old file.
+  download over your old file, then click **I've replaced it** in the banner. The app can't tell
+  whether a download was kept, so the changes count as unsaved until you confirm.
 - **Download copy** saves a copy and leaves your original file untouched.
 
 The browser warns you if you try to leave the page with unsaved changes. Stopping the server
 discards any unsaved changes.
+
+One vault is open at a time, shared by every browser tab. Opening another vault means closing the
+current one first (**Close vault** in the header menu), and the vault can't be closed while a scrape
+is running.
 
 > Upgrading from an earlier version? Your existing `.vault` file (in the directory you ran the app
 > from) still works. Open it from the welcome screen. `VAULT_PATH` is no longer used.
@@ -96,8 +101,8 @@ discards any unsaved changes.
 
 The **History** tab lists the runs from the current session. To keep history between sessions, turn
 on **Save run history to a file** in **Config → Settings**. Runs are then appended to the history
-file path set there (default `./history.json`). The setting is off by default, and nothing is
-written while it is off.
+file path set there (default `./history.json`), along with the runs already made this session. The
+setting is off by default, and nothing is written while it is off.
 
 ## Vault backup
 

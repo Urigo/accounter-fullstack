@@ -159,14 +159,29 @@ function withStore<T>(
   });
 }
 
-export async function rememberHandle(handle: FileSystemFileHandle | null): Promise<void> {
-  await withStore('readwrite', store => (handle ? store.put(handle, KEY) : store.delete(KEY)));
+// The handle is stored with the server session it belongs to. After a reload it is only reused
+// for that same session — never for a different vault that happens to share the file name.
+type StoredHandle = { handle: FileSystemFileHandle; sessionId: string };
+
+export async function rememberHandle(
+  handle: FileSystemFileHandle | null,
+  sessionId: string | null,
+): Promise<void> {
+  await withStore('readwrite', store =>
+    handle && sessionId
+      ? store.put({ handle, sessionId } satisfies StoredHandle, KEY)
+      : store.delete(KEY),
+  );
 }
 
-export async function recallHandle(): Promise<FileSystemFileHandle | null> {
-  const handle = await withStore<unknown>('readonly', store => store.get(KEY));
-  return handle && typeof handle === 'object' && 'getFile' in handle
-    ? (handle as FileSystemFileHandle)
+export async function recallHandle(sessionId: string): Promise<FileSystemFileHandle | null> {
+  const stored = await withStore<Partial<StoredHandle>>('readonly', store => store.get(KEY));
+  const handle = stored?.handle;
+  return stored?.sessionId === sessionId &&
+    handle &&
+    typeof handle === 'object' &&
+    'getFile' in handle
+    ? handle
     : null;
 }
 

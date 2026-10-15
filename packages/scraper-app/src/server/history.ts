@@ -17,19 +17,26 @@ function enqueue(filePath: string, work: () => Promise<void>): Promise<void> {
   return next;
 }
 
-async function doAppend(record: RunRecord, filePath: string): Promise<void> {
-  let records: RunRecord[] = [];
+/** Unique by run id, oldest first, capped at MAX_RECORDS. */
+function mergeRuns(...lists: RunRecord[][]): RunRecord[] {
+  const byId = new Map<string, RunRecord>();
+  for (const list of lists) for (const r of list) byId.set(r.id, r);
+  return [...byId.values()]
+    .sort((a, b) => a.startedAt.localeCompare(b.startedAt))
+    .slice(-MAX_RECORDS);
+}
+
+async function readFileRuns(filePath: string): Promise<RunRecord[]> {
   try {
-    const raw = await readFile(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    records = Array.isArray(parsed) ? (parsed as RunRecord[]) : [];
+    const parsed = JSON.parse(await readFile(filePath, 'utf8'));
+    return Array.isArray(parsed) ? (parsed as RunRecord[]) : [];
   } catch {
-    // file missing or unparseable — start fresh
+    return []; // file missing or unparseable — start fresh
   }
-  records.push(record);
-  if (records.length > MAX_RECORDS) {
-    records = records.slice(-MAX_RECORDS);
-  }
+}
+
+async function doAppend(newRecords: RunRecord[], filePath: string): Promise<void> {
+  const records = mergeRuns(await readFileRuns(filePath), newRecords);
   await writeFile(filePath, JSON.stringify(records, null, 2), 'utf8');
 }
 
@@ -49,18 +56,24 @@ export function clearSessionHistory(): void {
 }
 
 export function appendRun(record: RunRecord, filePath: string): Promise<void> {
-  return enqueue(filePath, () => doAppend(record, filePath));
+  return enqueue(filePath, () => doAppend([record], filePath));
+}
+
+/** Writes this session's runs to the file — used when the user turns persistence on. */
+export function persistSessionHistory(filePath: string): Promise<void> {
+  return enqueue(filePath, () => doAppend(sessionRuns, filePath));
 }
 
 export async function readHistory(filePath: string): Promise<RunRecord[]> {
-  try {
-    const raw = await readFile(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    const records = Array.isArray(parsed) ? (parsed as RunRecord[]) : [];
-    return records.slice(-MAX_RECORDS).reverse();
-  } catch {
-    return [];
-  }
+  return mergeRuns(await readFileRuns(filePath)).reverse();
+}
+
+/**
+ * The file's runs plus this session's, newest first. Session runs are included so a run whose
+ * append failed, or one from before persistence was turned on, still shows.
+ */
+export async function readPersistedHistory(filePath: string): Promise<RunRecord[]> {
+  return mergeRuns(await readFileRuns(filePath), sessionRuns).reverse();
 }
 
 export async function clearHistory(filePath: string): Promise<void> {

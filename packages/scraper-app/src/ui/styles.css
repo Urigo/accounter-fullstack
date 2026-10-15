@@ -721,6 +721,16 @@ a {
   gap: 8px;
 }
 
+.banner-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  border-top: 1px solid var(--unsaved-border);
+  padding: 10px 16px;
+}
+
 .banner-details {
   border-top: 1px solid var(--unsaved-border);
   padding: 12px 16px 14px;

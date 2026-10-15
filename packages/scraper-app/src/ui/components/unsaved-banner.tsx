@@ -27,7 +27,7 @@ export function UnsavedBanner(): ReactElement | null {
 
   // The success toast fades on its own; errors stay until the next attempt.
   useEffect(() => {
-    if (result !== 'saved' && result !== 'downloaded') return;
+    if (result !== 'saved') return;
     const t = setTimeout(() => setResult(null), 3500);
     return () => clearTimeout(t);
   }, [result]);
@@ -41,7 +41,7 @@ export function UnsavedBanner(): ReactElement | null {
     try {
       const outcome = await action();
       if (outcome) setResult(outcome);
-      if (outcome === 'saved' || outcome === 'downloaded') setExpanded(false);
+      if (outcome === 'saved') setExpanded(false);
     } catch {
       setResult('error');
     } finally {
@@ -50,18 +50,18 @@ export function UnsavedBanner(): ReactElement | null {
   }
 
   if (!changes?.dirty) {
-    if (result === 'saved' || result === 'downloaded') {
+    if (result === 'saved') {
       return (
         <div className="toast" role="status">
           <CheckIcon size={16} />
-          {result === 'saved'
-            ? `Saved to ${fileName}`
-            : `Downloaded ${fileName}. Replace your old vault file with it.`}
+          Saved to {fileName}
         </div>
       );
     }
     return null;
   }
+
+  const disabled = busy || vault.saving;
 
   const count = changes.items.length;
   const groups = groupChanges(changes);
@@ -112,7 +112,7 @@ export function UnsavedBanner(): ReactElement | null {
               <button
                 type="button"
                 className="btn"
-                disabled={busy}
+                disabled={disabled}
                 onClick={() => void run(vault.downloadCopy)}
               >
                 <DownloadIcon size={16} /> Download copy
@@ -121,14 +121,37 @@ export function UnsavedBanner(): ReactElement | null {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={busy}
+              disabled={disabled}
               onClick={() => void run(vault.save)}
             >
               <SaveIcon size={16} />
-              {busy ? 'Saving…' : saveLabel(vault.saveMode, fileName)}
+              {vault.saving ? 'Saving…' : saveLabel(vault.saveMode, fileName)}
             </button>
           </div>
         </div>
+
+        {vault.pendingDownload && (
+          <div className="banner-confirm">
+            <p className="small" style={{ margin: 0 }}>
+              {changes.neverSaved
+                ? `Downloaded ${fileName}. Once it is somewhere safe, confirm it here.`
+                : `Downloaded ${fileName}. Once it has replaced your old vault file, confirm it here.`}
+            </p>
+            <button
+              type="button"
+              className="btn"
+              disabled={disabled}
+              onClick={() =>
+                void run(async () => {
+                  await vault.confirmDownloaded();
+                  return 'saved';
+                })
+              }
+            >
+              <CheckIcon size={16} /> {changes.neverSaved ? 'I’ve kept it' : 'I’ve replaced it'}
+            </button>
+          </div>
+        )}
 
         {expanded && (
           <div id="unsaved-details" className="banner-details">
@@ -160,6 +183,11 @@ export function UnsavedBanner(): ReactElement | null {
       {result === 'error' && (
         <p role="alert" className="inline-error">
           Could not save the vault. Please try again.
+        </p>
+      )}
+      {result === 'session-changed' && (
+        <p role="alert" className="inline-error">
+          This vault was closed or replaced in another tab, so nothing was saved. Reload the page.
         </p>
       )}
       {result === 'denied' && (

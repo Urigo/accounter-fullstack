@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { defaultVault, encryptVault } from '../vault.js';
-import { closeVault, openVault } from '../vault-store.js';
+import { closeVault, getSessionInfo, openVault } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
 
 const PASSWORD = 'test-password-123';
@@ -78,7 +78,11 @@ describe('PUT /api/vault/accounts/:id', () => {
     });
 
     const { blob } = (
-      await app.inject({ method: 'POST', url: '/api/vault/export' })
+      await app.inject({
+        method: 'POST',
+        url: '/api/vault/export',
+        payload: { sessionId: getSessionInfo().sessionId },
+      })
     ).json() as { blob: string };
     closeVault();
     await app.inject({

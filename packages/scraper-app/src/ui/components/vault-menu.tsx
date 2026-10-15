@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useVault } from '../contexts/vault-context.js';
+import { ApiError } from '../lib/api.js';
 import { ChevronDownIcon, DownloadIcon, LockIcon, SaveIcon } from './icons.js';
 
 /** The vault file chip in the app header: name, saved state, and file actions. */
@@ -7,6 +8,7 @@ export function VaultMenu(): ReactElement {
   const vault = useVault();
   const [open, setOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +28,10 @@ export function VaultMenu(): ReactElement {
   }, [open]);
 
   useEffect(() => {
-    if (!open) setConfirmClose(false);
+    if (!open) {
+      setConfirmClose(false);
+      setCloseError(null);
+    }
   }, [open]);
 
   const dirty = !!vault.changes?.dirty;
@@ -39,6 +44,21 @@ export function VaultMenu(): ReactElement {
   function act(fn: () => Promise<unknown>) {
     setOpen(false);
     void fn().catch(() => undefined);
+  }
+
+  // Stays open on failure: the session is still there, and the user should see why.
+  async function closeVault() {
+    setCloseError(null);
+    try {
+      await vault.close();
+    } catch (e) {
+      setConfirmClose(false);
+      setCloseError(
+        e instanceof ApiError && e.message === 'run-in-progress'
+          ? 'A scrape is running. Close the vault after it finishes.'
+          : 'Could not close the vault. Please try again.',
+      );
+    }
   }
 
   return (
@@ -66,6 +86,7 @@ export function VaultMenu(): ReactElement {
             type="button"
             role="menuitem"
             className="menu-item"
+            disabled={vault.saving}
             onClick={() => act(vault.save)}
           >
             <SaveIcon size={16} />
@@ -93,7 +114,7 @@ export function VaultMenu(): ReactElement {
                   type="button"
                   className="btn btn-primary"
                   style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
-                  onClick={() => act(vault.close)}
+                  onClick={() => void closeVault()}
                 >
                   Close vault
                 </button>
@@ -104,10 +125,15 @@ export function VaultMenu(): ReactElement {
               type="button"
               role="menuitem"
               className="menu-item menu-item-danger"
-              onClick={() => (dirty ? setConfirmClose(true) : act(vault.close))}
+              onClick={() => (dirty ? setConfirmClose(true) : void closeVault())}
             >
               <LockIcon size={16} /> Close vault
             </button>
+          )}
+          {closeError && (
+            <p role="alert" className="inline-error small" style={{ margin: '4px 10px 6px' }}>
+              {closeError}
+            </p>
           )}
         </div>
       )}

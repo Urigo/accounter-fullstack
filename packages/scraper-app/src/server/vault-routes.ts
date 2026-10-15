@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { VaultStatusResponse } from '../shared/types.js';
 import { registerAccountsRoutes } from './accounts-routes.js';
+import { isRunning } from './scrape-runner.js';
 import { registerSettingsRoutes } from './settings-routes.js';
 import { registerSourcesRoutes } from './sources-routes.js';
 import {
@@ -10,6 +11,7 @@ import {
   getChanges,
   getSessionInfo,
   getVault,
+  isCurrentSession,
   isLocked,
   markSaved,
   openVault,
@@ -17,7 +19,10 @@ import {
 
 type OpenBody = { blob: string; password: string; fileName?: string };
 type CreateBody = { password: string; serverUrl: string; apiKey: string };
-type SavedBody = { revision: number; fileName?: string };
+type ExportBody = { sessionId: string };
+type SavedBody = { sessionId: string; revision: number; fileName?: string };
+
+const STALE_SESSION = { error: 'session-changed' };
 
 export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/vault/status', async (): Promise<VaultStatusResponse> => {
@@ -46,7 +51,8 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       const { blob, password, fileName } = req.body;
       const result = await openVault(blob, password, fileName ?? '');
-      if (result === 'ok') return { ok: true };
+      if (result === 'ok') return { ok: true, sessionId: getSessionInfo().sessionId };
+      if (result === 'already-open') return reply.status(409).send({ error: 'vault-already-open' });
       const status = result === 'wrong-password' ? 401 : 400;
       return reply.status(status).send({ error: result });
     },
@@ -68,10 +74,11 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (req, reply) => {
-      if (!isLocked()) return reply.status(409).send({ error: 'vault-already-open' });
       const { password, serverUrl, apiKey } = req.body;
-      createVault(password, serverUrl, apiKey);
-      return reply.status(201).send({ ok: true });
+      if (!createVault(password, serverUrl, apiKey)) {
+        return reply.status(409).send({ error: 'vault-already-open' });
+      }
+      return reply.status(201).send({ ok: true, sessionId: getSessionInfo().sessionId });
     },
   );
 
@@ -80,10 +87,24 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     return getChanges();
   });
 
-  app.post('/api/vault/export', async (_req, reply) => {
-    if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
-    return exportVault();
-  });
+  // Both export and saved name the session the client is saving for. A tab holding a file handle
+  // from a session that has since been closed (say, in another tab) must not write a different
+  // vault into that file.
+  const sessionBody = {
+    type: 'object',
+    required: ['sessionId'],
+    properties: { sessionId: { type: 'string' } },
+  } as const;
+
+  app.post<{ Body: ExportBody }>(
+    '/api/vault/export',
+    { schema: { body: sessionBody } },
+    async (req, reply) => {
+      if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
+      if (!isCurrentSession(req.body.sessionId)) return reply.status(409).send(STALE_SESSION);
+      return exportVault();
+    },
+  );
 
   app.post<{ Body: SavedBody }>(
     '/api/vault/saved',
@@ -91,21 +112,29 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       schema: {
         body: {
           type: 'object',
-          required: ['revision'],
-          properties: { revision: { type: 'integer' }, fileName: { type: 'string' } },
+          required: ['sessionId', 'revision'],
+          properties: {
+            sessionId: { type: 'string' },
+            revision: { type: 'integer' },
+            fileName: { type: 'string' },
+          },
         },
       },
     },
     async (req, reply) => {
       if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
+      if (!isCurrentSession(req.body.sessionId)) return reply.status(409).send(STALE_SESSION);
       // The baseline becomes exactly what was exported, so edits made while the save dialog was
-      // open still show as unsaved. A revision that doesn't match the latest export is ignored.
+      // open still show as unsaved. A revision that was never exported is ignored.
       const ok = markSaved(req.body.revision, req.body.fileName);
       return { ok, changes: getChanges() };
     },
   );
 
-  app.post('/api/vault/close', async () => {
+  app.post('/api/vault/close', async (_req, reply) => {
+    // A running scrape reads and updates the vault (account discovery). Closing under it would
+    // fail the run, or write its accounts into whichever vault is opened next.
+    if (isRunning()) return reply.status(409).send({ error: 'run-in-progress' });
     closeVault();
     return { ok: true };
   });

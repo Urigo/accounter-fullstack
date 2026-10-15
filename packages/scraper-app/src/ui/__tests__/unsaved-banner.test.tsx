@@ -91,4 +91,28 @@ describe('UnsavedBanner', () => {
     await userEvent.click(screen.getByRole('button', { name: /save to mine\.vault/i }));
     expect((await screen.findByRole('alert')).textContent).toContain('not allowed');
   });
+
+  it('keeps a download unsaved until the user confirms they kept the file', async () => {
+    const confirmDownloaded = vi.fn().mockResolvedValue(undefined);
+    renderBanner({ saveMode: 'download', pendingDownload: true, confirmDownloaded });
+    expect(screen.getByText(/3 unsaved changes/i)).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: /i’ve replaced it/i }));
+    expect(confirmDownloaded).toHaveBeenCalledOnce();
+  });
+
+  it('does not offer the confirmation before anything was downloaded', () => {
+    renderBanner({ saveMode: 'download' });
+    expect(screen.queryByRole('button', { name: /i’ve replaced it/i })).toBeNull();
+  });
+
+  it('disables saving while another save is in progress', () => {
+    renderBanner({ saving: true });
+    expect(screen.getByRole('button', { name: /saving…/i }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('explains when the vault was closed in another tab', async () => {
+    renderBanner({ save: vi.fn().mockResolvedValue('session-changed') });
+    await userEvent.click(screen.getByRole('button', { name: /save to mine\.vault/i }));
+    expect((await screen.findByRole('alert')).textContent).toContain('another tab');
+  });
 });

@@ -52,7 +52,7 @@ describe('vault-changed events', () => {
     okFetch({ blob: 'b', revision: 1, fileName: 'f' });
     const listener = vi.fn();
     vaultEvents.addEventListener('vault-changed', listener);
-    await vaultExport();
+    await vaultExport('session-1');
     vaultEvents.removeEventListener('vault-changed', listener);
     expect(listener).not.toHaveBeenCalled();
   });

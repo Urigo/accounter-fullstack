@@ -61,25 +61,30 @@ function AppContent(): ReactElement {
  */
 function useDiscoveredAccounts(runStatus: string): number {
   const { changes, refreshChanges } = useVault();
-  const added =
-    changes?.items.filter(i => i.section === 'accounts' && i.kind === 'added').length ?? 0;
-  const atRunStart = useRef<number | null>(null);
+  const addedIds = (changes?.items ?? [])
+    .filter(i => i.section === 'accounts' && i.kind === 'added')
+    .map(i => i.id);
+  // Ids rather than a count: a save during the run moves the baseline, so the number of unsaved
+  // additions can stay level even as new accounts come in.
+  const atRunStart = useRef<Set<string> | null>(null);
   const [discovered, setDiscovered] = useState(0);
+  const addedKey = addedIds.join(',');
 
   useEffect(() => {
     if (runStatus === 'running') {
-      atRunStart.current = added;
+      atRunStart.current = new Set(addedIds);
       setDiscovered(0);
     }
     if (runStatus === 'complete') void refreshChanges();
-    // Only react to run transitions; `added` is read at the moment the run starts.
+    // Only react to run transitions; the ids are read at the moment the run starts.
   }, [runStatus]);
 
   useEffect(() => {
-    if (runStatus === 'complete' && atRunStart.current !== null) {
-      setDiscovered(Math.max(0, added - atRunStart.current));
+    const before = atRunStart.current;
+    if (runStatus === 'complete' && before !== null) {
+      setDiscovered(addedIds.filter(id => !before.has(id)).length);
     }
-  }, [runStatus, added]);
+  }, [runStatus, addedKey]);
 
   return discovered;
 }

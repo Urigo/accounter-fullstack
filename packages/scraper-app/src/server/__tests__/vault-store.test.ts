@@ -49,7 +49,11 @@ describe('vault-store', () => {
     expect(await openSeeded()).toBe('ok');
     expect(isLocked()).toBe(false);
     expect(getVault().maxAccounts[0]?.nickname).toBe('Personal');
-    expect(getSessionInfo()).toEqual({ origin: 'opened', fileName: 'mine.vault' });
+    expect(getSessionInfo()).toEqual({
+      sessionId: expect.any(String),
+      origin: 'opened',
+      fileName: 'mine.vault',
+    });
     expect(getChanges()).toEqual({ dirty: false, neverSaved: false, items: [] });
   });
 
@@ -64,8 +68,24 @@ describe('vault-store', () => {
     expect(await openVault('aGVsbG8=', PASSWORD, 'x.txt')).toBe('invalid-file');
   });
 
+  it('refuses to replace an open session', async () => {
+    await openSeeded();
+    const { sessionId } = getSessionInfo();
+    expect(await openSeeded()).toBe('already-open');
+    expect(createVault(PASSWORD, '', '')).toBe(false);
+    expect(getSessionInfo().sessionId).toBe(sessionId);
+  });
+
+  it('gives each session a new id', async () => {
+    await openSeeded();
+    const first = getSessionInfo().sessionId;
+    closeVault();
+    await openSeeded();
+    expect(getSessionInfo().sessionId).not.toBe(first);
+  });
+
   it('creates a new vault that has never been saved', () => {
-    createVault(PASSWORD, 'http://x/graphql', 'key');
+    expect(createVault(PASSWORD, 'http://x/graphql', 'key')).toBe(true);
     expect(getSessionInfo().origin).toBe('new');
     const changes = getChanges();
     expect(changes).toMatchObject({ dirty: true, neverSaved: true });
@@ -142,12 +162,20 @@ describe('vault-store', () => {
       expect(getSessionInfo().fileName).toBe('picked-name.vault');
     });
 
-    it('ignores a confirmation for anything but the latest export', async () => {
+    it('takes the baseline from the last confirmation, even for an older export', async () => {
       await openSeeded();
       const first = await exportVault();
       await updateVault(v => ({ ...v, settings: { ...v.settings, showBrowser: true } }));
-      await exportVault();
-      expect(markSaved(first.revision)).toBe(false);
+      const second = await exportVault();
+      expect(markSaved(second.revision)).toBe(true);
+      expect(getChanges().dirty).toBe(false);
+      expect(markSaved(first.revision)).toBe(true);
+      expect(getChanges().items.map(i => i.id)).toEqual(['showBrowser']);
+    });
+
+    it('ignores a confirmation for a revision that was never exported', async () => {
+      await openSeeded();
+      expect(markSaved(42)).toBe(false);
     });
   });
 });

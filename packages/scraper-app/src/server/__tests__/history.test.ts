@@ -6,7 +6,9 @@ import {
   appendRun,
   clearHistory,
   clearSessionHistory,
+  persistSessionHistory,
   readHistory,
+  readPersistedHistory,
   readSessionHistory,
   recordSessionRun,
 } from '../history.js';
@@ -93,6 +95,28 @@ describe('session history', () => {
     recordSessionRun(makeRecord(2));
     expect(readSessionHistory().map(r => r.id)).toEqual(['run-2', 'run-1']);
     expect(await readHistory(filePath)).toEqual([]);
+  });
+
+  it('persistSessionHistory writes the session runs to the file once', async () => {
+    await appendRun(makeRecord(1), filePath);
+    recordSessionRun(makeRecord(1));
+    recordSessionRun(makeRecord(2));
+    await persistSessionHistory(filePath);
+    await persistSessionHistory(filePath);
+    expect((await readHistory(filePath)).map(r => r.id)).toEqual(['run-2', 'run-1']);
+  });
+
+  it('readPersistedHistory merges file and session runs without duplicates', async () => {
+    await appendRun(makeRecord(1), filePath);
+    await appendRun(makeRecord(3), filePath);
+    // Run 2 is in this session only (its append failed, or came before opting in).
+    recordSessionRun(makeRecord(2));
+    recordSessionRun(makeRecord(3));
+    expect((await readPersistedHistory(filePath)).map(r => r.id)).toEqual([
+      'run-3',
+      'run-2',
+      'run-1',
+    ]);
   });
 
   it('caps the session buffer at 100 runs', () => {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { VaultChangeItem, VaultChanges } from '../shared/types.js';
 import { decryptVault, defaultVault, encryptVault, type Vault } from './vault.js';
 
@@ -5,6 +6,8 @@ import { decryptVault, defaultVault, encryptVault, type Vault } from './vault.js
 // the user opens their own vault file (or creates a new one) and saves it back through the UI.
 
 type Session = {
+  /** Identifies this session, so a browser tab can't save one vault over another vault's file. */
+  id: string;
   vault: Vault;
   password: string;
   origin: 'new' | 'opened';
@@ -13,8 +16,12 @@ type Session = {
   revision: number;
   /** Canonical JSON of the vault as it is in the user's file; null until a new vault is saved. */
   baseline: string | null;
-  pendingExport: { revision: number; json: string } | null;
+  /** Recent exports by revision; whichever the client confirms writing last becomes the baseline. */
+  exports: Map<number, string>;
 };
+
+/** Saves are acknowledged within seconds, so only a handful of exports are ever outstanding. */
+const MAX_PENDING_EXPORTS = 20;
 
 let _session: Session | null = null;
 
@@ -36,7 +43,7 @@ export async function openVault(
   blob: string,
   password: string,
   fileName: string,
-): Promise<'ok' | 'wrong-password' | 'invalid-file'> {
+): Promise<'ok' | 'wrong-password' | 'invalid-file' | 'already-open'> {
   const trimmed = blob.trim();
   // Header (6) + salt (32) + iv (12) + tag (16) — anything shorter is not a vault file.
   if (!/^[A-Za-z0-9+/]+=*$/.test(trimmed) || Buffer.from(trimmed, 'base64').length < 66) {
@@ -44,31 +51,39 @@ export async function openVault(
   }
   const vault = await decryptVault(trimmed, password);
   if (vault === null) return 'wrong-password';
+  // Checked after the (async) decryption, right before assigning, so two overlapping opens can't
+  // both pass. Replacing a session would silently drop its unsaved changes.
+  if (_session !== null) return 'already-open';
   _session = {
+    id: randomUUID(),
     vault,
     password,
     origin: 'opened',
     fileName: fileName || DEFAULT_FILE_NAME,
     revision: 0,
     baseline: canonical(vault),
-    pendingExport: null,
+    exports: new Map(),
   };
   return 'ok';
 }
 
-export function createVault(password: string, serverUrl: string, apiKey: string): void {
+/** Returns false when a session is already open. */
+export function createVault(password: string, serverUrl: string, apiKey: string): boolean {
+  if (_session !== null) return false;
   const vault = defaultVault();
   if (serverUrl) vault.settings.serverUrl = serverUrl;
   if (apiKey) vault.settings.apiKey = apiKey;
   _session = {
+    id: randomUUID(),
     vault,
     password,
     origin: 'new',
     fileName: DEFAULT_FILE_NAME,
     revision: 0,
     baseline: null,
-    pendingExport: null,
+    exports: new Map(),
   };
+  return true;
 }
 
 function session(): Session {
@@ -94,9 +109,18 @@ export function closeVault(): void {
   _session = null;
 }
 
-export function getSessionInfo(): { origin: 'new' | 'opened'; fileName: string } {
-  const { origin, fileName } = session();
-  return { origin, fileName };
+export function getSessionInfo(): {
+  sessionId: string;
+  origin: 'new' | 'opened';
+  fileName: string;
+} {
+  const { id, origin, fileName } = session();
+  return { sessionId: id, origin, fileName };
+}
+
+/** Whether `sessionId` names the session that is open right now. */
+export function isCurrentSession(sessionId: string): boolean {
+  return _session !== null && _session.id === sessionId;
 }
 
 /** Encrypts the current vault for the client to write to a file. */
@@ -109,19 +133,26 @@ export async function exportVault(): Promise<{
   const json = canonical(s.vault);
   const revision = s.revision;
   const blob = await encryptVault(s.vault, s.password);
-  s.pendingExport = { revision, json };
+  s.exports.delete(revision);
+  s.exports.set(revision, json);
+  while (s.exports.size > MAX_PENDING_EXPORTS) {
+    s.exports.delete(s.exports.keys().next().value!);
+  }
   return { blob, revision, fileName: s.fileName };
 }
 
 /**
  * Called once the client has written an exported blob to a file. Only then does that export
  * become the new baseline — a cancelled save dialog leaves the session dirty.
+ *
+ * The baseline follows the most recent acknowledgement, even one for an older revision: the
+ * write acknowledged last is the one now in the file, so it is what the file holds.
  */
 export function markSaved(revision: number, fileName?: string): boolean {
   const s = session();
-  if (!s.pendingExport || s.pendingExport.revision !== revision) return false;
-  s.baseline = s.pendingExport.json;
-  s.pendingExport = null;
+  const json = s.exports.get(revision);
+  if (json === undefined) return false;
+  s.baseline = json;
   if (fileName) s.fileName = fileName;
   return true;
 }

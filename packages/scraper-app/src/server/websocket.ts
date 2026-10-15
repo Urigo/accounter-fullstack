@@ -868,7 +868,6 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
               });
             }
 
-            const { persistHistory, historyFilePath } = vault.settings;
             void startRun(tasks, vault.settings.concurrentScraping, emit)
               .then(async runRecord => {
                 const record = {
@@ -877,9 +876,12 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
                   completedAt: runRecord.completedAt.toISOString(),
                 };
                 recordSessionRun(record);
-                if (persistHistory) {
+                // Read the preference now, not at run start: Settings stay editable during a run.
+                // (The vault can't be closed while a run is active.)
+                const settings = isLocked() ? null : getVault().settings;
+                if (settings?.persistHistory) {
                   try {
-                    await appendRun(record, historyFilePath);
+                    await appendRun(record, settings.historyFilePath);
                   } catch (err) {
                     app.log.error(err, '[ws] failed to append run history');
                   }

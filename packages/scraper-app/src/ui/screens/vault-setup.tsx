@@ -97,6 +97,7 @@ export function VaultSetup(): ReactElement {
     try {
       const outcome = await vault.save();
       setSaveResult(outcome);
+      // After a download, the banner in the app asks the user to confirm they kept the file.
       if (outcome === 'saved' || outcome === 'downloaded') vault.finishSetup();
     } catch {
       setSaveResult('error');
@@ -121,6 +122,9 @@ export function VaultSetup(): ReactElement {
               </p>
             </div>
             {saveResult === 'error' && <FormError message="Could not save the file. Try again." />}
+            {saveResult === 'session-changed' && (
+              <FormError message="This vault was closed in another tab. Reload the page." />
+            )}
             {saveResult === 'denied' && (
               <FormError message="The browser was not allowed to write the file. Try again." />
             )}

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { persistSessionHistory } from './history.js';
 import { getVault, isLocked, updateVault } from './vault-store.js';
 import { SettingsSchema, type Settings } from './vault.js';
 
@@ -28,7 +29,18 @@ export async function registerSettingsRoutes(app: FastifyInstance): Promise<void
       Object.entries(parsed.data).filter(([key]) => sent.has(key)),
     ) as Partial<Settings>;
 
+    const wasPersisting = getVault().settings.persistHistory;
     await updateVault(v => ({ ...v, settings: { ...v.settings, ...patch } }));
+
+    // Opting in keeps the runs already made this session, not just the ones that follow.
+    const { persistHistory, historyFilePath } = getVault().settings;
+    if (persistHistory && !wasPersisting) {
+      try {
+        await persistSessionHistory(historyFilePath);
+      } catch (err) {
+        req.log.error(err, 'failed to write session history');
+      }
+    }
     return getVault().settings;
   });
 }

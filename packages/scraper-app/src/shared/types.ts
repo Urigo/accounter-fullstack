@@ -43,6 +43,7 @@ export type VaultStatusResponse =
   | { state: 'empty' }
   | {
       state: 'unlocked';
+      sessionId: string;
       origin: 'new' | 'opened';
       fileName: string;
       changes: VaultChanges;

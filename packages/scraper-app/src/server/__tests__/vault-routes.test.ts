@@ -2,8 +2,14 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import type { VaultChanges } from '../../shared/types.js';
 import { decryptVault, defaultVault, encryptVault } from '../vault.js';
-import { closeVault, isLocked } from '../vault-store.js';
+import { closeVault, getSessionInfo, isLocked } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
+
+const runner = vi.hoisted(() => ({ running: false }));
+vi.mock('../scrape-runner.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../scrape-runner.js')>()),
+  isRunning: () => runner.running,
+}));
 
 const PASSWORD = 'test-password-123';
 
@@ -32,6 +38,14 @@ async function addSource(nickname = 'Main') {
   });
 }
 
+function exportVault(sessionId = getSessionInfo().sessionId) {
+  return app.inject({ method: 'POST', url: '/api/vault/export', payload: { sessionId } });
+}
+
+function markSaved(revision: number, sessionId = getSessionInfo().sessionId) {
+  return app.inject({ method: 'POST', url: '/api/vault/saved', payload: { sessionId, revision } });
+}
+
 async function getChanges(): Promise<VaultChanges> {
   return (await app.inject({ method: 'GET', url: '/api/vault/changes' })).json();
 }
@@ -42,6 +56,7 @@ describe('vault session routes', () => {
   });
 
   afterEach(async () => {
+    runner.running = false;
     closeVault();
     await app.close();
   });
@@ -58,6 +73,7 @@ describe('vault session routes', () => {
       const res = await app.inject({ method: 'GET', url: '/api/vault/status' });
       expect(res.json()).toEqual({
         state: 'unlocked',
+        sessionId: expect.any(String),
         origin: 'opened',
         fileName: 'mine.vault',
         changes: { dirty: false, neverSaved: false, items: [] },
@@ -77,6 +93,19 @@ describe('vault session routes', () => {
       expect(res.statusCode).toBe(401);
       expect(res.json()).toEqual({ error: 'wrong-password' });
       expect(isLocked()).toBe(true);
+    });
+
+    it('returns the new session id', async () => {
+      const res = await openWith(await encryptVault(defaultVault(), PASSWORD));
+      expect(res.json()).toEqual({ ok: true, sessionId: getSessionInfo().sessionId });
+    });
+
+    it('returns 409 instead of replacing a vault that is already open', async () => {
+      await openWith(await encryptVault(defaultVault(), PASSWORD));
+      const { sessionId } = getSessionInfo();
+      const res = await openWith(await encryptVault(defaultVault(), PASSWORD));
+      expect(res.statusCode).toBe(409);
+      expect(getSessionInfo().sessionId).toBe(sessionId);
     });
 
     it('returns 400 for something that is not a vault file', async () => {
@@ -153,7 +182,7 @@ describe('vault session routes', () => {
 
     it('export returns an encrypted vault holding the current state', async () => {
       await addSource('Exported');
-      const res = await app.inject({ method: 'POST', url: '/api/vault/export' });
+      const res = await exportVault();
       expect(res.statusCode).toBe(200);
       const { blob, fileName } = res.json() as { blob: string; fileName: string };
       expect(fileName).toBe('mine.vault');
@@ -163,43 +192,54 @@ describe('vault session routes', () => {
 
     it('stays dirty until the client confirms the file was written', async () => {
       await addSource();
-      const { revision } = (
-        await app.inject({ method: 'POST', url: '/api/vault/export' })
-      ).json() as { revision: number };
+      const { revision } = (await exportVault()).json() as { revision: number };
       expect((await getChanges()).dirty).toBe(true);
 
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/vault/saved',
-        payload: { revision },
-      });
+      const res = await markSaved(revision);
       expect(res.json()).toMatchObject({ ok: true, changes: { dirty: false } });
     });
 
     it('keeps changes made after the export as unsaved', async () => {
       await addSource('First');
-      const { revision } = (
-        await app.inject({ method: 'POST', url: '/api/vault/export' })
-      ).json() as { revision: number };
+      const { revision } = (await exportVault()).json() as { revision: number };
       await addSource('Second');
-      await app.inject({ method: 'POST', url: '/api/vault/saved', payload: { revision } });
+      await markSaved(revision);
 
       const changes = await getChanges();
       expect(changes.dirty).toBe(true);
       expect(changes.items.map(i => i.label)).toEqual(['Second']);
     });
 
-    it('ignores a save confirmation for an export that is not the latest', async () => {
-      await addSource();
-      const first = (await app.inject({ method: 'POST', url: '/api/vault/export' })).json();
+    it('follows the last confirmed write, even when it is an older export', async () => {
+      await addSource('First');
+      const first = (await exportVault()).json() as { revision: number };
       await addSource('Later');
-      await app.inject({ method: 'POST', url: '/api/vault/export' });
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/vault/saved',
-        payload: { revision: (first as { revision: number }).revision },
-      });
+      const second = (await exportVault()).json() as { revision: number };
+
+      await markSaved(second.revision);
+      expect((await getChanges()).dirty).toBe(false);
+      // The older write finished last, so the file holds the older vault.
+      const res = await markSaved(first.revision);
+      expect(res.json()).toMatchObject({ ok: true, changes: { dirty: true } });
+      expect((await getChanges()).items.map(i => i.label)).toEqual(['Later']);
+    });
+
+    it('ignores a confirmation for a revision that was never exported', async () => {
+      await addSource();
+      const res = await markSaved(999);
       expect(res.json()).toMatchObject({ ok: false, changes: { dirty: true } });
+    });
+
+    it('refuses to export or confirm for a session that is no longer open', async () => {
+      const stale = getSessionInfo().sessionId;
+      const { revision } = (await exportVault()).json() as { revision: number };
+      closeVault();
+      await openWith(await encryptVault(defaultVault(), PASSWORD));
+
+      const exported = await exportVault(stale);
+      expect(exported.statusCode).toBe(409);
+      expect(exported.json()).toEqual({ error: 'session-changed' });
+      expect((await markSaved(revision, stale)).statusCode).toBe(409);
     });
 
     it('close clears the session', async () => {
@@ -208,6 +248,14 @@ describe('vault session routes', () => {
       expect((await app.inject({ method: 'GET', url: '/api/vault/changes' })).statusCode).toBe(
         401,
       );
+    });
+
+    it('refuses to close while a scrape is running', async () => {
+      runner.running = true;
+      const res = await app.inject({ method: 'POST', url: '/api/vault/close' });
+      expect(res.statusCode).toBe(409);
+      expect(res.json()).toEqual({ error: 'run-in-progress' });
+      expect(isLocked()).toBe(false);
     });
   });
 

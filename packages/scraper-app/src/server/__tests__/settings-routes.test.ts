@@ -1,8 +1,11 @@
 import Fastify, { type FastifyInstance } from 'fastify';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { persistSessionHistory } from '../history.js';
 import { defaultVault, encryptVault } from '../vault.js';
-import { closeVault, openVault } from '../vault-store.js';
+import { closeVault, getSessionInfo, openVault } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
+
+vi.mock('../history.js', () => ({ persistSessionHistory: vi.fn(async () => undefined) }));
 
 const PASSWORD = 'test-password-123';
 
@@ -17,6 +20,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.mocked(persistSessionHistory).mockClear();
   closeVault();
   await app.close();
 });
@@ -56,6 +60,19 @@ describe('PUT /api/vault/settings', () => {
     expect(settings).toMatchObject({ persistHistory: true, defaultDateRangeMonths: 6 });
   });
 
+  it('writes the session history to the file when history persistence is turned on', async () => {
+    const put = (payload: Record<string, unknown>) =>
+      app.inject({ method: 'PUT', url: '/api/vault/settings', payload });
+
+    await put({ persistHistory: true, historyFilePath: '/tmp/runs.json' });
+    expect(persistSessionHistory).toHaveBeenCalledExactlyOnceWith('/tmp/runs.json');
+
+    // Already on: nothing more to flush.
+    await put({ persistHistory: true });
+    await put({ showBrowser: true });
+    expect(persistSessionHistory).toHaveBeenCalledOnce();
+  });
+
   it('merges partial update and persists', async () => {
     const res = await app.inject({
       method: 'PUT',
@@ -87,7 +104,11 @@ describe('PUT /api/vault/settings', () => {
     });
 
     const { blob } = (
-      await app.inject({ method: 'POST', url: '/api/vault/export' })
+      await app.inject({
+        method: 'POST',
+        url: '/api/vault/export',
+        payload: { sessionId: getSessionInfo().sessionId },
+      })
     ).json() as { blob: string };
     closeVault();
     await app.inject({

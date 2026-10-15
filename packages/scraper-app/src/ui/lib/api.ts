@@ -55,7 +55,13 @@ export function vaultStatus(): Promise<VaultStatusResponse> {
   return apiFetch('/api/vault/status');
 }
 
-export function vaultOpen(blob: string, password: string, fileName: string): Promise<{ ok: true }> {
+export type VaultSessionResponse = { ok: true; sessionId: string };
+
+export function vaultOpen(
+  blob: string,
+  password: string,
+  fileName: string,
+): Promise<VaultSessionResponse> {
   return postJson('/api/vault/open', { blob, password, fileName });
 }
 
@@ -63,7 +69,7 @@ export function vaultCreate(
   password: string,
   serverUrl: string,
   apiKey: string,
-): Promise<{ ok: boolean }> {
+): Promise<VaultSessionResponse> {
   return postJson('/api/vault/create', { password, serverUrl, apiKey });
 }
 
@@ -71,15 +77,19 @@ export function vaultChanges(): Promise<VaultChanges> {
   return apiFetch('/api/vault/changes');
 }
 
-export function vaultExport(): Promise<{ blob: string; revision: number; fileName: string }> {
-  return postJson('/api/vault/export');
+/** Answers 409 when `sessionId` is no longer the open session (closed or replaced elsewhere). */
+export function vaultExport(
+  sessionId: string,
+): Promise<{ blob: string; revision: number; fileName: string }> {
+  return postJson('/api/vault/export', { sessionId });
 }
 
 export function vaultMarkSaved(
+  sessionId: string,
   revision: number,
   fileName?: string,
 ): Promise<{ ok: boolean; changes: VaultChanges }> {
-  return postJson('/api/vault/saved', { revision, fileName });
+  return postJson('/api/vault/saved', { sessionId, revision, fileName });
 }
 
 export function vaultClose(): Promise<{ ok: boolean }> {

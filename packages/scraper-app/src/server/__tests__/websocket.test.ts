@@ -2,6 +2,8 @@ import '@fastify/websocket'; // type augmentation for app.injectWS
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { appendRun } from '../history.js';
+import { startRun } from '../scrape-runner.js';
 import { registerWebSocketRoute } from '../websocket.js';
 
 const STUB_VAULT = {
@@ -13,8 +15,19 @@ const STUB_VAULT = {
   maxAccounts: [],
   otsarHahayalAccounts: [],
   accountRecords: [],
-  settings: { showBrowser: false, fetchBankOfIsraelRates: true, concurrentScraping: false },
+  settings: {
+    showBrowser: false,
+    fetchBankOfIsraelRates: true,
+    concurrentScraping: false,
+    persistHistory: false,
+    historyFilePath: './runs.json',
+  },
 };
+
+vi.mock('../history.js', () => ({
+  appendRun: vi.fn(async () => undefined),
+  recordSessionRun: vi.fn(),
+}));
 
 vi.mock('../vault-store.js', () => ({ isLocked: () => false, getVault: () => STUB_VAULT }));
 vi.mock('../scrape-runner.js', () => ({
@@ -159,5 +172,46 @@ describe('WebSocket /ws', () => {
 
     ws1.close();
     ws2.close();
+  });
+
+  it('reads the history preference when the run ends, not when it starts', async () => {
+    let finishRun!: () => void;
+    vi.mocked(startRun).mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          finishRun = () =>
+            resolve({
+              id: 'run-2',
+              startedAt: new Date(),
+              completedAt: new Date(),
+              totalInserted: 0,
+              totalSkipped: 0,
+              errorCount: 0,
+              sources: [],
+            });
+        }),
+    );
+    const client = makeClient();
+    const ws = await openSocket(client);
+    await client.next(); // consume connected
+
+    ws.send(JSON.stringify({ type: 'run-start', sourceIds: ['src-1'] }));
+    ws.send(JSON.stringify({ type: 'ping' }));
+    expect(await client.next()).toEqual({ type: 'pong' });
+
+    // Turned on mid-run: this run should still be written.
+    STUB_VAULT.settings.persistHistory = true;
+    try {
+      finishRun();
+      await vi.waitFor(() =>
+        expect(appendRun).toHaveBeenCalledWith(
+          expect.objectContaining({ id: 'run-2' }),
+          './runs.json',
+        ),
+      );
+    } finally {
+      STUB_VAULT.settings.persistHistory = false;
+      ws.close();
+    }
   });
 });
