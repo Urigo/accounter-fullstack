@@ -136,3 +136,132 @@ describe('ComboBox react-hook-form wiring', () => {
     expect(blurs).toBe(1);
   });
 });
+
+describe('ComboBox clearLabel', () => {
+  function options(): HTMLElement[] {
+    return [...document.querySelectorAll<HTMLElement>('[cmdk-item]')];
+  }
+
+  it('lists a first option that clears the selection', () => {
+    const changes: Array<string | null> = [];
+    act(() => {
+      root.render(
+        <ComboBox
+          data={DATA}
+          value="marketing"
+          clearLabel="None"
+          onChange={(value): void => {
+            changes.push(value);
+          }}
+        />,
+      );
+    });
+
+    act(() => trigger().click());
+    expect(options().map(option => option.textContent)).toEqual([
+      'None',
+      'Research & Development',
+      'Marketing',
+    ]);
+
+    act(() => options()[0].click());
+    expect(changes).toEqual([null]);
+  });
+
+  function pressEnter(): void {
+    const input = document.querySelector<HTMLInputElement>('[cmdk-input]');
+    expect(input).not.toBeNull();
+    act(() => {
+      input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+  }
+
+  function search(text: string): void {
+    const input = document.querySelector<HTMLInputElement>('[cmdk-input]')!;
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      setValue?.call(input, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  function renderWithChanges(value: string | null): Array<string | null> {
+    const changes: Array<string | null> = [];
+    act(() => {
+      root.render(
+        <ComboBox
+          data={DATA}
+          value={value}
+          clearLabel="None"
+          onChange={(next): void => {
+            changes.push(next);
+          }}
+        />,
+      );
+    });
+    return changes;
+  }
+
+  it('opens on the current selection, so Enter keeps it rather than clearing', () => {
+    const changes = renderWithChanges('marketing');
+    act(() => trigger().click());
+    pressEnter();
+    expect(changes).toEqual(['marketing']);
+  });
+
+  it('opens on the first real option when nothing is selected', () => {
+    const changes = renderWithChanges(null);
+    act(() => trigger().click());
+    pressEnter();
+    expect(changes).toEqual(['rd']);
+  });
+
+  it('matches its visible label only when filtering', () => {
+    renderWithChanges('marketing');
+    act(() => trigger().click());
+    const visible = (): string[] =>
+      options()
+        .filter(option => option.getAttribute('aria-hidden') !== 'true' && !option.hidden)
+        .map(option => option.textContent ?? '');
+
+    search('clear');
+    expect(visible()).not.toContain('None');
+    search('combo');
+    expect(visible()).not.toContain('None');
+    search('non');
+    expect(visible()).toContain('None');
+  });
+
+  it('is not listed unless asked for', () => {
+    act(() => {
+      root.render(<ComboBox data={DATA} value="marketing" />);
+    });
+
+    act(() => trigger().click());
+    expect(options().map(option => option.textContent)).toEqual([
+      'Research & Development',
+      'Marketing',
+    ]);
+  });
+});
+
+describe('ComboBox triggerProps', () => {
+  it('lets a caller replace the minimum width, e.g. for a narrow grid column', () => {
+    act(() => {
+      root.render(
+        <ComboBox data={DATA} value="marketing" triggerProps={{ className: 'min-w-0' }} />,
+      );
+    });
+
+    expect(trigger().className).toContain('min-w-0');
+    expect(trigger().className).not.toContain('min-w-40');
+  });
+
+  it('keeps the minimum width by default', () => {
+    act(() => {
+      root.render(<ComboBox data={DATA} value="marketing" />);
+    });
+
+    expect(trigger().className).toContain('min-w-40');
+  });
+});

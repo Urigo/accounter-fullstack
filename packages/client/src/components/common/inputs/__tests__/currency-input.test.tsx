@@ -4,7 +4,7 @@ import { act, createRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Currency } from '../../../../gql/graphql.js';
-import { CurrencyInput } from '../currency-input.js';
+import { CurrencyCodeInput, CurrencyInput } from '../currency-input.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -75,5 +75,25 @@ describe('CurrencyInput refs', () => {
     const button = container.querySelector('button');
     expect(button).not.toBeNull();
     expect(currencyRef).toHaveBeenCalledWith(button);
+  });
+});
+
+describe('CurrencyCodeInput layout', () => {
+  const wrapper = (): HTMLElement => container.firstElementChild as HTMLElement;
+  const selectTrigger = (): HTMLElement =>
+    container.querySelector('[data-slot="select-trigger"]') as HTMLElement;
+
+  it('keeps its label-row margin and content width by default', () => {
+    render(<CurrencyCodeInput value={Currency.Usd} />);
+    expect(wrapper().className).toContain('mt-6');
+    expect(selectTrigger().className).toContain('w-fit');
+  });
+
+  it('takes a wrapper and a trigger class', () => {
+    render(<CurrencyCodeInput value={Currency.Usd} className="mt-0" triggerClassName="w-full" />);
+    expect(wrapper().className).toContain('mt-0');
+    expect(wrapper().className).not.toContain('mt-6');
+    expect(selectTrigger().className).toContain('w-full');
+    expect(selectTrigger().className).not.toContain('w-fit');
   });
 });

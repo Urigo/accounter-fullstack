@@ -1,0 +1,67 @@
+import {
+  InsertLedgerRecordDocument,
+  type InsertLedgerRecordMutation,
+  type InsertLedgerRecordMutationVariables,
+} from '../gql/graphql.js';
+import { useApiMutation } from './use-api-mutation.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  mutation InsertLedgerRecord(
+    $chargeId: UUID
+    $operation: LedgerRecordOperation!
+    $input: LedgerRecordInput!
+  ) {
+    insertLedgerRecord(chargeId: $chargeId, operation: $operation, input: $input) {
+      __typename
+      ... on InsertLedgerRecordSuccessfulResult {
+        record {
+          id
+        }
+      }
+      ... on CommonError {
+        message
+      }
+    }
+  }
+`;
+
+type InsertedLedgerRecord = Extract<
+  InsertLedgerRecordMutation['insertLedgerRecord'],
+  { __typename: 'InsertLedgerRecordSuccessfulResult' }
+>;
+
+type UseInsertLedgerRecord = {
+  fetching: boolean;
+  /** Resolves to the inserted record on success, or to nothing when the server rejected it. */
+  insertLedgerRecord: (
+    variables: InsertLedgerRecordMutationVariables,
+  ) => Promise<InsertedLedgerRecord | void>;
+};
+
+const NOTIFICATION_ID = 'insertLedgerRecord';
+
+export const useInsertLedgerRecord = (): UseInsertLedgerRecord => {
+  const { fetching, execute } = useApiMutation({
+    document: InsertLedgerRecordDocument,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId ?? 'new-charge'}`,
+    loadingMessage: 'Adding ledger record',
+    errorMessage: variables =>
+      variables.chargeId
+        ? `Error adding a ledger record to charge [${variables.chargeId}]`
+        : 'Error adding a ledger record with a new charge',
+    commonErrorPath: 'insertLedgerRecord',
+    select: data => data.insertLedgerRecord,
+    // Without a charge the record may fall outside the host view's filters, so say where it went
+    successToast: (_result, variables) => ({
+      description: variables.chargeId
+        ? 'Ledger record added'
+        : 'Ledger record created on a new charge',
+    }),
+  });
+
+  return {
+    fetching,
+    insertLedgerRecord: execute,
+  };
+};

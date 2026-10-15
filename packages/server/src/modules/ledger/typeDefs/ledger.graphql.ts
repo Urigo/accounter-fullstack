@@ -19,6 +19,18 @@ export default gql`
     lockLedgerRecords(date: TimelessDate!): Boolean!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " overwrite the content of a single unlocked ledger record "
+    updateLedgerRecord(ledgerRecordId: UUID!, input: LedgerRecordInput!): UpdateLedgerRecordResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " insert a manual ledger record under a charge (a new charge when chargeId is omitted), together with the business entity it represents "
+    insertLedgerRecord(
+      chargeId: UUID
+      operation: LedgerRecordOperation!
+      input: LedgerRecordInput!
+    ): InsertLedgerRecordResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " the account slots a ledger record holds financial entities in "
@@ -74,6 +86,61 @@ export default gql`
     valueDate: TimelessDate!
     description: String
     reference: String
+    " whether the record is locked (closed books) and can no longer be edited "
+    locked: Boolean!
+    " the currency of the record's foreign amounts "
+    currency: Currency!
+  }
+
+  " the editable content of a manual ledger record "
+  input LedgerRecordInput {
+    debitEntity1: UUID!
+    debitLocalAmount1: Float!
+    debitForeignAmount1: Float
+    creditEntity1: UUID!
+    creditLocalAmount1: Float!
+    creditForeignAmount1: Float
+    debitEntity2: UUID
+    debitLocalAmount2: Float
+    debitForeignAmount2: Float
+    creditEntity2: UUID
+    creditLocalAmount2: Float
+    creditForeignAmount2: Float
+    currency: Currency!
+    invoiceDate: TimelessDate!
+    valueDate: TimelessDate!
+    description: String
+    reference: String
+  }
+
+  " the business operation a manually inserted ledger record represents "
+  enum LedgerRecordOperation {
+    " a misc expense: slot-1 credit entity is the creditor, slot-1 debit entity the debtor "
+    MISC_EXPENSE
+    " an INVOICE document with the slot-1 business counterparty; VAT is read from slot 2 "
+    DOCUMENT
+  }
+
+  " result type for insertLedgerRecord "
+  union InsertLedgerRecordResult = InsertLedgerRecordSuccessfulResult | CommonError
+
+  " result type for insertLedgerRecord" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type InsertLedgerRecordSuccessfulResult {
+    " the inserted ledger record "
+    record: LedgerRecord!
+    " the charge the record belongs to "
+    charge: Charge!
+  }
+
+  " result type for updateLedgerRecord "
+  union UpdateLedgerRecordResult = UpdateLedgerRecordSuccessfulResult | CommonError
+
+  " result type for updateLedgerRecord" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type UpdateLedgerRecordSuccessfulResult {
+    " the updated ledger record "
+    record: LedgerRecord!
+    " the charge the record belongs to "
+    charge: Charge!
   }
 
   extend interface Charge {

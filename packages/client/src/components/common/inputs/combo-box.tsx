@@ -1,5 +1,6 @@
 import React, { useMemo, type ComponentProps, type Ref } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
+import { Direction } from 'radix-ui';
 import { useMediaQuery } from '../../../hooks/use-media-query.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
@@ -46,6 +47,11 @@ type ComboBoxProps = {
    */
   onBlur?: () => void;
   ref?: Ref<HTMLButtonElement>;
+  /**
+   * Opt-in: lists an extra first option with this label (e.g. "None") that clears the selection
+   * (`onChange(null)`), for an optional field whose choice can be undone.
+   */
+  clearLabel?: string;
 };
 
 export function ComboBox({
@@ -63,6 +69,7 @@ export function ComboBox({
   required,
   onBlur,
   ref,
+  clearLabel,
 }: ComboBoxProps) {
   const generatedId = React.useId();
   const triggerId = id ?? generatedId;
@@ -81,6 +88,9 @@ export function ComboBox({
   // See https://github.com/emilkowalski/vaul/issues/496
   const portalContainer = usePortalContainer();
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  // A portaled popover leaves the DOM subtree that sets `dir`, so carry the text direction of an
+  // enclosing Radix DirectionProvider (e.g. a right-to-left dialog) over to its list
+  const dir = Direction.useDirection();
 
   const selectedOption = useMemo(() => {
     if (!value) return null;
@@ -107,13 +117,19 @@ export function ComboBox({
               {...triggerProps}
             />
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start" container={portalContainer}>
+          <PopoverContent
+            className="w-full p-0"
+            align="start"
+            container={portalContainer}
+            dir={dir}
+          >
             <OptionsList
               setOpen={setOpen}
               onChange={onChange}
               data={data}
               placeholder={placeholder}
               value={value}
+              clearLabel={clearLabel}
             />
           </PopoverContent>
         </Popover>
@@ -145,7 +161,7 @@ export function ComboBox({
             {...triggerProps}
           />
         </DrawerTrigger>
-        <DrawerContent>
+        <DrawerContent dir={dir}>
           <div className="mt-4 border-t">
             <OptionsList
               setOpen={setOpen}
@@ -153,6 +169,7 @@ export function ComboBox({
               data={data}
               placeholder={placeholder}
               value={value}
+              clearLabel={clearLabel}
             />
           </div>
         </DrawerContent>
@@ -207,19 +224,44 @@ function OptionsList({
   placeholder,
   data,
   value,
+  clearLabel,
 }: {
   setOpen: (open: boolean) => void;
   onChange?: (option: string | null) => void;
   placeholder?: string;
   data: Array<Option>;
   value?: string | null;
+  clearLabel?: string;
 }) {
+  // cmdk highlights the first item on open, which would be the clear option, so open + Enter would
+  // clear the selection. With a clear option, open on the current selection instead (or on the
+  // first real option). The list mounts on open, so this is the starting point of every opening;
+  // cmdk moves it on typing and arrow keys.
+  const [highlighted, setHighlighted] = React.useState(
+    () => data.find(option => option.value === value)?.value ?? data[0]?.value ?? clearLabel ?? '',
+  );
+  const highlightProps = clearLabel ? { value: highlighted, onValueChange: setHighlighted } : {};
+
   return (
-    <Command>
+    <Command {...highlightProps}>
       <CommandInput placeholder={placeholder ?? 'Filter options...'} />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup>
+          {clearLabel && (
+            <CommandItem
+              // Filters by its visible label only. Its select handler doesn't look the value up in
+              // `data`, so an option whose value happens to equal the label can't be picked instead.
+              value={clearLabel}
+              onSelect={() => {
+                onChange?.(null);
+                setOpen(false);
+              }}
+            >
+              <span className="text-gray-500 dark:text-gray-400">{clearLabel}</span>
+              <Check className={cn('ml-auto', value ? 'opacity-0' : 'opacity-100')} />
+            </CommandItem>
+          )}
           {data.map(option => (
             <CommandItem
               key={option.value}
