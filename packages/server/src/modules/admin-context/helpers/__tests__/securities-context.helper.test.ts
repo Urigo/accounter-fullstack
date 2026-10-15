@@ -25,7 +25,7 @@ describe('parseStoredSecuritiesContext', () => {
       sortCode: 990,
       taxCategories: {
         foreignDividendIncome: DIVIDEND_INCOME_ID,
-        dividendWithholdingTax: WITHHOLDING_ID,
+        foreignDividendWithholdingTax: WITHHOLDING_ID,
       },
     });
 
@@ -34,7 +34,7 @@ describe('parseStoredSecuritiesContext', () => {
       sortCode: 990,
       taxCategories: {
         FOREIGN_DIVIDEND_INCOME: DIVIDEND_INCOME_ID,
-        DIVIDEND_WITHHOLDING_TAX: WITHHOLDING_ID,
+        FOREIGN_DIVIDEND_WITHHOLDING_TAX: WITHHOLDING_ID,
       },
     });
   });
@@ -78,9 +78,9 @@ describe('serializeSecuritiesContext', () => {
       serializeSecuritiesContext({
         foreignSecuritiesBusinessId: null,
         sortCode: 990,
-        taxCategories: { BOND_WITHHOLDING_TAX: WITHHOLDING_ID },
+        taxCategories: { FOREIGN_BOND_WITHHOLDING_TAX: WITHHOLDING_ID },
       }),
-    ).toEqual({ sortCode: 990, taxCategories: { bondWithholdingTax: WITHHOLDING_ID } });
+    ).toEqual({ sortCode: 990, taxCategories: { foreignBondWithholdingTax: WITHHOLDING_ID } });
 
     expect(serializeSecuritiesContext(EMPTY_SECURITIES_CONTEXT)).toEqual({ taxCategories: {} });
   });
@@ -105,14 +105,14 @@ describe('parseSecuritiesContextPatch', () => {
         sortCode: 990,
         taxCategories: [
           { key: 'FOREIGN_DIVIDEND_INCOME', taxCategoryId: DIVIDEND_INCOME_ID },
-          { key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
+          { key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
         ],
       }),
     ).toEqual({
       sortCode: 990,
       taxCategories: [
         { key: 'FOREIGN_DIVIDEND_INCOME', taxCategoryId: DIVIDEND_INCOME_ID },
-        { key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
+        { key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
       ],
     });
   });
@@ -144,7 +144,7 @@ describe('mergeSecuritiesContext', () => {
     sortCode: 990,
     taxCategories: {
       FOREIGN_DIVIDEND_INCOME: DIVIDEND_INCOME_ID,
-      DIVIDEND_WITHHOLDING_TAX: WITHHOLDING_ID,
+      FOREIGN_DIVIDEND_WITHHOLDING_TAX: WITHHOLDING_ID,
     },
   };
 
@@ -153,7 +153,7 @@ describe('mergeSecuritiesContext', () => {
       mergeSecuritiesContext(current, {
         taxCategories: [
           { key: 'FOREIGN_SECURITIES_SALE_GAIN', taxCategoryId: GAIN_ID },
-          { key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
+          { key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
         ],
       }),
     ).toEqual({

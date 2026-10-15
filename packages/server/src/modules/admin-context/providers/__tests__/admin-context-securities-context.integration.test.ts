@@ -128,7 +128,7 @@ describe('AdminContextProvider.updateSecuritiesContext', () => {
       sortCode: 990,
       taxCategories: [
         { key: 'FOREIGN_DIVIDEND_INCOME', taxCategoryId: DIVIDEND_INCOME_ID },
-        { key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: WITHHOLDING_ID },
+        { key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: WITHHOLDING_ID },
       ],
     });
 
@@ -136,14 +136,14 @@ describe('AdminContextProvider.updateSecuritiesContext', () => {
       sortCode: 990,
       taxCategories: {
         FOREIGN_DIVIDEND_INCOME: DIVIDEND_INCOME_ID,
-        DIVIDEND_WITHHOLDING_TAX: WITHHOLDING_ID,
+        FOREIGN_DIVIDEND_WITHHOLDING_TAX: WITHHOLDING_ID,
       },
     });
     expect(await storedSecuritiesContext()).toEqual({
       sortCode: 990,
       taxCategories: {
         foreignDividendIncome: DIVIDEND_INCOME_ID,
-        dividendWithholdingTax: WITHHOLDING_ID,
+        foreignDividendWithholdingTax: WITHHOLDING_ID,
       },
     });
   });
@@ -153,13 +153,13 @@ describe('AdminContextProvider.updateSecuritiesContext', () => {
       sortCode: 990,
       taxCategories: [
         { key: 'FOREIGN_DIVIDEND_INCOME', taxCategoryId: DIVIDEND_INCOME_ID },
-        { key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: WITHHOLDING_ID },
+        { key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: WITHHOLDING_ID },
       ],
     });
 
     await createProvider().updateSecuritiesContext({
       taxCategories: [
-        { key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
+        { key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null },
         { key: 'FOREIGN_SECURITIES_SALE_GAIN', taxCategoryId: GAIN_ID },
       ],
     });

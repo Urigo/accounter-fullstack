@@ -139,11 +139,11 @@ describe('Mutation.updateSecuritiesContext', () => {
     const { injector, adminContextProvider } = makeInjector();
 
     await updateSecuritiesContext(injector, {
-      taxCategories: [{ key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null }],
+      taxCategories: [{ key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null }],
     });
 
     expect(adminContextProvider.updateSecuritiesContext).toHaveBeenCalledWith({
-      taxCategories: [{ key: 'DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null }],
+      taxCategories: [{ key: 'FOREIGN_DIVIDEND_WITHHOLDING_TAX', taxCategoryId: null }],
     });
   });
 });
