@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { ChevronDown, Download, Lock, Save } from 'lucide-react';
 import { useVault } from '../contexts/vault-context.js';
 import { ApiError } from '../lib/api.js';
-import { ChevronDownIcon, DownloadIcon, LockIcon, SaveIcon } from './icons.js';
 
 /** The vault file chip in the app header: name, saved state, and file actions. */
 export function VaultMenu(): ReactElement {
@@ -73,7 +73,7 @@ export function VaultMenu(): ReactElement {
       >
         <span className="status-dot" data-state={dirty ? 'unsaved' : 'saved'} />
         <span className="vault-chip-name">{vault.fileName}</span>
-        <ChevronDownIcon size={14} />
+        <ChevronDown size={14} />
       </button>
 
       {open && (
@@ -89,7 +89,7 @@ export function VaultMenu(): ReactElement {
             disabled={vault.saving}
             onClick={() => act(vault.save)}
           >
-            <SaveIcon size={16} />
+            <Save size={16} />
             {vault.saveMode === 'download' ? 'Download updated vault' : 'Save'}
           </button>
           <button
@@ -98,7 +98,7 @@ export function VaultMenu(): ReactElement {
             className="menu-item"
             onClick={() => act(vault.downloadCopy)}
           >
-            <DownloadIcon size={16} /> Download a copy
+            <Download size={16} /> Download a copy
           </button>
           <div className="menu-sep" />
           {confirmClose ? (
@@ -127,7 +127,7 @@ export function VaultMenu(): ReactElement {
               className="menu-item menu-item-danger"
               onClick={() => (dirty ? setConfirmClose(true) : void closeVault())}
             >
-              <LockIcon size={16} /> Close vault
+              <Lock size={16} /> Close vault
             </button>
           )}
           {closeError && (

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactElement } from 'react';
+import { Check, ChevronDown, Download, Save } from 'lucide-react';
 import { useVault, type SaveOutcome } from '../contexts/vault-context.js';
 import {
   describeChange,
@@ -7,7 +8,6 @@ import {
   KIND_MARKS,
   SECTION_LABELS,
 } from '../lib/change-labels.js';
-import { CheckIcon, ChevronDownIcon, DownloadIcon, SaveIcon } from './icons.js';
 
 function saveLabel(mode: 'in-place' | 'save-as' | 'download', fileName: string): string {
   if (mode === 'in-place') return `Save to ${fileName}`;
@@ -53,7 +53,7 @@ export function UnsavedBanner(): ReactElement | null {
     if (result === 'saved') {
       return (
         <div className="toast" role="status">
-          <CheckIcon size={16} />
+          <Check size={16} />
           Saved to {fileName}
         </div>
       );
@@ -95,7 +95,7 @@ export function UnsavedBanner(): ReactElement | null {
                     aria-controls="unsaved-details"
                   >
                     {expanded ? 'Hide changes' : 'Review changes'}
-                    <ChevronDownIcon
+                    <ChevronDown
                       size={14}
                       style={{
                         verticalAlign: 'middle',
@@ -115,7 +115,7 @@ export function UnsavedBanner(): ReactElement | null {
                 disabled={disabled}
                 onClick={() => void run(vault.downloadCopy)}
               >
-                <DownloadIcon size={16} /> Download copy
+                <Download size={16} /> Download copy
               </button>
             )}
             <button
@@ -124,7 +124,7 @@ export function UnsavedBanner(): ReactElement | null {
               disabled={disabled}
               onClick={() => void run(vault.save)}
             >
-              <SaveIcon size={16} />
+              <Save size={16} />
               {vault.saving ? 'Saving…' : saveLabel(vault.saveMode, fileName)}
             </button>
           </div>
@@ -148,7 +148,7 @@ export function UnsavedBanner(): ReactElement | null {
                 })
               }
             >
-              <CheckIcon size={16} /> {changes.neverSaved ? 'I’ve kept it' : 'I’ve replaced it'}
+              <Check size={16} /> {changes.neverSaved ? 'I’ve kept it' : 'I’ve replaced it'}
             </button>
           </div>
         )}

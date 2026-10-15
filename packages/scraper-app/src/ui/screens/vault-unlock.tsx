@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import { AlertIcon, ArrowLeftIcon, FileIcon, LockIcon } from '../components/icons.js';
+import { ArrowLeft, CircleAlert, FileIcon, Lock } from 'lucide-react';
 import { useVault } from '../contexts/vault-context.js';
 import { formatFileSize } from '../lib/vault-file.js';
 
@@ -22,13 +22,13 @@ export function VaultUnlock(): ReactElement {
     <main className="onboarding">
       <div className="onboarding-inner onboarding-narrow">
         <button type="button" className="back-link" onClick={vault.backToWelcome}>
-          <ArrowLeftIcon size={16} /> Back
+          <ArrowLeft size={16} /> Back
         </button>
 
         <div className="card stack">
           <div className="row">
             <div className="choice-icon" style={{ marginBottom: 0 }}>
-              <LockIcon />
+              <Lock size={18} />
             </div>
             <div>
               <h1 style={{ margin: 0, fontSize: '1.25rem' }}>Unlock your vault</h1>
@@ -40,7 +40,7 @@ export function VaultUnlock(): ReactElement {
 
           {file && (
             <div className="file-chip">
-              <FileIcon style={{ flex: 'none', color: 'var(--text-muted)' }} />
+              <FileIcon size={18} style={{ flex: 'none', color: 'var(--text-muted)' }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div className="file-chip-name">{file.name}</div>
                 <div className="muted small">{formatFileSize(file.size)}</div>
@@ -78,7 +78,7 @@ export function VaultUnlock(): ReactElement {
               </div>
               {vault.error && (
                 <p id="unlock-error" role="alert" className="field-error">
-                  <AlertIcon size={16} style={{ flex: 'none', marginTop: 1 }} />
+                  <CircleAlert size={16} style={{ flex: 'none', marginTop: 1 }} />
                   {vault.error}
                 </p>
               )}

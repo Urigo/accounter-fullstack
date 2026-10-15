@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import { AlertIcon, ArrowLeftIcon, CheckIcon, SaveIcon } from '../components/icons.js';
+import { ArrowLeft, Check, CircleAlert, Save } from 'lucide-react';
 import { useVault, type SaveOutcome } from '../contexts/vault-context.js';
 
 type Step = 1 | 2 | 3 | 4;
@@ -19,7 +19,7 @@ function Stepper({ current }: { current: Step }): ReactElement {
           aria-current={current === step ? 'step' : undefined}
           data-done={current > step}
         >
-          <span className="step-dot">{current > step ? <CheckIcon size={12} /> : step}</span>
+          <span className="step-dot">{current > step ? <Check size={12} /> : step}</span>
           {label}
         </li>
       ))}
@@ -46,7 +46,7 @@ function StepHeading({ step, title, hint }: { step: Step; title: string; hint?: 
 function FormError({ message }: { message: string }): ReactElement {
   return (
     <p role="alert" className="field-error">
-      <AlertIcon size={16} style={{ flex: 'none', marginTop: 1 }} />
+      <CircleAlert size={16} style={{ flex: 'none', marginTop: 1 }} />
       {message}
     </p>
   );
@@ -113,7 +113,7 @@ export function VaultSetup(): ReactElement {
           <div className="card stack">
             <div className="save-hero">
               <div className="save-hero-icon">
-                <CheckIcon size={28} />
+                <Check size={28} />
               </div>
               <h2>Your vault is ready</h2>
               <p>
@@ -134,7 +134,7 @@ export function VaultSetup(): ReactElement {
               onClick={() => void handleSave()}
               disabled={loading}
             >
-              <SaveIcon size={18} />
+              <Save size={18} />
               {loading
                 ? 'Saving…'
                 : vault.saveMode === 'download'
@@ -157,7 +157,7 @@ export function VaultSetup(): ReactElement {
     <main className="onboarding">
       <div className="onboarding-inner onboarding-narrow">
         <button type="button" className="back-link" onClick={vault.backToWelcome}>
-          <ArrowLeftIcon size={16} /> Back to start
+          <ArrowLeft size={16} /> Back to start
         </button>
 
         <h1 style={{ margin: '0 0 16px', fontSize: '1.5rem', letterSpacing: '-0.01em' }}>
@@ -208,7 +208,7 @@ export function VaultSetup(): ReactElement {
                 />
               </div>
               <p className="notice notice-amber notice-with-icon" style={{ margin: 0 }}>
-                <AlertIcon size={16} style={{ flex: 'none', marginTop: 2 }} />
+                <CircleAlert size={16} style={{ flex: 'none', marginTop: 2 }} />
                 <span>
                   There is no recovery. If you forget this password, the vault cannot be opened.
                 </span>

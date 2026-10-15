@@ -1,11 +1,5 @@
 import { useRef, useState, type DragEvent, type ReactElement } from 'react';
-import {
-  ArrowRightIcon,
-  FolderOpenIcon,
-  InfoIcon,
-  LockIcon,
-  SparkleIcon,
-} from '../components/icons.js';
+import { ArrowRight, FolderOpen, Info, Lock, Sparkles } from 'lucide-react';
 import { useVault } from '../contexts/vault-context.js';
 import { fileFromDrop, pickVaultFile, supportsOpenPicker } from '../lib/vault-file.js';
 
@@ -49,7 +43,7 @@ export function Welcome(): ReactElement {
       <div className="onboarding-inner">
         <header className="brand">
           <div className="brand-mark">
-            <LockIcon size={26} />
+            <Lock size={26} />
           </div>
           <h1>Accounter Scraper</h1>
           <p>
@@ -61,7 +55,7 @@ export function Welcome(): ReactElement {
         <div className="choice-grid">
           <section className="card choice" aria-labelledby="open-vault-title">
             <div className="choice-icon">
-              <FolderOpenIcon />
+              <FolderOpen size={18} />
             </div>
             <h2 id="open-vault-title">Open my vault</h2>
             <p>I already have a vault file and its master password.</p>
@@ -102,7 +96,7 @@ export function Welcome(): ReactElement {
 
           <section className="card choice" aria-labelledby="create-vault-title">
             <div className="choice-icon">
-              <SparkleIcon />
+              <Sparkles size={18} />
             </div>
             <h2 id="create-vault-title">Create a new vault</h2>
             <p>
@@ -111,14 +105,14 @@ export function Welcome(): ReactElement {
             </p>
             <div className="choice-action">
               <button type="button" className="btn btn-lg btn-block" onClick={vault.startCreate}>
-                Get started <ArrowRightIcon size={16} />
+                Get started <ArrowRight size={16} />
               </button>
             </div>
           </section>
         </div>
 
         <aside className="note">
-          <InfoIcon style={{ flex: 'none', marginTop: 2 }} />
+          <Info size={18} style={{ flex: 'none', marginTop: 2 }} />
           <div>
             <strong>How saving works.</strong> Anything you change while working (new credentials,
             discovered accounts, settings) is kept for this session. Save it back to your vault file

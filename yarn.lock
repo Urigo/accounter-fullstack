@@ -308,6 +308,7 @@ __metadata:
     fast-xml-parser: "npm:5.11.2"
     fastify: "npm:5.12.7"
     graphql-request: "npm:7.4.0"
+    lucide-react: "npm:1.57.0"
     msw: "npm:3.0.3"
     react: "npm:19.3.0"
     react-dom: "npm:19.3.0"
