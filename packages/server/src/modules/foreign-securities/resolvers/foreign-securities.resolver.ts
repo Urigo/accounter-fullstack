@@ -25,6 +25,20 @@ const optionalFloat = (value: string | null): number | null =>
 const tradeCurrencyAmount = (value: string | null, execution: SecurityExecutionRow) =>
   value == null ? null : formatFinancialAmount(value, execution.trade_currency);
 
+/**
+ * Amounts the bank quotes in the settlement currency — the currency the cash leg moved in.
+ * Falls back to the trade currency, as the ledger does when it books the same withheld tax.
+ */
+const settlementCurrencyAmount = (value: string | null, execution: SecurityExecutionRow) =>
+  value == null
+    ? null
+    : formatFinancialAmount(
+        value,
+        execution.settlement_currency?.trim()
+          ? execution.settlement_currency
+          : execution.trade_currency,
+      );
+
 /** The bank's NIS-suffixed columns; always ILS, never mixed. */
 const ilsAmount = (value: string | null) =>
   value == null ? null : formatFinancialAmount(value, Currency.Ils);
@@ -82,7 +96,16 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
       tradeCurrencyAmount(execution.trade_commission_value_trade_currency, execution),
     managementFees: execution =>
       tradeCurrencyAmount(execution.management_fees_value_trade_currency, execution),
-    israelTaxValue: execution => ilsAmount(execution.israe_tax_value),
+    israelTaxValue: execution => tradeCurrencyAmount(execution.israe_tax_value, execution),
+    foreignTaxValue: execution =>
+      settlementCurrencyAmount(execution.foreign_tax_value_settlement_currency, execution),
+    israelTaxValueByPayments: execution =>
+      settlementCurrencyAmount(
+        execution.israel_tax_value_by_payments_settlement_currency,
+        execution,
+      ),
+    capitalTaxValue: execution =>
+      settlementCurrencyAmount(execution.capital_tax_value_settlement_currency, execution),
     nominalProfitLoss: execution => ilsAmount(execution.nominal_profit_loss_nis),
     realProfitLoss: execution => ilsAmount(execution.real_profit_loss_nis),
     symbol: execution => execution.symbol || null,

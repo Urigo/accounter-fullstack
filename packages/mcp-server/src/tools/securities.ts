@@ -435,6 +435,18 @@ const GET_SECURITY_EXECUTIONS_QUERY = /* GraphQL */ `
             raw
             currency
           }
+          foreignTaxValue {
+            raw
+            currency
+          }
+          israelTaxValueByPayments {
+            raw
+            currency
+          }
+          capitalTaxValue {
+            raw
+            currency
+          }
         }
       }
     }
@@ -506,6 +518,9 @@ function normalizeExecutionNode(node: RawExecutionNode) {
     netValue: normalizeAmount(execution.netValue),
     tradeCommission: normalizeAmount(execution.tradeCommission),
     israelTaxValue: normalizeAmount(execution.israelTaxValue),
+    foreignTaxValue: normalizeAmount(execution.foreignTaxValue),
+    israelTaxValueByPayments: normalizeAmount(execution.israelTaxValueByPayments),
+    capitalTaxValue: normalizeAmount(execution.capitalTaxValue),
     // Absent rather than null when not asked for, so "no charge matched" stays
     // distinguishable from "charge links were not requested". `@include(if:)`
     // omits the field entirely, which is what makes the distinction possible.
@@ -571,7 +586,8 @@ async function getSecurityExecutionsHandler(
 export const getSecurityExecutionsTool: ToolDefinition<typeof getSecurityExecutionsInput> = {
   name: GET_SECURITY_EXECUTIONS_TOOL_NAME,
   description:
-    'Fetch securities trade history - buys, sales, dividends, interest, redemptions and transfers - newest first, with dates, direction, quantity, unit price, net value, commission and Israeli tax. ' +
+    'Fetch securities trade history - buys, sales, dividends, interest, redemptions and transfers - newest first, with dates, direction, quantity, unit price, net value, commission and tax. ' +
+    'Tax withheld from the cash leg comes per kind - `foreignTaxValue` (withheld abroad), `israelTaxValueByPayments` and `capitalTaxValue` - in the settlement currency, negative for a refund; `israelTaxValue` is a separate Israeli-tax figure the bank reports in the trade currency, not their total. ' +
     'Narrow by security (securityBusinessIds, isins or symbols - these three union with each other, since they are three ways of naming the same thing), by trade date, and by kind. ' +
     "Amounts are in each security's own trade currency and are never converted, so do not add rows from different securities together. " +
     'Set `includeCharges` to also get the charge each trade cash movement landed on; that requires naming the securities, because the pairing is computed over a security whole history rather than a page. ' +
