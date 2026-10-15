@@ -224,7 +224,10 @@ export function validatePoalimSecurities(
 /** ownerId is not derivable from the input — the provider stamps it from the auth context. */
 export function validatePoalimSecuritiesTransactions(
   transactions: readonly PoalimSecurityTransactionInput[],
-): Omit<IUploadPoalimSecuritiesTransactionsParams['transactions'][number], 'ownerId'>[] {
+): Omit<
+  IUploadPoalimSecuritiesTransactionsParams['transactions'][number],
+  'ownerId' | 'occurrence'
+>[] {
   return transactions.map(t => ({
     bankNumber: t.bankNumber,
     branchNumber: t.branchNumber,
