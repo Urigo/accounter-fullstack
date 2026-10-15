@@ -236,6 +236,47 @@ function CollapsibleSection({
   );
 }
 
+function DetailsGroup({
+  title,
+  count,
+  color,
+  defaultOpen,
+  children,
+}: {
+  title: string;
+  count: number;
+  color?: string;
+  defaultOpen: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          marginBottom: 4,
+          fontWeight: 600,
+          fontSize: 'inherit',
+          color,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+        }}
+      >
+        {open ? '▾' : '▸'} {title} ({count})
+      </button>
+      {open && children}
+    </div>
+  );
+}
+
 export function TaskRow({
   sourceId: _sourceId,
   nickname,
@@ -362,10 +403,11 @@ export function TaskRow({
       {state.status === 'done' && expanded && (
         <div style={{ fontSize: '0.85em', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {(state.insertedTransactions?.length ?? 0) > 0 && (
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                New transactions ({state.insertedTransactions!.length})
-              </div>
+            <DetailsGroup
+              title="New transactions"
+              count={state.insertedTransactions!.length}
+              defaultOpen
+            >
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ color: '#6b7280', textAlign: 'left' }}>
@@ -390,14 +432,17 @@ export function TaskRow({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </DetailsGroup>
           )}
 
           {(state.changedTransactions?.length ?? 0) > 0 && (
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: 4, color: '#b45309' }}>
-                Changed transactions ({state.changedTransactions!.length})
-              </div>
+            // Changed transactions can number in the hundreds, so this list starts collapsed.
+            <DetailsGroup
+              title="Changed transactions"
+              count={state.changedTransactions!.length}
+              color="#b45309"
+              defaultOpen={false}
+            >
               {state.changedTransactions!.map(ct => (
                 <div
                   key={ct.id}
@@ -438,7 +483,7 @@ export function TaskRow({
                   </table>
                 </div>
               ))}
-            </div>
+            </DetailsGroup>
           )}
         </div>
       )}

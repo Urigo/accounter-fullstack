@@ -31,13 +31,16 @@ describe('vault', () => {
     expect(() => VaultSchema.parse(defaultVault())).not.toThrow();
   });
 
-  it('accepts vaultPath in settings', () => {
-    const v = VaultSchema.parse({ settings: { vaultPath: '/custom/path/.vault' } });
-    expect(v.settings.vaultPath).toBe('/custom/path/.vault');
+  it('history persistence is opt-in by default', () => {
+    expect(defaultVault().settings.persistHistory).toBe(false);
   });
 
-  it('accepts settings without vaultPath', () => {
-    const v = VaultSchema.parse({ settings: {} });
-    expect(v.settings.vaultPath).toBeUndefined();
+  it('migrates legacy settings: strips vaultPath and saveHistory, history stays opt-in', () => {
+    const v = VaultSchema.parse({
+      settings: { vaultPath: '/custom/path/.vault', saveHistory: true },
+    });
+    expect(v.settings).not.toHaveProperty('vaultPath');
+    expect(v.settings).not.toHaveProperty('saveHistory');
+    expect(v.settings.persistHistory).toBe(false);
   });
 });

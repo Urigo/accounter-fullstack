@@ -13,7 +13,12 @@ function nickname(src: SourceConfig): string {
   return `${SOURCE_LABELS[src.type]} (${src.id.slice(0, 6)})`;
 }
 
-type RunProps = UseRunSocketResult & { onNavigateAccounts?: () => void; isVisible?: boolean };
+type RunProps = UseRunSocketResult & {
+  onNavigateAccounts?: () => void;
+  isVisible?: boolean;
+  /** Account records the latest run added to the vault (not yet saved to the vault file). */
+  discoveredAccounts?: number;
+};
 
 export function Run({
   send,
@@ -23,6 +28,7 @@ export function Run({
   dismissOtp,
   onNavigateAccounts,
   isVisible = true,
+  discoveredAccounts = 0,
 }: RunProps): ReactElement {
   const [sources, setSources] = useState<SourceConfig[]>([]);
   const [sourcesLoading, setSourcesLoading] = useState(true);
@@ -253,6 +259,19 @@ export function Run({
               <span style={{ color: '#b91c1c' }}>✕ {summary.errors} errors</span>
             )}
           </div>
+          {discoveredAccounts > 0 && (
+            <p className="notice notice-amber" style={{ margin: '12px 0 0' }}>
+              {discoveredAccounts === 1
+                ? '1 new account was added to your vault.'
+                : `${discoveredAccounts} new accounts were added to your vault.`}{' '}
+              Save the vault to keep {discoveredAccounts === 1 ? 'it' : 'them'}.{' '}
+              {onNavigateAccounts && (
+                <button type="button" className="btn-link" onClick={onNavigateAccounts}>
+                  Review accounts
+                </button>
+              )}
+            </p>
+          )}
         </section>
       )}
 

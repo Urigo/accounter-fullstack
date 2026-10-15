@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { AccountRecord } from '../../../server/vault.js';
+import { ChangePill } from '../../components/change-pill.js';
+import { useVaultChanges } from '../../contexts/vault-context.js';
 import { deleteAccount, fetchAccounts, updateStatus } from '../../lib/api.js';
+import { changeFor } from '../../lib/change-labels.js';
 import { SOURCE_LABELS } from './source-types.js';
 
 type SourceType = 'poalim' | 'discount' | 'isracard' | 'amex' | 'cal' | 'max';
@@ -35,6 +38,7 @@ type AccountRowProps = {
 };
 
 function AccountRow({ account, onStatusChange, onDelete }: AccountRowProps): ReactElement {
+  const changes = useVaultChanges();
   const label = account.branchNumber
     ? `${account.accountNumber} / branch ${account.branchNumber}`
     : account.accountNumber;
@@ -48,6 +52,7 @@ function AccountRow({ account, onStatusChange, onDelete }: AccountRowProps): Rea
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ flex: 1 }}>{label}</span>
+        <ChangePill kind={changeFor(changes, 'accounts', account.id)} />
         <StatusBadge status={account.status} />
         <select
           aria-label={`Status for ${label}`}

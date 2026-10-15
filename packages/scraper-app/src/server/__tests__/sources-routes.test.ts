@@ -1,39 +1,24 @@
-import { randomBytes } from 'node:crypto';
-import { rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { defaultVault, saveVaultFile } from '../vault.js';
-import { lockVault } from '../vault-store.js';
+import { defaultVault, encryptVault } from '../vault.js';
+import { closeVault, openVault } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
 
 const PASSWORD = 'test-password-123';
 
-let vaultPath: string;
 let app: FastifyInstance;
 
 beforeEach(async () => {
-  vaultPath = join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
-  process.env['VAULT_PATH'] = vaultPath;
-  await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+  await openVault(await encryptVault(defaultVault(), PASSWORD), PASSWORD, 'test.vault');
 
   app = Fastify();
   await registerVaultRoutes(app);
   await app.ready();
-
-  await app.inject({
-    method: 'POST',
-    url: '/api/vault/unlock',
-    payload: { password: PASSWORD },
-  });
 });
 
 afterEach(async () => {
-  lockVault();
+  closeVault();
   await app.close();
-  await rm(vaultPath, { force: true });
-  delete process.env['VAULT_PATH'];
 });
 
 describe('GET /api/vault/sources', () => {
@@ -44,7 +29,7 @@ describe('GET /api/vault/sources', () => {
   });
 
   it('returns 401 when vault is locked', async () => {
-    lockVault();
+    closeVault();
     const res = await app.inject({ method: 'GET', url: '/api/vault/sources' });
     expect(res.statusCode).toBe(401);
   });
@@ -86,7 +71,7 @@ describe('POST /api/vault/sources', () => {
   });
 
   it('returns 401 when vault is locked', async () => {
-    lockVault();
+    closeVault();
     const res = await app.inject({
       method: 'POST',
       url: '/api/vault/sources',

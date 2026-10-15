@@ -1,5 +1,9 @@
 # Vault Download & Upload — Implementation Prompts
 
+> **Superseded.** The vault is no longer stored on the server's disk, so the vault path setting and
+> the upload/download endpoints described here were removed. The vault file is now opened in memory
+> and saved back from the browser. See the scraper-app README, "Your vault file".
+
 Reference plan: [`vault-download-upload.md`](./vault-download-upload.md)
 
 These prompts are ordered so each one compiles and passes tests before the next begins. No step
