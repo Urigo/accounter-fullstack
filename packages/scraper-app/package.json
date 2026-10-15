@@ -32,23 +32,23 @@
     "@fastify/websocket": "11.3.4",
     "date-fns": "4.4.0",
     "fast-xml-parser": "5.11.2",
-    "fastify": "5.12.5",
+    "fastify": "5.12.7",
     "graphql-request": "7.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "ws": "8.22.0",
-    "zod": "4.6.5"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
-    "@testing-library/user-event": "14.6.7",
+    "@testing-library/user-event": "14.6.8",
     "@vitejs/plugin-react": "6.1.2",
     "msw": "3.0.3",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
     "vite": "8.3.4",
-    "vitest": "5.0.3"
+    "vitest": "5.0.4"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
