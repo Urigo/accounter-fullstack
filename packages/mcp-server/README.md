@@ -211,15 +211,16 @@ scope, because it _is_ the scope.
   to add a shekel column to a dollar one. Quantities and average costs are never summed at all.
 - **`accounter_get_security_executions`** — the **trade history** behind that portfolio: buys,
   sales, dividends, interest, redemptions, distributions and transfers, newest first, with dates,
-  direction, quantity, unit price, net value, commission and Israeli tax. Narrow by security
-  (`securityBusinessIds`, `isins` or `symbols` — three ways of naming one axis, so they union with
-  each other), by trade date, and by `tradeTypes`/`transactionTypes`. Really paginated upstream
-  (1-based `page` here, 0-based there) with `pagination` echoed. `includeCharges` additionally
-  resolves the charge each trade's cash movement landed on, and **requires naming the securities**:
-  the pairing is greedy and one-to-one over a security's whole history, so it cannot be computed
-  from a page — see the note in `docs/connector-gaps-and-decisions.md`. Asking for it unnarrowed is
-  refused here as a `VALIDATION_ERROR` rather than upstream as an `UPSTREAM_ERROR`, so the failure
-  says what to add.
+  direction, quantity, unit price, net value, commission and tax — the tax withheld from the cash
+  leg per kind (foreign, Israeli, capital) in the settlement currency, plus the bank's separate
+  Israeli-tax figure in ILS. Narrow by security (`securityBusinessIds`, `isins` or `symbols` — three
+  ways of naming one axis, so they union with each other), by trade date, and by
+  `tradeTypes`/`transactionTypes`. Really paginated upstream (1-based `page` here, 0-based there)
+  with `pagination` echoed. `includeCharges` additionally resolves the charge each trade's cash
+  movement landed on, and **requires naming the securities**: the pairing is greedy and one-to-one
+  over a security's whole history, so it cannot be computed from a page — see the note in
+  `docs/connector-gaps-and-decisions.md`. Asking for it unnarrowed is refused here as a
+  `VALIDATION_ERROR` rather than upstream as an `UPSTREAM_ERROR`, so the failure says what to add.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `memberBusinessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and
   size-capped (≤ 1000).

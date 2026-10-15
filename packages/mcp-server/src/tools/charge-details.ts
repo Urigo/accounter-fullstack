@@ -321,6 +321,18 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
             raw
             currency
           }
+          foreignTaxValue {
+            raw
+            currency
+          }
+          israelTaxValueByPayments {
+            raw
+            currency
+          }
+          capitalTaxValue {
+            raw
+            currency
+          }
         }
       }
     }
@@ -447,6 +459,9 @@ function normalizeChargeSecurity(security: RawChargeSecurity) {
       netValue: normalizeAmount(execution.netValue),
       tradeCommission: normalizeAmount(execution.tradeCommission),
       israelTaxValue: normalizeAmount(execution.israelTaxValue),
+      foreignTaxValue: normalizeAmount(execution.foreignTaxValue),
+      israelTaxValueByPayments: normalizeAmount(execution.israelTaxValueByPayments),
+      capitalTaxValue: normalizeAmount(execution.capitalTaxValue),
     })),
   };
 }
