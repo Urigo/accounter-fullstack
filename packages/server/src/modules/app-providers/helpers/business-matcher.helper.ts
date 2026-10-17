@@ -147,10 +147,10 @@ export function matchBusiness(
     }
   }
 
-  // 3. Suggestion phrases, sorted by priority descending
-  const sorted = [...businesses].sort(
-    (a, b) => (b.suggestion_data?.priority ?? 0) - (a.suggestion_data?.priority ?? 0),
-  );
+  // 3. Suggestion phrases, sorted by priority descending. The `id` tiebreaker in
+  // the shared comparator keeps the winner stable when several equal-priority
+  // businesses match the same phrase.
+  const sorted = [...businesses].sort(compareByPriorityThenId);
   for (const b of sorted) {
     const phrases = b.suggestion_data?.phrases ?? [];
     for (const phrase of phrases) {
@@ -167,4 +167,39 @@ export function matchBusiness(
   }
 
   return null;
+}
+
+/**
+ * Total order over businesses: `suggestion_data.priority` descending, then `id`
+ * ascending.
+ *
+ * The `id` tiebreaker is what makes the order *total*. Sorting on priority alone
+ * leaves every business that shares a priority — which is all of them, since
+ * `priority` defaults to 0 — in an unspecified relative order, so the same set of
+ * businesses can serialize to different bytes on different calls. For the prompt
+ * catalog that is a silent cache invalidator: the cached prefix is matched byte
+ * for byte, so a reshuffle means a full-price miss with no error to notice. For
+ * `matchBusiness` it means two runs over identical data can pick different
+ * equal-priority phrase matches.
+ */
+function compareByPriorityThenId(a: BusinessMatchData, b: BusinessMatchData): number {
+  const byPriority = (b.suggestion_data?.priority ?? 0) - (a.suggestion_data?.priority ?? 0);
+  return byPriority === 0 ? a.id.localeCompare(b.id) : byPriority;
+}
+
+/**
+ * Serialize the tenant's businesses into the `UUID|name` catalog handed to the
+ * model for issuer/recipient matching.
+ *
+ * This string is the cached prefix of the OCR prompt, so it must be a pure
+ * function of the business set: same businesses in, byte-identical string out,
+ * regardless of the order the rows arrived in. Neither `getAllBusinesses` nor
+ * `getBusinessesForIngestMatching` guarantees a row order, so the sort here is
+ * the only thing standing between the catalog and a permanently cold cache.
+ */
+export function serializeBusinessCatalog(businesses: BusinessMatchData[]): string {
+  return [...businesses]
+    .sort(compareByPriorityThenId)
+    .map(b => `${b.id}|${b.name ?? b.hebrew_name ?? ''}`)
+    .join('\n');
 }
