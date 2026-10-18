@@ -16,7 +16,7 @@
     "pg-promise": "12.7.1"
   },
   "devDependencies": {
-    "tsup": "8.5.1"
+    "tsup": "9.0.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
