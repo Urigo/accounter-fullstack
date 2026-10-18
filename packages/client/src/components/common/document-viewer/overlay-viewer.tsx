@@ -16,7 +16,8 @@ import { useOverlayHistory } from './use-overlay-history.js';
 const MODE_CLASSES: Record<OverlayMode, string> = {
   // There is no `Dialog.Overlay`, so no scroll lock. `touch-none` stops a drag on the header or
   // toolbar from scrolling the page behind (iOS); taps still click, and the canvas pans in JS.
-  fullscreen: 'fixed inset-0 z-1001 touch-none overscroll-contain bg-white dark:bg-gray-950',
+  // (No `overscroll-contain`: the frame isn't a scroll container, so it would do nothing.)
+  fullscreen: 'fixed inset-0 z-1001 touch-none bg-white dark:bg-gray-950',
   sheet:
     'fixed inset-y-0 right-0 z-1001 w-1/2 min-w-105 border-l bg-white shadow-xl dark:bg-gray-950',
 };
@@ -141,7 +142,11 @@ export function OverlayDocumentViewer(): ReactElement {
   // Stepping swaps `current` in place: no placement change and no history entry (decision 13).
   const stepper = useViewerStepper(open ? current?.id : null);
 
-  const requestClose = useOverlayHistory({ active: open && mode === 'fullscreen', close });
+  const requestClose = useOverlayHistory({
+    active: open && mode === 'fullscreen',
+    close,
+    entryId: current?.id ?? null,
+  });
 
   // `close()` forgets the trigger before Radix asks where focus goes, so it is kept here while the
   // overlay is open. A `WeakRef`, as in the store: an unmounted row isn't kept alive.
