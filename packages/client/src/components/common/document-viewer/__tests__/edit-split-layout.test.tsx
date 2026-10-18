@@ -425,6 +425,36 @@ describe('DocumentEditSplit', () => {
     expect(query('[role="separator"]')).not.toBeNull();
   });
 
+  it.each([
+    ['the body (macOS: a clicked button takes no focus)', () => document.body],
+    ['an ancestor of the split, such as the dialog content', () => container],
+  ])('Esc while expanded with the target on %s still collapses', (_, target) => {
+    render();
+    click('button[data-slot="viewer-expand"]');
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => {
+      target().dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(true);
+    expect(query('[data-slot="edit-split-viewer-content"]').className).not.toContain('absolute');
+  });
+
+  it('Esc while expanded from a portaled layer elsewhere is left to that layer', () => {
+    render();
+    click('button[data-slot="viewer-expand"]');
+    const layer = document.createElement('div');
+    layer.setAttribute('data-radix-popper-content-wrapper', '');
+    const item = document.createElement('button');
+    layer.append(item);
+    document.body.append(layer);
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => {
+      item.dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(false);
+    expect(query('[data-slot="edit-split-viewer-content"]').className).toContain('absolute');
+  });
+
   it('leaves Esc alone when not expanded, or from a field that handles Esc itself', () => {
     render();
     const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });

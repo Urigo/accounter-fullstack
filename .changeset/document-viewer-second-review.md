@@ -14,4 +14,5 @@ and M shortcuts follow the letter on AZERTY and Dvorak keyboards, and shortcuts 
 a dropdown, slider or tab is focused. The stepper keeps focus at the first and last document and
 announces each step to screen readers. Remembered pane sizes are kept within the same limits while
 dragging as after a reload. The Image URL preview waits until the address has a complete host
-before loading it. Button labels for screen readers now match their tooltips.
+before loading it. If Save & next runs into an error after saving, it now shows an error message
+instead of failing silently. Button labels for screen readers now match their tooltips.

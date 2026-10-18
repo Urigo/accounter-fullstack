@@ -154,19 +154,26 @@ export function DocumentEditSplit({
   // Esc while expanded collapses the viewer instead of closing the whole sheet, which would drop
   // unsaved edits. Radix hears Esc in the document's capture phase, ahead of any React handler, so
   // this listens on `window` (whose capture phase runs first) and marks the key handled; the sheet
-  // ignores a handled Esc. Only for keys from inside the split: an overlay or a menu portaled
-  // elsewhere keeps its own Esc, and so does a field that cancels an edit on Esc.
+  // ignores a handled Esc.
+  //
+  // Keys from inside the split count, and so do keys with no focused control: Safari and Firefox
+  // on macOS don't focus a button on click, and `inert` drops focus from the form, so the target is
+  // often the body or the sheet's dialog content, an ancestor of the split. An overlay or a menu
+  // portaled elsewhere keeps its own Esc (its target neither is inside the split nor contains it),
+  // and so does a field that cancels an edit on Esc.
   useEffect(() => {
     if (!expanded) {
       return;
     }
     const onKeyDown = (event: KeyboardEvent): void => {
       const { target } = event;
+      const split = rootRef.current;
       if (
         event.key !== 'Escape' ||
         event.defaultPrevented ||
+        !split ||
         !(target instanceof Node) ||
-        !rootRef.current?.contains(target) ||
+        !(split.contains(target) || target === document.body || target.contains(split)) ||
         (target instanceof Element && target.closest('[data-local-escape]'))
       ) {
         return;

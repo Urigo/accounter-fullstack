@@ -7,10 +7,13 @@ import type { ModifyDocumentFieldsProps } from '../modify-document-fields.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { useQueryMock, updateDocumentMock } = vi.hoisted(() => ({
+const { useQueryMock, updateDocumentMock, toastErrorMock } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
   updateDocumentMock: vi.fn<(variables: unknown) => Promise<unknown>>(),
+  toastErrorMock: vi.fn<(title: string, options?: { description?: string }) => void>(),
 }));
+
+vi.mock('sonner', () => ({ toast: { error: toastErrorMock } }));
 
 vi.mock('urql', () => ({ useQuery: useQueryMock }));
 
@@ -357,6 +360,11 @@ describe('EditDocument Save & next, review fixes', () => {
 
       expect(unhandled).not.toHaveBeenCalled();
       expect(consoleError).toHaveBeenCalledWith('Save & next failed', expect.any(Error));
+      // The same error toast the mutation hooks raise.
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: expect.stringContaining('Save & next failed') }),
+      );
       expect(onNavigate).not.toHaveBeenCalled();
       // Released: Save & next is usable again (the edit is still dirty).
       expect(saveAndNext()?.disabled).toBe(false);

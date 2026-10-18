@@ -21,11 +21,38 @@ type DocumentsTableRowProps<TData extends { id: string }> = {
  * highlight is `data-viewing` plus an inset ring, so `data-state` stays free for row selection and
  * the row keeps whatever background its caller gave it.
  */
+/** The viewing outline's width and its edges on a cell, as inset box-shadow offsets. */
+const OUTLINE_PX = 2;
+const OUTLINE_EDGES = {
+  top: `0 ${OUTLINE_PX}px`,
+  bottom: `0 -${OUTLINE_PX}px`,
+  left: `${OUTLINE_PX}px 0`,
+  right: `-${OUTLINE_PX}px 0`,
+};
+
+/**
+ * The viewing outline for one cell: top and bottom edges on every cell, plus the left edge on the
+ * first and the right edge on the last. On the cells rather than the `<tr>`, where a ring can be
+ * clipped or painted over by cell backgrounds depending on the browser. The colour comes from the
+ * row's `--viewing-outline`, so dark mode can change it.
+ */
+export function viewingOutline(index: number, count: number): string {
+  const edges = [OUTLINE_EDGES.top, OUTLINE_EDGES.bottom];
+  if (index === 0) {
+    edges.push(OUTLINE_EDGES.left);
+  }
+  if (index === count - 1) {
+    edges.push(OUTLINE_EDGES.right);
+  }
+  return edges.map(edge => `inset ${edge} 0 0 var(--viewing-outline)`).join(', ');
+}
+
 export function DocumentsTableRow<TData extends { id: string }>({
   row,
   className,
 }: DocumentsTableRowProps<TData>): ReactElement {
   const viewing = useDocumentViewer(s => s.current?.id === row.original.id);
+  const cells = row.getVisibleCells();
 
   return (
     <TableRow
@@ -33,14 +60,18 @@ export function DocumentsTableRow<TData extends { id: string }>({
       data-viewing={viewing || undefined}
       className={cn(
         className,
-        // A ring, not a background: a background would replace the row's own tint (twMerge drops
-        // e.g. the "linked document" `bg-blue-100`), and hover and selection backgrounds would
-        // fight it. An inset ring sits on top of all of them, so every state stays readable.
-        viewing && 'ring-2 ring-inset ring-blue-500 dark:ring-blue-400',
+        // An outline, not a background: a background would replace the row's own tint (twMerge
+        // drops e.g. the "linked document" `bg-blue-100`), and hover and selection backgrounds
+        // would fight it. The outline is drawn on the cells (below), over all of them.
+        viewing &&
+          '[--viewing-outline:var(--color-blue-500)] dark:[--viewing-outline:var(--color-blue-400)]',
       )}
     >
-      {row.getVisibleCells().map(cell => (
-        <TableCell key={cell.id}>
+      {cells.map((cell, index) => (
+        <TableCell
+          key={cell.id}
+          style={viewing ? { boxShadow: viewingOutline(index, cells.length) } : undefined}
+        >
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}
