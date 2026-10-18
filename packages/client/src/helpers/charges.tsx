@@ -42,7 +42,7 @@ export const CHARGE_TYPE_NAME: Record<ChargeType, string> = {
 };
 
 export const getChargeTypeName = (type?: ChargeType): string =>
-  !type || !(type in CHARGE_TYPE_NAME) ? 'Unknown' : CHARGE_TYPE_NAME[type];
+  type && type in CHARGE_TYPE_NAME ? CHARGE_TYPE_NAME[type] : 'Unknown';
 
 const ICON_MAP: Record<ChargeType, ReactElement> = {
   CommonCharge: <Coins />,
@@ -59,7 +59,7 @@ const ICON_MAP: Record<ChargeType, ReactElement> = {
 };
 
 export const getChargeTypeIcon = (type?: ChargeType): ReactElement =>
-  !type || !(type in ICON_MAP) ? <Coins /> : ICON_MAP[type];
+  type && type in ICON_MAP ? ICON_MAP[type] : <Coins />;
 
 export function getChargeTypeInputValue(type: ChargeType): ChargeTypeInput {
   switch (type) {

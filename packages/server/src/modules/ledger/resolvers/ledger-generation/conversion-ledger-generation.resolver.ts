@@ -173,13 +173,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       quoteEntry = aggregateConversionSideEntries(quoteEntries);
     }
 
-    if (!baseEntry || !quoteEntry) {
-      // only report a missing side when it is genuinely absent; currency-validation
-      // failures above already add specific, more accurate errors
-      if (baseEntries.length === 0 || quoteEntries.length === 0) {
-        errors.add(`Conversion Charge must include base and quote main transactions`);
-      }
-    } else {
+    if (baseEntry && quoteEntry) {
       // create a ledger record for fee transactions
       for (const transaction of feeTransactions) {
         if (!transaction.is_fee) {
@@ -332,6 +326,10 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           throw e;
         }
       }
+    } else if (baseEntries.length === 0 || quoteEntries.length === 0) {
+      // only report a missing side when it is genuinely absent; currency-validation
+      // failures above already add specific, more accurate errors
+      errors.add(`Conversion Charge must include base and quote main transactions`);
     }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
