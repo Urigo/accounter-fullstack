@@ -336,7 +336,7 @@ __metadata:
     "@google-cloud/pubsub": "npm:6.3.0"
     "@graphql-hive/yoga": "npm:0.49.8"
     "@graphql-tools/utils": "npm:12.0.4"
-    "@graphql-yoga/plugin-defer-stream": "npm:3.24.5"
+    "@graphql-yoga/plugin-defer-stream": "npm:3.24.6"
     "@opentelemetry/api": "npm:1.9.1"
     "@opentelemetry/auto-instrumentations-node": "npm:0.81.0"
     "@opentelemetry/exporter-trace-otlp-http": "npm:0.223.0"
@@ -365,7 +365,7 @@ __metadata:
     graphql: "npm:16.14.2"
     graphql-modules: "npm:3.1.2"
     graphql-scalars: "npm:2.0.0"
-    graphql-yoga: "npm:5.24.5"
+    graphql-yoga: "npm:5.24.6"
     iconv-lite: "npm:0.7.3"
     inline-css: "npm:4.0.3"
     jose: "npm:6.2.12"
@@ -3663,15 +3663,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-yoga/plugin-defer-stream@npm:3.24.5":
-  version: 3.24.5
-  resolution: "@graphql-yoga/plugin-defer-stream@npm:3.24.5"
+"@graphql-yoga/plugin-defer-stream@npm:3.24.6":
+  version: 3.24.6
+  resolution: "@graphql-yoga/plugin-defer-stream@npm:3.24.6"
   dependencies:
     "@graphql-tools/utils": "npm:^12.0.3"
   peerDependencies:
     graphql: ^15.2.0 || ^16.0.0 || ^17.0.0
-    graphql-yoga: ^5.24.5
-  checksum: 10c0/7a75d21299a86c873908a698d31e2b930b268f0646cc778ac568d7d1004e18f8fd9c35cec8e56f3f829af77507da1e7a088f2c44b11834c19c1a7fc42b1a01c0
+    graphql-yoga: ^5.24.6
+  checksum: 10c0/b6c979b3539e175ee1502fa63730abaad344971f8b7e694e65d20c79b85d37ba58ab9ae6eb7970163989ee7c2cc858c876d19761cf07fca5f3b977077df154bf
   languageName: node
   linkType: hard
 
@@ -10874,7 +10874,7 @@ __metadata:
     eslint-plugin-unicorn: "npm:77.0.0"
     globals: "npm:17.13.0"
     graphql: "npm:16.14.2"
-    graphql-yoga: "npm:5.24.5"
+    graphql-yoga: "npm:5.24.6"
     husky: "npm:9.1.7"
     lint-staged: "npm:17.6.0"
     pg: "npm:8.23.1"
@@ -16370,9 +16370,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-yoga@npm:5.24.5":
-  version: 5.24.5
-  resolution: "graphql-yoga@npm:5.24.5"
+"graphql-yoga@npm:5.24.6":
+  version: 5.24.6
+  resolution: "graphql-yoga@npm:5.24.6"
   dependencies:
     "@envelop/core": "npm:^5.6.1"
     "@envelop/instrumentation": "npm:^1.0.1"
@@ -16388,7 +16388,7 @@ __metadata:
     tslib: "npm:^2.8.1"
   peerDependencies:
     graphql: ^15.2.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/a45b0c47ccb56d83669bb37623a7548afd6bc95ba58492d8f850d15bb4ceb960df60cfa8697f99a1a410d811777bf43983f8754e251920eb842614a1a9f0e2aa
+  checksum: 10c0/74af49fd7c54d71b9a82d7f822b11550396035f10e2c1ae45aee9a155848ebfccaa2bc2caabe54fe6a3a4c6506a9af0df56c4da0c66eab00c2fc607720b233f9
   languageName: node
   linkType: hard
 
