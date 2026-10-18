@@ -362,6 +362,49 @@ describe('DockedDocumentViewer', () => {
     expect(width(section)).toBe('clamp(420px, 52%, 100% - 480px)');
   });
 
+  it('suspended by the edit sheet and resumed, puts back the scroll the browser dropped', () => {
+    // Layout passes run at once here.
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    openDoc();
+    const canvas = region()!.querySelector<HTMLElement>('[data-slot="document-viewer-canvas"]')!;
+    const setCanvas = (w: number, h: number): void => {
+      Object.defineProperty(canvas, 'clientWidth', { configurable: true, value: w });
+      Object.defineProperty(canvas, 'clientHeight', { configurable: true, value: h });
+    };
+    const scrollTo = (y: number): void =>
+      act(() => {
+        canvas.scrollTop = y;
+        canvas.dispatchEvent(new Event('scroll'));
+      });
+    setCanvas(666, 816);
+    const image = canvas.querySelector('img')!;
+    Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 2480 });
+    Object.defineProperty(image, 'naturalHeight', { configurable: true, value: 3508 });
+    act(() => {
+      image.dispatchEvent(new Event('load'));
+    });
+    // Within the page's scroll range (about 119px at this size).
+    scrollTo(100);
+
+    let resume: () => void = () => {};
+    act(() => {
+      resume = useDocumentViewer.getState().suspend();
+    });
+    // What `display: none` does in Chromium: no size, and the scroll reset.
+    setCanvas(0, 0);
+    fireResize();
+    scrollTo(0);
+
+    act(() => resume());
+    setCanvas(666, 816);
+    fireResize();
+    expect(Math.abs(canvas.scrollTop - 100)).toBeLessThan(1);
+  });
+
   it('ignores Esc while suspended', () => {
     openDoc();
     let resume: () => void = () => {};

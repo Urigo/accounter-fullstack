@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent, type ReactElement } from 
 import { ArrowRight } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Button } from '@/components/ui/button.js';
 import { Label } from '@/components/ui/label.js';
@@ -243,10 +244,16 @@ export const EditDocument = ({
     handleSubmit(onSaveAndNext)(event)
       .catch((error: unknown) => {
         // The save itself reports through the hook's toast; this is a throw after it (say, in the
-        // list's `onChange`). Logged, not rethrown, so it can't surface as an unhandled rejection,
-        // and the buttons are released below either way.
+        // list's `onChange`). Shown and logged, not rethrown, so it can't surface as an unhandled
+        // rejection, and the buttons are released below either way. The toast matches the one
+        // `useApiMutation` raises.
         // eslint-disable-next-line no-console
         console.error('Save & next failed', error);
+        toast.error('Error', {
+          description: 'Save & next failed. Check the document before moving on.',
+          duration: 100_000,
+          closeButton: true,
+        });
       })
       .finally(() => {
         savingNextRef.current = false;

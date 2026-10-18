@@ -71,15 +71,19 @@ const LETTER_CODES = new Set(['KeyR', 'KeyM']);
  * Hebrew layout, so this costs Israeli users nothing.
  *
  * Then a typed `r` or `m`. A Latin character on the R or M key that isn't that letter (AZERTY's `,`
- * on the US M key, Dvorak's `p` on the US R key) is not the shortcut; only a non-Latin character
- * there (Hebrew) falls back to the physical key.
+ * on the US M key, Dvorak's `p` on the US R key) is not the shortcut, and neither is a named key
+ * such as `Dead`, `Process` (IME) or `Unidentified`; only a single non-Latin character there
+ * (Hebrew) falls back to the physical key.
  */
 export function matchShortcut(event: Pick<KeyboardEvent, 'key' | 'code'>): ShortcutAction | null {
   const typed = BY_KEY[event.key] ?? BY_LETTER[event.key.toLowerCase()];
   if (typed) {
     return typed;
   }
-  if (ASCII_CHARACTER.test(event.key) && LETTER_CODES.has(event.code)) {
+  if (
+    LETTER_CODES.has(event.code) &&
+    (ASCII_CHARACTER.test(event.key) || [...event.key].length !== 1)
+  ) {
     return null;
   }
   return BY_CODE[event.code] ?? BY_FALLBACK_CODE[event.code] ?? null;

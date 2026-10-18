@@ -57,12 +57,40 @@ function canParseUrl(value: string): boolean {
   }
 }
 
+/** A dotted-quad IPv4 address: four numeric parts. */
+const DOTTED_QUAD = /^\d{1,3}(\.\d{1,3}){3}$/;
+
 /**
- * Whether a hostname looks complete: `localhost`, or a dot with something on both sides
- * (`example.com`, `10.0.0.1`). `exam` and `exam.` are still being typed.
+ * The host as typed, before `URL` normalizes it: the authority after `scheme://`, without user
+ * info or port. `null` when the input has no `//` authority.
  */
-function isCompleteHostname(hostname: string): boolean {
-  return hostname === 'localhost' || /^[^.]+(\.[^.]+)+$/.test(hostname);
+function typedHost(url: string): string | null {
+  const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#\\]*)/i.exec(url)?.[1];
+  if (authority == null) {
+    return null;
+  }
+  const host = authority.slice(authority.lastIndexOf('@') + 1);
+  return host.replace(/:\d*$/, '').toLowerCase();
+}
+
+/**
+ * Whether the URL's host looks complete: `localhost`, a name with a dot and something on both
+ * sides (`example.com`), or an IPv4 address typed as exactly four numeric parts.
+ *
+ * `URL` normalizes partial IPv4 hosts (`https://10` → `0.0.0.10`, `http://192.168.1` →
+ * `192.168.0.1`, `http://127.1` → `127.0.0.1`), so a numeric host is checked against what was
+ * typed: a pause while typing `http://192.168.1.50` must not fetch `192.168.0.1`. Not previewed:
+ * names still being typed (`exam`, `exam.`), single-label names, trailing-dot hosts and IPv6.
+ */
+function isCompleteHost(hostname: string, url: string): boolean {
+  if (hostname === 'localhost') {
+    return true;
+  }
+  if (/^[\d.]+$/.test(hostname)) {
+    const typed = typedHost(url);
+    return typed != null && DOTTED_QUAD.test(typed) && typed === hostname;
+  }
+  return /^[^.]+(\.[^.]+)+$/.test(hostname);
 }
 
 /**
@@ -82,5 +110,5 @@ export function previewImageUrl(value: unknown, stored: string | null): string |
   if (protocol !== 'http:' && protocol !== 'https:') {
     return stored;
   }
-  return isCompleteHostname(hostname) ? url : stored;
+  return isCompleteHost(hostname, url) ? url : stored;
 }

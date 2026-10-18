@@ -115,6 +115,10 @@ describe('matchShortcut', () => {
     expect(matchShortcut({ key: ',', code: 'KeyM' })).toBeNull();
     expect(matchShortcut({ key: 'p', code: 'KeyR' })).toBeNull();
     expect(matchShortcut({ key: '.', code: 'KeyR' })).toBeNull();
+    // Named keys on the R or M key (a dead key, an IME, an unknown key) are not the shortcuts.
+    expect(matchShortcut({ key: 'Dead', code: 'KeyR' })).toBeNull();
+    expect(matchShortcut({ key: 'Process', code: 'KeyM' })).toBeNull();
+    expect(matchShortcut({ key: 'Unidentified', code: 'KeyR' })).toBeNull();
   });
 });
 
