@@ -111,7 +111,8 @@ describe('OverlayViewerFrame', () => {
   });
 
   it.each([
-    ['fullscreen', ['fixed', 'inset-0', 'z-1001', 'touch-none', 'overscroll-contain'], ['w-1/2']],
+    // No `overscroll-contain`: the frame isn't a scroll container.
+    ['fullscreen', ['fixed', 'inset-0', 'z-1001', 'touch-none'], ['w-1/2', 'overscroll-contain']],
     ['sheet', ['fixed', 'inset-y-0', 'right-0', 'z-1001', 'w-1/2', 'min-w-105'], ['inset-0']],
   ] as const)('%s uses its classes', async (mode, present, absent) => {
     await act(async () =>

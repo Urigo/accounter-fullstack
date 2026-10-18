@@ -785,6 +785,37 @@ describe('DocumentViewer touch inertia', () => {
     expect(box.scrollLeft).toBe(caught);
   });
 
+  it('a Ctrl+wheel zoom catches the glide', () => {
+    const box = swipe();
+    runFrames(1);
+    const wheel = new WheelEvent('wheel', {
+      deltaY: -100,
+      clientX: 300,
+      clientY: 400,
+      bubbles: true,
+      cancelable: true,
+    });
+    // happy-dom's WheelEvent drops `ctrlKey` from the init dictionary.
+    Object.defineProperty(wheel, 'ctrlKey', { value: true });
+    act(() => {
+      box.dispatchEvent(wheel);
+    });
+    expect(wheel.defaultPrevented).toBe(true);
+    const zoomed = box.scrollLeft;
+    // At most the cancelled frame, which the stub leaves queued as a no-op.
+    expect(runFrames()).toBeLessThanOrEqual(1);
+    expect(box.scrollLeft).toBe(zoomed);
+  });
+
+  it('a toolbar zoom (anything else moving the scroll) catches the glide', () => {
+    const box = swipe();
+    runFrames(1);
+    click(button('Zoom in'));
+    const zoomed = { x: box.scrollLeft, y: box.scrollTop };
+    runFrames();
+    expect({ x: box.scrollLeft, y: box.scrollTop }).toEqual(zoomed);
+  });
+
   it('does not glide under prefers-reduced-motion', () => {
     reducedMotion = true;
     const box = swipe();

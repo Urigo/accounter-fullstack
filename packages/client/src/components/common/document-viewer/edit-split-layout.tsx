@@ -192,6 +192,10 @@ export function DocumentEditSplit({
   } else if (entry) {
     // The trigger sits in the sheet's dialog, so this resolves to the overlay (full screen under
     // 1024px), which hands focus back to it on close.
+    //
+    // Known trade-off: the store holds one `current`, so this replaces a docked document that the
+    // sheet had suspended. Closing the overlay and then the sheet leaves no docked viewer behind;
+    // the user reopens it from its row.
     toggleExpand = (trigger): void => openViewer(entry, { trigger });
   }
 
