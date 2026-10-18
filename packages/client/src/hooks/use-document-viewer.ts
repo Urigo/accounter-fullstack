@@ -18,8 +18,9 @@ export interface OpenDocumentViewerOptions {
    */
   trigger?: HTMLElement | null;
   /**
-   * The documents the viewer can step through, in the source table's current sort and filter
-   * order. A snapshot: later changes to the table don't reach it. Leave it out to show no stepper.
+   * The documents the viewer can step through, in the order the source table shows when the
+   * viewer opens. A snapshot (spec decision 14): a later re-sort or filter change doesn't reorder
+   * it. Leave it out to show no stepper.
    */
   siblings?: readonly DocumentViewerEntry[] | null;
 }
@@ -71,9 +72,10 @@ interface DocumentViewerState {
    */
   step(delta: 1 | -1): void;
   /**
-   * Called by a documents table whose row ids changed. If the current document was among `prev`
-   * but is gone from `next` (deleted, filtered out, paged away), the sibling snapshot no longer
-   * matches the table, so it is dropped and the stepper hides instead of guessing.
+   * Called by a documents table whose row ids changed. The sibling snapshot keeps the order shown
+   * when the viewer opened; it is never re-sorted to follow the table. If the current document was
+   * among `prev` but is gone from `next` (deleted, filtered out, paged away), the snapshot no
+   * longer matches the table, so it is dropped and the stepper hides instead of guessing.
    */
   reconcileRowIds(prev: readonly string[], next: readonly string[]): void;
   /** Adds a keyboard owner; the returned function removes it again (idempotent). */

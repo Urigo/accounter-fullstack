@@ -95,6 +95,15 @@ describe('matchShortcut', () => {
     [{ key: 'צ', code: 'KeyM' }, 'magnifier'],
     [{ key: ']', code: 'BracketLeft' }, 'previous'],
     [{ key: '[', code: 'BracketRight' }, 'next'],
+    // Shift doesn't matter for the letters.
+    [{ key: 'R', code: 'KeyR' }, 'rotate'],
+    [{ key: 'M', code: 'KeyM' }, 'magnifier'],
+    // AZERTY: M is on the key a US layout calls `Semicolon`.
+    [{ key: 'm', code: 'Semicolon' }, 'magnifier'],
+    [{ key: 'r', code: 'KeyR' }, 'rotate'],
+    // Dvorak: R is on the US O key, M stays on the US M key.
+    [{ key: 'r', code: 'KeyO' }, 'rotate'],
+    [{ key: 'm', code: 'KeyM' }, 'magnifier'],
   ] as const)('%o → %s', (event, action) => {
     expect(matchShortcut(event)).toBe(action);
   });
@@ -102,8 +111,10 @@ describe('matchShortcut', () => {
   it('ignores other keys', () => {
     expect(matchShortcut({ key: 'a', code: 'KeyA' })).toBeNull();
     expect(matchShortcut({ key: 'Escape', code: 'Escape' })).toBeNull();
-    // A letter that merely *types* r on another layout is not the R key.
-    expect(matchShortcut({ key: 'r', code: 'KeyP' })).toBeNull();
+    // AZERTY types `,` on the US M key, and Dvorak types `p` on the US R key: not the shortcuts.
+    expect(matchShortcut({ key: ',', code: 'KeyM' })).toBeNull();
+    expect(matchShortcut({ key: 'p', code: 'KeyR' })).toBeNull();
+    expect(matchShortcut({ key: '.', code: 'KeyR' })).toBeNull();
   });
 });
 
@@ -150,6 +161,11 @@ describe('useViewerShortcuts', () => {
     ['a contenteditable', '<div contenteditable="true"><span>x</span></div>', 'span'],
     ['an open menu', '<div role="menu"><div role="menuitem">x</div></div>', '[role="menuitem"]'],
     ['a listbox', '<div role="listbox"><div role="option">x</div></div>', '[role="option"]'],
+    // The edit form's Radix Select triggers.
+    ['a combobox', '<button role="combobox">x</button>', 'button'],
+    ['a slider', '<span role="slider" tabindex="0">x</span>', '[role="slider"]'],
+    ['a spin button', '<span role="spinbutton" tabindex="0">x</span>', '[role="spinbutton"]'],
+    ['a tab list', '<div role="tablist"><button role="tab">x</button></div>', '[role="tab"]'],
     [
       'a Radix popover',
       '<div data-radix-popper-content-wrapper><button>x</button></div>',
@@ -168,6 +184,18 @@ describe('useViewerShortcuts', () => {
     const event = press({ key: 'r', code: 'KeyR' }, target);
     expect(handlers.rotate).not.toHaveBeenCalled();
     expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("still works from a radio group, such as the viewer's own fit-mode toggle", () => {
+    const handlers = makeHandlers();
+    act(() => root.render(<Owner rank={KEYBOARD_RANK.docked} handlers={handlers} />));
+    const host = document.createElement('div');
+    host.innerHTML =
+      '<div role="radiogroup" aria-label="Fit mode"><button role="radio">Fit width</button></div>';
+    document.body.append(host);
+    const event = press({ key: '+', code: 'Equal' }, host.querySelector('[role="radio"]')!);
+    expect(handlers.zoomIn).toHaveBeenCalledTimes(1);
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it.each([

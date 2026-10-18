@@ -207,7 +207,7 @@ describe.each([
   ['Preview', Preview],
   ['Files', Files],
 ])('%s cell siblings', (_, Cell) => {
-  it('opens with the table rows as siblings, leaving out those with nothing attached', () => {
+  it('opens with the table rows as siblings, leaving out those with no image and no file', () => {
     const docs = [makeDocument('doc-1'), makeDocument('doc-empty', null), makeDocument('doc-3')];
     render(<Cell document={docs[0]} table={fakeTable(docs)} />);
     act(() => imageButton().click());

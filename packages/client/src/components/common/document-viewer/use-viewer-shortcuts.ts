@@ -26,8 +26,15 @@ export function withShortcut(label: string, action: ShortcutAction): string {
 }
 
 /**
- * Letters, digits and brackets match on the physical key (`event.code`): on a Hebrew layout R types
- * ר, M types צ and the brackets are mirrored, so `event.key` would miss them.
+ * R and M match on the letter typed, in either case, on any Latin layout: on AZERTY M sits where a
+ * US layout has `;`, and on Dvorak R sits on the US O key, so their physical keys would be wrong.
+ */
+const BY_LETTER: Record<string, ShortcutAction> = { r: 'rotate', m: 'magnifier' };
+
+/**
+ * Digits and brackets match on the physical key (`event.code`), and so do R and M when the layout
+ * doesn't type Latin letters: on a Hebrew layout R types ר, M types צ and the brackets are
+ * mirrored, so `event.key` would miss them.
  */
 const BY_CODE: Record<string, ShortcutAction> = {
   KeyR: 'rotate',
@@ -52,13 +59,30 @@ const BY_FALLBACK_CODE: Record<string, ShortcutAction> = {
   NumpadSubtract: 'zoomOut',
 };
 
+/** One printable ASCII character: what a Latin layout types on a letter key. */
+const ASCII_CHARACTER = /^[\x20-\x7e]$/;
+
+/** The physical keys that only stand in for R and M on layouts without Latin letters. */
+const LETTER_CODES = new Set(['KeyR', 'KeyM']);
+
 /**
  * The typed `+`, `=` or `-` wins over the physical key: on a German layout `+` sits on the key a US
  * layout calls `BracketRight`. No layout types those three on the R, M or bracket keys of the
  * Hebrew layout, so this costs Israeli users nothing.
+ *
+ * Then a typed `r` or `m`. A Latin character on the R or M key that isn't that letter (AZERTY's `,`
+ * on the US M key, Dvorak's `p` on the US R key) is not the shortcut; only a non-Latin character
+ * there (Hebrew) falls back to the physical key.
  */
 export function matchShortcut(event: Pick<KeyboardEvent, 'key' | 'code'>): ShortcutAction | null {
-  return BY_KEY[event.key] ?? BY_CODE[event.code] ?? BY_FALLBACK_CODE[event.code] ?? null;
+  const typed = BY_KEY[event.key] ?? BY_LETTER[event.key.toLowerCase()];
+  if (typed) {
+    return typed;
+  }
+  if (ASCII_CHARACTER.test(event.key) && LETTER_CODES.has(event.code)) {
+    return null;
+  }
+  return BY_CODE[event.code] ?? BY_FALLBACK_CODE[event.code] ?? null;
 }
 
 /** Typing targets, and open menus, listboxes and popovers that own their keys. */
@@ -69,6 +93,15 @@ const SKIP_TARGET_SELECTOR = [
   '[contenteditable]:not([contenteditable="false"])',
   '[role="menu"]',
   '[role="listbox"]',
+  // Widgets that own their keys: Radix Select triggers are `button[role=combobox]` and type ahead
+  // on letters, sliders and spin buttons step (and may take typed digits), and a tab list is a page
+  // control the viewer shouldn't act through. Not radio groups: they only take arrow keys, and the
+  // viewer's own fit-mode and magnifier-size toggles are radio groups, so skipping them would turn
+  // the shortcuts off right after a click on Fit width.
+  '[role="combobox"]',
+  '[role="slider"]',
+  '[role="spinbutton"]',
+  '[role="tablist"]',
   '[data-radix-popper-content-wrapper]',
 ].join(',');
 

@@ -3,10 +3,10 @@
 ---
 
 The document viewer can now step through a table's documents. Opened from a documents table, its
-header shows a `‹ 3/12 ›` stepper that walks the table in its current sort and filter order (the
-current page on the documents report, the charge's own documents inside a charge), and the row
-highlight follows. Documents with nothing attached are skipped, and the stepper hides if the
-document shown drops out of the table. In the edit sheet, a new Save & next button saves the
+header shows a `‹ 3/12 ›` stepper that walks the table's documents in the order shown when you
+opened it (the current page on the documents report, the charge's own documents inside a charge),
+and the row highlight follows. Documents with no image and no file are skipped, and the stepper
+hides if the document shown drops out of the table. In the edit sheet, a new Save & next button saves the
 document and moves the same sheet on to the next one in the list; if the save fails it stays put
 with the edits intact. A new Rotate button turns sideways scans 90° at a time, with the magnifier
 following, and resets for each document. Keyboard shortcuts work while a viewer is open, except

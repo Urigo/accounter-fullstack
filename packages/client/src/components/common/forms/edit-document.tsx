@@ -240,12 +240,20 @@ export const EditDocument = ({
     }
     savingNextRef.current = true;
     setSavingNext(true);
-    void handleSubmit(onSaveAndNext)(event).finally(() => {
-      savingNextRef.current = false;
-      if (mountedRef.current) {
-        setSavingNext(false);
-      }
-    });
+    handleSubmit(onSaveAndNext)(event)
+      .catch((error: unknown) => {
+        // The save itself reports through the hook's toast; this is a throw after it (say, in the
+        // list's `onChange`). Logged, not rethrown, so it can't surface as an unhandled rejection,
+        // and the buttons are released below either way.
+        // eslint-disable-next-line no-console
+        console.error('Save & next failed', error);
+      })
+      .finally(() => {
+        savingNextRef.current = false;
+        if (mountedRef.current) {
+          setSavingNext(false);
+        }
+      });
   };
 
   const amountCurrency = watch('amount.currency');

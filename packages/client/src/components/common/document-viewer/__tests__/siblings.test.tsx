@@ -36,7 +36,7 @@ function entry(id: string, imageUrl: string | null = `https://example.com/${id}.
 }
 
 describe('buildViewerSiblings', () => {
-  it('maps the rows in table order and leaves out documents with nothing attached', () => {
+  it('maps the rows in table order and leaves out documents with no image and no file', () => {
     const siblings = buildViewerSiblings(fakeTable(ROWS));
     expect(siblings.map(s => s.id)).toEqual(['a', 'file-only', 'd']);
     // Entries are normalized like any viewer entry: trimmed URLs and a title from the labels.
@@ -45,7 +45,7 @@ describe('buildViewerSiblings', () => {
 });
 
 describe('getRowIds', () => {
-  it('keeps every row, documents with nothing attached included', () => {
+  it('keeps every row, documents with no image and no file included', () => {
     expect(getRowIds(fakeTable(ROWS))).toEqual(['a', 'empty', 'file-only', 'd']);
   });
 });
