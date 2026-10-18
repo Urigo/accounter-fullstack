@@ -31,7 +31,7 @@ vi.mock('../modify-document-fields.js', () => ({
   ),
 }));
 
-const { EditDocument } = await import('../edit-document.js');
+const { EditDocument, formColumns } = await import('../edit-document.js');
 const { resetDocumentViewerStore, useDocumentViewer } = await import(
   '../../../../hooks/use-document-viewer.js'
 );
@@ -398,5 +398,17 @@ describe('EditDocument remembered pane and live preview', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('formColumns', () => {
+  it('drops to one column in a narrow pane, whatever the viewer does', () => {
+    expect(formColumns(true, false)).toBe(1);
+    expect(formColumns(true, true)).toBe(1);
+  });
+
+  it('uses two columns beside the viewer and four once it is hidden', () => {
+    expect(formColumns(false, false)).toBe(2);
+    expect(formColumns(false, true)).toBe(4);
   });
 });

@@ -128,6 +128,17 @@ export function nextSiblingId(
   return index === -1 ? null : (siblingIds?.[index + 1] ?? null);
 }
 
+/**
+ * The form grid's column count: one in a narrow pane (the split's 320px minimum can't fit two),
+ * two beside the viewer, four once the viewer is hidden.
+ */
+export function formColumns(narrow: boolean, viewerHidden: boolean): number {
+  if (narrow) {
+    return 1;
+  }
+  return viewerHidden ? 4 : 2;
+}
+
 /** `value`, once it has held still for `delayMs`. */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -267,12 +278,13 @@ export const EditDocument = ({
       entry={viewerSource}
       hidden={viewerHidden}
       onHiddenChange={setViewerHidden}
-      form={
+      form={({ narrow }) => (
         <Form {...formManager}>
           <form onSubmit={handleSubmit(onSubmit)} className="px-5 pt-1">
             {/* The grid's breakpoints follow the viewport, not this pane, so the column count
-                follows the viewer instead: two beside it, four once it is hidden. */}
-            <SimpleGrid cols={viewerHidden ? 4 : 2}>
+                follows the pane instead: one when it is narrow, two beside the viewer, four once
+                the viewer is hidden. */}
+            <SimpleGrid cols={formColumns(narrow, viewerHidden)}>
               <ModifyDocumentFields document={document} formManager={formManager} />
 
               <div className="space-y-2">
@@ -310,7 +322,7 @@ export const EditDocument = ({
             </div>
           </form>
         </Form>
-      }
+      )}
       viewer={({ onHide, onToggleExpand, expanded }) => (
         <DocumentViewer
           source={viewerSource}

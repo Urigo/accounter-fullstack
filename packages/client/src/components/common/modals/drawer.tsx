@@ -62,8 +62,13 @@ export const PopUpDrawer = ({
         withOverlay={withOverlay}
         className={SIZE_CLASSES[size]}
         onEscapeKeyDown={event => {
-          // An input that handles Esc itself (cancelling an edit) keeps the drawer open.
-          if (event.target instanceof Element && event.target.closest('[data-local-escape]')) {
+          // An Esc something inside already handled (the edit split collapsing its expanded
+          // viewer) keeps the drawer open, and so does an input that handles Esc itself
+          // (cancelling an edit). Radix only dismisses when the event isn't default-prevented.
+          if (
+            event.defaultPrevented ||
+            (event.target instanceof Element && event.target.closest('[data-local-escape]'))
+          ) {
             event.preventDefault();
           }
         }}
