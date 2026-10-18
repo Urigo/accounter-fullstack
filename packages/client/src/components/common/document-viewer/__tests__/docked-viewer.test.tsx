@@ -188,12 +188,12 @@ describe('DockedDocumentViewer', () => {
   it('Expand toggles and resets on close', () => {
     openDoc();
     const expand = (): HTMLButtonElement | null =>
-      container.querySelector('button[aria-label="Expand document viewer"]');
-    expect(expand()?.getAttribute('aria-pressed')).toBe('false');
+      container.querySelector('button[data-slot="viewer-expand"]');
+    expect(expand()?.getAttribute('aria-label')).toBe('Expand document viewer');
 
     act(() => expand()?.click());
     expect(useDocumentViewer.getState().expanded).toBe(true);
-    expect(expand()?.getAttribute('aria-pressed')).toBe('true');
+    expect(expand()?.getAttribute('aria-label')).toBe('Restore document viewer width');
     const viewer = container.querySelector('[data-slot="document-viewer"]');
     expect(viewer?.className).toContain('absolute');
     // The section stays in the flow as a spacer of the same width; the handle hides.

@@ -107,7 +107,7 @@ describe('OverlayViewerFrame', () => {
     // The viewer is inside, with ✕ and no Expand.
     expect(dialog?.querySelector('[data-slot="document-viewer"]')).not.toBeNull();
     expect(dialog?.querySelector('[aria-label="Close document viewer"]')).not.toBeNull();
-    expect(dialog?.querySelector('[aria-label="Expand document viewer"]')).toBeNull();
+    expect(dialog?.querySelector('[data-slot="viewer-expand"]')).toBeNull();
   });
 
   it.each([

@@ -320,11 +320,11 @@ describe('DocumentEditSplit', () => {
   it('Expand covers the form and toggles back', () => {
     render();
     const expand = (): HTMLButtonElement =>
-      query<HTMLButtonElement>('button[aria-label="Expand document viewer"]');
-    expect(expand().getAttribute('aria-pressed')).toBe('false');
+      query<HTMLButtonElement>('button[data-slot="viewer-expand"]');
+    expect(expand().getAttribute('aria-label')).toBe('Expand document viewer');
 
     act(() => expand().click());
-    expect(expand().getAttribute('aria-pressed')).toBe('true');
+    expect(expand().getAttribute('aria-label')).toBe('Restore document viewer width');
     expect(query('[data-slot="edit-split-viewer-content"]').className).toContain('absolute');
     // The pane stays as a spacer, positioned against the split; the handle hides.
     expect(query('[data-slot="edit-split-viewer"]').className).not.toContain('relative');
@@ -337,12 +337,12 @@ describe('DocumentEditSplit', () => {
 
   it('hiding an expanded viewer and showing it again starts collapsed', () => {
     render();
-    click('button[aria-label="Expand document viewer"]');
+    click('button[data-slot="viewer-expand"]');
     click('button[aria-label="Hide document"]');
     act(() => query<HTMLButtonElement>('[data-slot="edit-split-viewer"] button').click());
     expect(
-      query('button[aria-label="Expand document viewer"]').getAttribute('aria-pressed'),
-    ).toBe('false');
+      query('button[data-slot="viewer-expand"]').getAttribute('aria-label'),
+    ).toBe('Expand document viewer');
   });
 
   it('stacked below lg, Expand opens the full-screen overlay with the button as trigger', () => {
@@ -357,8 +357,8 @@ describe('DocumentEditSplit', () => {
         <Harness entry={ENTRY} />
       </div>,
     );
-    const expand = query<HTMLButtonElement>('button[aria-label="Expand document viewer"]');
-    expect(expand.getAttribute('aria-pressed')).toBe('false');
+    const expand = query<HTMLButtonElement>('button[data-slot="viewer-expand"]');
+    expect(expand.getAttribute('aria-label')).toBe('Expand document viewer');
 
     act(() => expand.click());
 
@@ -369,12 +369,12 @@ describe('DocumentEditSplit', () => {
     });
     expect(getViewerTrigger()).toBe(expand);
     // The split itself doesn't change: nothing covers the form.
-    expect(expand.getAttribute('aria-pressed')).toBe('false');
+    expect(expand.getAttribute('aria-label')).toBe('Expand document viewer');
   });
 
   it('side by side, Expand stays in the sheet and never opens the overlay', () => {
     render(<Harness entry={ENTRY} />);
-    act(() => query<HTMLButtonElement>('button[aria-label="Expand document viewer"]').click());
+    act(() => query<HTMLButtonElement>('button[data-slot="viewer-expand"]').click());
     expect(useDocumentViewer.getState().current).toBeNull();
   });
 
@@ -382,7 +382,7 @@ describe('DocumentEditSplit', () => {
     wide = false;
     render();
     expect(container.querySelector('[role="separator"]')).toBeNull();
-    expect(container.querySelector('button[aria-label="Expand document viewer"]')).toBeNull();
+    expect(container.querySelector('button[data-slot="viewer-expand"]')).toBeNull();
     expect(query('[data-slot="edit-split-viewer"]').className).toContain('h-[45vh]');
     expect(container.querySelector('button[aria-label="Hide document"]')).not.toBeNull();
   });

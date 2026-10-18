@@ -34,7 +34,9 @@ export const Files = ({ document, table }: Props): ReactElement => {
                 size="icon"
                 className="size-7.5"
                 disabled={!image}
-                aria-label="Open document image"
+                // Matches the tooltip, and differs from the Preview thumbnail's name so the two
+                // buttons in one row are told apart by screen-reader users.
+                aria-label="Open image"
                 aria-expanded={isActive}
                 // Opens the shared viewer, or closes it when this document is the one shown.
                 onClick={e =>
