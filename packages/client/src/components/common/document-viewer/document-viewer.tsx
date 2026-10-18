@@ -290,9 +290,10 @@ export function DocumentViewer({
                 variant="ghost"
                 size="icon"
                 className="size-8"
-                // A toggle keeps one label; `aria-pressed` carries the state.
-                aria-label="Expand document viewer"
-                aria-pressed={expanded}
+                data-slot="viewer-expand"
+                // The name follows the state and the tooltip (WCAG 2.5.3), so there is no
+                // `aria-pressed`: a toggle whose label also changes would announce the state twice.
+                aria-label={expanded ? 'Restore document viewer width' : 'Expand document viewer'}
                 onClick={event => onToggleExpand(event.currentTarget)}
               >
                 {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}

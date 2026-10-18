@@ -18,7 +18,8 @@ type DocumentsTableRowProps<TData extends { id: string }> = {
  * One documents-table row. It highlights while its document is open in the shared viewer.
  *
  * The boolean selector means a swap re-renders only the two rows whose answer changed. The
- * highlight is `data-viewing`, so `data-state` stays free for row selection.
+ * highlight is `data-viewing` plus an inset ring, so `data-state` stays free for row selection and
+ * the row keeps whatever background its caller gave it.
  */
 export function DocumentsTableRow<TData extends { id: string }>({
   row,
@@ -32,10 +33,10 @@ export function DocumentsTableRow<TData extends { id: string }>({
       data-viewing={viewing || undefined}
       className={cn(
         className,
-        // The selected-state variants too: `TableRow`'s `data-[state=selected]:bg-gray-100` is more
-        // specific than a plain background, so a selected row would otherwise lose the highlight.
-        viewing &&
-          'bg-blue-50 hover:bg-blue-50 data-[state=selected]:bg-blue-50 dark:bg-blue-950/40 dark:hover:bg-blue-950/40 dark:data-[state=selected]:bg-blue-950/40',
+        // A ring, not a background: a background would replace the row's own tint (twMerge drops
+        // e.g. the "linked document" `bg-blue-100`), and hover and selection backgrounds would
+        // fight it. An inset ring sits on top of all of them, so every state stays readable.
+        viewing && 'ring-2 ring-inset ring-blue-500 dark:ring-blue-400',
       )}
     >
       {row.getVisibleCells().map(cell => (

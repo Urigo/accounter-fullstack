@@ -61,7 +61,7 @@ function render(ui: ReactElement): void {
 
 function imageButton(): HTMLButtonElement {
   const button = container.querySelector<HTMLButtonElement>(
-    'button[aria-label="Open document image"]',
+    'button[aria-label="Open document image"], button[aria-label="Open image"]',
   );
   if (!button) {
     throw new Error('no image button');
@@ -111,6 +111,22 @@ describe.each([
   });
 });
 
+describe('image button names', () => {
+  it('gives the Files button a name distinct from the Preview thumbnail, matching its tooltip', () => {
+    render(
+      <>
+        <Preview document={makeDocument('doc-1')} />
+        <Files document={makeDocument('doc-1')} />
+      </>,
+    );
+    const names = [...container.querySelectorAll('button[aria-label^="Open"]')].map(b =>
+      b.getAttribute('aria-label'),
+    );
+    expect(names).toContain('Open document image');
+    expect(names).toContain('Open image');
+  });
+});
+
 describe('DocumentsTableRow', () => {
   function renderRows(): void {
     render(
@@ -138,8 +154,10 @@ describe('DocumentsTableRow', () => {
         .open({ id: 'doc-1', imageUrl: 'https://example.com/a.jpg', fileUrl: null, title: 'A' }),
     );
     expect(rowFor(0).hasAttribute('data-viewing')).toBe(true);
-    expect(rowFor(0).className).toContain('bg-blue-50');
-    expect(rowFor(0).className).not.toContain('bg-blue-100');
+    // The viewing mark is a ring, so the caller's "linked document" tint survives alongside it.
+    expect(rowFor(0).className.split(/\s+/)).toContain('ring-blue-500');
+    expect(rowFor(0).className.split(/\s+/)).toContain('ring-inset');
+    expect(rowFor(0).className).toContain('bg-blue-100');
     expect(rowFor(1).hasAttribute('data-viewing')).toBe(false);
     // Selection keeps `data-state` to itself.
     expect(rowFor(0).getAttribute('data-state')).toBeNull();
@@ -162,10 +180,10 @@ describe('DocumentsTableRow', () => {
         .open({ id: 'doc-1', imageUrl: 'https://example.com/a.jpg', fileUrl: null, title: 'A' }),
     );
     const classes = rowFor(0).className.split(/\s+/);
-    expect(classes).toContain('data-[state=selected]:bg-blue-50');
-    expect(classes).toContain('dark:data-[state=selected]:bg-blue-950/40');
-    expect(classes).not.toContain('data-[state=selected]:bg-gray-100');
-    expect(classes).not.toContain('dark:data-[state=selected]:bg-gray-800');
+    // Selection keeps its own background, and the ring marks the open document on top of it.
+    expect(classes).toContain('data-[state=selected]:bg-gray-100');
+    expect(classes).toContain('ring-2');
+    expect(classes).toContain('ring-blue-500');
   });
 
   it('moves the highlight on a swap', () => {
