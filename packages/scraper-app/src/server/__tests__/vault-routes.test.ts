@@ -46,6 +46,14 @@ function markSaved(revision: number, sessionId = getSessionInfo().sessionId) {
   return app.inject({ method: 'POST', url: '/api/vault/saved', payload: { sessionId, revision } });
 }
 
+function closeSession(body: { sessionId?: string; discardChanges?: boolean } = {}) {
+  return app.inject({
+    method: 'POST',
+    url: '/api/vault/close',
+    payload: { sessionId: getSessionInfo().sessionId, ...body },
+  });
+}
+
 async function getChanges(): Promise<VaultChanges> {
   return (await app.inject({ method: 'GET', url: '/api/vault/changes' })).json();
 }
@@ -243,7 +251,8 @@ describe('vault session routes', () => {
     });
 
     it('close clears the session', async () => {
-      await app.inject({ method: 'POST', url: '/api/vault/close' });
+      const res = await closeSession();
+      expect(res.statusCode).toBe(200);
       expect(isLocked()).toBe(true);
       expect((await app.inject({ method: 'GET', url: '/api/vault/changes' })).statusCode).toBe(
         401,
@@ -252,9 +261,30 @@ describe('vault session routes', () => {
 
     it('refuses to close while a scrape is running', async () => {
       runner.running = true;
-      const res = await app.inject({ method: 'POST', url: '/api/vault/close' });
+      const res = await closeSession();
       expect(res.statusCode).toBe(409);
       expect(res.json()).toEqual({ error: 'run-in-progress' });
+      expect(isLocked()).toBe(false);
+    });
+
+    it('refuses to close a vault with unsaved changes unless told to discard them', async () => {
+      await addSource();
+      const refused = await closeSession();
+      expect(refused.statusCode).toBe(409);
+      expect(refused.json()).toEqual({ error: 'unsaved-changes' });
+      expect(isLocked()).toBe(false);
+
+      expect((await closeSession({ discardChanges: true })).statusCode).toBe(200);
+      expect(isLocked()).toBe(true);
+    });
+
+    it('refuses to close a vault for a session that is no longer open', async () => {
+      const stale = getSessionInfo().sessionId;
+      closeVault();
+      await openWith(await encryptVault(defaultVault(), PASSWORD));
+      const res = await closeSession({ sessionId: stale });
+      expect(res.statusCode).toBe(409);
+      expect(res.json()).toEqual({ error: 'session-changed' });
       expect(isLocked()).toBe(false);
     });
   });

@@ -70,7 +70,7 @@ discards any unsaved changes.
 
 One vault is open at a time, shared by every browser tab. Opening another vault means closing the
 current one first (**Close vault** in the header menu), and the vault can't be closed while a scrape
-is running.
+is running. Tabs keep each other up to date, so a change or save made in one shows in the others.
 
 > Upgrading from an earlier version? Your existing `.vault` file (in the directory you ran the app
 > from) still works. Open it from the welcome screen. `VAULT_PATH` is no longer used.

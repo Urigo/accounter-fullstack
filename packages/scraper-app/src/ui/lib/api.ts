@@ -17,6 +17,14 @@ export class ApiError extends Error {
  */
 export const vaultEvents = new EventTarget();
 
+// Every tab shares the one server-side vault session. Tell the others when this tab changes it,
+// so their unsaved-changes state doesn't go stale; they receive it as `vault-remote`.
+const tabs =
+  typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('accounter-vault');
+tabs?.addEventListener('message', () => vaultEvents.dispatchEvent(new Event('vault-remote')));
+// Node's BroadcastChannel (tests) would otherwise keep the process alive.
+(tabs as { unref?(): void } | null)?.unref?.();
+
 const SESSION_ENDPOINTS = new Set([
   '/api/vault/open',
   '/api/vault/create',
@@ -25,9 +33,15 @@ const SESSION_ENDPOINTS = new Set([
   '/api/vault/close',
 ]);
 
-function mutatesVault(url: string, init?: RequestInit): boolean {
+/** Any request that changes the vault session, including opening, saving and closing it. */
+function isVaultWrite(url: string, init?: RequestInit): boolean {
   const method = (init?.method ?? 'GET').toUpperCase();
-  return method !== 'GET' && url.startsWith('/api/vault/') && !SESSION_ENDPOINTS.has(url);
+  return method !== 'GET' && url.startsWith('/api/vault/');
+}
+
+/** Edits to the vault's contents; session requests update the context directly. */
+function mutatesVault(url: string, init?: RequestInit): boolean {
+  return isVaultWrite(url, init) && !SESSION_ENDPOINTS.has(url);
 }
 
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
@@ -38,6 +52,7 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   }
   const data = (await res.json()) as T;
   if (mutatesVault(url, init)) vaultEvents.dispatchEvent(new Event('vault-changed'));
+  if (isVaultWrite(url, init)) tabs?.postMessage('vault-changed');
   return data;
 }
 
@@ -92,8 +107,9 @@ export function vaultMarkSaved(
   return postJson('/api/vault/saved', { sessionId, revision, fileName });
 }
 
-export function vaultClose(): Promise<{ ok: boolean }> {
-  return postJson('/api/vault/close');
+/** Answers 409 `unsaved-changes` unless `discardChanges` is set and the vault has unsaved changes. */
+export function vaultClose(sessionId: string, discardChanges = false): Promise<{ ok: boolean }> {
+  return postJson('/api/vault/close', { sessionId, discardChanges });
 }
 
 // ── Sources ───────────────────────────────────────────────────────────────────

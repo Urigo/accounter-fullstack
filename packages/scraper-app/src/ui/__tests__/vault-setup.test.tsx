@@ -153,6 +153,16 @@ describe('VaultSetup — save step', () => {
     expect(await screen.findByRole('button', { name: /download vault file/i })).toBeTruthy();
   });
 
+  it('keeps the wizard in place while the vault is being created', async () => {
+    renderSetup(makeCtx(vi.fn(() => new Promise<boolean>(() => undefined))));
+    await completeWizard();
+    expect(screen.getByRole('button', { name: /creating…/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /back to start/i }).hasAttribute('disabled')).toBe(
+      true,
+    );
+    expect(screen.getByRole('button', { name: /^back$/i }).hasAttribute('disabled')).toBe(true);
+  });
+
   it('does not advance when creating the vault fails', async () => {
     renderSetup(makeCtx(vi.fn().mockResolvedValue(false)));
     await completeWizard();

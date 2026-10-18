@@ -70,8 +70,11 @@ export type VaultContextValue = {
   save(): Promise<SaveOutcome>;
   confirmDownloaded(): Promise<void>;
   downloadCopy(): Promise<void>;
-  /** Rejects (keeping the session) when the server refuses, e.g. while a scrape is running. */
-  close(): Promise<void>;
+  /**
+   * Rejects (keeping the session) when the server refuses: a scrape is running, or the vault has
+   * unsaved changes and `discardChanges` wasn't set.
+   */
+  close(discardChanges?: boolean): Promise<void>;
   refreshChanges(): Promise<void>;
 };
 
@@ -109,13 +112,64 @@ export function VaultProvider({ children }: { children: ReactNode }): ReactEleme
     setPicked(null);
   }, [adoptHandle]);
 
+  // Change reports can arrive out of order (a refresh, a save, another tab). Each request takes a
+  // sequence number, and only the latest one may apply — so an older "clean" answer can't hide
+  // newer unsaved edits.
+  const changesSeq = useRef(0);
+
+  const applyChanges = useCallback((next: VaultChanges) => {
+    changesSeq.current += 1;
+    setChanges(next);
+  }, []);
+
   const refreshChanges = useCallback(async () => {
+    const seq = ++changesSeq.current;
+    const sessionId = sessionIdRef.current;
     try {
-      setChanges(await apiChanges());
+      const next = await apiChanges();
+      if (seq === changesSeq.current && sessionId === sessionIdRef.current) setChanges(next);
     } catch {
       // Locked or unreachable — keep whatever we last knew.
     }
   }, []);
+
+  /**
+   * The session is shared by every tab. Re-reads it when another tab changed something (or this
+   * tab regains focus) and follows along: new changes, a save, or a close and re-open elsewhere.
+   */
+  const syncWithServer = useCallback(async () => {
+    if (phaseRef.current !== 'unlocked') return;
+    const seq = ++changesSeq.current;
+    const sessionId = sessionIdRef.current;
+    let status: Awaited<ReturnType<typeof apiStatus>>;
+    try {
+      status = await apiStatus();
+    } catch {
+      return;
+    }
+    if (
+      seq !== changesSeq.current ||
+      sessionId !== sessionIdRef.current ||
+      phaseRef.current !== 'unlocked'
+    ) {
+      return;
+    }
+    if (status.state === 'empty') {
+      resetSession();
+      setPhase('welcome');
+      return;
+    }
+    if (status.sessionId !== sessionId) {
+      // Closed and replaced in another tab: drop this vault's file handle and pending download,
+      // and show the vault that is open now.
+      sessionIdRef.current = status.sessionId;
+      setPendingDownload(null);
+      setHandle(await recallHandle(status.sessionId));
+    }
+    setFileName(status.fileName);
+    setOrigin(status.origin);
+    setChanges(status.changes);
+  }, [resetSession]);
 
   useEffect(() => {
     apiStatus()
@@ -144,6 +198,21 @@ export function VaultProvider({ children }: { children: ReactNode }): ReactEleme
     vaultEvents.addEventListener('vault-changed', onChange);
     return () => vaultEvents.removeEventListener('vault-changed', onChange);
   }, [refreshChanges]);
+
+  useEffect(() => {
+    const sync = () => void syncWithServer();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') sync();
+    };
+    vaultEvents.addEventListener('vault-remote', sync);
+    window.addEventListener('focus', sync);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      vaultEvents.removeEventListener('vault-remote', sync);
+      window.removeEventListener('focus', sync);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [syncWithServer]);
 
   // Changes live only in this session; warn before the tab is closed with unsaved work. A new
   // vault is dirty already on the wizard's final "save your file" step.
@@ -258,11 +327,11 @@ export function VaultProvider({ children }: { children: ReactNode }): ReactEleme
     }
 
     const res = await apiMarkSaved(sessionId, revision, savedAs);
-    setChanges(res.changes);
+    applyChanges(res.changes);
     setPendingDownload(null);
     if (savedAs) setFileName(savedAs);
     return 'saved';
-  }, [handle, adoptHandle]);
+  }, [handle, adoptHandle, applyChanges]);
 
   // One save at a time, whether it starts from the banner, the header menu or the wizard:
   // overlapping writes could finish out of order and leave an older revision in the file.
@@ -283,9 +352,9 @@ export function VaultProvider({ children }: { children: ReactNode }): ReactEleme
     const sessionId = sessionIdRef.current;
     if (pendingDownload === null || !sessionId) return;
     const res = await apiMarkSaved(sessionId, pendingDownload);
-    setChanges(res.changes);
+    applyChanges(res.changes);
     setPendingDownload(null);
-  }, [pendingDownload]);
+  }, [pendingDownload, applyChanges]);
 
   const downloadCopy = useCallback(async () => {
     // A copy never replaces the user's vault file, so it doesn't clear the unsaved state.
@@ -295,14 +364,27 @@ export function VaultProvider({ children }: { children: ReactNode }): ReactEleme
     downloadBlob(blob, name);
   }, []);
 
-  const close = useCallback(async () => {
-    // Only forget the session once the server has: otherwise it keeps the decrypted vault while
-    // this tab shows the welcome screen.
-    await apiClose();
-    resetSession();
-    setError(null);
-    setPhase('welcome');
-  }, [resetSession]);
+  const close = useCallback(
+    async (discardChanges = false) => {
+      const sessionId = sessionIdRef.current;
+      if (sessionId) {
+        // Only forget the session once the server has: otherwise it keeps the decrypted vault
+        // while this tab shows the welcome screen. The server also checks for unsaved changes
+        // itself, since another tab may have made some that this one hasn't heard of yet.
+        try {
+          await apiClose(sessionId, discardChanges);
+        } catch (e) {
+          if (e instanceof ApiError && e.message === 'session-changed') await syncWithServer();
+          if (e instanceof ApiError && e.message === 'unsaved-changes') await refreshChanges();
+          throw e;
+        }
+      }
+      resetSession();
+      setError(null);
+      setPhase('welcome');
+    },
+    [resetSession, syncWithServer, refreshChanges],
+  );
 
   return (
     <VaultContext.Provider

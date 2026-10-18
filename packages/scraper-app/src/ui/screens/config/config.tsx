@@ -6,7 +6,8 @@ import { AccountsTab } from './accounts-tab.js';
 import { SettingsTab } from './settings-tab.js';
 import { SourcesTab } from './sources-tab.js';
 
-type TabId = 'sources' | 'accounts' | 'settings';
+export type ConfigSection = 'sources' | 'accounts' | 'settings';
+type TabId = ConfigSection;
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'sources', label: 'Credentials' },
@@ -130,8 +131,11 @@ function ConnectionBar(): ReactElement {
   );
 }
 
-export function Config(): ReactElement {
-  const [active, setActive] = useState<TabId>('sources');
+/** `initialSection` lets links elsewhere in the app open a specific section. */
+export function Config({
+  initialSection = 'sources',
+}: { initialSection?: ConfigSection } = {}): ReactElement {
+  const [active, setActive] = useState<TabId>(initialSection);
   const changes = useVaultChanges();
 
   return (

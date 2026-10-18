@@ -248,8 +248,13 @@ a {
   cursor: pointer;
 }
 
-.back-link:hover {
+.back-link:hover:not(:disabled) {
   color: var(--text);
+}
+
+.back-link:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* ── Cards ───────────────────────────────────────────────────────────────── */

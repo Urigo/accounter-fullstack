@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { ChevronDown, Download, Lock, Save } from 'lucide-react';
-import { useVault } from '../contexts/vault-context.js';
+import { useVault, type SaveOutcome } from '../contexts/vault-context.js';
 import { ApiError } from '../lib/api.js';
 
 /** The vault file chip in the app header: name, saved state, and file actions. */
@@ -8,7 +8,7 @@ export function VaultMenu(): ReactElement {
   const vault = useVault();
   const [open, setOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
-  const [closeError, setCloseError] = useState<string | null>(null);
+  const [menuError, setMenuError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function VaultMenu(): ReactElement {
   useEffect(() => {
     if (!open) {
       setConfirmClose(false);
-      setCloseError(null);
+      setMenuError(null);
     }
   }, [open]);
 
@@ -41,22 +41,49 @@ export function VaultMenu(): ReactElement {
       ? 'Unsaved changes'
       : 'All changes saved';
 
-  function act(fn: () => Promise<unknown>) {
-    setOpen(false);
-    void fn().catch(() => undefined);
+  const fileName = vault.fileName ?? 'the vault file';
+  const SAVE_FAILURES: Partial<Record<SaveOutcome, string>> = {
+    denied: `The browser was not allowed to write to ${fileName}. Allow it, or download a copy.`,
+    'session-changed': 'This vault was closed or replaced in another tab. Reload the page.',
+  };
+
+  // Each action closes the menu when it works, and stays open with the reason when it doesn't.
+  async function save() {
+    setMenuError(null);
+    try {
+      const failure = SAVE_FAILURES[await vault.save()];
+      if (failure) setMenuError(failure);
+      else setOpen(false);
+    } catch {
+      setMenuError('Could not save the vault. Please try again.');
+    }
   }
 
-  // Stays open on failure: the session is still there, and the user should see why.
-  async function closeVault() {
-    setCloseError(null);
+  async function downloadCopy() {
+    setMenuError(null);
     try {
-      await vault.close();
+      await vault.downloadCopy();
+      setOpen(false);
+    } catch {
+      setMenuError('Could not download a copy. Please try again.');
+    }
+  }
+
+  async function closeVault(discardChanges: boolean) {
+    setMenuError(null);
+    try {
+      await vault.close(discardChanges);
     } catch (e) {
-      setConfirmClose(false);
-      setCloseError(
-        e instanceof ApiError && e.message === 'run-in-progress'
+      const code = e instanceof ApiError ? e.message : null;
+      // Changes this tab hadn't heard of (made in another tab): ask before discarding them.
+      setConfirmClose(code === 'unsaved-changes');
+      if (code === 'unsaved-changes') return;
+      setMenuError(
+        code === 'run-in-progress'
           ? 'A scrape is running. Close the vault after it finishes.'
-          : 'Could not close the vault. Please try again.',
+          : code === 'session-changed'
+            ? 'This vault was already closed in another tab.'
+            : 'Could not close the vault. Please try again.',
       );
     }
   }
@@ -87,7 +114,7 @@ export function VaultMenu(): ReactElement {
             role="menuitem"
             className="menu-item"
             disabled={vault.saving}
-            onClick={() => act(vault.save)}
+            onClick={() => void save()}
           >
             <Save size={16} />
             {vault.saveMode === 'download' ? 'Download updated vault' : 'Save'}
@@ -96,7 +123,7 @@ export function VaultMenu(): ReactElement {
             type="button"
             role="menuitem"
             className="menu-item"
-            onClick={() => act(vault.downloadCopy)}
+            onClick={() => void downloadCopy()}
           >
             <Download size={16} /> Download a copy
           </button>
@@ -114,7 +141,7 @@ export function VaultMenu(): ReactElement {
                   type="button"
                   className="btn btn-primary"
                   style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
-                  onClick={() => void closeVault()}
+                  onClick={() => void closeVault(true)}
                 >
                   Close vault
                 </button>
@@ -125,14 +152,14 @@ export function VaultMenu(): ReactElement {
               type="button"
               role="menuitem"
               className="menu-item menu-item-danger"
-              onClick={() => (dirty ? setConfirmClose(true) : void closeVault())}
+              onClick={() => (dirty ? setConfirmClose(true) : void closeVault(false))}
             >
               <Lock size={16} /> Close vault
             </button>
           )}
-          {closeError && (
+          {menuError && (
             <p role="alert" className="inline-error small" style={{ margin: '4px 10px 6px' }}>
-              {closeError}
+              {menuError}
             </p>
           )}
         </div>

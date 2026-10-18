@@ -20,6 +20,7 @@ import {
 type OpenBody = { blob: string; password: string; fileName?: string };
 type CreateBody = { password: string; serverUrl: string; apiKey: string };
 type ExportBody = { sessionId: string };
+type CloseBody = { sessionId: string; discardChanges?: boolean };
 type SavedBody = { sessionId: string; revision: number; fileName?: string };
 
 const STALE_SESSION = { error: 'session-changed' };
@@ -131,13 +132,32 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  app.post('/api/vault/close', async (_req, reply) => {
-    // A running scrape reads and updates the vault (account discovery). Closing under it would
-    // fail the run, or write its accounts into whichever vault is opened next.
-    if (isRunning()) return reply.status(409).send({ error: 'run-in-progress' });
-    closeVault();
-    return { ok: true };
-  });
+  app.post<{ Body: CloseBody }>(
+    '/api/vault/close',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['sessionId'],
+          properties: { sessionId: { type: 'string' }, discardChanges: { type: 'boolean' } },
+        },
+      },
+    },
+    async (req, reply) => {
+      if (isLocked()) return { ok: true };
+      // A tab left over from a vault closed elsewhere must not close the one open now.
+      if (!isCurrentSession(req.body.sessionId)) return reply.status(409).send(STALE_SESSION);
+      // A running scrape reads and updates the vault (account discovery). Closing under it would
+      // fail the run, or write its accounts into whichever vault is opened next.
+      if (isRunning()) return reply.status(409).send({ error: 'run-in-progress' });
+      // Checked here rather than trusted from the tab: another tab may have just made changes.
+      if (getChanges().dirty && !req.body.discardChanges) {
+        return reply.status(409).send({ error: 'unsaved-changes' });
+      }
+      closeVault();
+      return { ok: true };
+    },
+  );
 
   app.get('/api/vault/test-connection', async (_req, reply) => {
     if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });

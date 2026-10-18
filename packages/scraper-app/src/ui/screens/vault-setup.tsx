@@ -156,7 +156,13 @@ export function VaultSetup(): ReactElement {
   return (
     <main className="onboarding">
       <div className="onboarding-inner onboarding-narrow">
-        <button type="button" className="back-link" onClick={vault.backToWelcome}>
+        {/* Disabled while creating: the vault would still be created after leaving the wizard. */}
+        <button
+          type="button"
+          className="back-link"
+          onClick={vault.backToWelcome}
+          disabled={loading}
+        >
           <ArrowLeft size={16} /> Back to start
         </button>
 
@@ -278,7 +284,12 @@ export function VaultSetup(): ReactElement {
               </dl>
               {vault.error && <FormError message={vault.error} />}
               <div className="form-actions">
-                <button type="button" className="btn btn-ghost" onClick={() => setStep(2)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setStep(2)}
+                  disabled={loading}
+                >
                   Back
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={loading}>

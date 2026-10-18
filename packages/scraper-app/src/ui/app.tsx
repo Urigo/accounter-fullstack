@@ -4,7 +4,7 @@ import { UnsavedBanner } from './components/unsaved-banner.js';
 import { VaultMenu } from './components/vault-menu.js';
 import { useVault, VaultProvider } from './contexts/vault-context.js';
 import { useRunSocket } from './lib/ws.js';
-import { Config } from './screens/config/config.js';
+import { Config, type ConfigSection } from './screens/config/config.js';
 import { History } from './screens/history.js';
 import { Run } from './screens/run.js';
 import { VaultSetup } from './screens/vault-setup.js';
@@ -91,6 +91,12 @@ function useDiscoveredAccounts(runStatus: string): number {
 
 function AppUnlocked(): ReactElement {
   const [tab, setTab] = useState<AppTab>('run');
+  // Config is mounted only while its tab is shown, so this picks the section it opens on.
+  const [configSection, setConfigSection] = useState<ConfigSection>('sources');
+  function openConfig(section: ConfigSection) {
+    setConfigSection(section);
+    setTab('config');
+  }
   const socket = useRunSocket();
   const { changes } = useVault();
   const discoveredAccounts = useDiscoveredAccounts(socket.runStatus);
@@ -114,7 +120,7 @@ function AppUnlocked(): ReactElement {
             role="tab"
             className="tab"
             aria-selected={tab === id}
-            onClick={() => setTab(id)}
+            onClick={() => (id === 'config' ? openConfig('sources') : setTab(id))}
           >
             {label}
             {id === 'run' && socket.runStatus === 'running' && (
@@ -132,7 +138,7 @@ function AppUnlocked(): ReactElement {
         <ErrorBoundary label="Run">
           <Run
             {...socket}
-            onNavigateAccounts={() => setTab('config')}
+            onNavigateAccounts={() => openConfig('accounts')}
             isVisible={tab === 'run'}
             discoveredAccounts={discoveredAccounts}
           />
@@ -140,12 +146,12 @@ function AppUnlocked(): ReactElement {
       </div>
       {tab === 'history' && (
         <ErrorBoundary label="History">
-          <History onNavigateSettings={() => setTab('config')} />
+          <History onNavigateSettings={() => openConfig('settings')} />
         </ErrorBoundary>
       )}
       {tab === 'config' && (
         <ErrorBoundary label="Config">
-          <Config />
+          <Config initialSection={configSection} />
         </ErrorBoundary>
       )}
     </main>
