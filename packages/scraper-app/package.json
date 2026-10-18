@@ -46,7 +46,7 @@
     "@testing-library/user-event": "14.6.8",
     "@vitejs/plugin-react": "6.1.2",
     "msw": "3.0.3",
-    "tsup": "8.5.1",
+    "tsup": "9.0.0",
     "typescript": "6.0.3",
     "vite": "8.3.4",
     "vitest": "5.0.4"
