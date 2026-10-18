@@ -418,6 +418,19 @@ describe('DockedDocumentViewer stepper', () => {
     expect(useDocumentViewer.getState().placement).toBe('docked');
   });
 
+  it('stepping onto the last document keeps focus on Next, so Esc still closes', () => {
+    openWith(siblings[1], siblings);
+    const next = container.querySelector<HTMLButtonElement>('button[aria-label="Next document"]')!;
+    act(() => next.focus());
+    act(() => next.click());
+    expect(useDocumentViewer.getState().current?.id).toBe('s3');
+    expect(next.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(next);
+
+    key(next, { key: 'Escape' });
+    expect(useDocumentViewer.getState().current).toBeNull();
+  });
+
   it('steps with [ and ] from anywhere on the page', () => {
     openWith(siblings[0], siblings);
     key(document.body, { key: ']', code: 'BracketRight' });

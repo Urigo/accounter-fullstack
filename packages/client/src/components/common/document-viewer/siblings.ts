@@ -32,7 +32,7 @@ export function buildViewerSiblings<TData extends ViewerSiblingRow>(
 
 /**
  * Every document id the table shows, in order, for Save & next. Unfiltered, unlike
- * {@link buildViewerSiblings}: editing a document with nothing attached is legitimate.
+ * {@link buildViewerSiblings}: editing a document with no image and no file is legitimate.
  */
 export function getRowIds<TData extends { id: string }>(table: AnyTable<TData>): string[] {
   return visibleRows(table as AnyTable<TData & ViewerSiblingRow>).map(row => row.id);

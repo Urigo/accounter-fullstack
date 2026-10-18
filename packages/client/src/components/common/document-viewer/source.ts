@@ -58,15 +58,29 @@ function canParseUrl(value: string): boolean {
 }
 
 /**
+ * Whether a hostname looks complete: `localhost`, or a dot with something on both sides
+ * (`example.com`, `10.0.0.1`). `exam` and `exam.` are still being typed.
+ */
+function isCompleteHostname(hostname: string): boolean {
+  return hostname === 'localhost' || /^[^.]+(\.[^.]+)+$/.test(hostname);
+}
+
+/**
  * The image the edit sheet's viewer shows while the Image URL field is being edited: the typed
- * value once it parses as an absolute http(s) URL, the stored `image` otherwise (empty, half-typed,
- * or another scheme).
+ * value once it parses as an absolute http(s) URL with a complete hostname, the stored `image`
+ * otherwise (empty, half-typed, or another scheme).
+ *
+ * The hostname check is for privacy as much as tidiness: a preview fetches the URL, and a pause
+ * while typing `https://exam` would otherwise send a request to whatever host `exam` resolves to.
  */
 export function previewImageUrl(value: unknown, stored: string | null): string | null {
   const url = typeof value === 'string' || value instanceof URL ? toUrlString(value) : null;
   if (!url || !canParseUrl(url)) {
     return stored;
   }
-  const { protocol } = new URL(url);
-  return protocol === 'http:' || protocol === 'https:' ? url : stored;
+  const { protocol, hostname } = new URL(url);
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    return stored;
+  }
+  return isCompleteHostname(hostname) ? url : stored;
 }

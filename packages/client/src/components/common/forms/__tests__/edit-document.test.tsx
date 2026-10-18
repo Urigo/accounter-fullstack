@@ -338,6 +338,34 @@ describe('EditDocument Save & next, review fixes', () => {
     expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 
+  it('a throw after the save is caught and releases the buttons', async () => {
+    updateDocumentMock.mockResolvedValue({ __typename: 'UpdateDocumentSuccessfulResult' });
+    onChange.mockImplementationOnce(() => {
+      throw new Error('list refresh failed');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unhandled = vi.fn<(reason: unknown) => void>();
+    process.on('unhandledRejection', unhandled);
+    try {
+      renderSheet();
+      typeInto('Serial', '1043');
+      await act(async () => {
+        saveAndNext()?.click();
+      });
+      // Let any stray rejection reach the process before checking.
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(unhandled).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalledWith('Save & next failed', expect.any(Error));
+      expect(onNavigate).not.toHaveBeenCalled();
+      // Released: Save & next is usable again (the edit is still dirty).
+      expect(saveAndNext()?.disabled).toBe(false);
+    } finally {
+      process.off('unhandledRejection', unhandled);
+      consoleError.mockRestore();
+    }
+  });
+
   it('gives up the keyboard while the viewer pane is hidden', () => {
     renderSheet();
     expect(useDocumentViewer.getState().keyboardOwners).toHaveLength(1);
@@ -385,6 +413,7 @@ describe('EditDocument remembered pane and live preview', () => {
 
   it.each([
     ['half-typed', 'https://'],
+    ['host still being typed', 'https://exam'],
     ['not a URL', 'scan.jpg'],
     ['another scheme', 'javascript:alert(1)'],
     ['empty', ''],

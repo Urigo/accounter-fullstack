@@ -615,10 +615,23 @@ describe('DocumentViewer rotate, stepper and shortcuts', () => {
     expect(onStep.mock.calls).toEqual([[-1], [1]]);
 
     renderWith({ stepper: { index: 0, total: 12, onStep } });
-    expect(button('Previous document').disabled).toBe(true);
-    expect(button('Next document').disabled).toBe(false);
+    expect(button('Previous document').getAttribute('aria-disabled')).toBe('true');
+    expect(button('Next document').hasAttribute('aria-disabled')).toBe(false);
     renderWith({ stepper: { index: 11, total: 12, onStep } });
-    expect(button('Next document').disabled).toBe(true);
+    expect(button('Next document').getAttribute('aria-disabled')).toBe('true');
+    // `aria-disabled`, not `disabled`: it stays focusable, and a click does nothing.
+    expect(button('Next document').disabled).toBe(false);
+    onStep.mockClear();
+    click(button('Next document'));
+    expect(onStep).not.toHaveBeenCalled();
+  });
+
+  it('announces the position in a polite live region', () => {
+    renderWith({ stepper: { index: 2, total: 12, onStep: () => {} } });
+    const status = container.querySelector('[data-slot="document-viewer-stepper"] [role="status"]');
+    expect(status?.textContent).toBe('Document 3 of 12');
+    expect(status?.getAttribute('aria-live')).toBe('polite');
+    expect(status?.getAttribute('aria-atomic')).toBe('true');
   });
 
   it('has no stepper without one', () => {
