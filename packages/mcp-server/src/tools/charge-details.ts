@@ -572,9 +572,9 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
   const total =
     charges.length === 0
       ? 0
-      : !usingIds && !hasChargeIds
-        ? (filteredData?.allCharges.pageInfo.totalRecords ?? charges.length)
-        : charges.length;
+      : usingIds || hasChargeIds
+        ? charges.length
+        : (filteredData?.allCharges.pageInfo.totalRecords ?? charges.length);
 
   // Only a filtered request is paginated; a by-id request returns exactly the
   // ids asked for, so reporting a page over it would be meaningless.

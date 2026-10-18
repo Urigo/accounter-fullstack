@@ -345,10 +345,10 @@ export const generateLedgerRecordsForSalary: ResolverFn<
           }
 
           const batchedEntries = [...accountingLedgerEntries, ...miscExpensesLedgerEntries]
-            .filter(accountingLedgerEntry =>
-              accountingLedgerEntry.creditAccountID1
-                ? unbatchedBusinesses.includes(accountingLedgerEntry.creditAccountID1)
-                : false,
+            .filter(
+              accountingLedgerEntry =>
+                !!accountingLedgerEntry.creditAccountID1 &&
+                unbatchedBusinesses.includes(accountingLedgerEntry.creditAccountID1),
             )
             .map(accountingLedgerEntry => {
               const externalPayments = financialAccountLedgerEntries
