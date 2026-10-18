@@ -1,5 +1,5 @@
 import type { AccountRecord, Settings } from '../../server/vault.js';
-import type { RunRecord } from '../../shared/types.js';
+import type { RunRecord, VaultChanges, VaultStatusResponse } from '../../shared/types.js';
 
 export class ApiError extends Error {
   constructor(
@@ -11,37 +11,105 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Fires `vault-changed` after any request that may have edited the in-memory vault, so the
+ * unsaved-changes indicator can refresh without polling.
+ */
+export const vaultEvents = new EventTarget();
+
+// Every tab shares the one server-side vault session. Tell the others when this tab changes it,
+// so their unsaved-changes state doesn't go stale; they receive it as `vault-remote`.
+const tabs =
+  typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('accounter-vault');
+tabs?.addEventListener('message', () => vaultEvents.dispatchEvent(new Event('vault-remote')));
+// Node's BroadcastChannel (tests) would otherwise keep the process alive.
+(tabs as { unref?(): void } | null)?.unref?.();
+
+const SESSION_ENDPOINTS = new Set([
+  '/api/vault/open',
+  '/api/vault/create',
+  '/api/vault/export',
+  '/api/vault/saved',
+  '/api/vault/close',
+]);
+
+/** Any request that changes the vault session, including opening, saving and closing it. */
+function isVaultWrite(url: string, init?: RequestInit): boolean {
+  const method = (init?.method ?? 'GET').toUpperCase();
+  return method !== 'GET' && url.startsWith('/api/vault/');
+}
+
+/** Edits to the vault's contents; session requests update the context directly. */
+function mutatesVault(url: string, init?: RequestInit): boolean {
+  return isVaultWrite(url, init) && !SESSION_ENDPOINTS.has(url);
+}
+
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new ApiError(res.status, body.error ?? `HTTP ${res.status}`);
   }
-  return res.json() as Promise<T>;
+  const data = (await res.json()) as T;
+  if (mutatesVault(url, init)) vaultEvents.dispatchEvent(new Event('vault-changed'));
+  if (isVaultWrite(url, init)) tabs?.postMessage('vault-changed');
+  return data;
 }
 
-export function vaultStatus(): Promise<{ locked: boolean; hasFile: boolean }> {
+function postJson<T>(url: string, body?: unknown): Promise<T> {
+  return apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+}
+
+// ── Vault session ─────────────────────────────────────────────────────────────
+
+export function vaultStatus(): Promise<VaultStatusResponse> {
   return apiFetch('/api/vault/status');
 }
 
-export function vaultUnlock(password: string): Promise<{ ok: boolean }> {
-  return apiFetch('/api/vault/unlock', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
+export type VaultSessionResponse = { ok: true; sessionId: string };
+
+export function vaultOpen(
+  blob: string,
+  password: string,
+  fileName: string,
+): Promise<VaultSessionResponse> {
+  return postJson('/api/vault/open', { blob, password, fileName });
 }
 
 export function vaultCreate(
   password: string,
   serverUrl: string,
   apiKey: string,
-): Promise<{ ok: boolean }> {
-  return apiFetch('/api/vault/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password, serverUrl, apiKey }),
-  });
+): Promise<VaultSessionResponse> {
+  return postJson('/api/vault/create', { password, serverUrl, apiKey });
+}
+
+export function vaultChanges(): Promise<VaultChanges> {
+  return apiFetch('/api/vault/changes');
+}
+
+/** Answers 409 when `sessionId` is no longer the open session (closed or replaced elsewhere). */
+export function vaultExport(
+  sessionId: string,
+): Promise<{ blob: string; revision: number; fileName: string }> {
+  return postJson('/api/vault/export', { sessionId });
+}
+
+export function vaultMarkSaved(
+  sessionId: string,
+  revision: number,
+  fileName?: string,
+): Promise<{ ok: boolean; changes: VaultChanges }> {
+  return postJson('/api/vault/saved', { sessionId, revision, fileName });
+}
+
+/** Answers 409 `unsaved-changes` unless `discardChanges` is set and the vault has unsaved changes. */
+export function vaultClose(sessionId: string, discardChanges = false): Promise<{ ok: boolean }> {
+  return postJson('/api/vault/close', { sessionId, discardChanges });
 }
 
 // ── Sources ───────────────────────────────────────────────────────────────────
@@ -101,42 +169,6 @@ export function deleteAccount(id: string): Promise<VaultAccount[]> {
   return apiFetch(`/api/vault/accounts/${id}`, { method: 'DELETE' });
 }
 
-// ── Vault path ────────────────────────────────────────────────────────────────
-
-export function getVaultPath(): Promise<{ path: string }> {
-  return apiFetch('/api/vault/path');
-}
-
-export function getEnvVaultPath(): Promise<{ path: string }> {
-  return apiFetch('/api/vault/env-path');
-}
-
-export function vaultUpload(file: File, force = false): Promise<{ ok: boolean }> {
-  const url = force ? '/api/vault/upload?force=true' : '/api/vault/upload';
-  return apiFetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream' },
-    body: file,
-  });
-}
-
-export async function vaultDownload(suggestedName = '.vault'): Promise<void> {
-  const res = await fetch('/api/vault/download');
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(res.status, body.error ?? `HTTP ${res.status}`);
-  }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = suggestedName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 // ── Connection test ───────────────────────────────────────────────────────────
 
 export function testConnection(): Promise<{ ok: boolean; latencyMs?: number; error?: string }> {
@@ -145,6 +177,6 @@ export function testConnection(): Promise<{ ok: boolean; latencyMs?: number; err
 
 // ── History ───────────────────────────────────────────────────────────────────
 
-export function getHistory(): Promise<RunRecord[]> {
+export function getHistory(): Promise<{ records: RunRecord[]; persisted: boolean }> {
   return apiFetch('/api/history');
 }

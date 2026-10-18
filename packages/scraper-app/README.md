@@ -40,18 +40,40 @@ To run the production build:
 node packages/scraper-app/dist/index.js
 ```
 
-## First-run vault setup
+## Your vault file
 
-1. Open the app in your browser. You will see the **Vault Setup** wizard.
-2. **Step 1 — Choose password**: Enter and confirm a master password. This encrypts all stored
-   credentials.
-3. **Step 2 — Server connection**: Enter your Accounter server URL (e.g.
-   `http://localhost:4000/graphql`) and your scraper API key.
-4. **Step 3 — Confirm**: Review and click **Create vault**. The vault is saved locally as an
-   encrypted file.
-5. You will be taken to the main app. Navigate to **Config → Credentials** to add bank sources.
+All credentials and settings live in one encrypted **vault file** that you keep. The app never
+writes it to disk: when you open it, the server decrypts it in memory for the session only.
 
-On subsequent visits, you will be prompted to unlock the vault with your master password.
+When you open the app you choose one of two paths:
+
+- **Open my vault**: pick (or drag in) your vault file, then unlock it with its master password.
+- **Create a new vault**: choose a master password and enter your Accounter server URL and scraper
+  API key. Then save the new vault file somewhere safe. You can skip that step, but the vault exists
+  only in memory until you save it.
+
+### Saving changes
+
+Adding credentials, classifying accounts, changing settings, and running a scrape that discovers new
+accounts all change the vault in memory. When the session has changes that your file does not, a
+banner at the top of every screen counts them. Expand it to see what changed, and rows that changed
+get a `New` / `Edited` tag in Config.
+
+- **Save to <file>** overwrites the file you opened. This needs a Chromium-based browser (File
+  System Access API). In other browsers the button reads **Download updated vault**: save the
+  download over your old file, then click **I've replaced it** in the banner. The app can't tell
+  whether a download was kept, so the changes count as unsaved until you confirm.
+- **Download copy** saves a copy and leaves your original file untouched.
+
+The browser warns you if you try to leave the page with unsaved changes. Stopping the server
+discards any unsaved changes.
+
+One vault is open at a time, shared by every browser tab. Opening another vault means closing the
+current one first (**Close vault** in the header menu), and the vault can't be closed while a scrape
+is running. Tabs keep each other up to date, so a change or save made in one shows in the others.
+
+> Upgrading from an earlier version? Your existing `.vault` file (in the directory you ran the app
+> from) still works. Open it from the welcome screen. `VAULT_PATH` is no longer used.
 
 ## Adding bank sources
 
@@ -71,20 +93,18 @@ On subsequent visits, you will be prompted to unlock the vault with your master 
 
 ## Environment variables
 
-| Variable     | Default  | Description                             |
-| ------------ | -------- | --------------------------------------- |
-| `PORT`       | `4001`   | HTTP port the Fastify server listens on |
-| `VAULT_PATH` | `.vault` | Path to the encrypted vault file        |
+| Variable | Default | Description                             |
+| -------- | ------- | --------------------------------------- |
+| `PORT`   | `4001`  | HTTP port the Fastify server listens on |
 
-Example:
+## Run history
 
-```bash
-PORT=8080 VAULT_PATH=/data/my.vault node dist/index.js
-```
+The **History** tab lists the runs from the current session. To keep history between sessions, turn
+on **Save run history to a file** in **Config → Settings**. Runs are then appended to the history
+file path set there (default `./history.json`), along with the runs already made this session. The
+setting is off by default, and nothing is written while it is off.
 
 ## Vault backup
 
-The vault file (default: `.vault` in the working directory) contains all encrypted credentials.
-**Back up this file** — if lost, you will need to re-enter all credentials.
-
-The vault file path is also shown in **Config → Settings** with a one-click copy button.
+Your vault file is the only copy of your credentials. Keep a backup (**Download copy** in the vault
+menu at the top right). If it is lost, you will need to re-enter every credential.
