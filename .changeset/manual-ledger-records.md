@@ -45,3 +45,6 @@ the counterparty is the charge owner.
 Every financial entity a manual ledger record references (both operations of an insert, and an
 edit) must belong to the business the request writes to; an entity of another business in the read
 scope is reported as not found in this business.
+
+Both mutations are covered by database-backed integration tests: the stored rows, the rollback of
+every write when one fails, the lock rules, and a manual record matching the generated ledger.
