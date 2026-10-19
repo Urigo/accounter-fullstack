@@ -408,6 +408,44 @@ describe('matchExecutionsToTransactions — how the feeds report each kind of mo
     expect(matched.get('e-cancellation')?.id).toBe('t-out');
   });
 
+  it('pairs a buy cancelled as a sale with the refund, leaving the buy its own debit', () => {
+    // The bank books this cancellation as the opposite action with a positive value, dated like
+    // the buy — the refund is credited back to the buy's day and posted weeks later.
+    const buy = execution({
+      id: 'e-buy',
+      value_date: '2024-03-12',
+      net_value_trade_currency: '-20000',
+    });
+    const cancellation = execution({
+      id: 'e-a-cancellation',
+      trade_type: SELL,
+      value_date: '2024-03-12',
+      net_value_trade_currency: '20000',
+      is_cancel_transaction: CANCELLED,
+    });
+
+    const matched = match(
+      [
+        transaction({
+          id: 't-refund',
+          amount: '20000.00',
+          event_date: '2024-04-01',
+          source_description: 'ניע"ז קניה 0005129523',
+        }),
+        transaction({
+          id: 't-debit',
+          amount: '-20000.00',
+          event_date: '2024-03-13',
+          source_description: 'ניע"ז קניה 0005129523',
+        }),
+      ],
+      [buy, cancellation],
+    );
+
+    expect(matched.get('e-buy')?.id).toBe('t-debit');
+    expect(matched.get('e-a-cancellation')?.id).toBe('t-refund');
+  });
+
   it('pairs recurring payouts of one security each with their own month', () => {
     const payout = (id: string, tradeDate: TimelessDateString, valueDate: TimelessDateString) =>
       execution({

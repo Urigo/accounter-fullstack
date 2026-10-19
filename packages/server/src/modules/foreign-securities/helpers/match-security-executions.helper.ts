@@ -22,7 +22,8 @@ import { extractTransactionSecurityKeys } from './security-key.helper.js';
  * 2. the same security — the key the transaction names (see `extractTransactionSecurityKeys`),
  *    when it names one;
  * 3. the same amount — the execution's net value *in the transaction's currency*;
- * 4. the same direction — the one the trade type implies, reversed for a cancellation.
+ * 4. the same direction — the one the trade type implies, or for a cancellation the sign of the
+ *    value it reports.
  *
  * Amounts are exact. They come out of Postgres `numeric` as decimal strings and both sides report
  * the same figure, so there is nothing for a tolerance to absorb — a near-miss is a different
@@ -208,19 +209,28 @@ export function executionAmountInCurrency(
   return reported.find(isNonZero) ?? reported[0] ?? null;
 }
 
-/** The way cash moves for an execution, or null when the trade type implies none. */
-function cashDirection(execution: MatchableExecution): -1 | 1 | null {
+/**
+ * The way cash moves for an execution, or null when nothing constrains it.
+ *
+ * An ordinary execution moves cash the way its trade type implies. A cancellation does not: the
+ * bank books it either under the original's trade type with every value negated (a cancelled
+ * dividend, money going back out) or as the opposite action with positive values (a cancelled
+ * buy booked as a sale, money coming back in). What both spellings agree on is the sign of the
+ * value they report, so a cancellation's direction is read from that instead.
+ *
+ * The type stays the rule for everything else: the commission of a dividend is reported in the
+ * same execution's NIS column, with the sign of the fee, and reading signs there would let the fee
+ * pass for the dividend.
+ */
+function cashDirection(execution: MatchableExecution, reported: DecimalValue): -1 | 1 | null {
+  if (isCancelledExecution(execution)) {
+    return reported.magnitude === '0' ? null : reported.negative ? -1 : 1;
+  }
   // A trade type the translation does not know leaves the direction unconstrained rather than
   // failing the match: the account, key, amount and date still have to agree, and an execution
   // that gets this far reaches the resolver, which is where unknown vocabulary is meant to be loud.
   const tradeType = tryToSecurityTradeType(execution.trade_type);
-  const direction = tradeType ? CASH_DIRECTION[tradeType] : null;
-  if (direction == null) {
-    return null;
-  }
-  // A cancellation keeps the original's trade type but reverses its cash: a cancelled dividend
-  // is money going back out.
-  return isCancelledExecution(execution) ? (-direction as -1 | 1) : direction;
+  return tradeType ? CASH_DIRECTION[tradeType] : null;
 }
 
 /** How a transaction's dates fit an execution, best first. */
@@ -306,7 +316,7 @@ function matchesIdentity(
     return false;
   }
 
-  const direction = cashDirection(execution);
+  const direction = cashDirection(execution, executionValue);
   if (direction == null || transactionValue.magnitude === '0') {
     return true;
   }

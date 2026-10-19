@@ -15,8 +15,9 @@ Also:
   description, and are now recognized by it.
 - An amount column the feed leaves at `0` gives way to the next column in the same currency. This
   fixes shekel trades, whose cash is reported in the NIS column, and their FIFO purchase cost.
-- A cancelled execution is expected to move cash the other way. Before, it could take the original
-  payment's transaction.
+- A cancelled execution's direction is read from the sign of the value it reports. The bank books a
+  cancellation either under the original trade type with values negated, or as the opposite action
+  with positive values. Before, a cancellation could take the original payment's transaction.
 - Fee transactions no longer compete with main transactions for an execution.
 - The foreign-securities ledger reports a dividend or interest commission that has no matching fee
   transaction in the charge, and a cancelled income payment it cannot book as a reversal yet.
