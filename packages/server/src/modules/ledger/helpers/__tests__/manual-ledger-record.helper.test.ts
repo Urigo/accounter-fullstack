@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { LedgerRecordInput } from '../../../../__generated__/types.js';
+import { TEST_TIMEZONES, useTimezone } from '../../../../__tests__/helpers/timezones.js';
 import { Currency } from '../../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../../shared/helpers/misc.js';
 import {
+  deriveMiscExpenseFromLedgerInput,
   LEDGER_BALANCE_TOLERANCE,
   ledgerRecordInputToParams,
   validateManualLedgerRecord,
@@ -407,5 +410,77 @@ describe('validateManualLedgerRecord', () => {
       'Debit and credit totals must be equal (debit 5, credit 100)',
       'Invoice date must be after the ledger lock date (2025-02-28)',
     ]);
+  });
+});
+
+describe('deriveMiscExpenseFromLedgerInput', () => {
+  const VAT_INPUT: LedgerRecordInput = {
+    ...MINIMAL_INPUT,
+    debitLocalAmount1: 100,
+    creditLocalAmount1: 117,
+    debitEntity2: 'vat-entity',
+    debitLocalAmount2: 17,
+    creditEntity2: 'credit-entity-2',
+    creditLocalAmount2: 5,
+    description: 'Office supplies',
+  };
+
+  it('maps a local-currency record: creditor/debtor from slot 1, the credit local amount', () => {
+    const derived = deriveMiscExpenseFromLedgerInput(VAT_INPUT, { localCurrency: Currency.Ils });
+
+    expect(derived).toEqual({
+      creditorId: 'credit-entity-1',
+      debtorId: 'debit-entity-1',
+      amount: 117,
+      currency: Currency.Ils,
+      description: 'Office supplies',
+      invoiceDate: '2025-03-12',
+      valueDate: expect.any(Date),
+    });
+  });
+
+  it('maps a foreign-currency record to the credit slot-1 foreign amount', () => {
+    const derived = deriveMiscExpenseFromLedgerInput(
+      {
+        ...MINIMAL_INPUT,
+        currency: Currency.Usd,
+        debitForeignAmount1: 30,
+        creditLocalAmount1: 100,
+        creditForeignAmount1: 27,
+      },
+      { localCurrency: Currency.Ils },
+    );
+
+    expect(derived).toMatchObject({ amount: 27, currency: Currency.Usd });
+  });
+
+  it('ignores slot 2 and leaves a missing description null', () => {
+    const derived = deriveMiscExpenseFromLedgerInput(
+      { ...VAT_INPUT, description: undefined },
+      { localCurrency: Currency.Ils },
+    );
+
+    expect(derived.creditorId).toBe('credit-entity-1');
+    expect(derived.debtorId).toBe('debit-entity-1');
+    expect(derived.amount).toBe(117);
+    expect(derived.description).toBeNull();
+    expect(Object.values(derived)).not.toContain('vat-entity');
+    expect(Object.values(derived)).not.toContain('credit-entity-2');
+  });
+
+  describe.each(TEST_TIMEZONES)('value date (TZ=%s)', timeZone => {
+    useTimezone(timeZone);
+
+    it.each(['2025-03-14', '2025-01-01', '2024-12-31', '2024-02-29'] as const)(
+      'round-trips %s by day',
+      valueDate => {
+        const derived = deriveMiscExpenseFromLedgerInput(
+          { ...MINIMAL_INPUT, valueDate },
+          { localCurrency: Currency.Ils },
+        );
+
+        expect(dateToTimelessDateString(derived.valueDate)).toBe(valueDate);
+      },
+    );
   });
 });
