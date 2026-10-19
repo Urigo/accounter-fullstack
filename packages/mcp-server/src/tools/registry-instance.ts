@@ -1,9 +1,12 @@
+import { createBusinessTool } from './businesses-write.js';
 import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
+import { mergeChargesTool, updateChargeTool } from './charges-write.js';
 import { searchChargesTool } from './charges.js';
 import { listClientsTool } from './clients.js';
 import { getContractsTool } from './contracts.js';
 import { getDocumentsTool } from './document-details.js';
+import { deleteDocumentTool, updateDocumentTool } from './documents-edit-write.js';
 import { uploadDocumentsTool } from './documents-write.js';
 import { getLedgerRecordsTool } from './ledger.js';
 import {
@@ -19,6 +22,7 @@ import { getSecurityExecutionsTool, listSecurityHoldingsTool } from './securitie
 import { updateChargesTagsTool } from './tags-write.js';
 import { explainTerminologyTool } from './terminology.js';
 import { getTransactionsTool } from './transaction-details.js';
+import { updateTransactionsTool } from './transactions-write.js';
 
 /**
  * The process-wide registry of curated production tools. Tools register here as
@@ -77,3 +81,14 @@ toolRegistry.register(vatReportTool);
 // `MCP_ENABLE_WRITE_TOOLS=1`, so on a default deployment the list ends above.
 toolRegistry.register(updateChargesTagsTool);
 toolRegistry.register(uploadDocumentsTool);
+// The review/matching writes, in the order a review uses them: fix the charge,
+// fold duplicates into it, set counterparties on its rows, move or correct its
+// documents, delete what should never have been one — and, when a counterparty
+// is new, add it to the directory. Each is a thin wrapper over one upstream
+// mutation; none of them is retried, and all are hidden behind the same flag.
+toolRegistry.register(updateChargeTool);
+toolRegistry.register(mergeChargesTool);
+toolRegistry.register(updateTransactionsTool);
+toolRegistry.register(updateDocumentTool);
+toolRegistry.register(deleteDocumentTool);
+toolRegistry.register(createBusinessTool);
