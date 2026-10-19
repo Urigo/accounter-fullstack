@@ -113,6 +113,12 @@ describe('tool descriptions document their own result', () => {
   it.each([
     ['accounter_update_charges_tags', 'charges'],
     ['accounter_upload_documents', 'results'],
+    ['accounter_update_charge', 'charges'],
+    ['accounter_merge_charges', 'charges'],
+    ['accounter_update_transactions', 'transactions'],
+    ['accounter_update_document', 'documents'],
+    ['accounter_delete_document', 'documents'],
+    ['accounter_create_business', 'businesses'],
   ])('%s documents its write result (`%s`)', (name, itemsKey) => {
     const description = describedBy(name);
 
