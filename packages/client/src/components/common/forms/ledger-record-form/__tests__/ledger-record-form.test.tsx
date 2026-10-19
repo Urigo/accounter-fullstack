@@ -103,6 +103,17 @@ describe('LedgerRecordForm', () => {
     expect(target?.textContent).toContain(`${label} entity`);
   });
 
+  it('associates the Currency label with the currency select trigger', async () => {
+    await render();
+    const labelElement = Array.from(container.querySelectorAll('label')).find(
+      element => element.textContent === 'Currency',
+    );
+    const target = labelElement?.htmlFor ? document.getElementById(labelElement.htmlFor) : null;
+    expect(target?.tagName).toBe('BUTTON');
+    expect(target?.getAttribute('role')).toBe('combobox');
+    expect(target?.textContent).toContain('ILS');
+  });
+
   it('shows validation messages and does not submit an empty form', async () => {
     await render();
     await submit();
