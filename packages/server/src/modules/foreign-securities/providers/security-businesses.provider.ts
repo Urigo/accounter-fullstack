@@ -17,6 +17,7 @@ import type {
   IGetSecurityIdentifiersByBusinessIdsQuery,
   IInsertSecurityBusinessQuery,
   IInsertSecurityIdentifierQuery,
+  IUpdateSecurityBusinessesIsForeignQuery,
   SecurityBusinessDescriptors,
   SecurityBusinessRow,
   SecurityIdentifierRow,
@@ -76,6 +77,12 @@ const insertSecurityBusiness = sql<IInsertSecurityBusinessQuery>`
     $id!, $ownerId!, $isin!, $symbol, $engName, $hebName, $exchange,
     $currencyCode, $itemType, $stockType, $isEtf, $isForeign, $issuerCountryCode
   )
+  RETURNING *;`;
+
+const updateSecurityBusinessesIsForeign = sql<IUpdateSecurityBusinessesIsForeignQuery>`
+  UPDATE accounter_schema.businesses_securities
+  SET is_foreign = $isForeign!
+  WHERE id = ANY($ids!)
   RETURNING *;`;
 
 const insertSecurityIdentifier = sql<IInsertSecurityIdentifierQuery>`
@@ -267,6 +274,11 @@ export class SecurityBusinessesProvider {
    * The same for a batch, in one lookup: an ingest introduces a whole portfolio at once, and
    * asking per ISIN whether it exists costs a round trip for every security every scrape.
    * Only the ISINs with no business yet are created.
+   *
+   * Existing businesses get their `is_foreign` brought in line with the payload, so a flag
+   * recorded wrongly once is corrected by the next scrape rather than kept forever. A payload
+   * that cannot tell (null) leaves the stored value alone. The other descriptors stay as they
+   * were first recorded.
    */
   public async ensureSecurityBusinesses(
     descriptorsList: readonly SecurityBusinessDescriptors[],
@@ -278,9 +290,35 @@ export class SecurityBusinessesProvider {
 
     const securityBusinesses = await this.getSecurityBusinessesByIsins([...byIsin.keys()]);
 
+    const staleIdsByIsForeign = new Map<boolean, string[]>();
     for (const [isin, descriptors] of byIsin) {
-      if (!securityBusinesses.has(isin)) {
+      const existing = securityBusinesses.get(isin);
+      if (!existing) {
         securityBusinesses.set(isin, await this.createSecurityBusiness(descriptors));
+        continue;
+      }
+      const isForeign = descriptors.isForeign;
+      if (isForeign != null && existing.is_foreign !== isForeign) {
+        const ids = staleIdsByIsForeign.get(isForeign);
+        if (ids) {
+          ids.push(existing.id);
+        } else {
+          staleIdsByIsForeign.set(isForeign, [existing.id]);
+        }
+      }
+    }
+
+    if (staleIdsByIsForeign.size > 0) {
+      // At most two statements however many rows changed: one per flag value.
+      const updated = await Promise.all(
+        [...staleIdsByIsForeign].map(([isForeign, ids]) =>
+          updateSecurityBusinessesIsForeign.run({ isForeign, ids }, this.db),
+        ),
+      );
+      this.clearCache();
+      for (const row of updated.flat()) {
+        securityBusinesses.set(row.isin, row);
+        this.getSecurityBusinessByIdLoader.prime(row.id, row);
       }
     }
 

@@ -21,6 +21,7 @@ export type {
   IInsertSecurityBusinessQuery,
   IInsertSecurityIdentifierQuery,
   IGetAllSecurityBusinessesQuery,
+  IUpdateSecurityBusinessesIsForeignQuery,
 } from './__generated__/security-businesses.types.js';
 
 /** How a source names a security — accounter_schema.security_identifier_type. */

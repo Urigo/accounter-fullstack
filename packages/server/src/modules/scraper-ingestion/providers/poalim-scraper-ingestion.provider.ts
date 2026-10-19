@@ -16,6 +16,7 @@ import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import { isForeignSecurity } from '../../foreign-securities/helpers/security-locality.helper.js';
 import { SecurityBusinessesProvider } from '../../foreign-securities/providers/security-businesses.provider.js';
 import type { SecurityBusinessDescriptors } from '../../foreign-securities/types.js';
 import {
@@ -1395,7 +1396,10 @@ export class PoalimScraperIngestionProvider {
             exchange: text(transaction.issuerExchange),
             currencyCode: text(transaction.tradeCurrency),
             issuerCountryCode: text(transaction.issuerCountryCode),
-            isForeign: true,
+            isForeign: isForeignSecurity({
+              issuerCountryCode: text(transaction.issuerCountryCode),
+              isin,
+            }),
           },
           poalimKeys: new Set(),
         };
