@@ -5,7 +5,7 @@ import {
   executionAmountInCurrency,
   type MatchableExecution,
 } from './match-security-executions.helper.js';
-import { tryToSecurityTradeType } from './security-execution-enums.helper.js';
+import { isCancelledExecution, tryToSecurityTradeType } from './security-execution-enums.helper.js';
 
 /**
  * The purchase cost of the units an execution takes out of a position, first in, first out —
@@ -56,8 +56,6 @@ export type FifoCostBasis = {
    */
   openingPositionUnknown: boolean;
 };
-
-const CANCELLED = 'כן';
 
 /** Fractional units (funds, ETFs) leave float residue; anything below this counts as nothing */
 const UNITS_EPSILON = 1e-6;
@@ -111,7 +109,7 @@ export function calculateFifoCostBasis(
   redemption: CostBasisExecution,
   currency: Currency,
 ): FifoCostBasis {
-  const live = history.filter(execution => execution.is_cancel_transaction !== CANCELLED);
+  const live = history.filter(execution => !isCancelledExecution(execution));
 
   const lots: Lot[] = [];
   let openingPositionUnknown = false;
@@ -150,7 +148,7 @@ export function calculateFifoCostBasis(
   }
 
   // a cancelled execution takes nothing out
-  const redeemedUnits = redemption.is_cancel_transaction === CANCELLED ? 0 : toUnits(redemption.nv);
+  const redeemedUnits = isCancelledExecution(redemption) ? 0 : toUnits(redemption.nv);
   let costForeign = 0;
   let coveredUnits = 0;
   let unknownCostUnits = 0;

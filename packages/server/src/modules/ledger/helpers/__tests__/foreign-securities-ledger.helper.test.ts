@@ -5,8 +5,12 @@ import {
   buildIncomeEntry,
   buildRedemptionEntry,
   classifySecurityExecution,
+  getExpectedCommissionCharge,
   getSecurityLocality,
   getWithheldTax,
+  validateSecurityCommissions,
+  type CommissionExecution,
+  type CommissionFeeTransaction,
   type WithheldTaxExecution,
 } from '../foreign-securities-ledger.helper.js';
 import { LedgerError } from '../utils.helper.js';
@@ -405,5 +409,124 @@ describe('buildRedemptionEntry', () => {
     expect(entry.creditAmount2).toBeUndefined();
     expect(entry.localCurrencyCreditAmount1).toBeCloseTo(800, 6);
     expect(entry.localCurrencyCreditAmount2).toBeCloseTo(200, 6);
+  });
+});
+
+function commissionExecution(overrides: Partial<CommissionExecution> = {}): CommissionExecution {
+  return {
+    security: '7654321',
+    trade_currency: USD_LABEL,
+    commissions_currency: ILS_LABEL,
+    trade_commission_value_nis: '15.30',
+    trade_commission_value_trade_currency: '4.25',
+    ...overrides,
+  };
+}
+
+function commissionFee(
+  overrides: Partial<CommissionFeeTransaction> = {},
+): CommissionFeeTransaction {
+  return {
+    amount: '-15.30',
+    currency: Currency.Ils,
+    source_description: "ניעז עמ' תשלום FSEC PYMNT FEE",
+    source_reference: '7654321',
+    ...overrides,
+  };
+}
+
+describe('getExpectedCommissionCharge', () => {
+  it('expects a shekel commission to be charged as money going out', () => {
+    expect(getExpectedCommissionCharge(commissionExecution())).toEqual({
+      currency: Currency.Ils,
+      amount: -15.3,
+    });
+  });
+
+  it('expects a cancelled execution’s negated commission to come back as a refund', () => {
+    expect(
+      getExpectedCommissionCharge(commissionExecution({ trade_commission_value_nis: '-15.30' })),
+    ).toEqual({ currency: Currency.Ils, amount: 15.3 });
+  });
+
+  it('reads a commission charged in the trade currency from the trade-currency column', () => {
+    expect(
+      getExpectedCommissionCharge(commissionExecution({ commissions_currency: USD_LABEL })),
+    ).toEqual({ currency: Currency.Usd, amount: -4.25 });
+  });
+
+  it('expects nothing when there is no commission', () => {
+    expect(
+      getExpectedCommissionCharge(commissionExecution({ trade_commission_value_nis: '0' })),
+    ).toBeNull();
+  });
+
+  it('expects nothing when the commission currency is not reported', () => {
+    expect(getExpectedCommissionCharge(commissionExecution({ commissions_currency: null }))).toBeNull();
+  });
+});
+
+describe('validateSecurityCommissions', () => {
+  it('accepts a commission charged by a fee of the same amount', () => {
+    expect(validateSecurityCommissions([commissionExecution()], [commissionFee()])).toEqual([]);
+  });
+
+  it('reports a commission with no fee transaction', () => {
+    const execution = commissionExecution();
+
+    expect(validateSecurityCommissions([execution], [])).toEqual([
+      { executions: [execution], currency: Currency.Ils, expected: -15.3, charged: 0 },
+    ]);
+  });
+
+  it('reports a fee that differs from the reported commission', () => {
+    const execution = commissionExecution();
+
+    expect(
+      validateSecurityCommissions([execution], [commissionFee({ amount: '-12.00' })]),
+    ).toEqual([{ executions: [execution], currency: Currency.Ils, expected: -15.3, charged: -12 }]);
+  });
+
+  it('expects the refund of a cancelled execution’s commission', () => {
+    expect(
+      validateSecurityCommissions(
+        [commissionExecution({ trade_commission_value_nis: '-15.30' })],
+        [commissionFee({ amount: '15.30' })],
+      ),
+    ).toEqual([]);
+  });
+
+  it('expects no fee when there is no commission', () => {
+    expect(
+      validateSecurityCommissions([commissionExecution({ trade_commission_value_nis: '0' })], []),
+    ).toEqual([]);
+  });
+
+  it('does not count a fee of another security', () => {
+    expect(
+      validateSecurityCommissions(
+        [commissionExecution()],
+        [commissionFee({ source_reference: '1111111' })],
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('counts each execution’s own fee when several of one security share a charge', () => {
+    // A bond's last coupon and its redemption, each charged a fee of its own.
+    expect(
+      validateSecurityCommissions(
+        [commissionExecution(), commissionExecution({ trade_commission_value_nis: '40.00' })],
+        [commissionFee(), commissionFee({ amount: '-40.00' })],
+      ),
+    ).toEqual([]);
+  });
+
+  it('adds up the commissions of several executions of one security', () => {
+    expect(
+      validateSecurityCommissions(
+        [commissionExecution(), commissionExecution({ trade_commission_value_nis: '4.70' })],
+        [commissionFee({ amount: '-20.00' })],
+      ),
+    ).toEqual([]);
   });
 });

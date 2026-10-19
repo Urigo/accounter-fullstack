@@ -162,8 +162,9 @@ read scope entirely. INSERT needs none, having no `USING` at all.
 ### Charge links and pagination do not compose (`accounter_get_security_executions`)
 
 `matchExecutionsToTransactions` pairs a securities execution with the bank row behind it. There is
-no link in the source — the scrape has no per-execution id — so the pairing is derived, exact, and
-**greedy and one-to-one over the sets it is handed**, consuming executions oldest-first.
+no link in the source — the scrape has no per-execution id — so the pairing is derived, and **greedy
+and one-to-one over the sets it is handed**, taking the best-fitting pairs first (exact dates before
+nearby ones, then oldest executions first).
 
 Hand it a page's slice and an execution on page 2 can claim the cash movement that belongs to one on
 page 1, so the _same_ execution reports a _different_ charge at a different page size. A paginated

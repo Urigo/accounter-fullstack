@@ -4,6 +4,7 @@ import { formatCurrency } from '../../../shared/helpers/index.js';
 import type { StrictLedgerProto } from '../../../shared/types/index.js';
 import { executionAmountInCurrency } from '../../foreign-securities/helpers/match-security-executions.helper.js';
 import { tryToSecurityTradeType } from '../../foreign-securities/helpers/security-execution-enums.helper.js';
+import { extractTransactionSecurityKeys } from '../../foreign-securities/helpers/security-key.helper.js';
 import type { SecurityExecutionRow } from '../../foreign-securities/types.js';
 import { LedgerError } from './utils.helper.js';
 
@@ -284,4 +285,117 @@ export function buildRedemptionEntry(
   }
 
   return withSecondaryLines(base, base.creditAccountID1, { ...withholding, ...gainOrLoss });
+}
+
+export type CommissionExecution = Pick<
+  SecurityExecutionRow,
+  | 'security'
+  | 'trade_currency'
+  | 'commissions_currency'
+  | 'trade_commission_value_nis'
+  | 'trade_commission_value_trade_currency'
+>;
+
+/**
+ * The fee transaction the bank should have posted for an execution's commission, signed as the
+ * cash moves: an ordinary commission is money out, and a cancelled execution's negated commission
+ * is a refund coming back in.
+ *
+ * The commission is not part of the execution's net value — the bank charges it separately, as a
+ * fee row of its own in the commission currency (shekels, for the executions seen so far). Null
+ * when there is no commission, or it is in a currency the execution does not report a value for.
+ */
+export function getExpectedCommissionCharge(
+  execution: CommissionExecution,
+): { currency: Currency; amount: number } | null {
+  const currency = currencyOfLabel(execution.commissions_currency);
+  if (!currency) {
+    return null;
+  }
+
+  let commission: number;
+  if (currency === Currency.Ils) {
+    commission = toAmount(execution.trade_commission_value_nis);
+  } else if (currencyOfLabel(execution.trade_currency) === currency) {
+    commission = toAmount(execution.trade_commission_value_trade_currency);
+  } else {
+    return null;
+  }
+
+  return Math.abs(commission) < MIN_AMOUNT ? null : { currency, amount: -commission };
+}
+
+export type CommissionFeeTransaction = {
+  amount: string;
+  currency: string;
+  source_description: string | null;
+  source_reference: string | null;
+};
+
+export type CommissionMismatch<TExecution extends CommissionExecution> = {
+  /** The executions of the security whose commissions were added up */
+  executions: TExecution[];
+  currency: Currency;
+  /** What the bank reported, signed as the fee should move */
+  expected: number;
+  /** What the charge's fee transactions for the security add up to */
+  charged: number;
+};
+
+/**
+ * Whether each security's reported commission was actually charged: the executions' expected fee
+ * charges against the charge's fee transactions, per security and currency.
+ *
+ * A fee transaction names its security in its reference (see `extractTransactionSecurityKeys`);
+ * one that names none cannot be attributed and is left out. Fees of securities with no expected
+ * commission are not this check's business either — they are booked as fees regardless.
+ *
+ * Every fee of a security is added up, so every execution of that security in the charge has to
+ * be passed in — a bond's coupon and its redemption each bring a fee of their own. Which mismatches
+ * are worth reporting is the caller's call.
+ */
+export function validateSecurityCommissions<TExecution extends CommissionExecution>(
+  executions: readonly TExecution[],
+  feeTransactions: readonly CommissionFeeTransaction[],
+): CommissionMismatch<TExecution>[] {
+  const groupKey = (security: string, currency: Currency) => `${security}:${currency}`;
+
+  const expectedByGroup = new Map<string, CommissionMismatch<TExecution>>();
+  for (const execution of executions) {
+    const charge = getExpectedCommissionCharge(execution);
+    if (!charge) {
+      continue;
+    }
+    const key = groupKey(execution.security, charge.currency);
+    const group = expectedByGroup.get(key);
+    if (group) {
+      group.executions.push(execution);
+      group.expected += charge.amount;
+    } else {
+      expectedByGroup.set(key, {
+        executions: [execution],
+        currency: charge.currency,
+        expected: charge.amount,
+        charged: 0,
+      });
+    }
+  }
+
+  for (const fee of feeTransactions) {
+    const currency = formatCurrency(fee.currency, true);
+    if (!currency) {
+      continue;
+    }
+    for (const security of extractTransactionSecurityKeys(fee)) {
+      const group = expectedByGroup.get(groupKey(security, currency));
+      if (group) {
+        group.charged += toAmount(fee.amount);
+        break;
+      }
+    }
+  }
+
+  return [...expectedByGroup.values()].filter(
+    group => Math.abs(group.expected - group.charged) > TAX_TOLERANCE,
+  );
 }

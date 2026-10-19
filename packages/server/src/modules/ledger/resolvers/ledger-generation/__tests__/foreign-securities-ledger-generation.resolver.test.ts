@@ -650,6 +650,132 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       ]);
       expect(errors).toEqual([expect.stringContaining('does not match gross minus net')]);
     });
+
+    it('keeps the base entry of a cancelled dividend and says its reversal is not booked', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled dividend of MOCK (US0000000001)'),
+      ]);
+    });
+
+    describe('commission', () => {
+      /** The commission fee, which the bank keys to the security in its reference */
+      const commissionFee = (amount: string, id = 'transaction-commission') => ({
+        ...buildTransaction({
+          id,
+          amount,
+          currency: Currency.Ils,
+          businessId: BANK_BUSINESS_ID,
+          isFee: true,
+          description: "ניעז עמ' תשלום FSEC PYMNT FEE",
+        }),
+        source_reference: '7654321',
+      });
+      const dividendWithCommission = () =>
+        dividendExecution({
+          commissions_currency: ILS_LABEL,
+          trade_commission_value_nis: '25',
+        });
+
+      it('accepts a commission the charge has a matching fee for', async () => {
+        const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+        const { errors } = await generate({
+          transactions: [transaction, commissionFee('-25')],
+          executions: { [transaction.id]: dividendWithCommission() },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('reports a commission the charge has no fee for', async () => {
+        const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: dividendWithCommission() },
+        });
+
+        expect(records.map(summarize)).toEqual([
+          { ...baseCashInRecord(1000), credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME },
+        ]);
+        expect(errors).toEqual([
+          'A commission of 25.00 ILS was reported for MOCK (US0000000001), but the charge has no fee transaction for it',
+        ]);
+      });
+
+      it('counts the fee of a non-income execution of the same security', async () => {
+        const dividend = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+        const sale = buildTransaction({ id: 'transaction-sale', amount: '2000' });
+
+        const { errors } = await generate({
+          transactions: [dividend, sale, commissionFee('-25'), commissionFee('-14', 'transaction-sale-commission')],
+          executions: {
+            [dividend.id]: dividendWithCommission(),
+            [sale.id]: buildExecution({
+              id: 'execution-sale',
+              trade_type: TRADE_TYPES.sell,
+              transaction_type: TRADE_TYPES.sell,
+              net_value_trade_currency: '2000',
+              net_value_settlement_currency: '2000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '14',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('does not report a commission mismatch of trades alone', async () => {
+        const sale = buildTransaction({ id: 'transaction-sale', amount: '2000' });
+
+        const { errors } = await generate({
+          transactions: [sale],
+          executions: {
+            [sale.id]: buildExecution({
+              id: 'execution-sale',
+              trade_type: TRADE_TYPES.sell,
+              transaction_type: TRADE_TYPES.sell,
+              net_value_trade_currency: '2000',
+              net_value_settlement_currency: '2000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '14',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('reports a fee that differs from the reported commission, and still books it', async () => {
+        const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+        const { records, errors } = await generate({
+          transactions: [transaction, commissionFee('-20')],
+          executions: { [transaction.id]: dividendWithCommission() },
+        });
+
+        expect(recordOf(records, FEES_TAX_CATEGORY_ID)).toBeDefined();
+        expect(errors).toEqual([
+          'Fee transactions for MOCK (US0000000001) charge 20.00 ILS, but the bank reported a commission of 25.00 ILS',
+        ]);
+      });
+    });
   });
 
   describe('bond interest', () => {
