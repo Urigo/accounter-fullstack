@@ -177,7 +177,12 @@ export class DeelClientProvider {
         } else {
           break;
         }
-        invoices.push(...data.data);
+        const normalizedData = data.data.map(invoice => ({
+          ...invoice,
+          // NOTE: contract ID -261 refers to "independent contractor", so we normalize it to null
+          contract_id: invoice.contract_id === '-261' ? null : invoice.contract_id,
+        }));
+        invoices.push(...normalizedData);
       }
 
       return invoices;
