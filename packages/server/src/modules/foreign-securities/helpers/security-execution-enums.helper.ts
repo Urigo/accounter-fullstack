@@ -73,6 +73,17 @@ export const toSecurityTradeType = (raw: string): SecurityTradeType =>
 export const tryToSecurityTradeType = (raw: string): SecurityTradeType | null =>
   TRADE_TYPES[raw] ?? null;
 
+/** The bank's `IsCancelTransaction` flag, which reads "כן" (yes) on a cancelled execution. */
+const CANCELLED = 'כן';
+
+/**
+ * Whether the bank cancelled this execution. A cancellation keeps the original's trade type but
+ * negates its values, so its cash moves the other way: a cancelled dividend takes money out.
+ */
+export const isCancelledExecution = (execution: {
+  is_cancel_transaction: string | null;
+}): boolean => execution.is_cancel_transaction === CANCELLED;
+
 export const toSecurityTransactionType = (raw: string): SecurityTransactionType =>
   translate(TRANSACTION_TYPES, raw, 'transaction type', 'TRANSACTION_TYPES');
 

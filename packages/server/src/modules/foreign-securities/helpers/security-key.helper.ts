@@ -30,3 +30,48 @@ export function extractSecurityKeys(description: string | null | undefined): str
 
   return [...keys];
 }
+
+/**
+ * Whether a description reads as a Poalim securities movement that carries no padded key —
+ * a domestic trade (`ני"ע-קניה SEC'TIES PURCH`) or a securities fee
+ * (`ניעז עמ' תשלום FSEC PYMNT FEE`). Quotes are stripped first: the bank spells the
+ * abbreviation with `"`, `״` or nothing at all.
+ */
+function isSecuritiesDescription(description: string): boolean {
+  const lower = description.toLowerCase();
+  return (
+    lower.replace(/["'׳״]/g, '').includes('ניע') ||
+    lower.includes('fsec') ||
+    /sec'?ties/.test(lower)
+  );
+}
+
+/**
+ * The security keys a transaction refers to, wherever the bank put them.
+ *
+ * Foreign-securities rows embed the padded key in the description (see `extractSecurityKeys`).
+ * Domestic trades and securities fees do not: their description is a fixed phrase, and the key is
+ * the row's `source_reference` instead. The reference is only read for those phrases — on any
+ * other row it is an unrelated bank reference, and treating it as a key would attach the
+ * transaction to whatever security happens to share the number.
+ */
+export function extractTransactionSecurityKeys(transaction: {
+  source_description: string | null;
+  source_reference: string | null;
+}): string[] {
+  const keys = extractSecurityKeys(transaction.source_description);
+  if (keys.length > 0) {
+    return keys;
+  }
+
+  if (
+    !transaction.source_description ||
+    !transaction.source_reference ||
+    !isSecuritiesDescription(transaction.source_description)
+  ) {
+    return [];
+  }
+
+  const key = normalizeNumericReference(transaction.source_reference);
+  return key ? [key] : [];
+}

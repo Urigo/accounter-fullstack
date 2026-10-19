@@ -18,6 +18,7 @@ import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import { calculateFifoCostBasis } from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
+import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
 import { ForeignSecuritiesProvider } from '../../../foreign-securities/providers/foreign-securities.provider.js';
 import type { SecurityExecutionRow } from '../../../foreign-securities/types.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -32,6 +33,7 @@ import {
   getSecurityLocality,
   getWithheldTax,
   INCOME_TAX_CATEGORY_KEYS,
+  validateSecurityCommissions,
   WITHHOLDING_TAX_CATEGORY_KEYS,
   type SecurityLocality,
 } from '../../helpers/foreign-securities-ledger.helper.js';
@@ -53,6 +55,10 @@ const MIN_AMOUNT = 0.005;
 function describeTransaction(transaction: IGetTransactionsByChargeIdsResult): string {
   const date = transaction.debit_date_override ?? transaction.debit_date ?? transaction.event_date;
   return `"${transaction.source_description ?? transaction.id}" (${date}, ${transaction.amount} ${transaction.currency})`;
+}
+
+function formatLedgerAmount(amount: number): string {
+  return amount.toFixed(2);
 }
 
 function describeSecurity(execution: SecurityExecutionRow): string {
@@ -144,6 +150,15 @@ async function securitiesLedgerEntry(params: {
 
   const kind = classifySecurityExecution(execution);
   if (kind === 'OTHER') {
+    return baseEntry;
+  }
+
+  // A cancellation keeps the original's trade type but sends the cash back the other way, so the
+  // income and redemption entries below — built for money coming in — do not fit it.
+  if (isCancelledExecution(execution)) {
+    errors.add(
+      `Transaction ${transactionDescription} reverses a cancelled ${kind.toLowerCase()} of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
+    );
     return baseEntry;
   }
 
@@ -300,6 +315,26 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     // generate ledger from transactions
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
+
+    // The bank charges an income payment's commission as a fee row of its own, which lands in this
+    // charge by reference. The fees are booked as they are either way; this only reports a
+    // commission the bank says it took that the charge does not show.
+    const incomeExecutions = [
+      ...new Map(
+        [...executionsByTransactionId.values()].map(execution => [execution.id, execution]),
+      ).values(),
+    ].filter(execution => {
+      const kind = classifySecurityExecution(execution);
+      return kind === 'DIVIDEND' || kind === 'INTEREST';
+    });
+    for (const mismatch of validateSecurityCommissions(incomeExecutions, feeTransactions)) {
+      const security = describeSecurity(mismatch.execution);
+      errors.add(
+        mismatch.charged === 0
+          ? `A commission of ${formatLedgerAmount(-mismatch.expected)} ${mismatch.currency} was reported for ${security}, but the charge has no fee transaction for it`
+          : `Fee transactions for ${security} charge ${formatLedgerAmount(-mismatch.charged)} ${mismatch.currency}, but the bank reported a commission of ${formatLedgerAmount(-mismatch.expected)} ${mismatch.currency}`,
+      );
+    }
 
     const mainTransactionsPromises = mainTransactions.map(async transaction => {
       let baseEntry: StrictLedgerProto;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractSecurityKeys } from '../security-key.helper.js';
+import { extractSecurityKeys, extractTransactionSecurityKeys } from '../security-key.helper.js';
 
 describe('extractSecurityKeys', () => {
   it('extracts the key from a sell description', () => {
@@ -39,5 +39,52 @@ describe('extractSecurityKeys', () => {
 
   it('ignores runs shorter than the padded minimum', () => {
     expect(extractSecurityKeys('ניע"ז מכירה 012345')).toEqual([]);
+  });
+});
+
+describe('extractTransactionSecurityKeys', () => {
+  it('reads a domestic trade’s key from its reference', () => {
+    expect(
+      extractTransactionSecurityKeys({
+        source_description: `ני"ע-קניה SEC'TIES PURCH`,
+        source_reference: '1234567',
+      }),
+    ).toEqual(['1234567']);
+  });
+
+  it('reads a securities fee’s key from its reference', () => {
+    expect(
+      extractTransactionSecurityKeys({
+        source_description: "ניעז עמ' תשלום FSEC PYMNT FEE",
+        source_reference: '0012345678',
+      }),
+    ).toEqual(['12345678']);
+  });
+
+  it('prefers the padded key in the description over the reference', () => {
+    expect(
+      extractTransactionSecurityKeys({
+        source_description: 'ניע"ז מכירה 0005129523',
+        source_reference: '3900123',
+      }),
+    ).toEqual(['5129523']);
+  });
+
+  it('does not read the reference of a row that is not a securities movement', () => {
+    expect(
+      extractTransactionSecurityKeys({
+        source_description: 'העברה לחשבון אחר',
+        source_reference: '1234567',
+      }),
+    ).toEqual([]);
+  });
+
+  it('returns nothing without a reference to read', () => {
+    expect(
+      extractTransactionSecurityKeys({
+        source_description: `ני"ע-קניה SEC'TIES PURCH`,
+        source_reference: null,
+      }),
+    ).toEqual([]);
   });
 });
