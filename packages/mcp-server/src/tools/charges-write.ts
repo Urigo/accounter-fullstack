@@ -1,7 +1,15 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpMergeChargesMutation, McpUpdateChargeMutation } from '../gql/index.js';
+import type {
+  McpChargeWriteEchoFragment,
+  McpMergeChargesMutation,
+  McpRereadChargeQuery,
+  McpUpdateChargeMutation,
+} from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
+import { CHARGE_TYPES } from './charge-filters.js';
+import { parseCalendarDate, TIMELESS_DATE } from './dates.js';
+import { chargeTypeFromTypename } from './entity-shapes.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
 import type {
   ToolDefinition,
@@ -32,25 +40,11 @@ export const MERGE_CHARGES_TOOL_NAME = 'accounter_merge_charges';
 
 /** Max charges folded into one base charge per call. */
 export const MAX_CHARGES_TO_MERGE = 20;
+/** Max `yearsOfRelevance` entries per call — a spread rarely covers more than a few years. */
+export const MAX_YEARS_OF_RELEVANCE = 10;
 
-/**
- * Charge types the model may assign. Mirrors the upstream `ChargeType` enum;
- * kept as a literal list so the schema the model sees names every value.
- */
-export const CHARGE_TYPES = [
-  'COMMON',
-  'CONVERSION',
-  'PAYROLL',
-  'INTERNAL',
-  'DIVIDEND',
-  'BUSINESS_TRIP',
-  'VAT',
-  'BANK_DEPOSIT',
-  'FOREIGN_SECURITIES',
-  'CREDITCARD_BANK',
-  'FINANCIAL',
-] as const;
-
+// The type vocabulary is the one `byChargeTypes` already uses (charge-filters.ts),
+// so a type upstream adds reaches the write tool the moment the filter learns it.
 const chargeTypeInput = z
   .enum(CHARGE_TYPES)
   .optional()
@@ -67,14 +61,18 @@ const userDescriptionInput = z
   .optional()
   .describe('Replace the user-written description of the charge.');
 
-const updateChargeInput = z.object({
-  memberBusinessId: writeTargetBusinessIdInput,
-  chargeId: z
-    .string()
-    .min(1)
-    .describe(
-      'The charge to edit. Use accounter_search_charges / accounter_get_charges to find it.',
-    ),
+const yearOfRelevanceInput = z.object({
+  year: TIMELESS_DATE.refine(value => parseCalendarDate(value) !== null, {
+    message: 'must be a real calendar date',
+  }).describe('A date inside the year the charge (or this slice of it) belongs to, YYYY-MM-DD.'),
+  amount: z
+    .number()
+    .optional()
+    .describe('The part of the charge booked to that year; omit to spread evenly.'),
+});
+
+/** The charge fields shared by update and merge, as the tool exposes them. */
+const chargeFieldsInput = {
   userDescription: userDescriptionInput,
   type: chargeTypeInput,
   optionalDocuments: z
@@ -89,6 +87,21 @@ const updateChargeInput = z.object({
     .boolean()
     .optional()
     .describe('Mark the charge as exempt from the VAT check (true) or subject to it (false).'),
+  isInvoicePaymentDifferentCurrency: z
+    .boolean()
+    .optional()
+    .describe(
+      'True when the invoice and its payment are legitimately in different currencies, so the ' +
+        'currency mismatch is not flagged.',
+    ),
+  defaultTaxCategoryId: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      'Override the tax category the charge is booked to (normally inherited from the ' +
+        'counterparty). Resolve ids with accounter_list_tax_categories.',
+    ),
   businessTripId: z
     .string()
     .min(1)
@@ -97,6 +110,27 @@ const updateChargeInput = z.object({
       'Attach the charge to a business trip. Pass the all-zero UUID ' +
         '(00000000-0000-0000-0000-000000000000) to detach it from its current trip.',
     ),
+  yearsOfRelevance: z
+    .array(yearOfRelevanceInput)
+    .min(1)
+    .max(MAX_YEARS_OF_RELEVANCE)
+    .optional()
+    .describe(
+      'Spread the charge across accounting years (an annual licence paid in one go, say): one ' +
+        'entry per year, each with a date in that year and optionally the amount booked to it. ' +
+        'Replaces the existing spread.',
+    ),
+};
+
+const updateChargeInput = z.object({
+  memberBusinessId: writeTargetBusinessIdInput,
+  chargeId: z
+    .string()
+    .min(1)
+    .describe(
+      'The charge to edit. Use accounter_search_charges / accounter_get_charges to find it.',
+    ),
+  ...chargeFieldsInput,
 });
 type UpdateChargeInput = z.infer<typeof updateChargeInput>;
 
@@ -117,10 +151,7 @@ const mergeChargesInput = z.object({
       `The charges to fold into the base charge (1-${MAX_CHARGES_TO_MERGE}). They are deleted ` +
         'once their transactions and documents have moved.',
     ),
-  userDescription: userDescriptionInput.describe(
-    'Optional new description for the base charge, applied before the merge.',
-  ),
-  type: chargeTypeInput,
+  ...chargeFieldsInput,
 });
 type MergeChargesInput = z.infer<typeof mergeChargesInput>;
 
@@ -132,6 +163,7 @@ const CHARGE_ECHO_FRAGMENT = /* GraphQL */ `
     userDescription
     optionalDocuments
     optionalVAT
+    isInvoicePaymentDifferentCurrency
     counterparty {
       id
       name
@@ -148,7 +180,7 @@ const CHARGE_ECHO_FRAGMENT = /* GraphQL */ `
   }
 `;
 
-// The fragment trails the operation: the write path checks that the document
+// The fragment trails each operation: the write path checks that the document
 // *starts* with `mutation`, so a leading fragment definition would be refused.
 const UPDATE_CHARGE_MUTATION = /* GraphQL */ `
   mutation McpUpdateCharge($chargeId: UUID!, $fields: UpdateChargeInput!) {
@@ -181,7 +213,7 @@ const MERGE_CHARGES_MUTATION = /* GraphQL */ `
       __typename
       ... on MergeChargeSuccessfulResult {
         charge {
-          ...McpChargeWriteEcho
+          id
         }
       }
       ... on CommonError {
@@ -189,43 +221,28 @@ const MERGE_CHARGES_MUTATION = /* GraphQL */ `
       }
     }
   }
+`;
+
+// Upstream `mergeCharges` returns the base charge as it was loaded *before*
+// `fields` were applied, so its echo can show the old description or type and
+// the model would read the edit as lost. The merged charge is re-read instead.
+const REREAD_CHARGE_QUERY = /* GraphQL */ `
+  query McpRereadCharge($chargeIDs: [UUID!]!) {
+    chargesByIDs(chargeIDs: $chargeIDs) {
+      ...McpChargeWriteEcho
+    }
+  }
   ${CHARGE_ECHO_FRAGMENT}
 `;
 
-/**
- * The charge type is the GraphQL `__typename` with its `Charge` suffix dropped
- * and the camel case split into the enum spelling (`CreditcardBankCharge` →
- * `CREDITCARD_BANK`), which is also how the read tools report `chargeType`.
- */
-function chargeTypeOf(typename: string): string {
-  return typename
-    .replace(/Charge$/, '')
-    .replace(/([a-z])([A-Z])/g, '$1_$2')
-    .toUpperCase();
-}
-
-type ChargeEcho = {
-  __typename: string;
-  id: string;
-  userDescription?: string | null;
-  optionalDocuments?: boolean | null;
-  optionalVAT?: boolean | null;
-  counterparty?: { id: string; name: string } | null;
-  tags: Array<{ id: string; name: string }>;
-  metadata?: {
-    transactionsCount: number;
-    documentsCount: number;
-    invalidLedger: string;
-  } | null;
-};
-
-function shapeChargeEcho(charge: ChargeEcho) {
+function shapeChargeEcho(charge: McpChargeWriteEchoFragment) {
   return {
     id: charge.id,
-    chargeType: chargeTypeOf(charge.__typename),
+    chargeType: chargeTypeFromTypename(charge.__typename),
     description: charge.userDescription ?? null,
     optionalDocuments: charge.optionalDocuments ?? null,
     optionalVat: charge.optionalVAT ?? null,
+    isInvoicePaymentDifferentCurrency: charge.isInvoicePaymentDifferentCurrency ?? null,
     counterparty: charge.counterparty
       ? { id: charge.counterparty.id, name: charge.counterparty.name }
       : null,
@@ -236,26 +253,36 @@ function shapeChargeEcho(charge: ChargeEcho) {
   };
 }
 
+type ChargeFields = z.infer<z.ZodObject<typeof chargeFieldsInput>>;
+
 /**
  * Build the upstream `UpdateChargeInput` from the tool's flat fields. Only the
  * fields the caller passed are sent: upstream treats an absent field as "leave
  * as is", and sending `null` for the rest would clear them.
  */
-function chargeFieldsOf(input: {
-  userDescription?: string;
-  type?: (typeof CHARGE_TYPES)[number];
-  optionalDocuments?: boolean;
-  optionalVat?: boolean;
-  businessTripId?: string;
-}): Record<string, unknown> {
+function chargeFieldsOf(input: ChargeFields): Record<string, unknown> {
   const fields: Record<string, unknown> = {};
   if (input.userDescription !== undefined) fields.userDescription = input.userDescription;
   if (input.type !== undefined) fields.type = input.type;
   if (input.optionalDocuments !== undefined) fields.optionalDocuments = input.optionalDocuments;
   if (input.optionalVat !== undefined) fields.optionalVAT = input.optionalVat;
+  if (input.isInvoicePaymentDifferentCurrency !== undefined) {
+    fields.isInvoicePaymentDifferentCurrency = input.isInvoicePaymentDifferentCurrency;
+  }
+  if (input.defaultTaxCategoryId !== undefined) {
+    fields.defaultTaxCategoryID = input.defaultTaxCategoryId;
+  }
   if (input.businessTripId !== undefined) fields.businessTripID = input.businessTripId;
+  if (input.yearsOfRelevance !== undefined) {
+    fields.yearsOfRelevance = input.yearsOfRelevance.map(entry => ({
+      year: entry.year,
+      amount: entry.amount ?? null,
+    }));
+  }
   return fields;
 }
+
+const SETTABLE_FIELDS = Object.keys(chargeFieldsInput).join(', ');
 
 async function updateChargeHandler(
   input: UpdateChargeInput,
@@ -266,11 +293,7 @@ async function updateChargeHandler(
   // costs no round trip and tells the model which fields it can set.
   if (Object.keys(fields).length === 0) {
     throw new ToolInputError('No charge changes requested', [
-      {
-        path: 'chargeId',
-        message:
-          'provide at least one of userDescription, type, optionalDocuments, optionalVat or businessTripId',
-      },
+      { path: 'chargeId', message: `provide at least one of ${SETTABLE_FIELDS}` },
     ]);
   }
 
@@ -341,19 +364,27 @@ async function mergeChargesHandler(
     );
   }
 
-  const charge = shapeChargeEcho(result.charge);
+  const reread = await context.client.query<McpRereadChargeQuery>(
+    { query: REREAD_CHARGE_QUERY, variables: { chargeIDs: [input.baseChargeId] } },
+    context.upstream,
+  );
+  const fresh = reread.chargesByIDs[0];
+  const charges = fresh ? [shapeChargeEcho(fresh)] : [];
+  const counts = fresh
+    ? `; it now has ${fresh.metadata?.transactionsCount ?? '?'} transaction(s) and ${fresh.metadata?.documentsCount ?? '?'} document(s)`
+    : '';
+
   return shapeWriteResult({
     action: 'merge_charges',
     outcome: {
       baseChargeId: input.baseChargeId,
       mergedChargeIds: input.chargeIdsToMerge,
       mergedCount: input.chargeIdsToMerge.length,
+      updatedFields: Object.keys(fields),
       scope: { memberBusinessIds: context.readScope.memberBusinessIds },
     },
-    items: { key: 'charges', values: [charge] },
-    summary:
-      `Merged ${input.chargeIdsToMerge.length} charge(s) into ${input.baseChargeId}; it now has ` +
-      `${charge.transactionsCount ?? '?'} transaction(s) and ${charge.documentsCount ?? '?'} document(s).`,
+    items: { key: 'charges', values: charges },
+    summary: `Merged ${input.chargeIdsToMerge.length} charge(s) into ${input.baseChargeId}${counts}.`,
   });
 }
 
@@ -369,11 +400,13 @@ export const updateChargeTool: ToolDefinition<typeof updateChargeInput> = {
   name: UPDATE_CHARGE_TOOL_NAME,
   description:
     'Edit a charge’s own fields: its description, its type (COMMON, PAYROLL, FINANCIAL, ' +
-    'BUSINESS_TRIP, CREDITCARD_BANK, …), whether documents or VAT are optional for it, and the ' +
-    'business trip it belongs to. Only the fields you pass change. This does NOT set the ' +
-    'counterparty — a charge takes its counterparty from its transactions and documents, so use ' +
-    '`accounter_update_transactions` (counterpartyId) or `accounter_update_document` ' +
-    '(creditorId / debtorId) for that, and `accounter_update_charges_tags` for tags. ' +
+    'BUSINESS_TRIP, CREDITCARD_BANK, …), whether documents or VAT are optional for it, whether ' +
+    'invoice and payment may differ in currency, its tax-category override, the business trip it ' +
+    'belongs to, and its spread across accounting years. Only the fields you pass change. This ' +
+    'does NOT set the counterparty — a charge takes its counterparty from its transactions and ' +
+    'documents, so use `accounter_update_transactions` (counterpartyId) or ' +
+    '`accounter_update_document` (creditorId / debtorId) for that, and ' +
+    '`accounter_update_charges_tags` for tags. ' +
     'The echo under `charges` is the charge as it now stands (`chargeType`, `description`, ' +
     '`counterparty`, `tags`, counts), alongside `chargeId` and `updatedFields`. ' +
     writeResultDescription('charges') +
@@ -398,9 +431,10 @@ export const mergeChargesTool: ToolDefinition<typeof mergeChargesInput> = {
     'is how an emailed receipt that landed in its own charge is joined to the bank or card row it ' +
     'pays for — make the charge that holds the transaction the base, so its dates and amounts ' +
     'survive. The merge is not reversible from here; confirm both sides with ' +
-    '`accounter_get_charges` first. Optionally set `userDescription` / `type` on the base charge ' +
-    'in the same call. The echo under `charges` is the merged charge with its new transaction and ' +
-    'document counts, alongside `baseChargeId`, `mergedChargeIds` and `mergedCount`. ' +
+    '`accounter_get_charges` first. The same fields as `accounter_update_charge` ' +
+    '(`userDescription`, `type`, …) can be set on the base charge in the same call. The echo ' +
+    'under `charges` is the merged charge re-read after the merge, with its new transaction and ' +
+    'document counts, alongside `baseChargeId`, `mergedChargeIds`, `mergedCount` and `updatedFields`. ' +
     writeResultDescription('charges') +
     ' ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,

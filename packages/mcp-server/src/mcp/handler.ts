@@ -575,7 +575,7 @@ export async function dispatchMcpBodyDualEra(
  * model, so the one place a server gets to speak for itself is worth using.
  */
 const MODERN_INSTRUCTIONS =
-  'Read-only accounting data for the businesses you are a member of, plus two opt-in write tools. ' +
+  'Read-only accounting data for the businesses you are a member of, plus eight opt-in write tools. ' +
   'Call `accounter_list_business_memberships` first to discover the `memberBusinessId` values every ' +
   'other tool takes as scope, and `accounter_explain_terminology` for what a charge, transaction, ' +
   'document or ledger record means here — the distinctions are not inferable from the schema.';

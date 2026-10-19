@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpDeleteDocumentMutation, McpUpdateDocumentMutation } from '../gql/index.js';
+import type {
+  McpDeleteDocumentMutation,
+  McpDocumentChargeQuery,
+  McpUpdateDocumentMutation,
+} from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
+import { deleteEmptiedCharges, describeCleanup, type CleanupResult } from './charge-cleanup.js';
+import { parseCalendarDate, TIMELESS_DATE } from './dates.js';
+import { DOCUMENT_TYPES } from './document-details.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
 import type {
   ToolDefinition,
@@ -10,6 +17,7 @@ import type {
   ToolResult,
 } from './registry.js';
 import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './scope-input.js';
+import { EMPTY_UUID } from './transactions-write.js';
 
 /**
  * Write tools on an existing document: edit its extracted fields or move it to
@@ -21,21 +29,16 @@ import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './sc
  * somewhere: fix a creditor the extractor got wrong, move a receipt onto the
  * charge with the card row, or delete a stray attachment that was never a
  * document at all.
+ *
+ * Upstream `updateDocument` deletes an emptied former charge only on the
+ * EMPTY_UUID unlink path (reported as `deletedChargeId`). Moving a document
+ * onto a REAL charge leaves its former charge behind, so after such a move the
+ * tool deletes that charge if it is now empty (see charge-cleanup.ts) and
+ * reports it under `cleanup`.
  */
 
 export const UPDATE_DOCUMENT_TOOL_NAME = 'accounter_update_document';
 export const DELETE_DOCUMENT_TOOL_NAME = 'accounter_delete_document';
-
-/** Mirrors the upstream `DocumentType` enum. */
-export const DOCUMENT_TYPES = [
-  'INVOICE',
-  'RECEIPT',
-  'INVOICE_RECEIPT',
-  'CREDIT_INVOICE',
-  'PROFORMA',
-  'OTHER',
-  'UNPROCESSED',
-] as const;
 
 /** Mirrors the upstream `Currency` enum. */
 export const CURRENCIES = [
@@ -52,14 +55,9 @@ export const CURRENCIES = [
   'USDC',
 ] as const;
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-const amountInput = z
-  .object({
-    value: z.number().describe('The amount; positive for the document’s face value.'),
-    currency: z.enum(CURRENCIES),
-  })
-  .optional();
+const calendarDate = TIMELESS_DATE.refine(value => parseCalendarDate(value) !== null, {
+  message: 'must be a real calendar date',
+});
 
 const updateDocumentInput = z.object({
   memberBusinessId: writeTargetBusinessIdInput,
@@ -75,8 +73,11 @@ const updateDocumentInput = z.object({
     .optional()
     .describe(
       'Move the document onto this charge — typically the one holding the bank or card ' +
-        'transaction it documents. If the former charge is left empty it is deleted and reported ' +
-        'as `deletedChargeId`.',
+        'transaction it documents. If the former charge is left empty it is deleted afterwards ' +
+        'and listed under `cleanup.deletedChargeIds` (turn that off with ' +
+        `\`deleteEmptiedCharges: false\`). Pass the all-zero UUID (${EMPTY_UUID}) to unlink the ` +
+        'document into a new charge of its own; upstream then deletes the former charge itself ' +
+        'when the document was all it held, reported as `deletedChargeId`.',
     ),
   creditorId: z
     .string()
@@ -92,6 +93,8 @@ const updateDocumentInput = z.object({
     .min(1)
     .optional()
     .describe('Business the document is addressed to (your own business on an expense invoice).'),
+  // The vocabulary is the one `accounter_get_documents` filters by, so a type
+  // upstream adds reaches both tools at once.
   documentType: z
     .enum(DOCUMENT_TYPES)
     .optional()
@@ -99,14 +102,32 @@ const updateDocumentInput = z.object({
       'Reclassify the document, e.g. an OTHER the extractor missed that is really a RECEIPT.',
     ),
   serialNumber: z.string().max(100).optional().describe('The document’s own number.'),
-  date: z
-    .string()
-    .regex(DATE_RE, 'YYYY-MM-DD')
+  date: calendarDate.optional().describe('The document date, YYYY-MM-DD.'),
+  amount: z
+    .object({
+      value: z.number().describe('The amount; positive for the document’s face value.'),
+      currency: z.enum(CURRENCIES),
+    })
     .optional()
-    .describe('The document date, YYYY-MM-DD.'),
-  amount: amountInput.describe('Replace the document total.'),
-  vat: amountInput.describe('Replace the VAT amount on the document.'),
+    .describe('Replace the document total. Its currency is the document’s currency.'),
+  // Upstream stores one currency per document and takes it from `amount` only;
+  // a currency on `vat` would be silently ignored, so the tool does not take one.
+  vat: z
+    .number()
+    .optional()
+    .describe(
+      'Replace the VAT amount on the document, in the document’s own currency (set or change ' +
+        'that currency through `amount`).',
+    ),
   description: z.string().max(1000).optional().describe('Replace the document description.'),
+  deleteEmptiedCharges: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      'When moving onto a real charge, delete the former charge if it ends up with no ' +
+        'transactions, documents or misc expenses (default true).',
+    ),
 });
 type UpdateDocumentInput = z.infer<typeof updateDocumentInput>;
 
@@ -115,6 +136,17 @@ const deleteDocumentInput = z.object({
   documentId: z.string().min(1).describe('The document to delete.'),
 });
 type DeleteDocumentInput = z.infer<typeof deleteDocumentInput>;
+
+const DOCUMENT_CHARGE_QUERY = /* GraphQL */ `
+  query McpDocumentCharge($documentIds: [UUID!]!) {
+    documentsByIds(documentIds: $documentIds) {
+      id
+      charge {
+        id
+      }
+    }
+  }
+`;
 
 const UPDATE_DOCUMENT_MUTATION = /* GraphQL */ `
   mutation McpUpdateDocument($documentId: UUID!, $fields: UpdateDocumentFieldsInput!) {
@@ -132,6 +164,10 @@ const UPDATE_DOCUMENT_MUTATION = /* GraphQL */ `
             serialNumber
             date
             amount {
+              raw
+              currency
+            }
+            vat {
               raw
               currency
             }
@@ -176,10 +212,16 @@ function documentFieldsOf(input: UpdateDocumentInput): Record<string, unknown> {
     fields.amount = { raw: input.amount.value, currency: input.amount.currency };
   }
   if (input.vat !== undefined) {
-    fields.vat = { raw: input.vat.value, currency: input.vat.currency };
+    // `UpdateDocumentFieldsInput.vat` is a FinancialAmountInput, so a currency
+    // has to travel; upstream ignores it (the document's currency comes from
+    // `amount`), so it is the amount's currency when given, else a placeholder.
+    fields.vat = { raw: input.vat, currency: input.amount?.currency ?? 'ILS' };
   }
   return fields;
 }
+
+const SETTABLE_FIELDS =
+  'chargeId, creditorId, debtorId, documentType, serialNumber, date, amount, vat or description';
 
 async function updateDocumentHandler(
   input: UpdateDocumentInput,
@@ -188,12 +230,19 @@ async function updateDocumentHandler(
   const fields = documentFieldsOf(input);
   if (Object.keys(fields).length === 0) {
     throw new ToolInputError('No document changes requested', [
-      {
-        path: 'documentId',
-        message:
-          'provide at least one of chargeId, creditorId, debtorId, documentType, serialNumber, date, amount, vat or description',
-      },
+      { path: 'documentId', message: `provide at least one of ${SETTABLE_FIELDS}` },
     ]);
+  }
+
+  const movingToRealCharge =
+    input.chargeId !== undefined && input.chargeId !== EMPTY_UUID && input.deleteEmptiedCharges;
+  let formerChargeId: string | null = null;
+  if (movingToRealCharge) {
+    const before = await context.client.query<McpDocumentChargeQuery>(
+      { query: DOCUMENT_CHARGE_QUERY, variables: { documentIds: [input.documentId] } },
+      context.upstream,
+    );
+    formerChargeId = before.documentsByIds[0]?.charge?.id ?? null;
   }
 
   const data = await context.client.mutate<McpUpdateDocumentMutation>(
@@ -222,6 +271,7 @@ async function updateDocumentHandler(
           'amount' in document && document.amount
             ? { value: document.amount.raw, currency: document.amount.currency }
             : null,
+        vat: 'vat' in document && document.vat ? document.vat.raw : null,
         creditor:
           'creditor' in document && document.creditor
             ? { id: document.creditor.id, name: document.creditor.name }
@@ -233,12 +283,18 @@ async function updateDocumentHandler(
       }
     : null;
 
+  const cleanup: CleanupResult =
+    movingToRealCharge && formerChargeId
+      ? await deleteEmptiedCharges([formerChargeId], input.chargeId ?? null, context)
+      : { deletedChargeIds: [], keptChargeIds: [], failures: [] };
+
   return shapeWriteResult({
     action: 'update_document',
     outcome: {
       documentId: input.documentId,
       updatedFields: Object.keys(fields),
       deletedChargeId: result.deletedChargeId ?? null,
+      cleanup,
       scope: { memberBusinessIds: context.readScope.memberBusinessIds },
     },
     items: { key: 'documents', values: echo ? [echo] : [] },
@@ -246,7 +302,8 @@ async function updateDocumentHandler(
       `Updated ${Object.keys(fields).join(', ')} on document ${input.documentId}.` +
       (result.deletedChargeId
         ? ` Its former charge ${result.deletedChargeId} was left empty and deleted.`
-        : ''),
+        : '') +
+      describeCleanup(cleanup),
   });
 }
 
@@ -285,12 +342,14 @@ async function deleteDocumentHandler(
 }
 
 function observeUpdate(input: UpdateDocumentInput, result: ToolResult): ToolObservation {
-  const structured = result.structuredContent as { deletedChargeId?: string | null } | undefined;
+  const structured = result.structuredContent as
+    { deletedChargeId?: string | null; cleanup?: CleanupResult } | undefined;
   return {
     fields: {
       updatedFieldCount: Object.keys(documentFieldsOf(input)).length,
       movesCharge: input.chargeId !== undefined,
-      deletedFormerCharge: !!structured?.deletedChargeId,
+      deletedFormerCharge:
+        !!structured?.deletedChargeId || (structured?.cleanup?.deletedChargeIds.length ?? 0) > 0,
     },
   };
 }
@@ -304,12 +363,14 @@ export const updateDocumentTool: ToolDefinition<typeof updateDocumentInput> = {
   name: UPDATE_DOCUMENT_TOOL_NAME,
   description:
     'Edit an existing document or move it to another charge: set `chargeId` to attach a receipt ' +
-    'to the charge holding the card or bank row it documents (an emptied former charge is deleted ' +
-    'and reported as `deletedChargeId`), and `creditorId` / `debtorId` to correct the businesses ' +
-    'the extractor read off it — which is also what sets the charge’s counterparty on the ' +
-    'document side. `documentType`, `serialNumber`, `date`, `amount`, `vat` and `description` ' +
-    'fix extracted values. Only the fields you pass change. The echo under `documents` is the ' +
-    'document as it now stands, alongside `documentId`, `updatedFields` and `deletedChargeId`. ' +
+    'to the charge holding the card or bank row it documents — the former charge is then ' +
+    'deleted if the move left it empty (under `cleanup.deletedChargeIds`; kept and listed under ' +
+    '`cleanup.keptChargeIds` otherwise). `creditorId` / `debtorId` correct the businesses the ' +
+    'extractor read off it, which is also what sets the charge’s counterparty on the document ' +
+    'side. `documentType`, `serialNumber`, `date`, `amount`, `vat` (a number in the document’s ' +
+    'currency) and `description` fix extracted values. Only the fields you pass change. The echo ' +
+    'under `documents` is the document as it now stands, alongside `documentId`, `updatedFields`, ' +
+    '`deletedChargeId` (set only on an all-zero-UUID unlink) and `cleanup`. ' +
     writeResultDescription('documents') +
     ' ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,
