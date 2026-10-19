@@ -9,6 +9,7 @@ import {
 
 const DEBIT_ENTITY = '11111111-1111-4111-8111-111111111111';
 const CREDIT_ENTITY = '22222222-2222-4222-8222-222222222222';
+const VAT_ENTITY = '33333333-3333-4333-8333-333333333333';
 
 function validValues(overrides: LedgerRecordFormInput = {}): LedgerRecordFormInput {
   return {
@@ -81,6 +82,15 @@ describe('buildLedgerRecordFormSchema', () => {
       const result = insertSchema.safeParse({ ...validValues(), [field]: undefined });
       expect(issuePaths(result)).toContain(field);
     });
+
+    it.each(['debitLocalAmount1', 'creditLocalAmount1'] as const)(
+      'requires %s when it was emptied (null)',
+      field => {
+        const result = insertSchema.safeParse(validValues({ [field]: null }));
+        expect(issuePaths(result)).toEqual([field]);
+        expect(result.error?.issues[0].message).toBe('Amount is required');
+      },
+    );
 
     it.each(['invoiceDate', 'valueDate'] as const)('requires a yyyy-mm-dd %s', field => {
       expect(issuePaths(insertSchema.safeParse({ ...validValues(), [field]: undefined }))).toContain(
@@ -164,6 +174,198 @@ describe('buildLedgerRecordFormSchema', () => {
         validValues({ debitLocalAmount1: 100.0051, creditLocalAmount1: 100 }),
       );
       expect(issuePaths(result)).toEqual(['balance']);
+      // Totals print as entered (only float noise is rounded off), like the server's message
+      expect(result.error?.issues[0].message).toBe(
+        'Debit and credit totals must be equal (debit 100.0051, credit 100)',
+      );
+    });
+
+    it('balances across all four lines', () => {
+      const result = insertSchema.safeParse(
+        validValues({
+          debitLocalAmount1: 100,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17,
+          creditLocalAmount1: 117,
+        }),
+      );
+      expect(result.success).toBe(true);
+
+      const creditSide = insertSchema.safeParse(
+        validValues({
+          debitLocalAmount1: 117,
+          creditLocalAmount1: 100,
+          creditEntity2: VAT_ENTITY,
+          creditLocalAmount2: 17,
+        }),
+      );
+      expect(creditSide.success).toBe(true);
+    });
+
+    it('rejects four lines that are off by 0.01', () => {
+      const result = insertSchema.safeParse(
+        validValues({
+          debitLocalAmount1: 100,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17.01,
+          creditLocalAmount1: 117,
+        }),
+      );
+      expect(issuePaths(result)).toEqual(['balance']);
+      expect(result.error?.issues[0].message).toBe(
+        'Debit and credit totals must be equal (debit 117.01, credit 117)',
+      );
+    });
+
+    it('is reported together with other field errors', () => {
+      const result = insertSchema.safeParse({
+        ...validValues({ debitLocalAmount1: 100, creditLocalAmount1: 99 }),
+        invoiceDate: undefined,
+      });
+      expect(issuePaths(result).sort()).toEqual(['balance', 'invoiceDate']);
+    });
+
+    it('is reported together with secondary-line errors', () => {
+      const result = insertSchema.safeParse(
+        validValues({ debitLocalAmount1: 100, creditLocalAmount1: 99, creditEntity2: VAT_ENTITY }),
+      );
+      expect(issuePaths(result).sort()).toEqual(['balance', 'creditLocalAmount2']);
+    });
+
+    it('is not checked while a main local amount is missing', () => {
+      const result = insertSchema.safeParse({ ...validValues(), creditLocalAmount1: undefined });
+      expect(issuePaths(result)).toEqual(['creditLocalAmount1']);
+    });
+  });
+
+  describe('secondary lines', () => {
+    it('are optional, whether left out or cleared', () => {
+      expect(insertSchema.safeParse(validValues()).success).toBe(true);
+      const cleared = insertSchema.safeParse(
+        validValues({
+          debitEntity2: null,
+          debitLocalAmount2: null,
+          debitForeignAmount2: null,
+          creditEntity2: '',
+          creditLocalAmount2: null,
+          creditForeignAmount2: null,
+        }),
+      );
+      expect(cleared.success).toBe(true);
+    });
+
+    it.each(['debit', 'credit'] as const)('%s 2: an entity needs an amount', side => {
+      const result = insertSchema.safeParse(validValues({ [`${side}Entity2`]: VAT_ENTITY }));
+      expect(issuePaths(result)).toEqual([`${side}LocalAmount2`]);
+      expect(result.error?.issues[0].message).toBe('Amount is required');
+    });
+
+    it.each([0, -5])('rejects a secondary amount of %s', amount => {
+      const result = insertSchema.safeParse(
+        validValues({
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: amount,
+          creditLocalAmount1: 100 + amount,
+        }),
+      );
+      expect(issuePaths(result)).toEqual(['debitLocalAmount2']);
+      expect(result.error?.issues[0].message).toBe('Amount must be greater than 0');
+    });
+
+    it.each(['debit', 'credit'] as const)(
+      '%s 2: an amount without an entity is reported on the entity',
+      side => {
+        const result = insertSchema.safeParse(
+          validValues({
+            [`${side}LocalAmount2`]: 17,
+            [side === 'debit' ? 'creditLocalAmount1' : 'debitLocalAmount1']: 117,
+          }),
+        );
+        expect(issuePaths(result)).toEqual([`${side}Entity2`]);
+        expect(result.error?.issues[0].message).toBe(
+          'Entity is required when an amount is entered',
+        );
+      },
+    );
+
+    it('reports a zero amount without an entity on the entity', () => {
+      const result = insertSchema.safeParse(validValues({ debitLocalAmount2: 0 }));
+      expect(issuePaths(result)).toEqual(['debitEntity2']);
+    });
+
+    it('reports secondary-line errors together with other field errors', () => {
+      const result = insertSchema.safeParse({
+        ...validValues({ debitEntity1: '', creditEntity2: VAT_ENTITY }),
+        valueDate: undefined,
+      });
+      expect(issuePaths(result).sort()).toEqual([
+        'creditLocalAmount2',
+        'debitEntity1',
+        'valueDate',
+      ]);
+    });
+
+    describe('in a foreign currency', () => {
+      const foreign = (overrides: LedgerRecordFormInput = {}): LedgerRecordFormInput =>
+        validValues({
+          currency: Currency.Usd,
+          debitForeignAmount1: 27,
+          creditForeignAmount1: 31.6,
+          creditLocalAmount1: 117,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17,
+          debitForeignAmount2: 4.6,
+          ...overrides,
+        });
+
+      it('accepts a filled secondary line with its foreign amount', () => {
+        expect(insertSchema.safeParse(foreign()).success).toBe(true);
+      });
+
+      it('requires a foreign amount on a filled secondary line', () => {
+        const result = insertSchema.safeParse(foreign({ debitForeignAmount2: undefined }));
+        expect(issuePaths(result)).toEqual(['debitForeignAmount2']);
+        expect(result.error?.issues[0].message).toBe('Foreign amount is required for USD records');
+      });
+
+      it('rejects a non-positive secondary foreign amount', () => {
+        const result = insertSchema.safeParse(foreign({ debitForeignAmount2: 0 }));
+        expect(issuePaths(result)).toEqual(['debitForeignAmount2']);
+        expect(result.error?.issues[0].message).toBe('Foreign amount must be greater than 0');
+      });
+
+      it('does not require foreign amounts on an empty secondary line', () => {
+        const result = insertSchema.safeParse(
+          foreign({
+            creditLocalAmount1: 100,
+            creditForeignAmount1: 27,
+            debitEntity2: null,
+            debitLocalAmount2: null,
+            debitForeignAmount2: null,
+          }),
+        );
+        expect(result.success).toBe(true);
+      });
+
+      it('reports a foreign amount without an entity on the entity', () => {
+        const result = insertSchema.safeParse(
+          foreign({ debitEntity2: '', debitLocalAmount2: null, creditLocalAmount1: 100 }),
+        );
+        expect(issuePaths(result)).toEqual(['debitEntity2']);
+      });
+    });
+
+    it('ignores leftover secondary foreign amounts in the local currency', () => {
+      const result = insertSchema.safeParse(
+        validValues({
+          creditLocalAmount1: 117,
+          debitEntity2: VAT_ENTITY,
+          debitLocalAmount2: 17,
+          debitForeignAmount2: -1,
+          creditForeignAmount2: 3,
+        }),
+      );
+      expect(result.success).toBe(true);
     });
   });
 
@@ -315,6 +517,75 @@ describe('formValuesToLedgerRecordInput', () => {
     expect(input.currency).toBe(Currency.Ils);
     expect(input.debitForeignAmount1).toBe(27);
     expect(input.creditForeignAmount1).toBe(27);
+  });
+
+  it('nulls an empty secondary line, whether left out or cleared', () => {
+    const cleared = toInput(
+      validValues({
+        debitEntity2: '',
+        debitLocalAmount2: null,
+        debitForeignAmount2: null,
+        creditEntity2: null,
+        creditLocalAmount2: undefined,
+      }),
+    );
+    expect(cleared).toEqual(toInput(validValues()));
+    expect(cleared).toEqual(
+      expect.objectContaining({
+        debitEntity2: null,
+        debitLocalAmount2: null,
+        debitForeignAmount2: null,
+        creditEntity2: null,
+        creditLocalAmount2: null,
+        creditForeignAmount2: null,
+      }),
+    );
+  });
+
+  it('sends a filled secondary line without foreign amounts in the local currency', () => {
+    const input = toInput(
+      validValues({
+        creditLocalAmount1: 117,
+        debitEntity2: VAT_ENTITY,
+        debitLocalAmount2: 17,
+        debitForeignAmount2: 4.6,
+      }),
+    );
+    expect(input).toEqual(
+      expect.objectContaining({
+        debitEntity2: VAT_ENTITY,
+        debitLocalAmount2: 17,
+        debitForeignAmount2: null,
+        creditEntity2: null,
+        creditLocalAmount2: null,
+        creditForeignAmount2: null,
+      }),
+    );
+  });
+
+  it('sends a filled secondary line with its foreign amount in a foreign currency', () => {
+    const input = toInput(
+      validValues({
+        currency: Currency.Usd,
+        debitLocalAmount1: 117,
+        debitForeignAmount1: 31.6,
+        creditForeignAmount1: 27,
+        creditEntity2: VAT_ENTITY,
+        creditLocalAmount2: 17,
+        creditForeignAmount2: 4.6,
+      }),
+    );
+    expect(input).toEqual(
+      expect.objectContaining({
+        currency: Currency.Usd,
+        creditEntity2: VAT_ENTITY,
+        creditLocalAmount2: 17,
+        creditForeignAmount2: 4.6,
+        debitEntity2: null,
+        debitLocalAmount2: null,
+        debitForeignAmount2: null,
+      }),
+    );
   });
 
   it('maps empty optional strings to null', () => {

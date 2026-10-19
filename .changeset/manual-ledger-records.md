@@ -56,8 +56,13 @@ Ledger". It opens a form to pick the operation (misc expense or document), the i
 dates, an optional description and reference, the record's currency (the local currency by
 default), and a debit and a credit entity with their local amounts. Choosing another currency adds a
 foreign amount to each line; switching back to the local currency clears them, and a local-currency
-record never sends foreign amounts. The form checks the same rules as the server before submitting:
-both entities and positive amounts are required, a foreign-currency record needs a positive foreign
-amount on both lines, the debit and credit local amounts must balance to within 0.005, and both
-dates must be after the ledger lock date. On success the dialog closes and the charge
+record never sends foreign amounts. Optional secondary "Debit 2" and "Credit 2" lines (for example
+input VAT on a document) take an entity and amounts too, and each has a clear (×) action that
+empties it. Live debit and credit totals and their difference are shown under the lines, and the
+difference turns red while it is out of balance. The form checks the same rules as the server
+before submitting, and shows every problem at once: both main entities and positive amounts are
+required, a filled secondary line needs a positive amount and an amount needs an entity, a
+foreign-currency record needs a positive foreign amount on every filled line, the debit and credit
+local totals across all lines must balance to within 0.005, and both dates must be after the
+ledger lock date. On success the dialog closes and the charge
 refreshes; if the server rejects the record, its error is shown and the dialog stays open.

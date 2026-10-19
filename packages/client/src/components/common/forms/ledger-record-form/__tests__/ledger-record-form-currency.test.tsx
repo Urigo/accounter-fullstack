@@ -177,8 +177,8 @@ describe('LedgerRecordForm currency', () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     const submitted = onSubmit.mock.calls[0][0];
     expect(submitted.currency).toBe(Currency.Ils);
-    expect(submitted.debitForeignAmount1).toBeUndefined();
-    expect(submitted.creditForeignAmount1).toBeUndefined();
+    expect(submitted.debitForeignAmount1).toBeNull();
+    expect(submitted.creditForeignAmount1).toBeNull();
 
     // Back in a foreign currency, the typed values do not come back
     await selectCurrency(Currency.Eur);
@@ -209,22 +209,18 @@ describe('LedgerRecordForm currency', () => {
 
     await selectCurrency(Currency.Ils);
     await submit();
-    expect(onSubmit.mock.calls[0][0].debitForeignAmount1).toBeUndefined();
-    expect(onSubmit.mock.calls[0][0].creditForeignAmount1).toBeUndefined();
+    expect(onSubmit.mock.calls[0][0].debitForeignAmount1).toBeNull();
+    expect(onSubmit.mock.calls[0][0].creditForeignAmount1).toBeNull();
 
-    // A re-mounted input falls back to its default (react-hook-form), so prefilled amounts come
-    // back with a foreign currency; what is shown is exactly what is submitted
+    // The cleared values stay cleared when the inputs re-mount in a foreign currency (react-hook-
+    // form would re-apply the prefilled defaults to an `undefined` field); what is shown is
+    // exactly what is submitted
     await selectCurrency(Currency.Eur);
-    expect(foreignInput('Debit')?.value).toBe('27');
+    expect(foreignInput('Debit')?.value).toBe('');
+    expect(foreignInput('Credit')?.value).toBe('');
     await submit();
-    expect(onSubmit).toHaveBeenCalledTimes(2);
-    expect(onSubmit.mock.calls[1][0]).toEqual(
-      expect.objectContaining({
-        currency: Currency.Eur,
-        debitForeignAmount1: 27,
-        creditForeignAmount1: 27,
-      }),
-    );
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain('Foreign amount is required for EUR records');
   });
 
   it('drops foreign-amount errors when switching back to the local currency', async () => {
