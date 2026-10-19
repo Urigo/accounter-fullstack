@@ -183,6 +183,36 @@ describe('LedgerRecordForm layout', () => {
     expect(symbols()).toEqual([]);
   });
 
+  it('hides the symbol from assistive tech and pads the input for its length', async () => {
+    const foreignInput = (): HTMLInputElement =>
+      container.querySelector('input[aria-label="Credit foreign amount"]') as HTMLInputElement;
+    const symbol = (): HTMLElement =>
+      foreignInput()
+        .closest('[data-slot="form-item"]')
+        ?.querySelector('[data-testid="foreign-currency-symbol"]') as HTMLElement;
+
+    // One character: $
+    await render(USD_VALUES);
+    expect(symbol().textContent).toBe('$');
+    expect(symbol().getAttribute('aria-hidden')).toBe('true');
+    expect(foreignInput().className).toContain('pr-8');
+    await act(async () => root.unmount());
+
+    // Two characters: C$
+    root = createRoot(container);
+    await render({ ...USD_VALUES, currency: Currency.Cad });
+    expect(symbol().textContent).toBe('C$');
+    expect(foreignInput().className).toContain('pr-10');
+    expect(foreignInput().className).not.toContain('pr-8');
+    await act(async () => root.unmount());
+
+    // Four characters: USDC
+    root = createRoot(container);
+    await render({ ...USD_VALUES, currency: Currency.Usdc });
+    expect(symbol().textContent).toBe('USDC');
+    expect(foreignInput().className).toContain('pr-14');
+  });
+
   it('lets a secondary entity be unpicked with "None"', async () => {
     await render(USD_VALUES);
     await pickOption('Credit 2', 'Input VAT');

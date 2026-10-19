@@ -168,6 +168,70 @@ describe('ComboBox clearLabel', () => {
     expect(changes).toEqual([null]);
   });
 
+  function pressEnter(): void {
+    const input = document.querySelector<HTMLInputElement>('[cmdk-input]');
+    expect(input).not.toBeNull();
+    act(() => {
+      input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+  }
+
+  function search(text: string): void {
+    const input = document.querySelector<HTMLInputElement>('[cmdk-input]')!;
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      setValue?.call(input, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  function renderWithChanges(value: string | null): Array<string | null> {
+    const changes: Array<string | null> = [];
+    act(() => {
+      root.render(
+        <ComboBox
+          data={DATA}
+          value={value}
+          clearLabel="None"
+          onChange={(next): void => {
+            changes.push(next);
+          }}
+        />,
+      );
+    });
+    return changes;
+  }
+
+  it('opens on the current selection, so Enter keeps it rather than clearing', () => {
+    const changes = renderWithChanges('marketing');
+    act(() => trigger().click());
+    pressEnter();
+    expect(changes).toEqual(['marketing']);
+  });
+
+  it('opens on the first real option when nothing is selected', () => {
+    const changes = renderWithChanges(null);
+    act(() => trigger().click());
+    pressEnter();
+    expect(changes).toEqual(['rd']);
+  });
+
+  it('matches its visible label only when filtering', () => {
+    renderWithChanges('marketing');
+    act(() => trigger().click());
+    const visible = (): string[] =>
+      options()
+        .filter(option => option.getAttribute('aria-hidden') !== 'true' && !option.hidden)
+        .map(option => option.textContent ?? '');
+
+    search('clear');
+    expect(visible()).not.toContain('None');
+    search('combo');
+    expect(visible()).not.toContain('None');
+    search('non');
+    expect(visible()).toContain('None');
+  });
+
   it('is not listed unless asked for', () => {
     act(() => {
       root.render(<ComboBox data={DATA} value="marketing" />);
