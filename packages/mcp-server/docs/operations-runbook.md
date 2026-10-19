@@ -354,7 +354,9 @@ Diagnosis checklist:
 3. **Auth is a red herring here unless** `authFailuresTotal.expired_token` / `invalid_token` is
    actually rising, or Auth0 logs show failed refresh (`type: fer`/`fert`). A lone `missing_token`
    401 that immediately recovers via `/.well-known/oauth-protected-resource` → `200` is the _normal_
-   reconnect handshake, not a failure.
+   reconnect handshake, not a failure. Since 2026-10-18, connector refresh tokens also expire after
+   30 days, or 15 days unused, so a reconnect after that long is expected (see
+   [`connecting-clients.md`](./connecting-clients.md#tenant-configuration-record)).
 
 **Fix: keep the instance always-on.** Run the connector on a hosting tier that does not spin down on
 idle (preferred), or keep it warm with an external pinger hitting `GET /health` more often than the

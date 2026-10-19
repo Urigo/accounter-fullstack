@@ -133,7 +133,11 @@ Hosted Claude redirect URI to allow:
 
 - https://claude.ai/api/mcp/auth_callback
 
-If Claude Code support is added later, also support loopback callback patterns as a separate phase.
+Other MCP hosts each get their own pre-registered Auth0 app with exact callback URLs (Auth0 does not
+accept wildcard ports). Cursor's are `http://localhost:8787/callback`,
+`http://127.0.0.1:8787/callback`, `http://127.0.0.1:5602/oauth/callback` and
+`cursor://anysphere.cursor-mcp/oauth/callback`. The per-client setup, including what is known about
+clients not yet configured, is in [`connecting-clients.md`](./connecting-clients.md).
 
 ## 6.4 Token and Scope Model
 

@@ -8,16 +8,17 @@ Complements [`submission-checklist.md`](./submission-checklist.md) — none of t
 there, and its "Authentication & OAuth discovery" section is marked fully complete while gap 1 is
 outstanding.
 
-Setup instructions live in [`local-development.md`](./local-development.md). The completed
-owner-scoping effort is reviewed in [`owner-scoping-review.md`](./owner-scoping-review.md), which
-also records findings not tracked as gaps here.
+Setup instructions live in [`connecting-clients.md`](./connecting-clients.md) (production clients)
+and [`local-development.md`](./local-development.md). The completed owner-scoping effort is reviewed
+in [`owner-scoping-review.md`](./owner-scoping-review.md), which also records findings not tracked
+as gaps here.
 
 **For the actionable list, see [`todo.md`](./todo.md)** — it consolidates the open items from this
 document and the review into one place. This document keeps the analysis behind each item.
 
 ## Known gaps
 
-**Still open: 1, 3, 4, 6, 7. Closed: 2, 5, 8** — kept below in condensed form, with the resolution,
+**Still open: 1, 3, 4, 6. Closed: 2, 5, 7, 8** — kept below in condensed form, with the resolution,
 so they are not re-discovered as bugs. Gap numbers are stable; other docs reference them.
 
 ### 1. Auth0 DCR is rejected by Claude — **critical, blocks production**
@@ -39,6 +40,19 @@ interop bug to Anthropic and/or Auth0, or front Auth0 with an authorization serv
 RFC 7591 the way Claude expects.
 
 Reproduction data is in the Auth0 tenant logs (type `sapi`, "Dynamic client registration").
+
+> Update (2026-10): Current behaviour.
+>
+> - Registration still succeeds on Auth0's side (201), as described above. The two self-registered
+>   'Claude' clients created 2026-08-02 were those registrations; neither showed any login activity,
+>   and both were deleted on 2026-10-18. There's no evidence Claude proceeds to /authorize.
+> - Even if it did, self-registered clients now get no API access: the Accounter API uses per-app
+>   authorization, so they fail with 'not authorized'.
+> - The 'confidential client secret' argument no longer holds: the Claude and Cursor connector apps
+>   are public clients (PKCE, no secret), and pre-registered public client IDs can be published (see
+>   the Cursor setup in [`connecting-clients.md`](./connecting-clients.md)). Whether a
+>   directory-published Claude connector can use a pre-registered client ID instead of DCR is an
+>   open question, tracked in #4616.
 
 ### 3. No resource binding: MCP and GraphQL share one audience — **medium**
 
@@ -65,28 +79,19 @@ The checklist covers the server's OAuth discovery obligations but never mentions
 obtain credentials, so it reads as complete while gap 1 is open. Add a client-registration line item
 and list gap 1 under "Known gaps to disclose at submission".
 
-### 7. Connector uses the API's auto-created test application — **low-medium (deferred)**
+### 7. Connector used the API's auto-created test application — **closed (2026-10)**
 
-The connector authenticates as `jTQFYG0Jgzoj5HlQzB2YNiRbfiB8dYJh`, which is the Accounter API's
-auto-created _"Accounter API (Test Application)"_ renamed to `Claude MCP Connector`. Accepted
-deliberately (2026-07-31) to avoid extra setup while the local connector was being brought up.
+The connector used to authenticate as `jTQFYG0Jgzoj5HlQzB2YNiRbfiB8dYJh`, the Accounter API's
+auto-created _"Accounter API (Test Application)"_ renamed to `Claude MCP Connector`: an M2M client
+running an Authorization Code flow, tied to the API object's lifecycle, and shared with the
+dashboard's Test tab. The plan was to replace it with a Regular Web Application.
 
-Latent problems, none of which affect current operation:
-
-- **Lifecycle is tied to the API object.** Auth0 removes the test application when its API is
-  deleted, so recreating or replacing the Accounter API silently destroys the connector's
-  credentials with nothing pointing at the dependency.
-- **Shared with the dashboard.** It backs the API's **Test** tab; anyone rotating its secret there
-  breaks the connector.
-- **Wrong application type.** It is a non-interactive M2M client running an Authorization Code +
-  Refresh Token flow. Functional (grant types were enabled manually), but Auth0 defaults and
-  anything keying off `app_type` assume M2M, and the name now misrepresents what the object is.
-
-**Task:** replace it with a purpose-built **Regular Web Application** (callback
-`https://claude.ai/api/mcp/auth_callback`, Authorization Code + Refresh Token grants), move the
-user-delegated grant on the Accounter API to the new app, update the connector's client ID/secret in
-Claude Desktop, and restore the test application's original name. Best paired with any other change
-that already requires re-granting API access.
+**Resolution.** That application no longer exists. The live Claude connector is a dedicated
+**Native, public** client, "Accounter MCP server" (`YHHwkpmelOQBnQw4WLctlIBcBsWrcuis`: PKCE, no
+secret, callback `https://claude.ai/api/mcp/auth_callback`), with its own user-access grant on
+`https://api.accounter.com`. Cursor has its own app on the same pattern. The Regular Web App plan is
+dropped. The configuration is recorded in
+[`connecting-clients.md`](./connecting-clients.md#tenant-configuration-record).
 
 ## Recorded findings (not gaps)
 
