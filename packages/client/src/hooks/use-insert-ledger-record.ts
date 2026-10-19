@@ -8,7 +8,7 @@ import { useApiMutation } from './use-api-mutation.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation InsertLedgerRecord(
-    $chargeId: UUID!
+    $chargeId: UUID
     $operation: LedgerRecordOperation!
     $input: LedgerRecordInput!
   ) {
@@ -44,9 +44,12 @@ const NOTIFICATION_ID = 'insertLedgerRecord';
 export const useInsertLedgerRecord = (): UseInsertLedgerRecord => {
   const { fetching, execute } = useApiMutation({
     document: InsertLedgerRecordDocument,
-    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
+    notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId ?? 'new-charge'}`,
     loadingMessage: 'Adding ledger record',
-    errorMessage: variables => `Error adding a ledger record to charge [${variables.chargeId}]`,
+    errorMessage: variables =>
+      variables.chargeId
+        ? `Error adding a ledger record to charge [${variables.chargeId}]`
+        : 'Error adding a ledger record with a new charge',
     commonErrorPath: 'insertLedgerRecord',
     select: data => data.insertLedgerRecord,
     successToast: { description: 'Ledger record added' },

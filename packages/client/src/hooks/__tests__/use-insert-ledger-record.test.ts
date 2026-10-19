@@ -84,4 +84,17 @@ describe('useInsertLedgerRecord', () => {
     );
     expect(toastMock.success).not.toHaveBeenCalled();
   });
+
+  it('names a new charge, not an undefined one, when inserting without a charge', async () => {
+    mutateMock.mockResolvedValue({ data: undefined });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { chargeId: _chargeId, ...withoutCharge } = VARIABLES;
+    const hook = await renderHook();
+
+    await expect(hook().insertLedgerRecord(withoutCharge)).resolves.toBeUndefined();
+    expect(mutateMock).toHaveBeenCalledWith(withoutCharge);
+    const [, options] = toastMock.error.mock.calls[0] as [string, { description: string }];
+    expect(options.description).toContain('with a new charge');
+    expect(options.description).not.toContain('undefined');
+  });
 });
