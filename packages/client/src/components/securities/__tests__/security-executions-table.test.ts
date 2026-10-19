@@ -61,6 +61,20 @@ describe('securityTaxLines', () => {
     ]);
   });
 
+  it('leaves out capital tax that restates the Israeli tax', () => {
+    expect(
+      securityTaxLines({
+        israelTaxValue: amount(25, '$'),
+        foreignTaxValue: amount(0, '$'),
+        israelTaxValueByPayments: amount(25, '$'),
+        capitalTaxValue: amount(25, '$'),
+      }),
+    ).toEqual([
+      { label: 'Israel', formatted: '$ 25.00' },
+      { label: null, formatted: '$ 25.00', secondary: true },
+    ]);
+  });
+
   it('keeps a refund of withheld tax', () => {
     expect(securityTaxLines({ israelTaxValueByPayments: amount(-5, '$') })).toEqual([
       { label: 'Israel', formatted: '$ -5.00' },

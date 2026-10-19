@@ -106,10 +106,11 @@ function currencyOfLabel(label: string | null): Currency | null {
 /**
  * The tax withheld from an execution's cash leg, in the cash leg's currency.
  *
- * The bank reports it per tax (foreign, Israeli, capital), signed — a refund of earlier
- * withholding is negative — and in the settlement currency, which the scraper guarantees is the
- * trade currency too. That reported amount is what gets booked; gross minus net is the same figure
- * worked out from the values, and `isConsistent` says whether the two agree.
+ * The bank reports it as foreign and Israeli tax, signed — a refund of earlier withholding is
+ * negative — and in the settlement currency, which the scraper guarantees is the trade currency
+ * too. Its capital tax column restates the Israeli tax rather than adding to it, so it only stands
+ * in when the Israeli column is empty. That reported amount is what gets booked; gross minus net is
+ * the same figure worked out from the values, and `isConsistent` says whether the two agree.
  */
 export function getWithheldTax(
   execution: WithheldTaxExecution,
@@ -123,10 +124,10 @@ export function getWithheldTax(
     );
   }
 
-  const withheld =
-    toAmount(execution.foreign_tax_value_settlement_currency) +
-    toAmount(execution.israel_tax_value_by_payments_settlement_currency) +
+  const israelTax =
+    toAmount(execution.israel_tax_value_by_payments_settlement_currency) ||
     toAmount(execution.capital_tax_value_settlement_currency);
+  const withheld = toAmount(execution.foreign_tax_value_settlement_currency) + israelTax;
 
   const net = executionAmountInCurrency(execution, cashCurrency);
   const deduced =
