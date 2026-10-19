@@ -3,6 +3,7 @@ import {
   Currency,
   LedgerRecordOperation,
   type LedgerRecordInput,
+  type LedgerRecordsTableFieldsFragment,
 } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
@@ -371,6 +372,37 @@ export function formValuesToLedgerRecordInput(
     valueDate: values.valueDate,
     description: emptyToNull(values.description),
     reference: emptyToNull(values.reference),
+  };
+}
+
+/**
+ * Prefill values for editing a stored ledger record (`LedgerRecordForm` in edit mode). Entities come
+ * from the accounts, local amounts from the `localCurrency*` amounts and foreign amounts from the
+ * record's own amounts. An empty line or a missing foreign amount is `null` (a cleared value, see
+ * `LedgerRecordFormInput`), and a missing description or reference is ''.
+ */
+export function ledgerRecordToFormValues(
+  record: LedgerRecordsTableFieldsFragment,
+): LedgerRecordFormValues {
+  return {
+    currency: record.currency,
+    invoiceDate: record.invoiceDate,
+    valueDate: record.valueDate,
+    description: record.description ?? '',
+    reference: record.reference ?? '',
+    // A stored record always has both main entities; '' lets the form flag one that doesn't
+    debitEntity1: record.debitAccount1?.id ?? '',
+    debitLocalAmount1: record.localCurrencyDebitAmount1.raw,
+    debitForeignAmount1: record.debitAmount1?.raw ?? null,
+    creditEntity1: record.creditAccount1?.id ?? '',
+    creditLocalAmount1: record.localCurrencyCreditAmount1.raw,
+    creditForeignAmount1: record.creditAmount1?.raw ?? null,
+    debitEntity2: record.debitAccount2?.id ?? null,
+    debitLocalAmount2: record.localCurrencyDebitAmount2?.raw ?? null,
+    debitForeignAmount2: record.debitAmount2?.raw ?? null,
+    creditEntity2: record.creditAccount2?.id ?? null,
+    creditLocalAmount2: record.localCurrencyCreditAmount2?.raw ?? null,
+    creditForeignAmount2: record.creditAmount2?.raw ?? null,
   };
 }
 
