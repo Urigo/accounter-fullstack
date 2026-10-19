@@ -4,6 +4,7 @@ import stripIndent from 'strip-indent';
 import { z } from 'zod';
 import { anthropic } from '@ai-sdk/anthropic';
 import { Currency, DocumentType } from '../../shared/enums.js';
+import { normalizeAllocationNumber } from './helpers/allocation-number.helper.js';
 import type { BusinessMatchData, OwnerMatchInfo } from './helpers/business-matcher.helper.js';
 import {
   applyForeignCounterpartyVatDefault,
@@ -68,12 +69,13 @@ const documentDataSchema = z.object({
     .describe(
       'Complete document identifier including any separators (e.g., dashes, slashes). Return empty string if missing.',
     ),
-  allocationNumber: z
+  // The model returns the code verbatim; the 9-digit allocation number is sliced off in code
+  // (see `normalizeAllocationNumber`), since LLMs miscount digit positions in long numbers.
+  allocationNumberRaw: z
     .string()
-    .length(9)
     .nullable()
     .describe(
-      'Unique document 9-digit allocation number (מספר הקצאה). Sometimes last 9 digits of a longer number. Return NULL (not empty string!) if no VAT amount, if amount is < 5000 ILS, or if missing.',
+      'Allocation number (מספר הקצאה), also labeled "Tax Authorities Code" / "קוד רשות המסים" / "מספר אישור". Copy it VERBATIM with every digit exactly as printed - it is often a long code of 20+ digits. Do NOT shorten it, truncate it or extract a substring. Return NULL (not empty string!) if no VAT amount, if amount is < 5000 ILS, or if missing.',
     ),
   description: z
     .string()
@@ -82,9 +84,13 @@ const documentDataSchema = z.object({
 
 type DocumentData = z.infer<typeof documentDataSchema>;
 
-export type DocumentDataWithMatches = Omit<DocumentData, 'type' | 'currency'> & {
+export type DocumentDataWithMatches = Omit<
+  DocumentData,
+  'type' | 'currency' | 'allocationNumberRaw'
+> & {
   type?: DocumentType;
   currency?: Currency;
+  allocationNumber: string | null;
   suggestedIssuer: string | null;
   suggestedRecipient: string | null;
 };
@@ -160,7 +166,7 @@ export class AnthropicProvider {
                         - Issuer and recipient details (names and VAT/registration numbers)
                         - Monetary amounts (total and VAT)
                         - Date and reference numbers
-                        - Allocation number (if VAT exists and applicable)
+                        - Allocation number (if VAT exists and applicable): copy the full code verbatim, never shorten it
                         - Description or remarks
 
                         Note that some receipts (e.g. by Stripe) carry the invoice details; pay extra attention not to misclassify them as INVOICE_RECEIPT.
@@ -183,7 +189,7 @@ export class AnthropicProvider {
       throw new Error(`Failed to extract document details: ${err.message}`);
     });
 
-    const draft = output;
+    const { allocationNumberRaw, ...draft } = output;
 
     const businessList = businesses ?? [];
     let suggestedIssuer = matchBusiness(draft.issuer, draft.issuerVatNumber, businessList);
@@ -272,6 +278,7 @@ export class AnthropicProvider {
     return {
       ...draft,
       vatAmount,
+      allocationNumber: normalizeAllocationNumber(allocationNumberRaw),
       type: validatedType,
       currency: validatedCurrency,
       suggestedIssuer,
