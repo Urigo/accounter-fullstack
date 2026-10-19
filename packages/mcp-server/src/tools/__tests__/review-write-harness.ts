@@ -42,8 +42,20 @@ export interface CapturedCall {
   headers: Record<string, string>;
 }
 
-/** A client answering `{ data: { [rootField]: payload } }` to every call. */
-export function mutationClient(rootField: string, payload: unknown, status = 200) {
+/**
+ * A client that answers each upstream call from `handlers`: the key is the
+ * root field the operation selects (`updateCharge`, `chargesByIDs`, …) and the
+ * value is the payload returned under it. A single `(rootField, payload)` pair
+ * is the one-operation shorthand. Operations with no handler answer `{}`, so a
+ * missing read shows up as a crash in the tool rather than a silent pass.
+ */
+export function mutationClient(
+  handlers: string | Record<string, unknown>,
+  payload?: unknown,
+  status = 200,
+) {
+  const table: Record<string, unknown> =
+    typeof handlers === 'string' ? { [handlers]: payload } : handlers;
   const captured: CapturedCall[] = [];
   const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string) as {
@@ -55,10 +67,14 @@ export function mutationClient(rootField: string, payload: unknown, status = 200
       variables: body.variables,
       headers: init.headers as Record<string, string>,
     });
+    const rootField = Object.keys(table).find(field =>
+      new RegExp(`\\b${field}\\s*\\(`).test(body.query),
+    );
+    const data = rootField ? { [rootField]: table[rootField] } : {};
     return {
       ok: status < 400,
       status,
-      json: async () => ({ data: { [rootField]: payload } }),
+      json: async () => ({ data }),
     } as unknown as Response;
   });
   const client = new UpstreamGraphQLClient({
@@ -67,6 +83,22 @@ export function mutationClient(rootField: string, payload: unknown, status = 200
     fetchImpl: fetchImpl as unknown as typeof fetch,
   });
   return { client, captured };
+}
+
+/** The calls in `captured` whose operation selects `rootField`. */
+export function callsTo(captured: CapturedCall[], rootField: string): CapturedCall[] {
+  const re = new RegExp(`\\b${rootField}\\s*\\(`);
+  return captured.filter(call => re.test(call.query));
+}
+
+/** The root field each captured call selects, in call order. */
+export function rootFields(captured: CapturedCall[]): string[] {
+  return captured.map(call => {
+    // Skip the operation header (`mutation Name(...) {`) and read the first
+    // selection, which is the root field.
+    const body = call.query.replace(/^\s*(query|mutation)\s+\w+\s*(\([^)]*\))?\s*\{/, '');
+    return (body.match(/\b(\w+)\s*[({]/) ?? [])[1] ?? '';
+  });
 }
 
 export function runTool(
@@ -93,6 +125,7 @@ export function chargeEcho(overrides: Record<string, unknown> = {}) {
     userDescription: 'General banking fees',
     optionalDocuments: null,
     optionalVAT: null,
+    isInvoicePaymentDifferentCurrency: null,
     counterparty: { id: BIZ, name: 'Poalim' },
     tags: [{ id: 'tag-1', name: 'financial' }],
     metadata: { transactionsCount: 2, documentsCount: 0, invalidLedger: 'VALID' },

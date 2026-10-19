@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpUpdateTransactionsMutation } from '../gql/index.js';
+import type { McpTransactionChargesQuery, McpUpdateTransactionsMutation } from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
+import { deleteEmptiedCharges, describeCleanup, type CleanupResult } from './charge-cleanup.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
 import type {
   ToolDefinition,
@@ -20,6 +21,15 @@ import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './sc
  * transaction edit, not a charge edit. The same call also moves a transaction
  * between charges, which is the other half of matching: a bank row that landed
  * in its own charge is moved onto the charge holding the invoice it pays.
+ *
+ * Two upstream behaviours shape the move (`updateTransactions`):
+ *  - moving onto a REAL charge never touches the former charge, so a row that
+ *    was alone leaves an empty charge behind. The tool notes the former charges
+ *    before the move and deletes the ones left empty (see charge-cleanup.ts),
+ *    unless `deleteEmptiedCharges` is false;
+ *  - EMPTY_UUID "unlinks": upstream creates ONE new charge and moves every
+ *    listed transaction into it (not one charge per row), and deletes former
+ *    charges it emptied itself.
  */
 
 export const UPDATE_TRANSACTIONS_TOOL_NAME = 'accounter_update_transactions';
@@ -27,7 +37,7 @@ export const UPDATE_TRANSACTIONS_TOOL_NAME = 'accounter_update_transactions';
 /** Max transactions edited in one call, matching the other write tools' cap. */
 export const MAX_TRANSACTIONS_PER_CALL = 50;
 
-/** Upstream's sentinel for "unlink into a fresh charge of its own". */
+/** Upstream's sentinel for "unlink into a new charge". */
 export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';
 
 const updateTransactionsInput = z.object({
@@ -55,15 +65,41 @@ const updateTransactionsInput = z.object({
     .optional()
     .describe(
       'Move the transactions onto this charge (the one holding the matching invoice, say). A ' +
-        'former charge left with nothing in it is deleted. Pass the all-zero UUID ' +
-        `(${EMPTY_UUID}) to unlink each transaction into a new charge of its own.`,
+        'former charge the move leaves empty is deleted afterwards and reported under ' +
+        '`cleanup.deletedChargeIds` (turn that off with `deleteEmptiedCharges: false`). Pass the ' +
+        `all-zero UUID (${EMPTY_UUID}) to unlink: upstream then creates ONE new charge and moves ` +
+        'all the listed transactions into it together, so unlink unrelated rows in separate calls.',
     ),
   isFee: z
     .boolean()
     .optional()
     .describe('Mark the transactions as bank/processing fees (true) or not (false).'),
+  deleteEmptiedCharges: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      'When moving onto a real charge, delete former charges that end up with no transactions, ' +
+        'documents or misc expenses (default true). Only charges upstream confirms are empty are ' +
+        'deleted.',
+    ),
 });
 type UpdateTransactionsInput = z.infer<typeof updateTransactionsInput>;
+
+const TRANSACTION_CHARGES_QUERY = /* GraphQL */ `
+  query McpTransactionCharges($transactionIDs: [UUID!]!) {
+    transactionsByIDs(transactionIDs: $transactionIDs) {
+      ... on CommonTransaction {
+        id
+        chargeId
+      }
+      ... on ConversionTransaction {
+        id
+        chargeId
+      }
+    }
+  }
+`;
 
 const UPDATE_TRANSACTIONS_MUTATION = /* GraphQL */ `
   mutation McpUpdateTransactions($transactionIds: [UUID!]!, $fields: UpdateTransactionInput!) {
@@ -120,6 +156,19 @@ async function updateTransactionsHandler(
     ]);
   }
 
+  // A move onto a real charge may leave former charges empty; upstream does not
+  // clean those up, so remember where the rows came from before they move.
+  const movingToRealCharge =
+    input.chargeId !== undefined && input.chargeId !== EMPTY_UUID && input.deleteEmptiedCharges;
+  let formerChargeIds: string[] = [];
+  if (movingToRealCharge) {
+    const before = await context.client.query<McpTransactionChargesQuery>(
+      { query: TRANSACTION_CHARGES_QUERY, variables: { transactionIDs: input.transactionIds } },
+      context.upstream,
+    );
+    formerChargeIds = before.transactionsByIDs.map(transaction => transaction.chargeId);
+  }
+
   const data = await context.client.mutate<McpUpdateTransactionsMutation>(
     {
       query: UPDATE_TRANSACTIONS_MUTATION,
@@ -146,29 +195,37 @@ async function updateTransactionsHandler(
       : null,
   }));
 
+  const cleanup: CleanupResult = movingToRealCharge
+    ? await deleteEmptiedCharges(formerChargeIds, input.chargeId ?? null, context)
+    : { deletedChargeIds: [], keptChargeIds: [], failures: [] };
+
   return shapeWriteResult({
     action: 'update_transactions',
     outcome: {
       updatedCount: transactions.length,
       requestedCount: input.transactionIds.length,
       updatedFields: Object.keys(fields),
+      cleanup,
       scope: { memberBusinessIds: context.readScope.memberBusinessIds },
     },
     items: { key: 'transactions', values: transactions },
     summary:
       `Updated ${Object.keys(fields).join(', ')} on ${transactions.length} of ` +
-      `${input.transactionIds.length} requested transaction(s).`,
+      `${input.transactionIds.length} requested transaction(s).` +
+      describeCleanup(cleanup),
   });
 }
 
 function observe(input: UpdateTransactionsInput, result: ToolResult): ToolObservation {
-  const structured = result.structuredContent as { updatedCount?: number } | undefined;
+  const structured = result.structuredContent as
+    { updatedCount?: number; cleanup?: CleanupResult } | undefined;
   return {
     fields: {
       requestedTransactionCount: input.transactionIds.length,
       updatedTransactionCount: structured?.updatedCount,
       setsCounterparty: input.counterpartyId !== undefined,
       movesCharge: input.chargeId !== undefined,
+      deletedEmptiedChargeCount: structured?.cleanup?.deletedChargeIds.length ?? 0,
     },
   };
 }
@@ -181,10 +238,12 @@ export const updateTransactionsTool: ToolDefinition<typeof updateTransactionsInp
     'its transactions, so pass the business id as `counterpartyId` (resolve it with ' +
     '`accounter_list_businesses`, or make one with `accounter_create_business`). `chargeId` ' +
     'moves the transactions onto another charge — e.g. an incoming wire onto the charge ' +
-    'holding the invoice it pays — and an emptied former charge is deleted. Only the fields ' +
-    'you pass change. The echo under `transactions` lists each transaction as it now stands ' +
-    '(`id`, `chargeId`, `isFee`, `counterparty`), alongside `updatedCount`, `requestedCount` and ' +
-    '`updatedFields`. ' +
+    'holding the invoice it pays; former charges the move leaves empty are then deleted and ' +
+    'listed under `cleanup.deletedChargeIds` (those still holding something are kept and listed ' +
+    'under `cleanup.keptChargeIds`). The all-zero UUID unlinks all the listed transactions into ' +
+    'one new charge. Only the fields you pass change. The echo under `transactions` lists each ' +
+    'transaction as it now stands (`id`, `chargeId`, `isFee`, `counterparty`), alongside ' +
+    '`updatedCount`, `requestedCount`, `updatedFields` and `cleanup`. ' +
     writeResultDescription('transactions') +
     ' ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,

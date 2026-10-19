@@ -361,8 +361,10 @@ async function callTool(name: string, args: JsonRecord, token: string) {
   return body.result;
 }
 
-/** The review/matching write tools, all behind the same flag as the first two. */
-const REVIEW_WRITE_TOOLS = [
+/** Every mutating tool: all hidden unless `MCP_ENABLE_WRITE_TOOLS=1`. */
+const WRITE_TOOLS = [
+  'accounter_update_charges_tags',
+  'accounter_upload_documents',
   'accounter_update_charge',
   'accounter_merge_charges',
   'accounter_update_transactions',
@@ -431,9 +433,7 @@ describe('authenticated tool invocation', () => {
     expect(tools).not.toContain('accounter_smoke_ping');
     // MCP_ENABLE_WRITE_TOOLS is unset here, which is the default a deployment
     // upgrades into: the write tools must not appear.
-    expect(tools).not.toContain('accounter_update_charges_tags');
-    expect(tools).not.toContain('accounter_upload_documents');
-    for (const writeTool of REVIEW_WRITE_TOOLS) {
+    for (const writeTool of WRITE_TOOLS) {
       expect(tools).not.toContain(writeTool);
     }
   });
@@ -759,9 +759,7 @@ describe('write tools with MCP_ENABLE_WRITE_TOOLS=1', () => {
       (await res.json()) as { result: { tools: Array<{ name: string }> } }
     ).result.tools.map(t => t.name);
 
-    expect(tools).toContain('accounter_update_charges_tags');
-    expect(tools).toContain('accounter_upload_documents');
-    for (const writeTool of REVIEW_WRITE_TOOLS) {
+    for (const writeTool of WRITE_TOOLS) {
       expect(tools).toContain(writeTool);
     }
     // Reads still lead: a tool that changes data should not be the first thing

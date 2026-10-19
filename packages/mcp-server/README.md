@@ -298,35 +298,51 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   [Uploading by URL](#uploading-by-url) and
   [Why inline upload is small](#why-inline-upload-is-small). Requires `business_owner`/`accountant`.
 - **`accounter_update_charge`** — edit a charge's own fields: `userDescription`, `type` (the
-  `ChargeType` vocabulary — PAYROLL, FINANCIAL, BUSINESS_TRIP, CREDITCARD_BANK, …),
-  `optionalDocuments`, `optionalVat`, `businessTripId`. Only the fields passed are sent, so an
-  omitted field is left as is. It deliberately has no `counterpartyId`: upstream derives a charge's
-  counterparty from its transactions and documents (the field exists on `UpdateChargeInput` but the
-  resolver ignores it), so the schema rejects it and points at the two tools below.
+  `ChargeType` vocabulary shared with `byChargeTypes` — PAYROLL, FINANCIAL, BUSINESS_TRIP,
+  CREDITCARD_BANK, …), `optionalDocuments`, `optionalVat`, `isInvoicePaymentDifferentCurrency`,
+  `defaultTaxCategoryId`, `businessTripId` and `yearsOfRelevance` (the spread across accounting
+  years). Only the fields passed are sent, so an omitted field is left as is. It deliberately has no
+  `counterpartyId`: upstream derives a charge's counterparty from its transactions and documents
+  (the field exists on `UpdateChargeInput` but the resolver ignores it), so the schema rejects it
+  and points at the two tools below. The echo's `chargeType` uses the same typename map as the read
+  tools (`chargeTypeFromTypename`), so PAYROLL / INTERNAL / VAT read back as sent.
 - **`accounter_merge_charges`** — fold 1–20 charges into a base charge: their transactions,
   documents and ledger records move onto it and they are deleted. This is the "receipt in its own
   charge ↔ card row in another" fix; the base should be the charge holding the transaction. Refuses
-  a self-merge or a duplicated id before any round trip. Optional `userDescription` / `type` apply
-  to the base in the same call.
+  a self-merge or a duplicated id before any round trip. The same optional fields as
+  `accounter_update_charge` apply to the base in the same call. Upstream returns the base charge as
+  loaded _before_ those fields are applied, so the tool re-reads the merged charge for its echo.
 - **`accounter_update_transactions`** — set `counterpartyId`, `chargeId` and/or `isFee` on 1–50
   transactions in one upstream batch. This is where a charge's counterparty is actually set.
-  `chargeId` moves the rows onto another charge (an emptied former charge is deleted); the all-zero
-  UUID unlinks each row into a fresh charge of its own. Reports `requestedCount` vs `updatedCount`,
-  since upstream skips ids it cannot resolve.
-- **`accounter_update_document`** — edit an existing document: `chargeId` moves it (the former
-  charge is deleted if left empty, reported as `deletedChargeId`), `creditorId` / `debtorId` fix the
-  parties the extractor read, and `documentType`, `serialNumber`, `date`, `amount`, `vat`,
-  `description` fix extracted values. Amounts are `{ value, currency }` and are mapped to the
-  upstream `{ raw, currency }`.
+  `chargeId` moves the rows onto another charge; upstream leaves a former charge behind even when
+  the move emptied it, so the tool notes the former charges first and afterwards deletes those left
+  with no transactions, documents or misc expenses (`cleanup.deletedChargeIds`; the rest under
+  `cleanup.keptChargeIds`; off with `deleteEmptiedCharges: false`). Deletion goes through upstream
+  `deleteCharge`, which itself refuses a non-empty charge. The all-zero UUID unlinks: upstream then
+  creates **one** new charge and moves every listed transaction into it (not one charge per row) and
+  deletes the former charges it emptied. Reports `requestedCount` vs `updatedCount`, since upstream
+  skips ids it cannot resolve.
+- **`accounter_update_document`** — edit an existing document: `chargeId` moves it, with the same
+  emptied-former-charge cleanup as above (upstream's own `deletedChargeId` is set only on the
+  all-zero-UUID unlink path); `creditorId` / `debtorId` fix the parties the extractor read; and
+  `documentType`, `serialNumber`, `date` (a real calendar date, checked with the shared helper),
+  `amount`, `vat` and `description` fix extracted values. `amount` is `{ value, currency }` and sets
+  the document's currency; `vat` is a bare number in that currency, because upstream takes the
+  currency from `amount` only and would silently ignore one on `vat`.
 - **`accounter_delete_document`** — delete one document for good; the charge goes with it when the
   document was all it held (`deletedChargeId`). Not reversible, so the description tells the model
   to read it back first and to prefer `accounter_update_document` for a real document in the wrong
   place.
 - **`accounter_create_business`** — add a business to the directory so it can be used as a
-  counterparty: `name` and an ISO 3166-1 alpha-3 `country` (the upstream mutation requires one),
-  plus optional `hebrewName`, `website`, `email`, `isDocumentsOptional`. Sort code, tax category and
-  the other bookkeeping attributes stay in the Accounter UI. Creates a new entry every call, hence
-  the instruction to look the name up with `accounter_list_businesses` first.
+  counterparty. Mirrors `InsertNewBusinessInput` field for field (`name`, a `country` validated
+  against the server's `CountryCode` enum, `hebrewName`, `governmentId`, `sortCode`,
+  `taxCategoryId`, `irsCode`, `pcn874RecordType`, address fields, `email`, `phoneNumber`, `website`,
+  the `exemptDealer` / `optionalVat` / `isReceiptEnough` / `isDocumentsOptional` / `isActive` flags
+  and matching `suggestions`), so the bookkeeping attributes are set in the same call. Upstream
+  `insertNewBusiness` is not atomic (financial entity first, business row second), and a model's
+  natural reaction to an error is to fix its input and call again — so the tool looks the name up
+  first and refuses an exact match with the existing id in the error (`allowDuplicateName: true`
+  overrides), and its description says to look the name up again after any upstream error.
 
 All six require `business_owner`/`accountant`, target exactly one business, are audit-logged, and
 are never retried.
@@ -785,6 +801,12 @@ Two tool-specific rules worth knowing:
 - `accounter_update_charges_tags` is incremental, not a replacement: tags not named in
   `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
   ends up added.
+- Moving rows onto a real charge does not clean up after itself upstream. `updateTransactions` and
+  `updateDocument` delete an emptied former charge only on the all-zero-UUID unlink path; a move
+  onto an existing charge leaves the former charge behind. `accounter_update_transactions` and
+  `accounter_update_document` therefore do the cleanup themselves (`charge-cleanup.ts`): read the
+  former charges before the move, and after it delete those upstream confirms are empty. The outcome
+  is reported under `cleanup`, separately from upstream's own `deletedChargeId`.
 - A charge's counterparty is **not** a charge field. `accounter_update_charge` rejects
   `counterpartyId` on purpose — upstream computes the counterparty from the businesses on the
   charge's transactions and the creditor/debtor on its documents, so the edit lives in
