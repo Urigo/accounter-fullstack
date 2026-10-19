@@ -42,8 +42,12 @@ import { extractTransactionSecurityKeys } from './security-key.helper.js';
  */
 
 /**
- * How many calendar days after its value date an execution's cash can still move. Covers a
- * settlement a few business days late plus a weekend and a holiday run.
+ * How far from its execution's dates a transaction's cash can still move: up to this many
+ * calendar days after the value date (a settlement a few business days late, plus a weekend and a
+ * holiday run), and up to this many before it — though never before the trade date.
+ *
+ * Only a transaction that names its security gets this much slack; one that names none has to
+ * line up exactly (see `fitDates`).
  */
 export const CASH_SETTLEMENT_WINDOW_DAYS = 10;
 
@@ -172,7 +176,7 @@ export function transactionCashDates(
  * column at zero and reports the cash in the NIS column. So a zero column gives way to the next
  * one in the same currency, and only when every candidate is zero is the execution taken to be
  * worth zero. On a foreign-currency execution the NIS column is not the trade at all — it is the
- * commission the bank charged separately in shekels.
+ * commission the bank charged separately in shekels — so it is only read for a shekel execution.
  *
  * The feed spells its currencies out in Hebrew; `formatCurrency` knows those labels, and the
  * nullable form keeps an unrecognized one from throwing mid-match.
@@ -202,7 +206,13 @@ export function executionAmountInCurrency(
   ) {
     reported.push(execution.net_value_settlement_currency);
   }
-  if (currency === Currency.Ils && execution.net_value_nis != null) {
+  // The NIS column is only the trade's cash on a shekel execution. On a foreign-currency one it
+  // is the commission the bank charges separately in shekels, and reading it as the cash leg
+  // would let that fee pass for the trade.
+  const isShekelExecution =
+    label(execution.trade_currency) === Currency.Ils ||
+    label(execution.settlement_currency) === Currency.Ils;
+  if (currency === Currency.Ils && isShekelExecution && execution.net_value_nis != null) {
     reported.push(execution.net_value_nis);
   }
 
@@ -243,18 +253,47 @@ enum DateFit {
   Window = 2,
 }
 
+type DatesFit = {
+  fit: DateFit;
+  /** Days from the cash to the execution's trade-to-value span; zero inside it */
+  distance: number;
+  /**
+   * Days from the cash to the trade date, which breaks ties between neighbouring executions in the
+   * window. Zero for an exact match, which keeps the original rule's oldest-first order there.
+   */
+  tradeDistance: number;
+};
+
+/**
+ * How well a transaction's dates fit an execution, or null when they cannot be its cash.
+ *
+ * Inside the window, closeness is measured to the execution's whole trade-to-value span rather
+ * than to its value date: a foreign row's cash usually moves near the trade date, so measuring from
+ * the value date alone would make a later trade's cash look closer to an earlier trade's settlement
+ * than to its own trade.
+ */
 function fitDates(
   execution: MatchableExecution,
   transaction: MatchableTransaction,
-): { fit: DateFit; distance: number } | null {
+  namesSecurity: boolean,
+): DatesFit | null {
+  const tradeDistance = (date: TimelessDateString) =>
+    Math.abs(differenceInTimelessDays(date, execution.trade_date));
+
   const debitDate = transaction.debit_date_override ?? transaction.debit_date;
   if (execution.value_date != null) {
     if (debitDate === execution.value_date) {
-      return { fit: DateFit.ExactDebitDate, distance: 0 };
+      return { fit: DateFit.ExactDebitDate, distance: 0, tradeDistance: 0 };
     }
     if (transaction.event_date === execution.value_date) {
-      return { fit: DateFit.ExactEventDate, distance: 0 };
+      return { fit: DateFit.ExactEventDate, distance: 0, tradeDistance: 0 };
     }
+  }
+
+  // Without a security to pin it down, a nearby date is too weak a link: any same-amount movement
+  // in the charge could pass for the cash leg of any of its securities.
+  if (!namesSecurity) {
+    return null;
   }
 
   // Cash never moves before the trade, and never more than the window away from the value date.
@@ -263,25 +302,53 @@ function fitDates(
   const from =
     compareTimelessDates(execution.trade_date, earliest) > 0 ? execution.trade_date : earliest;
   const to = addDaysToTimelessDate(anchor, CASH_SETTLEMENT_WINDOW_DAYS);
+  const spanStart =
+    compareTimelessDates(execution.trade_date, anchor) < 0 ? execution.trade_date : anchor;
+  const spanEnd =
+    compareTimelessDates(execution.trade_date, anchor) < 0 ? anchor : execution.trade_date;
 
-  let distance: number | null = null;
+  let best: DatesFit | null = null;
   for (const date of transactionCashDates(transaction)) {
     if (compareTimelessDates(date, from) < 0 || compareTimelessDates(date, to) > 0) {
       continue;
     }
-    const days = Math.abs(differenceInTimelessDays(date, anchor));
-    if (distance == null || days < distance) {
-      distance = days;
+    const distance =
+      compareTimelessDates(date, spanStart) < 0
+        ? differenceInTimelessDays(spanStart, date)
+        : compareTimelessDates(date, spanEnd) > 0
+          ? differenceInTimelessDays(date, spanEnd)
+          : 0;
+    const candidate = { fit: DateFit.Window, distance, tradeDistance: tradeDistance(date) };
+    if (
+      best == null ||
+      candidate.distance < best.distance ||
+      (candidate.distance === best.distance && candidate.tradeDistance < best.tradeDistance)
+    ) {
+      best = candidate;
     }
   }
-  return distance == null ? null : { fit: DateFit.Window, distance };
+  return best;
 }
+
+/** What the matcher reads off a transaction, worked out once rather than per execution */
+type PreparedTransaction<TTransaction extends MatchableTransaction> = {
+  transaction: TTransaction;
+  index: number;
+  accountTuple: AccountTuple;
+  keys: string[];
+  currency: Currency;
+  value: DecimalValue;
+};
 
 function matchesIdentity(
   execution: MatchableExecution,
-  transaction: MatchableTransaction,
-  transactionKeys: readonly string[],
-  accountTuple: AccountTuple,
+  executionValueIn: (currency: Currency) => DecimalValue | null,
+  {
+    keys: transactionKeys,
+    accountTuple,
+    currency,
+    value: transactionValue,
+  }: PreparedTransaction<MatchableTransaction>,
 ): boolean {
   if (
     execution.bank_number !== accountTuple.bankNumber ||
@@ -297,19 +364,8 @@ function matchesIdentity(
     return false;
   }
 
-  const currency = formatCurrency(transaction.currency, true);
-  if (!currency) {
-    return false;
-  }
-
-  const executionAmount = executionAmountInCurrency(execution, currency);
-  if (executionAmount == null) {
-    return false;
-  }
-
-  const executionValue = parseDecimal(executionAmount);
-  const transactionValue = parseDecimal(transaction.amount);
-  if (!executionValue || !transactionValue) {
+  const executionValue = executionValueIn(currency);
+  if (!executionValue) {
     return false;
   }
   if (executionValue.magnitude !== transactionValue.magnitude) {
@@ -335,6 +391,11 @@ function matchesIdentity(
  * transaction first, so the pairing is stable regardless of row order. A pair whose execution or
  * transaction was already taken is skipped. Exact debit-date pairs rank above everything else,
  * so every pairing the original exact rule makes is still made the same way.
+ *
+ * Taking the best pair first can strand an execution whose only candidate went to a neighbour
+ * that had another option. A second pass re-seats pairs along augmenting paths until no more
+ * executions can be paired, trying each execution's candidates in the same order. Exact
+ * debit-date pairs are never re-seated.
  */
 export function matchExecutionsToTransactions<
   TExecution extends MatchableExecution,
@@ -344,28 +405,51 @@ export function matchExecutionsToTransactions<
   executions: readonly TExecution[],
   accountTuples: ReadonlyMap<string, AccountTuple>,
 ): Map<string, TTransaction> {
-  const eligible = transactions.flatMap((transaction, index) => {
-    const accountTuple = accountTuples.get(transaction.account_id);
-    return accountTuple
-      ? [{ transaction, index, accountTuple, keys: extractTransactionSecurityKeys(transaction) }]
-      : [];
-  });
+  const eligible = transactions.flatMap(
+    (transaction, index): PreparedTransaction<TTransaction>[] => {
+      const accountTuple = accountTuples.get(transaction.account_id);
+      const currency = formatCurrency(transaction.currency, true);
+      const value = parseDecimal(transaction.amount);
+      if (!accountTuple || !currency || !value) {
+        return [];
+      }
+      return [
+        {
+          transaction,
+          index,
+          accountTuple,
+          keys: extractTransactionSecurityKeys(transaction),
+          currency,
+          value,
+        },
+      ];
+    },
+  );
 
-  const candidates: Array<{
-    execution: TExecution;
-    transaction: TTransaction;
-    index: number;
-    fit: DateFit;
-    distance: number;
-  }> = [];
+  type Candidate = { execution: TExecution; transaction: TTransaction; index: number } & DatesFit;
+  const candidates: Candidate[] = [];
   for (const execution of executions) {
-    for (const { transaction, index, accountTuple, keys } of eligible) {
-      if (!matchesIdentity(execution, transaction, keys, accountTuple)) {
+    const valuesByCurrency = new Map<Currency, DecimalValue | null>();
+    const executionValueIn = (currency: Currency) => {
+      if (!valuesByCurrency.has(currency)) {
+        const amount = executionAmountInCurrency(execution, currency);
+        valuesByCurrency.set(currency, amount == null ? null : parseDecimal(amount));
+      }
+      return valuesByCurrency.get(currency) ?? null;
+    };
+
+    for (const prepared of eligible) {
+      if (!matchesIdentity(execution, executionValueIn, prepared)) {
         continue;
       }
-      const dates = fitDates(execution, transaction);
+      const dates = fitDates(execution, prepared.transaction, prepared.keys.length > 0);
       if (dates) {
-        candidates.push({ execution, transaction, index, ...dates });
+        candidates.push({
+          execution,
+          transaction: prepared.transaction,
+          index: prepared.index,
+          ...dates,
+        });
       }
     }
   }
@@ -374,19 +458,63 @@ export function matchExecutionsToTransactions<
     (a, b) =>
       a.fit - b.fit ||
       a.distance - b.distance ||
+      a.tradeDistance - b.tradeDistance ||
       compareTimelessDates(a.execution.trade_date, b.execution.trade_date) ||
       a.execution.id.localeCompare(b.execution.id) ||
       a.index - b.index,
   );
 
   const matches = new Map<string, TTransaction>();
-  const takenTransactionIds = new Set<string>();
-  for (const { execution, transaction } of candidates) {
-    if (matches.has(execution.id) || takenTransactionIds.has(transaction.id)) {
-      continue;
-    }
+  const fitByExecutionId = new Map<string, DateFit>();
+  const ownerByTransactionId = new Map<string, TExecution>();
+  const seat = ({ execution, transaction, fit }: Candidate) => {
     matches.set(execution.id, transaction);
-    takenTransactionIds.add(transaction.id);
+    fitByExecutionId.set(execution.id, fit);
+    ownerByTransactionId.set(transaction.id, execution);
+  };
+
+  for (const candidate of candidates) {
+    if (
+      !matches.has(candidate.execution.id) &&
+      !ownerByTransactionId.has(candidate.transaction.id)
+    ) {
+      seat(candidate);
+    }
+  }
+
+  const candidatesByExecutionId = new Map<string, Candidate[]>();
+  for (const candidate of candidates) {
+    const list = candidatesByExecutionId.get(candidate.execution.id);
+    if (list) {
+      list.push(candidate);
+    } else {
+      candidatesByExecutionId.set(candidate.execution.id, [candidate]);
+    }
+  }
+
+  const augment = (execution: TExecution, visited: Set<string>): boolean => {
+    for (const candidate of candidatesByExecutionId.get(execution.id) ?? []) {
+      const transactionId = candidate.transaction.id;
+      if (visited.has(transactionId)) {
+        continue;
+      }
+      visited.add(transactionId);
+      const owner = ownerByTransactionId.get(transactionId);
+      if (
+        !owner ||
+        (fitByExecutionId.get(owner.id) !== DateFit.ExactDebitDate && augment(owner, visited))
+      ) {
+        seat(candidate);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (const executionId of candidatesByExecutionId.keys()) {
+    if (!matches.has(executionId)) {
+      augment(candidatesByExecutionId.get(executionId)![0].execution, new Set());
+    }
   }
 
   return matches;

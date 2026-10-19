@@ -475,7 +475,7 @@ describe('validateSecurityCommissions', () => {
     const execution = commissionExecution();
 
     expect(validateSecurityCommissions([execution], [])).toEqual([
-      { execution, currency: Currency.Ils, expected: -15.3, charged: 0 },
+      { executions: [execution], currency: Currency.Ils, expected: -15.3, charged: 0 },
     ]);
   });
 
@@ -484,7 +484,7 @@ describe('validateSecurityCommissions', () => {
 
     expect(
       validateSecurityCommissions([execution], [commissionFee({ amount: '-12.00' })]),
-    ).toEqual([{ execution, currency: Currency.Ils, expected: -15.3, charged: -12 }]);
+    ).toEqual([{ executions: [execution], currency: Currency.Ils, expected: -15.3, charged: -12 }]);
   });
 
   it('expects the refund of a cancelled execution’s commission', () => {
@@ -509,6 +509,16 @@ describe('validateSecurityCommissions', () => {
         [commissionFee({ source_reference: '1111111' })],
       ),
     ).toHaveLength(1);
+  });
+
+  it('counts each execution’s own fee when several of one security share a charge', () => {
+    // A bond's last coupon and its redemption, each charged a fee of its own.
+    expect(
+      validateSecurityCommissions(
+        [commissionExecution(), commissionExecution({ trade_commission_value_nis: '40.00' })],
+        [commissionFee(), commissionFee({ amount: '-40.00' })],
+      ),
+    ).toEqual([]);
   });
 
   it('adds up the commissions of several executions of one security', () => {

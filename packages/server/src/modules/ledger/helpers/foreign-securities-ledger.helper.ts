@@ -333,8 +333,8 @@ export type CommissionFeeTransaction = {
 };
 
 export type CommissionMismatch<TExecution extends CommissionExecution> = {
-  /** An execution of the security, to name it by */
-  execution: TExecution;
+  /** The executions of the security whose commissions were added up */
+  executions: TExecution[];
   currency: Currency;
   /** What the bank reported, signed as the fee should move */
   expected: number;
@@ -349,6 +349,10 @@ export type CommissionMismatch<TExecution extends CommissionExecution> = {
  * A fee transaction names its security in its reference (see `extractTransactionSecurityKeys`);
  * one that names none cannot be attributed and is left out. Fees of securities with no expected
  * commission are not this check's business either — they are booked as fees regardless.
+ *
+ * Every fee of a security is added up, so every execution of that security in the charge has to
+ * be passed in — a bond's coupon and its redemption each bring a fee of their own. Which mismatches
+ * are worth reporting is the caller's call.
  */
 export function validateSecurityCommissions<TExecution extends CommissionExecution>(
   executions: readonly TExecution[],
@@ -356,10 +360,7 @@ export function validateSecurityCommissions<TExecution extends CommissionExecuti
 ): CommissionMismatch<TExecution>[] {
   const groupKey = (security: string, currency: Currency) => `${security}:${currency}`;
 
-  const expectedByGroup = new Map<
-    string,
-    { execution: TExecution; currency: Currency; expected: number; charged: number }
-  >();
+  const expectedByGroup = new Map<string, CommissionMismatch<TExecution>>();
   for (const execution of executions) {
     const charge = getExpectedCommissionCharge(execution);
     if (!charge) {
@@ -368,10 +369,11 @@ export function validateSecurityCommissions<TExecution extends CommissionExecuti
     const key = groupKey(execution.security, charge.currency);
     const group = expectedByGroup.get(key);
     if (group) {
+      group.executions.push(execution);
       group.expected += charge.amount;
     } else {
       expectedByGroup.set(key, {
-        execution,
+        executions: [execution],
         currency: charge.currency,
         expected: charge.amount,
         charged: 0,

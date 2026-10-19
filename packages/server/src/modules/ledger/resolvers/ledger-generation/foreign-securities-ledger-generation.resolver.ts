@@ -8,6 +8,7 @@ import type {
   SecuritiesTaxCategoryKey,
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
+import { formatStringifyAmount } from '../../../../shared/helpers/amount.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
   securitiesTaxCategoryLabel,
@@ -55,10 +56,6 @@ const MIN_AMOUNT = 0.005;
 function describeTransaction(transaction: IGetTransactionsByChargeIdsResult): string {
   const date = transaction.debit_date_override ?? transaction.debit_date ?? transaction.event_date;
   return `"${transaction.source_description ?? transaction.id}" (${date}, ${transaction.amount} ${transaction.currency})`;
-}
-
-function formatLedgerAmount(amount: number): string {
-  return amount.toFixed(2);
 }
 
 function describeSecurity(execution: SecurityExecutionRow): string {
@@ -316,23 +313,25 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
     // generate ledger from transactions
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
-    // The bank charges an income payment's commission as a fee row of its own, which lands in this
+    // The bank charges an execution's commission as a fee row of its own, which lands in this
     // charge by reference. The fees are booked as they are either way; this only reports a
-    // commission the bank says it took that the charge does not show.
-    const incomeExecutions = [
-      ...new Map(
-        [...executionsByTransactionId.values()].map(execution => [execution.id, execution]),
-      ).values(),
-    ].filter(execution => {
+    // commission the bank says it took on an income payment that the charge does not show. Every
+    // matched execution is counted, since every fee of the security is; only income payments are
+    // reported, as the commission convention of trades is not established yet.
+    const isIncome = (execution: SecurityExecutionRow) => {
       const kind = classifySecurityExecution(execution);
       return kind === 'DIVIDEND' || kind === 'INTEREST';
-    });
-    for (const mismatch of validateSecurityCommissions(incomeExecutions, feeTransactions)) {
-      const security = describeSecurity(mismatch.execution);
+    };
+    const commissionMismatches = validateSecurityCommissions(
+      [...executionsByTransactionId.values()],
+      feeTransactions,
+    ).filter(mismatch => mismatch.executions.some(isIncome));
+    for (const mismatch of commissionMismatches) {
+      const security = describeSecurity(mismatch.executions[0]!);
       errors.add(
         mismatch.charged === 0
-          ? `A commission of ${formatLedgerAmount(-mismatch.expected)} ${mismatch.currency} was reported for ${security}, but the charge has no fee transaction for it`
-          : `Fee transactions for ${security} charge ${formatLedgerAmount(-mismatch.charged)} ${mismatch.currency}, but the bank reported a commission of ${formatLedgerAmount(-mismatch.expected)} ${mismatch.currency}`,
+          ? `A commission of ${formatStringifyAmount(-mismatch.expected)} ${mismatch.currency} was reported for ${security}, but the charge has no fee transaction for it`
+          : `Fee transactions for ${security} charge ${formatStringifyAmount(-mismatch.charged)} ${mismatch.currency}, but the bank reported a commission of ${formatStringifyAmount(-mismatch.expected)} ${mismatch.currency}`,
       );
     }
 

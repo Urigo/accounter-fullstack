@@ -35,7 +35,8 @@ function transaction(overrides: Partial<MatchableTransaction> = {}): MatchableTr
     debit_date: '2024-03-12',
     debit_date_override: null,
     account_id: ACCOUNT_ID,
-    source_description: null,
+    // names the default execution's security, as a foreign-securities row does
+    source_description: 'ניע"ז קניה 0005129523',
     source_reference: null,
     ...overrides,
   };
@@ -140,13 +141,22 @@ describe('matchExecutionsToTransactions', () => {
   });
 
   it('compares the net value quoted in the transaction currency', () => {
-    // Same execution, booked in ILS: the NIS column is the comparable one.
+    // Settled in shekels: the NIS column is the comparable one.
     const matched = match(
       [transaction({ amount: '-3700.00', currency: 'ILS' })],
-      [execution({ trade_currency: 'דולר ארה"ב' })],
+      [execution({ settlement_currency: 'שקל חדש', net_value_settlement_currency: '0' })],
     );
 
     expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('never reads a foreign execution’s NIS column, which holds its shekel commission', () => {
+    expect(
+      match(
+        [transaction({ amount: '-37.00', currency: 'ILS' })],
+        [execution({ net_value_nis: '-37.00' })],
+      ).size,
+    ).toBe(0);
   });
 
   it('reads the settlement currency column when that is what the transaction is in', () => {
@@ -506,12 +516,71 @@ describe('matchExecutionsToTransactions — the settlement window', () => {
       ],
       [
         execution({ id: 'e-first', trade_date: '2024-03-04', value_date: '2024-03-06' }),
-        execution({ id: 'e-second', trade_date: '2024-03-04', value_date: '2024-03-13' }),
+        execution({ id: 'e-second', trade_date: '2024-03-11', value_date: '2024-03-13' }),
       ],
     );
 
     expect(matched.get('e-first')?.id).toBe('t-first');
     expect(matched.get('e-second')?.id).toBe('t-second');
+  });
+});
+
+describe('matchExecutionsToTransactions — neighbouring trades', () => {
+  // Two same-amount buys of one security, three days apart, each settling two days after its
+  // trade. A foreign row's cash moves near its trade date, closer to the earlier trade's
+  // settlement than to its own.
+  const earlier = execution({ id: 'e-earlier', trade_date: '2024-03-10', value_date: '2024-03-12' });
+  const later = execution({ id: 'e-later', trade_date: '2024-03-13', value_date: '2024-03-15' });
+
+  it('pairs cash with the trade whose span it falls in, even matched on its own', () => {
+    // As a charge holding only the later trade's cash sees it.
+    const matched = match(
+      [transaction({ id: 't-later', debit_date: '2024-03-13', event_date: '2024-03-13' })],
+      [earlier, later],
+    );
+
+    expect(matched.get('e-later')?.id).toBe('t-later');
+    expect(matched.has('e-earlier')).toBe(false);
+  });
+
+  it('re-seats a pair when that lets every execution find its cash', () => {
+    // e-a ranks t-shared first and could also take t-late; t-shared is all e-b can reach.
+    const matched = match(
+      [
+        transaction({ id: 't-shared', debit_date: '2024-03-08' }),
+        transaction({ id: 't-late', debit_date: '2024-03-20' }),
+      ],
+      [
+        execution({ id: 'e-a', trade_date: '2024-03-07', value_date: '2024-03-12' }),
+        execution({ id: 'e-b', trade_date: '2024-03-05', value_date: '2024-03-09' }),
+      ],
+    );
+
+    expect(matched.get('e-a')?.id).toBe('t-late');
+    expect(matched.get('e-b')?.id).toBe('t-shared');
+  });
+
+  it('never re-seats a pair made on the exact debit date', () => {
+    const matched = match(
+      [transaction({ id: 't-exact', debit_date: '2024-03-12' })],
+      [
+        execution({ id: 'e-exact', trade_date: '2024-03-10', value_date: '2024-03-12' }),
+        execution({ id: 'e-window', trade_date: '2024-03-11', value_date: '2024-03-14' }),
+      ],
+    );
+
+    expect(matched.get('e-exact')?.id).toBe('t-exact');
+    expect(matched.has('e-window')).toBe(false);
+  });
+});
+
+describe('matchExecutionsToTransactions — transactions that name no security', () => {
+  it('pairs them on an exact date only', () => {
+    const keyless = (debitDate: TimelessDateString) =>
+      transaction({ debit_date: debitDate, source_description: 'העברה' });
+
+    expect(match([keyless('2024-03-12')], [execution()]).get('e1')?.id).toBe('t1');
+    expect(match([keyless('2024-03-13')], [execution()]).size).toBe(0);
   });
 });
 
@@ -596,7 +665,14 @@ describe('executionAmountInCurrency', () => {
 describe('matchSecurityExecutions', () => {
   it('groups the matched executions by security key', () => {
     const matched = matchSecurityExecutions(
-      [transaction({ id: 't1' }), transaction({ id: 't2', amount: '-2000.00' })],
+      [
+        transaction({ id: 't1' }),
+        transaction({
+          id: 't2',
+          amount: '-2000.00',
+          source_description: 'ניע"ז קניה 0007654321',
+        }),
+      ],
       [
         execution({ id: 'e1', security: '5129523' }),
         execution({ id: 'e2', security: '7654321', net_value_trade_currency: '2000.00' }),

@@ -404,14 +404,19 @@ export class ForeignSecuritiesProvider {
    * {@link getCandidateExecutions}.
    *
    * Fees are left out of the pairing, as in {@link getChargeExecutionsByTransactionId}: a fee is
-   * never the cash leg of an execution.
+   * never the cash leg of an execution. The executions fetched are those of the securities the
+   * main transactions name, so this and the ledger's pairing see the same candidates.
    */
   private async getMatchedExecutions(
     transactions: readonly (MatchableTransaction & { is_fee: boolean | null })[],
-    securityKeys: readonly string[],
   ): Promise<Map<string, SecurityExecutionRow[]>> {
     const mainTransactions = transactions.filter(transaction => !transaction.is_fee);
-    if (mainTransactions.length === 0) {
+    const securityKeys = [
+      ...new Set(
+        mainTransactions.flatMap(transaction => extractTransactionSecurityKeys(transaction)),
+      ),
+    ];
+    if (securityKeys.length === 0) {
       return new Map();
     }
     const candidateExecutions = await this.getCandidateExecutions(mainTransactions, securityKeys);
@@ -810,7 +815,7 @@ export class ForeignSecuritiesProvider {
     const keys = [...transactionIdsByKey.keys()].sort();
     const [details, executionsByKey] = await Promise.all([
       this.securityByKeyLoader.loadMany(keys.map(securityKey => ({ ownerId, securityKey }))),
-      this.getMatchedExecutions(transactions, keys),
+      this.getMatchedExecutions(transactions),
     ]);
 
     return keys.map((key, index) => {

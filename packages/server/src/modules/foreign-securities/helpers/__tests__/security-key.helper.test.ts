@@ -79,6 +79,23 @@ describe('extractTransactionSecurityKeys', () => {
     ).toEqual([]);
   });
 
+  it('does not read the reference of a row that only mentions securities', () => {
+    for (const description of ['דמי משמרת ני"ע', 'דמי ניהול ני"ע', 'מניעה']) {
+      expect(
+        extractTransactionSecurityKeys({ source_description: description, source_reference: '1234567' }),
+      ).toEqual([]);
+    }
+  });
+
+  it('reads a domestic sale’s key from its reference', () => {
+    expect(
+      extractTransactionSecurityKeys({
+        source_description: 'ני"ע-מכירה',
+        source_reference: '1234567',
+      }),
+    ).toEqual(['1234567']);
+  });
+
   it('returns nothing without a reference to read', () => {
     expect(
       extractTransactionSecurityKeys({

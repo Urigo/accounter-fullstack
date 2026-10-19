@@ -674,9 +674,9 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
 
     describe('commission', () => {
       /** The commission fee, which the bank keys to the security in its reference */
-      const commissionFee = (amount: string) => ({
+      const commissionFee = (amount: string, id = 'transaction-commission') => ({
         ...buildTransaction({
-          id: 'transaction-commission',
+          id,
           amount,
           currency: Currency.Ils,
           businessId: BANK_BUSINESS_ID,
@@ -716,6 +716,50 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         expect(errors).toEqual([
           'A commission of 25.00 ILS was reported for MOCK (US0000000001), but the charge has no fee transaction for it',
         ]);
+      });
+
+      it('counts the fee of a non-income execution of the same security', async () => {
+        const dividend = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+        const sale = buildTransaction({ id: 'transaction-sale', amount: '2000' });
+
+        const { errors } = await generate({
+          transactions: [dividend, sale, commissionFee('-25'), commissionFee('-14', 'transaction-sale-commission')],
+          executions: {
+            [dividend.id]: dividendWithCommission(),
+            [sale.id]: buildExecution({
+              id: 'execution-sale',
+              trade_type: TRADE_TYPES.sell,
+              transaction_type: TRADE_TYPES.sell,
+              net_value_trade_currency: '2000',
+              net_value_settlement_currency: '2000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '14',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('does not report a commission mismatch of trades alone', async () => {
+        const sale = buildTransaction({ id: 'transaction-sale', amount: '2000' });
+
+        const { errors } = await generate({
+          transactions: [sale],
+          executions: {
+            [sale.id]: buildExecution({
+              id: 'execution-sale',
+              trade_type: TRADE_TYPES.sell,
+              transaction_type: TRADE_TYPES.sell,
+              net_value_trade_currency: '2000',
+              net_value_settlement_currency: '2000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '14',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
       });
 
       it('reports a fee that differs from the reported commission, and still books it', async () => {

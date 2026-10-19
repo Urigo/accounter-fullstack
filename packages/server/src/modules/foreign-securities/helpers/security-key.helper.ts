@@ -32,17 +32,21 @@ export function extractSecurityKeys(description: string | null | undefined): str
 }
 
 /**
- * Whether a description reads as a Poalim securities movement that carries no padded key —
- * a domestic trade (`ני"ע-קניה SEC'TIES PURCH`) or a securities fee
- * (`ניעז עמ' תשלום FSEC PYMNT FEE`). Quotes are stripped first: the bank spells the
- * abbreviation with `"`, `״` or nothing at all.
+ * Whether a description is one of the Poalim securities phrases that carry no padded key — a
+ * domestic trade (`ני"ע-קניה SEC'TIES PURCH`, `ני"ע-מכירה …`) or a securities fee
+ * (`ניעז עמ' תשלום FSEC PYMNT FEE`).
+ *
+ * Only these phrases, not every mention of securities: a custody or management fee (`דמי משמרת
+ * ני"ע`) also names securities, but its reference is an ordinary bank reference, and reading it
+ * as a key would invent a security. Quotes are stripped before the Hebrew check — the bank spells
+ * the abbreviation with `"`, `״` or nothing at all.
  */
 function isSecuritiesDescription(description: string): boolean {
   const lower = description.toLowerCase();
   return (
-    lower.replace(/["'׳״]/g, '').includes('ניע') ||
-    lower.includes('fsec') ||
-    /sec'?ties/.test(lower)
+    /ניע-(קניה|מכירה)/.test(lower.replace(/["'׳״]/g, '')) ||
+    /\bfsec\b/.test(lower) ||
+    /\bsec'?ties\b/.test(lower)
   );
 }
 
