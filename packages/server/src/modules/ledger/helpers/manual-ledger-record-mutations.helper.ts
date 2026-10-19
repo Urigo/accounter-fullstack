@@ -6,7 +6,10 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import { validateLedgerRecordParams } from './ledger-validation.helper.js';
-import { ledgerRecordInputToParams } from './manual-ledger-record.helper.js';
+import {
+  ledgerRecordInputToParams,
+  validateManualLedgerRecord,
+} from './manual-ledger-record.helper.js';
 
 /**
  * Overwrite the content of a single stored, unlocked ledger record. Every failure (missing or
@@ -32,18 +35,22 @@ export async function updateManualLedgerRecord(
       };
     }
 
-    const params = ledgerRecordInputToParams(input);
     const { defaultLocalCurrency, ledgerLock } = await injector
       .get(AdminContextProvider)
       .getVerifiedAdminContext();
-    // Never move a record into a closed period: both dates must be strictly after the lock date,
-    // matching `lockLedgerRecords`, which locks every record dated on or before it
-    if (ledgerLock && (input.invoiceDate <= ledgerLock || input.valueDate <= ledgerLock)) {
+    const validationErrors = validateManualLedgerRecord(input, {
+      localCurrency: defaultLocalCurrency,
+      ledgerLock,
+    });
+    if (validationErrors.length > 0) {
       return {
         __typename: 'CommonError',
-        message: new LedgerLockError().message,
+        message: validationErrors.join('\n'),
       };
     }
+
+    // Guards the provider's own invariants; runs after the friendlier checks above
+    const params = ledgerRecordInputToParams(input);
     try {
       validateLedgerRecordParams(
         { ...params, chargeId: record.charge_id, ownerId: record.owner_id },

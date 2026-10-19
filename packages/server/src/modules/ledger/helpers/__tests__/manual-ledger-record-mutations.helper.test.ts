@@ -9,11 +9,18 @@ import type { IGetChargesByIdsResult } from '../../../charges/types.js';
 import { LedgerProvider } from '../../providers/ledger.provider.js';
 import { makeInjector } from '../../resolvers/ledger-generation/__tests__/helpers/ledger-generation-mocks.js';
 import type { IGetLedgerRecordsByIdsResult } from '../../types.js';
+import { validateLedgerRecordParams } from '../ledger-validation.helper.js';
 import { updateManualLedgerRecord } from '../manual-ledger-record-mutations.helper.js';
 
 vi.mock('../../../accountant-approval/helpers/degrade-charges.helper.js', () => ({
   degradeChargesAccountantApproval: vi.fn(),
 }));
+
+// Real implementation by default; one test makes it throw to cover the provider-invariant guard
+vi.mock('../ledger-validation.helper.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../ledger-validation.helper.js')>();
+  return { ...actual, validateLedgerRecordParams: vi.fn(actual.validateLedgerRecordParams) };
+});
 
 /* All IDs, amounts and dates below are made up. */
 
@@ -138,29 +145,74 @@ describe('updateManualLedgerRecord', () => {
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
   });
 
-  it('returns a CommonError when the params fail validation', async () => {
-    const { injector, ledgerProvider } = setup(buildRecord());
+  it('returns a CommonError listing every validation problem, and never updates', async () => {
+    const { injector, ledgerProvider } = setup(buildRecord(), { ledgerLock: '2025-02-28' });
 
     const result = await updateManualLedgerRecord(injector, {
       ledgerRecordId: RECORD_ID,
-      // a foreign amount on a local-currency record
-      input: { ...INPUT, debitForeignAmount1: 30 },
+      input: {
+        ...INPUT,
+        // a foreign amount on a local-currency record
+        debitForeignAmount1: 30,
+        // unbalanced
+        creditLocalAmount1: 117,
+        invoiceDate: '2025-02-28',
+      },
     });
 
     expect(result).toEqual({
       __typename: 'CommonError',
-      message: 'Ledger record foreign currency is missing',
+      message: [
+        'Debit 1: foreign amount is not allowed for ILS records',
+        'Debit and credit totals must be equal (debit 100, credit 117)',
+        'Invoice date must be after the ledger lock date (2025-02-28)',
+      ].join('\n'),
+    });
+    expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
+    expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+  });
+
+  it('returns a CommonError when the provider-invariant validation throws, and never updates', async () => {
+    const { injector, ledgerProvider } = setup(buildRecord());
+    vi.mocked(validateLedgerRecordParams).mockImplementationOnce(() => {
+      throw new Error('Ledger record must have an invoice date');
+    });
+
+    const result = await updateManualLedgerRecord(injector, {
+      ledgerRecordId: RECORD_ID,
+      input: INPUT,
+    });
+
+    expect(result).toEqual({
+      __typename: 'CommonError',
+      message: 'Ledger record must have an invoice date',
     });
     expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
   });
 
   it.each([
-    ['the invoice date is on the lock date', { invoiceDate: '2025-02-28' }],
-    ['the invoice date is before the lock date', { invoiceDate: '2025-01-15' }],
-    ['the value date is on the lock date', { valueDate: '2025-02-28' }],
-    ['the value date is before the lock date', { valueDate: '2025-01-15' }],
-  ] as const)('returns a CommonError and never updates when %s', async (_, dates) => {
+    [
+      'the invoice date is on the lock date',
+      { invoiceDate: '2025-02-28' },
+      'Invoice date must be after the ledger lock date (2025-02-28)',
+    ],
+    [
+      'the invoice date is before the lock date',
+      { invoiceDate: '2025-01-15' },
+      'Invoice date must be after the ledger lock date (2025-02-28)',
+    ],
+    [
+      'the value date is on the lock date',
+      { valueDate: '2025-02-28' },
+      'Value date must be after the ledger lock date (2025-02-28)',
+    ],
+    [
+      'the value date is before the lock date',
+      { valueDate: '2025-01-15' },
+      'Value date must be after the ledger lock date (2025-02-28)',
+    ],
+  ] as const)('returns a CommonError and never updates when %s', async (_, dates, message) => {
     const { injector, ledgerProvider } = setup(buildRecord(), { ledgerLock: '2025-02-28' });
 
     const result = await updateManualLedgerRecord(injector, {
@@ -168,10 +220,7 @@ describe('updateManualLedgerRecord', () => {
       input: { ...INPUT, ...dates },
     });
 
-    expect(result).toEqual({
-      __typename: 'CommonError',
-      message: new LedgerLockError().message,
-    });
+    expect(result).toEqual({ __typename: 'CommonError', message });
     expect(ledgerProvider.updateLedgerRecord).not.toHaveBeenCalled();
     expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
   });
