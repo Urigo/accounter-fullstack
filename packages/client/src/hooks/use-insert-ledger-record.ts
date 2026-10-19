@@ -52,7 +52,12 @@ export const useInsertLedgerRecord = (): UseInsertLedgerRecord => {
         : 'Error adding a ledger record with a new charge',
     commonErrorPath: 'insertLedgerRecord',
     select: data => data.insertLedgerRecord,
-    successToast: { description: 'Ledger record added' },
+    // Without a charge the record may fall outside the host view's filters, so say where it went
+    successToast: (_result, variables) => ({
+      description: variables.chargeId
+        ? 'Ledger record added'
+        : 'Ledger record created on a new charge',
+    }),
   });
 
   return {
