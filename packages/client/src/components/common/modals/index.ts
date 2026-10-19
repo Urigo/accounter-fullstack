@@ -10,6 +10,7 @@ export * from './edit-transaction-modal.js';
 export * from './insert-business.js';
 export * from './insert-business-trip-modal.js';
 export * from './insert-document-modal.js';
+export * from './insert-ledger-record-modal.js';
 export * from './insert-misc-expense-modal.js';
 export * from './insert-salary-record-modal.js';
 export * from './insert-sort-code.js';

@@ -20,12 +20,7 @@ import {
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
 import { Depreciation } from '../common/depreciation/index.js';
-import {
-  BusinessTripSummarizedReport,
-  PreviewDocumentModal,
-  RegenerateLedgerRecordsButton,
-  Tooltip,
-} from '../common/index.js';
+import { BusinessTripSummarizedReport, PreviewDocumentModal, Tooltip } from '../common/index.js';
 import { DocumentsGallery } from '../documents-table/documents-gallery.js';
 import { DocumentsTable } from '../documents-table/index.js';
 import { LedgerTable } from '../ledger-table/index.js';
@@ -44,6 +39,7 @@ import { ExchangeRates } from './extended-info/exchange-rates.js';
 import { ForeignSecuritiesInfo } from './extended-info/foreign-securities-info.js';
 import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.js';
 import { SalariesTable } from './extended-info/salaries-info.js';
+import { LedgerSectionHeader } from './ledger-section-header.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -551,30 +547,17 @@ export function ChargeExtendedInfo({
               </AccordionItem>
             )}
 
-            {hasLedgerRecords && (
-              <AccordionItem value="ledger">
-                <AccordionTrigger
-                  disabled={!hasLedgerRecords}
-                  onClick={event => {
-                    event.stopPropagation();
-                  }}
-                >
-                  <div className="flex flex-row items-center gap-2 justify-start w-full">
-                    {!charge.metadata?.isLedgerLocked && (
-                      <RegenerateLedgerRecordsButton
-                        chargeId={charge.id}
-                        onChange={onExtendedChange}
-                        variant="outline"
-                      />
-                    )}
-                    Ledger Records
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
-                </AccordionContent>
-              </AccordionItem>
-            )}
+            {/* Always rendered, so a record can be added to a charge that has none yet */}
+            <AccordionItem value="ledger">
+              <LedgerSectionHeader
+                chargeId={charge.id}
+                isLedgerLocked={!!charge.metadata?.isLedgerLocked}
+                onChange={onExtendedChange}
+              />
+              <AccordionContent>
+                {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
+              </AccordionContent>
+            </AccordionItem>
 
             {chargeType === 'BankDepositCharge' && (
               <AccordionItem value="bankDeposit">
