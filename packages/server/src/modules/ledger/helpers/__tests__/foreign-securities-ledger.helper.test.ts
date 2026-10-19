@@ -138,20 +138,36 @@ describe('getWithheldTax', () => {
     expect(result.isConsistent).toBe(true);
   });
 
-  it('adds up the foreign, Israeli and capital tax columns', () => {
+  it('adds up the foreign and Israeli tax, counting the capital tax restating it once', () => {
     const result = getWithheldTax(
       taxExecution({
         trade_gross_value_trade_currency: '100',
-        net_value_trade_currency: '70',
-        net_value_settlement_currency: '70',
+        net_value_trade_currency: '75',
+        net_value_settlement_currency: '75',
         foreign_tax_value_settlement_currency: '15',
         israel_tax_value_by_payments_settlement_currency: '10',
-        capital_tax_value_settlement_currency: '5',
+        capital_tax_value_settlement_currency: '10',
       }),
       Currency.Usd,
     );
 
-    expect(result.withheld).toBeCloseTo(30, 6);
+    expect(result.withheld).toBeCloseTo(25, 6);
+    expect(result.deduced).toBeCloseTo(25, 6);
+    expect(result.isConsistent).toBe(true);
+  });
+
+  it('reads the Israeli tax from the capital tax column when only it is reported', () => {
+    const result = getWithheldTax(
+      taxExecution({
+        trade_gross_value_trade_currency: '100',
+        net_value_trade_currency: '75',
+        net_value_settlement_currency: '75',
+        capital_tax_value_settlement_currency: '25',
+      }),
+      Currency.Usd,
+    );
+
+    expect(result.withheld).toBeCloseTo(25, 6);
     expect(result.isConsistent).toBe(true);
   });
 

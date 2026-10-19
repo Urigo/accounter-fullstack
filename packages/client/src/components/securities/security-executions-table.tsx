@@ -110,8 +110,9 @@ export type SecurityTaxLine = {
 /**
  * The tax lines of one execution. The bank reports the tax withheld from the cash leg per kind
  * (foreign, Israeli, capital) in the settlement currency, which is what the ledger books, and
- * separately an Israeli tax figure in the trade currency. The per-kind amounts lead; that figure
- * follows when it is non-zero, and stands alone, as it always did, on rows with no per-kind amount.
+ * separately an Israeli tax figure in the trade currency. Capital tax often restates the Israeli
+ * tax, so it is listed only when it differs. The per-kind amounts lead; that figure follows when
+ * it is non-zero, and stands alone, as it always did, on rows with no per-kind amount.
  */
 export const securityTaxLines = (execution: {
   israelTaxValue?: TaxAmount;
@@ -122,10 +123,14 @@ export const securityTaxLines = (execution: {
   const isSignificant = (amount: TaxAmount): amount is NonNullable<TaxAmount> =>
     amount != null && Math.abs(amount.raw) >= MIN_TAX_AMOUNT;
 
+  const capitalTax =
+    execution.capitalTaxValue?.raw === execution.israelTaxValueByPayments?.raw
+      ? null
+      : execution.capitalTaxValue;
   const withheld: SecurityTaxLine[] = [
     { label: 'Foreign', amount: execution.foreignTaxValue },
     { label: 'Israel', amount: execution.israelTaxValueByPayments },
-    { label: 'Capital', amount: execution.capitalTaxValue },
+    { label: 'Capital', amount: capitalTax },
   ].flatMap(({ label, amount }) =>
     isSignificant(amount) ? [{ label, formatted: amount.formatted }] : [],
   );

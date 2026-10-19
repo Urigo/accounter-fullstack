@@ -52,7 +52,7 @@ export default gql`
     foreignTaxValue: FinancialAmount
     " Israeli tax withheld on the payment, in the settlement currency; negative for a refund. Source column israel_tax_value_by_payments_settlement_currency "
     israelTaxValueByPayments: FinancialAmount
-    " Capital gains tax, in the settlement currency; negative for a refund. Source column capital_tax_value_settlement_currency "
+    " Capital gains tax, in the settlement currency; negative for a refund. Usually restates israelTaxValueByPayments rather than adding to it. Source column capital_tax_value_settlement_currency "
     capitalTaxValue: FinancialAmount
     nominalProfitLoss: FinancialAmount
     realProfitLoss: FinancialAmount

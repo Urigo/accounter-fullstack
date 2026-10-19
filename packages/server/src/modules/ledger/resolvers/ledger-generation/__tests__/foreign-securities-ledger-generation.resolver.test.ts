@@ -589,6 +589,34 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(records[0].credit_entity1).not.toBe(SECURITIES_ILS);
     });
 
+    it('books Israeli tax once when the bank restates it as capital tax', async () => {
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            trade_gross_value_trade_currency: '1250',
+            israel_tax_value_by_payments_settlement_currency: '250',
+            capital_tax_value_settlement_currency: '250',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          debitForeign2: usd(250).foreign,
+          debitLocal2: usd(250).local,
+          credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          creditForeign1: usd(1250).foreign,
+          creditLocal1: usd(1250).local,
+        },
+      ]);
+    });
+
     it('keeps the base entry and names a missing income category', async () => {
       const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
       const { FOREIGN_DIVIDEND_INCOME: _, ...taxCategories } = TAX_CATEGORIES;
