@@ -20,6 +20,10 @@ import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.pro
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import { calculateFifoCostBasis } from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
 import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
+import {
+  getSecurityLocality,
+  type SecurityLocality,
+} from '../../../foreign-securities/helpers/security-locality.helper.js';
 import { ForeignSecuritiesProvider } from '../../../foreign-securities/providers/foreign-securities.provider.js';
 import type { SecurityExecutionRow } from '../../../foreign-securities/types.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -31,12 +35,10 @@ import {
   buildRedemptionEntry,
   calculateRedemptionGain,
   classifySecurityExecution,
-  getSecurityLocality,
   getWithheldTax,
   INCOME_TAX_CATEGORY_KEYS,
   validateSecurityCommissions,
   WITHHOLDING_TAX_CATEGORY_KEYS,
-  type SecurityLocality,
 } from '../../helpers/foreign-securities-ledger.helper.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../helpers/misc-expenses-ledger.helper.js';
@@ -128,6 +130,7 @@ function costBasisProblem(
 async function securitiesLedgerEntry(params: {
   injector: Injector;
   ownerId: string;
+  locality: string;
   transaction: IGetTransactionsByChargeIdsResult;
   baseEntry: StrictLedgerProto;
   execution: SecurityExecutionRow | undefined;
@@ -135,7 +138,8 @@ async function securitiesLedgerEntry(params: {
   errors: Set<string>;
   missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
 }): Promise<StrictLedgerProto> {
-  const { injector, ownerId, transaction, baseEntry, execution, taxCategories, errors } = params;
+  const { injector, ownerId, locality, transaction, baseEntry, execution, taxCategories, errors } =
+    params;
   const transactionDescription = describeTransaction(transaction);
 
   if (!execution) {
@@ -169,20 +173,20 @@ async function securitiesLedgerEntry(params: {
     }
     const hasWithheldTax = Math.abs(tax.withheld) >= MIN_AMOUNT;
     const requireLocality = (): SecurityLocality => {
-      const locality = getSecurityLocality(execution);
-      if (!locality) {
+      const securityLocality = getSecurityLocality(execution, locality);
+      if (!securityLocality) {
         throw new LedgerError(
           `Cannot tell whether ${describeSecurity(execution)} of transaction ${transactionDescription} is local or foreign: its execution has no issuer country or ISIN`,
         );
       }
-      return locality;
+      return securityLocality;
     };
 
     if (kind === 'DIVIDEND' || kind === 'INTEREST') {
-      const locality = requireLocality();
-      const incomeKey = INCOME_TAX_CATEGORY_KEYS[kind][locality];
+      const securityLocality = requireLocality();
+      const incomeKey = INCOME_TAX_CATEGORY_KEYS[kind][securityLocality];
       const withholdingKey = hasWithheldTax
-        ? WITHHOLDING_TAX_CATEGORY_KEYS[kind][locality]
+        ? WITHHOLDING_TAX_CATEGORY_KEYS[kind][securityLocality]
         : undefined;
       const ids = requireTaxCategories(
         withholdingKey ? [incomeKey, withholdingKey] : [incomeKey],
@@ -260,6 +264,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
   const {
     ownerId,
     defaultLocalCurrency,
+    locality,
     foreignSecurities: { taxCategories },
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
@@ -356,6 +361,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       const ledgerEntry = await securitiesLedgerEntry({
         injector,
         ownerId: charge.owner_id,
+        locality,
         transaction,
         baseEntry,
         execution: executionsByTransactionId.get(transaction.id),

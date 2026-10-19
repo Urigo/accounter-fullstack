@@ -66,6 +66,7 @@ beforeAll(async () => {
     getVerifiedAdminContext: () =>
       Promise.resolve({
         ownerId: TEST_OWNER_ID,
+        locality: 'ISR',
         foreignSecurities: {
           foreignSecuritiesBusinessId: null,
           foreignSecuritiesFeesCategoryId: null,
@@ -77,6 +78,7 @@ beforeAll(async () => {
   provider = new PoalimScraperIngestionProvider(
     dbClient,
     authContextProvider,
+    adminContextProvider,
     new SecurityBusinessesProvider(
       dbClient,
       adminContextProvider,
@@ -583,6 +585,52 @@ describe('uploadPoalimSecuritiesTransactions', () => {
       await provider.uploadPoalimSecuritiesTransactions([{ ...baseTransaction, isin: null }]);
 
       expect(await securityBusinessesOfOwner()).toEqual([]);
+    });
+
+    describe('is_foreign', () => {
+      // A dollar-denominated Israeli fund: the trade currency must not make it foreign.
+      const israeliFund: PoalimSecurityTransactionInput = {
+        ...baseTransaction,
+        security: '5129523',
+        isin: 'IL0000000001',
+        issuerCountryCode: 'IL',
+      };
+
+      const isForeignByIsin = async () => {
+        const { rows } = await pool.query(
+          `SELECT isin, is_foreign
+           FROM accounter_schema.businesses_securities
+           WHERE owner_id = $1
+           ORDER BY isin`,
+          [TEST_OWNER_ID],
+        );
+        return Object.fromEntries(rows.map(row => [row.isin, row.is_foreign]));
+      };
+
+      it('is derived from the issuer country, not assumed', async () => {
+        await provider.uploadPoalimSecuritiesTransactions([
+          { ...baseTransaction, issuerCountryCode: 'US' },
+          israeliFund,
+        ]);
+
+        expect(await isForeignByIsin()).toEqual({
+          IL0000000001: false,
+          US0000000001: true,
+        });
+      });
+
+      it('is corrected on a re-scrape when the stored flag is wrong', async () => {
+        await provider.uploadPoalimSecuritiesTransactions([israeliFund]);
+        await pool.query(
+          `UPDATE accounter_schema.businesses_securities SET is_foreign = true
+           WHERE owner_id = $1 AND isin = $2`,
+          [TEST_OWNER_ID, israeliFund.isin],
+        );
+
+        await provider.uploadPoalimSecuritiesTransactions([israeliFund]);
+
+        expect(await isForeignByIsin()).toEqual({ IL0000000001: false });
+      });
     });
   });
 
