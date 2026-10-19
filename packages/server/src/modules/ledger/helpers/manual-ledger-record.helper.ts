@@ -1,8 +1,9 @@
 import type { LedgerRecordInput } from '../../../__generated__/types.js';
-import type { Currency } from '../../../shared/enums.js';
+import { DocumentType, type Currency } from '../../../shared/enums.js';
 import { timelessDateStringToLocalDate } from '../../../shared/helpers/misc.js';
 import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
+import type { IInsertDocumentsParams } from '../../documents/types.js';
 import type { IInsertExpenseParams } from '../../misc-expenses/types.js';
 import type { IInsertLedgerRecordsParams } from '../types.js';
 
@@ -202,5 +203,124 @@ export function deriveMiscExpenseFromLedgerInput(
     // A timestamp column: store local midnight so the ledger generator, which reads it back with
     // `dateToTimelessDateString`, lands on the same calendar day in every timezone
     valueDate: timelessDateStringToLocalDate(input.valueDate),
+  };
+}
+
+/** The document a manual ledger record represents, before it is attached to a charge */
+export type ManualLedgerRecordDocument = Omit<
+  IInsertDocumentsParams['documents'][number],
+  'chargeId' | 'ownerId'
+>;
+
+/**
+ * A slot's amount in the record's currency: the foreign amount for a foreign-currency record,
+ * otherwise the local amount
+ */
+function slotAmount(
+  {
+    label,
+    localAmount,
+    foreignAmount,
+  }: Pick<LedgerSlot, 'label' | 'localAmount' | 'foreignAmount'>,
+  isLocalCurrency: boolean,
+  currency: Currency,
+): number {
+  const amount = isLocalCurrency ? localAmount : foreignAmount;
+  if (!isPresent(amount)) {
+    // Unreachable after `validateManualLedgerRecord`, which requires it
+    throw new Error(
+      isLocalCurrency
+        ? `${label}: amount is required`
+        : `${label}: foreign amount is required for ${currency} records`,
+    );
+  }
+  return amount;
+}
+
+/**
+ * Derive the INVOICE document backing a manual DOCUMENT ledger record. The counterparty is the one
+ * slot-1 entity that is a business: on the credit side the record is an expense (the counterparty
+ * is the creditor and the charge owner the debtor), on the debit side an income (the reverse). The
+ * document's total is the counterparty's slot-1 amount. Its VAT is the slot-2 amount on the side
+ * opposite the counterparty (debit 2 for an expense, credit 2 for an income) when that slot holds
+ * the input or output VAT tax category, and 0 otherwise.
+ *
+ * Throws an `Error` with an end-user readable message when no single business counterparty can be
+ * found, or when it is the charge owner.
+ */
+export function deriveDocumentFromLedgerInput(
+  input: LedgerRecordInput,
+  ctx: {
+    ownerId: string;
+    localCurrency: Currency;
+    entityTypes: Map<string, string>;
+    inputVatTaxCategoryId?: string | null;
+    outputVatTaxCategoryId?: string | null;
+  },
+): ManualLedgerRecordDocument {
+  const isDebitBusiness = ctx.entityTypes.get(input.debitEntity1) === 'business';
+  const isCreditBusiness = ctx.entityTypes.get(input.creditEntity1) === 'business';
+  if (isDebitBusiness === isCreditBusiness) {
+    throw new Error(
+      'A document needs exactly one business among the main debit and credit entities',
+    );
+  }
+
+  // An expense when the counterparty is on the credit side, an income when it is on the debit side
+  const isExpense = isCreditBusiness;
+  const counterpartyId = isExpense ? input.creditEntity1 : input.debitEntity1;
+  const counterpartySlot = isExpense
+    ? {
+        label: 'Credit 1',
+        localAmount: input.creditLocalAmount1,
+        foreignAmount: input.creditForeignAmount1,
+      }
+    : {
+        label: 'Debit 1',
+        localAmount: input.debitLocalAmount1,
+        foreignAmount: input.debitForeignAmount1,
+      };
+  const vatSlot = isExpense
+    ? {
+        label: 'Debit 2',
+        entity: input.debitEntity2,
+        localAmount: input.debitLocalAmount2,
+        foreignAmount: input.debitForeignAmount2,
+      }
+    : {
+        label: 'Credit 2',
+        entity: input.creditEntity2,
+        localAmount: input.creditLocalAmount2,
+        foreignAmount: input.creditForeignAmount2,
+      };
+  if (counterpartyId === ctx.ownerId) {
+    throw new Error("A document's counterparty cannot be the charge owner");
+  }
+
+  const isLocalCurrency = input.currency === ctx.localCurrency;
+  const vatCategoryIds = [ctx.inputVatTaxCategoryId, ctx.outputVatTaxCategoryId].filter(isPresent);
+  const vat =
+    vatSlot.entity && vatCategoryIds.includes(vatSlot.entity)
+      ? slotAmount(vatSlot, isLocalCurrency, input.currency)
+      : 0;
+
+  return {
+    documentType: DocumentType.Invoice,
+    creditorId: isExpense ? counterpartyId : ctx.ownerId,
+    debtorId: isExpense ? ctx.ownerId : counterpartyId,
+    amount: slotAmount(counterpartySlot, isLocalCurrency, input.currency),
+    currencyCode: input.currency,
+    vat,
+    serialNumber: input.reference ?? null,
+    date: input.invoiceDate,
+    description: input.description ?? null,
+    image: null,
+    file: null,
+    vatReportDateOverride: null,
+    noVatAmount: null,
+    allocationNumber: null,
+    exchangeRateOverride: null,
+    fileHash: null,
+    remarks: null,
   };
 }

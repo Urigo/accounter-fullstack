@@ -31,3 +31,17 @@ approved charge is re-flagged for accountant review), or a `CommonError`.
 Both mutations save the ledger change and the charge's re-flagging in one transaction. They reject
 a charge or ledger record that belongs to a business other than the one the request writes to, with
 a message asking to narrow the business scope to that business.
+
+`insertLedgerRecord` also supports `operation: DOCUMENT`, which creates the INVOICE document the
+record represents in the same transaction. Its counterparty is the one main (slot-1) debit or credit
+entity that is a business: on the credit side the document is an expense (the counterparty is the
+creditor and the charge owner the debtor), on the debit side an income (the reverse). The total is
+the counterparty's slot-1 amount in the record's currency, the serial number is the reference and
+the date is the invoice date. VAT is the slot-2 amount on the side opposite the counterparty (debit
+2 for an expense, credit 2 for an income) when that slot holds the input or output VAT tax category,
+and 0 otherwise. The insert is rejected when neither or both main entities are businesses, or when
+the counterparty is the charge owner.
+
+Every financial entity a manual ledger record references (both operations of an insert, and an
+edit) must belong to the business the request writes to; an entity of another business in the read
+scope is reported as not found in this business.

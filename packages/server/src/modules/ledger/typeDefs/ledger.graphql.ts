@@ -115,7 +115,10 @@ export default gql`
 
   " the business operation a manually inserted ledger record represents "
   enum LedgerRecordOperation {
+    " a misc expense: slot-1 credit entity is the creditor, slot-1 debit entity the debtor "
     MISC_EXPENSE
+    " an INVOICE document with the slot-1 business counterparty; VAT is read from slot 2 "
+    DOCUMENT
   }
 
   " result type for insertLedgerRecord "
