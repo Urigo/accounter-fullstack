@@ -5,6 +5,7 @@ import type { StrictLedgerProto } from '../../../shared/types/index.js';
 import { executionAmountInCurrency } from '../../foreign-securities/helpers/match-security-executions.helper.js';
 import { tryToSecurityTradeType } from '../../foreign-securities/helpers/security-execution-enums.helper.js';
 import { extractTransactionSecurityKeys } from '../../foreign-securities/helpers/security-key.helper.js';
+import type { SecurityLocality } from '../../foreign-securities/helpers/security-locality.helper.js';
 import type { SecurityExecutionRow } from '../../foreign-securities/types.js';
 import { LedgerError } from './utils.helper.js';
 
@@ -36,28 +37,6 @@ export function classifySecurityExecution(
     default:
       return 'OTHER';
   }
-}
-
-export type SecurityLocality = 'LOCAL' | 'FOREIGN';
-
-/** ISO 3166-1 alpha-2, as the bank reports the issuer country and as an ISIN starts */
-const LOCAL_COUNTRY_CODE = 'IL';
-
-/**
- * Whether income from a security is local or foreign, by where its issuer is: a dividend of an
- * Israeli company listed abroad is still a local dividend. Falls back to the ISIN's country prefix.
- */
-export function getSecurityLocality(
-  execution: Pick<SecurityExecutionRow, 'issuer_country_code' | 'isin'>,
-): SecurityLocality | null {
-  const issuerCountry = execution.issuer_country_code?.trim().toUpperCase();
-  const isinCountry = execution.isin?.trim().slice(0, 2).toUpperCase();
-  const country =
-    issuerCountry || (isinCountry && /^[A-Z]{2}$/.test(isinCountry) ? isinCountry : '');
-  if (!country) {
-    return null;
-  }
-  return country === LOCAL_COUNTRY_CODE ? 'LOCAL' : 'FOREIGN';
 }
 
 export const INCOME_TAX_CATEGORY_KEYS = {

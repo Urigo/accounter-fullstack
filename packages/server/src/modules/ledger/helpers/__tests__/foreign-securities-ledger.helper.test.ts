@@ -6,7 +6,6 @@ import {
   buildRedemptionEntry,
   classifySecurityExecution,
   getExpectedCommissionCharge,
-  getSecurityLocality,
   getWithheldTax,
   validateSecurityCommissions,
   type CommissionExecution,
@@ -90,26 +89,6 @@ describe('classifySecurityExecution', () => {
     ['something the bank never sent', 'OTHER'],
   ])('reads trade type "%s" as %s', (tradeType, kind) => {
     expect(classifySecurityExecution({ trade_type: tradeType })).toBe(kind);
-  });
-});
-
-describe('getSecurityLocality', () => {
-  it('is local for an Israeli issuer and foreign for any other', () => {
-    expect(getSecurityLocality({ issuer_country_code: 'IL', isin: 'US0000000001' })).toBe('LOCAL');
-    expect(getSecurityLocality({ issuer_country_code: 'US', isin: 'IL0000000001' })).toBe(
-      'FOREIGN',
-    );
-  });
-
-  it('falls back to the ISIN prefix when the issuer country is missing', () => {
-    expect(getSecurityLocality({ issuer_country_code: null, isin: 'IL0011223344' })).toBe('LOCAL');
-    expect(getSecurityLocality({ issuer_country_code: null, isin: 'FR0011223344' })).toBe(
-      'FOREIGN',
-    );
-  });
-
-  it('is unknown with neither', () => {
-    expect(getSecurityLocality({ issuer_country_code: null, isin: null })).toBeNull();
   });
 });
 

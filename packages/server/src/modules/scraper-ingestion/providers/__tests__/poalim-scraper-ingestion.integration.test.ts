@@ -66,6 +66,7 @@ beforeAll(async () => {
     getVerifiedAdminContext: () =>
       Promise.resolve({
         ownerId: TEST_OWNER_ID,
+        locality: 'ISR',
         foreignSecurities: {
           foreignSecuritiesBusinessId: null,
           foreignSecuritiesFeesCategoryId: null,
@@ -77,6 +78,7 @@ beforeAll(async () => {
   provider = new PoalimScraperIngestionProvider(
     dbClient,
     authContextProvider,
+    adminContextProvider,
     new SecurityBusinessesProvider(
       dbClient,
       adminContextProvider,

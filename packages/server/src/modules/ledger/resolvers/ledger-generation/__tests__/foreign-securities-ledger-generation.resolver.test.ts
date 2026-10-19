@@ -236,6 +236,7 @@ function makeInjector(scenario: Scenario) {
           getVerifiedAdminContext: async () => ({
             ownerId: OWNER_ID,
             defaultLocalCurrency: Currency.Ils,
+            locality: 'ISR',
             foreignSecurities: {
               foreignSecuritiesBusinessId: null,
               foreignSecuritiesFeesCategoryId: (scenario.taxCategories ?? TAX_CATEGORIES)
