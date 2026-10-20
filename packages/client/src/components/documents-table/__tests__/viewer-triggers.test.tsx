@@ -11,7 +11,7 @@ import {
 import { Files } from '../cells/files.js';
 import { Preview } from '../cells/preview.js';
 import type { DocumentsTableRowType } from '../columns.js';
-import { DocumentsTableRow, useReconcileViewerRows } from '../data-table.js';
+import { DocumentsTableRow, useReconcileViewerRows, viewingOutline } from '../data-table.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -36,7 +36,13 @@ function fakeRow(id: string, selected = false): Row<TableFeaturesConfig, { id: s
     id,
     original: { id },
     getIsSelected: () => selected,
-    getVisibleCells: () => [],
+    // Two cells, so the outline's first and last edges can be seen.
+    getVisibleCells: () =>
+      ['a', 'b'].map(key => ({
+        id: `${id}-${key}`,
+        column: { columnDef: { cell: () => key } },
+        getContext: () => ({}),
+      })),
   } as unknown as Row<TableFeaturesConfig, { id: string }>;
 }
 
@@ -61,7 +67,7 @@ function render(ui: ReactElement): void {
 
 function imageButton(): HTMLButtonElement {
   const button = container.querySelector<HTMLButtonElement>(
-    'button[aria-label="Open document image"]',
+    'button[aria-label="Open document image"], button[aria-label="Open image"]',
   );
   if (!button) {
     throw new Error('no image button');
@@ -111,6 +117,37 @@ describe.each([
   });
 });
 
+describe('image button names', () => {
+  it('gives the Files button a name distinct from the Preview thumbnail, matching its tooltip', () => {
+    render(
+      <>
+        <Preview document={makeDocument('doc-1')} />
+        <Files document={makeDocument('doc-1')} />
+      </>,
+    );
+    const names = [...container.querySelectorAll('button[aria-label^="Open"]')].map(b =>
+      b.getAttribute('aria-label'),
+    );
+    expect(names).toContain('Open document image');
+    expect(names).toContain('Open image');
+  });
+});
+
+describe('viewingOutline', () => {
+  const edges = (index: number, count: number): string[] =>
+    viewingOutline(index, count)
+      .split(', ')
+      .map(part => part.replace(' 0 0 var(--viewing-outline)', '').replace('inset ', ''));
+
+  it('draws top and bottom on every cell, and the outer edges on the first and last', () => {
+    expect(edges(0, 3)).toEqual(['0 2px', '0 -2px', '2px 0']);
+    expect(edges(1, 3)).toEqual(['0 2px', '0 -2px']);
+    expect(edges(2, 3)).toEqual(['0 2px', '0 -2px', '-2px 0']);
+    // A single cell is boxed on all four sides.
+    expect(edges(0, 1)).toEqual(['0 2px', '0 -2px', '2px 0', '-2px 0']);
+  });
+});
+
 describe('DocumentsTableRow', () => {
   function renderRows(): void {
     render(
@@ -138,8 +175,11 @@ describe('DocumentsTableRow', () => {
         .open({ id: 'doc-1', imageUrl: 'https://example.com/a.jpg', fileUrl: null, title: 'A' }),
     );
     expect(rowFor(0).hasAttribute('data-viewing')).toBe(true);
-    expect(rowFor(0).className).toContain('bg-blue-50');
-    expect(rowFor(0).className).not.toContain('bg-blue-100');
+    // The viewing mark is an outline on the cells, so the row's "linked document" tint survives.
+    expect(rowFor(0).className).toContain('[--viewing-outline:var(--color-blue-500)]');
+    expect(rowFor(0).className).toContain('bg-blue-100');
+    expect(rowFor(0).querySelector('td')?.style.boxShadow).toContain('var(--viewing-outline)');
+    expect(rowFor(1).querySelector('td')?.style.boxShadow).toBe('');
     expect(rowFor(1).hasAttribute('data-viewing')).toBe(false);
     // Selection keeps `data-state` to itself.
     expect(rowFor(0).getAttribute('data-state')).toBeNull();
@@ -162,10 +202,9 @@ describe('DocumentsTableRow', () => {
         .open({ id: 'doc-1', imageUrl: 'https://example.com/a.jpg', fileUrl: null, title: 'A' }),
     );
     const classes = rowFor(0).className.split(/\s+/);
-    expect(classes).toContain('data-[state=selected]:bg-blue-50');
-    expect(classes).toContain('dark:data-[state=selected]:bg-blue-950/40');
-    expect(classes).not.toContain('data-[state=selected]:bg-gray-100');
-    expect(classes).not.toContain('dark:data-[state=selected]:bg-gray-800');
+    // Selection keeps its own background, and the outline marks the open document on top of it.
+    expect(classes).toContain('data-[state=selected]:bg-gray-100');
+    expect(classes).toContain('[--viewing-outline:var(--color-blue-500)]');
   });
 
   it('moves the highlight on a swap', () => {
@@ -189,7 +228,7 @@ describe.each([
   ['Preview', Preview],
   ['Files', Files],
 ])('%s cell siblings', (_, Cell) => {
-  it('opens with the table rows as siblings, leaving out those with nothing attached', () => {
+  it('opens with the table rows as siblings, leaving out those with no image and no file', () => {
     const docs = [makeDocument('doc-1'), makeDocument('doc-empty', null), makeDocument('doc-3')];
     render(<Cell document={docs[0]} table={fakeTable(docs)} />);
     act(() => imageButton().click());

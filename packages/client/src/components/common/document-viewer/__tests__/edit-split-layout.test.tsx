@@ -24,6 +24,18 @@ let root: Root;
 /** Whether the `lg` media query matches (side by side) or not (stacked). */
 let wide = true;
 let resizeCallbacks = new Set<() => void>();
+/** `change` listeners on the stubbed media query lists. */
+let mediaListeners = new Set<() => void>();
+
+/** Crosses the `lg` breakpoint, notifying the live media query lists. */
+function setWide(next: boolean): void {
+  wide = next;
+  act(() => {
+    for (const listener of mediaListeners) {
+      listener();
+    }
+  });
+}
 
 /** Delivers a layout pass to every live `ResizeObserver`. */
 function fireResize(): void {
@@ -47,11 +59,12 @@ beforeEach(() => {
   resetDocumentViewerStore();
   wide = true;
   resizeCallbacks = new Set();
+  mediaListeners = new Set();
   vi.stubGlobal('matchMedia', (query: string) => ({
     matches: query === SPLIT_MEDIA_QUERY ? wide : false,
     media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    addEventListener: (_: string, listener: () => void) => mediaListeners.add(listener),
+    removeEventListener: (_: string, listener: () => void) => mediaListeners.delete(listener),
   }));
   vi.stubGlobal(
     'ResizeObserver',
@@ -320,11 +333,11 @@ describe('DocumentEditSplit', () => {
   it('Expand covers the form and toggles back', () => {
     render();
     const expand = (): HTMLButtonElement =>
-      query<HTMLButtonElement>('button[aria-label="Expand document viewer"]');
-    expect(expand().getAttribute('aria-pressed')).toBe('false');
+      query<HTMLButtonElement>('button[data-slot="viewer-expand"]');
+    expect(expand().getAttribute('aria-label')).toBe('Expand document viewer');
 
     act(() => expand().click());
-    expect(expand().getAttribute('aria-pressed')).toBe('true');
+    expect(expand().getAttribute('aria-label')).toBe('Restore document viewer width');
     expect(query('[data-slot="edit-split-viewer-content"]').className).toContain('absolute');
     // The pane stays as a spacer, positioned against the split; the handle hides.
     expect(query('[data-slot="edit-split-viewer"]').className).not.toContain('relative');
@@ -337,12 +350,12 @@ describe('DocumentEditSplit', () => {
 
   it('hiding an expanded viewer and showing it again starts collapsed', () => {
     render();
-    click('button[aria-label="Expand document viewer"]');
+    click('button[data-slot="viewer-expand"]');
     click('button[aria-label="Hide document"]');
     act(() => query<HTMLButtonElement>('[data-slot="edit-split-viewer"] button').click());
     expect(
-      query('button[aria-label="Expand document viewer"]').getAttribute('aria-pressed'),
-    ).toBe('false');
+      query('button[data-slot="viewer-expand"]').getAttribute('aria-label'),
+    ).toBe('Expand document viewer');
   });
 
   it('stacked below lg, Expand opens the full-screen overlay with the button as trigger', () => {
@@ -357,8 +370,8 @@ describe('DocumentEditSplit', () => {
         <Harness entry={ENTRY} />
       </div>,
     );
-    const expand = query<HTMLButtonElement>('button[aria-label="Expand document viewer"]');
-    expect(expand.getAttribute('aria-pressed')).toBe('false');
+    const expand = query<HTMLButtonElement>('button[data-slot="viewer-expand"]');
+    expect(expand.getAttribute('aria-label')).toBe('Expand document viewer');
 
     act(() => expand.click());
 
@@ -369,12 +382,12 @@ describe('DocumentEditSplit', () => {
     });
     expect(getViewerTrigger()).toBe(expand);
     // The split itself doesn't change: nothing covers the form.
-    expect(expand.getAttribute('aria-pressed')).toBe('false');
+    expect(expand.getAttribute('aria-label')).toBe('Expand document viewer');
   });
 
   it('side by side, Expand stays in the sheet and never opens the overlay', () => {
     render(<Harness entry={ENTRY} />);
-    act(() => query<HTMLButtonElement>('button[aria-label="Expand document viewer"]').click());
+    act(() => query<HTMLButtonElement>('button[data-slot="viewer-expand"]').click());
     expect(useDocumentViewer.getState().current).toBeNull();
   });
 
@@ -382,9 +395,182 @@ describe('DocumentEditSplit', () => {
     wide = false;
     render();
     expect(container.querySelector('[role="separator"]')).toBeNull();
-    expect(container.querySelector('button[aria-label="Expand document viewer"]')).toBeNull();
+    expect(container.querySelector('button[data-slot="viewer-expand"]')).toBeNull();
     expect(query('[data-slot="edit-split-viewer"]').className).toContain('h-[45vh]');
     expect(container.querySelector('button[aria-label="Hide document"]')).not.toBeNull();
+  });
+
+  it('Esc while expanded collapses the viewer and marks the key handled', () => {
+    render();
+    click('button[data-slot="viewer-expand"]');
+    const expand = query<HTMLButtonElement>('button[data-slot="viewer-expand"]');
+    expect(expand.getAttribute('aria-label')).toBe('Restore document viewer width');
+
+    // A document capture listener stands in for Radix's, which closes the sheet on Esc.
+    const seen: boolean[] = [];
+    const radix = (event: KeyboardEvent): void => {
+      seen.push(event.defaultPrevented);
+    };
+    document.addEventListener('keydown', radix, { capture: true });
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => {
+      expand.dispatchEvent(event);
+    });
+    document.removeEventListener('keydown', radix, { capture: true });
+
+    expect(event.defaultPrevented).toBe(true);
+    // Stopped before it reached the sheet's listener.
+    expect(seen).toEqual([]);
+    expect(query('[data-slot="edit-split-viewer-content"]').className).not.toContain('absolute');
+    expect(query('[role="separator"]')).not.toBeNull();
+  });
+
+  it.each([
+    ['the body (macOS: a clicked button takes no focus)', () => document.body],
+    ['an ancestor of the split, such as the dialog content', () => container],
+  ])('Esc while expanded with the target on %s still collapses', (_, target) => {
+    render();
+    click('button[data-slot="viewer-expand"]');
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => {
+      target().dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(true);
+    expect(query('[data-slot="edit-split-viewer-content"]').className).not.toContain('absolute');
+  });
+
+  it('Esc while expanded from a portaled layer elsewhere is left to that layer', () => {
+    render();
+    click('button[data-slot="viewer-expand"]');
+    const layer = document.createElement('div');
+    layer.setAttribute('data-radix-popper-content-wrapper', '');
+    const item = document.createElement('button');
+    layer.append(item);
+    document.body.append(layer);
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => {
+      item.dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(false);
+    expect(query('[data-slot="edit-split-viewer-content"]').className).toContain('absolute');
+  });
+
+  it('leaves Esc alone when not expanded, or from a field that handles Esc itself', () => {
+    render();
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    act(() => {
+      query('button[aria-label="Hide document"]').dispatchEvent(event);
+    });
+    expect(event.defaultPrevented).toBe(false);
+
+    click('button[data-slot="viewer-expand"]');
+    const field = document.createElement('input');
+    field.setAttribute('data-local-escape', '');
+    query('[data-slot="edit-split-viewer-content"]').append(field);
+    key(field, { key: 'Escape' });
+    expect(query('[data-slot="edit-split-viewer-content"]').className).toContain('absolute');
+  });
+
+  it('takes the covered form out of the tab order and the accessibility tree while expanded', () => {
+    render();
+    const form = query('[data-slot="edit-split-form"]');
+    expect(form.hasAttribute('inert')).toBe(false);
+    expect(form.hasAttribute('aria-hidden')).toBe(false);
+
+    click('button[data-slot="viewer-expand"]');
+    expect(form.hasAttribute('inert')).toBe(true);
+    expect(form.getAttribute('aria-hidden')).toBe('true');
+
+    click('button[data-slot="viewer-expand"]');
+    expect(form.hasAttribute('inert')).toBe(false);
+    expect(form.hasAttribute('aria-hidden')).toBe(false);
+  });
+
+  it('narrowing to the stacked layout drops Expand, so widening again starts collapsed', () => {
+    render(<Harness entry={ENTRY} />);
+    click('button[data-slot="viewer-expand"]');
+    expect(query('[data-slot="edit-split-viewer-content"]').className).toContain('absolute');
+
+    setWide(false);
+    expect(query('[data-slot="edit-split-viewer-content"]').className).not.toContain('absolute');
+    setWide(true);
+    expect(query('[data-slot="edit-split-viewer-content"]').className).not.toContain('absolute');
+    expect(
+      query('button[data-slot="viewer-expand"]').getAttribute('aria-label'),
+    ).toBe('Expand document viewer');
+  });
+
+  it('starts in the side-by-side layout on the first commit, with no stacked frame', () => {
+    const layouts: string[] = [];
+    function Probe(): ReactElement {
+      return (
+        <DocumentEditSplit
+          hidden={false}
+          onHiddenChange={() => {}}
+          form={null}
+          viewer={({ onToggleExpand }) => {
+            layouts.push(onToggleExpand ? 'side-by-side' : 'stacked');
+            return <div />;
+          }}
+        />
+      );
+    }
+    act(() => root.render(<Probe />));
+    expect(layouts[0]).toBe('side-by-side');
+    expect(layouts).not.toContain('stacked');
+  });
+
+  it('drops a focus request the parent did not apply', () => {
+    function Ignoring({ hidden }: { hidden: boolean }): ReactElement {
+      return (
+        <DocumentEditSplit
+          hidden={hidden}
+          onHiddenChange={() => {}}
+          form={<input aria-label="Serial" />}
+          viewer={({ onHide }) => (
+            <button type="button" aria-label="Hide document" onClick={onHide}>
+              Hide
+            </button>
+          )}
+        />
+      );
+    }
+    act(() => root.render(<Ignoring hidden={false} />));
+    click('button[aria-label="Hide document"]');
+    expect(query('[data-slot="edit-split-viewer"]').hasAttribute('data-hidden')).toBe(false);
+
+    // A later change from outside doesn't pull focus to the Show button.
+    act(() => root.render(<Ignoring hidden />));
+    expect(document.activeElement?.textContent).not.toBe('Show document');
+  });
+
+  it('tells the form when its pane is narrow', () => {
+    const seen: boolean[] = [];
+    act(() =>
+      root.render(
+        <DocumentEditSplit
+          hidden={false}
+          onHiddenChange={() => {}}
+          form={({ narrow }) => {
+            seen.push(narrow);
+            return <span data-testid="narrow">{String(narrow)}</span>;
+          }}
+          viewer={() => <div />}
+        />,
+      ),
+    );
+    const formPane = query('[data-slot="edit-split-form"]');
+    splitRoot().getBoundingClientRect = () => ({ ...SPLIT_RECT, x: 20, y: 0 }) as DOMRect;
+    // Before the first layout, it isn't narrow.
+    expect(seen.at(-1)).toBe(false);
+
+    formPane.getBoundingClientRect = () => ({ width: 400 }) as DOMRect;
+    fireResize();
+    expect(query('[data-testid="narrow"]').textContent).toBe('true');
+
+    formPane.getBoundingClientRect = () => ({ width: 700 }) as DOMRect;
+    fireResize();
+    expect(query('[data-testid="narrow"]').textContent).toBe('false');
   });
 
   it('starts hidden when asked', () => {

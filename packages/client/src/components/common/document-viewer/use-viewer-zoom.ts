@@ -277,43 +277,79 @@ export function useViewerZoom(): ViewerZoom {
   }, [onImageLoad]);
 
   // Re-apply the fit mode when the pane resizes; a custom zoom only re-clamps the scroll.
+  //
+  // A hidden viewer (`display: none`, kept mounted to keep its state) has no size, and Chromium
+  // also drops its scroll position: the zoom survives in the inline styles, the scroll does not.
+  // So the last scroll seen while visible is remembered, and put back when the pane is shown again.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || typeof ResizeObserver === 'undefined') {
       return;
     }
+    const isHidden = (): boolean => el.clientWidth === 0 || el.clientHeight === 0;
+    const lastScroll: Point = { x: el.scrollLeft, y: el.scrollTop };
+    /** Set on a resize to 0×0, cleared once the scroll is restored on the next visible resize. */
+    let wasHidden = false;
+    const onScroll = (): void => {
+      // Ignore the reset (and anything else) while hidden or not yet restored.
+      if (wasHidden || isHidden()) {
+        return;
+      }
+      lastScroll.x = el.scrollLeft;
+      lastScroll.y = el.scrollTop;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+
     let frame = 0;
     const observer = new ResizeObserver(() => {
+      if (isHidden()) {
+        wasHidden = true;
+      }
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const m = model.current;
-        // A hidden viewer (`display: none`, kept mounted to keep its state) has no size; fitting or
-        // clamping against 0×0 would throw the zoom and scroll away. It resizes again when shown.
-        if (!m.natural || el.clientWidth === 0 || el.clientHeight === 0) {
+        // Fitting or clamping against 0×0 would throw the zoom and scroll away. It resizes again
+        // when shown.
+        if (isHidden()) {
+          return;
+        }
+        // Coming back from hidden, start from the remembered scroll rather than the reset one.
+        // Cleared on any visible frame, even before the image has a size, so later scrolls count.
+        const from = wasHidden ? { ...lastScroll } : { x: el.scrollLeft, y: el.scrollTop };
+        wasHidden = false;
+        if (!m.natural) {
           return;
         }
         if (m.mode === 'custom') {
           const viewport = { width: el.clientWidth, height: el.clientHeight };
           const scroll = clampScroll(
-            { x: el.scrollLeft, y: el.scrollTop },
+            from,
             displaySize(m.natural, m.zoom, m.rotation),
             viewport,
             CANVAS_PADDING,
           );
           el.scrollLeft = scroll.x;
           el.scrollTop = scroll.y;
+          lastScroll.x = scroll.x;
+          lastScroll.y = scroll.y;
           return;
         }
+        el.scrollLeft = from.x;
+        el.scrollTop = from.y;
         const zoom = resolveFit(m.mode);
         if (zoom != null) {
+          // Re-clamps the restored scroll to the refitted page.
           applyZoom(zoom, m.mode, { x: 0, y: 0 });
         }
+        lastScroll.x = el.scrollLeft;
+        lastScroll.y = el.scrollTop;
       });
     });
     observer.observe(el);
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      el.removeEventListener('scroll', onScroll);
     };
   }, [applyZoom, resolveFit]);
 

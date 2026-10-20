@@ -81,6 +81,30 @@ describe('previewImageUrl', () => {
   });
 
   it.each([
+    ['localhost', 'http://localhost:3000/scan.jpg'],
+    ['an IPv4 address', 'http://10.0.0.1/scan.jpg'],
+    ['a LAN address', 'http://192.168.1.50/x.png'],
+    ['an address with a port and user info', 'http://me@192.168.1.50:8080/x.png'],
+    ['a subdomain', 'https://res.cloudinary.com/demo/scan.jpg'],
+  ])('uses a URL whose host is %s', (_, value) => {
+    expect(previewImageUrl(value, STORED)).toBe(value);
+  });
+
+  it.each([
+    ['a host still being typed', 'https://exam'],
+    ['a host ending in a dot', 'https://exam.'],
+    ['a single-label host with a path', 'https://intranet/scan.jpg'],
+    // `URL` would turn these into complete-looking addresses (0.0.0.10, 192.168.0.1, 127.0.0.1).
+    ['a one-part IPv4 host', 'https://10'],
+    ['a three-part IPv4 host', 'http://192.168.1'],
+    ['a two-part IPv4 host', 'http://127.1'],
+    ['a hex IPv4 host', 'http://0x7f.0.0.1/x.png'],
+    ['an IPv6 host', 'http://[::1]/x.png'],
+  ])('does not fetch %s while typing', (_, value) => {
+    expect(previewImageUrl(value, STORED)).toBe(STORED);
+  });
+
+  it.each([
     ['empty', ''],
     ['half-typed', 'https://'],
     ['relative', 'scan.jpg'],

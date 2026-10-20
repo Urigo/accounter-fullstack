@@ -10,4 +10,5 @@ the issue-document dialog, it opens as a sheet on the right with the dialog stil
 left; Esc closes only the sheet and focus returns into the dialog. The same sheet replaces the old
 drawer when the screen is too narrow to dock the viewer. In the edit sheet below 1024px, Expand now
 opens the document full screen. The toolbar condenses in a narrow viewer, with the magnifier moving
-into a ⋯ menu. The old document drawer is gone.
+into a ⋯ menu. The old document drawer is gone. Clicking a link to the charge or business page
+you are already on no longer reloads its data.

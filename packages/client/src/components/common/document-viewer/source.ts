@@ -57,16 +57,58 @@ function canParseUrl(value: string): boolean {
   }
 }
 
+/** A dotted-quad IPv4 address: four numeric parts. */
+const DOTTED_QUAD = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/**
+ * The host as typed, before `URL` normalizes it: the authority after `scheme://`, without user
+ * info or port. `null` when the input has no `//` authority.
+ */
+function typedHost(url: string): string | null {
+  const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#\\]*)/i.exec(url)?.[1];
+  if (authority == null) {
+    return null;
+  }
+  const host = authority.slice(authority.lastIndexOf('@') + 1);
+  return host.replace(/:\d*$/, '').toLowerCase();
+}
+
+/**
+ * Whether the URL's host looks complete: `localhost`, a name with a dot and something on both
+ * sides (`example.com`), or an IPv4 address typed as exactly four numeric parts.
+ *
+ * `URL` normalizes partial IPv4 hosts (`https://10` → `0.0.0.10`, `http://192.168.1` →
+ * `192.168.0.1`, `http://127.1` → `127.0.0.1`), so a numeric host is checked against what was
+ * typed: a pause while typing `http://192.168.1.50` must not fetch `192.168.0.1`. Not previewed:
+ * names still being typed (`exam`, `exam.`), single-label names, trailing-dot hosts and IPv6.
+ */
+function isCompleteHost(hostname: string, url: string): boolean {
+  if (hostname === 'localhost') {
+    return true;
+  }
+  if (/^[\d.]+$/.test(hostname)) {
+    const typed = typedHost(url);
+    return typed != null && DOTTED_QUAD.test(typed) && typed === hostname;
+  }
+  return /^[^.]+(\.[^.]+)+$/.test(hostname);
+}
+
 /**
  * The image the edit sheet's viewer shows while the Image URL field is being edited: the typed
- * value once it parses as an absolute http(s) URL, the stored `image` otherwise (empty, half-typed,
- * or another scheme).
+ * value once it parses as an absolute http(s) URL with a complete hostname, the stored `image`
+ * otherwise (empty, half-typed, or another scheme).
+ *
+ * The hostname check is for privacy as much as tidiness: a preview fetches the URL, and a pause
+ * while typing `https://exam` would otherwise send a request to whatever host `exam` resolves to.
  */
 export function previewImageUrl(value: unknown, stored: string | null): string | null {
   const url = typeof value === 'string' || value instanceof URL ? toUrlString(value) : null;
   if (!url || !canParseUrl(url)) {
     return stored;
   }
-  const { protocol } = new URL(url);
-  return protocol === 'http:' || protocol === 'https:' ? url : stored;
+  const { protocol, hostname } = new URL(url);
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    return stored;
+  }
+  return isCompleteHost(hostname, url) ? url : stored;
 }

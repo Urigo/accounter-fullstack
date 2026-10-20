@@ -56,7 +56,8 @@ function prefersReducedMotion(): boolean {
  * - A primary-button drag pans by moving the scroll position. Two touch pointers pinch.
  * - A touch pan glides on after release. The canvas is `touch-none`, which drops the browser's own
  *   momentum, so a light inertia stands in: the last 100ms of velocity, decayed per frame. The next
- *   press stops it, and it is off under `prefers-reduced-motion`.
+ *   press, a wheel or gesture zoom, a double-click, or anything else moving the scroll (a toolbar
+ *   zoom, a shortcut) stops it, and it is off under `prefers-reduced-motion`.
  *
  * Drag tracking listens on `window` rather than relying on pointer capture, because vaul's own
  * `pointerdown` captures the pointer on the event target. Nothing here stops propagation: Radix's
@@ -103,14 +104,24 @@ export function useViewerGestures(
       }
       let last = now;
       let frames = 0;
+      /** Where the glide left the scroll; anything else moved it since (a toolbar zoom, a key). */
+      let expected = { x: el.scrollLeft, y: el.scrollTop };
       const frame = (time: number): void => {
+        const before = { x: el.scrollLeft, y: el.scrollTop };
+        if (before.x !== expected.x || before.y !== expected.y) {
+          // A zoom from the toolbar, a shortcut or the keyboard re-anchored the scroll: gliding on
+          // from the old velocity would drag the page away from where it was just put.
+          inertiaFrame = 0;
+          return;
+        }
         const dt = Math.max(0, time - last);
         last = time;
         frames += 1;
-        const before = { x: el.scrollLeft, y: el.scrollTop };
         // The finger moved the page; scrolling runs the other way.
         el.scrollLeft = before.x - v.x * dt;
         el.scrollTop = before.y - v.y * dt;
+        // Read back: the browser clamps (and may round) what was written.
+        expected = { x: el.scrollLeft, y: el.scrollTop };
         v = decayVelocity(v, dt);
         const stuck = el.scrollLeft === before.x && el.scrollTop === before.y && dt > 0;
         if (Math.hypot(v.x, v.y) < INERTIA_MIN_SPEED || stuck || frames >= INERTIA_MAX_FRAMES) {
@@ -143,6 +154,8 @@ export function useViewerGestures(
         return;
       }
       e.preventDefault();
+      // Any zoom catches the glide, so it doesn't fight the new anchor.
+      stopInertia();
       if (gestureActive) {
         return;
       }
@@ -152,6 +165,7 @@ export function useViewerGestures(
 
     const onGestureStart = (event: Event): void => {
       event.preventDefault();
+      stopInertia();
       gestureActive = true;
       gestureScale = 1;
     };
@@ -163,6 +177,7 @@ export function useViewerGestures(
       }
       const factor = gestureScale > 0 ? e.scale / gestureScale : 1;
       gestureScale = e.scale;
+      stopInertia();
       handlersRef.current.zoomByFactor(factor, { x: e.clientX, y: e.clientY });
     };
     const onGestureEnd = (event: Event): void => {
@@ -300,6 +315,7 @@ export function useViewerGestures(
       if (lastPointerType === 'touch') {
         return;
       }
+      stopInertia();
       handlersRef.current.toggleAt({ x: e.clientX, y: e.clientY });
     };
 

@@ -118,6 +118,24 @@ describe('usePersistedRatio', () => {
     expect(setItem).toHaveBeenCalledTimes(1);
   });
 
+  it('clamps a drag and what it stores the same way a reload does', () => {
+    render();
+    act(() => api.preview(0.95));
+    // What the drag shows is what a reload would bring back.
+    expect(api.ratio).toBe(0.8);
+    act(() => api.commit());
+    expect(localStorage.getItem(KEY)).toBe('0.8');
+
+    act(() => api.preview(0.05));
+    expect(api.ratio).toBe(0.2);
+    act(() => api.commit());
+    expect(localStorage.getItem(KEY)).toBe('0.2');
+
+    act(() => api.set(0.9));
+    expect(api.ratio).toBe(0.8);
+    expect(localStorage.getItem(KEY)).toBe('0.8');
+  });
+
   it('set() stores at once, and null resets to the default', () => {
     render();
     act(() => api.set(0.6));
