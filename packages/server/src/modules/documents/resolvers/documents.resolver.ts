@@ -408,9 +408,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         // the former charge may be left empty by the move - delete it to avoid a ghost charge, and
         // report it so the client can drop its row instead of refetching a charge that no longer
         // exists
-        const [deletedChargeId = null] = await deleteChargesIfEmpty([formerChargeId], injector, {
-          keepChargeIds: [chargeId],
-        });
+        const [deletedChargeId = null] = fields.chargeId
+          ? await deleteChargesIfEmpty([formerChargeId], injector, { keepChargeIds: [chargeId] })
+          : [];
 
         await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
 

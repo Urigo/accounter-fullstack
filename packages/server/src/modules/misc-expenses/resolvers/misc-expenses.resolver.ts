@@ -84,9 +84,11 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
               throw new Error('Error updating misc expense');
             }
             // the former charge may be left empty by the move - delete it to avoid a ghost charge
-            await deleteChargesIfEmpty([formerChargeId], injector, {
-              keepChargeIds: [res[0].charge_id],
-            });
+            if (fields.chargeId) {
+              await deleteChargesIfEmpty([formerChargeId], injector, {
+                keepChargeIds: [res[0].charge_id],
+              });
+            }
             await degradeChargesAccountantApproval(injector, [formerChargeId, res[0].charge_id]);
             return res[0];
           });

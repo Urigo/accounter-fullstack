@@ -96,6 +96,14 @@ function unlinkDocument(context: unknown): Promise<unknown> {
   return moveDocument(context, EMPTY_UUID);
 }
 
+function updateDocumentFields(context: unknown, fields: unknown): Promise<unknown> {
+  const resolver = documentsResolvers.Mutation!.updateDocument!;
+  const resolve = typeof resolver === 'function' ? resolver : resolver.resolve;
+  return (
+    resolve as (parent: unknown, args: unknown, context: unknown, info: unknown) => Promise<unknown>
+  )({}, { documentId: DOCUMENT_ID, fields }, context, {});
+}
+
 describe('Mutation.updateDocument — unlinking the charge’s last document', () => {
   beforeEach(() => {
     vi.mocked(deleteCharges).mockReset().mockResolvedValue(undefined);
@@ -130,5 +138,15 @@ describe('Mutation.updateDocument — unlinking the charge’s last document', (
     expect(deleteCharges).toHaveBeenCalledTimes(1);
     expect(deleteCharges).toHaveBeenCalledWith([FORMER_CHARGE_ID], expect.anything());
     expect(result).toMatchObject({ deletedChargeId: FORMER_CHARGE_ID });
+  }, 5000);
+
+  it('skips the cleanup when the charge is not changed', async () => {
+    // the mocked former charge reads as empty, so only the guard keeps it from being deleted
+    const { context } = contextWithSoleDocument();
+
+    const result = await updateDocumentFields(context, { serialNumber: '42' });
+
+    expect(deleteCharges).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ deletedChargeId: null });
   }, 5000);
 });

@@ -166,7 +166,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         }
 
         // the former charge may be left empty by the move - delete it to avoid a ghost charge
-        await deleteChargesIfEmpty([formerChargeId], injector, { keepChargeIds: [chargeId] });
+        if (fields.chargeId) {
+          await deleteChargesIfEmpty([formerChargeId], injector, { keepChargeIds: [chargeId] });
+        }
 
         await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
 
@@ -274,12 +276,16 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           throw new GraphQLError('Transactions update failed');
         }
 
-        // former charges may be left empty by the move - delete them to avoid ghost charges
-        await deleteChargesIfEmpty(formerChargeIds, injector, { keepChargeIds: [chargeId] });
+        // former charges may be left empty by the move - delete them to avoid ghost charges, and
+        // report them so a client drops their rows instead of refetching charges that no longer
+        // exist
+        const deletedChargeIds = fields.chargeId
+          ? await deleteChargesIfEmpty(formerChargeIds, injector, { keepChargeIds: [chargeId] })
+          : [];
 
         await degradeChargesAccountantApproval(injector, [...formerChargeIds, chargeId]);
 
-        return { transactions: res.map(transaction => transaction.id) };
+        return { transactions: res.map(transaction => transaction.id), deletedChargeIds };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;

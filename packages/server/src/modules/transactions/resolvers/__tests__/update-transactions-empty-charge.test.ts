@@ -13,7 +13,9 @@ import { transactionsResolvers } from '../transactions.resolver.js';
  *
  * The former charge may be left empty, so after the update it is handed to
  * `deleteChargesIfEmpty` — for an unlink (`EMPTY_UUID`) as well as a move to another existing
- * charge — never touching the charge the transactions moved into. Unlinking several transactions
+ * charge — never touching the charge the transactions moved into, and skipped entirely when the
+ * update doesn't change the charge (e.g. a counterparty-only update). `updateTransactions` reports
+ * the deleted charges back as `deletedChargeIds`. Unlinking several transactions
  * of the same charge used to keep that charge (the old inline check expected exactly one
  * transaction on it per moved transaction), leaving a ghost charge behind.
  */
@@ -113,8 +115,9 @@ describe('transactions mutations — cleaning up the emptied former charge', () 
 
   it('updateTransactions: checks the shared former charge after unlinking all its transactions', async () => {
     const { context, generateCharge } = buildContext();
+    vi.mocked(deleteChargesIfEmpty).mockResolvedValue([FORMER_CHARGE_ID]);
 
-    await run(
+    const result = await run(
       'updateTransactions',
       { transactionIds: [TX_1, TX_2], fields: { chargeId: EMPTY_UUID } },
       context,
@@ -127,5 +130,31 @@ describe('transactions mutations — cleaning up the emptied former charge', () 
       expect.anything(),
       { keepChargeIds: [NEW_CHARGE_ID] },
     );
+    expect(result).toMatchObject({ deletedChargeIds: [FORMER_CHARGE_ID] });
+  });
+
+  it('updateTransaction: skips the cleanup when the charge is not changed', async () => {
+    const { context } = buildContext();
+
+    await run(
+      'updateTransaction',
+      { transactionId: TX_1, fields: { counterpartyId: OWNER_ID } },
+      context,
+    );
+
+    expect(deleteChargesIfEmpty).not.toHaveBeenCalled();
+  });
+
+  it('updateTransactions: skips the cleanup when the charge is not changed', async () => {
+    const { context } = buildContext();
+
+    const result = await run(
+      'updateTransactions',
+      { transactionIds: [TX_1, TX_2], fields: { counterpartyId: OWNER_ID } },
+      context,
+    );
+
+    expect(deleteChargesIfEmpty).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ deletedChargeIds: [] });
   });
 });
