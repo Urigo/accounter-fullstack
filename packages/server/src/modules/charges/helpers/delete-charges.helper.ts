@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import { BankDepositChargesProvider } from '../../bank-deposits/providers/bank-deposit-charges.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
+import { BalanceCancellationProvider } from '../../ledger/providers/balance-cancellation.provider.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../../ledger/providers/unbalanced-businesses.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
@@ -71,12 +72,26 @@ async function clearChargeDependencies(chargeId: string, injector: Injector) {
         throw new Error(message);
       });
 
+    // clear balance cancellations
+    const clearBalanceCancellationsPromise = injector
+      .get(BalanceCancellationProvider)
+      .deleteBalanceCancellationByChargeIds([chargeId])
+      .catch(e => {
+        const message = `Failed to clear balance cancellations for charge ID="${chargeId}"`;
+        console.error(`${message}: ${e}`);
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        throw new Error(message);
+      });
+
     await Promise.all([
       clearAllChargeTagsPromise,
       clearBusinessTripsPromise,
       clearLedgerPromise,
       clearSpreadPromise,
       clearUnbalancedBusinessesPromise,
+      clearBalanceCancellationsPromise,
     ]);
   } catch (e) {
     if (e instanceof GraphQLError) {

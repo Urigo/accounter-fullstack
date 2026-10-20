@@ -6,7 +6,6 @@ import { deleteCharges } from '../../../charges/helpers/delete-charges.helper.js
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
-import { BalanceCancellationProvider } from '../../../ledger/providers/balance-cancellation.provider.js';
 import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
 import { SalariesProvider } from '../../../salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -86,7 +85,6 @@ function contextWithSoleDocument({ transactions = [] }: { transactions?: unknown
           SalariesProvider,
           BusinessTripEmployeePaymentsProvider,
           DepreciationProvider,
-          BalanceCancellationProvider,
         ].includes(token as never)
       ) {
         // no other records hang off the former charge
@@ -94,7 +92,6 @@ function contextWithSoleDocument({ transactions = [] }: { transactions?: unknown
           getSalaryRecordsByChargeIdLoader: byChargeId([]),
           getBusinessTripEmployeePaymentsByChargeIdLoader: byChargeId([]),
           getDepreciationRecordsByChargeIdLoader: byChargeId([]),
-          getBalanceCancellationByChargesIdLoader: byChargeId([]),
         };
       }
       throw new Error('unexpected provider requested');

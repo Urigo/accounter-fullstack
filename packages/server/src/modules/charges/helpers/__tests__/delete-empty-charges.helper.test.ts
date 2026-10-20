@@ -4,7 +4,6 @@ import { EMPTY_UUID } from '../../../../shared/constants.js';
 import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
-import { BalanceCancellationProvider } from '../../../ledger/providers/balance-cancellation.provider.js';
 import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
 import { SalariesProvider } from '../../../salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -26,7 +25,6 @@ type ChargeContent = {
   salaries?: number;
   businessTripEmployeePayments?: number;
   depreciation?: number;
-  balanceCancellations?: number;
 };
 
 function buildInjector(
@@ -46,7 +44,6 @@ function buildInjector(
     salaries: loader('salaries'),
     businessTripEmployeePayments: loader('businessTripEmployeePayments'),
     depreciation: loader('depreciation'),
-    balanceCancellations: loader('balanceCancellations'),
   };
   const invalidateCharge = vi.fn();
 
@@ -72,11 +69,6 @@ function buildInjector(
       }
       if (token === DepreciationProvider) {
         return { getDepreciationRecordsByChargeIdLoader: linkedRecordLoaders.depreciation };
-      }
-      if (token === BalanceCancellationProvider) {
-        return {
-          getBalanceCancellationByChargesIdLoader: linkedRecordLoaders.balanceCancellations,
-        };
       }
       if (token === ChargesProvider) {
         return {
@@ -139,7 +131,6 @@ describe('deleteChargesIfEmpty', () => {
     ['a salary record', { salaries: 1 }],
     ['a business trip employee payment', { businessTripEmployeePayments: 1 }],
     ['a depreciation record', { depreciation: 1 }],
-    ['a balance cancellation', { balanceCancellations: 1 }],
   ])('keeps a charge that still holds %s', async (_, content) => {
     const { injector } = buildInjector({ [CHARGE_A]: content });
 
