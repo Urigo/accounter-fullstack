@@ -4,20 +4,24 @@ import { EMPTY_UUID } from '../../../../shared/constants.js';
 import { degradeChargesAccountantApproval } from '../../../accountant-approval/helpers/degrade-charges.helper.js';
 import { deleteCharges } from '../../../charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
+import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
+import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
+import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
+import { SalariesProvider } from '../../../salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { DocumentsProvider } from '../../providers/documents.provider.js';
 import { documentsResolvers } from '../documents.resolver.js';
 
 /**
- * `updateDocument` unlink path (`fields.chargeId === EMPTY_UUID`).
+ * `updateDocument` moving a document off its charge (unlink via `EMPTY_UUID`, or move to another
+ * existing charge).
  *
- * Unlinking a charge's only document leaves that charge empty, so the resolver moves the document
- * to a freshly generated charge and deletes the former one — reporting it back as
- * `deletedChargeId` so the client drops the row instead of refetching a charge that no longer
- * exists. The deletion is deferred through a mutable `postUpdateActions` closure, which once ended
- * by calling itself: the tail call read the variable it had just been assigned to, so the mutation
- * never resolved and re-ran `deleteCharges` forever (the helper is idempotent, so nothing ever
- * threw to break the loop). The call-count assertion is what pins that down.
+ * Moving a charge's only record leaves that charge empty, so the resolver deletes the former one
+ * after the update (via `deleteChargesIfEmpty`) — reporting it back as `deletedChargeId` so the
+ * client drops the row instead of refetching a charge that no longer exists. The deletion once ran
+ * through a mutable `postUpdateActions` closure that ended by calling itself, so the mutation never
+ * resolved and re-ran `deleteCharges` forever (the helper is idempotent, so nothing ever threw to
+ * break the loop). The call-count assertion is what pins that down.
  */
 
 // The resolver module pulls in the Green Invoice client, whose generated mesh artifacts only exist
@@ -38,6 +42,7 @@ vi.mock('../../../accountant-approval/helpers/degrade-charges.helper.js', () => 
 const DOCUMENT_ID = 'dd000000-0000-4000-8000-000000000001';
 const FORMER_CHARGE_ID = 'cc000000-0000-4000-8000-000000000001';
 const NEW_CHARGE_ID = 'cc000000-0000-4000-8000-000000000002';
+const OTHER_CHARGE_ID = 'cc000000-0000-4000-8000-000000000003';
 const OWNER_ID = 'bb000000-0000-4000-8000-000000000001';
 
 function contextWithSoleDocument({ transactions = [] }: { transactions?: unknown[] } = {}) {
@@ -45,25 +50,49 @@ function contextWithSoleDocument({ transactions = [] }: { transactions?: unknown
   const updateDocument = vi.fn().mockResolvedValue([document]);
   const generateCharge = vi.fn().mockResolvedValue({ id: NEW_CHARGE_ID, owner_id: OWNER_ID });
 
+  // after the update the document no longer sits on its former charge
+  const byChargeId = (rows: unknown[]) => ({
+    load: vi.fn(async (chargeId: string) => (chargeId === FORMER_CHARGE_ID ? rows : [{}])),
+    clear: vi.fn(),
+  });
+
   const injector = {
     get: (token: unknown) => {
       if (token === DocumentsProvider) {
         return {
           getDocumentsByIdLoader: { load: vi.fn().mockResolvedValue(document) },
-          getDocumentsByChargeIdLoader: { load: vi.fn().mockResolvedValue([document]) },
+          getDocumentsByChargeIdLoader: byChargeId([]),
           updateDocument,
         };
       }
       if (token === ChargesProvider) {
         return {
           getChargeByIdLoader: {
-            load: vi.fn().mockResolvedValue({ id: FORMER_CHARGE_ID, owner_id: OWNER_ID }),
+            load: vi.fn(async (id: string) => ({ id, owner_id: OWNER_ID })),
           },
           generateCharge,
+          invalidateCharge: vi.fn(),
         };
       }
       if (token === TransactionsProvider) {
-        return { transactionsByChargeIDLoader: { load: vi.fn().mockResolvedValue(transactions) } };
+        return { transactionsByChargeIDLoader: byChargeId(transactions) };
+      }
+      if (token === MiscExpensesProvider) {
+        return { getExpensesByChargeIdLoader: byChargeId([]) };
+      }
+      if (
+        [
+          SalariesProvider,
+          BusinessTripEmployeePaymentsProvider,
+          DepreciationProvider,
+        ].includes(token as never)
+      ) {
+        // no other records hang off the former charge
+        return {
+          getSalaryRecordsByChargeIdLoader: byChargeId([]),
+          getBusinessTripEmployeePaymentsByChargeIdLoader: byChargeId([]),
+          getDepreciationRecordsByChargeIdLoader: byChargeId([]),
+        };
       }
       throw new Error('unexpected provider requested');
     },
@@ -72,12 +101,24 @@ function contextWithSoleDocument({ transactions = [] }: { transactions?: unknown
   return { context: { injector } as never, updateDocument, generateCharge };
 }
 
-function unlinkDocument(context: unknown): Promise<unknown> {
+function moveDocument(context: unknown, chargeId: string): Promise<unknown> {
   const resolver = documentsResolvers.Mutation!.updateDocument!;
   const resolve = typeof resolver === 'function' ? resolver : resolver.resolve;
   return (
     resolve as (parent: unknown, args: unknown, context: unknown, info: unknown) => Promise<unknown>
-  )({}, { documentId: DOCUMENT_ID, fields: { chargeId: EMPTY_UUID } }, context, {});
+  )({}, { documentId: DOCUMENT_ID, fields: { chargeId } }, context, {});
+}
+
+function unlinkDocument(context: unknown): Promise<unknown> {
+  return moveDocument(context, EMPTY_UUID);
+}
+
+function updateDocumentFields(context: unknown, fields: unknown): Promise<unknown> {
+  const resolver = documentsResolvers.Mutation!.updateDocument!;
+  const resolve = typeof resolver === 'function' ? resolver : resolver.resolve;
+  return (
+    resolve as (parent: unknown, args: unknown, context: unknown, info: unknown) => Promise<unknown>
+  )({}, { documentId: DOCUMENT_ID, fields }, context, {});
 }
 
 describe('Mutation.updateDocument — unlinking the charge’s last document', () => {
@@ -100,6 +141,27 @@ describe('Mutation.updateDocument — unlinking the charge’s last document', (
     const { context } = contextWithSoleDocument({ transactions: [{ id: 'tx1' }] });
 
     const result = await unlinkDocument(context);
+
+    expect(deleteCharges).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ deletedChargeId: null });
+  }, 5000);
+
+  it('deletes the emptied former charge when moving to another existing charge', async () => {
+    const { context, generateCharge } = contextWithSoleDocument();
+
+    const result = await moveDocument(context, OTHER_CHARGE_ID);
+
+    expect(generateCharge).not.toHaveBeenCalled();
+    expect(deleteCharges).toHaveBeenCalledTimes(1);
+    expect(deleteCharges).toHaveBeenCalledWith([FORMER_CHARGE_ID], expect.anything());
+    expect(result).toMatchObject({ deletedChargeId: FORMER_CHARGE_ID });
+  }, 5000);
+
+  it('skips the cleanup when the charge is not changed', async () => {
+    // the mocked former charge reads as empty, so only the guard keeps it from being deleted
+    const { context } = contextWithSoleDocument();
+
+    const result = await updateDocumentFields(context, { serialNumber: '42' });
 
     expect(deleteCharges).not.toHaveBeenCalled();
     expect(result).toMatchObject({ deletedChargeId: null });

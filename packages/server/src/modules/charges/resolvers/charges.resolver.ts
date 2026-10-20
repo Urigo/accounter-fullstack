@@ -26,6 +26,7 @@ import {
 import { getChargeType } from '../helpers/charge-type.js';
 import { getChargeBusinesses, isEnrichedFilteredCharge } from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
+import { isChargeEmpty } from '../helpers/delete-empty-charges.helper.js';
 import { fetchFilteredCharges } from '../helpers/filtered-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
@@ -57,7 +58,10 @@ async function chargeTypeChecker(
  * alone — the meta helpers would additionally re-derive amounts, dates and
  * validation flags this check has no use for.
  */
-async function isChargeEmpty(charge: IGetChargesByIdsResult, injector: Injector): Promise<boolean> {
+async function isChargeEmptyForLedger(
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<boolean> {
   const isEnriched = isEnrichedFilteredCharge(charge);
 
   const [transactionsCount, documentsCount, ledgerCount, miscExpensesCount] = await Promise.all([
@@ -528,16 +532,17 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
       try {
-        const [charge, transactions, documents] = await Promise.all([
+        const [charge, isEmpty] = await Promise.all([
           injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-          injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
-          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
+          isChargeEmpty(chargeId, injector),
         ]);
         if (!charge) {
           throw new GraphQLError(`Charge ID="${chargeId}" not found`);
         }
-        if (documents.length > 0 || transactions.length > 0) {
-          throw new GraphQLError(`Charge ID="${chargeId}" has linked documents/transactions`);
+        if (!isEmpty) {
+          throw new GraphQLError(
+            `Charge ID="${chargeId}" has linked documents/transactions/misc expenses or other records`,
+          );
         }
 
         await deleteCharges([chargeId], injector);
@@ -740,7 +745,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         if (
           (chargeType === ChargeTypeEnum.Common ||
             chargeType === ChargeTypeEnum.CreditcardBankCharge) &&
-          (await isChargeEmpty(DbCharge, injector))
+          (await isChargeEmptyForLedger(DbCharge, injector))
         ) {
           return 'VALID';
         }

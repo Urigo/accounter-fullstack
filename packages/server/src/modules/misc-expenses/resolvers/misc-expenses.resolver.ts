@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
+import { deleteChargesIfEmpty } from '../../charges/helpers/delete-empty-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { MiscExpensesProvider } from '../providers/misc-expenses.provider.js';
@@ -82,6 +83,12 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
             if (!res.length) {
               throw new Error('Error updating misc expense');
             }
+            // the former charge may be left empty by the move - delete it to avoid a ghost charge
+            if (fields.chargeId) {
+              await deleteChargesIfEmpty([formerChargeId], injector, {
+                keepChargeIds: [res[0].charge_id],
+              });
+            }
             await degradeChargesAccountantApproval(injector, [formerChargeId, res[0].charge_id]);
             return res[0];
           });
@@ -103,6 +110,8 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
           .get(MiscExpensesProvider)
           .deleteMiscExpense({ id })
           .then(async () => {
+            // the charge may be left empty by the deletion - delete it to avoid a ghost charge
+            await deleteChargesIfEmpty([chargeId], injector);
             await degradeChargesAccountantApproval(injector, [chargeId]);
             return true;
           });

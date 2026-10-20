@@ -1190,14 +1190,25 @@ const POALIM_SWIFT_DIFF_FIELDS: Array<{
   { key: 'swift_senders_charges_71f', incoming: t => t.swiftSendersCharges71F ?? null },
 ];
 
+/**
+ * The scraper sends a blank placeholder (`' '`) for absent optional SWIFT fields, while rows
+ * already in the DB may hold `null` for the same absence. Treat both as `null` so they don't
+ * register as a change.
+ */
+function normalizeSwiftDiffValue(value: unknown): string {
+  if (value == null) return 'null';
+  const str = String(value);
+  return str.trim() === '' ? 'null' : str;
+}
+
 function diffPoalimSwiftRow(
   existing: IFetchPoalimSwiftByIdsResult,
   incoming: IUploadPoalimSwiftTransactionsParams['transactions'][number],
 ): ChangedField[] {
   const changed: ChangedField[] = [];
   for (const { key, incoming: getIncoming } of POALIM_SWIFT_DIFF_FIELDS) {
-    const oldStr = existing[key] == null ? 'null' : String(existing[key]);
-    const newStr = getIncoming(incoming) == null ? 'null' : String(getIncoming(incoming));
+    const oldStr = normalizeSwiftDiffValue(existing[key]);
+    const newStr = normalizeSwiftDiffValue(getIncoming(incoming));
     if (oldStr !== newStr) {
       changed.push({ field: key, oldValue: oldStr, newValue: newStr });
     }

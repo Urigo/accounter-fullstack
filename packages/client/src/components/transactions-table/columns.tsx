@@ -84,7 +84,7 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, TransactionsTableR
       );
     },
     cell: ({ row }) => {
-      return <Counterparty transaction={row.original} />;
+      return <Counterparty transaction={row.original} onChange={row.original.onUpdate} />;
     },
   },
   {

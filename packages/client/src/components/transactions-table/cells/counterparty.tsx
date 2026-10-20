@@ -47,23 +47,20 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
   const { updateTransaction, fetching } = useUpdateTransaction();
   const updateBusiness = useCallback(
     async (counterpartyId: string) => {
-      await updateTransaction({
+      const updated = await updateTransaction({
         transactionId,
         fields: {
           counterpartyId,
         },
       });
+      if (updated) {
+        // The charge reflects its transactions' counterparty, so refresh it now rather than
+        // waiting for the similar-transactions modal to close (it may never open).
+        onChange?.();
+      }
       setSimilarTransactionsOpen(true);
     },
-    [transactionId, updateTransaction],
-  );
-
-  const onAddBusiness = useCallback(
-    async (businessId: string) => {
-      await updateBusiness(businessId);
-      onChange?.();
-    },
-    [updateBusiness, onChange],
+    [transactionId, updateTransaction, onChange],
   );
 
   const { selectableBusinesses, fetching: businessesLoading } = useGetBusinesses();
@@ -117,7 +114,7 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
               search={search}
               onSearchChange={setSearch}
               placeholder="Choose or create a business"
-              empty={search ? <InsertBusiness description={search} onAdd={onAddBusiness} /> : null}
+              empty={search ? <InsertBusiness description={search} onAdd={updateBusiness} /> : null}
             />
             <Tooltip content="Approve">
               <Button

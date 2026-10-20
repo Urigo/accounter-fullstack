@@ -58,7 +58,9 @@ export async function scrapeCurrencyRates(
         continue;
       }
 
-      const rate = currency === 'JPY' ? value * 0.01 : value;
+      // BOI quotes JPY per 100 units; convert to a 1-unit rate and round to the DB column's
+      // precision (numeric(7, 6)) so floating-point noise doesn't register as a changed rate.
+      const rate = currency === 'JPY' ? Number((value / 100).toFixed(6)) : value;
 
       if (!rateMap.has(date)) rateMap.set(date, new Map());
       rateMap.get(date)!.set(currency, rate);

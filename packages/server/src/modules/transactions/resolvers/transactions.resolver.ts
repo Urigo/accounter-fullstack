@@ -5,9 +5,8 @@ import { formatCurrency } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
-import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
+import { deleteChargesIfEmpty } from '../../charges/helpers/delete-empty-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
@@ -92,11 +91,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
   },
   Mutation: {
     updateTransaction: async (_, { transactionId, fields }, { injector }) => {
-      let postUpdateActions = async (): Promise<void> => void 0;
-
       try {
-        // let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
-
         // capture the transaction's current charge so it too gets re-flagged
         // when the transaction moves to (or is unlinked to) a different charge
         const formerChargeId = await injector
@@ -124,15 +119,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
             throw new GraphQLError(`Transaction ID="${transactionId}" not valid`);
           }
           if (transaction.charge_id) {
-            const [charge, transactions, documents] = await Promise.all([
-              injector.get(ChargesProvider).getChargeByIdLoader.load(transaction.charge_id),
-              injector
-                .get(TransactionsProvider)
-                .transactionsByChargeIDLoader.load(transaction.charge_id),
-              injector
-                .get(DocumentsProvider)
-                .getDocumentsByChargeIdLoader.load(transaction.charge_id),
-            ]);
+            const charge = await injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(transaction.charge_id);
             if (!charge) {
               throw new GraphQLError(`Former transaction's charge ID ("${chargeId}") not valid`);
             }
@@ -148,21 +137,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               );
             }
             chargeId = newCharge.id;
-
-            if (documents.length === 0 && transactions.length === 1) {
-              postUpdateActions = async () =>
-                deleteCharges([charge.id], injector)
-                  .catch(e => {
-                    if (e instanceof GraphQLError) {
-                      throw e;
-                    }
-                    console.error(e);
-                    throw new GraphQLError(
-                      `Failed to delete the empty former charge ID="${charge.id}"`,
-                    );
-                  })
-                  .then(postUpdateActions);
-            }
+          } else {
+            // not linked to any charge: nothing to unlink. Never pass the sentinel on - the SQL
+            // would try to write it as the charge ID
+            chargeId = null;
           }
         };
 
@@ -191,7 +169,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           throw new GraphQLError('Transaction update failed');
         }
 
-        await postUpdateActions();
+        // the former charge may be left empty by the move - delete it to avoid a ghost charge
+        if (fields.chargeId) {
+          await deleteChargesIfEmpty([formerChargeId], injector, { keepChargeIds: [chargeId] });
+        }
 
         await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
 
@@ -208,8 +189,6 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       }
     },
     updateTransactions: async (_, { transactionIds, fields }, { injector }) => {
-      let postUpdateActions = async (): Promise<void> => void 0;
-
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
@@ -249,50 +228,22 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
                 }) as IGetTransactionsByIdsResult[],
             );
 
-          const transactionsWithChargeId = transactions.filter(t => t.charge_id);
-          if (transactionsWithChargeId.length > 0) {
-            const chargesToDelete = new Set<string>();
+          const formerTransactionsChargeIds = new Set(
+            transactions.map(t => t.charge_id).filter((id): id is string => !!id),
+          );
+          if (formerTransactionsChargeIds.size > 0) {
             await Promise.all(
-              transactionsWithChargeId.map(async transaction => {
-                if (!transaction.charge_id) {
-                  return;
-                }
-                const [charge, transactions, documents] = await Promise.all([
-                  injector.get(ChargesProvider).getChargeByIdLoader.load(transaction.charge_id),
-                  injector
-                    .get(TransactionsProvider)
-                    .transactionsByChargeIDLoader.load(transaction.charge_id),
-                  injector
-                    .get(DocumentsProvider)
-                    .getDocumentsByChargeIdLoader.load(transaction.charge_id),
-                ]);
+              Array.from(formerTransactionsChargeIds).map(async formerChargeId => {
+                const charge = await injector
+                  .get(ChargesProvider)
+                  .getChargeByIdLoader.load(formerChargeId);
                 if (!charge) {
                   throw new GraphQLError(
-                    `Former transaction's charge ID ("${transaction.charge_id}") not valid`,
+                    `Former transaction's charge ID ("${formerChargeId}") not valid`,
                   );
-                }
-
-                if (documents.length === 0 && transactions.length === 1) {
-                  chargesToDelete.add(charge.id);
                 }
               }),
             );
-
-            if (chargesToDelete.size > 0) {
-              const oldPostUpdateActions = postUpdateActions;
-              postUpdateActions = async () => {
-                await oldPostUpdateActions();
-                await deleteCharges(Array.from(chargesToDelete), injector).catch(e => {
-                  if (e instanceof GraphQLError) {
-                    throw e;
-                  }
-                  console.error(e);
-                  throw new GraphQLError(
-                    `Failed to delete empty former charges: ${Array.from(chargesToDelete).join(', ')}`,
-                  );
-                });
-              };
-            }
 
             // generate new charge
             const newCharge = await injector.get(ChargesProvider).generateCharge({
@@ -303,6 +254,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               throw new GraphQLError(`Failed to generate new charge for transactions update`);
             }
             chargeId = newCharge.id;
+          } else {
+            // none is linked to any charge: nothing to unlink. Never pass the sentinel on - the SQL
+            // would try to write it as the charge ID
+            chargeId = null;
           }
         };
 
@@ -329,11 +284,16 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
           throw new GraphQLError('Transactions update failed');
         }
 
-        await postUpdateActions();
+        // former charges may be left empty by the move - delete them to avoid ghost charges, and
+        // report them so a client drops their rows instead of refetching charges that no longer
+        // exist
+        const deletedChargeIds = fields.chargeId
+          ? await deleteChargesIfEmpty(formerChargeIds, injector, { keepChargeIds: [chargeId] })
+          : [];
 
         await degradeChargesAccountantApproval(injector, [...formerChargeIds, chargeId]);
 
-        return { transactions: res.map(transaction => transaction.id) };
+        return { transactions: res.map(transaction => transaction.id), deletedChargeIds };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
