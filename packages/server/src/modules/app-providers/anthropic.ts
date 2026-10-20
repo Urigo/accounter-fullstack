@@ -2,7 +2,7 @@ import { generateText, ModelMessage, Output } from 'ai';
 import { Injectable, Scope } from 'graphql-modules';
 import stripIndent from 'strip-indent';
 import { z } from 'zod';
-import { anthropic } from '@ai-sdk/anthropic';
+import { anthropic, type AnthropicLanguageModelOptions } from '@ai-sdk/anthropic';
 import { Currency, DocumentType } from '../../shared/enums.js';
 import type { BusinessMatchData, OwnerMatchInfo } from './helpers/business-matcher.helper.js';
 import {
@@ -108,6 +108,14 @@ const FINANCIAL_DOC_TYPES = new Set<string>([
   DocumentType.Proforma,
 ]);
 
+const MODEL_ID = 'claude-opus-5-5';
+
+// On a safety-classifier refusal, let the API re-run the request on a fallback model it picks by
+// refusal category, instead of failing the extraction.
+const ANTHROPIC_PROVIDER_OPTIONS = {
+  anthropic: { fallbacks: 'default' } satisfies AnthropicLanguageModelOptions,
+};
+
 const SUPPORTED_FILE_TYPES = [
   'image/jpeg',
   'image/png',
@@ -176,7 +184,8 @@ export class AnthropicProvider {
       output,
       finalStep: { response },
     } = await generateText({
-      model: anthropic('claude-sonnet-4-5'),
+      model: anthropic(MODEL_ID),
+      providerOptions: ANTHROPIC_PROVIDER_OPTIONS,
       output: Output.object({ schema: documentDataSchema }),
       messages: inputMessages,
     }).catch(err => {
@@ -222,7 +231,8 @@ export class AnthropicProvider {
 
         try {
           const { output: matchOutput } = await generateText({
-            model: anthropic('claude-sonnet-4-5'),
+            model: anthropic(MODEL_ID),
+            providerOptions: ANTHROPIC_PROVIDER_OPTIONS,
             output: Output.object({ schema: businessMatchSchema }),
             messages: [
               ...inputMessages,
