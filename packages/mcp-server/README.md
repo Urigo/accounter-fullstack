@@ -10,6 +10,8 @@ See the design docs:
   implementation plan
 - [`docs/operations-runbook.md`](./docs/operations-runbook.md) — incident handling, metrics, log
   queries, rollback
+- [`docs/connecting-clients.md`](./docs/connecting-clients.md) — connecting Claude and Cursor, and
+  the Auth0 app record for each
 - [`docs/submission-checklist.md`](./docs/submission-checklist.md) — connector submission readiness
 
 ## Status
@@ -596,10 +598,11 @@ curl http://localhost:3100/health
 The server handles `SIGINT`/`SIGTERM` by closing connections and exiting cleanly (forcing exit after
 a grace period).
 
-To connect this server to Claude Desktop as a custom connector — HTTPS tunnel, Auth0 application,
-connector fields, and a troubleshooting table — see
-[`docs/local-development.md`](./docs/local-development.md). Note that Claude requires an HTTPS
-connector URL, so `http://localhost:3100` cannot be used directly.
+To connect Claude or Cursor to the production server, see
+[`docs/connecting-clients.md`](./docs/connecting-clients.md). To connect a local server to Claude
+Desktop as a custom connector — HTTPS tunnel, Auth0 application, connector fields, and a
+troubleshooting table — see [`docs/local-development.md`](./docs/local-development.md). Note that
+Claude requires an HTTPS connector URL, so `http://localhost:3100` cannot be used directly.
 
 ### MCP endpoint
 

@@ -173,6 +173,11 @@ Operational implications:
 - Invitation acceptance unblocks user and triggers password setup flow
 - Expired invitation cleanup can remove Auth0 user
 
+> Note (2026-10): acceptance does not trigger a password setup flow. `sendPasswordResetEmail` has no
+> callers, so no password-setup email is sent, and invitees currently sign in with Google using the
+> invited email; email/password invitees are an open gap. See
+> [Invite New User](../operations/auth0-runbook.md#invite-new-user).
+
 ## 7. Setup Checklist
 
 Use this checklist after configuration:

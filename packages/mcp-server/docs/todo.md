@@ -13,6 +13,9 @@ owner-scoping work (#4089–#4097) is also in.
 Auth0 client, read-only, five curated tools, business scope enforced by RLS upstream. Not
 publishable — see B1.
 
+> Update (2026-10): Claude and Cursor each connect through their own pre-registered public Auth0
+> app; see [`connecting-clients.md`](./connecting-clients.md).
+
 ---
 
 ## B — Blockers (nothing ships publicly until these clear)
@@ -32,6 +35,19 @@ secret. The pre-registered-client workaround only covers developers and small tr
       logs, type `sapi`, "Dynamic client registration")
 - [ ] Decide whether a fronting authorization server implementing RFC 7591 is an acceptable fallback
       → see D2
+
+> Update (2026-10): Current behaviour.
+>
+> - Registration still succeeds on Auth0's side (201), as described above. The two self-registered
+>   'Claude' clients created 2026-08-02 were those registrations; neither showed any login activity,
+>   and both were deleted on 2026-10-18. There's no evidence Claude proceeds to /authorize.
+> - Even if it did, self-registered clients now get no API access: the Accounter API uses per-app
+>   authorization, so they fail with 'not authorized'.
+> - The 'confidential client secret' argument no longer holds: the Claude and Cursor connector apps
+>   are public clients (PKCE, no secret), and pre-registered public client IDs can be published (see
+>   the Cursor setup in [`connecting-clients.md`](./connecting-clients.md)). Whether a
+>   directory-published Claude connector can use a pre-registered client ID instead of DCR is an
+>   open question, tracked in #4616.
 
 Source: gap 1, F6.
 
@@ -175,7 +191,8 @@ docs and PR descriptions reference them.
   `context.route` keeps the raw pathname.
 - **Auth0 DCR tenant workarounds** (domain-level connection, `allow_all` user policy) — both
   reverted 2026-07-31 and verified by full reconnect. The connector is now authorized by an explicit
-  user-subject grant. _That grant must move with the application — see I3._
+  user-subject grant. Each connector app now has its own grant — see
+  [`connecting-clients.md`](./connecting-clients.md#tenant-configuration-record).
 - **Stateless-vs-stateful connector** — decided 2026-08-01: stateless, scope carried per call, with
   self-describing responses replacing session stickiness.
 - **MCP GraphQL documents unvalidated** (gap 8) — closed by graphql-codegen; `src/tools/*.ts` and
