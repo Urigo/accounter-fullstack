@@ -225,7 +225,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.20.0"
     pino-pretty: "npm:13.2.0"
-    puppeteer: "npm:25.14.0"
+    puppeteer: "npm:25.15.0"
   languageName: unknown
   linkType: soft
 
@@ -274,7 +274,7 @@ __metadata:
     node-xlsx: "npm:0.24.0"
     nodemon: "npm:3.1.14"
     playwright: "npm:1.64.1"
-    puppeteer: "npm:25.14.0"
+    puppeteer: "npm:25.15.0"
     puppeteer-extra: "npm:3.3.6"
     puppeteer-extra-plugin-stealth: "npm:2.11.2"
     typescript: "npm:6.0.3"
@@ -21549,6 +21549,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"puppeteer-core@npm:25.15.0":
+  version: 25.15.0
+  resolution: "puppeteer-core@npm:25.15.0"
+  dependencies:
+    "@puppeteer/browsers": "npm:3.2.5"
+    chromium-bidi: "npm:157.0.8090-0"
+    devtools-protocol: "npm:0.0.1696802"
+    typed-query-selector: "npm:^2.12.3"
+    webdriver-bidi-protocol: "npm:1.0.1"
+    ws: "npm:^8.22.0"
+  checksum: 10c0/708c9c122e539cf116c076a5ebebe39c6835704af438eb1f5ffb52f9dc0c95b62bbd0f78089e0ec979b2dfe5512ee65c70c68fae706416989cbd42c4596a907d
+  languageName: node
+  linkType: hard
+
 "puppeteer-extra-plugin-stealth@npm:2.11.2":
   version: 2.11.2
   resolution: "puppeteer-extra-plugin-stealth@npm:2.11.2"
@@ -21649,7 +21663,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:*, puppeteer@npm:25.14.0":
+"puppeteer@npm:*":
   version: 25.14.0
   resolution: "puppeteer@npm:25.14.0"
   dependencies:
@@ -21662,6 +21676,22 @@ __metadata:
   bin:
     puppeteer: lib/puppeteer/node/cli.js
   checksum: 10c0/ced234a644f174f483cc55615ebc735280fd1a244fa0b64e073956ed002aaf9f958a1ed44b994ee723412f3711d26c4cb05829a300d1a7725caceeb0b616fca2
+  languageName: node
+  linkType: hard
+
+"puppeteer@npm:25.15.0":
+  version: 25.15.0
+  resolution: "puppeteer@npm:25.15.0"
+  dependencies:
+    "@puppeteer/browsers": "npm:3.2.5"
+    chromium-bidi: "npm:157.0.8090-0"
+    devtools-protocol: "npm:0.0.1696802"
+    lilconfig: "npm:^3.1.3"
+    puppeteer-core: "npm:25.15.0"
+    typed-query-selector: "npm:^2.12.3"
+  bin:
+    puppeteer: lib/puppeteer/node/cli.js
+  checksum: 10c0/268ded115936aec124b4c322c05a7f8fe36cad21f9573f9423243d3fecbd79329070e63638a3fb25ecb22c2c59d937aae513a8c3b44dbd78c2e33f67a20d3b23
   languageName: node
   linkType: hard
 
