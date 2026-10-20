@@ -618,6 +618,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const newChargeIds = await Promise.all(spreadPromises);
         chargeIds.push(...newChargeIds);
 
+        // the original charge may be left empty once all its documents are spread - delete it to
+        // avoid a ghost charge
+        const [deletedChargeId] = await deleteChargesIfEmpty([chargeId], injector);
+        if (deletedChargeId) {
+          chargeIds.splice(chargeIds.indexOf(deletedChargeId), 1);
+        }
+
         // the original charge lost documents; re-flag it for accountant review
         await degradeChargesAccountantApproval(injector, [chargeId]);
       } catch (e) {
