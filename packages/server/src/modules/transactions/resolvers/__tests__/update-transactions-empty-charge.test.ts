@@ -35,9 +35,9 @@ const NEW_CHARGE_ID = 'cc000000-0000-4000-8000-000000000002';
 const OTHER_CHARGE_ID = 'cc000000-0000-4000-8000-000000000003';
 const OWNER_ID = 'bb000000-0000-4000-8000-000000000001';
 
-function buildContext() {
+function buildContext({ formerChargeId = FORMER_CHARGE_ID }: { formerChargeId?: string | null } = {}) {
   const transactions = new Map(
-    [TX_1, TX_2].map(id => [id, { id, charge_id: FORMER_CHARGE_ID }] as const),
+    [TX_1, TX_2].map(id => [id, { id, charge_id: formerChargeId }] as const),
   );
   const updateTransactions = vi.fn(async ({ transactionIds }: { transactionIds: string[] }) =>
     transactionIds.map(id => ({ id })),
@@ -68,7 +68,7 @@ function buildContext() {
     },
   } as unknown as Injector;
 
-  return { context: { injector } as never, generateCharge };
+  return { context: { injector } as never, generateCharge, updateTransactions };
 }
 
 type AnyResolver = (parent: unknown, args: unknown, context: unknown, info: unknown) => unknown;
@@ -156,5 +156,47 @@ describe('transactions mutations — cleaning up the emptied former charge', () 
 
     expect(deleteChargesIfEmpty).not.toHaveBeenCalled();
     expect(result).toMatchObject({ deletedChargeIds: [] });
+  });
+});
+
+/**
+ * Unlinking (`chargeId: EMPTY_UUID`) transactions that sit on no charge is a no-op for the charge.
+ * The sentinel used to reach the SQL as-is, which tried to write the nil UUID as the charge ID and
+ * failed on the foreign key — failing the whole update, other fields included.
+ */
+describe('transactions mutations — unlinking charge-less transactions', () => {
+  beforeEach(() => {
+    vi.mocked(deleteChargesIfEmpty).mockReset().mockResolvedValue([]);
+    vi.mocked(degradeChargesAccountantApproval).mockReset().mockResolvedValue(new Map());
+  });
+
+  it('updateTransaction: leaves the charge untouched instead of writing the sentinel', async () => {
+    const { context, generateCharge, updateTransactions } = buildContext({ formerChargeId: null });
+
+    await run(
+      'updateTransaction',
+      { transactionId: TX_1, fields: { chargeId: EMPTY_UUID, isFee: true } },
+      context,
+    );
+
+    expect(generateCharge).not.toHaveBeenCalled();
+    expect(updateTransactions).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionIds: [TX_1], chargeId: null, isFee: true }),
+    );
+  });
+
+  it('updateTransactions: leaves the charge untouched instead of writing the sentinel', async () => {
+    const { context, generateCharge, updateTransactions } = buildContext({ formerChargeId: null });
+
+    await run(
+      'updateTransactions',
+      { transactionIds: [TX_1, TX_2], fields: { chargeId: EMPTY_UUID, isFee: true } },
+      context,
+    );
+
+    expect(generateCharge).not.toHaveBeenCalled();
+    expect(updateTransactions).toHaveBeenCalledWith(
+      expect.objectContaining({ transactionIds: [TX_1, TX_2], chargeId: null, isFee: true }),
+    );
   });
 });
