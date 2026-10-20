@@ -57,7 +57,10 @@ async function chargeTypeChecker(
  * alone — the meta helpers would additionally re-derive amounts, dates and
  * validation flags this check has no use for.
  */
-async function isChargeEmpty(charge: IGetChargesByIdsResult, injector: Injector): Promise<boolean> {
+async function isChargeEmptyForLedger(
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<boolean> {
   const isEnriched = isEnrichedFilteredCharge(charge);
 
   const [transactionsCount, documentsCount, ledgerCount, miscExpensesCount] = await Promise.all([
@@ -740,7 +743,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         if (
           (chargeType === ChargeTypeEnum.Common ||
             chargeType === ChargeTypeEnum.CreditcardBankCharge) &&
-          (await isChargeEmpty(DbCharge, injector))
+          (await isChargeEmptyForLedger(DbCharge, injector))
         ) {
           return 'VALID';
         }
