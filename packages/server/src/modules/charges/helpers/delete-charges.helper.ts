@@ -75,7 +75,7 @@ async function clearChargeDependencies(chargeId: string, injector: Injector) {
     // clear balance cancellations
     const clearBalanceCancellationsPromise = injector
       .get(BalanceCancellationProvider)
-      .deleteBalanceCancellationByChargeIds([chargeId])
+      .deleteBalanceCancellationByChargeIdLoader.load(chargeId)
       .catch(e => {
         const message = `Failed to clear balance cancellations for charge ID="${chargeId}"`;
         console.error(`${message}: ${e}`);

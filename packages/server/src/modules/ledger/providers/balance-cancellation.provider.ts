@@ -46,10 +46,16 @@ export class BalanceCancellationProvider {
     return deleteBalanceCancellationByBusinessId.run({ businessId }, this.db);
   }
 
-  public deleteBalanceCancellationByChargeIds(chargeIds: readonly string[]) {
+  private async batchDeleteBalanceCancellationByChargeIds(chargeIds: readonly string[]) {
     chargeIds.map(id => this.getBalanceCancellationByChargesIdLoader.clear(id));
-    return deleteBalanceCancellationByChargeIds.run({ chargeIds }, this.db);
+    await deleteBalanceCancellationByChargeIds.run({ chargeIds }, this.db);
+    return chargeIds.map(_id => void 0);
   }
+
+  public deleteBalanceCancellationByChargeIdLoader = new DataLoader(
+    (chargeIds: readonly string[]) => this.batchDeleteBalanceCancellationByChargeIds(chargeIds),
+    { cache: false },
+  );
 
   public clearCache() {
     this.getBalanceCancellationByChargesIdLoader.clearAll();

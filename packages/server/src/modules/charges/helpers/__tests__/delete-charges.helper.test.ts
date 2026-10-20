@@ -28,7 +28,7 @@ function buildInjector() {
       return [];
     };
 
-  const deleteBalanceCancellationByChargeIds = vi.fn(record('balanceCancellation'));
+  const deleteBalanceCancellation = vi.fn(record('balanceCancellation'));
   const deleteChargesByIds = vi.fn(record('charges'));
 
   const injector = {
@@ -47,7 +47,7 @@ function buildInjector() {
         case UnbalancedBusinessesProvider:
           return { deleteChargeUnbalancedBusinessesByChargeId: record('unbalanced') };
         case BalanceCancellationProvider:
-          return { deleteBalanceCancellationByChargeIds };
+          return { deleteBalanceCancellationByChargeIdLoader: { load: deleteBalanceCancellation } };
         case ChargesProvider:
           return { deleteChargesByIds };
         default:
@@ -56,18 +56,17 @@ function buildInjector() {
     },
   } as unknown as Injector;
 
-  return { injector, calls, deleteBalanceCancellationByChargeIds, deleteChargesByIds };
+  return { injector, calls, deleteBalanceCancellation, deleteChargesByIds };
 }
 
 describe('deleteCharges', () => {
   it('clears balance cancellations of every charge before deleting the charges', async () => {
-    const { injector, calls, deleteBalanceCancellationByChargeIds, deleteChargesByIds } =
-      buildInjector();
+    const { injector, calls, deleteBalanceCancellation, deleteChargesByIds } = buildInjector();
 
     await deleteCharges([CHARGE_A, CHARGE_B], injector);
 
-    expect(deleteBalanceCancellationByChargeIds).toHaveBeenCalledWith([CHARGE_A]);
-    expect(deleteBalanceCancellationByChargeIds).toHaveBeenCalledWith([CHARGE_B]);
+    expect(deleteBalanceCancellation).toHaveBeenCalledWith(CHARGE_A);
+    expect(deleteBalanceCancellation).toHaveBeenCalledWith(CHARGE_B);
     expect(deleteChargesByIds).toHaveBeenCalledWith({ chargeIds: [CHARGE_A, CHARGE_B] });
     expect(calls.at(-1)).toMatch(/^charges:/);
   });
