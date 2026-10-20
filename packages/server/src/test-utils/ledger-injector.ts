@@ -1,5 +1,6 @@
 import type { Injector } from 'graphql-modules';
 import type { Pool } from 'pg';
+import { AccountantApprovalProvider } from '../modules/accountant-approval/providers/accountant-approval.provider.js';
 import { AdminContextProvider } from '../modules/admin-context/providers/admin-context.provider.js';
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
@@ -25,6 +26,7 @@ import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbala
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '../modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
+import type { AuthUser } from '../shared/types/auth.js';
 
 export type ModuleContextLike = {
   injector: Injector;
@@ -60,8 +62,14 @@ export function createLedgerTestContext(options: {
    * @see createMockExchangeRates, mockExchangeRate from __tests__/helpers/exchange-mock.ts
    */
   mockExchangeRates?: ExchangeRateMockFn;
+  /**
+   * Optional authenticated user. Without one the auth context is anonymous, which is enough for
+   * reads and ledger generation; role-guarded writes (e.g. degrading a charge's accountant
+   * approval) need a user with an allowed role.
+   */
+  user?: AuthUser;
 }): ModuleContextLike {
-  const { pool, moduleId = 'test', env, businessId, mockExchangeRates } = options;
+  const { pool, moduleId = 'test', env, businessId, mockExchangeRates, user } = options;
 
   const resolvedBusinessId = businessId;
   if (!resolvedBusinessId) {
@@ -81,6 +89,7 @@ export function createLedgerTestContext(options: {
   const authContextProvider = {
     getAuthContext: async () => ({
       authType: null,
+      ...(user && { user }),
       tenant: { businessId: resolvedBusinessId },
     }),
   } as AuthContextProvider;
@@ -92,10 +101,12 @@ export function createLedgerTestContext(options: {
   // Create AdminContextProvider for providers that need it
   const adminContextProvider = new AdminContextProvider(authContextProvider, tenantAwareDB);
 
-  const injector = new SimpleInjector(token => {
+  const injector: Injector = new SimpleInjector(token => {
     switch (token) {
       case DBProvider:
         return dbProvider;
+      case TenantAwareDBClient:
+        return tenantAwareDB;
       case AdminContextProvider:
         return adminContextProvider;
       case CoinMarketCapProvider:
@@ -147,6 +158,12 @@ export function createLedgerTestContext(options: {
         );
         return new ChargesProvider(tenantAwareDB, chargesAuthorizationProvider);
       }
+      case AccountantApprovalProvider:
+        return new AccountantApprovalProvider(
+          tenantAwareDB,
+          new ChargesAuthorizationProvider(authContextProvider, tenantAwareDB),
+          injector.get(ChargesProvider),
+        );
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {
