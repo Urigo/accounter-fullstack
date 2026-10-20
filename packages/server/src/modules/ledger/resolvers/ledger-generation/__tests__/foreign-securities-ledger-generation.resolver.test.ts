@@ -907,6 +907,103 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       ]);
       expect(errors).toEqual([expect.stringContaining('does not match gross minus net')]);
     });
+
+    it('books a refund of withheld tax as a second credit', async () => {
+      // 950 declared, 50 of earlier withholding refunded, 1,000 received
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            trade_gross_value_trade_currency: '950',
+            israel_tax_value_by_payments_settlement_currency: '-50',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          credit1: TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+          creditForeign1: usd(950).foreign,
+          creditLocal1: usd(950).local,
+          credit2: TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
+          creditForeign2: usd(50).foreign,
+          creditLocal2: usd(50).local,
+        },
+      ]);
+    });
+
+    it('keeps the base entry and names a missing income category', async () => {
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+      const { FOREIGN_BOND_INTEREST_INCOME: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: interestExecution() },
+        taxCategories,
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Missing securities tax category "Foreign bond interest income"'),
+      ]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_BOND_INTEREST_INCOME']);
+    });
+
+    it('names a missing withholding category only when tax was withheld', async () => {
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+      const { FOREIGN_BOND_WITHHOLDING_TAX: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const withoutTax = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: interestExecution() },
+        taxCategories,
+      });
+      expect(withoutTax.errors).toEqual([]);
+      expect(withoutTax.records[0].credit_entity1).toBe(
+        TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+      );
+
+      const withTax = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            trade_gross_value_trade_currency: '1100',
+            foreign_tax_value_settlement_currency: '100',
+          }),
+        },
+        taxCategories,
+      });
+      expect(withTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(withTax.errors).toEqual([
+        expect.stringContaining('Missing securities tax category "Foreign bond withholding tax"'),
+      ]);
+      expect(withTax.missingSecuritiesTaxCategories).toEqual(['FOREIGN_BOND_WITHHOLDING_TAX']);
+    });
+
+    it('keeps the base entry of a cancelled interest payment and says its reversal is not booked', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled interest of MOCK (FR0000000001)'),
+      ]);
+    });
   });
 
   describe('bond redemption', () => {
