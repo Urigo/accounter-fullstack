@@ -45,6 +45,73 @@ function authContext(): McpAuthContext {
 
 /** Upstream payloads keyed by the operation each tool issues. */
 function dataFor(query: string): unknown {
+  if (query.includes('mutation McpUpdateCharge')) {
+    return {
+      updateCharge: {
+        __typename: 'UpdateChargeSuccessfulResult',
+        charge: {
+          __typename: 'CommonCharge',
+          id: 'c1',
+          userDescription: 'x',
+          optionalDocuments: null,
+          optionalVAT: null,
+          counterparty: null,
+          tags: [],
+          metadata: { transactionsCount: 1, documentsCount: 1, invalidLedger: 'VALID' },
+        },
+      },
+    };
+  }
+  if (query.includes('mutation McpMergeCharges')) {
+    return {
+      mergeCharges: {
+        __typename: 'MergeChargeSuccessfulResult',
+        charge: {
+          __typename: 'CommonCharge',
+          id: 'c1',
+          userDescription: 'x',
+          optionalDocuments: null,
+          optionalVAT: null,
+          counterparty: null,
+          tags: [],
+          metadata: { transactionsCount: 1, documentsCount: 1, invalidLedger: 'VALID' },
+        },
+      },
+    };
+  }
+  if (query.includes('updateTransactions')) {
+    return {
+      updateTransactions: {
+        __typename: 'UpdatedTransactionsSuccessfulResult',
+        transactions: [{ id: 't1', chargeId: 'c1', isFee: false, counterparty: null }],
+        deletedChargeIds: [],
+      },
+    };
+  }
+  if (query.includes('mutation McpUpdateDocument')) {
+    return {
+      updateDocument: {
+        __typename: 'UpdateDocumentSuccessfulResult',
+        deletedChargeId: null,
+        document: { id: 'd1', documentType: 'RECEIPT', charge: { id: 'c1' } },
+      },
+    };
+  }
+  if (query.includes('deleteDocument')) {
+    return { deleteDocument: { success: true, chargeId: 'c1', deletedChargeId: null } };
+  }
+  if (query.includes('insertNewBusiness')) {
+    return {
+      insertNewBusiness: {
+        __typename: 'LtdFinancialEntity',
+        id: 'b-new',
+        name: 'Vendor',
+        hebrewName: null,
+        website: null,
+        country: { code: 'USA' },
+      },
+    };
+  }
   if (query.includes('allCharges')) {
     return {
       allCharges: {
@@ -121,6 +188,12 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
     chargeId: 'c1',
     documentUrls: ['https://example.com/invoice.pdf?token=hunter2'],
   },
+  accounter_update_charge: { memberBusinessId: B1, chargeId: 'c1', userDescription: 'x' },
+  accounter_merge_charges: { memberBusinessId: B1, baseChargeId: 'c1', chargeIdsToMerge: ['c2'] },
+  accounter_update_transactions: { memberBusinessId: B1, transactionIds: ['t1'], counterpartyId: 'b1' },
+  accounter_update_document: { memberBusinessId: B1, documentId: 'd1', chargeId: 'c1' },
+  accounter_delete_document: { memberBusinessId: B1, documentId: 'd1' },
+  accounter_create_business: { memberBusinessId: B1, name: 'Vendor', country: 'USA' },
 };
 
 interface UsageLine {
