@@ -116,7 +116,7 @@ export const retrieveInvoicesSchema = z
     data: z.array(invoiceSchema),
     page: z
       .object({
-        total_rows: z.number().int().positive(),
+        total_rows: z.number().int().nonnegative(),
         items_per_page: z.number().int().min(1).max(99),
         offset: z.number().int().min(0),
       })
