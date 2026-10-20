@@ -307,6 +307,25 @@ describe('uploadPoalimSwiftTransactions', () => {
     expect(result.inserted).toBe(0);
     expect(result.skipped).toBe(1);
   });
+
+  it('does not report a blank placeholder against a stored null as a change', async () => {
+    await provider.uploadPoalimSwiftTransactions([baseSwift]);
+    const result = await provider.uploadPoalimSwiftTransactions([
+      { ...baseSwift, swiftRemittanceInformation70: ' ', swiftDetailsOfCharges71A: '' },
+    ]);
+    expect(result.changedTransactions).toEqual([]);
+  });
+
+  it('reports a real value against a stored null as a change', async () => {
+    await provider.uploadPoalimSwiftTransactions([baseSwift]);
+    const result = await provider.uploadPoalimSwiftTransactions([
+      { ...baseSwift, swiftRemittanceInformation70: 'INVOICE 42' },
+    ]);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual([
+      { field: 'swift_remittance_information_70', oldValue: 'null', newValue: 'INVOICE 42' },
+    ]);
+  });
 });
 
 
