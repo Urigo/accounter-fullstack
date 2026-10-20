@@ -8,10 +8,9 @@ import { degradeChargesAccountantApproval } from '../../accountant-approval/help
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
-import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
+import { deleteChargesIfEmpty } from '../../charges/helpers/delete-empty-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
-import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   fetchRemoteDocument,
   RemoteDocumentError,
@@ -330,11 +329,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
-      let postUpdateActions = async (): Promise<void> => void 0;
-      // set when the former charge is emptied by this update and therefore deleted, so the
-      // client can drop its row instead of refetching a charge that no longer exists
-      let deletedChargeId: string | null = null;
-
       try {
         let chargeId: string | undefined = undefined;
         // capture the document's current charge so it too gets re-flagged when
@@ -353,13 +347,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             throw new GraphQLError(`Document ID="${documentId}" not valid`);
           }
           if (document.charge_id) {
-            const [charge, transactions, documents] = await Promise.all([
-              injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
-              injector
-                .get(TransactionsProvider)
-                .transactionsByChargeIDLoader.load(document.charge_id),
-              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
-            ]);
+            const charge = await injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(document.charge_id);
             if (!charge) {
               throw new GraphQLError(
                 `Former document's charge ID ("${fields.chargeId}") not valid`,
@@ -377,23 +367,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               );
             }
             chargeId = newCharge.id;
-
-            if (documents.length === 1 && transactions.length === 0) {
-              postUpdateActions = async () => {
-                try {
-                  await deleteCharges([charge.id], injector);
-                  deletedChargeId = charge.id;
-                } catch (e) {
-                  if (e instanceof GraphQLError) {
-                    throw e;
-                  }
-                  console.error(e);
-                  throw new GraphQLError(
-                    `Failed to delete the empty former charge ID="${charge.id}"`,
-                  );
-                }
-              };
-            }
           }
         } else if (fields.chargeId) {
           // case new charge ID
@@ -432,7 +405,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           throw new Error(`Document ID="${documentId}" not found`);
         }
 
-        await postUpdateActions();
+        // the former charge may be left empty by the move - delete it to avoid a ghost charge, and
+        // report it so the client can drop its row instead of refetching a charge that no longer
+        // exists
+        const [deletedChargeId = null] = fields.chargeId
+          ? await deleteChargesIfEmpty([formerChargeId], injector, { keepChargeIds: [chargeId] })
+          : [];
 
         await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
 
@@ -461,20 +439,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
         if (res.length === 1) {
           await degradeChargesAccountantApproval(injector, [document.charge_id]);
-          let deletedChargeId: string | null = null;
-          if (document.charge_id) {
-            const [charge, transactions, documents] = await Promise.all([
-              injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
-              injector
-                .get(TransactionsProvider)
-                .transactionsByChargeIDLoader.load(document.charge_id),
-              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
-            ]);
-            if (charge && documents.length === 0 && transactions.length === 0) {
-              await deleteCharges([charge.id], injector);
-              deletedChargeId = charge.id;
-            }
-          }
+          const [deletedChargeId = null] = await deleteChargesIfEmpty(
+            [document.charge_id],
+            injector,
+          );
           return {
             success: true,
             chargeId: document.charge_id ?? null,
