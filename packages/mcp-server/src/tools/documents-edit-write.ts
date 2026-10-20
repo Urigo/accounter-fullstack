@@ -1,12 +1,7 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type {
-  McpDeleteDocumentMutation,
-  McpDocumentChargeQuery,
-  McpUpdateDocumentMutation,
-} from '../gql/index.js';
+import type { McpDeleteDocumentMutation, McpUpdateDocumentMutation } from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
-import { deleteEmptiedCharges, describeCleanup, type CleanupResult } from './charge-cleanup.js';
 import { parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { DOCUMENT_TYPES } from './document-details.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
@@ -30,11 +25,9 @@ import { EMPTY_UUID } from './transactions-write.js';
  * charge with the card row, or delete a stray attachment that was never a
  * document at all.
  *
- * Upstream `updateDocument` deletes an emptied former charge only on the
- * EMPTY_UUID unlink path (reported as `deletedChargeId`). Moving a document
- * onto a REAL charge leaves its former charge behind, so after such a move the
- * tool deletes that charge if it is now empty (see charge-cleanup.ts) and
- * reports it under `cleanup`.
+ * Upstream `updateDocument` deletes the former charge when a move (onto a real
+ * charge or an EMPTY_UUID unlink) leaves it with no transactions, documents or
+ * misc expenses, and reports it as `deletedChargeId`.
  */
 
 export const UPDATE_DOCUMENT_TOOL_NAME = 'accounter_update_document';
@@ -73,11 +66,9 @@ const updateDocumentInput = z.object({
     .optional()
     .describe(
       'Move the document onto this charge — typically the one holding the bank or card ' +
-        'transaction it documents. If the former charge is left empty it is deleted afterwards ' +
-        'and listed under `cleanup.deletedChargeIds` (turn that off with ' +
-        `\`deleteEmptiedCharges: false\`). Pass the all-zero UUID (${EMPTY_UUID}) to unlink the ` +
-        'document into a new charge of its own; upstream then deletes the former charge itself ' +
-        'when the document was all it held, reported as `deletedChargeId`.',
+        `transaction it documents. Pass the all-zero UUID (${EMPTY_UUID}) to unlink the document ` +
+        'into a new charge of its own. Either way, upstream deletes the former charge when the ' +
+        'move left it empty and reports it as `deletedChargeId`.',
     ),
   creditorId: z
     .string()
@@ -120,14 +111,6 @@ const updateDocumentInput = z.object({
         'that currency through `amount`).',
     ),
   description: z.string().max(1000).optional().describe('Replace the document description.'),
-  deleteEmptiedCharges: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe(
-      'When moving onto a real charge, delete the former charge if it ends up with no ' +
-        'transactions, documents or misc expenses (default true).',
-    ),
 });
 type UpdateDocumentInput = z.infer<typeof updateDocumentInput>;
 
@@ -136,17 +119,6 @@ const deleteDocumentInput = z.object({
   documentId: z.string().min(1).describe('The document to delete.'),
 });
 type DeleteDocumentInput = z.infer<typeof deleteDocumentInput>;
-
-const DOCUMENT_CHARGE_QUERY = /* GraphQL */ `
-  query McpDocumentCharge($documentIds: [UUID!]!) {
-    documentsByIds(documentIds: $documentIds) {
-      id
-      charge {
-        id
-      }
-    }
-  }
-`;
 
 const UPDATE_DOCUMENT_MUTATION = /* GraphQL */ `
   mutation McpUpdateDocument($documentId: UUID!, $fields: UpdateDocumentFieldsInput!) {
@@ -234,17 +206,6 @@ async function updateDocumentHandler(
     ]);
   }
 
-  const movingToRealCharge =
-    input.chargeId !== undefined && input.chargeId !== EMPTY_UUID && input.deleteEmptiedCharges;
-  let formerChargeId: string | null = null;
-  if (movingToRealCharge) {
-    const before = await context.client.query<McpDocumentChargeQuery>(
-      { query: DOCUMENT_CHARGE_QUERY, variables: { documentIds: [input.documentId] } },
-      context.upstream,
-    );
-    formerChargeId = before.documentsByIds[0]?.charge?.id ?? null;
-  }
-
   const data = await context.client.mutate<McpUpdateDocumentMutation>(
     { query: UPDATE_DOCUMENT_MUTATION, variables: { documentId: input.documentId, fields } },
     context.upstream,
@@ -283,18 +244,12 @@ async function updateDocumentHandler(
       }
     : null;
 
-  const cleanup: CleanupResult =
-    movingToRealCharge && formerChargeId
-      ? await deleteEmptiedCharges([formerChargeId], input.chargeId ?? null, context)
-      : { deletedChargeIds: [], keptChargeIds: [], failures: [] };
-
   return shapeWriteResult({
     action: 'update_document',
     outcome: {
       documentId: input.documentId,
       updatedFields: Object.keys(fields),
       deletedChargeId: result.deletedChargeId ?? null,
-      cleanup,
       scope: { memberBusinessIds: context.readScope.memberBusinessIds },
     },
     items: { key: 'documents', values: echo ? [echo] : [] },
@@ -302,8 +257,7 @@ async function updateDocumentHandler(
       `Updated ${Object.keys(fields).join(', ')} on document ${input.documentId}.` +
       (result.deletedChargeId
         ? ` Its former charge ${result.deletedChargeId} was left empty and deleted.`
-        : '') +
-      describeCleanup(cleanup),
+        : ''),
   });
 }
 
@@ -342,14 +296,12 @@ async function deleteDocumentHandler(
 }
 
 function observeUpdate(input: UpdateDocumentInput, result: ToolResult): ToolObservation {
-  const structured = result.structuredContent as
-    { deletedChargeId?: string | null; cleanup?: CleanupResult } | undefined;
+  const structured = result.structuredContent as { deletedChargeId?: string | null } | undefined;
   return {
     fields: {
       updatedFieldCount: Object.keys(documentFieldsOf(input)).length,
       movesCharge: input.chargeId !== undefined,
-      deletedFormerCharge:
-        !!structured?.deletedChargeId || (structured?.cleanup?.deletedChargeIds.length ?? 0) > 0,
+      deletedFormerCharge: !!structured?.deletedChargeId,
     },
   };
 }
@@ -363,14 +315,13 @@ export const updateDocumentTool: ToolDefinition<typeof updateDocumentInput> = {
   name: UPDATE_DOCUMENT_TOOL_NAME,
   description:
     'Edit an existing document or move it to another charge: set `chargeId` to attach a receipt ' +
-    'to the charge holding the card or bank row it documents — the former charge is then ' +
-    'deleted if the move left it empty (under `cleanup.deletedChargeIds`; kept and listed under ' +
-    '`cleanup.keptChargeIds` otherwise). `creditorId` / `debtorId` correct the businesses the ' +
-    'extractor read off it, which is also what sets the charge’s counterparty on the document ' +
-    'side. `documentType`, `serialNumber`, `date`, `amount`, `vat` (a number in the document’s ' +
+    'to the charge holding the card or bank row it documents — upstream then deletes the former ' +
+    'charge if the move left it empty, reported as `deletedChargeId`. `creditorId` / `debtorId` ' +
+    'correct the businesses the extractor read off it, which is also what sets the charge’s ' +
+    'counterparty on the document side. `documentType`, `serialNumber`, `date`, `amount`, `vat` (a number in the document’s ' +
     'currency) and `description` fix extracted values. Only the fields you pass change. The echo ' +
-    'under `documents` is the document as it now stands, alongside `documentId`, `updatedFields`, ' +
-    '`deletedChargeId` (set only on an all-zero-UUID unlink) and `cleanup`. ' +
+    'under `documents` is the document as it now stands, alongside `documentId`, `updatedFields` ' +
+    'and `deletedChargeId`. ' +
     writeResultDescription('documents') +
     ' ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,

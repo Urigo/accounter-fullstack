@@ -314,17 +314,14 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   loaded _before_ those fields are applied, so the tool re-reads the merged charge for its echo.
 - **`accounter_update_transactions`** — set `counterpartyId`, `chargeId` and/or `isFee` on 1–50
   transactions in one upstream batch. This is where a charge's counterparty is actually set.
-  `chargeId` moves the rows onto another charge; upstream leaves a former charge behind even when
-  the move emptied it, so the tool notes the former charges first and afterwards deletes those left
-  with no transactions, documents or misc expenses (`cleanup.deletedChargeIds`; the rest under
-  `cleanup.keptChargeIds`; off with `deleteEmptiedCharges: false`). Deletion goes through upstream
-  `deleteCharge`, which itself refuses a non-empty charge. The all-zero UUID unlinks: upstream then
-  creates **one** new charge and moves every listed transaction into it (not one charge per row) and
-  deletes the former charges it emptied. Reports `requestedCount` vs `updatedCount`, since upstream
-  skips ids it cannot resolve.
-- **`accounter_update_document`** — edit an existing document: `chargeId` moves it, with the same
-  emptied-former-charge cleanup as above (upstream's own `deletedChargeId` is set only on the
-  all-zero-UUID unlink path); `creditorId` / `debtorId` fix the parties the extractor read; and
+  `chargeId` moves the rows onto another charge; upstream deletes the former charges the move left
+  with no transactions, documents or misc expenses and the tool relays them as `deletedChargeIds`.
+  The all-zero UUID unlinks: upstream then creates **one** new charge and moves every listed
+  transaction into it (not one charge per row). Reports `requestedCount` vs `updatedCount`, since
+  upstream skips ids it cannot resolve.
+- **`accounter_update_document`** — edit an existing document: `chargeId` moves it (the all-zero
+  UUID unlinks it), and upstream deletes the former charge when the move left it empty, reported as
+  `deletedChargeId`; `creditorId` / `debtorId` fix the parties the extractor read; and
   `documentType`, `serialNumber`, `date` (a real calendar date, checked with the shared helper),
   `amount`, `vat` and `description` fix extracted values. `amount` is `{ value, currency }` and sets
   the document's currency; `vat` is a bare number in that currency, because upstream takes the
@@ -801,12 +798,11 @@ Two tool-specific rules worth knowing:
 - `accounter_update_charges_tags` is incremental, not a replacement: tags not named in
   `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
   ends up added.
-- Moving rows onto a real charge does not clean up after itself upstream. `updateTransactions` and
-  `updateDocument` delete an emptied former charge only on the all-zero-UUID unlink path; a move
-  onto an existing charge leaves the former charge behind. `accounter_update_transactions` and
-  `accounter_update_document` therefore do the cleanup themselves (`charge-cleanup.ts`): read the
-  former charges before the move, and after it delete those upstream confirms are empty. The outcome
-  is reported under `cleanup`, separately from upstream's own `deletedChargeId`.
+- Emptied charges are cleaned up upstream. `updateTransactions` and `updateDocument` delete a former
+  charge any move (onto an existing charge or an all-zero-UUID unlink) left with no transactions,
+  documents or misc expenses, and report it (`deletedChargeIds` / `deletedChargeId`).
+  `accounter_update_transactions` and `accounter_update_document` relay those reports rather than
+  cleaning up themselves.
 - A charge's counterparty is **not** a charge field. `accounter_update_charge` rejects
   `counterpartyId` on purpose — upstream computes the counterparty from the businesses on the
   charge's transactions and the creditor/debtor on its documents, so the edit lives in

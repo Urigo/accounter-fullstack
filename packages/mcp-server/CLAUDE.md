@@ -34,7 +34,6 @@ re-declared:
 | ISO alpha-3 country                    | `country-codes.ts` (`countryCodeInput`, mirrors the server enum) |
 | scope inputs / description suffixes    | `scope-input.ts`                                                 |
 | write result envelope                  | `output.ts` (`shapeWriteResult`, `writeResultDescription`)       |
-| emptied-charge cleanup after a move    | `charge-cleanup.ts`                                              |
 
 `schema-contract.test.ts` pins the shared lists to `schema.graphql`; a private copy in a tool file
 goes stale silently.
@@ -48,8 +47,8 @@ calling. Things that have bitten before:
 
 - `UpdateChargeInput.counterpartyId` exists in the schema and is ignored by `updateCharge`; a
   charge's counterparty is derived from its transactions and documents.
-- `updateTransactions` / `updateDocument` delete an emptied former charge **only** on the
-  `EMPTY_UUID` unlink path; moving onto a real charge leaves the old charge behind.
+- `updateTransactions` / `updateDocument` delete an emptied former charge on **any** `chargeId` move
+  and report it; the tools relay that report — never clean up client-side.
 - `EMPTY_UUID` on `updateTransactions` creates **one** new charge for all listed rows.
 - `mergeCharges` returns the base charge as loaded **before** `fields` are applied.
 - `updateDocument` takes the document currency from `amount` only; `vat.currency` is ignored.

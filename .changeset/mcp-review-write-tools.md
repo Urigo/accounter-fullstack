@@ -18,10 +18,9 @@ audit-logged and are never retried — the same guards as `accounter_update_char
 - `accounter_update_transactions` — set `counterpartyId`, `chargeId` and/or `isFee` on 1–50
   transactions in one upstream batch (`updateTransactions`); this is where a charge's counterparty
   is actually set, and `chargeId` is how a wire is moved onto the charge holding its invoice.
-  Former charges the move leaves empty are deleted afterwards (upstream only does that on the
-  unlink path) and reported under `cleanup`.
-- `accounter_update_document` — move a document to another charge (with the same emptied-charge
-  cleanup) and/or fix `creditorId`, `debtorId`, `documentType`, `serialNumber`, `date`, `amount`,
+  Former charges the move leaves empty are deleted upstream and relayed as `deletedChargeIds`.
+- `accounter_update_document` — move a document to another charge (an emptied former charge is
+  deleted upstream and relayed as `deletedChargeId`) and/or fix `creditorId`, `debtorId`, `documentType`, `serialNumber`, `date`, `amount`,
   `vat`, `description` (`updateDocument`).
 - `accounter_delete_document` — delete a document (`deleteDocument`), reporting the charge it
   came off and whether that charge was deleted with it.

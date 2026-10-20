@@ -84,6 +84,7 @@ function dataFor(query: string): unknown {
       updateTransactions: {
         __typename: 'UpdatedTransactionsSuccessfulResult',
         transactions: [{ id: 't1', chargeId: 'c1', isFee: false, counterparty: null }],
+        deletedChargeIds: [],
       },
     };
   }
