@@ -15,6 +15,7 @@ import {
   IDeleteProviderCredentialsQuery,
   IGetProviderCredentialPayloadQuery,
   IGetProviderStatusesQuery,
+  ISetProviderBusinessQuery,
   IUpsertProviderCredentialsQuery,
 } from '../types.js';
 
@@ -25,10 +26,27 @@ const PROVIDER_SCHEMAS = {
 
 export type ProviderKey = keyof typeof PROVIDER_SCHEMAS;
 
+export type ProviderStatus = {
+  provider: string;
+  configuredAt: string;
+  /** The business entity that represents the provider in the tenant's books, if set */
+  businessId: string | null;
+};
+
 const upsertProviderCredentials = sql<IUpsertProviderCredentialsQuery>`
-  INSERT INTO accounter_schema.provider_credentials (owner_id, provider, payload)
-  VALUES (accounter_schema.get_current_business_id(), $provider, $encrypted)
-  ON CONFLICT (owner_id, provider) DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()
+  INSERT INTO accounter_schema.provider_credentials (owner_id, provider, payload, business_id)
+  VALUES (accounter_schema.get_current_business_id(), $provider, $encrypted, $businessId)
+  ON CONFLICT (owner_id, provider) DO UPDATE SET
+    payload = EXCLUDED.payload,
+    business_id = COALESCE(EXCLUDED.business_id, provider_credentials.business_id),
+    updated_at = now()
+  RETURNING updated_at;`;
+
+const setProviderBusiness = sql<ISetProviderBusinessQuery>`
+  UPDATE accounter_schema.provider_credentials
+  SET business_id = $businessId
+  WHERE owner_id = accounter_schema.get_current_business_id()
+    AND provider = $provider
   RETURNING updated_at;`;
 
 const deleteProviderCredentials = sql<IDeleteProviderCredentialsQuery>`
@@ -37,7 +55,7 @@ const deleteProviderCredentials = sql<IDeleteProviderCredentialsQuery>`
     AND provider = $provider;`;
 
 const getProviderStatuses = sql<IGetProviderStatusesQuery>`
-  SELECT provider, updated_at
+  SELECT provider, updated_at, business_id
   FROM accounter_schema.provider_credentials
   WHERE owner_id = accounter_schema.get_current_business_id();`;
 
@@ -49,6 +67,9 @@ const getProviderCredentialPayload = sql<IGetProviderCredentialPayloadQuery>`
 
 @Injectable({ scope: Scope.Operation, global: true })
 export class ProviderCredentialsProvider {
+  /** Statuses are read once per operation — ledger generation asks for them per document */
+  private statusesPromise: Promise<ProviderStatus[]> | null = null;
+
   constructor(
     private db: TenantAwareDBClient,
     @Inject(ENVIRONMENT) private env: Environment,
@@ -64,7 +85,11 @@ export class ProviderCredentialsProvider {
     return key;
   }
 
-  async setCredentials(provider: ProviderKey, payload: unknown): Promise<Date | undefined> {
+  async setCredentials(
+    provider: ProviderKey,
+    payload: unknown,
+    options: { businessId?: string | null } = {},
+  ): Promise<Date | undefined> {
     const schema = PROVIDER_SCHEMAS[provider];
     const result = schema.safeParse(payload);
     if (!result.success) {
@@ -75,20 +100,50 @@ export class ProviderCredentialsProvider {
 
     const encrypted = encryptCredential(JSON.stringify(result.data), this.encryptionKey);
 
-    const credentials = await upsertProviderCredentials.run({ provider, encrypted }, this.db);
+    this.statusesPromise = null;
+    const credentials = await upsertProviderCredentials.run(
+      { provider, encrypted, businessId: options.businessId ?? null },
+      this.db,
+    );
     return credentials[0]?.updated_at;
   }
 
+  /**
+   * Set the business entity that represents the provider in the tenant's books. The provider must
+   * already be connected.
+   */
+  async setProviderBusiness(provider: ProviderKey, businessId: string): Promise<Date> {
+    this.statusesPromise = null;
+    const [row] = await setProviderBusiness.run({ provider, businessId }, this.db);
+    if (!row?.updated_at) {
+      throw new GraphQLError(
+        `Provider "${provider}" is not connected — connect it before choosing its business`,
+        { extensions: { code: 'NOT_FOUND' } },
+      );
+    }
+    return row.updated_at;
+  }
+
   async deleteCredentials(provider: ProviderKey): Promise<void> {
+    this.statusesPromise = null;
     await deleteProviderCredentials.run({ provider }, this.db);
   }
 
-  async getProviderStatuses(): Promise<Array<{ provider: string; configuredAt: string }>> {
-    const rows = await getProviderStatuses.run(undefined, this.db);
-    return rows.map(row => ({
-      provider: row.provider!,
-      configuredAt: row.updated_at!.toISOString(),
-    }));
+  getProviderStatuses(): Promise<ProviderStatus[]> {
+    this.statusesPromise ??= getProviderStatuses
+      .run(undefined, this.db)
+      .then(rows =>
+        rows.map(row => ({
+          provider: row.provider!,
+          configuredAt: row.updated_at!.toISOString(),
+          businessId: row.business_id ?? null,
+        })),
+      )
+      .catch(error => {
+        this.statusesPromise = null;
+        throw error;
+      });
+    return this.statusesPromise;
   }
 
   async getGreenInvoiceCredentials(): Promise<GreenInvoicePayload | null> {
