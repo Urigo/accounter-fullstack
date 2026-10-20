@@ -1,8 +1,12 @@
 import type { Injector } from 'graphql-modules';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EMPTY_UUID } from '../../../../shared/constants.js';
+import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
+import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
+import { BalanceCancellationProvider } from '../../../ledger/providers/balance-cancellation.provider.js';
 import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
+import { SalariesProvider } from '../../../salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '../../providers/charges.provider.js';
 import { deleteCharges } from '../delete-charges.helper.js';
@@ -15,7 +19,15 @@ vi.mock('../delete-charges.helper.js', () => ({
 const CHARGE_A = 'cc000000-0000-4000-8000-00000000000a';
 const CHARGE_B = 'cc000000-0000-4000-8000-00000000000b';
 
-type ChargeContent = { transactions?: number; documents?: number; miscExpenses?: number };
+type ChargeContent = {
+  transactions?: number;
+  documents?: number;
+  miscExpenses?: number;
+  salaries?: number;
+  businessTripEmployeePayments?: number;
+  depreciation?: number;
+  balanceCancellations?: number;
+};
 
 function buildInjector(
   contents: Record<string, ChargeContent>,
@@ -30,6 +42,12 @@ function buildInjector(
   const transactionsLoader = loader('transactions');
   const documentsLoader = loader('documents');
   const miscExpensesLoader = loader('miscExpenses');
+  const linkedRecordLoaders = {
+    salaries: loader('salaries'),
+    businessTripEmployeePayments: loader('businessTripEmployeePayments'),
+    depreciation: loader('depreciation'),
+    balanceCancellations: loader('balanceCancellations'),
+  };
   const invalidateCharge = vi.fn();
 
   const injector = {
@@ -43,6 +61,23 @@ function buildInjector(
       if (token === MiscExpensesProvider) {
         return { getExpensesByChargeIdLoader: miscExpensesLoader };
       }
+      if (token === SalariesProvider) {
+        return { getSalaryRecordsByChargeIdLoader: linkedRecordLoaders.salaries };
+      }
+      if (token === BusinessTripEmployeePaymentsProvider) {
+        return {
+          getBusinessTripEmployeePaymentsByChargeIdLoader:
+            linkedRecordLoaders.businessTripEmployeePayments,
+        };
+      }
+      if (token === DepreciationProvider) {
+        return { getDepreciationRecordsByChargeIdLoader: linkedRecordLoaders.depreciation };
+      }
+      if (token === BalanceCancellationProvider) {
+        return {
+          getBalanceCancellationByChargesIdLoader: linkedRecordLoaders.balanceCancellations,
+        };
+      }
       if (token === ChargesProvider) {
         return {
           getChargeByIdLoader: {
@@ -55,11 +90,20 @@ function buildInjector(
     },
   } as unknown as Injector;
 
-  return { injector, transactionsLoader, documentsLoader, miscExpensesLoader, invalidateCharge };
+  return {
+    injector,
+    loaders: [
+      transactionsLoader,
+      documentsLoader,
+      miscExpensesLoader,
+      ...Object.values(linkedRecordLoaders),
+    ],
+    invalidateCharge,
+  };
 }
 
 describe('isChargeEmpty', () => {
-  it('is empty only when there are no transactions, documents or misc expenses', async () => {
+  it('is empty only when there are no records of any kind', async () => {
     const { injector } = buildInjector({
       [CHARGE_A]: {},
       [CHARGE_B]: { miscExpenses: 1 },
@@ -70,11 +114,11 @@ describe('isChargeEmpty', () => {
   });
 
   it('clears the per-charge loaders before counting', async () => {
-    const { injector, transactionsLoader, documentsLoader, miscExpensesLoader } = buildInjector({});
+    const { injector, loaders } = buildInjector({});
 
     await isChargeEmpty(CHARGE_A, injector);
 
-    for (const loader of [transactionsLoader, documentsLoader, miscExpensesLoader]) {
+    for (const loader of loaders) {
       expect(loader.clear).toHaveBeenCalledWith(CHARGE_A);
       expect(loader.clear.mock.invocationCallOrder[0]).toBeLessThan(
         loader.load.mock.invocationCallOrder[0],
@@ -92,6 +136,10 @@ describe('deleteChargesIfEmpty', () => {
     ['a transaction', { transactions: 1 }],
     ['a document', { documents: 1 }],
     ['a misc expense', { miscExpenses: 1 }],
+    ['a salary record', { salaries: 1 }],
+    ['a business trip employee payment', { businessTripEmployeePayments: 1 }],
+    ['a depreciation record', { depreciation: 1 }],
+    ['a balance cancellation', { balanceCancellations: 1 }],
   ])('keeps a charge that still holds %s', async (_, content) => {
     const { injector } = buildInjector({ [CHARGE_A]: content });
 
