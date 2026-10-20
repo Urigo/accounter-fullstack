@@ -137,6 +137,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               );
             }
             chargeId = newCharge.id;
+          } else {
+            // not linked to any charge: nothing to unlink. Never pass the sentinel on - the SQL
+            // would try to write it as the charge ID
+            chargeId = null;
           }
         };
 
@@ -250,6 +254,10 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
               throw new GraphQLError(`Failed to generate new charge for transactions update`);
             }
             chargeId = newCharge.id;
+          } else {
+            // none is linked to any charge: nothing to unlink. Never pass the sentinel on - the SQL
+            // would try to write it as the charge ID
+            chargeId = null;
           }
         };
 
