@@ -322,11 +322,11 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
 - **`accounter_update_document`** — edit an existing document: `chargeId` moves it, and a former
   charge the move leaves empty is deleted by upstream and reported as `deletedChargeId` (on a move
   onto an existing charge and on the all-zero-UUID unlink alike); `creditorId` / `debtorId` fix the
-  parties the extractor read; and
-  `documentType`, `serialNumber`, `date` (a real calendar date, checked with the shared helper),
-  `amount`, `vat` and `description` fix extracted values. `amount` is `{ value, currency }` and sets
-  the document's currency; `vat` is a bare number in that currency, because upstream takes the
-  currency from `amount` only and would silently ignore one on `vat`.
+  parties the extractor read; and `documentType`, `serialNumber`, `date` (a real calendar date,
+  checked with the shared helper), `amount`, `vat` and `description` fix extracted values. `amount`
+  is `{ value, currency }` and sets the document's currency; `vat` is a bare number in that
+  currency, because upstream takes the currency from `amount` only and would silently ignore one on
+  `vat`.
 - **`accounter_delete_document`** — delete one document for good; the charge goes with it when the
   document was all it held (`deletedChargeId`). Not reversible, so the description tells the model
   to read it back first and to prefer `accounter_update_document` for a real document in the wrong

@@ -47,10 +47,10 @@ calling. Things that have bitten before:
 
 - `UpdateChargeInput.counterpartyId` exists in the schema and is ignored by `updateCharge`; a
   charge's counterparty is derived from its transactions and documents.
-- `updateTransactions` / `updateDocument` delete a former charge the move left with no
-  transactions, documents or misc expenses (`deletedChargeIds` / `deletedChargeId`). That lives in
-  the server (`charges/helpers/delete-emptied-charges.helper.ts`); the tools only relay it. Do not
-  re-implement upstream clean-up in a tool.
+- `updateTransactions` / `updateDocument` delete a former charge the move left with no transactions,
+  documents or misc expenses (`deletedChargeIds` / `deletedChargeId`). That lives in the server
+  (`charges/helpers/delete-emptied-charges.helper.ts`); the tools only relay it. Do not re-implement
+  upstream clean-up in a tool.
 - `EMPTY_UUID` on `updateTransactions` creates **one** new charge for all listed rows.
 - `mergeCharges` returns the base charge as loaded **before** `fields` are applied.
 - `updateDocument` takes the document currency from `amount` only; `vat.currency` is ignored.

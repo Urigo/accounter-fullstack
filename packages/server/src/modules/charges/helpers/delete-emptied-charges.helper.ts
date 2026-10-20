@@ -23,9 +23,7 @@ export async function deleteFormerChargesIfEmptied(
   injector: Injector,
 ): Promise<string[]> {
   const candidates = [
-    ...new Set(
-      formerChargeIds.filter((id): id is string => !!id && id !== targetChargeId),
-    ),
+    ...new Set(formerChargeIds.filter((id): id is string => !!id && id !== targetChargeId)),
   ];
   if (candidates.length === 0) {
     return [];
