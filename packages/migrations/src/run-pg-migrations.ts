@@ -215,6 +215,7 @@ import migration_2026_10_11T13_00_00_deprecate_legacy_foreign_securities_columns
 import migration_2026_10_15T12_00_00_split_securities_withholding_tax_categories from './actions/2026-10-15T12-00-00.split-securities-withholding-tax-categories.js';
 import migration_2026_10_15T14_00_00_poalim_securities_transactions_restatable_dedup from './actions/2026-10-15T14-00-00.poalim-securities-transactions-restatable-dedup.js';
 import migration_2026_10_19T12_00_00_security_businesses_is_foreign_by_issuer from './actions/2026-10-19T12-00-00.security-businesses-is-foreign-by-issuer.js';
+import migration_2026_10_20T12_00_00_provider_credentials_business_id from './actions/2026-10-20T12-00-00.provider-credentials-business-id.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -434,6 +435,7 @@ export const MIGRATIONS = [
   migration_2026_10_15T12_00_00_split_securities_withholding_tax_categories,
   migration_2026_10_15T14_00_00_poalim_securities_transactions_restatable_dedup,
   migration_2026_10_19T12_00_00_security_businesses_is_foreign_by_issuer,
+  migration_2026_10_20T12_00_00_provider_credentials_business_id,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
