@@ -6,6 +6,7 @@ import { degradeChargesAccountantApproval } from '../../accountant-approval/help
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
+import { deleteFormerChargesIfEmptied } from '../../charges/helpers/delete-emptied-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
@@ -193,6 +194,11 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         await postUpdateActions();
 
+        // moved onto an existing charge: the former charge may now hold nothing at all
+        if (fields.chargeId && fields.chargeId !== EMPTY_UUID) {
+          await deleteFormerChargesIfEmptied([formerChargeId], fields.chargeId, injector);
+        }
+
         await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
 
         return res[0].id;
@@ -209,6 +215,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
     },
     updateTransactions: async (_, { transactionIds, fields }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
+      // former charges this update left empty and therefore deleted, reported back so a client
+      // drops their rows instead of refetching charges that no longer exist
+      const deletedChargeIds: string[] = [];
 
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
@@ -291,6 +300,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
                     `Failed to delete empty former charges: ${Array.from(chargesToDelete).join(', ')}`,
                   );
                 });
+                deletedChargeIds.push(...chargesToDelete);
               };
             }
 
@@ -331,9 +341,16 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         await postUpdateActions();
 
+        // moved onto an existing charge: former charges may now hold nothing at all
+        if (fields.chargeId && fields.chargeId !== EMPTY_UUID) {
+          deletedChargeIds.push(
+            ...(await deleteFormerChargesIfEmptied(formerChargeIds, fields.chargeId, injector)),
+          );
+        }
+
         await degradeChargesAccountantApproval(injector, [...formerChargeIds, chargeId]);
 
-        return { transactions: res.map(transaction => transaction.id) };
+        return { transactions: res.map(transaction => transaction.id), deletedChargeIds };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;

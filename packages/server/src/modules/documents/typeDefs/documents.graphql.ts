@@ -343,7 +343,7 @@ export default gql`
   " result type for updateDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type UpdateDocumentSuccessfulResult {
     document: Document
-    " set when the document's former charge became empty by the update and was deleted "
+    " set when the document's former charge was left with nothing by the update (unlinked or moved away) and was deleted "
     deletedChargeId: UUID
   }
 

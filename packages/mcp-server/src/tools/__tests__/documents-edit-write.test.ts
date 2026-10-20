@@ -32,7 +32,6 @@ const updated = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const emptyMeta = { transactionsCount: 0, documentsCount: 0, miscExpensesCount: 0 };
 
 describe('updateDocumentTool — request', () => {
   it('sends only the requested fields, converting amounts to the upstream shape', async () => {
@@ -89,51 +88,39 @@ describe('updateDocumentTool — request', () => {
 });
 
 describe('updateDocumentTool — moving between charges', () => {
-  it('moves onto a real charge, then deletes the former charge the move left empty', async () => {
-    const { client, captured } = mutationClient({
-      documentsByIds: [{ id: D1, charge: { id: C2 } }],
-      updateDocument: updated(),
-      chargesByIDs: [{ id: C2, metadata: emptyMeta }],
-      deleteCharge: true,
-    });
+  it('moves onto a real charge in one mutation and relays the former charge upstream deleted', async () => {
+    const { client, captured } = mutationClient(
+      'updateDocument',
+      updated({ deletedChargeId: C2 }),
+    );
     const result = await runTool(updateDocumentTool, { documentId: D1, chargeId: C1 }, client);
 
     expect(result.isError).toBeUndefined();
-    const order = rootFields(captured);
-    expect(order).toEqual(['documentsByIds', 'updateDocument', 'chargesByIDs', 'deleteCharge']);
-    expect(callsTo(captured, 'deleteCharge')[0].variables).toEqual({ chargeId: C2 });
+    // No pre-read and no follow-up delete: the server owns the cleanup.
+    expect(rootFields(captured)).toEqual(['updateDocument']);
+    expect(callsTo(captured, 'deleteCharge')).toHaveLength(0);
 
-    const structured = result.structuredContent as {
-      deletedChargeId: string | null;
-      cleanup: { deletedChargeIds: string[]; keptChargeIds: string[] };
-    };
-    // `deletedChargeId` is upstream's unlink-path report; a move onto a real
-    // charge never sets it — the cleanup pass is what deleted C2.
-    expect(structured.deletedChargeId).toBeNull();
-    expect(structured.cleanup.deletedChargeIds).toEqual([C2]);
+    const structured = result.structuredContent as { deletedChargeId: string | null };
+    expect(structured.deletedChargeId).toBe(C2);
     expect(result.content[0]).toMatchObject({
       type: 'text',
-      text: expect.stringMatching(/Deleted 1 former charge\(s\) left empty: .*C2|cc000000/),
+      text: expect.stringMatching(/former charge .* was left empty and deleted/),
     });
   });
 
-  it('keeps a former charge that still holds a transaction', async () => {
-    const { client, captured } = mutationClient({
-      documentsByIds: [{ id: D1, charge: { id: C2 } }],
-      updateDocument: updated(),
-      chargesByIDs: [
-        { id: C2, metadata: { transactionsCount: 1, documentsCount: 0, miscExpensesCount: 0 } },
-      ],
-      deleteCharge: true,
-    });
+  it('reports no deletion when the former charge still holds something', async () => {
+    const { client } = mutationClient('updateDocument', updated());
     const result = await runTool(updateDocumentTool, { documentId: D1, chargeId: C1 }, client);
 
-    expect(callsTo(captured, 'deleteCharge')).toHaveLength(0);
-    const structured = result.structuredContent as { cleanup: { keptChargeIds: string[] } };
-    expect(structured.cleanup.keptChargeIds).toEqual([C2]);
+    const structured = result.structuredContent as { deletedChargeId: string | null };
+    expect(structured.deletedChargeId).toBeNull();
+    expect(result.content[0]).toMatchObject({
+      type: 'text',
+      text: expect.not.stringMatching(/deleted/),
+    });
   });
 
-  it('leaves the unlink path to upstream and relays its deletedChargeId', async () => {
+  it('relays deletedChargeId on the unlink path too', async () => {
     const { client, captured } = mutationClient(
       'updateDocument',
       updated({ deletedChargeId: C2, document: { id: D1, documentType: 'RECEIPT', charge: { id: 'new' } } }),
@@ -141,27 +128,7 @@ describe('updateDocumentTool — moving between charges', () => {
     const result = await runTool(updateDocumentTool, { documentId: D1, chargeId: EMPTY_UUID }, client);
 
     expect(captured).toHaveLength(1);
-    const structured = result.structuredContent as {
-      deletedChargeId: string | null;
-      cleanup: { deletedChargeIds: string[] };
-    };
-    expect(structured.deletedChargeId).toBe(C2);
-    expect(structured.cleanup.deletedChargeIds).toEqual([]);
-    expect(result.content[0]).toMatchObject({
-      type: 'text',
-      text: expect.stringMatching(/former charge .* deleted/),
-    });
-  });
-
-  it('skips the cleanup when deleteEmptiedCharges is false', async () => {
-    const { client, captured } = mutationClient('updateDocument', updated());
-    await runTool(
-      updateDocumentTool,
-      { documentId: D1, chargeId: C1, deleteEmptiedCharges: false },
-      client,
-    );
-
-    expect(captured).toHaveLength(1);
+    expect((result.structuredContent as { deletedChargeId: string | null }).deletedChargeId).toBe(C2);
   });
 });
 

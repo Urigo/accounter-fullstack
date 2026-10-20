@@ -9,6 +9,7 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
+import { deleteFormerChargesIfEmptied } from '../../charges/helpers/delete-emptied-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -331,8 +332,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
-      // set when the former charge is emptied by this update and therefore deleted, so the
-      // client can drop its row instead of refetching a charge that no longer exists
+      // set when the former charge is emptied by this update (unlinked from or moved away from)
+      // and therefore deleted, so the client can drop its row instead of refetching a charge that
+      // no longer exists
       let deletedChargeId: string | null = null;
 
       try {
@@ -433,6 +435,16 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }
 
         await postUpdateActions();
+
+        // moved onto an existing charge: the former charge may now hold nothing at all
+        if (fields.chargeId && fields.chargeId !== EMPTY_UUID) {
+          const [emptiedChargeId] = await deleteFormerChargesIfEmptied(
+            [formerChargeId],
+            fields.chargeId,
+            injector,
+          );
+          deletedChargeId = emptiedChargeId ?? null;
+        }
 
         await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
 
