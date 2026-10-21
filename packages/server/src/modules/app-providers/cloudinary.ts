@@ -20,7 +20,7 @@ export class CloudinaryProvider {
   public async uploadInvoiceToCloudinary(
     base64string: string,
     // fileFormat?: string,
-  ): Promise<{ fileUrl: string; imageUrl: string }> {
+  ): Promise<{ fileUrl: string; imageUrl: string; publicId?: string; resourceType?: string }> {
     try {
       const res = await cloudinary.uploader.upload(base64string, {
         resource_type: 'auto',
@@ -31,11 +31,16 @@ export class CloudinaryProvider {
 
       const imageUrl = res.url.split('.').slice(0, -1).join('.') + '.jpg';
 
-      return { fileUrl, imageUrl };
+      return { fileUrl, imageUrl, publicId: res.public_id, resourceType: res.resource_type };
     } catch (e) {
       const message = 'Error on uploading file to cloudinary';
       console.error(`${message}: ${(e as Error).message}\n${JSON.stringify(e, null, 2)}`);
       throw new Error(message, { cause: e });
     }
+  }
+
+  /** Remove an uploaded file, e.g. one whose document was never saved */
+  public async deleteUpload(publicId: string, resourceType = 'image'): Promise<void> {
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType, invalidate: true });
   }
 }
