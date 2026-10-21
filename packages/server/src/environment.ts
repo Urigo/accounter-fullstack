@@ -258,6 +258,15 @@ const EmailIngestionModel = zod.object({
   ),
 });
 
+const PriceIndexSyncModel = zod.object({
+  PRICE_INDEX_SYNC_ENABLED: emptyString(
+    zod
+      .union([zod.literal('1'), zod.literal('0')])
+      .optional()
+      .default('1'),
+  ),
+});
+
 // The Auth0 SDK (v7+) requires `domain` to be a bare hostname and throws from the
 // `ManagementClient` constructor when it carries a scheme, path, query string or
 // fragment. The rest of the codebase already assumes a bare hostname too (it builds
@@ -307,6 +316,7 @@ const configs = {
   otel: OtelModel.safeParse(process.env),
   emailIngestion: EmailIngestionModel.safeParse(process.env),
   gatewayControlPlane: GatewayControlPlaneModel.safeParse(process.env),
+  priceIndexSync: PriceIndexSyncModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -340,6 +350,7 @@ const general = extractConfig(configs.general);
 const otel = extractConfig(configs.otel);
 const emailIngestion = extractConfig(configs.emailIngestion);
 const gatewayControlPlane = extractConfig(configs.gatewayControlPlane);
+const priceIndexSync = extractConfig(configs.priceIndexSync);
 
 export const env = {
   postgres: {
@@ -425,5 +436,8 @@ export const env = {
   },
   gatewayControlPlane: {
     token: gatewayControlPlane.GATEWAY_CP_TOKEN,
+  },
+  priceIndexSync: {
+    enabled: priceIndexSync.PRICE_INDEX_SYNC_ENABLED === '1',
   },
 } as const;

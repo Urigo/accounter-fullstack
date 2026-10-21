@@ -218,6 +218,9 @@ export default [
               'PaginatedSecurityExecutions',
               'PCNFileResult',
               'PCNRawData',
+              'PriceIndexLinkage',
+              'PriceIndexSyncResult',
+              'PriceIndexValue',
               'ReportCommentary',
               'ReportCommentaryRecord',
               'ReportCommentarySubRecord',
@@ -380,6 +383,9 @@ export default [
       'packages/server/src/modules/countries/providers/countries.provider.ts',
       'packages/server/src/modules/depreciation/providers/depreciation-categories.provider.ts',
       'packages/server/src/modules/exchange-rates/providers/fiat-exchange.provider.ts',
+      // Global CBS price-index reference data (no owner_id); the sync also runs outside DI
+      'packages/server/src/modules/price-indexes/providers/price-index-sync.provider.ts',
+      'packages/server/src/modules/price-indexes/providers/price-indexes.provider.ts',
       'packages/server/src/modules/vat/providers/vat.provider.ts',
       // email-ingestion-ingest.provider.ts uses raw pool intentionally: the ingest endpoint is
       // called with gateway_control_plane auth (empty businessId), so TenantAwareDBClient would
