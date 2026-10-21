@@ -21,6 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
     paymentType
     quantity
     tradePrice
+    tradeGrossValue {
+      formatted
+    }
     netValue {
       formatted
     }
@@ -170,6 +173,7 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
           <TableHead>Type</TableHead>
           <TableHead>Quantity</TableHead>
           <TableHead>Price</TableHead>
+          <TableHead>Gross Value</TableHead>
           <TableHead>Net Value</TableHead>
           <TableHead>Commission</TableHead>
           <TableHead>Tax</TableHead>
@@ -206,6 +210,10 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
               {/* Quantities can be fractional for ETFs and mutual funds. */}
               <TableCell>{formatSecurityDecimal(execution.quantity)}</TableCell>
               <TableCell>{formatSecurityDecimal(execution.tradePrice)}</TableCell>
+              {/* A stock distribution's value is its gross value; its net value is only the commission. */}
+              <TableCell className="whitespace-nowrap">
+                {execution.tradeGrossValue?.formatted}
+              </TableCell>
               <TableCell className="whitespace-nowrap">{execution.netValue?.formatted}</TableCell>
               <TableCell className="whitespace-nowrap">
                 {(execution.tradeCommission ?? execution.managementFees)?.formatted}
