@@ -25,9 +25,7 @@
       "Edit(CLAUDE.md)",
       "Edit(.claude/**)",
       "Edit(**/.env.template)",
-      "Edit(**/.env.example)",
-      "Edit(.env.template)",
-      "Edit(.env.example)"
+      "Edit(**/.env.example)"
     ],
     "deny": [
       "Bash(rm -rf *)",
@@ -35,9 +33,12 @@
       "Bash(git reset --hard *)",
       "Bash(yarn npm publish *)",
       "Edit(**/.env)",
-      "Edit(**/.env.*)",
-      "Edit(.env)",
-      "Edit(.env.*)"
+      "Edit(**/.env.local)",
+      "Edit(**/.env.*.local)",
+      "Edit(**/.env.test)",
+      "Edit(**/.env.development)",
+      "Edit(**/.env.staging)",
+      "Edit(**/.env.production)"
     ]
   },
   "hooks": {
