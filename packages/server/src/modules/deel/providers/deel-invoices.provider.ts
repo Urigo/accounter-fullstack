@@ -11,6 +11,7 @@ import type {
   IGetReceiptToChargeQuery,
   IInsertDeelInvoiceRecordsParams,
   IInsertDeelInvoiceRecordsQuery,
+  ILockInvoicesForSyncQuery,
   IUpdateDeelInvoiceRecordsParams,
   IUpdateDeelInvoiceRecordsQuery,
 } from '../types.js';
@@ -41,8 +42,17 @@ FROM
     accounter_schema.deel_invoices di
 LEFT JOIN accounter_schema.documents d
     ON d.id = di.document_id
+WHERE di.payment_id <> ''
 ORDER BY
     di.payment_id, di.created_at ASC;`;
+
+const lockInvoicesForSync = sql<ILockInvoicesForSyncQuery>`
+  SELECT di.id, di.payment_id, di.document_id, d.charge_id
+  FROM accounter_schema.deel_invoices di
+  LEFT JOIN accounter_schema.documents d
+    ON d.id = di.document_id
+  WHERE di.id in $$ids
+  FOR UPDATE OF di;`;
 
 const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
       INSERT INTO accounter_schema.deel_invoices (
@@ -340,11 +350,9 @@ export class DeelInvoicesProvider {
 
   public async getInvoicesByIssueDates(from: Date, to: Date) {
     try {
-      return getInvoicesByIssueDates.run({ from, to }, this.db);
+      return await getInvoicesByIssueDates.run({ from, to }, this.db);
     } catch (e) {
-      const message = `Error getting Deel invoices by issue dates`;
-      console.error(message, e);
-      throw new Error(message, { cause: e });
+      throw new Error('Error getting Deel invoices by issue dates', { cause: e });
     }
   }
 
@@ -384,31 +392,48 @@ export class DeelInvoicesProvider {
       }
       return receiptChargeMap;
     } catch (e) {
-      const message = `Error getting receipt to charge mapping`;
-      console.error(message, e);
-      throw new Error(message, { cause: e });
+      throw new Error('Error getting receipt to charge mapping', { cause: e });
     }
+  }
+
+  /**
+   * Lock the given invoice rows for the rest of the surrounding transaction, and report their
+   * current payment, document and charge. Must run inside a transaction to hold the lock.
+   */
+  public async lockInvoicesForSync(ids: readonly string[]) {
+    if (ids.length === 0) {
+      return [];
+    }
+    return lockInvoicesForSync.run({ ids }, this.db);
   }
 
   public async insertDeelInvoiceRecords(params: IInsertDeelInvoiceRecordsParams) {
     try {
       const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-      // invalidate cache
-      return insertDeelInvoiceRecords.run(reassureOwnerIdExists(params, ownerId), this.db);
+      const result = await insertDeelInvoiceRecords.run(
+        reassureOwnerIdExists(params, ownerId),
+        this.db,
+      );
+      if (params.id) this.getInvoicesByIdLoader.clear(params.id);
+      return result;
     } catch (e) {
-      const message = `Error inserting Deel invoice`;
-      console.error(message, e);
-      throw new Error(message, { cause: e });
+      throw new Error(`Error inserting Deel invoice [${params.id}]`, { cause: e });
     }
   }
 
   public async updateDeelInvoiceRecords(params: IUpdateDeelInvoiceRecordsParams) {
     try {
-      return updateDeelInvoiceRecords.run(params, this.db);
+      const result = await updateDeelInvoiceRecords.run(params, this.db);
+      if (params.id) this.getInvoicesByIdLoader.clear(params.id);
+      return result;
     } catch (e) {
-      const message = `Error updating Deel invoice`;
-      console.error(message, e);
-      throw new Error(message, { cause: e });
+      throw new Error(`Error updating Deel invoice [${params.id}]`, { cause: e });
     }
+  }
+
+  public clearCache() {
+    this.getInvoicesByIdLoader.clearAll();
+    this.getInvoicesByIssueDateLoader.clearAll();
+    this.getChargeIdByPaymentIdLoader.clearAll();
   }
 }

@@ -24,6 +24,9 @@ const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([429, 502, 503, 504]);
 export const DEEL_INVOICES_PAGE_SIZE = 50;
 export const DEEL_INVOICES_MAX_PAGES = 40;
 const ERROR_BODY_MAX_LENGTH = 300;
+const MAX_REPORTED_ISSUE_GROUPS = 10;
+const MAX_REPORTED_VALUES = 5;
+const REPORTED_VALUE_MAX_LENGTH = 60;
 
 /** A Deel API call that failed, with the endpoint and the reason in its message */
 export class DeelApiError extends Error {
@@ -56,6 +59,49 @@ function formatDeelErrors(errors: unknown): string {
     }
   }
   return truncate(JSON.stringify(errors), ERROR_BODY_MAX_LENGTH);
+}
+
+function formatReceivedValue(value: unknown): string {
+  let text: string;
+  try {
+    text = value === undefined ? 'undefined' : JSON.stringify(value);
+  } catch {
+    text = String(value);
+  }
+  return truncate(text, REPORTED_VALUE_MAX_LENGTH);
+}
+
+/**
+ * Describe schema violations one line per kind: array indexes are collapsed (`rows[*]`), so a field
+ * that breaks in every row is reported once with a count and the values Deel actually sent — what
+ * is needed to fix the schema when Deel adds a value.
+ */
+export function formatZodIssues(issues: readonly z.core.$ZodIssue[]): string {
+  const groups = new Map<string, { count: number; values: Set<string> }>();
+  for (const issue of issues) {
+    const path = issue.path
+      .map((part, index) =>
+        typeof part === 'number' ? '[*]' : `${index === 0 ? '' : '.'}${String(part)}`,
+      )
+      .join('');
+    const key = `${path || '(root)'}: ${issue.message}`;
+    const group = groups.get(key) ?? { count: 0, values: new Set<string>() };
+    group.count++;
+    if ('input' in issue && group.values.size < MAX_REPORTED_VALUES) {
+      group.values.add(formatReceivedValue(issue.input));
+    }
+    groups.set(key, group);
+  }
+
+  const lines = [...groups.entries()].slice(0, MAX_REPORTED_ISSUE_GROUPS).map(([key, group]) => {
+    const count = group.count > 1 ? ` (${group.count}×)` : '';
+    const values = group.values.size ? ` — received ${[...group.values].join(', ')}` : '';
+    return `- ${key}${count}${values}`;
+  });
+  if (groups.size > MAX_REPORTED_ISSUE_GROUPS) {
+    lines.push(`- …and ${groups.size - MAX_REPORTED_ISSUE_GROUPS} more`);
+  }
+  return lines.join('\n');
 }
 
 /** Retry delay: the server's `Retry-After` when given, exponential backoff otherwise */
@@ -213,10 +259,10 @@ export class DeelClientProvider {
       );
     }
 
-    const parsed = schema.safeParse(rawData);
+    const parsed = schema.safeParse(rawData, { reportInput: true });
     if (!parsed.success) {
       throw new DeelApiError(
-        `Deel API ${label} returned an unexpected payload:\n${z.prettifyError(parsed.error)}`,
+        `Deel API ${label} returned an unexpected payload:\n${formatZodIssues(parsed.error.issues)}`,
         res.status,
       );
     }

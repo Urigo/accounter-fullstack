@@ -14,7 +14,11 @@ import {
   getChargeDocumentsMeta,
   getChargeTaxCategoryId,
 } from '../../../charges/helpers/common.helper.js';
-import { getDeelEmployeeId, isDeelDocument } from '../../../deel/helpers/deel.helper.js';
+import {
+  getDeelBusinessId,
+  getDeelEmployeeId,
+  isDeelDocument,
+} from '../../../deel/helpers/deel.helper.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -415,7 +419,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         );
 
         let exchangeRateTaxCategory: string | undefined = undefined;
-        const deelCharge = documents.some(doc => isDeelDocument(doc));
+        const deelBusinessId = await getDeelBusinessId(injector);
+        const deelCharge = documents.some(doc => isDeelDocument(doc, deelBusinessId));
 
         if (deelCharge) {
           exchangeRateEntry ||= miscLedgerEntries.find(entry =>
