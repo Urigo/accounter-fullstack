@@ -105,7 +105,7 @@ __metadata:
     html2canvas-pro: "npm:2.5.2"
     iconv-lite: "npm:0.7.3"
     json-bigint-patch: "npm:0.0.9"
-    lucide-react: "npm:1.58.0"
+    lucide-react: "npm:1.61.0"
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:6.4.299"
     radix-ui: "npm:1.8.1"
@@ -308,7 +308,7 @@ __metadata:
     fast-xml-parser: "npm:5.11.2"
     fastify: "npm:5.12.7"
     graphql-request: "npm:7.4.0"
-    lucide-react: "npm:1.58.0"
+    lucide-react: "npm:1.61.0"
     msw: "npm:3.0.3"
     react: "npm:19.3.1"
     react-dom: "npm:19.3.1"
@@ -18660,16 +18660,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:1.58.0":
-  version: 1.58.0
-  resolution: "lucide-react@npm:1.58.0"
+"lucide-react@npm:1.61.0":
+  version: 1.61.0
+  resolution: "lucide-react@npm:1.61.0"
   peerDependencies:
     "@types/react": "*"
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/2206d52aef1224292bf41285b7c1d224e3718bc9bbb1ae57fbaba346ec7600793b594730288ed065aa3165c98966bee275c8765ab1802620867a18787bfdf20c
+  checksum: 10c0/85576d32aef43d5dccf5a1fac06b67c2ccbb70eb33b996123f49aab108111fffa6bdd517c7d406db67a14432c45924279c2ec7212a166864d3355ce68b361494
   languageName: node
   linkType: hard
 
