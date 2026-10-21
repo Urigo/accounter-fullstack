@@ -18,6 +18,7 @@ import type { AdminContextProvider } from '../../../admin-context/providers/admi
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
+import { SecurityExecutionChargesProvider } from '../../../foreign-securities/providers/security-execution-charges.provider.js';
 import { SecurityBusinessesProvider } from '../../../foreign-securities/providers/security-businesses.provider.js';
 import { PoalimScraperIngestionProvider } from '../poalim-scraper-ingestion.provider.js';
 
@@ -91,6 +92,8 @@ beforeAll(async () => {
       businessesProvider,
       taxCategoriesProvider,
     ),
+    // Charges for stock distributions are covered by security-execution-charges.integration.test.ts
+    { ensureDistributionCharges: () => Promise.resolve([]) } as unknown as SecurityExecutionChargesProvider,
   );
 
   // poalim_securities.owner_id is a real FK, so the acting tenant must exist.
