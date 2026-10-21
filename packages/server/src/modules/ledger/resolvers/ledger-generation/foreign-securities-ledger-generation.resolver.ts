@@ -7,7 +7,7 @@ import type {
   ResolversTypes,
   SecuritiesTaxCategoryKey,
 } from '../../../../__generated__/types.js';
-import { SecurityTradeType, type Currency } from '../../../../shared/enums.js';
+import type { Currency } from '../../../../shared/enums.js';
 import { formatStringifyAmount } from '../../../../shared/helpers/amount.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
@@ -19,10 +19,7 @@ import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import { calculateFifoCostBasis } from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
-import {
-  isCancelledExecution,
-  tryToSecurityTradeType,
-} from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
+import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
 import {
   getSecurityLocality,
   type SecurityLocality,
@@ -41,6 +38,7 @@ import {
   classifySecurityExecution,
   currencyOfLabel,
   distributionValueDate,
+  findDistributionCancellation,
   getBankRateMismatch,
   getDistributionWithheldTax,
   getWithheldTax,
@@ -281,8 +279,10 @@ async function distributionLedgerEntry(params: {
   locality: string;
   defaultLocalCurrency: Currency;
   execution: SecurityExecutionRow;
-  /** The foreign-securities account, or undefined when the tenant has none */
-  securitiesAccountId: string | undefined;
+  /** The owner's foreign-securities account */
+  securitiesAccountId: string;
+  /** The executions of the distribution's security in its account, shared across distributions */
+  getHistory: (execution: SecurityExecutionRow) => Promise<SecurityExecutionRow[]>;
   taxCategories: SecuritiesTaxCategoryIds;
   errors: Set<string>;
   missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
@@ -333,11 +333,6 @@ async function distributionLedgerEntry(params: {
       return null;
     }
 
-    if (!params.securitiesAccountId) {
-      throw new LedgerError(
-        `Cannot book ${distribution}: the foreign securities account (account number "${FOREIGN_SECURITIES_ACCOUNT_NUMBER}") is missing`,
-      );
-    }
     const securitiesTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, {
       account_id: params.securitiesAccountId,
       currency,
@@ -366,17 +361,8 @@ async function distributionLedgerEntry(params: {
     }
 
     // A cancellation is a row of its own, which no charge links — so it is looked for here.
-    const history = await injector
-      .get(ForeignSecuritiesProvider)
-      .getSecurityAccountHistory(execution, ownerId);
-    const isReversed = history.some(
-      row =>
-        row.id !== execution.id &&
-        isCancelledExecution(row) &&
-        tryToSecurityTradeType(row.trade_type) === SecurityTradeType.StockDistribution &&
-        Math.abs(Number(row.nv)) === Math.abs(Number(execution.nv)),
-    );
-    if (isReversed) {
+    // Ingestion skips distributions cancelled by then; this catches a cancellation that came later.
+    if (findDistributionCancellation(execution, await params.getHistory(execution))) {
       errors.add(
         `The bank reports a cancellation of ${distribution}, and booking the reversal is not supported yet`,
       );
@@ -493,7 +479,16 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       return kind === 'DIVIDEND' || kind === 'INTEREST' || isDividendInKindDistribution(execution);
     };
     const commissionMismatches = validateSecurityCommissions(
-      [...executionsByTransactionId.values(), ...distributions],
+      // A merged-in transaction can also be matched to a linked distribution; count it once, or
+      // its commission would be expected twice.
+      [
+        ...new Map(
+          [...executionsByTransactionId.values(), ...distributions].map(execution => [
+            execution.id,
+            execution,
+          ]),
+        ).values(),
+      ],
       feeTransactions,
     ).filter(mismatch => mismatch.executions.some(isIncome));
     for (const mismatch of commissionMismatches) {
@@ -620,41 +615,62 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       });
     });
 
-    // executions the charge books directly
-    const distributionsPromise = distributions.length
-      ? injector
-          .get(FinancialAccountsProvider)
-          .getFinancialAccountByAccountNumberLoader.load(FOREIGN_SECURITIES_ACCOUNT_NUMBER)
-          .then(async securitiesAccount => {
-            for (const execution of distributions) {
-              const entry = await distributionLedgerEntry({
-                injector,
-                ownerId: charge.owner_id,
-                chargeId,
-                locality,
-                defaultLocalCurrency,
-                execution,
-                securitiesAccountId: securitiesAccount?.id,
-                taxCategories,
-                errors,
-                missingTaxCategories,
-              });
-              if (entry) {
-                distributionLedgerEntries.push(entry);
-                updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
-              }
-            }
-          })
-      : Promise.resolve();
+    // Executions the charge books directly. The history of a security's account is read once, however
+    // many of its distributions the charge holds.
+    const historyBySecurityAccount = new Map<string, Promise<SecurityExecutionRow[]>>();
+    const getHistory = (execution: SecurityExecutionRow) => {
+      const key = [
+        execution.security,
+        execution.bank_number,
+        execution.branch_number,
+        execution.account_number,
+      ].join(':');
+      let history = historyBySecurityAccount.get(key);
+      if (!history) {
+        history = injector
+          .get(ForeignSecuritiesProvider)
+          .getSecurityAccountHistory(execution, charge.owner_id);
+        historyBySecurityAccount.set(key, history);
+      }
+      return history;
+    };
+    const distributionsPromises = distributions.map(async execution => {
+      const entry = await distributionLedgerEntry({
+        injector,
+        ownerId: charge.owner_id,
+        chargeId,
+        locality,
+        defaultLocalCurrency,
+        execution,
+        // owner-scoped, unlike a lookup by account number across the request's business scope
+        securitiesAccountId: foreignSecuritiesAccountId,
+        getHistory,
+        taxCategories,
+        errors,
+        missingTaxCategories,
+      });
+      if (entry) {
+        distributionLedgerEntries.push(entry);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
+      }
+    });
 
     entriesPromises.push(
       ...mainTransactionsPromises,
       ...feeTransactionsPromises,
       expensesLedgerPromise,
-      distributionsPromise,
+      ...distributionsPromises,
     );
 
     await Promise.all(entriesPromises);
+
+    // booked concurrently; keep the charge's own order so regenerations match
+    const distributionOrder = new Map(
+      distributions.map((execution, index) => [execution.id, index]),
+    );
+    distributionLedgerEntries.sort(
+      (a, b) => (distributionOrder.get(a.id) ?? 0) - (distributionOrder.get(b.id) ?? 0),
+    );
 
     const records = [
       ...financialAccountLedgerEntries,

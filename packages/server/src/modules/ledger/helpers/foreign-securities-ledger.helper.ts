@@ -1,16 +1,20 @@
 import type { SecuritiesTaxCategoryKey } from '../../../__generated__/types.js';
-import { Currency, SecurityPaymentType, SecurityTradeType } from '../../../shared/enums.js';
+import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { formatCurrency } from '../../../shared/helpers/index.js';
 import type { StrictLedgerProto } from '../../../shared/types/index.js';
 import { executionAmountInCurrency } from '../../foreign-securities/helpers/match-security-executions.helper.js';
 import {
-  paymentTypeToRaw,
+  currencyOfSecurityLabel,
+  isCancelledExecution,
+  isDividendInKindDistribution,
   tryToSecurityTradeType,
 } from '../../foreign-securities/helpers/security-execution-enums.helper.js';
 import { extractTransactionSecurityKeys } from '../../foreign-securities/helpers/security-key.helper.js';
 import type { SecurityLocality } from '../../foreign-securities/helpers/security-locality.helper.js';
 import type { SecurityExecutionRow } from '../../foreign-securities/types.js';
 import { LedgerError } from './utils.helper.js';
+
+export { isDividendInKindDistribution };
 
 /**
  * Building blocks of the foreign-securities ledger. The base entry of a cash movement books the
@@ -40,23 +44,6 @@ export function classifySecurityExecution(
     default:
       return 'OTHER';
   }
-}
-
-/**
- * A stock distribution paid as a dividend in kind: shares received instead of cash, booked as
- * dividend income at their value.
- *
- * Only this kind of distribution is booked. A bonus issue or a split of the same company is not
- * income — it spreads the cost of the existing holding over more units — and none has been seen
- * yet, so it is left to be handled when one is.
- */
-export function isDividendInKindDistribution(
-  execution: Pick<SecurityExecutionRow, 'trade_type' | 'payment_type'>,
-): boolean {
-  return (
-    tryToSecurityTradeType(execution.trade_type) === SecurityTradeType.StockDistribution &&
-    execution.payment_type === paymentTypeToRaw[SecurityPaymentType.DividendInKind]
-  );
 }
 
 export const INCOME_TAX_CATEGORY_KEYS = {
@@ -98,9 +85,7 @@ export function toAmount(value: string | null | undefined): number {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-export function currencyOfLabel(label: string | null): Currency | null {
-  return label?.trim() ? formatCurrency(label, true) : null;
-}
+export const currencyOfLabel = currencyOfSecurityLabel;
 
 /**
  * The tax withheld from an execution's cash leg, in the cash leg's currency.
@@ -497,19 +482,25 @@ export function buildDistributionEntry(params: {
  */
 const RATE_TOLERANCE = 0.0005;
 
+/** How far each of the bank's reported amounts can be from its unrounded value */
+const AMOUNT_ROUNDING = 0.005;
+
 /**
  * The bank's rate from the trade currency to the local one, as it priced a distribution: its own
  * rate column when reported (it writes -1 for "no rate"), or else its local value over its
- * trade-currency value. Null when neither is usable.
+ * trade-currency value — `derived`, since both of those amounts are rounded. Null when neither is
+ * usable.
  */
-export function getBankDistributionRate(execution: DistributionExecution): number | null {
+export function getBankDistributionRate(
+  execution: DistributionExecution,
+): { rate: number; derived: boolean } | null {
   const personalRate = toAmount(execution.personal_currency_rate);
   if (personalRate > 0) {
-    return personalRate;
+    return { rate: personalRate, derived: false };
   }
   const gross = toAmount(execution.trade_gross_value_trade_currency);
   const grossLocal = toAmount(execution.trade_gross_value_nis);
-  return gross > 0 && grossLocal > 0 ? grossLocal / gross : null;
+  return gross > 0 && grossLocal > 0 ? { rate: grossLocal / gross, derived: true } : null;
 }
 
 /**
@@ -517,14 +508,72 @@ export function getBankDistributionRate(execution: DistributionExecution): numbe
  * did. Rates are compared rather than local amounts: the bank works its local value out from the
  * unrounded units times price, so its amount differs from gross times rate by a few agorot even
  * when the rates agree.
+ *
+ * A rate derived from the two rounded amounts carries that rounding too, magnified on a small
+ * distribution, so its tolerance widens by the most the rounding can move it: half an agora on the
+ * local value and half a cent on the gross (worth `rate` agorot), over the gross.
  */
 export function getBankRateMismatch(
   execution: DistributionExecution,
   ledgerRate: number,
 ): { ledgerRate: number; bankRate: number } | null {
   const bankRate = getBankDistributionRate(execution);
-  if (bankRate == null || Math.abs(bankRate - ledgerRate) < RATE_TOLERANCE) {
+  if (bankRate == null) {
     return null;
   }
-  return { ledgerRate, bankRate };
+  const gross = toAmount(execution.trade_gross_value_trade_currency);
+  const tolerance = bankRate.derived
+    ? RATE_TOLERANCE + (AMOUNT_ROUNDING * (bankRate.rate + 1)) / gross
+    : RATE_TOLERANCE;
+  if (Math.abs(bankRate.rate - ledgerRate) <= tolerance) {
+    return null;
+  }
+  return { ledgerRate, bankRate: bankRate.rate };
+}
+
+export type DistributionHistoryExecution = Pick<
+  SecurityExecutionRow,
+  'id' | 'trade_date' | 'trade_type' | 'payment_type' | 'nv' | 'is_cancel_transaction'
+>;
+
+/**
+ * The cancellation of a stock distribution among the executions of its security and account, or
+ * null when the bank never cancelled it.
+ *
+ * A cancellation is a row of its own with the same trade and payment type and units, dated on or
+ * after the distribution it reverses. It is paired with the latest such live distribution at or
+ * before it, so of two same-size distributions a year apart, cancelling the later one does not
+ * reverse the earlier. Ingestion skips cancelled distributions by the same rule
+ * (`getUnlinkedDistributions`).
+ */
+export function findDistributionCancellation<T extends DistributionHistoryExecution>(
+  distribution: T,
+  history: readonly T[],
+): T | null {
+  const units = Math.abs(Number(distribution.nv));
+  const sameKind = (row: T) =>
+    row.trade_type === distribution.trade_type &&
+    (row.payment_type ?? null) === (distribution.payment_type ?? null) &&
+    Math.abs(Number(row.nv)) === units;
+  const isAfterDistribution = (row: T) =>
+    row.trade_date > distribution.trade_date ||
+    (row.trade_date === distribution.trade_date && row.id > distribution.id);
+
+  return (
+    history.find(
+      cancellation =>
+        cancellation.id !== distribution.id &&
+        isCancelledExecution(cancellation) &&
+        sameKind(cancellation) &&
+        cancellation.trade_date >= distribution.trade_date &&
+        // no later live distribution of the same kind it would reverse instead
+        !history.some(
+          other =>
+            !isCancelledExecution(other) &&
+            sameKind(other) &&
+            isAfterDistribution(other) &&
+            other.trade_date <= cancellation.trade_date,
+        ),
+    ) ?? null
+  );
 }

@@ -1,5 +1,4 @@
-import { Currency, SecurityPaymentType, SecurityTradeType } from '../../../shared/enums.js';
-import { formatCurrency } from '../../../shared/helpers/amount.js';
+import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import {
@@ -7,8 +6,9 @@ import {
   type MatchableExecution,
 } from './match-security-executions.helper.js';
 import {
+  currencyOfSecurityLabel,
   isCancelledExecution,
-  paymentTypeToRaw,
+  isDividendInKindDistribution,
   tryToSecurityTradeType,
 } from './security-execution-enums.helper.js';
 
@@ -99,13 +99,7 @@ function toUnits(nv: string | null): number {
 }
 
 function lotEffectOf(execution: CostBasisExecution, tradeType: SecurityTradeType): LotEffect {
-  if (
-    tradeType === SecurityTradeType.StockDistribution &&
-    execution.payment_type === paymentTypeToRaw[SecurityPaymentType.DividendInKind]
-  ) {
-    return 'ADD_AT_GROSS_VALUE';
-  }
-  return LOT_EFFECT[tradeType];
+  return isDividendInKindDistribution(execution) ? 'ADD_AT_GROSS_VALUE' : LOT_EFFECT[tradeType];
 }
 
 /**
@@ -117,9 +111,7 @@ function grossUnitCost(
   units: number,
   currency: Currency,
 ): number | null {
-  const tradeCurrency = execution.trade_currency?.trim()
-    ? formatCurrency(execution.trade_currency, true)
-    : null;
+  const tradeCurrency = currencyOfSecurityLabel(execution.trade_currency);
   const gross = Number(execution.trade_gross_value_trade_currency);
   if (tradeCurrency !== currency || !Number.isFinite(gross) || gross <= 0) {
     return null;

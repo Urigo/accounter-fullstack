@@ -18,15 +18,24 @@ type ByChargeIdLoader = {
 /**
  * Whether a charge holds nothing: no transactions, documents or misc expenses, and none of the
  * other records that hang off a charge (salary records, business trip employee payments,
- * depreciation records, securities executions it books directly). Those are content of their own, so a charge holding any of them is not
- * empty. Records that only annotate a charge (tags, ledger records, balance cancellations, …) are
- * not counted: `deleteCharges` deletes them with the charge.
+ * depreciation records, securities executions it books directly). Those are content of their own,
+ * so a charge holding any of them is not empty. Records that only annotate a charge (tags, ledger
+ * records, balance cancellations, …) are not counted: `deleteCharges` deletes them with the charge.
+ *
+ * `dismissSecurityExecutions` is for a user deleting the charge on purpose: the securities
+ * executions it books directly then do not count, and deleting the charge dismisses them (their
+ * link row keeps a NULL charge, so ingestion does not recreate the charge). Automatic cleanup must
+ * never pass it — a charge holding only a stock distribution is not a ghost.
  *
  * The per-charge loader entries are cleared first, so the check reflects the
  * current DB state rather than what an earlier read in the same request cached
  * (callers run it right after moving / deleting records).
  */
-export async function isChargeEmpty(chargeId: string, injector: Injector): Promise<boolean> {
+export async function isChargeEmpty(
+  chargeId: string,
+  injector: Injector,
+  { dismissSecurityExecutions = false }: { dismissSecurityExecutions?: boolean } = {},
+): Promise<boolean> {
   const loaders: ByChargeIdLoader[] = [
     injector.get(TransactionsProvider).transactionsByChargeIDLoader,
     injector.get(DocumentsProvider).getDocumentsByChargeIdLoader,
@@ -35,7 +44,9 @@ export async function isChargeEmpty(chargeId: string, injector: Injector): Promi
     injector.get(BusinessTripEmployeePaymentsProvider)
       .getBusinessTripEmployeePaymentsByChargeIdLoader,
     injector.get(DepreciationProvider).getDepreciationRecordsByChargeIdLoader,
-    injector.get(SecurityExecutionChargesProvider).linkedExecutionIdsByChargeIdLoader,
+    ...(dismissSecurityExecutions
+      ? []
+      : [injector.get(SecurityExecutionChargesProvider).linkedExecutionIdsByChargeIdLoader]),
   ];
 
   const records = await Promise.all(

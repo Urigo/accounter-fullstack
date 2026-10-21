@@ -534,7 +534,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
       try {
         const [charge, isEmpty] = await Promise.all([
           injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-          isChargeEmpty(chargeId, injector),
+          // deleting a stock distribution's charge dismisses the distribution
+          isChargeEmpty(chargeId, injector, { dismissSecurityExecutions: true }),
         ]);
         if (!charge) {
           throw new GraphQLError(`Charge ID="${chargeId}" not found`);

@@ -5,7 +5,11 @@ import { SecurityPaymentType, SecurityTradeType } from '../../../shared/enums.js
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { paymentTypeToRaw, tradeTypeToRaw } from '../helpers/security-execution-enums.helper.js';
+import {
+  CANCELLED_EXECUTION_FLAG,
+  paymentTypeToRaw,
+  tradeTypeToRaw,
+} from '../helpers/security-execution-enums.helper.js';
 import type {
   IGetChargeIdsByExecutionIdsQuery,
   IGetExecutionIdsByChargeIdsQuery,
@@ -38,10 +42,17 @@ const replaceChargeSecurityExecutionsChargeId = sql<IReplaceChargeSecurityExecut
   RETURNING execution_id, charge_id;`;
 
 /**
- * The owner's live distributions that no charge books yet. `owner_id` is filtered explicitly:
- * reads follow the request's whole business scope, and the charges are created for one owner.
- * Executions on or before the ledger lock are left alone — a charge with no transactions is never
- * considered locked, so a new one there would book into a closed period.
+ * The owner's live distributions that have no row in the link table yet — neither linked to a
+ * charge nor dismissed. `owner_id` is filtered explicitly: reads follow the request's whole
+ * business scope, and the charges are created for one owner.
+ *
+ * Left alone:
+ * - executions on or before the ledger lock, by the earlier of the trade date (the entry's invoice
+ *   date) and the value date — a charge with no transactions is never considered locked, so a new
+ *   one there would book into a closed period;
+ * - distributions the bank later cancelled. A cancellation is a row of its own, paired with the
+ *   latest same-size live distribution of the same security and account at or before it — the rule
+ *   `findDistributionCancellation` in the ledger helper applies too.
  */
 const getUnlinkedDistributions = sql<IGetUnlinkedDistributionsQuery>`
   SELECT t.id, t.symbol, t.eng_name, t.security, t.nv
@@ -53,7 +64,36 @@ const getUnlinkedDistributions = sql<IGetUnlinkedDistributionsQuery>`
     AND t.trade_type = $tradeType!
     AND t.payment_type = $paymentType!
     AND t.is_cancel_transaction IS DISTINCT FROM $cancelledFlag!
-    AND ($ledgerLock::DATE IS NULL OR COALESCE(t.value_date, t.trade_date) > $ledgerLock::DATE)
+    AND ($ledgerLock::DATE IS NULL OR LEAST(t.trade_date, COALESCE(t.value_date, t.trade_date)) > $ledgerLock::DATE)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM accounter_schema.poalim_securities_transactions c
+      WHERE c.owner_id = t.owner_id
+        AND c.bank_number = t.bank_number
+        AND c.branch_number = t.branch_number
+        AND c.account_number = t.account_number
+        AND c.security = t.security
+        AND c.trade_type = t.trade_type
+        AND c.payment_type IS NOT DISTINCT FROM t.payment_type
+        AND c.is_cancel_transaction = $cancelledFlag!
+        AND abs(c.nv) = abs(t.nv)
+        AND c.trade_date >= t.trade_date
+        AND NOT EXISTS (
+          SELECT 1
+          FROM accounter_schema.poalim_securities_transactions o
+          WHERE o.owner_id = t.owner_id
+            AND o.bank_number = t.bank_number
+            AND o.branch_number = t.branch_number
+            AND o.account_number = t.account_number
+            AND o.security = t.security
+            AND o.trade_type = t.trade_type
+            AND o.payment_type IS NOT DISTINCT FROM t.payment_type
+            AND o.is_cancel_transaction IS DISTINCT FROM $cancelledFlag!
+            AND abs(o.nv) = abs(t.nv)
+            AND (o.trade_date, o.id) > (t.trade_date, t.id)
+            AND o.trade_date <= c.trade_date
+        )
+    )
   ORDER BY t.trade_date, t.id;`;
 
 const insertChargeSecurityExecution = sql<IInsertChargeSecurityExecutionQuery>`
@@ -61,9 +101,6 @@ const insertChargeSecurityExecution = sql<IInsertChargeSecurityExecutionQuery>`
   VALUES ($executionId!, $chargeId!, $ownerId!)
   ON CONFLICT (execution_id) DO NOTHING
   RETURNING execution_id;`;
-
-/** The bank's `IsCancelTransaction` flag on a cancelled execution — see `isCancelledExecution` */
-const CANCELLED_FLAG = 'כן';
 
 /** Thrown to roll back a charge whose execution another run linked first */
 class AlreadyLinkedError extends Error {}
@@ -94,6 +131,9 @@ export class SecurityExecutionChargesProvider {
     );
     const byChargeId = new Map<string, string[]>();
     for (const { charge_id, execution_id } of rows) {
+      if (!charge_id) {
+        continue;
+      }
       const executionIds = byChargeId.get(charge_id);
       if (executionIds) {
         executionIds.push(execution_id);
@@ -150,7 +190,8 @@ export class SecurityExecutionChargesProvider {
    * linked the execution first, the charge is rolled back rather than left empty (the scraper
    * cannot delete charges).
    *
-   * Returns the ids of the charges created.
+   * A failure on one distribution is logged and the rest still get their charges; the next upload
+   * retries it. Returns the ids of the charges created.
    */
   public async ensureDistributionCharges(
     ownerId: string,
@@ -161,47 +202,58 @@ export class SecurityExecutionChargesProvider {
         ownerId,
         tradeType: tradeTypeToRaw[SecurityTradeType.StockDistribution],
         paymentType: paymentTypeToRaw[SecurityPaymentType.DividendInKind],
-        cancelledFlag: CANCELLED_FLAG,
+        cancelledFlag: CANCELLED_EXECUTION_FLAG,
         ledgerLock,
       },
       this.db,
     );
 
     const chargeIds: string[] = [];
-    for (const distribution of distributions) {
-      try {
-        const chargeId = await this.db.transaction(async client => {
-          const charge = await this.chargesProvider.generateCharge(
-            {
-              ownerId,
-              type: 'FOREIGN_SECURITIES',
-              userDescription: distributionChargeDescription(distribution),
-            },
-            client,
-          );
-          if (!charge?.id) {
-            throw new Error(
-              `Failed to create a charge for securities execution ${distribution.id}`,
+    try {
+      for (const distribution of distributions) {
+        let createdChargeId: string | undefined;
+        try {
+          const chargeId = await this.db.transaction(async client => {
+            const charge = await this.chargesProvider.generateCharge(
+              {
+                ownerId,
+                type: 'FOREIGN_SECURITIES',
+                userDescription: distributionChargeDescription(distribution),
+              },
+              client,
+            );
+            if (!charge?.id) {
+              throw new Error(
+                `Failed to create a charge for securities execution ${distribution.id}`,
+              );
+            }
+            createdChargeId = charge.id;
+            const [link] = await insertChargeSecurityExecution.run(
+              { executionId: distribution.id, chargeId: charge.id, ownerId },
+              client,
+            );
+            if (!link) {
+              throw new AlreadyLinkedError();
+            }
+            return charge.id;
+          });
+          chargeIds.push(chargeId);
+        } catch (e) {
+          // the charge was rolled back, but `generateCharge` had already cached it
+          if (createdChargeId) {
+            await this.chargesProvider.invalidateCharge(createdChargeId);
+          }
+          // one failed distribution must not keep the others from their charges; the next upload
+          // retries it
+          if (!(e instanceof AlreadyLinkedError)) {
+            console.error(
+              `Failed to create a charge for stock distribution ${distribution.id}:`,
+              e,
             );
           }
-          const [link] = await insertChargeSecurityExecution.run(
-            { executionId: distribution.id, chargeId: charge.id, ownerId },
-            client,
-          );
-          if (!link) {
-            throw new AlreadyLinkedError();
-          }
-          return charge.id;
-        });
-        chargeIds.push(chargeId);
-      } catch (e) {
-        if (!(e instanceof AlreadyLinkedError)) {
-          throw e;
         }
       }
-    }
-
-    if (chargeIds.length > 0) {
+    } finally {
       this.linkedExecutionIdsByChargeIdLoader.clearAll();
       this.chargeIdByExecutionIdLoader.clearAll();
     }

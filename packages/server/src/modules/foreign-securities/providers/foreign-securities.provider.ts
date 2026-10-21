@@ -500,6 +500,9 @@ export class ForeignSecuritiesProvider {
     );
     const byChargeId = new Map<string, SecurityExecutionRow[]>();
     for (const { charge_id, ...execution } of rows) {
+      if (!charge_id) {
+        continue;
+      }
       const executions = byChargeId.get(charge_id);
       if (executions) {
         executions.push(execution);

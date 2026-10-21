@@ -117,6 +117,20 @@ describe('isChargeEmpty', () => {
     await expect(isChargeEmpty(CHARGE_A, injector)).resolves.toBe(false);
   });
 
+  it('ignores securities executions the user dismisses by deleting the charge', async () => {
+    const { injector } = buildInjector({
+      [CHARGE_A]: { securityExecutions: 1 },
+      [CHARGE_B]: { securityExecutions: 1, transactions: 1 },
+    });
+
+    await expect(
+      isChargeEmpty(CHARGE_A, injector, { dismissSecurityExecutions: true }),
+    ).resolves.toBe(true);
+    await expect(
+      isChargeEmpty(CHARGE_B, injector, { dismissSecurityExecutions: true }),
+    ).resolves.toBe(false);
+  });
+
   it('clears the per-charge loaders before counting', async () => {
     const { injector, loaders } = buildInjector({});
 

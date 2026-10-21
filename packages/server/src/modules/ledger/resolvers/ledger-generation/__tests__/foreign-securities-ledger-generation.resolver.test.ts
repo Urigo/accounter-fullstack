@@ -220,8 +220,11 @@ type Scenario = {
   taxCategories?: Partial<Record<SecuritiesTaxCategoryKey, string>>;
   /** Executions with no cash leg that the charge books directly */
   distributions?: SecurityExecutionRow[];
-  /** Whether the foreign-securities account is missing from the tenant's accounts */
-  noSecuritiesAccount?: boolean;
+  /**
+   * Whether a lookup by account number resolves another in-scope business's securities account,
+   * which the owner-scoped lookups must not book to
+   */
+  otherBusinessAccountByNumber?: boolean;
 };
 
 function makeInjector(scenario: Scenario) {
@@ -272,8 +275,12 @@ function makeInjector(scenario: Scenario) {
           },
           getFinancialAccountByAccountNumberLoader: {
             load: async (accountNumber: string) =>
-              accountNumber === 'foreign_securities' && !scenario.noSecuritiesAccount
-                ? { id: SECURITIES_ACCOUNT_ID }
+              accountNumber === 'foreign_securities'
+                ? {
+                    id: scenario.otherBusinessAccountByNumber
+                      ? 'account-other-business-securities'
+                      : SECURITIES_ACCOUNT_ID,
+                  }
                 : null,
           },
         },
@@ -1487,15 +1494,45 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_INCOME']);
     });
 
-    it('reports a missing securities account', async () => {
+    it("debits the owner's own securities account, not one found by account number", async () => {
       const { records, errors } = await generate({
         transactions: [],
         distributions: [distributionExecution()],
-        noSecuritiesAccount: true,
+        otherBusinessAccountByNumber: true,
       });
 
-      expect(records).toEqual([]);
-      expect(errors).toEqual([expect.stringContaining('foreign securities account')]);
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+    });
+
+    it('reads the account history once for several distributions of one security', async () => {
+      const { records, foreignSecuritiesProvider } = await generate({
+        transactions: [],
+        distributions: [
+          distributionExecution({ id: 'execution-distribution-1' }),
+          distributionExecution({ id: 'execution-distribution-2' }),
+        ],
+      });
+
+      expect(records).toHaveLength(2);
+      expect(foreignSecuritiesProvider.getSecurityAccountHistory).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not take a later cancellation of another same-size distribution as its own', async () => {
+      const distribution = distributionExecution({ trade_date: '2024-03-12' });
+      const later = distributionExecution({ id: 'execution-later' });
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distribution],
+        history: [
+          distribution,
+          later,
+          distributionExecution({ id: 'execution-cancellation', is_cancel_transaction: 'כן' }),
+        ],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records).toHaveLength(1);
     });
 
     describe('commission', () => {
@@ -1526,6 +1563,18 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         expect(errors).toEqual([
           'A commission of 25.00 ILS was reported for MOCK (US0000000001), but the charge has no fee transaction for it — merge the charge holding the commission fee into this one',
         ]);
+      });
+
+      it('counts the commission once when a merged-in transaction is also matched to the distribution', async () => {
+        const transaction = buildTransaction({ id: 'transaction-matched', amount: '0' });
+        const distribution = distributionWithCommission();
+        const { errors } = await generate({
+          transactions: [transaction, commissionFee],
+          executions: { [transaction.id]: distribution },
+          distributions: [distribution],
+        });
+
+        expect(errors.filter(error => error.includes('commission'))).toEqual([]);
       });
 
       it('books the merged fee and accepts the commission', async () => {

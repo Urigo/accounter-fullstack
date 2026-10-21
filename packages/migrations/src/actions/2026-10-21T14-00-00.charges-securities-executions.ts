@@ -13,6 +13,10 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  * One execution belongs to at most one charge, hence `execution_id` as the key. A charge can hold
  * several (after a merge).
  *
+ * A NULL `charge_id` marks an execution the user dismissed by deleting its charge: the row stays,
+ * so ingestion — which only creates charges for executions with no row here — does not bring the
+ * charge back on the next upload.
+ *
  * Execution rows are referenced from here on: `2026-10-15T14-00-00.poalim-securities-transactions-
  * restatable-dedup` deleted duplicate rows on the grounds that nothing referenced them, which is no
  * longer true. Deleting an execution drops its link (CASCADE) and leaves its charge without one.
@@ -24,15 +28,15 @@ import { type MigrationExecutor } from '../pg-migrator.js';
 export default {
   name: '2026-10-21T14-00-00.charges-securities-executions.sql',
   run: ({ sql }) => sql`
-    CREATE TABLE accounter_schema.charges_securities_executions (
+    CREATE TABLE IF NOT EXISTS accounter_schema.charges_securities_executions (
       execution_id UUID        NOT NULL
                                CONSTRAINT charges_securities_executions_pk PRIMARY KEY
                                CONSTRAINT charges_securities_executions_execution_id_fk
                                  REFERENCES accounter_schema.poalim_securities_transactions (id)
                                  ON DELETE CASCADE,
-      charge_id    UUID        NOT NULL
+      charge_id    UUID
                                CONSTRAINT charges_securities_executions_charge_id_fk
-                                 REFERENCES accounter_schema.charges (id) ON DELETE CASCADE,
+                                 REFERENCES accounter_schema.charges (id) ON DELETE SET NULL,
       owner_id     UUID        NOT NULL
                                CONSTRAINT charges_securities_executions_owner_id_fk
                                  REFERENCES accounter_schema.businesses (id) ON DELETE CASCADE,
@@ -40,27 +44,30 @@ export default {
     );
 
     COMMENT ON TABLE accounter_schema.charges_securities_executions IS
-      'Securities executions booked by a charge directly, for executions with no cash leg (stock distributions)';
+      'Securities executions booked by a charge directly, for executions with no cash leg (stock distributions); a NULL charge_id marks one the user dismissed';
 
-    CREATE INDEX charges_securities_executions_charge_id_idx
+    CREATE INDEX IF NOT EXISTS charges_securities_executions_charge_id_idx
       ON accounter_schema.charges_securities_executions (charge_id);
 
-    CREATE INDEX charges_securities_executions_owner_id_idx
+    CREATE INDEX IF NOT EXISTS charges_securities_executions_owner_id_idx
       ON accounter_schema.charges_securities_executions (owner_id);
 
     ALTER TABLE accounter_schema.charges_securities_executions ENABLE ROW LEVEL SECURITY;
     ALTER TABLE accounter_schema.charges_securities_executions FORCE ROW LEVEL SECURITY;
 
+    DROP POLICY IF EXISTS tenant_isolation ON accounter_schema.charges_securities_executions;
     CREATE POLICY tenant_isolation ON accounter_schema.charges_securities_executions
       FOR ALL
       USING (owner_id = ANY (accounter_schema.get_current_business_scope()))
       WITH CHECK (owner_id = accounter_schema.get_current_business_id());
 
+    DROP POLICY IF EXISTS tenant_isolation_delete ON accounter_schema.charges_securities_executions;
     CREATE POLICY tenant_isolation_delete ON accounter_schema.charges_securities_executions
       AS RESTRICTIVE
       FOR DELETE
       USING (owner_id = accounter_schema.get_current_business_id());
 
+    DROP POLICY IF EXISTS tenant_isolation_update ON accounter_schema.charges_securities_executions;
     CREATE POLICY tenant_isolation_update ON accounter_schema.charges_securities_executions
       AS RESTRICTIVE
       FOR UPDATE

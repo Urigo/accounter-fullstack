@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Currency } from '../../../../shared/enums.js';
-import type { StrictLedgerProto } from '../../../../shared/types/index.js';
+import type { StrictLedgerProto, TimelessDateString } from '../../../../shared/types/index.js';
 import {
   buildDistributionEntry,
   buildIncomeEntry,
@@ -8,6 +8,7 @@ import {
   classifySecurityExecution,
   getBankRateMismatch,
   getDistributionWithheldTax,
+  findDistributionCancellation,
   getExpectedCommissionCharge,
   getWithheldTax,
   isDividendInKindDistribution,
@@ -683,6 +684,20 @@ describe('stock distributions', () => {
       ).toEqual({ ledgerRate: 3.5, bankRate: 3.6 });
     });
 
+    it('allows a derived rate the rounding of a small distribution moved', () => {
+      // 9.996 units' worth rounds to 10.00, while the local value is 9.996 × 3.7 = 36.985
+      expect(
+        getBankRateMismatch(
+          distribution({
+            personal_currency_rate: '-1',
+            trade_gross_value_trade_currency: '10',
+            trade_gross_value_nis: '36.985',
+          }),
+          3.7,
+        ),
+      ).toBeNull();
+    });
+
     it('has nothing to compare when the bank reports neither', () => {
       expect(
         getBankRateMismatch(
@@ -691,5 +706,52 @@ describe('stock distributions', () => {
         ),
       ).toBeNull();
     });
+  });
+});
+
+describe('findDistributionCancellation', () => {
+  const row = (
+    id: string,
+    tradeDate: TimelessDateString,
+    overrides: Partial<{ nv: string; payment_type: string | null; is_cancel_transaction: string }> = {},
+  ) => ({
+    id,
+    trade_date: tradeDate,
+    trade_type: 'הטבה חלוקת מניות',
+    payment_type: 'דיבידנד בעין' as string | null,
+    nv: '10',
+    is_cancel_transaction: 'לא',
+    ...overrides,
+  });
+
+  it('pairs a cancellation with the distribution it follows', () => {
+    const distribution = row('d1', '2025-01-10');
+    const cancellation = row('c1', '2025-01-12', { is_cancel_transaction: 'כן', nv: '-10' });
+
+    expect(findDistributionCancellation(distribution, [distribution, cancellation])).toBe(
+      cancellation,
+    );
+  });
+
+  it('pairs a cancellation with the latest same-size distribution before it only', () => {
+    const earlier = row('d1', '2024-01-10');
+    const later = row('d2', '2025-01-10');
+    const cancellation = row('c1', '2025-01-12', { is_cancel_transaction: 'כן' });
+    const history = [earlier, later, cancellation];
+
+    expect(findDistributionCancellation(earlier, history)).toBeNull();
+    expect(findDistributionCancellation(later, history)).toBe(cancellation);
+  });
+
+  it('ignores cancellations before the distribution, of other sizes or of other payment types', () => {
+    const distribution = row('d1', '2025-01-10');
+    const history = [
+      row('c1', '2025-01-09', { is_cancel_transaction: 'כן' }),
+      row('c2', '2025-01-12', { is_cancel_transaction: 'כן', nv: '5' }),
+      row('c3', '2025-01-12', { is_cancel_transaction: 'כן', payment_type: null }),
+      distribution,
+    ];
+
+    expect(findDistributionCancellation(distribution, history)).toBeNull();
   });
 });

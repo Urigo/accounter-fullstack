@@ -58,6 +58,16 @@ describe('Mutation.deleteCharge', () => {
     expect(deleteCharges).toHaveBeenCalledWith([CHARGE_ID], expect.anything());
   });
 
+  it('lets the user dismiss the stock distributions a charge books by deleting it', async () => {
+    vi.mocked(isChargeEmpty).mockResolvedValue(true);
+
+    await deleteCharge(null, { chargeId: CHARGE_ID }, context());
+
+    expect(isChargeEmpty).toHaveBeenCalledWith(CHARGE_ID, expect.anything(), {
+      dismissSecurityExecutions: true,
+    });
+  });
+
   it('refuses a charge that still holds records', async () => {
     vi.mocked(isChargeEmpty).mockResolvedValue(false);
 

@@ -71,7 +71,9 @@ const computeChargeValidation = async (
     taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
   // A securities charge can book executions with no cash leg (stock distributions), which have
-  // neither a transaction nor a counterparty to show.
+  // neither a transaction nor a counterparty to show. Only the requirement to have them is waived:
+  // whatever transactions and counterparty such a charge does hold (say, a merged-in commission
+  // fee) are still validated.
   const booksSecurityExecutions =
     chargeType === ChargeTypeEnum.ForeignSecurities &&
     (
@@ -84,9 +86,7 @@ const computeChargeValidation = async (
   const businessNotRequired =
     [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary, ChargeTypeEnum.Financial].includes(
       chargeType,
-    ) ||
-    isGeneralFees ||
-    booksSecurityExecutions;
+    ) || isGeneralFees;
   const businessPromise =
     mainBusinessId && !businessNotRequired
       ? injector.get(BusinessesProvider).getBusinessByIdLoader.load(mainBusinessId)
@@ -102,7 +102,8 @@ const computeChargeValidation = async (
     getChargeDocumentsMeta(charge, injector),
   ]);
 
-  const businessIsFine = businessNotRequired || !!business;
+  const businessIsFine =
+    businessNotRequired || !!business || (booksSecurityExecutions && !mainBusinessId);
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
@@ -156,9 +157,10 @@ const computeChargeValidation = async (
 
   // validate transactions
   const hasTransaction = transactionsCount >= 1;
-  const transactionsNotRequired =
-    [ChargeTypeEnum.Financial].includes(chargeType) || booksSecurityExecutions;
-  const transactionsAreFine = transactionsNotRequired || (hasTransaction && !invalidTransactions);
+  const transactionsNotRequired = [ChargeTypeEnum.Financial].includes(chargeType);
+  const transactionsAreFine =
+    transactionsNotRequired ||
+    ((hasTransaction || booksSecurityExecutions) && !invalidTransactions);
   if (!transactionsAreFine) {
     missingInfo.push(MissingChargeInfo.Transactions);
   }

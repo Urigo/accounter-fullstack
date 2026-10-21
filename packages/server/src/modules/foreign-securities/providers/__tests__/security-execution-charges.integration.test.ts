@@ -58,12 +58,14 @@ async function insertExecution({
   tradeDate = '2025-03-10',
   valueDate = '2025-03-10' as string | null,
   isCancelled = false,
+  nv = 10,
 }: {
   tradeType?: string;
   paymentType?: string | null;
   tradeDate?: string;
   valueDate?: string | null;
   isCancelled?: boolean;
+  nv?: number;
 } = {}): Promise<string> {
   executionCounter += 1;
   const {
@@ -73,7 +75,7 @@ async function insertExecution({
        owner_id, bank_number, branch_number, account_number, security, trade_date, value_date,
        trade_type, transaction_type, payment_type, nv, trade_price, trade_gross_value_trade_currency,
        net_value_trade_currency, trade_currency, symbol, is_cancel_transaction, occurrence
-     ) VALUES ($1, 12, 600, 100000, '7654321', $2, $3, $4, 'תשלומים ואירועי חברה', $5, 10, 100,
+     ) VALUES ($1, 12, 600, 100000, '7654321', $2, $3, $4, 'תשלומים ואירועי חברה', $5, $8, 100,
                1000, 0, 'דולר ארה"ב', 'MOCK', $6, $7)
      RETURNING id`,
     [
@@ -84,6 +86,7 @@ async function insertExecution({
       paymentType,
       isCancelled ? 'כן' : 'לא',
       executionCounter,
+      nv,
     ],
   );
   return row!.id;
@@ -184,15 +187,41 @@ describe('SecurityExecutionChargesProvider.ensureDistributionCharges', () => {
     expect(await linksOf(executions)).toEqual([]);
   });
 
-  it('does not create charges in a locked period', async () => {
+  it('does not create charges in a locked period, by the earlier of trade and value date', async () => {
     const locked = await insertExecution({ tradeDate: '2024-12-30', valueDate: '2024-12-31' });
-    const open = await insertExecution({ tradeDate: '2024-12-31', valueDate: null });
+    const onLock = await insertExecution({ tradeDate: '2024-12-31', valueDate: null });
+    // booked on its trade date, inside the locked period, though it settles after it
+    const tradedLocked = await insertExecution({ tradeDate: '2024-12-31', valueDate: '2025-01-02' });
     const after = await insertExecution({ tradeDate: '2025-01-01', valueDate: '2025-01-01' });
 
     await createProvider().ensureDistributionCharges(TEST_OWNER_ID, '2024-12-31');
 
-    const links = await linksOf([locked, open, after]);
+    const links = await linksOf([locked, onLock, tradedLocked, after]);
     expect(links.map(link => link.execution_id)).toEqual([after]);
+  });
+
+  it('skips a distribution the bank already cancelled, but not an earlier one of the same size', async () => {
+    const earlier = await insertExecution({ tradeDate: '2024-03-10', valueDate: '2024-03-10' });
+    const cancelled = await insertExecution();
+    await insertExecution({ tradeDate: '2025-03-12', valueDate: '2025-03-12', isCancelled: true, nv: -10 });
+
+    await createProvider().ensureDistributionCharges(TEST_OWNER_ID, null);
+
+    const links = await linksOf([earlier, cancelled]);
+    expect(links.map(link => link.execution_id)).toEqual([earlier]);
+  });
+
+  it('does not recreate the charge of a distribution the user dismissed', async () => {
+    const execution = await insertExecution();
+    const [chargeId] = await createProvider().ensureDistributionCharges(TEST_OWNER_ID, null);
+
+    // deleting the charge keeps the link row with no charge
+    await pool.query('DELETE FROM accounter_schema.charges WHERE id = $1', [chargeId]);
+    expect(await linksOf([execution])).toEqual([{ execution_id: execution, charge_id: null }]);
+
+    const again = await createProvider().ensureDistributionCharges(TEST_OWNER_ID, null);
+    expect(again).toEqual([]);
+    expect(await createProvider().chargeIdByExecutionIdLoader.load(execution)).toBeNull();
   });
 
   it('exposes the link both ways and moves it on a merge', async () => {
