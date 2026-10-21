@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { createGraphQLError } from '@graphql-tools/utils';
+import { createGraphQLError } from 'graphql-yoga';
 import { isConnectionLevelError } from '../../email-ingestion/helpers/email-ingestion-tenant-context.helper.js';
 
 /**
@@ -138,9 +138,11 @@ function categorize(sqlState: string): PgErrorCategory {
  *
  * `originalError` is deliberately never set: yoga masks any `GraphQLError` whose
  * `originalError` is not itself a `GraphQLError`, which would undo all of this.
- * Errors are built with `createGraphQLError` (the factory yoga itself uses) so they
- * come from the same `graphql` copy yoga checks against, even where a bundler would
- * resolve `graphql` to its ESM entry and Node to its CJS one (as vitest does).
+ * Errors are built with yoga's own `createGraphQLError` re-export (the factory yoga
+ * itself uses) so they come from the same `graphql` copy yoga checks against, even
+ * where a bundler would resolve `graphql` to its ESM entry and Node to its CJS one
+ * (as vitest does). A plain `new GraphQLError` here would get masked under vitest,
+ * and `@graphql-tools/utils` v13 no longer exports the factory.
  */
 export function toScraperUploadError(operation: string, error: unknown): GraphQLError {
   if (error instanceof GraphQLError) {
