@@ -6,16 +6,15 @@ import type { Invoice } from '../../../app-providers/deel/schemas.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
-import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
-import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { DeelContractsProvider } from '../../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../../providers/deel-invoices.provider.js';
 import type { ReceiptSyncUnit, StandaloneSyncUnit } from '../deel-sync-plan.helper.js';
 import { createDeelInvoiceMatchFromUnmatchedInvoice, type DeelInvoiceMatch } from '../deel.helper.js';
 
-const { degradeMock, deleteChargesMock, uploadMock } = vi.hoisted(() => ({
+const { degradeMock, deleteChargesMock, isChargeEmptyMock, uploadMock } = vi.hoisted(() => ({
   degradeMock: vi.fn(async (..._args: unknown[]) => new Map()),
   deleteChargesMock: vi.fn(async (..._args: unknown[]) => undefined),
+  isChargeEmptyMock: vi.fn(async (..._args: unknown[]) => true),
   uploadMock: vi.fn(),
 }));
 
@@ -24,6 +23,10 @@ vi.mock('../../../accountant-approval/helpers/degrade-charges.helper.js', () => 
 }));
 vi.mock('../../../charges/helpers/delete-charges.helper.js', () => ({
   deleteCharges: deleteChargesMock,
+}));
+// what makes a charge "empty" is the shared helper's business; here it is a switch
+vi.mock('../../../charges/helpers/delete-empty-charges.helper.js', () => ({
+  isChargeEmpty: isChargeEmptyMock,
 }));
 vi.mock('../../../documents/helpers/upload.helper.js', () => ({
   uploadToCloudinary: uploadMock,
@@ -120,20 +123,8 @@ function setup() {
     }),
     clearCache: vi.fn(),
   };
-  const transactions = {
-    transactionsByChargeIDLoader: {
-      clear: vi.fn(),
-      load: vi.fn(async (_chargeId: string) => [] as unknown[]),
-    },
-  };
   const deelClient = {
     getSalaryInvoiceFile: vi.fn(async (id: string) => new Blob([`pdf ${id}`])),
-  };
-  const miscExpenses = {
-    getExpensesByChargeIdLoader: {
-      clear: vi.fn(),
-      load: vi.fn(async (_chargeId: string) => [] as unknown[]),
-    },
   };
   const cloudinary = { deleteUpload: vi.fn(async () => undefined) };
   const deelContracts = {
@@ -145,11 +136,9 @@ function setup() {
     [DeelInvoicesProvider, deelInvoices],
     [DocumentsProvider, documents],
     [ChargesProvider, charges],
-    [TransactionsProvider, transactions],
     [DeelClientProvider, deelClient],
     [CloudinaryProvider, cloudinary],
     [DeelContractsProvider, deelContracts],
-    [MiscExpensesProvider, miscExpenses],
   ]);
   const injector = {
     get: (token: unknown) => {
@@ -171,7 +160,7 @@ function setup() {
     };
   });
 
-  return { injector, events, db, deelInvoices, documents, charges, transactions, deelClient, cloudinary };
+  return { injector, events, db, deelInvoices, documents, charges, deelClient, cloudinary };
 }
 
 describe('syncUnit', () => {
@@ -305,12 +294,12 @@ describe('syncUnit', () => {
     expect(degradeMock).toHaveBeenCalledWith(injector, ['receipt-charge']);
   });
 
-  it('keeps a previous charge that still holds a transaction, and degrades it too', async () => {
-    const { injector, deelInvoices, transactions } = setup();
+  it('keeps a previous charge that still holds records, and degrades it too', async () => {
+    const { injector, deelInvoices } = setup();
     deelInvoices.lockInvoicesForSync.mockResolvedValue([
       { id: 'i3', payment_id: '', document_id: 'd3', charge_id: 'old-charge' },
     ]);
-    transactions.transactionsByChargeIDLoader.load.mockResolvedValue([{ id: 't1' }]);
+    isChargeEmptyMock.mockResolvedValueOnce(false);
 
     await syncUnit(
       injector,
