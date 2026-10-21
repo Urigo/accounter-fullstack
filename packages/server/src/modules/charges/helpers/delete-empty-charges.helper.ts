@@ -3,6 +3,7 @@ import { EMPTY_UUID } from '../../../shared/constants.js';
 import { BusinessTripEmployeePaymentsProvider } from '../../business-trips/providers/business-trips-employee-payments.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
+import { SecurityExecutionChargesProvider } from '../../foreign-securities/providers/security-execution-charges.provider.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 import { SalariesProvider } from '../../salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -17,7 +18,7 @@ type ByChargeIdLoader = {
 /**
  * Whether a charge holds nothing: no transactions, documents or misc expenses, and none of the
  * other records that hang off a charge (salary records, business trip employee payments,
- * depreciation records). Those are content of their own, so a charge holding any of them is not
+ * depreciation records, securities executions it books directly). Those are content of their own, so a charge holding any of them is not
  * empty. Records that only annotate a charge (tags, ledger records, balance cancellations, …) are
  * not counted: `deleteCharges` deletes them with the charge.
  *
@@ -34,6 +35,7 @@ export async function isChargeEmpty(chargeId: string, injector: Injector): Promi
     injector.get(BusinessTripEmployeePaymentsProvider)
       .getBusinessTripEmployeePaymentsByChargeIdLoader,
     injector.get(DepreciationProvider).getDepreciationRecordsByChargeIdLoader,
+    injector.get(SecurityExecutionChargesProvider).linkedExecutionIdsByChargeIdLoader,
   ];
 
   const records = await Promise.all(
