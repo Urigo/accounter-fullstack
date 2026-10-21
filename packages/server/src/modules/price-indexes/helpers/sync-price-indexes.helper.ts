@@ -51,8 +51,42 @@ export function isNextIndexDue(latestPeriod: TimelessDateString, today: Timeless
   return today >= earliestPublication;
 }
 
+const CHAIN_FACTOR_TOLERANCE = 1e-9;
+
+/**
+ * Fails when freshly fetched chain factors disagree with stored ones. Factors are anchored at the
+ * oldest base CBS returns, so a shorter or re-anchored chain would put new chained values on a
+ * different scale than stored rows and silently break cross-period linkage.
+ */
+export function assertChainsMatchKnownBases(
+  chains: Map<string, ChainLink>,
+  knownBases: PriceIndexBase[],
+  indexCode: number,
+) {
+  for (const known of knownBases) {
+    const fetched = chains.get(known.baseLabel);
+    if (!fetched) {
+      continue;
+    }
+    const relativeDiff =
+      Math.abs(fetched.chainedFactor - known.chainedFactor) / Math.abs(known.chainedFactor);
+    if (relativeDiff > CHAIN_FACTOR_TOLERANCE) {
+      throw new Error(
+        `Chain factor of base "${known.baseLabel}" of price index ${indexCode} changed: stored ${known.chainedFactor}, fetched ${fetched.chainedFactor}`,
+      );
+    }
+  }
+}
+
 /**
  * Turns fetched CBS entries into the bases and value rows to upsert.
+ *
+ * Publication dates: CBS exposes none, so a new month gets the 15th of the following month (the
+ * CBS calculator's own rule), or `today` when the sync first sees it earlier. Only an early
+ * publication caught by a run on that same day is therefore recorded exactly; after downtime, and
+ * for backfilled history, an early publication still reads as the 15th, which can shift the
+ * "known" index by a day or two around month boundaries. `published_on` can be corrected by hand;
+ * syncs never overwrite it.
  *
  * @param chains - chain factors from an entry fetched with coefficients, covering every base the entries use
  * @param knownBases - bases already stored, used when `chains` doesn't cover an entry's base

@@ -3,7 +3,8 @@ import zod from 'zod';
 
 /** CBS (Israel Central Bureau of Statistics) price-index API. Public, no key; see
  * https://www.cbs.gov.il/he/CBSNewBrand/Pages/מדדי-מחירים-באמצעות-API.aspx */
-const CBS_PRICE_API_URL = 'https://api.cbs.gov.il/index/data/price';
+const CBS_API_HOST = 'api.cbs.gov.il';
+const CBS_PRICE_API_URL = `https://${CBS_API_HOST}/index/data/price`;
 // CBS rejects requests without a user agent (mandatory per their API docs)
 const USER_AGENT = 'accounter-server (+https://github.com/Urigo/accounter-fullstack)';
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -92,6 +93,14 @@ export function parseCbsPriceResponse(json: unknown): {
   return { entries, nextUrl: parsed.data.paging?.next_url ?? null };
 }
 
+/** Pagination URLs come from the response body; only ever follow them on the CBS API host */
+function assertCbsUrl(url: string) {
+  const { protocol, hostname } = new URL(url);
+  if (protocol !== 'https:' || hostname !== CBS_API_HOST) {
+    throw new Error(`Refusing to follow CBS pagination URL outside ${CBS_API_HOST}: ${url}`);
+  }
+}
+
 @Injectable({
   scope: Scope.Singleton,
   global: true,
@@ -125,7 +134,13 @@ export class CbsPriceIndexClient {
 
     const entries: CbsPriceIndexEntry[] = [];
     let nextUrl: string | null = url.toString();
-    for (let page = 0; nextUrl && page < MAX_PAGES; page++) {
+    for (let page = 0; nextUrl; page++) {
+      if (page >= MAX_PAGES) {
+        throw new Error(
+          `CBS price index pagination exceeded ${MAX_PAGES} pages for index ${indexCode}`,
+        );
+      }
+      assertCbsUrl(nextUrl);
       const result = parseCbsPriceResponse(await this.fetchJson(nextUrl));
       entries.push(...result.entries);
       nextUrl = result.nextUrl;
@@ -154,6 +169,13 @@ export class CbsPriceIndexClient {
     if (!res.ok) {
       throw new Error(`CBS price index API responded with ${res.status} for ${url}`);
     }
-    return res.json();
+    try {
+      return await res.json();
+    } catch (error) {
+      // e.g. a WAF block page served as HTML with status 200
+      throw new Error(`CBS price index API returned a non-JSON response for ${url}`, {
+        cause: error,
+      });
+    }
   }
 }

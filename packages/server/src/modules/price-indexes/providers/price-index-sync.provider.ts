@@ -4,6 +4,7 @@ import { CbsPriceIndexClient } from '../../app-providers/cbs-price-index-client.
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { addMonths, CPI_INDEX_CODE, periodToYearMonth } from '../helpers/price-index.helper.js';
 import {
+  assertChainsMatchKnownBases,
   buildSyncRows,
   computeChainFactors,
   isNextIndexDue,
@@ -112,6 +113,30 @@ export class PriceIndexSyncProvider {
     };
     const today = todayInIsrael(now);
 
+    // Decide and fetch outside any transaction: CBS calls can take a while, and a pooled
+    // connection must not sit idle-in-transaction meanwhile. The upserts are idempotent, so the
+    // advisory lock only needs to guard the write phase below.
+    const [{ latest_period: latestPeriod } = { latest_period: null }] =
+      await getLatestPriceIndexPeriod.run({ indexCode }, this.dbProvider);
+    const isIncremental = !full && !!latestPeriod;
+    if (isIncremental && !isNextIndexDue(latestPeriod, today)) {
+      return { ...result, skipped: true };
+    }
+
+    // Incremental runs re-fetch a short overlap with coefficients, so a new base (each odd
+    // January) arrives together with its chain. Full runs fetch the chain once and the
+    // (much larger) history without per-row coefficients.
+    const entries = isIncremental
+      ? await this.cbsClient.fetchValues(indexCode, {
+          startPeriod: periodToYearMonth(addMonths(latestPeriod, -2)),
+          withCoefficients: true,
+        })
+      : await this.cbsClient.fetchValues(indexCode);
+    const chainSource = isIncremental
+      ? entries.find(entry => entry.previousBases.length > 0)
+      : await this.cbsClient.fetchLatestWithChain(indexCode);
+    const chains = chainSource ? computeChainFactors(chainSource) : new Map();
+
     const client = await this.dbProvider.pool.connect();
     try {
       await client.query('BEGIN');
@@ -121,34 +146,14 @@ export class PriceIndexSyncProvider {
         return { ...result, skipped: true };
       }
 
-      const [{ latest_period: latestPeriod } = { latest_period: null }] =
-        await getLatestPriceIndexPeriod.run({ indexCode }, client);
-      const isIncremental = !full && !!latestPeriod;
-      if (isIncremental && !isNextIndexDue(latestPeriod, today)) {
-        await client.query('ROLLBACK');
-        return { ...result, skipped: true };
-      }
-
+      // Read stored bases under the lock, so a concurrent writer's bases are taken into account
       const knownBases = (await getPriceIndexBasesForSync.run({ indexCode }, client)).map(base => ({
         baseLabel: base.base_label,
         firstPeriod: base.first_period,
         chainCoefficient: base.chain_coefficient == null ? null : Number(base.chain_coefficient),
         chainedFactor: Number(base.chained_factor),
       }));
-
-      // Incremental runs re-fetch a short overlap with coefficients, so a new base (each odd
-      // January) arrives together with its chain. Full runs fetch the chain once and the
-      // (much larger) history without per-row coefficients.
-      const entries = isIncremental
-        ? await this.cbsClient.fetchValues(indexCode, {
-            startPeriod: periodToYearMonth(addMonths(latestPeriod, -2)),
-            withCoefficients: true,
-          })
-        : await this.cbsClient.fetchValues(indexCode);
-      const chainSource = isIncremental
-        ? entries.find(entry => entry.previousBases.length > 0)
-        : await this.cbsClient.fetchLatestWithChain(indexCode);
-      const chains = chainSource ? computeChainFactors(chainSource) : new Map();
+      assertChainsMatchKnownBases(chains, knownBases, indexCode);
 
       const { bases, values } = buildSyncRows({ indexCode, entries, chains, knownBases, today });
 

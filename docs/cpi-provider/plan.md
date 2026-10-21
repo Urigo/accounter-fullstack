@@ -154,6 +154,10 @@ Steps:
 - `published_on` for **new** rows =
   `min(15th of the month after the period, today in Asia/Jerusalem)`. An early publication caught by
   the daily run is recorded exactly; backfilled history follows the calculator's rule.
+  - **Known limitation:** only an early publication seen by a run on that same day is recorded
+    exactly. After downtime, and for backfilled history, an early publication still reads as the
+    15th, which can shift the "known" index by a day or two around month boundaries. This matches
+    the CBS calculator; `published_on` can be corrected by hand and survives re-syncs.
 - Upsert `ON CONFLICT (index_code, period) DO UPDATE` value, base, chained value and percentages
   **only when they differ**, and log a warning: CPI should never change. **Never overwrite
   `published_on`**, so manual corrections stick.

@@ -101,6 +101,48 @@ describe('CbsPriceIndexClient', () => {
     expect(entries).toHaveLength(8);
   });
 
+  it('fails instead of truncating when pagination never ends', async () => {
+    const page = fixture('cbs-base-change-window.json') as { paging: Record<string, unknown> };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse({ ...page, paging: { ...page.paging, next_url: 'https://api.cbs.gov.il/next' } }),
+      ),
+    );
+    await expect(new CbsPriceIndexClient().fetchValues(120_010)).rejects.toThrow(
+      /pagination exceeded 20 pages/,
+    );
+  });
+
+  it('refuses to follow a pagination URL outside the CBS API', async () => {
+    const page = fixture('cbs-base-change-window.json') as { paging: Record<string, unknown> };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ ...page, paging: { ...page.paging, next_url: 'https://example.com/next' } }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(new CbsPriceIndexClient().fetchValues(120_010)).rejects.toThrow(
+      /outside api\.cbs\.gov\.il/,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('explains a non-JSON response (e.g. a WAF block page)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('<html>Request Rejected</html>', {
+          status: 200,
+          headers: { 'Content-Type': 'text/html' },
+        }),
+      ),
+    );
+    await expect(new CbsPriceIndexClient().fetchValues(120_010)).rejects.toThrow(
+      /non-JSON response/,
+    );
+  });
+
   it('throws on a non-OK response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({}, 503)));
     await expect(new CbsPriceIndexClient().fetchLatestWithChain(120_010)).rejects.toThrow(/503/);

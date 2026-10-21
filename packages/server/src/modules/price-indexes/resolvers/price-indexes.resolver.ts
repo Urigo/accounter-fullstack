@@ -6,6 +6,7 @@ import {
   periodToYearMonth,
   PriceIndexNotAvailableError,
   valueInBase,
+  type PriceIndexBase,
   type PriceIndexRow,
   type PriceIndexSeries,
 } from '../helpers/price-index.helper.js';
@@ -29,8 +30,11 @@ function indexTypeByCode(indexCode: number): PriceIndexType {
   return entry[0] as PriceIndexType;
 }
 
-function toGraphQLValue(series: PriceIndexSeries, row: PriceIndexRow) {
-  const latest = latestBase(series);
+function toGraphQLValue(
+  series: PriceIndexSeries,
+  row: PriceIndexRow,
+  latest: PriceIndexBase | undefined,
+) {
   return {
     period: periodToYearMonth(row.period),
     value: row.value,
@@ -52,12 +56,13 @@ export const priceIndexesResolvers: PriceIndexesModule.Resolvers = {
         });
       }
       const series = await injector.get(PriceIndexesProvider).getSeries(INDEX_CODES[type]);
+      const latest = latestBase(series);
       return series.rows
         .filter(row => {
           const period = periodToYearMonth(row.period);
           return period >= fromPeriod && period <= toPeriod;
         })
-        .map(row => toGraphQLValue(series, row));
+        .map(row => toGraphQLValue(series, row, latest));
     },
     priceIndexLinkage: async (_, { type, amount, from, to }, { injector }) => {
       const provider = injector.get(PriceIndexesProvider);
@@ -70,10 +75,11 @@ export const priceIndexesResolvers: PriceIndexesModule.Resolvers = {
           { date: to.date, mode: to.mode ?? 'KNOWN' },
           indexCode,
         );
+        const latest = latestBase(series);
         return {
           ...linkage,
-          fromIndex: toGraphQLValue(series, linkage.fromIndex),
-          toIndex: toGraphQLValue(series, linkage.toIndex),
+          fromIndex: toGraphQLValue(series, linkage.fromIndex, latest),
+          toIndex: toGraphQLValue(series, linkage.toIndex, latest),
         };
       } catch (error) {
         if (error instanceof PriceIndexNotAvailableError) {
@@ -95,7 +101,8 @@ export const priceIndexesResolvers: PriceIndexesModule.Resolvers = {
         }));
       } catch (error) {
         console.error('Error syncing price indexes', error);
-        throw new GraphQLError('Error syncing price indexes');
+        // super-admin only, so the underlying cause (e.g. CBS unreachable from this host) is safe to surface
+        throw new GraphQLError(`Error syncing price indexes: ${(error as Error).message}`);
       }
     },
   },

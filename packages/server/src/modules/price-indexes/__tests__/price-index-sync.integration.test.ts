@@ -59,6 +59,14 @@ async function clearTestRows() {
   ]);
 }
 
+async function countTestRows() {
+  const { rows } = await pool.query(
+    'SELECT count(*)::int AS count FROM accounter_schema.price_index_values WHERE index_code = $1',
+    [TEST_INDEX_CODE],
+  );
+  return rows[0].count as number;
+}
+
 beforeAll(async () => {
   pool = await connectTestDb();
   await runMigrationsIfNeeded(pool);
@@ -151,6 +159,28 @@ describe('PriceIndexSyncProvider', () => {
     expect(rows[0].published_on).toBe('2025-01-14');
   });
 
+  it('refuses to write values on a different chain scale than stored bases', async () => {
+    const values = { current: HISTORY };
+    const client = createClient(() => values.current, entry(2024, 12, 108.4, OLD_BASE));
+    const sync = new PriceIndexSyncProvider(dbProvider, client as unknown as CbsPriceIndexClient);
+    // Backfill: "Average 2022" is the oldest stored base, with factor 1
+    await sync.sync({ indexCodes: [TEST_INDEX_CODE], now: new Date('2025-01-20T12:00:00Z') });
+
+    // CBS now returns a longer chain, anchored one base further back
+    values.current = [
+      entry(2025, 1, 101.5, NEW_BASE),
+      {
+        ...entry(2024, 12, 108.4, OLD_BASE),
+        previousBases: [{ baseLabel: 'Average 2020', coefficient: 1.059 }],
+      },
+    ];
+
+    await expect(
+      sync.sync({ indexCodes: [TEST_INDEX_CODE], now: new Date('2025-02-14T17:00:00Z') }),
+    ).rejects.toThrow(/Chain factor of base "Average 2022"/);
+    expect(await countTestRows()).toBe(2);
+  });
+
   it('skips while another instance holds the sync lock', async () => {
     const client = createClient(() => HISTORY, entry(2024, 12, 108.4, OLD_BASE));
     const sync = new PriceIndexSyncProvider(dbProvider, client as unknown as CbsPriceIndexClient);
@@ -161,7 +191,7 @@ describe('PriceIndexSyncProvider', () => {
       await holder.query("SELECT pg_advisory_xact_lock(hashtext('accounter.price_index_sync'))");
       const [result] = await sync.sync({ indexCodes: [TEST_INDEX_CODE] });
       expect(result.skipped).toBe(true);
-      expect(client.fetchValues).not.toHaveBeenCalled();
+      expect(await countTestRows()).toBe(0);
     } finally {
       await holder.query('ROLLBACK');
       holder.release();

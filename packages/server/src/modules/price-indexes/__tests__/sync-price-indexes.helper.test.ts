@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { parseCbsPriceResponse } from '../../app-providers/cbs-price-index-client.js';
 import {
+  assertChainsMatchKnownBases,
   buildSyncRows,
   computeChainFactors,
   isNextIndexDue,
@@ -30,6 +31,27 @@ describe('computeChainFactors', () => {
   it('matches the chained value the CBS calculator reports (mult) for Nov 2024', () => {
     // calculator: from_index_value 108.7 (Average 2022) → mult_min 39185641.14
     expect(108.7 * chains.get('Average 2022')!.chainedFactor).toBeCloseTo(39_185_641.14, 1);
+  });
+});
+
+describe('assertChainsMatchKnownBases', () => {
+  const chains = computeChainFactors(latest);
+  const stored = Array.from(chains, ([baseLabel, link]) => ({
+    baseLabel,
+    firstPeriod: date('2000-01-01'),
+    ...link,
+  }));
+
+  it('accepts a chain matching the stored bases', () => {
+    expect(() => assertChainsMatchKnownBases(chains, stored, 120_010)).not.toThrow();
+    expect(() => assertChainsMatchKnownBases(new Map(), stored, 120_010)).not.toThrow();
+  });
+
+  it('rejects a truncated chain that re-anchors the factors', () => {
+    const truncated = computeChainFactors({ ...latest, previousBases: latest.previousBases.slice(0, 5) });
+    expect(() => assertChainsMatchKnownBases(truncated, stored, 120_010)).toThrow(
+      /Chain factor of base "[^"]+" of price index 120010 changed/,
+    );
   });
 });
 
