@@ -25,6 +25,8 @@ function execution(overrides: Partial<CostBasisExecution> & Pick<CostBasisExecut
     net_value_settlement_currency: '-1000.00',
     net_value_nis: '-3700.00',
     is_cancel_transaction: 'לא',
+    payment_type: null,
+    trade_gross_value_trade_currency: null,
     ...overrides,
   } satisfies CostBasisExecution;
 }
@@ -198,6 +200,66 @@ describe('calculateFifoCostBasis', () => {
     expect(result.unknownCostUnits).toBe(6);
     expect(result.coveredUnits).toBe(4);
     expect(result.costForeign).toBeCloseTo(400, 6);
+  });
+
+  it('costs units received as a dividend in kind at their gross value', () => {
+    const target = redemption('r1', '2025-03-01', 10, 1100);
+
+    const result = calculateFifoCostBasis(
+      [
+        buy('b1', '2024-02-10', 4, 400),
+        execution({
+          id: 'd1',
+          trade_date: '2024-06-10',
+          trade_type: 'הטבה חלוקת מניות',
+          payment_type: 'דיבידנד בעין',
+          nv: '6',
+          trade_gross_value_trade_currency: '720',
+          // a distribution's net value is its commission, never its cost
+          net_value_trade_currency: '0',
+          net_value_settlement_currency: '-2',
+        }),
+        target,
+      ],
+      target,
+      Currency.Usd,
+    );
+
+    expect(result.unknownCostUnits).toBe(0);
+    expect(result.coveredUnits).toBe(10);
+    expect(result.costForeign).toBeCloseTo(1120, 6);
+  });
+
+  it('leaves units of another distribution, or of one in another currency, without cost', () => {
+    const target = redemption('r1', '2025-03-01', 10, 1100);
+    const distribution = (id: string, overrides: Partial<CostBasisExecution>) =>
+      execution({
+        id,
+        trade_date: '2024-06-10',
+        trade_type: 'הטבה חלוקת מניות',
+        nv: '5',
+        trade_gross_value_trade_currency: '600',
+        net_value_trade_currency: '0',
+        net_value_settlement_currency: '0',
+        ...overrides,
+      });
+
+    const result = calculateFifoCostBasis(
+      [
+        distribution('d1', { payment_type: null }),
+        distribution('d2', {
+          payment_type: 'דיבידנד בעין',
+          trade_currency: EUR_LABEL,
+          settlement_currency: EUR_LABEL,
+        }),
+        target,
+      ],
+      target,
+      Currency.Usd,
+    );
+
+    expect(result.unknownCostUnits).toBe(10);
+    expect(result.coveredUnits).toBe(0);
   });
 
   it('reports the units the ingested history does not cover', () => {

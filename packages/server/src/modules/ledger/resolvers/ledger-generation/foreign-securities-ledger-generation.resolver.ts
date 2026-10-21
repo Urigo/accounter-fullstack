@@ -7,7 +7,7 @@ import type {
   ResolversTypes,
   SecuritiesTaxCategoryKey,
 } from '../../../../__generated__/types.js';
-import type { Currency } from '../../../../shared/enums.js';
+import { SecurityTradeType, type Currency } from '../../../../shared/enums.js';
 import { formatStringifyAmount } from '../../../../shared/helpers/amount.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
@@ -19,7 +19,10 @@ import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import { calculateFifoCostBasis } from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
-import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
+import {
+  isCancelledExecution,
+  tryToSecurityTradeType,
+} from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
 import {
   getSecurityLocality,
   type SecurityLocality,
@@ -31,12 +34,18 @@ import type { IGetTransactionsByChargeIdsResult } from '../../../transactions/ty
 import { ledgerEntryFromMainTransaction } from '../../helpers/common-charge-ledger.helper.js';
 import { splitFeeTransactions } from '../../helpers/fee-transactions.js';
 import {
+  buildDistributionEntry,
   buildIncomeEntry,
   buildRedemptionEntry,
   calculateRedemptionGain,
   classifySecurityExecution,
+  currencyOfLabel,
+  distributionValueDate,
+  getBankRateMismatch,
+  getDistributionWithheldTax,
   getWithheldTax,
   INCOME_TAX_CATEGORY_KEYS,
+  isDividendInKindDistribution,
   validateSecurityCommissions,
   WITHHOLDING_TAX_CATEGORY_KEYS,
 } from '../../helpers/foreign-securities-ledger.helper.js';
@@ -53,6 +62,12 @@ import {
 
 /** Below this, an amount is float noise rather than something to book */
 const MIN_AMOUNT = 0.005;
+
+/**
+ * The account number of the tenant's foreign-securities account: what the securities side of
+ * every cash movement is booked to, through its tax category in the movement's currency.
+ */
+const FOREIGN_SECURITIES_ACCOUNT_NUMBER = 'foreign_securities';
 
 /** How a ledger error names a cash movement, so the user can find it in the charge */
 function describeTransaction(transaction: IGetTransactionsByChargeIdsResult): string {
@@ -117,7 +132,7 @@ function costBasisProblem(
     return `Could not find the purchase of ${costBasis.missingUnits} of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed}: ${history}. Scrape older securities transactions of this account to complete it.${bankNote}`;
   }
   if (costBasis.unknownCostUnits > 0) {
-    return `${costBasis.unknownCostUnits} of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed} have no known purchase cost: they arrived by transfer or distribution, or were bought in another currency.${bankNote}`;
+    return `${costBasis.unknownCostUnits} of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed} have no known purchase cost: they arrived by transfer or by a distribution other than a dividend in kind, or were bought or distributed in another currency.${bankNote}`;
   }
   return null;
 }
@@ -254,6 +269,139 @@ async function securitiesLedgerEntry(params: {
   }
 }
 
+/**
+ * The entry for an execution the charge books directly (see `charges_securities_executions`):
+ * so far only a stock distribution paid as a dividend in kind, booked as dividend income at the
+ * value of the shares received. Null after recording why it cannot be booked.
+ */
+async function distributionLedgerEntry(params: {
+  injector: Injector;
+  ownerId: string;
+  chargeId: string;
+  locality: string;
+  defaultLocalCurrency: Currency;
+  execution: SecurityExecutionRow;
+  /** The foreign-securities account, or undefined when the tenant has none */
+  securitiesAccountId: string | undefined;
+  taxCategories: SecuritiesTaxCategoryIds;
+  errors: Set<string>;
+  missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
+}): Promise<StrictLedgerProto | null> {
+  const { injector, ownerId, execution, errors } = params;
+  const distribution = `the stock distribution of ${describeSecurity(execution)} on ${execution.trade_date}`;
+
+  if (!isDividendInKindDistribution(execution)) {
+    // Bonus issues and splits are not income — they move the cost of the existing holding — and
+    // none has been seen yet; they are to be handled when one is.
+    errors.add(
+      `Cannot book the securities execution of ${describeSecurity(execution)} on ${execution.trade_date}: only stock distributions paid as a dividend in kind are booked without a cash transaction so far`,
+    );
+    return null;
+  }
+  if (isCancelledExecution(execution)) {
+    errors.add(`Booking the cancellation of ${distribution} is not supported yet`);
+    return null;
+  }
+
+  try {
+    const withheldTax = getDistributionWithheldTax(execution);
+    if (Math.abs(withheldTax) >= MIN_AMOUNT) {
+      throw new LedgerError(
+        `The bank reports ${withheldTax} withheld tax on ${distribution}, and booking tax withheld on a stock distribution is not supported yet`,
+      );
+    }
+
+    const currency = currencyOfLabel(execution.trade_currency);
+    if (!currency) {
+      throw new LedgerError(`Cannot book ${distribution}: its execution reports no trade currency`);
+    }
+
+    const securityLocality = getSecurityLocality(execution, params.locality);
+    if (!securityLocality) {
+      throw new LedgerError(
+        `Cannot tell whether ${describeSecurity(execution)} of ${distribution} is local or foreign: its execution has no issuer country or ISIN`,
+      );
+    }
+    const incomeKey = INCOME_TAX_CATEGORY_KEYS.DIVIDEND[securityLocality];
+    const ids = requireTaxCategories(
+      [incomeKey],
+      params.taxCategories,
+      errors,
+      params.missingTaxCategories,
+    );
+    if (!ids) {
+      return null;
+    }
+
+    if (!params.securitiesAccountId) {
+      throw new LedgerError(
+        `Cannot book ${distribution}: the foreign securities account (account number "${FOREIGN_SECURITIES_ACCOUNT_NUMBER}") is missing`,
+      );
+    }
+    const securitiesTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, {
+      account_id: params.securitiesAccountId,
+      currency,
+    });
+
+    const rate =
+      currency === params.defaultLocalCurrency
+        ? 1
+        : await injector
+            .get(ExchangeProvider)
+            .getExchangeRates(
+              currency,
+              params.defaultLocalCurrency,
+              distributionValueDate(execution),
+            );
+
+    if (currency !== params.defaultLocalCurrency) {
+      const mismatch = getBankRateMismatch(execution, rate);
+      if (mismatch) {
+        // Reported, not fatal: the ledger's rate is the one booked, the difference is for the user
+        // to look into.
+        errors.add(
+          `${distribution[0]!.toUpperCase()}${distribution.slice(1)} is booked at the ledger rate of ${mismatch.ledgerRate} ${params.defaultLocalCurrency} per ${currency}, but the bank priced it at ${mismatch.bankRate}`,
+        );
+      }
+    }
+
+    // A cancellation is a row of its own, which no charge links — so it is looked for here.
+    const history = await injector
+      .get(ForeignSecuritiesProvider)
+      .getSecurityAccountHistory(execution, ownerId);
+    const isReversed = history.some(
+      row =>
+        row.id !== execution.id &&
+        isCancelledExecution(row) &&
+        tryToSecurityTradeType(row.trade_type) === SecurityTradeType.StockDistribution &&
+        Math.abs(Number(row.nv)) === Math.abs(Number(execution.nv)),
+    );
+    if (isReversed) {
+      errors.add(
+        `The bank reports a cancellation of ${distribution}, and booking the reversal is not supported yet`,
+      );
+    }
+
+    return buildDistributionEntry({
+      execution,
+      securitiesTaxCategoryId,
+      incomeTaxCategoryId: ids[incomeKey],
+      currency,
+      defaultLocalCurrency: params.defaultLocalCurrency,
+      rate,
+      ownerId,
+      chargeId: params.chargeId,
+    });
+  } catch (e) {
+    errors.add(
+      e instanceof LedgerError
+        ? e.message
+        : `Failed to book ${distribution}: ${(e as Error)?.message ?? e}`,
+    );
+    return null;
+  }
+}
+
 export const generateLedgerRecordsForForeignSecurities: ResolverFn<
   Maybe<ResolversTypes['GeneratedLedgerRecords']>,
   ResolversParentTypes['Charge'],
@@ -294,13 +442,27 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       .get(ForeignSecuritiesProvider)
       .getChargeExecutionsByTransactionId(chargeId, charge.owner_id);
 
-    const [transactions, financialAccounts, { mainBusinessId }, executionsByTransactionId] =
-      await Promise.all([
-        transactionsPromise,
-        financialAccountsPromise,
-        getChargeBusinesses(chargeId, injector),
-        executionsPromise,
-      ]);
+    // executions with no cash leg, which the charge books directly
+    const linkedExecutionsPromise = injector
+      .get(ForeignSecuritiesProvider)
+      .executionsByChargeIdLoader.load(chargeId);
+
+    const [
+      transactions,
+      financialAccounts,
+      { mainBusinessId },
+      executionsByTransactionId,
+      linkedExecutions,
+    ] = await Promise.all([
+      transactionsPromise,
+      financialAccountsPromise,
+      getChargeBusinesses(chargeId, injector),
+      executionsPromise,
+      linkedExecutionsPromise,
+    ]);
+    const distributions = linkedExecutions.filter(
+      execution => execution.owner_id === charge.owner_id,
+    );
 
     const foreignSecuritiesAccountId = financialAccounts.find(
       account => account.type === 'FOREIGN_SECURITIES',
@@ -312,6 +474,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     const entriesPromises: Array<Promise<void>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const distributionLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const miscExpensesLedgerEntries: LedgerProto[] = [];
 
@@ -322,20 +485,25 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
     // charge by reference. The fees are booked as they are either way; this only reports a
     // commission the bank says it took on an income payment that the charge does not show. Every
     // matched execution is counted, since every fee of the security is; only income payments are
-    // reported, as the commission convention of trades is not established yet.
+    // reported, as the commission convention of trades is not established yet. A distribution's
+    // commission is a fee row in a charge of its own until the user merges it into this one, which
+    // the error says.
     const isIncome = (execution: SecurityExecutionRow) => {
       const kind = classifySecurityExecution(execution);
-      return kind === 'DIVIDEND' || kind === 'INTEREST';
+      return kind === 'DIVIDEND' || kind === 'INTEREST' || isDividendInKindDistribution(execution);
     };
     const commissionMismatches = validateSecurityCommissions(
-      [...executionsByTransactionId.values()],
+      [...executionsByTransactionId.values(), ...distributions],
       feeTransactions,
     ).filter(mismatch => mismatch.executions.some(isIncome));
     for (const mismatch of commissionMismatches) {
       const security = describeSecurity(mismatch.executions[0]!);
+      const isDistribution = mismatch.executions.some(execution =>
+        distributions.some(distribution => distribution.id === execution.id),
+      );
       errors.add(
         mismatch.charged === 0
-          ? `A commission of ${formatStringifyAmount(-mismatch.expected)} ${mismatch.currency} was reported for ${security}, but the charge has no fee transaction for it`
+          ? `A commission of ${formatStringifyAmount(-mismatch.expected)} ${mismatch.currency} was reported for ${security}, but the charge has no fee transaction for it${isDistribution ? ' — merge the charge holding the commission fee into this one' : ''}`
           : `Fee transactions for ${security} charge ${formatStringifyAmount(-mismatch.charged)} ${mismatch.currency}, but the bank reported a commission of ${formatStringifyAmount(-mismatch.expected)} ${mismatch.currency}`,
       );
     }
@@ -344,7 +512,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       let baseEntry: StrictLedgerProto;
       try {
         baseEntry = await ledgerEntryFromMainTransaction(
-          { ...transaction, source_reference: 'foreign_securities' },
+          { ...transaction, source_reference: FOREIGN_SECURITIES_ACCOUNT_NUMBER },
           injector,
           chargeId,
           charge.owner_id,
@@ -452,16 +620,45 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       });
     });
 
+    // executions the charge books directly
+    const distributionsPromise = distributions.length
+      ? injector
+          .get(FinancialAccountsProvider)
+          .getFinancialAccountByAccountNumberLoader.load(FOREIGN_SECURITIES_ACCOUNT_NUMBER)
+          .then(async securitiesAccount => {
+            for (const execution of distributions) {
+              const entry = await distributionLedgerEntry({
+                injector,
+                ownerId: charge.owner_id,
+                chargeId,
+                locality,
+                defaultLocalCurrency,
+                execution,
+                securitiesAccountId: securitiesAccount?.id,
+                taxCategories,
+                errors,
+                missingTaxCategories,
+              });
+              if (entry) {
+                distributionLedgerEntries.push(entry);
+                updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
+              }
+            }
+          })
+      : Promise.resolve();
+
     entriesPromises.push(
       ...mainTransactionsPromises,
       ...feeTransactionsPromises,
       expensesLedgerPromise,
+      distributionsPromise,
     );
 
     await Promise.all(entriesPromises);
 
     const records = [
       ...financialAccountLedgerEntries,
+      ...distributionLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
       ...miscExpensesLedgerEntries,
     ];

@@ -26,6 +26,7 @@ import type {
   IGetFilteredSecurityExecutionsQuery,
   IGetSecuritiesByKeysQuery,
   IGetSecurityExecutionsByBusinessIdsQuery,
+  IGetSecurityExecutionsByChargeIdsQuery,
   IGetSecurityExecutionsQuery,
   PaginatedSecurityExecutionsProto,
   SecurityExecutionRow,
@@ -98,7 +99,9 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     foreign_tax_value_settlement_currency,
     israel_tax_value_by_payments_settlement_currency,
     capital_tax_value_settlement_currency,
-    is_cancel_transaction
+    is_cancel_transaction,
+    trade_gross_value_nis,
+    personal_currency_rate
   FROM accounter_schema.poalim_securities_transactions
   WHERE security = ANY($securities!)
     AND bank_number = ANY($bankNumbers!)
@@ -159,6 +162,8 @@ const getSecurityExecutionsByBusinessIds = sql<IGetSecurityExecutionsByBusinessI
     t.israel_tax_value_by_payments_settlement_currency,
     t.capital_tax_value_settlement_currency,
     t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
     si.business_id AS security_business_id
   FROM accounter_schema.poalim_securities_transactions t
   INNER JOIN accounter_schema.security_identifiers si
@@ -227,6 +232,8 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
     t.israel_tax_value_by_payments_settlement_currency,
     t.capital_tax_value_settlement_currency,
     t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
     si.business_id AS security_business_id,
     COUNT(*) OVER () AS total_count
   FROM accounter_schema.poalim_securities_transactions t
@@ -241,6 +248,59 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
     AND ($toTradeDate::DATE IS NULL OR t.trade_date <= $toTradeDate)
   ORDER BY t.trade_date DESC, t.id DESC
   LIMIT $limit! OFFSET $offset!;`;
+
+/**
+ * The executions a charge books directly, through `charges_securities_executions` — those with no
+ * cash leg to pair with (stock distributions). Same column list as `getSecurityExecutions`, so the
+ * rows are `SecurityExecutionRow`s, plus the charge each belongs to.
+ *
+ * Tenant scoping is RLS, on both tables.
+ */
+const getSecurityExecutionsByChargeIds = sql<IGetSecurityExecutionsByChargeIdsQuery>`
+  SELECT
+    t.id,
+    t.owner_id,
+    t.security,
+    t.bank_number,
+    t.branch_number,
+    t.account_number,
+    t.trade_date,
+    t.value_date,
+    t.settlement_date,
+    t.payment_date,
+    t.trade_type,
+    t.transaction_type,
+    t.nv,
+    t.trade_price,
+    t.trade_gross_value_trade_currency,
+    t.net_value_trade_currency,
+    t.net_value_settlement_currency,
+    t.net_value_nis,
+    t.trade_currency,
+    t.settlement_currency,
+    t.trade_commission_value_trade_currency,
+    t.trade_commission_value_nis,
+    t.commissions_currency,
+    t.management_fees_value_trade_currency,
+    t.israe_tax_value,
+    t.nominal_profit_loss_nis,
+    t.real_profit_loss_nis,
+    t.payment_type,
+    t.symbol,
+    t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
+    l.charge_id
+  FROM accounter_schema.charges_securities_executions l
+  INNER JOIN accounter_schema.poalim_securities_transactions t
+    ON t.id = l.execution_id
+  WHERE l.charge_id = ANY($chargeIds!)
+  ORDER BY t.trade_date, t.id;`;
 
 /**
  * How many securities `includeCharges` will pair at once.
@@ -430,6 +490,34 @@ export class ForeignSecuritiesProvider {
       candidateExecutions.accountTuples,
     );
   }
+
+  private async batchExecutionsByChargeIds(
+    chargeIds: readonly string[],
+  ): Promise<SecurityExecutionRow[][]> {
+    const rows = await getSecurityExecutionsByChargeIds.run(
+      { chargeIds: [...new Set(chargeIds)] },
+      this.db,
+    );
+    const byChargeId = new Map<string, SecurityExecutionRow[]>();
+    for (const { charge_id, ...execution } of rows) {
+      const executions = byChargeId.get(charge_id);
+      if (executions) {
+        executions.push(execution);
+      } else {
+        byChargeId.set(charge_id, [execution]);
+      }
+    }
+    return chargeIds.map(chargeId => byChargeId.get(chargeId) ?? []);
+  }
+
+  /**
+   * The executions each charge books directly (see `charges_securities_executions`), oldest
+   * first. Executions paired with a charge's cash transactions are not among them — those are
+   * reached through the transactions, as everywhere else in this provider.
+   */
+  public executionsByChargeIdLoader = new DataLoader((chargeIds: readonly string[]) =>
+    this.batchExecutionsByChargeIds(chargeIds),
+  );
 
   /** Memo for {@link getChargeExecutionsByTransactionId}; the provider lives for one operation. */
   private chargeExecutionsCache = new Map<string, Promise<Map<string, SecurityExecutionRow>>>();
@@ -786,12 +874,15 @@ export class ForeignSecuritiesProvider {
 
   /**
    * The securities a charge's transactions reference, keyed off the security key each
-   * description carries. Keys with no ingested row are still returned, with a null
-   * `details`, so a stale or missing scrape is visible instead of silently dropping data.
+   * description carries, plus those of the executions the charge books directly (passed in as
+   * `linkedExecutions` — see `executionsByChargeIdLoader`). Keys with no ingested row are still
+   * returned, with a null `details`, so a stale or missing scrape is visible instead of silently
+   * dropping data.
    */
   public async getChargeSecurities(
     chargeId: string,
     ownerId: string,
+    linkedExecutions: readonly SecurityExecutionRow[] = [],
   ): Promise<ChargeSecurityProto[]> {
     const transactions =
       await this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId);
@@ -808,18 +899,34 @@ export class ForeignSecuritiesProvider {
       }
     }
 
-    if (transactionIdsByKey.size === 0) {
+    const ownLinkedExecutions = linkedExecutions.filter(
+      execution => execution.owner_id === ownerId,
+    );
+    const keySet = new Set([
+      ...transactionIdsByKey.keys(),
+      ...ownLinkedExecutions.map(execution => execution.security),
+    ]);
+    if (keySet.size === 0) {
       return [];
     }
 
-    const keys = [...transactionIdsByKey.keys()].sort();
+    const keys = [...keySet].sort();
     const [details, executionsByKey] = await Promise.all([
       this.securityByKeyLoader.loadMany(keys.map(securityKey => ({ ownerId, securityKey }))),
-      this.getMatchedExecutions(transactions),
+      transactionIdsByKey.size > 0
+        ? this.getMatchedExecutions(transactions)
+        : Promise.resolve(new Map<string, SecurityExecutionRow[]>()),
     ]);
 
     return keys.map((key, index) => {
       const detail = details[index];
+      // a linked execution can also be matched to a transaction after a merge; list it once
+      const executions = new Map(
+        [
+          ...(executionsByKey.get(key) ?? []),
+          ...ownLinkedExecutions.filter(execution => execution.security === key),
+        ].map(execution => [execution.id, execution]),
+      );
       return {
         id: `${chargeId}-${key}`,
         ownerId,
@@ -828,7 +935,7 @@ export class ForeignSecuritiesProvider {
         // the same as "not ingested" so one bad key can't blank the whole section.
         details: detail instanceof Error ? null : (detail as SecurityRow | null),
         transactionIds: transactionIdsByKey.get(key) ?? [],
-        executions: executionsByKey.get(key) ?? [],
+        executions: [...executions.values()],
       };
     });
   }

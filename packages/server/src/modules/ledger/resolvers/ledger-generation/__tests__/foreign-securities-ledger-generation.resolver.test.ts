@@ -218,6 +218,10 @@ type Scenario = {
   history?: SecurityExecutionRow[];
   /** Securities tax categories configured for the tenant; defaults to all of them */
   taxCategories?: Partial<Record<SecuritiesTaxCategoryKey, string>>;
+  /** Executions with no cash leg that the charge books directly */
+  distributions?: SecurityExecutionRow[];
+  /** Whether the foreign-securities account is missing from the tenant's accounts */
+  noSecuritiesAccount?: boolean;
 };
 
 function makeInjector(scenario: Scenario) {
@@ -226,6 +230,7 @@ function makeInjector(scenario: Scenario) {
       async () => new Map(Object.entries(scenario.executions ?? {})),
     ),
     getSecurityAccountHistory: vi.fn(async () => scenario.history ?? []),
+    executionsByChargeIdLoader: { load: vi.fn(async () => scenario.distributions ?? []) },
   };
 
   const injector = makeMockInjector(
@@ -267,7 +272,9 @@ function makeInjector(scenario: Scenario) {
           },
           getFinancialAccountByAccountNumberLoader: {
             load: async (accountNumber: string) =>
-              accountNumber === 'foreign_securities' ? { id: SECURITIES_ACCOUNT_ID } : null,
+              accountNumber === 'foreign_securities' && !scenario.noSecuritiesAccount
+                ? { id: SECURITIES_ACCOUNT_ID }
+                : null,
           },
         },
       ],
@@ -1325,5 +1332,214 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         creditLocal1: 25,
       }),
     ]);
+  });
+
+  describe('stock distributions booked directly', () => {
+    /** A dividend paid in shares: no cash leg, valued at units times price */
+    const distributionExecution = (overrides: Partial<SecurityExecutionRow> = {}) =>
+      buildExecution({
+        id: 'execution-distribution',
+        trade_type: 'הטבה חלוקת מניות',
+        payment_type: 'דיבידנד בעין',
+        nv: '10',
+        trade_price: '100',
+        trade_gross_value_trade_currency: '1000',
+        // the net value columns of a distribution hold its commission, not the shares' value
+        net_value_trade_currency: '0',
+        net_value_settlement_currency: '-7',
+        net_value_nis: '-25',
+        trade_gross_value_nis: String(1000 * USD_RATE),
+        personal_currency_rate: String(USD_RATE),
+        ...overrides,
+      });
+
+    const distributionRecord = {
+      currency: Currency.Usd,
+      debit1: SECURITIES_USD,
+      debitForeign1: usd(1000).foreign,
+      debitLocal1: usd(1000).local,
+      debit2: null,
+      debitForeign2: null,
+      debitLocal2: null,
+      credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+      creditForeign1: usd(1000).foreign,
+      creditLocal1: usd(1000).local,
+      credit2: null,
+      creditForeign2: null,
+      creditLocal2: null,
+    };
+
+    beforeEach(() => {
+      // a charge created for a distribution has no counterparty
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+    });
+
+    it('debits the securities account and credits foreign dividend income at the gross value', async () => {
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [],
+        distributions: [distributionExecution()],
+      });
+
+      expect(errors).toEqual([]);
+      expect(missingSecuritiesTaxCategories ?? []).toEqual([]);
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+      expect(records[0]!.description).toBe('Stock distribution: 10 × MOCK');
+    });
+
+    it('credits local dividend income for an Israeli issuer', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [
+          distributionExecution({ issuer_country_code: 'IL', isin: 'IL0000000001' }),
+        ],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        { ...distributionRecord, credit1: TAX_CATEGORIES.LOCAL_DIVIDEND_INCOME },
+      ]);
+    });
+
+    it('books at the ledger rate and reports a different bank rate', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ personal_currency_rate: '3.6' })],
+      });
+
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+      expect(errors).toEqual([
+        expect.stringMatching(/ledger rate of 3\.5 ILS per USD, but the bank priced it at 3\.6$/),
+      ]);
+    });
+
+    it('falls back to the bank\'s local value when it reports no rate', async () => {
+      const { errors } = await generate({
+        transactions: [],
+        distributions: [
+          distributionExecution({ personal_currency_rate: '-1', trade_gross_value_nis: '3700' }),
+        ],
+      });
+
+      expect(errors).toEqual([expect.stringContaining('but the bank priced it at 3.7')]);
+    });
+
+    it('does not book a distribution with withheld tax', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ foreign_tax_value_settlement_currency: '150' })],
+      });
+
+      expect(records).toEqual([]);
+      expect(errors).toEqual([
+        expect.stringContaining('booking tax withheld on a stock distribution is not supported yet'),
+      ]);
+    });
+
+    it('does not book a distribution other than a dividend in kind', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ payment_type: null })],
+      });
+
+      expect(records).toEqual([]);
+      expect(errors).toEqual([
+        expect.stringContaining('only stock distributions paid as a dividend in kind are booked'),
+      ]);
+    });
+
+    it('does not book a cancelled distribution', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ is_cancel_transaction: 'כן' })],
+      });
+
+      expect(records).toEqual([]);
+      expect(errors).toEqual([expect.stringContaining('cancellation of the stock distribution')]);
+    });
+
+    it('books a distribution the bank later cancelled, and says the reversal is not booked', async () => {
+      const distribution = distributionExecution();
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distribution],
+        history: [
+          distribution,
+          distributionExecution({ id: 'execution-cancellation', is_cancel_transaction: 'כן' }),
+        ],
+      });
+
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+      expect(errors).toEqual([
+        expect.stringContaining('reports a cancellation of the stock distribution'),
+      ]);
+    });
+
+    it('names a missing dividend income category', async () => {
+      const { FOREIGN_DIVIDEND_INCOME: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, missingSecuritiesTaxCategories } = await generate({
+        transactions: [],
+        distributions: [distributionExecution()],
+        taxCategories,
+      });
+
+      expect(records).toEqual([]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_INCOME']);
+    });
+
+    it('reports a missing securities account', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution()],
+        noSecuritiesAccount: true,
+      });
+
+      expect(records).toEqual([]);
+      expect(errors).toEqual([expect.stringContaining('foreign securities account')]);
+    });
+
+    describe('commission', () => {
+      const commissionFee = {
+        ...buildTransaction({
+          id: 'transaction-commission',
+          amount: '-25',
+          currency: Currency.Ils,
+          businessId: BANK_BUSINESS_ID,
+          isFee: true,
+          description: "ניעז עמ' תשלום FSEC PYMNT FEE",
+        }),
+        source_reference: '7654321',
+      };
+      const distributionWithCommission = () =>
+        distributionExecution({
+          commissions_currency: ILS_LABEL,
+          trade_commission_value_nis: '25',
+        });
+
+      it('asks to merge in the fee charge when the charge has no fee for the commission', async () => {
+        const { records, errors } = await generate({
+          transactions: [],
+          distributions: [distributionWithCommission()],
+        });
+
+        expect(records.map(summarize)).toEqual([distributionRecord]);
+        expect(errors).toEqual([
+          'A commission of 25.00 ILS was reported for MOCK (US0000000001), but the charge has no fee transaction for it — merge the charge holding the commission fee into this one',
+        ]);
+      });
+
+      it('books the merged fee and accepts the commission', async () => {
+        const { records, errors } = await generate({
+          transactions: [commissionFee],
+          distributions: [distributionWithCommission()],
+        });
+
+        expect(errors).toEqual([]);
+        expect(records.map(summarize)).toEqual([
+          distributionRecord,
+          expect.objectContaining({ debit1: FEES_TAX_CATEGORY_ID, credit1: BANK_ILS, creditLocal1: 25 }),
+        ]);
+      });
+    });
   });
 });

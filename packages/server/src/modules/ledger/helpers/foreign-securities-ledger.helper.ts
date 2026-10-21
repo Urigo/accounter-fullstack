@@ -1,9 +1,12 @@
 import type { SecuritiesTaxCategoryKey } from '../../../__generated__/types.js';
-import { Currency, SecurityTradeType } from '../../../shared/enums.js';
+import { Currency, SecurityPaymentType, SecurityTradeType } from '../../../shared/enums.js';
 import { formatCurrency } from '../../../shared/helpers/index.js';
 import type { StrictLedgerProto } from '../../../shared/types/index.js';
 import { executionAmountInCurrency } from '../../foreign-securities/helpers/match-security-executions.helper.js';
-import { tryToSecurityTradeType } from '../../foreign-securities/helpers/security-execution-enums.helper.js';
+import {
+  paymentTypeToRaw,
+  tryToSecurityTradeType,
+} from '../../foreign-securities/helpers/security-execution-enums.helper.js';
 import { extractTransactionSecurityKeys } from '../../foreign-securities/helpers/security-key.helper.js';
 import type { SecurityLocality } from '../../foreign-securities/helpers/security-locality.helper.js';
 import type { SecurityExecutionRow } from '../../foreign-securities/types.js';
@@ -37,6 +40,23 @@ export function classifySecurityExecution(
     default:
       return 'OTHER';
   }
+}
+
+/**
+ * A stock distribution paid as a dividend in kind: shares received instead of cash, booked as
+ * dividend income at their value.
+ *
+ * Only this kind of distribution is booked. A bonus issue or a split of the same company is not
+ * income — it spreads the cost of the existing holding over more units — and none has been seen
+ * yet, so it is left to be handled when one is.
+ */
+export function isDividendInKindDistribution(
+  execution: Pick<SecurityExecutionRow, 'trade_type' | 'payment_type'>,
+): boolean {
+  return (
+    tryToSecurityTradeType(execution.trade_type) === SecurityTradeType.StockDistribution &&
+    execution.payment_type === paymentTypeToRaw[SecurityPaymentType.DividendInKind]
+  );
 }
 
 export const INCOME_TAX_CATEGORY_KEYS = {
@@ -73,12 +93,12 @@ export type WithheldTaxExecution = Pick<
   | 'capital_tax_value_settlement_currency'
 >;
 
-function toAmount(value: string | null | undefined): number {
+export function toAmount(value: string | null | undefined): number {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function currencyOfLabel(label: string | null): Currency | null {
+export function currencyOfLabel(label: string | null): Currency | null {
   return label?.trim() ? formatCurrency(label, true) : null;
 }
 
@@ -378,4 +398,133 @@ export function validateSecurityCommissions<TExecution extends CommissionExecuti
   return [...expectedByGroup.values()].filter(
     group => Math.abs(group.expected - group.charged) > TAX_TOLERANCE,
   );
+}
+
+export type DistributionExecution = Pick<
+  SecurityExecutionRow,
+  | 'id'
+  | 'security'
+  | 'symbol'
+  | 'isin'
+  | 'nv'
+  | 'trade_date'
+  | 'value_date'
+  | 'trade_currency'
+  | 'trade_gross_value_trade_currency'
+  | 'trade_gross_value_nis'
+  | 'personal_currency_rate'
+  | 'foreign_tax_value_settlement_currency'
+  | 'israel_tax_value_by_payments_settlement_currency'
+  | 'capital_tax_value_settlement_currency'
+>;
+
+/**
+ * The tax the bank reports withheld on a distribution, read straight off its tax columns, as
+ * `getWithheldTax` reads them: the capital tax column restates the Israeli one, so it only stands
+ * in when that is empty.
+ *
+ * Not `getWithheldTax` itself: a distribution has no cash leg to read the tax in, and its net value
+ * columns hold the commission rather than what was received, so gross minus net says nothing.
+ */
+export function getDistributionWithheldTax(execution: DistributionExecution): number {
+  const israelTax =
+    toAmount(execution.israel_tax_value_by_payments_settlement_currency) ||
+    toAmount(execution.capital_tax_value_settlement_currency);
+  return toAmount(execution.foreign_tax_value_settlement_currency) + israelTax;
+}
+
+/** The date a distribution is booked on: its value date, or the trade date when there is none */
+export function distributionValueDate(execution: DistributionExecution) {
+  return execution.value_date ?? execution.trade_date;
+}
+
+/**
+ * A dividend in kind: the shares received are debited to the securities account and credited to
+ * dividend income, at their gross value in the trade currency and the ledger's rate.
+ *
+ * The gross value, not the net: on a distribution the net value columns hold the commission the
+ * bank charged for it, not the value of the shares.
+ */
+export function buildDistributionEntry(params: {
+  execution: DistributionExecution;
+  /** The securities account's tax category in the trade currency */
+  securitiesTaxCategoryId: string;
+  incomeTaxCategoryId: string;
+  currency: Currency;
+  defaultLocalCurrency: Currency;
+  /** The ledger's rate from the trade currency to the local one; 1 for a local-currency trade */
+  rate: number;
+  ownerId: string;
+  chargeId: string;
+}): StrictLedgerProto {
+  const { execution, currency, defaultLocalCurrency, rate } = params;
+  const gross = toAmount(execution.trade_gross_value_trade_currency);
+  if (gross <= 0) {
+    throw new LedgerError(
+      `The stock distribution of ${execution.symbol ?? execution.security} on ${execution.trade_date} reports no value for the shares received`,
+    );
+  }
+  const isForeign = currency !== defaultLocalCurrency;
+  const local = isForeign ? gross * rate : gross;
+  const valueDate = distributionValueDate(execution);
+  const name = execution.symbol?.trim() || execution.security;
+
+  return {
+    id: execution.id,
+    invoiceDate: execution.trade_date,
+    valueDate,
+    exchangeRateDate: valueDate,
+    currency,
+    debitAccountID1: params.securitiesTaxCategoryId,
+    debitAmount1: isForeign ? gross : undefined,
+    localCurrencyDebitAmount1: local,
+    creditAccountID1: params.incomeTaxCategoryId,
+    creditAmount1: isForeign ? gross : undefined,
+    localCurrencyCreditAmount1: local,
+    description: `Stock distribution: ${Number(execution.nv ?? 0)} × ${name}`,
+    reference: execution.security,
+    isCreditorCounterparty: true,
+    ownerId: params.ownerId,
+    currencyRate: isForeign ? rate : undefined,
+    chargeId: params.chargeId,
+  };
+}
+
+/**
+ * How far the ledger's rate may be from the bank's before it is reported. The Bank of Israel
+ * publishes three decimals, and so does the bank's own rate, so any difference at that precision
+ * means the two used different rates.
+ */
+const RATE_TOLERANCE = 0.0005;
+
+/**
+ * The bank's rate from the trade currency to the local one, as it priced a distribution: its own
+ * rate column when reported (it writes -1 for "no rate"), or else its local value over its
+ * trade-currency value. Null when neither is usable.
+ */
+export function getBankDistributionRate(execution: DistributionExecution): number | null {
+  const personalRate = toAmount(execution.personal_currency_rate);
+  if (personalRate > 0) {
+    return personalRate;
+  }
+  const gross = toAmount(execution.trade_gross_value_trade_currency);
+  const grossLocal = toAmount(execution.trade_gross_value_nis);
+  return gross > 0 && grossLocal > 0 ? grossLocal / gross : null;
+}
+
+/**
+ * Whether the ledger priced a foreign-currency distribution at a different rate than the bank
+ * did. Rates are compared rather than local amounts: the bank works its local value out from the
+ * unrounded units times price, so its amount differs from gross times rate by a few agorot even
+ * when the rates agree.
+ */
+export function getBankRateMismatch(
+  execution: DistributionExecution,
+  ledgerRate: number,
+): { ledgerRate: number; bankRate: number } | null {
+  const bankRate = getBankDistributionRate(execution);
+  if (bankRate == null || Math.abs(bankRate - ledgerRate) < RATE_TOLERANCE) {
+    return null;
+  }
+  return { ledgerRate, bankRate };
 }

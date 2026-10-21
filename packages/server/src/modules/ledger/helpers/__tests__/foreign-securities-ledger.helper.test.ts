@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { Currency } from '../../../../shared/enums.js';
 import type { StrictLedgerProto } from '../../../../shared/types/index.js';
 import {
+  buildDistributionEntry,
   buildIncomeEntry,
   buildRedemptionEntry,
   classifySecurityExecution,
+  getBankRateMismatch,
+  getDistributionWithheldTax,
   getExpectedCommissionCharge,
   getWithheldTax,
+  isDividendInKindDistribution,
   validateSecurityCommissions,
   type CommissionExecution,
+  type DistributionExecution,
   type CommissionFeeTransaction,
   type WithheldTaxExecution,
 } from '../foreign-securities-ledger.helper.js';
@@ -523,5 +528,168 @@ describe('validateSecurityCommissions', () => {
         [commissionFee({ amount: '-20.00' })],
       ),
     ).toEqual([]);
+  });
+});
+
+describe('stock distributions', () => {
+  function distribution(overrides: Partial<DistributionExecution> = {}): DistributionExecution {
+    return {
+      id: 'execution-distribution',
+      security: '7654321',
+      symbol: 'MOCK',
+      isin: 'US0000000001',
+      nv: '10',
+      trade_date: '2025-03-12',
+      value_date: '2025-03-13',
+      trade_currency: USD_LABEL,
+      trade_gross_value_trade_currency: '1000',
+      trade_gross_value_nis: '3500',
+      personal_currency_rate: '3.5',
+      foreign_tax_value_settlement_currency: '0',
+      israel_tax_value_by_payments_settlement_currency: '0',
+      capital_tax_value_settlement_currency: '0',
+      ...overrides,
+    };
+  }
+
+  describe('isDividendInKindDistribution', () => {
+    it.each([
+      ['הטבה חלוקת מניות', 'דיבידנד בעין', true],
+      ['הטבה חלוקת מניות', null, false],
+      ['הטבה חלוקת מניות', 'איחוד מניות', false],
+      ['דבידנד תשלום', 'דיבידנד', false],
+      ['unknown', 'דיבידנד בעין', false],
+    ])('trade type %s with payment type %s → %s', (tradeType, paymentType, expected) => {
+      expect(
+        isDividendInKindDistribution({ trade_type: tradeType, payment_type: paymentType }),
+      ).toBe(expected);
+    });
+  });
+
+  describe('getDistributionWithheldTax', () => {
+    it('is zero when nothing was withheld', () => {
+      expect(getDistributionWithheldTax(distribution())).toBe(0);
+    });
+
+    it('adds foreign tax to Israeli tax, counting the capital tax restatement once', () => {
+      expect(
+        getDistributionWithheldTax(
+          distribution({
+            foreign_tax_value_settlement_currency: '100',
+            israel_tax_value_by_payments_settlement_currency: '50',
+            capital_tax_value_settlement_currency: '50',
+          }),
+        ),
+      ).toBe(150);
+    });
+
+    it('falls back to the capital tax column when the Israeli one is empty', () => {
+      expect(
+        getDistributionWithheldTax(distribution({ capital_tax_value_settlement_currency: '40' })),
+      ).toBe(40);
+    });
+  });
+
+  describe('buildDistributionEntry', () => {
+    const params = {
+      securitiesTaxCategoryId: SECURITIES_USD,
+      incomeTaxCategoryId: DIVIDEND_INCOME,
+      defaultLocalCurrency: Currency.Ils,
+      ownerId: 'owner-1',
+      chargeId: 'charge-1',
+    };
+
+    it('debits the securities account and credits income at the gross value', () => {
+      const entry = buildDistributionEntry({
+        ...params,
+        execution: distribution(),
+        currency: Currency.Usd,
+        rate: RATE,
+      });
+
+      expect(entry).toMatchObject({
+        id: 'execution-distribution',
+        invoiceDate: '2025-03-12',
+        valueDate: '2025-03-13',
+        currency: Currency.Usd,
+        debitAccountID1: SECURITIES_USD,
+        debitAmount1: 1000,
+        localCurrencyDebitAmount1: 1000 * RATE,
+        creditAccountID1: DIVIDEND_INCOME,
+        creditAmount1: 1000,
+        localCurrencyCreditAmount1: 1000 * RATE,
+        isCreditorCounterparty: true,
+        reference: '7654321',
+        description: 'Stock distribution: 10 × MOCK',
+      });
+    });
+
+    it('books a local-currency distribution with no foreign amounts', () => {
+      const entry = buildDistributionEntry({
+        ...params,
+        execution: distribution({ trade_currency: ILS_LABEL }),
+        currency: Currency.Ils,
+        rate: 1,
+      });
+
+      expect(entry.debitAmount1).toBeUndefined();
+      expect(entry.creditAmount1).toBeUndefined();
+      expect(entry.localCurrencyDebitAmount1).toBe(1000);
+      expect(entry.localCurrencyCreditAmount1).toBe(1000);
+    });
+
+    it('books on the trade date when there is no value date', () => {
+      const entry = buildDistributionEntry({
+        ...params,
+        execution: distribution({ value_date: null }),
+        currency: Currency.Usd,
+        rate: RATE,
+      });
+
+      expect(entry.valueDate).toBe('2025-03-12');
+    });
+
+    it('refuses a distribution that reports no value', () => {
+      expect(() =>
+        buildDistributionEntry({
+          ...params,
+          execution: distribution({ trade_gross_value_trade_currency: '0' }),
+          currency: Currency.Usd,
+          rate: RATE,
+        }),
+      ).toThrow(LedgerError);
+    });
+  });
+
+  describe('getBankRateMismatch', () => {
+    it('accepts a ledger rate equal to the bank rate', () => {
+      expect(getBankRateMismatch(distribution(), 3.5)).toBeNull();
+    });
+
+    it('accepts a difference below the published precision', () => {
+      expect(getBankRateMismatch(distribution(), 3.5004)).toBeNull();
+    });
+
+    it('reports a different rate', () => {
+      expect(getBankRateMismatch(distribution(), 3.51)).toEqual({ ledgerRate: 3.51, bankRate: 3.5 });
+    });
+
+    it('falls back to the local value over the trade value when the bank reports no rate', () => {
+      expect(
+        getBankRateMismatch(
+          distribution({ personal_currency_rate: '-1', trade_gross_value_nis: '3600' }),
+          3.5,
+        ),
+      ).toEqual({ ledgerRate: 3.5, bankRate: 3.6 });
+    });
+
+    it('has nothing to compare when the bank reports neither', () => {
+      expect(
+        getBankRateMismatch(
+          distribution({ personal_currency_rate: null, trade_gross_value_nis: null }),
+          3.5,
+        ),
+      ).toBeNull();
+    });
   });
 });

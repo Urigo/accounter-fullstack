@@ -375,7 +375,7 @@ export function ledgerProtoToRecordsConverter(
 
 export async function getFinancialAccountTaxCategoryId(
   injector: Injector,
-  transaction: IGetTransactionsByChargeIdsResult,
+  transaction: Pick<IGetTransactionsByChargeIdsResult, 'account_id' | 'currency'>,
 ): Promise<string> {
   const taxCategory = await injector
     .get(TaxCategoriesProvider)
