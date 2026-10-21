@@ -18,3 +18,5 @@
   longer save the same invoice twice.
 - The Deel business is read from the Deel provider integration instead of being hard-coded, by
   both the sync and ledger generation.
+- A payment method type Deel added after the schema was written no longer fails the whole receipts
+  list, and schema mismatches are reported once per field with the values Deel actually sent.

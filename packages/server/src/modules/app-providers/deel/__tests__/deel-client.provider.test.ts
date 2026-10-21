@@ -2,7 +2,9 @@ import { GraphQLError } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Environment } from '../../../../shared/types/index.js';
 import type { ProviderCredentialsProvider } from '../../../provider-credentials/providers/provider-credentials.provider.js';
-import { DEEL_MAX_ATTEMPTS, DeelClientProvider } from '../deel-client.provider.js';
+import z from 'zod';
+import { DEEL_MAX_ATTEMPTS, DeelClientProvider, formatZodIssues } from '../deel-client.provider.js';
+import { paymentReceiptsSchema } from '../schemas.js';
 
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
@@ -149,7 +151,7 @@ describe('DeelClientProvider', () => {
 
     const cause = (error.cause as Error).message;
     expect(cause).toContain('Deel API GET /payments/r1/breakdown returned an unexpected payload');
-    expect(cause).toContain('data[0].bonus');
+    expect(cause).toContain('- data[*].bonus: Invalid input: expected "0.00" — received "5.00"');
   });
 
   it("reports Deel's own error messages", async () => {
@@ -185,5 +187,52 @@ describe('DeelClientProvider', () => {
       expect(url.searchParams.get('limit')).toBe('50');
       expect(url.searchParams.get('offset')).toBe('0');
     });
+  });
+});
+
+describe('formatZodIssues', () => {
+  const schema = z.object({
+    rows: z.array(z.object({ kind: z.enum(['a', 'b']), amount: z.string() })),
+  });
+
+  it('reports a field broken in every row once, with a count and the received values', () => {
+    const result = schema.safeParse(
+      {
+        rows: [
+          { kind: 'new_kind', amount: '1' },
+          { kind: 'new_kind', amount: '2' },
+          { kind: 'other', amount: 3 },
+        ],
+      },
+      { reportInput: true },
+    );
+    expect(result.success).toBe(false);
+
+    const message = formatZodIssues(result.error!.issues);
+
+    expect(message.split('\n')).toEqual([
+      '- rows[*].kind: Invalid option: expected one of "a"|"b" (3×) — received "new_kind", "other"',
+      '- rows[*].amount: Invalid input: expected string, received number — received 3',
+    ]);
+  });
+
+  it('caps the number of reported kinds', () => {
+    const wide = z.object(
+      Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`f${i}`, z.string()])),
+    );
+    const result = wide.safeParse({}, { reportInput: true });
+
+    const lines = formatZodIssues(result.error!.issues).split('\n');
+
+    expect(lines).toHaveLength(11);
+    expect(lines.at(-1)).toBe('- …and 2 more');
+  });
+});
+
+describe('paymentReceiptsSchema', () => {
+  it('accepts a payment method type Deel added after the schema was written', () => {
+    expect(
+      paymentReceiptsSchema.shape.payment_method.safeParse({ type: 'some_new_method' }).success,
+    ).toBe(true);
   });
 });
