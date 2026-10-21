@@ -249,7 +249,7 @@ __metadata:
     "@opentelemetry/api": "npm:1.9.1"
     "@opentelemetry/auto-instrumentations-node": "npm:0.81.2"
     "@opentelemetry/exporter-trace-otlp-http": "npm:0.223.0"
-    "@opentelemetry/resources": "npm:2.12.0"
+    "@opentelemetry/resources": "npm:3.0.0"
     "@opentelemetry/sdk-node": "npm:0.223.0"
     "@opentelemetry/semantic-conventions": "npm:1.43.0"
     "@types/node": "npm:25.9.9"
@@ -340,7 +340,7 @@ __metadata:
     "@opentelemetry/api": "npm:1.9.1"
     "@opentelemetry/auto-instrumentations-node": "npm:0.81.2"
     "@opentelemetry/exporter-trace-otlp-http": "npm:0.223.0"
-    "@opentelemetry/resources": "npm:2.12.0"
+    "@opentelemetry/resources": "npm:3.0.0"
     "@opentelemetry/sdk-node": "npm:0.223.0"
     "@opentelemetry/semantic-conventions": "npm:1.43.0"
     "@pgtyped/cli": "npm:2.4.3"
@@ -5501,6 +5501,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@opentelemetry/core@npm:3.0.0":
+  version: 3.0.0
+  resolution: "@opentelemetry/core@npm:3.0.0"
+  dependencies:
+    "@opentelemetry/semantic-conventions": "npm:^1.29.0"
+  peerDependencies:
+    "@opentelemetry/api": ">=1.10.0 <1.11.0"
+  checksum: 10c0/339512e305d73e1625e6a90ad180f2e2c703080e8a7bf55e8506ccfd457ec22e92a061189d7756e4ff442051965fbaf9fde55cfe677ee531fe224edbfff5bf92
+  languageName: node
+  linkType: hard
+
 "@opentelemetry/exporter-logs-otlp-grpc@npm:0.223.0":
   version: 0.223.0
   resolution: "@opentelemetry/exporter-logs-otlp-grpc@npm:0.223.0"
@@ -6329,6 +6340,18 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ">=1.3.0 <1.10.0"
   checksum: 10c0/ef3f8470b9ada8406fa4e4a0f002ca31537c1b7fe61f06102fb9023c97a56b0d978c687dd392539f1e005c20f0467f6a1c66f9c43e8d31c2900023164529f2bc
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/resources@npm:3.0.0":
+  version: 3.0.0
+  resolution: "@opentelemetry/resources@npm:3.0.0"
+  dependencies:
+    "@opentelemetry/core": "npm:3.0.0"
+    "@opentelemetry/semantic-conventions": "npm:^1.29.0"
+  peerDependencies:
+    "@opentelemetry/api": ">=1.10.0 <1.11.0"
+  checksum: 10c0/bf53a6d3b5fd23dacc5e97951f9a7a077bc634cf7a1b96d380ed7844563b11ede3d922045957d160e7e7c8793a4180383547ea8e9d6a5d8c3de84752bfc2d85e
   languageName: node
   linkType: hard
 
