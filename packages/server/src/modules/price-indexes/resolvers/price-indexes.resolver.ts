@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { YEAR_MONTH_REGEX } from '../../../shared/constants.js';
 import { SuperAdminProvider } from '../../auth/providers/super-admin.provider.js';
 import {
   CPI_INDEX_CODE,
@@ -19,8 +20,6 @@ type PriceIndexType = 'CONSUMER_PRICE_INDEX';
 const INDEX_CODES: Record<PriceIndexType, number> = {
   CONSUMER_PRICE_INDEX: CPI_INDEX_CODE,
 };
-
-const YEAR_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 function indexTypeByCode(indexCode: number): PriceIndexType {
   const entry = Object.entries(INDEX_CODES).find(([, code]) => code === indexCode);
@@ -50,7 +49,7 @@ function toGraphQLValue(
 export const priceIndexesResolvers: PriceIndexesModule.Resolvers = {
   Query: {
     priceIndexValues: async (_, { type, fromPeriod, toPeriod }, { injector }) => {
-      if (!YEAR_MONTH_PATTERN.test(fromPeriod) || !YEAR_MONTH_PATTERN.test(toPeriod)) {
+      if (!YEAR_MONTH_REGEX.test(fromPeriod) || !YEAR_MONTH_REGEX.test(toPeriod)) {
         throw new GraphQLError('Periods must be formatted as YYYY-MM', {
           extensions: { code: 'BAD_USER_INPUT' },
         });
