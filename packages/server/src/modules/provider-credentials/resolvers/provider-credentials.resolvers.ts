@@ -1,3 +1,5 @@
+import type { Injector } from 'graphql-modules';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import {
   ProviderCredentialsProvider,
   type ProviderKey as DbProviderKey,
@@ -14,6 +16,13 @@ const GQL_TO_DB: Record<ProviderCredentialsModule.ProviderKey, DbProviderKey> = 
   DEEL: 'deel',
 };
 
+async function assertBusinessExists(injector: Injector, businessId: string): Promise<void> {
+  const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(businessId);
+  if (!business) {
+    throw new Error(`Business [${businessId}] not found`);
+  }
+}
+
 export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers = {
   Query: {
     providerCredentials: async (_parent, _args, { injector }) => {
@@ -24,6 +33,7 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
           id: DB_TO_GQL[s.provider],
           provider: DB_TO_GQL[s.provider],
           configuredAt: new Date(s.configuredAt),
+          businessId: s.businessId,
         }));
     },
   },
@@ -53,12 +63,15 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
       }
     },
 
-    setDeelCredentials: async (_parent, { apiToken }, { injector }) => {
+    setDeelCredentials: async (_parent, { apiToken, businessId }, { injector }) => {
       // TODO: Ensure 'apiToken' is added to the logging redaction list if structured logging is introduced
       try {
+        if (businessId) {
+          await assertBusinessExists(injector, businessId);
+        }
         const updatedAt = await injector
           .get(ProviderCredentialsProvider)
-          .setCredentials('deel', { apiToken });
+          .setCredentials('deel', { apiToken }, { businessId });
 
         if (!updatedAt) {
           throw new Error('Failed to save Deel credentials');
@@ -73,6 +86,26 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
       } catch (e) {
         const message = (e as Error)?.message ?? 'Failed to save Deel credentials';
         console.error('setDeelCredentials error:', e);
+        return { __typename: 'CommonError' as const, message };
+      }
+    },
+
+    setProviderBusiness: async (_parent, { provider, businessId }, { injector }) => {
+      try {
+        await assertBusinessExists(injector, businessId);
+        const updatedAt = await injector
+          .get(ProviderCredentialsProvider)
+          .setProviderBusiness(GQL_TO_DB[provider], businessId);
+
+        return {
+          __typename: 'ProviderCredentialResult' as const,
+          id: provider,
+          provider,
+          configuredAt: new Date(updatedAt),
+        };
+      } catch (e) {
+        const message = (e as Error)?.message ?? 'Failed to set provider business';
+        console.error('setProviderBusiness error:', e);
         return { __typename: 'CommonError' as const, message };
       }
     },
