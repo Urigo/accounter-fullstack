@@ -1,0 +1,71 @@
+{
+  "month": [
+    {
+      "code": 120010,
+      "name": "Consumer Price Index - General",
+      "date": [
+        {
+          "year": 2025,
+          "percent": 0.0,
+          "percentYear": 3.4,
+          "currBase": {
+            "baseDesc": "Average 2024",
+            "value": 101.5
+          },
+          "prevBase": null,
+          "month": 2,
+          "monthDesc": "February"
+        },
+        {
+          "year": 2025,
+          "percent": 0.6,
+          "percentYear": 3.8,
+          "currBase": {
+            "baseDesc": "Average 2024",
+            "value": 101.5
+          },
+          "prevBase": null,
+          "month": 1,
+          "monthDesc": "January"
+        },
+        {
+          "year": 2024,
+          "percent": -0.3,
+          "percentYear": 3.2,
+          "currBase": {
+            "baseDesc": "Average 2022",
+            "value": 108.4
+          },
+          "prevBase": null,
+          "month": 12,
+          "monthDesc": "December"
+        },
+        {
+          "year": 2024,
+          "percent": -0.4,
+          "percentYear": 3.4,
+          "currBase": {
+            "baseDesc": "Average 2022",
+            "value": 108.7
+          },
+          "prevBase": null,
+          "month": 11,
+          "monthDesc": "November"
+        }
+      ]
+    }
+  ],
+  "quarter": null,
+  "paging": {
+    "total_items": 4,
+    "page_size": 100,
+    "current_page": 1,
+    "last_page": 1,
+    "first_url": "https://api.cbs.gov.il//index/data/price?Page=1&PageSize=100&id=120010&format=json&download=false&lang=en&startPeriod=11-2024&endPeriod=02-2025",
+    "previous_url": null,
+    "current_url": "https://api.cbs.gov.il//index/data/price?Page=1&PageSize=100&id=120010&format=json&download=false&lang=en&startPeriod=11-2024&endPeriod=02-2025",
+    "next_url": null,
+    "last_url": "https://api.cbs.gov.il//index/data/price?Page=1&PageSize=100&id=120010&format=json&download=false&lang=en&startPeriod=11-2024&endPeriod=02-2025",
+    "base_url": null
+  }
+}

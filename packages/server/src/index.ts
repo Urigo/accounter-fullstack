@@ -11,9 +11,11 @@ import { env } from './environment.js';
 import { cleanupExpiredInvitations, type Logger } from './jobs/cleanup-expired-invitations.js';
 import { scheduleDailyAtUtc } from './jobs/utils.js';
 import { createGraphQLApp } from './modules-app.js';
+import { CbsPriceIndexClient } from './modules/app-providers/cbs-price-index-client.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
 import { startTenantDbClientWatchdog } from './modules/app-providers/tenant-db-client.js';
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
+import { PriceIndexSyncProvider } from './modules/price-indexes/providers/price-index-sync.provider.js';
 import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
@@ -25,6 +27,10 @@ const { Pool } = pg;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CLEANUP_SCHEDULE_HOUR_UTC = 2;
 const CLEANUP_SCHEDULE_MINUTE_UTC = 0;
+// CBS publishes price indexes at 18:30 Israel time (14:00 on Fridays); 17:00 UTC is after both in
+// either DST state
+const PRICE_INDEX_SYNC_HOUR_UTC = 17;
+const PRICE_INDEX_SYNC_MINUTE_UTC = 0;
 
 async function main() {
   await startTelemetry();
@@ -139,6 +145,33 @@ async function main() {
     });
   }
 
+  const priceIndexSync = new PriceIndexSyncProvider(dbProvider, new CbsPriceIndexClient());
+  const runPriceIndexSync = async () => {
+    try {
+      const results = await priceIndexSync.sync();
+      logger.info('Price index sync complete', results);
+    } catch (error) {
+      logger.error('Price index sync failed', { error });
+    }
+  };
+  const priceIndexSchedule = env.priceIndexSync.enabled
+    ? scheduleDailyAtUtc(
+        PRICE_INDEX_SYNC_HOUR_UTC,
+        PRICE_INDEX_SYNC_MINUTE_UTC,
+        DAY_IN_MS,
+        runPriceIndexSync,
+      )
+    : null;
+
+  if (priceIndexSchedule) {
+    logger.info('Scheduled price index sync job', {
+      cron: `${PRICE_INDEX_SYNC_MINUTE_UTC} ${PRICE_INDEX_SYNC_HOUR_UTC} * * *`,
+      timezone: 'UTC',
+    });
+    // Backfills a fresh database and catches up after downtime; no-op when nothing new is due
+    void runPriceIndexSync();
+  }
+
   const { application, transformedSchema } = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
@@ -197,6 +230,7 @@ async function main() {
     });
 
     cleanupSchedule?.cancel();
+    priceIndexSchedule?.cancel();
     dbClientWatchdog.stop();
     poolMonitor?.stop();
 
