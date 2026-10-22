@@ -29,8 +29,12 @@ import { Badge } from '../../ui/badge.js';
           exchange
           currencyCode
           isEtf
-          isForeign
           asOfDate
+        }
+        # Locality judged against the tenant — the reference row's own flag is the bank's
+        securityBusiness {
+          id
+          isForeign
         }
         executions {
           id
@@ -69,7 +73,7 @@ export const ForeignSecuritiesInfo = ({ chargeProps }: Props): ReactNode => {
 };
 
 const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactElement => {
-  const { details } = security;
+  const { details, securityBusiness } = security;
 
   return (
     <div className="flex flex-col gap-2">
@@ -86,7 +90,7 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
             <Badge variant="outline">{details.itemType}</Badge>
             {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
             {details.isEtf && <Badge variant="outline">ETF</Badge>}
-            {details.isForeign && <Badge variant="outline">Foreign</Badge>}
+            {securityBusiness?.isForeign && <Badge variant="outline">Foreign</Badge>}
           </div>
           <div className="text-xs text-gray-400">
             Key {security.securityKey} · reference data as of {formatSecurityDate(details.asOfDate)}
