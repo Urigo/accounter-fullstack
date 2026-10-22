@@ -17,7 +17,7 @@ export default gql`
       @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
-  " the tax categories securities income, withheld tax and redemption gains are booked to "
+  " the tax categories securities income, withheld tax and sale and redemption gains are booked to "
   enum SecuritiesTaxCategoryKey {
     FOREIGN_SECURITIES_FEES
     FOREIGN_DIVIDEND_INCOME
@@ -30,6 +30,8 @@ export default gql`
     LOCAL_BOND_WITHHOLDING_TAX
     FOREIGN_SECURITIES_SALE_GAIN
     FOREIGN_SECURITIES_SALE_LOSS
+    FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN
+    FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS
   }
 
   " the tenant's securities ledger configuration "
