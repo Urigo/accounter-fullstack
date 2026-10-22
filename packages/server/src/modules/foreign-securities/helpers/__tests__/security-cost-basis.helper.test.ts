@@ -12,6 +12,9 @@ import {
  */
 
 const USD_LABEL = 'דולר ארה"ב';
+/** Two of the owner's portfolio accounts, at the same bank and branch */
+const OLD_ACCOUNT = 111111;
+const NEW_ACCOUNT = 222222;
 const EUR_LABEL = 'אירו';
 
 function execution(overrides: Partial<CostBasisExecution> & Pick<CostBasisExecution, 'id'>) {
@@ -27,6 +30,9 @@ function execution(overrides: Partial<CostBasisExecution> & Pick<CostBasisExecut
     is_cancel_transaction: 'לא',
     payment_type: null,
     trade_gross_value_trade_currency: null,
+    bank_number: 12,
+    branch_number: 600,
+    account_number: OLD_ACCOUNT,
     ...overrides,
   } satisfies CostBasisExecution;
 }
@@ -351,11 +357,13 @@ describe('calculateFifoCostBasis', () => {
   });
 
   describe('lots, and transfers between the owner accounts', () => {
+    /** Out of the old account, or into the new one unless another account is given */
     const transfer = (
       id: string,
       tradeDate: TimelessDateString,
       units: number,
       direction: 'in' | 'out',
+      accountNumber = direction === 'in' ? NEW_ACCOUNT : OLD_ACCOUNT,
     ) =>
       execution({
         id,
@@ -364,36 +372,21 @@ describe('calculateFifoCostBasis', () => {
         nv: String(units),
         net_value_trade_currency: '0',
         net_value_settlement_currency: '0',
+        account_number: accountNumber,
       });
 
-    it('lists the costed lots the units were drawn from, with their dates', () => {
+    it('lists the costed lots the units were drawn from, with their acquisitions', () => {
       const target = sell('s1', '2025-03-01', 15, 1800);
 
       const result = calculateFifoCostBasis(
-        [
-          { ...buy('b1', '2024-01-10', 10, 1000), value_date: '2024-01-11' },
-          { ...buy('b2', '2024-02-10', 10, 1200), settlement_date: '2024-02-12' },
-          target,
-        ],
+        [buy('b1', '2024-01-10', 10, 1000), buy('b2', '2024-02-10', 10, 1200), target],
         target,
         Currency.Usd,
       );
 
       expect(result.lots).toEqual([
-        {
-          executionId: 'b1',
-          tradeDate: '2024-01-10',
-          bookedDate: '2024-01-11',
-          units: 10,
-          costForeign: 1000,
-        },
-        {
-          executionId: 'b2',
-          tradeDate: '2024-02-10',
-          bookedDate: '2024-02-12',
-          units: 5,
-          costForeign: 600,
-        },
+        { executionId: 'b1', tradeDate: '2024-01-10', units: 10, costForeign: 1000 },
+        { executionId: 'b2', tradeDate: '2024-02-10', units: 5, costForeign: 600 },
       ]);
     });
 
@@ -453,6 +446,60 @@ describe('calculateFifoCostBasis', () => {
 
       expect(result.unknownCostUnits).toBe(0);
       expect(result.costForeign).toBeCloseTo(1000, 6);
+    });
+
+    it('does not take an unrelated, later transfer in for the arrival of a transfer out', () => {
+      // units given away in March; months later, units of the same security arrive from elsewhere
+      const target = sell('s1', '2025-03-01', 5, 600);
+
+      const result = calculateFifoCostBasis(
+        [
+          buy('b1', '2024-01-10', 5, 500),
+          transfer('out', '2024-03-01', 5, 'out'),
+          transfer('in', '2024-09-01', 5, 'in'),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.unknownCostUnits).toBe(5);
+      expect(result.lots).toEqual([]);
+    });
+
+    it('does not pair transfers of different units', () => {
+      const target = sell('s1', '2025-03-01', 10, 1100);
+
+      const result = calculateFifoCostBasis(
+        [
+          buy('b1', '2024-01-10', 10, 1000),
+          transfer('out', '2024-06-01', 10, 'out'),
+          transfer('in', '2024-06-02', 8, 'in'),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.unknownCostUnits).toBe(8);
+      expect(result.missingUnits).toBe(2);
+    });
+
+    it('does not pair a transfer back into the account it left', () => {
+      const target = sell('s1', '2025-03-01', 10, 1100);
+
+      const result = calculateFifoCostBasis(
+        [
+          buy('b1', '2024-01-10', 10, 1000),
+          transfer('out', '2024-06-01', 10, 'out'),
+          transfer('in', '2024-06-02', 10, 'in', OLD_ACCOUNT),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.unknownCostUnits).toBe(10);
     });
 
     it('treats units transferred out and never back as gone', () => {

@@ -1,5 +1,8 @@
 import { Currency, SecurityTradeType } from '../../../shared/enums.js';
-import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
+import {
+  addDaysToTimelessDate,
+  compareTimelessDates,
+} from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import {
   executionAmountInCurrency,
@@ -19,13 +22,15 @@ import {
  * FIFO is the taxpayer's, not an account's (Income Tax Regulations on capital gains from traded
  * securities, 2002, reg. 5): identical securities are sold in the order they were acquired. A
  * transfer out of one of the owner's accounts and into another — a move to a new account — carries
- * its lots across with their cost and place in line; units transferred in with no such transfer out
- * have no known cost.
+ * its lots across with their cost and place in line. A transfer in is only taken for such a move
+ * when it is of the same units, into another account, within `TRANSFER_PAIRING_WINDOW_DAYS` of the
+ * transfer out; any other transfer in came from outside, at no known cost, and a transfer out that
+ * nothing pairs with left the owner.
  *
  * Cost is kept in the currency the units were paid in (the cash leg's currency), not converted to
- * shekels. Each lot says when it was acquired and when its cost was booked, so the caller prices it
- * at the rate it needs: the ledger at the rate the securities account carries it at, a tax
- * computation at the rate of its acquisition date.
+ * shekels. Each lot names the acquisition it came from, so the caller prices it at the rate it
+ * needs: the ledger at the rate the securities account carries it at, a tax computation at the
+ * rate of its acquisition date.
  *
  * Only the ingested history is known. Units bought before it starts, or that arrived with no cash
  * leg (a deposit transfer, a stock distribution other than a dividend in kind), have no known cost
@@ -47,6 +52,9 @@ export type CostBasisExecution = Pick<
   | 'net_value_trade_currency'
   | 'net_value_settlement_currency'
   | 'net_value_nis'
+  | 'bank_number'
+  | 'branch_number'
+  | 'account_number'
 > & {
   nv: string | null;
   /** The bank's `IsCancelTransaction`: "כן" on a cancelled execution */
@@ -55,9 +63,6 @@ export type CostBasisExecution = Pick<
   payment_type: string | null;
   /** The value of the units in the trade currency; a dividend in kind's cost */
   trade_gross_value_trade_currency: string | null;
-  /** When the cash leg settled — the day an acquisition's cost was booked at */
-  value_date?: TimelessDateString | null;
-  settlement_date?: TimelessDateString | null;
 };
 
 /** Units drawn from one acquisition with a known cost */
@@ -66,8 +71,6 @@ export type FifoLot = {
   executionId: string;
   /** Its trade date: the acquisition date of the units */
   tradeDate: TimelessDateString;
-  /** The day its cost was booked: its value date, else its settlement date, else its trade date */
-  bookedDate: TimelessDateString;
   units: number;
   /** What those units cost, in the requested currency */
   costForeign: number;
@@ -95,6 +98,12 @@ export type FifoCostBasis = {
   /** The lots with a known cost the units were drawn from, oldest first; they add up to `costForeign` */
   lots: FifoLot[];
 };
+
+/**
+ * How long after a transfer out of one of the owner's accounts a transfer in of the same units to
+ * another may arrive and still be the same holding moving
+ */
+export const TRANSFER_PAIRING_WINDOW_DAYS = 10;
 
 /** Fractional units (funds, ETFs) leave float residue; anything below this counts as nothing */
 const UNITS_EPSILON = 1e-6;
@@ -143,6 +152,28 @@ type LotSource = Omit<FifoLot, 'units' | 'costForeign'>;
 /** `order` is the place in line: the acquisition's position in the replay, kept across transfers */
 type Lot = { units: number; unitCost: number | null; order: number; source: LotSource | null };
 
+/** Lots that left one of the owner's accounts, until a transfer in to another takes them back */
+type PendingTransfer = { execution: CostBasisExecution; units: number; lots: Lot[] };
+
+const sameAccount = (a: CostBasisExecution, b: CostBasisExecution) =>
+  a.bank_number === b.bank_number &&
+  a.branch_number === b.branch_number &&
+  a.account_number === b.account_number;
+
+/** Whether a transfer in is the arrival of a pending transfer out: a holding moving accounts */
+function isArrivalOf(transferIn: CostBasisExecution, units: number, pending: PendingTransfer) {
+  const out = pending.execution;
+  return (
+    Math.abs(pending.units - units) <= UNITS_EPSILON &&
+    !sameAccount(out, transferIn) &&
+    compareTimelessDates(transferIn.trade_date, out.trade_date) >= 0 &&
+    compareTimelessDates(
+      transferIn.trade_date,
+      addDaysToTimelessDate(out.trade_date, TRANSFER_PAIRING_WINDOW_DAYS),
+    ) <= 0
+  );
+}
+
 function toUnits(nv: string | null): number {
   const units = Number(nv);
   return Number.isFinite(units) && units > 0 ? units : 0;
@@ -174,7 +205,11 @@ function sameDayRank(execution: CostBasisExecution): number {
   return tradeType ? SAME_DAY_RANK[lotEffectOf(execution, tradeType)] : SAME_DAY_RANK.NONE;
 }
 
-/** Trade date, then the same-day rank, then id — the matcher's order, with the day's in before out */
+/**
+ * Trade date, then the same-day rank, then id — the matcher's order, with the day's in before out.
+ * Two disposals of one day go by id, so how the lots split between them is arbitrary; what they
+ * take between them is not.
+ */
 function compareExecutions(a: CostBasisExecution, b: CostBasisExecution): number {
   return (
     compareTimelessDates(a.trade_date, b.trade_date) ||
@@ -184,11 +219,7 @@ function compareExecutions(a: CostBasisExecution, b: CostBasisExecution): number
 }
 
 function lotSourceOf(execution: CostBasisExecution): LotSource {
-  return {
-    executionId: execution.id,
-    tradeDate: execution.trade_date,
-    bookedDate: execution.value_date ?? execution.settlement_date ?? execution.trade_date,
-  };
+  return { executionId: execution.id, tradeDate: execution.trade_date };
 }
 
 const sumUnits = (lots: readonly Lot[]) => lots.reduce((sum, lot) => sum + lot.units, 0);
@@ -218,8 +249,7 @@ export function calculateFifoCostBasis(
   const live = history.filter(execution => !isCancelledExecution(execution));
 
   const lots: Lot[] = [];
-  // lots transferred out of one of the owner's accounts, until a transfer in brings them back
-  const inTransit: Lot[] = [];
+  const pendingTransfers: PendingTransfer[] = [];
   let openingPositionUnknown = false;
   const earlier = live
     .filter(
@@ -257,19 +287,27 @@ export function calculateFifoCostBasis(
         break;
       case 'TRANSFER_OUT': {
         const taken = takeUnits(lots, units);
-        inTransit.push(...taken);
+        pendingTransfers.push({ execution, units, lots: taken });
         if (units - sumUnits(taken) > UNITS_EPSILON) {
           openingPositionUnknown = true;
         }
         break;
       }
       case 'TRANSFER_IN': {
-        // back in line where the lots stood; the rest came from outside the owner's accounts
-        const restored = takeUnits(inTransit, units);
-        const fromOutside = units - sumUnits(restored);
-        lots.push(...restored);
-        if (fromOutside > UNITS_EPSILON) {
-          lots.push({ units: fromOutside, unitCost: null, order, source: null });
+        const arrival = pendingTransfers.findIndex(pending =>
+          isArrivalOf(execution, units, pending),
+        );
+        if (arrival === -1) {
+          // from outside the owner's accounts
+          lots.push({ units, unitCost: null, order, source: null });
+          break;
+        }
+        // back in line where the lots stood; units the transfer out had no lot for stay unknown
+        const [{ lots: moved }] = pendingTransfers.splice(arrival, 1);
+        const uncovered = units - sumUnits(moved);
+        lots.push(...moved);
+        if (uncovered > UNITS_EPSILON) {
+          lots.push({ units: uncovered, unitCost: null, order, source: null });
         }
         lots.sort((a, b) => a.order - b.order);
         break;
