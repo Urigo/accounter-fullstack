@@ -54,10 +54,12 @@ const mockResourceFromAttributes = vi.hoisted(() => vi.fn().mockReturnValue(mock
 
 vi.mock('@opentelemetry/sdk-node', () => ({
   NodeSDK: MockNodeSDK,
-  tracing: mockSamplers,
-  resources: {
-    resourceFromAttributes: mockResourceFromAttributes,
-  },
+}));
+
+vi.mock('@opentelemetry/sdk-trace', () => mockSamplers);
+
+vi.mock('@opentelemetry/resources', () => ({
+  resourceFromAttributes: mockResourceFromAttributes,
 }));
 
 // ---------- OTLPTraceExporter mock ----------
