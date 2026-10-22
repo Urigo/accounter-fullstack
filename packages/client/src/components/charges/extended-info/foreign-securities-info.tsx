@@ -1,9 +1,12 @@
 import { useMemo, type ReactElement, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '@/router/routes.js';
 import {
   ForeignSecuritiesChargeInfoFragmentDoc,
   type ForeignSecuritiesChargeInfoFragment,
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { SecurityDescriptorBadges } from '../../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
   SecurityExecutionsTable,
@@ -31,6 +34,14 @@ import { Badge } from '../../ui/badge.js';
           isEtf
           isForeign
           asOfDate
+        }
+        securityBusiness {
+          id
+          isin
+          symbol
+          engName
+          hebName
+          ...SecurityDescriptorFields
         }
         executions {
           id
@@ -68,17 +79,45 @@ export const ForeignSecuritiesInfo = ({ chargeProps }: Props): ReactNode => {
   ) : null;
 };
 
+/** The security's name, linked to its business page when it has one. */
+const SecurityTitle = ({
+  name,
+  symbol,
+  businessId,
+}: {
+  name: string;
+  symbol?: string | null;
+  businessId?: string;
+}): ReactElement => (
+  <div className="text-lg font-semibold">
+    {businessId ? (
+      <Link
+        to={ROUTES.BUSINESSES.DETAIL(businessId)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:underline"
+      >
+        {name}
+      </Link>
+    ) : (
+      name
+    )}
+    {symbol && <span className="text-gray-500"> ({symbol})</span>}
+  </div>
+);
+
 const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactElement => {
-  const { details } = security;
+  const { details, securityBusiness } = security;
 
   return (
     <div className="flex flex-col gap-2">
       {details ? (
         <div className="flex flex-col gap-1">
-          <div className="text-lg font-semibold">
-            {details.engName}
-            {details.symbol && <span className="text-gray-500"> ({details.symbol})</span>}
-          </div>
+          <SecurityTitle
+            name={details.engName}
+            symbol={details.symbol}
+            businessId={securityBusiness?.id}
+          />
           <div className="text-sm text-gray-500">{details.hebName}</div>
           <div className="flex flex-row flex-wrap items-center gap-2">
             {details.exchange && <Badge variant="secondary">{details.exchange}</Badge>}
@@ -90,6 +129,25 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
           </div>
           <div className="text-xs text-gray-400">
             Key {security.securityKey} · reference data as of {formatSecurityDate(details.asOfDate)}
+          </div>
+        </div>
+      ) : securityBusiness ? (
+        // The reference list only carries what the portfolio held when it was scraped, so a
+        // security closed out before then (a redeemed bond, say) has no row there — but its
+        // executions still created a security business, linked by the Poalim key.
+        <div className="flex flex-col gap-1">
+          <SecurityTitle
+            name={securityBusiness.engName ?? securityBusiness.isin}
+            symbol={securityBusiness.symbol}
+            businessId={securityBusiness.id}
+          />
+          {securityBusiness.hebName && (
+            <div className="text-sm text-gray-500">{securityBusiness.hebName}</div>
+          )}
+          <SecurityDescriptorBadges security={securityBusiness} />
+          <div className="text-xs text-gray-400">
+            Key {security.securityKey} · from the security&apos;s business (not in the ingested
+            securities list)
           </div>
         </div>
       ) : (
