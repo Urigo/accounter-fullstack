@@ -32,7 +32,6 @@ import { Badge } from '../../ui/badge.js';
           exchange
           currencyCode
           isEtf
-          isForeign
           asOfDate
         }
         securityBusiness {
@@ -41,6 +40,8 @@ import { Badge } from '../../ui/badge.js';
           symbol
           engName
           hebName
+          # Locality vs. the tenant. Not details.isForeign, which is the bank's raw flag
+          isForeign
           ...SecurityDescriptorFields
         }
         executions {
@@ -102,7 +103,7 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
               <Badge variant="outline">{details.itemType}</Badge>
               {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
               {details.isEtf && <Badge variant="outline">ETF</Badge>}
-              {details.isForeign && <Badge variant="outline">Foreign</Badge>}
+              {securityBusiness?.isForeign && <Badge variant="outline">Foreign</Badge>}
             </div>
           </SecurityHeading>
           <div className="text-xs text-gray-400">
