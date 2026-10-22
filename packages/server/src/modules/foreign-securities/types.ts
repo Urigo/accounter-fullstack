@@ -135,6 +135,8 @@ export type ChargeSecurityProto = {
   securityKey: string;
   details: SecurityRow | null;
   transactionIds: string[];
+  /** Net of this security's non-fee transactions in the charge, per currency */
+  netAmounts: Map<string, number>;
   /** Ingested executions matched to this charge's transactions — see the matcher helper. */
   executions: SecurityExecutionRow[];
 };

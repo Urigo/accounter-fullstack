@@ -1,6 +1,9 @@
 import { Currency } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
+import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { areNetZero } from '../helpers/securities-counterparty.helper.js';
 import {
   toSecurityPaymentType,
   toSecurityTradeType,
@@ -61,6 +64,20 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
         throw errorSimplifier(`Error fetching securities for charge ${dbCharge.id}`, e);
       }
     },
+    counterparties: async (dbCharge, _, { injector }) => {
+      try {
+        const { mainBusinessIds } = await getChargeBusinesses(dbCharge, injector);
+        const entities = await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.loadMany(mainBusinessIds);
+        return entities.filter(
+          (entity): entity is Exclude<typeof entity, Error | undefined | null> =>
+            !!entity && !(entity instanceof Error),
+        );
+      } catch (e) {
+        throw errorSimplifier(`Error fetching counterparties for charge ${dbCharge.id}`, e);
+      }
+    },
   },
   ChargeSecurity: {
     id: chargeSecurity => chargeSecurity.id,
@@ -82,6 +99,14 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
     // Transaction concrete types are mapped to their id (see codegen.ts mappers).
     transactions: chargeSecurity => chargeSecurity.transactionIds,
     executions: chargeSecurity => chargeSecurity.executions,
+    netAmount: ({ netAmounts }) => {
+      if (netAmounts.size !== 1) {
+        return null;
+      }
+      const [[currency, amount]] = netAmounts;
+      return formatFinancialAmount(amount, currency);
+    },
+    isOffsetting: ({ netAmounts }) => areNetZero(netAmounts),
   },
   SecurityExecution: {
     id: execution => execution.id,
