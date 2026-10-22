@@ -11,6 +11,7 @@ import {
 import { calculateSecurityPosition, isOpenPosition } from '../helpers/security-position.helper.js';
 import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
+import { SecurityExecutionChargesProvider } from '../providers/security-execution-charges.provider.js';
 import type { ForeignSecuritiesModule } from '../types.js';
 
 /**
@@ -145,7 +146,12 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
     // mapped to its row, so it has to be loaded.
     transaction: historyExecution => historyExecution.transaction?.id ?? null,
     charge: async (historyExecution, _, { injector }) => {
-      const chargeId = historyExecution.transaction?.charge_id;
+      // an execution with no cash leg (a stock distribution) is booked by its charge directly
+      const chargeId =
+        historyExecution.transaction?.charge_id ??
+        (await injector
+          .get(SecurityExecutionChargesProvider)
+          .chargeIdByExecutionIdLoader.load(historyExecution.execution.id));
       if (!chargeId) {
         return null;
       }

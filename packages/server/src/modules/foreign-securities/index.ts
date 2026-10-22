@@ -1,6 +1,7 @@
 import { createModule } from 'graphql-modules';
 import { ForeignSecuritiesProvider } from './providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from './providers/security-businesses.provider.js';
+import { SecurityExecutionChargesProvider } from './providers/security-execution-charges.provider.js';
 import { foreignSecuritiesResolvers } from './resolvers/foreign-securities.resolver.js';
 import { securityBusinessesResolvers } from './resolvers/security-businesses.resolver.js';
 import foreignSecurities from './typeDefs/foreign-securities.graphql.js';
@@ -13,7 +14,11 @@ export const foreignSecuritiesModule = createModule({
   dirname: __dirname,
   typeDefs: [foreignSecurities, securityBusinesses],
   resolvers: [foreignSecuritiesResolvers, securityBusinessesResolvers],
-  providers: () => [ForeignSecuritiesProvider, SecurityBusinessesProvider],
+  providers: () => [
+    ForeignSecuritiesProvider,
+    SecurityBusinessesProvider,
+    SecurityExecutionChargesProvider,
+  ],
 });
 
 export * as ForeignSecuritiesTypes from './types.js';

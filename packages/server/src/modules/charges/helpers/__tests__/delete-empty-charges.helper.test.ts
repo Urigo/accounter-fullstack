@@ -4,6 +4,7 @@ import { EMPTY_UUID } from '../../../../shared/constants.js';
 import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
+import { SecurityExecutionChargesProvider } from '../../../foreign-securities/providers/security-execution-charges.provider.js';
 import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
 import { SalariesProvider } from '../../../salaries/providers/salaries.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -25,6 +26,7 @@ type ChargeContent = {
   salaries?: number;
   businessTripEmployeePayments?: number;
   depreciation?: number;
+  securityExecutions?: number;
 };
 
 function buildInjector(
@@ -44,6 +46,7 @@ function buildInjector(
     salaries: loader('salaries'),
     businessTripEmployeePayments: loader('businessTripEmployeePayments'),
     depreciation: loader('depreciation'),
+    securityExecutions: loader('securityExecutions'),
   };
   const invalidateCharge = vi.fn();
 
@@ -69,6 +72,9 @@ function buildInjector(
       }
       if (token === DepreciationProvider) {
         return { getDepreciationRecordsByChargeIdLoader: linkedRecordLoaders.depreciation };
+      }
+      if (token === SecurityExecutionChargesProvider) {
+        return { linkedExecutionIdsByChargeIdLoader: linkedRecordLoaders.securityExecutions };
       }
       if (token === ChargesProvider) {
         return {
@@ -103,6 +109,26 @@ describe('isChargeEmpty', () => {
 
     await expect(isChargeEmpty(CHARGE_A, injector)).resolves.toBe(true);
     await expect(isChargeEmpty(CHARGE_B, injector)).resolves.toBe(false);
+  });
+
+  it('is not empty while it books a securities execution directly', async () => {
+    const { injector } = buildInjector({ [CHARGE_A]: { securityExecutions: 1 } });
+
+    await expect(isChargeEmpty(CHARGE_A, injector)).resolves.toBe(false);
+  });
+
+  it('ignores securities executions the user dismisses by deleting the charge', async () => {
+    const { injector } = buildInjector({
+      [CHARGE_A]: { securityExecutions: 1 },
+      [CHARGE_B]: { securityExecutions: 1, transactions: 1 },
+    });
+
+    await expect(
+      isChargeEmpty(CHARGE_A, injector, { dismissSecurityExecutions: true }),
+    ).resolves.toBe(true);
+    await expect(
+      isChargeEmpty(CHARGE_B, injector, { dismissSecurityExecutions: true }),
+    ).resolves.toBe(false);
   });
 
   it('clears the per-charge loaders before counting', async () => {

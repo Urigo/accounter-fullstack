@@ -1,9 +1,11 @@
 import { GraphQLError } from 'graphql';
 import {
+  Currency,
   SecurityPaymentType,
   SecurityTradeType,
   SecurityTransactionType,
 } from '../../../shared/enums.js';
+import { formatCurrency } from '../../../shared/helpers/amount.js';
 
 /**
  * `accounter_schema.poalim_securities_transactions` stores the bank's own Hebrew vocabulary
@@ -74,7 +76,7 @@ export const tryToSecurityTradeType = (raw: string): SecurityTradeType | null =>
   TRADE_TYPES[raw] ?? null;
 
 /** The bank's `IsCancelTransaction` flag, which reads "כן" (yes) on a cancelled execution. */
-const CANCELLED = 'כן';
+export const CANCELLED_EXECUTION_FLAG = 'כן';
 
 /**
  * Whether the bank cancelled this execution. A cancellation keeps the original's trade type but
@@ -82,7 +84,7 @@ const CANCELLED = 'כן';
  */
 export const isCancelledExecution = (execution: {
   is_cancel_transaction: string | null;
-}): boolean => execution.is_cancel_transaction === CANCELLED;
+}): boolean => execution.is_cancel_transaction === CANCELLED_EXECUTION_FLAG;
 
 export const toSecurityTransactionType = (raw: string): SecurityTransactionType =>
   translate(TRANSACTION_TYPES, raw, 'transaction type', 'TRANSACTION_TYPES');
@@ -114,3 +116,30 @@ function invert<T extends string>(map: Record<string, T>): Record<T, string> {
 export const tradeTypeToRaw = invert(TRADE_TYPES);
 export const transactionTypeToRaw = invert(TRANSACTION_TYPES);
 export const paymentTypeToRaw = invert(PAYMENT_TYPES);
+
+/**
+ * A stock distribution paid as a dividend in kind: shares received instead of cash, booked as
+ * dividend income at their value, and costing that value in the FIFO cost basis.
+ *
+ * Only this kind of distribution is booked. A bonus issue or a split of the same company is not
+ * income — it spreads the cost of the existing holding over more units — and none has been seen
+ * yet, so it is left to be handled when one is.
+ */
+export function isDividendInKindDistribution(execution: {
+  trade_type: string;
+  payment_type: string | null;
+}): boolean {
+  return (
+    tryToSecurityTradeType(execution.trade_type) === SecurityTradeType.StockDistribution &&
+    execution.payment_type === paymentTypeToRaw[SecurityPaymentType.DividendInKind]
+  );
+}
+
+/**
+ * The currency of one of the feed's (Hebrew) currency labels, or null when there is none.
+ * `formatCurrency` reads a missing label as the local currency, which would make an unreported
+ * currency look like shekels.
+ */
+export function currencyOfSecurityLabel(label: string | null | undefined): Currency | null {
+  return label?.trim() ? formatCurrency(label, true) : null;
+}

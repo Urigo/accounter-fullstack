@@ -19,6 +19,7 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { getSecurityLocality } from '../../foreign-securities/helpers/security-locality.helper.js';
 import { SecurityBusinessesProvider } from '../../foreign-securities/providers/security-businesses.provider.js';
+import { SecurityExecutionChargesProvider } from '../../foreign-securities/providers/security-execution-charges.provider.js';
 import type { SecurityBusinessDescriptors } from '../../foreign-securities/types.js';
 import {
   assignSecurityTransactionOccurrences,
@@ -1366,6 +1367,7 @@ export class PoalimScraperIngestionProvider {
     private authContextProvider: AuthContextProvider,
     private adminContextProvider: AdminContextProvider,
     private securityBusinessesProvider: SecurityBusinessesProvider,
+    private securityExecutionChargesProvider: SecurityExecutionChargesProvider,
   ) {}
 
   /**
@@ -1454,6 +1456,26 @@ export class PoalimScraperIngestionProvider {
       }
     } catch (error) {
       console.error('Failed to create security businesses for ingested executions:', error);
+    }
+  }
+
+  /**
+   * Give every stock distribution paid as a dividend in kind a charge of its own (see
+   * `SecurityExecutionChargesProvider.ensureDistributionCharges`). It has no cash leg, so no bank
+   * transaction would ever bring it into a charge, and without one it is never booked.
+   *
+   * Logged rather than thrown, like `ensureSecurityBusinesses`: the executions are stored, and the
+   * next upload retries whatever is still unlinked.
+   */
+  private async ensureDistributionCharges(ownerId: string): Promise<void> {
+    try {
+      const { ledgerLock } = await this.adminContextProvider.getVerifiedAdminContext();
+      await this.securityExecutionChargesProvider.ensureDistributionCharges(
+        ownerId,
+        ledgerLock ?? null,
+      );
+    } catch (error) {
+      console.error('Failed to create charges for ingested stock distributions:', error);
     }
   }
 
@@ -1845,6 +1867,7 @@ export class PoalimScraperIngestionProvider {
     }
 
     await this.ensureSecurityBusinesses(validated);
+    await this.ensureDistributionCharges(businessId);
 
     return {
       inserted: insertedIds.length,

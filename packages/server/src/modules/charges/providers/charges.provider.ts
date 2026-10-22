@@ -728,6 +728,17 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     ) x
     GROUP BY x.charge_id
   ),
+  -- Securities executions a charge books directly (stock distributions) carry its only dates
+  -- until a ledger is generated for it.
+  securities_executions_by_charge AS (
+    SELECT cse.charge_id,
+           min(COALESCE(pst.value_date, pst.trade_date)) AS min_date,
+           max(COALESCE(pst.value_date, pst.trade_date)) AS max_date
+    FROM accounter_schema.charges_securities_executions cse
+    JOIN filtered_charges fc ON fc.id = cse.charge_id
+    JOIN accounter_schema.poalim_securities_transactions pst ON pst.id = cse.execution_id
+    GROUP BY cse.charge_id
+  ),
   enriched_charges AS (
     SELECT
       c.id,
@@ -799,6 +810,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       lbc.max_value_date AS ledger_max_value_date,
       lbc.min_invoice_date AS ledger_min_invoice_date,
       lbc.max_invoice_date AS ledger_max_invoice_date,
+      sebc.min_date AS securities_executions_min_date,
+      sebc.max_date AS securities_executions_max_date,
       y.years_of_relevance,
       c.invoice_payment_currency_diff,
       c.type,
@@ -818,6 +831,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     LEFT JOIN tags_by_charge tgc ON tgc.charge_id = c.id
     LEFT JOIN accounter_schema.business_trip_charges btc ON btc.charge_id = c.id
     LEFT JOIN ledger_by_charge lbc ON lbc.charge_id = c.id
+    LEFT JOIN securities_executions_by_charge sebc ON sebc.charge_id = c.id
     LEFT JOIN years_of_relevance y ON y.charge_id = c.id
     LEFT JOIN (
       SELECT DISTINCT charge_id
@@ -831,10 +845,10 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   WHERE
   ($isBusinessIds = 0 OR ec.business_array && $businessIds)
   AND ($isExcludedBusinessIds = 0 OR NOT COALESCE(ec.business_array && $excludedBusinessIds, FALSE))
-  AND ($fromDate ::TEXT IS NULL OR COALESCE(ec.documents_min_date, ec.transactions_min_event_date) >= $fromDate ::DATE)
-  AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(ec.documents_max_date, ec.transactions_max_event_date, ec.transactions_max_debit_date, ec.ledger_max_invoice_date, ec.ledger_max_value_date) >= $fromAnyDate ::DATE)
-  AND ($toDate ::TEXT IS NULL OR COALESCE(ec.documents_max_date, ec.transactions_max_event_date) <= $toDate ::DATE)
-  AND ($toAnyDate ::TEXT IS NULL OR LEAST(ec.documents_min_date, ec.transactions_min_event_date, ec.transactions_min_debit_date, ec.ledger_min_invoice_date, ec.ledger_min_value_date) <= $toAnyDate ::DATE)
+  AND ($fromDate ::TEXT IS NULL OR COALESCE(ec.documents_min_date, ec.transactions_min_event_date, ec.securities_executions_min_date) >= $fromDate ::DATE)
+  AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(ec.documents_max_date, ec.transactions_max_event_date, ec.transactions_max_debit_date, ec.ledger_max_invoice_date, ec.ledger_max_value_date, ec.securities_executions_max_date) >= $fromAnyDate ::DATE)
+  AND ($toDate ::TEXT IS NULL OR COALESCE(ec.documents_max_date, ec.transactions_max_event_date, ec.securities_executions_max_date) <= $toDate ::DATE)
+  AND ($toAnyDate ::TEXT IS NULL OR LEAST(ec.documents_min_date, ec.transactions_min_event_date, ec.transactions_min_debit_date, ec.ledger_min_invoice_date, ec.ledger_min_value_date, ec.securities_executions_min_date) <= $toAnyDate ::DATE)
   AND ($chargeType = 'ALL' OR ($chargeType = 'INCOME' AND ec.transactions_event_amount > 0) OR ($chargeType = 'EXPENSE' AND ec.transactions_event_amount <= 0))
   AND ($type::accounter_schema.charge_type IS NULL OR ec.type = $type)
   AND ($withoutInvoice = FALSE OR COALESCE(ec.invoices_count, 0) = 0)
@@ -852,8 +866,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($isExcludedAccountIds = 0 OR NOT COALESCE(ec.account_array && $excludedAccountIds::uuid[], FALSE))
   AND ($withMissingCounterparty = FALSE OR COALESCE(ec.missing_counterparty_transactions, false) = true OR COALESCE(ec.missing_counterparty_documents, false) = true)
   ORDER BY
-  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END DESC,
+  CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date, ec.securities_executions_min_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END ASC,
+  CASE WHEN $asc = false AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date, ec.securities_executions_min_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN (ec.event_amount, ec.id) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_amount' THEN (ec.event_amount, ec.id) END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END ASC,

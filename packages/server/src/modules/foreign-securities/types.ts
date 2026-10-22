@@ -24,6 +24,15 @@ export type {
   IUpdateSecurityBusinessesIsForeignQuery,
 } from './__generated__/security-businesses.types.js';
 
+// Named rather than `export type *`: the generated module declares `stringArray` too.
+export type {
+  IGetChargeIdsByExecutionIdsQuery,
+  IGetExecutionIdsByChargeIdsQuery,
+  IGetUnlinkedDistributionsQuery,
+  IInsertChargeSecurityExecutionQuery,
+  IReplaceChargeSecurityExecutionsChargeIdQuery,
+} from './__generated__/security-execution-charges.types.js';
+
 /** How a source names a security — accounter_schema.security_identifier_type. */
 export type SecurityIdentifierType = security_identifier_type;
 

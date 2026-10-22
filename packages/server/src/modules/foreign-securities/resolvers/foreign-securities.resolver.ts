@@ -47,9 +47,16 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
   ForeignSecuritiesCharge: {
     securities: async (dbCharge, _, { injector }) => {
       try {
-        return await injector
-          .get(ForeignSecuritiesProvider)
-          .getChargeSecurities(dbCharge.id, dbCharge.owner_id);
+        const foreignSecuritiesProvider = injector.get(ForeignSecuritiesProvider);
+        // executions with no cash leg (stock distributions), which the charge books directly
+        const linkedExecutions = await foreignSecuritiesProvider.executionsByChargeIdLoader.load(
+          dbCharge.id,
+        );
+        return await foreignSecuritiesProvider.getChargeSecurities(
+          dbCharge.id,
+          dbCharge.owner_id,
+          linkedExecutions,
+        );
       } catch (e) {
         throw errorSimplifier(`Error fetching securities for charge ${dbCharge.id}`, e);
       }

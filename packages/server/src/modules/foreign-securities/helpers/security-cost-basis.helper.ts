@@ -5,7 +5,12 @@ import {
   executionAmountInCurrency,
   type MatchableExecution,
 } from './match-security-executions.helper.js';
-import { isCancelledExecution, tryToSecurityTradeType } from './security-execution-enums.helper.js';
+import {
+  currencyOfSecurityLabel,
+  isCancelledExecution,
+  isDividendInKindDistribution,
+  tryToSecurityTradeType,
+} from './security-execution-enums.helper.js';
 
 /**
  * The purchase cost of the units an execution takes out of a position, first in, first out —
@@ -16,8 +21,13 @@ import { isCancelledExecution, tryToSecurityTradeType } from './security-executi
  * revalues, so crediting it at the historical shekel cost would count the currency effect twice.
  *
  * Only the ingested history is known. Units bought before it starts, or that arrived with no cash
- * leg (a deposit transfer, a stock distribution), have no known cost — reported apart, so the
- * caller can say which it is rather than guess.
+ * leg (a deposit transfer, a stock distribution other than a dividend in kind), have no known cost
+ * — reported apart, so the caller can say which it is rather than guess.
+ *
+ * A dividend in kind is booked as income at the gross value of the shares received, so that value
+ * is their cost. It is taken from the execution whether or not its ledger entry was actually
+ * booked (a distribution can fail to book, e.g. on withheld tax) — the cost is the event's, not
+ * the ledger's.
  */
 
 export type CostBasisExecution = Pick<
@@ -34,6 +44,10 @@ export type CostBasisExecution = Pick<
   nv: string | null;
   /** The bank's `IsCancelTransaction`: "כן" on a cancelled execution */
   is_cancel_transaction: string | null;
+  /** The bank's payment type label; tells a dividend in kind from other distributions */
+  payment_type: string | null;
+  /** The value of the units in the trade currency; a dividend in kind's cost */
+  trade_gross_value_trade_currency: string | null;
 };
 
 export type FifoCostBasis = {
@@ -60,10 +74,12 @@ export type FifoCostBasis = {
 /** Fractional units (funds, ETFs) leave float residue; anything below this counts as nothing */
 const UNITS_EPSILON = 1e-6;
 
-type LotEffect = 'BUY' | 'ADD_WITHOUT_COST' | 'CONSUME' | 'NONE';
+type LotEffect = 'BUY' | 'ADD_AT_GROSS_VALUE' | 'ADD_WITHOUT_COST' | 'CONSUME' | 'NONE';
 
 const LOT_EFFECT: Record<SecurityTradeType, LotEffect> = {
   [SecurityTradeType.Buy]: 'BUY',
+  // a dividend in kind is the exception — see `lotEffectOf`. Bonus issues and splits are not
+  // income and spread the existing cost instead; none has been seen yet, so they stay unknown
   [SecurityTradeType.StockDistribution]: 'ADD_WITHOUT_COST',
   [SecurityTradeType.TransferIn]: 'ADD_WITHOUT_COST',
   [SecurityTradeType.TransferInTwoSided]: 'ADD_WITHOUT_COST',
@@ -80,6 +96,27 @@ type Lot = { units: number; unitCost: number | null };
 function toUnits(nv: string | null): number {
   const units = Number(nv);
   return Number.isFinite(units) && units > 0 ? units : 0;
+}
+
+function lotEffectOf(execution: CostBasisExecution, tradeType: SecurityTradeType): LotEffect {
+  return isDividendInKindDistribution(execution) ? 'ADD_AT_GROSS_VALUE' : LOT_EFFECT[tradeType];
+}
+
+/**
+ * A dividend in kind's units cost what they were booked at: their gross value, which is in the
+ * trade currency — so it is only known in that currency.
+ */
+function grossUnitCost(
+  execution: CostBasisExecution,
+  units: number,
+  currency: Currency,
+): number | null {
+  const tradeCurrency = currencyOfSecurityLabel(execution.trade_currency);
+  const gross = Number(execution.trade_gross_value_trade_currency);
+  if (tradeCurrency !== currency || !Number.isFinite(gross) || gross <= 0) {
+    return null;
+  }
+  return gross / units;
 }
 
 /** The same total order the matcher pairs in: trade date, then id */
@@ -125,12 +162,15 @@ export function calculateFifoCostBasis(
       continue;
     }
 
-    switch (LOT_EFFECT[tradeType]) {
+    switch (lotEffectOf(execution, tradeType)) {
       case 'BUY': {
         const paid = Math.abs(Number(executionAmountInCurrency(execution, currency) ?? Number.NaN));
         lots.push({ units, unitCost: Number.isFinite(paid) ? paid / units : null });
         break;
       }
+      case 'ADD_AT_GROSS_VALUE':
+        lots.push({ units, unitCost: grossUnitCost(execution, units, currency) });
+        break;
       case 'ADD_WITHOUT_COST':
         lots.push({ units, unitCost: null });
         break;
