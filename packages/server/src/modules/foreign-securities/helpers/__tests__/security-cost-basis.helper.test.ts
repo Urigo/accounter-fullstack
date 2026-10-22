@@ -349,4 +349,141 @@ describe('calculateFifoCostBasis', () => {
     expect(result.redeemedUnits).toBe(0);
     expect(result.coveredUnits).toBe(0);
   });
+
+  describe('lots, and transfers between the owner accounts', () => {
+    const transfer = (
+      id: string,
+      tradeDate: TimelessDateString,
+      units: number,
+      direction: 'in' | 'out',
+    ) =>
+      execution({
+        id,
+        trade_date: tradeDate,
+        trade_type: direction === 'in' ? 'העברה לזכות הפקדון' : 'העברה לחובת הפקדון',
+        nv: String(units),
+        net_value_trade_currency: '0',
+        net_value_settlement_currency: '0',
+      });
+
+    it('lists the costed lots the units were drawn from, with their dates', () => {
+      const target = sell('s1', '2025-03-01', 15, 1800);
+
+      const result = calculateFifoCostBasis(
+        [
+          { ...buy('b1', '2024-01-10', 10, 1000), value_date: '2024-01-11' },
+          { ...buy('b2', '2024-02-10', 10, 1200), settlement_date: '2024-02-12' },
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.lots).toEqual([
+        {
+          executionId: 'b1',
+          tradeDate: '2024-01-10',
+          bookedDate: '2024-01-11',
+          units: 10,
+          costForeign: 1000,
+        },
+        {
+          executionId: 'b2',
+          tradeDate: '2024-02-10',
+          bookedDate: '2024-02-12',
+          units: 5,
+          costForeign: 600,
+        },
+      ]);
+    });
+
+    it('leaves lots with no known cost out of the list', () => {
+      const target = sell('s1', '2025-03-01', 10, 1100);
+
+      const result = calculateFifoCostBasis(
+        [transfer('t1', '2024-01-05', 4, 'in'), buy('b1', '2024-02-10', 6, 600), target],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.unknownCostUnits).toBe(4);
+      expect(result.lots.map(lot => lot.executionId)).toEqual(['b1']);
+    });
+
+    it('carries lots moved between two accounts of the owner with their cost and place', () => {
+      // bought in the old account, moved to the new one, then more bought there
+      const target = sell('s1', '2025-03-01', 12, 1500);
+
+      const result = calculateFifoCostBasis(
+        [
+          buy('b1', '2024-01-10', 10, 1000),
+          transfer('out', '2024-06-01', 10, 'out'),
+          buy('b2', '2024-06-02', 10, 1500),
+          transfer('in', '2024-06-03', 10, 'in'),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      // the moved lot is still the oldest: all 10 of it (1,000), then 2 of the later buy (300)
+      expect(result.unknownCostUnits).toBe(0);
+      expect(result.openingPositionUnknown).toBe(false);
+      expect(result.costForeign).toBeCloseTo(1300, 6);
+      expect(result.lots.map(lot => [lot.executionId, lot.units])).toEqual([
+        ['b1', 10],
+        ['b2', 2],
+      ]);
+    });
+
+    it('pairs a transfer out with the transfer in of the same day', () => {
+      const target = sell('s1', '2025-03-01', 10, 1100);
+
+      const result = calculateFifoCostBasis(
+        // the ids would put the transfer in first
+        [
+          buy('b1', '2024-01-10', 10, 1000),
+          transfer('a-in', '2024-06-01', 10, 'in'),
+          transfer('z-out', '2024-06-01', 10, 'out'),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.unknownCostUnits).toBe(0);
+      expect(result.costForeign).toBeCloseTo(1000, 6);
+    });
+
+    it('treats units transferred out and never back as gone', () => {
+      const target = sell('s1', '2025-03-01', 5, 600);
+
+      const result = calculateFifoCostBasis(
+        [
+          buy('b1', '2024-01-10', 5, 500),
+          transfer('out', '2024-03-01', 5, 'out'),
+          buy('b2', '2024-04-10', 5, 550),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.costForeign).toBeCloseTo(550, 6);
+      expect(result.lots.map(lot => lot.executionId)).toEqual(['b2']);
+    });
+
+    it('lets a same-day buy cover a sale, whatever their ids', () => {
+      const target = sell('a-sell', '2025-03-01', 5, 600);
+
+      const result = calculateFifoCostBasis(
+        [buy('z-buy', '2025-03-01', 5, 500), target],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.coveredUnits).toBe(5);
+      expect(result.costForeign).toBeCloseTo(500, 6);
+    });
+  });
 });

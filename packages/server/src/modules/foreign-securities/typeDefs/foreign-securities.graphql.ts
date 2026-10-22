@@ -58,7 +58,64 @@ export default gql`
     realProfitLoss: FinancialAmount
     symbol: String
     isin: String
+    " For a sale or a redemption: its capital gain, worked out from the FIFO lots it disposes of across the owner's accounts. Null for any other execution and for a cancelled one "
+    capitalGain: SecurityCapitalGainResult
   }
+
+  " The capital gain of a sale or a redemption, from the FIFO lots it disposes of. Local amounts are at the Bank of Israel rates of the trade dates. Commissions are left out: they are booked as fees "
+  type SecurityCapitalGain {
+    " The disposal's execution id "
+    id: ID!
+    " Units disposed of "
+    quantity: Float!
+    " What the units fetched before tax, in the currency they were paid in "
+    proceeds: FinancialAmount!
+    " The rate of the sale's trade date "
+    saleRate: Float!
+    " What the units cost, in the currency they were paid in "
+    cost: FinancialAmount!
+    " Proceeds less cost, in the currency they were paid in "
+    originCurrencyGain: FinancialAmount!
+    " Local proceeds at the sale rate, less each lot's local cost at its purchase rate "
+    nominalGain: FinancialAmount!
+    " The part of the nominal gain due to the price: originCurrencyGain at the sale rate "
+    priceGain: FinancialAmount!
+    " The part of the nominal gain due to the exchange rate: each lot's cost times the rate's change since its purchase "
+    exchangeRateGain: FinancialAmount!
+    " Income Tax Ordinance s.88, with the CPI as the index: the exempt part of the nominal gain (סכום אינפלציוני). Never negative, never more than the gain, and nothing on a loss "
+    inflationaryAmount: FinancialAmount!
+    " s.88: the nominal gain less the inflationary amount (רווח הון ריאלי). A loss is not indexed "
+    realGain: FinancialAmount!
+    lots: [SecurityCapitalGainLot!]!
+  }
+
+  " The units of a disposal drawn from one acquisition, first in, first out "
+  type SecurityCapitalGainLot {
+    id: ID!
+    " The buy (or dividend in kind) the units came from "
+    purchaseExecutionId: UUID!
+    purchaseDate: TimelessDate!
+    quantity: Float!
+    " What the units cost, in the currency they were paid in "
+    cost: FinancialAmount!
+    " The cost at the rate of the purchase date: the original price "
+    costLocal: FinancialAmount!
+    purchaseRate: Float!
+    " The lot's share of the local proceeds: the consideration "
+    consideration: FinancialAmount!
+    " The month of the CPI known on the purchase date, YYYY-MM "
+    purchaseIndexPeriod: String!
+    " The month of the CPI known on the sale date, YYYY-MM "
+    saleIndexPeriod: String!
+    " The CPI known on the sale date over the CPI known on the purchase date "
+    indexRatio: Float!
+    nominalGain: FinancialAmount!
+    inflationaryAmount: FinancialAmount!
+    realGain: FinancialAmount!
+  }
+
+  " A disposal's capital gain, or why it cannot be worked out "
+  union SecurityCapitalGainResult = SecurityCapitalGain | CommonError
 
   " Direction of a securities execution, as the bank files it "
   enum SecurityTradeType {
