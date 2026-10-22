@@ -552,18 +552,6 @@ const RATE_TOLERANCE = 0.0005;
 const AMOUNT_ROUNDING = 0.005;
 
 /**
- * The bank's rate from the trade currency to the local one, as it priced a distribution: its own
- * rate column when reported (it writes -1 for "no rate"), or else its local value over its
- * trade-currency value — `derived`, since both of those amounts are rounded. Null when neither is
- * usable.
- */
-export function getBankDistributionRate(
-  execution: DistributionExecution,
-): { rate: number; derived: boolean } | null {
-  return getExecutionBankRate(execution);
-}
-
-/**
  * Whether the ledger priced a foreign-currency distribution at a different rate than the bank
  * did. Rates are compared rather than local amounts: the bank works its local value out from the
  * unrounded units times price, so its amount differs from gross times rate by a few agorot even
@@ -577,7 +565,7 @@ export function getBankRateMismatch(
   execution: DistributionExecution,
   ledgerRate: number,
 ): { ledgerRate: number; bankRate: number } | null {
-  const bankRate = getBankDistributionRate(execution);
+  const bankRate = getExecutionBankRate(execution);
   if (bankRate == null) {
     return null;
   }

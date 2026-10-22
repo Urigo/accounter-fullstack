@@ -44,6 +44,20 @@ export function isTransactionsOppositeSign([first, second]: IGetTransactionsByCh
   return Number(first.amount) > 0 !== Number(second.amount) > 0;
 }
 
+/**
+ * The point a transaction's cash leg is priced at: `debit_timestamp` (set for crypto and MAX
+ * credit-card rows) is the exact time of the transaction, otherwise its debit day. Null when it has
+ * no debit date at all.
+ */
+export function transactionExchangeRateDate(
+  transaction: Pick<
+    IGetTransactionsByChargeIdsResult,
+    'debit_timestamp' | 'debit_date_override' | 'debit_date'
+  >,
+): TimelessDateString | Date | null {
+  return transaction.debit_timestamp ?? transaction.debit_date_override ?? transaction.debit_date;
+}
+
 export function validateTransactionBasicVariables(transaction: IGetTransactionsByChargeIdsResult) {
   const currency = formatCurrency(transaction.currency);
   const debitDate = transaction.debit_date_override ?? transaction.debit_date;
@@ -58,7 +72,8 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
   const valueDate = transaction.debit_timestamp
     ? dateToTimelessDateString(transaction.debit_timestamp)
     : debitDate;
-  const exchangeRateDate: TimelessDateString | Date = transaction.debit_timestamp ?? debitDate;
+  const exchangeRateDate: TimelessDateString | Date =
+    transactionExchangeRateDate(transaction) ?? debitDate;
 
   if (!transaction.business_id) {
     throw new LedgerError(

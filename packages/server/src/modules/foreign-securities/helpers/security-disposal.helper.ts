@@ -166,17 +166,25 @@ export function calculateCpiCapitalGain(lots: readonly CpiLotInput[]): {
 }
 
 /**
- * The day a lot's local carrying value was last set. The year-end revaluation revalues what the
- * securities account holds to the rate of 31 December, so a lot booked on or before the last
- * 31 December ahead of the disposal is carried at that day's rate, and a later one at the rate it
- * was booked at.
+ * The last revaluation of the securities account a lot was held over: the latest revaluation on or
+ * after the day the lot's cost was booked and before the disposal. It moved the lot's local
+ * carrying value to that day's rate; with none (null), the lot is still carried at the rate it was
+ * booked at.
+ *
+ * Read from the revaluations actually booked rather than assumed from the calendar, so a year whose
+ * revaluation was never booked leaves the lot where it was. One booked after the disposal's ledger
+ * was generated is only seen once that ledger is regenerated.
  */
-export function carryingRateDate(
-  bookedDate: TimelessDateString,
-  disposalDate: TimelessDateString,
-): TimelessDateString {
-  const lastYearEnd = `${Number(disposalDate.slice(0, 4)) - 1}-12-31` as TimelessDateString;
-  return bookedDate <= lastYearEnd ? lastYearEnd : bookedDate;
+export function lastRevaluationOver(
+  bookedOn: TimelessDateString,
+  disposedOn: TimelessDateString,
+  revaluationDates: readonly TimelessDateString[],
+): TimelessDateString | null {
+  return revaluationDates.reduce<TimelessDateString | null>(
+    (latest, date) =>
+      date >= bookedOn && date < disposedOn && (!latest || date > latest) ? date : latest,
+    null,
+  );
 }
 
 function toNumber(value: string | null | undefined): number {

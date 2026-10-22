@@ -62,7 +62,7 @@ export default gql`
     capitalGain: SecurityCapitalGainResult
   }
 
-  " The capital gain of a sale or a redemption, from the FIFO lots it disposes of. Local amounts are at the Bank of Israel rates of the trade dates. Commissions are left out: they are booked as fees "
+  " The capital gain of a sale or a redemption, from the FIFO lots it disposes of. Local amounts are at the Bank of Israel rates of the trade dates. The real/inflationary split is a company's, with the CPI as the index: for an individual, s.88 makes the exchange rate the index on foreign-currency securities, which is what the bank's figures follow. Commissions are left out: they are booked as fees "
   type SecurityCapitalGain {
     " The disposal's execution id "
     id: ID!
@@ -82,7 +82,7 @@ export default gql`
     priceGain: FinancialAmount!
     " The part of the nominal gain due to the exchange rate: each lot's cost times the rate's change since its purchase "
     exchangeRateGain: FinancialAmount!
-    " Income Tax Ordinance s.88, with the CPI as the index: the exempt part of the nominal gain (סכום אינפלציוני). Never negative, never more than the gain, and nothing on a loss "
+    " Income Tax Ordinance s.88, with the CPI as the index (a company's): the exempt part of the nominal gain (סכום אינפלציוני). Never negative, never more than the gain, and nothing on a loss "
     inflationaryAmount: FinancialAmount!
     " s.88: the nominal gain less the inflationary amount (רווח הון ריאלי). A loss is not indexed "
     realGain: FinancialAmount!
