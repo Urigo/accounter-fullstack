@@ -4,6 +4,8 @@ export default gql`
   extend type ForeignSecuritiesCharge {
     " Securities referenced by this charge's transactions, resolved against the ingested Poalim securities list "
     securities: [ChargeSecurity!]!
+    " Main-counterparty candidates, after dropping securities whose trades cancel out within the charge. A single entry is the charge's counterparty; more than one means the charge spans several securities and has no single counterparty "
+    counterparties: [FinancialEntity!]!
   }
 
   " A security key carried by a charge's transaction descriptions, with its reference details when ingested "
@@ -19,6 +21,10 @@ export default gql`
     transactions: [Transaction!]!
     " Ingested portfolio executions matched to those transactions by account, date and amount "
     executions: [SecurityExecution!]!
+    " Net of those transactions, fees excluded. Null when they move in more than one currency, or when there are none "
+    netAmount: FinancialAmount
+    " Whether those transactions cancel out (say, a buy reversed by a sell of the same amount), so the security carries no exposure in this charge and is not used as its counterparty "
+    isOffsetting: Boolean!
   }
 
   " A single executed action in a Poalim securities portfolio, matched to a charge transaction "

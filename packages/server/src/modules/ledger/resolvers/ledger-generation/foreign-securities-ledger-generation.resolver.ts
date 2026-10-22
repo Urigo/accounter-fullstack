@@ -682,12 +682,14 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
-    const allowedUnbalancedBusinesses = new Set<string>();
-    // a charge of fees only has no main entry
-    const mainLedgerEntry = financialAccountLedgerEntries[0];
-    if (mainLedgerEntry && !mainLedgerEntry.isCreditorCounterparty) {
-      allowedUnbalancedBusinesses.add(mainLedgerEntry.debitAccountID1);
-    }
+    // Every bought security keeps its balance as a holding. A charge can buy more than one
+    // security, and the main entries are pushed in completion order, so allow each of them
+    // rather than whichever happened to finish first. A charge of fees only has no main entry.
+    const allowedUnbalancedBusinesses = new Set<string>(
+      financialAccountLedgerEntries
+        .filter(entry => !entry.isCreditorCounterparty)
+        .map(entry => entry.debitAccountID1),
+    );
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,
       ledgerBalance,

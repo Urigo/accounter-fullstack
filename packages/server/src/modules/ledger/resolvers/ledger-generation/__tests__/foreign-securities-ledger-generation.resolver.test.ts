@@ -225,6 +225,8 @@ type Scenario = {
    * which the owner-scoped lookups must not book to
    */
   otherBusinessAccountByNumber?: boolean;
+  /** Entities the balance check treats as businesses; defaults to the bank only */
+  businessIds?: string[];
 };
 
 function makeInjector(scenario: Scenario) {
@@ -301,7 +303,10 @@ function makeInjector(scenario: Scenario) {
         },
       ],
       [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
-      [FinancialEntitiesProvider, makeFinancialEntitiesProvider([BANK_BUSINESS_ID])],
+      [
+        FinancialEntitiesProvider,
+        makeFinancialEntitiesProvider(scenario.businessIds ?? [BANK_BUSINESS_ID]),
+      ],
       [ForeignSecuritiesProvider, foreignSecuritiesProvider],
     ]),
   );
@@ -446,6 +451,30 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
 
       expect(errors).toEqual([]);
       expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+    });
+  });
+
+  describe('a charge spanning several securities', () => {
+    it('lets every bought security keep its holding balance', async () => {
+      // two security businesses that are not internal wallets, so each trade is booked against
+      // its own security rather than the securities account
+      const alpha = 'business-security-alpha';
+      const beta = 'business-security-beta';
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+      const buyAlpha = buildTransaction({ id: 'transaction-buy-alpha', amount: '-1000', businessId: alpha });
+      const buyBeta = buildTransaction({ id: 'transaction-buy-beta', amount: '-1000', businessId: beta });
+
+      const { records, errors } = await generate({
+        transactions: [buyAlpha, buyBeta],
+        executions: {
+          [buyAlpha.id]: buyExecution('execution-buy-alpha', DAY, 10, 1000),
+          [buyBeta.id]: buyExecution('execution-buy-beta', DAY, 10, 1000),
+        },
+        businessIds: [BANK_BUSINESS_ID, alpha, beta],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(record => record.debit_entity1).sort()).toEqual([alpha, beta]);
     });
   });
 
