@@ -1,0 +1,158 @@
+import type { Injector } from 'graphql-modules';
+import { describe, expect, it, vi } from 'vitest';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
+import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
+import { SecurityBusinessesProvider } from '../../../foreign-securities/providers/security-businesses.provider.js';
+import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
+import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
+import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
+import type { IGetChargesByIdsResult } from '../../types.js';
+import { getChargeBusinesses } from '../common.helper.js';
+
+// Synthetic values only — never lifted from a real bank capture.
+const OWNER_ID = 'owner-business';
+const CHARGE_ID = 'charge-securities';
+const FUND_ALPHA = 'business-fund-alpha';
+const FUND_BETA = 'business-fund-beta';
+const BANK = 'business-bank';
+const VENDOR = 'business-vendor';
+
+type StubTransaction = {
+  id: string;
+  business_id: string | null;
+  is_fee: boolean;
+  amount: string;
+  currency: string;
+};
+
+function tx(
+  id: string,
+  businessId: string,
+  amount: string,
+  overrides: Partial<StubTransaction> = {},
+): StubTransaction {
+  return { id, business_id: businessId, is_fee: false, amount, currency: 'USD', ...overrides };
+}
+
+const charge = {
+  id: CHARGE_ID,
+  owner_id: OWNER_ID,
+  type: 'FOREIGN_SECURITIES',
+} as IGetChargesByIdsResult;
+
+function makeInjector(transactions: StubTransaction[]) {
+  const transactionsLoader = vi.fn(async () => transactions);
+  const providers = new Map<unknown, unknown>([
+    [TransactionsProvider, { transactionsByChargeIDLoader: { load: transactionsLoader } }],
+    [DocumentsProvider, { getDocumentsByChargeIdLoader: { load: async () => [] } }],
+    [LedgerProvider, { getLedgerRecordsByChargesIdLoader: { load: async () => [] } }],
+    [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
+    [
+      AdminContextProvider,
+      {
+        getVerifiedAdminContext: async () => ({
+          foreignSecurities: { foreignSecuritiesBusinessId: null },
+        }),
+      },
+    ],
+    [
+      SecurityBusinessesProvider,
+      { getAllSecurityBusinessIds: async () => new Set([FUND_ALPHA, FUND_BETA]) },
+    ],
+  ]);
+  const injector = {
+    get: (token: unknown) => {
+      if (!providers.has(token)) {
+        throw new Error(`Unexpected provider token: ${String(token)}`);
+      }
+      return providers.get(token);
+    },
+  } as unknown as Injector;
+  return { injector, transactionsLoader };
+}
+
+/** A buy of one fund, plus another fund bought and sold back for the same amount, plus a fee */
+const offsettingTransactions = [
+  tx('buy-alpha', FUND_ALPHA, '-1000'),
+  tx('buy-beta', FUND_BETA, '-1000'),
+  tx('sell-beta', FUND_BETA, '1000'),
+  tx('fee', BANK, '-12.34', { is_fee: true, currency: 'ILS' }),
+];
+
+describe('getChargeBusinesses — securities counterparty', () => {
+  it('resolves to the security that moved money when another one cancels out', async () => {
+    const { injector } = makeInjector(offsettingTransactions);
+
+    const result = await getChargeBusinesses(charge, injector);
+
+    expect(result.mainBusinessId).toBe(FUND_ALPHA);
+    expect(result.mainBusinessIds).toEqual([FUND_ALPHA]);
+    // every party is still listed, so filters and the charge type see the whole charge
+    expect(result.allBusinessIds.sort()).toEqual([BANK, FUND_ALPHA, FUND_BETA].sort());
+  });
+
+  it('keeps every candidate when the charge truly spans several securities', async () => {
+    const { injector } = makeInjector([
+      tx('sell-alpha', FUND_ALPHA, '1000'),
+      tx('buy-beta', FUND_BETA, '-1000'),
+    ]);
+
+    const result = await getChargeBusinesses(charge, injector);
+
+    expect(result.mainBusinessId).toBeNull();
+    expect(result.mainBusinessIds).toEqual([FUND_ALPHA, FUND_BETA]);
+  });
+
+  it('leaves charges with no securities candidate as they are', async () => {
+    const { injector } = makeInjector([
+      tx('pay-vendor', VENDOR, '-1000'),
+      tx('refund-bank', BANK, '-20'),
+      tx('rebook-bank', BANK, '20'),
+    ]);
+
+    const result = await getChargeBusinesses(charge, injector);
+
+    expect(result.mainBusinessId).toBeNull();
+    expect(result.mainBusinessIds).toEqual([VENDOR, BANK]);
+  });
+
+  describe('rows enriched by getChargesByFilters', () => {
+    function enriched(mainBusinessArray: string[], businessId: string | null) {
+      return {
+        ...charge,
+        abs_event_amount: '1000',
+        business_array: [...mainBusinessArray, BANK],
+        main_business_array: mainBusinessArray,
+        business_id: businessId,
+      } as unknown as IGetChargesByIdsResult;
+    }
+
+    it('applies the same narrowing to an ambiguous securities row', async () => {
+      const { injector } = makeInjector(offsettingTransactions);
+
+      const result = await getChargeBusinesses(enriched([FUND_ALPHA, FUND_BETA], null), injector);
+
+      expect(result.mainBusinessId).toBe(FUND_ALPHA);
+      expect(result.mainBusinessIds).toEqual([FUND_ALPHA]);
+    });
+
+    it('loads no transactions for a row with a single counterparty', async () => {
+      const { injector, transactionsLoader } = makeInjector(offsettingTransactions);
+
+      const result = await getChargeBusinesses(enriched([FUND_ALPHA], FUND_ALPHA), injector);
+
+      expect(result.mainBusinessId).toBe(FUND_ALPHA);
+      expect(transactionsLoader).not.toHaveBeenCalled();
+    });
+
+    it('loads no transactions when no candidate is a security', async () => {
+      const { injector, transactionsLoader } = makeInjector([]);
+
+      const result = await getChargeBusinesses(enriched([VENDOR, BANK], null), injector);
+
+      expect(result.mainBusinessId).toBeNull();
+      expect(result.mainBusinessIds).toEqual([VENDOR, BANK]);
+      expect(transactionsLoader).not.toHaveBeenCalled();
+    });
+  });
+});

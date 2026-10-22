@@ -20,6 +20,7 @@ import {
   type AccountTuple,
   type MatchableTransaction,
 } from '../helpers/match-security-executions.helper.js';
+import { netAmountsByCurrency } from '../helpers/securities-counterparty.helper.js';
 import { extractTransactionSecurityKeys } from '../helpers/security-key.helper.js';
 import type {
   ChargeSecurityProto,
@@ -923,6 +924,7 @@ export class ForeignSecuritiesProvider {
 
     return keys.map((key, index) => {
       const detail = details[index];
+      const transactionIds = transactionIdsByKey.get(key) ?? [];
       // a linked execution can also be matched to a transaction after a merge; list it once
       const executions = new Map(
         [
@@ -937,7 +939,10 @@ export class ForeignSecuritiesProvider {
         // loadMany surfaces a rejected key as an Error rather than throwing; treat it
         // the same as "not ingested" so one bad key can't blank the whole section.
         details: detail instanceof Error ? null : (detail as SecurityRow | null),
-        transactionIds: transactionIdsByKey.get(key) ?? [],
+        transactionIds,
+        netAmounts: netAmountsByCurrency(
+          transactions.filter(transaction => transactionIds.includes(transaction.id)),
+        ),
         executions: [...executions.values()],
       };
     });

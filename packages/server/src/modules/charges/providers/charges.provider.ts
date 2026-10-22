@@ -800,6 +800,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       dbc.invalid_documents,
       dbc.open_docs_flag,
       bbc.business_array,
+      bbc.filtered_business_array AS main_business_array,
       b.id AS business_id,
       COALESCE(b.can_settle_with_receipt, false) AS can_settle_with_receipt,
       tgc.tags_array AS tags,

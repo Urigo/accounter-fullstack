@@ -9,6 +9,7 @@ import {
 } from '../../documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { getForeignSecuritiesBusinessIds } from '../../foreign-securities/helpers/foreign-securities-businesses.helper.js';
 import { SecurityExecutionChargesProvider } from '../../foreign-securities/providers/security-execution-charges.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
 import type { IGetChargesByIdsResult } from '../types.js';
@@ -59,7 +60,7 @@ const computeChargeValidation = async (
 ): Promise<ResolversTypes['ValidationData']> => {
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const [chargeType, { mainBusinessId }, taxCategoryId] = await Promise.all([
+  const [chargeType, { mainBusinessId, mainBusinessIds }, taxCategoryId] = await Promise.all([
     getChargeType(charge, injector),
     getChargeBusinesses(charge, injector),
     getChargeTaxCategoryId(charge, injector),
@@ -82,6 +83,18 @@ const computeChargeValidation = async (
         .linkedExecutionIdsByChargeIdLoader.load(charge.id)
     ).length > 0;
 
+  // A securities charge can span several securities (say, a switch selling one fund to buy
+  // another). Each trade is booked against its own security, so having no single counterparty is
+  // a valid state — as long as every candidate is a security. Any other candidate is a real
+  // ambiguity and stays flagged.
+  const isMultiSecurityCharge =
+    chargeType === ChargeTypeEnum.ForeignSecurities &&
+    !mainBusinessId &&
+    mainBusinessIds.length > 1 &&
+    (await getForeignSecuritiesBusinessIds(injector).then(securitiesBusinessIds =>
+      mainBusinessIds.every(businessId => securitiesBusinessIds.has(businessId)),
+    ));
+
   // check for consistent counterparty business
   const businessNotRequired =
     [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary, ChargeTypeEnum.Financial].includes(
@@ -103,7 +116,10 @@ const computeChargeValidation = async (
   ]);
 
   const businessIsFine =
-    businessNotRequired || !!business || (booksSecurityExecutions && !mainBusinessId);
+    businessNotRequired ||
+    !!business ||
+    (booksSecurityExecutions && !mainBusinessId) ||
+    isMultiSecurityCharge;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }

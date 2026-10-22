@@ -12,6 +12,8 @@ import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
 import { basicDocumentValidation } from '../../documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import { getForeignSecuritiesBusinessIds } from '../../foreign-securities/helpers/foreign-securities-businesses.helper.js';
+import { pruneOffsettingSecurityCandidates } from '../../foreign-securities/helpers/securities-counterparty.helper.js';
 import { getLedgerMeta } from '../../ledger/helpers/common.helper.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
@@ -88,15 +90,46 @@ export async function calculateTotalAmount(
   }
 }
 
+/**
+ * Narrows ambiguous main-counterparty candidates by dropping securities whose trades cancel out
+ * within the charge (see `pruneOffsettingSecurityCandidates`). Only charges with a securities
+ * candidate pay for the lookup.
+ */
+async function narrowMainBusinessIds(
+  chargeId: string,
+  mainBusinessIds: string[],
+  injector: Injector,
+  loadedTransactions?: Awaited<
+    ReturnType<TransactionsProvider['transactionsByChargeIDLoader']['load']>
+  >,
+): Promise<string[]> {
+  if (mainBusinessIds.length <= 1) {
+    return mainBusinessIds;
+  }
+  const securitiesBusinessIds = await getForeignSecuritiesBusinessIds(injector);
+  if (!mainBusinessIds.some(businessId => securitiesBusinessIds.has(businessId))) {
+    return mainBusinessIds;
+  }
+  const transactions =
+    loadedTransactions ??
+    (await injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId));
+  return pruneOffsettingSecurityCandidates(mainBusinessIds, transactions, securitiesBusinessIds);
+}
+
 export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Injector) {
   const charge = await resolveCharge(chargeRef, injector);
 
   if (isEnrichedFilteredCharge(charge)) {
     // business_array folds in transactions, documents, ledger and misc-expense
     // parties (minus the owner), so no child-table loads are needed.
+    const sqlMainBusinessIds = (charge.main_business_array as string[] | null) ?? [];
+    const mainBusinessIds = await narrowMainBusinessIds(charge.id, sqlMainBusinessIds, injector);
     return {
       allBusinessIds: charge.business_array ?? [],
-      mainBusinessId: (charge.business_id as string | null) ?? null,
+      mainBusinessIds,
+      mainBusinessId:
+        (charge.business_id as string | null) ??
+        (sqlMainBusinessIds.length > 1 && mainBusinessIds.length === 1 ? mainBusinessIds[0] : null),
     };
   }
 
@@ -145,7 +178,12 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
   });
 
   const allBusinessIds = Array.from(allBusinessIdsSet);
-  const mainBusinessIds = Array.from(mainBusinessIdsSet);
+  const mainBusinessIds = await narrowMainBusinessIds(
+    charge.id,
+    Array.from(mainBusinessIdsSet),
+    injector,
+    transactions,
+  );
 
   let mainBusinessId: string | null = null;
 
@@ -155,6 +193,8 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
 
   return {
     allBusinessIds,
+    /** Main-counterparty candidates; more than one means the charge has no single counterparty */
+    mainBusinessIds,
     mainBusinessId,
   };
 }
