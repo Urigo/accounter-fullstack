@@ -9,7 +9,12 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import { formatStringifyAmount } from '../../../../shared/helpers/amount.js';
-import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { dateToTimelessDateString } from '../../../../shared/helpers/index.js';
+import type {
+  LedgerProto,
+  StrictLedgerProto,
+  TimelessDateString,
+} from '../../../../shared/types/index.js';
 import {
   securitiesTaxCategoryLabel,
   type SecuritiesTaxCategoryIds,
@@ -18,7 +23,19 @@ import { AdminContextProvider } from '../../../admin-context/providers/admin-con
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
-import { calculateFifoCostBasis } from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
+import {
+  calculateFifoCostBasis,
+  type FifoCostBasis,
+} from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
+import {
+  calculateDisposalPnL,
+  compareWithBankProfitLoss,
+  costBasisProblem,
+  describeSecurity,
+  getExecutionBankRate,
+  lastRevaluationOver,
+  type BankProfitLossMismatch,
+} from '../../../foreign-securities/helpers/security-disposal.helper.js';
 import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
 import {
   getSecurityLocality,
@@ -31,10 +48,11 @@ import type { IGetTransactionsByChargeIdsResult } from '../../../transactions/ty
 import { ledgerEntryFromMainTransaction } from '../../helpers/common-charge-ledger.helper.js';
 import { splitFeeTransactions } from '../../helpers/fee-transactions.js';
 import {
+  buildDisposalEntry,
   buildDistributionEntry,
   buildIncomeEntry,
-  buildRedemptionEntry,
-  calculateRedemptionGain,
+  buildSaleRevaluationEntry,
+  calculateDisposalGain,
   classifySecurityExecution,
   currencyOfLabel,
   distributionValueDate,
@@ -44,6 +62,7 @@ import {
   getWithheldTax,
   INCOME_TAX_CATEGORY_KEYS,
   isDividendInKindDistribution,
+  toAmount,
   validateSecurityCommissions,
   WITHHOLDING_TAX_CATEGORY_KEYS,
 } from '../../helpers/foreign-securities-ledger.helper.js';
@@ -54,9 +73,12 @@ import {
   getLedgerBalanceInfo,
   LedgerError,
   ledgerProtoToRecordsConverter,
+  transactionExchangeRateDate,
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../../helpers/utils.helper.js';
+import { LedgerProvider } from '../../providers/ledger.provider.js';
+import { REVALUATION_LEDGER_DESCRIPTION } from './financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 
 /** Below this, an amount is float noise rather than something to book */
 const MIN_AMOUNT = 0.005;
@@ -71,11 +93,6 @@ const FOREIGN_SECURITIES_ACCOUNT_NUMBER = 'foreign_securities';
 function describeTransaction(transaction: IGetTransactionsByChargeIdsResult): string {
   const date = transaction.debit_date_override ?? transaction.debit_date ?? transaction.event_date;
   return `"${transaction.source_description ?? transaction.id}" (${date}, ${transaction.amount} ${transaction.currency})`;
-}
-
-function describeSecurity(execution: SecurityExecutionRow): string {
-  const name = execution.symbol ?? execution.security;
-  return execution.isin ? `${name} (${execution.isin})` : name;
 }
 
 /**
@@ -93,7 +110,7 @@ function requireTaxCategories<TKey extends SecuritiesTaxCategoryKey>(
     for (const key of missing) {
       missingTaxCategories.add(key);
       errors.add(
-        `Missing securities tax category "${securitiesTaxCategoryLabel(key)}" — set it from the charge's ledger errors to book securities income and redemptions`,
+        `Missing securities tax category "${securitiesTaxCategoryLabel(key)}" — set it from the charge's ledger errors to book securities income, sales and redemptions`,
       );
     }
     return null;
@@ -101,79 +118,354 @@ function requireTaxCategories<TKey extends SecuritiesTaxCategoryKey>(
   return Object.fromEntries(keys.map(key => [key, taxCategories[key]])) as Record<TKey, string>;
 }
 
-/** Why the FIFO purchase cost of a redemption cannot be worked out, or null when it can */
-function costBasisProblem(
-  execution: SecurityExecutionRow,
-  costBasis: ReturnType<typeof calculateFifoCostBasis>,
-): string | null {
-  const security = describeSecurity(execution);
-  const redeemed = execution.trade_date;
-  const bankProfitLoss = Number(execution.nominal_profit_loss_nis);
-  const bankNote =
-    Number.isFinite(bankProfitLoss) && bankProfitLoss !== 0
-      ? ` For reference, the bank reports a nominal profit/loss of ${bankProfitLoss} ₪ on it.`
-      : '';
+/** The bank's commission on an execution, in shekels — what the bank may deduct from its PnL */
+function commissionLocal(execution: SecurityExecutionRow): number {
+  return Math.abs(toAmount(execution.trade_commission_value_nis));
+}
 
-  if (costBasis.redeemedUnits === 0) {
-    return `The redemption of ${security} on ${redeemed} reports no redeemed units, so its purchase cost cannot be found.${bankNote}`;
-  }
-  if (costBasis.openingPositionUnknown) {
-    const history = costBasis.historyStartDate
-      ? ` (it starts on ${costBasis.historyStartDate})`
-      : '';
-    return `Could not determine the purchase cost of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed}: the scraped securities history of this account${history} starts mid-position — units were sold or transferred out before as many were seen bought, so an earlier holding of unknown cost comes first. Scrape older securities transactions of this account to complete it.${bankNote}`;
-  }
-  if (costBasis.missingUnits > 0) {
-    const history = costBasis.historyStartDate
-      ? `the scraped securities history of this account starts on ${costBasis.historyStartDate}`
-      : 'no securities history of it was scraped for this account';
-    return `Could not find the purchase of ${costBasis.missingUnits} of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed}: ${history}. Scrape older securities transactions of this account to complete it.${bankNote}`;
-  }
-  if (costBasis.unknownCostUnits > 0) {
-    return `${costBasis.unknownCostUnits} of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed} have no known purchase cost: they arrived by transfer or by a distribution other than a dividend in kind, or were bought or distributed in another currency.${bankNote}`;
-  }
-  return null;
+type DisposalKind = 'SALE' | 'REDEMPTION';
+
+function describeDisposal(kind: DisposalKind, execution: SecurityExecutionRow): string {
+  return `the ${kind === 'SALE' ? 'sale' : 'redemption'} of ${describeSecurity(execution)} on ${execution.trade_date}`;
 }
 
 /**
- * The entry for one cash movement: the base entry (bank ↔ securities account), reshaped by the
- * execution behind it for dividends, bond interest and redemptions. Anything that prevents that
- * is recorded as a ledger error and leaves the base entry as it is.
+ * How the bank's own PnL report of a disposal disagrees with its FIFO lots, both at the bank's
+ * own rates — so a difference points at the lots (or the bank's figures), not at a rate. Nothing
+ * is checked when the bank reports no rate for the disposal or one of its lots.
  */
-async function securitiesLedgerEntry(params: {
+function bankProfitLossProblems(params: {
+  kind: DisposalKind;
+  execution: SecurityExecutionRow;
+  history: readonly SecurityExecutionRow[];
+  costBasis: FifoCostBasis;
+  proceedsForeign: number;
+  isForeign: boolean;
+}): string[] {
+  const { execution, costBasis, isForeign } = params;
+  const historyById = new Map(params.history.map(row => [row.id, row]));
+  const bankRate = (row: SecurityExecutionRow | undefined) =>
+    isForeign ? (row ? getExecutionBankRate(row)?.rate : undefined) : 1;
+
+  const saleRate = bankRate(execution);
+  const lotRates = costBasis.lots.map(lot => bankRate(historyById.get(lot.executionId)));
+  if (saleRate == null || lotRates.some(rate => rate == null)) {
+    return [];
+  }
+
+  const pnl = calculateDisposalPnL({
+    proceedsForeign: params.proceedsForeign,
+    saleRate,
+    lots: costBasis.lots.map((lot, index) => ({ ...lot, rate: lotRates[index]! })),
+  });
+  const lotsCommission = costBasis.lots.reduce((sum, lot) => {
+    const acquisition = historyById.get(lot.executionId);
+    const units = Number(acquisition?.nv);
+    return acquisition && units > 0
+      ? sum + (commissionLocal(acquisition) * lot.units) / units
+      : sum;
+  }, 0);
+  const mismatches = compareWithBankProfitLoss({
+    execution,
+    pnl,
+    commissionsLocal: commissionLocal(execution) + lotsCommission,
+    isForeign,
+  });
+  if (!mismatches.length) {
+    return [];
+  }
+
+  const disposal = describeDisposal(params.kind, execution);
+  const lots = costBasis.lots
+    .map(
+      (lot, index) =>
+        `${lot.units} bought on ${lot.tradeDate} for ${formatStringifyAmount(lot.costForeign)} at ${lotRates[index]}`,
+    )
+    .join('; ');
+  const describe = ({ field, ours, bank }: BankProfitLossMismatch) => {
+    switch (field) {
+      case 'NOMINAL':
+        return `a nominal profit/loss of ${formatStringifyAmount(bank)} ₪, where its FIFO lots come to ${formatStringifyAmount(ours)} ₪`;
+      case 'RATE':
+        return `linkage of ${formatStringifyAmount(-bank)} ₪ (an exchange-rate profit/loss of ${formatStringifyAmount(bank)} ₪), where its FIFO lots come to ${formatStringifyAmount(ours)} ₪`;
+      case 'REAL':
+        return `a real profit/loss of ${formatStringifyAmount(bank)} ₪, where its FIFO lots come to ${formatStringifyAmount(ours)} ₪ (the lower of the price and nominal profit/loss)`;
+    }
+  };
+  return mismatches.map(
+    mismatch =>
+      `The bank reports ${describe(mismatch)} on ${disposal}, at the bank's own rates (sold at ${saleRate}; lots: ${lots}). It is booked from the lots.`,
+  );
+}
+
+/**
+ * The point the ledger priced an acquisition's cost at, which is the rate the securities account
+ * took the units in at: a dividend in kind's value date (`distributionValueDate`, as
+ * `buildDistributionEntry` books it), a purchase's cash transaction's
+ * (`transactionExchangeRateDate`, as the purchase's base entry books it). Null for a purchase
+ * whose cash movement was not found.
+ */
+function acquisitionRateDate(
+  acquisition: SecurityExecutionRow,
+  transaction: Parameters<typeof transactionExchangeRateDate>[0] | undefined,
+): TimelessDateString | Date | null {
+  if (isDividendInKindDistribution(acquisition)) {
+    return distributionValueDate(acquisition);
+  }
+  return transaction ? transactionExchangeRateDate(transaction) : null;
+}
+
+/**
+ * The sale revaluation entry of a foreign-currency disposal (`buildSaleRevaluationEntry`): each
+ * lot's cost × (the cash leg's rate − the rate the securities account carries the lot at). The
+ * carrying rate is the one the lot was booked at, or the one the last revaluation it was held over
+ * moved it to.
+ *
+ * Null after recording why it cannot be booked. The disposal entry is booked either way, and the
+ * year-end revaluation takes up the rate PnL this leaves out.
+ */
+async function saleRevaluationEntry(params: {
+  injector: Injector;
+  ownerId: string;
+  defaultLocalCurrency: Currency;
+  kind: DisposalKind;
+  execution: SecurityExecutionRow;
+  disposalEntry: StrictLedgerProto;
+  history: readonly SecurityExecutionRow[];
+  costBasis: FifoCostBasis;
+  proceedsForeign: number;
+  taxCategories: SecuritiesTaxCategoryIds;
+  errors: Set<string>;
+  missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
+}): Promise<StrictLedgerProto | null> {
+  const { injector, defaultLocalCurrency, kind, execution, disposalEntry, costBasis } = params;
+  const disposal = describeDisposal(kind, execution);
+
+  try {
+    const historyById = new Map(params.history.map(row => [row.id, row]));
+    const securitiesAccountId = disposalEntry.creditAccountID1;
+    const [transactionsByExecutionId, securitiesAccountRecords] = await Promise.all([
+      injector
+        .get(ForeignSecuritiesProvider)
+        .getSecurityOwnerTransactionsByExecutionId(execution, params.ownerId),
+      injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByFinancialEntityIdLoader.load(securitiesAccountId),
+    ]);
+    const revaluationDates = securitiesAccountRecords
+      .filter(record => record.description?.includes(REVALUATION_LEDGER_DESCRIPTION))
+      .map(record => record.invoice_date);
+
+    const carryingRates = await Promise.all(
+      costBasis.lots.map(async lot => {
+        const acquisition = historyById.get(lot.executionId);
+        const bookedAt =
+          acquisition &&
+          acquisitionRateDate(acquisition, transactionsByExecutionId.get(lot.executionId));
+        if (!bookedAt) {
+          throw new LedgerError(
+            `the cash movement of the purchase of ${lot.units} units on ${lot.tradeDate} was not found, so the rate the securities account carries them at is unknown`,
+          );
+        }
+        const revaluedOn = lastRevaluationOver(
+          bookedAt instanceof Date ? dateToTimelessDateString(bookedAt) : bookedAt,
+          disposalEntry.valueDate,
+          revaluationDates,
+        );
+        return injector
+          .get(ExchangeProvider)
+          .getExchangeRates(disposalEntry.currency, defaultLocalCurrency, revaluedOn ?? bookedAt);
+      }),
+    );
+
+    const { ratePnL } = calculateDisposalPnL({
+      proceedsForeign: params.proceedsForeign,
+      saleRate: disposalEntry.localCurrencyDebitAmount1 / disposalEntry.debitAmount1!,
+      lots: costBasis.lots.map((lot, index) => ({ ...lot, rate: carryingRates[index]! })),
+    });
+    if (Math.abs(ratePnL) < MIN_AMOUNT) {
+      return null;
+    }
+    const exchangeKey: SecuritiesTaxCategoryKey =
+      ratePnL > 0
+        ? 'FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN'
+        : 'FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS';
+    if (
+      !requireTaxCategories(
+        [exchangeKey],
+        params.taxCategories,
+        params.errors,
+        params.missingTaxCategories,
+      )
+    ) {
+      return null;
+    }
+
+    return buildSaleRevaluationEntry(disposalEntry, {
+      ratePnL,
+      exchangeGainTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN,
+      exchangeLossTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS,
+      localCurrency: defaultLocalCurrency,
+      description: `${kind === 'SALE' ? 'Sale' : 'Redemption'} revaluation: ${costBasis.redeemedUnits} × ${describeSecurity(execution)}`,
+    });
+  } catch (e) {
+    params.errors.add(
+      `Could not book the exchange-rate part of ${disposal}: ${(e as Error)?.message ?? e}. It is left to the year-end revaluation.`,
+    );
+    return null;
+  }
+}
+
+/**
+ * The entries of a disposal — a sale or a redemption — from the FIFO lots it draws on: the
+ * disposal entry (cost out, price PnL, withheld tax) and, for a foreign-currency one, the sale
+ * revaluation entry (rate PnL). Throws a `LedgerError` for anything that prevents the disposal
+ * entry; the sale revaluation entry is left out, with its own error, when it cannot be booked.
+ */
+async function disposalLedgerEntries(params: {
+  injector: Injector;
+  ownerId: string;
+  defaultLocalCurrency: Currency;
+  kind: DisposalKind;
+  execution: SecurityExecutionRow;
+  baseEntry: StrictLedgerProto;
+  withheldTax: number;
+  requireLocality: () => SecurityLocality;
+  taxCategories: SecuritiesTaxCategoryIds;
+  errors: Set<string>;
+  missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
+}): Promise<StrictLedgerProto[]> {
+  const { injector, ownerId, defaultLocalCurrency, kind, execution, baseEntry, withheldTax } =
+    params;
+  const cashCurrency = baseEntry.currency;
+  const isForeign = cashCurrency !== defaultLocalCurrency;
+  const hasWithheldTax = Math.abs(withheldTax) >= MIN_AMOUNT;
+
+  if (kind === 'SALE' && hasWithheldTax) {
+    throw new LedgerError(
+      `The bank reports ${withheldTax} ${cashCurrency} tax withheld on ${describeDisposal(kind, execution)}, and booking tax withheld on a sale is not supported yet`,
+    );
+  }
+  if (isForeign && !baseEntry.debitAmount1) {
+    throw new LedgerError(
+      `The cash leg of ${describeDisposal(kind, execution)} has no ${cashCurrency} amount, so its rate cannot be worked out`,
+    );
+  }
+  // only withheld tax depends on locality, so a redemption without it books as is even when the
+  // execution has no issuer country or ISIN
+  const withholdingKeys = hasWithheldTax
+    ? [WITHHOLDING_TAX_CATEGORY_KEYS.REDEMPTION[params.requireLocality()]]
+    : [];
+
+  const history = await injector
+    .get(ForeignSecuritiesProvider)
+    .getSecurityOwnerHistory(execution, ownerId);
+  const costBasis = calculateFifoCostBasis(history, execution, cashCurrency);
+  const problem = costBasisProblem(execution, costBasis);
+  if (problem) {
+    throw new LedgerError(problem);
+  }
+
+  const gain = calculateDisposalGain(baseEntry, {
+    costForeign: costBasis.costForeign,
+    withheldTax,
+  });
+  const gainOrLossKeys: SecuritiesTaxCategoryKey[] =
+    gain >= MIN_AMOUNT
+      ? ['FOREIGN_SECURITIES_SALE_GAIN']
+      : gain <= -MIN_AMOUNT
+        ? ['FOREIGN_SECURITIES_SALE_LOSS']
+        : [];
+  const ids = requireTaxCategories(
+    [...gainOrLossKeys, ...withholdingKeys],
+    params.taxCategories,
+    params.errors,
+    params.missingTaxCategories,
+  );
+  if (!ids) {
+    return [baseEntry];
+  }
+
+  const disposalEntry = buildDisposalEntry(baseEntry, {
+    costForeign: costBasis.costForeign,
+    withheldTax,
+    gainTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_GAIN,
+    lossTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_LOSS,
+    withholdingTaxCategoryId: withholdingKeys.length ? ids[withholdingKeys[0]] : undefined,
+  });
+  const proceedsForeign =
+    (baseEntry.debitAmount1 ?? baseEntry.localCurrencyDebitAmount1) + withheldTax;
+  const revaluationEntry = isForeign
+    ? await saleRevaluationEntry({
+        injector,
+        ownerId,
+        defaultLocalCurrency,
+        kind,
+        execution,
+        disposalEntry,
+        history,
+        costBasis,
+        proceedsForeign,
+        taxCategories: params.taxCategories,
+        errors: params.errors,
+        missingTaxCategories: params.missingTaxCategories,
+      })
+    : null;
+
+  for (const problem of bankProfitLossProblems({
+    kind,
+    execution,
+    history,
+    costBasis,
+    proceedsForeign,
+    isForeign,
+  })) {
+    params.errors.add(problem);
+  }
+
+  return revaluationEntry ? [disposalEntry, revaluationEntry] : [disposalEntry];
+}
+
+/**
+ * The entries for one cash movement: the base entry (bank ↔ securities account), reshaped by the
+ * execution behind it for dividends, bond interest, sales and redemptions — a disposal adds a
+ * second entry for its rate PnL. Anything that prevents that is recorded as a ledger error and
+ * leaves the base entry as it is.
+ */
+async function securitiesLedgerEntries(params: {
   injector: Injector;
   ownerId: string;
   locality: string;
+  defaultLocalCurrency: Currency;
   transaction: IGetTransactionsByChargeIdsResult;
   baseEntry: StrictLedgerProto;
   execution: SecurityExecutionRow | undefined;
   taxCategories: SecuritiesTaxCategoryIds;
   errors: Set<string>;
   missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
-}): Promise<StrictLedgerProto> {
-  const { injector, ownerId, locality, transaction, baseEntry, execution, taxCategories, errors } =
-    params;
+}): Promise<StrictLedgerProto[]> {
+  const { locality, transaction, baseEntry, execution, taxCategories, errors } = params;
   const transactionDescription = describeTransaction(transaction);
 
   if (!execution) {
     errors.add(
       `Transaction ${transactionDescription} has no matched security execution — make sure the securities transactions of its account were scraped for that day`,
     );
-    return baseEntry;
+    return [baseEntry];
   }
 
   const kind = classifySecurityExecution(execution);
   if (kind === 'OTHER') {
-    return baseEntry;
+    return [baseEntry];
   }
 
   // A cancellation keeps the original's trade type but sends the cash back the other way, so the
-  // income and redemption entries below — built for money coming in — do not fit it.
+  // entries below — built for money coming in — do not fit it.
   if (isCancelledExecution(execution)) {
     errors.add(
       `Transaction ${transactionDescription} reverses a cancelled ${kind.toLowerCase()} of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
     );
-    return baseEntry;
+    return [baseEntry];
   }
 
   try {
@@ -208,54 +500,29 @@ async function securitiesLedgerEntry(params: {
         params.missingTaxCategories,
       );
       if (!ids) {
-        return baseEntry;
+        return [baseEntry];
       }
-      return buildIncomeEntry(baseEntry, {
-        incomeTaxCategoryId: ids[incomeKey],
-        withholdingTaxCategoryId: withholdingKey ? ids[withholdingKey] : undefined,
-        withheldTax: tax.withheld,
-      });
+      return [
+        buildIncomeEntry(baseEntry, {
+          incomeTaxCategoryId: ids[incomeKey],
+          withholdingTaxCategoryId: withholdingKey ? ids[withholdingKey] : undefined,
+          withheldTax: tax.withheld,
+        }),
+      ];
     }
 
-    // a redemption: only withheld tax depends on locality, so a redemption without it books as is
-    // even when the execution has no issuer country or ISIN
-    const withholdingKeys = hasWithheldTax
-      ? [WITHHOLDING_TAX_CATEGORY_KEYS.REDEMPTION[requireLocality()]]
-      : [];
-    const history = await injector
-      .get(ForeignSecuritiesProvider)
-      .getSecurityAccountHistory(execution, ownerId);
-    const costBasis = calculateFifoCostBasis(history, execution, cashCurrency);
-    const problem = costBasisProblem(execution, costBasis);
-    if (problem) {
-      throw new LedgerError(problem);
-    }
-
-    const gain = calculateRedemptionGain(baseEntry, {
-      costForeign: costBasis.costForeign,
+    return await disposalLedgerEntries({
+      injector: params.injector,
+      ownerId: params.ownerId,
+      defaultLocalCurrency: params.defaultLocalCurrency,
+      kind,
+      execution,
+      baseEntry,
       withheldTax: tax.withheld,
-    });
-    const gainOrLossKeys: SecuritiesTaxCategoryKey[] =
-      gain >= MIN_AMOUNT
-        ? ['FOREIGN_SECURITIES_SALE_GAIN']
-        : gain <= -MIN_AMOUNT
-          ? ['FOREIGN_SECURITIES_SALE_LOSS']
-          : [];
-    const ids = requireTaxCategories(
-      [...gainOrLossKeys, ...withholdingKeys],
+      requireLocality,
       taxCategories,
       errors,
-      params.missingTaxCategories,
-    );
-    if (!ids) {
-      return baseEntry;
-    }
-    return buildRedemptionEntry(baseEntry, {
-      costForeign: costBasis.costForeign,
-      withheldTax: tax.withheld,
-      gainTaxCategoryId: taxCategories.FOREIGN_SECURITIES_SALE_GAIN,
-      lossTaxCategoryId: taxCategories.FOREIGN_SECURITIES_SALE_LOSS,
-      withholdingTaxCategoryId: withholdingKeys.length ? ids[withholdingKeys[0]] : undefined,
+      missingTaxCategories: params.missingTaxCategories,
     });
   } catch (e) {
     errors.add(
@@ -263,7 +530,7 @@ async function securitiesLedgerEntry(params: {
         ? e.message
         : `Failed to book the security execution of transaction ${transactionDescription}: ${(e as Error)?.message ?? e}`,
     );
-    return baseEntry;
+    return [baseEntry];
   }
 }
 
@@ -460,6 +727,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     const entriesPromises: Array<Promise<void>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
+    const saleRevaluationLedgerEntries: StrictLedgerProto[] = [];
     const distributionLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const miscExpensesLedgerEntries: LedgerProto[] = [];
@@ -521,10 +789,11 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
         throw e;
       }
 
-      const ledgerEntry = await securitiesLedgerEntry({
+      const [ledgerEntry, ...revaluationEntries] = await securitiesLedgerEntries({
         injector,
         ownerId: charge.owner_id,
         locality,
+        defaultLocalCurrency,
         transaction,
         baseEntry,
         execution: executionsByTransactionId.get(transaction.id),
@@ -532,8 +801,11 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
         errors,
         missingTaxCategories,
       });
-      financialAccountLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
+      for (const entry of [ledgerEntry!, ...revaluationEntries]) {
+        updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
+      }
+      financialAccountLedgerEntries.push(ledgerEntry!);
+      saleRevaluationLedgerEntries.push(...revaluationEntries);
     });
 
     // create a ledger record for fee transactions
@@ -674,6 +946,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     const records = [
       ...financialAccountLedgerEntries,
+      ...saleRevaluationLedgerEntries,
       ...distributionLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
       ...miscExpensesLedgerEntries,

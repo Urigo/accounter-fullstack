@@ -59,6 +59,8 @@ export const SECURITIES_TAX_CATEGORY_LABELS: Record<SecuritiesTaxCategoryKey, st
   LOCAL_BOND_WITHHOLDING_TAX: 'Local bond withholding tax',
   FOREIGN_SECURITIES_SALE_GAIN: 'Gain from sale of foreign securities',
   FOREIGN_SECURITIES_SALE_LOSS: 'Loss from sale of foreign securities',
+  FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: 'Exchange rate gain on sale of foreign securities',
+  FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: 'Exchange rate loss on sale of foreign securities',
 };
 
 type Mode = 'existing' | 'new';

@@ -1,5 +1,8 @@
 import { Currency, SecurityTradeType } from '../../../shared/enums.js';
-import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
+import {
+  addDaysToTimelessDate,
+  compareTimelessDates,
+} from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import {
   executionAmountInCurrency,
@@ -14,11 +17,20 @@ import {
 
 /**
  * The purchase cost of the units an execution takes out of a position, first in, first out —
- * replayed from the ingested executions of one security in one portfolio account.
+ * replayed from the ingested executions of one security across the owner's portfolio accounts.
+ *
+ * FIFO is the taxpayer's, not an account's (Income Tax Regulations on capital gains from traded
+ * securities, 2002, reg. 5): identical securities are sold in the order they were acquired. A
+ * transfer out of one of the owner's accounts and into another — a move to a new account — carries
+ * its lots across with their cost and place in line. A transfer in is only taken for such a move
+ * when it is of the same units, into another account, within `TRANSFER_PAIRING_WINDOW_DAYS` of the
+ * transfer out; any other transfer in came from outside, at no known cost, and a transfer out that
+ * nothing pairs with left the owner.
  *
  * Cost is kept in the currency the units were paid in (the cash leg's currency), not converted to
- * shekels: the securities account is a foreign-currency account the year-end revaluation already
- * revalues, so crediting it at the historical shekel cost would count the currency effect twice.
+ * shekels. Each lot names the acquisition it came from, so the caller prices it at the rate it
+ * needs: the ledger at the rate the securities account carries it at, a tax computation at the
+ * rate of its acquisition date.
  *
  * Only the ingested history is known. Units bought before it starts, or that arrived with no cash
  * leg (a deposit transfer, a stock distribution other than a dividend in kind), have no known cost
@@ -40,6 +52,9 @@ export type CostBasisExecution = Pick<
   | 'net_value_trade_currency'
   | 'net_value_settlement_currency'
   | 'net_value_nis'
+  | 'bank_number'
+  | 'branch_number'
+  | 'account_number'
 > & {
   nv: string | null;
   /** The bank's `IsCancelTransaction`: "כן" on a cancelled execution */
@@ -48,6 +63,17 @@ export type CostBasisExecution = Pick<
   payment_type: string | null;
   /** The value of the units in the trade currency; a dividend in kind's cost */
   trade_gross_value_trade_currency: string | null;
+};
+
+/** Units drawn from one acquisition with a known cost */
+export type FifoLot = {
+  /** The acquisition (a buy or a dividend in kind) the units came from */
+  executionId: string;
+  /** Its trade date: the acquisition date of the units */
+  tradeDate: TimelessDateString;
+  units: number;
+  /** What those units cost, in the requested currency */
+  costForeign: number;
 };
 
 export type FifoCostBasis = {
@@ -69,29 +95,84 @@ export type FifoCostBasis = {
    * lot after it can be taken as the definitive cost of what is redeemed.
    */
   openingPositionUnknown: boolean;
+  /** The lots with a known cost the units were drawn from, oldest first; they add up to `costForeign` */
+  lots: FifoLot[];
 };
+
+/**
+ * How long after a transfer out of one of the owner's accounts a transfer in of the same units to
+ * another may arrive and still be the same holding moving
+ */
+export const TRANSFER_PAIRING_WINDOW_DAYS = 10;
 
 /** Fractional units (funds, ETFs) leave float residue; anything below this counts as nothing */
 const UNITS_EPSILON = 1e-6;
 
-type LotEffect = 'BUY' | 'ADD_AT_GROSS_VALUE' | 'ADD_WITHOUT_COST' | 'CONSUME' | 'NONE';
+type LotEffect =
+  | 'BUY'
+  | 'ADD_AT_GROSS_VALUE'
+  | 'ADD_WITHOUT_COST'
+  | 'TRANSFER_OUT'
+  | 'TRANSFER_IN'
+  | 'CONSUME'
+  | 'NONE';
 
 const LOT_EFFECT: Record<SecurityTradeType, LotEffect> = {
   [SecurityTradeType.Buy]: 'BUY',
   // a dividend in kind is the exception — see `lotEffectOf`. Bonus issues and splits are not
   // income and spread the existing cost instead; none has been seen yet, so they stay unknown
   [SecurityTradeType.StockDistribution]: 'ADD_WITHOUT_COST',
-  [SecurityTradeType.TransferIn]: 'ADD_WITHOUT_COST',
-  [SecurityTradeType.TransferInTwoSided]: 'ADD_WITHOUT_COST',
+  [SecurityTradeType.TransferIn]: 'TRANSFER_IN',
+  [SecurityTradeType.TransferInTwoSided]: 'TRANSFER_IN',
   [SecurityTradeType.Sell]: 'CONSUME',
   [SecurityTradeType.Redemption]: 'CONSUME',
-  [SecurityTradeType.TransferOut]: 'CONSUME',
-  [SecurityTradeType.TransferOutTwoSided]: 'CONSUME',
+  [SecurityTradeType.TransferOut]: 'TRANSFER_OUT',
+  [SecurityTradeType.TransferOutTwoSided]: 'TRANSFER_OUT',
   [SecurityTradeType.DividendPayment]: 'NONE',
   [SecurityTradeType.InterestPayment]: 'NONE',
 };
 
-type Lot = { units: number; unitCost: number | null };
+/**
+ * Within a day, units come in before they go out, and a transfer out comes before the transfer in
+ * it pairs with — the day's order is not otherwise known, and this order never draws a lot FIFO
+ * would not: a same-day acquisition is the newest lot, reached only once the older ones are gone.
+ */
+const SAME_DAY_RANK: Record<LotEffect, number> = {
+  BUY: 0,
+  ADD_AT_GROSS_VALUE: 0,
+  ADD_WITHOUT_COST: 0,
+  TRANSFER_OUT: 1,
+  TRANSFER_IN: 2,
+  CONSUME: 3,
+  NONE: 4,
+};
+
+type LotSource = Omit<FifoLot, 'units' | 'costForeign'>;
+
+/** `order` is the place in line: the acquisition's position in the replay, kept across transfers */
+type Lot = { units: number; unitCost: number | null; order: number; source: LotSource | null };
+
+/** Lots that left one of the owner's accounts, until a transfer in to another takes them back */
+type PendingTransfer = { execution: CostBasisExecution; units: number; lots: Lot[] };
+
+const sameAccount = (a: CostBasisExecution, b: CostBasisExecution) =>
+  a.bank_number === b.bank_number &&
+  a.branch_number === b.branch_number &&
+  a.account_number === b.account_number;
+
+/** Whether a transfer in is the arrival of a pending transfer out: a holding moving accounts */
+function isArrivalOf(transferIn: CostBasisExecution, units: number, pending: PendingTransfer) {
+  const out = pending.execution;
+  return (
+    Math.abs(pending.units - units) <= UNITS_EPSILON &&
+    !sameAccount(out, transferIn) &&
+    compareTimelessDates(transferIn.trade_date, out.trade_date) >= 0 &&
+    compareTimelessDates(
+      transferIn.trade_date,
+      addDaysToTimelessDate(out.trade_date, TRANSFER_PAIRING_WINDOW_DAYS),
+    ) <= 0
+  );
+}
 
 function toUnits(nv: string | null): number {
   const units = Number(nv);
@@ -119,10 +200,29 @@ function grossUnitCost(
   return gross / units;
 }
 
-/** The same total order the matcher pairs in: trade date, then id */
-function compareExecutions(a: CostBasisExecution, b: CostBasisExecution): number {
-  return compareTimelessDates(a.trade_date, b.trade_date) || a.id.localeCompare(b.id);
+function sameDayRank(execution: CostBasisExecution): number {
+  const tradeType = tryToSecurityTradeType(execution.trade_type);
+  return tradeType ? SAME_DAY_RANK[lotEffectOf(execution, tradeType)] : SAME_DAY_RANK.NONE;
 }
+
+/**
+ * Trade date, then the same-day rank, then id — the matcher's order, with the day's in before out.
+ * Two disposals of one day go by id, so how the lots split between them is arbitrary; what they
+ * take between them is not.
+ */
+function compareExecutions(a: CostBasisExecution, b: CostBasisExecution): number {
+  return (
+    compareTimelessDates(a.trade_date, b.trade_date) ||
+    sameDayRank(a) - sameDayRank(b) ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+function lotSourceOf(execution: CostBasisExecution): LotSource {
+  return { executionId: execution.id, tradeDate: execution.trade_date };
+}
+
+const sumUnits = (lots: readonly Lot[]) => lots.reduce((sum, lot) => sum + lot.units, 0);
 
 /** Takes `units` off the front of `lots`, returning what was taken lot by lot */
 function takeUnits(lots: Lot[], units: number): Lot[] {
@@ -131,7 +231,7 @@ function takeUnits(lots: Lot[], units: number): Lot[] {
   while (remaining > UNITS_EPSILON && lots.length > 0) {
     const lot = lots[0];
     const take = Math.min(lot.units, remaining);
-    taken.push({ units: take, unitCost: lot.unitCost });
+    taken.push({ ...lot, units: take });
     lot.units -= take;
     remaining -= take;
     if (lot.units <= UNITS_EPSILON) {
@@ -149,13 +249,14 @@ export function calculateFifoCostBasis(
   const live = history.filter(execution => !isCancelledExecution(execution));
 
   const lots: Lot[] = [];
+  const pendingTransfers: PendingTransfer[] = [];
   let openingPositionUnknown = false;
   const earlier = live
     .filter(
       execution => execution.id !== redemption.id && compareExecutions(execution, redemption) < 0,
     )
     .sort(compareExecutions);
-  for (const execution of earlier) {
+  for (const [order, execution] of earlier.entries()) {
     const tradeType = tryToSecurityTradeType(execution.trade_type);
     const units = toUnits(execution.nv);
     if (!tradeType || units === 0) {
@@ -165,19 +266,55 @@ export function calculateFifoCostBasis(
     switch (lotEffectOf(execution, tradeType)) {
       case 'BUY': {
         const paid = Math.abs(Number(executionAmountInCurrency(execution, currency) ?? Number.NaN));
-        lots.push({ units, unitCost: Number.isFinite(paid) ? paid / units : null });
+        lots.push({
+          units,
+          unitCost: Number.isFinite(paid) ? paid / units : null,
+          order,
+          source: lotSourceOf(execution),
+        });
         break;
       }
       case 'ADD_AT_GROSS_VALUE':
-        lots.push({ units, unitCost: grossUnitCost(execution, units, currency) });
+        lots.push({
+          units,
+          unitCost: grossUnitCost(execution, units, currency),
+          order,
+          source: lotSourceOf(execution),
+        });
         break;
       case 'ADD_WITHOUT_COST':
-        lots.push({ units, unitCost: null });
+        lots.push({ units, unitCost: null, order, source: null });
         break;
+      case 'TRANSFER_OUT': {
+        const taken = takeUnits(lots, units);
+        pendingTransfers.push({ execution, units, lots: taken });
+        if (units - sumUnits(taken) > UNITS_EPSILON) {
+          openingPositionUnknown = true;
+        }
+        break;
+      }
+      case 'TRANSFER_IN': {
+        const arrival = pendingTransfers.findIndex(pending =>
+          isArrivalOf(execution, units, pending),
+        );
+        if (arrival === -1) {
+          // from outside the owner's accounts
+          lots.push({ units, unitCost: null, order, source: null });
+          break;
+        }
+        // back in line where the lots stood; units the transfer out had no lot for stay unknown
+        const [{ lots: moved }] = pendingTransfers.splice(arrival, 1);
+        const uncovered = units - sumUnits(moved);
+        lots.push(...moved);
+        if (uncovered > UNITS_EPSILON) {
+          lots.push({ units: uncovered, unitCost: null, order, source: null });
+        }
+        lots.sort((a, b) => a.order - b.order);
+        break;
+      }
       case 'CONSUME': {
         // more taken out than the history put in means it starts mid-position
-        const taken = takeUnits(lots, units).reduce((sum, lot) => sum + lot.units, 0);
-        if (units - taken > UNITS_EPSILON) {
+        if (units - sumUnits(takeUnits(lots, units)) > UNITS_EPSILON) {
           openingPositionUnknown = true;
         }
         break;
@@ -192,12 +329,14 @@ export function calculateFifoCostBasis(
   let costForeign = 0;
   let coveredUnits = 0;
   let unknownCostUnits = 0;
+  const costedLots: FifoLot[] = [];
   for (const lot of takeUnits(lots, redeemedUnits)) {
-    if (lot.unitCost == null) {
+    if (lot.unitCost == null || !lot.source) {
       unknownCostUnits += lot.units;
     } else {
       coveredUnits += lot.units;
       costForeign += lot.units * lot.unitCost;
+      costedLots.push({ ...lot.source, units: lot.units, costForeign: lot.units * lot.unitCost });
     }
   }
   const missingUnits = redeemedUnits - coveredUnits - unknownCostUnits;
@@ -218,5 +357,6 @@ export function calculateFifoCostBasis(
     missingUnits: missingUnits > UNITS_EPSILON ? missingUnits : 0,
     historyStartDate,
     openingPositionUnknown,
+    lots: costedLots,
   };
 }
