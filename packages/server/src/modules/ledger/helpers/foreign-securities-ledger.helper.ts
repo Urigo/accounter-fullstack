@@ -78,6 +78,7 @@ export type WithheldTaxExecution = Pick<
   | 'foreign_tax_value_settlement_currency'
   | 'israel_tax_value_by_payments_settlement_currency'
   | 'capital_tax_value_settlement_currency'
+  | 'is_cancel_transaction'
 >;
 
 export function toAmount(value: string | null | undefined): number {
@@ -95,6 +96,9 @@ export const currencyOfLabel = currencyOfSecurityLabel;
  * too. Its capital tax column restates the Israeli tax rather than adding to it, so it only stands
  * in when the Israeli column is empty. That reported amount is what gets booked; gross minus net is
  * the same figure worked out from the values, and `isConsistent` says whether the two agree.
+ *
+ * A cancellation reverses the cash: the bank keeps its gross positive but reports its net and tax
+ * negated, so the deduced figure is negated too, to compare with the reported one.
  */
 export function getWithheldTax(
   execution: WithheldTaxExecution,
@@ -114,12 +118,15 @@ export function getWithheldTax(
   const withheld = toAmount(execution.foreign_tax_value_settlement_currency) + israelTax;
 
   const net = executionAmountInCurrency(execution, cashCurrency);
+  const gross = toAmount(execution.trade_gross_value_trade_currency);
   const deduced =
     execution.trade_gross_value_trade_currency == null ||
     net == null ||
     currencyOfLabel(execution.trade_currency) !== cashCurrency
       ? null
-      : toAmount(execution.trade_gross_value_trade_currency) - Math.abs(toAmount(net));
+      : isCancelledExecution(execution)
+        ? -(Math.abs(gross) - Math.abs(toAmount(net)))
+        : gross - Math.abs(toAmount(net));
 
   return {
     withheld,
@@ -217,6 +224,50 @@ export function buildIncomeEntry(
     base,
     params.incomeTaxCategoryId,
     withholdingLine(params.withheldTax, params.withholdingTaxCategoryId),
+  );
+}
+
+/** The same entry seen from the other side: every debit becomes a credit and vice versa */
+function mirrorEntry(entry: StrictLedgerProto): StrictLedgerProto {
+  return {
+    ...entry,
+    debitAccountID1: entry.creditAccountID1,
+    debitAmount1: entry.creditAmount1,
+    localCurrencyDebitAmount1: entry.localCurrencyCreditAmount1,
+    debitAccountID2: entry.creditAccountID2,
+    debitAmount2: entry.creditAmount2,
+    localCurrencyDebitAmount2: entry.localCurrencyCreditAmount2,
+    creditAccountID1: entry.debitAccountID1,
+    creditAmount1: entry.debitAmount1,
+    localCurrencyCreditAmount1: entry.localCurrencyDebitAmount1,
+    creditAccountID2: entry.debitAccountID2,
+    creditAmount2: entry.debitAmount2,
+    localCurrencyCreditAmount2: entry.localCurrencyDebitAmount2,
+    isCreditorCounterparty: !entry.isCreditorCounterparty,
+  };
+}
+
+/**
+ * A cancelled dividend or bond interest payment: the mirror of the income entry it reverses. The
+ * bank is credited with the net paid back, the income is debited with the gross, and the withheld
+ * tax — reported negated on the cancellation — is credited back on a second line.
+ */
+export function buildIncomeReversalEntry(
+  base: StrictLedgerProto,
+  params: {
+    incomeTaxCategoryId: string;
+    withholdingTaxCategoryId?: string;
+    /** As the bank reports it on the cancellation: negative when it reverses withheld tax */
+    withheldTax: number;
+  },
+): StrictLedgerProto {
+  if (base.isCreditorCounterparty) {
+    throw new LedgerError(
+      `Expected money going out for the cancellation "${base.description ?? base.id}", but it came in`,
+    );
+  }
+  return mirrorEntry(
+    buildIncomeEntry(mirrorEntry(base), { ...params, withheldTax: -params.withheldTax }),
   );
 }
 

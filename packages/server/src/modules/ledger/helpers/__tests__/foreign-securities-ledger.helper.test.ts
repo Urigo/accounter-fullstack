@@ -4,6 +4,7 @@ import type { StrictLedgerProto, TimelessDateString } from '../../../../shared/t
 import {
   buildDistributionEntry,
   buildIncomeEntry,
+  buildIncomeReversalEntry,
   buildRedemptionEntry,
   classifySecurityExecution,
   getBankRateMismatch,
@@ -80,6 +81,7 @@ function taxExecution(overrides: Partial<WithheldTaxExecution> = {}): WithheldTa
     foreign_tax_value_settlement_currency: '0',
     israel_tax_value_by_payments_settlement_currency: '0',
     capital_tax_value_settlement_currency: '0',
+    is_cancel_transaction: 'לא',
     ...overrides,
   };
 }
@@ -216,6 +218,38 @@ describe('getWithheldTax', () => {
     expect(result.withheld).toBeCloseTo(125, 6);
     expect(result.isConsistent).toBe(true);
   });
+
+  it('reads the negated tax of a cancellation as consistent with its reversed cash', () => {
+    const result = getWithheldTax(
+      taxExecution({
+        trade_gross_value_trade_currency: '1000',
+        net_value_trade_currency: '-700',
+        net_value_settlement_currency: '-700',
+        foreign_tax_value_settlement_currency: '-300',
+        is_cancel_transaction: 'כן',
+      }),
+      Currency.Usd,
+    );
+
+    expect(result.withheld).toBeCloseTo(-300, 6);
+    expect(result.deduced).toBeCloseTo(-300, 6);
+    expect(result.isConsistent).toBe(true);
+  });
+
+  it('flags a cancellation whose tax does not match its reversed cash', () => {
+    const result = getWithheldTax(
+      taxExecution({
+        trade_gross_value_trade_currency: '1000',
+        net_value_trade_currency: '-700',
+        net_value_settlement_currency: '-700',
+        foreign_tax_value_settlement_currency: '-250',
+        is_cancel_transaction: 'כן',
+      }),
+      Currency.Usd,
+    );
+
+    expect(result.isConsistent).toBe(false);
+  });
 });
 
 describe('buildIncomeEntry', () => {
@@ -312,6 +346,88 @@ describe('buildIncomeEntry', () => {
         }),
         { incomeTaxCategoryId: DIVIDEND_INCOME, withheldTax: 0 },
       ),
+    ).toThrow(LedgerError);
+  });
+});
+
+describe('buildIncomeReversalEntry', () => {
+  /** What `ledgerEntryFromMainTransaction` builds for money going out: securities debit, bank credit */
+  const cashOutEntry = (amount: number) =>
+    baseEntry({
+      isCreditorCounterparty: false,
+      debitAccountID1: SECURITIES_USD,
+      debitAmount1: amount,
+      localCurrencyDebitAmount1: amount * RATE,
+      creditAccountID1: BANK_USD,
+      creditAmount1: amount,
+      localCurrencyCreditAmount1: amount * RATE,
+    });
+
+  it('debits the income with the gross and credits the bank and the withheld tax back', () => {
+    const entry = buildIncomeReversalEntry(cashOutEntry(700), {
+      incomeTaxCategoryId: DIVIDEND_INCOME,
+      withholdingTaxCategoryId: WITHHOLDING,
+      withheldTax: -300,
+    });
+
+    expect(entry.isCreditorCounterparty).toBe(false);
+    expect(entry.debitAccountID1).toBe(DIVIDEND_INCOME);
+    expect(entry.debitAmount1).toBeCloseTo(1000, 6);
+    expect(entry.localCurrencyDebitAmount1).toBeCloseTo(3500, 6);
+    expect(entry.debitAccountID2).toBeUndefined();
+    expect(entry.creditAccountID1).toBe(BANK_USD);
+    expect(entry.creditAmount1).toBe(700);
+    expect(entry.localCurrencyCreditAmount1).toBeCloseTo(2450, 6);
+    expect(entry.creditAccountID2).toBe(WITHHOLDING);
+    expect(entry.creditAmount2).toBeCloseTo(300, 6);
+    expect(entry.localCurrencyCreditAmount2).toBeCloseTo(1050, 6);
+    expect(entry.localCurrencyDebitAmount1).toBe(
+      entry.localCurrencyCreditAmount1 + entry.localCurrencyCreditAmount2!,
+    );
+  });
+
+  it('mirrors the income entry it reverses', () => {
+    const income = buildIncomeEntry(baseEntry({ debitAmount1: 700, localCurrencyDebitAmount1: 700 * RATE }), {
+      incomeTaxCategoryId: DIVIDEND_INCOME,
+      withholdingTaxCategoryId: WITHHOLDING,
+      withheldTax: 300,
+    });
+    const reversal = buildIncomeReversalEntry(cashOutEntry(700), {
+      incomeTaxCategoryId: DIVIDEND_INCOME,
+      withholdingTaxCategoryId: WITHHOLDING,
+      withheldTax: -300,
+    });
+
+    expect(reversal).toMatchObject({
+      debitAccountID1: income.creditAccountID1,
+      debitAmount1: income.creditAmount1,
+      localCurrencyDebitAmount1: income.localCurrencyCreditAmount1,
+      creditAccountID1: income.debitAccountID1,
+      creditAmount1: income.debitAmount1,
+      creditAccountID2: income.debitAccountID2,
+      creditAmount2: income.debitAmount2,
+    });
+  });
+
+  it('has no second line when nothing was withheld', () => {
+    const entry = buildIncomeReversalEntry(cashOutEntry(1000), {
+      incomeTaxCategoryId: DIVIDEND_INCOME,
+      withheldTax: 0,
+    });
+
+    expect(entry).toMatchObject({
+      debitAccountID1: DIVIDEND_INCOME,
+      debitAmount1: 1000,
+      creditAccountID1: BANK_USD,
+      creditAmount1: 1000,
+    });
+    expect(entry.debitAccountID2).toBeUndefined();
+    expect(entry.creditAccountID2).toBeUndefined();
+  });
+
+  it('refuses money coming in', () => {
+    expect(() =>
+      buildIncomeReversalEntry(baseEntry(), { incomeTaxCategoryId: DIVIDEND_INCOME, withheldTax: 0 }),
     ).toThrow(LedgerError);
   });
 });

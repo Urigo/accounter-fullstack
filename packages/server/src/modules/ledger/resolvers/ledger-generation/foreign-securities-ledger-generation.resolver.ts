@@ -33,6 +33,7 @@ import { splitFeeTransactions } from '../../helpers/fee-transactions.js';
 import {
   buildDistributionEntry,
   buildIncomeEntry,
+  buildIncomeReversalEntry,
   buildRedemptionEntry,
   calculateRedemptionGain,
   classifySecurityExecution,
@@ -167,9 +168,11 @@ async function securitiesLedgerEntry(params: {
     return baseEntry;
   }
 
-  // A cancellation keeps the original's trade type but sends the cash back the other way, so the
-  // income and redemption entries below — built for money coming in — do not fit it.
-  if (isCancelledExecution(execution)) {
+  // A cancellation keeps the original's trade type but sends the cash back the other way. A
+  // cancelled dividend or interest payment books as the mirror of its income entry; a cancelled
+  // redemption would also have to restore the redeemed units' cost, which is not supported.
+  const isCancellation = isCancelledExecution(execution);
+  if (isCancellation && kind === 'REDEMPTION') {
     errors.add(
       `Transaction ${transactionDescription} reverses a cancelled ${kind.toLowerCase()} of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
     );
@@ -210,7 +213,7 @@ async function securitiesLedgerEntry(params: {
       if (!ids) {
         return baseEntry;
       }
-      return buildIncomeEntry(baseEntry, {
+      return (isCancellation ? buildIncomeReversalEntry : buildIncomeEntry)(baseEntry, {
         incomeTaxCategoryId: ids[incomeKey],
         withholdingTaxCategoryId: withholdingKey ? ids[withholdingKey] : undefined,
         withheldTax: tax.withheld,
