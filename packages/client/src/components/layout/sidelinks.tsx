@@ -19,6 +19,7 @@ import {
   IdCard,
   ListChecks,
   ParkingMeter,
+  Percent,
   PlaneTakeoff,
   Puzzle,
   Receipt,
@@ -154,6 +155,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: ROUTES.REPORTS.BALANCE,
         icon: <ChartNoAxesCombined size={18} />,
+      },
+      {
+        title: 'CPI Linkage Calculator',
+        label: '',
+        href: ROUTES.REPORTS.CPI_CALCULATOR,
+        icon: <Percent size={18} />,
       },
       {
         title: 'Validate Reports',
