@@ -191,6 +191,7 @@ export const ROUTES = {
         ? `/reports/corporate-tax-ruling-compliance/${year}`
         : '/reports/corporate-tax-ruling-compliance',
     BALANCE: '/reports/balance',
+    CPI_CALCULATOR: '/reports/cpi-calculator',
     VALIDATE_REPORTS: '/reports/validate-reports',
   },
 

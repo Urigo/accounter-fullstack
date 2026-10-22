@@ -156,6 +156,11 @@ const BalanceReport = lazy(() =>
     default: m.BalanceReport,
   })),
 );
+const PriceIndexCalculator = lazy(() =>
+  import('../components/screens/price-index-calculator/index.js').then(m => ({
+    default: m.PriceIndexCalculator,
+  })),
+);
 const ValidateReportsScreen = lazy(() =>
   import('../components/reports/validations/index.js').then(m => ({
     default: m.ValidateReportsScreen,
@@ -617,6 +622,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Balance Report',
                   breadcrumb: 'Balance',
+                },
+              },
+              {
+                path: 'cpi-calculator',
+                element: withSuspense(PriceIndexCalculator),
+                handle: {
+                  title: 'CPI Linkage Calculator',
+                  breadcrumb: 'CPI Calculator',
                 },
               },
               {
