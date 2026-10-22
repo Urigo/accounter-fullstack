@@ -1,5 +1,53 @@
 # @accounter/scraper-app
 
+## 0.1.0
+
+### Minor Changes
+
+- [#4729](https://github.com/Urigo/accounter-fullstack/pull/4729) [`223adab`](https://github.com/Urigo/accounter-fullstack/commit/223adab1c371c577bbbcf32cc2d69a8bb5db69a4) Thanks [@gilgardosh](https://github.com/gilgardosh)! - **Breaking:** the vault is no longer stored on disk. The app opens your vault file in memory for
+  the session, and you save changes back to it from the UI (in place in Chromium browsers, as a
+  download elsewhere). A banner shows whenever the session has changes that your file doesn't.
+  `VAULT_PATH` and the vault-location setting are gone; open your existing `.vault` file once from
+  the new welcome screen. Run history is now kept for the session only unless you turn on "Save run
+  history" in Settings.
+
+### Patch Changes
+
+- [#4571](https://github.com/Urigo/accounter-fullstack/pull/4571) [`d394530`](https://github.com/Urigo/accounter-fullstack/commit/d394530d88cdc1243de19bd7a804acdc3fb26eac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@fastify/websocket@11.3.3` ↗︎](https://www.npmjs.com/package/@fastify/websocket/v/11.3.3) (from `11.3.1`, in `dependencies`)
+    - Updated dependency [`fast-xml-parser@5.11.2` ↗︎](https://www.npmjs.com/package/fast-xml-parser/v/5.11.2) (from `5.11.1`, in `dependencies`)
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@fastify/static@10.1.6` ↗︎](https://www.npmjs.com/package/@fastify/static/v/10.1.6) (from `10.1.5`, in `dependencies`)
+    - Updated dependency [`@fastify/websocket@11.3.4` ↗︎](https://www.npmjs.com/package/@fastify/websocket/v/11.3.4) (from `11.3.3`, in `dependencies`)
+
+- [#4663](https://github.com/Urigo/accounter-fullstack/pull/4663) [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`fastify@5.12.7` ↗︎](https://www.npmjs.com/package/fastify/v/5.12.7) (from `5.12.5`, in `dependencies`)
+    - Updated dependency [`zod@4.6.7` ↗︎](https://www.npmjs.com/package/zod/v/4.6.7) (from `4.6.5`, in `dependencies`)
+
+- [#4684](https://github.com/Urigo/accounter-fullstack/pull/4684) [`8a9c5be`](https://github.com/Urigo/accounter-fullstack/commit/8a9c5be6042af604d8ca8058aa1a0b0965579cfc) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Added dependency [`lucide-react@1.58.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.58.0) (to `dependencies`)
+
+- [#4725](https://github.com/Urigo/accounter-fullstack/pull/4725) [`6a5f5b6`](https://github.com/Urigo/accounter-fullstack/commit/6a5f5b68ac675498cc3164ffc960d20c5524623c) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`react@19.3.1` ↗︎](https://www.npmjs.com/package/react/v/19.3.1) (from `19.3.0`, in `dependencies`)
+    - Updated dependency [`react-dom@19.3.1` ↗︎](https://www.npmjs.com/package/react-dom/v/19.3.1) (from `19.3.0`, in `dependencies`)
+
+- [#4729](https://github.com/Urigo/accounter-fullstack/pull/4729) [`223adab`](https://github.com/Urigo/accounter-fullstack/commit/223adab1c371c577bbbcf32cc2d69a8bb5db69a4) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Added dependency [`lucide-react@1.57.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.57.0) (to `dependencies`)
+
+- [#4739](https://github.com/Urigo/accounter-fullstack/pull/4739) [`e016edf`](https://github.com/Urigo/accounter-fullstack/commit/e016edf873da7b3018c4ab6a1b5e97e3fca3feac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`lucide-react@1.61.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.61.0) (from `1.58.0`, in `dependencies`)
+
+- [#4687](https://github.com/Urigo/accounter-fullstack/pull/4687) [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Poalim securities transactions with the `איחוד/הפחתת הון` (consolidation / capital reduction)
+  payment type no longer fail schema validation. The value is accepted by the scraper schemas and
+  exposed in GraphQL as the new `SecurityPaymentType.CONSOLIDATION_OR_CAPITAL_REDUCTION` member.
+
+- [#4756](https://github.com/Urigo/accounter-fullstack/pull/4756) [`a6feedd`](https://github.com/Urigo/accounter-fullstack/commit/a6feeddb2a945af472fe9c56a9bd3ae8516fc11f) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Round the scraped JPY exchange rate (converted from BOI's per-100-units quote) to the DB column's
+  6-decimal precision, so floating-point noise (e.g. `0.018734999999999998`) no longer shows up as
+  changed currency-rate rows.
+- Updated dependencies [[`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439), [`a4121e9`](https://github.com/Urigo/accounter-fullstack/commit/a4121e9614f49dfe7a023f1f65d9e6a13dc0ecac), [`0cec65f`](https://github.com/Urigo/accounter-fullstack/commit/0cec65f89583a24fd86ff49c884b555a51e6866a), [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d), [`8a9c5be`](https://github.com/Urigo/accounter-fullstack/commit/8a9c5be6042af604d8ca8058aa1a0b0965579cfc), [`35a00dd`](https://github.com/Urigo/accounter-fullstack/commit/35a00dd2b79ef43c684be0dcb74fb8a80b88320e), [`6a5f5b6`](https://github.com/Urigo/accounter-fullstack/commit/6a5f5b68ac675498cc3164ffc960d20c5524623c), [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee)]:
+  - @accounter/modern-poalim-scraper@0.11.1
+
 ## 0.0.3
 
 ### Patch Changes
