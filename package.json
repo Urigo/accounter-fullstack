@@ -68,7 +68,7 @@
     "@graphql-eslint/eslint-plugin": "4.4.2",
     "@graphql-hive/cli": "0.68.1",
     "@graphql-inspector/cli": "7.0.1",
-    "@graphql-tools/mock": "10.0.2",
+    "@graphql-tools/mock": "10.1.1",
     "@parcel/watcher": "2.6.0",
     "@pgtyped/cli": "2.4.3",
     "@pgtyped/runtime": "2.4.2",
