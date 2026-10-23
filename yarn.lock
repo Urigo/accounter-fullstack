@@ -361,7 +361,7 @@ __metadata:
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.4.0"
     dotenv: "npm:18.0.8"
-    googleapis: "npm:187.0.0"
+    googleapis: "npm:188.0.0"
     graphql: "npm:16.14.2"
     graphql-modules: "npm:3.1.2"
     graphql-scalars: "npm:2.0.1"
@@ -16146,13 +16146,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"googleapis@npm:187.0.0":
-  version: 187.0.0
-  resolution: "googleapis@npm:187.0.0"
+"googleapis@npm:188.0.0":
+  version: 188.0.0
+  resolution: "googleapis@npm:188.0.0"
   dependencies:
     google-auth-library: "npm:^11.0.0"
     googleapis-common: "npm:^9.0.0"
-  checksum: 10c0/38dfa44ea3f01bdc7b38ae9dab9ab70755582840fd58c3e0bc87892f672c76a957296823677d73a36e6b5ebff7729fd4b246b0521e9e33e22ae1a0459e800419
+  checksum: 10c0/5abdb08647a8b45a4fbd307e3e4168ad7b7ad0296a3b682f1c637d4eb27f3f5b5ed5cbebfef5aab84eb8c0b40b6507a7738093c07ba9ae9cc831818a6b917a27
   languageName: node
   linkType: hard
 
