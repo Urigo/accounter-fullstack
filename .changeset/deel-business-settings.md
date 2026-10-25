@@ -2,6 +2,6 @@
 '@accounter/client': minor
 ---
 
-The Deel integration card asks for the business that represents Deel in the books when connecting,
-shows the current one, and lets the user change it — or warns that Deel sync is disabled while it is
-not set.
+The Deel integration card lets the user choose the business that represents Deel in the books —
+optionally when connecting, and later via "Set business" / "Change business" — shows the current
+one, and flags when none is set.

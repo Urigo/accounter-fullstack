@@ -9,6 +9,10 @@ import { ProviderCredentialsDocument, type ProviderCredentialsQuery } from '../g
       provider
       configuredAt
       businessId
+      business {
+        id
+        name
+      }
     }
   }
 `;
