@@ -1,13 +1,16 @@
 import { useMemo, type ReactElement, type ReactNode } from 'react';
+import { ROUTES } from '@/router/routes.js';
 import {
   ForeignSecuritiesChargeInfoFragmentDoc,
   type ForeignSecuritiesChargeInfoFragment,
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { SecurityDescriptorBadges } from '../../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
   SecurityExecutionsTable,
 } from '../../securities/security-executions-table.js';
+import { SecurityHeading } from '../../securities/security-heading.js';
 import { Badge } from '../../ui/badge.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -31,6 +34,14 @@ import { Badge } from '../../ui/badge.js';
           isEtf
           isForeign
           asOfDate
+        }
+        securityBusiness {
+          id
+          isin
+          symbol
+          engName
+          hebName
+          ...SecurityDescriptorFields
         }
         executions {
           id
@@ -69,34 +80,59 @@ export const ForeignSecuritiesInfo = ({ chargeProps }: Props): ReactNode => {
 };
 
 const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactElement => {
-  const { details } = security;
+  const { details, securityBusiness } = security;
+  const businessHref = securityBusiness
+    ? ROUTES.BUSINESSES.DETAIL_TAB(securityBusiness.id, 'security')
+    : undefined;
 
   return (
     <div className="flex flex-col gap-2">
       {details ? (
         <div className="flex flex-col gap-1">
-          <div className="text-lg font-semibold">
-            {details.engName}
-            {details.symbol && <span className="text-gray-500"> ({details.symbol})</span>}
-          </div>
-          <div className="text-sm text-gray-500">{details.hebName}</div>
-          <div className="flex flex-row flex-wrap items-center gap-2">
-            {details.exchange && <Badge variant="secondary">{details.exchange}</Badge>}
-            <Badge variant="secondary">{details.currencyCode}</Badge>
-            <Badge variant="outline">{details.itemType}</Badge>
-            {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
-            {details.isEtf && <Badge variant="outline">ETF</Badge>}
-            {details.isForeign && <Badge variant="outline">Foreign</Badge>}
-          </div>
+          <SecurityHeading
+            name={details.engName}
+            symbol={details.symbol}
+            hebName={details.hebName}
+            href={businessHref}
+          >
+            <div className="flex flex-row flex-wrap items-center gap-2">
+              {securityBusiness && <Badge variant="secondary">{securityBusiness.isin}</Badge>}
+              {details.exchange && <Badge variant="secondary">{details.exchange}</Badge>}
+              <Badge variant="secondary">{details.currencyCode}</Badge>
+              <Badge variant="outline">{details.itemType}</Badge>
+              {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
+              {details.isEtf && <Badge variant="outline">ETF</Badge>}
+              {details.isForeign && <Badge variant="outline">Foreign</Badge>}
+            </div>
+          </SecurityHeading>
           <div className="text-xs text-gray-400">
             Key {security.securityKey} · reference data as of {formatSecurityDate(details.asOfDate)}
+          </div>
+        </div>
+      ) : securityBusiness ? (
+        // The reference list only carries what the portfolio held when it was scraped, so a
+        // security closed out before then (a redeemed bond, say) has no row there — but its
+        // executions still created a security business, linked by the Poalim key.
+        <div className="flex flex-col gap-1">
+          <SecurityHeading
+            name={securityBusiness.engName ?? securityBusiness.isin}
+            symbol={securityBusiness.symbol}
+            hebName={securityBusiness.hebName}
+            href={businessHref}
+          >
+            <SecurityDescriptorBadges security={securityBusiness} />
+          </SecurityHeading>
+          <div className="text-xs text-gray-400">
+            Key {security.securityKey} · from the security&apos;s business (not in the ingested
+            securities list)
           </div>
         </div>
       ) : (
         <div className="flex flex-col gap-1">
           <div className="text-lg font-semibold">Security {security.securityKey}</div>
           <div className="text-sm text-gray-500">
-            Not found in the ingested securities list — the reference list may be out of date.
+            No reference data or security business for this key yet — the securities list or the
+            executions may not have been ingested.
           </div>
         </div>
       )}

@@ -149,6 +149,7 @@ export const ROUTES = {
     CONTRACTS: '/businesses/contracts',
     DETAIL: (businessId: string) => `/businesses/${businessId}`,
     DETAIL_LEDGER: (businessId: string) => `/businesses/${businessId}/ledger`,
+    DETAIL_TAB: (businessId: string, tab: string) => `/businesses/${businessId}?tab=${tab}`,
     AUTH_MANAGEMENT: (businessId: string) => `/businesses/${businessId}/auth-management`,
   },
 
