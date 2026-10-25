@@ -72,10 +72,11 @@ const computeChargeValidation = async (
   const isGeneralFees =
     taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
-  // A securities charge can book executions with no cash leg (stock distributions), which have
-  // neither a transaction nor a counterparty to show. Only the requirement to have them is waived:
-  // whatever transactions and counterparty such a charge does hold (say, a merged-in commission
-  // fee) are still validated.
+  // A securities charge can book executions with no cash leg (stock distributions), which have no
+  // transaction to show. Their counterparty is the distributed security's business (see
+  // `getChargeBusinesses`), but that business may not exist yet. Only the requirement to have them
+  // is waived: whatever transactions and counterparty such a charge does hold (say, a merged-in
+  // commission fee) are still validated.
   const booksSecurityExecutions =
     chargeType === ChargeTypeEnum.ForeignSecurities &&
     (

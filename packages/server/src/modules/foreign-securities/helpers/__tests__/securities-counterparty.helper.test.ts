@@ -132,6 +132,19 @@ describe('pruneOffsettingSecurityCandidates', () => {
     ).toEqual([FUND_ALPHA, BANK]);
   });
 
+  it('keeps a reversed security when no other security in the charge moved money', () => {
+    // the other candidate is not a security, so nothing can take the reversed one's place
+    const transactions = [
+      transaction({ business_id: FUND_ALPHA, amount: '-1000' }),
+      transaction({ business_id: FUND_ALPHA, amount: '1000' }),
+      transaction({ business_id: BANK, amount: '-20' }),
+    ];
+
+    expect(
+      pruneOffsettingSecurityCandidates([FUND_ALPHA, BANK], transactions, SECURITIES),
+    ).toEqual([FUND_ALPHA, BANK]);
+  });
+
   it('keeps a security that offsets in one currency but not another', () => {
     const transactions = [
       transaction({ business_id: FUND_ALPHA, amount: '-1000' }),

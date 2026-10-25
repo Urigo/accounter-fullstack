@@ -13,6 +13,7 @@ import { basicDocumentValidation } from '../../documents/helpers/validate-docume
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import { pruneOffsettingSecurityCandidates } from '../../foreign-securities/helpers/securities-counterparty.helper.js';
+import { ForeignSecuritiesProvider } from '../../foreign-securities/providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../../foreign-securities/providers/security-businesses.provider.js';
 import { getLedgerMeta } from '../../ledger/helpers/common.helper.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
@@ -150,6 +151,56 @@ async function narrowMainBusinessIds(
   };
 }
 
+/**
+ * The security businesses of the executions a securities charge books directly. A stock
+ * distribution has no cash leg, so its charge holds the execution alone, with no transaction or
+ * document naming a party: its counterparty is the security it was paid in. Resolved by the
+ * execution's Poalim key, falling back to its ISIN; an execution whose security has no business yet
+ * adds nothing.
+ *
+ * Only charges typed as foreign securities can book executions (distribution charges are created
+ * that way, and a merge types its result so), so other charges skip the lookup.
+ */
+async function linkedExecutionBusinessIds(
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<string[]> {
+  if (charge.type !== 'FOREIGN_SECURITIES') {
+    return [];
+  }
+  const executions = (
+    await injector.get(ForeignSecuritiesProvider).executionsByChargeIdLoader.load(charge.id)
+  ).filter(execution => execution.owner_id === charge.owner_id);
+  if (executions.length === 0) {
+    return [];
+  }
+  const identifierLoader = injector.get(
+    SecurityBusinessesProvider,
+  ).getSecurityBusinessByIdentifierLoader;
+  const businessIds = await Promise.all(
+    executions.map(async execution => {
+      const byKey = await identifierLoader.load({
+        ownerId: charge.owner_id,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+      if (byKey) {
+        return byKey.id;
+      }
+      if (!execution.isin) {
+        return null;
+      }
+      const byIsin = await identifierLoader.load({
+        ownerId: charge.owner_id,
+        type: 'ISIN',
+        value: execution.isin,
+      });
+      return byIsin?.id ?? null;
+    }),
+  );
+  return [...new Set(businessIds.filter((id): id is string => !!id))];
+}
+
 export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Injector) {
   const charge = await resolveCharge(chargeRef, injector);
 
@@ -157,27 +208,36 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
     // business_array folds in transactions, documents, ledger and misc-expense
     // parties (minus the owner), so no child-table loads are needed.
     const sqlMainBusinessIds = (charge.main_business_array as string[] | null) ?? [];
-    const mainBusinesses = await narrowMainBusinessIds(charge.id, sqlMainBusinessIds, injector);
+    const linkedBusinessIds = await linkedExecutionBusinessIds(charge, injector);
+    const candidateIds = [...new Set([...sqlMainBusinessIds, ...linkedBusinessIds])];
+    // the SQL knows nothing of executions booked directly, so its single-candidate answer stands
+    // only when they add no candidate
+    const addsLinked = candidateIds.length > sqlMainBusinessIds.length;
+    const mainBusinesses = await narrowMainBusinessIds(charge.id, candidateIds, injector);
     // A single SQL candidate only becomes the counterparty when it joins a `businesses` row (so a
     // tax category never does) — that is `business_id`. Pruning must not bypass that check, so the
-    // pruned survivor is used only where the SQL had several candidates to begin with.
+    // pruned survivor is used only where the SQL had several candidates to begin with, or where a
+    // directly booked execution's security (always a business) joined them.
     const narrowedToOne =
-      sqlMainBusinessIds.length > 1 && mainBusinesses.mainBusinessIds.length === 1;
+      (sqlMainBusinessIds.length > 1 || addsLinked) && mainBusinesses.mainBusinessIds.length === 1;
+    const narrowedMainBusinessId = narrowedToOne ? mainBusinesses.mainBusinessIds[0] : null;
     return {
-      allBusinessIds: charge.business_array ?? [],
+      allBusinessIds: [...new Set([...(charge.business_array ?? []), ...linkedBusinessIds])],
       ...mainBusinesses,
-      mainBusinessId:
-        (charge.business_id as string | null) ??
-        (narrowedToOne ? mainBusinesses.mainBusinessIds[0] : null),
+      mainBusinessId: addsLinked
+        ? narrowedMainBusinessId
+        : ((charge.business_id as string | null) ?? narrowedMainBusinessId),
     };
   }
 
-  const [transactions, documents, ledgerRecords, miscExpenses] = await Promise.all([
-    injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(charge.id),
-    injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(charge.id),
-    injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(charge.id),
-    injector.get(MiscExpensesProvider).getExpensesByChargeIdLoader.load(charge.id),
-  ]);
+  const [transactions, documents, ledgerRecords, miscExpenses, linkedBusinessIds] =
+    await Promise.all([
+      injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(charge.id),
+      injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(charge.id),
+      injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(charge.id),
+      injector.get(MiscExpensesProvider).getExpensesByChargeIdLoader.load(charge.id),
+      linkedExecutionBusinessIds(charge, injector),
+    ]);
 
   const allBusinessIdsSet = new Set<string>();
   const mainBusinessIdsSet = new Set<string>();
@@ -214,6 +274,12 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
         allBusinessIdsSet.add(id);
       }
     });
+  });
+
+  // a stock distribution's security: the charge's party, though no transaction names it
+  linkedBusinessIds.map(id => {
+    allBusinessIdsSet.add(id);
+    mainBusinessIdsSet.add(id);
   });
 
   const allBusinessIds = Array.from(allBusinessIdsSet);

@@ -50,12 +50,15 @@ export function areNetZero(nets: ReadonlyMap<string, number>): boolean {
 
 /**
  * Narrows a charge's main-counterparty candidates by dropping the securities whose trades cancel
- * out within the charge. A security bought and sold back for the same amount carries no exposure,
- * so it should not compete with the security the charge actually moved money into.
+ * out within the charge — but only when another security in the same charge moved money. A
+ * security bought and sold back for the same amount carries no exposure, so next to a security
+ * the charge actually traded it should not compete for the counterparty.
  *
- * Only securities businesses are pruned — a non-securities candidate (say, a bank fee row not
- * flagged as a fee) is a real ambiguity and stays visible. When every candidate cancels out there
- * is nothing to prefer, so the candidates are returned as they are.
+ * On its own, a reversal is still the charge's subject: a charge of just a buy and its
+ * cancelling sell keeps that security as its counterparty, and so does one whose only other
+ * candidate is not a security (say, a bank fee row not flagged as a fee) — such a candidate is a
+ * real ambiguity and stays visible, never a reason to drop the security. Non-securities are never
+ * dropped.
  */
 export function pruneOffsettingSecurityCandidates(
   candidateIds: readonly string[],
@@ -66,11 +69,17 @@ export function pruneOffsettingSecurityCandidates(
     return [...candidateIds];
   }
 
-  const remaining = candidateIds.filter(
-    businessId =>
-      !securitiesBusinessIds.has(businessId) ||
-      !isNetZero(transactions.filter(transaction => transaction.business_id === businessId)),
-  );
+  const isOffsetting = (businessId: string) =>
+    securitiesBusinessIds.has(businessId) &&
+    isNetZero(transactions.filter(transaction => transaction.business_id === businessId));
 
-  return remaining.length > 0 ? remaining : [...candidateIds];
+  // only a security that carries exposure can take an offsetting one's place
+  const hasExposedSecurity = candidateIds.some(
+    businessId => securitiesBusinessIds.has(businessId) && !isOffsetting(businessId),
+  );
+  if (!hasExposedSecurity) {
+    return [...candidateIds];
+  }
+
+  return candidateIds.filter(businessId => !isOffsetting(businessId));
 }

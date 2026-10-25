@@ -1,6 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { describe, expect, it, vi } from 'vitest';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
+import { ForeignSecuritiesProvider } from '../../../foreign-securities/providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../../../foreign-securities/providers/security-businesses.provider.js';
 import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '../../../misc-expenses/providers/misc-expenses.provider.js';
@@ -41,16 +42,37 @@ const charge = {
   type: 'FOREIGN_SECURITIES',
 } as IGetChargesByIdsResult;
 
-function makeInjector(transactions: StubTransaction[]) {
+/** An execution the charge books directly, as a stock distribution's charge does */
+type StubExecution = { owner_id: string; security: string; isin: string | null };
+
+/** Security businesses by identifier: alpha by its Poalim key, beta only by its ISIN */
+const IDENTIFIERS: Record<string, string> = {
+  'POALIM_SECURITY_KEY:11111111': FUND_ALPHA,
+  'ISIN:XS0000000002': FUND_BETA,
+};
+
+function makeInjector(transactions: StubTransaction[], linkedExecutions: StubExecution[] = []) {
   const transactionsLoader = vi.fn(async () => transactions);
   const providers = new Map<unknown, unknown>([
     [TransactionsProvider, { transactionsByChargeIDLoader: { load: transactionsLoader } }],
+    [
+      ForeignSecuritiesProvider,
+      { executionsByChargeIdLoader: { load: async () => linkedExecutions } },
+    ],
     [DocumentsProvider, { getDocumentsByChargeIdLoader: { load: async () => [] } }],
     [LedgerProvider, { getLedgerRecordsByChargesIdLoader: { load: async () => [] } }],
     [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
     [
       SecurityBusinessesProvider,
-      { getAllSecurityBusinessIds: async () => new Set([FUND_ALPHA, FUND_BETA]) },
+      {
+        getAllSecurityBusinessIds: async () => new Set([FUND_ALPHA, FUND_BETA]),
+        getSecurityBusinessByIdentifierLoader: {
+          load: async ({ type, value }: { type: string; value: string }) => {
+            const id = IDENTIFIERS[`${type}:${value}`];
+            return id ? { id } : undefined;
+          },
+        },
+      },
     ],
   ]);
   const injector = {
@@ -100,6 +122,34 @@ describe('getChargeBusinesses — securities counterparty', () => {
     expect(result.spansSeveralSecurities).toBe(true);
   });
 
+  it('keeps a charge of just a buy and its reversal on that security', async () => {
+    const { injector } = makeInjector([
+      tx('buy-alpha', FUND_ALPHA, '-1000'),
+      tx('reverse-alpha', FUND_ALPHA, '1000'),
+      tx('fee', BANK, '-12.34', { is_fee: true, currency: 'ILS' }),
+    ]);
+
+    const result = await getChargeBusinesses(charge, injector);
+
+    expect(result.mainBusinessId).toBe(FUND_ALPHA);
+    expect(result.offsettingBusinessIds).toEqual([]);
+  });
+
+  it('does not drop a reversed security in favour of a candidate that is not a security', async () => {
+    const { injector } = makeInjector([
+      tx('buy-alpha', FUND_ALPHA, '-1000'),
+      tx('reverse-alpha', FUND_ALPHA, '1000'),
+      // a bank row not flagged as a fee
+      tx('bank', BANK, '-20'),
+    ]);
+
+    const result = await getChargeBusinesses(charge, injector);
+
+    expect(result.mainBusinessId).toBeNull();
+    expect(result.mainBusinessIds).toEqual([FUND_ALPHA, BANK]);
+    expect(result.offsettingBusinessIds).toEqual([]);
+  });
+
   it('marks nothing as offsetting when every security cancels out', async () => {
     const { injector } = makeInjector([
       tx('buy-alpha', FUND_ALPHA, '-1000'),
@@ -141,6 +191,79 @@ describe('getChargeBusinesses — securities counterparty', () => {
 
     expect(result.mainBusinessId).toBeNull();
     expect(result.mainBusinessIds).toEqual([VENDOR, BANK]);
+  });
+
+  describe('stock distributions booked directly', () => {
+    it("takes the distributed security's business as the counterparty", async () => {
+      const { injector } = makeInjector(
+        [],
+        [{ owner_id: OWNER_ID, security: '11111111', isin: 'XS0000000001' }],
+      );
+
+      const result = await getChargeBusinesses(charge, injector);
+
+      expect(result.mainBusinessId).toBe(FUND_ALPHA);
+      expect(result.allBusinessIds).toEqual([FUND_ALPHA]);
+    });
+
+    it('falls back to the ISIN, and ignores a merged-in commission fee', async () => {
+      const { injector } = makeInjector(
+        [tx('commission', BANK, '-5', { is_fee: true })],
+        [{ owner_id: OWNER_ID, security: '22222222', isin: 'XS0000000002' }],
+      );
+
+      const result = await getChargeBusinesses(charge, injector);
+
+      expect(result.mainBusinessId).toBe(FUND_BETA);
+    });
+
+    it("adds nothing for another owner's execution or a security with no business", async () => {
+      const { injector } = makeInjector(
+        [],
+        [
+          { owner_id: 'another-owner', security: '11111111', isin: null },
+          { owner_id: OWNER_ID, security: '99999999', isin: null },
+        ],
+      );
+
+      const result = await getChargeBusinesses(charge, injector);
+
+      expect(result.mainBusinessId).toBeNull();
+      expect(result.allBusinessIds).toEqual([]);
+    });
+
+    it('does not look executions up for a charge not typed as foreign securities', async () => {
+      const { injector } = makeInjector(
+        [tx('pay-vendor', VENDOR, '-100')],
+        [{ owner_id: OWNER_ID, security: '11111111', isin: null }],
+      );
+
+      const result = await getChargeBusinesses(
+        { ...charge, type: 'COMMON' } as IGetChargesByIdsResult,
+        injector,
+      );
+
+      expect(result.mainBusinessId).toBe(VENDOR);
+    });
+
+    it('resolves an enriched distribution row the SQL found no party for', async () => {
+      const { injector } = makeInjector(
+        [],
+        [{ owner_id: OWNER_ID, security: '11111111', isin: null }],
+      );
+      const row = {
+        ...charge,
+        abs_event_amount: '0',
+        business_array: [],
+        main_business_array: [],
+        business_id: null,
+      } as unknown as IGetChargesByIdsResult;
+
+      const result = await getChargeBusinesses(row, injector);
+
+      expect(result.mainBusinessId).toBe(FUND_ALPHA);
+      expect(result.allBusinessIds).toEqual([FUND_ALPHA]);
+    });
   });
 
   describe('rows enriched by getChargesByFilters', () => {
