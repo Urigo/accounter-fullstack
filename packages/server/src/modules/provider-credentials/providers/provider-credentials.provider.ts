@@ -15,6 +15,7 @@ import {
   IDeleteProviderCredentialsQuery,
   IGetProviderCredentialPayloadQuery,
   IGetProviderStatusesQuery,
+  IIsOwnBusinessQuery,
   ISetProviderBusinessQuery,
   IUpsertProviderCredentialsQuery,
 } from '../types.js';
@@ -42,11 +43,30 @@ const upsertProviderCredentials = sql<IUpsertProviderCredentialsQuery>`
     updated_at = now()
   RETURNING updated_at;`;
 
+// a business id must belong to the tenant: reads (RLS) may reach sibling businesses in scope, and
+// the FK check bypasses RLS altogether
+const isOwnBusiness = sql<IIsOwnBusinessQuery>`
+  SELECT EXISTS (
+    SELECT 1
+    FROM accounter_schema.businesses
+    WHERE id = $businessId
+      AND owner_id = accounter_schema.get_current_business_id()
+  ) AS "isOwn!";`;
+
 const setProviderBusiness = sql<ISetProviderBusinessQuery>`
   UPDATE accounter_schema.provider_credentials
   SET business_id = $businessId
   WHERE owner_id = accounter_schema.get_current_business_id()
     AND provider = $provider
+    AND (
+      $businessId::uuid IS NULL
+      OR EXISTS (
+        SELECT 1
+        FROM accounter_schema.businesses
+        WHERE id = $businessId
+          AND owner_id = accounter_schema.get_current_business_id()
+      )
+    )
   RETURNING updated_at;`;
 
 const deleteProviderCredentials = sql<IDeleteProviderCredentialsQuery>`
@@ -99,22 +119,30 @@ export class ProviderCredentialsProvider {
     }
 
     const encrypted = encryptCredential(JSON.stringify(result.data), this.encryptionKey);
+    if (options.businessId) {
+      await this.assertOwnBusiness(options.businessId);
+    }
 
-    this.statusesPromise = null;
-    const credentials = await upsertProviderCredentials.run(
-      { provider, encrypted, businessId: options.businessId ?? null },
-      this.db,
-    );
-    return credentials[0]?.updated_at;
+    return this.write(async () => {
+      const credentials = await upsertProviderCredentials.run(
+        { provider, encrypted, businessId: options.businessId ?? null },
+        this.db,
+      );
+      return credentials[0]?.updated_at;
+    });
   }
 
   /**
-   * Set the business entity that represents the provider in the tenant's books. The provider must
-   * already be connected.
+   * Set the business entity that represents the provider in the tenant's books, or clear it with
+   * `null`. The provider must already be connected, and the business must belong to the tenant.
    */
-  async setProviderBusiness(provider: ProviderKey, businessId: string): Promise<Date> {
-    this.statusesPromise = null;
-    const [row] = await setProviderBusiness.run({ provider, businessId }, this.db);
+  async setProviderBusiness(provider: ProviderKey, businessId: string | null): Promise<Date> {
+    if (businessId) {
+      await this.assertOwnBusiness(businessId);
+    }
+    const [row] = await this.write(() =>
+      setProviderBusiness.run({ provider, businessId }, this.db),
+    );
     if (!row?.updated_at) {
       throw new GraphQLError(
         `Provider "${provider}" is not connected — connect it before choosing its business`,
@@ -125,8 +153,29 @@ export class ProviderCredentialsProvider {
   }
 
   async deleteCredentials(provider: ProviderKey): Promise<void> {
+    await this.write(() => deleteProviderCredentials.run({ provider }, this.db));
+  }
+
+  private async assertOwnBusiness(businessId: string): Promise<void> {
+    const [row] = await isOwnBusiness.run({ businessId }, this.db);
+    if (!row?.isOwn) {
+      throw new GraphQLError(`Business [${businessId}] doesn't belong to this workspace`, {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+  }
+
+  /**
+   * Run a write, dropping the memoized statuses both before and after it: a read that starts while
+   * the write is in flight would otherwise cache the pre-write rows for the rest of the operation.
+   */
+  private async write<T>(run: () => Promise<T>): Promise<T> {
     this.statusesPromise = null;
-    await deleteProviderCredentials.run({ provider }, this.db);
+    try {
+      return await run();
+    } finally {
+      this.statusesPromise = null;
+    }
   }
 
   getProviderStatuses(): Promise<ProviderStatus[]> {

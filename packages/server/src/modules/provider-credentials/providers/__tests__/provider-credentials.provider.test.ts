@@ -28,6 +28,30 @@ describe('ProviderCredentialsProvider', () => {
     provider = new ProviderCredentialsProvider(db, env);
   });
 
+  /** Answer the ownership check and the UPDATE; everything else returns no rows */
+  function mockQueries(answers: { isOwn?: boolean; updatedRows?: unknown[] }) {
+    db.query.mockImplementation((async (sql: string) => {
+      if (/isOwn/.test(sql)) {
+        return { rows: [{ isOwn: answers.isOwn ?? false }], rowCount: 1 };
+      }
+      if (/^\s*UPDATE/i.test(sql)) {
+        const rows = answers.updatedRows ?? [];
+        return { rows, rowCount: rows.length };
+      }
+      return { rows: [], rowCount: 0 };
+    }) as unknown as typeof db.query);
+  }
+
+  function callsMatching(pattern: RegExp) {
+    return (db.query.mock.calls as unknown as Array<[string, unknown[]]>).filter(([sql]) =>
+      pattern.test(sql),
+    );
+  }
+
+  function upsertCalls() {
+    return callsMatching(/INSERT INTO accounter_schema\.provider_credentials/);
+  }
+
   describe('setCredentials', () => {
     it('calls db.query once with INSERT and provider_credentials; payload is encrypted', async () => {
       db.query.mockResolvedValue({ rows: [], rowCount: 0 } as unknown as QueryResultWithRows);
@@ -44,16 +68,26 @@ describe('ProviderCredentialsProvider', () => {
     });
 
     it('keeps an existing business_id unless a new one is given', async () => {
-      db.query.mockResolvedValue({ rows: [], rowCount: 0 } as unknown as QueryResultWithRows);
+      mockQueries({ isOwn: true });
 
       await provider.setCredentials('deel', { apiToken: 'token' });
-      const [sql, params] = db.query.mock.calls[0] as [string, unknown[]];
+      const [sql, params] = upsertCalls()[0];
       expect(sql).toMatch(/COALESCE\(EXCLUDED\.business_id, provider_credentials\.business_id\)/);
-      expect(params[2]).toBeNull();
+      expect(params).not.toContain(DEEL_BUSINESS_ID);
 
       await provider.setCredentials('deel', { apiToken: 'token' }, { businessId: DEEL_BUSINESS_ID });
-      const [, paramsWithBusiness] = db.query.mock.calls[1] as [string, unknown[]];
-      expect(paramsWithBusiness[2]).toBe(DEEL_BUSINESS_ID);
+      expect(upsertCalls()[1][1]).toContain(DEEL_BUSINESS_ID);
+    });
+
+    it("refuses a business that doesn't belong to the workspace", async () => {
+      mockQueries({ isOwn: false });
+
+      const error = await provider
+        .setCredentials('deel', { apiToken: 'token' }, { businessId: DEEL_BUSINESS_ID })
+        .catch(e => e);
+
+      expect((error as GraphQLError).extensions.code).toBe('BAD_USER_INPUT');
+      expect(upsertCalls()).toHaveLength(0);
     });
 
     it('throws GraphQLError BAD_USER_INPUT and does not call db.query when payload is invalid', async () => {
@@ -129,22 +163,36 @@ describe('ProviderCredentialsProvider', () => {
   describe('setProviderBusiness', () => {
     it('updates business_id of the connected provider', async () => {
       const updatedAt = new Date();
-      db.query.mockResolvedValue({
-        rows: [{ updated_at: updatedAt }],
-        rowCount: 1,
-      } as unknown as QueryResultWithRows);
+      mockQueries({ isOwn: true, updatedRows: [{ updated_at: updatedAt }] });
 
       await expect(provider.setProviderBusiness('deel', DEEL_BUSINESS_ID)).resolves.toBe(
         updatedAt,
       );
-      const [sql, params] = db.query.mock.calls[0] as [string, unknown[]];
-      expect(sql).toMatch(/UPDATE/i);
+      const [sql, params] = callsMatching(/UPDATE/i)[0];
       expect(sql).toMatch(/business_id/i);
       expect(params).toContain(DEEL_BUSINESS_ID);
     });
 
+    it('clears the business with null, without an ownership check', async () => {
+      mockQueries({ updatedRows: [{ updated_at: new Date() }] });
+
+      await provider.setProviderBusiness('deel', null);
+
+      expect(callsMatching(/isOwn/)).toHaveLength(0);
+      expect(callsMatching(/UPDATE/i)[0][1]).toContain(null);
+    });
+
+    it("refuses a business that doesn't belong to the workspace", async () => {
+      mockQueries({ isOwn: false });
+
+      const error = await provider.setProviderBusiness('deel', DEEL_BUSINESS_ID).catch(e => e);
+
+      expect((error as GraphQLError).extensions.code).toBe('BAD_USER_INPUT');
+      expect(callsMatching(/UPDATE/i)).toHaveLength(0);
+    });
+
     it('throws NOT_FOUND when the provider is not connected', async () => {
-      db.query.mockResolvedValue({ rows: [], rowCount: 0 } as unknown as QueryResultWithRows);
+      mockQueries({ isOwn: true, updatedRows: [] });
 
       const error = await provider.setProviderBusiness('deel', DEEL_BUSINESS_ID).catch(e => e);
       expect(error).toBeInstanceOf(GraphQLError);

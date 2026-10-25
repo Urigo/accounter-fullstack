@@ -1,4 +1,3 @@
-import type { Injector } from 'graphql-modules';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import {
   ProviderCredentialsProvider,
@@ -16,13 +15,6 @@ const GQL_TO_DB: Record<ProviderCredentialsModule.ProviderKey, DbProviderKey> = 
   DEEL: 'deel',
 };
 
-async function assertBusinessExists(injector: Injector, businessId: string): Promise<void> {
-  const business = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(businessId);
-  if (!business) {
-    throw new Error(`Business [${businessId}] not found`);
-  }
-}
-
 export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers = {
   Query: {
     providerCredentials: async (_parent, _args, { injector }) => {
@@ -36,6 +28,14 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
           businessId: s.businessId,
         }));
     },
+  },
+
+  ProviderCredentialStatus: {
+    business: async (parent, _, { injector }) =>
+      parent.businessId
+        ? ((await injector.get(BusinessesProvider).getBusinessByIdLoader.load(parent.businessId)) ??
+          null)
+        : null,
   },
 
   Mutation: {
@@ -66,9 +66,6 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
     setDeelCredentials: async (_parent, { apiToken, businessId }, { injector }) => {
       // TODO: Ensure 'apiToken' is added to the logging redaction list if structured logging is introduced
       try {
-        if (businessId) {
-          await assertBusinessExists(injector, businessId);
-        }
         const updatedAt = await injector
           .get(ProviderCredentialsProvider)
           .setCredentials('deel', { apiToken }, { businessId });
@@ -82,6 +79,11 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
           id: DB_TO_GQL['deel'],
           provider: DB_TO_GQL['deel'],
           configuredAt: new Date(updatedAt),
+          // an omitted businessId keeps the stored one — report what was saved
+          businessId:
+            (await injector.get(ProviderCredentialsProvider).getProviderStatuses()).find(
+              status => status.provider === 'deel',
+            )?.businessId ?? null,
         };
       } catch (e) {
         const message = (e as Error)?.message ?? 'Failed to save Deel credentials';
@@ -92,16 +94,16 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
 
     setProviderBusiness: async (_parent, { provider, businessId }, { injector }) => {
       try {
-        await assertBusinessExists(injector, businessId);
         const updatedAt = await injector
           .get(ProviderCredentialsProvider)
-          .setProviderBusiness(GQL_TO_DB[provider], businessId);
+          .setProviderBusiness(GQL_TO_DB[provider], businessId ?? null);
 
         return {
           __typename: 'ProviderCredentialResult' as const,
           id: provider,
           provider,
           configuredAt: new Date(updatedAt),
+          businessId: businessId ?? null,
         };
       } catch (e) {
         const message = (e as Error)?.message ?? 'Failed to set provider business';

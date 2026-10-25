@@ -115,7 +115,62 @@ describe('provider business id', () => {
     expect(status.businessId).toBe(OTHER_DEEL_BUSINESS_A);
 
     await expect(
-      createProvider(TENANT_B).setProviderBusiness('deel', DEEL_BUSINESS_A),
+      createProvider(TENANT_B).setProviderBusiness('deel', null),
     ).rejects.toMatchObject({ extensions: { code: 'NOT_FOUND' } });
+  });
+
+  it("refuses another tenant's business, even with the provider connected", async () => {
+    const providerB = createProvider(TENANT_B);
+    await providerB.setCredentials('deel', { apiToken: 'token-b' });
+
+    await expect(providerB.setProviderBusiness('deel', DEEL_BUSINESS_A)).rejects.toMatchObject({
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+    await expect(
+      providerB.setCredentials('deel', { apiToken: 'token-b' }, { businessId: DEEL_BUSINESS_A }),
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } });
+
+    const [status] = await createProvider(TENANT_B).getProviderStatuses();
+    expect(status.businessId).toBeNull();
+  });
+
+  it("doesn't move configuredAt when only the business changes", async () => {
+    const provider = createProvider(TENANT_A);
+    await provider.setCredentials('deel', { apiToken: 'token' });
+    const [before] = await createProvider(TENANT_A).getProviderStatuses();
+
+    await provider.setProviderBusiness('deel', DEEL_BUSINESS_A);
+
+    const [after] = await createProvider(TENANT_A).getProviderStatuses();
+    expect(after.businessId).toBe(DEEL_BUSINESS_A);
+    expect(after.configuredAt).toBe(before.configuredAt);
+  });
+
+  it('clears the business with null', async () => {
+    const provider = createProvider(TENANT_A);
+    await provider.setCredentials('deel', { apiToken: 'token' }, { businessId: DEEL_BUSINESS_A });
+
+    await provider.setProviderBusiness('deel', null);
+
+    const [status] = await createProvider(TENANT_A).getProviderStatuses();
+    expect(status.businessId).toBeNull();
+  });
+
+  it('clears the business when the business is deleted', async () => {
+    const TEMP_BUSINESS = '00000000-0000-0000-0000-0000000c4ed4';
+    await seedBusiness(TEMP_BUSINESS, TENANT_A, 'Deel (temporary)');
+    await createProvider(TENANT_A).setCredentials(
+      'deel',
+      { apiToken: 'token' },
+      { businessId: TEMP_BUSINESS },
+    );
+
+    await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [TEMP_BUSINESS]);
+    await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = $1', [
+      TEMP_BUSINESS,
+    ]);
+
+    const [status] = await createProvider(TENANT_A).getProviderStatuses();
+    expect(status.businessId).toBeNull();
   });
 });
