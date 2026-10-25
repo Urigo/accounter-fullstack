@@ -111,8 +111,8 @@ export default gql`
     " Kept as a free string, not the Currency enum, for source fidelity "
     currencyCode: String!
     isEtf: Boolean
-    " The bank's own flag, as reported — not a locality judgement. Use SecurityBusiness.isForeign, which compares the issuer country with the tenant's locality "
-    isForeign: Boolean!
+    " The bank's raw flag, as reported. For locality against the tenant use SecurityBusiness.isForeign (null when unknown) "
+    isForeign: Boolean! @deprecated(reason: "Use ChargeSecurity.securityBusiness.isForeign")
     " When the reference list was last scraped "
     asOfDate: DateTime!
   }
