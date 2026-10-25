@@ -72,7 +72,13 @@ const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
 
 const DAY: TimelessDateString = '2025-03-12';
 const USD_RATE = 3.5;
-const RATES: MockRate[] = [[Currency.Usd, DAY, USD_RATE]];
+/** A later day at another rate, for a payment cancelled after it was made */
+const LATER_DAY: TimelessDateString = '2025-03-19';
+const LATER_USD_RATE = 3.6;
+const RATES: MockRate[] = [
+  [Currency.Usd, DAY, USD_RATE],
+  [Currency.Usd, LATER_DAY, LATER_USD_RATE],
+];
 
 const USD_LABEL = 'דולר ארה"ב';
 const ILS_LABEL = 'שקל חדש';
@@ -352,6 +358,23 @@ function recordOf(records: IGetLedgerRecordsByChargesIdsResult[], debitOrCredit:
   return records.find(
     record => record.debit_entity1 === debitOrCredit || record.credit_entity1 === debitOrCredit,
   );
+}
+
+/** Each entity's balance across the records, in foreign or local amounts: debits less credits */
+function netByEntity(records: IGetLedgerRecordsByChargesIdsResult[], amounts: 'foreign' | 'local') {
+  const net = new Map<string, number>();
+  const add = (entity: string | null, amount: string | null, sign: 1 | -1) => {
+    if (entity && amount != null) {
+      net.set(entity, (net.get(entity) ?? 0) + sign * Number(amount));
+    }
+  };
+  for (const record of records) {
+    add(record.debit_entity1, record[`debit_${amounts}_amount1`], 1);
+    add(record.debit_entity2, record[`debit_${amounts}_amount2`], 1);
+    add(record.credit_entity1, record[`credit_${amounts}_amount1`], -1);
+    add(record.credit_entity2, record[`credit_${amounts}_amount2`], -1);
+  }
+  return net;
 }
 
 /** What a cash-in movement looks like before this change, and still does when it can't be improved */
@@ -694,24 +717,173 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(errors).toEqual([expect.stringContaining('does not match gross minus net')]);
     });
 
-    it('keeps the base entry of a cancelled dividend and says its reversal is not booked', async () => {
+    it('books a cancelled dividend as the mirror of its income entry, crediting its tax back', async () => {
+      // the bank reverses a 1,250 dividend that paid 1,000 after 250 withheld: its gross stays
+      // positive, while the cash and the tax come back negated
       const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
 
       const { records, errors } = await generate({
         transactions: [transaction],
         executions: {
           [transaction.id]: dividendExecution({
+            trade_gross_value_trade_currency: '1250',
             net_value_trade_currency: '-1000',
             net_value_settlement_currency: '-1000',
+            foreign_tax_value_settlement_currency: '-250',
             is_cancel_transaction: 'כן',
           }),
         },
       });
 
-      expect(records).toHaveLength(1);
-      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      // the dividend it cancels is not in the charge, which is the fallback's business below
+      expect(errors).toEqual([expect.stringContaining('that is not in this charge')]);
+      expect(records.map(summarize)).toEqual([
+        {
+          currency: Currency.Usd,
+          debit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          debitForeign1: usd(1250).foreign,
+          debitLocal1: usd(1250).local,
+          debit2: null,
+          debitForeign2: null,
+          debitLocal2: null,
+          credit1: BANK_USD,
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          creditForeign2: usd(250).foreign,
+          creditLocal2: usd(250).local,
+        },
+      ]);
+    });
+
+    it('nets a cancelled and re-executed dividend down to the replacement, at the original rate', async () => {
+      // a 1,250 dividend (250 withheld) is cancelled a week later, at another rate, and paid again
+      // as 1,240 (248 withheld)
+      const original = buildTransaction({ id: 'transaction-original', amount: '1000' });
+      const cancellation = buildTransaction({
+        id: 'transaction-cancellation',
+        amount: '-1000',
+        debitDate: LATER_DAY,
+      });
+      const replacement = buildTransaction({
+        id: 'transaction-replacement',
+        amount: '992',
+        debitDate: LATER_DAY,
+      });
+
+      const { records, errors } = await generate({
+        transactions: [original, cancellation, replacement],
+        executions: {
+          [original.id]: dividendExecution({
+            id: 'execution-original',
+            trade_gross_value_trade_currency: '1250',
+            foreign_tax_value_settlement_currency: '250',
+          }),
+          [cancellation.id]: dividendExecution({
+            id: 'execution-cancellation',
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
+            trade_gross_value_trade_currency: '1250',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            foreign_tax_value_settlement_currency: '-250',
+            is_cancel_transaction: 'כן',
+          }),
+          [replacement.id]: dividendExecution({
+            id: 'execution-replacement',
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
+            trade_gross_value_trade_currency: '1240',
+            net_value_trade_currency: '992',
+            net_value_settlement_currency: '992',
+            foreign_tax_value_settlement_currency: '248',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+
+      // the reversal is booked on its own day, at the rate of the dividend it cancels
+      const reversal = records.find(
+        record => record.debit_entity1 === TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+      )!;
+      expect(reversal.value_date).toBe(LATER_DAY);
+      expect(summarize(reversal)).toMatchObject({
+        debitLocal1: usd(1250).local,
+        creditLocal1: usd(1000).local,
+        creditLocal2: usd(250).local,
+      });
+
+      const foreign = netByEntity(records, 'foreign');
+      expect(foreign.get(BANK_USD)).toBeCloseTo(992);
+      expect(foreign.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX)).toBeCloseTo(248);
+      expect(foreign.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME)).toBeCloseTo(-1240);
+      expect(foreign.has(SECURITIES_USD)).toBe(false);
+
+      // income and withheld tax are left with the replacement's, at its rate, and nothing else
+      const local = netByEntity(records, 'local');
+      expect(local.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX)).toBeCloseTo(
+        248 * LATER_USD_RATE,
+        6,
+      );
+      expect(local.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME)).toBeCloseTo(
+        -1240 * LATER_USD_RATE,
+        6,
+      );
+    });
+
+    it('prices a cancellation at its own rate, and says so, when the dividend it cancels is not in the charge', async () => {
+      const cancellation = buildTransaction({
+        id: 'transaction-cancellation',
+        amount: '-1000',
+        debitDate: LATER_DAY,
+      });
+
+      const { records, errors } = await generate({
+        transactions: [cancellation],
+        executions: {
+          [cancellation.id]: dividendExecution({
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
+            trade_gross_value_trade_currency: '1250',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            foreign_tax_value_settlement_currency: '-250',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
       expect(errors).toEqual([
-        expect.stringContaining('reverses a cancelled dividend of MOCK (US0000000001)'),
+        expect.stringContaining(
+          "cancels a dividend of MOCK (US0000000001) that is not in this charge, so its reversal is priced at the cancellation day's rate",
+        ),
+      ]);
+      expect(records.map(summarize)).toEqual([
+        expect.objectContaining({
+          debit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          debitLocal1: 1250 * LATER_USD_RATE,
+          credit1: BANK_USD,
+          creditLocal1: 1000 * LATER_USD_RATE,
+          credit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          creditLocal2: 250 * LATER_USD_RATE,
+        }),
+      ]);
+    });
+
+    it('keeps the base entry of a cancellation whose cash came in, and says why', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({ is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Expected money going out for the cancellation'),
       ]);
     });
 
@@ -999,7 +1171,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(withTax.missingSecuritiesTaxCategories).toEqual(['FOREIGN_BOND_WITHHOLDING_TAX']);
     });
 
-    it('keeps the base entry of a cancelled interest payment and says its reversal is not booked', async () => {
+    it('books a cancelled interest payment as the mirror of its income entry', async () => {
       const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
 
       const { records, errors } = await generate({
@@ -1013,15 +1185,37 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         },
       });
 
-      expect(records).toHaveLength(1);
-      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
       expect(errors).toEqual([
-        expect.stringContaining('reverses a cancelled interest of MOCK (FR0000000001)'),
+        expect.stringContaining('cancels an interest payment of MOCK (FR0000000001)'),
+      ]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit1: TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+          credit1: BANK_USD,
+        },
       ]);
     });
   });
 
   describe('bond redemption', () => {
+    it('keeps the base entry of a cancelled redemption and says its reversal is not booked', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: redemptionExecution(10, -1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled redemption of MOCK (US0000000001)'),
+      ]);
+    });
+
     it('credits the FIFO purchase cost and books the gain', async () => {
       // lots: 10 for 1,000 and 10 for 1,200; 5 sold since, from the first lot.
       // The redemption of the remaining 15 costs 5 × 100 + 10 × 120 = 1,700 and pays 1,900.

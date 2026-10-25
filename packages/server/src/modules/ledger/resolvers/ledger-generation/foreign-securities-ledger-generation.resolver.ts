@@ -33,17 +33,20 @@ import { splitFeeTransactions } from '../../helpers/fee-transactions.js';
 import {
   buildDistributionEntry,
   buildIncomeEntry,
+  buildIncomeReversalEntry,
   buildRedemptionEntry,
   calculateRedemptionGain,
   classifySecurityExecution,
   currencyOfLabel,
   distributionValueDate,
+  findCancelledPayment,
   findDistributionCancellation,
   getBankRateMismatch,
   getDistributionWithheldTax,
   getWithheldTax,
   INCOME_TAX_CATEGORY_KEYS,
   isDividendInKindDistribution,
+  priceEntryAtRate,
   validateSecurityCommissions,
   WITHHOLDING_TAX_CATEGORY_KEYS,
 } from '../../helpers/foreign-securities-ledger.helper.js';
@@ -144,9 +147,12 @@ async function securitiesLedgerEntry(params: {
   injector: Injector;
   ownerId: string;
   locality: string;
+  defaultLocalCurrency: Currency;
   transaction: IGetTransactionsByChargeIdsResult;
   baseEntry: StrictLedgerProto;
   execution: SecurityExecutionRow | undefined;
+  /** The transaction of the payment a cancelled execution cancels, when it is in this charge */
+  cancelledPaymentOf: (execution: SecurityExecutionRow) => IGetTransactionsByChargeIdsResult | null;
   taxCategories: SecuritiesTaxCategoryIds;
   errors: Set<string>;
   missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
@@ -167,11 +173,13 @@ async function securitiesLedgerEntry(params: {
     return baseEntry;
   }
 
-  // A cancellation keeps the original's trade type but sends the cash back the other way, so the
-  // income and redemption entries below — built for money coming in — do not fit it.
-  if (isCancelledExecution(execution)) {
+  // A cancellation keeps the original's trade type but sends the cash back the other way. A
+  // cancelled dividend or interest payment books as the mirror of its income entry; a cancelled
+  // redemption would also have to restore the redeemed units' cost, which is not supported.
+  const isCancellation = isCancelledExecution(execution);
+  if (isCancellation && kind === 'REDEMPTION') {
     errors.add(
-      `Transaction ${transactionDescription} reverses a cancelled ${kind.toLowerCase()} of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
+      `Transaction ${transactionDescription} reverses a cancelled redemption of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
     );
     return baseEntry;
   }
@@ -181,7 +189,7 @@ async function securitiesLedgerEntry(params: {
     const tax = getWithheldTax(execution, cashCurrency);
     if (!tax.isConsistent) {
       errors.add(
-        `Withheld tax of ${tax.withheld} ${cashCurrency} reported for transaction ${transactionDescription} does not match gross minus net (${tax.deduced} ${cashCurrency})`,
+        `Withheld tax of ${tax.withheld} ${cashCurrency} reported for transaction ${transactionDescription} does not match ${isCancellation ? 'the reversed gross minus net' : 'gross minus net'} (${tax.deduced} ${cashCurrency})`,
       );
     }
     const hasWithheldTax = Math.abs(tax.withheld) >= MIN_AMOUNT;
@@ -193,6 +201,27 @@ async function securitiesLedgerEntry(params: {
         );
       }
       return securityLocality;
+    };
+
+    // A reversal is priced at the rate of the payment it cancels, so its income and withheld tax
+    // net out in the local currency too, rather than leaving a currency difference on them.
+    const priceAtCancelledPaymentRate = async (): Promise<StrictLedgerProto> => {
+      const original = params.cancelledPaymentOf(execution);
+      const pricing = original ? validateTransactionBasicVariables(original) : null;
+      if (!original || pricing?.currency !== cashCurrency) {
+        errors.add(
+          `Transaction ${transactionDescription} cancels ${kind === 'DIVIDEND' ? 'a dividend' : 'an interest payment'} of ${describeSecurity(execution)} that is not in this charge, so its reversal is priced at the cancellation day's rate; any exchange difference stays on its income and withheld tax`,
+        );
+        return baseEntry;
+      }
+      const { exchangeRateDate } = pricing;
+      const rate = await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(cashCurrency, params.defaultLocalCurrency, exchangeRateDate);
+      return priceEntryAtRate(baseEntry, rate, {
+        exchangeRateDate,
+        currencyRate: original.currency_rate ? Number(original.currency_rate) : undefined,
+      });
     };
 
     if (kind === 'DIVIDEND' || kind === 'INTEREST') {
@@ -210,11 +239,20 @@ async function securitiesLedgerEntry(params: {
       if (!ids) {
         return baseEntry;
       }
-      return buildIncomeEntry(baseEntry, {
+      const incomeParams = {
         incomeTaxCategoryId: ids[incomeKey],
         withholdingTaxCategoryId: withholdingKey ? ids[withholdingKey] : undefined,
         withheldTax: tax.withheld,
-      });
+      };
+      if (!isCancellation) {
+        return buildIncomeEntry(baseEntry, incomeParams);
+      }
+      // money coming in is no reversal, which building it reports; there is nothing to price
+      const reversalBase =
+        cashCurrency === params.defaultLocalCurrency || baseEntry.isCreditorCounterparty
+          ? baseEntry
+          : await priceAtCancelledPaymentRate();
+      return buildIncomeReversalEntry(reversalBase, incomeParams);
     }
 
     // a redemption: only withheld tax depends on locality, so a redemption without it books as is
@@ -503,6 +541,20 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       );
     }
 
+    // A cancelled payment is priced at the rate of the payment it cancels, looked for among the
+    // charge's other matched executions.
+    const matchedPayments = mainTransactions.flatMap(transaction => {
+      const execution = executionsByTransactionId.get(transaction.id);
+      return execution ? [{ transaction, execution }] : [];
+    });
+    const cancelledPaymentOf = (execution: SecurityExecutionRow) => {
+      const original = findCancelledPayment(
+        execution,
+        matchedPayments.map(payment => payment.execution),
+      );
+      return matchedPayments.find(payment => payment.execution === original)?.transaction ?? null;
+    };
+
     const mainTransactionsPromises = mainTransactions.map(async transaction => {
       let baseEntry: StrictLedgerProto;
       try {
@@ -525,9 +577,11 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
         injector,
         ownerId: charge.owner_id,
         locality,
+        defaultLocalCurrency,
         transaction,
         baseEntry,
         execution: executionsByTransactionId.get(transaction.id),
+        cancelledPaymentOf,
         taxCategories,
         errors,
         missingTaxCategories,

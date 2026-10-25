@@ -78,6 +78,7 @@ export type WithheldTaxExecution = Pick<
   | 'foreign_tax_value_settlement_currency'
   | 'israel_tax_value_by_payments_settlement_currency'
   | 'capital_tax_value_settlement_currency'
+  | 'is_cancel_transaction'
 >;
 
 export function toAmount(value: string | null | undefined): number {
@@ -95,6 +96,9 @@ export const currencyOfLabel = currencyOfSecurityLabel;
  * too. Its capital tax column restates the Israeli tax rather than adding to it, so it only stands
  * in when the Israeli column is empty. That reported amount is what gets booked; gross minus net is
  * the same figure worked out from the values, and `isConsistent` says whether the two agree.
+ *
+ * A cancellation reverses the cash: the bank keeps its gross positive but reports its net and tax
+ * negated, so the deduced figure is negated too, to compare with the reported one.
  */
 export function getWithheldTax(
   execution: WithheldTaxExecution,
@@ -119,7 +123,8 @@ export function getWithheldTax(
     net == null ||
     currencyOfLabel(execution.trade_currency) !== cashCurrency
       ? null
-      : toAmount(execution.trade_gross_value_trade_currency) - Math.abs(toAmount(net));
+      : (isCancelledExecution(execution) ? -1 : 1) *
+        (Math.abs(toAmount(execution.trade_gross_value_trade_currency)) - Math.abs(toAmount(net)));
 
   return {
     withheld,
@@ -218,6 +223,121 @@ export function buildIncomeEntry(
     params.incomeTaxCategoryId,
     withholdingLine(params.withheldTax, params.withholdingTaxCategoryId),
   );
+}
+
+/** The same entry seen from the other side: every debit becomes a credit and vice versa */
+function mirrorEntry(entry: StrictLedgerProto): StrictLedgerProto {
+  return {
+    ...entry,
+    debitAccountID1: entry.creditAccountID1,
+    debitAmount1: entry.creditAmount1,
+    localCurrencyDebitAmount1: entry.localCurrencyCreditAmount1,
+    debitAccountID2: entry.creditAccountID2,
+    debitAmount2: entry.creditAmount2,
+    localCurrencyDebitAmount2: entry.localCurrencyCreditAmount2,
+    creditAccountID1: entry.debitAccountID1,
+    creditAmount1: entry.debitAmount1,
+    localCurrencyCreditAmount1: entry.localCurrencyDebitAmount1,
+    creditAccountID2: entry.debitAccountID2,
+    creditAmount2: entry.debitAmount2,
+    localCurrencyCreditAmount2: entry.localCurrencyDebitAmount2,
+    isCreditorCounterparty: !entry.isCreditorCounterparty,
+  };
+}
+
+/**
+ * A cancelled dividend or bond interest payment: the mirror of the income entry it reverses. The
+ * bank is credited with the net paid back, the income is debited with the gross, and the withheld
+ * tax — reported negated on the cancellation — is credited back on a second line.
+ */
+export function buildIncomeReversalEntry(
+  base: StrictLedgerProto,
+  params: {
+    incomeTaxCategoryId: string;
+    withholdingTaxCategoryId?: string;
+    /** As the bank reports it on the cancellation: negative when it reverses withheld tax */
+    withheldTax: number;
+  },
+): StrictLedgerProto {
+  if (base.isCreditorCounterparty) {
+    throw new LedgerError(
+      `Expected money going out for the cancellation "${base.description ?? base.id}", but it came in`,
+    );
+  }
+  return mirrorEntry(
+    buildIncomeEntry(mirrorEntry(base), { ...params, withheldTax: -params.withheldTax }),
+  );
+}
+
+/**
+ * Prices a foreign-currency base entry at the given rate instead of its own day's: both sides of
+ * its line are revalued from their foreign amounts, and the entry carries the pricing it took. Its
+ * value date stays, so it is still booked on the day the cash moved.
+ */
+export function priceEntryAtRate(
+  entry: StrictLedgerProto,
+  rate: number,
+  pricing: Pick<StrictLedgerProto, 'exchangeRateDate' | 'currencyRate'>,
+): StrictLedgerProto {
+  if (entry.debitAmount1 == null || entry.creditAmount1 == null) {
+    throw new LedgerError(
+      `Cannot reprice "${entry.description ?? entry.id}": it has no foreign-currency amounts`,
+    );
+  }
+  return {
+    ...entry,
+    localCurrencyDebitAmount1: entry.debitAmount1 * rate,
+    localCurrencyCreditAmount1: entry.creditAmount1 * rate,
+    exchangeRateDate: pricing.exchangeRateDate,
+    currencyRate: pricing.currencyRate,
+  };
+}
+
+export type CancelledPaymentExecution = Pick<
+  SecurityExecutionRow,
+  | 'id'
+  | 'security'
+  | 'trade_type'
+  | 'trade_date'
+  | 'trade_gross_value_trade_currency'
+  | 'is_cancel_transaction'
+>;
+
+/**
+ * The payment a cancelled execution cancels, among the executions it is booked with, or null when
+ * none of them is it.
+ *
+ * The bank reports a cancellation as a row of its own with the original's security, trade type and
+ * gross. It is paired with the latest such live execution at or before it, as a cancelled
+ * distribution is (`findDistributionCancellation`); of two on the same day, with the later one.
+ */
+export function findCancelledPayment<T extends CancelledPaymentExecution>(
+  cancellation: T,
+  candidates: readonly T[],
+): T | null {
+  const gross = Math.abs(toAmount(cancellation.trade_gross_value_trade_currency));
+  let original: T | null = null;
+  for (const candidate of candidates) {
+    if (
+      candidate.id === cancellation.id ||
+      isCancelledExecution(candidate) ||
+      candidate.security !== cancellation.security ||
+      candidate.trade_type !== cancellation.trade_type ||
+      Math.abs(Math.abs(toAmount(candidate.trade_gross_value_trade_currency)) - gross) >=
+        MIN_AMOUNT ||
+      candidate.trade_date > cancellation.trade_date
+    ) {
+      continue;
+    }
+    if (
+      !original ||
+      candidate.trade_date > original.trade_date ||
+      (candidate.trade_date === original.trade_date && candidate.id > original.id)
+    ) {
+      original = candidate;
+    }
+  }
+  return original;
 }
 
 /** Gross proceeds (net received plus tax withheld) less what the redeemed units cost */
