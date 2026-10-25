@@ -1,5 +1,5 @@
 ---
-'@accounter/server': patch
+'@accounter/server': minor
 ---
 
 `CloudinaryProvider` returns the uploaded file's `publicId` and `resourceType`, and can delete an
