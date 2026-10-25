@@ -58,14 +58,55 @@ function charge(security: {
   return {
     id: 'charge-1',
     __typename: 'ForeignSecuritiesCharge',
+    counterparty: security.securityBusiness ? { id: security.securityBusiness.id } : null,
+    counterparties: security.securityBusiness ? [{ id: security.securityBusiness.id }] : [],
     securities: [
       {
         id: `charge-1-${SECURITY_KEY}`,
         securityKey: SECURITY_KEY,
         executions: [],
+        isOffsetting: false,
+        netAmount: { raw: -1000, formatted: '$ -1,000.00' },
         ...security,
       },
     ],
+  } as unknown as ChargeProps;
+}
+
+const OTHER_KEY = '2000002';
+const OTHER_BUSINESS_ID = '00000000-0000-0000-0000-000000000002';
+
+/** A second security in the same charge, known only by its business */
+const otherSecurity = (overrides: { isOffsetting: boolean; raw: number; formatted: string }) => ({
+  id: `charge-1-${OTHER_KEY}`,
+  securityKey: OTHER_KEY,
+  executions: [],
+  details: null,
+  securityBusiness: {
+    id: OTHER_BUSINESS_ID,
+    isin: 'XS0000000002',
+    symbol: 'EX0230',
+    engName: 'Example Fund Two',
+    hebName: null,
+  },
+  isOffsetting: overrides.isOffsetting,
+  netAmount: { raw: overrides.raw, formatted: overrides.formatted },
+});
+
+/** The charge from `charge()` with a second security and the given counterparty outcome */
+function twoSecurities(
+  counterparty: { id: string } | null,
+  counterparties: Array<{ id: string }>,
+  other: ReturnType<typeof otherSecurity>,
+): ChargeProps {
+  const base = charge({ details, securityBusiness }) as unknown as {
+    securities: unknown[];
+  };
+  return {
+    ...base,
+    counterparty,
+    counterparties,
+    securities: [other, ...base.securities],
   } as unknown as ChargeProps;
 }
 
@@ -156,6 +197,47 @@ describe('ForeignSecuritiesInfo', () => {
       'No reference data or security business for this key yet',
     );
     expect(securityLink()).toBeNull();
+  });
+
+  it('shows the net amount but no role badge for a charge of a single security', () => {
+    render(charge({ details, securityBusiness }));
+
+    expect(container.textContent).toContain('$ -1,000.00');
+    expect(container.textContent).not.toContain('Main counterparty');
+    expect(container.textContent).not.toContain('spans');
+  });
+
+  it('marks the counterparty and lists a security that nets to zero last', () => {
+    render(
+      twoSecurities(
+        { id: BUSINESS_ID },
+        [{ id: BUSINESS_ID }],
+        otherSecurity({ isOffsetting: true, raw: 0, formatted: '$ 0.00' }),
+      ),
+    );
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('Main counterparty');
+    expect(text).toContain('Nets to zero');
+    expect(text).not.toContain('spans');
+    // the counterparty comes first, although the offsetting security was listed first
+    expect(text.indexOf('Example Bond 5% 01/30')).toBeLessThan(text.indexOf('Example Fund Two'));
+  });
+
+  it('says a charge spanning several securities has no single counterparty', () => {
+    render(
+      twoSecurities(
+        null,
+        [{ id: BUSINESS_ID }, { id: OTHER_BUSINESS_ID }],
+        otherSecurity({ isOffsetting: false, raw: 1000, formatted: '$ 1,000.00' }),
+      ),
+    );
+
+    const text = container.textContent ?? '';
+    expect(text).toContain('This charge spans 2 securities');
+    expect(text).toContain('Counterparty 1 of 2');
+    expect(text).toContain('Counterparty 2 of 2');
+    expect(text).not.toContain('Main counterparty');
   });
 
   it('renders nothing for a charge that is not a foreign-securities charge', () => {
