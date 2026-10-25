@@ -1,5 +1,4 @@
 import { useMemo, type ReactElement, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
 import {
   ForeignSecuritiesChargeInfoFragmentDoc,
@@ -11,6 +10,7 @@ import {
   formatSecurityDate,
   SecurityExecutionsTable,
 } from '../../securities/security-executions-table.js';
+import { SecurityHeading } from '../../securities/security-heading.js';
 import { Badge } from '../../ui/badge.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -79,54 +79,32 @@ export const ForeignSecuritiesInfo = ({ chargeProps }: Props): ReactNode => {
   ) : null;
 };
 
-/** The security's name, linked to its business page when it has one. */
-const SecurityTitle = ({
-  name,
-  symbol,
-  businessId,
-}: {
-  name: string;
-  symbol?: string | null;
-  businessId?: string;
-}): ReactElement => (
-  <div className="text-lg font-semibold">
-    {businessId ? (
-      <Link
-        to={ROUTES.BUSINESSES.DETAIL(businessId)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hover:underline"
-      >
-        {name}
-      </Link>
-    ) : (
-      name
-    )}
-    {symbol && <span className="text-gray-500"> ({symbol})</span>}
-  </div>
-);
-
 const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactElement => {
   const { details, securityBusiness } = security;
+  const businessHref = securityBusiness
+    ? ROUTES.BUSINESSES.DETAIL_TAB(securityBusiness.id, 'security')
+    : undefined;
 
   return (
     <div className="flex flex-col gap-2">
       {details ? (
         <div className="flex flex-col gap-1">
-          <SecurityTitle
+          <SecurityHeading
             name={details.engName}
             symbol={details.symbol}
-            businessId={securityBusiness?.id}
-          />
-          <div className="text-sm text-gray-500">{details.hebName}</div>
-          <div className="flex flex-row flex-wrap items-center gap-2">
-            {details.exchange && <Badge variant="secondary">{details.exchange}</Badge>}
-            <Badge variant="secondary">{details.currencyCode}</Badge>
-            <Badge variant="outline">{details.itemType}</Badge>
-            {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
-            {details.isEtf && <Badge variant="outline">ETF</Badge>}
-            {details.isForeign && <Badge variant="outline">Foreign</Badge>}
-          </div>
+            hebName={details.hebName}
+            href={businessHref}
+          >
+            <div className="flex flex-row flex-wrap items-center gap-2">
+              {securityBusiness && <Badge variant="secondary">{securityBusiness.isin}</Badge>}
+              {details.exchange && <Badge variant="secondary">{details.exchange}</Badge>}
+              <Badge variant="secondary">{details.currencyCode}</Badge>
+              <Badge variant="outline">{details.itemType}</Badge>
+              {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
+              {details.isEtf && <Badge variant="outline">ETF</Badge>}
+              {details.isForeign && <Badge variant="outline">Foreign</Badge>}
+            </div>
+          </SecurityHeading>
           <div className="text-xs text-gray-400">
             Key {security.securityKey} · reference data as of {formatSecurityDate(details.asOfDate)}
           </div>
@@ -136,15 +114,14 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
         // security closed out before then (a redeemed bond, say) has no row there — but its
         // executions still created a security business, linked by the Poalim key.
         <div className="flex flex-col gap-1">
-          <SecurityTitle
+          <SecurityHeading
             name={securityBusiness.engName ?? securityBusiness.isin}
             symbol={securityBusiness.symbol}
-            businessId={securityBusiness.id}
-          />
-          {securityBusiness.hebName && (
-            <div className="text-sm text-gray-500">{securityBusiness.hebName}</div>
-          )}
-          <SecurityDescriptorBadges security={securityBusiness} />
+            hebName={securityBusiness.hebName}
+            href={businessHref}
+          >
+            <SecurityDescriptorBadges security={securityBusiness} />
+          </SecurityHeading>
           <div className="text-xs text-gray-400">
             Key {security.securityKey} · from the security&apos;s business (not in the ingested
             securities list)
@@ -154,7 +131,8 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
         <div className="flex flex-col gap-1">
           <div className="text-lg font-semibold">Security {security.securityKey}</div>
           <div className="text-sm text-gray-500">
-            Not found in the ingested securities list — the reference list may be out of date.
+            No reference data or security business for this key yet — the securities list or the
+            executions may not have been ingested.
           </div>
         </div>
       )}
