@@ -425,6 +425,7 @@ describe('authenticated tool invocation', () => {
         'accounter_vat_report',
         'accounter_list_security_holdings',
         'accounter_get_security_executions',
+        'accounter_get_account_balances',
         'accounter_list_clients',
       ]),
     );

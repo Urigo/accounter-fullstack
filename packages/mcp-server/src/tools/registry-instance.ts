@@ -1,3 +1,4 @@
+import { getAccountBalancesTool } from './account-balances.js';
 import { createBusinessTool } from './businesses-write.js';
 import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
@@ -48,6 +49,9 @@ toolRegistry.register(searchChargesTool);
 // into specific charges — which nest their transactions and documents.
 toolRegistry.register(getChargesTool);
 toolRegistry.register(getTransactionsTool);
+// Balances right after transactions: each balance is read off the newest
+// transaction of an account, and its `transactionId` drills straight back there.
+toolRegistry.register(getAccountBalancesTool);
 toolRegistry.register(getDocumentsTool);
 // Ledger records are the accounting layer under a charge, so they follow the
 // charge/transaction/document drill-down rather than sitting with the lookups.

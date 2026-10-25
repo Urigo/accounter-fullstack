@@ -12,6 +12,8 @@ import type {
   IGetFinancialAccountsByAccountIDsQuery,
   IGetFinancialAccountsByAccountNumbersQuery,
   IGetFinancialAccountsByOwnerIdsQuery,
+  IGetLatestAccountBalancesParams,
+  IGetLatestAccountBalancesQuery,
   IInsertFinancialAccountsParams,
   IInsertFinancialAccountsQuery,
   IUpdateFinancialAccountParams,
@@ -79,6 +81,38 @@ const deleteFinancialAccount = sql<IDeleteFinancialAccountQuery>`
         WHERE id = $financialAccountId
         RETURNING id;
       `;
+
+/**
+ * The bank's own running balance, read off the newest ingested transaction per
+ * (account, currency). Banks report the balance after every movement
+ * (`transactions.current_balance`), so the latest row is the latest balance the
+ * bank told us about. Same-day ties are broken by the bank's own sequence:
+ * `serial_number` for Poalim ILS rows, `event_number` for Poalim foreign-currency
+ * rows, then insertion time for every other source.
+ */
+const getLatestAccountBalances = sql<IGetLatestAccountBalancesQuery>`
+  SELECT DISTINCT ON (t.account_id, t.currency)
+    t.id AS transaction_id,
+    t.account_id,
+    t.owner_id,
+    t.currency::TEXT AS currency,
+    t.current_balance,
+    t.event_date,
+    t.debit_date
+  FROM accounter_schema.transactions t
+  JOIN accounter_schema.financial_accounts fa ON fa.id = t.account_id
+  LEFT JOIN accounter_schema.transactions_raw_list rl ON rl.id = t.source_id
+  LEFT JOIN accounter_schema.poalim_ils_account_transactions pi ON pi.id = rl.poalim_ils_id
+  LEFT JOIN accounter_schema.poalim_foreign_account_transactions pf ON pf.id = rl.poalim_foreign_id
+  WHERE fa.type = 'BANK_ACCOUNT'
+    AND ($isAccountIds = 0 OR t.account_id IN $$accountIds)
+    AND ($asOfDate ::TEXT IS NULL OR t.event_date <= $asOfDate ::DATE)
+  ORDER BY
+    t.account_id,
+    t.currency,
+    t.event_date DESC,
+    COALESCE(pi.serial_number, pf.event_number) DESC NULLS LAST,
+    t.created_at DESC;`;
 
 @Injectable({
   scope: Scope.Operation,
@@ -148,6 +182,19 @@ export class FinancialAccountsProvider {
     });
     this.allFinancialAccountsCache = result;
     return result;
+  }
+
+  public async getLatestAccountBalances(params: {
+    accountIds?: readonly string[] | null;
+    asOfDate?: string | null;
+  }) {
+    const accountIds = params.accountIds?.length ? [...params.accountIds] : [null];
+    const queryParams: IGetLatestAccountBalancesParams = {
+      accountIds,
+      isAccountIds: params.accountIds?.length ? 1 : 0,
+      asOfDate: params.asOfDate ?? null,
+    };
+    return getLatestAccountBalances.run(queryParams, this.db);
   }
 
   public async updateFinancialAccount(params: IUpdateFinancialAccountParams) {

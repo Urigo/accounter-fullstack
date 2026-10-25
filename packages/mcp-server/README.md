@@ -20,15 +20,15 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of seventeen read-only tools
+Accounter GraphQL server; a curated registry of eighteen read-only tools
 (`accounter_list_business_memberships`, `accounter_explain_terminology`, `accounter_search_charges`,
-`accounter_get_charges`, `accounter_get_transactions`, `accounter_get_documents`,
-`accounter_get_ledger_records`, `accounter_list_clients`, `accounter_get_contracts`,
-`accounter_list_security_holdings`, `accounter_get_security_executions`, `accounter_list_tags`,
-`accounter_list_tax_categories`, `accounter_list_sort_codes`, `accounter_list_businesses`,
-`accounter_balance_report`, `accounter_vat_report`) each gated by strict input validation, a
-per-tool authorization policy, and business-scope narrowing forwarded upstream as
-`x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
+`accounter_get_charges`, `accounter_get_transactions`, `accounter_get_account_balances`,
+`accounter_get_documents`, `accounter_get_ledger_records`, `accounter_list_clients`,
+`accounter_get_contracts`, `accounter_list_security_holdings`, `accounter_get_security_executions`,
+`accounter_list_tags`, `accounter_list_tax_categories`, `accounter_list_sort_codes`,
+`accounter_list_businesses`, `accounter_balance_report`, `accounter_vat_report`) each gated by
+strict input validation, a per-tool authorization policy, and business-scope narrowing forwarded
+upstream as `x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
 propagation, sanitized errors); a unified error taxonomy; per-`tools/call` rate limiting; in-process
 operational metrics (request/outcome counters, a latency histogram, auth-failure counters) exposed
 at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
@@ -202,6 +202,13 @@ scope, because it _is_ the scope.
   owner filter and is forwarded as the upstream `filters.ownerIds`; there is no separate owner input
   to drift from it. Each row reports its `ownerId` plus the client, period, amount, billing cycle,
   document type, product/plan, and purchase orders.
+- **`accounter_get_account_balances`** — the **bank balance** of each bank account, per currency, as
+  the bank reported it: banks send the running balance after every movement, and the newest ingested
+  transaction of an account in a currency carries the newest one. Every row says which day it is
+  from (`asOfDate`, `daysOld`) and which transaction carries it, so a quiet account's stale balance
+  is visible rather than silent; `asOfDate` in the input gives the balance at the end of a past day.
+  Credit cards are excluded, and deposits and securities are not part of a bank balance. Amounts are
+  never converted: the response carries per-currency `byCurrency` totals and a `caveats` array.
 - **`accounter_list_security_holdings`** — the **securities portfolio**: one row per security with
   units held, weighted average cost per unit bought, totals bought and sold, and the span of the
   ingested trade history. `includeClosed` also returns securities traded but no longer held;

@@ -22,6 +22,7 @@ const LIST_TOOLS: ReadonlyArray<readonly [tool: string, itemsKey: string]> = [
   ['accounter_search_charges', 'charges'],
   ['accounter_get_charges', 'charges'],
   ['accounter_get_transactions', 'transactions'],
+  ['accounter_get_account_balances', 'balances'],
   ['accounter_get_documents', 'documents'],
   ['accounter_get_ledger_records', 'ledgerRecords'],
   ['accounter_list_clients', 'clients'],

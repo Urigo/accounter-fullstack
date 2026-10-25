@@ -5,6 +5,28 @@ export default gql`
     allFinancialAccounts: [FinancialAccount!]! @requiresAuth
     financialAccountsByOwner(ownerId: UUID!): [FinancialAccount!]! @requiresAuth
     financialAccount(id: UUID!): FinancialAccount! @requiresAuth
+    " The latest balance each bank account reported, per currency (from the running balance on the newest ingested transaction) "
+    financialAccountBalances(
+      accountIds: [UUID!]
+      asOfDate: TimelessDate
+    ): [FinancialAccountBalance!]! @requiresAuth
+  }
+
+  " A bank-reported balance: the running balance after the newest ingested transaction of one account in one currency "
+  type FinancialAccountBalance {
+    " account id and currency "
+    id: ID!
+    account: FinancialAccount!
+    currency: Currency!
+    " balance after the transaction, in the account currency "
+    balance: FinancialAmount!
+    " event date of the transaction that carries the balance "
+    asOfDate: TimelessDate!
+    " value (debit) date of that transaction, when the bank reported one "
+    valueDate: TimelessDate
+    " the transaction that carries the balance "
+    transactionId: UUID!
+    ownerId: UUID!
   }
 
   extend type Mutation {
