@@ -13,6 +13,7 @@ import { useApiMutation } from './use-api-mutation.js';
       ... on UpdateChargeSuccessfulResult {
         charge {
           id
+          ...ChargeMutationResultFields
         }
       }
       ... on CommonError {

@@ -21,6 +21,7 @@ import { useApiMutation } from './use-api-mutation.js';
       ... on MergeChargeSuccessfulResult {
         charge {
           id
+          ...ChargeMutationResultFields
         }
       }
       ... on CommonError {

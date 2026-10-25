@@ -515,7 +515,14 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         const degradedCharges = await degradeChargesAccountantApproval(injector, [baseChargeID]);
 
-        return { charge: degradedCharges.get(baseChargeID) ?? charge };
+        // `charge` predates the update and the merge (which can also retype it), so respond with the
+        // charge as it is now — the client takes its new state from this payload.
+        const mergedCharge =
+          degradedCharges.get(baseChargeID) ??
+          (await injector.get(ChargesProvider).getChargeByIdLoader.load(baseChargeID)) ??
+          charge;
+
+        return { charge: mergedCharge };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;
