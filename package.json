@@ -13,7 +13,7 @@
   },
   "packageManager": "yarn@4.18.1",
   "engines": {
-    "node": "26.12.0"
+    "node": "26.12.1"
   },
   "scripts": {
     "build": "yarn generate && yarn build:tools && yarn build:main",
@@ -51,7 +51,7 @@
     "validate:demo": "tsx packages/server/src/demo-fixtures/validate-demo-data.ts"
   },
   "devDependencies": {
-    "@0no-co/graphqlsp": "1.17.5",
+    "@0no-co/graphqlsp": "1.18.0",
     "@changesets/changelog-github": "1.0.1",
     "@changesets/cli": "3.0.3",
     "@eslint/compat": "2.1.1",
@@ -67,8 +67,8 @@
     "@graphql-codegen/typescript-resolvers": "6.1.1",
     "@graphql-eslint/eslint-plugin": "4.4.2",
     "@graphql-hive/cli": "0.68.1",
-    "@graphql-inspector/cli": "7.0.1",
-    "@graphql-tools/mock": "10.0.2",
+    "@graphql-inspector/cli": "7.0.2",
+    "@graphql-tools/mock": "10.1.1",
     "@parcel/watcher": "2.6.0",
     "@pgtyped/cli": "2.4.3",
     "@pgtyped/runtime": "2.4.2",
@@ -92,7 +92,7 @@
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-sonarjs": "4.2.2",
-    "eslint-plugin-unicorn": "78.0.0",
+    "eslint-plugin-unicorn": "79.0.0",
     "globals": "17.13.0",
     "graphql": "16.14.2",
     "graphql-yoga": "5.24.6",

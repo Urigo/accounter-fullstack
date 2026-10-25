@@ -38,7 +38,7 @@
     "@tanstack/react-table": "9.3.1",
     "@urql/exchange-auth": "3.0.0",
     "@urql/exchange-retry": "2.0.0",
-    "chart.js": "4.5.1",
+    "chart.js": "4.6.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
@@ -62,7 +62,7 @@
     "react-dnd": "16.0.1",
     "react-dom": "19.3.1",
     "react-error-boundary": "6.1.6",
-    "react-hook-form": "7.90.0",
+    "react-hook-form": "7.91.0",
     "react-number-format": "5.4.5",
     "react-router-dom": "7.18.4",
     "react-to-pdf": "3.2.2",
@@ -73,11 +73,11 @@
     "urql": "5.0.4",
     "vaul": "1.1.2",
     "zod": "4.6.7",
-    "zustand": "5.0.15"
+    "zustand": "5.0.16"
   },
   "devDependencies": {
-    "@storybook/addon-a11y": "10.6.2",
-    "@storybook/react-vite": "10.6.2",
+    "@storybook/addon-a11y": "10.6.3",
+    "@storybook/react-vite": "10.6.3",
     "@tailwindcss/vite": "4.3.3",
     "@types/chart.js": "4.0.1",
     "@types/deep-equal": "1.0.4",
@@ -86,14 +86,14 @@
     "@urql/devtools": "2.0.3",
     "@vitejs/plugin-react": "6.1.2",
     "autoprefixer": "10.6.1",
-    "happy-dom": "21.0.3",
-    "storybook": "10.6.2",
+    "happy-dom": "21.0.4",
+    "storybook": "10.6.3",
     "tailwindcss": "4.3.3",
     "tailwindcss-animate": "1.0.7",
     "typescript": "6.0.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vite-plugin-node-polyfills": "0.28.0",
-    "wrangler": "4.151.2"
+    "wrangler": "4.152.0"
   },
   "overrides": {
     "react-is": "19.3.1"

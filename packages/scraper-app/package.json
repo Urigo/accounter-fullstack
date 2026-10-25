@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@accounter/modern-poalim-scraper": "workspace:^",
-    "@fastify/static": "10.1.6",
+    "@fastify/static": "10.1.7",
     "@fastify/websocket": "11.3.4",
     "date-fns": "4.4.0",
     "fast-xml-parser": "5.11.2",
@@ -48,7 +48,7 @@
     "msw": "3.0.3",
     "tsup": "9.0.0",
     "typescript": "6.0.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "5.0.5"
   },
   "publishConfig": {
