@@ -4,7 +4,6 @@ import { ChargeTypeEnum, MissingChargeInfo } from '../../../../shared/enums.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
-import { SecurityBusinessesProvider } from '../../../foreign-securities/providers/security-businesses.provider.js';
 import { SecurityExecutionChargesProvider } from '../../../foreign-securities/providers/security-execution-charges.provider.js';
 import { ChargeTagsProvider } from '../../../tags/providers/charge-tags.provider.js';
 import type { IGetChargesByIdsResult } from '../../types.js';
@@ -54,10 +53,6 @@ function makeInjector() {
       { linkedExecutionIdsByChargeIdLoader: { load: async () => [] } },
     ],
     [
-      SecurityBusinessesProvider,
-      { getAllSecurityBusinessIds: async () => new Set([FUND_ALPHA, FUND_BETA]) },
-    ],
-    [
       BusinessesProvider,
       { getBusinessByIdLoader: { load: async (id: string) => ({ id, country: 'USA' }) } },
     ],
@@ -84,6 +79,8 @@ describe('validateCharge — securities counterparty', () => {
     vi.mocked(getChargeBusinesses).mockResolvedValue({
       allBusinessIds: [FUND_ALPHA, FUND_BETA],
       mainBusinessIds: [FUND_ALPHA, FUND_BETA],
+      offsettingBusinessIds: [],
+      spansSeveralSecurities: true,
       mainBusinessId: null,
     });
 
@@ -92,10 +89,12 @@ describe('validateCharge — securities counterparty', () => {
     expect(missingInfo).not.toContain(MissingChargeInfo.Counterparty);
   });
 
-  it('still flags a candidate that is not a security', async () => {
+  it('still flags candidates that are not all securities', async () => {
     vi.mocked(getChargeBusinesses).mockResolvedValue({
       allBusinessIds: [FUND_ALPHA, BANK],
       mainBusinessIds: [FUND_ALPHA, BANK],
+      offsettingBusinessIds: [],
+      spansSeveralSecurities: false,
       mainBusinessId: null,
     });
 
@@ -109,6 +108,8 @@ describe('validateCharge — securities counterparty', () => {
     vi.mocked(getChargeBusinesses).mockResolvedValue({
       allBusinessIds: [FUND_ALPHA, FUND_BETA],
       mainBusinessIds: [FUND_ALPHA, FUND_BETA],
+      offsettingBusinessIds: [],
+      spansSeveralSecurities: true,
       mainBusinessId: null,
     });
 

@@ -21,9 +21,9 @@ export default gql`
     transactions: [Transaction!]!
     " Ingested portfolio executions matched to those transactions by account, date and amount "
     executions: [SecurityExecution!]!
-    " Net of those transactions, fees excluded. Null when they move in more than one currency, or when there are none "
+    " Net of the charge's non-fee transactions booked against the security's business. Null when the security has no business, or when those transactions move in more than one currency or are none "
     netAmount: FinancialAmount
-    " Whether those transactions cancel out (say, a buy reversed by a sell of the same amount), so the security carries no exposure in this charge and is not used as its counterparty "
+    " Whether the security was left out of the charge's counterparties because its trades cancel out within the charge (say, a buy reversed by a sell of the same amount) "
     isOffsetting: Boolean!
   }
 

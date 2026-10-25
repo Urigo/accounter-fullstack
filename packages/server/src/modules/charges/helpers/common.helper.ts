@@ -12,8 +12,8 @@ import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
 import { basicDocumentValidation } from '../../documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
-import { getForeignSecuritiesBusinessIds } from '../../foreign-securities/helpers/foreign-securities-businesses.helper.js';
 import { pruneOffsettingSecurityCandidates } from '../../foreign-securities/helpers/securities-counterparty.helper.js';
+import { SecurityBusinessesProvider } from '../../foreign-securities/providers/security-businesses.provider.js';
 import { getLedgerMeta } from '../../ledger/helpers/common.helper.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
@@ -90,30 +90,64 @@ export async function calculateTotalAmount(
   }
 }
 
+type MainBusinesses = {
+  /** Main-counterparty candidates; more than one means the charge has no single counterparty */
+  mainBusinessIds: string[];
+  /** Securities dropped from the candidates because their trades cancel out within the charge */
+  offsettingBusinessIds: string[];
+  /**
+   * More than one candidate is left, and every one of them is a traded security: the charge spans
+   * several securities and validly has no single counterparty.
+   */
+  spansSeveralSecurities: boolean;
+};
+
 /**
  * Narrows ambiguous main-counterparty candidates by dropping securities whose trades cancel out
  * within the charge (see `pruneOffsettingSecurityCandidates`). Only charges with a securities
  * candidate pay for the lookup.
+ *
+ * "Security" means a per-security business only. The tenant's general foreign-securities business
+ * stands for a trade whose security was not recognized, which is a gap to surface rather than a
+ * counterparty to settle on.
  */
 async function narrowMainBusinessIds(
   chargeId: string,
-  mainBusinessIds: string[],
+  candidateIds: string[],
   injector: Injector,
   loadedTransactions?: Awaited<
     ReturnType<TransactionsProvider['transactionsByChargeIDLoader']['load']>
   >,
-): Promise<string[]> {
-  if (mainBusinessIds.length <= 1) {
-    return mainBusinessIds;
+): Promise<MainBusinesses> {
+  const unchanged = {
+    mainBusinessIds: candidateIds,
+    offsettingBusinessIds: [],
+    spansSeveralSecurities: false,
+  };
+  if (candidateIds.length <= 1) {
+    return unchanged;
   }
-  const securitiesBusinessIds = await getForeignSecuritiesBusinessIds(injector);
-  if (!mainBusinessIds.some(businessId => securitiesBusinessIds.has(businessId))) {
-    return mainBusinessIds;
+  const securityBusinessIds = await injector
+    .get(SecurityBusinessesProvider)
+    .getAllSecurityBusinessIds();
+  if (!candidateIds.some(businessId => securityBusinessIds.has(businessId))) {
+    return unchanged;
   }
   const transactions =
     loadedTransactions ??
     (await injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId));
-  return pruneOffsettingSecurityCandidates(mainBusinessIds, transactions, securitiesBusinessIds);
+  const mainBusinessIds = pruneOffsettingSecurityCandidates(
+    candidateIds,
+    transactions,
+    securityBusinessIds,
+  );
+  return {
+    mainBusinessIds,
+    offsettingBusinessIds: candidateIds.filter(businessId => !mainBusinessIds.includes(businessId)),
+    spansSeveralSecurities:
+      mainBusinessIds.length > 1 &&
+      mainBusinessIds.every(businessId => securityBusinessIds.has(businessId)),
+  };
 }
 
 export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Injector) {
@@ -123,13 +157,18 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
     // business_array folds in transactions, documents, ledger and misc-expense
     // parties (minus the owner), so no child-table loads are needed.
     const sqlMainBusinessIds = (charge.main_business_array as string[] | null) ?? [];
-    const mainBusinessIds = await narrowMainBusinessIds(charge.id, sqlMainBusinessIds, injector);
+    const mainBusinesses = await narrowMainBusinessIds(charge.id, sqlMainBusinessIds, injector);
+    // A single SQL candidate only becomes the counterparty when it joins a `businesses` row (so a
+    // tax category never does) — that is `business_id`. Pruning must not bypass that check, so the
+    // pruned survivor is used only where the SQL had several candidates to begin with.
+    const narrowedToOne =
+      sqlMainBusinessIds.length > 1 && mainBusinesses.mainBusinessIds.length === 1;
     return {
       allBusinessIds: charge.business_array ?? [],
-      mainBusinessIds,
+      ...mainBusinesses,
       mainBusinessId:
         (charge.business_id as string | null) ??
-        (sqlMainBusinessIds.length > 1 && mainBusinessIds.length === 1 ? mainBusinessIds[0] : null),
+        (narrowedToOne ? mainBusinesses.mainBusinessIds[0] : null),
     };
   }
 
@@ -178,7 +217,7 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
   });
 
   const allBusinessIds = Array.from(allBusinessIdsSet);
-  const mainBusinessIds = await narrowMainBusinessIds(
+  const mainBusinesses = await narrowMainBusinessIds(
     charge.id,
     Array.from(mainBusinessIdsSet),
     injector,
@@ -187,14 +226,13 @@ export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Inject
 
   let mainBusinessId: string | null = null;
 
-  if (mainBusinessIds.length === 1) {
-    mainBusinessId = mainBusinessIds[0];
+  if (mainBusinesses.mainBusinessIds.length === 1) {
+    mainBusinessId = mainBusinesses.mainBusinessIds[0];
   }
 
   return {
     allBusinessIds,
-    /** Main-counterparty candidates; more than one means the charge has no single counterparty */
-    mainBusinessIds,
+    ...mainBusinesses,
     mainBusinessId,
   };
 }

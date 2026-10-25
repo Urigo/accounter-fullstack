@@ -76,7 +76,7 @@ const MultipleSecurities = ({
       </button>
     </PopoverTrigger>
     <PopoverContent className="flex w-72 flex-col gap-2" onClick={event => event.stopPropagation()}>
-      <div className="text-sm font-medium text-gray-500">Main counterparties</div>
+      <div className="text-sm font-medium text-gray-500">Securities</div>
       <ul className="flex flex-col gap-1">
         {counterparties.map(entity => (
           <li key={entity.id}>

@@ -1,6 +1,5 @@
 import type { Injector } from 'graphql-modules';
 import { describe, expect, it, vi } from 'vitest';
-import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { SecurityBusinessesProvider } from '../../../foreign-securities/providers/security-businesses.provider.js';
 import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
@@ -16,6 +15,8 @@ const FUND_ALPHA = 'business-fund-alpha';
 const FUND_BETA = 'business-fund-beta';
 const BANK = 'business-bank';
 const VENDOR = 'business-vendor';
+/** The tenant's general foreign-securities business: a trade whose security was not recognized */
+const GENERAL_SECURITIES = 'business-general-securities';
 
 type StubTransaction = {
   id: string;
@@ -48,14 +49,6 @@ function makeInjector(transactions: StubTransaction[]) {
     [LedgerProvider, { getLedgerRecordsByChargesIdLoader: { load: async () => [] } }],
     [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
     [
-      AdminContextProvider,
-      {
-        getVerifiedAdminContext: async () => ({
-          foreignSecurities: { foreignSecuritiesBusinessId: null },
-        }),
-      },
-    ],
-    [
       SecurityBusinessesProvider,
       { getAllSecurityBusinessIds: async () => new Set([FUND_ALPHA, FUND_BETA]) },
     ],
@@ -87,6 +80,8 @@ describe('getChargeBusinesses — securities counterparty', () => {
 
     expect(result.mainBusinessId).toBe(FUND_ALPHA);
     expect(result.mainBusinessIds).toEqual([FUND_ALPHA]);
+    expect(result.offsettingBusinessIds).toEqual([FUND_BETA]);
+    expect(result.spansSeveralSecurities).toBe(false);
     // every party is still listed, so filters and the charge type see the whole charge
     expect(result.allBusinessIds.sort()).toEqual([BANK, FUND_ALPHA, FUND_BETA].sort());
   });
@@ -101,6 +96,38 @@ describe('getChargeBusinesses — securities counterparty', () => {
 
     expect(result.mainBusinessId).toBeNull();
     expect(result.mainBusinessIds).toEqual([FUND_ALPHA, FUND_BETA]);
+    expect(result.offsettingBusinessIds).toEqual([]);
+    expect(result.spansSeveralSecurities).toBe(true);
+  });
+
+  it('marks nothing as offsetting when every security cancels out', async () => {
+    const { injector } = makeInjector([
+      tx('buy-alpha', FUND_ALPHA, '-1000'),
+      tx('sell-alpha', FUND_ALPHA, '1000'),
+      tx('buy-beta', FUND_BETA, '-500'),
+      tx('sell-beta', FUND_BETA, '500'),
+    ]);
+
+    const result = await getChargeBusinesses(charge, injector);
+
+    expect(result.mainBusinessIds).toEqual([FUND_ALPHA, FUND_BETA]);
+    expect(result.offsettingBusinessIds).toEqual([]);
+  });
+
+  it('does not treat the general securities business as a security', async () => {
+    // an unrecognized trade is a gap to surface, not a security to settle on
+    const { injector } = makeInjector([
+      tx('buy-alpha', FUND_ALPHA, '-1000'),
+      tx('buy-unknown', GENERAL_SECURITIES, '-1000'),
+      tx('sell-unknown', GENERAL_SECURITIES, '1000'),
+    ]);
+
+    const result = await getChargeBusinesses(charge, injector);
+
+    expect(result.mainBusinessId).toBeNull();
+    expect(result.mainBusinessIds).toEqual([FUND_ALPHA, GENERAL_SECURITIES]);
+    expect(result.offsettingBusinessIds).toEqual([]);
+    expect(result.spansSeveralSecurities).toBe(false);
   });
 
   it('leaves charges with no securities candidate as they are', async () => {

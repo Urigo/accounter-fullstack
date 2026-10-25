@@ -488,7 +488,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       const buyBeta = buildTransaction({ id: 'transaction-buy-beta', amount: '-1000', businessId: beta });
 
       const { records, errors } = await generate({
-        transactions: [buyAlpha, buyBeta],
+        transactions: [buyBeta, buyAlpha],
         executions: {
           [buyAlpha.id]: buyExecution('execution-buy-alpha', DAY, 10, 1000),
           [buyBeta.id]: buyExecution('execution-buy-beta', DAY, 10, 1000),
@@ -497,7 +497,41 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       });
 
       expect(errors).toEqual([]);
-      expect(records.map(record => record.debit_entity1).sort()).toEqual([alpha, beta]);
+      // in the transactions' order, not the order their lookups happened to finish in
+      expect(records.map(record => record.debit_entity1)).toEqual([beta, alpha]);
+    });
+
+    it('reports a security sold beyond what the charge bought', async () => {
+      const alpha = 'business-security-alpha';
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+      const buyAlpha = buildTransaction({
+        id: 'transaction-buy-alpha',
+        amount: '-1000',
+        businessId: alpha,
+      });
+      const sellAlpha = buildTransaction({
+        id: 'transaction-sell-alpha',
+        amount: '1500',
+        businessId: alpha,
+      });
+
+      const { errors } = await generate({
+        transactions: [buyAlpha, sellAlpha],
+        executions: {
+          [buyAlpha.id]: buyExecution('execution-buy-alpha', DAY, 10, 1000),
+          [sellAlpha.id]: buildExecution({
+            id: 'execution-sell-alpha',
+            trade_type: TRADE_TYPES.sell,
+            transaction_type: TRADE_TYPES.sell,
+            nv: '10',
+            net_value_trade_currency: '1500',
+          }),
+        },
+        businessIds: [BANK_BUSINESS_ID, alpha],
+      });
+
+      // it took part in a buy, but its balance across the charge is a credit, not a holding
+      expect(errors).toEqual([expect.stringContaining(`Business "${alpha}" is unbalanced`)]);
     });
   });
 

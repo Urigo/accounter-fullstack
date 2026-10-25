@@ -1,9 +1,3 @@
-/**
- * Sums below this are treated as zero: amounts are stored to the cent, and summing their float
- * representations can leave a sub-cent residue.
- */
-const NET_ZERO_TOLERANCE = 0.005;
-
 export type NettableTransaction = {
   business_id: string | null;
   is_fee: boolean | null;
@@ -28,6 +22,11 @@ export function netAmountsByCurrency(
       (nets.get(transaction.currency) ?? 0) + Number(transaction.amount),
     );
   }
+  // Amounts are stored to the cent, but summing their float representations can leave a
+  // sub-cent residue — round it off, and turn a -0 into 0 so it never reads as negative.
+  for (const [currency, net] of nets) {
+    nets.set(currency, Math.round(net * 100) / 100 || 0);
+  }
   return nets;
 }
 
@@ -46,7 +45,7 @@ export function areNetZero(nets: ReadonlyMap<string, number>): boolean {
   if (nets.size === 0) {
     return false;
   }
-  return [...nets.values()].every(net => Math.abs(net) < NET_ZERO_TOLERANCE);
+  return [...nets.values()].every(net => net === 0);
 }
 
 /**

@@ -41,6 +41,19 @@ describe('netAmountsByCurrency', () => {
   });
 });
 
+describe('netAmountsByCurrency — rounding', () => {
+  it('rounds float residue off to the cent, with no negative zero', () => {
+    const nets = netAmountsByCurrency([
+      transaction({ amount: '0.3' }),
+      transaction({ amount: '-0.1' }),
+      transaction({ amount: '-0.2' }),
+    ]);
+
+    // 0.3 - 0.1 - 0.2 is -2.8e-17 in floats, which would read as a negative amount
+    expect(Object.is(nets.get('USD'), 0)).toBe(true);
+  });
+});
+
 describe('isNetZero', () => {
   it('is true for a buy reversed by a sell of the same amount', () => {
     expect(isNetZero([transaction({ amount: '-1000' }), transaction({ amount: '1000' })])).toBe(
