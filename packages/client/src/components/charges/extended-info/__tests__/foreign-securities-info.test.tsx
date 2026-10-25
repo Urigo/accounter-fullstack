@@ -6,12 +6,15 @@ import { ForeignSecuritiesInfo } from '../foreign-securities-info.js';
 
 /**
  * The descriptor badges read their fields through `getFragmentData`, which asserts on the
- * fragment document at runtime. A stub that prints the ISIN keeps these cases about the panel
- * while still showing which branch rendered the badges.
+ * fragment document at runtime. A stub that prints the ISIN (and the business's locality) keeps
+ * these cases about the panel while still showing which branch rendered the badges.
  */
 vi.mock('../../../securities/security-descriptor-badges.js', () => ({
-  SecurityDescriptorBadges: ({ security }: { security: { isin: string } }) => (
-    <span data-testid="descriptor-badges">{security.isin}</span>
+  SecurityDescriptorBadges: ({ security }: { security: { isin: string; isForeign?: boolean } }) => (
+    <span data-testid="descriptor-badges">
+      {security.isin}
+      {security.isForeign && ' Foreign'}
+    </span>
   ),
 }));
 
@@ -30,6 +33,7 @@ const details = {
   exchange: 'LUX',
   currencyCode: 'USD',
   isEtf: false,
+  // the bank's raw flag, set on local securities too; the panel must not read it
   isForeign: true,
   asOfDate: '2026-01-15',
 };
@@ -44,7 +48,12 @@ const securityBusiness = {
 
 function charge(security: {
   details: typeof details | null;
-  securityBusiness: (Omit<typeof securityBusiness, 'engName'> & { engName: string | null }) | null;
+  securityBusiness:
+    | (Omit<typeof securityBusiness, 'engName'> & {
+        engName: string | null;
+        isForeign?: boolean | null;
+      })
+    | null;
 }): ChargeProps {
   return {
     id: 'charge-1',
@@ -109,6 +118,28 @@ describe('ForeignSecuritiesInfo', () => {
     );
     expect(securityLink()?.getAttribute('href')).toBe(`/businesses/${BUSINESS_ID}?tab=security`);
     expect(container.textContent).not.toContain('No reference data');
+  });
+
+  it('takes locality from the security business, not the raw reference flag', () => {
+    render(charge({ details, securityBusiness: { ...securityBusiness, isForeign: false } }));
+
+    expect(container.querySelector('[data-testid="descriptor-badges"]')?.textContent).toBe(
+      'XS0000000001',
+    );
+    expect(container.textContent).not.toContain('Foreign');
+  });
+
+  it('marks a security its business judges foreign', () => {
+    render(charge({ details, securityBusiness: { ...securityBusiness, isForeign: true } }));
+
+    expect(container.textContent).toContain('Foreign');
+  });
+
+  it('shows no locality without a security business', () => {
+    render(charge({ details, securityBusiness: null }));
+
+    expect(container.textContent).toContain('USD');
+    expect(container.textContent).not.toContain('Foreign');
   });
 
   it('names a business with no English name by its ISIN', () => {

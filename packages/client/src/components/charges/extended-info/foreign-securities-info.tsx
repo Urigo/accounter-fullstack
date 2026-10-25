@@ -32,7 +32,6 @@ import { Badge } from '../../ui/badge.js';
           exchange
           currencyCode
           isEtf
-          isForeign
           asOfDate
         }
         securityBusiness {
@@ -95,15 +94,19 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
             hebName={details.hebName}
             href={businessHref}
           >
-            <div className="flex flex-row flex-wrap items-center gap-2">
-              {securityBusiness && <Badge variant="secondary">{securityBusiness.isin}</Badge>}
-              {details.exchange && <Badge variant="secondary">{details.exchange}</Badge>}
-              <Badge variant="secondary">{details.currencyCode}</Badge>
-              <Badge variant="outline">{details.itemType}</Badge>
-              {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
-              {details.isEtf && <Badge variant="outline">ETF</Badge>}
-              {details.isForeign && <Badge variant="outline">Foreign</Badge>}
-            </div>
+            {securityBusiness ? (
+              // Locality vs. the tenant. Not details.isForeign, which is the bank's raw flag
+              <SecurityDescriptorBadges security={securityBusiness} />
+            ) : (
+              // No security business yet, so locality is unknown: no Foreign badge
+              <div className="flex flex-row flex-wrap items-center gap-2">
+                {details.exchange && <Badge variant="secondary">{details.exchange}</Badge>}
+                <Badge variant="secondary">{details.currencyCode}</Badge>
+                <Badge variant="outline">{details.itemType}</Badge>
+                {details.stockType && <Badge variant="outline">{details.stockType}</Badge>}
+                {details.isEtf && <Badge variant="outline">ETF</Badge>}
+              </div>
+            )}
           </SecurityHeading>
           <div className="text-xs text-gray-400">
             Key {security.securityKey} · reference data as of {formatSecurityDate(details.asOfDate)}
