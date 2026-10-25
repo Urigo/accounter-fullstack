@@ -72,7 +72,13 @@ const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
 
 const DAY: TimelessDateString = '2025-03-12';
 const USD_RATE = 3.5;
-const RATES: MockRate[] = [[Currency.Usd, DAY, USD_RATE]];
+/** A later day at another rate, for a payment cancelled after it was made */
+const LATER_DAY: TimelessDateString = '2025-03-19';
+const LATER_USD_RATE = 3.6;
+const RATES: MockRate[] = [
+  [Currency.Usd, DAY, USD_RATE],
+  [Currency.Usd, LATER_DAY, LATER_USD_RATE],
+];
 
 const USD_LABEL = 'דולר ארה"ב';
 const ILS_LABEL = 'שקל חדש';
@@ -354,8 +360,8 @@ function recordOf(records: IGetLedgerRecordsByChargesIdsResult[], debitOrCredit:
   );
 }
 
-/** Each entity's foreign-currency balance across the records: debits less credits */
-function netForeignByEntity(records: IGetLedgerRecordsByChargesIdsResult[]) {
+/** Each entity's balance across the records, in foreign or local amounts: debits less credits */
+function netByEntity(records: IGetLedgerRecordsByChargesIdsResult[], amounts: 'foreign' | 'local') {
   const net = new Map<string, number>();
   const add = (entity: string | null, amount: string | null, sign: 1 | -1) => {
     if (entity && amount != null) {
@@ -363,10 +369,10 @@ function netForeignByEntity(records: IGetLedgerRecordsByChargesIdsResult[]) {
     }
   };
   for (const record of records) {
-    add(record.debit_entity1, record.debit_foreign_amount1, 1);
-    add(record.debit_entity2, record.debit_foreign_amount2, 1);
-    add(record.credit_entity1, record.credit_foreign_amount1, -1);
-    add(record.credit_entity2, record.credit_foreign_amount2, -1);
+    add(record.debit_entity1, record[`debit_${amounts}_amount1`], 1);
+    add(record.debit_entity2, record[`debit_${amounts}_amount2`], 1);
+    add(record.credit_entity1, record[`credit_${amounts}_amount1`], -1);
+    add(record.credit_entity2, record[`credit_${amounts}_amount2`], -1);
   }
   return net;
 }
@@ -729,7 +735,8 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         },
       });
 
-      expect(errors).toEqual([]);
+      // the dividend it cancels is not in the charge, which is the fallback's business below
+      expect(errors).toEqual([expect.stringContaining('that is not in this charge')]);
       expect(records.map(summarize)).toEqual([
         {
           currency: Currency.Usd,
@@ -749,11 +756,20 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       ]);
     });
 
-    it('nets a cancelled and re-executed dividend down to the replacement', async () => {
-      // a 1,250 dividend (250 withheld) is cancelled and paid again as 1,240 (248 withheld)
+    it('nets a cancelled and re-executed dividend down to the replacement, at the original rate', async () => {
+      // a 1,250 dividend (250 withheld) is cancelled a week later, at another rate, and paid again
+      // as 1,240 (248 withheld)
       const original = buildTransaction({ id: 'transaction-original', amount: '1000' });
-      const cancellation = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
-      const replacement = buildTransaction({ id: 'transaction-replacement', amount: '992' });
+      const cancellation = buildTransaction({
+        id: 'transaction-cancellation',
+        amount: '-1000',
+        debitDate: LATER_DAY,
+      });
+      const replacement = buildTransaction({
+        id: 'transaction-replacement',
+        amount: '992',
+        debitDate: LATER_DAY,
+      });
 
       const { records, errors } = await generate({
         transactions: [original, cancellation, replacement],
@@ -765,6 +781,8 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           }),
           [cancellation.id]: dividendExecution({
             id: 'execution-cancellation',
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
             trade_gross_value_trade_currency: '1250',
             net_value_trade_currency: '-1000',
             net_value_settlement_currency: '-1000',
@@ -773,6 +791,8 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           }),
           [replacement.id]: dividendExecution({
             id: 'execution-replacement',
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
             trade_gross_value_trade_currency: '1240',
             net_value_trade_currency: '992',
             net_value_settlement_currency: '992',
@@ -782,11 +802,89 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       });
 
       expect(errors).toEqual([]);
-      const net = netForeignByEntity(records);
-      expect(net.get(BANK_USD)).toBeCloseTo(992);
-      expect(net.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX)).toBeCloseTo(248);
-      expect(net.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME)).toBeCloseTo(-1240);
-      expect(net.has(SECURITIES_USD)).toBe(false);
+
+      // the reversal is booked on its own day, at the rate of the dividend it cancels
+      const reversal = records.find(
+        record => record.debit_entity1 === TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+      )!;
+      expect(reversal.value_date).toBe(LATER_DAY);
+      expect(summarize(reversal)).toMatchObject({
+        debitLocal1: usd(1250).local,
+        creditLocal1: usd(1000).local,
+        creditLocal2: usd(250).local,
+      });
+
+      const foreign = netByEntity(records, 'foreign');
+      expect(foreign.get(BANK_USD)).toBeCloseTo(992);
+      expect(foreign.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX)).toBeCloseTo(248);
+      expect(foreign.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME)).toBeCloseTo(-1240);
+      expect(foreign.has(SECURITIES_USD)).toBe(false);
+
+      // income and withheld tax are left with the replacement's, at its rate, and nothing else
+      const local = netByEntity(records, 'local');
+      expect(local.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX)).toBeCloseTo(
+        248 * LATER_USD_RATE,
+        6,
+      );
+      expect(local.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME)).toBeCloseTo(
+        -1240 * LATER_USD_RATE,
+        6,
+      );
+    });
+
+    it('prices a cancellation at its own rate, and says so, when the dividend it cancels is not in the charge', async () => {
+      const cancellation = buildTransaction({
+        id: 'transaction-cancellation',
+        amount: '-1000',
+        debitDate: LATER_DAY,
+      });
+
+      const { records, errors } = await generate({
+        transactions: [cancellation],
+        executions: {
+          [cancellation.id]: dividendExecution({
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
+            trade_gross_value_trade_currency: '1250',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            foreign_tax_value_settlement_currency: '-250',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([
+        expect.stringContaining(
+          "cancels a dividend of MOCK (US0000000001) that is not in this charge, so its reversal is priced at the cancellation day's rate",
+        ),
+      ]);
+      expect(records.map(summarize)).toEqual([
+        expect.objectContaining({
+          debit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          debitLocal1: 1250 * LATER_USD_RATE,
+          credit1: BANK_USD,
+          creditLocal1: 1000 * LATER_USD_RATE,
+          credit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          creditLocal2: 250 * LATER_USD_RATE,
+        }),
+      ]);
+    });
+
+    it('keeps the base entry of a cancellation whose cash came in, and says why', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({ is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Expected money going out for the cancellation'),
+      ]);
     });
 
     describe('commission', () => {
@@ -1087,7 +1185,9 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         },
       });
 
-      expect(errors).toEqual([]);
+      expect(errors).toEqual([
+        expect.stringContaining('cancels an interest payment of MOCK (FR0000000001)'),
+      ]);
       expect(records.map(summarize)).toEqual([
         {
           ...baseCashInRecord(1000),

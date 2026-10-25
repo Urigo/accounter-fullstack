@@ -9,10 +9,12 @@ import {
   classifySecurityExecution,
   getBankRateMismatch,
   getDistributionWithheldTax,
+  findCancelledPayment,
   findDistributionCancellation,
   getExpectedCommissionCharge,
   getWithheldTax,
   isDividendInKindDistribution,
+  priceEntryAtRate,
   validateSecurityCommissions,
   type CommissionExecution,
   type DistributionExecution,
@@ -406,7 +408,60 @@ describe('buildIncomeReversalEntry', () => {
       creditAmount1: income.debitAmount1,
       creditAccountID2: income.debitAccountID2,
       creditAmount2: income.debitAmount2,
+      localCurrencyCreditAmount1: income.localCurrencyDebitAmount1,
+      localCurrencyCreditAmount2: income.localCurrencyDebitAmount2,
     });
+  });
+
+  it('works for a shekel cancellation, with no foreign amounts', () => {
+    const entry = buildIncomeReversalEntry(
+      {
+        ...ilsBaseEntry(375),
+        isCreditorCounterparty: false,
+        debitAccountID1: SECURITIES_USD,
+        creditAccountID1: BANK_USD,
+      },
+      {
+        incomeTaxCategoryId: DIVIDEND_INCOME,
+        withholdingTaxCategoryId: WITHHOLDING,
+        withheldTax: -125,
+      },
+    );
+
+    expect(entry.currency).toBe(Currency.Ils);
+    expect(entry).toMatchObject({
+      debitAccountID1: DIVIDEND_INCOME,
+      debitAmount1: undefined,
+      creditAccountID1: BANK_USD,
+      creditAmount1: undefined,
+      localCurrencyCreditAmount1: 375,
+      creditAccountID2: WITHHOLDING,
+      creditAmount2: undefined,
+    });
+    expect(entry.localCurrencyDebitAmount1).toBeCloseTo(500, 6);
+    expect(entry.localCurrencyCreditAmount2).toBeCloseTo(125, 6);
+  });
+
+  it('debits the withholding when the cancelled payment refunded tax', () => {
+    // the original paid 1,050 on a 1,000 gross, 50 of it a tax refund; its cancellation reports
+    // that refund back as positive tax
+    const entry = buildIncomeReversalEntry(cashOutEntry(1050), {
+      incomeTaxCategoryId: DIVIDEND_INCOME,
+      withholdingTaxCategoryId: WITHHOLDING,
+      withheldTax: 50,
+    });
+
+    expect(entry.creditAccountID2).toBeUndefined();
+    expect(entry.debitAccountID1).toBe(DIVIDEND_INCOME);
+    expect(entry.debitAmount1).toBeCloseTo(1000, 6);
+    expect(entry.debitAccountID2).toBe(WITHHOLDING);
+    expect(entry.debitAmount2).toBeCloseTo(50, 6);
+    expect(entry.creditAccountID1).toBe(BANK_USD);
+    expect(entry.creditAmount1).toBe(1050);
+    expect(entry.localCurrencyDebitAmount1 + entry.localCurrencyDebitAmount2!).toBeCloseTo(
+      entry.localCurrencyCreditAmount1,
+      6,
+    );
   });
 
   it('has no second line when nothing was withheld', () => {
@@ -429,6 +484,92 @@ describe('buildIncomeReversalEntry', () => {
     expect(() =>
       buildIncomeReversalEntry(baseEntry(), { incomeTaxCategoryId: DIVIDEND_INCOME, withheldTax: 0 }),
     ).toThrow(LedgerError);
+  });
+});
+
+describe('priceEntryAtRate', () => {
+  it('revalues both sides from their foreign amounts and carries the pricing', () => {
+    const entry = priceEntryAtRate(baseEntry({ valueDate: '2025-03-19' }), 3.4, {
+      exchangeRateDate: '2025-03-12',
+      currencyRate: 3.41,
+    });
+
+    expect(entry).toMatchObject({
+      valueDate: '2025-03-19',
+      exchangeRateDate: '2025-03-12',
+      currencyRate: 3.41,
+      debitAmount1: 1000,
+      creditAmount1: 1000,
+    });
+    expect(entry.localCurrencyDebitAmount1).toBeCloseTo(3400, 6);
+    expect(entry.localCurrencyCreditAmount1).toBeCloseTo(3400, 6);
+  });
+
+  it('refuses an entry with no foreign amounts', () => {
+    expect(() => priceEntryAtRate(ilsBaseEntry(400), 3.4, {})).toThrow(LedgerError);
+  });
+});
+
+describe('findCancelledPayment', () => {
+  const payment = (
+    id: string,
+    tradeDate: TimelessDateString,
+    overrides: Partial<{
+      security: string;
+      trade_type: string;
+      trade_gross_value_trade_currency: string;
+      is_cancel_transaction: string;
+    }> = {},
+  ) => ({
+    id,
+    security: '1234567',
+    trade_type: 'דבידנד תשלום',
+    trade_date: tradeDate,
+    trade_gross_value_trade_currency: '1250',
+    is_cancel_transaction: 'לא',
+    ...overrides,
+  });
+  const cancellation = payment('c1', '2025-03-19', { is_cancel_transaction: 'כן' });
+
+  it('pairs a cancellation with the payment of the same security, kind and gross', () => {
+    const original = payment('p1', '2025-03-12');
+    const replacement = payment('p2', '2025-03-19', { trade_gross_value_trade_currency: '1240' });
+    const otherSecurity = payment('p3', '2025-03-12', { security: '7654321' });
+    const interest = payment('p4', '2025-03-12', { trade_type: 'ריבית תשלום' });
+
+    expect(
+      findCancelledPayment(cancellation, [
+        replacement,
+        otherSecurity,
+        interest,
+        cancellation,
+        original,
+      ]),
+    ).toBe(original);
+  });
+
+  it('matches the gross by its absolute value', () => {
+    const original = payment('p1', '2025-03-12', { trade_gross_value_trade_currency: '-1250' });
+
+    expect(findCancelledPayment(cancellation, [original])).toBe(original);
+  });
+
+  it('takes the latest payment at or before the cancellation', () => {
+    const earlier = payment('p1', '2025-01-12');
+    const later = payment('p2', '2025-03-12');
+    const afterwards = payment('p3', '2025-04-12');
+
+    expect(findCancelledPayment(cancellation, [later, afterwards, earlier])).toBe(later);
+  });
+
+  it('ignores other cancellations', () => {
+    const otherCancellation = payment('c0', '2025-03-12', { is_cancel_transaction: 'כן' });
+
+    expect(findCancelledPayment(cancellation, [otherCancellation, cancellation])).toBeNull();
+  });
+
+  it('finds nothing when the cancelled payment is not among the candidates', () => {
+    expect(findCancelledPayment(cancellation, [])).toBeNull();
   });
 });
 
