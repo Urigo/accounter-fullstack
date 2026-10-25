@@ -11,29 +11,45 @@ import {
   ContractSchema,
   downloadInvoicePdfSchema,
   Invoice,
+  PaymentReceipts,
   retrieveInvoicesSchema,
   retrievePaymentBreakdownSchema,
   retrievePaymentReceiptsSchema,
 } from './schemas.js';
 
-export const DEEL_FETCH_TIMEOUT_MS = 30_000;
+const DEEL_FETCH_TIMEOUT_MS = 30_000;
 export const DEEL_MAX_ATTEMPTS = 3;
 const DEEL_RETRY_BASE_DELAY_MS = 1000;
 const DEEL_MAX_RETRY_DELAY_MS = 30_000;
 const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([429, 502, 503, 504]);
-export const DEEL_INVOICES_PAGE_SIZE = 50;
-export const DEEL_INVOICES_MAX_PAGES = 40;
+const DEEL_INVOICES_PAGE_SIZE = 50;
+const DEEL_INVOICES_MAX_PAGES = 40;
+const DEEL_RECEIPTS_MAX_PAGES = 40;
 const ERROR_BODY_MAX_LENGTH = 300;
+const MAX_REPORTED_ISSUE_GROUPS = 10;
+const MAX_REPORTED_VALUES = 5;
+const REPORTED_VALUE_MAX_LENGTH = 60;
 
 /** A Deel API call that failed, with the endpoint and the reason in its message */
 export class DeelApiError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'DeelApiError';
+  }
+}
+
+function isTimeout(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+}
+
+/** Thrown inside a retried attempt to mark it as worth retrying */
+class RetryableAttemptError extends Error {
   constructor(
     message: string,
-    public readonly status?: number,
+    public readonly retryAfter?: string | null,
     options?: ErrorOptions,
   ) {
     super(message, options);
-    this.name = 'DeelApiError';
   }
 }
 
@@ -58,6 +74,49 @@ function formatDeelErrors(errors: unknown): string {
   return truncate(JSON.stringify(errors), ERROR_BODY_MAX_LENGTH);
 }
 
+function formatReceivedValue(value: unknown): string {
+  let text: string;
+  try {
+    text = value === undefined ? 'undefined' : JSON.stringify(value);
+  } catch {
+    text = String(value);
+  }
+  return truncate(text, REPORTED_VALUE_MAX_LENGTH);
+}
+
+/**
+ * Describe schema violations one line per kind: array indexes are collapsed (`rows[*]`), so a field
+ * that breaks in every row is reported once with a count and the values Deel actually sent — what
+ * is needed to fix the schema when Deel adds a value.
+ */
+export function formatZodIssues(issues: readonly z.core.$ZodIssue[]): string {
+  const groups = new Map<string, { count: number; values: Set<string> }>();
+  for (const issue of issues) {
+    const path = issue.path
+      .map((part, index) =>
+        typeof part === 'number' ? '[*]' : `${index === 0 ? '' : '.'}${String(part)}`,
+      )
+      .join('');
+    const key = `${path || '(root)'}: ${issue.message}`;
+    const group = groups.get(key) ?? { count: 0, values: new Set<string>() };
+    group.count++;
+    if ('input' in issue && group.values.size < MAX_REPORTED_VALUES) {
+      group.values.add(formatReceivedValue(issue.input));
+    }
+    groups.set(key, group);
+  }
+
+  const lines = [...groups.entries()].slice(0, MAX_REPORTED_ISSUE_GROUPS).map(([key, group]) => {
+    const count = group.count > 1 ? ` (${group.count}×)` : '';
+    const values = group.values.size ? ` — received ${[...group.values].join(', ')}` : '';
+    return `- ${key}${count}${values}`;
+  });
+  if (groups.size > MAX_REPORTED_ISSUE_GROUPS) {
+    lines.push(`- …and ${groups.size - MAX_REPORTED_ISSUE_GROUPS} more`);
+  }
+  return lines.join('\n');
+}
+
 /** Retry delay: the server's `Retry-After` when given, exponential backoff otherwise */
 function getRetryDelayMs(attempt: number, retryAfter?: string | null): number {
   if (retryAfter) {
@@ -72,9 +131,15 @@ function getRetryDelayMs(attempt: number, retryAfter?: string | null): number {
   return Math.min(DEEL_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1), DEEL_MAX_RETRY_DELAY_MS);
 }
 
-function describeHttpFailure(label: string, res: Response, body: string): string {
+function describeHttpFailure(
+  label: string,
+  res: Response,
+  body: string,
+  sentToken: boolean,
+): string {
   let message = `Deel API ${label} responded ${res.status}${res.statusText ? ` ${res.statusText}` : ''}`;
-  if (res.status === 401 || res.status === 403) {
+  // only a request that sent the token can be refused because of it (not e.g. a signed file URL)
+  if (sentToken && (res.status === 401 || res.status === 403)) {
     message += ' — check the Deel API token in the provider integrations settings';
   }
   const details = truncate(body, ERROR_BODY_MAX_LENGTH);
@@ -104,6 +169,10 @@ export class DeelClientProvider {
 
   // This is a workaround for the Deel API returning PST dates as UTC dates.
   private timeZoneFix(dateString: string) {
+    // optional dates come as '' — keep them empty rather than turning them into "Invalid Date"
+    if (!dateString) {
+      return dateString;
+    }
     const date = new Date(dateString);
     return addHours(date, 7).toUTCString();
   }
@@ -134,48 +203,68 @@ export class DeelClientProvider {
   }
 
   /**
-   * GET with a timeout, retrying network failures, timeouts, 429 and 5xx gateway errors. Any other
-   * failure is thrown as a DeelApiError naming the endpoint, the status and the response body.
+   * GET with a timeout, retrying network failures, timeouts (also while reading the body), 429 and
+   * 5xx gateway errors. `read` consumes the body inside the attempt, so a body that stalls is
+   * retried like a request that does. Any other failure is thrown as a DeelApiError naming the
+   * endpoint, the status and the response body.
    */
-  private async fetchWithRetry(
+  private async fetchWithRetry<T>(
     url: URL | string,
     label: string,
-    headers: Record<string, string>,
-  ): Promise<Response> {
+    options: { headers: Record<string, string>; read: (res: Response) => Promise<T> },
+  ): Promise<T> {
+    const sentToken = 'authorization' in options.headers;
     for (let attempt = 1; ; attempt++) {
-      let res: Response;
       try {
-        res = await fetch(url, {
-          headers,
-          signal: AbortSignal.timeout(DEEL_FETCH_TIMEOUT_MS),
-        });
-      } catch (error) {
-        if (attempt < DEEL_MAX_ATTEMPTS) {
-          await this.delay(getRetryDelayMs(attempt));
-          continue;
+        let res: Response;
+        try {
+          res = await fetch(url, {
+            headers: options.headers,
+            signal: AbortSignal.timeout(DEEL_FETCH_TIMEOUT_MS),
+          });
+        } catch (error) {
+          const reason = isTimeout(error)
+            ? `timed out after ${DEEL_FETCH_TIMEOUT_MS / 1000}s`
+            : 'could not be reached';
+          throw new RetryableAttemptError(reason, null, { cause: error });
         }
-        const timedOut =
-          error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
-        const reason = timedOut
-          ? `timed out after ${DEEL_FETCH_TIMEOUT_MS / 1000}s`
-          : 'could not be reached';
-        throw new DeelApiError(`Deel API ${label} ${reason} (${attempt} attempts)`, undefined, {
-          cause: error,
-        });
-      }
 
-      if (res.ok) {
-        return res;
-      }
+        if (!res.ok) {
+          // on the last attempt fall through, so the error carries the response body
+          if (RETRYABLE_STATUSES.has(res.status) && attempt < DEEL_MAX_ATTEMPTS) {
+            await res.body?.cancel().catch(() => undefined);
+            throw new RetryableAttemptError(
+              `responded ${res.status}`,
+              res.headers.get('retry-after'),
+            );
+          }
+          const body = await res.text().catch(() => '');
+          throw new DeelApiError(describeHttpFailure(label, res, body, sentToken));
+        }
 
-      if (RETRYABLE_STATUSES.has(res.status) && attempt < DEEL_MAX_ATTEMPTS) {
-        await res.body?.cancel().catch(() => undefined);
-        await this.delay(getRetryDelayMs(attempt, res.headers.get('retry-after')));
-        continue;
+        try {
+          return await options.read(res);
+        } catch (error) {
+          if (isTimeout(error)) {
+            throw new RetryableAttemptError(
+              `timed out after ${DEEL_FETCH_TIMEOUT_MS / 1000}s while reading the response`,
+              null,
+              { cause: error },
+            );
+          }
+          throw error;
+        }
+      } catch (error) {
+        if (!(error instanceof RetryableAttemptError)) {
+          throw error;
+        }
+        if (attempt >= DEEL_MAX_ATTEMPTS) {
+          throw new DeelApiError(`Deel API ${label} ${error.message} (${attempt} attempts)`, {
+            cause: error.cause,
+          });
+        }
+        await this.delay(getRetryDelayMs(attempt, error.retryAfter));
       }
-
-      const body = await res.text().catch(() => '');
-      throw new DeelApiError(describeHttpFailure(label, res, body), res.status);
     }
   }
 
@@ -192,37 +281,39 @@ export class DeelClientProvider {
     }
     const label = `GET ${endpoint}${url.search}`;
 
-    const res = await this.fetchWithRetry(url, label, {
-      accept: 'application/json',
-      authorization: `Bearer ${await this.getApiToken()}`,
+    const rawData = await this.fetchWithRetry(url, label, {
+      headers: {
+        accept: 'application/json',
+        authorization: `Bearer ${await this.getApiToken()}`,
+      },
+      read: async res => {
+        const text = await res.text();
+        try {
+          return JSON.parse(text) as unknown;
+        } catch (error) {
+          throw new DeelApiError(`Deel API ${label} returned a non-JSON response`, {
+            cause: error,
+          });
+        }
+      },
     });
-
-    let rawData: unknown;
-    try {
-      rawData = await res.json();
-    } catch (error) {
-      throw new DeelApiError(`Deel API ${label} returned a non-JSON response`, res.status, {
-        cause: error,
-      });
-    }
 
     if (rawData && typeof rawData === 'object' && 'errors' in rawData) {
       throw new DeelApiError(
         `Deel API ${label} returned errors: ${formatDeelErrors(rawData.errors)}`,
-        res.status,
       );
     }
 
-    const parsed = schema.safeParse(rawData);
+    const parsed = schema.safeParse(rawData, { reportInput: true });
     if (!parsed.success) {
       throw new DeelApiError(
-        `Deel API ${label} returned an unexpected payload:\n${z.prettifyError(parsed.error)}`,
-        res.status,
+        `Deel API ${label} returned an unexpected payload:\n${formatZodIssues(parsed.error.issues)}`,
       );
     }
     return parsed.data;
   }
 
+  /** Payment receipts of the last year, following Deel's cursor through every page */
   public async getPaymentReceipts() {
     try {
       const query: {
@@ -234,17 +325,35 @@ export class DeelClientProvider {
         date_from: addYearsToTimelessDate(todayTimelessDate(), -1),
         date_to: todayTimelessDate(),
       };
-      const data = await this.request('/payments', retrievePaymentReceiptsSchema, query);
 
-      if (data.data.has_more) {
-        // The cursor parameter of this endpoint is undocumented. Syncing a truncated list would
-        // file the invoices of the missing receipts as unmatched, so refuse instead.
-        throw new Error(
-          `Deel returned only ${data.data.rows.length} of ${data.data.total_count ?? 'more'} payment receipts since ${query.date_from}, and paging through the rest is not supported yet`,
-        );
+      const receipts = new Map<string, PaymentReceipts>();
+      let cursor: string | undefined;
+      for (let page = 0; page < DEEL_RECEIPTS_MAX_PAGES; page++) {
+        const data = await this.request('/payments', retrievePaymentReceiptsSchema, {
+          ...query,
+          cursor,
+        });
+        const sizeBefore = receipts.size;
+        for (const receipt of data.data.rows) {
+          receipts.set(receipt.id, receipt);
+        }
+
+        if (!data.data.has_more || !data.data.next_cursor) {
+          return [...receipts.values()];
+        }
+        if (receipts.size === sizeBefore) {
+          // the cursor didn't move us forward — syncing a truncated list would file the invoices
+          // of the missing receipts as unmatched, so refuse instead
+          throw new Error(
+            `Deel kept returning the same payment receipts after ${receipts.size}, so the rest of the list (${data.data.total_count ?? 'unknown'} in total) couldn't be fetched`,
+          );
+        }
+        cursor = data.data.next_cursor;
       }
 
-      return data;
+      throw new Error(
+        `Deel has more than ${DEEL_RECEIPTS_MAX_PAGES} pages of payment receipts since ${query.date_from}; refusing to sync a truncated list`,
+      );
     } catch (error) {
       throw wrapError('Failed to fetch Deel payment receipts', error);
     }
@@ -263,34 +372,37 @@ export class DeelClientProvider {
 
   public async getSalaryInvoices(): Promise<Invoice[]> {
     try {
-      const invoices: Invoice[] = [];
+      // keyed by id: offset paging over a live list may return a row twice when it shifts
+      const invoices = new Map<string, Invoice>();
       const issuedFromDate = addYearsToTimelessDate(todayTimelessDate(), -1);
 
+      let offset = 0;
       for (let page = 0; page < DEEL_INVOICES_MAX_PAGES; page++) {
-        const offset = page * DEEL_INVOICES_PAGE_SIZE;
         const data = await this.request('/invoices', retrieveInvoicesSchema, {
           limit: DEEL_INVOICES_PAGE_SIZE,
           offset,
           issued_from_date: issuedFromDate,
         });
 
-        invoices.push(
-          ...data.data.map(invoice => ({
+        for (const invoice of data.data) {
+          invoices.set(invoice.id, {
             ...invoice,
             issued_at: this.timeZoneFix(invoice.issued_at),
             due_date: this.timeZoneFix(invoice.due_date),
             // NOTE: contract ID -261 refers to "independent contractor", so we normalize it to null
             contract_id: invoice.contract_id === '-261' ? null : invoice.contract_id,
-          })),
-        );
+          });
+        }
 
-        if (data.data.length === 0 || offset + data.data.length >= data.page.total_rows) {
-          return invoices;
+        // advance by what the page held, so a short page doesn't skip rows
+        offset += data.data.length;
+        if (data.data.length === 0 || offset >= data.page.total_rows) {
+          return [...invoices.values()];
         }
       }
 
       throw new Error(
-        `Deel has more than ${DEEL_INVOICES_MAX_PAGES * DEEL_INVOICES_PAGE_SIZE} invoices issued since ${issuedFromDate}; refusing to sync a truncated list`,
+        `Deel has more than ${DEEL_INVOICES_MAX_PAGES} pages of invoices issued since ${issuedFromDate}; refusing to sync a truncated list`,
       );
     } catch (error) {
       throw wrapError('Failed to fetch Deel salary invoices', error);
@@ -309,8 +421,10 @@ export class DeelClientProvider {
       }
 
       // The signed URL carries its own credentials — keep it out of error messages
-      const invoiceFileRes = await this.fetchWithRetry(data.data.url, 'invoice file download', {});
-      const invoiceFileBuffer = await invoiceFileRes.arrayBuffer();
+      const invoiceFileBuffer = await this.fetchWithRetry(data.data.url, 'invoice file download', {
+        headers: {},
+        read: res => res.arrayBuffer(),
+      });
       return new Blob([invoiceFileBuffer], { type: 'application/pdf' });
     } catch (error) {
       throw wrapError(`Failed to fetch Deel invoice file [${id}]`, error);
