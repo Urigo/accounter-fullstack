@@ -754,6 +754,22 @@ describe('validateSecurityCommissions', () => {
     ).toEqual([]);
   });
 
+  it('counts the bank’s refund of a cancelled execution’s commission', () => {
+    // a payment charged 15.30, cancelled (its commission refunded) and paid again for 15.10
+    const executions = [
+      commissionExecution(),
+      commissionExecution({ trade_commission_value_nis: '-15.30' }),
+      commissionExecution({ trade_commission_value_nis: '15.10' }),
+    ];
+    const fees = [
+      commissionFee(),
+      commissionFee({ amount: '15.30', source_description: 'ביטול עמלה ני"ע CANC SEC FEE' }),
+      commissionFee({ amount: '-15.10' }),
+    ];
+
+    expect(validateSecurityCommissions(executions, fees)).toEqual([]);
+  });
+
   it('expects no fee when there is no commission', () => {
     expect(
       validateSecurityCommissions([commissionExecution({ trade_commission_value_nis: '0' })], []),

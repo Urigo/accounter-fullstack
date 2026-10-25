@@ -889,14 +889,18 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
 
     describe('commission', () => {
       /** The commission fee, which the bank keys to the security in its reference */
-      const commissionFee = (amount: string, id = 'transaction-commission') => ({
+      const commissionFee = (
+        amount: string,
+        id = 'transaction-commission',
+        description = "ניעז עמ' תשלום FSEC PYMNT FEE",
+      ) => ({
         ...buildTransaction({
           id,
           amount,
           currency: Currency.Ils,
           businessId: BANK_BUSINESS_ID,
           isFee: true,
-          description: "ניעז עמ' תשלום FSEC PYMNT FEE",
+          description,
         }),
         source_reference: '7654321',
       });
@@ -970,6 +974,49 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
               net_value_settlement_currency: '2000',
               commissions_currency: ILS_LABEL,
               trade_commission_value_nis: '14',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('counts the refunded commission of a cancelled and re-executed dividend', async () => {
+        // a dividend charged 25 is cancelled, its commission refunded, and paid again for 24.80
+        const original = buildTransaction({ id: 'transaction-original', amount: '1000' });
+        const cancellation = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+        const replacement = buildTransaction({ id: 'transaction-replacement', amount: '992' });
+
+        const { errors } = await generate({
+          transactions: [
+            original,
+            cancellation,
+            replacement,
+            commissionFee('-25', 'transaction-original-commission'),
+            commissionFee('25', 'transaction-commission-refund', 'ביטול עמלה ני"ע CANC SEC FEE'),
+            commissionFee('-24.80', 'transaction-replacement-commission'),
+          ],
+          executions: {
+            [original.id]: dividendExecution({
+              id: 'execution-original',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '25',
+            }),
+            [cancellation.id]: dividendExecution({
+              id: 'execution-cancellation',
+              net_value_trade_currency: '-1000',
+              net_value_settlement_currency: '-1000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '-25',
+              is_cancel_transaction: 'כן',
+            }),
+            [replacement.id]: dividendExecution({
+              id: 'execution-replacement',
+              trade_gross_value_trade_currency: '992',
+              net_value_trade_currency: '992',
+              net_value_settlement_currency: '992',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '24.80',
             }),
           },
         });

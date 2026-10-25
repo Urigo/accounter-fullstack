@@ -61,6 +61,22 @@ describe('extractTransactionSecurityKeys', () => {
     ).toEqual(['12345678']);
   });
 
+  it('reads the key of a securities fee refund from its reference', () => {
+    for (const description of [
+      'ביטול עמלה ני"ע CANC SEC FEE',
+      'ביטול עמלה ני״ע',
+      'ביטול עמלה ניע',
+      'canc sec fee',
+    ]) {
+      expect(
+        extractTransactionSecurityKeys({
+          source_description: description,
+          source_reference: '0012345678',
+        }),
+      ).toEqual(['12345678']);
+    }
+  });
+
   it('prefers the padded key in the description over the reference', () => {
     expect(
       extractTransactionSecurityKeys({
@@ -80,7 +96,7 @@ describe('extractTransactionSecurityKeys', () => {
   });
 
   it('does not read the reference of a row that only mentions securities', () => {
-    for (const description of ['דמי משמרת ני"ע', 'דמי ניהול ני"ע', 'מניעה']) {
+    for (const description of ['דמי משמרת ני"ע', 'דמי ניהול ני"ע', 'מניעה', 'ביטול עמלה']) {
       expect(
         extractTransactionSecurityKeys({ source_description: description, source_reference: '1234567' }),
       ).toEqual([]);
