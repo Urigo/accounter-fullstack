@@ -8,6 +8,7 @@ import {
   executionAmountInCurrency,
   type MatchableExecution,
 } from './match-security-executions.helper.js';
+import { pairCancellations } from './security-cancellations.helper.js';
 import {
   currencyOfSecurityLabel,
   isCancelledExecution,
@@ -33,6 +34,9 @@ import {
  * needs: the ledger at the rate the securities account carries it at, a tax computation at the
  * rate of its acquisition date.
  *
+ * A cancelled execution never happened: the bank reports the cancellation as a row of its own and
+ * leaves the original as it was, so both are dropped from the replay (`pairCancellations`).
+ *
  * Only the ingested history is known. Units bought before it starts, or that arrived with no cash
  * leg (a deposit transfer, a stock distribution other than a dividend in kind), have no known cost
  * — reported apart, so the caller can say which it is rather than guess.
@@ -48,6 +52,7 @@ export type CostBasisExecution = Pick<
   | 'id'
   | 'trade_date'
   | 'trade_type'
+  | 'security'
   | 'trade_currency'
   | 'settlement_currency'
   | 'net_value_trade_currency'
@@ -262,7 +267,8 @@ export function calculateFifoCostBasis(
   redemption: CostBasisExecution,
   currency: Currency,
 ): FifoCostBasis {
-  const live = history.filter(execution => !isCancelledExecution(execution));
+  // a cancellation and the execution it cancels both drop out
+  const { live } = pairCancellations(history);
 
   const lotsByAccount = new Map<AccountKey, Lot[]>();
   const lotsOf = (execution: CostBasisExecution): Lot[] => {
