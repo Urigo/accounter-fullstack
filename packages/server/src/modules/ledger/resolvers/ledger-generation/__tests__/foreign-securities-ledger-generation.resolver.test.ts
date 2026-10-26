@@ -15,6 +15,7 @@ import type { SecurityExecutionRow } from '../../../../foreign-securities/types.
 import { MiscExpensesProvider } from '../../../../misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '../../../../transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../../../transactions/types.js';
+import { LedgerProvider } from '../../../providers/ledger.provider.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../../../types.js';
 import { generateLedgerRecordsForForeignSecurities } from '../foreign-securities-ledger-generation.resolver.js';
 import {
@@ -41,7 +42,8 @@ vi.mock('../../../../charges/helpers/common.helper.js', async importOriginal => 
  *  - dividends and bond interest are credited to (local or foreign) income, with any tax withheld
  *    debited to a withholding-tax category;
  *  - a sale or a redemption credits the securities account with the FIFO purchase cost and books
- *    the difference as a price gain or loss.
+ *    the difference as a price gain or loss; a second, local-currency entry books its rate PnL, so
+ *    the securities account gives up the units at the rate it carries them at.
  *
  * All IDs, amounts, rates and dates below are made up.
  */
@@ -68,6 +70,8 @@ const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
   LOCAL_BOND_WITHHOLDING_TAX: 'tax-category-local-bond-withholding-tax',
   FOREIGN_SECURITIES_SALE_GAIN: 'tax-category-foreign-securities-gain',
   FOREIGN_SECURITIES_SALE_LOSS: 'tax-category-foreign-securities-loss',
+  FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: 'tax-category-foreign-securities-exchange-gain',
+  FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: 'tax-category-foreign-securities-exchange-loss',
 };
 
 const DAY: TimelessDateString = '2025-03-12';
@@ -75,9 +79,15 @@ const USD_RATE = 3.5;
 /** A later day at another rate, for a payment cancelled after it was made */
 const LATER_DAY: TimelessDateString = '2025-03-19';
 const LATER_USD_RATE = 3.6;
+const LAST_YEAR_END: TimelessDateString = '2024-12-31';
+/**
+ * The day's rate, a later day's, and the day's again at the last year-end, so lots held over it
+ * carry no rate PnL
+ */
 const RATES: MockRate[] = [
   [Currency.Usd, DAY, USD_RATE],
   [Currency.Usd, LATER_DAY, LATER_USD_RATE],
+  [Currency.Usd, LAST_YEAR_END, USD_RATE],
 ];
 
 const USD_LABEL = 'דולר ארה"ב';
@@ -219,6 +229,25 @@ function saleExecution(
   });
 }
 
+/** A local-currency record: one account on each side */
+function localRecord(debit: string, credit: string, amount: number) {
+  return {
+    currency: Currency.Ils,
+    debit1: debit,
+    debitForeign1: null,
+    debitLocal1: amount,
+    debit2: null,
+    debitForeign2: null,
+    debitLocal2: null,
+    credit1: credit,
+    creditForeign1: null,
+    creditLocal1: amount,
+    credit2: null,
+    creditForeign2: null,
+    creditLocal2: null,
+  };
+}
+
 const charge: IGetChargesByIdsResult = {
   id: CHARGE_ID,
   accountant_status: 'PENDING',
@@ -240,6 +269,15 @@ type Scenario = {
   executions?: Record<string, SecurityExecutionRow>;
   /** The ingested history of the security across the owner's accounts, for sales and redemptions */
   history?: SecurityExecutionRow[];
+  /** Exchange rates; defaults to `RATES` */
+  rates?: MockRate[];
+  /**
+   * The cash movement each acquisition in the history was booked from, by execution id; defaults
+   * to one debited on each buy's value date
+   */
+  acquisitionTransactions?: Record<string, Partial<IGetTransactionsByChargeIdsResult>>;
+  /** The days the securities account was revalued; defaults to the last year-end */
+  revaluationDates?: TimelessDateString[];
   /** Securities tax categories configured for the tenant; defaults to all of them */
   taxCategories?: Partial<Record<SecuritiesTaxCategoryKey, string>>;
   /** Executions with no cash leg that the charge books directly */
@@ -260,6 +298,26 @@ function makeInjector(scenario: Scenario) {
     ),
     getSecurityAccountHistory: vi.fn(async () => scenario.history ?? []),
     getSecurityOwnerHistory: vi.fn(async () => scenario.history ?? []),
+    getSecurityOwnerTransactionsByExecutionId: vi.fn(
+      async () =>
+        new Map(
+          Object.entries(
+            scenario.acquisitionTransactions ??
+              Object.fromEntries(
+                (scenario.history ?? [])
+                  .filter(execution => execution.trade_type === TRADE_TYPES.buy)
+                  .map(execution => [
+                    execution.id,
+                    {
+                      debit_date: execution.value_date ?? execution.trade_date,
+                      debit_date_override: null,
+                      debit_timestamp: null,
+                    },
+                  ]),
+              ),
+          ),
+        ),
+    ),
     executionsByChargeIdLoader: { load: vi.fn(async () => scenario.distributions ?? []) },
   };
 
@@ -312,7 +370,7 @@ function makeInjector(scenario: Scenario) {
           },
         },
       ],
-      [ExchangeProvider, makeExchangeProvider(RATES)],
+      [ExchangeProvider, makeExchangeProvider(scenario.rates ?? RATES)],
       [
         TaxCategoriesProvider,
         {
@@ -333,6 +391,19 @@ function makeInjector(scenario: Scenario) {
         makeFinancialEntitiesProvider(scenario.businessIds ?? [BANK_BUSINESS_ID]),
       ],
       [ForeignSecuritiesProvider, foreignSecuritiesProvider],
+      [
+        LedgerProvider,
+        {
+          getLedgerRecordsByFinancialEntityIdLoader: {
+            load: async (entityId: string) =>
+              (scenario.revaluationDates ?? [LAST_YEAR_END]).map(date => ({
+                description: 'Revaluation of account "Foreign securities"',
+                invoice_date: date,
+                debit_entity1: entityId,
+              })),
+          },
+        },
+      ],
     ]),
   );
 
@@ -478,11 +549,12 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
   });
 
   describe('sales', () => {
-    // 10 units bought on 15 Jan for 1,000, sold on DAY
+    // 10 units bought on 15 Jan for 1,000 when the dollar was 3.70, sold on DAY for 1,100 at 3.50
     const LOT_DAY: TimelessDateString = '2025-01-15';
+    const SALE_RATES: MockRate[] = [...RATES, [Currency.Usd, LOT_DAY, 3.7]];
     const lot = () => buyExecution('execution-buy', LOT_DAY, 10, 1000);
 
-    it('credits the FIFO cost and books the price gain', async () => {
+    it('credits the FIFO cost, books the price gain, and books the rate PnL apart', async () => {
       const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
       const sale = saleExecution(10, 1100);
 
@@ -490,6 +562,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         transactions: [transaction],
         executions: { [transaction.id]: sale },
         history: [lot(), sale],
+        rates: SALE_RATES,
       });
 
       expect(errors).toEqual([]);
@@ -506,10 +579,20 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           creditForeign2: usd(100).foreign,
           creditLocal2: usd(100).local,
         },
+        // the lot is carried at 3.70: 1,000 × (3.50 − 3.70)
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 200),
       ]);
+      // the securities account gives up what it carried the lot at: 1,000 × 3.70
+      const securitiesCredit = records
+        .flatMap(record => [
+          record.credit_entity1 === SECURITIES_USD ? Number(record.credit_local_amount1) : 0,
+          record.debit_entity1 === SECURITIES_USD ? -Number(record.debit_local_amount1) : 0,
+        ])
+        .reduce((sum, amount) => sum + amount, 0);
+      expect(securitiesCredit).toBeCloseTo(3700, 6);
     });
 
-    it('books a price loss as a second debit', async () => {
+    it('books an exchange gain when the dollar rose since the purchase', async () => {
       const transaction = buildTransaction({ id: 'transaction-sale', amount: '900' });
       const sale = saleExecution(10, 900);
 
@@ -517,6 +600,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         transactions: [transaction],
         executions: { [transaction.id]: sale },
         history: [lot(), sale],
+        rates: [...RATES, [Currency.Usd, LOT_DAY, 3.3]],
       });
 
       expect(errors).toEqual([]);
@@ -529,10 +613,139 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           creditForeign1: usd(1000).foreign,
           creditLocal1: usd(1000).local,
         },
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 200),
       ]);
     });
 
-    it('books a sale in shekels', async () => {
+    it('measures the rate PnL of a lot held over a year-end from that year-end', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
+        // the year-end revaluation carried the lot from its purchase rate to 3.60
+        rates: [
+          [Currency.Usd, DAY, USD_RATE],
+          [Currency.Usd, LAST_YEAR_END, 3.6],
+        ],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 100),
+      );
+    });
+
+    it('keeps a lot held over a year-end that was never revalued at the rate it was booked at', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
+        rates: [
+          [Currency.Usd, DAY, USD_RATE],
+          [Currency.Usd, '2024-06-10', 3.4],
+        ],
+        revaluationDates: [],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(
+        // 1,000 × (3.50 − 3.40)
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 100),
+      );
+    });
+
+    it('carries a purchase at the rate of the cash movement it was booked from', async () => {
+      // the buy settled on its value date, but its cash movement was debited a day later
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: [...RATES, [Currency.Usd, '2025-01-16', 3.72]],
+        acquisitionTransactions: {
+          'execution-buy': {
+            debit_date: '2025-01-15',
+            debit_date_override: '2025-01-16',
+            debit_timestamp: null,
+          },
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(
+        // 1,000 × (3.50 − 3.72)
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 220),
+      );
+    });
+
+    it("books the sale without its rate PnL when the purchase's cash movement is not found", async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: SALE_RATES,
+        acquisitionTransactions: {},
+      });
+
+      expect(records).toHaveLength(1);
+      expect(records[0]!.credit_entity2).toBe(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN);
+      expect(errors).toEqual([
+        expect.stringContaining(
+          'Could not book the exchange-rate part of the sale of MOCK (US0000000001) on 2025-03-12: the cash movement of the purchase of 10 units on 2025-01-15 was not found',
+        ),
+      ]);
+    });
+
+    it('leaves the securities account at zero after a buy and the sale of all of it', async () => {
+      const buyTransaction = buildTransaction({
+        id: 'transaction-buy',
+        amount: '-1000',
+        debitDate: LOT_DAY,
+      });
+      const saleTransaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const buy = lot();
+      const sale = saleExecution(10, 1100);
+      const scenario = {
+        history: [buy, sale],
+        rates: SALE_RATES,
+        acquisitionTransactions: { [buy.id]: buyTransaction },
+      };
+
+      const bought = await generate({
+        ...scenario,
+        transactions: [buyTransaction],
+        executions: { [buyTransaction.id]: buy },
+      });
+      const sold = await generate({
+        ...scenario,
+        transactions: [saleTransaction],
+        executions: { [saleTransaction.id]: sale },
+      });
+
+      expect([...bought.errors, ...sold.errors]).toEqual([]);
+      const securitiesBalance = (records: IGetLedgerRecordsByChargesIdsResult[]) =>
+        records.reduce(
+          (sum, record) =>
+            sum +
+            (record.debit_entity1 === SECURITIES_USD ? Number(record.debit_local_amount1) : 0) -
+            (record.credit_entity1 === SECURITIES_USD ? Number(record.credit_local_amount1) : 0),
+          0,
+        );
+      expect(securitiesBalance([...bought.records, ...sold.records])).toBeCloseTo(0, 6);
+    });
+
+    it('books no rate PnL for a sale in shekels', async () => {
       const transaction = buildTransaction({
         id: 'transaction-sale',
         amount: '1100',
@@ -587,6 +800,37 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       ]);
     });
 
+    it('books the sale and leaves out its rate PnL when the exchange category is missing', async () => {
+      // every tenant starts without it: the disposal must keep booking as it did
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+      const { FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: SALE_RATES,
+        taxCategories,
+      });
+
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1100),
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(100).foreign,
+          creditLocal2: usd(100).local,
+        },
+      ]);
+      expect(errors).toEqual([
+        expect.stringContaining(
+          'Missing securities tax category "Exchange rate loss on sale of foreign securities"',
+        ),
+      ]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS']);
+    });
 
     it('keeps the base entry of a sale with withheld tax', async () => {
       const transaction = buildTransaction({ id: 'transaction-sale', amount: '1050' });
@@ -599,6 +843,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         transactions: [transaction],
         executions: { [transaction.id]: sale },
         history: [lot(), sale],
+        rates: SALE_RATES,
       });
 
       expect(records.map(summarize)).toEqual([baseCashInRecord(1050)]);
@@ -606,7 +851,6 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         expect.stringContaining('booking tax withheld on a sale is not supported yet'),
       ]);
     });
-
 
     it('keeps the base entry and explains a sale with no purchase in the history', async () => {
       const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
@@ -1519,6 +1763,25 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           creditForeign2: usd(200).foreign,
           creditLocal2: usd(200).local,
         },
+      ]);
+    });
+
+    it('books the rate PnL of a redemption apart, like a sale', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2025-01-15', 10, 1000), redemption],
+        rates: [...RATES, [Currency.Usd, '2025-01-15', 3.4]],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        baseCashInRecord(1000),
+        // 1,000 × (3.50 − 3.40)
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 100),
       ]);
     });
 
