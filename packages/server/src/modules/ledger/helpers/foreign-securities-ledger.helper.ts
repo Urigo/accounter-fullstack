@@ -361,7 +361,7 @@ export function calculateDisposalGain(
  * proceeds is a second debit, so it cannot be booked together with a loss.
  *
  * Crediting the cost at the cash leg's rate leaves the securities account's local balance off by
- * the rate PnL, which the year-end revaluation takes up.
+ * the rate PnL; `buildSaleRevaluationEntry` books that.
  */
 export function buildDisposalEntry(
   base: StrictLedgerProto,
@@ -399,6 +399,62 @@ export function buildDisposalEntry(
   }
 
   return withSecondaryLines(base, base.creditAccountID1, { ...withholding, ...gainOrLoss });
+}
+
+/**
+ * The rate PnL of a disposal: the disposal entry credits the securities account with the units'
+ * cost at the cash leg's rate, while the account carries them at the rate they were booked at, or
+ * revalued to at the last year-end. This local-currency entry books the difference, so the account
+ * gives up exactly what it carried the units at:
+ * - a gain (the cost is worth more now): Dr securities account, Cr exchange gain
+ * - a loss: Dr exchange loss, Cr securities account
+ *
+ * Null when there is nothing worth booking.
+ */
+export function buildSaleRevaluationEntry(
+  /** The disposal entry, whose first credit is the securities account */
+  disposal: StrictLedgerProto,
+  params: {
+    /** Σ lot cost × (cash leg's rate − lot's carrying rate) */
+    ratePnL: number;
+    exchangeGainTaxCategoryId?: string;
+    exchangeLossTaxCategoryId?: string;
+    localCurrency: Currency;
+    description: string;
+  },
+): StrictLedgerProto | null {
+  const { ratePnL } = params;
+  if (Math.abs(ratePnL) < MIN_AMOUNT) {
+    return null;
+  }
+  const isGain = ratePnL > 0;
+  const exchangeAccountId = isGain
+    ? params.exchangeGainTaxCategoryId
+    : params.exchangeLossTaxCategoryId;
+  if (!exchangeAccountId) {
+    throw new LedgerError(
+      `An exchange ${isGain ? 'gain' : 'loss'} tax category is required to book the rate PnL of "${disposal.description ?? disposal.id}"`,
+    );
+  }
+  const securitiesAccountId = disposal.creditAccountID1;
+  const amount = Math.abs(ratePnL);
+
+  return {
+    id: `${disposal.id}|sale-revaluation`, // NOTE: this field is dummy
+    invoiceDate: disposal.invoiceDate,
+    valueDate: disposal.valueDate,
+    currency: params.localCurrency,
+    debitAccountID1: isGain ? securitiesAccountId : exchangeAccountId,
+    localCurrencyDebitAmount1: amount,
+    creditAccountID1: isGain ? exchangeAccountId : securitiesAccountId,
+    localCurrencyCreditAmount1: amount,
+    description: params.description,
+    reference: disposal.reference,
+    // the securities account is the counterparty, credited on a loss
+    isCreditorCounterparty: !isGain,
+    ownerId: disposal.ownerId,
+    chargeId: disposal.chargeId,
+  };
 }
 
 export type CommissionExecution = Pick<

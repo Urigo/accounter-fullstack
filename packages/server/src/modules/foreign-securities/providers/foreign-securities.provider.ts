@@ -312,7 +312,11 @@ const getSecurityExecutionsByChargeIds = sql<IGetSecurityExecutionsByChargeIdsQu
 export const MAX_CHARGE_LINK_SECURITIES = 10;
 
 /** What the reverse match needs off a transaction, charge included so a row can link out. */
-type MatchedTransaction = MatchableTransaction & { charge_id: string };
+type MatchedTransaction = MatchableTransaction & {
+  charge_id: string;
+  /** The exact time of the cash leg, when known; what the ledger prices it at before its day */
+  debit_timestamp: Date | null;
+};
 
 /**
  * A Poalim security key, qualified by the owner it belongs to.
@@ -659,6 +663,40 @@ export class ForeignSecuritiesProvider {
         .run({ businessIds: [securityBusiness.id] }, this.db)
         .then(executions => executions.filter(row => row.owner_id === ownerId));
       this.ownerHistoryCache.set(cacheKey, cached);
+    }
+    return cached;
+  }
+
+  /** Memo for {@link getSecurityOwnerTransactionsByExecutionId}; the provider lives for one operation. */
+  private ownerTransactionsCache = new Map<string, Promise<Map<string, MatchedTransaction>>>();
+
+  /**
+   * The cash transaction each of the owner's executions of an execution's security was paired
+   * with, by execution id — the movement a purchase's cost was booked from, and so the rate it was
+   * booked at. Pairs the same way the security's own page does (see
+   * {@link getSecurityBusinessHistory}). Empty when the key belongs to no security business.
+   */
+  public async getSecurityOwnerTransactionsByExecutionId(
+    execution: Pick<SecurityExecutionRow, 'security'>,
+    ownerId: string,
+  ): Promise<Map<string, MatchedTransaction>> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return new Map();
+    }
+
+    const cacheKey = `${ownerId}:${securityBusiness.id}`;
+    let cached = this.ownerTransactionsCache.get(cacheKey);
+    if (!cached) {
+      cached = this.getSecurityBusinessHistory(securityBusiness.id, ownerId).then(
+        ({ transactionByExecutionId }) => transactionByExecutionId,
+      );
+      this.ownerTransactionsCache.set(cacheKey, cached);
     }
     return cached;
   }

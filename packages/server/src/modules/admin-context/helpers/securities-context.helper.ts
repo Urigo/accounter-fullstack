@@ -59,6 +59,15 @@ const SECURITIES_TAX_CATEGORIES = {
     field: 'foreignSecuritiesSaleLoss',
     label: 'Loss from sale of foreign securities',
   },
+  // the exchange-rate part of a sale's PnL, apart from the price part above
+  FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: {
+    field: 'foreignSecuritiesSaleExchangeGain',
+    label: 'Exchange rate gain on sale of foreign securities',
+  },
+  FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: {
+    field: 'foreignSecuritiesSaleExchangeLoss',
+    label: 'Exchange rate loss on sale of foreign securities',
+  },
 } as const satisfies Record<SecuritiesTaxCategoryKey, { field: string; label: string }>;
 
 export const SECURITIES_TAX_CATEGORY_KEYS = Object.keys(
