@@ -8,6 +8,7 @@ import { FinancialEntitiesProvider } from '../../financial-entities/providers/fi
 import { PriceIndexNotAvailableError } from '../../price-indexes/helpers/price-index.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { netAmountsByCurrency } from '../helpers/securities-counterparty.helper.js';
+import { securityAccountId, securityAccountOf } from '../helpers/security-account.helper.js';
 import {
   getSecurityCapitalGain,
   SecurityCapitalGainError,
@@ -183,6 +184,9 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers &
     realProfitLoss: execution => ilsAmount(execution.real_profit_loss_nis),
     symbol: execution => execution.symbol || null,
     isin: execution => execution.isin || null,
+    account: execution => securityAccountOf(execution),
+    transferCounterpart: (execution, _, { injector }) =>
+      injector.get(ForeignSecuritiesProvider).getTransferCounterpart(execution),
     capitalGain: async (execution, _, { injector }) => {
       try {
         return await getSecurityCapitalGain(injector, execution);
@@ -194,6 +198,14 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers &
         throw errorSimplifier(`Error working out the capital gain of execution ${execution.id}`, e);
       }
     },
+  },
+  SecurityAccount: {
+    id: account => securityAccountId(account),
+    bankNumber: account => account.bankNumber,
+    branchNumber: account => account.branchNumber,
+    accountNumber: account => account.accountNumber,
+    financialAccount: (account, _, { injector }) =>
+      injector.get(ForeignSecuritiesProvider).getFinancialAccountBySecurityAccount(account),
   },
   SecurityCapitalGainResult: {
     __resolveType: obj =>

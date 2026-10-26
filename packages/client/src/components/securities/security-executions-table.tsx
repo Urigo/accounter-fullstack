@@ -2,12 +2,18 @@ import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import {
   SecurityExecutionFieldsFragmentDoc,
+  SecurityTradeType,
   type SecurityExecutionFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { ChargeNavigateButton } from '../common/buttons/charge-navigate-button.js';
 import { Badge } from '../ui/badge.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import {
+  readSecurityAccount,
+  SecurityAccountBadge,
+  securityAccountLabel,
+} from './security-account.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -48,6 +54,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
     capitalTaxValue {
       raw
       formatted
+    }
+    account {
+      id
+      ...SecurityAccountFields
+    }
+    transferCounterpart {
+      id
+      tradeDate
+      account {
+        id
+        ...SecurityAccountFields
+      }
     }
   }
 `;
@@ -147,6 +165,65 @@ export const securityTaxLines = (execution: {
     : withheld;
 };
 
+const TRANSFERS_IN: ReadonlySet<SecurityTradeType> = new Set([
+  SecurityTradeType.TransferIn,
+  SecurityTradeType.TransferInTwoSided,
+]);
+const TRANSFERS_OUT: ReadonlySet<SecurityTradeType> = new Set([
+  SecurityTradeType.TransferOut,
+  SecurityTradeType.TransferOutTwoSided,
+]);
+
+/**
+ * Where a transfer's units went or came from. A transfer between two of the owner's accounts is
+ * paired the way FIFO pairs it to move lots — the same units, into another account, within 10 days
+ * — and names the other account. A transfer in nothing pairs with brought units at no known cost,
+ * which a later sale from this account will hit; a transfer out nothing pairs with left the
+ * owner's accounts.
+ */
+function TransferNote({
+  execution,
+}: {
+  execution: SecurityExecutionFieldsFragment;
+}): ReactElement | null {
+  const isIn = TRANSFERS_IN.has(execution.tradeType);
+  if (!isIn && !TRANSFERS_OUT.has(execution.tradeType)) {
+    return null;
+  }
+
+  const counterpart = execution.transferCounterpart;
+  if (counterpart) {
+    const account = readSecurityAccount(counterpart.account);
+    const label = securityAccountLabel(account);
+    return (
+      <span
+        className="text-xs text-gray-500"
+        title={`${isIn ? 'Transferred out of' : 'Arrived in'} ${label} on ${formatSecurityDate(counterpart.tradeDate)}`}
+      >
+        {isIn ? `← from ${label}` : `→ to ${label}`}
+      </span>
+    );
+  }
+
+  return isIn ? (
+    <Badge
+      variant="outline"
+      className="border-amber-500 text-amber-700"
+      title="No transfer out of the same units from another of your accounts within 10 days before it. These units have no known purchase cost, so selling them from this account cannot be costed."
+    >
+      Unknown cost
+    </Badge>
+  ) : (
+    <Badge
+      variant="outline"
+      className="text-gray-500"
+      title="No transfer in of the same units to another of your accounts within 10 days after it. The units left your accounts."
+    >
+      Left your accounts
+    </Badge>
+  );
+}
+
 export type SecurityExecutionRow = {
   execution: FragmentType<typeof SecurityExecutionFieldsFragmentDoc>;
   /** The charge behind this execution's cash movement, when one was matched. */
@@ -157,19 +234,26 @@ interface Props {
   rows: readonly SecurityExecutionRow[];
   /** Adds the column linking each execution to its charge. */
   withChargeLink?: boolean;
+  /** Adds the column naming the account each execution was made in. */
+  withAccount?: boolean;
 }
 
 /**
  * One row per executed action, shared by a charge's securities panel and a security's own
  * page so the two always read the same.
  */
-export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactElement {
+export function SecurityExecutionsTable({
+  rows,
+  withChargeLink,
+  withAccount,
+}: Props): ReactElement {
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Trade Date</TableHead>
           <TableHead>Value Date</TableHead>
+          {withAccount && <TableHead>Account</TableHead>}
           <TableHead>Type</TableHead>
           <TableHead>Quantity</TableHead>
           <TableHead>Price</TableHead>
@@ -194,6 +278,11 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
               <TableCell className="whitespace-nowrap">
                 {formatSecurityDate(execution.valueDate ?? execution.settlementDate)}
               </TableCell>
+              {withAccount && (
+                <TableCell>
+                  <SecurityAccountBadge account={readSecurityAccount(execution.account)} />
+                </TableCell>
+              )}
               <TableCell>
                 <div className="flex flex-row flex-wrap items-center gap-1">
                   <Badge variant="secondary">{humanizeSecurityEnum(execution.tradeType)}</Badge>
@@ -205,6 +294,7 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
                   {execution.paymentType && (
                     <Badge variant="outline">{humanizeSecurityEnum(execution.paymentType)}</Badge>
                   )}
+                  <TransferNote execution={execution} />
                 </div>
               </TableCell>
               {/* Quantities can be fractional for ETFs and mutual funds. */}

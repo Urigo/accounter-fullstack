@@ -4,19 +4,58 @@ import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import type { SecurityHoldingsScreenQuery } from '../../../gql/graphql.js';
 import { ROUTES } from '../../../router/routes.js';
 import { DataTableColumnHeader } from '../../common/data-table-column-header.js';
+import {
+  readSecurityAccount,
+  SecurityAccountBadge,
+  securityAccountLabel,
+  type SecurityAccount,
+} from '../../securities/security-account.js';
 import { SecurityDescriptorBadges } from '../../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
   formatSecurityDecimal,
 } from '../../securities/security-executions-table.js';
 
-export type SecurityHoldingRow = SecurityHoldingsScreenQuery['securityHoldings'][number];
+export type SecurityHolding = SecurityHoldingsScreenQuery['securityHoldings'][number];
+
+/**
+ * One row of the table: a security's whole holding, or — split by account — what one account
+ * holds of it.
+ */
+export type SecurityHoldingRow = Pick<SecurityHolding, 'security' | 'position'> & {
+  id: string;
+  /** Set when the table is split by account */
+  account: SecurityAccount | null;
+};
 
 type HoldingRow = Row<PaginatedTableFeaturesConfig, SecurityHoldingRow>;
 
-/** Everything the search box matches on, for one holding. */
+/** A row per security, or a row per security and account it is held in */
+export function holdingRows(
+  holdings: readonly SecurityHolding[],
+  splitByAccount: boolean,
+): SecurityHoldingRow[] {
+  if (!splitByAccount) {
+    return holdings.map(({ id, security, position }) => ({
+      id,
+      security,
+      position,
+      account: null,
+    }));
+  }
+  return holdings.flatMap(({ security, accounts }) =>
+    accounts.map(({ id, account, position }) => ({
+      id,
+      security,
+      position,
+      account: readSecurityAccount(account),
+    })),
+  );
+}
+
+/** Everything the search box matches on, for one row. */
 export function holdingSearchFields(holding: SecurityHoldingRow): (string | null | undefined)[] {
-  const { security } = holding;
+  const { security, account } = holding;
   return [
     security.engName,
     security.hebName,
@@ -25,6 +64,7 @@ export function holdingSearchFields(holding: SecurityHoldingRow): (string | null
     security.exchange,
     security.currencyCode,
     ...security.identifiers.map(identifier => identifier.value),
+    ...(account ? [securityAccountLabel(account), String(account.accountNumber)] : []),
   ];
 }
 
@@ -48,6 +88,21 @@ const sortByAmount =
 const sortByDate =
   (field: 'historyStartDate' | 'lastExecutionDate') => (a: HoldingRow, b: HoldingRow) =>
     (a.original.position[field] ?? '').localeCompare(b.original.position[field] ?? '');
+
+const accountColumn: ColumnDef<PaginatedTableFeaturesConfig, SecurityHoldingRow> = {
+  id: 'account',
+  accessorFn: row => (row.account ? securityAccountLabel(row.account) : ''),
+  header: ({ column }) => <DataTableColumnHeader column={column} title="Account" />,
+  cell: ({ row }) =>
+    row.original.account ? <SecurityAccountBadge account={row.original.account} /> : null,
+};
+
+/** The holdings columns; split by account, the account comes right after the security */
+export function holdingColumns(
+  splitByAccount: boolean,
+): ColumnDef<PaginatedTableFeaturesConfig, SecurityHoldingRow>[] {
+  return splitByAccount ? [columns[0], accountColumn, ...columns.slice(1)] : columns;
+}
 
 export const columns: ColumnDef<PaginatedTableFeaturesConfig, SecurityHoldingRow>[] = [
   {

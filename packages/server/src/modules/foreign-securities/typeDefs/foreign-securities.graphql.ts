@@ -27,6 +27,17 @@ export default gql`
     isOffsetting: Boolean!
   }
 
+  " A Poalim securities portfolio: the bank account securities are held and traded in, as the executions identify it. FIFO is per account, so a sale is costed from the lots of its own account "
+  type SecurityAccount {
+    " bank-branch-account "
+    id: ID!
+    bankNumber: Int!
+    branchNumber: Int!
+    accountNumber: Int!
+    " The owner's financial account with the same bank, branch and account numbers; null when none is registered "
+    financialAccount: FinancialAccount
+  }
+
   " A single executed action in a Poalim securities portfolio, matched to a charge transaction "
   type SecurityExecution {
     id: UUID!
@@ -64,6 +75,10 @@ export default gql`
     realProfitLoss: FinancialAmount
     symbol: String
     isin: String
+    " The portfolio account the execution was made in "
+    account: SecurityAccount!
+    " For a transfer between two of the owner's accounts, its other leg — paired as FIFO pairs them to move lots: the same units, into another account, within 10 days of the transfer out. Null for an unpaired transfer (from or to outside the owner's accounts, or not matched) and for any other execution "
+    transferCounterpart: SecurityExecution
     " For a sale or a redemption: its capital gain, worked out from the FIFO lots of the account it was made in; lots moved in from another of the owner's accounts keep their cost. Null for any other execution and for a cancelled one "
     capitalGain: SecurityCapitalGainResult
   }

@@ -43,6 +43,17 @@ export default gql`
     id: UUID!
     security: SecurityBusiness!
     position: SecurityPosition!
+    " The position split by the account it is held in. Accounts that hold nothing are left out unless closed positions are asked for "
+    accounts: [SecurityAccountHolding!]!
+  }
+
+  " What one portfolio account holds of a security "
+  type SecurityAccountHolding {
+    " The security's business id and the account's id "
+    id: ID!
+    account: SecurityAccount!
+    " The position the account's own executions add up to; a transfer between two of the owner's accounts moves units from one to the other "
+    position: SecurityPosition!
   }
 
   " Everything a security business page shows "
@@ -50,13 +61,15 @@ export default gql`
     id: UUID!
     security: SecurityBusiness!
     position: SecurityPosition!
+    " The position split by account: every account the security was ever held in, in account order "
+    accounts: [SecurityAccountHolding!]!
     " Every ingested execution, oldest first "
     executions: [SecurityHistoryExecution!]!
   }
 
   " What the ingested executions add up to. Derived rather than reported — the bank's own holdings are not ingested, so the numbers are only as complete as the execution history behind them (see historyStartDate) "
   type SecurityPosition {
-    " The security this position belongs to "
+    " The security's business id for its whole position; a derived id for one account's share of it "
     id: UUID!
     " Units held, from the executions alone "
     quantity: Float!

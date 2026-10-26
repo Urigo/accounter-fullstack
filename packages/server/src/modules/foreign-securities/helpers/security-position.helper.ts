@@ -1,5 +1,11 @@
 import { SecurityTradeType } from '../../../shared/enums.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
+import {
+  securityAccountKey,
+  securityAccountOf,
+  type SecurityAccountColumns,
+  type SecurityAccountProto,
+} from './security-account.helper.js';
 import { toSecurityTradeType } from './security-execution-enums.helper.js';
 
 /**
@@ -120,4 +126,41 @@ export function calculateSecurityPosition(
     historyStartDate: historyStart,
     lastExecutionDate: lastExecution,
   };
+}
+
+/** One portfolio account's share of a security: the position its own executions add up to */
+export type SecurityAccountPosition = {
+  account: SecurityAccountProto;
+  position: SecurityPositionProto;
+};
+
+/**
+ * The position split by the account each execution was made in, accounts in id order. A transfer
+ * between two of the owner's accounts takes units out of one and puts them into the other, so the
+ * accounts add up to the security's whole position.
+ */
+export function calculateSecurityPositionsByAccount(
+  executions: readonly (PositionExecution &
+    SecurityAccountColumns & {
+      owner_id: string;
+    })[],
+): SecurityAccountPosition[] {
+  const executionsByAccount = new Map<string, (typeof executions)[number][]>();
+  for (const execution of executions) {
+    // an account number is only unique within its owner
+    const key = `${execution.owner_id}:${securityAccountKey(execution)}`;
+    const accountExecutions = executionsByAccount.get(key);
+    if (accountExecutions) {
+      accountExecutions.push(execution);
+    } else {
+      executionsByAccount.set(key, [execution]);
+    }
+  }
+
+  return [...executionsByAccount.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, accountExecutions]) => ({
+      account: securityAccountOf(accountExecutions[0]),
+      position: calculateSecurityPosition(accountExecutions),
+    }));
 }

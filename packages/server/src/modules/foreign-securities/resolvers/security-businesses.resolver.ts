@@ -1,18 +1,28 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
+import { makeUUID } from '../../../shared/helpers/deterministic-uuid.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { securityAccountId } from '../helpers/security-account.helper.js';
 import {
   tradeTypeToRaw,
   transactionTypeToRaw,
 } from '../helpers/security-execution-enums.helper.js';
-import { calculateSecurityPosition, isOpenPosition } from '../helpers/security-position.helper.js';
+import {
+  calculateSecurityPosition,
+  calculateSecurityPositionsByAccount,
+  isOpenPosition,
+} from '../helpers/security-position.helper.js';
 import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
 import { SecurityExecutionChargesProvider } from '../providers/security-execution-charges.provider.js';
-import type { ForeignSecuritiesModule } from '../types.js';
+import type {
+  ForeignSecuritiesModule,
+  SecurityAccountHoldingProto,
+  SecurityExecutionRow,
+} from '../types.js';
 
 /**
  * Falls back to the schema default, which graphql-js applies for an omitted argument but not for
@@ -23,6 +33,23 @@ const DEFAULT_SECURITY_EXECUTIONS_LIMIT = 100;
 /** An amount the executions imply, or null when they imply nothing. */
 const positionAmount = (value: number | null, currency: string | null) =>
   value == null || currency == null ? null : formatFinancialAmount(value, currency);
+
+/**
+ * A security's position split by account. Each share gets an id of its own: the position id is a
+ * UUID that otherwise names the security, and two accounts' shares must not collide in a cache.
+ */
+const accountHoldings = (
+  securityBusinessId: string,
+  executions: readonly SecurityExecutionRow[],
+): SecurityAccountHoldingProto[] =>
+  calculateSecurityPositionsByAccount(executions).map(({ account, position }) => {
+    const id = `${securityBusinessId}:${securityAccountId(account)}`;
+    return {
+      id,
+      account,
+      position: { id: makeUUID('security-account-position', id), ...position },
+    };
+  });
 
 export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
   Query: {
@@ -51,17 +78,26 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
 
       return (
         securityBusinesses
-          .map(securityBusiness => ({
-            id: securityBusiness.id,
-            security: securityBusiness,
-            position: {
+          .map(securityBusiness => {
+            const executions = executionsByBusinessId.get(securityBusiness.id) ?? [];
+            const accounts = accountHoldings(securityBusiness.id, executions);
+            return {
               id: securityBusiness.id,
-              ...calculateSecurityPosition(executionsByBusinessId.get(securityBusiness.id) ?? []),
-            },
-          }))
+              security: securityBusiness,
+              position: { id: securityBusiness.id, ...calculateSecurityPosition(executions) },
+              accounts: includeClosed
+                ? accounts
+                : accounts.filter(account => isOpenPosition(account.position)),
+            };
+          })
           // Closed positions are the bulk of a long-lived portfolio, so the screen asks for them
-          // explicitly. A security with nothing ingested against it reads as closed too.
-          .filter(holding => includeClosed || isOpenPosition(holding.position))
+          // explicitly. A security with nothing ingested against it reads as closed too. One whose
+          // accounts hold units that net to nothing — history that starts mid-position in one of
+          // them — is still listed: that is worth seeing, not a closed position.
+          .filter(
+            holding =>
+              includeClosed || isOpenPosition(holding.position) || holding.accounts.length > 0,
+          )
           // Ordered here so an unsorted render is stable across requests.
           .sort((a, b) =>
             (a.security.eng_name ?? a.security.isin).localeCompare(
@@ -87,6 +123,7 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
         id: businessId,
         security: securityBusiness,
         position: { id: businessId, ...calculateSecurityPosition(executions) },
+        accounts: accountHoldings(businessId, executions),
         executions: executions.map(execution => ({
           id: execution.id,
           execution,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateSecurityPosition,
+  calculateSecurityPositionsByAccount,
   isOpenPosition,
   type PositionExecution,
 } from '../security-position.helper.js';
@@ -122,5 +123,77 @@ describe('isOpenPosition', () => {
 
   it('reads a negative holding as open, since it means the history starts mid-life', () => {
     expect(isOpenPosition({ quantity: -5 })).toBe(true);
+  });
+});
+
+describe('calculateSecurityPositionsByAccount', () => {
+  const OWNER_ID = 'owner-business';
+  const inAccount = (accountNumber: number, overrides: Partial<PositionExecution> = {}) => ({
+    ...execution(overrides),
+    owner_id: OWNER_ID,
+    bank_number: 12,
+    branch_number: 600,
+    account_number: accountNumber,
+  });
+
+  it('is empty with no executions', () => {
+    expect(calculateSecurityPositionsByAccount([])).toEqual([]);
+  });
+
+  it('splits the position by the account each execution was made in', () => {
+    const accounts = calculateSecurityPositionsByAccount([
+      inAccount(222_222, { nv: '4', net_value_trade_currency: '-480.00' }),
+      inAccount(111_111, { nv: '10' }),
+      inAccount(111_111, { nv: '3', trade_type: 'מכירה', net_value_trade_currency: '330.00' }),
+    ]);
+
+    expect(
+      accounts.map(({ account, position }) => [account.accountNumber, position.quantity]),
+    ).toEqual([
+      [111_111, 7],
+      [222_222, 4],
+    ]);
+    expect(accounts[0].account).toEqual({
+      ownerId: OWNER_ID,
+      bankNumber: 12,
+      branchNumber: 600,
+      accountNumber: 111_111,
+    });
+  });
+
+  it('moves transferred units from one account to the other, keeping the total', () => {
+    const executions = [
+      inAccount(111_111, { trade_date: '2024-01-10', nv: '10' }),
+      inAccount(111_111, {
+        trade_date: '2024-06-01',
+        trade_type: 'העברה לחובת הפקדון',
+        nv: '10',
+        net_value_trade_currency: '0',
+      }),
+      inAccount(222_222, {
+        trade_date: '2024-06-02',
+        trade_type: 'העברה לזכות הפקדון',
+        nv: '10',
+        net_value_trade_currency: '0',
+      }),
+    ];
+
+    const accounts = calculateSecurityPositionsByAccount(executions);
+
+    expect(accounts.map(({ position }) => position.quantity)).toEqual([0, 10]);
+    expect(isOpenPosition(accounts[0].position)).toBe(false);
+    expect(calculateSecurityPosition(executions).quantity).toBe(10);
+  });
+
+  it('keeps two owners apart even when their account numbers are the same', () => {
+    const accounts = calculateSecurityPositionsByAccount([
+      inAccount(111_111),
+      { ...inAccount(111_111), owner_id: 'another-owner' },
+    ]);
+
+    expect(accounts.map(({ account }) => account.ownerId).sort()).toEqual([
+      'another-owner',
+      OWNER_ID,
+    ]);
   });
 });

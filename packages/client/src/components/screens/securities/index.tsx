@@ -14,7 +14,7 @@ import { Label } from '../../ui/label.js';
 import { Spinner } from '../../ui/spinner.js';
 import { Switch } from '../../ui/switch.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table.js';
-import { columns, holdingSearchFields } from './columns.js';
+import { holdingColumns, holdingRows, holdingSearchFields } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -54,12 +54,38 @@ import { columns, holdingSearchFields } from './columns.js';
         historyStartDate
         lastExecutionDate
       }
+      accounts {
+        id
+        account {
+          id
+          ...SecurityAccountFields
+        }
+        position {
+          id
+          quantity
+          averageCost {
+            raw
+            formatted
+          }
+          totalBought {
+            raw
+            formatted
+          }
+          totalSold {
+            raw
+            formatted
+          }
+          historyStartDate
+          lastExecutionDate
+        }
+      }
     }
   }
 `;
 
 export const Securities = (): ReactElement => {
   const [includeClosed, setIncludeClosed] = useState(false);
+  const [splitByAccount, setSplitByAccount] = useState(false);
   const [search, setSearch] = useState('');
   const [{ data, fetching, error }] = useQuery({
     query: SecurityHoldingsScreenDocument,
@@ -68,16 +94,23 @@ export const Securities = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
 
   const holdings = useMemo(() => data?.securityHoldings ?? [], [data?.securityHoldings]);
+  const rows = useMemo(() => holdingRows(holdings, splitByAccount), [holdings, splitByAccount]);
+  const columns = useMemo(() => holdingColumns(splitByAccount), [splitByAccount]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
     if (!needle) {
-      return holdings;
+      return rows;
     }
-    return holdings.filter(holding =>
-      holdingSearchFields(holding).some(field => field?.toLowerCase().includes(needle)),
+    return rows.filter(row =>
+      holdingSearchFields(row).some(field => field?.toLowerCase().includes(needle)),
     );
-  }, [holdings, search]);
+  }, [rows, search]);
+  // split by account, a security held in two accounts is two rows but still one security
+  const securityCount = useMemo(
+    () => new Set(filtered.map(row => row.security.id)).size,
+    [filtered],
+  );
 
   const table = useTable({
     features: paginatedTableFeaturesConfig,
@@ -108,7 +141,7 @@ export const Securities = (): ReactElement => {
 
   return (
     <PageLayout
-      title={`Securities (${filtered.length})`}
+      title={`Securities (${securityCount})`}
       description="What you hold, added up from the scraped executions"
       headerActions={
         <div className="flex flex-row flex-wrap items-center gap-4">
@@ -140,6 +173,19 @@ export const Securities = (): ReactElement => {
             />
             <Label htmlFor="include-closed" className="whitespace-nowrap">
               Show closed positions
+            </Label>
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <Switch
+              id="split-by-account"
+              checked={splitByAccount}
+              onCheckedChange={checked => {
+                setSplitByAccount(checked);
+                table.setPageIndex(0);
+              }}
+            />
+            <Label htmlFor="split-by-account" className="whitespace-nowrap">
+              Split by account
             </Label>
           </div>
         </div>
@@ -210,7 +256,10 @@ export const Securities = (): ReactElement => {
             reports. Anything held before a security&apos;s first scraped trade is therefore not
             counted, and a change in units with no execution behind it — a split, say — is
             invisible. Amounts are in each security&apos;s own trade currency and are never
-            converted, so they do not compare across currencies.
+            converted, so they do not compare across currencies. Split by account, each row is what
+            one account&apos;s own executions add up to: a sale is costed from the lots of the
+            account it was made in, and a transfer between two of your accounts moves units from one
+            to the other.
           </p>
         </div>
       )}

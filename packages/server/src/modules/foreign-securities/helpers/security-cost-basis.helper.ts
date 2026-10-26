@@ -8,6 +8,7 @@ import {
   executionAmountInCurrency,
   type MatchableExecution,
 } from './match-security-executions.helper.js';
+import { securityAccountKey } from './security-account.helper.js';
 import {
   currencyOfSecurityLabel,
   isCancelledExecution,
@@ -158,10 +159,11 @@ type LotSource = Omit<FifoLot, 'units' | 'costForeign'>;
  */
 type Lot = { units: number; unitCost: number | null; order: number; source: LotSource | null };
 
-/** Lots that left one of the owner's accounts, until a transfer in to another takes them in */
-type PendingTransfer = {
-  execution: CostBasisExecution;
-  units: number;
+/** A transfer out of one of the owner's accounts, until a transfer in to another takes it in */
+type PendingTransfer<T extends CostBasisExecution> = { execution: T; units: number };
+
+/** Lots that left one of the owner's accounts by a transfer out, until its transfer in takes them */
+type MovingLots = {
   lots: Lot[];
   /** Whether the source account's history started mid-position by then, so these lots may not be */
   fromOpeningUnknown: boolean;
@@ -170,14 +172,17 @@ type PendingTransfer = {
 type AccountKey = string;
 
 /** A portfolio account: the bank/branch/account triple the executions carry */
-const accountKeyOf = (execution: CostBasisExecution): AccountKey =>
-  `${execution.bank_number}-${execution.branch_number}-${execution.account_number}`;
+const accountKeyOf: (execution: CostBasisExecution) => AccountKey = securityAccountKey;
 
 const sameAccount = (a: CostBasisExecution, b: CostBasisExecution) =>
   accountKeyOf(a) === accountKeyOf(b);
 
 /** Whether a transfer in is the arrival of a pending transfer out: a holding moving accounts */
-function isArrivalOf(transferIn: CostBasisExecution, units: number, pending: PendingTransfer) {
+function isArrivalOf(
+  transferIn: CostBasisExecution,
+  units: number,
+  pending: PendingTransfer<CostBasisExecution>,
+) {
   const out = pending.execution;
   return (
     Math.abs(pending.units - units) <= UNITS_EPSILON &&
@@ -257,6 +262,47 @@ function takeUnits(lots: Lot[], units: number): Lot[] {
   return taken;
 }
 
+/**
+ * Which transfers are a holding moving between two of the owner's accounts: each transfer in paired
+ * with the transfer out it is the arrival of, keyed both ways. A transfer in is taken for one only
+ * when it is of the same units, into another account, within `TRANSFER_PAIRING_WINDOW_DAYS` of the
+ * transfer out, and the earliest transfer out that fits is the one it takes. Anything not in the map
+ * is unpaired: a transfer in from outside the owner's accounts, at no known cost, or a transfer out
+ * that left them.
+ *
+ * This is the pairing FIFO moves lots by, so what a caller shows is what the cost basis did. Pairing
+ * the whole history gives what the replay up to any one disposal sees, since a transfer in only ever
+ * pairs with a transfer out that comes before it.
+ */
+export function pairSecurityTransfers<T extends CostBasisExecution>(
+  history: readonly T[],
+): Map<string, T> {
+  const pairs = new Map<string, T>();
+  const pendingTransfers: PendingTransfer<T>[] = [];
+  const live = history
+    .filter(execution => !isCancelledExecution(execution))
+    .sort(compareExecutions);
+  for (const execution of live) {
+    const tradeType = tryToSecurityTradeType(execution.trade_type);
+    const units = toUnits(execution.nv);
+    if (!tradeType || units === 0) {
+      continue;
+    }
+    const lotEffect = lotEffectOf(execution, tradeType);
+    if (lotEffect === 'TRANSFER_OUT') {
+      pendingTransfers.push({ execution, units });
+    } else if (lotEffect === 'TRANSFER_IN') {
+      const arrival = pendingTransfers.findIndex(pending => isArrivalOf(execution, units, pending));
+      if (arrival !== -1) {
+        const [{ execution: transferOut }] = pendingTransfers.splice(arrival, 1);
+        pairs.set(transferOut.id, execution);
+        pairs.set(execution.id, transferOut);
+      }
+    }
+  }
+  return pairs;
+}
+
 export function calculateFifoCostBasis(
   history: readonly CostBasisExecution[],
   redemption: CostBasisExecution,
@@ -276,7 +322,9 @@ export function calculateFifoCostBasis(
   };
   // accounts whose history starts mid-position, by their own shortfall or lots moved in from one
   const openingUnknownAccounts = new Set<AccountKey>();
-  const pendingTransfers: PendingTransfer[] = [];
+  const transferPairs = pairSecurityTransfers(live);
+  // by the id of the transfer out they left with
+  const movingLots = new Map<string, MovingLots>();
 
   const earlier = live
     .filter(
@@ -318,26 +366,24 @@ export function calculateFifoCostBasis(
         if (units - sumUnits(taken) > UNITS_EPSILON) {
           openingUnknownAccounts.add(accountKeyOf(execution));
         }
-        pendingTransfers.push({
-          execution,
-          units,
+        movingLots.set(execution.id, {
           lots: taken,
           fromOpeningUnknown: openingUnknownAccounts.has(accountKeyOf(execution)),
         });
         break;
       }
       case 'TRANSFER_IN': {
-        const arrival = pendingTransfers.findIndex(pending =>
-          isArrivalOf(execution, units, pending),
-        );
-        if (arrival === -1) {
+        const transferOut = transferPairs.get(execution.id);
+        const moving = transferOut && movingLots.get(transferOut.id);
+        if (!moving) {
           // from outside the owner's accounts
           lots.push({ units, unitCost: null, order, source: null });
           break;
         }
+        movingLots.delete(transferOut.id);
         // into this account at their purchase-order place; units the transfer out had no lot for
         // stay unknown
-        const [{ lots: moved, fromOpeningUnknown }] = pendingTransfers.splice(arrival, 1);
+        const { lots: moved, fromOpeningUnknown } = moving;
         const uncovered = units - sumUnits(moved);
         lots.push(...moved);
         if (uncovered > UNITS_EPSILON) {

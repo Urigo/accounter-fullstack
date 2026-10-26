@@ -3,6 +3,7 @@ import { Currency } from '../../../../shared/enums.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import {
   calculateFifoCostBasis,
+  pairSecurityTransfers,
   type CostBasisExecution,
 } from '../security-cost-basis.helper.js';
 
@@ -694,5 +695,89 @@ describe('calculateFifoCostBasis', () => {
 
       expect(result.historyStartDate).toBe('2024-03-01');
     });
+  });
+});
+
+describe('pairSecurityTransfers', () => {
+  /** A transfer of `units`; out of the old account and into the new one unless told otherwise */
+  const transfer = (
+    id: string,
+    tradeDate: TimelessDateString,
+    units: number,
+    direction: 'in' | 'out',
+    overrides: Partial<CostBasisExecution> = {},
+  ) =>
+    execution({
+      id,
+      trade_date: tradeDate,
+      trade_type: direction === 'in' ? 'העברה לזכות הפקדון' : 'העברה לחובת הפקדון',
+      nv: String(units),
+      net_value_trade_currency: '0',
+      net_value_settlement_currency: '0',
+      account_number: direction === 'in' ? NEW_ACCOUNT : OLD_ACCOUNT,
+      ...overrides,
+    });
+
+  const pairedIds = (pairs: Map<string, CostBasisExecution>) =>
+    Object.fromEntries([...pairs].map(([id, counterpart]) => [id, counterpart.id]));
+
+  it('pairs a transfer out with its arrival in another account, both ways', () => {
+    const pairs = pairSecurityTransfers([
+      buy('b1', '2024-01-10', 10, 1000),
+      transfer('out', '2024-06-01', 10, 'out'),
+      transfer('in', '2024-06-04', 10, 'in'),
+    ]);
+
+    expect(pairedIds(pairs)).toEqual({ out: 'in', in: 'out' });
+  });
+
+  it('pairs a same-day transfer out and in, whatever their ids', () => {
+    const pairs = pairSecurityTransfers([
+      transfer('a-in', '2024-06-01', 10, 'in'),
+      transfer('z-out', '2024-06-01', 10, 'out'),
+    ]);
+
+    expect(pairedIds(pairs)).toEqual({ 'z-out': 'a-in', 'a-in': 'z-out' });
+  });
+
+  it('leaves a transfer in from outside, and a transfer out that never arrived, unpaired', () => {
+    const pairs = pairSecurityTransfers([
+      transfer('in-from-outside', '2024-02-01', 5, 'in'),
+      transfer('out-for-good', '2024-06-01', 10, 'out'),
+    ]);
+
+    expect(pairs.size).toBe(0);
+  });
+
+  it('does not pair a late arrival, other units, or a transfer back into the same account', () => {
+    const pairs = pairSecurityTransfers([
+      transfer('out-1', '2024-03-01', 10, 'out'),
+      transfer('late', '2024-03-12', 10, 'in'),
+      transfer('out-2', '2024-06-01', 10, 'out'),
+      transfer('fewer', '2024-06-02', 8, 'in'),
+      transfer('out-3', '2024-09-01', 10, 'out'),
+      transfer('same-account', '2024-09-02', 10, 'in', { account_number: OLD_ACCOUNT }),
+    ]);
+
+    expect(pairs.size).toBe(0);
+  });
+
+  it('lets the earliest fitting transfer out take an arrival', () => {
+    const pairs = pairSecurityTransfers([
+      transfer('out-1', '2024-06-01', 10, 'out'),
+      transfer('out-2', '2024-06-03', 10, 'out'),
+      transfer('in', '2024-06-05', 10, 'in'),
+    ]);
+
+    expect(pairedIds(pairs)).toEqual({ 'out-1': 'in', in: 'out-1' });
+  });
+
+  it('skips cancelled transfers', () => {
+    const pairs = pairSecurityTransfers([
+      transfer('out', '2024-06-01', 10, 'out', { is_cancel_transaction: 'כן' }),
+      transfer('in', '2024-06-02', 10, 'in'),
+    ]);
+
+    expect(pairs.size).toBe(0);
   });
 });

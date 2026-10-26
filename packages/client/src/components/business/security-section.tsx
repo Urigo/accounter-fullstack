@@ -1,7 +1,19 @@
 import type { ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { BusinessSecuritySectionDocument } from '@/gql/graphql.js';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table.js';
+import {
+  BusinessSecuritySectionDocument,
+  type BusinessSecuritySectionQuery,
+} from '@/gql/graphql.js';
+import { readSecurityAccount, SecurityAccountBadge } from '../securities/security-account.js';
 import { SecurityDescriptorBadges } from '../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
@@ -43,6 +55,27 @@ import { SecurityHeading } from '../securities/security-heading.js';
         historyStartDate
         lastExecutionDate
       }
+      accounts {
+        id
+        account {
+          id
+          ...SecurityAccountFields
+        }
+        position {
+          id
+          quantity
+          averageCost {
+            formatted
+          }
+          totalBought {
+            formatted
+          }
+          totalSold {
+            formatted
+          }
+          lastExecutionDate
+        }
+      }
       executions {
         id
         charge {
@@ -68,6 +101,56 @@ const Stat = ({ label, value }: { label: string; value: string }): ReactElement 
   </div>
 );
 
+type AccountHolding = NonNullable<
+  BusinessSecuritySectionQuery['securityBusinessHistory']
+>['accounts'][number];
+
+/**
+ * What each account holds, when the security was held in more than one. A sale is costed from the
+ * lots of its own account, and a transfer between two of the owner's accounts moves units from one
+ * row to the other, so the rows add up to the total above.
+ */
+const AccountsTable = ({ accounts }: { accounts: readonly AccountHolding[] }): ReactElement => (
+  <div className="rounded-md border">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Account</TableHead>
+          <TableHead>Current hold</TableHead>
+          <TableHead>Average cost</TableHead>
+          <TableHead>Total bought</TableHead>
+          <TableHead>Total sold</TableHead>
+          <TableHead>Last execution</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {accounts.map(({ id, account, position }) => (
+          <TableRow key={id}>
+            <TableCell>
+              <SecurityAccountBadge account={readSecurityAccount(account)} />
+            </TableCell>
+            <TableCell className="tabular-nums">
+              {formatSecurityDecimal(position.quantity)}
+            </TableCell>
+            <TableCell className="whitespace-nowrap">
+              {position.averageCost?.formatted ?? '—'}
+            </TableCell>
+            <TableCell className="whitespace-nowrap">
+              {position.totalBought?.formatted ?? '—'}
+            </TableCell>
+            <TableCell className="whitespace-nowrap">
+              {position.totalSold?.formatted ?? '—'}
+            </TableCell>
+            <TableCell className="whitespace-nowrap">
+              {formatSecurityDate(position.lastExecutionDate) || '—'}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+);
+
 export function SecuritySection({ businessId }: Props): ReactElement {
   const [{ data, fetching }] = useQuery({
     query: BusinessSecuritySectionDocument,
@@ -83,7 +166,8 @@ export function SecuritySection({ businessId }: Props): ReactElement {
     return <div>No security details found for this business</div>;
   }
 
-  const { security, position, executions } = history;
+  const { security, position, accounts, executions } = history;
+  const multipleAccounts = accounts.length > 1;
   const poalimKeys = security.identifiers
     .filter(identifier => identifier.type === 'POALIM_SECURITY_KEY')
     .map(identifier => identifier.value);
@@ -118,6 +202,7 @@ export function SecuritySection({ businessId }: Props): ReactElement {
               : 'No executions ingested for this security yet.'}
             {poalimKeys.length > 0 && ` · Poalim key ${poalimKeys.join(', ')}`}
           </div>
+          {multipleAccounts && <AccountsTable accounts={accounts} />}
         </CardContent>
       </Card>
 
@@ -130,6 +215,7 @@ export function SecuritySection({ businessId }: Props): ReactElement {
           <div className="rounded-md border">
             <SecurityExecutionsTable
               withChargeLink
+              withAccount={multipleAccounts}
               rows={executions.map(row => ({
                 execution: row.execution,
                 chargeId: row.charge?.id ?? null,

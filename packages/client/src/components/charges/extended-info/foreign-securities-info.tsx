@@ -6,6 +6,12 @@ import {
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { cn } from '../../../lib/utils.js';
+import {
+  distinctSecurityAccounts,
+  readSecurityAccount,
+  SecurityAccountBadge,
+  type SecurityAccount,
+} from '../../securities/security-account.js';
 import { SecurityDescriptorBadges } from '../../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
@@ -58,6 +64,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
         executions {
           id
           ...SecurityExecutionFields
+          account {
+            id
+            ...SecurityAccountFields
+          }
         }
       }
     }
@@ -168,11 +178,22 @@ const RoleBadge = ({ role }: { role: SecurityRole }): ReactNode => {
 const SecurityHeaderStrip = ({
   security,
   role,
+  accounts,
 }: {
   security: ChargeSecurity;
   role: SecurityRole;
+  accounts: readonly SecurityAccount[];
 }): ReactElement => (
   <div className="flex shrink-0 flex-row items-center gap-3">
+    {accounts.length > 0 && (
+      // FIFO costs a sale from the lots of its own account, so say which account it was
+      <span className="flex flex-row flex-wrap items-center gap-1 text-sm text-gray-500">
+        {accounts.length > 1 ? 'Accounts' : 'Account'}
+        {accounts.map(account => (
+          <SecurityAccountBadge key={account.id} account={account} />
+        ))}
+      </span>
+    )}
     {security.netAmount && (
       <span className="text-sm text-gray-500">
         Net{' '}
@@ -199,6 +220,10 @@ const SecuritySection = ({
   role: SecurityRole;
 }): ReactElement => {
   const { details, securityBusiness } = security;
+  // a charge's trades are usually all in one account; a list per account when they are not
+  const accounts = distinctSecurityAccounts(
+    security.executions.map(execution => readSecurityAccount(execution.account)),
+  );
   const businessHref = securityBusiness
     ? ROUTES.BUSINESSES.DETAIL_TAB(securityBusiness.id, 'security')
     : undefined;
@@ -263,11 +288,14 @@ const SecuritySection = ({
             </div>
           )}
         </div>
-        <SecurityHeaderStrip security={security} role={role} />
+        <SecurityHeaderStrip security={security} role={role} accounts={accounts} />
       </div>
       {security.executions.length > 0 && (
         <TableSection title="Portfolio activity">
-          <SecurityExecutionsTable rows={security.executions.map(execution => ({ execution }))} />
+          <SecurityExecutionsTable
+            rows={security.executions.map(execution => ({ execution }))}
+            withAccount={accounts.length > 1}
+          />
         </TableSection>
       )}
     </div>

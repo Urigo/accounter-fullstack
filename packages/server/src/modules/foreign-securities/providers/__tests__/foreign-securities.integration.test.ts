@@ -23,6 +23,7 @@ const OTHER_OWNER_ID = '00000000-0000-0000-0000-0000000006ed';
 const CHARGE_ID = '00000000-0000-0000-0000-00000000c001';
 
 const ACCOUNT_ID = '00000000-0000-0000-0000-00000000a001';
+const SECURITIES_LEDGER_ACCOUNT_ID = '00000000-0000-0000-0000-00000000a002';
 
 // The synthetic security businesses. Fixed ids so cleanup and assertions are deterministic.
 const APPLE_BUSINESS_ID = '00000000-0000-0000-0000-0000000005a1';
@@ -131,6 +132,30 @@ function createStubFinancialAccountsProvider(accountNumber = String(ACCOUNT_NUMB
     getFinancialAccountByAccountIDLoader: {
       load: (id: string) =>
         Promise.resolve(id === ACCOUNT_ID ? { id, account_number: accountNumber } : undefined),
+    },
+    // the owner's bank account, plus its ledger securities account, which no portfolio can be
+    getFinancialAccountsByOwnerIdLoader: {
+      load: (ownerId: string) =>
+        Promise.resolve(
+          ownerId === TEST_OWNER_ID
+            ? [
+                {
+                  id: ACCOUNT_ID,
+                  account_number: accountNumber,
+                  account_name: 'Main account',
+                  owner: ownerId,
+                  type: 'BANK_ACCOUNT',
+                },
+                {
+                  id: SECURITIES_LEDGER_ACCOUNT_ID,
+                  account_number: 'foreign_securities',
+                  account_name: 'Foreign securities',
+                  owner: ownerId,
+                  type: 'FOREIGN_SECURITIES',
+                },
+              ]
+            : [],
+        ),
     },
   } as unknown as FinancialAccountsProvider;
 }
@@ -758,6 +783,98 @@ describe('getSecurityOwnerHistory', () => {
     );
 
     expect(history).toEqual([]);
+  });
+});
+
+describe('getTransferCounterpart', () => {
+  const TRANSFER_OUT = 'העברה לחובת הפקדון';
+  const TRANSFER_IN = 'העברה לזכות הפקדון';
+  const TRANSFERS = 'העברות';
+
+  it("pairs a transfer between two of the owner's accounts, and leaves the rest unpaired", async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'ZZ0000000101',
+      securityKeys: ['7100001'],
+    });
+    await insertExecution({ security: '7100001', tradeDate: '2024-01-10', nv: '10' });
+    // moved to another of the owner's accounts
+    await insertExecution({
+      security: '7100001',
+      tradeDate: '2024-06-01',
+      tradeType: TRANSFER_OUT,
+      transactionType: TRANSFERS,
+      netValueTradeCurrency: '0',
+      nv: '10',
+    });
+    await insertExecution({
+      security: '7100001',
+      tradeDate: '2024-06-03',
+      tradeType: TRANSFER_IN,
+      transactionType: TRANSFERS,
+      netValueTradeCurrency: '0',
+      nv: '10',
+      accountNumber: 100001,
+    });
+    // and units that came in from outside the owner's accounts
+    await insertExecution({
+      security: '7100001',
+      tradeDate: '2024-09-01',
+      tradeType: TRANSFER_IN,
+      transactionType: TRANSFERS,
+      netValueTradeCurrency: '0',
+      nv: '4',
+    });
+
+    const provider = createProvider([]);
+    const history = await provider.getSecurityOwnerHistory({ security: '7100001' }, TEST_OWNER_ID);
+    const counterparts = await Promise.all(
+      history.map(async execution => [
+        execution.trade_date,
+        (await provider.getTransferCounterpart(execution))?.trade_date ?? null,
+      ]),
+    );
+
+    expect(counterparts).toEqual([
+      ['2024-01-10', null],
+      ['2024-06-01', '2024-06-03'],
+      ['2024-06-03', '2024-06-01'],
+      ['2024-09-01', null],
+    ]);
+  });
+});
+
+describe('getFinancialAccountBySecurityAccount', () => {
+  it('finds the bank account the portfolio is held in', async () => {
+    const financialAccount = await createProvider([]).getFinancialAccountBySecurityAccount({
+      ownerId: TEST_OWNER_ID,
+      bankNumber: BANK_NUMBER,
+      branchNumber: BRANCH_NUMBER,
+      accountNumber: ACCOUNT_NUMBER,
+    });
+
+    expect(financialAccount?.id).toBe(ACCOUNT_ID);
+  });
+
+  it("is null for a portfolio none of the owner's financial accounts is", async () => {
+    const provider = createProvider([]);
+
+    await expect(
+      provider.getFinancialAccountBySecurityAccount({
+        ownerId: TEST_OWNER_ID,
+        bankNumber: BANK_NUMBER,
+        branchNumber: BRANCH_NUMBER,
+        accountNumber: 100001,
+      }),
+    ).resolves.toBeNull();
+    await expect(
+      provider.getFinancialAccountBySecurityAccount({
+        ownerId: OTHER_OWNER_ID,
+        bankNumber: BANK_NUMBER,
+        branchNumber: BRANCH_NUMBER,
+        accountNumber: ACCOUNT_NUMBER,
+      }),
+    ).resolves.toBeNull();
   });
 });
 

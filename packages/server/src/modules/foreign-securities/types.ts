@@ -9,7 +9,10 @@ import type {
   IGetSecurityIdentifiersByBusinessIdsResult,
   security_identifier_type,
 } from './__generated__/security-businesses.types.js';
+import type { SecurityAccountProto } from './helpers/security-account.helper.js';
 import type { SecurityPositionProto } from './helpers/security-position.helper.js';
+
+export type { SecurityAccountProto } from './helpers/security-account.helper.js';
 
 export type * from './__generated__/types.js';
 export type * from './__generated__/foreign-securities.types.js';
@@ -108,6 +111,14 @@ export type SecurityExecutionsFilterInput = {
   rawTransactionTypes?: readonly string[] | null;
 };
 
+/** What one portfolio account holds of a security */
+export type SecurityAccountHoldingProto = {
+  /** The security's business id and the account's id */
+  id: string;
+  account: SecurityAccountProto;
+  position: SecurityPositionWithIdProto;
+};
+
 /**
  * One security plus the position its executions imply, for the tenant-wide holdings list.
  * The execution list itself is deliberately absent — see the `SecurityHolding` type.
@@ -116,12 +127,14 @@ export type SecurityHoldingProto = {
   id: string;
   security: SecurityBusinessRow;
   position: SecurityPositionWithIdProto;
+  accounts: SecurityAccountHoldingProto[];
 };
 
 export type SecurityBusinessHistoryProto = {
   id: string;
   security: SecurityBusinessRow;
   position: SecurityPositionWithIdProto;
+  accounts: SecurityAccountHoldingProto[];
   executions: SecurityHistoryExecutionProto[];
 };
 

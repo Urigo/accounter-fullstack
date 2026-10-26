@@ -2,6 +2,10 @@ import { act, type ComponentProps, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  securityAccount,
+  securityExecution,
+} from '../../../securities/__tests__/security-execution-fixtures.js';
 import { ForeignSecuritiesInfo } from '../foreign-securities-info.js';
 
 /**
@@ -238,6 +242,48 @@ describe('ForeignSecuritiesInfo', () => {
     expect(text).toContain('Counterparty 1 of 2');
     expect(text).toContain('Counterparty 2 of 2');
     expect(text).not.toContain('Main counterparty');
+  });
+
+  describe('accounts', () => {
+    const withExecutions = (executions: unknown[]) =>
+      ({
+        ...(charge({ details, securityBusiness }) as unknown as { securities: object[] }),
+        securities: [
+          {
+            ...(charge({ details, securityBusiness }) as unknown as { securities: object[] })
+              .securities[0],
+            executions,
+          },
+        ],
+      }) as unknown as ChargeProps;
+
+    it('names the account the trades were made in', () => {
+      render(
+        withExecutions([
+          securityExecution('buy', securityAccount(111_111, 'Main portfolio')),
+          securityExecution('sell', securityAccount(111_111, 'Main portfolio'), {
+            tradeType: 'SELL',
+            transactionType: 'SELL',
+          }),
+        ]),
+      );
+
+      expect(container.textContent).toContain('AccountMain portfolio');
+      // one account: the strip says it, so the table needs no column for it
+      expect(container.querySelector('thead')?.textContent).not.toContain('Account');
+    });
+
+    it('adds an account column when the trades span two accounts', () => {
+      render(
+        withExecutions([
+          securityExecution('buy', securityAccount(111_111, 'Main portfolio')),
+          securityExecution('sell', securityAccount(222_222)),
+        ]),
+      );
+
+      expect(container.textContent).toContain('AccountsMain portfolio12-600-222222');
+      expect(container.querySelector('thead')?.textContent).toContain('Account');
+    });
   });
 
   it('renders nothing for a charge that is not a foreign-securities charge', () => {

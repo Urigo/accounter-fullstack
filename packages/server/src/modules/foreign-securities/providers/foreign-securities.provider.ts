@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { SecurityTradeType } from '../../../shared/enums.js';
 import {
   addDaysToTimelessDate,
   compareTimelessDates,
@@ -11,6 +12,7 @@ import {
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
+import type { IGetFinancialAccountsByOwnerIdsResult } from '../../financial-accounts/types.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   CASH_SETTLEMENT_WINDOW_DAYS,
@@ -20,6 +22,12 @@ import {
   type AccountTuple,
   type MatchableTransaction,
 } from '../helpers/match-security-executions.helper.js';
+import {
+  securityAccountId,
+  type SecurityAccountProto,
+} from '../helpers/security-account.helper.js';
+import { pairSecurityTransfers } from '../helpers/security-cost-basis.helper.js';
+import { tryToSecurityTradeType } from '../helpers/security-execution-enums.helper.js';
 import { extractTransactionSecurityKeys } from '../helpers/security-key.helper.js';
 import type {
   ChargeSecurityProto,
@@ -35,6 +43,14 @@ import type {
   SecurityRow,
 } from '../types.js';
 import { SecurityBusinessesProvider } from './security-businesses.provider.js';
+
+/** The executions that move units between accounts rather than buying or selling them */
+const TRANSFER_TRADE_TYPES = new Set<SecurityTradeType>([
+  SecurityTradeType.TransferIn,
+  SecurityTradeType.TransferOut,
+  SecurityTradeType.TransferInTwoSided,
+  SecurityTradeType.TransferOutTwoSided,
+]);
 
 /**
  * Deduped per owner as well as per key, and returning the owner.
@@ -420,6 +436,47 @@ export class ForeignSecuritiesProvider {
     return tuples;
   }
 
+  /** Memo for {@link getFinancialAccountBySecurityAccount}, by owner; the provider lives for one operation. */
+  private financialAccountsBySecurityAccountCache = new Map<
+    string,
+    Promise<Map<string, IGetFinancialAccountsByOwnerIdsResult>>
+  >();
+
+  /**
+   * The owner's financial account a portfolio account is: the bank account with the same bank,
+   * branch and account numbers. Null when the owner has none registered — the executions name the
+   * account by those numbers only.
+   *
+   * The inverse of {@link getAccountTuples}, over the owner's accounts. Should two of them carry the
+   * same numbers, the bank account wins, since that is what the bank scrapes a portfolio under.
+   */
+  public async getFinancialAccountBySecurityAccount(
+    account: SecurityAccountProto,
+  ): Promise<IGetFinancialAccountsByOwnerIdsResult | null> {
+    let cached = this.financialAccountsBySecurityAccountCache.get(account.ownerId);
+    if (!cached) {
+      cached = this.financialAccountsProvider.getFinancialAccountsByOwnerIdLoader
+        .load(account.ownerId)
+        .then(async financialAccounts => {
+          const tuples = await this.getAccountTuples(financialAccounts.map(({ id }) => id));
+          const byAccountId = new Map<string, IGetFinancialAccountsByOwnerIdsResult>();
+          for (const financialAccount of financialAccounts) {
+            const tuple = tuples.get(financialAccount.id);
+            if (!tuple) {
+              continue;
+            }
+            const accountId = securityAccountId(tuple);
+            if (!byAccountId.has(accountId) || financialAccount.type === 'BANK_ACCOUNT') {
+              byAccountId.set(accountId, financialAccount);
+            }
+          }
+          return byAccountId;
+        });
+      this.financialAccountsBySecurityAccountCache.set(account.ownerId, cached);
+    }
+    return (await cached).get(securityAccountId(account)) ?? null;
+  }
+
   /**
    * The executions that could pair with the given transactions, plus the Poalim identity of each
    * account they touch. Null when the transactions touch no resolvable Poalim account or carry no
@@ -669,6 +726,35 @@ export class ForeignSecuritiesProvider {
       this.ownerHistoryCache.set(cacheKey, cached);
     }
     return cached;
+  }
+
+  /** Memo for {@link getTransferCounterpart}, by the owner history it pairs */
+  private transferPairsCache = new WeakMap<
+    readonly SecurityExecutionRow[],
+    Map<string, SecurityExecutionRow>
+  >();
+
+  /**
+   * A transfer's other leg: the transfer in a transfer out of one of the owner's accounts arrived
+   * as, or the transfer out a transfer in arrived from — paired over the owner's history of the
+   * security exactly as FIFO pairs them to move lots. Null for an unpaired transfer, and for any
+   * other execution.
+   */
+  public async getTransferCounterpart(
+    execution: SecurityExecutionRow,
+  ): Promise<SecurityExecutionRow | null> {
+    const tradeType = tryToSecurityTradeType(execution.trade_type);
+    if (!tradeType || !TRANSFER_TRADE_TYPES.has(tradeType)) {
+      return null;
+    }
+
+    const history = await this.getSecurityOwnerHistory(execution, execution.owner_id);
+    let pairs = this.transferPairsCache.get(history);
+    if (!pairs) {
+      pairs = pairSecurityTransfers(history);
+      this.transferPairsCache.set(history, pairs);
+    }
+    return pairs.get(execution.id) ?? null;
   }
 
   /** Memo for {@link getSecurityOwnerTransactionsByExecutionId}; the provider lives for one operation. */

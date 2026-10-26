@@ -62,7 +62,30 @@ function holding(index: number, overrides: Record<string, unknown> = {}) {
       historyStartDate: '2024-01-05',
       lastExecutionDate: '2024-03-10',
     },
+    accounts: [],
     ...overrides,
+  };
+}
+
+function accountHolding(securityIndex: number, accountNumber: number, quantity: number) {
+  return {
+    id: `security-${securityIndex}:12-600-${accountNumber}`,
+    account: {
+      id: `12-600-${accountNumber}`,
+      bankNumber: 12,
+      branchNumber: 600,
+      accountNumber,
+      financialAccount: null,
+    },
+    position: {
+      id: `position-${securityIndex}-${accountNumber}`,
+      quantity,
+      averageCost: { raw: 100, formatted: '$100' },
+      totalBought: { raw: 100 * quantity, formatted: `$${100 * quantity}` },
+      totalSold: { raw: 0, formatted: '$0' },
+      historyStartDate: '2024-01-05',
+      lastExecutionDate: '2024-03-10',
+    },
   };
 }
 
@@ -214,6 +237,56 @@ describe('Securities screen', () => {
     const link = container.querySelector('a[href="/businesses/security-7"]');
     expect(link).not.toBeNull();
     expect(link?.textContent).toContain('Example Corp 7');
+  });
+
+  it('splits each holding into a row per account once the toggle is on', () => {
+    mockHoldings([
+      holding(1, {
+        accounts: [accountHolding(1, 111_111, 3), accountHolding(1, 222_222, 7)],
+      }),
+      holding(2, { accounts: [accountHolding(2, 111_111, 5)] }),
+    ]);
+    act(() => root.render(<Harness />));
+
+    const rowCount = () => container.querySelectorAll('tbody tr').length;
+    expect(rowCount()).toBe(2);
+    expect(container.textContent).not.toContain('12-600-222222');
+
+    const toggle = container.querySelector('#split-by-account');
+    expect(toggle).not.toBeNull();
+    act(() => {
+      (toggle as HTMLElement).click();
+    });
+
+    expect(rowCount()).toBe(3);
+    expect(container.querySelector('thead')?.textContent).toContain('Account');
+    expect(container.textContent).toContain('12-600-111111');
+    expect(container.textContent).toContain('12-600-222222');
+    // still two securities, however many accounts hold them
+    expect(container.textContent).toContain('Securities (2)');
+    // the split never refetches: the accounts come with the holdings
+    expect(useQueryMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ variables: { includeClosed: false } }),
+    );
+  });
+
+  it('searches the account too when split by account', () => {
+    mockHoldings([
+      holding(1, {
+        accounts: [accountHolding(1, 111_111, 3), accountHolding(1, 222_222, 7)],
+      }),
+    ]);
+    act(() => root.render(<Harness />));
+    act(() => {
+      (container.querySelector('#split-by-account') as HTMLElement).click();
+    });
+
+    const input = container.querySelector('input[placeholder^="Search"]') as HTMLInputElement;
+    act(() => typeInto(input, '222222'));
+
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(container.textContent).toContain('12-600-222222');
+    expect(container.textContent).not.toContain('12-600-111111');
   });
 
   it('points at the toggle when nothing is held', () => {
