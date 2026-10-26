@@ -35,11 +35,11 @@ import type { IGetTransactionsByChargeIdsResult } from '../../../transactions/ty
 import { ledgerEntryFromMainTransaction } from '../../helpers/common-charge-ledger.helper.js';
 import { splitFeeTransactions } from '../../helpers/fee-transactions.js';
 import {
+  buildDisposalEntry,
   buildDistributionEntry,
   buildIncomeEntry,
   buildIncomeReversalEntry,
-  buildRedemptionEntry,
-  calculateRedemptionGain,
+  calculateDisposalGain,
   classifySecurityExecution,
   currencyOfLabel,
   distributionValueDate,
@@ -95,7 +95,7 @@ function requireTaxCategories<TKey extends SecuritiesTaxCategoryKey>(
     for (const key of missing) {
       missingTaxCategories.add(key);
       errors.add(
-        `Missing securities tax category "${securitiesTaxCategoryLabel(key)}" — set it from the charge's ledger errors to book securities income and redemptions`,
+        `Missing securities tax category "${securitiesTaxCategoryLabel(key)}" — set it from the charge's ledger errors to book securities income, sales and redemptions`,
       );
     }
     return null;
@@ -103,10 +103,87 @@ function requireTaxCategories<TKey extends SecuritiesTaxCategoryKey>(
   return Object.fromEntries(keys.map(key => [key, taxCategories[key]])) as Record<TKey, string>;
 }
 
+type DisposalKind = 'SALE' | 'REDEMPTION';
+
+function describeDisposal(kind: DisposalKind, execution: SecurityExecutionRow): string {
+  return `the ${kind === 'SALE' ? 'sale' : 'redemption'} of ${describeSecurity(execution)} on ${execution.trade_date}`;
+}
+
+/**
+ * The entry of a disposal — a sale or a redemption — from the FIFO lots it draws on: the
+ * securities account gives up their cost, the difference is the price PnL, and withheld tax is
+ * booked as on a redemption. Throws a `LedgerError` for anything that prevents it.
+ */
+async function disposalLedgerEntry(params: {
+  injector: Injector;
+  ownerId: string;
+  defaultLocalCurrency: Currency;
+  kind: DisposalKind;
+  execution: SecurityExecutionRow;
+  baseEntry: StrictLedgerProto;
+  withheldTax: number;
+  requireLocality: () => SecurityLocality;
+  taxCategories: SecuritiesTaxCategoryIds;
+  errors: Set<string>;
+  missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
+}): Promise<StrictLedgerProto> {
+  const { injector, ownerId, kind, execution, baseEntry, withheldTax } = params;
+  const cashCurrency = baseEntry.currency;
+  const hasWithheldTax = Math.abs(withheldTax) >= MIN_AMOUNT;
+
+  if (kind === 'SALE' && hasWithheldTax) {
+    throw new LedgerError(
+      `The bank reports ${withheldTax} ${cashCurrency} tax withheld on ${describeDisposal(kind, execution)}, and booking tax withheld on a sale is not supported yet`,
+    );
+  }
+  // only withheld tax depends on locality, so a redemption without it books as is even when the
+  // execution has no issuer country or ISIN
+  const withholdingKeys = hasWithheldTax
+    ? [WITHHOLDING_TAX_CATEGORY_KEYS.REDEMPTION[params.requireLocality()]]
+    : [];
+
+  const history = await injector
+    .get(ForeignSecuritiesProvider)
+    .getSecurityOwnerHistory(execution, ownerId);
+  const costBasis = calculateFifoCostBasis(history, execution, cashCurrency);
+  const problem = costBasisProblem(execution, costBasis);
+  if (problem) {
+    throw new LedgerError(problem);
+  }
+
+  const gain = calculateDisposalGain(baseEntry, {
+    costForeign: costBasis.costForeign,
+    withheldTax,
+  });
+  const gainOrLossKeys: SecuritiesTaxCategoryKey[] =
+    gain >= MIN_AMOUNT
+      ? ['FOREIGN_SECURITIES_SALE_GAIN']
+      : gain <= -MIN_AMOUNT
+        ? ['FOREIGN_SECURITIES_SALE_LOSS']
+        : [];
+  const ids = requireTaxCategories(
+    [...gainOrLossKeys, ...withholdingKeys],
+    params.taxCategories,
+    params.errors,
+    params.missingTaxCategories,
+  );
+  if (!ids) {
+    return baseEntry;
+  }
+
+  return buildDisposalEntry(baseEntry, {
+    costForeign: costBasis.costForeign,
+    withheldTax,
+    gainTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_GAIN,
+    lossTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_LOSS,
+    withholdingTaxCategoryId: withholdingKeys.length ? ids[withholdingKeys[0]] : undefined,
+  });
+}
+
 /**
  * The entry for one cash movement: the base entry (bank ↔ securities account), reshaped by the
- * execution behind it for dividends, bond interest and redemptions. Anything that prevents that
- * is recorded as a ledger error and leaves the base entry as it is.
+ * execution behind it for dividends, bond interest, sales and redemptions. Anything that prevents
+ * that is recorded as a ledger error and leaves the base entry as it is.
  */
 async function securitiesLedgerEntry(params: {
   injector: Injector;
@@ -122,8 +199,7 @@ async function securitiesLedgerEntry(params: {
   errors: Set<string>;
   missingTaxCategories: Set<SecuritiesTaxCategoryKey>;
 }): Promise<StrictLedgerProto> {
-  const { injector, ownerId, locality, transaction, baseEntry, execution, taxCategories, errors } =
-    params;
+  const { injector, locality, transaction, baseEntry, execution, taxCategories, errors } = params;
   const transactionDescription = describeTransaction(transaction);
 
   if (!execution) {
@@ -140,11 +216,11 @@ async function securitiesLedgerEntry(params: {
 
   // A cancellation keeps the original's trade type but sends the cash back the other way. A
   // cancelled dividend or interest payment books as the mirror of its income entry; a cancelled
-  // redemption would also have to restore the redeemed units' cost, which is not supported.
+  // sale or redemption would also have to restore the units' cost, which is not supported.
   const isCancellation = isCancelledExecution(execution);
-  if (isCancellation && kind === 'REDEMPTION') {
+  if (isCancellation && (kind === 'SALE' || kind === 'REDEMPTION')) {
     errors.add(
-      `Transaction ${transactionDescription} reverses a cancelled redemption of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
+      `Transaction ${transactionDescription} reverses a cancelled ${kind === 'SALE' ? 'sale' : 'redemption'} of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
     );
     return baseEntry;
   }
@@ -220,45 +296,18 @@ async function securitiesLedgerEntry(params: {
       return buildIncomeReversalEntry(reversalBase, incomeParams);
     }
 
-    // a redemption: only withheld tax depends on locality, so a redemption without it books as is
-    // even when the execution has no issuer country or ISIN
-    const withholdingKeys = hasWithheldTax
-      ? [WITHHOLDING_TAX_CATEGORY_KEYS.REDEMPTION[requireLocality()]]
-      : [];
-    const history = await injector
-      .get(ForeignSecuritiesProvider)
-      .getSecurityOwnerHistory(execution, ownerId);
-    const costBasis = calculateFifoCostBasis(history, execution, cashCurrency);
-    const problem = costBasisProblem(execution, costBasis);
-    if (problem) {
-      throw new LedgerError(problem);
-    }
-
-    const gain = calculateRedemptionGain(baseEntry, {
-      costForeign: costBasis.costForeign,
+    return await disposalLedgerEntry({
+      injector: params.injector,
+      ownerId: params.ownerId,
+      defaultLocalCurrency: params.defaultLocalCurrency,
+      kind,
+      execution,
+      baseEntry,
       withheldTax: tax.withheld,
-    });
-    const gainOrLossKeys: SecuritiesTaxCategoryKey[] =
-      gain >= MIN_AMOUNT
-        ? ['FOREIGN_SECURITIES_SALE_GAIN']
-        : gain <= -MIN_AMOUNT
-          ? ['FOREIGN_SECURITIES_SALE_LOSS']
-          : [];
-    const ids = requireTaxCategories(
-      [...gainOrLossKeys, ...withholdingKeys],
+      requireLocality,
       taxCategories,
       errors,
-      params.missingTaxCategories,
-    );
-    if (!ids) {
-      return baseEntry;
-    }
-    return buildRedemptionEntry(baseEntry, {
-      costForeign: costBasis.costForeign,
-      withheldTax: tax.withheld,
-      gainTaxCategoryId: taxCategories.FOREIGN_SECURITIES_SALE_GAIN,
-      lossTaxCategoryId: taxCategories.FOREIGN_SECURITIES_SALE_LOSS,
-      withholdingTaxCategoryId: withholdingKeys.length ? ids[withholdingKeys[0]] : undefined,
+      missingTaxCategories: params.missingTaxCategories,
     });
   } catch (e) {
     errors.add(
