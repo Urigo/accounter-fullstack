@@ -19,7 +19,7 @@ export { isDividendInKindDistribution };
 /**
  * Building blocks of the foreign-securities ledger. The base entry of a cash movement books the
  * bank account against the securities account; once the matched execution says what the movement
- * was, income and redemptions are reshaped from it here.
+ * was, income, sales and redemptions are reshaped from it here.
  */
 
 /** Below this, an amount is float noise rather than a line worth storing */
@@ -28,7 +28,7 @@ const MIN_AMOUNT = 0.005;
 /** How far apart the reported and the deduced withheld tax may be before it is flagged */
 const TAX_TOLERANCE = 0.01;
 
-export type SecuritiesExecutionKind = 'DIVIDEND' | 'INTEREST' | 'REDEMPTION' | 'OTHER';
+export type SecuritiesExecutionKind = 'DIVIDEND' | 'INTEREST' | 'SALE' | 'REDEMPTION' | 'OTHER';
 
 /** What the ledger does with a cash movement, by the execution behind it */
 export function classifySecurityExecution(
@@ -39,6 +39,8 @@ export function classifySecurityExecution(
       return 'DIVIDEND';
     case SecurityTradeType.InterestPayment:
       return 'INTEREST';
+    case SecurityTradeType.Sell:
+      return 'SALE';
     case SecurityTradeType.Redemption:
       return 'REDEMPTION';
     default:
@@ -63,7 +65,8 @@ export const WITHHOLDING_TAX_CATEGORY_KEYS = {
   // tax withheld on a redemption is withheld on a bond
   REDEMPTION: { LOCAL: 'LOCAL_BOND_WITHHOLDING_TAX', FOREIGN: 'FOREIGN_BOND_WITHHOLDING_TAX' },
 } as const satisfies Record<
-  Exclude<SecuritiesExecutionKind, 'OTHER'>,
+  // tax withheld on a sale is not booked yet
+  Exclude<SecuritiesExecutionKind, 'OTHER' | 'SALE'>,
   Record<SecurityLocality, SecuritiesTaxCategoryKey>
 >;
 
@@ -340,8 +343,11 @@ export function findCancelledPayment<T extends CancelledPaymentExecution>(
   return original;
 }
 
-/** Gross proceeds (net received plus tax withheld) less what the redeemed units cost */
-export function calculateRedemptionGain(
+/**
+ * The price PnL of a disposal (a sale or a redemption), in the cash currency: gross proceeds (net
+ * received plus tax withheld) less what the units cost
+ */
+export function calculateDisposalGain(
   base: StrictLedgerProto,
   params: { costForeign: number; withheldTax: number },
 ): number {
@@ -349,12 +355,15 @@ export function calculateRedemptionGain(
 }
 
 /**
- * Bond redemption: the bank debit stays as it is, the securities account is credited with the
- * FIFO purchase cost (in the cash currency, at the redemption day's rate) and the difference is a
- * gain (second credit) or a loss (second debit). Tax withheld from the proceeds is a second debit,
- * so it cannot be booked together with a loss.
+ * A disposal — a sale, or a bond redemption: the bank debit stays as it is, the securities account
+ * is credited with the FIFO purchase cost (in the cash currency, at the cash leg's rate) and the
+ * difference is the price gain (second credit) or loss (second debit). Tax withheld from the
+ * proceeds is a second debit, so it cannot be booked together with a loss.
+ *
+ * Crediting the cost at the cash leg's rate leaves the securities account's local balance off by
+ * the rate PnL, which the year-end revaluation takes up.
  */
-export function buildRedemptionEntry(
+export function buildDisposalEntry(
   base: StrictLedgerProto,
   params: {
     costForeign: number;
@@ -365,7 +374,7 @@ export function buildRedemptionEntry(
   },
 ): StrictLedgerProto {
   const withholding = withholdingLine(params.withheldTax, params.withholdingTaxCategoryId);
-  const gain = calculateRedemptionGain(base, {
+  const gain = calculateDisposalGain(base, {
     costForeign: params.costForeign,
     withheldTax: withholding.debit2?.amount ?? -(withholding.credit2?.amount ?? 0),
   });
@@ -373,12 +382,12 @@ export function buildRedemptionEntry(
   let gainOrLoss: { debit2?: SecondaryLine; credit2?: SecondaryLine } = {};
   if (gain >= MIN_AMOUNT) {
     if (!params.gainTaxCategoryId) {
-      throw new LedgerError('A gain tax category is required to book a redemption gain');
+      throw new LedgerError('A gain tax category is required to book a disposal gain');
     }
     gainOrLoss = { credit2: { accountId: params.gainTaxCategoryId, amount: gain } };
   } else if (gain <= -MIN_AMOUNT) {
     if (!params.lossTaxCategoryId) {
-      throw new LedgerError('A loss tax category is required to book a redemption loss');
+      throw new LedgerError('A loss tax category is required to book a disposal loss');
     }
     gainOrLoss = { debit2: { accountId: params.lossTaxCategoryId, amount: -gain } };
   }
