@@ -48,6 +48,12 @@
         name
       }
     }
+    ... on ForeignSecuritiesCharge {
+      counterparties {
+        id
+        name
+      }
+    }
     metadata {
       transactionsCount
       documentsCount
