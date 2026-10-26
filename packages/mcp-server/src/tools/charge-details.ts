@@ -290,6 +290,8 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
           isin
           symbol
           engName
+          exchange
+          itemType
         }
         details {
           key
@@ -430,11 +432,13 @@ interface NormalizedCharge {
  * One security a charge's transaction descriptions referenced, plus the trades
  * behind the cash movement.
  *
- * `details` is the ingested reference row and is legitimately null: the feed can
- * be out of date, and saying so is more useful than dropping the key. Descriptors
- * come from the security *business* where both have them — its `currencyCode` is
- * the resolved `Currency` enum, while the reference feed's is a raw source string
- * that can still be a Hebrew label.
+ * `details` is the ingested reference row and is legitimately null: the bank's
+ * reference list only holds securities held when it was scraped, so a position
+ * closed before then never appears, and saying so is more useful than dropping
+ * the key. Descriptors come from the security *business* where both have them,
+ * falling back to the reference row — its `currencyCode` is the resolved
+ * `Currency` enum, while the reference feed's is a raw source string that can
+ * still be a Hebrew label.
  */
 function normalizeChargeSecurity(security: RawChargeSecurity) {
   return {
@@ -443,8 +447,8 @@ function normalizeChargeSecurity(security: RawChargeSecurity) {
     isin: security.securityBusiness?.isin ?? null,
     symbol: security.securityBusiness?.symbol ?? security.details?.symbol ?? null,
     name: security.securityBusiness?.engName ?? security.details?.engName ?? null,
-    exchange: security.details?.exchange ?? null,
-    itemType: security.details?.itemType ?? null,
+    exchange: security.securityBusiness?.exchange ?? security.details?.exchange ?? null,
+    itemType: security.securityBusiness?.itemType ?? security.details?.itemType ?? null,
     referenceAsOf: security.details?.asOfDate ?? null,
     referenceFound: security.details != null,
     executions: security.executions.map(execution => ({

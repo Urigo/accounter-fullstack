@@ -154,9 +154,10 @@ scope, because it _is_ the scope.
   the answer can be followed into the portfolio. Three states stay distinct: the field is **absent**
   for a charge that is not a securities one and for one fetched without the flag, an **empty array**
   means the transaction descriptions carried no key the ingested feed knows, and
-  `referenceFound: false` on a present security means the reference scrape is stale for a key that
-  _is_ traded. Nesting executions multiplies the payload, so pair it with explicit `chargeIds` or a
-  small `pageSize`.
+  `referenceFound: false` on a present security means the bank's reference list has no row for this
+  key, typically because the position was closed before the list was scraped; descriptors then come
+  from the security business. Nesting executions multiplies the payload, so pair it with explicit
+  `chargeIds` or a small `pageSize`.
 
   Both charge tools build their filter from one definition (`tools/charge-filters.ts`), and
   `schema-contract.test.ts` checks that definition against `input ChargeFilter` in `schema.graphql`,
