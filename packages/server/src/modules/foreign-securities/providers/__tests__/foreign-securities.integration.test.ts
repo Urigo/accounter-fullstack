@@ -718,6 +718,49 @@ describe('getSecurityAccountHistory', () => {
   });
 });
 
+describe('getSecurityOwnerHistory', () => {
+  it("returns every key of the security business across the owner's accounts, oldest first", async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'ZZ0000000101',
+      securityKeys: ['7000001', '7000002'],
+    });
+    await insertExecution({ security: '7000001', tradeDate: '2024-05-01', nv: '3' });
+    await insertExecution({ security: '7000002', tradeDate: '2024-01-01', nv: '7' });
+    // the same security in another of the owner's portfolios: a transfer can bring its lots over
+    await insertExecution({
+      security: '7000001',
+      tradeDate: '2024-02-01',
+      nv: '5',
+      accountNumber: 100001,
+    });
+    // and another owner's execution of the same key
+    await insertExecution({ ownerId: OTHER_OWNER_ID, security: '7000001', tradeDate: '2024-03-01' });
+
+    const history = await createProvider([]).getSecurityOwnerHistory(
+      { security: '7000001' },
+      TEST_OWNER_ID,
+    );
+
+    expect(history.map(execution => [execution.trade_date, execution.nv])).toEqual([
+      ['2024-01-01', '7'],
+      ['2024-02-01', '5'],
+      ['2024-05-01', '3'],
+    ]);
+  });
+
+  it('is empty when the key belongs to no security business', async () => {
+    await insertExecution({ security: '7000001' });
+
+    const history = await createProvider([]).getSecurityOwnerHistory(
+      { security: '7000001' },
+      TEST_OWNER_ID,
+    );
+
+    expect(history).toEqual([]);
+  });
+});
+
 function ownedBuckets<T>(byBusinessId: Map<string, T[]>): T[][] {
   return SECURITY_BUSINESS_IDS.map(id => byBusinessId.get(id)).filter(
     (bucket): bucket is T[] => bucket !== undefined,

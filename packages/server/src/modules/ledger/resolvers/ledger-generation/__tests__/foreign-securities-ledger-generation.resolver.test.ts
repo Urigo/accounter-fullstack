@@ -220,7 +220,7 @@ type Scenario = {
   transactions: IGetTransactionsByChargeIdsResult[];
   /** The execution each transaction is matched to, by transaction id */
   executions?: Record<string, SecurityExecutionRow>;
-  /** The ingested history of the security, for redemptions */
+  /** The ingested history of the security across the owner's accounts, for redemptions */
   history?: SecurityExecutionRow[];
   /** Securities tax categories configured for the tenant; defaults to all of them */
   taxCategories?: Partial<Record<SecuritiesTaxCategoryKey, string>>;
@@ -241,6 +241,7 @@ function makeInjector(scenario: Scenario) {
       async () => new Map(Object.entries(scenario.executions ?? {})),
     ),
     getSecurityAccountHistory: vi.fn(async () => scenario.history ?? []),
+    getSecurityOwnerHistory: vi.fn(async () => scenario.history ?? []),
     executionsByChargeIdLoader: { load: vi.fn(async () => scenario.distributions ?? []) },
   };
 
@@ -1353,7 +1354,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       });
 
       expect(errors).toEqual([]);
-      expect(foreignSecuritiesProvider.getSecurityAccountHistory).toHaveBeenCalledWith(
+      expect(foreignSecuritiesProvider.getSecurityOwnerHistory).toHaveBeenCalledWith(
         redemption,
         OWNER_ID,
       );

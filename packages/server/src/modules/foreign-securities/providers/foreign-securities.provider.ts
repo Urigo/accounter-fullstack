@@ -589,12 +589,11 @@ export class ForeignSecuritiesProvider {
 
   /**
    * Every ingested execution of an execution's security in the same portfolio account, oldest
-   * first — the history a redemption's FIFO purchase cost is replayed from.
+   * first — what a stock distribution's cancellation is looked for in.
    *
    * Addressed through the security business, so every Poalim key the ISIN is known by counts, and
-   * narrowed to the execution's own bank/branch/account: a position is held per account, and the
-   * same security held in two of a tenant's portfolios must not share lots. Empty when the key
-   * belongs to no security business.
+   * narrowed to the execution's own bank/branch/account. Empty when the key belongs to no security
+   * business. FIFO reads {@link getSecurityOwnerHistory} instead.
    */
   public async getSecurityAccountHistory(
     execution: Pick<
@@ -624,6 +623,44 @@ export class ForeignSecuritiesProvider {
         row.branch_number === execution.branch_number &&
         row.account_number === execution.account_number,
     );
+  }
+
+  /** Memo for {@link getSecurityOwnerHistory}; the provider lives for one operation. */
+  private ownerHistoryCache = new Map<string, Promise<SecurityExecutionRow[]>>();
+
+  /**
+   * Every ingested execution of an execution's security across all of the owner's portfolio
+   * accounts, oldest first — the history a disposal's FIFO purchase cost is replayed from.
+   *
+   * A sale draws only on its own account's lots; the history spans the owner's accounts so that a
+   * holding transferred between two of them brings its lots, and their cost, across. Addressed
+   * through the security business like {@link getSecurityAccountHistory}, and narrowed to the
+   * owner, since reads follow the request's whole business scope. Empty when the key belongs to no
+   * security business.
+   */
+  public async getSecurityOwnerHistory(
+    execution: Pick<SecurityExecutionRow, 'security'>,
+    ownerId: string,
+  ): Promise<SecurityExecutionRow[]> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return [];
+    }
+
+    const cacheKey = `${ownerId}:${securityBusiness.id}`;
+    let cached = this.ownerHistoryCache.get(cacheKey);
+    if (!cached) {
+      cached = getSecurityExecutionsByBusinessIds
+        .run({ businessIds: [securityBusiness.id] }, this.db)
+        .then(executions => executions.filter(row => row.owner_id === ownerId));
+      this.ownerHistoryCache.set(cacheKey, cached);
+    }
+    return cached;
   }
 
   /**
