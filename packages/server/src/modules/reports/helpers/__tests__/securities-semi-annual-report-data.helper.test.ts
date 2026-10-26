@@ -6,6 +6,7 @@ import { AdminContextProvider } from '../../../admin-context/providers/admin-con
 import type { AdminContext } from '../../../admin-context/types.js';
 import { ExchangeRateNotAvailableError } from '../../../exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
+import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
 import {
   paymentTypeToRaw,
   tradeTypeToRaw,
@@ -17,6 +18,7 @@ import { PriceIndexesProvider } from '../../../price-indexes/providers/price-ind
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import {
   collectHalfDisposals,
+  collectHalfSecuritiesExpenses,
   collectHalfSecuritiesIncome,
 } from '../securities-semi-annual-report-data.helper.js';
 import { getSemiAnnualPeriod } from '../securities-semi-annual-report.helper.js';
@@ -88,6 +90,7 @@ function makeInjector(params: {
   transactionsByCharge?: Record<string, { id: string; origin_key: string }[]>;
   executionsByTransaction?: Record<string, Record<string, SecurityExecutionRow>>;
   distributionsByCharge?: Record<string, SecurityExecutionRow[]>;
+  taxCategoryNames?: Record<string, string>;
 }) {
   const providers = new Map<unknown, unknown>([
     [
@@ -156,6 +159,18 @@ function makeInjector(params: {
     [
       LedgerProvider,
       { getLedgerRecordsByFilters: vi.fn(async () => params.ledgerRecords ?? []) },
+    ],
+    [
+      TaxCategoriesProvider,
+      {
+        taxCategoryByIdLoader: {
+          loadMany: async (ids: string[]) =>
+            ids.map(id => {
+              const name = params.taxCategoryNames?.[id];
+              return name ? { id, name } : undefined;
+            }),
+        },
+      },
     ],
     [
       TransactionsProvider,
@@ -685,6 +700,63 @@ describe('collectHalfSecuritiesIncome', () => {
       expect.objectContaining({
         message: expect.stringContaining('its income tax category is not set'),
       }),
+    ]);
+  });
+});
+
+describe('collectHalfSecuritiesExpenses', () => {
+  const FEES = 'securities-fees';
+  const CONSULTANCY = 'financial-consultancy';
+  const expensesContext = adminContext({
+    FOREIGN_SECURITIES_FEES: FEES,
+    FINANCIAL_CONSULTANCY: CONSULTANCY,
+  });
+
+  it('totals what the ledger booked on the fees and consultancy categories, by category', async () => {
+    const { expenses, issues } = await collectHalfSecuritiesExpenses(
+      makeInjector({
+        ledgerRecords: [
+          ledgerRecord({ debit_entity1: FEES, debit_local_amount1: '120', credit_entity1: 'bank' }),
+          ledgerRecord({ debit_entity1: FEES, debit_local_amount1: '30', credit_entity1: 'bank' }),
+          // a refund of a fee
+          ledgerRecord({ debit_entity1: 'bank', credit_entity1: FEES, credit_local_amount1: '20' }),
+          ledgerRecord({
+            debit_entity1: CONSULTANCY,
+            debit_local_amount1: '1000',
+            credit_entity1: 'supplier',
+          }),
+        ],
+        taxCategoryNames: { [FEES]: 'Foreign Securities Fees', [CONSULTANCY]: 'Consultancy' },
+      }),
+      { ownerId: OWNER_ID, period: H1, adminContext: expensesContext },
+    );
+
+    expect(issues).toEqual([]);
+    expect(expenses).toEqual([
+      {
+        key: 'FOREIGN_SECURITIES_FEES',
+        taxCategoryId: FEES,
+        name: 'Foreign Securities Fees',
+        amount: 130,
+      },
+      {
+        key: 'FINANCIAL_CONSULTANCY',
+        taxCategoryId: CONSULTANCY,
+        name: 'Consultancy',
+        amount: 1000,
+      },
+    ]);
+  });
+
+  it('names a category the settings lack, so it can be set', async () => {
+    const { expenses, issues } = await collectHalfSecuritiesExpenses(
+      makeInjector({ ledgerRecords: [] }),
+      { ownerId: OWNER_ID, period: H1, adminContext: adminContext({ FOREIGN_SECURITIES_FEES: FEES }) },
+    );
+
+    expect(expenses.map(expense => expense.key)).toEqual(['FOREIGN_SECURITIES_FEES']);
+    expect(issues).toEqual([
+      expect.objectContaining({ missingTaxCategory: 'FINANCIAL_CONSULTANCY' }),
     ]);
   });
 });

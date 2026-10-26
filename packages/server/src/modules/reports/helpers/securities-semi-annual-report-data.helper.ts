@@ -1,10 +1,12 @@
 import type { Injector } from 'graphql-modules';
+import type { SecuritiesTaxCategoryKey } from '../../../__generated__/types.js';
 import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { addDaysToTimelessDate } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
 import { ExchangeRateNotAvailableError } from '../../exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
+import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import {
   cancelledTradeType,
   pairCancellations,
@@ -64,6 +66,22 @@ export type SemiAnnualIssue = {
   message: string;
   executionId?: string | null;
   chargeId?: string | null;
+  /** A securities tax category the report needs and the settings lack */
+  missingTaxCategory?: SecuritiesTaxCategoryKey | null;
+};
+
+/** The securities settings' tax categories the report counts as securities expenses */
+export const SECURITIES_EXPENSE_TAX_CATEGORY_KEYS = [
+  'FOREIGN_SECURITIES_FEES',
+  'FINANCIAL_CONSULTANCY',
+] as const satisfies readonly SecuritiesTaxCategoryKey[];
+
+export type SemiAnnualExpense = {
+  key: (typeof SECURITIES_EXPENSE_TAX_CATEGORY_KEYS)[number];
+  taxCategoryId: string;
+  name: string;
+  /** What the ledger booked on the category in the half, in ILS: debits less credits */
+  amount: number;
 };
 
 export type SemiAnnualSale = SemiAnnualSaleFigures & {
@@ -430,6 +448,74 @@ export async function collectHalfSecuritiesIncome(
   }
 
   return { income, issues };
+}
+
+const EXPENSE_LABEL: Record<SemiAnnualExpense['key'], string> = {
+  FOREIGN_SECURITIES_FEES: 'Foreign securities fees',
+  FINANCIAL_CONSULTANCY: 'Financial consultancy',
+};
+
+/**
+ * The half's securities expenses: what the ledger booked (by `invoice_date`) on the tax categories
+ * the securities settings name as the fees (where the securities ledger books commissions) and the
+ * financial consultancy. They come from the settings rather than a sort code, so a category is in
+ * because it plays that role, not because of where it is filed.
+ */
+export async function collectHalfSecuritiesExpenses(
+  injector: Injector,
+  params: { ownerId: string; period: SemiAnnualPeriod; adminContext: AdminContext },
+): Promise<{ expenses: SemiAnnualExpense[]; issues: SemiAnnualIssue[] }> {
+  const { ownerId, period, adminContext } = params;
+  const { taxCategories } = adminContext.foreignSecurities;
+  const issues: SemiAnnualIssue[] = [];
+
+  const categories: { key: SemiAnnualExpense['key']; taxCategoryId: string }[] = [];
+  for (const key of SECURITIES_EXPENSE_TAX_CATEGORY_KEYS) {
+    const taxCategoryId = taxCategories[key];
+    if (taxCategoryId) {
+      categories.push({ key, taxCategoryId });
+    } else {
+      issues.push({
+        message: `No "${EXPENSE_LABEL[key]}" tax category is set in the securities settings, so the securities expenses leave it out`,
+        missingTaxCategory: key,
+      });
+    }
+  }
+  if (categories.length === 0) {
+    return { expenses: [], issues };
+  }
+
+  const taxCategoryIds = categories.map(category => category.taxCategoryId);
+  const [records, names] = await Promise.all([
+    injector.get(LedgerProvider).getLedgerRecordsByFilters({
+      financialEntityIds: taxCategoryIds,
+      ownerIds: [ownerId],
+      fromInvoiceDate: period.fromDate,
+      toInvoiceDate: period.toDate,
+      limit: INCOME_RECORDS_LIMIT,
+    }),
+    injector.get(TaxCategoriesProvider).taxCategoryByIdLoader.loadMany(taxCategoryIds),
+  ]);
+  if (records.length >= INCOME_RECORDS_LIMIT) {
+    issues.push({
+      message: `The half has more than ${INCOME_RECORDS_LIMIT} securities expense ledger records; only the first ${INCOME_RECORDS_LIMIT} are counted`,
+    });
+  }
+
+  const expenses = categories.map(({ key, taxCategoryId }, index) => {
+    const taxCategory = names[index];
+    return {
+      key,
+      taxCategoryId,
+      name: taxCategory && !(taxCategory instanceof Error) ? taxCategory.name : EXPENSE_LABEL[key],
+      // an expense is debited: credits less debits comes out negative
+      amount: -records.reduce(
+        (total, record) => total + ledgerEntityAmount(record, taxCategoryId),
+        0,
+      ),
+    };
+  });
+  return { expenses, issues };
 }
 
 /** The execution behind an income ledger record, or null when it cannot be traced */

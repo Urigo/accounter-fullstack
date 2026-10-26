@@ -280,6 +280,25 @@ ledger-reading report there would create an import cycle.
   - `page-layout.tsx`: an opt-in `hideHeaderInPrint` prop.
   - `[print-color-adjust:exact]` on shaded cells.
 
+## Follow-up: accountant review of the first draft
+
+- **Header:** the advances file number (תיק מקדמות) is removed.
+- **Line 5, securities expenses** (lines 6–7 are now the liability and the advance). The categories
+  come from the securities settings, not a sort code:
+  - the `FOREIGN_SECURITIES_FEES` slot, where the securities ledger books commissions;
+  - a new `FINANCIAL_CONSULTANCY` slot.
+
+  A missing slot is an issue with a button to set it. The expenses come off the capital gain left
+  after carried-forward losses, then off the dividends and interest. Whatever they exceed is left
+  for the annual return.
+
+- **Capital loss offset (s.92(a)(4)).** The year's capital loss offsets capital gains first; the
+  rest offsets the securities dividends and interest, the buckets with the least foreign tax first.
+  In H2, the H1 loss counts only for what H1's own income didn't absorb. Prior-year losses offset
+  capital gains only.
+- **The advance always shows an amount, 0 included.** A capital loss is noted under it with its full
+  amount, what it offset, and that there is no tax liability.
+
 ## 4. Verification
 
 ```sh

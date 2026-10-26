@@ -8,8 +8,9 @@ import type { TimelessDateString } from '../../../shared/types/index.js';
  *
  * What is reported, after the Tax Authority's guidance (July 2006) and the accountant's letter:
  * the half's sales turnover, its real capital gains and losses, its dividend and interest income,
- * the tax on them and the advance due. A company pays the regular corporate tax rate on all of it
- * (s.91(a), s.126(a)), except for local dividends, which are exempt (s.126(b)).
+ * its securities expenses, the tax on them and the advance due. A company pays the regular
+ * corporate tax rate on all of it (s.91(a), s.126(a)), except for local dividends, which are exempt
+ * (s.126(b)).
  */
 
 export type YearHalf = 'H1' | 'H2';
@@ -18,6 +19,7 @@ export type SecuritiesIncomeLocality = 'LOCAL' | 'FOREIGN';
 export type SemiAnnualAdvanceNote =
   | 'CAPITAL_GAINS_OFFSET_BY_CARRIED_FORWARD_LOSSES'
   | 'CAPITAL_LOSS_IN_PERIOD'
+  | 'CAPITAL_LOSS_OFFSET_AGAINST_INCOME'
   | 'INCOME_TAX_COVERED_BY_FOREIGN_TAX'
   | 'LIABILITY_COVERED_BY_WITHHOLDING'
   | 'NO_TAXABLE_EVENTS';
@@ -133,6 +135,10 @@ export type SemiAnnualIncomeSummary = {
   foreignTaxWithheld: number;
   israeliTaxWithheld: number;
   taxable: boolean;
+  /** The year's capital loss set against it (s.92(a)(4)) */
+  capitalLossOffset: number;
+  /** The securities expenses deducted from it */
+  expensesDeducted: number;
   /** Null when there is no tax rate */
   tax: number | null;
   /** The foreign tax credited against `tax`: never more than it, nor than what was withheld */
@@ -150,6 +156,18 @@ export type SemiAnnualDeclaration = SemiAnnualSalesSummary & {
   dividendIncome: number;
   interestIncome: number;
   incomeSummary: SemiAnnualIncomeSummary[];
+  /** The year's capital loss set against the half's dividends and interest (s.92(a)(4)) */
+  capitalLossOffsetAgainstIncome: number;
+  /** The half's securities expenses (fees, financial consultancy) */
+  securitiesExpenses: number;
+  /** The part of the expenses deducted from the capital gain */
+  expensesDeductedFromGains: number;
+  /** The part of the expenses deducted from the dividends and interest */
+  expensesDeductedFromIncome: number;
+  /** Expenses beyond the half's taxable income, left for the annual return */
+  unusedExpenses: number;
+  /** The capital gain the tax is on: after carried-forward losses and expenses */
+  taxableCapitalGain: number;
   /** The tax lines are null when there is no tax rate */
   capitalGainsTax: number | null;
   dividendsTax: number | null;
@@ -171,18 +189,115 @@ export type SemiAnnualDeclaration = SemiAnnualSalesSummary & {
   advanceNotes: SemiAnnualAdvanceNote[];
 };
 
+/** A half's income by bucket, in whole shekels */
+function summarizeIncome(income: readonly SemiAnnualIncomeFigures[]) {
+  return SEMI_ANNUAL_INCOME_BUCKETS.map(({ kind, locality }) => {
+    const records = income.filter(record => record.kind === kind && record.locality === locality);
+    return {
+      kind,
+      locality,
+      gross: shekels(sum(records.map(record => record.gross))),
+      foreignTaxWithheld: shekels(sum(records.map(record => record.foreignTaxWithheld))),
+      israeliTaxWithheld: shekels(sum(records.map(record => record.israeliTaxWithheld))),
+      taxable: isTaxableIncome(kind, locality),
+    };
+  });
+}
+
+type IncomeBucketTotals = ReturnType<typeof summarizeIncome>[number];
+
+/**
+ * Spreads a deduction over the taxable income, up to what is left of each bucket (`room`, which it
+ * reduces). The buckets with the least foreign tax per shekel come first: a deduction from them
+ * wastes the least foreign tax credit.
+ */
+function spreadOverIncome(
+  buckets: readonly IncomeBucketTotals[],
+  room: number[],
+  amount: number,
+): { taken: number[]; left: number } {
+  const foreignTaxShare = (bucket: IncomeBucketTotals) =>
+    bucket.gross > 0 ? Math.max(0, bucket.foreignTaxWithheld) / bucket.gross : 0;
+  const order = buckets
+    .map((bucket, index) => ({ index, share: foreignTaxShare(bucket) }))
+    .sort((a, b) => a.share - b.share || a.index - b.index);
+  const taken = buckets.map(() => 0);
+  let left = Math.max(0, amount);
+  for (const { index } of order) {
+    const take = Math.min(left, room[index]!);
+    taken[index] = take;
+    room[index]! -= take;
+    left -= take;
+  }
+  return { taken, left };
+}
+
+/**
+ * What offsets a half's capital gain and income, in the order the law and the taxpayer's interest
+ * set:
+ * 1. The year's capital losses — the half's own net loss, and in the second half what the first
+ *    half left unused — offset its capital gains first, then the prior years' losses (s.92(b)),
+ *    which can offset capital gains only.
+ * 2. What is left of the year's capital loss offsets the securities dividends and interest
+ *    (s.92(a)(4)).
+ * 3. The securities expenses come off the capital gain left, then off the income left. What they
+ *    exceed is left for the annual return.
+ */
+function settleHalf(params: {
+  netRealCapitalGain: number;
+  buckets: readonly IncomeBucketTotals[];
+  expenses: number;
+  priorYearsLosses: number;
+  /** The year's capital loss the half starts with: the first half's unused loss, in the second */
+  yearLoss: number;
+}) {
+  let gain = Math.max(0, params.netRealCapitalGain);
+  let yearLoss = params.yearLoss + Math.max(0, -params.netRealCapitalGain);
+  const yearLossOnGains = Math.min(yearLoss, gain);
+  gain -= yearLossOnGains;
+  yearLoss -= yearLossOnGains;
+  const priorLossesOnGains = Math.min(params.priorYearsLosses, gain);
+  gain -= priorLossesOnGains;
+
+  const room = params.buckets.map(bucket => (bucket.taxable ? Math.max(0, bucket.gross) : 0));
+  const lossOffset = spreadOverIncome(params.buckets, room, yearLoss);
+
+  const expenses = Math.max(0, params.expenses);
+  const expensesOnGains = Math.min(expenses, gain);
+  gain -= expensesOnGains;
+  const expensesOnIncome = spreadOverIncome(params.buckets, room, expenses - expensesOnGains);
+
+  return {
+    lossesOnGains: yearLossOnGains + priorLossesOnGains,
+    lossOffset: lossOffset.taken,
+    expensesOnGains,
+    expensesOnIncome: expensesOnIncome.taken,
+    unusedExpenses: expensesOnIncome.left,
+    taxableCapitalGain: gain,
+    remaining: {
+      priorYearsLosses: params.priorYearsLosses - priorLossesOnGains,
+      yearLoss: lossOffset.left,
+    },
+  };
+}
+
 export type SemiAnnualDeclarationParams = {
   /** The corporate tax rate, as a fraction; null when none is set */
   taxRate: number | null;
   priorYearsLosses: number;
   sales: readonly SemiAnnualSaleFigures[];
   income: readonly SemiAnnualIncomeFigures[];
+  /** The half's securities expenses, in ILS */
+  expenses: number;
 } & (
   | { half: 'H1' }
   | {
       half: 'H2';
-      /** The first half's sales, which the second half carries losses from */
-      firstHalfSales: readonly SemiAnnualSaleFigures[];
+      /** The first half's sales and income, which the second half carries losses from */
+      firstHalf: {
+        sales: readonly SemiAnnualSaleFigures[];
+        income: readonly SemiAnnualIncomeFigures[];
+      };
     }
 );
 
@@ -191,15 +306,17 @@ export type SemiAnnualDeclarationParams = {
  *
  * - Capital gains: the half's real gains less its losses, less the capital losses carried forward
  *   (s.92(b)). In the second half, those are the prior years' losses still unused after the first
- *   half, plus the first half's own net loss: `max(0, prior − first half's net)`.
+ *   half, plus what the first half's own net loss did not offset there.
+ * - A net capital loss of the year offsets the securities dividends and interest (s.92(a)(4)).
+ * - The securities expenses are deducted from the capital gain, then from the income (see
+ *   `settleHalf`).
  * - Dividends and interest are taxed by bucket (kind × locality) at the same rate, local dividends
  *   excepted; the foreign tax withheld on a bucket is credited against its tax, capped at it — so
  *   excess foreign tax on one bucket does not reduce the tax on another.
  * - The liability is the gross tax less the foreign tax credit; the advance is the liability less
  *   the Israeli tax withheld at source (s.91(d)(6)), never below zero.
  *
- * Not modelled: offsetting a net securities loss against dividends and interest (s.92(a)(4)), and
- * carrying an unused foreign tax credit between halves.
+ * Not modelled: carrying an unused foreign tax credit or unused expenses between halves.
  */
 export function computeSemiAnnualDeclaration(
   params: SemiAnnualDeclarationParams,
@@ -207,37 +324,51 @@ export function computeSemiAnnualDeclaration(
   const { taxRate } = params;
   const salesSummary = summarizeSemiAnnualSales(params.sales);
   const priorYearsLosses = shekels(Math.max(0, params.priorYearsLosses));
+  const securitiesExpenses = shekels(params.expenses);
 
-  const firstHalfNetRealCapitalGain =
-    params.half === 'H2'
-      ? summarizeSemiAnnualSales(params.firstHalfSales).netRealCapitalGain
-      : null;
-  const lossesCarriedForward =
-    firstHalfNetRealCapitalGain == null
-      ? priorYearsLosses
-      : Math.max(0, priorYearsLosses - firstHalfNetRealCapitalGain);
+  let firstHalfNetRealCapitalGain: number | null = null;
+  let carried = { priorYearsLosses, yearLoss: 0 };
+  if (params.half === 'H2') {
+    firstHalfNetRealCapitalGain = summarizeSemiAnnualSales(
+      params.firstHalf.sales,
+    ).netRealCapitalGain;
+    // the first half's expenses take nothing from the losses, so they are not needed here
+    carried = settleHalf({
+      netRealCapitalGain: firstHalfNetRealCapitalGain,
+      buckets: summarizeIncome(params.firstHalf.income),
+      expenses: 0,
+      priorYearsLosses,
+      yearLoss: 0,
+    }).remaining;
+  }
+  const lossesCarriedForward = carried.priorYearsLosses + carried.yearLoss;
   const netRealCapitalGainAfterLosses = salesSummary.netRealCapitalGain - lossesCarriedForward;
+
+  const buckets = summarizeIncome(params.income);
+  const settled = settleHalf({
+    netRealCapitalGain: salesSummary.netRealCapitalGain,
+    buckets,
+    expenses: securitiesExpenses,
+    ...carried,
+  });
 
   const taxOn = (amount: number) =>
     taxRate == null ? null : shekels(taxRate * Math.max(0, amount));
 
-  const incomeSummary = SEMI_ANNUAL_INCOME_BUCKETS.map(({ kind, locality }) => {
-    const records = params.income.filter(
-      record => record.kind === kind && record.locality === locality,
-    );
-    const gross = shekels(sum(records.map(record => record.gross)));
-    const foreignTaxWithheld = shekels(sum(records.map(record => record.foreignTaxWithheld)));
-    const taxable = isTaxableIncome(kind, locality);
-    const tax = taxable ? taxOn(gross) : taxRate == null ? null : 0;
+  const incomeSummary = buckets.map((bucket, index) => {
+    const capitalLossOffset = settled.lossOffset[index]!;
+    const expensesDeducted = settled.expensesOnIncome[index]!;
+    const tax = bucket.taxable
+      ? taxOn(bucket.gross - capitalLossOffset - expensesDeducted)
+      : taxRate == null
+        ? null
+        : 0;
     return {
-      kind,
-      locality,
-      gross,
-      foreignTaxWithheld,
-      israeliTaxWithheld: shekels(sum(records.map(record => record.israeliTaxWithheld))),
-      taxable,
+      ...bucket,
+      capitalLossOffset,
+      expensesDeducted,
       tax,
-      foreignTaxCredit: tax == null ? null : Math.min(Math.max(0, foreignTaxWithheld), tax),
+      foreignTaxCredit: tax == null ? null : Math.min(Math.max(0, bucket.foreignTaxWithheld), tax),
     } satisfies SemiAnnualIncomeSummary;
   });
 
@@ -251,8 +382,9 @@ export function computeSemiAnnualDeclaration(
   const israeliTaxWithheldOnExemptIncome = withheldOn(
     incomeSummary.filter(bucket => !bucket.taxable),
   );
+  const capitalLossOffsetAgainstIncome = sum(settled.lossOffset);
 
-  const capitalGainsTax = taxOn(netRealCapitalGainAfterLosses);
+  const capitalGainsTax = taxOn(settled.taxableCapitalGain);
   const declaration = {
     ...salesSummary,
     priorYearsLosses,
@@ -262,11 +394,20 @@ export function computeSemiAnnualDeclaration(
     dividendIncome,
     interestIncome,
     incomeSummary,
+    capitalLossOffsetAgainstIncome,
+    securitiesExpenses,
+    expensesDeductedFromGains: settled.expensesOnGains,
+    expensesDeductedFromIncome: sum(settled.expensesOnIncome),
+    unusedExpenses: settled.unusedExpenses,
+    taxableCapitalGain: settled.taxableCapitalGain,
     israeliTaxWithheldOnIncome,
     israeliTaxWithheldOnExemptIncome,
   };
 
-  const hasEvents = salesSummary.saleCount > 0 || incomeSummary.some(bucket => bucket.gross !== 0);
+  const hasEvents =
+    salesSummary.saleCount > 0 ||
+    incomeSummary.some(bucket => bucket.gross !== 0) ||
+    securitiesExpenses !== 0;
 
   if (capitalGainsTax == null) {
     return {
@@ -298,11 +439,14 @@ export function computeSemiAnnualDeclaration(
   if (!hasEvents) {
     advanceNotes.push('NO_TAXABLE_EVENTS');
   }
-  if (salesSummary.netRealCapitalGain > 0 && lossesCarriedForward > 0) {
+  if (salesSummary.netRealCapitalGain > 0 && settled.lossesOnGains > 0) {
     advanceNotes.push('CAPITAL_GAINS_OFFSET_BY_CARRIED_FORWARD_LOSSES');
   }
   if (salesSummary.saleCount > 0 && salesSummary.netRealCapitalGain < 0) {
     advanceNotes.push('CAPITAL_LOSS_IN_PERIOD');
+  }
+  if (capitalLossOffsetAgainstIncome > 0) {
+    advanceNotes.push('CAPITAL_LOSS_OFFSET_AGAINST_INCOME');
   }
   if (dividendsTax + interestTax > 0 && foreignTaxCredit >= dividendsTax + interestTax) {
     advanceNotes.push('INCOME_TAX_COVERED_BY_FOREIGN_TAX');

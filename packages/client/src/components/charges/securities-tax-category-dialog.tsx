@@ -61,21 +61,25 @@ export const SECURITIES_TAX_CATEGORY_LABELS: Record<SecuritiesTaxCategoryKey, st
   FOREIGN_SECURITIES_SALE_LOSS: 'Loss from sale of foreign securities',
   FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: 'Exchange rate gain on sale of foreign securities',
   FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: 'Exchange rate loss on sale of foreign securities',
+  FINANCIAL_CONSULTANCY: 'Financial consultancy',
 };
 
 type Mode = 'existing' | 'new';
 
 type Props = {
   taxCategoryKey: SecuritiesTaxCategoryKey;
-  /** The charge whose ledger asked for the category; its ledger is regenerated once it is set */
-  chargeId: string;
+  /**
+   * The charge whose ledger asked for the category; its ledger is regenerated once it is set.
+   * Omitted when no ledger is waiting on it (a report asked).
+   */
+  chargeId?: string;
   onDone?: () => void;
 };
 
 /**
- * Sets one of the tenant's securities tax categories, from a ledger error: pick an existing tax
- * category, or create one under the securities sort code. The choice is stored for every future
- * securities ledger, and the charge's ledger is regenerated with it.
+ * Sets one of the tenant's securities tax categories, from a ledger error or a report issue: pick
+ * an existing tax category, or create one under the securities sort code. The choice is stored for
+ * every future securities ledger, and the asking charge's ledger, if any, is regenerated with it.
  */
 export function SecuritiesTaxCategoryDialog({
   taxCategoryKey,
@@ -97,7 +101,8 @@ export function SecuritiesTaxCategoryDialog({
           <DialogTitle>{label}</DialogTitle>
           <DialogDescription>
             The tax category securities ledgers book &quot;{label}&quot; to. It is saved for all
-            future securities charges, and this charge&apos;s ledger is regenerated with it.
+            future securities charges
+            {chargeId ? ", and this charge's ledger is regenerated with it" : ''}.
           </DialogDescription>
         </DialogHeader>
         {/* mounted only while open, so a closed button queries nothing and reopening starts fresh */}
@@ -161,8 +166,7 @@ function SecuritiesTaxCategoryForm({
       return;
     }
     // stay open on failure, so the user can retry; the hook already reported the error
-    const regenerated = await regenerateLedgerRecords([chargeId]);
-    if (!regenerated) {
+    if (chargeId && !(await regenerateLedgerRecords([chargeId]))) {
       return;
     }
     onSaved();
