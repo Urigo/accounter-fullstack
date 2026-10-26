@@ -800,6 +800,88 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       ]);
     });
 
+    describe("the bank's profit/loss", () => {
+      // at the bank's own rates (3.50 and 3.70): nominal 3,850 − 3,700 = 150, price 100 × 3.50
+      // = 350, rate 1,000 × (3.50 − 3.70) = −200, which the bank reports as a linkage of 200
+      const bankLot = () =>
+        buildExecution({
+          ...lot(),
+          personal_currency_rate: '-1',
+          trade_gross_value_nis: '3700',
+        });
+      const bankSale = (overrides: Partial<SecurityExecutionRow>) =>
+        saleExecution(10, 1100, {
+          personal_currency_rate: '-1',
+          trade_gross_value_nis: '3850',
+          nominal_profit_loss_nis: '150',
+          nominal_profit_loss_linkage: '200',
+          // the smaller of the two gains
+          real_profit_loss_nis: '150',
+          ...overrides,
+        });
+
+      it('agrees with a bank that reports the same', async () => {
+        const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const sale = bankSale({});
+
+        const { errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [bankLot(), sale],
+          rates: SALE_RATES,
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it("costs the sale from its own account's lots, as the bank does, past an older one elsewhere", async () => {
+        // an older, cheaper lot of the same security sits in another of the owner's accounts
+        const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const sale = bankSale({});
+        const elsewhere = buildExecution({
+          ...buyExecution('execution-buy-elsewhere', '2024-06-10', 10, 500),
+          account_number: 654321,
+        });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [elsewhere, bankLot(), sale],
+          rates: SALE_RATES,
+        });
+
+        expect(errors).toEqual([]);
+        // the cost and the price gain come from this account's lot alone: 1,000, and 100 × 3.50
+        expect(records.map(summarize)[0]).toEqual({
+          ...baseCashInRecord(1100),
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(100).foreign,
+          creditLocal2: usd(100).local,
+        });
+      });
+
+      it('reports each figure that disagrees, and still books the sale from its lots', async () => {
+        const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const sale = bankSale({ nominal_profit_loss_nis: '120', nominal_profit_loss_linkage: '230' });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [bankLot(), sale],
+          rates: SALE_RATES,
+        });
+
+        expect(errors).toEqual([
+          expect.stringContaining('a nominal profit/loss of 120.00 ₪, where its FIFO lots come to 150.00 ₪'),
+          expect.stringContaining('linkage of 230.00 ₪'),
+        ]);
+        expect(errors[0]).toContain('the sale of MOCK (US0000000001) on 2025-03-12');
+        expect(records).toHaveLength(2);
+      });
+    });
+
     it('books the sale and leaves out its rate PnL when the exchange category is missing', async () => {
       // every tenant starts without it: the disposal must keep booking as it did
       const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });

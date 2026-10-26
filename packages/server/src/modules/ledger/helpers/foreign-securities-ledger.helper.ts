@@ -3,6 +3,7 @@ import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { formatCurrency } from '../../../shared/helpers/index.js';
 import type { StrictLedgerProto } from '../../../shared/types/index.js';
 import { executionAmountInCurrency } from '../../foreign-securities/helpers/match-security-executions.helper.js';
+import { getExecutionBankRate } from '../../foreign-securities/helpers/security-disposal.helper.js';
 import {
   currencyOfSecurityLabel,
   isCancelledExecution,
@@ -671,24 +672,6 @@ const RATE_TOLERANCE = 0.0005;
 const AMOUNT_ROUNDING = 0.005;
 
 /**
- * The bank's rate from the trade currency to the local one, as it priced a distribution: its own
- * rate column when reported (it writes -1 for "no rate"), or else its local value over its
- * trade-currency value — `derived`, since both of those amounts are rounded. Null when neither is
- * usable.
- */
-export function getBankDistributionRate(
-  execution: DistributionExecution,
-): { rate: number; derived: boolean } | null {
-  const personalRate = toAmount(execution.personal_currency_rate);
-  if (personalRate > 0) {
-    return { rate: personalRate, derived: false };
-  }
-  const gross = toAmount(execution.trade_gross_value_trade_currency);
-  const grossLocal = toAmount(execution.trade_gross_value_nis);
-  return gross > 0 && grossLocal > 0 ? { rate: grossLocal / gross, derived: true } : null;
-}
-
-/**
  * Whether the ledger priced a foreign-currency distribution at a different rate than the bank
  * did. Rates are compared rather than local amounts: the bank works its local value out from the
  * unrounded units times price, so its amount differs from gross times rate by a few agorot even
@@ -702,7 +685,7 @@ export function getBankRateMismatch(
   execution: DistributionExecution,
   ledgerRate: number,
 ): { ledgerRate: number; bankRate: number } | null {
-  const bankRate = getBankDistributionRate(execution);
+  const bankRate = getExecutionBankRate(execution);
   if (bankRate == null) {
     return null;
   }
