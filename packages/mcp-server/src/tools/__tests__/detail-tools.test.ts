@@ -251,6 +251,9 @@ describe('getChargesTool', () => {
                 isin: 'US67066G1040',
                 symbol: 'NVDA',
                 engName: 'NVIDIA Corp',
+                // Differ from the reference row's, so assertions show which source won.
+                exchange: 'XNAS',
+                itemType: 'COMMON_STOCK',
               },
               details: {
                 key: '1177423',
@@ -305,6 +308,9 @@ describe('getChargesTool', () => {
       expect(sent.variables.includeSecurities).toBe(true);
       expect(sent.query).toContain('... on ForeignSecuritiesCharge');
       expect(sent.query).toContain('securities @include(if: $includeSecurities)');
+      const businessSelection = sent.query.match(/securityBusiness \{([^}]*)\}/)?.[1] ?? '';
+      expect(businessSelection).toContain('exchange');
+      expect(businessSelection).toContain('itemType');
     });
 
     it('reports the security, its business id and its executions', async () => {
@@ -329,6 +335,9 @@ describe('getChargesTool', () => {
         isin: 'US67066G1040',
         symbol: 'NVDA',
         name: 'NVIDIA Corp',
+        // The business wins over the reference row, as for symbol and name.
+        exchange: 'XNAS',
+        itemType: 'COMMON_STOCK',
         referenceFound: true,
       });
       expect(
@@ -354,12 +363,57 @@ describe('getChargesTool', () => {
         }
       ).charges[0]!.securities[0]!;
 
-      // A stale scrape must be visible rather than looking like an absent
-      // security: the key and the security business survive.
+      // A missing reference row (e.g. a position closed before the list was
+      // scraped) must be visible rather than looking like an absent security:
+      // the key survives and the descriptors come from the security business.
       expect(security.referenceFound).toBe(false);
+      expect(security.referenceAsOf).toBeNull();
       expect(security.securityKey).toBe('1177423');
       expect(security.symbol).toBe('NVDA');
+      expect(security.exchange).toBe('XNAS');
+      expect(security.itemType).toBe('COMMON_STOCK');
+    });
+
+    it('falls back to the reference row when there is no security business', async () => {
+      const fixture = structuredClone(securitiesChargeFixture);
+      (fixture.chargesByIDs[0]!.securities[0] as Record<string, unknown>).securityBusiness = null;
+
+      const result = await run(getChargesTool, clientReturning(fixture), authContext([B1]), {
+        chargeIds: ['sec-charge'],
+        includeSecurities: true,
+      });
+      const security = (
+        result.structuredContent as {
+          charges: Array<{ securities: Array<Record<string, unknown>> }>;
+        }
+      ).charges[0]!.securities[0]!;
+
+      expect(security.securityBusinessId).toBeNull();
+      expect(security.referenceFound).toBe(true);
+      expect(security.exchange).toBe('NASDAQ');
+      expect(security.itemType).toBe('STOCK');
+    });
+
+    it('reports null descriptors when neither source has the security', async () => {
+      const fixture = structuredClone(securitiesChargeFixture);
+      const raw = fixture.chargesByIDs[0]!.securities[0] as Record<string, unknown>;
+      raw.securityBusiness = null;
+      raw.details = null;
+
+      const result = await run(getChargesTool, clientReturning(fixture), authContext([B1]), {
+        chargeIds: ['sec-charge'],
+        includeSecurities: true,
+      });
+      const security = (
+        result.structuredContent as {
+          charges: Array<{ securities: Array<Record<string, unknown>> }>;
+        }
+      ).charges[0]!.securities[0]!;
+
+      expect(security.referenceFound).toBe(false);
+      expect(security.securityKey).toBe('1177423');
       expect(security.exchange).toBeNull();
+      expect(security.itemType).toBeNull();
     });
 
     it('distinguishes "no keys resolved" from "not a securities charge"', async () => {
