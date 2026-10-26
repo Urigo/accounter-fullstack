@@ -15,7 +15,6 @@ import type { SecurityExecutionRow } from '../../../../foreign-securities/types.
 import { MiscExpensesProvider } from '../../../../misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '../../../../transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../../../transactions/types.js';
-import { LedgerProvider } from '../../../providers/ledger.provider.js';
 import type { IGetLedgerRecordsByChargesIdsResult } from '../../../types.js';
 import { generateLedgerRecordsForForeignSecurities } from '../foreign-securities-ledger-generation.resolver.js';
 import {
@@ -42,8 +41,8 @@ vi.mock('../../../../charges/helpers/common.helper.js', async importOriginal => 
  *  - dividends and bond interest are credited to (local or foreign) income, with any tax withheld
  *    debited to a withholding-tax category;
  *  - a sale or a redemption credits the securities account with the FIFO purchase cost and books
- *    the difference as a price gain or loss; a second, local-currency entry books its rate PnL, so
- *    the securities account gives up the units at the rate it carries them at.
+ *    the difference as a price gain or loss; a second, local-currency entry books its rate PnL since
+ *    the purchase, ignoring any year-end revaluation the units were held over.
  *
  * All IDs, amounts, rates and dates below are made up.
  */
@@ -69,9 +68,7 @@ const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
   FOREIGN_BOND_WITHHOLDING_TAX: 'tax-category-foreign-bond-withholding-tax',
   LOCAL_BOND_WITHHOLDING_TAX: 'tax-category-local-bond-withholding-tax',
   FOREIGN_SECURITIES_SALE_GAIN: 'tax-category-foreign-securities-gain',
-  FOREIGN_SECURITIES_SALE_LOSS: 'tax-category-foreign-securities-loss',
-  FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: 'tax-category-foreign-securities-exchange-gain',
-  FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: 'tax-category-foreign-securities-exchange-loss',
+  FOREIGN_SECURITIES_EXCHANGE_RATE: 'tax-category-foreign-securities-exchange-rate',
   FINANCIAL_CONSULTANCY: 'tax-category-financial-consultancy',
 };
 
@@ -82,13 +79,15 @@ const LATER_DAY: TimelessDateString = '2025-03-19';
 const LATER_USD_RATE = 3.6;
 const LAST_YEAR_END: TimelessDateString = '2024-12-31';
 /**
- * The day's rate, a later day's, and the day's again at the last year-end, so lots held over it
- * carry no rate PnL
+ * The day's rate, a later day's, and the day's again on the older purchase days, so lots bought on
+ * them carry no rate PnL
  */
 const RATES: MockRate[] = [
   [Currency.Usd, DAY, USD_RATE],
   [Currency.Usd, LATER_DAY, LATER_USD_RATE],
-  [Currency.Usd, LAST_YEAR_END, USD_RATE],
+  [Currency.Usd, '2023-01-10', USD_RATE],
+  [Currency.Usd, '2023-06-10', USD_RATE],
+  [Currency.Usd, '2024-06-01', USD_RATE],
 ];
 
 const USD_LABEL = 'דולר ארה"ב';
@@ -277,8 +276,6 @@ type Scenario = {
    * to one dated on each buy's trade date and debited on its value date
    */
   acquisitionTransactions?: Record<string, Partial<IGetTransactionsByChargeIdsResult>>;
-  /** The days the securities account was revalued; defaults to the last year-end */
-  revaluationDates?: TimelessDateString[];
   /** Securities tax categories configured for the tenant; defaults to all of them */
   taxCategories?: Partial<Record<SecuritiesTaxCategoryKey, string>>;
   /** Executions with no cash leg that the charge books directly */
@@ -393,19 +390,6 @@ function makeInjector(scenario: Scenario) {
         makeFinancialEntitiesProvider(scenario.businessIds ?? [BANK_BUSINESS_ID]),
       ],
       [ForeignSecuritiesProvider, foreignSecuritiesProvider],
-      [
-        LedgerProvider,
-        {
-          getLedgerRecordsByFinancialEntityIdLoader: {
-            load: async (entityId: string) =>
-              (scenario.revaluationDates ?? [LAST_YEAR_END]).map(date => ({
-                description: 'Revaluation of account "Foreign securities"',
-                invoice_date: date,
-                debit_entity1: entityId,
-              })),
-          },
-        },
-      ],
     ]),
   );
 
@@ -595,10 +579,10 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
           creditForeign2: usd(100).foreign,
           creditLocal2: usd(100).local,
         },
-        // the lot is carried at 3.70: 1,000 × (3.50 − 3.70)
-        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 200),
+        // the lot was bought at 3.70: 1,000 × (3.50 − 3.70)
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_EXCHANGE_RATE, SECURITIES_USD, 200),
       ]);
-      // the securities account gives up what it carried the lot at: 1,000 × 3.70
+      // the securities account gives up the lot's purchase cost: 1,000 × 3.70
       const securitiesCredit = records
         .flatMap(record => [
           record.credit_entity1 === SECURITIES_USD ? Number(record.credit_local_amount1) : 0,
@@ -623,17 +607,17 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(records.map(summarize)).toEqual([
         {
           ...baseCashInRecord(900),
-          debit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_LOSS,
+          debit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
           debitForeign2: usd(100).foreign,
           debitLocal2: usd(100).local,
           creditForeign1: usd(1000).foreign,
           creditLocal1: usd(1000).local,
         },
-        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 200),
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_EXCHANGE_RATE, 200),
       ]);
     });
 
-    it('measures the rate PnL of a lot held over a year-end from that year-end', async () => {
+    it('measures the rate PnL of a lot held over a year-end from its purchase, ignoring the revaluation', async () => {
       const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
       const sale = saleExecution(10, 1100);
 
@@ -641,39 +625,29 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         transactions: [transaction],
         executions: { [transaction.id]: sale },
         history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
-        // the year-end revaluation carried the lot from its purchase rate to 3.60
+        // bought at 3.40, revalued to 3.60 at the year-end, sold at 3.50
         rates: [
           [Currency.Usd, DAY, USD_RATE],
+          [Currency.Usd, '2024-06-10', 3.4],
           [Currency.Usd, LAST_YEAR_END, 3.6],
         ],
       });
 
       expect(errors).toEqual([]);
       expect(records.map(summarize)[1]).toEqual(
-        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 100),
-      );
-    });
-
-    it('keeps a lot held over a year-end that was never revalued at the rate it was booked at', async () => {
-      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
-      const sale = saleExecution(10, 1100);
-
-      const { records, errors } = await generate({
-        transactions: [transaction],
-        executions: { [transaction.id]: sale },
-        history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
-        rates: [
-          [Currency.Usd, DAY, USD_RATE],
-          [Currency.Usd, '2024-06-10', 3.4],
-        ],
-        revaluationDates: [],
-      });
-
-      expect(errors).toEqual([]);
-      expect(records.map(summarize)[1]).toEqual(
         // 1,000 × (3.50 − 3.40)
-        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 100),
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_EXCHANGE_RATE, 100),
       );
+      expect(records[1]!.description).toBe('Exchange rate on sale: 10 × MOCK (US0000000001)');
+      // the securities account gives up the lot's purchase cost, 1,000 × 3.40, and keeps the
+      // year-end revaluation for the next one to reverse
+      const securitiesCredit = records
+        .flatMap(record => [
+          record.credit_entity1 === SECURITIES_USD ? Number(record.credit_local_amount1) : 0,
+          record.debit_entity1 === SECURITIES_USD ? -Number(record.debit_local_amount1) : 0,
+        ])
+        .reduce((sum, amount) => sum + amount, 0);
+      expect(securitiesCredit).toBeCloseTo(3400, 6);
     });
 
     it('carries a purchase at the rate of the cash movement it was booked from', async () => {
@@ -699,7 +673,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(errors).toEqual([]);
       expect(records.map(summarize)[1]).toEqual(
         // 1,000 × (3.50 − 3.72)
-        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 220),
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_EXCHANGE_RATE, SECURITIES_USD, 220),
       );
     });
 
@@ -721,7 +695,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         event_date: TRADED_ON,
       });
 
-      it('carries a lot bought before the year-end and debited after it at the year-end rate', async () => {
+      it('measures a lot bought before the year-end and debited after it from its purchase rate', async () => {
         const buyTransaction = straddling({ id: 'transaction-buy', amount: '-1000' });
         const saleTransaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
         const buy = buyExecution('execution-buy', TRADED_ON, 10, 1000);
@@ -744,21 +718,20 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         });
 
         expect([...bought.errors, ...sold.errors]).toEqual([]);
-        // the year-end revaluation counted the buy, by its trade day, and moved it to 3.60
+        // the buy is booked at its debit's rate, 3.80; the year-end revaluation to 3.60 is ignored
         expect(sold.records.map(summarize)[1]).toEqual(
-          // 1,000 × (3.50 − 3.60)
-          localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 100),
+          // 1,000 × (3.50 − 3.80)
+          localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_EXCHANGE_RATE, SECURITIES_USD, 300),
         );
-        // the buy is booked at 3.80, the year-end revaluation moves it to 3.60, and the sale
-        // gives up what that leaves
-        const revaluation = 1000 * (3.6 - 3.8);
+        // the buy and the sale net to nothing in the securities account on their own, whichever
+        // side of the year-end their dates fall, so what the revaluation booked is left for the next
+        // one to reverse
         const securitiesBalance =
-          (netByEntity([...bought.records, ...sold.records], 'local').get(SECURITIES_USD) ?? 0) +
-          revaluation;
+          netByEntity([...bought.records, ...sold.records], 'local').get(SECURITIES_USD) ?? 0;
         expect(securitiesBalance).toBeCloseTo(0, 6);
       });
 
-      it('does not carry a lot sold before the year-end and debited after it over that year-end', async () => {
+      it('measures a lot sold before the year-end and debited after it from its purchase rate', async () => {
         const transaction = straddling({ id: 'transaction-sale', amount: '1100' });
         const sale = saleExecution(10, 1100, { trade_date: TRADED_ON, value_date: DEBITED_ON });
 
@@ -770,10 +743,9 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         });
 
         expect(errors).toEqual([]);
-        // the year-end revaluation counted the units as gone, so they are still carried at 3.40
         expect(records.map(summarize)[1]).toEqual(
           // 1,000 × (3.80 − 3.40)
-          localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 400),
+          localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_EXCHANGE_RATE, 400),
         );
       });
     });
@@ -978,7 +950,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       // every tenant starts without it: the disposal must keep booking as it did
       const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
       const sale = saleExecution(10, 1100);
-      const { FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: _, ...taxCategories } = TAX_CATEGORIES;
+      const { FOREIGN_SECURITIES_EXCHANGE_RATE: _, ...taxCategories } = TAX_CATEGORIES;
 
       const { records, errors, missingSecuritiesTaxCategories } = await generate({
         transactions: [transaction],
@@ -1000,10 +972,10 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       ]);
       expect(errors).toEqual([
         expect.stringContaining(
-          'Missing securities tax category "Exchange rate loss on sale of foreign securities"',
+          'Missing securities tax category "Exchange rate on foreign securities"',
         ),
       ]);
-      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS']);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_SECURITIES_EXCHANGE_RATE']);
     });
 
     it('keeps the base entry of a sale with withheld tax', async () => {
@@ -2023,7 +1995,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(records.map(summarize)).toEqual([
         baseCashInRecord(1000),
         // 1,000 × (3.50 − 3.40)
-        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 100),
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_EXCHANGE_RATE, 100),
       ]);
     });
 
@@ -2041,7 +2013,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       expect(records.map(summarize)).toEqual([
         {
           ...baseCashInRecord(1000),
-          debit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_LOSS,
+          debit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
           debitForeign2: usd(200).foreign,
           debitLocal2: usd(200).local,
           creditForeign1: usd(1200).foreign,
