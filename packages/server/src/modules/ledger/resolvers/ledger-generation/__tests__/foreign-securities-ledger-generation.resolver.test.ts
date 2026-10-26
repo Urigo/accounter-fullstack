@@ -72,6 +72,7 @@ const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
   FOREIGN_SECURITIES_SALE_LOSS: 'tax-category-foreign-securities-loss',
   FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: 'tax-category-foreign-securities-exchange-gain',
   FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: 'tax-category-foreign-securities-exchange-loss',
+  FINANCIAL_CONSULTANCY: 'tax-category-financial-consultancy',
 };
 
 const DAY: TimelessDateString = '2025-03-12';

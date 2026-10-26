@@ -9,6 +9,7 @@ import { CorporateTaxesProvider } from '../../corporate-taxes/providers/corporat
 import { AdminBusinessesProvider } from '../../financial-entities/providers/admin-businesses.provider.js';
 import {
   collectHalfDisposals,
+  collectHalfSecuritiesExpenses,
   collectHalfSecuritiesIncome,
   type SemiAnnualIssue,
 } from '../helpers/securities-semi-annual-report-data.helper.js';
@@ -61,13 +62,24 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
       const localCurrency = ownerAdminContext.defaultLocalCurrency;
 
       const firstHalf = half === 'H2' ? getSemiAnnualPeriod(year, 'H1') : null;
-      const [disposals, firstHalfDisposals, securitiesIncome] = await Promise.all([
-        collectHalfDisposals(injector, { ownerId, period, localCurrency }),
-        firstHalf
-          ? collectHalfDisposals(injector, { ownerId, period: firstHalf, localCurrency })
-          : null,
-        collectHalfSecuritiesIncome(injector, { ownerId, period, adminContext: ownerAdminContext }),
-      ]);
+      const adminContext = ownerAdminContext;
+      const [disposals, securitiesIncome, securitiesExpenses, firstHalfDisposals, firstHalfIncome] =
+        await Promise.all([
+          collectHalfDisposals(injector, { ownerId, period, localCurrency }),
+          collectHalfSecuritiesIncome(injector, { ownerId, period, adminContext }),
+          collectHalfSecuritiesExpenses(injector, { ownerId, period, adminContext }),
+          firstHalf
+            ? collectHalfDisposals(injector, { ownerId, period: firstHalf, localCurrency })
+            : null,
+          firstHalf
+            ? collectHalfSecuritiesIncome(injector, { ownerId, period: firstHalf, adminContext })
+            : null,
+        ]);
+      // whole shekels per category, so the categories add up to the line
+      const expenses = securitiesExpenses.expenses.map(expense => ({
+        ...expense,
+        amount: Math.round(expense.amount),
+      }));
 
       // the regular rate, as on "special" income: a reduced preferred-enterprise rate does not
       // reach capital gains or passive income
@@ -81,8 +93,12 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
         taxRate: taxRate != null && Number.isFinite(taxRate) ? taxRate : null,
         priorYearsLosses: priorYearsLosses ?? 0,
         sales: disposals.sales,
-        firstHalfSales: firstHalfDisposals?.sales,
         income: securitiesIncome.income,
+        expenses: expenses.reduce((total, expense) => total + expense.amount, 0),
+        firstHalf:
+          firstHalfDisposals && firstHalfIncome
+            ? { sales: firstHalfDisposals.sales, income: firstHalfIncome.income }
+            : undefined,
       });
 
       const issues: SemiAnnualIssue[] = [];
@@ -94,15 +110,17 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
           message: `No corporate tax rate is set for ${period.fromDate}, so no tax or advance is worked out`,
         });
       }
-      issues.push(...disposals.issues, ...securitiesIncome.issues);
-      if (firstHalfDisposals?.issues.length) {
-        issues.push(
-          ...firstHalfDisposals.issues.map(issue => ({
+      issues.push(
+        ...securitiesExpenses.issues,
+        ...disposals.issues,
+        ...securitiesIncome.issues,
+        ...[...(firstHalfDisposals?.issues ?? []), ...(firstHalfIncome?.issues ?? [])].map(
+          issue => ({
             ...issue,
             message: `First half (losses carried to this one): ${issue.message}`,
-          })),
-        );
-      }
+          }),
+        ),
+      );
 
       const id = `securities-semi-annual:${ownerId}:${year}:${half}:${priorYearsLosses ?? 0}`;
       const int = (amount: number) => formatFinancialIntAmount(amount, localCurrency);
@@ -138,9 +156,24 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
           foreignTaxWithheld: int(bucket.foreignTaxWithheld),
           israeliTaxWithheld: int(bucket.israeliTaxWithheld),
           taxable: bucket.taxable,
+          capitalLossOffset: int(bucket.capitalLossOffset),
+          expensesDeducted: int(bucket.expensesDeducted),
           tax: intOrNull(bucket.tax),
           foreignTaxCredit: intOrNull(bucket.foreignTaxCredit),
         })),
+        capitalLossOffsetAgainstIncome: int(declaration.capitalLossOffsetAgainstIncome),
+        securitiesExpenses: int(declaration.securitiesExpenses),
+        expenseSummary: expenses.map(expense => ({
+          id: `${id}:expense:${expense.key}`,
+          key: expense.key,
+          taxCategoryId: expense.taxCategoryId,
+          name: expense.name,
+          amount: int(expense.amount),
+        })),
+        expensesDeductedFromGains: int(declaration.expensesDeductedFromGains),
+        expensesDeductedFromIncome: int(declaration.expensesDeductedFromIncome),
+        unusedExpenses: int(declaration.unusedExpenses),
+        taxableCapitalGain: int(declaration.taxableCapitalGain),
         capitalGainsTax: intOrNull(declaration.capitalGainsTax),
         dividendsTax: intOrNull(declaration.dividendsTax),
         interestTax: intOrNull(declaration.interestTax),
@@ -185,6 +218,7 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
           message: issue.message,
           executionId: issue.executionId ?? null,
           chargeId: issue.chargeId ?? null,
+          missingTaxCategory: issue.missingTaxCategory ?? null,
         })),
       };
     },

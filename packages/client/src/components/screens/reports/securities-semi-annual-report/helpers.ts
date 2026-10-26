@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   SecuritiesIncomeKind,
   SecuritiesIncomeLocality,
+  SecuritiesTaxCategoryKey,
   SemiAnnualAdvanceNote,
   YearHalf,
 } from '../../../../gql/graphql.js';
@@ -67,32 +68,93 @@ export const INCOME_LOCALITY_LABELS: Record<SecuritiesIncomeLocality, { he: stri
     [SecuritiesIncomeLocality.Foreign]: { he: 'זר', en: 'Foreign' },
   };
 
+/** The securities expense tax categories in Hebrew; the English is the category's own name */
+export const EXPENSE_CATEGORY_LABELS: Partial<Record<SecuritiesTaxCategoryKey, string>> = {
+  [SecuritiesTaxCategoryKey.ForeignSecuritiesFees]: 'עמלות ניירות ערך',
+  [SecuritiesTaxCategoryKey.FinancialConsultancy]: 'ייעוץ פיננסי',
+};
+
+/** What a note's wording needs from the report, in whole shekels */
+export type AdvanceNoteFigures = {
+  /** The half's net capital loss, as a positive amount */
+  periodCapitalLoss: number;
+  /** The year's capital loss offset against the half's dividends and interest */
+  capitalLossOffset: number;
+  /** Null when there is no tax rate */
+  taxLiability: number | null;
+};
+
+/** Keeps an amount left-to-right inside a Hebrew sentence */
+const isolated = (amount: number) => `\u2066${formatWholeShekels(amount)}\u2069`;
+
 /**
  * Why there is no advance, or a lower one, in the words the accountant sends. The carried-forward
- * sentence is hers verbatim.
+ * sentence is hers verbatim; a capital loss is spelled out with its amount, and what it offset.
  */
-export const ADVANCE_NOTE_TEXT: Record<SemiAnnualAdvanceNote, { he: string; en: string }> = {
-  [SemiAnnualAdvanceNote.CapitalGainsOffsetByCarriedForwardLosses]: {
-    he: 'הרווחים קוזזו מול הפסדים מועברים ולכן אין חבות מס',
-    en: 'The gains were offset against carried-forward losses, so there is no tax liability',
-  },
-  [SemiAnnualAdvanceNote.CapitalLossInPeriod]: {
-    he: 'בתקופה נוצר הפסד הון ממכירת ניירות ערך ולכן אין חבות מס בגינה',
-    en: 'The sales of the period ended in a capital loss, so they carry no tax liability',
-  },
-  [SemiAnnualAdvanceNote.IncomeTaxCoveredByForeignTax]: {
-    he: 'המס הזר ששולם על הדיבידנד והריבית מקוזז כנגד המס בישראל',
-    en: 'The foreign tax paid on the dividends and interest is credited against the Israeli tax',
-  },
-  [SemiAnnualAdvanceNote.LiabilityCoveredByWithholding]: {
-    he: 'המס שנוכה במקור מכסה את חבות המס ולכן אין מקדמה לתשלום',
-    en: 'The tax withheld at source covers the liability, so there is no advance to pay',
-  },
-  [SemiAnnualAdvanceNote.NoTaxableEvents]: {
-    he: 'לא היו בתקופה מכירות, דיבידנדים או ריבית',
-    en: 'There were no sales, dividends or interest in the period',
-  },
-};
+export function advanceNoteText(
+  note: SemiAnnualAdvanceNote,
+  figures: AdvanceNoteFigures,
+): { he: string; en: string } {
+  switch (note) {
+    case SemiAnnualAdvanceNote.CapitalGainsOffsetByCarriedForwardLosses:
+      return {
+        he: 'הרווחים קוזזו מול הפסדים מועברים ולכן אין חבות מס',
+        en: 'The gains were offset against carried-forward losses, so there is no tax liability',
+      };
+    case SemiAnnualAdvanceNote.CapitalLossInPeriod: {
+      const { periodCapitalLoss, capitalLossOffset, taxLiability } = figures;
+      const noLiability = taxLiability === 0;
+      return {
+        he:
+          `בתקופה נוצר הפסד הון ממכירת ניירות ערך בסך ${isolated(periodCapitalLoss)}` +
+          (capitalLossOffset > 0
+            ? `, שקוזז כנגד הכנסות הדיבידנד והריבית בסך ${isolated(capitalLossOffset)} (סעיף 92(א)(4))`
+            : '') +
+          (noLiability ? ', ולכן אין חבות מס' : ', ולכן אין חבות מס בגין המכירות'),
+        en:
+          `The sales of the period ended in a capital loss of ${formatWholeShekels(periodCapitalLoss)}` +
+          (capitalLossOffset > 0
+            ? `, offset against ${formatWholeShekels(capitalLossOffset)} of dividend and interest income (s.92(a)(4))`
+            : '') +
+          (noLiability
+            ? ', so there is no tax liability'
+            : ', so the sales carry no tax liability'),
+      };
+    }
+    case SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome:
+      return {
+        he: `הפסד הון מהמחצית הראשונה של השנה בסך ${isolated(figures.capitalLossOffset)} קוזז כנגד הכנסות הדיבידנד והריבית (סעיף 92(א)(4))`,
+        en: `A capital loss of ${formatWholeShekels(figures.capitalLossOffset)} from the first half of the year was offset against the dividend and interest income (s.92(a)(4))`,
+      };
+    case SemiAnnualAdvanceNote.IncomeTaxCoveredByForeignTax:
+      return {
+        he: 'המס הזר ששולם על הדיבידנד והריבית מקוזז כנגד המס בישראל',
+        en: 'The foreign tax paid on the dividends and interest is credited against the Israeli tax',
+      };
+    case SemiAnnualAdvanceNote.LiabilityCoveredByWithholding:
+      return {
+        he: 'המס שנוכה במקור מכסה את חבות המס ולכן אין מקדמה לתשלום',
+        en: 'The tax withheld at source covers the liability, so there is no advance to pay',
+      };
+    case SemiAnnualAdvanceNote.NoTaxableEvents:
+      return {
+        he: 'לא היו בתקופה מכירות, דיבידנדים, ריבית או הוצאות',
+        en: 'There were no sales, dividends, interest or expenses in the period',
+      };
+  }
+}
+
+/**
+ * The notes to print under the advance: a capital loss of the half already says what it offset,
+ * so the offset is only a note of its own when the loss is the first half's.
+ */
+export function advanceNotesToShow(
+  notes: readonly SemiAnnualAdvanceNote[],
+): SemiAnnualAdvanceNote[] {
+  return notes.includes(SemiAnnualAdvanceNote.CapitalLossInPeriod)
+    ? notes.filter(note => note !== SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome)
+    : [...notes];
+}
 
 /** `2026-06-30` → `30/6/2026`, as the accountant writes dates */
 export function formatShortDate(date: string): string {

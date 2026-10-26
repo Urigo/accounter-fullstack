@@ -68,6 +68,9 @@ const SECURITIES_TAX_CATEGORIES = {
     field: 'foreignSecuritiesSaleExchangeLoss',
     label: 'Exchange rate loss on sale of foreign securities',
   },
+  // not booked by the securities ledger: charges are tagged with it by hand. The semi-annual
+  // securities report counts it, with the fees, as the securities expenses
+  FINANCIAL_CONSULTANCY: { field: 'financialConsultancy', label: 'Financial consultancy' },
 } as const satisfies Record<SecuritiesTaxCategoryKey, { field: string; label: string }>;
 
 export const SECURITIES_TAX_CATEGORY_KEYS = Object.keys(

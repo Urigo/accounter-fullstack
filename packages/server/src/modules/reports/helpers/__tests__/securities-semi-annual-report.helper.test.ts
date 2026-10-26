@@ -41,13 +41,22 @@ const income = (
     ...overrides,
   }) satisfies SemiAnnualIncomeFigures;
 
-const declare = (params: Partial<Parameters<typeof computeSemiAnnualDeclaration>[0]>) =>
+const declare = ({
+  firstHalfSales,
+  firstHalfIncome,
+  ...params
+}: Partial<Parameters<typeof computeSemiAnnualDeclaration>[0]> & {
+  firstHalfSales?: SemiAnnualSaleFigures[];
+  firstHalfIncome?: SemiAnnualIncomeFigures[];
+}) =>
   computeSemiAnnualDeclaration({
     half: 'H1',
     taxRate: RATE,
     priorYearsLosses: 0,
     sales: [],
     income: [],
+    expenses: 0,
+    firstHalf: { sales: firstHalfSales ?? [], income: firstHalfIncome ?? [] },
     ...params,
   });
 
@@ -203,6 +212,142 @@ describe('computeSemiAnnualDeclaration', () => {
 
       expect(declaration.firstHalfNetRealCapitalGain).toBeNull();
       expect(declaration.lossesCarriedForward).toBe(0);
+    });
+  });
+
+  describe('capital loss against dividends and interest (s.92(a)(4))', () => {
+    it('offsets the whole income, leaving no liability', () => {
+      const declaration = declare({
+        sales: [sale(-4000)],
+        income: [income('INTEREST', 'LOCAL', 3000)],
+      });
+
+      expect(declaration.capitalLossOffsetAgainstIncome).toBe(3000);
+      expect(bucket(declaration, 'INTEREST', 'LOCAL').capitalLossOffset).toBe(3000);
+      expect(declaration.interestTax).toBe(0);
+      expect(declaration.taxLiability).toBe(0);
+      expect(declaration.taxAdvance).toBe(0);
+      expect(declaration.advanceNotes).toEqual([
+        'CAPITAL_LOSS_IN_PERIOD',
+        'CAPITAL_LOSS_OFFSET_AGAINST_INCOME',
+      ]);
+    });
+
+    it('offsets part of the income, taxing the rest', () => {
+      const declaration = declare({
+        sales: [sale(-1000)],
+        income: [income('INTEREST', 'LOCAL', 3000)],
+      });
+
+      expect(declaration.capitalLossOffsetAgainstIncome).toBe(1000);
+      expect(declaration.interestTax).toBe(460);
+      expect(declaration.taxAdvance).toBe(460);
+    });
+
+    it('offsets the income with the least foreign tax first, keeping the foreign tax credit', () => {
+      const declaration = declare({
+        sales: [sale(-1000)],
+        income: [
+          income('DIVIDEND', 'FOREIGN', 1000, { foreignTaxWithheld: 250 }),
+          income('INTEREST', 'LOCAL', 1000),
+        ],
+      });
+
+      expect(bucket(declaration, 'INTEREST', 'LOCAL').capitalLossOffset).toBe(1000);
+      expect(bucket(declaration, 'DIVIDEND', 'FOREIGN').capitalLossOffset).toBe(0);
+      expect(declaration.foreignTaxCredit).toBe(230);
+      expect(declaration.taxLiability).toBe(0);
+    });
+
+    it('does not offset exempt local dividends', () => {
+      const declaration = declare({
+        sales: [sale(-1000)],
+        income: [income('DIVIDEND', 'LOCAL', 5000)],
+      });
+
+      expect(declaration.capitalLossOffsetAgainstIncome).toBe(0);
+    });
+
+    it("never offsets the income with prior years' losses", () => {
+      const declaration = declare({
+        priorYearsLosses: 5000,
+        income: [income('INTEREST', 'LOCAL', 1000)],
+      });
+
+      expect(declaration.capitalLossOffsetAgainstIncome).toBe(0);
+      expect(declaration.interestTax).toBe(230);
+    });
+
+    it("carries to the second half only what the first half's income left of its loss", () => {
+      const declaration = declare({
+        half: 'H2',
+        firstHalfSales: [sale(-3000)],
+        firstHalfIncome: [income('INTEREST', 'LOCAL', 1000)],
+        sales: [sale(5000)],
+      });
+
+      expect(declaration.lossesCarriedForward).toBe(2000);
+      expect(declaration.capitalGainsTax).toBe(690);
+    });
+
+    it("offsets the second half's income with what is left of the first half's loss", () => {
+      const declaration = declare({
+        half: 'H2',
+        firstHalfSales: [sale(-3000)],
+        income: [income('INTEREST', 'LOCAL', 1000)],
+      });
+
+      expect(declaration.capitalLossOffsetAgainstIncome).toBe(1000);
+      expect(declaration.taxLiability).toBe(0);
+      expect(declaration.advanceNotes).toEqual(['CAPITAL_LOSS_OFFSET_AGAINST_INCOME']);
+    });
+  });
+
+  describe('securities expenses', () => {
+    it('come off the capital gain', () => {
+      const declaration = declare({ sales: [sale(10_000)], expenses: 2000 });
+
+      expect(declaration.securitiesExpenses).toBe(2000);
+      expect(declaration.expensesDeductedFromGains).toBe(2000);
+      expect(declaration.taxableCapitalGain).toBe(8000);
+      expect(declaration.capitalGainsTax).toBe(1840);
+    });
+
+    it('come off the income once the gain is used up', () => {
+      const declaration = declare({
+        sales: [sale(1000)],
+        income: [income('INTEREST', 'LOCAL', 1000)],
+        expenses: 1500,
+      });
+
+      expect(declaration.capitalGainsTax).toBe(0);
+      expect(declaration.expensesDeductedFromIncome).toBe(500);
+      expect(declaration.interestTax).toBe(115);
+    });
+
+    it('leave what exceeds the taxable income for the annual return', () => {
+      const declaration = declare({
+        income: [income('INTEREST', 'LOCAL', 1000), income('DIVIDEND', 'LOCAL', 9000)],
+        expenses: 5000,
+      });
+
+      expect(declaration.unusedExpenses).toBe(4000);
+      expect(declaration.taxLiability).toBe(0);
+    });
+
+    it('do not spend carried-forward losses, which come off the gain first', () => {
+      const declaration = declare({
+        sales: [sale(10_000)],
+        priorYearsLosses: 4000,
+        expenses: 2000,
+      });
+
+      expect(declaration.taxableCapitalGain).toBe(4000);
+      expect(declaration.capitalGainsTax).toBe(920);
+    });
+
+    it('count as an event of the half', () => {
+      expect(declare({ expenses: 100 }).advanceNotes).toEqual([]);
     });
   });
 
