@@ -37,7 +37,7 @@ __metadata:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch"
     "@types/pg": "npm:8.23.1"
     pg-promise: "npm:12.7.1"
-    slonik: "npm:49.10.10"
+    slonik: "npm:49.12.0"
     tslib: "npm:2.8.1"
     zod: "npm:4.6.7"
   languageName: unknown
@@ -380,7 +380,7 @@ __metadata:
     playwright: "npm:1.64.1"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.1.3"
-    slonik: "npm:49.10.10"
+    slonik: "npm:49.12.0"
     strip-indent: "npm:4.1.1"
     tsx: "npm:4.23.15"
     typescript: "npm:6.0.3"
@@ -8856,7 +8856,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/driver@npm:^49.10.10":
+"@slonik/driver@npm:^49.10.10, @slonik/driver@npm:^49.12.0":
   version: 49.12.0
   resolution: "@slonik/driver@npm:49.12.0"
   dependencies:
@@ -8899,6 +8899,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@slonik/pg-driver@npm:^49.12.0":
+  version: 49.12.0
+  resolution: "@slonik/pg-driver@npm:49.12.0"
+  dependencies:
+    "@slonik/driver": "npm:^49.12.0"
+    "@slonik/errors": "npm:^49.12.0"
+    "@slonik/sql-tag": "npm:^49.12.0"
+    "@slonik/types": "npm:^49.12.0"
+    "@slonik/utilities": "npm:^49.12.0"
+    pg: "npm:^8.22.0"
+    pg-query-stream: "npm:^4.12.0"
+    pg-types: "npm:^4.1.0"
+    postgres-array: "npm:^3.0.4"
+  peerDependencies:
+    zod: ^3.25 || ^4
+  checksum: 10c0/712c3d39da810632397c4ad8ccab2a2bf67a1264cc0d0ad198e96581d50e60057baa2cc2bdeb52f3ca9014e54cf6fb8123995079032747dcd585faed1fc229c0
+  languageName: node
+  linkType: hard
+
 "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch":
   version: 49.10.10
   resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch::version=49.10.10&hash=fa0108"
@@ -8918,7 +8937,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/sql-tag@npm:^49.10.10":
+"@slonik/sql-tag@npm:^49.10.10, @slonik/sql-tag@npm:^49.12.0":
   version: 49.12.0
   resolution: "@slonik/sql-tag@npm:49.12.0"
   dependencies:
@@ -23594,16 +23613,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slonik@npm:49.10.10":
-  version: 49.10.10
-  resolution: "slonik@npm:49.10.10"
+"slonik@npm:49.12.0":
+  version: 49.12.0
+  resolution: "slonik@npm:49.12.0"
   dependencies:
     "@opentelemetry/api": "npm:^1.9.0"
-    "@slonik/driver": "npm:^49.10.10"
-    "@slonik/errors": "npm:^49.10.10"
-    "@slonik/pg-driver": "npm:^49.10.10"
-    "@slonik/sql-tag": "npm:^49.10.10"
-    "@slonik/utilities": "npm:^49.10.10"
+    "@slonik/driver": "npm:^49.12.0"
+    "@slonik/errors": "npm:^49.12.0"
+    "@slonik/pg-driver": "npm:^49.12.0"
+    "@slonik/sql-tag": "npm:^49.12.0"
+    "@slonik/utilities": "npm:^49.12.0"
     "@standard-schema/spec": "npm:^1.0.0"
     iso8601-duration: "npm:^2.1.3"
     p-queue: "npm:^9.3.0"
@@ -23612,7 +23631,7 @@ __metadata:
     serialize-error: "npm:^12.0.0"
     strict-event-emitter-types: "npm:^2.0.0"
     zod: "npm:^4.3.6"
-  checksum: 10c0/8909aa4066eb2b329a8bc7fedf23d137ad84fdfcb82d3bcab8b611027448dee5146a296f016652514808fe0423206f9df88da9fe95a3c74e4ab97b1c3672f972
+  checksum: 10c0/e1af59af442132f12e708ab7ee46db25ea6cdec546e91a354d92f32ab0f6802974d75f3166dacc7993cb7a225b5411736b7e9cd65c07b43381026d31ed84958c
   languageName: node
   linkType: hard
 
