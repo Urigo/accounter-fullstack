@@ -231,6 +231,8 @@ type Scenario = {
    * which the owner-scoped lookups must not book to
    */
   otherBusinessAccountByNumber?: boolean;
+  /** Entities the balance check treats as businesses; defaults to the bank only */
+  businessIds?: string[];
 };
 
 function makeInjector(scenario: Scenario) {
@@ -307,7 +309,10 @@ function makeInjector(scenario: Scenario) {
         },
       ],
       [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
-      [FinancialEntitiesProvider, makeFinancialEntitiesProvider([BANK_BUSINESS_ID])],
+      [
+        FinancialEntitiesProvider,
+        makeFinancialEntitiesProvider(scenario.businessIds ?? [BANK_BUSINESS_ID]),
+      ],
       [ForeignSecuritiesProvider, foreignSecuritiesProvider],
     ]),
   );
@@ -469,6 +474,64 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
 
       expect(errors).toEqual([]);
       expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+    });
+  });
+
+  describe('a charge spanning several securities', () => {
+    it('lets every bought security keep its holding balance', async () => {
+      // two security businesses that are not internal wallets, so each trade is booked against
+      // its own security rather than the securities account
+      const alpha = 'business-security-alpha';
+      const beta = 'business-security-beta';
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+      const buyAlpha = buildTransaction({ id: 'transaction-buy-alpha', amount: '-1000', businessId: alpha });
+      const buyBeta = buildTransaction({ id: 'transaction-buy-beta', amount: '-1000', businessId: beta });
+
+      const { records, errors } = await generate({
+        transactions: [buyBeta, buyAlpha],
+        executions: {
+          [buyAlpha.id]: buyExecution('execution-buy-alpha', DAY, 10, 1000),
+          [buyBeta.id]: buyExecution('execution-buy-beta', DAY, 10, 1000),
+        },
+        businessIds: [BANK_BUSINESS_ID, alpha, beta],
+      });
+
+      expect(errors).toEqual([]);
+      // in the transactions' order, not the order their lookups happened to finish in
+      expect(records.map(record => record.debit_entity1)).toEqual([beta, alpha]);
+    });
+
+    it('reports a security sold beyond what the charge bought', async () => {
+      const alpha = 'business-security-alpha';
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+      const buyAlpha = buildTransaction({
+        id: 'transaction-buy-alpha',
+        amount: '-1000',
+        businessId: alpha,
+      });
+      const sellAlpha = buildTransaction({
+        id: 'transaction-sell-alpha',
+        amount: '1500',
+        businessId: alpha,
+      });
+
+      const { errors } = await generate({
+        transactions: [buyAlpha, sellAlpha],
+        executions: {
+          [buyAlpha.id]: buyExecution('execution-buy-alpha', DAY, 10, 1000),
+          [sellAlpha.id]: buildExecution({
+            id: 'execution-sell-alpha',
+            trade_type: TRADE_TYPES.sell,
+            transaction_type: TRADE_TYPES.sell,
+            nv: '10',
+            net_value_trade_currency: '1500',
+          }),
+        },
+        businessIds: [BANK_BUSINESS_ID, alpha],
+      });
+
+      // it took part in a buy, but its balance across the charge is a credit, not a holding
+      expect(errors).toEqual([expect.stringContaining(`Business "${alpha}" is unbalanced`)]);
     });
   });
 

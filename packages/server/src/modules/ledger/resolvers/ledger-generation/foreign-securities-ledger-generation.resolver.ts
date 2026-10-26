@@ -496,7 +496,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       throw new GraphQLError('Foreign securities account is missing');
     }
 
-    const entriesPromises: Array<Promise<void>> = [];
+    const entriesPromises: Array<Promise<unknown>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
     const distributionLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
@@ -555,6 +555,8 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       return matchedPayments.find(payment => payment.execution === original)?.transaction ?? null;
     };
 
+    // Each resolves to its entry rather than pushing it, so the entries keep the transactions'
+    // order however the lookups interleave.
     const mainTransactionsPromises = mainTransactions.map(async transaction => {
       let baseEntry: StrictLedgerProto;
       try {
@@ -586,8 +588,8 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
         errors,
         missingTaxCategories,
       });
-      financialAccountLedgerEntries.push(ledgerEntry);
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
+      return ledgerEntry;
     });
 
     // create a ledger record for fee transactions
@@ -718,6 +720,12 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     await Promise.all(entriesPromises);
 
+    for (const entry of await Promise.all(mainTransactionsPromises)) {
+      if (entry) {
+        financialAccountLedgerEntries.push(entry);
+      }
+    }
+
     // booked concurrently; keep the charge's own order so regenerations match
     const distributionOrder = new Map(
       distributions.map((execution, index) => [execution.id, index]),
@@ -736,12 +744,16 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
-    const allowedUnbalancedBusinesses = new Set<string>();
-    // a charge of fees only has no main entry
-    const mainLedgerEntry = financialAccountLedgerEntries[0];
-    if (mainLedgerEntry && !mainLedgerEntry.isCreditorCounterparty) {
-      allowedUnbalancedBusinesses.add(mainLedgerEntry.debitAccountID1);
-    }
+    // A bought security keeps its balance as a holding, and a charge can buy more than one. Allow
+    // each account a main entry bought into, but only while its balance across the whole charge
+    // is still a debit (debits are negative in the balance map): a security sold beyond what the
+    // charge bought is reported. A charge of fees only has no main entry.
+    const allowedUnbalancedBusinesses = new Set<string>(
+      financialAccountLedgerEntries
+        .filter(entry => !entry.isCreditorCounterparty)
+        .map(entry => entry.debitAccountID1)
+        .filter(accountId => (ledgerBalance.get(accountId)?.amount ?? 0) < 0),
+    );
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
       injector,
       ledgerBalance,

@@ -59,21 +59,24 @@ const computeChargeValidation = async (
 ): Promise<ResolversTypes['ValidationData']> => {
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const [chargeType, { mainBusinessId }, taxCategoryId] = await Promise.all([
-    getChargeType(charge, injector),
-    getChargeBusinesses(charge, injector),
-    getChargeTaxCategoryId(charge, injector),
-  ]);
+  const [chargeType, { mainBusinessId, spansSeveralSecurities }, taxCategoryId] = await Promise.all(
+    [
+      getChargeType(charge, injector),
+      getChargeBusinesses(charge, injector),
+      getChargeTaxCategoryId(charge, injector),
+    ],
+  );
 
   const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const isGeneralFees =
     taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
 
-  // A securities charge can book executions with no cash leg (stock distributions), which have
-  // neither a transaction nor a counterparty to show. Only the requirement to have them is waived:
-  // whatever transactions and counterparty such a charge does hold (say, a merged-in commission
-  // fee) are still validated.
+  // A securities charge can book executions with no cash leg (stock distributions), which have no
+  // transaction to show. Their counterparty is the distributed security's business (see
+  // `getChargeBusinesses`), but that business may not exist yet. Only the requirement to have them
+  // is waived: whatever transactions and counterparty such a charge does hold (say, a merged-in
+  // commission fee) are still validated.
   const booksSecurityExecutions =
     chargeType === ChargeTypeEnum.ForeignSecurities &&
     (
@@ -81,6 +84,13 @@ const computeChargeValidation = async (
         .get(SecurityExecutionChargesProvider)
         .linkedExecutionIdsByChargeIdLoader.load(charge.id)
     ).length > 0;
+
+  // A securities charge can span several securities (say, a switch selling one fund to buy
+  // another). Each trade is booked against its own security, so having no single counterparty is
+  // a valid state — as long as every candidate is a traded security. Any other candidate,
+  // including the general securities business of an unrecognized trade, stays flagged.
+  const isMultiSecurityCharge =
+    chargeType === ChargeTypeEnum.ForeignSecurities && spansSeveralSecurities;
 
   // check for consistent counterparty business
   const businessNotRequired =
@@ -103,7 +113,10 @@ const computeChargeValidation = async (
   ]);
 
   const businessIsFine =
-    businessNotRequired || !!business || (booksSecurityExecutions && !mainBusinessId);
+    businessNotRequired ||
+    !!business ||
+    (booksSecurityExecutions && !mainBusinessId) ||
+    isMultiSecurityCharge;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }

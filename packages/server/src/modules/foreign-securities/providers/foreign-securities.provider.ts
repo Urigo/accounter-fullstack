@@ -932,6 +932,7 @@ export class ForeignSecuritiesProvider {
       );
       return {
         id: `${chargeId}-${key}`,
+        chargeId,
         ownerId,
         securityKey: key,
         // loadMany surfaces a rejected key as an Error rather than throwing; treat it
