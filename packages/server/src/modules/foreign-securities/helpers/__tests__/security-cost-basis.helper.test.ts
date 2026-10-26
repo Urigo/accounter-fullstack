@@ -22,6 +22,7 @@ function execution(overrides: Partial<CostBasisExecution> & Pick<CostBasisExecut
   return {
     trade_date: '2024-01-10',
     trade_type: 'קניה',
+    security: '1111111',
     nv: '10',
     trade_currency: USD_LABEL,
     settlement_currency: USD_LABEL,
@@ -159,6 +160,50 @@ describe('calculateFifoCostBasis', () => {
     );
 
     expect(result.costForeign).toBeCloseTo(1000, 6);
+  });
+
+  it('drops a cancelled sale together with its cancellation, so it takes no lot', () => {
+    const target = sell('s2', '2025-03-01', 10, 1300);
+    const cancelled = sell('s1', '2024-06-01', 10, 1200);
+    const cancellation = {
+      ...sell('s1-cancel', '2024-06-03', 10, -1200),
+      is_cancel_transaction: 'כן',
+    };
+
+    const result = calculateFifoCostBasis(
+      [
+        buy('b1', '2024-01-10', 10, 1000),
+        buy('b2', '2024-02-10', 10, 1100),
+        cancelled,
+        cancellation,
+        target,
+      ],
+      target,
+      Currency.Usd,
+    );
+
+    // the cancelled sale never happened, so the oldest lot is still there to draw on
+    expect(result.lots.map(lot => lot.executionId)).toEqual(['b1']);
+    expect(result.costForeign).toBeCloseTo(1000, 6);
+    expect(result.openingPositionUnknown).toBe(false);
+  });
+
+  it('drops a cancelled buy together with its cancellation, so it adds no lot', () => {
+    const target = sell('s1', '2025-03-01', 10, 1300);
+
+    const result = calculateFifoCostBasis(
+      [
+        buy('b1', '2024-01-10', 10, 900),
+        { ...buy('b1-cancel', '2024-01-11', 10, -900), is_cancel_transaction: 'כן' },
+        buy('b2', '2024-02-10', 10, 1100),
+        target,
+      ],
+      target,
+      Currency.Usd,
+    );
+
+    expect(result.lots.map(lot => lot.executionId)).toEqual(['b2']);
+    expect(result.costForeign).toBeCloseTo(1100, 6);
   });
 
   it('ignores cash-only actions such as dividends and interest', () => {
