@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 
 function parseDiff(diff) {
-  /** @type {Map<string, Set<number>>} */
+  /** @type {Map<string, Map<number, string>>} */
   const files = new Map();
   let current = null;
   let newLine = 0;
@@ -24,7 +24,7 @@ function parseDiff(diff) {
     if (!inHunk && raw.startsWith('+++ ')) {
       const path = raw.slice(4).trim();
       current = path === '/dev/null' ? null : path.replace(/^b\//, '');
-      if (current && !files.has(current)) files.set(current, new Set());
+      if (current && !files.has(current)) files.set(current, new Map());
       continue;
     }
     const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(raw);
@@ -35,7 +35,7 @@ function parseDiff(diff) {
     }
     if (!inHunk || !current) continue;
     if (raw.startsWith('+') || raw.startsWith(' ')) {
-      files.get(current).add(newLine);
+      files.get(current).set(newLine, raw.slice(1));
       newLine += 1;
     } else if (raw.startsWith('\\')) {
       // "\ No newline at end of file"
@@ -57,12 +57,17 @@ function toRanges(lines) {
   return ranges.map(([a, b]) => (a === b ? `${a}` : `${a}-${b}`)).join(', ');
 }
 
-const files = parseDiff(readFileSync(0, 'utf8'));
+const diff = readFileSync(0, 'utf8');
+if (!diff.trim()) {
+  console.error('No diff on stdin: pipe in `gh pr diff <n>`.');
+  process.exit(1);
+}
+const files = parseDiff(diff);
 const arg = process.argv[2];
 
 if (!arg || arg === '--lines') {
   for (const [path, lines] of files)
-    console.log(`${path}: ${lines.size ? toRanges(lines) : '(none)'}`);
+    console.log(`${path}: ${lines.size ? toRanges(lines.keys()) : '(none)'}`);
   process.exit(0);
 }
 
@@ -84,11 +89,15 @@ for (const [i, c] of (payload.comments ?? []).entries()) {
     problems.push(`${where}: start_side must be RIGHT`);
   if (c.start_line != null && c.start_line >= c.line)
     problems.push(`${where}: start_line must be < line`);
+  if (!Number.isInteger(c.line) || (c.start_line != null && !Number.isInteger(c.start_line))) {
+    problems.push(`${where}: line is missing or not an integer (use "line", not "position")`);
+    continue;
+  }
   const from = c.start_line ?? c.line;
   for (let n = from; n <= c.line; n++) {
     if (!lines.has(n)) {
       problems.push(
-        `${where}: line ${n} is not on the RIGHT side of a hunk (valid: ${toRanges(lines)})`,
+        `${where}: line ${n} is not on the RIGHT side of a hunk (valid: ${toRanges(lines.keys())})`,
       );
       break;
     }
@@ -101,5 +110,12 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `OK: ${payload.comments?.length ?? 0} inline comment(s) all land on RIGHT-side diff lines.`,
+  `OK: ${payload.comments?.length ?? 0} inline comment(s) land on RIGHT-side diff lines. Check that each one sits on the code its comment is about:`,
 );
+for (const c of payload.comments ?? []) {
+  const lines = files.get(c.path);
+  console.log(
+    `\n${c.path}:${c.start_line ? `${c.start_line}-` : ''}${c.line}  ${c.body.split('\n')[0]}`,
+  );
+  for (let n = c.start_line ?? c.line; n <= c.line; n++) console.log(`  ${n} | ${lines.get(n)}`);
+}
