@@ -19,6 +19,10 @@ import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import { calculateFifoCostBasis } from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
+import {
+  costBasisProblem,
+  describeSecurity,
+} from '../../../foreign-securities/helpers/security-disposal.helper.js';
 import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
 import {
   getSecurityLocality,
@@ -76,11 +80,6 @@ function describeTransaction(transaction: IGetTransactionsByChargeIdsResult): st
   return `"${transaction.source_description ?? transaction.id}" (${date}, ${transaction.amount} ${transaction.currency})`;
 }
 
-function describeSecurity(execution: SecurityExecutionRow): string {
-  const name = execution.symbol ?? execution.security;
-  return execution.isin ? `${name} (${execution.isin})` : name;
-}
-
 /**
  * The tax categories an entry needs, or null after recording the missing ones — those are the
  * tenant's to configure, so the charge's error panel offers to pick or create them.
@@ -102,40 +101,6 @@ function requireTaxCategories<TKey extends SecuritiesTaxCategoryKey>(
     return null;
   }
   return Object.fromEntries(keys.map(key => [key, taxCategories[key]])) as Record<TKey, string>;
-}
-
-/** Why the FIFO purchase cost of a redemption cannot be worked out, or null when it can */
-function costBasisProblem(
-  execution: SecurityExecutionRow,
-  costBasis: ReturnType<typeof calculateFifoCostBasis>,
-): string | null {
-  const security = describeSecurity(execution);
-  const redeemed = execution.trade_date;
-  const bankProfitLoss = Number(execution.nominal_profit_loss_nis);
-  const bankNote =
-    Number.isFinite(bankProfitLoss) && bankProfitLoss !== 0
-      ? ` For reference, the bank reports a nominal profit/loss of ${bankProfitLoss} ₪ on it.`
-      : '';
-
-  if (costBasis.redeemedUnits === 0) {
-    return `The redemption of ${security} on ${redeemed} reports no redeemed units, so its purchase cost cannot be found.${bankNote}`;
-  }
-  if (costBasis.openingPositionUnknown) {
-    const history = costBasis.historyStartDate
-      ? ` (it starts on ${costBasis.historyStartDate})`
-      : '';
-    return `Could not determine the purchase cost of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed}: the scraped securities history of this account${history} starts mid-position — units were sold or transferred out before as many were seen bought, so an earlier holding of unknown cost comes first. Scrape older securities transactions of this account to complete it.${bankNote}`;
-  }
-  if (costBasis.missingUnits > 0) {
-    const history = costBasis.historyStartDate
-      ? `the scraped securities history of this account starts on ${costBasis.historyStartDate}`
-      : 'no securities history of it was scraped for this account';
-    return `Could not find the purchase of ${costBasis.missingUnits} of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed}: ${history}. Scrape older securities transactions of this account to complete it.${bankNote}`;
-  }
-  if (costBasis.unknownCostUnits > 0) {
-    return `${costBasis.unknownCostUnits} of ${costBasis.redeemedUnits} units of ${security} redeemed on ${redeemed} have no known purchase cost: they arrived by transfer or by a distribution other than a dividend in kind, or were bought or distributed in another currency.${bankNote}`;
-  }
-  return null;
 }
 
 /**
@@ -262,7 +227,7 @@ async function securitiesLedgerEntry(params: {
       : [];
     const history = await injector
       .get(ForeignSecuritiesProvider)
-      .getSecurityAccountHistory(execution, ownerId);
+      .getSecurityOwnerHistory(execution, ownerId);
     const costBasis = calculateFifoCostBasis(history, execution, cashCurrency);
     const problem = costBasisProblem(execution, costBasis);
     if (problem) {
