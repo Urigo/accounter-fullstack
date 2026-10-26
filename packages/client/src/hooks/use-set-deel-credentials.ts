@@ -7,8 +7,8 @@ import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation SetDeelCredentials($apiToken: String!) {
-    setDeelCredentials(apiToken: $apiToken) {
+  mutation SetDeelCredentials($apiToken: String!, $businessId: UUID) {
+    setDeelCredentials(apiToken: $apiToken, businessId: $businessId) {
       ... on ProviderCredentialResult {
         id
         provider
