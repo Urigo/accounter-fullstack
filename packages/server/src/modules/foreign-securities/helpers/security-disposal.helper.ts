@@ -117,6 +117,116 @@ export function lastRevaluationOver(
   );
 }
 
+function toNumber(value: string | null | undefined): number {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+/**
+ * The bank's rate from an execution's trade currency to the local one: its own rate column when
+ * reported (it writes -1 for "no rate"), or else its local value over its trade-currency value —
+ * `derived`, since both of those amounts are rounded. Null when neither is usable.
+ */
+export function getExecutionBankRate(
+  execution: Pick<
+    SecurityExecutionRow,
+    'personal_currency_rate' | 'trade_gross_value_trade_currency' | 'trade_gross_value_nis'
+  >,
+): { rate: number; derived: boolean } | null {
+  const personalRate = toNumber(execution.personal_currency_rate);
+  if (personalRate > 0) {
+    return { rate: personalRate, derived: false };
+  }
+  const gross = Math.abs(toNumber(execution.trade_gross_value_trade_currency));
+  const grossLocal = Math.abs(toNumber(execution.trade_gross_value_nis));
+  return gross > 0 && grossLocal > 0 ? { rate: grossLocal / gross, derived: true } : null;
+}
+
+/**
+ * An individual's real gain on a foreign-currency security, as the bank reports it: s.88 of the
+ * Income Tax Ordinance makes the exchange rate the index, so the inflationary amount is the rate
+ * PnL, capped at the gain. That leaves the smaller of the two gains (price PnL and local PnL), the
+ * smaller of the two losses — and nothing when one is a gain and the other a loss.
+ */
+export function lowerOfTwo(pricePnL: number, localPnL: number): number {
+  if (pricePnL > 0 && localPnL > 0) {
+    return Math.min(pricePnL, localPnL);
+  }
+  if (pricePnL < 0 && localPnL < 0) {
+    return Math.max(pricePnL, localPnL);
+  }
+  return 0;
+}
+
+/** How far our PnL may be from the bank's: two shekels, or a millionth of the proceeds */
+export const BANK_PNL_TOLERANCE = { absolute: 2, relative: 1e-6 } as const;
+
+export type BankProfitLossExecution = Pick<
+  SecurityExecutionRow,
+  'nominal_profit_loss_nis' | 'nominal_profit_loss_linkage' | 'real_profit_loss_nis'
+>;
+
+export type BankProfitLossMismatch = {
+  field: 'NOMINAL' | 'RATE' | 'REAL';
+  /** Our figure */
+  ours: number;
+  /** The bank's figure, in our sign convention */
+  bank: number;
+};
+
+/**
+ * Where a disposal's PnL, worked out at the bank's own rates, disagrees with the bank's report:
+ * - its nominal PnL in shekels is the local PnL;
+ * - its linkage is the rate PnL with the sign turned: the bank reports it on the cost side, as
+ *   what the shekel's moves added to the cost;
+ * - its real PnL is the individual's under s.88 (`lowerOfTwo`).
+ *
+ * Whether the bank deducts the trade's commissions is not known, so a figure that matches with them
+ * deducted matches too. A security in the local currency is only checked on
+ * the nominal PnL: its linkage and real PnL are the bank's CPI figures. Nothing is checked when the
+ * bank reports no PnL at all.
+ */
+export function compareWithBankProfitLoss(params: {
+  execution: BankProfitLossExecution;
+  pnl: Pick<DisposalPnL, 'pricePnL' | 'ratePnL' | 'localPnL' | 'proceedsLocal'>;
+  /** The trade's commissions in the local currency */
+  commissionsLocal: number;
+  isForeign: boolean;
+}): BankProfitLossMismatch[] {
+  const { execution, pnl, isForeign } = params;
+  const reported = (value: string | null) => (value == null ? null : toNumber(value));
+  const nominal = reported(execution.nominal_profit_loss_nis);
+  const linkage = reported(execution.nominal_profit_loss_linkage);
+  const real = reported(execution.real_profit_loss_nis);
+  if (!nominal && !linkage && !real) {
+    return [];
+  }
+
+  const tolerance = Math.max(
+    BANK_PNL_TOLERANCE.absolute,
+    BANK_PNL_TOLERANCE.relative * Math.abs(pnl.proceedsLocal),
+  );
+  const deductions = params.commissionsLocal ? [0, params.commissionsLocal] : [0];
+  const matches = (ours: (deduction: number) => number, bank: number) =>
+    deductions.some(deduction => Math.abs(ours(deduction) - bank) <= tolerance);
+
+  const mismatches: BankProfitLossMismatch[] = [];
+  if (nominal != null && !matches(deduction => pnl.localPnL - deduction, nominal)) {
+    mismatches.push({ field: 'NOMINAL', ours: pnl.localPnL, bank: nominal });
+  }
+  if (isForeign && linkage != null && !matches(() => pnl.ratePnL, -linkage)) {
+    mismatches.push({ field: 'RATE', ours: pnl.ratePnL, bank: -linkage });
+  }
+  if (
+    isForeign &&
+    real != null &&
+    !matches(deduction => lowerOfTwo(pnl.pricePnL - deduction, pnl.localPnL - deduction), real)
+  ) {
+    mismatches.push({ field: 'REAL', ours: lowerOfTwo(pnl.pricePnL, pnl.localPnL), bank: real });
+  }
+  return mismatches;
+}
+
 export function describeSecurity(
   execution: Pick<SecurityExecutionRow, 'symbol' | 'security' | 'isin'>,
 ) {

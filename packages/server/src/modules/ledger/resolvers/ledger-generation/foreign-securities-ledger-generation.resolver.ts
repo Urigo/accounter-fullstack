@@ -29,9 +29,12 @@ import {
 } from '../../../foreign-securities/helpers/security-cost-basis.helper.js';
 import {
   calculateDisposalPnL,
+  compareWithBankProfitLoss,
   costBasisProblem,
   describeSecurity,
+  getExecutionBankRate,
   lastRevaluationOver,
+  type BankProfitLossMismatch,
 } from '../../../foreign-securities/helpers/security-disposal.helper.js';
 import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
 import {
@@ -62,6 +65,7 @@ import {
   INCOME_TAX_CATEGORY_KEYS,
   isDividendInKindDistribution,
   priceEntryAtRate,
+  toAmount,
   validateSecurityCommissions,
   WITHHOLDING_TAX_CATEGORY_KEYS,
 } from '../../helpers/foreign-securities-ledger.helper.js';
@@ -117,10 +121,84 @@ function requireTaxCategories<TKey extends SecuritiesTaxCategoryKey>(
   return Object.fromEntries(keys.map(key => [key, taxCategories[key]])) as Record<TKey, string>;
 }
 
+/** The bank's commission on an execution, in shekels — what the bank may deduct from its PnL */
+function commissionLocal(execution: SecurityExecutionRow): number {
+  return Math.abs(toAmount(execution.trade_commission_value_nis));
+}
+
 type DisposalKind = 'SALE' | 'REDEMPTION';
 
 function describeDisposal(kind: DisposalKind, execution: SecurityExecutionRow): string {
   return `the ${kind === 'SALE' ? 'sale' : 'redemption'} of ${describeSecurity(execution)} on ${execution.trade_date}`;
+}
+
+/**
+ * How the bank's own PnL report of a disposal disagrees with its FIFO lots, both at the bank's
+ * own rates — so a difference points at the lots (or the bank's figures), not at a rate. Nothing
+ * is checked when the bank reports no rate for the disposal or one of its lots.
+ */
+function bankProfitLossProblems(params: {
+  kind: DisposalKind;
+  execution: SecurityExecutionRow;
+  history: readonly SecurityExecutionRow[];
+  costBasis: FifoCostBasis;
+  proceedsForeign: number;
+  isForeign: boolean;
+}): string[] {
+  const { execution, costBasis, isForeign } = params;
+  const historyById = new Map(params.history.map(row => [row.id, row]));
+  const bankRate = (row: SecurityExecutionRow | undefined) =>
+    isForeign ? (row ? getExecutionBankRate(row)?.rate : undefined) : 1;
+
+  const saleRate = bankRate(execution);
+  const lotRates = costBasis.lots.map(lot => bankRate(historyById.get(lot.executionId)));
+  if (saleRate == null || lotRates.some(rate => rate == null)) {
+    return [];
+  }
+
+  const pnl = calculateDisposalPnL({
+    proceedsForeign: params.proceedsForeign,
+    saleRate,
+    lots: costBasis.lots.map((lot, index) => ({ ...lot, rate: lotRates[index]! })),
+  });
+  const lotsCommission = costBasis.lots.reduce((sum, lot) => {
+    const acquisition = historyById.get(lot.executionId);
+    const units = Number(acquisition?.nv);
+    return acquisition && units > 0
+      ? sum + (commissionLocal(acquisition) * lot.units) / units
+      : sum;
+  }, 0);
+  const mismatches = compareWithBankProfitLoss({
+    execution,
+    pnl,
+    commissionsLocal: commissionLocal(execution) + lotsCommission,
+    isForeign,
+  });
+  if (!mismatches.length) {
+    return [];
+  }
+
+  const disposal = describeDisposal(params.kind, execution);
+  const lots = costBasis.lots
+    .map(
+      (lot, index) =>
+        `${lot.units} bought on ${lot.tradeDate} for ${formatStringifyAmount(lot.costForeign)} at ${lotRates[index]}`,
+    )
+    .join('; ');
+  const describe = ({ field, ours, bank }: BankProfitLossMismatch) => {
+    switch (field) {
+      case 'NOMINAL':
+        return `a nominal profit/loss of ${formatStringifyAmount(bank)} ₪, where its FIFO lots come to ${formatStringifyAmount(ours)} ₪`;
+      case 'RATE':
+        return `linkage of ${formatStringifyAmount(-bank)} ₪ (an exchange-rate profit/loss of ${formatStringifyAmount(bank)} ₪), where its FIFO lots come to ${formatStringifyAmount(ours)} ₪`;
+      case 'REAL':
+        return `a real profit/loss of ${formatStringifyAmount(bank)} ₪, where its FIFO lots come to ${formatStringifyAmount(ours)} ₪ (the lower of the price and nominal profit/loss)`;
+    }
+  };
+  return mismatches.map(
+    mismatch =>
+      `The bank reports ${describe(mismatch)} on ${disposal}, at the bank's own rates (sold at ${saleRate}; lots: ${lots}). It is booked from the lots.`,
+  );
 }
 
 /**
@@ -336,6 +414,17 @@ async function disposalLedgerEntries(params: {
         missingTaxCategories: params.missingTaxCategories,
       })
     : null;
+
+  for (const problem of bankProfitLossProblems({
+    kind,
+    execution,
+    history,
+    costBasis,
+    proceedsForeign,
+    isForeign,
+  })) {
+    params.errors.add(problem);
+  }
 
   return revaluationEntry ? [disposalEntry, revaluationEntry] : [disposalEntry];
 }
