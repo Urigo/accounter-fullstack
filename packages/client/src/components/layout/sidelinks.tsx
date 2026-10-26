@@ -13,6 +13,7 @@ import {
   CheckCheck,
   Download,
   Factory,
+  FileChartColumn,
   FilePen,
   Files,
   HandCoins,
@@ -155,6 +156,12 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: ROUTES.REPORTS.BALANCE,
         icon: <ChartNoAxesCombined size={18} />,
+      },
+      {
+        title: 'Securities Semi-Annual Report',
+        label: '',
+        href: ROUTES.REPORTS.SECURITIES_SEMI_ANNUAL,
+        icon: <FileChartColumn size={18} />,
       },
       {
         title: 'CPI Linkage Calculator',

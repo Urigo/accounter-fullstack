@@ -193,6 +193,7 @@ export const ROUTES = {
         : '/reports/corporate-tax-ruling-compliance',
     BALANCE: '/reports/balance',
     CPI_CALCULATOR: '/reports/cpi-calculator',
+    SECURITIES_SEMI_ANNUAL: '/reports/securities-semi-annual',
     VALIDATE_REPORTS: '/reports/validate-reports',
   },
 

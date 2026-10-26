@@ -210,3 +210,24 @@
     --chart-5: 340 75% 55%;
   }
 }
+
+/*
+ * Printing (and "Save as PDF"): A4 pages with a print margin, on white. The app chrome (header,
+ * sidebar, footer) opts out with `print:hidden`; a page that prints a document of its own
+ * styles it with `print:` variants.
+ */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+
+  [data-sonner-toaster] {
+    display: none;
+  }
+}

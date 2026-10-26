@@ -12,6 +12,7 @@ import {
 } from '../../foreign-securities/helpers/security-execution-enums.helper.js';
 import { extractTransactionSecurityKeys } from '../../foreign-securities/helpers/security-key.helper.js';
 import type { SecurityLocality } from '../../foreign-securities/helpers/security-locality.helper.js';
+import { getWithheldTaxParts } from '../../foreign-securities/helpers/security-withheld-tax.helper.js';
 import type { SecurityExecutionRow } from '../../foreign-securities/types.js';
 import { LedgerError } from './utils.helper.js';
 
@@ -116,10 +117,8 @@ export function getWithheldTax(
     );
   }
 
-  const israelTax =
-    toAmount(execution.israel_tax_value_by_payments_settlement_currency) ||
-    toAmount(execution.capital_tax_value_settlement_currency);
-  const withheld = toAmount(execution.foreign_tax_value_settlement_currency) + israelTax;
+  const { foreign, israeli } = getWithheldTaxParts(execution);
+  const withheld = foreign + israeli;
 
   const net = executionAmountInCurrency(execution, cashCurrency);
   const deduced =
@@ -598,10 +597,8 @@ export type DistributionExecution = Pick<
  * columns hold the commission rather than what was received, so gross minus net says nothing.
  */
 export function getDistributionWithheldTax(execution: DistributionExecution): number {
-  const israelTax =
-    toAmount(execution.israel_tax_value_by_payments_settlement_currency) ||
-    toAmount(execution.capital_tax_value_settlement_currency);
-  return toAmount(execution.foreign_tax_value_settlement_currency) + israelTax;
+  const { foreign, israeli } = getWithheldTaxParts(execution);
+  return foreign + israeli;
 }
 
 /** The date a distribution is booked on: its value date, or the trade date when there is none */
