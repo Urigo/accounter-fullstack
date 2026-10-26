@@ -79,6 +79,10 @@ export const DocumentsGallery = ({
           </div>
           <EditDocumentModal
             documentId={openModal}
+            // Save & next follows the carousel's order.
+            siblingIds={additionalDocuments.map(doc => doc.id)}
+            // A closed sheet stays closed, even if a slow save asks to move on.
+            onNavigate={id => setOpenModal(current => (current ? id : current))}
             onDone={(): void => setOpenModal(undefined)}
             onChange={onChange}
             onChargeDeleted={onChargeDeleted}

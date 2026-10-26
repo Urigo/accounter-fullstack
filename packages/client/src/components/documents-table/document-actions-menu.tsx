@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   CircleX,
   Copy,
@@ -14,13 +14,20 @@ import {
   Unlink,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDocumentViewer } from '@/hooks/use-document-viewer.js';
+import type { AnyTable } from '@/lib/table-features.js';
 import { ROUTES } from '@/router/routes.js';
 import { DocumentType } from '../../gql/graphql.js';
 import { writeToClipboard } from '../../helpers/index.js';
+import { buildViewerSiblings, getRowIds } from '../common/document-viewer/siblings.js';
+import {
+  isSafeHttpUrl,
+  toDocumentViewerEntry,
+  toUrlString,
+} from '../common/document-viewer/source.js';
 import {
   CloseDocumentButton,
   DeleteDocumentButton,
-  DocumentImageDrawer,
   PreviewDocumentModal,
   ReprocessDocumentOcrButton,
   UnlinkDocumentButton,
@@ -39,24 +46,29 @@ import type { DocumentsTableRowType } from './columns.js';
 interface DocumentActionsMenuProps {
   document: DocumentsTableRowType;
   /**
+   * The table this menu sits in, from either feature set: View Image steps through its rows, and
+   * Edit Document hands their ids to Save & next.
+   */
+  table?: AnyTable<DocumentsTableRowType>;
+  /**
    * Show the items that navigate away to the document's charge. Hosts that already live inside a
    * charge (the charge screen's documents accordion, for instance) leave it off.
    */
   withChargeLink?: boolean;
 }
 
-function toHref(value?: string | URL | null): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-  return typeof value === 'string' ? value : value.href;
-}
-
 export function DocumentActionsMenu({
   document,
+  table,
   withChargeLink = false,
 }: DocumentActionsMenuProps): ReactElement {
-  const [imageOpen, setImageOpen] = useState(false);
+  // The menu item is portaled to `document.body`, so the trigger button stands in for it when the
+  // viewer checks whether it was opened from inside a dialog.
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const isViewing = useDocumentViewer(s => s.current?.id === document.id);
+  const openViewer = useDocumentViewer(s => s.open);
+  const updateViewer = useDocumentViewer(s => s.update);
+  const viewerEntry = useMemo(() => toDocumentViewerEntry(document), [document]);
   const [closeDocumentOpen, setCloseDocumentOpen] = useState(false);
   const [issueDocumentOpen, setIssueDocumentOpen] = useState(false);
   const [unlinkOpen, setUnlinkOpen] = useState(false);
@@ -64,7 +76,9 @@ export function DocumentActionsMenu({
   const [reprocessOcrOpen, setReprocessOcrOpen] = useState(false);
 
   const chargeId = document.charge?.id;
-  const fileHref = toHref(document.file);
+  // `file` is user-editable and may hold any scheme; only an http(s) URL becomes a link.
+  const fileUrl = toUrlString(document.file);
+  const fileHref = isSafeHttpUrl(fileUrl) ? fileUrl : undefined;
   const isOpenIssuedDocument =
     'issuedDocumentInfo' in document && document.issuedDocumentInfo?.status === 'OPEN';
 
@@ -78,6 +92,23 @@ export function DocumentActionsMenu({
     writeToClipboard(document.id);
   }, [document.id]);
 
+  // The actions column can't be hidden, so this cell keeps the open viewer in step with the row:
+  // an edit saved in the sheet refreshes the docked document. `update` ignores unchanged entries.
+  useEffect(() => {
+    if (isViewing) {
+      updateViewer(viewerEntry);
+    }
+  }, [isViewing, viewerEntry, updateViewer]);
+
+  // A deleted document must not stay in the viewer. Done on delete success, not on unmount: a
+  // refetch remounts rows, and the row usually unmounts before the delete resolves anyway.
+  const onDocumentDeleted = useCallback((): void => {
+    const viewer = useDocumentViewer.getState();
+    if (viewer.current?.id === document.id) {
+      viewer.close();
+    }
+  }, [document.id]);
+
   return (
     <>
       {/* Non-modal: a modal menu sets `pointer-events: none` on <body>, and the edit-document / image
@@ -86,6 +117,7 @@ export function DocumentActionsMenu({
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
+            ref={menuTriggerRef}
             variant="ghost"
             size="icon"
             aria-label="Document actions"
@@ -101,7 +133,9 @@ export function DocumentActionsMenu({
           onClick={event => event.stopPropagation()}
         >
           <DropdownMenuLabel variant="section">Document</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={document.editDocument}>
+          <DropdownMenuItem
+            onSelect={() => document.editDocument(table ? getRowIds(table) : undefined)}
+          >
             <Edit className="size-4" />
             Edit Document
           </DropdownMenuItem>
@@ -122,7 +156,15 @@ export function DocumentActionsMenu({
           <DropdownMenuSeparator />
 
           <DropdownMenuLabel variant="section">Files</DropdownMenuLabel>
-          <DropdownMenuItem disabled={!document.image} onSelect={() => setImageOpen(true)}>
+          <DropdownMenuItem
+            disabled={!document.image}
+            onSelect={() =>
+              openViewer(viewerEntry, {
+                trigger: menuTriggerRef.current,
+                siblings: table ? buildViewerSiblings(table) : null,
+              })
+            }
+          >
             <Image className="size-4" />
             View Image
           </DropdownMenuItem>
@@ -187,12 +229,6 @@ export function DocumentActionsMenu({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <DocumentImageDrawer
-        src={document.image}
-        opened={imageOpen}
-        onClose={(): void => setImageOpen(false)}
-      />
-
       <ReprocessDocumentOcrButton
         documentId={document.id}
         onChange={document.onUpdate}
@@ -210,6 +246,7 @@ export function DocumentActionsMenu({
       <DeleteDocumentButton
         documentId={document.id}
         onChange={document.onUpdate}
+        onDone={onDocumentDeleted}
         onChargeDeleted={document.onChargeDeleted}
         open={deleteOpen}
         setOpen={setDeleteOpen}
