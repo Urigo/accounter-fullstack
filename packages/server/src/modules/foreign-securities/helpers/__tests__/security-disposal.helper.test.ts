@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { SecurityExecutionRow } from '../../types.js';
 import {
   calculateDisposalPnL,
+  compareWithBankProfitLoss,
   costBasisProblem,
+  getExecutionBankRate,
   lastRevaluationOver,
+  lowerOfTwo,
 } from '../security-disposal.helper.js';
 
 /*
@@ -81,6 +84,141 @@ describe('lastRevaluationOver', () => {
 
   it('is null when the year-end was never revalued', () => {
     expect(lastRevaluationOver('2024-05-01', '2025-03-01', ['2023-12-31'])).toBeNull();
+  });
+});
+
+describe('getExecutionBankRate', () => {
+  it("reads the bank's own rate when it reports one", () => {
+    expect(
+      getExecutionBankRate({
+        personal_currency_rate: '3.7',
+        trade_gross_value_trade_currency: '100',
+        trade_gross_value_nis: '380',
+      }),
+    ).toEqual({ rate: 3.7, derived: false });
+  });
+
+  it('derives it from the gross values otherwise', () => {
+    expect(
+      getExecutionBankRate({
+        personal_currency_rate: '-1',
+        trade_gross_value_trade_currency: '-100',
+        trade_gross_value_nis: '-370',
+      }),
+    ).toEqual({ rate: 3.7, derived: true });
+  });
+
+  it('is null when there is neither', () => {
+    expect(
+      getExecutionBankRate({
+        personal_currency_rate: '-1',
+        trade_gross_value_trade_currency: '0',
+        trade_gross_value_nis: '0',
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('lowerOfTwo', () => {
+  it('takes the smaller of two gains', () => {
+    expect(lowerOfTwo(50, 80)).toBe(50);
+    expect(lowerOfTwo(80, 50)).toBe(50);
+  });
+
+  it('takes the smaller of two losses', () => {
+    expect(lowerOfTwo(-50, -80)).toBe(-50);
+  });
+
+  it('is nothing when one is a gain and the other a loss', () => {
+    expect(lowerOfTwo(28.8, -51.2)).toBe(0);
+    expect(lowerOfTwo(-10, 40)).toBe(0);
+  });
+});
+
+describe('compareWithBankProfitLoss', () => {
+  // the single-lot sale above
+  const pnl = { pricePnL: 28.8, ratePnL: -80, localPnL: -51.2, proceedsLocal: 1468.8 };
+  const bank = {
+    nominal_profit_loss_nis: '-51.2',
+    nominal_profit_loss_linkage: '80',
+    real_profit_loss_nis: '0',
+  };
+
+  it('agrees with a bank that reports the linkage on the cost side and the lower of two', () => {
+    expect(
+      compareWithBankProfitLoss({ execution: bank, pnl, commissionsLocal: 0, isForeign: true }),
+    ).toEqual([]);
+  });
+
+  it('allows for rounding', () => {
+    expect(
+      compareWithBankProfitLoss({
+        execution: { ...bank, nominal_profit_loss_nis: '-52.5' },
+        pnl,
+        commissionsLocal: 0,
+        isForeign: true,
+      }),
+    ).toEqual([]);
+  });
+
+  it('reports each figure that disagrees, in our sign convention', () => {
+    expect(
+      compareWithBankProfitLoss({
+        execution: {
+          nominal_profit_loss_nis: '-60',
+          nominal_profit_loss_linkage: '-80',
+          real_profit_loss_nis: '28.8',
+        },
+        pnl,
+        commissionsLocal: 0,
+        isForeign: true,
+      }),
+    ).toEqual([
+      { field: 'NOMINAL', ours: -51.2, bank: -60 },
+      { field: 'RATE', ours: -80, bank: 80 },
+      { field: 'REAL', ours: 0, bank: 28.8 },
+    ]);
+  });
+
+  it("accepts a nominal PnL with the trade's commissions deducted", () => {
+    expect(
+      compareWithBankProfitLoss({
+        execution: { ...bank, nominal_profit_loss_nis: '-61.2' },
+        pnl,
+        commissionsLocal: 10,
+        isForeign: true,
+      }),
+    ).toEqual([]);
+  });
+
+  it('only checks the nominal PnL of a security in the local currency', () => {
+    expect(
+      compareWithBankProfitLoss({
+        execution: {
+          nominal_profit_loss_nis: '100',
+          nominal_profit_loss_linkage: '12',
+          real_profit_loss_nis: '88',
+        },
+        pnl: { pricePnL: 100, ratePnL: 0, localPnL: 100, proceedsLocal: 1100 },
+        commissionsLocal: 0,
+        isForeign: false,
+      }),
+    ).toEqual([]);
+  });
+
+  it('checks nothing when the bank reports no PnL', () => {
+    expect(
+      compareWithBankProfitLoss({
+        execution: {
+          nominal_profit_loss_nis: '0',
+          nominal_profit_loss_linkage: null,
+          real_profit_loss_nis: '0',
+        },
+        pnl,
+        commissionsLocal: 0,
+        isForeign: true,
+      }),
+    ).toEqual([]);
   });
 });
 
