@@ -103,8 +103,10 @@ export default gql`
     taxLiability: FinancialIntAmount
     " Israeli tax withheld at source on the half's sales "
     israeliTaxWithheldOnSales: FinancialIntAmount!
-    " Israeli tax withheld at source on the half's dividends and interest "
+    " Israeli tax withheld at source on the half's taxable dividends and interest "
     israeliTaxWithheldOnIncome: FinancialIntAmount!
+    " Israeli tax withheld at source on exempt income (local dividends): not credited against the advance, but refunded in the annual return "
+    israeliTaxWithheldOnExemptIncome: FinancialIntAmount!
     " (e) The advance to pay: the tax liability less the Israeli tax withheld at source, never below zero "
     taxAdvance: FinancialIntAmount
     " Israeli tax withheld beyond the liability, to claim in the annual return "

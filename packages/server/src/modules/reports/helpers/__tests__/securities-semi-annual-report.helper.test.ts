@@ -289,6 +289,21 @@ describe('computeSemiAnnualDeclaration', () => {
       expect(declaration.excessCredits).toBe(0);
     });
 
+    it('is not credited on exempt local dividends', () => {
+      const declaration = declare({
+        sales: [sale(10_000)],
+        income: [
+          income('DIVIDEND', 'LOCAL', 1000, { israeliTaxWithheld: 250 }),
+          income('INTEREST', 'LOCAL', 1000, { israeliTaxWithheld: 150 }),
+        ],
+      });
+
+      expect(declaration.israeliTaxWithheldOnIncome).toBe(150);
+      expect(declaration.israeliTaxWithheldOnExemptIncome).toBe(250);
+      expect(declaration.taxLiability).toBe(2300 + 230);
+      expect(declaration.taxAdvance).toBe(2530 - 150);
+    });
+
     it('leaves no advance once it covers the liability, and reports the excess', () => {
       const declaration = declare({ sales: [sale(1000, { israeliTaxWithheld: 400 })] });
 

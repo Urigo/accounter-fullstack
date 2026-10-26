@@ -47,18 +47,18 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
       }
 
       const period = getSemiAnnualPeriod(year, half);
-      const [adminContext, owner, corporateTaxes] = await Promise.all([
+      const [ownerAdminContext, owner, corporateTaxes] = await Promise.all([
         injector.get(AdminContextProvider).adminContextByOwnerIdLoader.load(ownerId),
         injector.get(AdminBusinessesProvider).getAdminBusinessByIdLoader.load(ownerId),
         injector.get(CorporateTaxesProvider).getCorporateTaxesByCorporateIdLoader.load(ownerId),
       ]);
-      if (!adminContext) {
+      if (!ownerAdminContext) {
         throw new GraphQLError(`No admin context is set for business ${ownerId}`);
       }
       if (!owner) {
         throw new GraphQLError(`Business ${ownerId} is not an admin business`);
       }
-      const localCurrency = adminContext.defaultLocalCurrency;
+      const localCurrency = ownerAdminContext.defaultLocalCurrency;
 
       const firstHalf = half === 'H2' ? getSemiAnnualPeriod(year, 'H1') : null;
       const [disposals, firstHalfDisposals, securitiesIncome] = await Promise.all([
@@ -66,7 +66,7 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
         firstHalf
           ? collectHalfDisposals(injector, { ownerId, period: firstHalf, localCurrency })
           : null,
-        collectHalfSecuritiesIncome(injector, { ownerId, period, adminContext }),
+        collectHalfSecuritiesIncome(injector, { ownerId, period, adminContext: ownerAdminContext }),
       ]);
 
       // the regular rate, as on "special" income: a reduced preferred-enterprise rate does not
@@ -149,6 +149,7 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
         taxLiability: intOrNull(declaration.taxLiability),
         israeliTaxWithheldOnSales: int(declaration.israeliTaxWithheld),
         israeliTaxWithheldOnIncome: int(declaration.israeliTaxWithheldOnIncome),
+        israeliTaxWithheldOnExemptIncome: int(declaration.israeliTaxWithheldOnExemptIncome),
         taxAdvance: intOrNull(declaration.taxAdvance),
         excessCredits: intOrNull(declaration.excessCredits),
         advanceNotes: declaration.advanceNotes,

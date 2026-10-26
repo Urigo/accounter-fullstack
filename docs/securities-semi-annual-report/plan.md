@@ -22,8 +22,8 @@ The accountant's requests, over three meetings:
   ```
 - **Her assessment:** "the only issue is sales — a sale has no logic that reflects it in the
   ledger". This is confirmed in the code. On main, a SELL books only bank ↔ securities account, with
-  no gain. Dividends and interest already sit on ledger tax categories. PR #4791 adds the sale
-  logic.
+  no gain. Dividends and interest already sit on ledger tax categories. PR #4791 adds the sale logic
+  (since split into #4824 and #4829–#4832, all on main).
 
 The goal is a simple, well-designed page that produces her letter for a chosen half-year, with the
 calculation behind it, and exports to PDF.
@@ -90,10 +90,10 @@ collection department and pay. The notice must contain:
 - **Interest:** securities interest only.
 - **PDF:** browser print → Save as PDF.
 - **Document:** bilingual, Hebrew RTL with English subtitles.
-- **Base:** stacked on PR #4791.
+- **Base:** stacked on PR #4791; now on main, after the FIFO cancellation fix (#4835).
 
-**Finding in PR #4791 (fix first).** `calculateFifoCostBasis` drops only the cancellation row
-(`is_cancel_transaction='כן'`). The original it cancels still takes units out of FIFO and skews
+**Finding in PR #4791 (fix first; now #4835).** `calculateFifoCostBasis` drops only the cancellation
+row (`is_cancel_transaction='כן'`). The original it cancels still takes units out of FIFO and skews
 later sales' cost. Fix: pair cancellations with their originals, as `findCancelledPayment` does in
 `ledger/helpers/foreign-securities-ledger.helper.ts`, and drop both.
 
@@ -102,7 +102,8 @@ later sales' cost. Fix: pair cancellations with their originals, as `findCancell
 ### Step 0: branch
 
 `git switch -c feat/securities-semi-annual-report origin/claude/friendly-fermat-1dxzsl`. Land the
-FIFO cancellation fix on #4791 (or as this branch's first commit).
+FIFO cancellation fix on #4791 (or as this branch's first commit). It landed as its own PR, #4835,
+which this branch is stacked on.
 
 ### Server: `reports` module
 
@@ -164,8 +165,9 @@ ledger-reading report there would create an import cycle.
     - Per income bucket b (kind × locality), taxable unless it is a local dividend: tax_b = rate ×
       max(0, gross_b), and FTC_b = min(max(0, foreign tax_b), tax_b). The cap is per bucket.
     - grossTax = CGT + Σ tax_b. FTC = Σ FTC_b. **liability = grossTax − FTC** (line 5).
-    - IL = Israeli withholding on sales + income. **advance = max(0, liability − IL)** (line 6).
-      excessCredits = max(0, IL − liability).
+    - IL = Israeli withholding on sales + taxable income (withholding on exempt local dividends is
+      left for the annual return). **advance = max(0, liability − IL)** (line 6). excessCredits =
+      max(0, IL − liability).
     - `advanceNotes`, set when the advance is 0 or reduced:
       - `CAPITAL_GAINS_OFFSET_BY_CARRIED_FORWARD_LOSSES` when N > 0 and carried > 0 absorbs some of
         it (rendered with her sentence when it absorbs all of it);
@@ -305,7 +307,7 @@ yarn lint && yarn prettier:check
   - Redemption withholding is not counted as interest withholding.
 - **Other tests:**
   - a `getWithheldTaxParts` unit test;
-  - the FIFO cancellation-pairing test on #4791;
+  - the FIFO cancellation-pairing test (#4835);
   - optionally, an integration test for `getOwnerExecutionsByTradeDates`;
   - client: default period on 2026-10-26 → 2026 H1 and on 2027-01-15 → 2026 H2; filename; schema;
     `ADVANCE_NOTE_TEXT` covers every enum value; `use-print-document-title` (`createRoot` + `act`).

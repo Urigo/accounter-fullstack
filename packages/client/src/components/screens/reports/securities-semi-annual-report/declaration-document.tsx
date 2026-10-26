@@ -119,6 +119,9 @@ import {
     israeliTaxWithheldOnIncome {
       raw
     }
+    israeliTaxWithheldOnExemptIncome {
+      raw
+    }
     taxAdvance {
       raw
     }
@@ -497,6 +500,14 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
                 he="מס שנוכה ביתר (לדרישה בדוח השנתי)"
                 en="Tax withheld in excess (to claim in the annual return)"
                 amount={formatWholeShekels(report.excessCredits.raw)}
+                muted
+              />
+            )}
+            {!!report.israeliTaxWithheldOnExemptIncome.raw && (
+              <DetailRow
+                he="מס שנוכה על דיבידנד פטור (לדרישה בדוח השנתי)"
+                en="Tax withheld on exempt dividends (to claim in the annual return)"
+                amount={formatWholeShekels(report.israeliTaxWithheldOnExemptIncome.raw)}
                 muted
               />
             )}

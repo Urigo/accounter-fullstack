@@ -20,6 +20,3 @@ advance due, as the accountant files it with the Tax Authority — printable to 
   English subtitles, the calculation behind it, and appendices of every sale and income record.
   _Print / Save PDF_ prints it on A4 under a file name of the report's year and half; the app's
   chrome is now left out of any printed page.
-- **FIFO drops cancelled executions with what they cancel.** The bank reports a cancellation as a
-  row of its own and leaves the original as it was; dropping only the cancellation let a cancelled
-  sale still use up lots (and a cancelled buy add one), skewing the cost of later sales.

@@ -307,16 +307,20 @@ export async function collectHalfSecuritiesIncome(
     });
   }
 
+  // traced all at once, so the loaders batch across records
+  const executions = await Promise.all(
+    records.map(record => findRecordExecution(injector, record, ownerId)),
+  );
   const tracedExecutionIds = new Set<string>();
   const income: SemiAnnualIncomeItem[] = [];
-  for (const record of records) {
+  for (const [index, record] of records.entries()) {
     const bucket = buckets.find(candidate => ledgerEntityAmount(record, candidate.incomeId) !== 0);
     if (!bucket) {
       continue;
     }
     const gross = ledgerEntityAmount(record, bucket.incomeId);
     const withheld = bucket.withholdingId ? -ledgerEntityAmount(record, bucket.withholdingId) : 0;
-    const execution = await findRecordExecution(injector, record, ownerId);
+    const execution = executions[index];
     if (execution) {
       tracedExecutionIds.add(execution.id);
     }

@@ -157,7 +157,13 @@ export type SemiAnnualDeclaration = SemiAnnualSalesSummary & {
   grossTax: number | null;
   foreignTaxCredit: number | null;
   taxLiability: number | null;
+  /** Israeli tax withheld on taxable dividends and interest: credited against the liability */
   israeliTaxWithheldOnIncome: number;
+  /**
+   * Israeli tax withheld on exempt income (local dividends, s.126(b)): no advance is due on that
+   * income, so it is not credited here but refunded in the annual return
+   */
+  israeliTaxWithheldOnExemptIncome: number;
   /** (e) The advance to pay, never below zero */
   taxAdvance: number | null;
   /** Israeli tax withheld beyond the liability */
@@ -231,7 +237,12 @@ export function computeSemiAnnualDeclaration(params: {
     incomeSummary.filter(bucket => bucket.kind === kind);
   const dividendIncome = sum(incomeOf('DIVIDEND').map(bucket => bucket.gross));
   const interestIncome = sum(incomeOf('INTEREST').map(bucket => bucket.gross));
-  const israeliTaxWithheldOnIncome = sum(incomeSummary.map(bucket => bucket.israeliTaxWithheld));
+  const withheldOn = (buckets: readonly SemiAnnualIncomeSummary[]) =>
+    sum(buckets.map(bucket => bucket.israeliTaxWithheld));
+  const israeliTaxWithheldOnIncome = withheldOn(incomeSummary.filter(bucket => bucket.taxable));
+  const israeliTaxWithheldOnExemptIncome = withheldOn(
+    incomeSummary.filter(bucket => !bucket.taxable),
+  );
 
   const capitalGainsTax = taxOn(netRealCapitalGainAfterLosses);
   const declaration = {
@@ -244,6 +255,7 @@ export function computeSemiAnnualDeclaration(params: {
     interestIncome,
     incomeSummary,
     israeliTaxWithheldOnIncome,
+    israeliTaxWithheldOnExemptIncome,
   };
 
   const hasEvents = salesSummary.saleCount > 0 || incomeSummary.some(bucket => bucket.gross !== 0);
