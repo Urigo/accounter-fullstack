@@ -1,8 +1,12 @@
-import { SecurityTradeType } from '../../../shared/enums.js';
+import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { SecurityExecutionRow } from '../types.js';
+import { executionAmountInCurrency } from './match-security-executions.helper.js';
 import { TRANSFER_PAIRING_WINDOW_DAYS, type FifoCostBasis } from './security-cost-basis.helper.js';
-import { tryToSecurityTradeType } from './security-execution-enums.helper.js';
+import {
+  currencyOfSecurityLabel,
+  tryToSecurityTradeType,
+} from './security-execution-enums.helper.js';
 
 /**
  * The arithmetic of a disposal — a sale or a redemption — out of its FIFO lots.
@@ -227,11 +231,91 @@ export function compareWithBankProfitLoss(params: {
   return mismatches;
 }
 
+export type CpiLotInput = {
+  /** The lot's original price: its cost in local currency at its acquisition */
+  originalLocal: number;
+  /** The lot's share of the consideration, in local currency */
+  considerationLocal: number;
+  /** The known CPI on the disposal date over the known CPI on the acquisition date */
+  indexRatio: number;
+};
+
+export type CpiLotGain = CpiLotInput & {
+  /** The original price linked to the CPI (מחיר מקורי מתואם) */
+  adjustedLocal: number;
+  /** Consideration less original price: a capital gain, or a capital loss when negative */
+  gain: number;
+  /** The exempt part of the gain (סכום אינפלציוני) */
+  inflationaryAmount: number;
+  /** The gain less the inflationary amount (רווח הון ריאלי); a loss is not indexed */
+  realGain: number;
+};
+
+/**
+ * A company's capital gain under s.88 of the Income Tax Ordinance, lot by lot, with the CPI as the
+ * index (the exchange rate is the index only for an individual's foreign-currency securities):
+ * - the inflationary amount is the part of the gain equal to the rise of the adjusted original
+ *   price over the original one — so it is never negative, never more than the gain, and nothing
+ *   on a loss;
+ * - the real gain is the gain less the inflationary amount;
+ * - a capital loss is the original price less the consideration, unindexed.
+ */
+export function calculateCpiCapitalGain(lots: readonly CpiLotInput[]): {
+  gain: number;
+  inflationaryAmount: number;
+  realGain: number;
+  lots: CpiLotGain[];
+} {
+  const lotGains = lots.map(lot => {
+    const adjustedLocal = lot.originalLocal * lot.indexRatio;
+    const gain = lot.considerationLocal - lot.originalLocal;
+    const inflationaryAmount =
+      gain > 0 ? Math.min(Math.max(adjustedLocal - lot.originalLocal, 0), gain) : 0;
+    return { ...lot, adjustedLocal, gain, inflationaryAmount, realGain: gain - inflationaryAmount };
+  });
+  return {
+    gain: lotGains.reduce((sum, lot) => sum + lot.gain, 0),
+    inflationaryAmount: lotGains.reduce((sum, lot) => sum + lot.inflationaryAmount, 0),
+    realGain: lotGains.reduce((sum, lot) => sum + lot.realGain, 0),
+    lots: lotGains,
+  };
+}
+
+/**
+ * What a disposal fetched before tax, in `currency`: its gross value when it is quoted in that
+ * currency, or else the cash it brought in. Null when it reports neither in that currency.
+ */
+export function getDisposalProceeds(
+  execution: Pick<
+    SecurityExecutionRow,
+    | 'trade_currency'
+    | 'settlement_currency'
+    | 'trade_gross_value_trade_currency'
+    | 'net_value_trade_currency'
+    | 'net_value_settlement_currency'
+    | 'net_value_nis'
+  >,
+  currency: Currency,
+): number | null {
+  const gross = Math.abs(toNumber(execution.trade_gross_value_trade_currency));
+  if (currencyOfSecurityLabel(execution.trade_currency) === currency && gross > 0) {
+    return gross;
+  }
+  const net = executionAmountInCurrency(execution, currency);
+  return net == null ? null : Math.abs(toNumber(net));
+}
+
 export function describeSecurity(
   execution: Pick<SecurityExecutionRow, 'symbol' | 'security' | 'isin'>,
 ) {
   const name = execution.symbol ?? execution.security;
   return execution.isin ? `${name} (${execution.isin})` : name;
+}
+
+/** Whether an execution disposes of units for cash: a sale or a redemption */
+export function isDisposalExecution(execution: Pick<SecurityExecutionRow, 'trade_type'>): boolean {
+  const tradeType = tryToSecurityTradeType(execution.trade_type);
+  return tradeType === SecurityTradeType.Sell || tradeType === SecurityTradeType.Redemption;
 }
 
 /** Why the FIFO purchase cost of a disposal cannot be worked out, or null when it can */

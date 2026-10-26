@@ -1,3 +1,4 @@
+import type { Currency } from '../../shared/enums.js';
 import type { TimelessDateString } from '../../shared/types/index.js';
 import type {
   IGetSecuritiesByKeysResult,
@@ -139,4 +140,54 @@ export type ChargeSecurityProto = {
   transactionIds: string[];
   /** Ingested executions matched to this charge's transactions — see the matcher helper. */
   executions: SecurityExecutionRow[];
+};
+
+/**
+ * The units of a disposal drawn from one acquisition, first in, first out: what they cost and
+ * fetched, and their capital gain under s.88 of the Income Tax Ordinance with the CPI as index.
+ * Local amounts are at the representative rates of the trade dates.
+ */
+export type SecurityCapitalGainLotProto = {
+  /** The disposal, the purchase and the lot's place among the disposal's lots */
+  id: string;
+  purchaseExecutionId: string;
+  purchaseDate: TimelessDateString;
+  quantity: number;
+  currency: Currency;
+  localCurrency: Currency;
+  /** In `currency` */
+  cost: number;
+  costLocal: number;
+  purchaseRate: number;
+  /** The lot's share of the proceeds, in the local currency */
+  consideration: number;
+  /** The month of the CPI known on the purchase date, YYYY-MM */
+  purchaseIndexPeriod: string;
+  /** The month of the CPI known on the sale date, YYYY-MM */
+  saleIndexPeriod: string;
+  indexRatio: number;
+  nominalGain: number;
+  inflationaryAmount: number;
+  realGain: number;
+};
+
+/** A sale's or a redemption's capital gain, from the FIFO lots it disposes of */
+export type SecurityCapitalGainProto = {
+  /** The disposal's execution id */
+  id: string;
+  currency: Currency;
+  localCurrency: Currency;
+  quantity: number;
+  /** What the units fetched before tax, in `currency` */
+  proceeds: number;
+  saleRate: number;
+  /** What the units cost, in `currency` */
+  cost: number;
+  originCurrencyGain: number;
+  nominalGain: number;
+  priceGain: number;
+  exchangeRateGain: number;
+  inflationaryAmount: number;
+  realGain: number;
+  lots: SecurityCapitalGainLotProto[];
 };
