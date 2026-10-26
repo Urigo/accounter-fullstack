@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { Currency } from '../../../../shared/enums.js';
 import type { SecurityExecutionRow } from '../../types.js';
 import {
+  calculateCpiCapitalGain,
   calculateDisposalPnL,
   compareWithBankProfitLoss,
   costBasisProblem,
+  getDisposalProceeds,
   getExecutionBankRate,
+  isDisposalExecution,
   lastRevaluationOver,
   lowerOfTwo,
 } from '../security-disposal.helper.js';
@@ -12,6 +16,8 @@ import {
 /*
  * The arithmetic of a disposal out of FIFO lots. All values are made up.
  */
+
+const USD_LABEL = 'דולר ארה"ב';
 
 describe('calculateDisposalPnL', () => {
   it('splits the local PnL of a single lot into price and rate PnL', () => {
@@ -219,6 +225,92 @@ describe('compareWithBankProfitLoss', () => {
         isForeign: true,
       }),
     ).toEqual([]);
+  });
+});
+
+describe('calculateCpiCapitalGain', () => {
+  it('exempts the CPI rise of the original price from a gain above it', () => {
+    const result = calculateCpiCapitalGain([
+      { originalLocal: 1000, considerationLocal: 1100, indexRatio: 1.03 },
+    ]);
+
+    expect(result.gain).toBeCloseTo(100, 6);
+    expect(result.inflationaryAmount).toBeCloseTo(30, 6);
+    expect(result.realGain).toBeCloseTo(70, 6);
+    expect(result.lots[0]!.adjustedLocal).toBeCloseTo(1030, 6);
+  });
+
+  it('caps the inflationary amount at the gain, leaving no real gain or loss', () => {
+    const result = calculateCpiCapitalGain([
+      { originalLocal: 1000, considerationLocal: 1020, indexRatio: 1.03 },
+    ]);
+
+    expect(result.inflationaryAmount).toBeCloseTo(20, 6);
+    expect(result.realGain).toBeCloseTo(0, 6);
+  });
+
+  it('does not index a loss', () => {
+    const result = calculateCpiCapitalGain([
+      { originalLocal: 1520, considerationLocal: 1468.8, indexRatio: 1.02 },
+    ]);
+
+    expect(result.gain).toBeCloseTo(-51.2, 6);
+    expect(result.inflationaryAmount).toBe(0);
+    expect(result.realGain).toBeCloseTo(-51.2, 6);
+  });
+
+  it('has no inflationary amount when the CPI fell', () => {
+    const result = calculateCpiCapitalGain([
+      { originalLocal: 1000, considerationLocal: 1100, indexRatio: 0.99 },
+    ]);
+
+    expect(result.inflationaryAmount).toBe(0);
+    expect(result.realGain).toBeCloseTo(100, 6);
+  });
+
+  it('works each lot out on its own and adds them up', () => {
+    const result = calculateCpiCapitalGain([
+      { originalLocal: 1000, considerationLocal: 1100, indexRatio: 1.03 },
+      { originalLocal: 500, considerationLocal: 450, indexRatio: 1.01 },
+    ]);
+
+    expect(result.gain).toBeCloseTo(50, 6);
+    expect(result.inflationaryAmount).toBeCloseTo(30, 6);
+    expect(result.realGain).toBeCloseTo(20, 6);
+  });
+});
+
+describe('getDisposalProceeds', () => {
+  const execution = {
+    trade_currency: USD_LABEL,
+    settlement_currency: USD_LABEL,
+    trade_gross_value_trade_currency: '1020',
+    net_value_trade_currency: '1000',
+    net_value_settlement_currency: '1000',
+    net_value_nis: '0',
+  };
+
+  it('is the gross value, before tax', () => {
+    expect(getDisposalProceeds(execution, Currency.Usd)).toBe(1020);
+  });
+
+  it('falls back to the cash brought in', () => {
+    expect(
+      getDisposalProceeds({ ...execution, trade_gross_value_trade_currency: '0' }, Currency.Usd),
+    ).toBe(1000);
+  });
+
+  it('is null in a currency the execution does not report', () => {
+    expect(getDisposalProceeds(execution, Currency.Eur)).toBeNull();
+  });
+});
+
+describe('isDisposalExecution', () => {
+  it('is a sale or a redemption', () => {
+    expect(isDisposalExecution({ trade_type: 'מכירה' })).toBe(true);
+    expect(isDisposalExecution({ trade_type: 'פדיון' })).toBe(true);
+    expect(isDisposalExecution({ trade_type: 'קניה' })).toBe(false);
+    expect(isDisposalExecution({ trade_type: 'דבידנד תשלום' })).toBe(false);
   });
 });
 
