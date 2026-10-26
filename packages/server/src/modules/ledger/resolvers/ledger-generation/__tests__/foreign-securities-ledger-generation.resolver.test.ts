@@ -40,8 +40,8 @@ vi.mock('../../../../charges/helpers/common.helper.js', async importOriginal => 
  * reshaped from it once the matched execution says what the movement was:
  *  - dividends and bond interest are credited to (local or foreign) income, with any tax withheld
  *    debited to a withholding-tax category;
- *  - a redemption credits the securities account with the FIFO purchase cost and books the
- *    difference as a gain or a loss.
+ *  - a sale or a redemption credits the securities account with the FIFO purchase cost and books
+ *    the difference as a price gain or loss.
  *
  * All IDs, amounts, rates and dates below are made up.
  */
@@ -201,6 +201,24 @@ function redemptionExecution(
   });
 }
 
+function saleExecution(
+  units: number,
+  proceeds: number,
+  overrides: Partial<SecurityExecutionRow> = {},
+) {
+  return buildExecution({
+    id: 'execution-sale',
+    trade_type: TRADE_TYPES.sell,
+    transaction_type: TRADE_TYPES.sell,
+    nv: String(units),
+    trade_gross_value_trade_currency: String(proceeds),
+    net_value_trade_currency: String(proceeds),
+    net_value_settlement_currency: String(proceeds),
+    net_value_nis: '0',
+    ...overrides,
+  });
+}
+
 const charge: IGetChargesByIdsResult = {
   id: CHARGE_ID,
   accountant_status: 'PENDING',
@@ -220,7 +238,7 @@ type Scenario = {
   transactions: IGetTransactionsByChargeIdsResult[];
   /** The execution each transaction is matched to, by transaction id */
   executions?: Record<string, SecurityExecutionRow>;
-  /** The ingested history of the security across the owner's accounts, for redemptions */
+  /** The ingested history of the security across the owner's accounts, for sales and redemptions */
   history?: SecurityExecutionRow[];
   /** Securities tax categories configured for the tenant; defaults to all of them */
   taxCategories?: Partial<Record<SecuritiesTaxCategoryKey, string>>;
@@ -437,7 +455,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
     });
   });
 
-  describe('buys and sales are unchanged', () => {
+  describe('buys', () => {
     it('books a buy against the securities account', async () => {
       const transaction = buildTransaction({ id: 'transaction-buy', amount: '-1000' });
 
@@ -457,24 +475,154 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         },
       ]);
     });
+  });
 
-    it('books a sale (also of a bond before its redemption) against the securities account', async () => {
-      const transaction = buildTransaction({ id: 'transaction-sell', amount: '1000' });
+  describe('sales', () => {
+    // 10 units bought on 15 Jan for 1,000, sold on DAY
+    const LOT_DAY: TimelessDateString = '2025-01-15';
+    const lot = () => buyExecution('execution-buy', LOT_DAY, 10, 1000);
 
-      const { records, errors } = await generate({
+    it('credits the FIFO cost and books the price gain', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors, foreignSecuritiesProvider } = await generate({
         transactions: [transaction],
-        executions: {
-          [transaction.id]: buildExecution({
-            id: 'execution-sell',
-            trade_type: TRADE_TYPES.sell,
-            transaction_type: TRADE_TYPES.sell,
-            nv: '10',
-          }),
-        },
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
       });
 
       expect(errors).toEqual([]);
-      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(foreignSecuritiesProvider.getSecurityOwnerHistory).toHaveBeenCalledWith(
+        sale,
+        OWNER_ID,
+      );
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1100),
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(100).foreign,
+          creditLocal2: usd(100).local,
+        },
+      ]);
+    });
+
+    it('books a price loss as a second debit', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '900' });
+      const sale = saleExecution(10, 900);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(900),
+          debit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_LOSS,
+          debitForeign2: usd(100).foreign,
+          debitLocal2: usd(100).local,
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+        },
+      ]);
+    });
+
+    it('books a sale in shekels', async () => {
+      const transaction = buildTransaction({
+        id: 'transaction-sale',
+        amount: '1100',
+        currency: Currency.Ils,
+      });
+      const ilsExecution = {
+        trade_currency: ILS_LABEL,
+        settlement_currency: ILS_LABEL,
+        trade_gross_value_trade_currency: '0',
+        net_value_trade_currency: '0',
+        net_value_settlement_currency: '0',
+      };
+      const sale = saleExecution(10, 1100, {
+        ...ilsExecution,
+        trade_gross_value_trade_currency: '1100',
+        net_value_nis: '1100',
+      });
+      const buy = buildExecution({
+        ...ilsExecution,
+        id: 'execution-buy',
+        trade_type: TRADE_TYPES.buy,
+        transaction_type: TRADE_TYPES.buy,
+        trade_date: LOT_DAY,
+        value_date: LOT_DAY,
+        nv: '10',
+        net_value_nis: '-1000',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [buy, sale],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          currency: Currency.Ils,
+          debit1: BANK_ILS,
+          debitForeign1: null,
+          debitLocal1: 1100,
+          debit2: null,
+          debitForeign2: null,
+          debitLocal2: null,
+          credit1: SECURITIES_ILS,
+          creditForeign1: null,
+          creditLocal1: 1000,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: null,
+          creditLocal2: 100,
+        },
+      ]);
+    });
+
+
+    it('keeps the base entry of a sale with withheld tax', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1050' });
+      const sale = saleExecution(10, 1050, {
+        trade_gross_value_trade_currency: '1100',
+        capital_tax_value_settlement_currency: '50',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1050)]);
+      expect(errors).toEqual([
+        expect.stringContaining('booking tax withheld on a sale is not supported yet'),
+      ]);
+    });
+
+
+    it('keeps the base entry and explains a sale with no purchase in the history', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [sale],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1100)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Could not find the purchase of 10 of 10 units of MOCK'),
+      ]);
+      expect(errors[0]).toContain('sold on 2025-03-12');
     });
   });
 
@@ -516,22 +664,26 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         businessId: alpha,
       });
 
+      const buyAlphaExecution = buyExecution('execution-buy-alpha', DAY, 10, 1000);
+      const sellAlphaExecution = saleExecution(10, 1500, { id: 'execution-sell-alpha' });
+
       const { errors } = await generate({
         transactions: [buyAlpha, sellAlpha],
         executions: {
-          [buyAlpha.id]: buyExecution('execution-buy-alpha', DAY, 10, 1000),
-          [sellAlpha.id]: buildExecution({
-            id: 'execution-sell-alpha',
-            trade_type: TRADE_TYPES.sell,
-            transaction_type: TRADE_TYPES.sell,
-            nv: '10',
-            net_value_trade_currency: '1500',
-          }),
+          [buyAlpha.id]: buyAlphaExecution,
+          [sellAlpha.id]: sellAlphaExecution,
         },
+        // FIFO sells an older holding, bought before this charge for more than its own buy
+        history: [
+          buyExecution('execution-buy-older', '2024-06-01', 10, 1200),
+          buyAlphaExecution,
+          sellAlphaExecution,
+        ],
         businessIds: [BANK_BUSINESS_ID, alpha],
       });
 
-      // it took part in a buy, but its balance across the charge is a credit, not a holding
+      // it took part in a buy, but the sale took out more cost than the charge put in, so its
+      // balance across the charge is a credit, not a holding
       expect(errors).toEqual([expect.stringContaining(`Business "${alpha}" is unbalanced`)]);
     });
   });
@@ -1003,18 +1155,18 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
 
       it('counts the fee of a non-income execution of the same security', async () => {
         const dividend = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
-        const sale = buildTransaction({ id: 'transaction-sale', amount: '2000' });
+        const buy = buildTransaction({ id: 'transaction-buy', amount: '-2000' });
 
         const { errors } = await generate({
-          transactions: [dividend, sale, commissionFee('-25'), commissionFee('-14', 'transaction-sale-commission')],
+          transactions: [dividend, buy, commissionFee('-25'), commissionFee('-14', 'transaction-buy-commission')],
           executions: {
             [dividend.id]: dividendWithCommission(),
-            [sale.id]: buildExecution({
-              id: 'execution-sale',
-              trade_type: TRADE_TYPES.sell,
-              transaction_type: TRADE_TYPES.sell,
-              net_value_trade_currency: '2000',
-              net_value_settlement_currency: '2000',
+            [buy.id]: buildExecution({
+              id: 'execution-buy',
+              trade_type: TRADE_TYPES.buy,
+              transaction_type: TRADE_TYPES.buy,
+              net_value_trade_currency: '-2000',
+              net_value_settlement_currency: '-2000',
               commissions_currency: ILS_LABEL,
               trade_commission_value_nis: '14',
             }),
@@ -1025,17 +1177,17 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       });
 
       it('does not report a commission mismatch of trades alone', async () => {
-        const sale = buildTransaction({ id: 'transaction-sale', amount: '2000' });
+        const buy = buildTransaction({ id: 'transaction-buy', amount: '-2000' });
 
         const { errors } = await generate({
-          transactions: [sale],
+          transactions: [buy],
           executions: {
-            [sale.id]: buildExecution({
-              id: 'execution-sale',
-              trade_type: TRADE_TYPES.sell,
-              transaction_type: TRADE_TYPES.sell,
-              net_value_trade_currency: '2000',
-              net_value_settlement_currency: '2000',
+            [buy.id]: buildExecution({
+              id: 'execution-buy',
+              trade_type: TRADE_TYPES.buy,
+              transaction_type: TRADE_TYPES.buy,
+              net_value_trade_currency: '-2000',
+              net_value_settlement_currency: '-2000',
               commissions_currency: ILS_LABEL,
               trade_commission_value_nis: '14',
             }),
