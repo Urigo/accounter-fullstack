@@ -11,6 +11,7 @@ import type {
   IGetReceiptToChargeQuery,
   IInsertDeelInvoiceRecordsParams,
   IInsertDeelInvoiceRecordsQuery,
+  ILockInvoiceIdForSyncQuery,
   ILockInvoicesForSyncQuery,
   IUpdateDeelInvoiceRecordsParams,
   IUpdateDeelInvoiceRecordsQuery,
@@ -53,6 +54,10 @@ const lockInvoicesForSync = sql<ILockInvoicesForSyncQuery>`
     ON d.id = di.document_id
   WHERE di.id in $$ids
   FOR UPDATE OF di;`;
+
+const lockInvoiceIdForSync = sql<ILockInvoiceIdForSyncQuery>`
+  SELECT true AS "locked!"
+  FROM pg_advisory_xact_lock(hashtext('deel_invoice:' || $id::text));`;
 
 const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
       INSERT INTO accounter_schema.deel_invoices (
@@ -393,6 +398,17 @@ export class DeelInvoicesProvider {
       return receiptChargeMap;
     } catch (e) {
       throw new Error('Error getting receipt to charge mapping', { cause: e });
+    }
+  }
+
+  /**
+   * Take a transaction-scoped advisory lock per invoice id, so two sync runs can't write the same
+   * invoice at once — unlike a row lock, this covers invoices that have no row yet. Ids are locked
+   * one at a time in sorted order, so concurrent runs can't deadlock. Must run inside a transaction.
+   */
+  public async lockInvoiceIdsForSync(ids: readonly string[]) {
+    for (const id of [...new Set(ids)].sort()) {
+      await lockInvoiceIdForSync.run({ id }, this.db);
     }
   }
 

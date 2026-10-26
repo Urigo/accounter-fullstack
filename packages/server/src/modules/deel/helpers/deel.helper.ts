@@ -47,6 +47,34 @@ export async function requireDeelBusinessId(injector: Injector): Promise<string>
   return deelBusinessId;
 }
 
+/**
+ * For ledger generation: the Deel business, resolved only for a charge that has financial
+ * documents. A failure to read it is logged and treated as "no Deel business", so it can't break
+ * the ledger of charges that have nothing to do with Deel.
+ */
+export async function getDeelBusinessIdForLedger(
+  injector: Injector,
+  documents: readonly IGetDocumentsByChargeIdResult[],
+): Promise<string | null> {
+  if (!documents.some(isFinancialDocument)) {
+    return null;
+  }
+  try {
+    return await getDeelBusinessId(injector);
+  } catch (error) {
+    console.error('Failed reading the Deel business; treating documents as non-Deel:', error);
+    return null;
+  }
+}
+
+function isFinancialDocument(document: IGetDocumentsByChargeIdResult): boolean {
+  return (
+    document.type === 'INVOICE' ||
+    document.type === 'INVOICE_RECEIPT' ||
+    document.type === 'CREDIT_INVOICE'
+  );
+}
+
 export function isDeelDocument(
   document: IGetDocumentsByChargeIdResult,
   deelBusinessId: string | null,
@@ -56,12 +84,7 @@ export function isDeelDocument(
   }
   const isDeelSide =
     document.creditor_id === deelBusinessId || document.debtor_id === deelBusinessId;
-  const isFinancialDocument =
-    document.type === 'INVOICE' ||
-    document.type === 'INVOICE_RECEIPT' ||
-    document.type === 'CREDIT_INVOICE';
-
-  return isDeelSide && isFinancialDocument;
+  return isDeelSide && isFinancialDocument(document);
 }
 
 export async function getDeelEmployeeId(
@@ -71,7 +94,7 @@ export async function getDeelEmployeeId(
   ledgerEntries: LedgerProto[],
   updateLedgerBalance: (entry: LedgerProto) => void,
 ): Promise<void> {
-  const deelBusinessId = await getDeelBusinessId(injector);
+  const deelBusinessId = await getDeelBusinessIdForLedger(injector, [document]);
   if (!isDeelDocument(document, deelBusinessId)) {
     return;
   }
@@ -271,7 +294,7 @@ export function convertMatchToDeelInvoiceRecord(
     deelFee: match.deel_fee,
     documentId,
     documentType: match.document_type,
-    dueDate: match.due_date,
+    dueDate: nullifyEmptyStrings(match.due_date),
     expenses: match.breakdown_expenses,
     frequency: nullifyEmptyStrings(match.breakdown_frequency),
     generalLedgerAccount: nullifyEmptyStrings(match.breakdown_general_ledger_account),
@@ -282,7 +305,7 @@ export function convertMatchToDeelInvoiceRecord(
     label: match.label,
     others: match.breakdown_others,
     overtime: match.breakdown_overtime,
-    paidAt: match.paid_at,
+    paidAt: nullifyEmptyStrings(match.paid_at),
     paymentCurrency: match.breakdown_payment_currency as Currency,
     paymentId: match.breakdown_receipt_id,
     processingFee: match.breakdown_processing_fee,

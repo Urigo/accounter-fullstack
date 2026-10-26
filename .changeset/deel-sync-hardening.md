@@ -10,11 +10,15 @@
   charge, documents and `deel_invoices` rows land together or not at all. Deel downloads and file
   uploads happen before the transaction, and uploads of a unit that failed are removed again.
 - What could not be synced is reported per receipt/invoice as a `DeelSyncIssue` with a code and a
-  message naming the invoices, receipt or contract involved — e.g. every unknown contract, with the
-  details needed to link it via `addDeelContract`. Other receipts are still synced. The client lists
-  the issues in a warning toast.
+  message naming the invoices, receipt or contract involved — e.g. every unknown contract of an
+  invoice being written, with the details needed to link it via `addDeelContract`. Other receipts
+  are still synced. Messages leave out internal detail (database errors, Deel response bodies),
+  which is logged on the server. The client lists the issues in a warning toast.
 - Re-matching a stored invoice to its payment deletes the charge it leaves empty, and the sync
-  resets the accountant approval of existing charges it changes. A concurrent sync run can no
-  longer save the same invoice twice.
+  resets the accountant approval of existing charges it changes. Concurrent sync runs are
+  serialized per invoice, so the same invoice can't be saved twice.
+- Invoices Deel sends without a due or paid date are stored (`deel_invoices.due_date` and
+  `paid_at` become nullable).
 - The Deel business is read from the Deel provider integration instead of being hard-coded, by
-  both the sync and ledger generation.
+  both the sync and ledger generation; until it is set, the Deel card reports Deel sync as
+  disabled.

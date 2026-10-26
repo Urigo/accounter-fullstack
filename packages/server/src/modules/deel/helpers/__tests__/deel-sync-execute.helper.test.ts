@@ -88,6 +88,9 @@ function setup() {
     }),
   };
   const deelInvoices = {
+    lockInvoiceIdsForSync: vi.fn(async (ids: readonly string[]) => {
+      events.push(`advisory lock ${[...ids].sort().join(',')}`);
+    }),
     lockInvoicesForSync: vi.fn(async (_ids: readonly string[]) => [] as unknown[]),
     insertDeelInvoiceRecords: vi.fn(async (params: { id?: string }) => {
       events.push(`insert deel_invoices ${params.id}`);
@@ -160,7 +163,17 @@ function setup() {
     };
   });
 
-  return { injector, events, db, deelInvoices, documents, charges, deelClient, cloudinary };
+  return {
+    injector,
+    events,
+    db,
+    deelInvoices,
+    documents,
+    charges,
+    deelClient,
+    cloudinary,
+    deelContracts,
+  };
 }
 
 describe('syncUnit', () => {
@@ -178,6 +191,7 @@ describe('syncUnit', () => {
     expect(outcome).toEqual({ ok: true, chargeId: 'new-charge', warnings: [] });
     expect(events).toEqual([
       'BEGIN',
+      'advisory lock i1,i2',
       'generate charge',
       'insert document d1',
       'insert deel_invoices i1',
@@ -266,7 +280,82 @@ describe('syncUnit', () => {
     const outcome = await syncUnit(injector, receiptUnit(), CONTEXT);
 
     expect(outcome).toMatchObject({ ok: false, issue: { code: 'ALREADY_PROCESSED' } });
-    expect(events).toEqual(['BEGIN', 'ROLLBACK']);
+    expect(events).toEqual(['BEGIN', 'advisory lock i1,i2', 'ROLLBACK']);
+  });
+
+  it('reports a duplicate-key insert (a run racing past the locks) as ALREADY_PROCESSED', async () => {
+    const { injector, deelInvoices } = setup();
+    const duplicate = Object.assign(new Error('duplicate key value violates unique constraint'), {
+      code: '23505',
+      severity: 'ERROR',
+    });
+    deelInvoices.insertDeelInvoiceRecords.mockRejectedValueOnce(
+      new Error('Error inserting Deel invoice [i1]', { cause: duplicate }),
+    );
+
+    const outcome = await syncUnit(injector, receiptUnit(), CONTEXT);
+
+    expect(outcome).toMatchObject({ ok: false, issue: { code: 'ALREADY_PROCESSED' } });
+    if (!outcome.ok) {
+      expect(outcome.issue.message).toContain('Deel invoice [i1] was saved by another sync run');
+    }
+  });
+
+  it('says when a stored row to re-match was removed, rather than matched', async () => {
+    const { injector } = setup();
+
+    const outcome = await syncUnit(
+      injector,
+      receiptUnit({ existingChargeId: 'receipt-charge', inserts: [], updates: [match('i3')] }),
+      CONTEXT,
+    );
+
+    expect(outcome).toMatchObject({ ok: false, issue: { code: 'ALREADY_PROCESSED' } });
+    if (!outcome.ok) {
+      expect(outcome.issue.message).toContain(
+        'the stored row of Deel invoice [i3] was removed by another operation',
+      );
+    }
+  });
+
+  it('keeps database error text out of the issue message', async () => {
+    const { injector, deelInvoices } = setup();
+    const dbError = Object.assign(
+      new Error('null value in column "paid_at" of relation "deel_invoices" violates not-null'),
+      { code: '23502', severity: 'ERROR' },
+    );
+    deelInvoices.insertDeelInvoiceRecords.mockRejectedValueOnce(
+      new Error('Error inserting Deel invoice [i1]', { cause: dbError }),
+    );
+
+    const outcome = await syncUnit(injector, receiptUnit(), CONTEXT);
+
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.issue.code).toBe('PERSIST_FAILED');
+    expect(outcome.issue.message).toContain(
+      'failed while inserting the deel_invoices row of Deel invoice [i1]: Error inserting Deel invoice [i1]: a database error occurred (details in the server logs)',
+    );
+    expect(outcome.issue.message).not.toContain('paid_at');
+  });
+
+  it('reports a failure reading the workers as PERSIST_FAILED, before fetching any file', async () => {
+    const { injector, deelClient, deelContracts } = setup();
+    deelContracts.getEmployeeByContractIdLoader.loadMany.mockRejectedValueOnce(
+      new Error('connection terminated'),
+    );
+
+    const outcome = await syncUnit(
+      injector,
+      receiptUnit({ workers: [{ contract_id: 'c1' }] as ReceiptSyncUnit['workers'] }),
+      CONTEXT,
+    );
+
+    expect(outcome).toMatchObject({ ok: false, issue: { code: 'PERSIST_FAILED' } });
+    if (!outcome.ok) {
+      expect(outcome.issue.message).toContain('Reading the contract workers of Deel receipt [r1]');
+    }
+    expect(deelClient.getSalaryInvoiceFile).not.toHaveBeenCalled();
   });
 
   it('moves re-matched documents, deletes their emptied charge and degrades the existing one', async () => {
@@ -284,6 +373,7 @@ describe('syncUnit', () => {
     expect(outcome).toEqual({ ok: true, chargeId: 'receipt-charge', warnings: [] });
     expect(events).toEqual([
       'BEGIN',
+      'advisory lock i3',
       'move d3 to receipt-charge',
       'update deel_invoices i3',
       'SAVEPOINT',
@@ -351,6 +441,7 @@ describe('syncUnit', () => {
     });
     expect(events).toEqual([
       'BEGIN',
+      'advisory lock i9',
       'generate charge',
       'insert document d1',
       'insert deel_invoices i9',

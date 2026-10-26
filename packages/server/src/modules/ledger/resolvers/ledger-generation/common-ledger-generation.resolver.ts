@@ -15,7 +15,7 @@ import {
   getChargeTaxCategoryId,
 } from '../../../charges/helpers/common.helper.js';
 import {
-  getDeelBusinessId,
+  getDeelBusinessIdForLedger,
   getDeelEmployeeId,
   isDeelDocument,
 } from '../../../deel/helpers/deel.helper.js';
@@ -419,7 +419,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         );
 
         let exchangeRateTaxCategory: string | undefined = undefined;
-        const deelBusinessId = await getDeelBusinessId(injector);
+        const deelBusinessId = await getDeelBusinessIdForLedger(injector, documents);
         const deelCharge = documents.some(doc => isDeelDocument(doc, deelBusinessId));
 
         if (deelCharge) {

@@ -5,10 +5,12 @@ import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
-import { describeError, type DeelSyncIssue } from './deel-sync-errors.js';
+import { describeErrorForUser, type DeelSyncIssue } from './deel-sync-errors.js';
 import { syncUnit } from './deel-sync-execute.helper.js';
 import {
   buildDeelSyncPlan,
+  getInvoicesToWrite,
+  groupBreakdownsByInvoice,
   splitPendingInvoices,
   type DecoratedPaymentBreakdown,
   type DeelSyncPlanInput,
@@ -61,9 +63,20 @@ export async function collectDeelSyncInput(injector: Injector): Promise<DeelSync
     return null;
   }
 
-  const pendingContractIds = [
+  // sequential, to stay clear of Deel's rate limits
+  const receipts = await deelClient.getPaymentReceipts();
+  const breakdowns: DecoratedPaymentBreakdown[] = [];
+  for (const receipt of receipts) {
+    if (receipt.id) {
+      const breakdown = await deelClient.getPaymentBreakdown(receipt.id);
+      breakdowns.push(...breakdown.data.map(row => ({ ...row, receipt_id: receipt.id })));
+    }
+  }
+
+  // only the contracts of invoices this sync may write need a business
+  const contractIds = [
     ...new Set(
-      [...pending.newInvoices, ...pending.unmatchedExistingInvoices]
+      getInvoicesToWrite(pending, groupBreakdownsByInvoice(breakdowns))
         .map(invoice => invoice.contract_id)
         .filter((id): id is string => !!id),
     ),
@@ -71,7 +84,7 @@ export async function collectDeelSyncInput(injector: Injector): Promise<DeelSync
   const knownContractIds = await step('Reading the linked Deel contracts', async () => {
     const contracts = await injector
       .get(DeelContractsProvider)
-      .getEmployeeByContractIdLoader.loadMany(pendingContractIds);
+      .getEmployeeByContractIdLoader.loadMany(contractIds);
     const known = new Set<string>();
     for (const contract of contracts) {
       if (contract instanceof Error) {
@@ -86,7 +99,7 @@ export async function collectDeelSyncInput(injector: Injector): Promise<DeelSync
 
   // details help the user link the contract; sequential, to stay clear of Deel's rate limits
   const unknownContracts = new Map<string, UnknownContractDetails>();
-  for (const contractId of pendingContractIds.filter(id => !knownContractIds.has(id))) {
+  for (const contractId of contractIds.filter(id => !knownContractIds.has(id))) {
     try {
       const { data } = await deelClient.getContractDetails(contractId);
       unknownContracts.set(contractId, {
@@ -95,17 +108,8 @@ export async function collectDeelSyncInput(injector: Injector): Promise<DeelSync
         startDate: data.start_date ?? null,
       });
     } catch (error) {
-      unknownContracts.set(contractId, { error: describeError(error) });
-    }
-  }
-
-  // sequential, to stay clear of Deel's rate limits
-  const receipts = await deelClient.getPaymentReceipts();
-  const breakdowns: DecoratedPaymentBreakdown[] = [];
-  for (const receipt of receipts) {
-    if (receipt.id) {
-      const breakdown = await deelClient.getPaymentBreakdown(receipt.id);
-      breakdowns.push(...breakdown.data.map(row => ({ ...row, receipt_id: receipt.id })));
+      console.error(`Failed fetching the details of Deel contract [${contractId}]:`, error);
+      unknownContracts.set(contractId, { error: describeErrorForUser(error) });
     }
   }
 

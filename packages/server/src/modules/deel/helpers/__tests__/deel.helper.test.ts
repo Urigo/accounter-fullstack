@@ -2,8 +2,16 @@ import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { describe, expect, it, vi } from 'vitest';
 import type { IGetDocumentsByChargeIdResult } from '../../../documents/types.js';
-import { describeError } from '../deel-sync-errors.js';
-import { getDeelBusinessId, isDeelDocument, requireDeelBusinessId } from '../deel.helper.js';
+import { describeError, describeErrorForUser } from '../deel-sync-errors.js';
+import {
+  convertMatchToDeelInvoiceRecord,
+  createDeelInvoiceMatchFromUnmatchedInvoice,
+  getDeelBusinessId,
+  getDeelBusinessIdForLedger,
+  isDeelDocument,
+  requireDeelBusinessId,
+} from '../deel.helper.js';
+import type { Invoice } from '../../../app-providers/deel/schemas.js';
 
 const DEEL_BUSINESS_ID = 'deel-business';
 
@@ -81,5 +89,70 @@ describe('describeError', () => {
   it('handles non-errors', () => {
     expect(describeError('boom')).toBe('boom');
     expect(describeError(undefined)).toBe('Unknown error');
+  });
+});
+
+describe('getDeelBusinessIdForLedger', () => {
+  it("doesn't read the provider statuses for a charge without financial documents", async () => {
+    const getProviderStatuses = vi.fn();
+    const injector = { get: () => ({ getProviderStatuses }) } as unknown as Injector;
+
+    await expect(
+      getDeelBusinessIdForLedger(injector, [document({ type: 'RECEIPT' })]),
+    ).resolves.toBeNull();
+    expect(getProviderStatuses).not.toHaveBeenCalled();
+  });
+
+  it('treats a failed read as no Deel business, instead of failing the ledger', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const injector = {
+      get: () => ({ getProviderStatuses: vi.fn().mockRejectedValue(new Error('RLS denied')) }),
+    } as unknown as Injector;
+
+    await expect(getDeelBusinessIdForLedger(injector, [document({})])).resolves.toBeNull();
+  });
+});
+
+describe('describeErrorForUser', () => {
+  it('summarizes a database error and points to the server logs', () => {
+    const dbError = Object.assign(new Error('duplicate key value violates "deel_invoices_pkey"'), {
+      code: '23505',
+      severity: 'ERROR',
+    });
+    expect(describeErrorForUser(new Error('Error inserting Deel invoice [x]', { cause: dbError }))).toBe(
+      'Error inserting Deel invoice [x]: a database error occurred (details in the server logs)',
+    );
+  });
+
+  it("shows an error's public message instead of its full one", () => {
+    const apiError = Object.assign(new Error('Deel API GET /payments returned … received "Jane"'), {
+      publicMessage: 'Deel API GET /payments returned an unexpected payload',
+    });
+    expect(describeErrorForUser(new Error('Failed to fetch Deel payment receipts', { cause: apiError }))).toBe(
+      'Failed to fetch Deel payment receipts: Deel API GET /payments returned an unexpected payload (details in the server logs)',
+    );
+  });
+
+  it('keeps a GraphQLError message as is', () => {
+    expect(describeErrorForUser(new GraphQLError('Deel credentials not configured for this tenant'))).toBe(
+      'Deel credentials not configured for this tenant',
+    );
+  });
+});
+
+describe('convertMatchToDeelInvoiceRecord', () => {
+  it('stores empty Deel dates as null', () => {
+    const match = createDeelInvoiceMatchFromUnmatchedInvoice({
+      id: 'i1',
+      due_date: '',
+      paid_at: '',
+      currency: 'USD',
+      amount: '1.00',
+    } as Invoice);
+
+    const record = convertMatchToDeelInvoiceRecord(match, 'doc-1');
+
+    expect(record.dueDate).toBeNull();
+    expect(record.paidAt).toBeNull();
   });
 });

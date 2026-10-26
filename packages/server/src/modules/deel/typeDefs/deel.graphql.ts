@@ -22,8 +22,6 @@ export default gql`
     INCONSISTENT_CONTRACT_INFO
     "The invoice matches several payment breakdowns"
     AMBIGUOUS_PAYMENT_MATCH
-    "No charge exists or can be created for the receipt"
-    MISSING_CHARGE
     "The invoice file could not be downloaded from Deel or stored"
     INVOICE_FILE_UNAVAILABLE
     "Another sync run saved the invoices in the meantime"

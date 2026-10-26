@@ -4,7 +4,6 @@ export type DeelSyncIssueCode =
   | 'UNKNOWN_CONTRACT'
   | 'INCONSISTENT_CONTRACT_INFO'
   | 'AMBIGUOUS_PAYMENT_MATCH'
-  | 'MISSING_CHARGE'
   | 'INVOICE_FILE_UNAVAILABLE'
   | 'ALREADY_PROCESSED'
   | 'PERSIST_FAILED'
@@ -24,8 +23,8 @@ export type DeelSyncIssue = {
 
 /** Thrown inside a unit's transaction when another sync run already wrote one of its invoices */
 export class DeelSyncConflictError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = 'DeelSyncConflictError';
   }
 }
@@ -52,4 +51,71 @@ export function describeError(error: unknown): string {
     current = current instanceof Error ? current.cause : undefined;
   }
   return messages.join(': ') || 'Unknown error';
+}
+
+/** A Postgres error (pg's `DatabaseError`): its text names tables and constraints */
+function isDatabaseError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'severity' in error &&
+    typeof (error as { code?: unknown }).code === 'string'
+  );
+}
+
+/** Whether an error chain contains a Postgres error with the given SQLSTATE */
+export function hasDatabaseErrorCode(error: unknown, sqlState: string): boolean {
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+  while (current instanceof Error && !seen.has(current)) {
+    seen.add(current);
+    if (isDatabaseError(current) && (current as { code?: string }).code === sqlState) {
+      return true;
+    }
+    current = current.cause;
+  }
+  return false;
+}
+
+/**
+ * Like {@link describeError}, but for the browser: what failed, without internal detail. Database
+ * errors are summarized (their text names tables and constraints), an error carrying a
+ * `publicMessage` — e.g. a Deel API failure, whose full message quotes the response body and the
+ * values Deel sent — contributes only that, and anything hidden is pointed to in the server logs,
+ * where the full chain is logged.
+ */
+export function describeErrorForUser(error: unknown): string {
+  const messages: string[] = [];
+  let hidden = false;
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+  while (current != null && !seen.has(current)) {
+    seen.add(current);
+    if (current instanceof GraphQLError) {
+      messages.push(current.message);
+      break;
+    }
+    const publicMessage = (current as { publicMessage?: unknown }).publicMessage;
+    if (typeof publicMessage === 'string') {
+      messages.push(publicMessage);
+      hidden ||= current instanceof Error && current.message !== publicMessage;
+      break;
+    }
+    if (isDatabaseError(current)) {
+      messages.push('a database error occurred');
+      hidden = true;
+      break;
+    }
+    if (!(current instanceof Error)) {
+      messages.push('an unexpected error occurred');
+      hidden = true;
+      break;
+    }
+    const message = current.message.trim();
+    if (message && !messages.at(-1)?.includes(message)) {
+      messages.push(message);
+    }
+    current = current.cause;
+  }
+  const text = messages.join(': ') || 'Unknown error';
+  return hidden ? `${text} (details in the server logs)` : text;
 }

@@ -1,7 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
-import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
+import { CloudinaryProvider, type CloudinaryResourceType } from '../../app-providers/cloudinary.js';
 import { DeelClientProvider } from '../../app-providers/deel/deel-client.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
@@ -13,7 +13,12 @@ import {
 } from '../../documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
-import { DeelSyncConflictError, describeError, type DeelSyncIssue } from './deel-sync-errors.js';
+import {
+  DeelSyncConflictError,
+  describeErrorForUser,
+  hasDatabaseErrorCode,
+  type DeelSyncIssue,
+} from './deel-sync-errors.js';
 import { describeUnit, getUnitInvoiceIds, type DeelSyncUnit } from './deel-sync-plan.helper.js';
 import {
   buildDeelInvoiceDocument,
@@ -32,8 +37,8 @@ type UploadedInvoiceFile = {
   fileUrl: string;
   imageUrl: string;
   fileHash: string;
-  publicId?: string;
-  resourceType?: string;
+  publicId: string;
+  resourceType: CloudinaryResourceType;
 };
 
 export type PreparedUnit = {
@@ -63,9 +68,6 @@ function unitUpdates(unit: DeelSyncUnit): DeelInvoiceMatch[] {
 
 async function deleteUploads(injector: Injector, files: Iterable<UploadedInvoiceFile>) {
   for (const file of files) {
-    if (!file.publicId) {
-      continue;
-    }
     try {
       await injector.get(CloudinaryProvider).deleteUpload(file.publicId, file.resourceType);
     } catch (error) {
@@ -74,18 +76,27 @@ async function deleteUploads(injector: Injector, files: Iterable<UploadedInvoice
   }
 }
 
+/** The description of the charge to generate for a unit that has none yet — reads the DB */
+export async function resolveChargeDescription(
+  injector: Injector,
+  unit: DeelSyncUnit,
+): Promise<string | null> {
+  if (unit.existingChargeId) {
+    return null;
+  }
+  return unit.kind === 'receipt'
+    ? getDeelChargeDescription(injector, unit.workers)
+    : `Deel invoice ${unit.invoice.label}`;
+}
+
 /**
  * The external part of a unit, done before its transaction opens: download each new invoice's file
- * from Deel, upload it, and work out the description of a charge to generate. On failure, files
- * already uploaded for the unit are removed again.
+ * from Deel and upload it. On failure, files already uploaded for the unit are removed again.
  */
-export async function prepareUnit(injector: Injector, unit: DeelSyncUnit): Promise<PreparedUnit> {
-  const chargeDescription = unit.existingChargeId
-    ? null
-    : unit.kind === 'receipt'
-      ? await getDeelChargeDescription(injector, unit.workers)
-      : `Deel invoice ${unit.invoice.label}`;
-
+export async function prepareUnitFiles(
+  injector: Injector,
+  unit: DeelSyncUnit,
+): Promise<Map<string, UploadedInvoiceFile>> {
   // minutes of downloads and uploads ahead — don't hold a pooled connection idle through them
   await releaseDbConnectionForExternalWork(injector);
 
@@ -104,17 +115,20 @@ export async function prepareUnit(injector: Injector, unit: DeelSyncUnit): Promi
     throw error;
   }
 
-  return { chargeDescription, files };
+  return files;
 }
 
 /** Delete a charge left empty (see `isChargeEmpty`); returns whether it was deleted */
 async function deleteChargeIfEmpty(injector: Injector, chargeId: string): Promise<boolean> {
-  if (!(await isChargeEmpty(chargeId, injector))) {
-    return false;
-  }
-  // a savepoint, so a failed delete (e.g. a locked ledger) doesn't abort the unit's transaction
-  await injector.get(TenantAwareDBClient).transaction(() => deleteCharges([chargeId], injector));
-  return true;
+  // a savepoint, so a failed check or delete (e.g. a locked ledger) doesn't abort the unit's
+  // transaction
+  return injector.get(TenantAwareDBClient).transaction(async () => {
+    if (!(await isChargeEmpty(chargeId, injector))) {
+      return false;
+    }
+    await deleteCharges([chargeId], injector);
+    return true;
+  });
 }
 
 /**
@@ -129,7 +143,7 @@ export async function persistUnit(
 ): Promise<{ chargeId: string; warnings: DeelSyncIssue[] }> {
   const inserts = unitInserts(unit);
   const updates = unitUpdates(unit);
-  let step = 'locking the invoice rows';
+  let step = 'locking the invoices';
 
   try {
     return await injector.get(TenantAwareDBClient).transaction(async () => {
@@ -137,8 +151,12 @@ export async function persistUnit(
       const deelInvoicesProvider = injector.get(DeelInvoicesProvider);
       const documentsProvider = injector.get(DocumentsProvider);
 
-      // another sync run may have saved these invoices since they were read
-      const lockedRows = await deelInvoicesProvider.lockInvoicesForSync(getUnitInvoiceIds(unit));
+      // another sync run may be saving the same invoices, or have saved them since they were read:
+      // the advisory locks serialize runs (also for invoices that have no row yet), the row lock
+      // reads their current state
+      const invoiceIds = getUnitInvoiceIds(unit);
+      await deelInvoicesProvider.lockInvoiceIdsForSync(invoiceIds);
+      const lockedRows = await deelInvoicesProvider.lockInvoicesForSync(invoiceIds);
       const storedById = new Map(lockedRows.map(row => [row.id, row]));
       for (const match of inserts) {
         if (storedById.has(match.id)) {
@@ -149,7 +167,12 @@ export async function persistUnit(
       }
       for (const match of updates) {
         const stored = storedById.get(match.id);
-        if (!stored || stored.payment_id) {
+        if (!stored) {
+          throw new DeelSyncConflictError(
+            `the stored row of Deel invoice [${match.id}] was removed by another operation in the meantime`,
+          );
+        }
+        if (stored.payment_id) {
           throw new DeelSyncConflictError(
             `Deel invoice [${match.id}] was matched to a payment by another sync run in the meantime`,
           );
@@ -197,9 +220,21 @@ export async function persistUnit(
         }
 
         step = `inserting the deel_invoices row of Deel invoice [${match.id}]`;
-        await deelInvoicesProvider.insertDeelInvoiceRecords(
-          convertMatchToDeelInvoiceRecord(match, document.id),
-        );
+        try {
+          await deelInvoicesProvider.insertDeelInvoiceRecords(
+            convertMatchToDeelInvoiceRecord(match, document.id),
+          );
+        } catch (error) {
+          // the advisory lock makes this unlikely, but a unique violation still means another run
+          // saved the invoice
+          if (hasDatabaseErrorCode(error, '23505')) {
+            throw new DeelSyncConflictError(
+              `Deel invoice [${match.id}] was saved by another sync run in the meantime`,
+              { cause: error },
+            );
+          }
+          throw error;
+        }
       }
 
       const previousChargeIds = new Set<string>();
@@ -231,7 +266,7 @@ export async function persistUnit(
           console.error(`Failed to delete empty charge [${previousChargeId}]:`, error);
           warnings.push({
             code: 'CLEANUP_FAILED',
-            message: `${describeUnit(unit)} was synced, but its documents' previous charge [${previousChargeId}] is now empty and could not be deleted: ${describeError(error)}`,
+            message: `${describeUnit(unit)} was synced, but its documents' previous charge [${previousChargeId}] is now empty and could not be deleted: ${describeErrorForUser(error)}`,
             invoiceIds: updates.map(match => match.id),
             receiptId: unit.kind === 'receipt' ? unit.receiptId : null,
           });
@@ -271,21 +306,38 @@ export async function syncUnit(
   const receiptId = unit.kind === 'receipt' ? unit.receiptId : null;
   const unitName = describeUnit(unit);
 
-  let prepared: PreparedUnit;
+  let chargeDescription: string | null;
   try {
-    prepared = await prepareUnit(injector, unit);
+    chargeDescription = await resolveChargeDescription(injector, unit);
   } catch (error) {
-    console.error(`Failed preparing ${unitName}:`, error);
+    console.error(`Failed reading the contract workers of ${unitName}:`, error);
     return {
       ok: false,
       issue: {
-        code: 'INVOICE_FILE_UNAVAILABLE',
-        message: `${unitName} was not synced, as its invoice files could not be fetched and stored: ${describeError(error)}`,
+        code: 'PERSIST_FAILED',
+        message: `Reading the contract workers of ${unitName} failed: ${describeErrorForUser(error)}. Nothing was saved for it.`,
         invoiceIds,
         receiptId,
       },
     };
   }
+
+  let files: Map<string, UploadedInvoiceFile>;
+  try {
+    files = await prepareUnitFiles(injector, unit);
+  } catch (error) {
+    console.error(`Failed preparing the invoice files of ${unitName}:`, error);
+    return {
+      ok: false,
+      issue: {
+        code: 'INVOICE_FILE_UNAVAILABLE',
+        message: `${unitName} was not synced, as its invoice files could not be fetched and stored: ${describeErrorForUser(error)}`,
+        invoiceIds,
+        receiptId,
+      },
+    };
+  }
+  const prepared: PreparedUnit = { chargeDescription, files };
 
   try {
     const { chargeId, warnings } = await persistUnit(injector, unit, prepared, context);
@@ -309,7 +361,7 @@ export async function syncUnit(
       ok: false,
       issue: {
         code: 'PERSIST_FAILED',
-        message: `Saving ${unitName} ${describeError(error)}. Nothing was saved for it.`,
+        message: `Saving ${unitName} ${describeErrorForUser(error)}. Nothing was saved for it.`,
         invoiceIds,
         receiptId,
       },

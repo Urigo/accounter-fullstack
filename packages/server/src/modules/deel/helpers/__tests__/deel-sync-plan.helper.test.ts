@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Invoice, PaymentReceipts } from '../../../app-providers/deel/schemas.js';
 import {
   buildDeelSyncPlan,
+  getInvoicesToWrite,
+  groupBreakdownsByInvoice,
   splitPendingInvoices,
   type DecoratedPaymentBreakdown,
   type DeelSyncPlanInput,
@@ -207,6 +209,33 @@ describe('buildDeelSyncPlan', () => {
     expect(plan.issues[1].message).toContain('responded 404');
   });
 
+  it('leaves a stored invoice that stays unmatched alone — no contract check, no issue', () => {
+    const plan = buildDeelSyncPlan(
+      input({
+        pending: {
+          newInvoices: [],
+          unmatchedExistingInvoices: [invoice('stored', { contract_id: 'unknown' })],
+        },
+      }),
+    );
+    expect(plan).toEqual({ units: [], issues: [] });
+  });
+
+  it('only asks for the contracts of invoices it will write', () => {
+    const pending = {
+      newInvoices: [invoice('new', { contract_id: 'x1' })],
+      unmatchedExistingInvoices: [
+        invoice('stays', { contract_id: 'x2' }),
+        invoice('matched-now', { contract_id: 'x3' }),
+      ],
+    };
+    const written = getInvoicesToWrite(
+      pending,
+      groupBreakdownsByInvoice([breakdown('matched-now', 'r1')]),
+    );
+    expect(written.map(i => i.id)).toEqual(['new', 'matched-now']);
+  });
+
   it('reports breakdowns that disagree on a contract, blocking its receipt', () => {
     const plan = buildDeelSyncPlan(
       input({
@@ -245,19 +274,6 @@ describe('buildDeelSyncPlan', () => {
     );
     expect(plan.issues).toEqual([]);
     expect(plan.units).toHaveLength(1);
-  });
-
-  it("reports a matched receipt Deel didn't list and that has no charge", () => {
-    const plan = buildDeelSyncPlan(
-      input({
-        pending: { newInvoices: [invoice('i1')], unmatchedExistingInvoices: [] },
-        breakdowns: [breakdown('i1', 'ghost')],
-      }),
-    );
-    expect(plan.units).toEqual([]);
-    expect(plan.issues).toEqual([
-      expect.objectContaining({ code: 'MISSING_CHARGE', receiptId: 'ghost', invoiceIds: ['i1'] }),
-    ]);
   });
 
   it("orders receipt units as Deel lists the receipts", () => {

@@ -233,7 +233,7 @@ export function DeelCard({
               <p className="text-sm text-gray-500">Deel business: {status.business.name}</p>
             ) : (
               <Badge className="w-fit bg-amber-500 text-white hover:bg-amber-500">
-                Deel business not set
+                Deel business not set — Deel sync disabled
               </Badge>
             )}
           </div>

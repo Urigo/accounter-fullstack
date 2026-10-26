@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { describeError } from '../helpers/deel-sync-errors.js';
+import { describeErrorForUser } from '../helpers/deel-sync-errors.js';
 import { syncDeelDocuments } from '../helpers/deel-sync.helper.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import type { DeelModule } from '../types.js';
@@ -34,7 +34,7 @@ export const deelResolvers: DeelModule.Resolvers = {
         console.error('Error fetching Deel documents:', error);
         return {
           __typename: 'CommonError' as const,
-          message: `Error fetching Deel documents: ${describeError(error)}`,
+          message: `Error fetching Deel documents: ${describeErrorForUser(error)}`,
         };
       }
     },

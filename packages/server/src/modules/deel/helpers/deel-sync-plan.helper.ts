@@ -92,6 +92,56 @@ export function splitPendingInvoices(
   return { newInvoices, unmatchedExistingInvoices };
 }
 
+export function groupBreakdownsByInvoice(
+  breakdowns: readonly DecoratedPaymentBreakdown[],
+): Map<string, DecoratedPaymentBreakdown[]> {
+  const byInvoice = new Map<string, DecoratedPaymentBreakdown[]>();
+  for (const breakdown of breakdowns) {
+    const list = byInvoice.get(breakdown.invoice_id) ?? [];
+    list.push(breakdown);
+    byInvoice.set(breakdown.invoice_id, list);
+  }
+  return byInvoice;
+}
+
+/**
+ * How an invoice relates to the payment breakdowns that mention it: one breakdown is a match;
+ * none — or several, for a processed, refunded or zero invoice — leaves it unmatched; several
+ * otherwise can't be resolved.
+ */
+function classifyMatch(
+  invoice: Invoice,
+  candidates: readonly DecoratedPaymentBreakdown[],
+): 'match' | 'unmatched' | 'ambiguous' {
+  if (candidates.length === 0) {
+    return 'unmatched';
+  }
+  if (candidates.length === 1) {
+    return 'match';
+  }
+  if (invoice.status === 'processed' || invoice.total === '0.00' || invoice.status === 'refunded') {
+    return 'unmatched';
+  }
+  return 'ambiguous';
+}
+
+/**
+ * The pending invoices this sync may write: every new invoice, and the stored unmatched ones that
+ * now relate to a payment. A stored invoice that stays unmatched is left alone, so it is neither
+ * checked nor reported.
+ */
+export function getInvoicesToWrite(
+  pending: PendingInvoices,
+  breakdownsByInvoice: ReadonlyMap<string, readonly DecoratedPaymentBreakdown[]>,
+): Invoice[] {
+  return [
+    ...pending.newInvoices,
+    ...pending.unmatchedExistingInvoices.filter(
+      invoice => classifyMatch(invoice, breakdownsByInvoice.get(invoice.id) ?? []) !== 'unmatched',
+    ),
+  ];
+}
+
 function toMatch(invoice: Invoice, breakdown: DecoratedPaymentBreakdown): DeelInvoiceMatch {
   const prefixed: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(breakdown)) {
@@ -161,12 +211,13 @@ export function buildDeelSyncPlan(input: DeelSyncPlanInput): DeelSyncPlan {
     }
   };
 
-  const pendingInvoices = [...pending.newInvoices, ...pending.unmatchedExistingInvoices];
   const unmatchedExistingIds = new Set(pending.unmatchedExistingInvoices.map(i => i.id));
+  const breakdownsByInvoice = groupBreakdownsByInvoice(breakdowns);
+  const invoicesToWrite = getInvoicesToWrite(pending, breakdownsByInvoice);
 
   // contracts must be linked to a business before their invoices can be booked
   const invoicesByUnknownContract = new Map<string, string[]>();
-  for (const invoice of pendingInvoices) {
+  for (const invoice of invoicesToWrite) {
     if (invoice.contract_id && !knownContractIds.has(invoice.contract_id)) {
       const ids = invoicesByUnknownContract.get(invoice.contract_id) ?? [];
       ids.push(invoice.id);
@@ -182,28 +233,16 @@ export function buildDeelSyncPlan(input: DeelSyncPlanInput): DeelSyncPlan {
     });
   }
 
-  // match pending invoices with payment breakdowns
-  const breakdownsByInvoice = new Map<string, DecoratedPaymentBreakdown[]>();
-  for (const breakdown of breakdowns) {
-    const list = breakdownsByInvoice.get(breakdown.invoice_id) ?? [];
-    list.push(breakdown);
-    breakdownsByInvoice.set(breakdown.invoice_id, list);
-  }
-
+  // match the invoices to write with payment breakdowns
   const matches: DeelInvoiceMatch[] = [];
   const unmatched: Invoice[] = [];
-  for (const invoice of pendingInvoices) {
+  for (const invoice of invoicesToWrite) {
     const candidates = breakdownsByInvoice.get(invoice.id) ?? [];
-    if (candidates.length === 0) {
+    const kind = classifyMatch(invoice, candidates);
+    if (kind === 'unmatched') {
       unmatched.push(invoice);
-    } else if (candidates.length === 1) {
+    } else if (kind === 'match') {
       matches.push(toMatch(invoice, candidates[0]));
-    } else if (
-      invoice.status === 'processed' ||
-      invoice.total === '0.00' ||
-      invoice.status === 'refunded'
-    ) {
-      unmatched.push(invoice);
     } else {
       block({
         code: 'AMBIGUOUS_PAYMENT_MATCH',
@@ -216,10 +255,14 @@ export function buildDeelSyncPlan(input: DeelSyncPlanInput): DeelSyncPlan {
   // breakdown rows of the same contract must agree on the contractor
   const contractInfos = new Map<string, ContractInfo>();
   const inconsistentContracts = new Set<string>();
+  const matchIdsByContract = new Map<string, string[]>();
   for (const match of matches) {
     if (!match.contract_id) {
       continue;
     }
+    const contractMatchIds = matchIdsByContract.get(match.contract_id) ?? [];
+    contractMatchIds.push(match.id);
+    matchIdsByContract.set(match.contract_id, contractMatchIds);
     const existing = contractInfos.get(match.contract_id);
     if (!existing) {
       contractInfos.set(match.contract_id, contractInfoOf(match));
@@ -238,7 +281,7 @@ export function buildDeelSyncPlan(input: DeelSyncPlanInput): DeelSyncPlan {
     }
   }
   for (const contractId of inconsistentContracts) {
-    const invoiceIds = matches.filter(m => m.contract_id === contractId).map(m => m.id);
+    const invoiceIds = matchIdsByContract.get(contractId) ?? [];
     block({
       code: 'INCONSISTENT_CONTRACT_INFO',
       message: `Deel payment breakdowns of contract [${contractId}] disagree on the contractor details (country, start date, type, email, name or id). Invoices: ${listIds(invoiceIds)}`,
@@ -274,6 +317,12 @@ export function buildDeelSyncPlan(input: DeelSyncPlanInput): DeelSyncPlan {
     matchesByReceipt.set(match.breakdown_receipt_id, list);
   }
   const receiptsById = new Map(receipts.map(receipt => [receipt.id, receipt]));
+  const invoiceIdsByReceipt = new Map<string, string[]>();
+  for (const breakdown of breakdowns) {
+    const list = invoiceIdsByReceipt.get(breakdown.receipt_id) ?? [];
+    list.push(breakdown.invoice_id);
+    invoiceIdsByReceipt.set(breakdown.receipt_id, list);
+  }
   const receiptOrder = new Map(receipts.map((receipt, index) => [receipt.id, index]));
   const receiptIds = [...matchesByReceipt.keys()].sort(
     (a, b) =>
@@ -291,7 +340,7 @@ export function buildDeelSyncPlan(input: DeelSyncPlanInput): DeelSyncPlan {
     const coveredInvoiceIds = new Set([
       ...invoiceIds,
       ...(receipt?.invoices ?? []).map(invoice => invoice.id),
-      ...breakdowns.filter(b => b.receipt_id === receiptId).map(b => b.invoice_id),
+      ...(invoiceIdsByReceipt.get(receiptId) ?? []),
     ]);
     const blocker = [...coveredInvoiceIds]
       .map(id => blockingIssues.get(id))
@@ -310,19 +359,12 @@ export function buildDeelSyncPlan(input: DeelSyncPlanInput): DeelSyncPlan {
       continue;
     }
 
+    // breakdowns are only fetched for listed receipts, so a receipt without a charge can always
+    // get a new one
     const existingChargeId =
       receiptChargeMap.get(receiptId) ??
       invoiceIds.map(id => invoiceChargeMap.get(id)).find(id => !!id) ??
       null;
-    if (!existingChargeId && !receipt) {
-      issues.push({
-        code: 'MISSING_CHARGE',
-        message: `${description} has no charge yet, and Deel did not list the receipt itself to create one from`,
-        invoiceIds,
-        receiptId,
-      });
-      continue;
-    }
 
     units.push({
       kind: 'receipt',

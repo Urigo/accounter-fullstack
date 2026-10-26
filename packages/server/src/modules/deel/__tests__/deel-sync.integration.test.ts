@@ -186,14 +186,31 @@ describe('Deel sync unit persistence', () => {
     expect(await countRows()).toEqual({ charges: 1, documents: 2, invoices: 2 });
   });
 
+  it('saves an invoice Deel sends without due and paid dates', async () => {
+    const injector = createInjector();
+
+    const outcome = await syncUnit(
+      injector,
+      receiptUnit([match('int-1', { due_date: '', paid_at: '' })]),
+      context,
+    );
+
+    expect(outcome).toMatchObject({ ok: true });
+    const { rows } = await pool.query(
+      'SELECT due_date, paid_at FROM accounter_schema.deel_invoices WHERE id = $1',
+      ['int-1'],
+    );
+    expect(rows[0]).toEqual({ due_date: null, paid_at: null });
+  });
+
   it('leaves nothing behind when the last row of a receipt fails to insert', async () => {
     const injector = createInjector();
 
-    // `paid_at` is NOT NULL: the second invoice fails after the charge, both documents and the
+    // `is_overdue` is NOT NULL: the second invoice fails after the charge, both documents and the
     // first deel_invoices row were already written in the same transaction
     const outcome = await syncUnit(
       injector,
-      receiptUnit([match('int-1'), match('int-2', { paid_at: null as unknown as string })]),
+      receiptUnit([match('int-1'), match('int-2', { is_overdue: null as unknown as boolean })]),
       context,
     );
 
