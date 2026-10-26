@@ -1,6 +1,17 @@
+import type { Injector } from 'graphql-modules';
+import type { Resolvers } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
+import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { PriceIndexNotAvailableError } from '../../price-indexes/helpers/price-index.helper.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { netAmountsByCurrency } from '../helpers/securities-counterparty.helper.js';
+import {
+  getSecurityCapitalGain,
+  SecurityCapitalGainError,
+} from '../helpers/security-capital-gain.helper.js';
 import {
   toSecurityPaymentType,
   toSecurityTradeType,
@@ -8,7 +19,11 @@ import {
 } from '../helpers/security-execution-enums.helper.js';
 import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
-import type { ForeignSecuritiesModule, SecurityExecutionRow } from '../types.js';
+import type {
+  ChargeSecurityProto,
+  ForeignSecuritiesModule,
+  SecurityExecutionRow,
+} from '../types.js';
 
 /**
  * `numeric` columns arrive as decimal strings. A null column means "not applicable for this
@@ -43,7 +58,24 @@ const settlementCurrencyAmount = (value: string | null, execution: SecurityExecu
 const ilsAmount = (value: string | null) =>
   value == null ? null : formatFinancialAmount(value, Currency.Ils);
 
-export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
+/**
+ * The bridge from the bank's key to the security's own identity: `security_identifiers` maps
+ * POALIM_SECURITY_KEY -> the ISIN-keyed security business, which is what the holdings list and
+ * the executions query are addressed by. Null is a real answer — the reference feed can be
+ * ingested before the executions that create a security business.
+ */
+const loadSecurityBusiness = async (chargeSecurity: ChargeSecurityProto, injector: Injector) =>
+  (await injector.get(SecurityBusinessesProvider).getSecurityBusinessByIdentifierLoader.load({
+    // Scoped to the charge's owner: the key is unique only within one, so a request whose scope
+    // spans two businesses trading the same security would otherwise resolve to whichever row
+    // won the batch.
+    ownerId: chargeSecurity.ownerId,
+    type: 'POALIM_SECURITY_KEY',
+    value: chargeSecurity.securityKey,
+  })) ?? null;
+
+export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers &
+  Pick<Resolvers, 'SecurityCapitalGainResult'> = {
   ForeignSecuritiesCharge: {
     securities: async (dbCharge, _, { injector }) => {
       try {
@@ -61,27 +93,61 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
         throw errorSimplifier(`Error fetching securities for charge ${dbCharge.id}`, e);
       }
     },
+    counterparties: async (dbCharge, _, { injector }) => {
+      try {
+        const { mainBusinessIds } = await getChargeBusinesses(dbCharge, injector);
+        const entities = await injector
+          .get(FinancialEntitiesProvider)
+          .getFinancialEntityByIdLoader.loadMany(mainBusinessIds);
+        return entities.filter(
+          (entity): entity is Exclude<typeof entity, Error | undefined | null> =>
+            !!entity && !(entity instanceof Error),
+        );
+      } catch (e) {
+        throw errorSimplifier(`Error fetching counterparties for charge ${dbCharge.id}`, e);
+      }
+    },
   },
   ChargeSecurity: {
     id: chargeSecurity => chargeSecurity.id,
     securityKey: chargeSecurity => chargeSecurity.securityKey,
     details: chargeSecurity => chargeSecurity.details,
-    // The bridge from the bank's key to the security's own identity: `security_identifiers` maps
-    // POALIM_SECURITY_KEY -> the ISIN-keyed security business, which is what the holdings list
-    // and the executions query are addressed by. Null is a real answer — the reference feed can
-    // be ingested before the executions that create a security business.
-    securityBusiness: async (chargeSecurity, _, { injector }) =>
-      (await injector.get(SecurityBusinessesProvider).getSecurityBusinessByIdentifierLoader.load({
-        // Scoped to the charge's owner: the key is unique only within one, so a request whose
-        // scope spans two businesses trading the same security would otherwise resolve to
-        // whichever row won the batch.
-        ownerId: chargeSecurity.ownerId,
-        type: 'POALIM_SECURITY_KEY',
-        value: chargeSecurity.securityKey,
-      })) ?? null,
+    securityBusiness: (chargeSecurity, _, { injector }) =>
+      loadSecurityBusiness(chargeSecurity, injector),
     // Transaction concrete types are mapped to their id (see codegen.ts mappers).
     transactions: chargeSecurity => chargeSecurity.transactionIds,
     executions: chargeSecurity => chargeSecurity.executions,
+    // Both read the charge's transactions by the security's business, the same grouping the
+    // charge's counterparty is narrowed by, so "offsetting" here always matches a security left
+    // out of `ForeignSecuritiesCharge.counterparties`.
+    netAmount: async (chargeSecurity, _, { injector }) => {
+      const securityBusiness = await loadSecurityBusiness(chargeSecurity, injector);
+      if (!securityBusiness) {
+        return null;
+      }
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .transactionsByChargeIDLoader.load(chargeSecurity.chargeId);
+      const nets = netAmountsByCurrency(
+        transactions.filter(transaction => transaction.business_id === securityBusiness.id),
+      );
+      if (nets.size !== 1) {
+        return null;
+      }
+      const [[currency, amount]] = nets;
+      return formatFinancialAmount(amount, currency);
+    },
+    isOffsetting: async (chargeSecurity, _, { injector }) => {
+      const securityBusiness = await loadSecurityBusiness(chargeSecurity, injector);
+      if (!securityBusiness) {
+        return false;
+      }
+      const { offsettingBusinessIds } = await getChargeBusinesses(
+        chargeSecurity.chargeId,
+        injector,
+      );
+      return offsettingBusinessIds.includes(securityBusiness.id);
+    },
   },
   SecurityExecution: {
     id: execution => execution.id,
@@ -117,6 +183,53 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
     realProfitLoss: execution => ilsAmount(execution.real_profit_loss_nis),
     symbol: execution => execution.symbol || null,
     isin: execution => execution.isin || null,
+    capitalGain: async (execution, _, { injector }) => {
+      try {
+        return await getSecurityCapitalGain(injector, execution);
+      } catch (e) {
+        // what the user can act on is said as is; anything else is a failure of its own
+        if (e instanceof SecurityCapitalGainError || e instanceof PriceIndexNotAvailableError) {
+          return { __typename: 'CommonError', message: e.message };
+        }
+        throw errorSimplifier(`Error working out the capital gain of execution ${execution.id}`, e);
+      }
+    },
+  },
+  SecurityCapitalGainResult: {
+    __resolveType: obj =>
+      '__typename' in obj && obj.__typename === 'CommonError'
+        ? 'CommonError'
+        : 'SecurityCapitalGain',
+  },
+  SecurityCapitalGain: {
+    id: gain => gain.id,
+    quantity: gain => gain.quantity,
+    proceeds: gain => formatFinancialAmount(gain.proceeds, gain.currency),
+    saleRate: gain => gain.saleRate,
+    cost: gain => formatFinancialAmount(gain.cost, gain.currency),
+    originCurrencyGain: gain => formatFinancialAmount(gain.originCurrencyGain, gain.currency),
+    nominalGain: gain => formatFinancialAmount(gain.nominalGain, gain.localCurrency),
+    priceGain: gain => formatFinancialAmount(gain.priceGain, gain.localCurrency),
+    exchangeRateGain: gain => formatFinancialAmount(gain.exchangeRateGain, gain.localCurrency),
+    inflationaryAmount: gain => formatFinancialAmount(gain.inflationaryAmount, gain.localCurrency),
+    realGain: gain => formatFinancialAmount(gain.realGain, gain.localCurrency),
+    lots: gain => gain.lots,
+  },
+  SecurityCapitalGainLot: {
+    id: lot => lot.id,
+    purchaseExecutionId: lot => lot.purchaseExecutionId,
+    purchaseDate: lot => lot.purchaseDate,
+    quantity: lot => lot.quantity,
+    cost: lot => formatFinancialAmount(lot.cost, lot.currency),
+    costLocal: lot => formatFinancialAmount(lot.costLocal, lot.localCurrency),
+    purchaseRate: lot => lot.purchaseRate,
+    consideration: lot => formatFinancialAmount(lot.consideration, lot.localCurrency),
+    purchaseIndexPeriod: lot => lot.purchaseIndexPeriod,
+    saleIndexPeriod: lot => lot.saleIndexPeriod,
+    indexRatio: lot => lot.indexRatio,
+    nominalGain: lot => formatFinancialAmount(lot.nominalGain, lot.localCurrency),
+    inflationaryAmount: lot => formatFinancialAmount(lot.inflationaryAmount, lot.localCurrency),
+    realGain: lot => formatFinancialAmount(lot.realGain, lot.localCurrency),
   },
   Security: {
     id: security => security.id,

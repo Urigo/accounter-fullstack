@@ -91,6 +91,7 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     management_fees_value_trade_currency,
     israe_tax_value,
     nominal_profit_loss_nis,
+    nominal_profit_loss_linkage,
     real_profit_loss_nis,
     payment_type,
     symbol,
@@ -153,6 +154,7 @@ const getSecurityExecutionsByBusinessIds = sql<IGetSecurityExecutionsByBusinessI
     t.management_fees_value_trade_currency,
     t.israe_tax_value,
     t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
     t.real_profit_loss_nis,
     t.payment_type,
     t.symbol,
@@ -223,6 +225,7 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
     t.management_fees_value_trade_currency,
     t.israe_tax_value,
     t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
     t.real_profit_loss_nis,
     t.payment_type,
     t.symbol,
@@ -284,6 +287,7 @@ const getSecurityExecutionsByChargeIds = sql<IGetSecurityExecutionsByChargeIdsQu
     t.management_fees_value_trade_currency,
     t.israe_tax_value,
     t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
     t.real_profit_loss_nis,
     t.payment_type,
     t.symbol,
@@ -312,7 +316,11 @@ const getSecurityExecutionsByChargeIds = sql<IGetSecurityExecutionsByChargeIdsQu
 export const MAX_CHARGE_LINK_SECURITIES = 10;
 
 /** What the reverse match needs off a transaction, charge included so a row can link out. */
-type MatchedTransaction = MatchableTransaction & { charge_id: string };
+type MatchedTransaction = MatchableTransaction & {
+  charge_id: string;
+  /** The exact time of the cash leg, when known; what the ledger prices it at before its day */
+  debit_timestamp: Date | null;
+};
 
 /**
  * A Poalim security key, qualified by the owner it belongs to.
@@ -589,12 +597,11 @@ export class ForeignSecuritiesProvider {
 
   /**
    * Every ingested execution of an execution's security in the same portfolio account, oldest
-   * first — the history a redemption's FIFO purchase cost is replayed from.
+   * first — what a stock distribution's cancellation is looked for in.
    *
    * Addressed through the security business, so every Poalim key the ISIN is known by counts, and
-   * narrowed to the execution's own bank/branch/account: a position is held per account, and the
-   * same security held in two of a tenant's portfolios must not share lots. Empty when the key
-   * belongs to no security business.
+   * narrowed to the execution's own bank/branch/account. Empty when the key belongs to no security
+   * business. FIFO reads {@link getSecurityOwnerHistory} instead.
    */
   public async getSecurityAccountHistory(
     execution: Pick<
@@ -624,6 +631,78 @@ export class ForeignSecuritiesProvider {
         row.branch_number === execution.branch_number &&
         row.account_number === execution.account_number,
     );
+  }
+
+  /** Memo for {@link getSecurityOwnerHistory}; the provider lives for one operation. */
+  private ownerHistoryCache = new Map<string, Promise<SecurityExecutionRow[]>>();
+
+  /**
+   * Every ingested execution of an execution's security across all of the owner's portfolio
+   * accounts, oldest first — the history a disposal's FIFO purchase cost is replayed from.
+   *
+   * A sale draws only on its own account's lots; the history spans the owner's accounts so that a
+   * holding transferred between two of them brings its lots, and their cost, across. Addressed
+   * through the security business like {@link getSecurityAccountHistory}, and narrowed to the
+   * owner, since reads follow the request's whole business scope. Empty when the key belongs to no
+   * security business.
+   */
+  public async getSecurityOwnerHistory(
+    execution: Pick<SecurityExecutionRow, 'security'>,
+    ownerId: string,
+  ): Promise<SecurityExecutionRow[]> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return [];
+    }
+
+    const cacheKey = `${ownerId}:${securityBusiness.id}`;
+    let cached = this.ownerHistoryCache.get(cacheKey);
+    if (!cached) {
+      cached = getSecurityExecutionsByBusinessIds
+        .run({ businessIds: [securityBusiness.id] }, this.db)
+        .then(executions => executions.filter(row => row.owner_id === ownerId));
+      this.ownerHistoryCache.set(cacheKey, cached);
+    }
+    return cached;
+  }
+
+  /** Memo for {@link getSecurityOwnerTransactionsByExecutionId}; the provider lives for one operation. */
+  private ownerTransactionsCache = new Map<string, Promise<Map<string, MatchedTransaction>>>();
+
+  /**
+   * The cash transaction each of the owner's executions of an execution's security was paired
+   * with, by execution id — the movement a purchase's cost was booked from, and so the rate it was
+   * booked at. Pairs the same way the security's own page does (see
+   * {@link getSecurityBusinessHistory}). Empty when the key belongs to no security business.
+   */
+  public async getSecurityOwnerTransactionsByExecutionId(
+    execution: Pick<SecurityExecutionRow, 'security'>,
+    ownerId: string,
+  ): Promise<Map<string, MatchedTransaction>> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return new Map();
+    }
+
+    const cacheKey = `${ownerId}:${securityBusiness.id}`;
+    let cached = this.ownerTransactionsCache.get(cacheKey);
+    if (!cached) {
+      cached = this.getSecurityBusinessHistory(securityBusiness.id, ownerId).then(
+        ({ transactionByExecutionId }) => transactionByExecutionId,
+      );
+      this.ownerTransactionsCache.set(cacheKey, cached);
+    }
+    return cached;
   }
 
   /**
@@ -932,6 +1011,7 @@ export class ForeignSecuritiesProvider {
       );
       return {
         id: `${chargeId}-${key}`,
+        chargeId,
         ownerId,
         securityKey: key,
         // loadMany surfaces a rejected key as an Error rather than throwing; treat it

@@ -1,3 +1,4 @@
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import {
   ProviderCredentialsProvider,
   type ProviderKey as DbProviderKey,
@@ -24,8 +25,17 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
           id: DB_TO_GQL[s.provider],
           provider: DB_TO_GQL[s.provider],
           configuredAt: new Date(s.configuredAt),
+          businessId: s.businessId,
         }));
     },
+  },
+
+  ProviderCredentialStatus: {
+    business: async (parent, _, { injector }) =>
+      parent.businessId
+        ? ((await injector.get(BusinessesProvider).getBusinessByIdLoader.load(parent.businessId)) ??
+          null)
+        : null,
   },
 
   Mutation: {
@@ -53,12 +63,12 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
       }
     },
 
-    setDeelCredentials: async (_parent, { apiToken }, { injector }) => {
+    setDeelCredentials: async (_parent, { apiToken, businessId }, { injector }) => {
       // TODO: Ensure 'apiToken' is added to the logging redaction list if structured logging is introduced
       try {
         const updatedAt = await injector
           .get(ProviderCredentialsProvider)
-          .setCredentials('deel', { apiToken });
+          .setCredentials('deel', { apiToken }, { businessId });
 
         if (!updatedAt) {
           throw new Error('Failed to save Deel credentials');
@@ -69,10 +79,35 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
           id: DB_TO_GQL['deel'],
           provider: DB_TO_GQL['deel'],
           configuredAt: new Date(updatedAt),
+          // an omitted businessId keeps the stored one — report what was saved
+          businessId:
+            (await injector.get(ProviderCredentialsProvider).getProviderStatuses()).find(
+              status => status.provider === 'deel',
+            )?.businessId ?? null,
         };
       } catch (e) {
         const message = (e as Error)?.message ?? 'Failed to save Deel credentials';
         console.error('setDeelCredentials error:', e);
+        return { __typename: 'CommonError' as const, message };
+      }
+    },
+
+    setProviderBusiness: async (_parent, { provider, businessId }, { injector }) => {
+      try {
+        const updatedAt = await injector
+          .get(ProviderCredentialsProvider)
+          .setProviderBusiness(GQL_TO_DB[provider], businessId ?? null);
+
+        return {
+          __typename: 'ProviderCredentialResult' as const,
+          id: provider,
+          provider,
+          configuredAt: new Date(updatedAt),
+          businessId: businessId ?? null,
+        };
+      } catch (e) {
+        const message = (e as Error)?.message ?? 'Failed to set provider business';
+        console.error('setProviderBusiness error:', e);
         return { __typename: 'CommonError' as const, message };
       }
     },

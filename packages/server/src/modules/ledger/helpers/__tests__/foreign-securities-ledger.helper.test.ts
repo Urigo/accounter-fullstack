@@ -4,8 +4,8 @@ import type { StrictLedgerProto, TimelessDateString } from '../../../../shared/t
 import {
   buildDistributionEntry,
   buildIncomeEntry,
+  buildDisposalEntry,
   buildIncomeReversalEntry,
-  buildRedemptionEntry,
   classifySecurityExecution,
   getBankRateMismatch,
   getDistributionWithheldTax,
@@ -94,7 +94,7 @@ describe('classifySecurityExecution', () => {
     ['ריבית תשלום', 'INTEREST'],
     ['פדיון', 'REDEMPTION'],
     ['קניה', 'OTHER'],
-    ['מכירה', 'OTHER'],
+    ['מכירה', 'SALE'],
     ['העברה לזכות הפקדון', 'OTHER'],
     ['something the bank never sent', 'OTHER'],
   ])('reads trade type "%s" as %s', (tradeType, kind) => {
@@ -573,9 +573,9 @@ describe('findCancelledPayment', () => {
   });
 });
 
-describe('buildRedemptionEntry', () => {
+describe('buildDisposalEntry', () => {
   it('credits the securities account with the purchase cost and books the gain', () => {
-    const entry = buildRedemptionEntry(baseEntry(), {
+    const entry = buildDisposalEntry(baseEntry(), {
       costForeign: 900,
       withheldTax: 0,
       gainTaxCategoryId: GAIN,
@@ -598,7 +598,7 @@ describe('buildRedemptionEntry', () => {
   });
 
   it('books a loss as a second debit', () => {
-    const entry = buildRedemptionEntry(baseEntry(), {
+    const entry = buildDisposalEntry(baseEntry(), {
       costForeign: 1150,
       withheldTax: 0,
       gainTaxCategoryId: GAIN,
@@ -616,7 +616,7 @@ describe('buildRedemptionEntry', () => {
   });
 
   it('has no secondary line at break-even', () => {
-    const entry = buildRedemptionEntry(baseEntry(), {
+    const entry = buildDisposalEntry(baseEntry(), {
       costForeign: 1000,
       withheldTax: 0,
       gainTaxCategoryId: GAIN,
@@ -631,7 +631,7 @@ describe('buildRedemptionEntry', () => {
 
   it('computes the gain on gross proceeds when tax was withheld', () => {
     // received 1,000 after 50 withheld: gross 1,050, cost 900, gain 150
-    const entry = buildRedemptionEntry(baseEntry(), {
+    const entry = buildDisposalEntry(baseEntry(), {
       costForeign: 900,
       withheldTax: 50,
       gainTaxCategoryId: GAIN,
@@ -647,7 +647,7 @@ describe('buildRedemptionEntry', () => {
 
   it('refuses a loss together with withheld tax, which needs a third debit', () => {
     expect(() =>
-      buildRedemptionEntry(baseEntry(), {
+      buildDisposalEntry(baseEntry(), {
         costForeign: 1200,
         withheldTax: 50,
         lossTaxCategoryId: LOSS,
@@ -657,7 +657,7 @@ describe('buildRedemptionEntry', () => {
   });
 
   it('carries no foreign amounts for a shekel redemption', () => {
-    const entry = buildRedemptionEntry(ilsBaseEntry(1000), {
+    const entry = buildDisposalEntry(ilsBaseEntry(1000), {
       costForeign: 800,
       withheldTax: 0,
       gainTaxCategoryId: GAIN,
@@ -752,6 +752,22 @@ describe('validateSecurityCommissions', () => {
         [commissionFee({ amount: '15.30' })],
       ),
     ).toEqual([]);
+  });
+
+  it('counts the bank’s refund of a cancelled execution’s commission', () => {
+    // a payment charged 15.30, cancelled (its commission refunded) and paid again for 15.10
+    const executions = [
+      commissionExecution(),
+      commissionExecution({ trade_commission_value_nis: '-15.30' }),
+      commissionExecution({ trade_commission_value_nis: '15.10' }),
+    ];
+    const fees = [
+      commissionFee(),
+      commissionFee({ amount: '15.30', source_description: 'ביטול עמלה ני"ע CANC SEC FEE' }),
+      commissionFee({ amount: '-15.10' }),
+    ];
+
+    expect(validateSecurityCommissions(executions, fees)).toEqual([]);
   });
 
   it('expects no fee when there is no commission', () => {
