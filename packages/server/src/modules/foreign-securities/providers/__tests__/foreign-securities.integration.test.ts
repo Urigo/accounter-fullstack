@@ -727,7 +727,7 @@ describe('getSecurityOwnerHistory', () => {
     });
     await insertExecution({ security: '7000001', tradeDate: '2024-05-01', nv: '3' });
     await insertExecution({ security: '7000002', tradeDate: '2024-01-01', nv: '7' });
-    // the same security in another of the owner's portfolios: FIFO is the owner's
+    // the same security in another of the owner's portfolios: a transfer can bring its lots over
     await insertExecution({
       security: '7000001',
       tradeDate: '2024-02-01',

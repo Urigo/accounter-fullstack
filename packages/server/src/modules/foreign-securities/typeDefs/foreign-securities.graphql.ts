@@ -64,7 +64,7 @@ export default gql`
     realProfitLoss: FinancialAmount
     symbol: String
     isin: String
-    " For a sale or a redemption: its capital gain, worked out from the FIFO lots it disposes of across the owner's accounts. Null for any other execution and for a cancelled one "
+    " For a sale or a redemption: its capital gain, worked out from the FIFO lots of the account it was made in; lots moved in from another of the owner's accounts keep their cost. Null for any other execution and for a cancelled one "
     capitalGain: SecurityCapitalGainResult
   }
 

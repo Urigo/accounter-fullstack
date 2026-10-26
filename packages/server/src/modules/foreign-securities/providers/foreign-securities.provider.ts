@@ -640,9 +640,8 @@ export class ForeignSecuritiesProvider {
    * Every ingested execution of an execution's security across all of the owner's portfolio
    * accounts, oldest first — the history a disposal's FIFO purchase cost is replayed from.
    *
-   * FIFO is the taxpayer's, not an account's: identical securities are sold in the order they were
-   * acquired, whichever of the owner's accounts holds them. So a holding moved to a new account
-   * keeps its lots, and a sale there is costed from the purchases made in the old one. Addressed
+   * A sale draws only on its own account's lots; the history spans the owner's accounts so that a
+   * holding transferred between two of them brings its lots, and their cost, across. Addressed
    * through the security business like {@link getSecurityAccountHistory}, and narrowed to the
    * owner, since reads follow the request's whole business scope. Empty when the key belongs to no
    * security business.

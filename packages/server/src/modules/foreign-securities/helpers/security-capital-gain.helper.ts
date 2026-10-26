@@ -29,8 +29,9 @@ export class SecurityCapitalGainError extends Error {
 }
 
 /**
- * The capital gain of a sale or a redemption, from the FIFO lots it disposes of across the owner's
- * accounts. Null for any other execution, and for a cancelled one.
+ * The capital gain of a sale or a redemption, from the FIFO lots of the account it was made in;
+ * lots moved in from another of the owner's accounts keep their cost. Null for any other execution,
+ * and for a cancelled one.
  *
  * Everything is in the local currency at the Bank of Israel representative rate of the trade dates
  * — the sale's and each lot's purchase — as tax practice prices them, and split two ways:

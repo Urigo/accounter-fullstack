@@ -67,6 +67,9 @@ function execution(
   return {
     owner_id: OWNER_ID,
     security: '7654321',
+    bank_number: 12,
+    branch_number: 600,
+    account_number: 123456,
     symbol: 'MOCK',
     isin: 'US0000000001',
     trade_currency: USD_LABEL,

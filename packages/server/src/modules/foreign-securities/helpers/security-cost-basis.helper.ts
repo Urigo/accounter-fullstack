@@ -19,13 +19,14 @@ import {
  * The purchase cost of the units an execution takes out of a position, first in, first out —
  * replayed from the ingested executions of one security across the owner's portfolio accounts.
  *
- * FIFO is the taxpayer's, not an account's (Income Tax Regulations on capital gains from traded
- * securities, 2002, reg. 5): identical securities are sold in the order they were acquired. A
- * transfer out of one of the owner's accounts and into another — a move to a new account — carries
- * its lots across with their cost and place in line. A transfer in is only taken for such a move
- * when it is of the same units, into another account, within `TRANSFER_PAIRING_WINDOW_DAYS` of the
- * transfer out; any other transfer in came from outside, at no known cost, and a transfer out that
- * nothing pairs with left the owner.
+ * FIFO is per account: a sale draws only on the lots of the account it was made in, which is how
+ * the bank computes and withholds its tax, so its profit/loss figures stay comparable. The whole
+ * owner's history is still replayed, because a transfer out of one of the owner's accounts and into
+ * another — a move to a new account — carries its lots into the receiving account with their cost
+ * and purchase-order place. A transfer in is only taken for such a move when it is of the same
+ * units, into another account, within `TRANSFER_PAIRING_WINDOW_DAYS` of the transfer out; any other
+ * transfer in came from outside, at no known cost, and a transfer out that nothing pairs with left
+ * the owner.
  *
  * Cost is kept in the currency the units were paid in (the cash leg's currency), not converted to
  * shekels. Each lot names the acquisition it came from, so the caller prices it at the rate it
@@ -87,12 +88,14 @@ export type FifoCostBasis = {
   unknownCostUnits: number;
   /** Units with no lot at all in the ingested history */
   missingUnits: number;
-  /** The earliest ingested execution: the history is only complete from this day on */
+  /** The earliest ingested execution in the disposal's account: its history is only complete from this day on */
   historyStartDate: TimelessDateString | null;
   /**
-   * Units went out before as many were seen coming in: the history starts mid-position, with an
-   * opening holding of unknown size and cost ahead of every observed lot in FIFO order — so no
-   * lot after it can be taken as the definitive cost of what is redeemed.
+   * Units went out of the disposal's account before as many were seen coming in — or lots were
+   * transferred in from an account where that happened: the history starts mid-position, with an
+   * opening holding of unknown size and cost ahead of every observed lot in FIFO order, so no lot
+   * after it can be taken as the definitive cost of what is redeemed. A gap in an unrelated account
+   * does not count.
    */
   openingPositionUnknown: boolean;
   /** The lots with a known cost the units were drawn from, oldest first; they add up to `costForeign` */
@@ -149,16 +152,29 @@ const SAME_DAY_RANK: Record<LotEffect, number> = {
 
 type LotSource = Omit<FifoLot, 'units' | 'costForeign'>;
 
-/** `order` is the place in line: the acquisition's position in the replay, kept across transfers */
+/**
+ * `order` is the place in line: the acquisition's position in the replay, kept across transfers so
+ * a moved lot takes its purchase-order place among the receiving account's own lots
+ */
 type Lot = { units: number; unitCost: number | null; order: number; source: LotSource | null };
 
-/** Lots that left one of the owner's accounts, until a transfer in to another takes them back */
-type PendingTransfer = { execution: CostBasisExecution; units: number; lots: Lot[] };
+/** Lots that left one of the owner's accounts, until a transfer in to another takes them in */
+type PendingTransfer = {
+  execution: CostBasisExecution;
+  units: number;
+  lots: Lot[];
+  /** Whether the source account's history started mid-position by then, so these lots may not be */
+  fromOpeningUnknown: boolean;
+};
+
+type AccountKey = string;
+
+/** A portfolio account: the bank/branch/account triple the executions carry */
+const accountKeyOf = (execution: CostBasisExecution): AccountKey =>
+  `${execution.bank_number}-${execution.branch_number}-${execution.account_number}`;
 
 const sameAccount = (a: CostBasisExecution, b: CostBasisExecution) =>
-  a.bank_number === b.bank_number &&
-  a.branch_number === b.branch_number &&
-  a.account_number === b.account_number;
+  accountKeyOf(a) === accountKeyOf(b);
 
 /** Whether a transfer in is the arrival of a pending transfer out: a holding moving accounts */
 function isArrivalOf(transferIn: CostBasisExecution, units: number, pending: PendingTransfer) {
@@ -248,9 +264,20 @@ export function calculateFifoCostBasis(
 ): FifoCostBasis {
   const live = history.filter(execution => !isCancelledExecution(execution));
 
-  const lots: Lot[] = [];
+  const lotsByAccount = new Map<AccountKey, Lot[]>();
+  const lotsOf = (execution: CostBasisExecution): Lot[] => {
+    const key = accountKeyOf(execution);
+    let lots = lotsByAccount.get(key);
+    if (!lots) {
+      lots = [];
+      lotsByAccount.set(key, lots);
+    }
+    return lots;
+  };
+  // accounts whose history starts mid-position, by their own shortfall or lots moved in from one
+  const openingUnknownAccounts = new Set<AccountKey>();
   const pendingTransfers: PendingTransfer[] = [];
-  let openingPositionUnknown = false;
+
   const earlier = live
     .filter(
       execution => execution.id !== redemption.id && compareExecutions(execution, redemption) < 0,
@@ -262,6 +289,7 @@ export function calculateFifoCostBasis(
     if (!tradeType || units === 0) {
       continue;
     }
+    const lots = lotsOf(execution);
 
     switch (lotEffectOf(execution, tradeType)) {
       case 'BUY': {
@@ -287,10 +315,15 @@ export function calculateFifoCostBasis(
         break;
       case 'TRANSFER_OUT': {
         const taken = takeUnits(lots, units);
-        pendingTransfers.push({ execution, units, lots: taken });
         if (units - sumUnits(taken) > UNITS_EPSILON) {
-          openingPositionUnknown = true;
+          openingUnknownAccounts.add(accountKeyOf(execution));
         }
+        pendingTransfers.push({
+          execution,
+          units,
+          lots: taken,
+          fromOpeningUnknown: openingUnknownAccounts.has(accountKeyOf(execution)),
+        });
         break;
       }
       case 'TRANSFER_IN': {
@@ -302,20 +335,24 @@ export function calculateFifoCostBasis(
           lots.push({ units, unitCost: null, order, source: null });
           break;
         }
-        // back in line where the lots stood; units the transfer out had no lot for stay unknown
-        const [{ lots: moved }] = pendingTransfers.splice(arrival, 1);
+        // into this account at their purchase-order place; units the transfer out had no lot for
+        // stay unknown
+        const [{ lots: moved, fromOpeningUnknown }] = pendingTransfers.splice(arrival, 1);
         const uncovered = units - sumUnits(moved);
         lots.push(...moved);
         if (uncovered > UNITS_EPSILON) {
           lots.push({ units: uncovered, unitCost: null, order, source: null });
         }
         lots.sort((a, b) => a.order - b.order);
+        if (fromOpeningUnknown) {
+          openingUnknownAccounts.add(accountKeyOf(execution));
+        }
         break;
       }
       case 'CONSUME': {
         // more taken out than the history put in means it starts mid-position
         if (units - sumUnits(takeUnits(lots, units)) > UNITS_EPSILON) {
-          openingPositionUnknown = true;
+          openingUnknownAccounts.add(accountKeyOf(execution));
         }
         break;
       }
@@ -330,7 +367,7 @@ export function calculateFifoCostBasis(
   let coveredUnits = 0;
   let unknownCostUnits = 0;
   const costedLots: FifoLot[] = [];
-  for (const lot of takeUnits(lots, redeemedUnits)) {
+  for (const lot of takeUnits(lotsOf(redemption), redeemedUnits)) {
     if (lot.unitCost == null || !lot.source) {
       unknownCostUnits += lot.units;
     } else {
@@ -341,13 +378,15 @@ export function calculateFifoCostBasis(
   }
   const missingUnits = redeemedUnits - coveredUnits - unknownCostUnits;
 
-  const historyStartDate = live.reduce<TimelessDateString | null>(
-    (earliest, execution) =>
-      earliest == null || compareTimelessDates(execution.trade_date, earliest) < 0
-        ? execution.trade_date
-        : earliest,
-    null,
-  );
+  const historyStartDate = live
+    .filter(execution => sameAccount(execution, redemption))
+    .reduce<TimelessDateString | null>(
+      (earliest, execution) =>
+        earliest == null || compareTimelessDates(execution.trade_date, earliest) < 0
+          ? execution.trade_date
+          : earliest,
+      null,
+    );
 
   return {
     redeemedUnits,
@@ -356,7 +395,7 @@ export function calculateFifoCostBasis(
     unknownCostUnits,
     missingUnits: missingUnits > UNITS_EPSILON ? missingUnits : 0,
     historyStartDate,
-    openingPositionUnknown,
+    openingPositionUnknown: openingUnknownAccounts.has(accountKeyOf(redemption)),
     lots: costedLots,
   };
 }

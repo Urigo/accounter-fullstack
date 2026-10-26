@@ -7,8 +7,9 @@ import {
 } from '../security-cost-basis.helper.js';
 
 /*
- * FIFO purchase cost of the units a redemption (or a sale) takes out of a position, replayed from
- * the ingested executions of one security in one account. All values are made up.
+ * FIFO purchase cost of the units a redemption (or a sale) takes out of its account's position,
+ * replayed from the ingested executions of one security across the owner's accounts. All values
+ * are made up.
  */
 
 const USD_LABEL = 'דולר ארה"ב';
@@ -357,6 +358,11 @@ describe('calculateFifoCostBasis', () => {
   });
 
   describe('lots, and transfers between the owner accounts', () => {
+    const inNew = <T extends CostBasisExecution>(row: T): T => ({
+      ...row,
+      account_number: NEW_ACCOUNT,
+    });
+
     /** Out of the old account, or into the new one unless another account is given */
     const transfer = (
       id: string,
@@ -394,7 +400,11 @@ describe('calculateFifoCostBasis', () => {
       const target = sell('s1', '2025-03-01', 10, 1100);
 
       const result = calculateFifoCostBasis(
-        [transfer('t1', '2024-01-05', 4, 'in'), buy('b1', '2024-02-10', 6, 600), target],
+        [
+          transfer('t1', '2024-01-05', 4, 'in', OLD_ACCOUNT),
+          buy('b1', '2024-02-10', 6, 600),
+          target,
+        ],
         target,
         Currency.Usd,
       );
@@ -404,14 +414,14 @@ describe('calculateFifoCostBasis', () => {
     });
 
     it('carries lots moved between two accounts of the owner with their cost and place', () => {
-      // bought in the old account, moved to the new one, then more bought there
-      const target = sell('s1', '2025-03-01', 12, 1500);
+      // bought in the old account, moved to the new one, where more was bought before it arrived
+      const target = inNew(sell('s1', '2025-03-01', 12, 1500));
 
       const result = calculateFifoCostBasis(
         [
           buy('b1', '2024-01-10', 10, 1000),
           transfer('out', '2024-06-01', 10, 'out'),
-          buy('b2', '2024-06-02', 10, 1500),
+          inNew(buy('b2', '2024-06-02', 10, 1500)),
           transfer('in', '2024-06-03', 10, 'in'),
           target,
         ],
@@ -419,7 +429,8 @@ describe('calculateFifoCostBasis', () => {
         Currency.Usd,
       );
 
-      // the moved lot is still the oldest: all 10 of it (1,000), then 2 of the later buy (300)
+      // the moved lot takes its purchase-order place, ahead of the new account's own later buy:
+      // all 10 of it (1,000), then 2 of the later buy (300)
       expect(result.unknownCostUnits).toBe(0);
       expect(result.openingPositionUnknown).toBe(false);
       expect(result.costForeign).toBeCloseTo(1300, 6);
@@ -430,7 +441,7 @@ describe('calculateFifoCostBasis', () => {
     });
 
     it('pairs a transfer out with the transfer in of the same day', () => {
-      const target = sell('s1', '2025-03-01', 10, 1100);
+      const target = inNew(sell('s1', '2025-03-01', 10, 1100));
 
       const result = calculateFifoCostBasis(
         // the ids would put the transfer in first
@@ -450,7 +461,7 @@ describe('calculateFifoCostBasis', () => {
 
     it('does not take an unrelated, later transfer in for the arrival of a transfer out', () => {
       // units given away in March; months later, units of the same security arrive from elsewhere
-      const target = sell('s1', '2025-03-01', 5, 600);
+      const target = inNew(sell('s1', '2025-03-01', 5, 600));
 
       const result = calculateFifoCostBasis(
         [
@@ -468,7 +479,7 @@ describe('calculateFifoCostBasis', () => {
     });
 
     it('does not pair transfers of different units', () => {
-      const target = sell('s1', '2025-03-01', 10, 1100);
+      const target = inNew(sell('s1', '2025-03-01', 10, 1100));
 
       const result = calculateFifoCostBasis(
         [
@@ -531,6 +542,157 @@ describe('calculateFifoCostBasis', () => {
 
       expect(result.coveredUnits).toBe(5);
       expect(result.costForeign).toBeCloseTo(500, 6);
+    });
+  });
+
+  describe('per account', () => {
+    const inAccount = <T extends CostBasisExecution>(row: T, accountNumber: number): T => ({
+      ...row,
+      account_number: accountNumber,
+    });
+    const old = <T extends CostBasisExecution>(row: T) => inAccount(row, OLD_ACCOUNT);
+    const neu = <T extends CostBasisExecution>(row: T) => inAccount(row, NEW_ACCOUNT);
+    const moveToNew = (id: string, tradeDate: TimelessDateString, units: number) => [
+      old(
+        execution({
+          id: `${id}-out`,
+          trade_date: tradeDate,
+          trade_type: 'העברה לחובת הפקדון',
+          nv: String(units),
+          net_value_trade_currency: '0',
+          net_value_settlement_currency: '0',
+        }),
+      ),
+      neu(
+        execution({
+          id: `${id}-in`,
+          trade_date: tradeDate,
+          trade_type: 'העברה לזכות הפקדון',
+          nv: String(units),
+          net_value_trade_currency: '0',
+          net_value_settlement_currency: '0',
+        }),
+      ),
+    ];
+
+    it('draws a sale only on the lots of its own account', () => {
+      const target = neu(sell('s1', '2025-02-01', 10, 1700));
+
+      const result = calculateFifoCostBasis(
+        [
+          old(buy('b-old', '2023-03-01', 10, 1000)),
+          neu(buy('b-new', '2024-05-01', 10, 1500)),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.costForeign).toBeCloseTo(1500, 6);
+      expect(result.lots.map(lot => lot.executionId)).toEqual(['b-new']);
+    });
+
+    it("leaves another account's lots for that account's own sale", () => {
+      const target = old(sell('s-old', '2025-06-01', 10, 1600));
+
+      const result = calculateFifoCostBasis(
+        [
+          old(buy('b-old', '2023-03-01', 10, 1000)),
+          neu(buy('b-new', '2024-05-01', 10, 1500)),
+          neu(sell('s-new', '2025-02-01', 10, 1700)),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.costForeign).toBeCloseTo(1000, 6);
+      expect(result.lots.map(lot => lot.executionId)).toEqual(['b-old']);
+    });
+
+    it("places moved lots by purchase date among the receiving account's own lots", () => {
+      const target = neu(sell('s1', '2025-06-01', 30, 4000));
+
+      const result = calculateFifoCostBasis(
+        [
+          neu(buy('b-2023', '2023-02-01', 10, 1000)),
+          old(buy('b-2024-01', '2024-01-10', 10, 1100)),
+          neu(buy('b-2024-06', '2024-06-10', 10, 1200)),
+          ...moveToNew('move', '2025-01-15', 10),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.lots.map(lot => lot.executionId)).toEqual([
+        'b-2023',
+        'b-2024-01',
+        'b-2024-06',
+      ]);
+      expect(result.costForeign).toBeCloseTo(3300, 6);
+    });
+
+    it('does not flag a sale for a gap in another account', () => {
+      const target = neu(sell('s-new', '2024-06-01', 5, 600));
+
+      const result = calculateFifoCostBasis(
+        [
+          old(sell('s-old', '2024-01-05', 5, 500)),
+          neu(buy('b-new', '2024-02-10', 5, 500)),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.openingPositionUnknown).toBe(false);
+      expect(result.costForeign).toBeCloseTo(500, 6);
+    });
+
+    it('flags the receiving account of a transfer out larger than its source held', () => {
+      const target = neu(sell('s1', '2025-03-01', 10, 1100));
+
+      const result = calculateFifoCostBasis(
+        [old(buy('b1', '2024-01-10', 5, 500)), ...moveToNew('move', '2024-06-01', 10), target],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.openingPositionUnknown).toBe(true);
+    });
+
+    it('flags the receiving account of lots from a source whose history starts mid-position', () => {
+      const target = neu(sell('s1', '2025-03-01', 10, 1100));
+
+      const result = calculateFifoCostBasis(
+        [
+          old(sell('s-old', '2024-01-05', 5, 500)),
+          old(buy('b1', '2024-02-10', 10, 1000)),
+          ...moveToNew('move', '2024-06-01', 10),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.openingPositionUnknown).toBe(true);
+    });
+
+    it("dates the history from the sale's own account", () => {
+      const target = neu(sell('s1', '2025-03-01', 5, 600));
+
+      const result = calculateFifoCostBasis(
+        [
+          old(buy('b-old', '2022-05-01', 5, 400)),
+          neu(buy('b-new', '2024-03-01', 5, 500)),
+          target,
+        ],
+        target,
+        Currency.Usd,
+      );
+
+      expect(result.historyStartDate).toBe('2024-03-01');
     });
   });
 });

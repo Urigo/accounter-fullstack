@@ -834,6 +834,34 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         expect(errors).toEqual([]);
       });
 
+      it("costs the sale from its own account's lots, as the bank does, past an older one elsewhere", async () => {
+        // an older, cheaper lot of the same security sits in another of the owner's accounts
+        const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const sale = bankSale({});
+        const elsewhere = buildExecution({
+          ...buyExecution('execution-buy-elsewhere', '2024-06-10', 10, 500),
+          account_number: 654321,
+        });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [elsewhere, bankLot(), sale],
+          rates: SALE_RATES,
+        });
+
+        expect(errors).toEqual([]);
+        // the cost and the price gain come from this account's lot alone: 1,000, and 100 × 3.50
+        expect(records.map(summarize)[0]).toEqual({
+          ...baseCashInRecord(1100),
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(100).foreign,
+          creditLocal2: usd(100).local,
+        });
+      });
+
       it('reports each figure that disagrees, and still books the sale from its lots', async () => {
         const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
         const sale = bankSale({ nominal_profit_loss_nis: '120', nominal_profit_loss_linkage: '230' });
