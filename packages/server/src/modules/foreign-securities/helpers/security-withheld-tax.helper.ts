@@ -7,10 +7,11 @@ export type WithheldTaxPartsExecution = Pick<
   | 'capital_tax_value_settlement_currency'
 >;
 
-const toAmount = (value: string | null | undefined): number => {
+/** A numeric column read as a number: 0 when it is empty or unreadable */
+export function toAmount(value: string | null | undefined): number {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount) ? amount : 0;
-};
+}
 
 /**
  * The tax withheld on an execution, split by who withheld it, in the settlement currency: the

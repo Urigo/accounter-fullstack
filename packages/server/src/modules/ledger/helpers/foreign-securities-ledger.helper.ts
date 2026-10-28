@@ -12,11 +12,14 @@ import {
 } from '../../foreign-securities/helpers/security-execution-enums.helper.js';
 import { extractTransactionSecurityKeys } from '../../foreign-securities/helpers/security-key.helper.js';
 import type { SecurityLocality } from '../../foreign-securities/helpers/security-locality.helper.js';
-import { getWithheldTaxParts } from '../../foreign-securities/helpers/security-withheld-tax.helper.js';
+import {
+  getWithheldTaxParts,
+  toAmount,
+} from '../../foreign-securities/helpers/security-withheld-tax.helper.js';
 import type { SecurityExecutionRow } from '../../foreign-securities/types.js';
 import { LedgerError } from './utils.helper.js';
 
-export { isDividendInKindDistribution };
+export { isDividendInKindDistribution, toAmount };
 
 /**
  * Building blocks of the foreign-securities ledger. The base entry of a cash movement books the
@@ -85,11 +88,6 @@ export type WithheldTaxExecution = Pick<
   | 'capital_tax_value_settlement_currency'
   | 'is_cancel_transaction'
 >;
-
-export function toAmount(value: string | null | undefined): number {
-  const amount = Number(value ?? 0);
-  return Number.isFinite(amount) ? amount : 0;
-}
 
 export const currencyOfLabel = currencyOfSecurityLabel;
 
