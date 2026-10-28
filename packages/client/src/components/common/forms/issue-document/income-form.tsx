@@ -141,7 +141,7 @@ export function IncomeForm({ income, currency, onChange }: IncomeFormProps) {
                     updateIncomeItem(index, 'vatType', value)
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

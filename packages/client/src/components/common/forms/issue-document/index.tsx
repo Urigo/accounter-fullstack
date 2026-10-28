@@ -181,7 +181,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.type}
                 onValueChange={(value: DocumentType) => updateFormData('type', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,7 +199,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.language}
                 onValueChange={(value: DocumentLanguage) => updateFormData('language', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -220,7 +220,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.currency}
                 onValueChange={(value: Currency) => updateFormData('currency', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -238,7 +238,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.vatType}
                 onValueChange={(value: DocumentVatType) => updateFormData('vatType', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,7 +256,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
             <div className="space-y-2">
               <Label htmlFor="clientSelect">Select Client</Label>
               <Select value={selectedClientId} onValueChange={handleClientSelection}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Choose existing client or create new" />
                 </SelectTrigger>
                 <SelectContent>
@@ -377,7 +377,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                           updateDiscount('type', value)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
