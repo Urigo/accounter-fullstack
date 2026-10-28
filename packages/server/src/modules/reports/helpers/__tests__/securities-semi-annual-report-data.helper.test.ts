@@ -230,6 +230,47 @@ describe('collectHalfDisposals', () => {
     ]);
   });
 
+  it('drops a cancelled buy the bank reports as a sale, with no issue', async () => {
+    const bought = execution({ ...buy, id: 'bought', trade_date: '2025-01-29' });
+    const cancellation = sale('cancellation', '2025-01-29', {
+      is_cancel_transaction: 'כן',
+      trade_gross_value_trade_currency: '1000',
+      net_value_trade_currency: '1000',
+    });
+
+    // in the half with its buy, and on its own when the buy was in an earlier half
+    for (const executions of [[bought, cancellation], [cancellation]]) {
+      const { sales, issues } = await collectHalfDisposals(makeInjector({ executions }), {
+        ownerId: OWNER_ID,
+        period: H1,
+        localCurrency: Currency.Ils,
+      });
+
+      expect(sales).toEqual([]);
+      expect(issues).toEqual([]);
+    }
+  });
+
+  it('drops a cancelled sale the bank reports as a buy', async () => {
+    const cancelled = sale('cancelled', SALE_DAY);
+    const cancellation = execution({
+      ...buy,
+      id: 'cancellation',
+      trade_date: SALE_DAY,
+      is_cancel_transaction: 'כן',
+      trade_gross_value_trade_currency: '1100',
+      net_value_trade_currency: '-1100',
+    });
+
+    const { sales, issues } = await collectHalfDisposals(
+      makeInjector({ executions: [cancelled, cancellation] }),
+      { ownerId: OWNER_ID, period: H1, localCurrency: Currency.Ils },
+    );
+
+    expect(sales).toEqual([]);
+    expect(issues).toEqual([]);
+  });
+
   it('still counts the consideration of a sale whose cost is unknown', async () => {
     const theSale = sale('sale', SALE_DAY);
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import {
+  cancelledTradeType,
   pairCancellations,
   type CancellableExecution,
 } from '../security-cancellations.helper.js';
@@ -11,6 +12,7 @@ import {
 
 const SELL = 'מכירה';
 const BUY = 'קניה';
+const DIVIDEND = 'דבידנד תשלום';
 
 function execution(
   id: string,
@@ -105,6 +107,41 @@ describe('pairCancellations', () => {
     ]);
   });
 
+  it('pairs a cancelled buy the bank reports as a sale', () => {
+    // as the bank reports it: the cancellation is a sale with the buy's amount and units, positive
+    const bought = execution('b1', '2026-01-29', {
+      trade_type: BUY,
+      trade_gross_value_trade_currency: '400000',
+      net_value_trade_currency: '-400000',
+      nv: '265.69',
+    });
+    const cancellation = execution('c1', '2026-01-29', {
+      is_cancel_transaction: 'כן',
+      trade_gross_value_trade_currency: '400000',
+      net_value_trade_currency: '400000',
+      nv: '265.69',
+    });
+
+    const result = pairCancellations([bought, cancellation]);
+
+    expect(result.pairs).toEqual([{ original: bought, cancellation }]);
+    expect(result.live).toEqual([]);
+    expect(result.orphanCancellations).toEqual([]);
+  });
+
+  it('pairs a cancelled sale reported as a buy', () => {
+    const sold = execution('s1', '2025-01-10');
+    const cancellation = execution('c1', '2025-01-12', {
+      trade_type: BUY,
+      is_cancel_transaction: 'כן',
+      net_value_trade_currency: '-990',
+    });
+
+    expect(pairCancellations([sold, cancellation]).pairs).toEqual([
+      { original: sold, cancellation },
+    ]);
+  });
+
   it('tells rows with no cash amount apart by their units', () => {
     const noCash = { trade_gross_value_trade_currency: null, net_value_trade_currency: '0' };
     const fiveUnits = execution('d1', '2025-04-01', { ...noCash, nv: '5' });
@@ -158,5 +195,41 @@ describe('pairCancellations', () => {
 
     expect(result.orphanCancellations.map(e => e.id)).toEqual(['c1']);
     expect(result.live.map(e => e.id)).toEqual(['s1']);
+  });
+});
+
+describe('cancelledTradeType', () => {
+  it('reads a sale that brings money in as the opposite trade: a cancelled buy', () => {
+    expect(cancelledTradeType(execution('c1', '2025-01-01', { net_value_trade_currency: '990' }))).toBe(
+      BUY,
+    );
+  });
+
+  it('reads a buy that takes money out as the opposite trade: a cancelled sale', () => {
+    expect(
+      cancelledTradeType(
+        execution('c1', '2025-01-01', { trade_type: BUY, net_value_trade_currency: '-990' }),
+      ),
+    ).toBe(SELL);
+  });
+
+  it("keeps the trade type of a cancellation with the original's values negated", () => {
+    expect(cancelledTradeType(cancellationOf('c1', '2025-01-01'))).toBe(SELL);
+    expect(
+      cancelledTradeType(
+        execution('c2', '2025-01-01', { trade_type: BUY, net_value_trade_currency: '990' }),
+      ),
+    ).toBe(BUY);
+    expect(
+      cancelledTradeType(
+        execution('c3', '2025-01-01', { trade_type: DIVIDEND, net_value_trade_currency: '-50' }),
+      ),
+    ).toBe(DIVIDEND);
+  });
+
+  it('keeps the trade type when there is no net amount to read', () => {
+    expect(
+      cancelledTradeType(execution('c1', '2025-01-01', { net_value_trade_currency: null })),
+    ).toBe(SELL);
   });
 });

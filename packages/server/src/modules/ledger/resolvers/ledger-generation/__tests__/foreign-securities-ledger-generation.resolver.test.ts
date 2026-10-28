@@ -547,6 +547,20 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         },
       ]);
     });
+
+    it('books a cancelled buy the bank reports as a sale as the cash coming back', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: saleExecution(10, 1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+    });
   });
 
   describe('sales', () => {

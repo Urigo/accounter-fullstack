@@ -23,6 +23,7 @@ import { AdminContextProvider } from '../../../admin-context/providers/admin-con
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
+import { cancelledTradeType } from '../../../foreign-securities/helpers/security-cancellations.helper.js';
 import {
   calculateFifoCostBasis,
   type FifoCostBasis,
@@ -485,15 +486,18 @@ async function securitiesLedgerEntries(params: {
     return [baseEntry];
   }
 
-  const kind = classifySecurityExecution(execution);
+  // A cancellation sends the cash back the other way, and is booked by what it cancels. A cancelled
+  // buy (which the bank may report as a sale) needs only the base entry, as the buy did. A
+  // cancelled dividend or interest payment books as the mirror of its income entry; a cancelled
+  // sale or redemption would also have to restore the units' cost, which is not supported.
+  const isCancellation = isCancelledExecution(execution);
+  const kind = classifySecurityExecution(
+    isCancellation ? { trade_type: cancelledTradeType(execution) } : execution,
+  );
   if (kind === 'OTHER') {
     return [baseEntry];
   }
 
-  // A cancellation keeps the original's trade type but sends the cash back the other way. A
-  // cancelled dividend or interest payment books as the mirror of its income entry; a cancelled
-  // sale or redemption would also have to restore the units' cost, which is not supported.
-  const isCancellation = isCancelledExecution(execution);
   if (isCancellation && (kind === 'SALE' || kind === 'REDEMPTION')) {
     errors.add(
       `Transaction ${transactionDescription} reverses a cancelled ${kind === 'SALE' ? 'sale' : 'redemption'} of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,
