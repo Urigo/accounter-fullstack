@@ -5,7 +5,10 @@ import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
 import { ExchangeRateNotAvailableError } from '../../exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
-import { pairCancellations } from '../../foreign-securities/helpers/security-cancellations.helper.js';
+import {
+  cancelledTradeType,
+  pairCancellations,
+} from '../../foreign-securities/helpers/security-cancellations.helper.js';
 import {
   getSecurityCapitalGain,
   SecurityCapitalGainError,
@@ -13,6 +16,7 @@ import {
 import {
   describeSecurity,
   getDisposalProceeds,
+  isDisposalExecution,
 } from '../../foreign-securities/helpers/security-disposal.helper.js';
 import {
   currencyOfSecurityLabel,
@@ -82,7 +86,7 @@ export type SemiAnnualIncomeItem = SemiAnnualIncomeFigures & {
   description: string | null;
 };
 
-const isRedemption = (execution: SecurityExecutionRow) =>
+const isRedemption = (execution: Pick<SecurityExecutionRow, 'trade_type'>) =>
   tryToSecurityTradeType(execution.trade_type) === SecurityTradeType.Redemption;
 
 /** The currency an execution's amounts are in: its settlement currency, else its trade currency */
@@ -123,7 +127,9 @@ const isDataError = (error: unknown): error is Error =>
  * The half's sales and redemptions, each priced from its FIFO lots by `getSecurityCapitalGain`.
  *
  * A cancelled sale is dropped with its cancellation; cancellations are looked for a few days past
- * the half, so a sale cancelled just after it still drops. A sale whose gain cannot be worked out
+ * the half, so a sale cancelled just after it still drops. Buys are read too, because the bank may
+ * report a cancellation as the opposite trade (`cancelledTradeType`): a cancelled buy then reads as
+ * a sale, and is dropped with its buy rather than flagged. A sale whose gain cannot be worked out
  * still counts in the turnover, at its proceeds and the trade date's rate — or the bank's own
  * shekel value — and is reported as an issue.
  */
@@ -138,20 +144,27 @@ export async function collectHalfDisposals(
     ownerId,
     fromDate: period.fromDate,
     toDate: addDaysToTimelessDate(period.toDate, CANCELLATION_LOOKAHEAD_DAYS),
-    tradeTypes: [SecurityTradeType.Sell, SecurityTradeType.Redemption],
+    tradeTypes: [SecurityTradeType.Buy, SecurityTradeType.Sell, SecurityTradeType.Redemption],
   });
   const inPeriod = (execution: SecurityExecutionRow) => execution.trade_date <= period.toDate;
   const { live, orphanCancellations } = pairCancellations(rows);
 
   for (const cancellation of orphanCancellations.filter(inPeriod)) {
+    // a cancelled buy from an earlier half is no sale of this one
+    const cancelled = { trade_type: cancelledTradeType(cancellation) };
+    if (!isDisposalExecution(cancelled)) {
+      continue;
+    }
     issues.push({
-      message: `A cancellation of ${describeSecurity(cancellation)} on ${cancellation.trade_date} matches no ${isRedemption(cancellation) ? 'redemption' : 'sale'} in the half, so it is left out — check whether what it cancels belongs to an earlier half`,
+      message: `A cancellation of ${describeSecurity(cancellation)} on ${cancellation.trade_date} matches no ${isRedemption(cancelled) ? 'redemption' : 'sale'} in the half, so it is left out — check whether what it cancels belongs to an earlier half`,
       executionId: cancellation.id,
     });
   }
 
+  // the buys were read only to pair cancellations
+  const disposals = live.filter(row => inPeriod(row) && isDisposalExecution(row));
   const sales = await Promise.all(
-    live.filter(inPeriod).map(async (row): Promise<SemiAnnualSale> => {
+    disposals.map(async (row): Promise<SemiAnnualSale> => {
       const security = describeSecurity(row);
       const base = {
         id: row.id,

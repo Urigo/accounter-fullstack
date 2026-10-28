@@ -206,6 +206,24 @@ describe('calculateFifoCostBasis', () => {
     expect(result.costForeign).toBeCloseTo(1100, 6);
   });
 
+  it('drops a cancelled buy the bank reports as a sale, so it adds no lot', () => {
+    const target = sell('s1', '2025-03-01', 10, 1300);
+
+    const result = calculateFifoCostBasis(
+      [
+        buy('b1', '2024-01-10', 10, 900),
+        { ...sell('b1-cancel', '2024-01-10', 10, 900), is_cancel_transaction: 'כן' },
+        buy('b2', '2024-02-10', 10, 1100),
+        target,
+      ],
+      target,
+      Currency.Usd,
+    );
+
+    expect(result.lots.map(lot => lot.executionId)).toEqual(['b2']);
+    expect(result.costForeign).toBeCloseTo(1100, 6);
+  });
+
   it('ignores cash-only actions such as dividends and interest', () => {
     const target = redemption('r1', '2025-03-01', 10, 1100);
 

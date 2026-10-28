@@ -1,6 +1,12 @@
+import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
 import type { SecurityExecutionRow } from '../types.js';
-import { isCancelledExecution } from './security-execution-enums.helper.js';
+import {
+  currencyOfSecurityLabel,
+  isCancelledExecution,
+  tradeTypeToRaw,
+  tryToSecurityTradeType,
+} from './security-execution-enums.helper.js';
 
 /** Amounts closer than this are the same amount */
 const MIN_AMOUNT = 0.005;
@@ -12,8 +18,12 @@ export type CancellableExecution = Pick<
   | 'trade_type'
   | 'security'
   | 'is_cancel_transaction'
+  | 'trade_currency'
+  | 'settlement_currency'
   | 'trade_gross_value_trade_currency'
   | 'net_value_trade_currency'
+  | 'net_value_settlement_currency'
+  | 'net_value_nis'
   | 'nv'
   | 'bank_number'
   | 'branch_number'
@@ -36,6 +46,58 @@ const absAmount = (value: string | null) => {
   const amount = Math.abs(Number(value));
   return Number.isFinite(amount) ? amount : null;
 };
+
+type NetAmountField =
+  | 'trade_currency'
+  | 'settlement_currency'
+  | 'net_value_trade_currency'
+  | 'net_value_settlement_currency'
+  | 'net_value_nis';
+
+/**
+ * The net amount an execution reports, for its sign: the first non-zero of the trade currency's,
+ * the settlement currency's and — on a shekel execution only — the shekel net, as the matcher
+ * reads it (`executionAmountInCurrency`). The bank may leave the trade currency's net empty. On a
+ * foreign-currency execution the shekel net is the commission, whose sign is the fee's.
+ */
+function reportedNet(execution: Pick<CancellableExecution, NetAmountField>): number {
+  const isShekelExecution =
+    currencyOfSecurityLabel(execution.trade_currency) === Currency.Ils ||
+    currencyOfSecurityLabel(execution.settlement_currency) === Currency.Ils;
+  const reported = [
+    execution.net_value_trade_currency,
+    execution.net_value_settlement_currency,
+    isShekelExecution ? execution.net_value_nis : null,
+  ].map(Number);
+  return reported.find(value => Number.isFinite(value) && value !== 0) ?? 0;
+}
+
+/**
+ * The trade type of the execution a cancellation cancels.
+ *
+ * The bank reports a cancellation in one of two ways:
+ * - under the original's trade type, with its values negated (a cancelled dividend: money going
+ *   back out);
+ * - as the opposite trade, with positive values (a cancelled buy reported as a sale: money coming
+ *   back in).
+ *
+ * The sign of the net amount tells them apart (`reportedNet`). A sale that brings money in, or a
+ * buy that takes it out, is the opposite trade, so it cancels a buy (or a sale). Anything else,
+ * and any row with no net amount, keeps its own trade type.
+ */
+export function cancelledTradeType(
+  cancellation: Pick<CancellableExecution, 'trade_type' | NetAmountField>,
+): string {
+  const net = reportedNet(cancellation);
+  const tradeType = tryToSecurityTradeType(cancellation.trade_type);
+  if (tradeType === SecurityTradeType.Sell && net > 0) {
+    return tradeTypeToRaw[SecurityTradeType.Buy];
+  }
+  if (tradeType === SecurityTradeType.Buy && net < 0) {
+    return tradeTypeToRaw[SecurityTradeType.Sell];
+  }
+  return cancellation.trade_type;
+}
 
 /** The amount a cancellation and its original share: the gross when reported, else the net */
 function sameAmount(a: CancellableExecution, b: CancellableExecution): boolean {
@@ -71,12 +133,12 @@ const sameAccount = (a: CancellableExecution, b: CancellableExecution) =>
 /**
  * Pairs each cancellation with the execution it cancels.
  *
- * The bank reports a cancellation as a row of its own (`is_cancel_transaction` = "כן") with the
- * original's trade type and amounts negated, and leaves the original as it was — so dropping only
- * the cancellation leaves a trade that never happened. The original is the latest live execution
- * at or before the cancellation of the same security, in the same account, of the same trade type,
- * amount and number of units (as the ledger pairs a cancelled payment, `findCancelledPayment`); of two on the same
- * day, the later id.
+ * The bank reports a cancellation as a row of its own (`is_cancel_transaction` = "כן") and leaves
+ * the original as it was — so dropping only the cancellation leaves a trade that never happened.
+ * The original is the latest live execution at or before the cancellation of the same security, in
+ * the same account, of the trade type it cancels (`cancelledTradeType`), amount and number of
+ * units (as the ledger pairs a cancelled payment, `findCancelledPayment`); of two on the same day,
+ * the later id.
  * Each original is cancelled once: cancellations are paired oldest first.
  */
 export function pairCancellations<T extends CancellableExecution>(
@@ -91,11 +153,12 @@ export function pairCancellations<T extends CancellableExecution>(
   const orphanCancellations: T[] = [];
 
   for (const cancellation of cancellations) {
+    const tradeType = cancelledTradeType(cancellation);
     let original: T | null = null;
     for (const candidate of candidates) {
       if (
         cancelled.has(candidate.id) ||
-        candidate.trade_type !== cancellation.trade_type ||
+        candidate.trade_type !== tradeType ||
         candidate.security !== cancellation.security ||
         !sameAccount(candidate, cancellation) ||
         !sameAmount(candidate, cancellation) ||
