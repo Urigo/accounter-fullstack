@@ -3,6 +3,7 @@ import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { addDaysToTimelessDate } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
+import { ExchangeRateNotAvailableError } from '../../exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { pairCancellations } from '../../foreign-securities/helpers/security-cancellations.helper.js';
 import {
@@ -18,6 +19,7 @@ import {
   isDividendInKindDistribution,
   tryToSecurityTradeType,
 } from '../../foreign-securities/helpers/security-execution-enums.helper.js';
+import { getSecurityLocality } from '../../foreign-securities/helpers/security-locality.helper.js';
 import { getWithheldTaxParts } from '../../foreign-securities/helpers/security-withheld-tax.helper.js';
 import { ForeignSecuritiesProvider } from '../../foreign-securities/providers/foreign-securities.provider.js';
 import type { SecurityExecutionRow } from '../../foreign-securities/types.js';
@@ -99,10 +101,23 @@ async function rateOn(
   }
   try {
     return await injector.get(ExchangeProvider).getExchangeRates(currency, localCurrency, date);
-  } catch {
-    return null;
+  } catch (error) {
+    if (error instanceof ExchangeRateNotAvailableError) {
+      return null;
+    }
+    throw error;
   }
 }
+
+/**
+ * Whether an error is about the data the user can fix — a missing rate, CPI or purchase — rather
+ * than a failure to read it. Only those make a sale an issue; anything else fails the report rather
+ * than quietly leaving the sale's gain out of it.
+ */
+const isDataError = (error: unknown): error is Error =>
+  error instanceof SecurityCapitalGainError ||
+  error instanceof PriceIndexNotAvailableError ||
+  error instanceof ExchangeRateNotAvailableError;
 
 /**
  * The half's sales and redemptions, each priced from its FIFO lots by `getSecurityCapitalGain`.
@@ -169,11 +184,13 @@ export async function collectHalfDisposals(
           };
         }
       } catch (error) {
-        // what the user can act on is said as is; anything else is named with its cause
+        if (!isDataError(error)) {
+          throw error;
+        }
         const message =
-          error instanceof SecurityCapitalGainError || error instanceof PriceIndexNotAvailableError
-            ? error.message
-            : `Could not work out the capital gain of ${security} on ${row.trade_date}: ${error instanceof Error ? error.message : String(error)}`;
+          error instanceof ExchangeRateNotAvailableError
+            ? `Could not work out the capital gain of ${security} on ${row.trade_date}: ${error.message}`
+            : error.message;
         issues.push({
           message: `${message}. Its consideration is counted in the turnover, but not its gain or loss`,
           executionId: row.id,
@@ -268,11 +285,11 @@ export async function collectHalfSecuritiesIncome(
   const issues: SemiAnnualIssue[] = [];
 
   const buckets: IncomeBucketCategories[] = [];
-  const unconfigured = new Set<SecuritiesIncomeKind>();
+  const unconfigured = new Set<`${SecuritiesIncomeKind}:${SecuritiesIncomeLocality}`>();
   for (const { kind, locality } of SEMI_ANNUAL_INCOME_BUCKETS) {
     const incomeId = taxCategories[INCOME_TAX_CATEGORY_KEYS[kind][locality]];
     if (!incomeId) {
-      unconfigured.add(kind);
+      unconfigured.add(`${kind}:${locality}`);
       continue;
     }
     buckets.push({
@@ -298,7 +315,12 @@ export async function collectHalfSecuritiesIncome(
       ownerId,
       fromDate: period.fromDate,
       toDate: period.toDate,
-      tradeTypes: [SecurityTradeType.DividendPayment, SecurityTradeType.InterestPayment],
+      // a dividend in kind is income too; other stock distributions (bonus issues, splits) aren't
+      tradeTypes: [
+        SecurityTradeType.DividendPayment,
+        SecurityTradeType.InterestPayment,
+        SecurityTradeType.StockDistribution,
+      ],
     }),
   ]);
   if (records.length >= INCOME_RECORDS_LIMIT) {
@@ -307,7 +329,8 @@ export async function collectHalfSecuritiesIncome(
     });
   }
 
-  // traced all at once, so the loaders batch across records
+  // traced all at once: the transactions load batches across records; the executions are one query
+  // per charge
   const executions = await Promise.all(
     records.map(record => findRecordExecution(injector, record, ownerId)),
   );
@@ -339,7 +362,7 @@ export async function collectHalfSecuritiesIncome(
       });
     } else if (Math.abs(split.mismatch) > WITHHOLDING_SPLIT_TOLERANCE) {
       issues.push({
-        message: `The tax withheld on the ${label} (${withheld.toFixed(2)}) does not match its execution's (${(split.foreign + split.israeli).toFixed(2)}); the execution's split is used`,
+        message: `The tax withheld on the ${label} (${withheld.toFixed(2)}) does not match its execution's (${(withheld + split.mismatch).toFixed(2)}); the ledger's amount is split by the execution's foreign and Israeli shares`,
         chargeId: record.charge_id,
         executionId: execution?.id,
       });
@@ -368,7 +391,11 @@ export async function collectHalfSecuritiesIncome(
   // income the bank paid in the half that no ledger record books
   const { live } = pairCancellations(incomeExecutions);
   for (const execution of live) {
-    if (tracedExecutionIds.has(execution.id)) {
+    if (
+      tracedExecutionIds.has(execution.id) ||
+      (tryToSecurityTradeType(execution.trade_type) === SecurityTradeType.StockDistribution &&
+        !isDividendInKindDistribution(execution))
+    ) {
       continue;
     }
     const kind: SecuritiesIncomeKind =
@@ -376,8 +403,13 @@ export async function collectHalfSecuritiesIncome(
         ? 'INTEREST'
         : 'DIVIDEND';
     const security = describeSecurity(execution);
+    const locality = getSecurityLocality(execution, adminContext.locality);
+    // with the locality unknown, a kind with any bucket unset may be why
+    const categoryUnset = locality
+      ? unconfigured.has(`${kind}:${locality}`)
+      : unconfigured.has(`${kind}:LOCAL`) || unconfigured.has(`${kind}:FOREIGN`);
     issues.push({
-      message: unconfigured.has(kind)
+      message: categoryUnset
         ? `The ${INCOME_KIND_LABEL[kind]} of ${security} on ${execution.trade_date} is left out: its income tax category is not set in the securities settings`
         : `No ledger record in the half books the ${INCOME_KIND_LABEL[kind]} of ${security} paid on ${execution.trade_date} — its charge's ledger may not be generated, or its cash came in after the half`,
       executionId: execution.id,

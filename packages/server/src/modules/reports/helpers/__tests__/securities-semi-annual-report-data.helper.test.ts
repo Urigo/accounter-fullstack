@@ -1,11 +1,15 @@
 import type { Injector } from 'graphql-modules';
 import { describe, expect, it, vi } from 'vitest';
-import { Currency, SecurityTradeType } from '../../../../shared/enums.js';
+import { Currency, SecurityPaymentType, SecurityTradeType } from '../../../../shared/enums.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import type { AdminContext } from '../../../admin-context/types.js';
+import { ExchangeRateNotAvailableError } from '../../../exchange-rates/helpers/exchange.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
-import { tradeTypeToRaw } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
+import {
+  paymentTypeToRaw,
+  tradeTypeToRaw,
+} from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
 import { ForeignSecuritiesProvider } from '../../../foreign-securities/providers/foreign-securities.provider.js';
 import type { SecurityExecutionRow } from '../../../foreign-securities/types.js';
 import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
@@ -79,7 +83,7 @@ const sale = (id: string, tradeDate: TimelessDateString, overrides = {}) =>
 
 function makeInjector(params: {
   executions?: SecurityExecutionRow[];
-  history?: SecurityExecutionRow[];
+  history?: SecurityExecutionRow[] | Error;
   ledgerRecords?: unknown[];
   transactionsByCharge?: Record<string, { id: string; origin_key: string }[]>;
   executionsByTransaction?: Record<string, Record<string, SecurityExecutionRow>>;
@@ -110,7 +114,12 @@ function makeInjector(params: {
                 tradeTypes.map(type => tradeTypeToRaw[type]).includes(row.trade_type),
             ),
         ),
-        getSecurityOwnerHistory: async () => params.history ?? [],
+        getSecurityOwnerHistory: async () => {
+          if (params.history instanceof Error) {
+            throw params.history;
+          }
+          return params.history ?? [];
+        },
         getChargeExecutionsByTransactionId: async (chargeId: string) =>
           new Map(Object.entries(params.executionsByTransaction?.[chargeId] ?? {})),
         executionsByChargeIdLoader: {
@@ -124,7 +133,7 @@ function makeInjector(params: {
         getExchangeRates: async (_from: Currency, _to: Currency, date: TimelessDateString) => {
           const rate = RATES[date];
           if (rate == null) {
-            throw new Error(`No mock rate for ${date}`);
+            throw new ExchangeRateNotAvailableError(`No mock rate for ${date}`);
           }
           return rate;
         },
@@ -253,6 +262,17 @@ describe('collectHalfDisposals', () => {
     expect(sales[0].consideration).toBe(4000);
   });
 
+  it('fails on a failure to read the data, rather than leaving the sale out', async () => {
+    const theSale = sale('sale', SALE_DAY);
+
+    await expect(
+      collectHalfDisposals(
+        makeInjector({ executions: [theSale], history: new Error('connection terminated') }),
+        { ownerId: OWNER_ID, period: H1, localCurrency: Currency.Ils },
+      ),
+    ).rejects.toThrow('connection terminated');
+  });
+
   it('flags foreign tax withheld on a sale', async () => {
     const theSale = sale('sale', SALE_DAY, { foreign_tax_value_settlement_currency: '5' });
 
@@ -277,7 +297,7 @@ const TAX_CATEGORIES = {
 };
 
 const adminContext = (taxCategories: Record<string, string> = TAX_CATEGORIES) =>
-  ({ foreignSecurities: { taxCategories } }) as unknown as AdminContext;
+  ({ locality: 'ISR', foreignSecurities: { taxCategories } }) as unknown as AdminContext;
 
 const ledgerRecord = (overrides: Record<string, unknown>) => ({
   id: 'record',
@@ -393,6 +413,222 @@ describe('collectHalfSecuritiesIncome', () => {
     expect(issues).toEqual([
       expect.objectContaining({
         executionId: 'dividend-execution',
+        message: expect.stringContaining('No ledger record in the half books the dividend'),
+      }),
+    ]);
+  });
+
+  it('flags withholding that does not match its execution, and keeps to the ledger', async () => {
+    // the ledger withheld 1,000; the execution's 250 at 3.70 is 925
+    const record = ledgerRecord({
+      ...dividendRecord,
+      debit_local_amount1: '2700',
+      debit_local_amount2: '1000',
+    });
+
+    const { income, issues } = await collectHalfSecuritiesIncome(
+      makeInjector({
+        ledgerRecords: [record],
+        executions: [dividendExecution],
+        transactionsByCharge: { charge: [{ id: 'transaction', origin_key: 'origin-key' }] },
+        executionsByTransaction: { charge: { transaction: dividendExecution } },
+      }),
+      { ownerId: OWNER_ID, period: H1, adminContext: adminContext() },
+    );
+
+    expect(income[0].foreignTaxWithheld).toBeCloseTo(600, 6);
+    expect(income[0].israeliTaxWithheld).toBeCloseTo(400, 6);
+    expect(issues).toEqual([
+      expect.objectContaining({
+        executionId: 'dividend-execution',
+        message: expect.stringContaining('(1000.00) does not match its execution\'s (925.00)'),
+      }),
+    ]);
+  });
+
+  it('nets a reversal out against the income it reverses', async () => {
+    const paid = execution({
+      ...dividendExecution,
+      trade_gross_value_trade_currency: '1000',
+      net_value_trade_currency: '750',
+    });
+    const cancellation = execution({
+      ...paid,
+      id: 'cancellation-execution',
+      trade_date: '2025-04-08',
+      is_cancel_transaction: 'כן',
+      trade_gross_value_trade_currency: '-1000',
+      net_value_trade_currency: '-750',
+      foreign_tax_value_settlement_currency: '-150',
+      israel_tax_value_by_payments_settlement_currency: '-100',
+    });
+    const reversal = ledgerRecord({
+      id: 'reversal-record',
+      charge_id: 'reversal-charge',
+      invoice_date: '2025-04-10',
+      reference1: 'reversal-origin-key',
+      debit_entity1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+      debit_local_amount1: '3700',
+      debit_foreign_amount1: '1000',
+      credit_entity1: 'bank',
+      credit_local_amount1: '2775',
+      credit_foreign_amount1: '750',
+      credit_entity2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+      credit_local_amount2: '925',
+      credit_foreign_amount2: '250',
+    });
+
+    const { income, issues } = await collectHalfSecuritiesIncome(
+      makeInjector({
+        ledgerRecords: [dividendRecord, reversal],
+        executions: [paid, cancellation],
+        transactionsByCharge: {
+          charge: [{ id: 'transaction', origin_key: 'origin-key' }],
+          'reversal-charge': [{ id: 'reversal-transaction', origin_key: 'reversal-origin-key' }],
+        },
+        executionsByTransaction: {
+          charge: { transaction: paid },
+          'reversal-charge': { 'reversal-transaction': cancellation },
+        },
+      }),
+      { ownerId: OWNER_ID, period: H1, adminContext: adminContext() },
+    );
+
+    expect(issues).toEqual([]);
+    const total = (field: 'gross' | 'foreignTaxWithheld' | 'israeliTaxWithheld') =>
+      income.reduce((sum, item) => sum + item[field], 0);
+    expect(income.map(item => item.gross)).toEqual([3700, -3700]);
+    expect(income[1].foreignTaxWithheld).toBeCloseTo(-555, 6);
+    expect(total('gross')).toBe(0);
+    expect(total('foreignTaxWithheld')).toBeCloseTo(0, 6);
+    expect(total('israeliTaxWithheld')).toBeCloseTo(0, 6);
+  });
+
+  describe('dividends in kind', () => {
+    const inKind = execution({
+      id: 'in-kind-execution',
+      trade_type: tradeTypeToRaw[SecurityTradeType.StockDistribution],
+      payment_type: paymentTypeToRaw[SecurityPaymentType.DividendInKind],
+      trade_date: '2025-03-20',
+      nv: '3',
+    });
+    const bonusIssue = execution({
+      id: 'bonus-execution',
+      trade_type: tradeTypeToRaw[SecurityTradeType.StockDistribution],
+      trade_date: '2025-03-21',
+      nv: '5',
+    });
+
+    it('traces a dividend in kind through its charge', async () => {
+      const record = ledgerRecord({
+        id: 'in-kind-record',
+        charge_id: 'in-kind-charge',
+        reference1: null,
+        credit_entity1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+        credit_local_amount1: '740',
+        credit_foreign_amount1: '200',
+        debit_entity1: 'securities',
+        debit_local_amount1: '740',
+        debit_foreign_amount1: '200',
+      });
+
+      const { income, issues } = await collectHalfSecuritiesIncome(
+        makeInjector({
+          ledgerRecords: [record],
+          executions: [inKind, bonusIssue],
+          distributionsByCharge: { 'in-kind-charge': [inKind] },
+        }),
+        { ownerId: OWNER_ID, period: H1, adminContext: adminContext() },
+      );
+
+      expect(issues).toEqual([]);
+      expect(income).toEqual([
+        expect.objectContaining({
+          kind: 'DIVIDEND',
+          locality: 'FOREIGN',
+          gross: 740,
+          security: 'MOCK (US0000000001)',
+        }),
+      ]);
+    });
+
+    it('reports a dividend in kind no ledger record books, but not a bonus issue', async () => {
+      const { issues } = await collectHalfSecuritiesIncome(
+        makeInjector({ executions: [inKind, bonusIssue] }),
+        { ownerId: OWNER_ID, period: H1, adminContext: adminContext() },
+      );
+
+      expect(issues).toEqual([
+        expect.objectContaining({
+          executionId: 'in-kind-execution',
+          message: expect.stringContaining('No ledger record in the half books the dividend'),
+        }),
+      ]);
+    });
+  });
+
+  it('flags foreign tax withheld on a local dividend, which is not credited', async () => {
+    const record = ledgerRecord({
+      id: 'local-record',
+      credit_entity1: TAX_CATEGORIES.LOCAL_DIVIDEND_INCOME,
+      credit_local_amount1: '1000',
+      debit_local_amount1: '750',
+      debit_entity2: TAX_CATEGORIES.LOCAL_DIVIDEND_WITHHOLDING_TAX,
+      debit_local_amount2: '250',
+    });
+    const localDividend = execution({
+      id: 'local-dividend-execution',
+      trade_type: tradeTypeToRaw[SecurityTradeType.DividendPayment],
+      trade_date: '2025-03-28',
+      isin: 'IL0000000001',
+      trade_currency: 'שקל חדש',
+      settlement_currency: 'שקל חדש',
+      foreign_tax_value_settlement_currency: '50',
+      israel_tax_value_by_payments_settlement_currency: '200',
+    });
+
+    const { income, issues } = await collectHalfSecuritiesIncome(
+      makeInjector({
+        ledgerRecords: [record],
+        executions: [localDividend],
+        transactionsByCharge: { charge: [{ id: 'transaction', origin_key: 'origin-key' }] },
+        executionsByTransaction: { charge: { transaction: localDividend } },
+      }),
+      { ownerId: OWNER_ID, period: H1, adminContext: adminContext() },
+    );
+
+    expect(income[0]).toMatchObject({
+      locality: 'LOCAL',
+      foreignTaxWithheld: 50,
+      israeliTaxWithheld: 200,
+    });
+    expect(issues).toEqual([
+      expect.objectContaining({
+        message: expect.stringContaining('Foreign tax was withheld on the local dividend'),
+      }),
+    ]);
+  });
+
+  it("blames an unset category only on income of that category's locality", async () => {
+    const { FOREIGN_DIVIDEND_INCOME: _unset, ...categories } = TAX_CATEGORIES;
+    const localDividend = execution({
+      ...dividendExecution,
+      id: 'local-dividend-execution',
+      isin: 'IL0000000001',
+    });
+
+    const { issues } = await collectHalfSecuritiesIncome(
+      makeInjector({ executions: [dividendExecution, localDividend] }),
+      { ownerId: OWNER_ID, period: H1, adminContext: adminContext(categories) },
+    );
+
+    expect(issues).toEqual([
+      expect.objectContaining({
+        executionId: 'dividend-execution',
+        message: expect.stringContaining('its income tax category is not set'),
+      }),
+      expect.objectContaining({
+        executionId: 'local-dividend-execution',
         message: expect.stringContaining('No ledger record in the half books the dividend'),
       }),
     ]);
