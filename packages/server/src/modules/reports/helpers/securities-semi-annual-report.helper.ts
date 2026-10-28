@@ -171,6 +171,21 @@ export type SemiAnnualDeclaration = SemiAnnualSalesSummary & {
   advanceNotes: SemiAnnualAdvanceNote[];
 };
 
+export type SemiAnnualDeclarationParams = {
+  /** The corporate tax rate, as a fraction; null when none is set */
+  taxRate: number | null;
+  priorYearsLosses: number;
+  sales: readonly SemiAnnualSaleFigures[];
+  income: readonly SemiAnnualIncomeFigures[];
+} & (
+  | { half: 'H1' }
+  | {
+      half: 'H2';
+      /** The first half's sales, which the second half carries losses from */
+      firstHalfSales: readonly SemiAnnualSaleFigures[];
+    }
+);
+
 /**
  * The declaration of a half.
  *
@@ -186,23 +201,16 @@ export type SemiAnnualDeclaration = SemiAnnualSalesSummary & {
  * Not modelled: offsetting a net securities loss against dividends and interest (s.92(a)(4)), and
  * carrying an unused foreign tax credit between halves.
  */
-export function computeSemiAnnualDeclaration(params: {
-  half: YearHalf;
-  /** The corporate tax rate, as a fraction; null when none is set */
-  taxRate: number | null;
-  priorYearsLosses: number;
-  sales: readonly SemiAnnualSaleFigures[];
-  /** For the second half: the first half's sales, which it carries losses from */
-  firstHalfSales?: readonly SemiAnnualSaleFigures[];
-  income: readonly SemiAnnualIncomeFigures[];
-}): SemiAnnualDeclaration {
+export function computeSemiAnnualDeclaration(
+  params: SemiAnnualDeclarationParams,
+): SemiAnnualDeclaration {
   const { taxRate } = params;
   const salesSummary = summarizeSemiAnnualSales(params.sales);
   const priorYearsLosses = shekels(Math.max(0, params.priorYearsLosses));
 
   const firstHalfNetRealCapitalGain =
     params.half === 'H2'
-      ? summarizeSemiAnnualSales(params.firstHalfSales ?? []).netRealCapitalGain
+      ? summarizeSemiAnnualSales(params.firstHalfSales).netRealCapitalGain
       : null;
   const lossesCarriedForward =
     firstHalfNetRealCapitalGain == null
@@ -355,7 +363,8 @@ export function ledgerEntityAmount(record: SemiAnnualLedgerRecord, entityId: str
 /**
  * The rate a ledger record converts its foreign amounts at: local over foreign on the slot that
  * carries the entity (the income category). 1 when the record has no foreign amount there — a
- * local-currency record. Null when the slot carries a foreign amount of zero against a local one.
+ * local-currency record. Null when the entity is not on the record, or when its slot carries a
+ * foreign amount of zero against a local one.
  */
 export function ledgerRecordRate(record: SemiAnnualLedgerRecord, entityId: string): number | null {
   const slots = [
@@ -388,9 +397,13 @@ export const WITHHOLDING_SPLIT_TOLERANCE = 1;
  * A record's withholding, split into the foreign and the Israeli tax.
  *
  * The ledger books both on one withholding line; the execution behind the record reports them
- * apart, in its settlement currency. They are converted at the record's own rate, so they are in
- * the same shekels as the line. When the execution is unknown, the whole line is taken as the tax
- * its locality makes likelier — Israeli on a local security, foreign on a foreign one — and the
+ * apart, in its settlement currency. The line is apportioned by the execution's shares, so the
+ * split needs no rate and always adds up to the line — the sheet matches the books. The record's
+ * own rate only checks the line against the execution: `mismatch` is how far the execution's tax,
+ * converted at it, is from the line (0 when the rate is unknown).
+ *
+ * When the execution is unknown, or reports no tax to apportion by, the whole line is taken as the
+ * tax its locality makes likelier — Israeli on a local security, foreign on a foreign one — and the
  * caller flags it.
  */
 export function splitIncomeWithholding(params: {
@@ -403,12 +416,17 @@ export function splitIncomeWithholding(params: {
   rate: number | null;
 }): { foreign: number; israeli: number; matched: boolean; mismatch: number } {
   const { locality, withheld, parts, rate } = params;
-  if (!parts || rate == null) {
-    return locality === 'LOCAL'
-      ? { foreign: 0, israeli: withheld, matched: false, mismatch: 0 }
-      : { foreign: withheld, israeli: 0, matched: false, mismatch: 0 };
+  const byLocality =
+    locality === 'LOCAL' ? { foreign: 0, israeli: withheld } : { foreign: withheld, israeli: 0 };
+  if (!parts) {
+    return { ...byLocality, matched: false, mismatch: 0 };
   }
-  const foreign = parts.foreign * rate;
-  const israeli = parts.israeli * rate;
-  return { foreign, israeli, matched: true, mismatch: foreign + israeli - withheld };
+  const total = parts.foreign + parts.israeli;
+  const mismatch = rate == null ? 0 : total * rate - withheld;
+  if (total === 0) {
+    // the execution reports no tax: a line beyond it is a mismatch, with no split to go by
+    return { ...byLocality, matched: true, mismatch: -withheld };
+  }
+  const foreign = (withheld * parts.foreign) / total;
+  return { foreign, israeli: withheld - foreign, matched: true, mismatch };
 }

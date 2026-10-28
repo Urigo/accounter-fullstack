@@ -6,9 +6,11 @@ import {
   ledgerRecordRate,
   splitIncomeWithholding,
   summarizeSemiAnnualSales,
+  type SemiAnnualDeclarationParams,
   type SemiAnnualIncomeFigures,
   type SemiAnnualLedgerRecord,
   type SemiAnnualSaleFigures,
+  type YearHalf,
 } from '../securities-semi-annual-report.helper.js';
 
 /*
@@ -41,15 +43,19 @@ const income = (
     ...overrides,
   }) satisfies SemiAnnualIncomeFigures;
 
-const declare = (params: Partial<Parameters<typeof computeSemiAnnualDeclaration>[0]>) =>
-  computeSemiAnnualDeclaration({
-    half: 'H1',
-    taxRate: RATE,
-    priorYearsLosses: 0,
-    sales: [],
-    income: [],
-    ...params,
-  });
+const declare = ({
+  half = 'H1',
+  firstHalfSales = [],
+  ...params
+}: Partial<Omit<SemiAnnualDeclarationParams, 'half'>> & {
+  half?: YearHalf;
+  firstHalfSales?: readonly SemiAnnualSaleFigures[];
+}) => {
+  const base = { taxRate: RATE, priorYearsLosses: 0, sales: [], income: [], ...params };
+  return computeSemiAnnualDeclaration(
+    half === 'H2' ? { ...base, half, firstHalfSales } : { ...base, half },
+  );
+};
 
 const bucket = (
   declaration: ReturnType<typeof declare>,
@@ -198,11 +204,11 @@ describe('computeSemiAnnualDeclaration', () => {
       expect(declaration.advanceNotes).toEqual([]);
     });
 
-    it('ignores the first half in the first half', () => {
-      const declaration = declare({ firstHalfSales: [sale(-5000)], sales: [sale(1000)] });
+    it('has no first half in the first half', () => {
+      const declaration = declare({ priorYearsLosses: 2000, sales: [sale(1000)] });
 
       expect(declaration.firstHalfNetRealCapitalGain).toBeNull();
-      expect(declaration.lossesCarriedForward).toBe(0);
+      expect(declaration.lossesCarriedForward).toBe(2000);
     });
   });
 
@@ -437,7 +443,7 @@ describe('ledgerRecordRate', () => {
 });
 
 describe('splitIncomeWithholding', () => {
-  it("splits the line by the execution's foreign and Israeli tax, at the record's rate", () => {
+  it("apportions the line by the execution's foreign and Israeli tax", () => {
     const split = splitIncomeWithholding({
       locality: 'FOREIGN',
       withheld: 925,
@@ -451,15 +457,52 @@ describe('splitIncomeWithholding', () => {
     expect(split.mismatch).toBeCloseTo(0, 9);
   });
 
-  it('reports how far the split is from the line', () => {
+  it('keeps to the line, and reports how far the execution is from it', () => {
     const split = splitIncomeWithholding({
       locality: 'FOREIGN',
       withheld: 900,
-      parts: { foreign: 250, israeli: 0 },
+      parts: { foreign: 150, israeli: 100 },
+      rate: 4,
+    });
+
+    expect(split.foreign).toBeCloseTo(540, 9);
+    expect(split.israeli).toBeCloseTo(360, 9);
+    expect(split.mismatch).toBeCloseTo(100, 9);
+  });
+
+  it("keeps a reversal's sign", () => {
+    const split = splitIncomeWithholding({
+      locality: 'FOREIGN',
+      withheld: -925,
+      parts: { foreign: -150, israeli: -100 },
       rate: 3.7,
     });
 
-    expect(split.mismatch).toBeCloseTo(25, 9);
+    expect(split.foreign).toBeCloseTo(-555, 9);
+    expect(split.israeli).toBeCloseTo(-370, 9);
+    expect(split.mismatch).toBeCloseTo(0, 9);
+  });
+
+  it("apportions by the execution's split when the record's rate is unknown", () => {
+    expect(
+      splitIncomeWithholding({
+        locality: 'LOCAL',
+        withheld: 100,
+        parts: { foreign: 30, israeli: 10 },
+        rate: null,
+      }),
+    ).toEqual({ foreign: 75, israeli: 25, matched: true, mismatch: 0 });
+  });
+
+  it('flags a line the execution reports no tax for', () => {
+    expect(
+      splitIncomeWithholding({
+        locality: 'FOREIGN',
+        withheld: 100,
+        parts: { foreign: 0, israeli: 0 },
+        rate: 3.7,
+      }),
+    ).toEqual({ foreign: 100, israeli: 0, matched: true, mismatch: -100 });
   });
 
   it('takes an untraced line as Israeli tax on a local security', () => {
@@ -470,12 +513,7 @@ describe('splitIncomeWithholding', () => {
 
   it('takes an untraced line as foreign tax on a foreign security', () => {
     expect(
-      splitIncomeWithholding({
-        locality: 'FOREIGN',
-        withheld: 100,
-        parts: { foreign: 10, israeli: 0 },
-        rate: null,
-      }),
+      splitIncomeWithholding({ locality: 'FOREIGN', withheld: 100, parts: null, rate: null }),
     ).toEqual({ foreign: 100, israeli: 0, matched: false, mismatch: 0 });
   });
 });

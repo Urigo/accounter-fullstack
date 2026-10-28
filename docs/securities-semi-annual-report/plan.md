@@ -99,11 +99,10 @@ later sales' cost. Fix: pair cancellations with their originals, as `findCancell
 
 ## 3. Implementation
 
-### Step 0: branch
+### Base
 
-`git switch -c feat/securities-semi-annual-report origin/claude/friendly-fermat-1dxzsl`. Land the
-FIFO cancellation fix on #4791 (or as this branch's first commit). It landed as its own PR, #4835,
-which this branch is stacked on.
+Builds on the securities-sale series (#4824, #4829–#4832, on `main`) for the per-sale capital gain,
+and on the FIFO cancellation fix, which landed as its own PR, #4835.
 
 ### Server: `reports` module
 
@@ -142,8 +141,10 @@ ledger-reading report there would create an import cycle.
         israeliTaxWithheld, taxable, tax, foreignTaxCredit.
     - **Line 5:** `capitalGainsTax` (§91(ד) subtotal), `dividendsTax`, `interestTax`, `grossTax`,
       `foreignTaxCredit`, `taxLiability`.
-    - **Line 6:** `israeliTaxWithheldOnSales`, `israeliTaxWithheldOnIncome`, `taxAdvance`,
-      `excessCredits`, `advanceNotes: [SemiAnnualAdvanceNote!]!`.
+    - **Line 6:** `israeliTaxWithheldOnSales`, `israeliTaxWithheldOnIncome` (taxable income),
+      `israeliTaxWithheldOnExemptIncome` (not credited), `taxAdvance`, `excessCredits`,
+      `advanceNotes: [SemiAnnualAdvanceNote!]!`. These are the report's totals; the per-bucket,
+      per-sale and per-record figures are each row's own `israeliTaxWithheld`.
     - **Lists:** `sales[]`, `incomeItems[]`, `issues[]`.
   - Row types (each with an `id` and descriptions, per lint):
     - **Sale** (id = execution id): date, type, security, quantity, consideration, cost,
@@ -154,10 +155,10 @@ ledger-reading report there would create an import cycle.
 - **`reports/helpers/securities-semi-annual-report.helper.ts`** (pure, unit-tested)
   - `getSemiAnnualPeriod(year, half)`: H1 runs 01-01 to 06-30, due 07-31. H2 runs 07-01 to 12-31,
     due 01-31 of the next year. Built with `timelessDateFromParts`.
-  - `pairCancelledDisposals(rows)`: drops original/cancellation pairs; an orphan cancellation
-    becomes an issue.
   - `ledgerEntityAmount(record, entityId)`: credits − debits across all 4 slots.
-  - `splitIncomeWithholding(...)`.
+  - `splitIncomeWithholding(...)`: apportions the record's withholding line by the execution's
+    foreign and Israeli shares, so it adds up to the line; the execution's tax at the record's rate
+    only checks the line.
   - `computeSemiAnnualDeclaration(...)`: rounds each line to whole ₪ first, so the sheet adds up.
     - C = Σ consideration. G = Σ positive real gains. L = Σ |losses|. N = G − L (line 2).
     - P = prior-years losses. carried = P for H1; `max(0, P + L₁ − G₁)` for H2.
@@ -171,14 +172,16 @@ ledger-reading report there would create an import cycle.
     - `advanceNotes`, set when the advance is 0 or reduced:
       - `CAPITAL_GAINS_OFFSET_BY_CARRIED_FORWARD_LOSSES` when N > 0 and carried > 0 absorbs some of
         it (rendered with her sentence when it absorbs all of it);
-      - `CAPITAL_LOSS_IN_PERIOD` when N ≤ 0 and there are sales;
+      - `CAPITAL_LOSS_IN_PERIOD` when N < 0 and there are sales (a net of exactly 0 is no loss: line
+        2 shows the 0, and nothing is due on it);
       - `INCOME_TAX_COVERED_BY_FOREIGN_TAX` when FTC = Σ tax_b > 0;
       - `LIABILITY_COVERED_BY_WITHHOLDING` when IL ≥ liability > 0;
       - `NO_TAXABLE_EVENTS` when nothing happened.
     - Taxes, advance and notes are null/empty when there is no rate (which raises an issue).
 - **`reports/helpers/securities-semi-annual-report-data.helper.ts`** (IO collectors)
   - **`collectHalfDisposals`**
-    1. `getOwnerExecutionsByTradeDates` for SELL and REDEMPTION, then `pairCancelledDisposals`.
+    1. `getOwnerExecutionsByTradeDates` for SELL and REDEMPTION, then `pairCancellations`
+       (`foreign-securities`, #4835) drops cancelled pairs; an orphan cancellation becomes an issue.
     2. Per sale, `getSecurityCapitalGain(injector, row)`. It is already cheap: owner history is
        memoized per operation, and rates and CPI go through DataLoaders.
     3. On success: consideration = proceeds × saleRate; cost = Σ `lots.costLocal`.
