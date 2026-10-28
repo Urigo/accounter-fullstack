@@ -1,5 +1,52 @@
 # @accounter/modern-poalim-scraper
 
+## 0.11.1
+
+### Patch Changes
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`uuid@14.0.3` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.3) (from `14.0.2`, in `dependencies`)
+
+- [#4639](https://github.com/Urigo/accounter-fullstack/pull/4639) [`a4121e9`](https://github.com/Urigo/accounter-fullstack/commit/a4121e9614f49dfe7a023f1f65d9e6a13dc0ecac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.64.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.0) (from `1.63.0`, in `dependencies`)
+
+- [#4643](https://github.com/Urigo/accounter-fullstack/pull/4643) [`0cec65f`](https://github.com/Urigo/accounter-fullstack/commit/0cec65f89583a24fd86ff49c884b555a51e6866a) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.13.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.13.0) (from `25.12.0`, in `dependencies`)
+
+- [#4663](https://github.com/Urigo/accounter-fullstack/pull/4663) [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.6.7` ↗︎](https://www.npmjs.com/package/zod/v/4.6.7) (from `4.6.5`, in `dependencies`)
+
+- [#4684](https://github.com/Urigo/accounter-fullstack/pull/4684) [`8a9c5be`](https://github.com/Urigo/accounter-fullstack/commit/8a9c5be6042af604d8ca8058aa1a0b0965579cfc) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.14.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.14.0) (from `25.13.0`, in `dependencies`)
+
+- [#4723](https://github.com/Urigo/accounter-fullstack/pull/4723) [`35a00dd`](https://github.com/Urigo/accounter-fullstack/commit/35a00dd2b79ef43c684be0dcb74fb8a80b88320e) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.14.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.14.0) (from `25.13.0`, in `dependencies`)
+
+- [#4725](https://github.com/Urigo/accounter-fullstack/pull/4725) [`6a5f5b6`](https://github.com/Urigo/accounter-fullstack/commit/6a5f5b68ac675498cc3164ffc960d20c5524623c) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.64.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.1) (from `1.64.0`, in `dependencies`)
+
+- [#4763](https://github.com/Urigo/accounter-fullstack/pull/4763) [`d4f979f`](https://github.com/Urigo/accounter-fullstack/commit/d4f979ff3ea72e7508db7801d3e74d9dccb6bbf9) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.15.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.15.0) (from `25.14.0`, in `dependencies`)
+
+- [#4771](https://github.com/Urigo/accounter-fullstack/pull/4771) [`b13ce9c`](https://github.com/Urigo/accounter-fullstack/commit/b13ce9c11b690909367418625e2307421bae54f2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4772](https://github.com/Urigo/accounter-fullstack/pull/4772) [`593ec81`](https://github.com/Urigo/accounter-fullstack/commit/593ec810870358bee0d9d0b5806e03bd32ee735b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4773](https://github.com/Urigo/accounter-fullstack/pull/4773) [`f92ab61`](https://github.com/Urigo/accounter-fullstack/commit/f92ab612b56409ed71d733e888b62838b5300fbf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4780](https://github.com/Urigo/accounter-fullstack/pull/4780) [`793503f`](https://github.com/Urigo/accounter-fullstack/commit/793503fb68471a79873c86f572509f783230935f) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.15.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.15.0) (from `25.14.0`, in `dependencies`)
+
+- [#4792](https://github.com/Urigo/accounter-fullstack/pull/4792) [`5e77e66`](https://github.com/Urigo/accounter-fullstack/commit/5e77e66344233868d7db934346ef4f91bd67197b) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4687](https://github.com/Urigo/accounter-fullstack/pull/4687) [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Poalim securities transactions with the `איחוד/הפחתת הון` (consolidation / capital reduction)
+  payment type no longer fail schema validation. The value is accepted by the scraper schemas and
+  exposed in GraphQL as the new `SecurityPaymentType.CONSOLIDATION_OR_CAPITAL_REDUCTION` member.
+
 ## 0.11.0
 
 ### Minor Changes

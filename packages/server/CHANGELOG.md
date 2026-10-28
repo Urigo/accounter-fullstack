@@ -1,5 +1,664 @@
 # @accounter/server
 
+## 0.3.0
+
+### Minor Changes
+
+- [#4651](https://github.com/Urigo/accounter-fullstack/pull/4651) [`9a73cc9`](https://github.com/Urigo/accounter-fullstack/commit/9a73cc9e4477e3e747481e9a59bd1acce49c9260) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Filter the businesses directory server-side. `allBusinesses` takes a new `filters: BusinessFilter`
+  input, applied in SQL before the count and the page slice:
+  
+  - `name`: case-insensitive substring of the name or Hebrew name
+  - `taxCategoryIds` / `withoutTaxCategory` and `sortCodes` / `withoutSortCode`: a list match OR-ed
+    with a "has none" match, to find uncategorized businesses
+  - `countries` (the table's Locality), `isClient`, `isActive` and `isAdmin`
+  
+  `filters.name` and `filters.isClient` replace the top-level `name` and `isClient` arguments.
+  
+  The businesses page replaces its inline filter bar with a name search in the toolbar and a Filters
+  dialog (tax category, sort code and country multi-selects, Any / Yes / No for client, active and
+  admin, and "Unused only"). The applied filter is persisted in the `businessesFilters` URL parameter,
+  so filtered views can be linked to, reloaded, and walked with back / forward. A business selected
+  under one filter stays selected when a later filter hides it.
+
+- [#4727](https://github.com/Urigo/accounter-fullstack/pull/4727) [`adc7f2c`](https://github.com/Urigo/accounter-fullstack/commit/adc7f2c0bd38b9de2fbab70f51d5e0a5e529c474) Thanks [@gilgardosh](https://github.com/gilgardosh)! - **Breaking API change:** remove the deprecated `name` and `isClient` arguments from
+  `Query.allBusinesses`. Pass them as `filters.name` and `filters.isClient` instead. The client and
+  the MCP server already do.
+
+- [#4773](https://github.com/Urigo/accounter-fullstack/pull/4773) [`f92ab61`](https://github.com/Urigo/accounter-fullstack/commit/f92ab612b56409ed71d733e888b62838b5300fbf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - `CloudinaryProvider` returns the uploaded file's `publicId` and `resourceType`, and can delete an
+  upload (`deleteUpload`) — for removing files whose document was never saved.
+
+- [#4784](https://github.com/Urigo/accounter-fullstack/pull/4784) [`c379561`](https://github.com/Urigo/accounter-fullstack/commit/c379561135a9345010136581da4d0774b9cde634) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Track the Israeli consumer price index (CPI) in the database. A new `price-indexes` module syncs CBS
+  price indexes (api.cbs.gov.il) into the global `price_index_values` / `price_index_bases` tables: a
+  full backfill at startup on an empty table and a daily incremental run at 17:00 UTC (disable with
+  `PRICE_INDEX_SYNC_ENABLED=0`). `PriceIndexesProvider` resolves the "known" index (Income Tax
+  Ordinance s.88) or the index for a month and links amounts between any two dates across base
+  changes, matching the official CBS calculator. New GraphQL: `priceIndexValues`, `priceIndexLinkage`
+  and the super-admin `syncPriceIndexes` mutation.
+
+- [#4762](https://github.com/Urigo/accounter-fullstack/pull/4762) [`485cd32`](https://github.com/Urigo/accounter-fullstack/commit/485cd32625c0758b1849f8a2f59a3e3074d5922b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Charges left empty (no transactions, documents or misc expenses) after their records move to
+  another charge or are deleted are now deleted, instead of lingering as ghost charges. This applies
+  to `updateTransaction`, `updateTransactions`, `updateDocument`, `deleteDocument`,
+  `updateMiscExpense`, `deleteMiscExpense` and the Deel documents fetch, through a shared
+  `deleteChargesIfEmpty` helper. Moving onto an existing charge is now covered too (previously only
+  unlinking was), as is unlinking several transactions of the same charge. Updates that do not change
+  the charge skip the check.
+  
+  `UpdatedTransactionsSuccessfulResult` gains `deletedChargeIds: [UUID!]!`, and
+  `UpdateDocumentSuccessfulResult.deletedChargeId` is now also set when a document moves onto an
+  existing charge, so clients can drop the deleted charges' rows instead of refetching them.
+
+- [#4674](https://github.com/Urigo/accounter-fullstack/pull/4674) [`a62a8b7`](https://github.com/Urigo/accounter-fullstack/commit/a62a8b73b4035d69210f310980466eb570a34f78) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Deprecate `user_context.foreign_securities_business_id` and
+  `user_context.foreign_securities_fees_category_id`, superseded by `securities_context`. The server no
+  longer reads or writes them (a migration copies any value still missing from `securities_context`
+  once more and marks both columns `DEPRECATED` in their column comments; they will be dropped later).
+  In GraphQL, `AdminContextInput.foreignSecuritiesBusinessId` / `foreignSecuritiesFeesCategoryId` are
+  deprecated in favour of `updateSecuritiesContext` (they now write `securities_context`), and
+  `AdminContextInfo.foreignSecuritiesBusiness` / `foreignSecuritiesFeesCategory` in favour of
+  `securitiesContext`.
+
+- [#4669](https://github.com/Urigo/accounter-fullstack/pull/4669) [`e12d29b`](https://github.com/Urigo/accounter-fullstack/commit/e12d29bd67edffd02220d0f45d502c29352c7f08) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Foreign securities ledger generation now reads the security execution behind each cash movement:
+  
+  - dividends and bond interest are credited to (local or foreign) dividend / bond interest income
+    instead of the securities account, with tax withheld from them booked to dividend or bond
+    withholding tax; the reported tax is checked against gross minus net
+  - a bond redemption credits the securities account with the FIFO purchase cost and books the
+    difference to gain or loss from sale of foreign securities
+  - a transaction with no matched execution, a purchase missing from the scraped history, or a
+    missing securities tax category is reported as a ledger error, keeping the previous entry; the
+    missing categories are also listed in the new `LedgerValidation.missingSecuritiesTaxCategories`
+  
+  Buys, sales and transfers are booked as before.
+
+- [#4771](https://github.com/Urigo/accounter-fullstack/pull/4771) [`b13ce9c`](https://github.com/Urigo/accounter-fullstack/commit/b13ce9c11b690909367418625e2307421bae54f2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Provider integrations can record the business that represents the provider in the books: a new
+  `provider_credentials.business_id` column, exposed as `providerCredentials.businessId` and
+  `providerCredentials.business`, set via an optional `businessId` argument of `setDeelCredentials` or
+  the new `setProviderBusiness` mutation (`null` clears it). The business must belong to the
+  workspace. The column starts empty — set it per workspace in the Deel integration settings.
+  Changing only the business no longer moves the credentials' `configuredAt`.
+
+- [#4471](https://github.com/Urigo/accounter-fullstack/pull/4471) [`2e9364d`](https://github.com/Urigo/accounter-fullstack/commit/2e9364d8d4654fe4c2216e70dac487f51780d135) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add a re-run OCR action for documents stuck on `UNPROCESSED`.
+  
+  A batch of documents was inserted with `type = 'UNPROCESSED'` and no extracted information at all —
+  no amount, date, serial or counterparty — because the email-ingestion path catches every OCR failure
+  and falls back to `UNPROCESSED` (`email-ingestion-ingest.provider.ts`). The document is still
+  inserted and the ingest still reports `INSERTED` with its idempotency key persisted, so replaying
+  the source email answers `DUPLICATE` and cannot recover it. The Cloudinary `file_url` survives,
+  though, which is enough to extract from the file again.
+  
+  New mutations `reprocessDocumentOcr(documentId)` and `batchReprocessDocumentsOcr(documentIds)`
+  re-fetch that stored file through the existing SSRF-hardened `fetchRemoteDocument`, run it back
+  through `getOcrData`, and report which fields were filled. Surfaced in the client as a "Re-run OCR"
+  item in the document actions menu and, on the documents screen, a bulk button over the unprocessed
+  documents currently listed (pair it with the "Invalid documents only" filter).
+  
+  The write is additive on purpose: a column is filled only where the document is empty, so a value an
+  accountant corrected by hand is never overwritten. The exception is `documentType`, which is replaced
+  only while the document is still `UNPROCESSED`. A pass that extracts nothing new writes nothing at
+  all, rather than bumping `updated_at` and dragging the charge's accountant approval back to `PENDING`
+  for no gain.
+  
+  That rule is enforced by the UPDATE statement rather than by the caller. Minutes pass between reading
+  a document and writing it back, and deciding which columns are blank from the pre-OCR read would mean
+  overwriting a field an accountant filled during the extraction, using a decision made before they
+  touched it. `COALESCE(column, $param)` — the reverse of the usual argument order — makes "never
+  overwrite" a property of the statement, and repeating the conditions in its `WHERE` clause keeps a
+  pass with nothing to contribute from matching any row at all.
+  
+  The document's owner is checked against the request's write target up front. Reads span the whole
+  business scope while writes are pinned to one business, so the all-documents screen can list a row
+  this request cannot write to; catching that late would mean paying for a download and an OCR call
+  first.
+  
+  The documents table gains a selection column, keyed by document id so a selection survives paging,
+  sorting and filtering, and a batch menu beside it offering "Re-run OCR" and "Delete" over the
+  selected rows. It also gains an opt-in `preview` column showing each document's stored image,
+  hidden by default because it costs one image request per visible row.
+  
+  When the stored original cannot be sent to OCR — the two MIME allowlists in play disagree in both
+  directions, so a GIF is refused by the fetch layer and a HEIC is refused by the model — the Cloudinary
+  `.jpg` derivative is used instead rather than failing.
+  
+  Two limits worth knowing. Nothing in the schema records whether OCR ever ran, failed, or was
+  deliberately skipped, so the action cannot tell a recoverable failure from a document that will
+  always be unreadable — retrying the latter costs an OCR pass and changes nothing. And the mutation
+  holds the request open for the whole extraction (tens of seconds per document, no job queue in this
+  server), which is why a batch is capped at 20 documents and runs three at a time.
+
+- [#4832](https://github.com/Urigo/accounter-fullstack/pull/4832) [`ebf75a7`](https://github.com/Urigo/accounter-fullstack/commit/ebf75a71a3a6e33a99531667d989164e14a5f797) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Expose a sale's or redemption's capital gain as `SecurityExecution.capitalGain`, from the FIFO lots
+  of its account, at the Bank of Israel rates of the trade dates: in the origin currency, nominal, and
+  split into price and exchange-rate parts, plus the s.88 inflationary amount and real gain using the
+  CPI known on the trade dates — a company's split; an individual's foreign-currency securities take
+  the exchange rate as the index, as the bank does. It is broken down by lot.
+
+- [#4669](https://github.com/Urigo/accounter-fullstack/pull/4669) [`e12d29b`](https://github.com/Urigo/accounter-fullstack/commit/e12d29bd67edffd02220d0f45d502c29352c7f08) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add a per-tenant securities ledger configuration: a new `user_context.securities_context` jsonb
+  holds the general foreign-securities business, the tax categories that securities fees, dividends,
+  bond interest, withheld tax and redemption gains/losses are booked to, plus the sort code new
+  securities tax categories are created under. It supersedes the `foreign_securities_business_id` and
+  `foreign_securities_fees_category_id` columns: their values are copied in by the migration, they are
+  only read as a fallback, and a legacy `updateAdminContext` change to them is mirrored into it. It is
+  exposed as `AdminContextInfo.securitiesContext` and set through the new `updateSecuritiesContext`
+  mutation (business owners and accountants), which checks that every id belongs to the tenant.
+
+- [#4796](https://github.com/Urigo/accounter-fullstack/pull/4796) [`eeea419`](https://github.com/Urigo/accounter-fullstack/commit/eeea419fee7c4c61f164952fda3a64fef5742d0b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Resolve the counterparty of a foreign-securities charge that holds trades of more than one
+  security. Each traded security is its own business, so a charge that held two of them had two
+  counterparty candidates, no counterparty, and was flagged as missing one.
+  
+  - When another security in the same charge was bought or sold, a security whose trades cancel out
+    within the charge (a buy reversed by a sell of the same amount, as when a trade is rebooked to
+    another series) no longer competes with it for the counterparty. A reversal on its own is still
+    the charge's subject: a charge holding only a buy and the sell that cancels it keeps that
+    security as its counterparty, and a reversed security is never dropped in favour of a candidate
+    that is not a security. Fees are left out of the netting, which is rounded to the cent. This
+    applies to both the single-charge path and the charges list.
+  - A charge spanning several securities with real exposure in each (say, a switch from one fund to
+    another) has no single counterparty and is no longer flagged as missing one, provided every
+    candidate is a traded security. The tenant's general foreign-securities business, which stands
+    for an unrecognized trade, does not count as one, so such a charge is still flagged.
+  - A stock distribution's charge, which books the execution directly and holds no transaction,
+    takes the distributed security's business as its counterparty (found by the execution's Poalim
+    key, or its ISIN). Before, it had no counterparty at all. A merged-in commission fee doesn't
+    change that.
+  - The securities ledger books its main entries in the transactions' order rather than the order
+    their lookups finish, and lets every bought security whose balance across the charge is still a
+    debit keep it as a holding. Before, only the first booked main entry was allowed to stay
+    unbalanced, so on a charge buying two securities the other one was reported as unbalanced; a
+    security sold beyond what the charge bought is still reported.
+  - New GraphQL fields: `ForeignSecuritiesCharge.counterparties` (the main-counterparty candidates),
+    and `ChargeSecurity.netAmount` and `ChargeSecurity.isOffsetting`. Both read the charge's
+    transactions by the security's business, so a security is offsetting exactly when it was left
+    out of `counterparties`.
+  - The charges table shows "N securities", with a popover listing them, instead of a red "Missing"
+    for a multi-security charge. On a charge of several securities, the Foreign Securities section
+    shows each security's role: main counterparty, counterparty k of N, or nets to zero. Securities
+    that cancel out are dimmed and listed last. Every security shows its net amount.
+
+- [#4829](https://github.com/Urigo/accounter-fullstack/pull/4829) [`89caeb2`](https://github.com/Urigo/accounter-fullstack/commit/89caeb24f7e08c54a7f5bcf6812cc6f46136de26) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Book sales of securities from their FIFO lots. A sale used to be booked as is, crediting the
+  securities account with the proceeds, so no gain or loss was recognised. It is now booked like a
+  redemption: the securities account gives up the FIFO cost at the cash leg's rate, and the difference
+  is a gain or loss (`(sell price − buy price) × units × sale rate`). A sale with withheld tax, and a
+  cancelled sale, keep the base entry with a ledger error. Existing sale ledgers change when
+  regenerated; ledgers in a locked period are not touched.
+
+- [#4830](https://github.com/Urigo/accounter-fullstack/pull/4830) [`6e997ca`](https://github.com/Urigo/accounter-fullstack/commit/6e997ca4311e7720c81bac16e9140257ee7c06b8) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Book the exchange-rate part of a securities sale or redemption apart from its price part. A second,
+  local-currency entry books each lot's cost × the change since the rate the securities account
+  carries it at: the rate the purchase's cash movement was booked at (a dividend in kind's value
+  date), or the rate of the last revaluation of the account it was held over, read from the
+  revaluations actually booked. The account then gives up exactly what it carried the units at.
+  
+  - **New securities tax categories:** exchange-rate gain and loss on the sale of foreign securities.
+    They are offered from the charge's ledger errors like the others, and can be pointed at the
+    exchange-revaluation category to merge them.
+  - Until they are set, or when a purchase's cash movement is not found, the disposal is still
+    booked, without the rate entry, and the year-end revaluation takes the rate PnL up as before.
+
+- [#4785](https://github.com/Urigo/accounter-fullstack/pull/4785) [`13fa09e`](https://github.com/Urigo/accounter-fullstack/commit/13fa09ee95f9527d24f844643ccec662ad64d408) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Book Poalim stock distributions paid as a dividend in kind. Such an execution has no cash leg, so no
+  bank transaction ever brought it into a charge and nothing booked it.
+  
+  - Ingesting securities executions now creates a `FOREIGN_SECURITIES` charge for each dividend in
+    kind no charge books yet, and links the two in the new `charges_securities_executions` table.
+    Cancelled distributions, distributions the bank later cancelled, and executions in a locked
+    ledger period are skipped. The check runs over the
+    whole owner, so distributions ingested earlier are picked up by the next upload.
+  - The securities ledger books each linked distribution as Dr Foreign Securities [trade currency] /
+    Cr foreign or local dividend income (by the issuer's locality), at the gross value of the shares
+    and the ledger's exchange rate. A bank rate that differs is reported as a ledger error; withheld
+    tax, a cancelled distribution and distributions other than a dividend in kind are reported and
+    not booked.
+  - The commission check now covers distributions. When the bank's commission fee sits in a charge of
+    its own, the error asks to merge it into the distribution's charge.
+  - A linked execution counts as charge content: the charge is not cleaned up as empty (deleting it
+    explicitly dismisses the distribution, so the next upload does not recreate it), a merge moves
+    the link (and types the merged charge as foreign securities), validation stops asking it for
+    transactions or a counterparty, and the charges list filters and sorts it by the execution's date.
+  - Units received as a dividend in kind now cost their gross value in the FIFO cost basis, so a
+    later sale or redemption of them can be booked.
+  - The charge's securities section and the security's history show the linked execution, and the
+    executions table gains a gross value column.
+
+- [#4731](https://github.com/Urigo/accounter-fullstack/pull/4731) [`71db49d`](https://github.com/Urigo/accounter-fullstack/commit/71db49dcfb3630fbe9765bcea0c082224da1e0b3) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Foreign-securities ledgers now book withheld tax to a local or a foreign tax category, by the
+  issuer's country (as the income line already does): `SecuritiesTaxCategoryKey`
+  `DIVIDEND_WITHHOLDING_TAX` and `BOND_WITHHOLDING_TAX` are replaced by
+  `FOREIGN_`/`LOCAL_DIVIDEND_WITHHOLDING_TAX` and `FOREIGN_`/`LOCAL_BOND_WITHHOLDING_TAX`. A migration
+  moves the tax category already set for each to its foreign key; the local ones start unset and are
+  asked for from the charge's ledger errors. Stored ledger records are not changed — regenerating a
+  charge's ledger suggests the new split.
+
+- [#4592](https://github.com/Urigo/accounter-fullstack/pull/4592) [`66402a5`](https://github.com/Urigo/accounter-fullstack/commit/66402a500987c81b2d3fc530694b0f996430983c) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Keep date-only values as `TimelessDateString` (`yyyy-mm-dd`) end to end, so calendar days no longer
+  shift with the server's or browser's timezone:
+  
+  - Postgres `date` / `date[]` columns are read as `yyyy-mm-dd` strings (custom node-pg type parsers)
+    and typed `TimelessDateString` by pgtyped (`typesOverrides`), instead of server-local `Date`s.
+  - `Charge.min/max{Event,Debit,Documents}Date` and `LedgerRecord` / `SingleSidedLedgerRecord`
+    `invoiceDate` / `valueDate` are now `TimelessDate` instead of `DateTime`: they return the day
+    (`2026-05-01`), not a timezone-dependent ISO timestamp.
+  - Server-side day arithmetic uses new timezone-independent helpers, fixing days that moved west of
+    UTC: VAT / PCN874 report months, document and bank-deposit date inputs, salary and reserve ledger
+    dates, revaluation dates, exchange-rate dates, corporate tax rates and more.
+  - The tenant's calendar days are reckoned in `Asia/Jerusalem` (a `TENANT_TIMEZONE` constant, to be
+    derived per tenant later) instead of the server's timezone: "today" (document dates and due
+    dates, default VAT month, contract billing month, sync windows), current-year checks, the day of
+    absolute instants (Otsar Hahayal and Poalim securities dates, balance-charge value dates) and the instant a day starts at (day-only crypto rate lookups, Green Invoice
+    `firstPayment`).
+  - `TimelessDateString` is now the pattern `${number}-${number}-${number}` instead of a union of
+    every day in 2000-2049, which kept server type-checking fast and allows earlier years.
+  - Client: the charges table, charge matching, ledger tables and CSV exports read these fields as
+    calendar days, and every `dd/MM/yy` date cell (transactions, documents, business trips,
+    depreciation, bank deposits) formats the `yyyy-mm-dd` string directly through a shared
+    `formatTimelessDate` helper instead of `new Date(...)`, which showed the previous day west of UTC.
+
+- [#4609](https://github.com/Urigo/accounter-fullstack/pull/4609) [`9487ae5`](https://github.com/Urigo/accounter-fullstack/commit/9487ae5d527bf879fbcf010552120e2ae8a369ec) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add `VatReportResult.summary`, the monthly VAT totals as filed in the PCN874 header.
+  
+  Until now the VAT report's totals existed only on the client, as a reduction over the report rows
+  whose definitions differ from the PCN874 file: taxable sales included zero-VAT rows, "equipment
+  inputs" was a pre-VAT amount where the file reports VAT, and other inputs VAT and the record counts
+  were not computed at all. Any other consumer (the MCP connector, API users) would have had to
+  re-implement that logic, and would still disagree with what was filed.
+  
+  The new `summary: VatReportSummary!` field mirrors the PCN874 header: `taxableSalesAmount`,
+  `taxableSalesVat`, `salesRecordCount`, `zeroValOrExemptSalesAmount`, `otherInputsVat`,
+  `equipmentInputsVat`, `inputsCount` and `totalVat`, amounts as `FinancialAmount` in the local
+  currency. It goes through the PCN874 path itself rather than a parallel implementation: the header
+  totals are factored out of `getHeaderDataFromRecords` into `getPcn874Totals`, which no longer needs a
+  licensed dealer id, and both the file header and the summary are built from it over the records
+  `transactionsFromVatReportRecords` produces.
+  
+  The summary is the filed figure, so it always covers the whole month and ignores the `chargesType`
+  filter. When the report is requested without one, its own income and expenses already are that
+  month and are reused; when it is filtered, the month is fetched again exactly as `getPcn874String`
+  fetches it. It is a lazy field resolver, so queries that do not select `summary` pay nothing for it.
+  
+  The totals carry over the header's current coverage: entry types it does not handle yet (for example
+  `S2`, `Y` and `R`) are left out of the summary just as they are left out of the file.
+  
+  Fixed along the way: the VAT report and the PCN874 file parsed the requested month with
+  `new Date(monthDate)`, which reads a date-only string as UTC midnight. On a server west of UTC that
+  is the previous local day, so a first-of-month request covered the month before, and the PCN874
+  file could even be stamped with the previous month. The month is now read from the date string's
+  year and month (`vatReportMonthStart`), for the report's date range, its VAT-date-override bounds,
+  and the PCN874 file. Servers at UTC or east of it are unaffected.
+
+### Patch Changes
+
+- [#4571](https://github.com/Urigo/accounter-fullstack/pull/4571) [`d394530`](https://github.com/Urigo/accounter-fullstack/commit/d394530d88cdc1243de19bd7a804acdc3fb26eac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.71` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.71) (from `4.0.65`, in `dependencies`)
+    - Updated dependency [`@graphql-hive/yoga@0.49.7` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.7) (from `0.49.6`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@12.0.3` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/12.0.3) (from `12.0.1`, in `dependencies`)
+    - Updated dependency [`@whatwg-node/fetch@0.12.1` ↗︎](https://www.npmjs.com/package/@whatwg-node/fetch/v/0.12.1) (from `0.12.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.127` ↗︎](https://www.npmjs.com/package/ai/v/7.0.127) (from `7.0.118`, in `dependencies`)
+    - Updated dependency [`dotenv@18.0.5` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.5) (from `18.0.4`, in `dependencies`)
+    - Updated dependency [`pg@8.23.1` ↗︎](https://www.npmjs.com/package/pg/v/8.23.1) (from `8.23.0`, in `dependencies`)
+
+- [#4589](https://github.com/Urigo/accounter-fullstack/pull/4589) [`9f62301`](https://github.com/Urigo/accounter-fullstack/commit/9f6230174015dd423047d703f55f13647a5efc37) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`auth0@7.3.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.3.0) (from `7.2.0`, in `dependencies`)
+
+- [#4595](https://github.com/Urigo/accounter-fullstack/pull/4595) [`a5767e0`](https://github.com/Urigo/accounter-fullstack/commit/a5767e0992e9a4e1ae4325853602f9e683ed1790) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`googleapis@183.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/183.0.0) (from `182.0.0`, in `dependencies`)
+
+- [#4620](https://github.com/Urigo/accounter-fullstack/pull/4620) [`965d1e8`](https://github.com/Urigo/accounter-fullstack/commit/965d1e8b5092aeb1d92ec035b18f3eb5a8efdcb3) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@envelop/generic-auth@11.2.3` ↗︎](https://www.npmjs.com/package/@envelop/generic-auth/v/11.2.3) (from `11.2.1`, in `dependencies`)
+    - Updated dependency [`@graphql-yoga/plugin-defer-stream@3.24.4` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.24.4) (from `3.24.1`, in `dependencies`)
+    - Updated dependency [`graphql-yoga@5.24.4` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.24.4) (from `5.24.1`, in `dependencies`)
+
+- [#4630](https://github.com/Urigo/accounter-fullstack/pull/4630) [`c34c478`](https://github.com/Urigo/accounter-fullstack/commit/c34c47859583d665f842aed49c7581e281d231b2) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@opentelemetry/exporter-trace-otlp-http@0.223.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http/v/0.223.0) (from `0.222.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/resources@2.12.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/resources/v/2.12.0) (from `2.11.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/sdk-node@0.223.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-node/v/0.223.0) (from `0.222.0`, in `dependencies`)
+
+- [#4631](https://github.com/Urigo/accounter-fullstack/pull/4631) [`008d263`](https://github.com/Urigo/accounter-fullstack/commit/008d2635cbe27948048e9e91cbe8cc0da6783ae4) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.81.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.81.0) (from `0.80.0`, in `dependencies`)
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.78` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.78) (from `4.0.71`, in `dependencies`)
+    - Updated dependency [`ai@7.0.137` ↗︎](https://www.npmjs.com/package/ai/v/7.0.137) (from `7.0.127`, in `dependencies`)
+    - Updated dependency [`dotenv@18.0.7` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.7) (from `18.0.5`, in `dependencies`)
+    - Updated dependency [`uuid@14.0.3` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.3) (from `14.0.2`, in `dependencies`)
+
+- [#4637](https://github.com/Urigo/accounter-fullstack/pull/4637) [`4c34566`](https://github.com/Urigo/accounter-fullstack/commit/4c34566eb79e5fc49a880e81d943a601a4f5bfe7) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`googleapis@184.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/184.0.0) (from `183.0.0`, in `dependencies`)
+
+- [#4638](https://github.com/Urigo/accounter-fullstack/pull/4638) [`1dc623a`](https://github.com/Urigo/accounter-fullstack/commit/1dc623ac7c9009f71a21c2b0e7257c6c299fc2c5) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@google-cloud/pubsub@6.2.0` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.2.0) (from `6.1.0`, in `dependencies`)
+
+- [#4639](https://github.com/Urigo/accounter-fullstack/pull/4639) [`a4121e9`](https://github.com/Urigo/accounter-fullstack/commit/a4121e9614f49dfe7a023f1f65d9e6a13dc0ecac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.64.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.0) (from `1.63.0`, in `dependencies`)
+
+- [#4644](https://github.com/Urigo/accounter-fullstack/pull/4644) [`1e5eac3`](https://github.com/Urigo/accounter-fullstack/commit/1e5eac3957757dc0d39f4e39bea5294e2bef5849) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`googleapis@185.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/185.0.0) (from `184.0.0`, in `dependencies`)
+
+- [#4646](https://github.com/Urigo/accounter-fullstack/pull/4646) [`691b32a`](https://github.com/Urigo/accounter-fullstack/commit/691b32a4a7bd3d5961b49aca585c41f0ad36622e) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`auth0@7.4.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.4.0) (from `7.3.0`, in `dependencies`)
+
+- [#4663](https://github.com/Urigo/accounter-fullstack/pull/4663) [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.79` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.79) (from `4.0.78`, in `dependencies`)
+    - Updated dependency [`@graphql-hive/yoga@0.49.8` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.8) (from `0.49.7`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@12.0.4` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/12.0.4) (from `12.0.3`, in `dependencies`)
+    - Updated dependency [`ai@7.0.138` ↗︎](https://www.npmjs.com/package/ai/v/7.0.138) (from `7.0.137`, in `dependencies`)
+    - Updated dependency [`zod@4.6.7` ↗︎](https://www.npmjs.com/package/zod/v/4.6.7) (from `4.6.5`, in `dependencies`)
+
+- [#4682](https://github.com/Urigo/accounter-fullstack/pull/4682) [`b743dc3`](https://github.com/Urigo/accounter-fullstack/commit/b743dc3eaa95cd77dc3f6081a39f031ae2105697) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@google-cloud/pubsub@6.3.0` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.3.0) (from `6.2.0`, in `dependencies`)
+
+- [#4684](https://github.com/Urigo/accounter-fullstack/pull/4684) [`8a9c5be`](https://github.com/Urigo/accounter-fullstack/commit/8a9c5be6042af604d8ca8058aa1a0b0965579cfc) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-yoga/plugin-defer-stream@3.24.6` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.24.6) (from `3.24.4`, in `dependencies`)
+    - Updated dependency [`auth0@7.5.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.5.0) (from `7.4.0`, in `dependencies`)
+    - Updated dependency [`googleapis@186.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/186.0.0) (from `185.0.0`, in `dependencies`)
+    - Updated dependency [`graphql-yoga@5.24.6` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.24.6) (from `5.24.4`, in `dependencies`)
+
+- [#4706](https://github.com/Urigo/accounter-fullstack/pull/4706) [`cae1bd9`](https://github.com/Urigo/accounter-fullstack/commit/cae1bd9d9987834e61802ff5f89671e70ac3b1e5) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-yoga/plugin-defer-stream@3.24.5` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.24.5) (from `3.24.4`, in `dependencies`)
+    - Updated dependency [`graphql-yoga@5.24.5` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.24.5) (from `5.24.4`, in `dependencies`)
+
+- [#4719](https://github.com/Urigo/accounter-fullstack/pull/4719) [`e2e4338`](https://github.com/Urigo/accounter-fullstack/commit/e2e4338da3a0d7c4aa9588a0781ad55718793d35) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`auth0@7.5.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.5.0) (from `7.4.0`, in `dependencies`)
+
+- [#4724](https://github.com/Urigo/accounter-fullstack/pull/4724) [`9469239`](https://github.com/Urigo/accounter-fullstack/commit/946923902d82de004985302df88de36d76571edf) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`googleapis@186.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/186.0.0) (from `185.0.0`, in `dependencies`)
+
+- [#4725](https://github.com/Urigo/accounter-fullstack/pull/4725) [`6a5f5b6`](https://github.com/Urigo/accounter-fullstack/commit/6a5f5b68ac675498cc3164ffc960d20c5524623c) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.82` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.82) (from `4.0.79`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.81.2` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.81.2) (from `0.81.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.143` ↗︎](https://www.npmjs.com/package/ai/v/7.0.143) (from `7.0.138`, in `dependencies`)
+    - Updated dependency [`dotenv@18.0.8` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.8) (from `18.0.7`, in `dependencies`)
+    - Updated dependency [`graphql-scalars@2.0.1` ↗︎](https://www.npmjs.com/package/graphql-scalars/v/2.0.1) (from `2.0.0`, in `dependencies`)
+    - Updated dependency [`playwright@1.64.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.1) (from `1.64.0`, in `dependencies`)
+
+- [#4733](https://github.com/Urigo/accounter-fullstack/pull/4733) [`801a3f2`](https://github.com/Urigo/accounter-fullstack/commit/801a3f2f46f4f6ed7594e0460e643d03d609a334) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-tools/utils@12.1.0` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/12.1.0) (from `12.0.4`, in `dependencies`)
+
+- [#4734](https://github.com/Urigo/accounter-fullstack/pull/4734) [`0acd510`](https://github.com/Urigo/accounter-fullstack/commit/0acd510caf1b6dccfebeffb270c3089a9d01fdfc) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-yoga/plugin-defer-stream@3.24.6` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.24.6) (from `3.24.5`, in `dependencies`)
+    - Updated dependency [`graphql-yoga@5.24.6` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.24.6) (from `5.24.5`, in `dependencies`)
+
+- [#4750](https://github.com/Urigo/accounter-fullstack/pull/4750) [`ef50aa6`](https://github.com/Urigo/accounter-fullstack/commit/ef50aa6e37da5d9c1c5bf296dcc31200ae53122b) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`auth0@7.6.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.6.0) (from `7.5.0`, in `dependencies`)
+
+- [#4751](https://github.com/Urigo/accounter-fullstack/pull/4751) [`d5af23f`](https://github.com/Urigo/accounter-fullstack/commit/d5af23fde546350ea061e6a2dd954f44328acab9) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.84` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.84) (from `4.0.82`, in `dependencies`)
+    - Updated dependency [`ai@7.0.146` ↗︎](https://www.npmjs.com/package/ai/v/7.0.146) (from `7.0.143`, in `dependencies`)
+    - Updated dependency [`jose@6.2.13` ↗︎](https://www.npmjs.com/package/jose/v/6.2.13) (from `6.2.12`, in `dependencies`)
+
+- [#4755](https://github.com/Urigo/accounter-fullstack/pull/4755) [`2841fb6`](https://github.com/Urigo/accounter-fullstack/commit/2841fb63014520c023173ad48f14f01f9ac412a1) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.84` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.84) (from `4.0.82`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@13.0.2` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.0.2) (from `12.1.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.146` ↗︎](https://www.npmjs.com/package/ai/v/7.0.146) (from `7.0.143`, in `dependencies`)
+    - Updated dependency [`auth0@7.6.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.6.0) (from `7.5.0`, in `dependencies`)
+    - Updated dependency [`jose@6.2.13` ↗︎](https://www.npmjs.com/package/jose/v/6.2.13) (from `6.2.12`, in `dependencies`)
+
+- [#4771](https://github.com/Urigo/accounter-fullstack/pull/4771) [`b13ce9c`](https://github.com/Urigo/accounter-fullstack/commit/b13ce9c11b690909367418625e2307421bae54f2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.85` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.85) (from `4.0.84`, in `dependencies`)
+    - Updated dependency [`@google-cloud/pubsub@6.3.1` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.3.1) (from `6.3.0`, in `dependencies`)
+    - Updated dependency [`@graphql-hive/yoga@0.49.9` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.9) (from `0.49.8`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@13.1.2` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.1.2) (from `13.1.1`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/api@1.10.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/api/v/1.10.0) (from `1.9.1`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.82.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.82.0) (from `0.81.2`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/exporter-trace-otlp-http@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/resources@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/resources/v/3.0.0) (from `2.12.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/sdk-node@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-node/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.148` ↗︎](https://www.npmjs.com/package/ai/v/7.0.148) (from `7.0.146`, in `dependencies`)
+    - Updated dependency [`googleapis@188.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/188.0.0) (from `187.0.0`, in `dependencies`)
+    - Added dependency [`@opentelemetry/sdk-trace@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-trace/v/3.0.0) (to `dependencies`)
+
+- [#4772](https://github.com/Urigo/accounter-fullstack/pull/4772) [`593ec81`](https://github.com/Urigo/accounter-fullstack/commit/593ec810870358bee0d9d0b5806e03bd32ee735b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.85` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.85) (from `4.0.84`, in `dependencies`)
+    - Updated dependency [`@google-cloud/pubsub@6.3.1` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.3.1) (from `6.3.0`, in `dependencies`)
+    - Updated dependency [`@graphql-hive/yoga@0.49.9` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.9) (from `0.49.8`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@13.1.2` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.1.2) (from `13.1.1`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/api@1.10.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/api/v/1.10.0) (from `1.9.1`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.82.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.82.0) (from `0.81.2`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/exporter-trace-otlp-http@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/resources@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/resources/v/3.0.0) (from `2.12.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/sdk-node@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-node/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.148` ↗︎](https://www.npmjs.com/package/ai/v/7.0.148) (from `7.0.146`, in `dependencies`)
+    - Updated dependency [`googleapis@188.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/188.0.0) (from `187.0.0`, in `dependencies`)
+    - Added dependency [`@opentelemetry/sdk-trace@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-trace/v/3.0.0) (to `dependencies`)
+
+- [#4773](https://github.com/Urigo/accounter-fullstack/pull/4773) [`f92ab61`](https://github.com/Urigo/accounter-fullstack/commit/f92ab612b56409ed71d733e888b62838b5300fbf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.85` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.85) (from `4.0.84`, in `dependencies`)
+    - Updated dependency [`@google-cloud/pubsub@6.3.1` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.3.1) (from `6.3.0`, in `dependencies`)
+    - Updated dependency [`@graphql-hive/yoga@0.49.9` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.9) (from `0.49.8`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@13.1.2` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.1.2) (from `13.1.1`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/api@1.10.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/api/v/1.10.0) (from `1.9.1`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.82.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.82.0) (from `0.81.2`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/exporter-trace-otlp-http@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/resources@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/resources/v/3.0.0) (from `2.12.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/sdk-node@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-node/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.148` ↗︎](https://www.npmjs.com/package/ai/v/7.0.148) (from `7.0.146`, in `dependencies`)
+    - Updated dependency [`googleapis@188.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/188.0.0) (from `187.0.0`, in `dependencies`)
+    - Added dependency [`@opentelemetry/sdk-trace@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-trace/v/3.0.0) (to `dependencies`)
+
+- [#4780](https://github.com/Urigo/accounter-fullstack/pull/4780) [`793503f`](https://github.com/Urigo/accounter-fullstack/commit/793503fb68471a79873c86f572509f783230935f) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.84` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.84) (from `4.0.82`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@13.1.1` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.1.1) (from `12.1.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/api@1.10.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/api/v/1.10.0) (from `1.9.1`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.82.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.82.0) (from `0.81.2`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/exporter-trace-otlp-http@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/resources@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/resources/v/3.0.0) (from `2.12.0`, in `dependencies`)
+    - Updated dependency [`@opentelemetry/sdk-node@0.300.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-node/v/0.300.0) (from `0.223.0`, in `dependencies`)
+    - Updated dependency [`ai@7.0.146` ↗︎](https://www.npmjs.com/package/ai/v/7.0.146) (from `7.0.143`, in `dependencies`)
+    - Updated dependency [`auth0@7.6.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.6.0) (from `7.5.0`, in `dependencies`)
+    - Updated dependency [`googleapis@187.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/187.0.0) (from `186.0.0`, in `dependencies`)
+    - Updated dependency [`jose@6.2.13` ↗︎](https://www.npmjs.com/package/jose/v/6.2.13) (from `6.2.12`, in `dependencies`)
+    - Added dependency [`@opentelemetry/sdk-trace@3.0.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-trace/v/3.0.0) (to `dependencies`)
+
+- [#4781](https://github.com/Urigo/accounter-fullstack/pull/4781) [`8676336`](https://github.com/Urigo/accounter-fullstack/commit/8676336574cc1362582532edeb3c11d9f4bed164) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`googleapis@187.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/187.0.0) (from `186.0.0`, in `dependencies`)
+
+- [#4782](https://github.com/Urigo/accounter-fullstack/pull/4782) [`12a3ede`](https://github.com/Urigo/accounter-fullstack/commit/12a3ede0448264b9d8c68d51a7ffb5126297d6bb) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@ai-sdk/anthropic@4.0.85` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.85) (from `4.0.84`, in `dependencies`)
+    - Updated dependency [`@google-cloud/pubsub@6.3.1` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.3.1) (from `6.3.0`, in `dependencies`)
+    - Updated dependency [`@graphql-hive/yoga@0.49.9` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.49.9) (from `0.49.8`, in `dependencies`)
+    - Updated dependency [`@graphql-tools/utils@13.1.2` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.1.2) (from `13.1.1`, in `dependencies`)
+    - Updated dependency [`ai@7.0.148` ↗︎](https://www.npmjs.com/package/ai/v/7.0.148) (from `7.0.146`, in `dependencies`)
+
+- [#4783](https://github.com/Urigo/accounter-fullstack/pull/4783) [`b3c036f`](https://github.com/Urigo/accounter-fullstack/commit/b3c036f1fe04049c5a22af74f7ec7b9c15e7222f) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-tools/utils@13.1.1` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.1.1) (from `13.0.2`, in `dependencies`)
+
+- [#4800](https://github.com/Urigo/accounter-fullstack/pull/4800) [`ba41d42`](https://github.com/Urigo/accounter-fullstack/commit/ba41d420674702160dac92e34704e393a8ae516d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`googleapis@188.0.0` ↗︎](https://www.npmjs.com/package/googleapis/v/188.0.0) (from `187.0.0`, in `dependencies`)
+
+- [#4664](https://github.com/Urigo/accounter-fullstack/pull/4664) [`f2d9df0`](https://github.com/Urigo/accounter-fullstack/commit/f2d9df0d6aa38eb625152291724754c6b3bd9dcd) Thanks [@gilgardosh](https://github.com/gilgardosh)! - `acceptInvitation` now requires a signed-in user, and the accepting account's verified email must
+  match the invitation email. API-key and gateway control-plane callers are rejected with
+  `UNAUTHENTICATED`. The GraphQL signature is unchanged; the client already signs users in before
+  accepting.
+
+- [#4765](https://github.com/Urigo/accounter-fullstack/pull/4765) [`bcd32d8`](https://github.com/Urigo/accounter-fullstack/commit/bcd32d862e7dfe960cb46a1136e732d080807953) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Switch document OCR (extraction and the follow-up business matching) from `claude-sonnet-4-5` to
+  `claude-opus-5-5`, and enable server-side refusal fallbacks so a safety-classifier decline is
+  retried on a fallback model instead of failing the extraction.
+
+- [#4857](https://github.com/Urigo/accounter-fullstack/pull/4857) [`a76637e`](https://github.com/Urigo/accounter-fullstack/commit/a76637e0702b6af278a8aa3d8469d9f09090e6a8) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Issued invoice-receipts can be cancelled with a credit invoice, like invoices. "Issue Document out
+  of This Document" is now offered for an invoice-receipt even once it is closed (Green Invoice issues
+  them closed), and drafts a credit invoice that cancels it. `newDocumentDraftByDocument` takes an
+  optional `type`; a `CREDIT_INVOICE` draft now sends `linkType: CANCEL` to Green Invoice, carries no
+  payment lines and no date (Green Invoice dates it on issue), and the original is recorded as
+  `CANCELLED_BY_OTHER_DOC` instead of `CLOSED`. The issue form keeps the link type in step with the
+  document type, and the server rejects a cancelling link on anything but a credit invoice. For a
+  partial credit, a "Cancel the original document" switch in the issue form downgrades the credit
+  invoice to a plain link; issuing a linked document now only closes linked documents that are still
+  open.
+
+- [#4794](https://github.com/Urigo/accounter-fullstack/pull/4794) [`488cf25`](https://github.com/Urigo/accounter-fullstack/commit/488cf25e9fb536ffe527d377a8eaec0e16941840) Thanks [@gilgardosh](https://github.com/gilgardosh)! - The charge security header now takes its "Foreign" badge from the security business, judged
+  against the tenant's locality, instead of the bank's raw flag.
+  `Security.isForeign` is deprecated in favor of `ChargeSecurity.securityBusiness.isForeign`.
+
+- [#4626](https://github.com/Urigo/accounter-fullstack/pull/4626) [`6a1a249`](https://github.com/Urigo/accounter-fullstack/commit/6a1a2490374ed2311fb211fde21524a4c2b5cd79) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Book the exchange-rate difference again when crypto legs land on the same day. Ledger generation
+  only adds an `Exchange ledger record` when a charge's entries were priced at more than one point,
+  and since dates became `TimelessDateString` it compared days, while crypto is still priced at its
+  exact `debit_timestamp`. A same-day crypto internal transfer (e.g. wallet → exchange) was left
+  unbalanced. Entries now carry the point they were priced at, keyed the way
+  `ExchangeProvider.getExchangeRates` prices them: crypto by time, fiat and local currency by day.
+
+- [#4746](https://github.com/Urigo/accounter-fullstack/pull/4746) [`efd373c`](https://github.com/Urigo/accounter-fullstack/commit/efd373c85dfadd860c50a5276e1122f75d2c8cdf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Deel invoices with the placeholder contract ID `-261` (independent contractor) are now normalized to
+  a null contract ID.
+
+- [#4766](https://github.com/Urigo/accounter-fullstack/pull/4766) [`b750274`](https://github.com/Urigo/accounter-fullstack/commit/b75027462b0b8b4036e4200295bf0d06b7a04516) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Empty-charge cleanup follow-ups:
+  
+  - A charge holding salary records, business trip employee payments or depreciation records is no
+    longer treated as empty, so the cleanup never tries (and fails) to delete it.
+  - `deleteCharges` now also deletes the charge's balance cancellations, which used to block the
+    delete through their foreign key.
+  - `deleteCharge` now refuses a charge that still holds misc expenses or any of the records above,
+    not only transactions and documents.
+  - `chargeSpreadDocuments` deletes the original charge when spreading leaves it empty, and leaves it
+    out of the returned charges.
+
+- [#4742](https://github.com/Urigo/accounter-fullstack/pull/4742) [`562837a`](https://github.com/Urigo/accounter-fullstack/commit/562837a0f24fd941cde38a8c26412b8b2cf6ad6d) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Match more Poalim securities executions to the cash movement behind them. The matcher required the
+  transaction's debit date to equal the execution's value date, but the two feeds disagree on dates:
+  foreign-currency rows are debited around the trade date and executed on the settlement day, a
+  back-dated correction is executed when posted, and a new issue can settle days late. A pair is now
+  identified by account, security key, exact amount and direction. The date only ranks candidates: an
+  exact debit-date or event-date match first, then the closest date within a settlement window.
+  
+  Also:
+  
+  - Domestic trades and securities fees carry the security key in their reference, not their
+    description, and are now recognized by it.
+  - An amount column the feed leaves at `0` gives way to the next column in the same currency. This
+    fixes shekel trades, whose cash is reported in the NIS column, and their FIFO purchase cost. The
+    NIS column is only read for executions traded or settled in shekels; on a foreign-currency
+    execution it holds the commission.
+  - Within the window, closeness is measured to the execution's whole trade-to-value span, so a
+    later trade's cash is not taken by an earlier neighbour. A pass re-seats pairs when that lets
+    more executions pair, and a transaction that names no security only pairs on an exact date.
+  - A cancelled execution's direction is read from the sign of the value it reports. The bank books a
+    cancellation either under the original trade type with values negated, or as the opposite action
+    with positive values. Before, a cancellation could take the original payment's transaction.
+  - Fee transactions no longer compete with main transactions for an execution.
+  - The foreign-securities ledger reports a dividend or interest commission that has no matching fee
+    transaction in the charge, and a cancelled income payment it cannot book as a reversal yet.
+
+- [#4732](https://github.com/Urigo/accounter-fullstack/pull/4732) [`f57374d`](https://github.com/Urigo/accounter-fullstack/commit/f57374da57d22ce501ea1825025f936f4bd9c4d7) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Stop duplicating Poalim securities executions that are scraped before they settle. The bank
+  restates an execution's price, net value and value/settlement dates as it settles, and those fields
+  were part of the dedup key, so each restated scrape added a second row. The key now leaves them out
+  (plus a per-scrape `occurrence` ordinal to keep genuine same-day, same-size executions apart), and a
+  re-scrape updates the existing row in place. A migration removes the superseded rows already
+  stored, keeping the most recent version of each execution.
+
+- [#4659](https://github.com/Urigo/accounter-fullstack/pull/4659) [`183a13c`](https://github.com/Urigo/accounter-fullstack/commit/183a13ce58a50b327181e385d9eadb0a9deb0dfb) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Track whether an invitation's Auth0 user was created by the invitation. `createBlockedUser` reuses
+  an existing Auth0 user for the email, but invitations always recorded `auth0_user_created = true`.
+  It now returns `{ userId, created }` (choosing deterministically when several users share an
+  email), and the real value is stored. The expired-invitation cleanup job, the `createInvitation`
+  rollback and invitation acceptance only delete an Auth0 user that is an unused invitation
+  placeholder (provisioned by Accounter, never logged in) and that no other invitation or membership
+  references; acceptance unblocks only the invitation's own or a reused unused placeholder. When an
+  existing member accepts, the invitation now points at their user and the pending placeholder
+  membership is removed.
+
+- [#3852](https://github.com/Urigo/accounter-fullstack/pull/3852) [`c5b26c0`](https://github.com/Urigo/accounter-fullstack/commit/c5b26c0cd268032c12d0c8cee110c9313c4981ce) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Reject duplicate and overlapping entries in a business' list inputs.
+  
+  Email lists — general contacts, billing emails, auto-match recognition emails, and the emails in the
+  client dialog — no longer accept the same address twice, compared case-insensitively. Internal email
+  links reject an exact repeat, which would otherwise fetch the same documents twice. Auto-match
+  phrases reject a phrase that repeats or contains / is contained in another: adding `GOOGLE` when
+  `GOOGL` exists says it is already covered, and adding `GOOGL` when `GOOGLE` exists asks to remove
+  `GOOGLE` first. Conflicts are blocked when the entry is added, with an inline message, and again by
+  the form schemas on submit.
+  
+  Phrases and links are compared case-sensitively, because that is how they are used: transaction and
+  charge suggestions match with a case-sensitive `description.includes(phrase)`, so `GOOGLE` and
+  `Google` match different descriptions and both may be needed.
+  
+  On the server, every write of a business' suggestion data (insert, update, batch update, merge) and
+  every client email write drops entries that are redundant without changing what matches: exact
+  repeats of phrases and internal links, and case-insensitive repeats of emails. Overlapping phrases
+  are deliberately left alone there. The configuration tab re-sends the full phrase list on every
+  save, so pruning `["GOOGL", "GOOGLE"]` down to one would silently change matching for businesses
+  that already hold both.
+
+- [#4744](https://github.com/Urigo/accounter-fullstack/pull/4744) [`f013521`](https://github.com/Urigo/accounter-fullstack/commit/f013521d60eee5b64a92dfe5d212aa50d6d87a98) Thanks [@gilgardosh](https://github.com/gilgardosh)! - OCR now reads the allocation number (מספר הקצאה) correctly when it is printed as the last 9 digits
+  of a longer "Tax Authorities Code". The model copies the code verbatim and the server takes the last
+  9 digits, instead of asking the model to slice them (it often returned a window shifted by a digit).
+
+- [#4687](https://github.com/Urigo/accounter-fullstack/pull/4687) [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Poalim securities transactions with the `איחוד/הפחתת הון` (consolidation / capital reduction)
+  payment type no longer fail schema validation. The value is accepted by the scraper schemas and
+  exposed in GraphQL as the new `SecurityPaymentType.CONSOLIDATION_OR_CAPITAL_REDUCTION` member.
+
+- [#4757](https://github.com/Urigo/accounter-fullstack/pull/4757) [`c59c74a`](https://github.com/Urigo/accounter-fullstack/commit/c59c74a6b54cd20fefc10735d800bdef878601ea) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Stop reporting Poalim SWIFT transactions as changed when an optional field (e.g.
+  `swift_remittance_information_70`) is stored as `null` and the scraper sends a blank placeholder for
+  it. Blank and `null` values are now treated as equal when diffing.
+
+- [#4831](https://github.com/Urigo/accounter-fullstack/pull/4831) [`a940d69`](https://github.com/Urigo/accounter-fullstack/commit/a940d69c3c984c526a6122dcbe0270e63af4d84b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Cross-check a securities sale's or redemption's profit/loss with the bank's. Its PnL is recomputed
+  from its FIFO lots at the bank's own rates and compared with the bank's `nominal_profit_loss_nis`,
+  `nominal_profit_loss_linkage` and `real_profit_loss_nis`, within ₪2 or a millionth of the proceeds.
+  The bank reports linkage on the cost side (the negated rate PnL), and its real PnL is the
+  individual's "lower of the two" result. A mismatch is a ledger error; the disposal is still booked
+  from its lots.
+
+- [#4793](https://github.com/Urigo/accounter-fullstack/pull/4793) [`8e5d177`](https://github.com/Urigo/accounter-fullstack/commit/8e5d177c7ba0e84d03de02719f003a3210d76f6f) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Book a cancelled foreign-securities dividend or bond interest payment as the reversal of its income
+  entry. The cancellation's cash leg used to stay on the securities account, with a "booking the
+  reversal is not supported yet" ledger error, so the cancelled payment's income and withheld tax were
+  never reversed. It now debits the income with the gross, credits the bank with the net paid back,
+  and credits the withholding-tax category with the tax the bank reverses.
+  
+  The reversal is priced at the rate of the payment it cancels, found among the charge's matched
+  executions by security, trade type and gross, so its income and withheld tax net out in shekels too.
+  When that payment is not in the charge, the reversal is priced at the cancellation day's rate and a
+  ledger error says so. The withheld-tax consistency check reads a cancellation's negated tax against
+  its reversed cash. A cancelled redemption is still reported as not supported.
+
+- [#4811](https://github.com/Urigo/accounter-fullstack/pull/4811) [`5079978`](https://github.com/Urigo/accounter-fullstack/commit/50799780ac5c18af3fe0d0df6365fd0584e8cc6d) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Count Poalim's securities commission refund (`ביטול עמלה ני"ע CANC SEC FEE`) in the foreign-securities
+  commission check. The row carries its security only in its reference, which was read for the
+  `FSEC` fee phrase but not for the refund's, so a cancelled payment's refunded commission was left
+  out and the charge reported a mismatch between its fee transactions and the bank's commission.
+
+- [#4824](https://github.com/Urigo/accounter-fullstack/pull/4824) [`3b9b211`](https://github.com/Urigo/accounter-fullstack/commit/3b9b2113fa0ee786c82288fececd3d07ed3e0688) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Cost a security disposal from the FIFO lots of its own account, carrying lots across transfers
+  between the owner's accounts.
+  
+  - **FIFO per account.** A disposal draws only on the lots of the account it was made in, as the
+    bank computes and withholds its tax. The owner's whole history is replayed: a transfer out of one
+    of the owner's accounts carries the lots' cost and purchase-order place into the account that
+    receives the same units within 10 days; any other transfer in still has no known cost. Within a
+    day, units come in before they go out.
+  - **Lots.** The FIFO cost basis now reports the lots it drew on, with their acquisitions.
+  - **Redemptions** read the new owner-wide history, so a redeemed bond moved from another account
+    keeps its cost, and their cost-basis errors name the account.
+
+- [#4749](https://github.com/Urigo/accounter-fullstack/pull/4749) [`e004303`](https://github.com/Urigo/accounter-fullstack/commit/e004303293857a4b29153199902aef9a09b1eb6a) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Stop double counting Israeli withheld tax on securities executions. The bank reports the Israeli tax
+  withheld from a dividend or interest payment in both `israel_tax_value_by_payments_settlement_currency`
+  and `capital_tax_value_settlement_currency`, and the foreign-securities ledger added the two, so it
+  booked twice the tax (and an inflated gross income) and flagged every such charge with "withheld tax
+  … does not match gross minus net". The capital tax column now only stands in when the Israeli column
+  is empty. The executions table no longer lists a capital tax line that repeats the Israeli one, and
+  the `capitalTaxValue` schema description and MCP securities tool say it is not additive. Regenerate the
+  ledger of affected charges.
+
+- [#4730](https://github.com/Urigo/accounter-fullstack/pull/4730) [`d273736`](https://github.com/Urigo/accounter-fullstack/commit/d2737367ed4d589ba936db665c261a261d9c1c14) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Show the tax withheld from a security execution in its own currency. `SecurityExecution` gains
+  `foreignTaxValue`, `israelTaxValueByPayments` and `capitalTaxValue` — the bank's per-kind withheld
+  tax, in the settlement currency, which the ledger already books. Until now only `israelTaxValue`
+  was exposed, so a foreign dividend's tax withheld abroad never showed. `israelTaxValue` itself is now
+  formatted in the trade currency: the bank's `israe_tax_value` is not in ILS, so it was mislabelled ₪. The
+  executions table's Tax column lists each non-zero kind, with the Israeli tax figure under them, and the MCP
+  securities and charge-details tools return the new fields.
+
+- [#4752](https://github.com/Urigo/accounter-fullstack/pull/4752) [`e7cab4a`](https://github.com/Urigo/accounter-fullstack/commit/e7cab4ad1eac21cc6f18f7d8db9b4e5505d9750d) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Stop marking every security business as foreign. Poalim securities ingestion hardcoded
+  `businesses_securities.is_foreign` to `true`, so Israeli funds and bonds (including dollar-denominated
+  ones) showed a "Foreign" badge. The flag is now derived from the issuer country the feed reports,
+  falling back to the ISIN's country prefix, and left null when neither is readable. A re-scrape now
+  corrects the flag on an existing security business, and a migration re-derives it for rows already
+  stored by tenants whose locality is Israel.
+  
+  "Local" now means the tenant's own `locality` rather than a hardcoded Israel, for both the
+  security-business flag and the securities ledger's local/foreign income and withholding-tax
+  categories, which now share one `getSecurityLocality` helper. The ISO alpha-3 to alpha-2 country
+  map moved out of the Green Invoice helper into a shared `countryCodeToAlpha2`.
+
+- [#4809](https://github.com/Urigo/accounter-fullstack/pull/4809) [`f6e1430`](https://github.com/Urigo/accounter-fullstack/commit/f6e14305a5334488ae3c4d061f6c70bad670d84d) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Keep `yarn server:dev` running when a rebuild fails while `yarn generate:watch` regenerates types.
+  
+  `tsc` exits with code 2 on type errors, which nodemon reserves for a malformed `--exec` command when
+  it happens within 500 ms of the last watched file event. Codegen writing `__generated__` files
+  mid-build hit that window, so nodemon stopped instead of waiting for the next change. The `--exec`
+  command now ends in `|| exit 1`, turning such failures into an ordinary crash that the pending
+  restart recovers from.
+
+- [#4767](https://github.com/Urigo/accounter-fullstack/pull/4767) [`728b8bb`](https://github.com/Urigo/accounter-fullstack/commit/728b8bbcb1235ec29c5a87c3946ca05e441dc72f) Thanks [@gilgardosh](https://github.com/gilgardosh)! - `updateTransaction` / `updateTransactions` with `chargeId: EMPTY_UUID` on transactions that are not
+  linked to any charge no longer fail: the charge is left untouched (there is nothing to unlink) and
+  the other fields are still updated. The sentinel used to reach the SQL as-is, which tried to write
+  the nil UUID as the charge ID and failed on its foreign key.
+- Updated dependencies [[`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439), [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d), [`6a5f5b6`](https://github.com/Urigo/accounter-fullstack/commit/6a5f5b68ac675498cc3164ffc960d20c5524623c), [`b13ce9c`](https://github.com/Urigo/accounter-fullstack/commit/b13ce9c11b690909367418625e2307421bae54f2), [`593ec81`](https://github.com/Urigo/accounter-fullstack/commit/593ec810870358bee0d9d0b5806e03bd32ee735b), [`f92ab61`](https://github.com/Urigo/accounter-fullstack/commit/f92ab612b56409ed71d733e888b62838b5300fbf), [`66464f8`](https://github.com/Urigo/accounter-fullstack/commit/66464f894b95cc5abb558c3a73bdb1ddc243ff14), [`abd0493`](https://github.com/Urigo/accounter-fullstack/commit/abd0493a80c7da683ac67ac268a45abec9e8f936), [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d), [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d), [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d), [`0aecf53`](https://github.com/Urigo/accounter-fullstack/commit/0aecf535d624a3f4c233075e8fde6faac67f4053), [`66402a5`](https://github.com/Urigo/accounter-fullstack/commit/66402a500987c81b2d3fc530694b0f996430983c), [`abd0493`](https://github.com/Urigo/accounter-fullstack/commit/abd0493a80c7da683ac67ac268a45abec9e8f936)]:
+  - @accounter/green-invoice-graphql@0.9.0
+  - @accounter/pcn874-generator@0.6.9
+  - @accounter/shaam-uniform-format-generator@0.2.8
+  - @accounter/shaam6111-generator@0.1.10
+
 ## 0.2.0
 
 ### Minor Changes
