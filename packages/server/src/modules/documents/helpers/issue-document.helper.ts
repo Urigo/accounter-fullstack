@@ -196,6 +196,68 @@ export function getTypeFromDocumentsAndTransactions(
   return DocumentType.Proforma;
 }
 
+/**
+ * Resolves the type of a document drafted out of an issued one, and whether it cancels that
+ * document. An invoice-receipt settles itself, so the only document to issue out of one is a credit
+ * invoice that cancels it; any other document gets the type deduced from it, unless a type is
+ * requested. Green Invoice issues an invoice-receipt already closed, so one can be cancelled while
+ * closed; an invoice must still be open, and nothing else can be cancelled.
+ */
+export function getDraftTypeOutOfIssuedDocument({
+  documentId,
+  documentType,
+  status,
+  requestedType,
+}: {
+  documentId: string;
+  documentType: DocumentType;
+  status: IGetIssuedDocumentsByIdsResult['status'];
+  requestedType?: DocumentType | null;
+}): { type: DocumentType; isCancellation: boolean } {
+  const type =
+    requestedType ??
+    (documentType === DocumentType.InvoiceReceipt
+      ? DocumentType.CreditInvoice
+      : // with a document to go by, the deduced type doesn't depend on the charge's transactions
+        getTypeFromDocumentsAndTransactions([{ type: documentType }], []));
+
+  const isCancellation = type === DocumentType.CreditInvoice;
+  if (!isCancellation) {
+    if (status !== 'OPEN') {
+      throw new GraphQLError(`Document with ID "${documentId}" is closed`);
+    }
+    return { type, isCancellation };
+  }
+
+  if (documentType !== DocumentType.Invoice && documentType !== DocumentType.InvoiceReceipt) {
+    throw new GraphQLError(
+      `Document with ID "${documentId}" can't be cancelled by a credit invoice - only invoices and invoice-receipts can`,
+    );
+  }
+  const isCancellable =
+    status === 'OPEN' || (documentType === DocumentType.InvoiceReceipt && status === 'CLOSED');
+  if (!isCancellable) {
+    throw new GraphQLError(
+      `Document with ID "${documentId}" can't be cancelled - its status is ${status}`,
+    );
+  }
+  return { type, isCancellation };
+}
+
+/**
+ * Only a credit invoice cancels the documents it links to. The issue form lets the type change after
+ * the draft set the link type, so a mismatch is rejected before it reaches Green Invoice.
+ */
+export function validateDocumentLinkType(
+  input: Pick<DocumentIssueInput, 'type' | 'linkType'>,
+): void {
+  if (input.linkType === 'CANCEL' && input.type !== DocumentType.CreditInvoice) {
+    throw new GraphQLError(
+      `Only a credit invoice can cancel the documents it links to - got ${input.type}`,
+    );
+  }
+}
+
 export function filterAndHandleSwiftTransactions(
   originTransactions: IGetTransactionsByChargeIdsResult[],
   swiftBusinessId: string | null,
@@ -357,6 +419,9 @@ export async function executeDocumentIssue(
   chargeId?: string,
   sendEmail = false,
 ) {
+  // outside the try, which would replace the reason with a generic error
+  validateDocumentLinkType(initialInput);
+
   try {
     const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
     const input = {

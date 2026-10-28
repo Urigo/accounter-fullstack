@@ -36,10 +36,12 @@ import {
   executeDocumentIssue,
   filterAndHandleSwiftTransactions,
   getDocumentDateOutOfTransactions,
+  getDraftTypeOutOfIssuedDocument,
   getIncomeRecordsFromDocuments,
   getLinkedDocumentsAttributes,
   getPaymentsFromTransactions,
   getTypeFromDocumentsAndTransactions,
+  validateDocumentLinkType,
 } from '../helpers/issue-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
@@ -277,35 +279,12 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         );
       }
 
-      // An invoice-receipt settles itself, so the only document to issue out of one is a credit
-      // invoice that cancels it.
-      const documentType = normalizeDocumentType(document.type);
-      const type =
-        requestedType ??
-        (documentType === DocumentType.InvoiceReceipt
-          ? DocumentType.CreditInvoice
-          : getTypeFromDocumentsAndTransactions([{ type: documentType }], transactions ?? []));
-
-      // A credit invoice cancels the document. Green Invoice issues an invoice-receipt already
-      // closed, so one can be cancelled while closed; an invoice must still be open.
-      const isCancellation = type === DocumentType.CreditInvoice;
-      if (isCancellation) {
-        if (documentType !== DocumentType.Invoice && documentType !== DocumentType.InvoiceReceipt) {
-          throw new GraphQLError(
-            `Document with ID "${document.id}" can't be cancelled by a credit invoice - only invoices and invoice-receipts can`,
-          );
-        }
-        const isCancellable =
-          issuedDocument.status === 'OPEN' ||
-          (documentType === DocumentType.InvoiceReceipt && issuedDocument.status === 'CLOSED');
-        if (!isCancellable) {
-          throw new GraphQLError(
-            `Document with ID "${document.id}" can't be cancelled - its status is ${issuedDocument.status}`,
-          );
-        }
-      } else if (issuedDocument.status !== 'OPEN') {
-        throw new GraphQLError(`Document with ID "${document.id}" is closed`);
-      }
+      const { type, isCancellation } = getDraftTypeOutOfIssuedDocument({
+        documentId: document.id,
+        documentType: normalizeDocumentType(document.type),
+        status: issuedDocument.status,
+        requestedType,
+      });
 
       const greenInvoiceDocumentPromise: Promise<_DOLLAR_defs_Document | null> = injector
         .get(GreenInvoiceClientProvider)
@@ -321,7 +300,11 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
           return res;
         });
 
-      const paymentPromise = getPaymentsFromTransactions(injector, transactions ?? []);
+      // A credit invoice undoes the document, not its payment: the charge's transactions are the
+      // payment the original already receipted, so the credit invoice doesn't carry them again
+      const paymentPromise = isCancellation
+        ? Promise.resolve(undefined)
+        : getPaymentsFromTransactions(injector, transactions ?? []);
 
       const greenInvoiceClientId = parseStoredClientIntegrations(
         client?.integrations ?? {},
@@ -361,7 +344,11 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         remarks = client.remark;
       }
 
-      const documentDate = getDocumentDateOutOfTransactions(transactions ?? []);
+      // A credit invoice belongs to the VAT period it is issued in, so it isn't backdated to the
+      // original payment - with no date, Green Invoice dates it on issue
+      const documentDate = isCancellation
+        ? undefined
+        : getDocumentDateOutOfTransactions(transactions ?? []);
 
       const draft: ResolversTypes['DocumentDraft'] = {
         remarks,
@@ -542,6 +529,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       });
     },
     previewDocument: async (_, { input: initialInput }, { injector }) => {
+      validateDocumentLinkType(initialInput);
       try {
         const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
         const document = await injector
