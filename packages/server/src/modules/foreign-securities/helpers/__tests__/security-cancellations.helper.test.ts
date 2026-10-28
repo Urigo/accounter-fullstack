@@ -13,6 +13,8 @@ import {
 const SELL = 'מכירה';
 const BUY = 'קניה';
 const DIVIDEND = 'דבידנד תשלום';
+const USD_LABEL = 'דולר ארה"ב';
+const ILS_LABEL = 'שקל חדש';
 
 function execution(
   id: string,
@@ -25,8 +27,12 @@ function execution(
     trade_type: SELL,
     security: '1111111',
     is_cancel_transaction: 'לא',
+    trade_currency: USD_LABEL,
+    settlement_currency: USD_LABEL,
     trade_gross_value_trade_currency: '1000',
     net_value_trade_currency: '990',
+    net_value_settlement_currency: null,
+    net_value_nis: null,
     nv: '10',
     bank_number: 12,
     branch_number: 600,
@@ -225,6 +231,38 @@ describe('cancelledTradeType', () => {
         execution('c3', '2025-01-01', { trade_type: DIVIDEND, net_value_trade_currency: '-50' }),
       ),
     ).toBe(DIVIDEND);
+  });
+
+  it("reads the settlement currency's net when the trade currency's is empty", () => {
+    const cancellation = execution('c1', '2025-01-01', {
+      net_value_trade_currency: null,
+      net_value_settlement_currency: '990',
+    });
+
+    expect(cancelledTradeType(cancellation)).toBe(BUY);
+  });
+
+  it("reads the shekel net only on a shekel execution, as it is a foreign one's commission", () => {
+    const noForeignNet = {
+      trade_type: BUY,
+      net_value_trade_currency: null,
+      net_value_settlement_currency: '0',
+    };
+
+    expect(
+      cancelledTradeType(
+        execution('c1', '2025-01-01', {
+          ...noForeignNet,
+          trade_currency: ILS_LABEL,
+          settlement_currency: ILS_LABEL,
+          net_value_nis: '-990',
+        }),
+      ),
+    ).toBe(SELL);
+    // a cancelled buy with its values negated, and the shekel commission it was charged
+    expect(
+      cancelledTradeType(execution('c2', '2025-01-01', { ...noForeignNet, net_value_nis: '-15' })),
+    ).toBe(BUY);
   });
 
   it('keeps the trade type when there is no net amount to read', () => {

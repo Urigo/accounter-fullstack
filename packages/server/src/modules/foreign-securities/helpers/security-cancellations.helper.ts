@@ -1,7 +1,8 @@
-import { SecurityTradeType } from '../../../shared/enums.js';
+import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
 import type { SecurityExecutionRow } from '../types.js';
 import {
+  currencyOfSecurityLabel,
   isCancelledExecution,
   tradeTypeToRaw,
   tryToSecurityTradeType,
@@ -17,8 +18,12 @@ export type CancellableExecution = Pick<
   | 'trade_type'
   | 'security'
   | 'is_cancel_transaction'
+  | 'trade_currency'
+  | 'settlement_currency'
   | 'trade_gross_value_trade_currency'
   | 'net_value_trade_currency'
+  | 'net_value_settlement_currency'
+  | 'net_value_nis'
   | 'nv'
   | 'bank_number'
   | 'branch_number'
@@ -42,6 +47,31 @@ const absAmount = (value: string | null) => {
   return Number.isFinite(amount) ? amount : null;
 };
 
+type NetAmountField =
+  | 'trade_currency'
+  | 'settlement_currency'
+  | 'net_value_trade_currency'
+  | 'net_value_settlement_currency'
+  | 'net_value_nis';
+
+/**
+ * The net amount an execution reports, for its sign: the first non-zero of the trade currency's,
+ * the settlement currency's and — on a shekel execution only — the shekel net, as the matcher
+ * reads it (`executionAmountInCurrency`). The bank may leave the trade currency's net empty. On a
+ * foreign-currency execution the shekel net is the commission, whose sign is the fee's.
+ */
+function reportedNet(execution: Pick<CancellableExecution, NetAmountField>): number {
+  const isShekelExecution =
+    currencyOfSecurityLabel(execution.trade_currency) === Currency.Ils ||
+    currencyOfSecurityLabel(execution.settlement_currency) === Currency.Ils;
+  const reported = [
+    execution.net_value_trade_currency,
+    execution.net_value_settlement_currency,
+    isShekelExecution ? execution.net_value_nis : null,
+  ].map(Number);
+  return reported.find(value => Number.isFinite(value) && value !== 0) ?? 0;
+}
+
 /**
  * The trade type of the execution a cancellation cancels.
  *
@@ -51,14 +81,14 @@ const absAmount = (value: string | null) => {
  * - as the opposite trade, with positive values (a cancelled buy reported as a sale: money coming
  *   back in).
  *
- * The sign of the net amount tells them apart. A sale that brings money in, or a buy that takes it
- * out, is the opposite trade, so it cancels a buy (or a sale). Anything else, and any row with no
- * net amount, keeps its own trade type.
+ * The sign of the net amount tells them apart (`reportedNet`). A sale that brings money in, or a
+ * buy that takes it out, is the opposite trade, so it cancels a buy (or a sale). Anything else,
+ * and any row with no net amount, keeps its own trade type.
  */
 export function cancelledTradeType(
-  cancellation: Pick<CancellableExecution, 'trade_type' | 'net_value_trade_currency'>,
+  cancellation: Pick<CancellableExecution, 'trade_type' | NetAmountField>,
 ): string {
-  const net = Number(cancellation.net_value_trade_currency);
+  const net = reportedNet(cancellation);
   const tradeType = tryToSecurityTradeType(cancellation.trade_type);
   if (tradeType === SecurityTradeType.Sell && net > 0) {
     return tradeTypeToRaw[SecurityTradeType.Buy];
