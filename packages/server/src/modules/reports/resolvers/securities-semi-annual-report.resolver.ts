@@ -27,14 +27,16 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
       { year, half, priorYearsLosses, businessId: requestedBusinessId },
       { injector },
     ) => {
-      if (!Number.isInteger(year) || year < MIN_YEAR || year > currentTenantYear() + 1) {
-        throw new GraphQLError(`Invalid year: ${year}`);
+      if (!Number.isInteger(year) || year < MIN_YEAR || year > currentTenantYear()) {
+        throw new GraphQLError(`Invalid year: ${year}`, { extensions: { code: 'BAD_USER_INPUT' } });
       }
       if (
         priorYearsLosses != null &&
         (!Number.isFinite(priorYearsLosses) || priorYearsLosses < 0)
       ) {
-        throw new GraphQLError('Prior years losses must be a non-negative amount');
+        throw new GraphQLError('Prior years losses must be a non-negative amount', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
       }
 
       // A requested business must be within the read scope; default to the request's own
@@ -76,17 +78,23 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
         .find(row => compareTimelessDates(row.date, period.fromDate) <= 0);
       const taxRate = corporateTax ? Number(corporateTax.original_tax_rate) / 100 : null;
 
-      const declaration = computeSemiAnnualDeclaration({
-        half,
+      const figures = {
         taxRate: taxRate != null && Number.isFinite(taxRate) ? taxRate : null,
         priorYearsLosses: priorYearsLosses ?? 0,
         sales: disposals.sales,
-        firstHalfSales: firstHalfDisposals?.sales,
         income: securitiesIncome.income,
-      });
+      };
+      const declaration = computeSemiAnnualDeclaration(
+        firstHalfDisposals
+          ? { ...figures, half: 'H2', firstHalfSales: firstHalfDisposals.sales }
+          : { ...figures, half: 'H1' },
+      );
 
       const issues: SemiAnnualIssue[] = [];
-      if (compareTimelessDates(todayTimelessDate(), period.toDate) <= 0) {
+      const today = todayTimelessDate();
+      if (compareTimelessDates(today, period.fromDate) < 0) {
+        issues.push({ message: `The half has not started yet: there is nothing to report` });
+      } else if (compareTimelessDates(today, period.toDate) <= 0) {
         issues.push({ message: `The half has not ended yet: the figures cover it until today` });
       }
       if (declaration.capitalGainsTax == null) {
