@@ -172,6 +172,21 @@ describe('getSecurityCapitalGain', () => {
     expect(await getSecurityCapitalGain(makeInjector({ history: [buy] }), cancelled)).toBeNull();
   });
 
+  it('is null for a sale a later row cancels', async () => {
+    const cancellation = execution({
+      ...sale,
+      id: 'execution-sale-cancellation',
+      trade_date: '2025-03-13',
+      is_cancel_transaction: 'כן',
+      nv: '-10',
+      trade_gross_value_trade_currency: '-1100',
+      net_value_trade_currency: '-1100',
+    });
+    const history = [buy, sale, cancellation];
+
+    expect(await getSecurityCapitalGain(makeInjector({ history }), sale)).toBeNull();
+  });
+
   it('says why when the purchase cost is not known', async () => {
     await expect(getSecurityCapitalGain(makeInjector({ history: [sale] }), sale)).rejects.toThrow(
       SecurityCapitalGainError,
