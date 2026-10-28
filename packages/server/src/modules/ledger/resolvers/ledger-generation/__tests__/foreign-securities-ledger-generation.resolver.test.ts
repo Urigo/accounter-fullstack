@@ -273,7 +273,7 @@ type Scenario = {
   rates?: MockRate[];
   /**
    * The cash movement each acquisition in the history was booked from, by execution id; defaults
-   * to one debited on each buy's value date
+   * to one dated on each buy's trade date and debited on its value date
    */
   acquisitionTransactions?: Record<string, Partial<IGetTransactionsByChargeIdsResult>>;
   /** The days the securities account was revalued; defaults to the last year-end */
@@ -309,6 +309,7 @@ function makeInjector(scenario: Scenario) {
                   .map(execution => [
                     execution.id,
                     {
+                      event_date: execution.trade_date,
                       debit_date: execution.value_date ?? execution.trade_date,
                       debit_date_override: null,
                       debit_timestamp: null,
@@ -672,6 +673,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         rates: [...RATES, [Currency.Usd, '2025-01-16', 3.72]],
         acquisitionTransactions: {
           'execution-buy': {
+            event_date: '2025-01-15',
             debit_date: '2025-01-15',
             debit_date_override: '2025-01-16',
             debit_timestamp: null,

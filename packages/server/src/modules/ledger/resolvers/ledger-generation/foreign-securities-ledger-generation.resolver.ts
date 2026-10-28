@@ -210,8 +210,9 @@ function bankProfitLossProblems(params: {
  * - `ledgerDate`: the invoice date of the record that booked it, which is what the year-end
  *   revaluation decides by whether it counted the lot — a dividend in kind's trade date (as
  *   `buildDistributionEntry` books it), a purchase's cash transaction's event date (as
- *   `ledgerEntryFromMainTransaction` books it). A transaction with no event date falls back to the
- *   rate date's day, the closest date the record could have been booked on.
+ *   `ledgerEntryFromMainTransaction` books it). A booked purchase always has an event date, since
+ *   the base entry's invoice date is taken from it; the fall back to the rate date's day only
+ *   covers the nullable column type.
  *
  * Null for a purchase whose cash movement was not found.
  */
