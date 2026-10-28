@@ -11,6 +11,7 @@ import { dynamicReportCommentsResolver } from './resolvers/dynamic-report-commen
 import { dynamicReportResolver } from './resolvers/dynamic-report.resolver.js';
 import { pcn874Resolvers } from './resolvers/pcn874.resolver.js';
 import { reportsResolvers } from './resolvers/reports.resolver.js';
+import { securitiesSemiAnnualReportResolvers } from './resolvers/securities-semi-annual-report.resolver.js';
 import { shaam6111Resolvers } from './resolvers/shaam6111.resolver.js';
 import annualRevenue from './typeDefs/annual-revenue.graphql.js';
 import balanceReport from './typeDefs/balance-report.graphql.js';
@@ -20,6 +21,7 @@ import dynamicReportComments from './typeDefs/dynamic-report-comments.graphql.js
 import dynamicReport from './typeDefs/dynamic-report.graphql.js';
 import pcn from './typeDefs/pcn.graphql.js';
 import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
+import securitiesSemiAnnualReport from './typeDefs/securities-semi-annual-report.graphql.js';
 import shaam6111Report from './typeDefs/shaam6111-report.graphql.js';
 import taxReport from './typeDefs/tax-report.graphql.js';
 import uniformFormat from './typeDefs/uniform-format.graphql.js';
@@ -45,6 +47,7 @@ export const reportsModule = createModule({
     shaam6111Report,
     uniformFormat,
     annualRevenue,
+    securitiesSemiAnnualReport,
   ],
   resolvers: [
     reportsResolvers,
@@ -55,6 +58,7 @@ export const reportsModule = createModule({
     depreciationReportResolvers,
     shaam6111Resolvers,
     annualRevenueResolvers,
+    securitiesSemiAnnualReportResolvers,
   ],
   providers: () => [
     DynamicReportProvider,
