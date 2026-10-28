@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { SemiAnnualAdvanceNote, YearHalf } from '../../../../../gql/graphql.js';
 import {
   advanceNoteText,
-  advanceNotesToShow,
   defaultSemiAnnualFilter,
   formatShekels,
   formatShortDate,
@@ -73,7 +72,12 @@ describe('semiAnnualFilterSchema', () => {
 });
 
 describe('advanceNoteText', () => {
-  const figures = { periodCapitalLoss: 5000, capitalLossOffset: 0, taxLiability: 0 };
+  const figures = {
+    periodCapitalLoss: 5000,
+    capitalLossOffset: 0,
+    firstHalfCapitalLossOffset: 0,
+    grossTax: 0,
+  };
 
   it('words every note in Hebrew and English', () => {
     for (const note of Object.values(SemiAnnualAdvanceNote)) {
@@ -90,9 +94,8 @@ describe('advanceNoteText', () => {
 
   it('spells out a capital loss, what it offset, and that there is no liability', () => {
     const { en } = advanceNoteText(SemiAnnualAdvanceNote.CapitalLossInPeriod, {
-      periodCapitalLoss: 5000,
+      ...figures,
       capitalLossOffset: 1200,
-      taxLiability: 0,
     });
 
     expect(en).toBe(
@@ -101,29 +104,32 @@ describe('advanceNoteText', () => {
   });
 
   it('limits the no-liability claim to the sales when other income is still taxed', () => {
+    // also when a foreign tax credit, not the loss, brings the liability to 0
     const { en } = advanceNoteText(SemiAnnualAdvanceNote.CapitalLossInPeriod, {
       ...figures,
-      taxLiability: 300,
+      grossTax: 300,
     });
 
     expect(en).toMatch(/so the sales carry no tax liability$/);
   });
-});
 
-describe('advanceNotesToShow', () => {
-  it("folds the offset into the half's own capital loss note", () => {
+  it("quotes each loss's own offset in the second half", () => {
+    // H1 lost 100, H2 lost 10; together they offset 110 of income, the older loss first
+    const halfFigures = {
+      ...figures,
+      periodCapitalLoss: 10,
+      capitalLossOffset: 10,
+      firstHalfCapitalLossOffset: 100,
+    };
+
+    expect(advanceNoteText(SemiAnnualAdvanceNote.CapitalLossInPeriod, halfFigures).en).toBe(
+      'The sales of the period ended in a capital loss of ₪ 10, offset against ₪ 10 of dividend and interest income (s.92(a)(4)), so there is no tax liability',
+    );
     expect(
-      advanceNotesToShow([
-        SemiAnnualAdvanceNote.CapitalLossInPeriod,
-        SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome,
-      ]),
-    ).toEqual([SemiAnnualAdvanceNote.CapitalLossInPeriod]);
-  });
-
-  it("keeps the offset of the first half's loss as a note of its own", () => {
-    expect(advanceNotesToShow([SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome])).toEqual([
-      SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome,
-    ]);
+      advanceNoteText(SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome, halfFigures).en,
+    ).toBe(
+      'A capital loss of ₪ 100 from the first half of the year was offset against the dividend and interest income (s.92(a)(4))',
+    );
   });
 });
 

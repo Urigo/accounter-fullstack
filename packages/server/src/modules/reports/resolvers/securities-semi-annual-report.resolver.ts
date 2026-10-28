@@ -171,6 +171,9 @@ export const securitiesSemiAnnualReportResolvers: ReportsModule.Resolvers = {
           foreignTaxCredit: intOrNull(bucket.foreignTaxCredit),
         })),
         capitalLossOffsetAgainstIncome: int(declaration.capitalLossOffsetAgainstIncome),
+        firstHalfCapitalLossOffsetAgainstIncome: int(
+          declaration.firstHalfCapitalLossOffsetAgainstIncome,
+        ),
         securitiesExpenses: int(declaration.securitiesExpenses),
         expenseSummary: expenses.map(expense => ({
           id: `${id}:expense:${expense.key}`,

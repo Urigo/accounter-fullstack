@@ -231,14 +231,13 @@ describe('computeSemiAnnualDeclaration', () => {
       });
 
       expect(declaration.capitalLossOffsetAgainstIncome).toBe(3000);
+      expect(declaration.firstHalfCapitalLossOffsetAgainstIncome).toBe(0);
       expect(bucket(declaration, 'INTEREST', 'LOCAL').capitalLossOffset).toBe(3000);
       expect(declaration.interestTax).toBe(0);
       expect(declaration.taxLiability).toBe(0);
       expect(declaration.taxAdvance).toBe(0);
-      expect(declaration.advanceNotes).toEqual([
-        'CAPITAL_LOSS_IN_PERIOD',
-        'CAPITAL_LOSS_OFFSET_AGAINST_INCOME',
-      ]);
+      // the half's own loss: its note says what it offset
+      expect(declaration.advanceNotes).toEqual(['CAPITAL_LOSS_IN_PERIOD']);
     });
 
     it('offsets part of the income, taxing the rest', () => {
@@ -306,8 +305,40 @@ describe('computeSemiAnnualDeclaration', () => {
       });
 
       expect(declaration.capitalLossOffsetAgainstIncome).toBe(1000);
+      expect(declaration.firstHalfCapitalLossOffsetAgainstIncome).toBe(1000);
       expect(declaration.taxLiability).toBe(0);
       expect(declaration.advanceNotes).toEqual(['CAPITAL_LOSS_OFFSET_AGAINST_INCOME']);
+    });
+
+    it("tells the first half's loss from the half's own, using the older first", () => {
+      // H1: a net loss of 100 and no income; H2: a net loss of 10 and 500 of interest
+      const declaration = declare({
+        half: 'H2',
+        firstHalfSales: [sale(-100)],
+        sales: [sale(-10)],
+        income: [income('INTEREST', 'LOCAL', 500)],
+      });
+
+      expect(declaration.capitalLossOffsetAgainstIncome).toBe(110);
+      expect(declaration.firstHalfCapitalLossOffsetAgainstIncome).toBe(100);
+      expect(declaration.advanceNotes).toEqual([
+        'CAPITAL_LOSS_IN_PERIOD',
+        'CAPITAL_LOSS_OFFSET_AGAINST_INCOME',
+      ]);
+    });
+
+    it("uses the first half's loss on the gains before the income", () => {
+      // H1's loss of 300 meets H2's gain of 200 first; its other 100 offsets the interest
+      const declaration = declare({
+        half: 'H2',
+        firstHalfSales: [sale(-300)],
+        sales: [sale(200)],
+        income: [income('INTEREST', 'LOCAL', 500)],
+      });
+
+      expect(declaration.capitalLossOffsetAgainstIncome).toBe(100);
+      expect(declaration.firstHalfCapitalLossOffsetAgainstIncome).toBe(100);
+      expect(declaration.taxableCapitalGain).toBe(0);
     });
   });
 

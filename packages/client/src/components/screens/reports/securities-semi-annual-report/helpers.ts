@@ -78,10 +78,12 @@ export const EXPENSE_CATEGORY_LABELS: Partial<Record<SecuritiesTaxCategoryKey, s
 export type AdvanceNoteFigures = {
   /** The half's net capital loss, as a positive amount */
   periodCapitalLoss: number;
-  /** The year's capital loss offset against the half's dividends and interest */
+  /** The half's own capital loss offset against its dividends and interest */
   capitalLossOffset: number;
-  /** Null when there is no tax rate */
-  taxLiability: number | null;
+  /** The first half's capital loss, carried into the second, offset against its income */
+  firstHalfCapitalLossOffset: number;
+  /** The tax before any credit; null when there is no tax rate */
+  grossTax: number | null;
 };
 
 /** Keeps an amount left-to-right inside a Hebrew sentence */
@@ -102,8 +104,9 @@ export function advanceNoteText(
         en: 'The gains were offset against carried-forward losses, so there is no tax liability',
       };
     case SemiAnnualAdvanceNote.CapitalLossInPeriod: {
-      const { periodCapitalLoss, capitalLossOffset, taxLiability } = figures;
-      const noLiability = taxLiability === 0;
+      const { periodCapitalLoss, capitalLossOffset, grossTax } = figures;
+      // only when the losses left nothing to tax; a foreign tax credit has a note of its own
+      const noLiability = grossTax === 0;
       return {
         he:
           `בתקופה נוצר הפסד הון ממכירת ניירות ערך בסך ${isolated(periodCapitalLoss)}` +
@@ -123,8 +126,8 @@ export function advanceNoteText(
     }
     case SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome:
       return {
-        he: `הפסד הון מהמחצית הראשונה של השנה בסך ${isolated(figures.capitalLossOffset)} קוזז כנגד הכנסות הדיבידנד והריבית (סעיף 92(א)(4))`,
-        en: `A capital loss of ${formatWholeShekels(figures.capitalLossOffset)} from the first half of the year was offset against the dividend and interest income (s.92(a)(4))`,
+        he: `הפסד הון מהמחצית הראשונה של השנה בסך ${isolated(figures.firstHalfCapitalLossOffset)} קוזז כנגד הכנסות הדיבידנד והריבית (סעיף 92(א)(4))`,
+        en: `A capital loss of ${formatWholeShekels(figures.firstHalfCapitalLossOffset)} from the first half of the year was offset against the dividend and interest income (s.92(a)(4))`,
       };
     case SemiAnnualAdvanceNote.IncomeTaxCoveredByForeignTax:
       return {
@@ -142,18 +145,6 @@ export function advanceNoteText(
         en: 'There were no sales, dividends, interest or expenses in the period',
       };
   }
-}
-
-/**
- * The notes to print under the advance: a capital loss of the half already says what it offset,
- * so the offset is only a note of its own when the loss is the first half's.
- */
-export function advanceNotesToShow(
-  notes: readonly SemiAnnualAdvanceNote[],
-): SemiAnnualAdvanceNote[] {
-  return notes.includes(SemiAnnualAdvanceNote.CapitalLossInPeriod)
-    ? notes.filter(note => note !== SemiAnnualAdvanceNote.CapitalLossOffsetAgainstIncome)
-    : [...notes];
 }
 
 /** `2026-06-30` → `30/6/2026`, as the accountant writes dates */

@@ -472,7 +472,13 @@ export async function collectHalfSecuritiesExpenses(
   const categories: { key: SemiAnnualExpense['key']; taxCategoryId: string }[] = [];
   for (const key of SECURITIES_EXPENSE_TAX_CATEGORY_KEYS) {
     const taxCategoryId = taxCategories[key];
-    if (taxCategoryId) {
+    const sharing = categories.find(category => category.taxCategoryId === taxCategoryId);
+    if (sharing) {
+      // the settings accept one category in two slots; its records are counted once
+      issues.push({
+        message: `"${EXPENSE_LABEL[key]}" uses the same tax category as "${EXPENSE_LABEL[sharing.key]}" in the securities settings; it is counted once`,
+      });
+    } else if (taxCategoryId) {
       categories.push({ key, taxCategoryId });
     } else {
       issues.push({

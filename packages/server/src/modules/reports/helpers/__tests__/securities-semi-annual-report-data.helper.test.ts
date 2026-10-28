@@ -759,4 +759,26 @@ describe('collectHalfSecuritiesExpenses', () => {
       expect.objectContaining({ missingTaxCategory: 'FINANCIAL_CONSULTANCY' }),
     ]);
   });
+
+  it('counts a category set in both slots once, and says so', async () => {
+    const { expenses, issues } = await collectHalfSecuritiesExpenses(
+      makeInjector({
+        ledgerRecords: [
+          ledgerRecord({ debit_entity1: FEES, debit_local_amount1: '500', credit_entity1: 'bank' }),
+        ],
+      }),
+      {
+        ownerId: OWNER_ID,
+        period: H1,
+        adminContext: adminContext({ FOREIGN_SECURITIES_FEES: FEES, FINANCIAL_CONSULTANCY: FEES }),
+      },
+    );
+
+    expect(expenses).toEqual([expect.objectContaining({ taxCategoryId: FEES, amount: 500 })]);
+    expect(issues).toEqual([
+      expect.objectContaining({
+        message: expect.stringContaining('uses the same tax category as'),
+      }),
+    ]);
+  });
 });

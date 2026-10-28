@@ -13,7 +13,6 @@ import {
   SectionHeading,
 } from './declaration-line.js';
 import {
-  advanceNotesToShow,
   advanceNoteText,
   EXPENSE_CATEGORY_LABELS,
   formatShortDate,
@@ -100,6 +99,9 @@ import {
       }
     }
     capitalLossOffsetAgainstIncome {
+      raw
+    }
+    firstHalfCapitalLossOffsetAgainstIncome {
       raw
     }
     securitiesExpenses {
@@ -193,8 +195,11 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
   const advance = report.taxAdvance?.raw ?? null;
   const noteFigures = {
     periodCapitalLoss: Math.max(0, -report.periodNetRealCapitalGain.raw),
-    capitalLossOffset: report.capitalLossOffsetAgainstIncome.raw,
-    taxLiability: report.taxLiability?.raw ?? null,
+    capitalLossOffset:
+      report.capitalLossOffsetAgainstIncome.raw -
+      report.firstHalfCapitalLossOffsetAgainstIncome.raw,
+    firstHalfCapitalLossOffset: report.firstHalfCapitalLossOffsetAgainstIncome.raw,
+    grossTax: report.grossTax?.raw ?? null,
   };
   const incomeOf = (kind: SecuritiesIncomeKind) =>
     report.incomeSummary.filter(bucket => bucket.kind === kind);
@@ -317,7 +322,7 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
             )}
             {report.advanceNotes.length > 0 && (
               <ul className="mt-2 space-y-1">
-                {advanceNotesToShow(report.advanceNotes).map(note => {
+                {report.advanceNotes.map(note => {
                   const text = advanceNoteText(note, noteFigures);
                   return (
                     <li key={note} className="text-sm">

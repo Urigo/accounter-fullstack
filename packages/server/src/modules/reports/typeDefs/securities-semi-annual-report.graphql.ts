@@ -41,7 +41,7 @@ export default gql`
     CAPITAL_GAINS_OFFSET_BY_CARRIED_FORWARD_LOSSES
     " The half's sales ended in a net capital loss "
     CAPITAL_LOSS_IN_PERIOD
-    " The year's capital loss offset the half's dividends and interest (s.92(a)(4)) "
+    " The first half's capital loss, carried into the second, offset the half's dividends and interest (s.92(a)(4)); an offset by the half's own loss goes with CAPITAL_LOSS_IN_PERIOD "
     CAPITAL_LOSS_OFFSET_AGAINST_INCOME
     " The foreign tax withheld covers the Israeli tax on the dividends and interest "
     INCOME_TAX_COVERED_BY_FOREIGN_TAX
@@ -92,6 +92,8 @@ export default gql`
     incomeSummary: [SecuritiesIncomeSummary!]!
     " The year's capital loss offset against the half's dividends and interest (s.92(a)(4)) "
     capitalLossOffsetAgainstIncome: FinancialIntAmount!
+    " Of the capital loss offset against the dividends and interest, the part from the first half's loss, carried into the second (the older loss is used first); the rest is the half's own "
+    firstHalfCapitalLossOffsetAgainstIncome: FinancialIntAmount!
 
     " The half's securities expenses: the fees and the financial consultancy the ledger booked "
     securitiesExpenses: FinancialIntAmount!

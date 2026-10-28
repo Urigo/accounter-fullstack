@@ -158,6 +158,11 @@ export type SemiAnnualDeclaration = SemiAnnualSalesSummary & {
   incomeSummary: SemiAnnualIncomeSummary[];
   /** The year's capital loss set against the half's dividends and interest (s.92(a)(4)) */
   capitalLossOffsetAgainstIncome: number;
+  /**
+   * Of that, the part from the first half's loss, carried into the second; the rest is the half's
+   * own loss. The older loss is used first.
+   */
+  firstHalfCapitalLossOffsetAgainstIncome: number;
   /** The half's securities expenses (fees, financial consultancy) */
   securitiesExpenses: number;
   /** The part of the expenses deducted from the capital gain */
@@ -239,7 +244,8 @@ function spreadOverIncome(
  *    half left unused — offset its capital gains first, then the prior years' losses (s.92(b)),
  *    which can offset capital gains only.
  * 2. What is left of the year's capital loss offsets the securities dividends and interest
- *    (s.92(a)(4)).
+ *    (s.92(a)(4)) — the first half's loss before the half's own, so each note can say whose loss
+ *    offset what.
  * 3. The securities expenses come off the capital gain left, then off the income left. What they
  *    exceed is left for the annual return.
  */
@@ -261,6 +267,9 @@ function settleHalf(params: {
 
   const room = params.buckets.map(bucket => (bucket.taxable ? Math.max(0, bucket.gross) : 0));
   const lossOffset = spreadOverIncome(params.buckets, room, yearLoss);
+  // a half has a net gain or a net loss, not both, so only a carried loss can have met the gains
+  const carriedLossLeft = params.yearLoss - yearLossOnGains;
+  const lossOffsetTotal = sum(lossOffset.taken);
 
   const expenses = Math.max(0, params.expenses);
   const expensesOnGains = Math.min(expenses, gain);
@@ -270,6 +279,7 @@ function settleHalf(params: {
   return {
     lossesOnGains: yearLossOnGains + priorLossesOnGains,
     lossOffset: lossOffset.taken,
+    carriedLossOffset: Math.min(lossOffsetTotal, carriedLossLeft),
     expensesOnGains,
     expensesOnIncome: expensesOnIncome.taken,
     unusedExpenses: expensesOnIncome.left,
@@ -383,6 +393,7 @@ export function computeSemiAnnualDeclaration(
     incomeSummary.filter(bucket => !bucket.taxable),
   );
   const capitalLossOffsetAgainstIncome = sum(settled.lossOffset);
+  const firstHalfCapitalLossOffsetAgainstIncome = settled.carriedLossOffset;
 
   const capitalGainsTax = taxOn(settled.taxableCapitalGain);
   const declaration = {
@@ -395,6 +406,7 @@ export function computeSemiAnnualDeclaration(
     interestIncome,
     incomeSummary,
     capitalLossOffsetAgainstIncome,
+    firstHalfCapitalLossOffsetAgainstIncome,
     securitiesExpenses,
     expensesDeductedFromGains: settled.expensesOnGains,
     expensesDeductedFromIncome: sum(settled.expensesOnIncome),
@@ -445,7 +457,8 @@ export function computeSemiAnnualDeclaration(
   if (salesSummary.saleCount > 0 && salesSummary.netRealCapitalGain < 0) {
     advanceNotes.push('CAPITAL_LOSS_IN_PERIOD');
   }
-  if (capitalLossOffsetAgainstIncome > 0) {
+  // the half's own loss is in `CAPITAL_LOSS_IN_PERIOD`; this note is for the first half's
+  if (firstHalfCapitalLossOffsetAgainstIncome > 0) {
     advanceNotes.push('CAPITAL_LOSS_OFFSET_AGAINST_INCOME');
   }
   if (dividendsTax + interestTax > 0 && foreignTaxCredit >= dividendsTax + interestTax) {
