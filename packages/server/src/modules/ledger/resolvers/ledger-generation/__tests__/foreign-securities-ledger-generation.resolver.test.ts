@@ -273,7 +273,7 @@ type Scenario = {
   rates?: MockRate[];
   /**
    * The cash movement each acquisition in the history was booked from, by execution id; defaults
-   * to one debited on each buy's value date
+   * to one dated on each buy's trade date and debited on its value date
    */
   acquisitionTransactions?: Record<string, Partial<IGetTransactionsByChargeIdsResult>>;
   /** The days the securities account was revalued; defaults to the last year-end */
@@ -309,6 +309,7 @@ function makeInjector(scenario: Scenario) {
                   .map(execution => [
                     execution.id,
                     {
+                      event_date: execution.trade_date,
                       debit_date: execution.value_date ?? execution.trade_date,
                       debit_date_override: null,
                       debit_timestamp: null,
@@ -672,6 +673,7 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         rates: [...RATES, [Currency.Usd, '2025-01-16', 3.72]],
         acquisitionTransactions: {
           'execution-buy': {
+            event_date: '2025-01-15',
             debit_date: '2025-01-15',
             debit_date_override: '2025-01-16',
             debit_timestamp: null,
@@ -684,6 +686,81 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
         // 1,000 × (3.50 − 3.72)
         localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 220),
       );
+    });
+
+    describe('a trade and its debit on either side of a year-end', () => {
+      // the trade's day, which its record is booked on, and its debit's, which it is priced at
+      const TRADED_ON: TimelessDateString = '2024-12-30';
+      const DEBITED_ON: TimelessDateString = '2025-01-02';
+      const STRADDLE_RATES: MockRate[] = [
+        [Currency.Usd, DAY, USD_RATE],
+        [Currency.Usd, '2024-06-10', 3.4],
+        [Currency.Usd, TRADED_ON, 3.7],
+        [Currency.Usd, LAST_YEAR_END, 3.6],
+        [Currency.Usd, DEBITED_ON, 3.8],
+      ];
+      const straddling = (
+        input: Parameters<typeof buildTransaction>[0],
+      ): IGetTransactionsByChargeIdsResult => ({
+        ...buildTransaction({ ...input, debitDate: DEBITED_ON }),
+        event_date: TRADED_ON,
+      });
+
+      it('carries a lot bought before the year-end and debited after it at the year-end rate', async () => {
+        const buyTransaction = straddling({ id: 'transaction-buy', amount: '-1000' });
+        const saleTransaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const buy = buyExecution('execution-buy', TRADED_ON, 10, 1000);
+        const sale = saleExecution(10, 1100);
+        const scenario = {
+          history: [buy, sale],
+          rates: STRADDLE_RATES,
+          acquisitionTransactions: { [buy.id]: buyTransaction },
+        };
+
+        const bought = await generate({
+          ...scenario,
+          transactions: [buyTransaction],
+          executions: { [buyTransaction.id]: buy },
+        });
+        const sold = await generate({
+          ...scenario,
+          transactions: [saleTransaction],
+          executions: { [saleTransaction.id]: sale },
+        });
+
+        expect([...bought.errors, ...sold.errors]).toEqual([]);
+        // the year-end revaluation counted the buy, by its trade day, and moved it to 3.60
+        expect(sold.records.map(summarize)[1]).toEqual(
+          // 1,000 × (3.50 − 3.60)
+          localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 100),
+        );
+        // the buy is booked at 3.80, the year-end revaluation moves it to 3.60, and the sale
+        // gives up what that leaves
+        const revaluation = 1000 * (3.6 - 3.8);
+        const securitiesBalance =
+          (netByEntity([...bought.records, ...sold.records], 'local').get(SECURITIES_USD) ?? 0) +
+          revaluation;
+        expect(securitiesBalance).toBeCloseTo(0, 6);
+      });
+
+      it('does not carry a lot sold before the year-end and debited after it over that year-end', async () => {
+        const transaction = straddling({ id: 'transaction-sale', amount: '1100' });
+        const sale = saleExecution(10, 1100, { trade_date: TRADED_ON, value_date: DEBITED_ON });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
+          rates: STRADDLE_RATES,
+        });
+
+        expect(errors).toEqual([]);
+        // the year-end revaluation counted the units as gone, so they are still carried at 3.40
+        expect(records.map(summarize)[1]).toEqual(
+          // 1,000 × (3.80 − 3.40)
+          localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 400),
+        );
+      });
     });
 
     it("books the sale without its rate PnL when the purchase's cash movement is not found", async () => {
