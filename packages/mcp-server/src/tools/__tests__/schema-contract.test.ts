@@ -17,6 +17,7 @@ import {
 } from '../document-details.js';
 import { KNOWN_CHARGE_TYPENAMES } from '../entity-shapes.js';
 import { LIST_BUSINESSES_FILTER_ALIASES, listBusinessesInput } from '../lookups.js';
+import { BILLING_CYCLES, PRODUCTS, SUBSCRIPTION_PLANS } from '../contracts-write.js';
 import { transactionFiltersInput } from '../transaction-details.js';
 
 /**
@@ -72,6 +73,15 @@ function inputFields(schema: string, name: string): string[] {
   // vacuously — the exact failure these tests exist to prevent.
   if (fields.length === 0) throw new Error(`no fields parsed from input ${name}`);
   return fields;
+}
+
+/** Values of an `enum` in `schema.graphql`, skipping the `"""` descriptions between them. */
+function enumValues(schema: string, name: string): string[] {
+  const match = schema.match(new RegExp(`^enum ${name} \\{([^}]*)\\}`, 'm'));
+  if (!match) throw new Error(`enum ${name} not found in schema.graphql`);
+  const values = [...match[1]!.matchAll(/^\s{2}([A-Z][A-Z0-9_]*)$/gm)].map(value => value[1]!);
+  if (values.length === 0) throw new Error(`no values parsed from enum ${name}`);
+  return values;
 }
 
 describe('generated schema contract', () => {
@@ -180,6 +190,20 @@ describe('generated schema contract', () => {
     expect(typeBlock(loadSchema(), 'ClientIntegrations')).toContain(
       'greenInvoiceInfo: GreenInvoiceClient',
     );
+  });
+
+  /**
+   * `accounter_create_contract` validates its enum inputs locally so a bad
+   * value is a field-level VALIDATION_ERROR rather than a sanitized upstream
+   * one. The lists are copies of the server enums; this is what keeps them
+   * honest when a product, plan or cycle is added upstream.
+   */
+  it.each([
+    ['BillingCycle', BILLING_CYCLES],
+    ['Product', PRODUCTS],
+    ['SubscriptionPlan', SUBSCRIPTION_PLANS],
+  ] as const)('accounter_create_contract mirrors the %s enum', (name, values) => {
+    expect([...enumValues(loadSchema(), name)].sort()).toEqual([...values].sort());
   });
 });
 

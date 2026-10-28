@@ -4,6 +4,7 @@ import { getChargesTool } from './charge-details.js';
 import { mergeChargesTool, updateChargeTool } from './charges-write.js';
 import { searchChargesTool } from './charges.js';
 import { listClientsTool } from './clients.js';
+import { createContractTool } from './contracts-write.js';
 import { getContractsTool } from './contracts.js';
 import { getDocumentsTool } from './document-details.js';
 import { deleteDocumentTool, updateDocumentTool } from './documents-edit-write.js';
@@ -92,3 +93,6 @@ toolRegistry.register(updateTransactionsTool);
 toolRegistry.register(updateDocumentTool);
 toolRegistry.register(deleteDocumentTool);
 toolRegistry.register(createBusinessTool);
+// Recording a signed customer's billing agreement is the other write workflow;
+// it keys on a client, which the read tools above enumerate.
+toolRegistry.register(createContractTool);

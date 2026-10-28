@@ -38,9 +38,10 @@ Phase 2 (write scope) has landed behind the `MCP_ENABLE_WRITE_TOOLS` flag, which
 default**: `accounter_update_charges_tags` and `accounter_upload_documents` first, then the six
 review/matching tools (`accounter_update_charge`, `accounter_merge_charges`,
 `accounter_update_transactions`, `accounter_update_document`, `accounter_delete_document`,
-`accounter_create_business`) that let a model act on what it finds in the missing-information views.
-See [Write tools](#write-tools) for the model, and [Known limitations](#known-limitations) for what
-is still out of scope.
+`accounter_create_business`) that let a model act on what it finds in the missing-information views,
+and `accounter_create_contract`, which records a client's billing agreement. See
+[Write tools](#write-tools) for the model, and [Known limitations](#known-limitations) for what is
+still out of scope.
 
 ## Tools
 
@@ -343,8 +344,20 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   natural reaction to an error is to fix its input and call again — so the tool looks the name up
   first and refuses an exact match with the existing id in the error (`allowDuplicateName: true`
   overrides), and its description says to look the name up again after any upstream error.
+- **`accounter_create_contract`** — record a **client billing contract**, the row
+  `accounter_get_contracts` lists. Mirrors `CreateContractInput` field for field: `clientId` (a
+  client's business id), `startDate` / `endDate` (real calendar dates, end not before start),
+  `amount` `{ value, currency }` per `billingCycle` (MONTHLY / ANNUAL), the `documentType` issued
+  per billing, optional `product` (HIVE / STELLATE), `plan` (ENTERPRISE / PRO), `purchaseOrders`,
+  `remarks`, `msCloud` (link to the signed agreement), `operationsLimit` (the full monthly
+  operations count, e.g. `30000000000` for 30B a month — not millions; 0 when omitted), `isActive`
+  (default true) and `deactivateContractIds` (upstream `deactivateContracts`, the UI's renewal
+  path). The enums are validated locally and pinned to the schema by `schema-contract.test.ts`.
+  Upstream `createContract` deactivates the listed contracts **before** inserting the new row and
+  does not roll that back when the insert fails, reporting only a generic error — so the description
+  says to re-read with `accounter_get_contracts` before retrying.
 
-All six require `business_owner`/`accountant`, target exactly one business, are audit-logged, and
+All seven require `business_owner`/`accountant`, target exactly one business, are audit-logged, and
 are never retried.
 
 ## Upstream GraphQL client
@@ -752,7 +765,7 @@ The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream m
 
 ## Write tools
 
-Eight mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
+Nine mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
 | Tool                            | What it does                                                                             |
 | ------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -764,12 +777,14 @@ Eight mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRIT
 | `accounter_update_document`     | Moves a document to another charge and/or fixes its extracted fields and parties         |
 | `accounter_delete_document`     | Deletes a document (and its charge, when the document was all it held)                   |
 | `accounter_create_business`     | Adds a business to the directory for use as a counterparty                               |
+| `accounter_create_contract`     | Records a client billing contract (optionally retiring the previous term)                |
 
-The last six exist for one workflow: a model reviews the missing-information charges (no
+Six of them exist for one workflow: a model reviews the missing-information charges (no
 counterparty, no document, no tag, no transaction) with the read tools, proposes a fix per charge,
 and — once a person confirms — applies it through these rather than handing back a to-do list for
-the Accounter UI. They are deliberately thin: each wraps one existing upstream mutation and adds
-only input validation, result mapping and the shared write guards.
+the Accounter UI. `accounter_create_contract` serves the other, recording a signed customer's
+billing agreement against an existing client. They are deliberately thin: each wraps one existing
+upstream mutation and adds only input validation, result mapping and the shared write guards.
 
 The default is off so that upgrading a running deployment never silently grants the model write
 access — an operator opts in per environment. `MCP_TOOL_ALLOWLIST` composes on top and can narrow
