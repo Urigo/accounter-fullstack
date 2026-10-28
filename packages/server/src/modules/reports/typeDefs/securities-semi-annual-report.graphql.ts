@@ -41,6 +41,8 @@ export default gql`
     CAPITAL_GAINS_OFFSET_BY_CARRIED_FORWARD_LOSSES
     " The half's sales ended in a net capital loss "
     CAPITAL_LOSS_IN_PERIOD
+    " The first half's capital loss, carried into the second, offset the half's dividends and interest (s.92(a)(4)); an offset by the half's own loss goes with CAPITAL_LOSS_IN_PERIOD "
+    CAPITAL_LOSS_OFFSET_AGAINST_INCOME
     " The foreign tax withheld covers the Israeli tax on the dividends and interest "
     INCOME_TAX_COVERED_BY_FOREIGN_TAX
     " The Israeli tax withheld at source covers the tax liability "
@@ -88,6 +90,23 @@ export default gql`
     interestIncome: FinancialIntAmount!
     " The half's dividend and interest income by kind and locality "
     incomeSummary: [SecuritiesIncomeSummary!]!
+    " The year's capital loss offset against the half's dividends and interest (s.92(a)(4)) "
+    capitalLossOffsetAgainstIncome: FinancialIntAmount!
+    " Of the capital loss offset against the dividends and interest, the part from the first half's loss, carried into the second (the older loss is used first); the rest is the half's own "
+    firstHalfCapitalLossOffsetAgainstIncome: FinancialIntAmount!
+
+    " The half's securities expenses: the fees and the financial consultancy the ledger booked "
+    securitiesExpenses: FinancialIntAmount!
+    " The securities expenses by tax category "
+    expenseSummary: [SecuritiesSemiAnnualExpense!]!
+    " The part of the expenses deducted from the capital gain "
+    expensesDeductedFromGains: FinancialIntAmount!
+    " The part of the expenses deducted from the dividends and interest "
+    expensesDeductedFromIncome: FinancialIntAmount!
+    " Expenses beyond the half's taxable income, left for the annual return "
+    unusedExpenses: FinancialIntAmount!
+    " The capital gain the tax is on: after carried-forward losses and expenses "
+    taxableCapitalGain: FinancialIntAmount!
 
     " The tax on the net real capital gain (the s.91(d) advance before credits) "
     capitalGainsTax: FinancialIntAmount
@@ -158,6 +177,10 @@ export default gql`
     israeliTaxWithheld: FinancialIntAmount!
     " Whether a company is taxed on it (local dividends are exempt) "
     taxable: Boolean!
+    " The year's capital loss offset against it (s.92(a)(4)) "
+    capitalLossOffset: FinancialIntAmount!
+    " The securities expenses deducted from it "
+    expensesDeducted: FinancialIntAmount!
     tax: FinancialIntAmount
     " The foreign tax credited against its tax, capped at that tax "
     foreignTaxCredit: FinancialIntAmount
@@ -180,11 +203,22 @@ export default gql`
     israeliTaxWithheld: FinancialAmount!
   }
 
+  " A securities expense tax category and what the ledger booked on it in the half "
+  type SecuritiesSemiAnnualExpense {
+    id: ID!
+    key: SecuritiesTaxCategoryKey!
+    taxCategoryId: UUID!
+    name: String!
+    amount: FinancialIntAmount!
+  }
+
   " Something the semi-annual report could not work out, or may have missed "
   type SecuritiesSemiAnnualIssue {
     id: ID!
     message: String!
     executionId: UUID
     chargeId: UUID
+    " A securities tax category the report needs and the securities settings lack "
+    missingTaxCategory: SecuritiesTaxCategoryKey
   }
 `;

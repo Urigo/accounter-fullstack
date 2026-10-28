@@ -81,7 +81,7 @@ export function SecuritiesSemiAnnualReport(): ReactElement {
   const businessId =
     filter.businessId ?? soleAdminBusinessId ?? userContext?.context.adminBusinessId ?? undefined;
 
-  const [{ data, fetching, error }] = useQuery({
+  const [{ data, fetching, error }, refetch] = useQuery({
     query: SecuritiesSemiAnnualReportScreenDocument,
     variables: {
       year: filter.year,
@@ -132,7 +132,11 @@ export function SecuritiesSemiAnnualReport(): ReactElement {
 
         {report && (
           <>
-            <ReportIssues data={report} />
+            <ReportIssues
+              data={report}
+              canSetTaxCategories={businessId === userContext?.context.adminBusinessId}
+              onTaxCategorySet={() => refetch({ requestPolicy: 'network-only' })}
+            />
             <div className={fetching ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
               <div className="flex flex-col gap-6 print:block">
                 <DeclarationDocument

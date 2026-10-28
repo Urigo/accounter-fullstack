@@ -13,7 +13,8 @@ import {
   SectionHeading,
 } from './declaration-line.js';
 import {
-  ADVANCE_NOTE_TEXT,
+  advanceNoteText,
+  EXPENSE_CATEGORY_LABELS,
   formatShortDate,
   formatTaxRate,
   formatWholeShekels,
@@ -36,10 +37,6 @@ import {
       id
       name
       governmentId
-      taxAdvancesAnnualIds {
-        id
-        year
-      }
     }
     salesTurnover {
       raw
@@ -88,12 +85,47 @@ import {
         raw
       }
       taxable
+      capitalLossOffset {
+        raw
+      }
+      expensesDeducted {
+        raw
+      }
       tax {
         raw
       }
       foreignTaxCredit {
         raw
       }
+    }
+    capitalLossOffsetAgainstIncome {
+      raw
+    }
+    firstHalfCapitalLossOffsetAgainstIncome {
+      raw
+    }
+    securitiesExpenses {
+      raw
+    }
+    expenseSummary {
+      id
+      key
+      name
+      amount {
+        raw
+      }
+    }
+    expensesDeductedFromGains {
+      raw
+    }
+    expensesDeductedFromIncome {
+      raw
+    }
+    unusedExpenses {
+      raw
+    }
+    taxableCapitalGain {
+      raw
     }
     capitalGainsTax {
       raw
@@ -138,6 +170,11 @@ const taxAmount = (amount?: { raw: number } | null) =>
 
 const negated = (raw: number) => formatWholeShekels(raw === 0 ? 0 : -raw);
 
+const deductionsOf = (bucket: {
+  capitalLossOffset: { raw: number };
+  expensesDeducted: { raw: number };
+}) => bucket.capitalLossOffset.raw + bucket.expensesDeducted.raw;
+
 type Props = {
   data: FragmentType<typeof SecuritiesSemiAnnualDeclarationFragmentDoc>;
   /** The day the document is prepared on, `YYYY-MM-DD` */
@@ -146,19 +183,24 @@ type Props = {
 };
 
 /**
- * The declaration as the accountant sends it to the Tax Authority — her six lines, then how each
+ * The declaration as the accountant sends it to the Tax Authority — its seven lines, then how each
  * was worked out — on an A4 sheet, in Hebrew with English subtitles.
  */
 export function DeclarationDocument({ data, preparedOn, issueCount }: Props): ReactElement {
   const report = getFragmentData(SecuritiesSemiAnnualDeclarationFragmentDoc, data);
   const halfLabel = HALF_LABELS[report.half];
   const period = `${formatShortDate(report.fromDate)} – ${formatShortDate(report.toDate)}`;
-  const taxAdvancesFileId = report.owner.taxAdvancesAnnualIds.find(
-    annual => annual.year === report.year,
-  )?.id;
   const israeliWithheld =
     report.israeliTaxWithheldOnSales.raw + report.israeliTaxWithheldOnIncome.raw;
   const advance = report.taxAdvance?.raw ?? null;
+  const noteFigures = {
+    periodCapitalLoss: Math.max(0, -report.periodNetRealCapitalGain.raw),
+    capitalLossOffset:
+      report.capitalLossOffsetAgainstIncome.raw -
+      report.firstHalfCapitalLossOffsetAgainstIncome.raw,
+    firstHalfCapitalLossOffset: report.firstHalfCapitalLossOffsetAgainstIncome.raw,
+    grossTax: report.grossTax?.raw ?? null,
+  };
   const incomeOf = (kind: SecuritiesIncomeKind) =>
     report.incomeSummary.filter(bucket => bucket.kind === kind);
 
@@ -177,11 +219,6 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
           <div className="text-gray-600">
             ח.פ. <Amount>{report.owner.governmentId}</Amount>
           </div>
-          {taxAdvancesFileId && (
-            <div className="text-gray-600">
-              תיק מקדמות <Amount>{taxAdvancesFileId}</Amount>
-            </div>
-          )}
         </div>
         <div className="space-y-1 text-end text-gray-600">
           <div>
@@ -246,6 +283,12 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
           />
           <DeclarationLine
             number={5}
+            he="סך ההוצאות בגין ניירות ערך היה"
+            en="Securities-related expenses"
+            amount={formatWholeShekels(report.securitiesExpenses.raw)}
+          />
+          <DeclarationLine
+            number={6}
             he="חבות המס מאירועים אלו היא"
             en="Tax liability from these events"
             amount={taxAmount(report.taxLiability)}
@@ -263,7 +306,7 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
               />
             )}
           </DeclarationLine>
-          <DeclarationLine number={6} he="מקדמה לתשלום" en="Advance payable">
+          <DeclarationLine number={7} he="מקדמה לתשלום" en="Advance payable">
             {advance == null ? (
               <p className="mt-2 text-gray-600">
                 לא הוגדר שיעור מס, ולכן לא חושבה מקדמה
@@ -271,30 +314,22 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
                   No tax rate is set, so no advance was worked out
                 </span>
               </p>
-            ) : advance > 0 ? (
+            ) : (
               <div className="mt-2 flex items-center justify-between gap-4 rounded-lg border-2 border-gray-900 px-4 py-3">
                 <BilingualLabel he="מקדמת מס בסך" en="Tax advance of" className="font-semibold" />
                 <Amount className="text-xl font-bold">{formatWholeShekels(advance)}</Amount>
               </div>
-            ) : (
-              <div className="mt-2 rounded-lg border-2 border-gray-900 px-4 py-3">
-                <BilingualLabel
-                  he="אין מקדמה לתשלום"
-                  en="No advance is due"
-                  className="font-semibold"
-                />
-              </div>
             )}
             {report.advanceNotes.length > 0 && (
               <ul className="mt-2 space-y-1">
-                {report.advanceNotes.map(note => (
-                  <li key={note} className="text-sm">
-                    <BilingualLabel
-                      he={`״${ADVANCE_NOTE_TEXT[note].he}״`}
-                      en={ADVANCE_NOTE_TEXT[note].en}
-                    />
-                  </li>
-                ))}
+                {report.advanceNotes.map(note => {
+                  const text = advanceNoteText(note, noteFigures);
+                  return (
+                    <li key={note} className="text-sm">
+                      <BilingualLabel he={`״${text.he}״`} en={text.en} />
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </DeclarationLine>
@@ -356,6 +391,14 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
               amount={formatWholeShekels(report.netRealCapitalGain.raw)}
               emphasis
             />
+            {!!report.capitalLossOffsetAgainstIncome.raw && (
+              <DetailRow
+                he="מתוכו קוזז כנגד דיבידנד וריבית (סעיף 92(א)(4))"
+                en="Of which offset against dividends and interest (s.92(a)(4))"
+                amount={formatWholeShekels(report.capitalLossOffsetAgainstIncome.raw)}
+                muted
+              />
+            )}
             <DetailRow
               he="סכום אינפלציוני (פטור)"
               en="Inflationary amount (exempt)"
@@ -380,6 +423,9 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
               </th>
               <th className="py-2 text-end font-medium">
                 <BilingualLabel he="מס שנוכה בישראל" en="Israeli tax" align="end" />
+              </th>
+              <th className="py-2 text-end font-medium">
+                <BilingualLabel he="קיזוזים וניכויים" en="Offsets" align="end" />
               </th>
               <th className="py-2 text-end font-medium">
                 <BilingualLabel he="מס" en="Tax" align="end" />
@@ -410,6 +456,9 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
                       <Amount>{formatWholeShekels(bucket.israeliTaxWithheld.raw)}</Amount>
                     </td>
                     <td className="py-2 text-end">
+                      <Amount>{negated(deductionsOf(bucket))}</Amount>
+                    </td>
+                    <td className="py-2 text-end">
                       <Amount>{taxAmount(bucket.tax)}</Amount>
                     </td>
                   </tr>
@@ -431,6 +480,9 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
                     <Amount>{total(bucket => bucket.israeliTaxWithheld.raw)}</Amount>
                   </td>
                   <td className="py-2 text-end">
+                    <Amount>{negated(buckets.reduce((sum, b) => sum + deductionsOf(b), 0))}</Amount>
+                  </td>
+                  <td className="py-2 text-end">
                     <Amount>
                       {report.taxRate == null ? '—' : total(bucket => bucket.tax?.raw ?? 0)}
                     </Amount>
@@ -440,12 +492,63 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
             })}
           </tbody>
         </table>
-        {report.incomeSummary.some(bucket => !bucket.taxable) && (
-          <p className="mt-2 text-xs text-gray-500">
-            * דיבידנד מחברה תושבת ישראל פטור ממס בידי חברה (סעיף 126(ב)); המקומיות נקבעת לפי ארץ
-            המנפיק<span className="print:hidden"> — יש לוודא</span>.
-          </p>
-        )}
+        <p className="mt-2 text-xs text-gray-500">
+          {report.incomeSummary.some(bucket => !bucket.taxable) && (
+            <>
+              * דיבידנד מחברה תושבת ישראל פטור ממס בידי חברה (סעיף 126(ב)); המקומיות נקבעת לפי ארץ
+              המנפיק<span className="print:hidden"> — יש לוודא</span>.{' '}
+            </>
+          )}
+          קיזוזים וניכויים: הפסד הון של השנה (סעיף 92(א)(4)) והוצאות ניירות ערך.
+        </p>
+      </section>
+
+      <section className="mb-8 break-inside-avoid">
+        <SectionHeading he="הוצאות בגין ניירות ערך" en="Securities-related expenses" />
+        <table className="w-full">
+          <tbody>
+            {report.expenseSummary.map(expense => (
+              <DetailRow
+                key={expense.id}
+                he={EXPENSE_CATEGORY_LABELS[expense.key] ?? expense.name}
+                en={expense.name}
+                amount={formatWholeShekels(expense.amount.raw)}
+              />
+            ))}
+            <DetailRow
+              he="סך ההוצאות"
+              en="Total expenses"
+              amount={formatWholeShekels(report.securitiesExpenses.raw)}
+              emphasis
+            />
+            <DetailRow
+              he="נוכו מרווח ההון"
+              en="Deducted from the capital gain"
+              amount={formatWholeShekels(report.expensesDeductedFromGains.raw)}
+              muted
+            />
+            <DetailRow
+              he="נוכו מהדיבידנד והריבית"
+              en="Deducted from dividends and interest"
+              amount={formatWholeShekels(report.expensesDeductedFromIncome.raw)}
+              muted
+            />
+            {!!report.unusedExpenses.raw && (
+              <DetailRow
+                he="לא נוכו בתקופה (יותרו בדוח השנתי)"
+                en="Not deducted in the period (left for the annual return)"
+                amount={formatWholeShekels(report.unusedExpenses.raw)}
+                muted
+              />
+            )}
+            <DetailRow
+              he="רווח הון חייב במס"
+              en="Taxable capital gain"
+              amount={formatWholeShekels(report.taxableCapitalGain.raw)}
+              emphasis
+            />
+          </tbody>
+        </table>
       </section>
 
       <section className="mb-8 break-inside-avoid">
@@ -524,14 +627,21 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
             רווח ההון הוא רווח ריאלי לפי סעיף 88: המחיר המקורי של כל מנה (FIFO) בשער היציג ביום
             הרכישה, צמוד למדד הידוע ביום המכירה. הפסד הון אינו מתואם.
           </li>
-          <li>עמלות קנייה ומכירה אינן נכללות ברווח ההון — הן נרשמות כהוצאה.</li>
+          <li>
+            עמלות קנייה ומכירה אינן נכללות במחיר המקורי ובתמורה — הן נכללות בהוצאות בגין ניירות ערך
+            (שורה 5), יחד עם הייעוץ הפיננסי. ההוצאות מנוכות מרווח ההון, ויתרתן מהדיבידנד והריבית.
+          </li>
           <li>
             הדיווח כולל ניירות ערך סחירים בלבד. מכירת נכסים אחרים (כגון מטבעות דיגיטליים או ניירות
             ערך לא סחירים) מדווחת בתוך 30 יום בטופס 1399.
           </li>
           <li>
-            לא בוצע קיזוז הפסד הון כנגד דיבידנד וריבית (סעיף 92(א)(4)). אם המקדמות השוטפות של החברה
-            כוללות רווחים מניירות ערך, ניתן לבקש מפקיד השומה להקטין את המקדמה החצי-שנתית.
+            הפסד הון של השנה מקוזז תחילה כנגד רווחי הון, ויתרתו כנגד דיבידנד וריבית מניירות ערך
+            (סעיף 92(א)(4)); הפסדים מועברים משנים קודמות מקוזזים כנגד רווחי הון בלבד.
+          </li>
+          <li>
+            אם המקדמות השוטפות של החברה כוללות רווחים מניירות ערך, ניתן לבקש מפקיד השומה להקטין את
+            המקדמה החצי-שנתית.
           </li>
           {issueCount > 0 && (
             // for the preparer, not the assessing officer: kept off the printed letter
