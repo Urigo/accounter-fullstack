@@ -5,13 +5,26 @@ import {
   type PositionExecution,
 } from '../security-position.helper.js';
 
+let nextId = 0;
+
 function execution(overrides: Partial<PositionExecution> = {}): PositionExecution {
+  nextId += 1;
   return {
+    id: `execution-${nextId}`,
     trade_date: '2024-03-10',
     trade_type: 'קניה',
+    security: '1111111',
+    is_cancel_transaction: 'לא',
     nv: '10',
+    trade_gross_value_trade_currency: null,
     net_value_trade_currency: '-1000.00',
+    net_value_settlement_currency: null,
+    net_value_nis: null,
     trade_currency: 'דולר ארה"ב',
+    settlement_currency: 'דולר ארה"ב',
+    bank_number: 12,
+    branch_number: 600,
+    account_number: 111111,
     ...overrides,
   };
 }
@@ -76,6 +89,64 @@ describe('calculateSecurityPosition', () => {
 
     expect(position.quantity).toBe(0);
     expect(position.totalSold).toBe(1050);
+  });
+
+  it('leaves out a cancelled buy the bank reports as a sale', () => {
+    const position = calculateSecurityPosition([
+      execution({ nv: '10', net_value_trade_currency: '-1000.00' }),
+      execution({ trade_date: '2024-04-01', nv: '5', net_value_trade_currency: '-600.00' }),
+      execution({
+        trade_date: '2024-04-01',
+        trade_type: 'מכירה',
+        is_cancel_transaction: 'כן',
+        nv: '5',
+        net_value_trade_currency: '600.00',
+      }),
+    ]);
+
+    expect(position.quantity).toBe(10);
+    expect(position.totalBought).toBe(1000);
+    expect(position.totalSold).toBe(0);
+    expect(position.averageCost).toBe(100);
+  });
+
+  it('leaves out a cancelled sale reported with its values negated', () => {
+    const position = calculateSecurityPosition([
+      execution({ nv: '10' }),
+      execution({
+        trade_date: '2024-04-01',
+        trade_type: 'מכירה',
+        nv: '4',
+        net_value_trade_currency: '480.00',
+      }),
+      execution({
+        trade_date: '2024-04-02',
+        trade_type: 'מכירה',
+        is_cancel_transaction: 'כן',
+        nv: '-4',
+        net_value_trade_currency: '-480.00',
+      }),
+    ]);
+
+    expect(position.quantity).toBe(10);
+    expect(position.totalSold).toBe(0);
+  });
+
+  it('still dates its history from a cancelled execution', () => {
+    const position = calculateSecurityPosition([
+      execution({ trade_date: '2024-01-05', nv: '5', net_value_trade_currency: '-600.00' }),
+      execution({
+        trade_date: '2024-01-05',
+        trade_type: 'מכירה',
+        is_cancel_transaction: 'כן',
+        nv: '5',
+        net_value_trade_currency: '600.00',
+      }),
+      execution({ trade_date: '2024-03-10' }),
+    ]);
+
+    expect(position.historyStartDate).toBe('2024-01-05');
+    expect(position.quantity).toBe(10);
   });
 
   it('reports the span the derivation is based on, whatever order rows arrive in', () => {

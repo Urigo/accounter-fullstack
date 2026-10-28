@@ -1,5 +1,6 @@
 import { SecurityTradeType } from '../../../shared/enums.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
+import { pairCancellations, type CancellableExecution } from './security-cancellations.helper.js';
 import { toSecurityTradeType } from './security-execution-enums.helper.js';
 
 /**
@@ -20,13 +21,7 @@ const QUANTITY_DIRECTION: Record<SecurityTradeType, -1 | 0 | 1> = {
   [SecurityTradeType.InterestPayment]: 0,
 };
 
-export type PositionExecution = {
-  trade_date: TimelessDateString;
-  trade_type: string;
-  nv: string | null;
-  net_value_trade_currency: string | null;
-  trade_currency: string | null;
-};
+export type PositionExecution = CancellableExecution;
 
 export type SecurityPositionProto = {
   /** Units held, derived from the ingested executions alone. */
@@ -75,6 +70,10 @@ const toNumber = (value: string | null): number => {
  * Derived, not reported: the bank's own balances are not ingested. Corporate actions that
  * change the unit count without an execution row (a split, say) are therefore invisible, and a
  * history that starts mid-life starts from zero — hence `historyStartDate`.
+ *
+ * A cancelled execution never happened, so it and its cancellation add nothing to the holding or
+ * the amounts (`pairCancellations`, as FIFO drops them). They still count as ingested history for
+ * the dates and the currency.
  */
 export function calculateSecurityPosition(
   executions: readonly PositionExecution[],
@@ -87,7 +86,7 @@ export function calculateSecurityPosition(
   let historyStart: TimelessDateString | null = null;
   let lastExecution: TimelessDateString | null = null;
 
-  for (const execution of executions) {
+  for (const execution of pairCancellations(executions).live) {
     const tradeType = toSecurityTradeType(execution.trade_type);
     const units = toNumber(execution.nv);
     const netValue = Math.abs(toNumber(execution.net_value_trade_currency));
@@ -101,7 +100,9 @@ export function calculateSecurityPosition(
     if (tradeType === SecurityTradeType.Sell || tradeType === SecurityTradeType.Redemption) {
       totalSold += netValue;
     }
+  }
 
+  for (const execution of executions) {
     currency ??= execution.trade_currency;
     if (!historyStart || execution.trade_date < historyStart) {
       historyStart = execution.trade_date;
