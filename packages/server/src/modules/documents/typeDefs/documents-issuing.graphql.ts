@@ -5,7 +5,8 @@ export default gql`
     newDocumentDraftByCharge(chargeId: UUID!): DocumentDraft!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
-    newDocumentDraftByDocument(documentId: UUID!): DocumentDraft!
+    " Draft a new document out of an issued one. The type defaults to the one deduced from the document - a credit invoice for an invoice-receipt. A CREDIT_INVOICE draft cancels the document: allowed for an open invoice, or an open or closed invoice-receipt (Green Invoice issues those already closed). "
+    newDocumentDraftByDocument(documentId: UUID!, type: DocumentType): DocumentDraft!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
     periodicalDocumentDrafts(issueMonth: TimelessDate!): [DocumentDraft!]!

@@ -65,8 +65,14 @@ export function DocumentActionsMenu({
 
   const chargeId = document.charge?.id;
   const fileHref = toHref(document.file);
-  const isOpenIssuedDocument =
-    'issuedDocumentInfo' in document && document.issuedDocumentInfo?.status === 'OPEN';
+  const issuedDocumentStatus =
+    'issuedDocumentInfo' in document ? document.issuedDocumentInfo?.status : undefined;
+  const isOpenIssuedDocument = issuedDocumentStatus === 'OPEN';
+  // Green Invoice issues an invoice-receipt already closed, so a document can still be issued out
+  // of one - a credit invoice that cancels it - after it was closed.
+  const canIssueOutOfDocument =
+    isOpenIssuedDocument ||
+    (issuedDocumentStatus === 'CLOSED' && document.documentType === DocumentType.InvoiceReceipt);
 
   const onCopyChargeLink = useCallback((): void => {
     if (chargeId) {
@@ -158,15 +164,17 @@ export function DocumentActionsMenu({
             </>
           )}
 
-          {isOpenIssuedDocument && (
+          {canIssueOutOfDocument && (
             <>
               <DropdownMenuSeparator />
 
               <DropdownMenuLabel variant="section">Issued Document</DropdownMenuLabel>
-              <DropdownMenuItem onSelect={() => setCloseDocumentOpen(true)}>
-                <CircleX className="size-4" />
-                Close Document
-              </DropdownMenuItem>
+              {isOpenIssuedDocument && (
+                <DropdownMenuItem onSelect={() => setCloseDocumentOpen(true)}>
+                  <CircleX className="size-4" />
+                  Close Document
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onSelect={() => setIssueDocumentOpen(true)}>
                 <ListPlus className="size-4" />
                 Issue Document out of This Document
@@ -216,24 +224,24 @@ export function DocumentActionsMenu({
       />
 
       {isOpenIssuedDocument && (
-        <>
-          <CloseDocumentButton
-            documentId={document.id}
-            couldIssueCreditInvoice={
-              document.documentType === DocumentType.Invoice ||
-              document.documentType === DocumentType.InvoiceReceipt
-            }
-            onChange={document.onUpdate}
-            open={closeDocumentOpen}
-            setOpen={setCloseDocumentOpen}
-          />
-          <PreviewDocumentModal
-            documentId={document.id}
-            open={issueDocumentOpen}
-            setOpen={setIssueDocumentOpen}
-            onIssued={document.onUpdate}
-          />
-        </>
+        <CloseDocumentButton
+          documentId={document.id}
+          couldIssueCreditInvoice={
+            document.documentType === DocumentType.Invoice ||
+            document.documentType === DocumentType.InvoiceReceipt
+          }
+          onChange={document.onUpdate}
+          open={closeDocumentOpen}
+          setOpen={setCloseDocumentOpen}
+        />
+      )}
+      {canIssueOutOfDocument && (
+        <PreviewDocumentModal
+          documentId={document.id}
+          open={issueDocumentOpen}
+          setOpen={setIssueDocumentOpen}
+          onIssued={document.onUpdate}
+        />
       )}
     </>
   );

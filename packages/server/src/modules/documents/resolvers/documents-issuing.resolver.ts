@@ -213,7 +213,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       };
       return draft;
     },
-    newDocumentDraftByDocument: async (_, { documentId }, { injector }) => {
+    newDocumentDraftByDocument: async (_, { documentId, type: requestedType }, { injector }) => {
       if (!documentId) {
         throw new GraphQLError('Document ID is required to fetch document draft');
       }
@@ -259,36 +259,62 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         ? injector.get(ClientsProvider).getClientByIdLoader.load(mainBusinessId)
         : Promise.resolve(undefined);
 
-      const openIssuedDocumentPromise = injector
+      const issuedDocumentPromise = injector
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.load(document.id);
 
       const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, mainBusinessId);
 
-      const [client, openIssuedDocument, vatType] = await Promise.all([
+      const [client, issuedDocument, vatType] = await Promise.all([
         clientPromise,
-        openIssuedDocumentPromise,
+        issuedDocumentPromise,
         vatTypePromise,
       ]);
 
-      if (!openIssuedDocument) {
+      if (!issuedDocument) {
         throw new GraphQLError(
           `Document with ID "${document.id}" doesn't seem like a document we issued`,
         );
       }
 
-      if (openIssuedDocument.status !== 'OPEN') {
+      // An invoice-receipt settles itself, so the only document to issue out of one is a credit
+      // invoice that cancels it.
+      const documentType = normalizeDocumentType(document.type);
+      const type =
+        requestedType ??
+        (documentType === DocumentType.InvoiceReceipt
+          ? DocumentType.CreditInvoice
+          : getTypeFromDocumentsAndTransactions([{ type: documentType }], transactions ?? []));
+
+      // A credit invoice cancels the document. Green Invoice issues an invoice-receipt already
+      // closed, so one can be cancelled while closed; an invoice must still be open.
+      const isCancellation = type === DocumentType.CreditInvoice;
+      if (isCancellation) {
+        if (documentType !== DocumentType.Invoice && documentType !== DocumentType.InvoiceReceipt) {
+          throw new GraphQLError(
+            `Document with ID "${document.id}" can't be cancelled by a credit invoice - only invoices and invoice-receipts can`,
+          );
+        }
+        const isCancellable =
+          issuedDocument.status === 'OPEN' ||
+          (documentType === DocumentType.InvoiceReceipt && issuedDocument.status === 'CLOSED');
+        if (!isCancellable) {
+          throw new GraphQLError(
+            `Document with ID "${document.id}" can't be cancelled - its status is ${issuedDocument.status}`,
+          );
+        }
+      } else if (issuedDocument.status !== 'OPEN') {
         throw new GraphQLError(`Document with ID "${document.id}" is closed`);
       }
 
       const greenInvoiceDocumentPromise: Promise<_DOLLAR_defs_Document | null> = injector
         .get(GreenInvoiceClientProvider)
-        .documentLoader.load(openIssuedDocument.external_id)
+        .documentLoader.load(issuedDocument.external_id)
         .then(res => {
           if (!res) {
             console.error(
               'Failed to fetch document from Green Invoice',
-              openIssuedDocument.external_id,
+              issuedDocument.external_id,
             );
             return null;
           }
@@ -320,20 +346,13 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
 
       const income = getIncomeRecordsFromDocuments([greenInvoiceDocument]);
 
-      const type = getTypeFromDocumentsAndTransactions(
-        [{ type: normalizeDocumentType(document.type) }],
-        transactions ?? [],
-      );
-
-      const linkedDocsAttributes = getLinkedDocumentsAttributes(
-        [openIssuedDocument],
-        type === DocumentType.CreditInvoice,
-      );
+      const linkedDocsAttributes = getLinkedDocumentsAttributes([issuedDocument], isCancellation);
 
       let remarks = greenInvoiceDocument.remarks;
       switch (type) {
         case DocumentType.Receipt:
         case DocumentType.InvoiceReceipt:
+        case DocumentType.CreditInvoice:
           remarks = `${getDocumentNameFromType(type)} for ${getDocumentNameFromGreenInvoiceType(greenInvoiceDocument.type)} ${greenInvoiceDocument.number}`;
           break;
       }

@@ -34,7 +34,6 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
-  getTypeFromGreenInvoiceDocument,
   getVatTypeFromGreenInvoiceDocument,
   insertNewDocumentFromGreenInvoice,
 } from '../../green-invoice/helpers/green-invoice.helper.js';
@@ -378,8 +377,12 @@ export async function executeDocumentIssue(
       throw new GraphQLError('Failed to issue new document');
     }
 
+    // A cancelling link makes Green Invoice cancel the linked documents on its own (and closing
+    // one that is no longer open fails), so only plainly linked documents are closed here.
+    const isCancellation = initialInput.linkType === 'CANCEL';
+
     // validate all linked documents are closed
-    if (input.linkedDocumentIds?.length) {
+    if (input.linkedDocumentIds?.length && !isCancellation) {
       await Promise.all(
         input.linkedDocumentIds.map(async id => {
           if (id) {
@@ -417,14 +420,17 @@ export async function executeDocumentIssue(
         throw new GraphQLError('Failed to issue new document');
       }
 
-      // Close linked documents
+      // Close (or mark as cancelled) linked documents
       if (coreInput.linkedDocumentIds?.length) {
         await Promise.all(
           coreInput.linkedDocumentIds.map(async id => {
             if (id) {
               await injector
                 .get(IssuedDocumentsProvider)
-                .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' })
+                .updateIssuedDocumentByExternalId({
+                  externalId: id,
+                  status: isCancellation ? 'CANCELLED_BY_OTHER_DOC' : 'CLOSED',
+                })
                 .catch(e => {
                   const message = `Failed to close linked document with ID ${id}`;
                   console.error(`${message}: ${e}`);
@@ -433,9 +439,6 @@ export async function executeDocumentIssue(
             }
           }),
         );
-      }
-      if (getTypeFromGreenInvoiceDocument(coreInput.type) === DocumentType.CreditInvoice) {
-        // Close origin
       }
 
       return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
