@@ -7,6 +7,7 @@ import {
   ClientInfoForDocumentIssuingDocument,
   Currency,
   DocumentLanguage,
+  DocumentLinkType,
   DocumentType,
   DocumentVatType,
   IssueDocumentClientFieldsFragmentDoc,
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
+import { Switch } from '../../../ui/switch.js';
 import { Textarea } from '../../../ui/textarea.js';
 import { normalizeClientInfo } from '../../index.js';
 import { ClientForm } from './client-form.js';
@@ -163,6 +165,9 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
     formData.type === DocumentType.CreditInvoice;
   const shouldShowPayment =
     formData.type === DocumentType.Receipt || formData.type === DocumentType.InvoiceReceipt;
+  // A credit invoice cancels the documents it links to by default; a partial credit only links them
+  const canChooseCancellation =
+    formData.type === DocumentType.CreditInvoice && !!formData.linkedDocumentIds?.length;
 
   return (
     <>
@@ -213,6 +218,28 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
               </Select>
             </div>
           </div>
+
+          {canChooseCancellation && (
+            <div className="flex flex-row items-center justify-between gap-4 rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="cancelLinkedDocuments">Cancel the original document</Label>
+                <p className="text-sm text-gray-500">
+                  Turn off for a partial credit - the credit invoice is only linked, and the
+                  original stays as it is.
+                </p>
+              </div>
+              <Switch
+                id="cancelLinkedDocuments"
+                checked={formData.linkType === DocumentLinkType.Cancel}
+                onCheckedChange={checked =>
+                  updateFormData(
+                    'linkType',
+                    checked ? DocumentLinkType.Cancel : DocumentLinkType.Link,
+                  )
+                }
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

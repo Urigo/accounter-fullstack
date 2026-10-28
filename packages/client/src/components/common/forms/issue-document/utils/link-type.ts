@@ -1,8 +1,10 @@
 import { DocumentLinkType, DocumentType } from '../../../../../gql/graphql.js';
 
 /**
- * The link type follows the document type: only a credit invoice cancels the documents it links
- * to, anything else just links to them. With no linked documents there is nothing to link.
+ * The link type that follows a change of document type: a credit invoice defaults to cancelling the
+ * documents it links to (the form lets the user downgrade that to a plain link for a partial
+ * credit), and anything else can only link to them. With no linked documents there is nothing to
+ * link.
  */
 export function getLinkTypeForDocumentType(
   type: DocumentType,

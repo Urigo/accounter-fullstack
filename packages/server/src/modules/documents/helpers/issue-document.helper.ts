@@ -199,9 +199,10 @@ export function getTypeFromDocumentsAndTransactions(
 /**
  * Resolves the type of a document drafted out of an issued one, and whether it cancels that
  * document. An invoice-receipt settles itself, so the only document to issue out of one is a credit
- * invoice that cancels it; any other document gets the type deduced from it, unless a type is
- * requested. Green Invoice issues an invoice-receipt already closed, so one can be cancelled while
- * closed; an invoice must still be open, and nothing else can be cancelled.
+ * invoice; any other document gets the type deduced from it, unless a type is requested. A credit
+ * invoice draft defaults to cancelling the document (the issue form can downgrade that to a plain
+ * link for a partial credit). Green Invoice issues an invoice-receipt already closed, so one can be
+ * credited while closed; an invoice must still be open, and nothing else can be credited.
  */
 export function getDraftTypeOutOfIssuedDocument({
   documentId,
@@ -410,6 +411,26 @@ export const convertContractToDraft = async (
   return documentInput;
 };
 
+/**
+ * The linked documents (by Green Invoice ID) that are still open. One without a local record is
+ * assumed open, so it is closed as before.
+ */
+async function getOpenLinkedDocumentIds(
+  injector: Injector,
+  externalIds: string[],
+): Promise<string[]> {
+  if (!externalIds.length) {
+    return [];
+  }
+  const issuedDocuments = await injector
+    .get(IssuedDocumentsProvider)
+    .getIssuedDocumentsByExternalIdLoader.loadMany(externalIds);
+  return externalIds.filter((_, index) => {
+    const issuedDocument = issuedDocuments[index];
+    return !issuedDocument || issuedDocument instanceof Error || issuedDocument.status === 'OPEN';
+  });
+}
+
 export async function executeDocumentIssue(
   injector: Injector,
   adminBusinessId: string,
@@ -436,32 +457,36 @@ export async function executeDocumentIssue(
       emailContent,
       attachment,
     };
+
+    // A cancelling link makes Green Invoice cancel the linked documents on its own (and closing
+    // one that is no longer open fails), so only plainly linked documents are closed here - and
+    // only those still open: a partial credit links to an invoice-receipt that is already closed.
+    const isCancellation = initialInput.linkType === 'CANCEL';
+    const linkedDocumentIds = (coreInput.linkedDocumentIds ?? []).filter(
+      (id): id is string => !!id,
+    );
+    const linkedDocumentIdsToClose = isCancellation
+      ? []
+      : await getOpenLinkedDocumentIds(injector, linkedDocumentIds);
+
     const document = await injector.get(GreenInvoiceClientProvider).addDocuments({ input });
 
     if (!document) {
       throw new GraphQLError('Failed to issue new document');
     }
 
-    // A cancelling link makes Green Invoice cancel the linked documents on its own (and closing
-    // one that is no longer open fails), so only plainly linked documents are closed here.
-    const isCancellation = initialInput.linkType === 'CANCEL';
-
     // validate all linked documents are closed
-    if (input.linkedDocumentIds?.length && !isCancellation) {
-      await Promise.all(
-        input.linkedDocumentIds.map(async id => {
-          if (id) {
-            await injector
-              .get(GreenInvoiceClientProvider)
-              .closeDocument(id)
-              .catch(e => {
-                const message = `ERROR: Failed to close Green Invoice linked document with ID ${id}`;
-                console.error(`${message}: ${e}`);
-              });
-          }
-        }),
-      );
-    }
+    await Promise.all(
+      linkedDocumentIdsToClose.map(async id => {
+        await injector
+          .get(GreenInvoiceClientProvider)
+          .closeDocument(id)
+          .catch(e => {
+            const message = `ERROR: Failed to close Green Invoice linked document with ID ${id}`;
+            console.error(`${message}: ${e}`);
+          });
+      }),
+    );
 
     if ('id' in document && document.id) {
       const greenInvoiceDocument = await injector
@@ -486,25 +511,21 @@ export async function executeDocumentIssue(
       }
 
       // Close (or mark as cancelled) linked documents
-      if (coreInput.linkedDocumentIds?.length) {
-        await Promise.all(
-          coreInput.linkedDocumentIds.map(async id => {
-            if (id) {
-              await injector
-                .get(IssuedDocumentsProvider)
-                .updateIssuedDocumentByExternalId({
-                  externalId: id,
-                  status: isCancellation ? 'CANCELLED_BY_OTHER_DOC' : 'CLOSED',
-                })
-                .catch(e => {
-                  const message = `Failed to close linked document with ID ${id}`;
-                  console.error(`${message}: ${e}`);
-                  throw new Error(message);
-                });
-            }
-          }),
-        );
-      }
+      await Promise.all(
+        (isCancellation ? linkedDocumentIds : linkedDocumentIdsToClose).map(async id => {
+          await injector
+            .get(IssuedDocumentsProvider)
+            .updateIssuedDocumentByExternalId({
+              externalId: id,
+              status: isCancellation ? 'CANCELLED_BY_OTHER_DOC' : 'CLOSED',
+            })
+            .catch(e => {
+              const message = `Failed to close linked document with ID ${id}`;
+              console.error(`${message}: ${e}`);
+              throw new Error(message);
+            });
+        }),
+      );
 
       return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
     }

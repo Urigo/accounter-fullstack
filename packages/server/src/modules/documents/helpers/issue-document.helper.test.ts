@@ -154,6 +154,8 @@ describe('executeDocumentIssue - linked documents', () => {
   let addDocuments: ReturnType<typeof vi.fn>;
   let closeDocument: ReturnType<typeof vi.fn>;
   let updateIssuedDocumentByExternalId: ReturnType<typeof vi.fn>;
+  // the linked document's local record, as the external-ID loader returns it
+  let linkedDocument: { external_id: string; status: string } | undefined;
   let injector: Injector;
 
   beforeEach(() => {
@@ -171,6 +173,7 @@ describe('executeDocumentIssue - linked documents', () => {
     addDocuments = vi.fn().mockResolvedValue({ id: 'gi-new-1' });
     closeDocument = vi.fn().mockResolvedValue(true);
     updateIssuedDocumentByExternalId = vi.fn().mockResolvedValue(undefined);
+    linkedDocument = { external_id: LINKED_EXTERNAL_ID, status: 'OPEN' };
 
     injector = {
       get: (token: unknown) => {
@@ -182,7 +185,12 @@ describe('executeDocumentIssue - linked documents', () => {
           };
         }
         if (token === IssuedDocumentsProvider) {
-          return { updateIssuedDocumentByExternalId };
+          return {
+            updateIssuedDocumentByExternalId,
+            getIssuedDocumentsByExternalIdLoader: {
+              loadMany: vi.fn(async (ids: string[]) => ids.map(() => linkedDocument)),
+            },
+          };
         }
         if (token === ChargesProvider) {
           return { getChargeByIdLoader: { load: vi.fn(async (id: string) => ({ id })) } };
@@ -209,7 +217,7 @@ describe('executeDocumentIssue - linked documents', () => {
     });
   });
 
-  it('closes a plainly linked document', async () => {
+  it('closes a plainly linked open document', async () => {
     await issue({ type: DocumentType.Receipt, linkType: 'LINK' });
 
     expect(closeDocument).toHaveBeenCalledWith(LINKED_EXTERNAL_ID);
@@ -217,6 +225,28 @@ describe('executeDocumentIssue - linked documents', () => {
       externalId: LINKED_EXTERNAL_ID,
       status: 'CLOSED',
     });
+  });
+
+  it('closes a plainly linked document that has no local record', async () => {
+    linkedDocument = undefined;
+
+    await issue({ type: DocumentType.Receipt, linkType: 'LINK' });
+
+    expect(closeDocument).toHaveBeenCalledWith(LINKED_EXTERNAL_ID);
+    expect(updateIssuedDocumentByExternalId).toHaveBeenCalledWith({
+      externalId: LINKED_EXTERNAL_ID,
+      status: 'CLOSED',
+    });
+  });
+
+  it('leaves a closed document as it is when a partial credit only links to it', async () => {
+    linkedDocument = { external_id: LINKED_EXTERNAL_ID, status: 'CLOSED' };
+
+    await issue({ type: DocumentType.CreditInvoice, linkType: 'LINK' });
+
+    expect(addDocuments).toHaveBeenCalledOnce();
+    expect(closeDocument).not.toHaveBeenCalled();
+    expect(updateIssuedDocumentByExternalId).not.toHaveBeenCalled();
   });
 
   it('rejects a cancelling link on a non-credit document before issuing anything', async () => {
