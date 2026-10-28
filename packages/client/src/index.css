@@ -222,9 +222,14 @@
 }
 
 @media print {
+  /*
+   * `!important` because MUI's `CssBaseline` emits its own unlayered `body` background (see the
+   * `@layer base` note above), and emotion appends it after this stylesheet, so it would win on
+   * source order and print the theme's background instead of white.
+   */
   html,
   body {
-    background: #fff;
+    background: #fff !important;
   }
 
   [data-sonner-toaster] {
