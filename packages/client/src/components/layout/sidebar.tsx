@@ -47,7 +47,7 @@ export function Sidebar({ className }: SidebarProps): JSX.Element {
     <>
       <nav
         className={cn(
-          'relative hidden h-screen flex-none border-r z-10 pt-10 md:block bg-white',
+          'relative hidden h-screen flex-none border-r z-10 pt-10 md:block bg-white print:hidden',
           status && 'duration-300',
           isMinimized ? 'w-[72px]' : 'w-[240px]',
           className,

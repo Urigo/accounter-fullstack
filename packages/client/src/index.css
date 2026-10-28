@@ -210,3 +210,29 @@
     --chart-5: 340 75% 55%;
   }
 }
+
+/*
+ * Printing (and "Save as PDF"): A4 pages with a print margin, on white. The app chrome (header,
+ * sidebar, footer) opts out with `print:hidden`; a page that prints a document of its own
+ * styles it with `print:` variants.
+ */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  /*
+   * `!important` because MUI's `CssBaseline` emits its own unlayered `body` background (see the
+   * `@layer base` note above), and emotion appends it after this stylesheet, so it would win on
+   * source order and print the theme's background instead of white.
+   */
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  [data-sonner-toaster] {
+    display: none;
+  }
+}
