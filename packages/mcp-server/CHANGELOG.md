@@ -1,5 +1,121 @@
 # @accounter/mcp-server
 
+## 0.2.0
+
+### Minor Changes
+
+- [#4628](https://github.com/Urigo/accounter-fullstack/pull/4628) [`7a612f4`](https://github.com/Urigo/accounter-fullstack/commit/7a612f43bce913e280ea77cd1fd3cd0cceeda365) Thanks [@gilgardosh](https://github.com/gilgardosh)! - **Breaking change to tool output:** drop `formatted` from the shared money shape. Every amount the
+  MCP tools return is now `{ value, currency }` instead of `{ value, formatted, currency }`. Any
+  consumer that reads `amount.formatted` must build the display string from `value` and `currency`
+  instead.
+  
+  `formatted` was the server's display string (e.g. `₪1,234.56`), which a model can rebuild from the
+  other two fields. It cost bytes on every amount: about 15% of an `accounter_vat_report` row, which
+  has nine amount fields. The connector no longer selects it from the API. `FinancialAmount.formatted`
+  stays in the server schema because the client uses it.
+  
+  The `accounter_vat_report` summary line now formats the total VAT itself, printing the unsigned
+  amount next to the "to pay" / "refund" wording (e.g. `total VAT ₪42.00 refund`, where it used to
+  print `-₪42.00`).
+
+- [#4655](https://github.com/Urigo/accounter-fullstack/pull/4655) [`5ad4449`](https://github.com/Urigo/accounter-fullstack/commit/5ad444987e4c7cb33579da1e8a6be028b67f1088) Thanks [@gilgardosh](https://github.com/gilgardosh)! - `accounter_list_businesses` now sends its filters through the `allBusinesses(filters:)` input
+  instead of the deprecated `name` / `isClient` arguments, and exposes every `BusinessFilter` field:
+  
+  - `taxCategoryIds` / `withoutTaxCategory`, to find businesses matched to given tax categories or
+    with none mapped
+  - `sortCodes` / `withoutSortCode`, by numeric sort code key
+  - `countries`, as ISO 3166-1 alpha-3 codes
+  - `isAdmin`, for the owner-managed businesses
+  
+  `activeOnly` is now applied upstream, before paging, as `filters.isActive`. It used to be applied to
+  the returned page, so pages could come back short and `totalCount` / `pagination` counted inactive
+  businesses. Both now describe active businesses only when `activeOnly` is set.
+
+- [#4748](https://github.com/Urigo/accounter-fullstack/pull/4748) [`30a845f`](https://github.com/Urigo/accounter-fullstack/commit/30a845f740b16b81633eeeed83002c062917005e) Thanks [@Urigo](https://github.com/Urigo)! - Add the six MCP write tools a charge review needs to apply its decisions directly, instead of
+  handing back a to-do list for the Accounter UI. All sit behind the existing `MCP_ENABLE_WRITE_TOOLS`
+  flag (off by default), require `business_owner`/`accountant`, target exactly one business, are
+  audit-logged and are never retried — the same guards as `accounter_update_charges_tags`.
+  
+  - `accounter_update_charge` — edit a charge's `userDescription`, `type`, `optionalDocuments`,
+    `optionalVat`, `isInvoicePaymentDifferentCurrency`, `defaultTaxCategoryId`, `businessTripId`
+    and `yearsOfRelevance`. Rejects `counterpartyId` on purpose: upstream derives a
+    charge's counterparty from its transactions and documents (the schema field exists but the
+    resolver ignores it), so the tool points at the two tools that do set it.
+  - `accounter_merge_charges` — fold 1–20 charges into a base charge (`mergeCharges`), the fix for an
+    emailed receipt that landed in its own charge next to the card row it pays for. Refuses a
+    self-merge or duplicate ids before any round trip.
+  - `accounter_update_transactions` — set `counterpartyId`, `chargeId` and/or `isFee` on 1–50
+    transactions in one upstream batch (`updateTransactions`); this is where a charge's counterparty
+    is actually set, and `chargeId` is how a wire is moved onto the charge holding its invoice.
+    Former charges the move leaves empty are deleted upstream and relayed as `deletedChargeIds`.
+  - `accounter_update_document` — move a document to another charge (an emptied former charge is
+    deleted upstream and relayed as `deletedChargeId`) and/or fix `creditorId`, `debtorId`, `documentType`, `serialNumber`, `date`, `amount`,
+    `vat`, `description` (`updateDocument`).
+  - `accounter_delete_document` — delete a document (`deleteDocument`), reporting the charge it
+    came off and whether that charge was deleted with it.
+  - `accounter_create_business` — add a directory entry (`insertNewBusiness`) with every
+    `InsertNewBusinessInput` field (`country` validated against the server `CountryCode` enum), so a
+    new vendor can be set as a counterparty in the same session. Refuses a name that already exists
+    (returning the existing id) unless `allowDuplicateName`, since the upstream insert is not atomic
+    and a retry would otherwise duplicate the entity.
+  
+  Each tool is a thin wrapper over one existing server mutation: no schema or resolver changes. Covered
+  by per-tool unit tests, the registry-wide scope-forwarding, usage-log and description contracts,
+  and the e2e exposure checks (hidden by default, listed after every read tool when enabled).
+
+- [#4623](https://github.com/Urigo/accounter-fullstack/pull/4623) [`8ae88db`](https://github.com/Urigo/accounter-fullstack/commit/8ae88db3564c004676f1867f3fe733a1fc362eb1) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Expose the monthly VAT report over the MCP connector as `accounter_vat_report`.
+  
+  The VAT report is the screen accountants and business owners use to prepare the monthly VAT filing,
+  and it was not reachable from the connector. The new tool is a thin forwarder of the server's
+  `vatReport` query for one member business and one month (`month: "YYYY-MM"`): which documents
+  qualify, income vs expense, the VAT figures, the filed totals and the validation reasons are all
+  computed server-side and passed through as-is, normalized into the connector's shared money and
+  entity shapes.
+  
+  **One section per call.** `section` picks `income`, `expenses` (one row per document, every
+  `VatReportRecord` field) or `missingInfo` (charges that still fail validation, with their `missing`
+  reasons), paged with `offset`/`limit`. Every call also returns `counts` for all three sections and
+  `summary`, the month's PCN874 header totals as filed (`totalVat` positive = to pay, negative =
+  refund), so a model can answer "what's the VAT for March?" from any first call. Rows carry the
+  reported business as `ownerId`, like the balance report.
+  
+  **Its own bounds.** The report validates every charge in the month, so the upstream read uses the
+  long-running budget (`GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS`) — reads can now opt into it, and a
+  long-running read is not retried after a timeout. Rows are wide, so this tool gets a 120 KB payload
+  cap; the shared 60 KB cap is unchanged for every other tool. The upstream `chargesType` filter is not
+  exposed until its inverted behaviour is fixed on the server.
+  
+  **Glossary.** `accounter_explain_terminology` gains a `report` topic covering the report, its rows,
+  how income vs expense is decided, the VAT date, every amount field, the summary (including which
+  PCN874 record types its totals leave out), the record types, and the missing-info section.
+  
+  The balance report moved to `tools/reports/` alongside it, and GraphQL codegen now covers that
+  folder.
+
+### Patch Changes
+
+- [#4823](https://github.com/Urigo/accounter-fullstack/pull/4823) [`5f01f2a`](https://github.com/Urigo/accounter-fullstack/commit/5f01f2a29a409d2d7c8c1492225d8648e65e3c99) Thanks [@gilgardosh](https://github.com/gilgardosh)! - `accounter_get_charges` with `includeSecurities` now takes a security's `exchange` and `itemType`
+  from its security business, falling back to the bank's reference row, like `symbol` and `name`.
+  They used to be `null` whenever the reference list had no row for the key (e.g. a position closed
+  before the list was scraped), even when the security business had both.
+
+- [#4749](https://github.com/Urigo/accounter-fullstack/pull/4749) [`e004303`](https://github.com/Urigo/accounter-fullstack/commit/e004303293857a4b29153199902aef9a09b1eb6a) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Stop double counting Israeli withheld tax on securities executions. The bank reports the Israeli tax
+  withheld from a dividend or interest payment in both `israel_tax_value_by_payments_settlement_currency`
+  and `capital_tax_value_settlement_currency`, and the foreign-securities ledger added the two, so it
+  booked twice the tax (and an inflated gross income) and flagged every such charge with "withheld tax
+  … does not match gross minus net". The capital tax column now only stands in when the Israeli column
+  is empty. The executions table no longer lists a capital tax line that repeats the Israeli one, and
+  the `capitalTaxValue` schema description and MCP securities tool say it is not additive. Regenerate the
+  ledger of affected charges.
+
+- [#4730](https://github.com/Urigo/accounter-fullstack/pull/4730) [`d273736`](https://github.com/Urigo/accounter-fullstack/commit/d2737367ed4d589ba936db665c261a261d9c1c14) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Show the tax withheld from a security execution in its own currency. `SecurityExecution` gains
+  `foreignTaxValue`, `israelTaxValueByPayments` and `capitalTaxValue` — the bank's per-kind withheld
+  tax, in the settlement currency, which the ledger already books. Until now only `israelTaxValue`
+  was exposed, so a foreign dividend's tax withheld abroad never showed. `israelTaxValue` itself is now
+  formatted in the trade currency: the bank's `israe_tax_value` is not in ILS, so it was mislabelled ₪. The
+  executions table's Tax column lists each non-zero kind, with the Israeli tax figure under them, and the MCP
+  securities and charge-details tools return the new fields.
+
 ## 0.1.0
 
 ### Minor Changes
