@@ -39,6 +39,8 @@ import { SalesAppendix } from './sales-appendix.js';
       businessId: $businessId
     ) {
       id
+      year
+      half
       issues {
         id
       }
@@ -90,7 +92,10 @@ export function SecuritiesSemiAnnualReport(): ReactElement {
   });
   const report = data?.securitiesSemiAnnualReport;
 
-  usePrintDocumentTitle(semiAnnualFileName(filter.year, filter.half));
+  // named after the report shown, which lags the filter while a new period loads
+  usePrintDocumentTitle(
+    semiAnnualFileName(report?.year ?? filter.year, report?.half ?? filter.half),
+  );
 
   return (
     <PageLayout
@@ -98,7 +103,11 @@ export function SecuritiesSemiAnnualReport(): ReactElement {
       description="Half-yearly report on securities sales, dividends and interest, and the tax advance due (Income Tax Ordinance s.91(d))"
       hideHeaderInPrint
       headerActions={
-        <Button onClick={() => window.print()} disabled={!report} className="print:hidden">
+        <Button
+          onClick={() => window.print()}
+          disabled={!report || fetching}
+          className="print:hidden"
+        >
           <Printer className="size-4" />
           Print / Save PDF
         </Button>

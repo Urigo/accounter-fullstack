@@ -440,10 +440,12 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
             })}
           </tbody>
         </table>
-        <p className="mt-2 text-xs text-gray-500">
-          * דיבידנד מחברה תושבת ישראל פטור ממס בידי חברה (סעיף 126(ב)); המקומיות נקבעת לפי ארץ
-          המנפיק — יש לוודא.
-        </p>
+        {report.incomeSummary.some(bucket => !bucket.taxable) && (
+          <p className="mt-2 text-xs text-gray-500">
+            * דיבידנד מחברה תושבת ישראל פטור ממס בידי חברה (סעיף 126(ב)); המקומיות נקבעת לפי ארץ
+            המנפיק<span className="print:hidden"> — יש לוודא</span>.
+          </p>
+        )}
       </section>
 
       <section className="mb-8 break-inside-avoid">
@@ -532,8 +534,12 @@ export function DeclarationDocument({ data, preparedOn, issueCount }: Props): Re
             כוללות רווחים מניירות ערך, ניתן לבקש מפקיד השומה להקטין את המקדמה החצי-שנתית.
           </li>
           {issueCount > 0 && (
-            <li className="font-medium text-gray-900">
-              {issueCount} פריטים בדוח דורשים בדיקה (ראו את רשימת הבעיות במסך).
+            // for the preparer, not the assessing officer: kept off the printed letter
+            <li className="font-medium text-gray-900 print:hidden">
+              {issueCount === 1
+                ? 'פריט אחד בדוח דורש בדיקה'
+                : `${issueCount} פריטים בדוח דורשים בדיקה`}{' '}
+              (ראו את רשימת הבעיות למעלה).
             </li>
           )}
         </ul>

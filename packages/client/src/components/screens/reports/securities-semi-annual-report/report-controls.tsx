@@ -114,7 +114,10 @@ export function ReportControls({
         <Label>Tax year</Label>
         <Select
           value={String(filter.year)}
-          onValueChange={year => onChange({ ...filter, year: Number(year) })}
+          // the carried-forward losses are as of 1 January of a year, so they don't carry to another
+          onValueChange={year =>
+            onChange({ ...filter, year: Number(year), priorYearsLosses: undefined })
+          }
         >
           <SelectTrigger className="w-28">
             <SelectValue />
