@@ -120,6 +120,7 @@ describe('tool descriptions document their own result', () => {
     ['accounter_delete_document', 'documents'],
     ['accounter_create_business', 'businesses'],
     ['accounter_create_contract', 'contracts'],
+    ['accounter_create_client', 'clients'],
   ])('%s documents its write result (`%s`)', (name, itemsKey) => {
     const description = describedBy(name);
 
