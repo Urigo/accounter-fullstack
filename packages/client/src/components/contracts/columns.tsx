@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { BillingCycle, SubscriptionPlan } from '@/gql/graphql.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
+import { formatCompactNumber } from '@/helpers/numbers.js';
 import type { PaginatedTableFeaturesConfig } from '@/lib/table-features.js';
 import { ModifyContractDialog } from '../clients/contracts/modify-contract-dialog.js';
 import { DataTableColumnHeader } from '../common/index.js';
@@ -111,7 +112,14 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, ContractRow>[] = [
       if (!operationsLimit) {
         return null;
       }
-      return <p className="text-sm font-medium">{operationsLimit.toString()}</p>;
+      return (
+        <p
+          className="text-sm font-medium"
+          title={`${operationsLimit.toLocaleString()} operations a month`}
+        >
+          {formatCompactNumber(operationsLimit)}
+        </p>
+      );
     },
   },
   {

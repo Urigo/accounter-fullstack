@@ -11,6 +11,7 @@ import {
   standardBillingCycle,
   standardPlan,
 } from '@/helpers/index.js';
+import { formatCompactNumber } from '@/helpers/numbers.js';
 import {
   ModifyContractDialog,
   type ContractFormValues,
@@ -199,8 +200,13 @@ function ContractCard({
         </div>
 
         <div className="space-y-0">
-          <p className="text-sm text-muted-foreground">Operations Limit</p>
-          <p className="text-sm font-medium">{contract.operationsLimit.toLocaleString()}</p>
+          <p className="text-sm text-muted-foreground">Operations limit / month</p>
+          <p
+            className="text-sm font-medium"
+            title={`${contract.operationsLimit.toLocaleString()} operations a month`}
+          >
+            {formatCompactNumber(contract.operationsLimit)}
+          </p>
         </div>
 
         <div className="space-y-0">
