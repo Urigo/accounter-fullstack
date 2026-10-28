@@ -14,6 +14,7 @@ export type CancellableExecution = Pick<
   | 'is_cancel_transaction'
   | 'trade_gross_value_trade_currency'
   | 'net_value_trade_currency'
+  | 'nv'
   | 'bank_number'
   | 'branch_number'
   | 'account_number'
@@ -29,6 +30,9 @@ export type CancellationPairing<T> = {
 };
 
 const absAmount = (value: string | null) => {
+  if (value == null) {
+    return null;
+  }
   const amount = Math.abs(Number(value));
   return Number.isFinite(amount) ? amount : null;
 };
@@ -45,6 +49,20 @@ function sameAmount(a: CancellableExecution, b: CancellableExecution): boolean {
   return netA != null && netB != null && Math.abs(netA - netB) < MIN_AMOUNT;
 }
 
+/**
+ * Whether a cancellation and its original are for the same number of units. A transfer or a
+ * distribution carries no cash amount (a net of 0), so the units are what tells two of them apart,
+ * as ingestion and the ledger pair a cancelled distribution (`findDistributionCancellation`).
+ */
+function sameUnits(a: CancellableExecution, b: CancellableExecution): boolean {
+  const unitsA = absAmount(a.nv);
+  const unitsB = absAmount(b.nv);
+  if (unitsA == null || unitsB == null) {
+    return unitsA === unitsB;
+  }
+  return Math.abs(unitsA - unitsB) < MIN_AMOUNT;
+}
+
 const sameAccount = (a: CancellableExecution, b: CancellableExecution) =>
   a.bank_number === b.bank_number &&
   a.branch_number === b.branch_number &&
@@ -56,8 +74,8 @@ const sameAccount = (a: CancellableExecution, b: CancellableExecution) =>
  * The bank reports a cancellation as a row of its own (`is_cancel_transaction` = "כן") with the
  * original's trade type and amounts negated, and leaves the original as it was — so dropping only
  * the cancellation leaves a trade that never happened. The original is the latest live execution
- * at or before the cancellation of the same security, in the same account, of the same trade type
- * and amount (as the ledger pairs a cancelled payment, `findCancelledPayment`); of two on the same
+ * at or before the cancellation of the same security, in the same account, of the same trade type,
+ * amount and number of units (as the ledger pairs a cancelled payment, `findCancelledPayment`); of two on the same
  * day, the later id.
  * Each original is cancelled once: cancellations are paired oldest first.
  */
@@ -81,6 +99,7 @@ export function pairCancellations<T extends CancellableExecution>(
         candidate.security !== cancellation.security ||
         !sameAccount(candidate, cancellation) ||
         !sameAmount(candidate, cancellation) ||
+        !sameUnits(candidate, cancellation) ||
         compareTimelessDates(candidate.trade_date, cancellation.trade_date) > 0
       ) {
         continue;

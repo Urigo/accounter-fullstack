@@ -25,6 +25,7 @@ function execution(
     is_cancel_transaction: 'לא',
     trade_gross_value_trade_currency: '1000',
     net_value_trade_currency: '990',
+    nv: '10',
     bank_number: 12,
     branch_number: 600,
     account_number: 111111,
@@ -36,6 +37,7 @@ const cancellationOf = (id: string, tradeDate: TimelessDateString, overrides = {
   execution(id, tradeDate, {
     is_cancel_transaction: 'כן',
     net_value_trade_currency: '-990',
+    nv: '-10',
     ...overrides,
   });
 
@@ -82,12 +84,13 @@ describe('pairCancellations', () => {
     expect(result.live).toEqual([]);
   });
 
-  it('requires the same trade type, security, account and amount', () => {
+  it('requires the same trade type, security, account, amount and units', () => {
     const result = pairCancellations([
       execution('buy', '2025-01-10', { trade_type: BUY }),
       execution('other-security', '2025-01-10', { security: '2222222' }),
       execution('other-account', '2025-01-10', { account_number: 222222 }),
       execution('other-amount', '2025-01-10', { trade_gross_value_trade_currency: '1500' }),
+      execution('other-units', '2025-01-10', { nv: '15' }),
       cancellationOf('c1', '2025-02-01'),
     ]);
 
@@ -98,7 +101,31 @@ describe('pairCancellations', () => {
       'other-security',
       'other-account',
       'other-amount',
+      'other-units',
     ]);
+  });
+
+  it('tells rows with no cash amount apart by their units', () => {
+    const noCash = { trade_gross_value_trade_currency: null, net_value_trade_currency: '0' };
+    const fiveUnits = execution('d1', '2025-04-01', { ...noCash, nv: '5' });
+    const tenUnits = execution('d2', '2025-04-02', { ...noCash, nv: '10' });
+    const cancellation = cancellationOf('c1', '2025-04-03', { ...noCash, nv: '-5' });
+
+    const result = pairCancellations([fiveUnits, tenUnits, cancellation]);
+
+    expect(result.pairs).toEqual([{ original: fiveUnits, cancellation }]);
+    expect(result.live.map(e => e.id)).toEqual(['d2']);
+  });
+
+  it('does not count two missing amounts as the same amount', () => {
+    const noAmounts = { trade_gross_value_trade_currency: null, net_value_trade_currency: null };
+    const original = execution('s1', '2025-01-10', noAmounts);
+    const cancellation = cancellationOf('c1', '2025-01-12', noAmounts);
+
+    const result = pairCancellations([original, cancellation]);
+
+    expect(result.pairs).toEqual([]);
+    expect(result.orphanCancellations.map(e => e.id)).toEqual(['c1']);
   });
 
   it('pairs within the security when two securities share an amount', () => {

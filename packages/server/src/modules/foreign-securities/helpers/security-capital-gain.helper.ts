@@ -6,6 +6,7 @@ import { periodToYearMonth } from '../../price-indexes/helpers/price-index.helpe
 import { PriceIndexesProvider } from '../../price-indexes/providers/price-indexes.provider.js';
 import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
 import type { SecurityCapitalGainProto, SecurityExecutionRow } from '../types.js';
+import { pairCancellations } from './security-cancellations.helper.js';
 import { calculateFifoCostBasis } from './security-cost-basis.helper.js';
 import {
   calculateCpiCapitalGain,
@@ -31,7 +32,7 @@ export class SecurityCapitalGainError extends Error {
 /**
  * The capital gain of a sale or a redemption, from the FIFO lots of the account it was made in;
  * lots moved in from another of the owner's accounts keep their cost. Null for any other execution,
- * and for a cancelled one.
+ * and for a cancelled one: the cancellation row, or the sale it cancels.
  *
  * Everything is in the local currency at the Bank of Israel representative rate of the trade dates
  * — the sale's and each lot's purchase — as tax practice prices them, and split two ways:
@@ -63,6 +64,10 @@ export async function getSecurityCapitalGain(
     injector.get(AdminContextProvider).getVerifiedAdminContext(),
     injector.get(ForeignSecuritiesProvider).getSecurityOwnerHistory(execution, execution.owner_id),
   ]);
+  // a sale a later cancellation row cancels never happened either
+  if (pairCancellations(history).pairs.some(({ original }) => original.id === execution.id)) {
+    return null;
+  }
   const costBasis = calculateFifoCostBasis(history, execution, currency);
   const problem = costBasisProblem(execution, costBasis);
   if (problem) {
