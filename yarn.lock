@@ -210,7 +210,7 @@ __metadata:
     "@graphql-mesh/compose-cli": "npm:1.8.4"
     "@graphql-mesh/fusion-runtime": "npm:1.13.0"
     "@graphql-mesh/transport-rest": "npm:0.12.4"
-    "@graphql-tools/utils": "npm:13.1.2"
+    "@graphql-tools/utils": "npm:13.2.0"
     "@omnigraph/json-schema": "npm:0.112.6"
     bob-the-bundler: "npm:7.0.1"
     graphql: "npm:16.14.2"
@@ -336,7 +336,7 @@ __metadata:
     "@envelop/graphql-modules": "npm:9.2.1"
     "@google-cloud/pubsub": "npm:6.3.1"
     "@graphql-hive/yoga": "npm:0.49.9"
-    "@graphql-tools/utils": "npm:13.1.2"
+    "@graphql-tools/utils": "npm:13.2.0"
     "@graphql-yoga/plugin-defer-stream": "npm:3.24.6"
     "@opentelemetry/api": "npm:1.10.0"
     "@opentelemetry/auto-instrumentations-node": "npm:0.82.0"
@@ -3514,16 +3514,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/utils@npm:13.1.2":
-  version: 13.1.2
-  resolution: "@graphql-tools/utils@npm:13.1.2"
+"@graphql-tools/utils@npm:13.2.0":
+  version: 13.2.0
+  resolution: "@graphql-tools/utils@npm:13.2.0"
   dependencies:
     "@graphql-typed-document-node/core": "npm:^3.2.0"
     "@whatwg-node/promise-helpers": "npm:^2.0.0"
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: ^16.0.0 || ^17.0.0
-  checksum: 10c0/351522fb2a17d1b5f4ce558994039ace6949699a26353caf69ed105d28b9999f46e768fb217bfd76e40ea233409940b758d48d38a34ebb2eb279bcfd9389e3ed
+  checksum: 10c0/645d23ed99bb76d29fb1d89f0f8329dcadc487ed85ffce69774bc42cf78d06c7f4d52a6e4ec31124c1889d6dac82cbb9ff3c9b5189935d259367c5713167e597
   languageName: node
   linkType: hard
 
