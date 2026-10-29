@@ -1,9 +1,35 @@
 import { type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { TableMiscExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
+import {
+  TableMiscExpenseRowFieldsFragmentDoc,
+  TableMiscExpensesFieldsFragmentDoc,
+} from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { DeleteMiscExpenseButton } from '../../common/buttons/delete-misc-expense-button.js';
 import { EditMiscExpenseModal } from '../../common/index.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment TableMiscExpenseRowFields on MiscExpense {
+    id
+    amount {
+      formatted
+    }
+    description
+    invoiceDate
+    valueDate
+    creditor {
+      id
+      name
+    }
+    debtor {
+      id
+      name
+    }
+    chargeId
+    ...EditMiscExpenseFields
+  }
+`;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -11,22 +37,7 @@ import { EditMiscExpenseModal } from '../../common/index.js';
     id
     miscExpenses {
       id
-      amount {
-        formatted
-      }
-      description
-      invoiceDate
-      valueDate
-      creditor {
-        id
-        name
-      }
-      debtor {
-        id
-        name
-      }
-      chargeId
-      ...EditMiscExpenseFields
+      ...TableMiscExpenseRowFields
     }
   }
 `;
@@ -54,32 +65,35 @@ export const ChargeMiscExpensesTable = ({ miscExpensesData, onChange }: Props): 
         </tr>
       </thead>
       <tbody>
-        {miscExpenses?.map(expense => (
-          <tr key={expense?.id}>
-            <td>
-              <div>{expense.creditor?.name}</div>
-            </td>
-            <td>
-              <div>{expense.debtor?.name}</div>
-            </td>
-            <td>
-              <div>{expense.amount?.formatted}</div>
-            </td>
-            <td>
-              <div>{expense.invoiceDate}</div>
-            </td>
-            <td>
-              <div>{expense.valueDate && format(new Date(expense.valueDate), 'yyyy-MM-dd')}</div>
-            </td>
-            <td>
-              <div>{expense.description}</div>
-            </td>
-            <td>
-              <EditMiscExpenseModal onDone={onChange} data={expense} />
-              <DeleteMiscExpenseButton miscExpenseId={expense.id} onChange={onChange} />
-            </td>
-          </tr>
-        ))}
+        {miscExpenses?.map(expenseData => {
+          const expense = getFragmentData(TableMiscExpenseRowFieldsFragmentDoc, expenseData);
+          return (
+            <tr key={expense.id}>
+              <td>
+                <div>{expense.creditor?.name}</div>
+              </td>
+              <td>
+                <div>{expense.debtor?.name}</div>
+              </td>
+              <td>
+                <div>{expense.amount?.formatted}</div>
+              </td>
+              <td>
+                <div>{expense.invoiceDate}</div>
+              </td>
+              <td>
+                <div>{expense.valueDate && format(new Date(expense.valueDate), 'yyyy-MM-dd')}</div>
+              </td>
+              <td>
+                <div>{expense.description}</div>
+              </td>
+              <td>
+                <EditMiscExpenseModal onDone={onChange} data={expense} />
+                <DeleteMiscExpenseButton miscExpenseId={expense.id} onChange={onChange} />
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
