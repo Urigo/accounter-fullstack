@@ -519,8 +519,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
         // charge as it is now — the client takes its new state from this payload.
         const mergedCharge =
           degradedCharges.get(baseChargeID) ??
-          (await injector.get(ChargesProvider).getChargeByIdLoader.load(baseChargeID)) ??
-          charge;
+          (await injector.get(ChargesProvider).getChargeByIdLoader.load(baseChargeID));
+        if (!mergedCharge) {
+          throw new Error(`Charge not found after merge`);
+        }
 
         return { charge: mergedCharge };
       } catch (e) {

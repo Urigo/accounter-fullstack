@@ -32,10 +32,15 @@ const charge = (fields: Partial<IGetChargesByIdsResult>) =>
 const staleCharge = charge({ user_description: 'before merge', accountant_status: 'UNAPPROVED' });
 const freshCharge = charge({ user_description: 'after merge', accountant_status: 'UNAPPROVED' });
 
-function context() {
+function context({ goneAfterMerge = false }: { goneAfterMerge?: boolean } = {}) {
   // Mirrors the real loader: the first load caches the charge as it was, and `updateCharge`
   // primes the cache with the updated row.
-  let cached = staleCharge;
+  let cached: IGetChargesByIdsResult | undefined = staleCharge;
+  vi.mocked(mergeChargesExecutor).mockImplementation(async () => {
+    if (goneAfterMerge) {
+      cached = undefined;
+    }
+  });
   const chargesProvider = {
     getChargeByIdLoader: { load: vi.fn(async () => cached) },
     updateCharge: vi.fn(async () => {
@@ -102,5 +107,15 @@ describe('Mutation.mergeCharges', () => {
     );
 
     expect(result.charge).toBe(degradedCharge);
+  });
+
+  it('reports an error rather than the pre-merge charge when the charge is gone after the merge', async () => {
+    const result = await mergeCharges(
+      null,
+      { baseChargeID: BASE_CHARGE_ID, chargeIdsToMerge: [MERGED_CHARGE_ID] },
+      context({ goneAfterMerge: true }),
+    );
+
+    expect(result).toEqual({ __typename: 'CommonError', message: 'Charge not found after merge' });
   });
 });
