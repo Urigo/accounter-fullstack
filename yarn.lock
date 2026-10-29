@@ -147,7 +147,7 @@ __metadata:
     graphql-request: "npm:7.4.0"
     inline-css: "npm:4.0.3"
     playwright: "npm:1.64.1"
-    postal-mime: "npm:4.1.4"
+    postal-mime: "npm:4.2.0"
     tsx: "npm:4.23.15"
     typescript: "npm:6.0.3"
     wrangler: "npm:4.155.0"
@@ -21181,10 +21181,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postal-mime@npm:4.1.4":
-  version: 4.1.4
-  resolution: "postal-mime@npm:4.1.4"
-  checksum: 10c0/9840cf5d7f7d11b26ad8e4fc2c16068c7de5008c449fed1cbca079afa6ec227a6fe09e4cf37bfcc8e183299e9db5736737cf5ba85b336d98b44df66cfa1a8a91
+"postal-mime@npm:4.2.0":
+  version: 4.2.0
+  resolution: "postal-mime@npm:4.2.0"
+  checksum: 10c0/87ab996ed134e2514f51dc62d742eb522ec23a972f548d6204fc6b64928a859d9238d2c874a00d03d12ec4c71ec0d9047095e42b58910c55861aa7c3f61f8519
   languageName: node
   linkType: hard
 
