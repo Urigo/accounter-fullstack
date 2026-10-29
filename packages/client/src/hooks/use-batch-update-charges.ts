@@ -14,6 +14,7 @@ import { useApiMutation } from './use-api-mutation.js';
       ... on BatchUpdateChargesSuccessfulResult {
         charges {
           id
+          ...ChargeMutationResultFields
         }
       }
       ... on CommonError {
