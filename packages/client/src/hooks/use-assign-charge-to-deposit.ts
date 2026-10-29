@@ -6,6 +6,23 @@ import { useApiMutation } from './use-api-mutation.js';
   mutation AssignChargeToDeposit($chargeId: UUID!, $depositId: String!) {
     assignChargeToDeposit(chargeId: $chargeId, depositId: $depositId) {
       id
+      name
+      isOpen
+      metadata {
+        id
+        currentBalance {
+          formatted
+        }
+        transactions {
+          id
+          chargeId
+          ...TransactionForTransactionsTableFields
+          charge {
+            id
+            ...ChargeMutationResultFields
+          }
+        }
+      }
     }
   }
 `;

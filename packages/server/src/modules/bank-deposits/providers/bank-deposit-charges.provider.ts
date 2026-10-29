@@ -127,7 +127,17 @@ export class BankDepositChargesProvider {
 
   public async upsertBankDepositCharge(params: IUpsertBankDepositChargeParams) {
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    return upsertBankDepositCharge.run(reassureOwnerIdExists(params, ownerId), this.db);
+    const result = await upsertBankDepositCharge.run(
+      reassureOwnerIdExists(params, ownerId),
+      this.db,
+    );
+    // the charge may have moved between deposits - both deposits' transactions and metadata change
+    if (params.chargeId) {
+      this.getBankDepositByChargeIdLoader.clear(params.chargeId);
+    }
+    this.getTransactionsByBankDepositLoader.clearAll();
+    this.getBankDepositMetadataLoader.clearAll();
+    return result;
   }
 
   private async batchBankDepositsMetadata(

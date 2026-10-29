@@ -249,8 +249,15 @@ async function regenerateSingleChargeLedgerRecords(
 
     const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
 
+    // respond with the charge's stored records as they are now - `toUpdate` holds only the changed
+    // ones, and the inserted ones still carry the EMPTY_UUID placeholder id
+    const updatedRecords = await injector
+      .get(LedgerProvider)
+      .getLedgerRecordsByChargesIdLoader.clear(chargeId)
+      .load(chargeId);
+
     return {
-      records: toUpdate,
+      records: [...updatedRecords].sort((a, b) => (a.invoice_date < b.invoice_date ? 1 : -1)),
       charge: degradedCharges.get(chargeId) ?? charge,
       errors: generated.errors,
     };
@@ -529,6 +536,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   },
   Ledger: {
     records: parent => parent.records,
+    charge: parent => parent.charge,
     balance: async (parent, _, { injector }) => {
       if (parent.balance) {
         return parent.balance;
