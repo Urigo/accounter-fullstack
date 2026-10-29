@@ -23,8 +23,10 @@ import { BalanceCancellationProvider } from '../modules/ledger/providers/balance
 import { LedgerProvider } from '../modules/ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbalanced-businesses.provider.js';
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
+import { ProviderCredentialsProvider } from '../modules/provider-credentials/providers/provider-credentials.provider.js';
 import { TransactionsProvider } from '../modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
+import type { Environment } from '../shared/types/index.js';
 
 export type ModuleContextLike = {
   injector: Injector;
@@ -191,6 +193,9 @@ export function createLedgerTestContext(options: {
       }
       case ChargeSpreadProvider:
         return new ChargeSpreadProvider(tenantAwareDB, adminContextProvider);
+      case ProviderCredentialsProvider:
+        // ledger generation only reads provider statuses (e.g. the Deel business), never secrets
+        return new ProviderCredentialsProvider(tenantAwareDB, {} as Environment);
       default:
         throw new Error(
           `Unsupported provider requested by injector: ${

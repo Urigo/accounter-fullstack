@@ -3,26 +3,21 @@ import type { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import {
   addDaysToTimelessDate,
-  hashStringToInt,
   timelessDateToUtcDate,
   utcDateToTimelessDate,
 } from '../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
-import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
-import { DeelClientProvider } from '../../app-providers/deel/deel-client.provider.js';
 import type {
   DeelWorker,
   Invoice,
   PaymentBreakdownRecord,
-  PaymentReceipts,
 } from '../../app-providers/deel/schemas.js';
-import { uploadToCloudinary } from '../../documents/helpers/upload.helper.js';
-import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import type {
   IGetDocumentsByChargeIdResult,
   IInsertDocumentsParams,
 } from '../../documents/types.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import { ProviderCredentialsProvider } from '../../provider-credentials/providers/provider-credentials.provider.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
 import type {
@@ -31,17 +26,65 @@ import type {
   IUpdateDeelInvoiceRecordsParams,
 } from '../types.js';
 
-const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff'; // TODO: replace with DB based business id
+/**
+ * The business entity that represents Deel in the tenant's books — set on the Deel provider
+ * integration. Null when Deel is not connected or its business was never chosen.
+ */
+export async function getDeelBusinessId(injector: Injector): Promise<string | null> {
+  const statuses = await injector.get(ProviderCredentialsProvider).getProviderStatuses();
+  return statuses.find(status => status.provider === 'deel')?.businessId ?? null;
+}
 
-export function isDeelDocument(document: IGetDocumentsByChargeIdResult): boolean {
-  const isDeelSide =
-    document.creditor_id === DEEL_BUSINESS_ID || document.debtor_id === DEEL_BUSINESS_ID;
-  const isFinancialDocument =
+/** Like {@link getDeelBusinessId}, but a missing business is an error the user can act on */
+export async function requireDeelBusinessId(injector: Injector): Promise<string> {
+  const deelBusinessId = await getDeelBusinessId(injector);
+  if (!deelBusinessId) {
+    throw new GraphQLError(
+      "The Deel business isn't set for this workspace. Choose it in Settings → Provider integrations → Deel, then re-run.",
+      { extensions: { code: 'PROVIDER_NOT_CONFIGURED' } },
+    );
+  }
+  return deelBusinessId;
+}
+
+/**
+ * For ledger generation: the Deel business, resolved only for a charge that has financial
+ * documents. A failure to read it is logged and treated as "no Deel business", so it can't break
+ * the ledger of charges that have nothing to do with Deel.
+ */
+export async function getDeelBusinessIdForLedger(
+  injector: Injector,
+  documents: readonly IGetDocumentsByChargeIdResult[],
+): Promise<string | null> {
+  if (!documents.some(isFinancialDocument)) {
+    return null;
+  }
+  try {
+    return await getDeelBusinessId(injector);
+  } catch (error) {
+    console.error('Failed reading the Deel business; treating documents as non-Deel:', error);
+    return null;
+  }
+}
+
+function isFinancialDocument(document: IGetDocumentsByChargeIdResult): boolean {
+  return (
     document.type === 'INVOICE' ||
     document.type === 'INVOICE_RECEIPT' ||
-    document.type === 'CREDIT_INVOICE';
+    document.type === 'CREDIT_INVOICE'
+  );
+}
 
-  return isDeelSide && isFinancialDocument;
+export function isDeelDocument(
+  document: IGetDocumentsByChargeIdResult,
+  deelBusinessId: string | null,
+): boolean {
+  if (!deelBusinessId) {
+    return false;
+  }
+  const isDeelSide =
+    document.creditor_id === deelBusinessId || document.debtor_id === deelBusinessId;
+  return isDeelSide && isFinancialDocument(document);
 }
 
 export async function getDeelEmployeeId(
@@ -51,11 +94,12 @@ export async function getDeelEmployeeId(
   ledgerEntries: LedgerProto[],
   updateLedgerBalance: (entry: LedgerProto) => void,
 ): Promise<void> {
-  if (!isDeelDocument(document)) {
+  const deelBusinessId = await getDeelBusinessIdForLedger(injector, [document]);
+  if (!isDeelDocument(document, deelBusinessId)) {
     return;
   }
 
-  const isDeelCreditor = ledgerEntry.creditAccountID1 === DEEL_BUSINESS_ID;
+  const isDeelCreditor = ledgerEntry.creditAccountID1 === deelBusinessId;
   // naive fetch employee id from deel
   let employeeId = await injector
     .get(DeelContractsProvider)
@@ -63,7 +107,7 @@ export async function getDeelEmployeeId(
 
   if (!employeeId && document.date && document.type) {
     // figure out through deel records: Deel documents carry the UTC day of the invoice's
-    // `issued_at` instant (see `uploadDeelInvoice`)
+    // `issued_at` instant (see `buildDeelInvoiceDocument`)
     const dayStart = timelessDateToUtcDate(document.date);
     const nextDayStart = timelessDateToUtcDate(addDaysToTimelessDate(document.date, 1));
     const records = await injector
@@ -172,67 +216,45 @@ export const createDeelInvoiceMatchFromUnmatchedInvoice = (invoice: Invoice): De
   breakdown_total_payment_currency: invoice.amount,
 });
 
-export async function uploadDeelInvoice(
-  chargeId: string,
-  match: DeelInvoiceMatch,
-  injector: Injector,
-  ownerId: string,
-): Promise<string> {
-  try {
-    // fetch file from Deel
-    const file = await injector.get(DeelClientProvider).getSalaryInvoiceFile(match.id);
-
-    const fileHashPromise = file.text().then(content => hashStringToInt(content).toString());
-
-    // upload file to cloudinary
-    const fileUrlsPromise = uploadToCloudinary(injector, file);
-
-    const [{ fileUrl, imageUrl }, fileHash] = await Promise.all([fileUrlsPromise, fileHashPromise]);
-
-    // create the new document object
-    const newDocumentFromInvoice: IInsertDocumentsParams['documents'][number] = {
-      ownerId,
-      image: imageUrl ?? null,
-      file: fileUrl ?? null,
-      documentType:
-        match.breakdown_contract_type === 'prepaid_billing'
-          ? DocumentType.Other
-          : match.status === 'refunded'
-            ? DocumentType.CreditInvoice
-            : DocumentType.Invoice,
-      serialNumber: match.label,
-      // the UTC day of the `issued_at` instant, as Postgres used to cast the raw string
-      date: utcDateToTimelessDate(new Date(match.issued_at)),
-      amount: Number(match.breakdown_total_payment_currency),
-      currencyCode: match.breakdown_payment_currency as Currency,
-      vat: Number(match.vat_total),
-      chargeId,
-      vatReportDateOverride: null,
-      noVatAmount: null,
-      debtorId: ownerId,
-      creditorId: DEEL_BUSINESS_ID,
-      allocationNumber: null,
-      exchangeRateOverride: null,
-      fileHash,
-      description: match.breakdown_contractor_employee_name,
-      remarks: match.id,
-    };
-
-    // upload the document
-    const [document] = await injector.get(DocumentsProvider).insertDocuments({
-      documents: [newDocumentFromInvoice],
-    });
-
-    if (!document.id) {
-      throw new Error('Document not uploaded to DB');
-    }
-
-    return document.id;
-  } catch (error) {
-    const message = 'Error uploading Deel invoice';
-    console.error(`${message}: ${error}`);
-    throw new Error(message, { cause: error });
-  }
+/**
+ * The document row for a Deel invoice. `file` holds the uploaded invoice file's URLs and hash; the
+ * document is recorded as issued by the Deel business to the owner.
+ */
+export function buildDeelInvoiceDocument(params: {
+  match: DeelInvoiceMatch;
+  chargeId: string;
+  ownerId: string;
+  deelBusinessId: string;
+  file: { fileUrl?: string | null; imageUrl?: string | null; fileHash: string };
+}): IInsertDocumentsParams['documents'][number] {
+  const { match, chargeId, ownerId, deelBusinessId, file } = params;
+  return {
+    ownerId,
+    image: file.imageUrl ?? null,
+    file: file.fileUrl ?? null,
+    documentType:
+      match.breakdown_contract_type === 'prepaid_billing'
+        ? DocumentType.Other
+        : match.status === 'refunded'
+          ? DocumentType.CreditInvoice
+          : DocumentType.Invoice,
+    serialNumber: match.label,
+    // the UTC day of the `issued_at` instant, as Postgres used to cast the raw string
+    date: utcDateToTimelessDate(new Date(match.issued_at)),
+    amount: Number(match.breakdown_total_payment_currency),
+    currencyCode: match.breakdown_payment_currency as Currency,
+    vat: Number(match.vat_total),
+    chargeId,
+    vatReportDateOverride: null,
+    noVatAmount: null,
+    debtorId: ownerId,
+    creditorId: deelBusinessId,
+    allocationNumber: null,
+    exchangeRateOverride: null,
+    fileHash: file.fileHash,
+    description: match.breakdown_contractor_employee_name,
+    remarks: match.id,
+  };
 }
 
 function nullifyEmptyStrings(raw: string) {
@@ -272,7 +294,7 @@ export function convertMatchToDeelInvoiceRecord(
     deelFee: match.deel_fee,
     documentId,
     documentType: match.document_type,
-    dueDate: match.due_date,
+    dueDate: nullifyEmptyStrings(match.due_date),
     expenses: match.breakdown_expenses,
     frequency: nullifyEmptyStrings(match.breakdown_frequency),
     generalLedgerAccount: nullifyEmptyStrings(match.breakdown_general_ledger_account),
@@ -283,7 +305,7 @@ export function convertMatchToDeelInvoiceRecord(
     label: match.label,
     others: match.breakdown_others,
     overtime: match.breakdown_overtime,
-    paidAt: match.paid_at,
+    paidAt: nullifyEmptyStrings(match.paid_at),
     paymentCurrency: match.breakdown_payment_currency as Currency,
     paymentId: match.breakdown_receipt_id,
     processingFee: match.breakdown_processing_fee,
@@ -351,313 +373,4 @@ export async function getDeelChargeDescription(
   const workersDescription = workerNames?.length ? ` for ${workerNames.join(', ')}` : '';
   const description = `Deel payment${workersDescription}`;
   return description;
-}
-
-export async function fetchAndFilterInvoices(injector: Injector) {
-  try {
-    const invoices = await injector.get(DeelClientProvider).getSalaryInvoices(); // TODO: enable setting up period
-    const contracts = await injector
-      .get(DeelContractsProvider)
-      .getEmployeeByContractIdLoader.loadMany(
-        Array.from(new Set(invoices.map(i => i.contract_id).filter(id => !!id) as string[])),
-      );
-    const existingContractIds = new Set(
-      (
-        contracts.filter(c => !!c && !(c instanceof Error)) as IGetEmployeeIDsByContractIdsResult[]
-      ).map(c => c.contract_id),
-    );
-
-    const newInvoices: Invoice[] = [];
-    const unmatchedExistingInvoices: Invoice[] = [];
-
-    // validate contract sequentially to prevent Deel API rate limit issues
-    for (const invoice of invoices) {
-      if (invoice.contract_id && !existingContractIds.has(invoice.contract_id)) {
-        const deelContract = await injector
-          .get(DeelClientProvider)
-          .getContractDetails(invoice.contract_id);
-        console.debug(`New contract found: ${invoice.contract_id}
-          ${JSON.stringify(deelContract, null, 2)}`);
-        throw new Error(`Deel contract ID [${invoice.contract_id}] not found in DB. Match business to the following contract details:
-          id: ${deelContract.data.id}
-          contractor_id: ${deelContract.data.worker?.id}
-          contractor_name: ${deelContract.data.worker?.full_name}
-          contract_start_date: ${deelContract.data.start_date}`);
-      }
-    }
-
-    //
-    await Promise.all(
-      invoices.map(async invoice => {
-        const dbInvoice = await injector
-          .get(DeelInvoicesProvider)
-          .getInvoicesByIdLoader.load(invoice.id)
-          .catch(e => {
-            const message = 'Error fetching invoice by ID';
-            console.error(`${message}: ${e}`);
-            throw new Error(message);
-          });
-        if (!dbInvoice) {
-          newInvoices.push(invoice);
-          return;
-        }
-        if (!dbInvoice.payment_id) {
-          unmatchedExistingInvoices.push(invoice);
-          return;
-        }
-        return;
-      }),
-    );
-
-    return { newInvoices, unmatchedExistingInvoices };
-  } catch (error) {
-    const message = 'Error fetching Deel invoices';
-    console.error(`${message}: ${error}`);
-    throw new Error(message, { cause: error });
-  }
-}
-
-export async function fetchReceipts(injector: Injector) {
-  try {
-    return await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERIOD_IN_MONTHS
-  } catch (error) {
-    const message = 'Error fetching Deel receipts';
-    console.error(`${message}: ${error}`);
-    throw new Error(message, { cause: error });
-  }
-}
-
-export type DecoratedPaymentBreakdown = PaymentBreakdownRecord & { receipt_id: string };
-
-export async function fetchPaymentBreakdowns(
-  injector: Injector,
-  receipts: PaymentReceipts[],
-): Promise<DecoratedPaymentBreakdown[]> {
-  const receiptsBreakDown: DecoratedPaymentBreakdown[] = [];
-
-  for (const receipt of receipts) {
-    if (receipt.id) {
-      const breakDown = await injector.get(DeelClientProvider).getPaymentBreakdown(receipt.id);
-      receiptsBreakDown.push(...breakDown.data.map(row => ({ ...row, receipt_id: receipt.id })));
-    }
-  }
-
-  return receiptsBreakDown;
-}
-
-type ContractInfo = {
-  contract_country: string;
-  contract_start_date: string;
-  contract_type: string;
-  contractor_email: string;
-  contractor_employee_name: string;
-  contractor_unique_identifier: string;
-};
-
-export function getContractsFromPaymentBreakdowns(matches: DeelInvoiceMatch[]) {
-  const contractsMap = new Map<string, ContractInfo>();
-  for (const match of matches) {
-    if (!match.contract_id) {
-      continue;
-    }
-    const existing = contractsMap.get(match.contract_id);
-    if (existing) {
-      if (match.breakdown_contractor_unique_identifier === '') {
-        // TODO: this is a temporary fix to handle fee invoices with alternative contractor info
-        continue;
-      }
-      // verify consistency
-      if (
-        existing.contract_country !== match.breakdown_contract_country ||
-        existing.contract_start_date !== match.breakdown_contract_start_date ||
-        existing.contract_type !== match.breakdown_contract_type ||
-        existing.contractor_email !== match.breakdown_contractor_email ||
-        existing.contractor_employee_name !== match.breakdown_contractor_employee_name ||
-        existing.contractor_unique_identifier !== match.breakdown_contractor_unique_identifier
-      ) {
-        throw new Error(`Inconsistent contract info for contract_id [${match.contract_id}]`);
-      }
-    } else {
-      contractsMap.set(match.contract_id, {
-        contract_country: match.breakdown_contract_country,
-        contract_start_date: match.breakdown_contract_start_date,
-        contract_type: match.breakdown_contract_type,
-        contractor_email: match.breakdown_contractor_email,
-        contractor_employee_name: match.breakdown_contractor_employee_name,
-        contractor_unique_identifier: match.breakdown_contractor_unique_identifier,
-      });
-    }
-  }
-  return contractsMap;
-}
-
-export async function validateContracts(
-  contractsInfo: Map<string, ContractInfo>,
-  injector: Injector,
-) {
-  await Promise.all(
-    Array.from(contractsInfo.keys()).map(async contractId => {
-      try {
-        const deelEmployee = await injector
-          .get(DeelContractsProvider)
-          .getEmployeeByContractIdLoader.load(contractId);
-        if (!deelEmployee) {
-          throw new Error(`Deel contract ID [${contractId}] not found in DB`);
-        }
-      } catch {
-        try {
-          const contractInfo = contractsInfo.get(contractId)!;
-          await injector.get(DeelContractsProvider).insertDeelContract({
-            contractId,
-            contractorId: contractInfo.contractor_unique_identifier,
-            contractorName: contractInfo.contractor_employee_name,
-            contractStartDate: contractInfo.contract_start_date,
-            businessId: DEEL_BUSINESS_ID, // TODO: replace with DB based business id
-          });
-        } catch (error) {
-          const message = `Error adding Deel contract [${contractId}] during validation`;
-          console.error(message, error);
-          throw new Error(message, { cause: error });
-        }
-      }
-    }),
-  );
-}
-
-export async function getChargeMatchesForPayments(
-  injector: Injector,
-  receipts: PaymentReceipts[],
-  paymentBreakdowns: DecoratedPaymentBreakdown[],
-) {
-  const receiptChargeMap = await injector.get(DeelInvoicesProvider).getReceiptToCharge();
-  const invoiceChargeMap = new Map<string, string>();
-  const newReceipts: PaymentReceipts[] = [];
-
-  receipts.map(receipt => {
-    const chargeId = receiptChargeMap.get(receipt.id);
-    if (chargeId) {
-      receipt.invoices?.map(invoice => invoiceChargeMap.set(invoice.id, chargeId));
-    } else {
-      newReceipts.push(receipt);
-    }
-  });
-
-  paymentBreakdowns.map(breakdown => {
-    const chargeId = receiptChargeMap.get(breakdown.receipt_id);
-    if (chargeId) {
-      invoiceChargeMap.set(breakdown.invoice_id, chargeId);
-    }
-  });
-
-  return { receiptChargeMap, invoiceChargeMap, newReceipts };
-}
-
-export async function matchInvoicesWithPayments(
-  invoices: Invoice[],
-  paymentBreakdowns: DecoratedPaymentBreakdown[],
-) {
-  const matches: DeelInvoiceMatch[] = [];
-  const unmatched: Invoice[] = [];
-
-  invoices.map(invoice => {
-    const optionalMatches = paymentBreakdowns.filter(receipt => invoice.id === receipt.invoice_id);
-    if (optionalMatches.length < 1) {
-      console.warn(`No payment breakdown match found for invoice ${invoice.id}`);
-      unmatched.push(invoice);
-      return;
-    }
-    if (optionalMatches.length === 1) {
-      const adjustedBreakdown: Record<string, unknown> = {};
-      Object.entries(optionalMatches[0]).map(([key, value]) => {
-        adjustedBreakdown[`breakdown_${key}`] = value;
-      });
-      matches.push({ ...(adjustedBreakdown as PrefixedBreakdown), ...invoice });
-      return;
-    }
-    if (
-      invoice.status === 'processed' ||
-      invoice.total === '0.00' ||
-      invoice.status === 'refunded'
-    ) {
-      unmatched.push(invoice);
-      return;
-    }
-    throw new Error(`Multiple matches found for invoice ${invoice.id}`);
-  });
-
-  return { matches, unmatched };
-}
-
-export async function updateDeelInvoiceRecord(
-  injector: Injector,
-  match: DeelInvoiceMatch,
-  chargeId: string,
-) {
-  try {
-    const deelInvoice = await injector
-      .get(DeelInvoicesProvider)
-      .getInvoicesByIdLoader.load(match.id);
-    if (!deelInvoice) {
-      throw new Error(`Deel invoice ${match.id} not found in DB`);
-    }
-    if (!deelInvoice.document_id) {
-      throw new Error(`Deel invoice ${match.id} has no associated document_id`);
-    }
-    const documentId = deelInvoice.document_id;
-    await injector
-      .get(DocumentsProvider)
-      .updateDocument({ documentId, chargeId })
-      .catch(error => {
-        const message = 'Error updating Deel invoice document';
-        console.error(`${message}: ${error}`);
-        throw new Error(message, { cause: error });
-      });
-
-    await injector
-      .get(DeelInvoicesProvider)
-      .updateDeelInvoiceRecords(convertMatchToPartialDeelInvoiceRecord(match))
-      .catch(error => {
-        const message = 'Error updating Deel invoice record';
-        console.error(`${message}: ${error}`);
-        throw new Error(message, { cause: error });
-      });
-  } catch (error) {
-    const message = 'Error updating Deel invoice record';
-    console.error(`${message}: ${error}`);
-    if (error instanceof GraphQLError) {
-      throw error;
-    }
-    throw new Error(message, { cause: error });
-  }
-}
-
-export async function insertDeelInvoiceRecord(
-  injector: Injector,
-  match: DeelInvoiceMatch,
-  chargeId: string,
-) {
-  try {
-    const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-    const documentId = await uploadDeelInvoice(chargeId, match, injector, ownerId).catch(error => {
-      const message = 'Error uploading Deel invoice';
-      console.error(`${message}: ${error}`);
-      throw new Error(message, { cause: error });
-    });
-
-    await injector
-      .get(DeelInvoicesProvider)
-      .insertDeelInvoiceRecords(convertMatchToDeelInvoiceRecord(match, documentId))
-      .catch(error => {
-        const message = 'Error inserting Deel invoice record';
-        console.error(`${message}: ${error}`);
-        throw new Error(message, { cause: error });
-      });
-  } catch (error) {
-    const message = 'Error uploading Deel invoice record';
-    console.error(`${message}: ${error}`);
-    if (error instanceof GraphQLError) {
-      throw error;
-    }
-    throw new Error(message, { cause: error });
-  }
 }
