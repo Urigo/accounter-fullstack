@@ -1042,6 +1042,74 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)
       ]);
       expect(errors[0]).toContain('sold on 2025-03-12');
     });
+
+    it("books a buy the bank cancelled as a sale as the buy's reversal", async () => {
+      // the bank's refund of a cancelled buy: a cancelled sale, with its value positive
+      const buyTransaction = buildTransaction({ id: 'transaction-buy', amount: '-1000' });
+      const refundTransaction = buildTransaction({ id: 'transaction-refund', amount: '1000' });
+
+      const { records, errors, foreignSecuritiesProvider } = await generate({
+        transactions: [buyTransaction, refundTransaction],
+        executions: {
+          [buyTransaction.id]: buyExecution('execution-buy', DAY, 10, 1000),
+          [refundTransaction.id]: saleExecution(10, 1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(baseCashInRecord(1000));
+      // the refund reverses the buy at the same rate: both accounts are back where they started
+      for (const amounts of ['foreign', 'local'] as const) {
+        const net = netByEntity(records, amounts);
+        expect(net.get(SECURITIES_USD)).toBeCloseTo(0, 6);
+        expect(net.get(BANK_USD)).toBeCloseTo(0, 6);
+      }
+      expect(foreignSecuritiesProvider.getSecurityOwnerHistory).not.toHaveBeenCalled();
+    });
+
+    it('flags a sale the bank cancelled as a buy rather than booking it as one', async () => {
+      // the mirror of a buy cancelled as a sale, not seen so far: a cancellation reported as a buy
+      // with a buy's own values, cash going out — which reverses a sale, not books a purchase
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: buildExecution({
+            id: 'execution-cancellation',
+            trade_type: TRADE_TYPES.buy,
+            transaction_type: TRADE_TYPES.buy,
+            nv: '10',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled sale of MOCK (US0000000001)'),
+      ]);
+    });
+
+    it('keeps the base entry of a cancelled sale and says its reversal is not booked', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: saleExecution(10, -1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled sale of MOCK (US0000000001)'),
+      ]);
+    });
   });
 
   describe('a charge spanning several securities', () => {
