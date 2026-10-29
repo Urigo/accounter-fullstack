@@ -1323,7 +1323,8 @@ export class ChargesProvider {
 
     const [newCharge] = await updateAccountantApproval.run(params, this.db);
     if (newCharge) {
-      this.getChargeByIdLoader.prime(newCharge.id, newCharge);
+      // `prime` is a no-op for a key already in the cache - clear first
+      this.getChargeByIdLoader.clear(newCharge.id).prime(newCharge.id, newCharge);
     }
     return newCharge;
   }
