@@ -252,7 +252,7 @@ __metadata:
     "@opentelemetry/resources": "npm:3.0.0"
     "@opentelemetry/sdk-node": "npm:0.300.0"
     "@opentelemetry/sdk-trace": "npm:3.0.0"
-    "@opentelemetry/semantic-conventions": "npm:1.43.0"
+    "@opentelemetry/semantic-conventions": "npm:1.44.0"
     "@types/node": "npm:25.9.9"
     dotenv: "npm:18.0.8"
     jose: "npm:6.2.13"
@@ -344,7 +344,7 @@ __metadata:
     "@opentelemetry/resources": "npm:3.0.0"
     "@opentelemetry/sdk-node": "npm:0.300.0"
     "@opentelemetry/sdk-trace": "npm:3.0.0"
-    "@opentelemetry/semantic-conventions": "npm:1.43.0"
+    "@opentelemetry/semantic-conventions": "npm:1.44.0"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch"
@@ -6451,7 +6451,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/semantic-conventions@npm:1.43.0, @opentelemetry/semantic-conventions@npm:^1.24.0, @opentelemetry/semantic-conventions@npm:^1.27.0, @opentelemetry/semantic-conventions@npm:^1.29.0, @opentelemetry/semantic-conventions@npm:^1.30.0, @opentelemetry/semantic-conventions@npm:^1.33.0, @opentelemetry/semantic-conventions@npm:^1.33.1, @opentelemetry/semantic-conventions@npm:^1.34.0, @opentelemetry/semantic-conventions@npm:^1.36.0, @opentelemetry/semantic-conventions@npm:^1.37.0, @opentelemetry/semantic-conventions@npm:^1.41.1":
+"@opentelemetry/semantic-conventions@npm:1.44.0":
+  version: 1.44.0
+  resolution: "@opentelemetry/semantic-conventions@npm:1.44.0"
+  checksum: 10c0/38ce72dfe254e16177903cc42475eecdfd312d20487133a84d1ab8d97c452acabb186e0069ddcd9a8ba1f65d76535dfec670ce059ef4265f8f29fc395b0db5f0
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/semantic-conventions@npm:^1.24.0, @opentelemetry/semantic-conventions@npm:^1.27.0, @opentelemetry/semantic-conventions@npm:^1.29.0, @opentelemetry/semantic-conventions@npm:^1.30.0, @opentelemetry/semantic-conventions@npm:^1.33.0, @opentelemetry/semantic-conventions@npm:^1.33.1, @opentelemetry/semantic-conventions@npm:^1.34.0, @opentelemetry/semantic-conventions@npm:^1.36.0, @opentelemetry/semantic-conventions@npm:^1.37.0, @opentelemetry/semantic-conventions@npm:^1.41.1":
   version: 1.43.0
   resolution: "@opentelemetry/semantic-conventions@npm:1.43.0"
   checksum: 10c0/ea4b4b07c9414b0c5e7ce7349f608cb2572d16922d96077fb0882b59f173ec9b94aada74896bd5dd4aeb1759924503bd5a34b6dc2847a84c36f71626a0578ec4
