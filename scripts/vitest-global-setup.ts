@@ -4,6 +4,13 @@ import * as path from 'node:path';
 import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
 import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
+// Log a caught error by its message, never the Error itself. Printing an Error formats its stack,
+// and Vite's stack source-mapping crashes on this module ("code.charCodeAt is not a function",
+// since the runner holds its code as bytes). That crash ends the run, hiding the warning and
+// failing every project, unit tests included, even though the failures below are meant to be
+// non-fatal.
+const describeError = (e: unknown): unknown => (e instanceof Error ? e.message : e);
+
 export default async function globalSetup() {
   // Before anything else: this setup writes (seedCountries below) and runs for *every*
   // vitest project, `--project unit` included. It reads the root .env, so "I only ran unit
@@ -29,7 +36,7 @@ export default async function globalSetup() {
     console.log(`[test-setup] Using isolated TEST_ENV_FILE: ${envFile}`);
   } catch (e) {
     // eslint-disable-next-line no-console
-    console.warn('[test-setup] Failed to establish isolated TEST_ENV_FILE', e);
+    console.warn('[test-setup] Failed to establish isolated TEST_ENV_FILE:', describeError(e));
   }
 
   // Enforce latest migration by default for local runs
@@ -57,7 +64,7 @@ export default async function globalSetup() {
     }
   } catch (e) {
     // eslint-disable-next-line no-console
-    console.warn('[test-setup] Failed to ensure countries reference data', e);
+    console.warn('[test-setup] Failed to ensure countries reference data:', describeError(e));
   }
 
   // Return a global teardown to ensure the shared test DB pool is closed once.
