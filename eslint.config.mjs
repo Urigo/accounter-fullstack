@@ -202,6 +202,7 @@ export default [
               'IncomeExpenseChart',
               'IncomeExpenseChartMonthData',
               'IngestEmailSuccess',
+              'IsraeliCorporationAddress',
               'Ledger',
               'LedgerBalanceInfo',
               'LedgerBalanceUnbalancedEntity',

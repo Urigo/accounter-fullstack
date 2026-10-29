@@ -29,6 +29,7 @@ import {
   type UpdateBusinessInput,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { CountryCode } from '@/helpers/countries.js';
 import { dirtyFieldMarker, relevantDataPicker, type MakeBoolean } from '@/helpers/index.js';
 import { duplicateEmailError, hasNoDuplicateEmails } from '@/helpers/list-input-validation.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
@@ -36,6 +37,11 @@ import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { UserContext } from '@/providers/user-provider.js';
 import { ComboBox } from '../common';
+import {
+  IsraeliCorporationLookup,
+  REGISTRY_FORM_FIELDS,
+  type RegistryFormFields,
+} from './israeli-corporation-lookup.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -160,6 +166,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
   const [newBillingEmail, setNewBillingEmail] = useState('');
 
   const locality = form.watch('locality');
+  const govId = form.watch('govId');
   const address = form.watch('address');
   const city = form.watch('city');
   const zipCode = form.watch('zipCode');
@@ -191,6 +198,15 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const isClient = business && 'clientInfo' in business && !!business.clientInfo;
   const isLocalEntity = locality === userContext?.context.locality;
+
+  const fillEmptyFields = (fields: RegistryFormFields) => {
+    for (const name of REGISTRY_FORM_FIELDS) {
+      const value = fields[name];
+      if (value && !form.getValues(name)?.trim()) {
+        form.setValue(name, value, { shouldDirty: true });
+      }
+    }
+  };
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
@@ -371,6 +387,10 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                   </FormItem>
                 )}
               />
+
+              {locality === CountryCode.Israel && (
+                <IsraeliCorporationLookup govId={govId} onApply={fillEmptyFields} />
+              )}
 
               <FormField
                 control={form.control}
