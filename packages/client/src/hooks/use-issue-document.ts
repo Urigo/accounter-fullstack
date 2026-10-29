@@ -23,7 +23,6 @@ import { useApiMutation } from './use-api-mutation.js';
       ...ChargeMutationResultFields
       additionalDocuments {
         id
-        ...TableDocumentsRowFields
       }
     }
   }
