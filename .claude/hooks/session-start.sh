@@ -19,7 +19,22 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
-log() { echo "[session-start] $*" >&2; }
+# A SessionStart hook's stdout is added to Claude's context, so the commands' output (tens of KB
+# of yarn and build logs) goes to a log file instead. Only a short summary reaches stdout (fd 3);
+# on failure, the log's tail goes to stderr (fd 4), which is what a failed hook shows.
+LOG_FILE="${TMPDIR:-/tmp}/accounter-session-start.log"
+exec 3>&1 4>&2 > "$LOG_FILE" 2>&1
+trap 'status=$?; if [ "$status" -ne 0 ]; then
+  echo "[session-start] failed (exit $status); last lines of $LOG_FILE:" >&4
+  tail -n 40 "$LOG_FILE" >&4
+fi' EXIT
+
+WARNINGS=()
+log() { echo "[session-start] $*"; }
+warn() {
+  log "WARNING: $*"
+  WARNINGS+=("$*")
+}
 
 persist_env() {
   if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
@@ -37,7 +52,7 @@ case "$(uname -m)" in
 esac
 if [ "$(node --version 2> /dev/null || true)" != "v$NODE_VERSION" ]; then
   if [ -z "$NODE_ARCH" ]; then
-    log "WARNING: no Node build for $(uname -m); keeping $(node --version 2> /dev/null || echo 'no node')"
+    warn "no Node build for $(uname -m); keeping $(node --version 2> /dev/null || echo 'no node')"
   else
     NODE_DIR="$HOME/.cache/accounter-node/node-v$NODE_VERSION-linux-$NODE_ARCH"
     if [ ! -x "$NODE_DIR/bin/node" ]; then
@@ -82,7 +97,8 @@ db_ready=false
 if command -v docker > /dev/null 2>&1; then
   if ! docker info > /dev/null 2>&1 && command -v dockerd > /dev/null 2>&1; then
     log "starting dockerd"
-    (nohup dockerd > /tmp/dockerd.log 2>&1 &)
+    # Close fds 3/4 for the daemon, or it would hold the hook's stdout/stderr pipes open.
+    (nohup dockerd > /tmp/dockerd.log 2>&1 3>&- 4>&- &)
     for _ in $(seq 1 30); do
       docker info > /dev/null 2>&1 && break
       sleep 1
@@ -109,7 +125,7 @@ if [ "$db_ready" = true ]; then
   # A session opened to fix a broken migration still needs codegen, so a failure here falls back
   # like a missing database does instead of ending the hook.
   if ! yarn workspace @accounter-helper/migrations migration:run; then
-    log "WARNING: migrations failed; skipping SQL codegen."
+    warn "migrations failed; skipping SQL codegen."
     db_ready=false
   fi
 fi
@@ -118,7 +134,7 @@ if [ "$db_ready" = true ]; then
   log "codegen (GraphQL + SQL)"
   yarn generate
 else
-  log "WARNING: the database is not ready; skipping SQL codegen." \
+  warn "the database is not ready; skipping SQL codegen." \
     "DB-backed tests and the server typecheck will not work in this session."
   yarn generate:graphql
 fi
@@ -127,3 +143,12 @@ log "building workspace tools"
 yarn build:tools
 
 log "done"
+{
+  db_state="ready on localhost:5432"
+  [ "$db_ready" = true ] || db_state="not ready"
+  echo "[session-start] cloud setup done: node $(node --version), Postgres $db_state." \
+    "Full log: $LOG_FILE"
+  for warning in ${WARNINGS[@]+"${WARNINGS[@]}"}; do
+    echo "[session-start] WARNING: $warning"
+  done
+} >&3
