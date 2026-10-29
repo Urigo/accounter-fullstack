@@ -9,8 +9,8 @@
 #   4. migrations, codegen (GraphQL + SQL) and build:tools (needed by the server typecheck)
 #
 # DB settings go to $CLAUDE_ENV_FILE instead of a .env file (the repo's .env.template defaults).
-# If Docker can't start, the DB steps are skipped with a warning and GraphQL-only codegen runs,
-# so the rest of the session still works.
+# If Docker can't start or the migrations fail, the DB steps are skipped with a warning and
+# GraphQL-only codegen runs, so the rest of the session still works.
 set -euo pipefail
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
@@ -30,15 +30,32 @@ persist_env() {
 
 # --- 1. Node ----------------------------------------------------------------------------------
 NODE_VERSION="$(tr -d '[:space:]' < .node-version)"
+case "$(uname -m)" in
+  x86_64) NODE_ARCH=x64 ;;
+  aarch64 | arm64) NODE_ARCH=arm64 ;;
+  *) NODE_ARCH="" ;;
+esac
 if [ "$(node --version 2> /dev/null || true)" != "v$NODE_VERSION" ]; then
-  NODE_DIR="$HOME/.cache/accounter-node/node-v$NODE_VERSION-linux-x64"
-  if [ ! -x "$NODE_DIR/bin/node" ]; then
-    log "installing Node v$NODE_VERSION"
-    mkdir -p "$(dirname "$NODE_DIR")"
-    curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
-      | tar -xJ -C "$(dirname "$NODE_DIR")"
+  if [ -z "$NODE_ARCH" ]; then
+    log "WARNING: no Node build for $(uname -m); keeping $(node --version 2> /dev/null || echo 'no node')"
+  else
+    NODE_DIR="$HOME/.cache/accounter-node/node-v$NODE_VERSION-linux-$NODE_ARCH"
+    if [ ! -x "$NODE_DIR/bin/node" ]; then
+      log "installing Node v$NODE_VERSION ($NODE_ARCH)"
+      mkdir -p "$(dirname "$NODE_DIR")"
+      # Extract into a temp dir and move it into place only once tar succeeded, so an interrupted
+      # download never leaves a half-extracted tree that a later run would take for a good cache.
+      # Temp dirs left by earlier interrupted runs are cleared first.
+      find "$(dirname "$NODE_DIR")" -maxdepth 1 -name '.download.*' -exec rm -rf {} +
+      NODE_TMP="$(mktemp -d "$(dirname "$NODE_DIR")/.download.XXXXXX")"
+      curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/$(basename "$NODE_DIR").tar.xz" \
+        | tar -xJ -C "$NODE_TMP"
+      rm -rf "$NODE_DIR"
+      mv "$NODE_TMP/$(basename "$NODE_DIR")" "$NODE_DIR"
+      rmdir "$NODE_TMP"
+    fi
+    persist_env PATH "$NODE_DIR/bin:$PATH"
   fi
-  persist_env PATH "$NODE_DIR/bin:$PATH"
 fi
 log "node $(node --version)"
 
@@ -89,11 +106,19 @@ fi
 # --- 4. Migrations, codegen, tools ------------------------------------------------------------
 if [ "$db_ready" = true ]; then
   log "running migrations"
-  yarn workspace @accounter-helper/migrations migration:run
+  # A session opened to fix a broken migration still needs codegen, so a failure here falls back
+  # like a missing database does instead of ending the hook.
+  if ! yarn workspace @accounter-helper/migrations migration:run; then
+    log "WARNING: migrations failed; skipping SQL codegen."
+    db_ready=false
+  fi
+fi
+
+if [ "$db_ready" = true ]; then
   log "codegen (GraphQL + SQL)"
   yarn generate
 else
-  log "WARNING: Postgres is not available; skipping migrations and SQL codegen." \
+  log "WARNING: the database is not ready; skipping SQL codegen." \
     "DB-backed tests and the server typecheck will not work in this session."
   yarn generate:graphql
 fi
