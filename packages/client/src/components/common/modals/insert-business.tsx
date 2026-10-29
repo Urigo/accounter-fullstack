@@ -4,6 +4,11 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  IsraeliCorporationLookup,
+  REGISTRY_FORM_FIELDS,
+  type RegistryFormFields,
+} from '@/components/business/israeli-corporation-lookup.js';
+import {
   ModifyClientDialog,
   type ClientFormValues,
 } from '@/components/clients/modify-client-dialog.js';
@@ -37,6 +42,7 @@ import {
 import { Switch } from '@/components/ui/switch.js';
 import { Textarea } from '@/components/ui/textarea.js';
 import { DocumentType } from '@/gql/graphql.js';
+import { CountryCode } from '@/helpers/countries.js';
 import { pcn874RecordEnum } from '@/helpers/index.js';
 import {
   duplicateEmailError,
@@ -82,18 +88,25 @@ const businessFormSchema = z
       .array(z.email())
       .refine(hasNoDuplicateEmails, { message: 'Emails must be unique' }),
   })
-  .refine(
-    data => {
-      if (data.locality === 'Israel') {
-        return !!data.localName && !!data.govId;
-      }
-      return true;
-    },
-    {
-      message: 'Local name and company number are required for Israeli businesses',
-      path: ['localName'],
-    },
-  );
+  .superRefine((data, ctx) => {
+    if (data.locality !== CountryCode.Israel) {
+      return;
+    }
+    if (!data.localName?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Local name is required for Israeli businesses',
+        path: ['localName'],
+      });
+    }
+    if (!data.govId?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Government ID is required for Israeli businesses',
+        path: ['govId'],
+      });
+    }
+  });
 
 type BusinessFormValues = z.infer<typeof businessFormSchema>;
 
@@ -236,9 +249,10 @@ function ContactInformationSection({ form }: SectionProps) {
   const { userContext } = useContext(UserContext);
   const { countries, fetching: fetchingCountries } = useAllCountries();
 
-  const { watch, setValue, control } = form;
+  const { watch, setValue, getValues, control } = form;
 
   const locality = watch('locality');
+  const govId = watch('govId');
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
@@ -263,7 +277,18 @@ function ContactInformationSection({ form }: SectionProps) {
     );
   };
 
-  const isLocalEntity = locality === userContext?.context.locality;
+  const isIsraeli = locality === CountryCode.Israel;
+  // Israeli businesses require these fields, so they show even when the tenant isn't Israeli
+  const showLocalFields = locality === userContext?.context.locality || isIsraeli;
+
+  const fillEmptyFields = (fields: RegistryFormFields) => {
+    for (const name of REGISTRY_FORM_FIELDS) {
+      const value = fields[name];
+      if (value && !getValues(name)?.trim()) {
+        setValue(name, value, { shouldDirty: true, shouldValidate: true });
+      }
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -305,7 +330,7 @@ function ContactInformationSection({ form }: SectionProps) {
           )}
         />
 
-        {isLocalEntity && (
+        {showLocalFields && (
           <>
             <FormField
               control={control}
@@ -334,6 +359,8 @@ function ContactInformationSection({ form }: SectionProps) {
                 </FormItem>
               )}
             />
+
+            {isIsraeli && <IsraeliCorporationLookup govId={govId} onApply={fillEmptyFields} />}
           </>
         )}
 
