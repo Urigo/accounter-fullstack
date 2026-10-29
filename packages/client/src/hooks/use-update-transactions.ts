@@ -13,8 +13,10 @@ import { useApiMutation } from './use-api-mutation.js';
         transactions {
           ... on Transaction {
             id
+            ...TransactionMutationResultFields
           }
         }
+        deletedChargeIds
       }
       ... on CommonError {
         message

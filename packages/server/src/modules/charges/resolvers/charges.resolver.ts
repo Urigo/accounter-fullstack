@@ -37,7 +37,7 @@ import type {
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
-import { commonChargeFields, commonDocumentsFields } from './common.js';
+import { commonChargeFields, commonDocumentsFields, commonTransactionFields } from './common.js';
 
 async function chargeTypeChecker(
   chargeType: ChargeTypeEnum,
@@ -657,6 +657,12 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Receipt: {
     ...commonDocumentsFields,
+  },
+  CommonTransaction: {
+    ...commonTransactionFields,
+  },
+  ConversionTransaction: {
+    ...commonTransactionFields,
   },
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,

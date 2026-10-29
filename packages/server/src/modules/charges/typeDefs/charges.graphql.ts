@@ -485,6 +485,19 @@ export default gql`
     charge: Charge
   }
 
+  extend interface Transaction {
+    " the charge the transaction belongs to "
+    charge: Charge!
+  }
+
+  extend type CommonTransaction {
+    charge: Charge!
+  }
+
+  extend type ConversionTransaction {
+    charge: Charge!
+  }
+
   extend interface FinancialAccount {
     charges(filter: ChargeFilter): [Charge!]!
   }
