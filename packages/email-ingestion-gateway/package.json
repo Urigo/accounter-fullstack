@@ -16,7 +16,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "26.12.1"
+    "node": "26.13.0"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -49,7 +49,7 @@
     "worker:dev": "wrangler dev"
   },
   "dependencies": {
-    "dotenv": "18.0.8",
+    "dotenv": "18.0.9",
     "graphql": "16.14.2",
     "graphql-request": "7.4.0",
     "inline-css": "4.0.3",
@@ -59,9 +59,9 @@
   },
   "devDependencies": {
     "@types/inline-css": "3.0.4",
-    "@types/node": "25.9.9",
+    "@types/node": "26.6.6",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "wrangler": "4.152.0"
+    "wrangler": "4.155.0"
   }
 }
