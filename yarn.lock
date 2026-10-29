@@ -105,7 +105,7 @@ __metadata:
     html2canvas-pro: "npm:2.5.2"
     iconv-lite: "npm:0.7.3"
     json-bigint-patch: "npm:0.0.9"
-    lucide-react: "npm:1.62.0"
+    lucide-react: "npm:1.64.0"
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:6.4.299"
     radix-ui: "npm:1.8.1"
@@ -309,7 +309,7 @@ __metadata:
     fast-xml-parser: "npm:5.11.2"
     fastify: "npm:5.12.7"
     graphql-request: "npm:7.4.0"
-    lucide-react: "npm:1.62.0"
+    lucide-react: "npm:1.64.0"
     msw: "npm:3.0.3"
     react: "npm:19.3.1"
     react-dom: "npm:19.3.1"
@@ -3514,7 +3514,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/utils@npm:13.2.0":
+"@graphql-tools/utils@npm:13.2.0, @graphql-tools/utils@npm:^13.2.0":
   version: 13.2.0
   resolution: "@graphql-tools/utils@npm:13.2.0"
   dependencies:
@@ -3566,19 +3566,6 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/a781650a9ccc524170ea04e485fb56f6ec357b2372787cd0056bd3bb0d4c38d10ae5bcbea598256353888dd96424b312e842ee47fc1eb3e6ebeb6bc1313203a3
-  languageName: node
-  linkType: hard
-
-"@graphql-tools/utils@npm:^13.2.0":
-  version: 13.2.0
-  resolution: "@graphql-tools/utils@npm:13.2.0"
-  dependencies:
-    "@graphql-typed-document-node/core": "npm:^3.2.0"
-    "@whatwg-node/promise-helpers": "npm:^2.0.0"
-    tslib: "npm:^2.4.0"
-  peerDependencies:
-    graphql: ^16.0.0 || ^17.0.0
-  checksum: 10c0/645d23ed99bb76d29fb1d89f0f8329dcadc487ed85ffce69774bc42cf78d06c7f4d52a6e4ec31124c1889d6dac82cbb9ff3c9b5189935d259367c5713167e597
   languageName: node
   linkType: hard
 
@@ -18676,16 +18663,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:1.62.0":
-  version: 1.62.0
-  resolution: "lucide-react@npm:1.62.0"
+"lucide-react@npm:1.64.0":
+  version: 1.64.0
+  resolution: "lucide-react@npm:1.64.0"
   peerDependencies:
     "@types/react": "*"
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/58334df044a9f837ba2ddc77e7a3c34545fd7ca28d853882df94ba52de54821ed16f34f7ced373089a2972725beadb8b82ebb9b9d1dcbcd468f87d05949ee46d
+  checksum: 10c0/fe02e02a8c6a58fad4e27f0be0791fd4a6015ac02eec026bb51299e9e6221ed28b9e735229acb711e3fdfc27055ea89f326077249d63ff00fd5968d3e93f703f
   languageName: node
   linkType: hard
 
