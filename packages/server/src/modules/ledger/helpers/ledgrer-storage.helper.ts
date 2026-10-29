@@ -4,11 +4,7 @@ import { formatCurrency } from '../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
-import type {
-  IGetLedgerRecordsByChargesIdsResult,
-  IInsertLedgerRecordsParams,
-  IUpdateLedgerRecordParams,
-} from '../types.js';
+import type { IGetLedgerRecordsByChargesIdsResult, IInsertLedgerRecordsParams } from '../types.js';
 
 type LedgerRecordInput = IInsertLedgerRecordsParams['ledgerRecords'][number];
 
@@ -212,7 +208,7 @@ export function convertLedgerRecordToProto(
 export function convertLedgerRecordToInput(
   record: IGetLedgerRecordsByChargesIdsResult,
   ownerId: string,
-): LedgerRecordInput | IUpdateLedgerRecordParams {
+): LedgerRecordInput & { ledgerId: string } {
   return {
     chargeId: record.charge_id ?? undefined,
     ownerId: record.owner_id ?? ownerId,

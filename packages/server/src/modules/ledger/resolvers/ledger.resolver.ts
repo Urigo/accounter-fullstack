@@ -31,6 +31,10 @@ import {
   ledgerRecordsGenerationFullMatchComparison,
   ledgerRecordsGenerationPartialMatchComparison,
 } from '../helpers/ledgrer-storage.helper.js';
+import {
+  insertManualLedgerRecord,
+  updateManualLedgerRecord,
+} from '../helpers/manual-ledger-record-mutations.helper.js';
 import { getLedgerBalanceInfo, updateLedgerBalanceByEntry } from '../helpers/utils.helper.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 import type {
@@ -262,7 +266,11 @@ async function regenerateSingleChargeLedgerRecords(
   }
 }
 
-export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
+export const ledgerResolvers: LedgerModule.Resolvers &
+  Pick<
+    Resolvers,
+    'GeneratedLedgerRecords' | 'UpdateLedgerRecordResult' | 'InsertLedgerRecordResult'
+  > = {
   Query: {
     chargesWithLedgerChanges: async (_, { filters, limit }, context, info) => {
       const { injector } = context;
@@ -481,6 +489,10 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         return false;
       }
     },
+    updateLedgerRecord: (_, { ledgerRecordId, input }, { injector }) =>
+      updateManualLedgerRecord(injector, { ledgerRecordId, input }),
+    insertLedgerRecord: (_, { chargeId, operation, input }, { injector }) =>
+      insertManualLedgerRecord(injector, { chargeId, operation, input }),
   },
   LedgerRecord: {
     id: DbLedgerRecord => DbLedgerRecord.id,
@@ -526,6 +538,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     valueDate: DbLedgerRecord => DbLedgerRecord.value_date,
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
     reference: DbLedgerRecord => DbLedgerRecord.reference1 ?? null,
+    locked: DbLedgerRecord => DbLedgerRecord.locked ?? false,
+    currency: DbLedgerRecord => DbLedgerRecord.currency as Currency,
   },
   Ledger: {
     records: parent => parent.records,
@@ -710,6 +724,18 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     __resolveType: (obj, _context, _info) => {
       if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
       return 'Ledger';
+    },
+  },
+  UpdateLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'UpdateLedgerRecordSuccessfulResult';
+    },
+  },
+  InsertLedgerRecordResult: {
+    __resolveType: (obj, _context, _info) => {
+      if ('__typename' in obj && obj.__typename === 'CommonError') return 'CommonError';
+      return 'InsertLedgerRecordSuccessfulResult';
     },
   },
   ChargeMetadata: {
