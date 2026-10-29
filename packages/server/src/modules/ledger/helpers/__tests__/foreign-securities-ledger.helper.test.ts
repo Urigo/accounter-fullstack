@@ -37,7 +37,6 @@ const SECURITIES_USD = 'tax-category-securities-usd';
 const DIVIDEND_INCOME = 'tax-category-dividend-income';
 const WITHHOLDING = 'tax-category-withholding';
 const GAIN = 'tax-category-gain';
-const LOSS = 'tax-category-loss';
 
 const RATE = 3.5;
 
@@ -579,7 +578,6 @@ describe('buildDisposalEntry', () => {
       costForeign: 900,
       withheldTax: 0,
       gainTaxCategoryId: GAIN,
-      lossTaxCategoryId: LOSS,
     });
 
     expect(entry.debitAccountID1).toBe(BANK_USD);
@@ -597,15 +595,14 @@ describe('buildDisposalEntry', () => {
     );
   });
 
-  it('books a loss as a second debit', () => {
+  it('books a loss as a second debit, on the gain tax category', () => {
     const entry = buildDisposalEntry(baseEntry(), {
       costForeign: 1150,
       withheldTax: 0,
       gainTaxCategoryId: GAIN,
-      lossTaxCategoryId: LOSS,
     });
 
-    expect(entry.debitAccountID2).toBe(LOSS);
+    expect(entry.debitAccountID2).toBe(GAIN);
     expect(entry.debitAmount2).toBeCloseTo(150, 6);
     expect(entry.creditAmount1).toBeCloseTo(1150, 6);
     expect(entry.localCurrencyCreditAmount1).toBeCloseTo(
@@ -620,7 +617,6 @@ describe('buildDisposalEntry', () => {
       costForeign: 1000,
       withheldTax: 0,
       gainTaxCategoryId: GAIN,
-      lossTaxCategoryId: LOSS,
     });
 
     expect(entry.creditAccountID1).toBe(SECURITIES_USD);
@@ -650,7 +646,7 @@ describe('buildDisposalEntry', () => {
       buildDisposalEntry(baseEntry(), {
         costForeign: 1200,
         withheldTax: 50,
-        lossTaxCategoryId: LOSS,
+        gainTaxCategoryId: GAIN,
         withholdingTaxCategoryId: WITHHOLDING,
       }),
     ).toThrow(LedgerError);

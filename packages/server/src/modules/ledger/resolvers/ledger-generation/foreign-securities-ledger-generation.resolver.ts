@@ -9,7 +9,6 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import { formatStringifyAmount } from '../../../../shared/helpers/amount.js';
-import { dateToTimelessDateString } from '../../../../shared/helpers/index.js';
 import type {
   LedgerProto,
   StrictLedgerProto,
@@ -34,7 +33,6 @@ import {
   costBasisProblem,
   describeSecurity,
   getExecutionBankRate,
-  lastRevaluationOver,
   type BankProfitLossMismatch,
 } from '../../../foreign-securities/helpers/security-disposal.helper.js';
 import { isCancelledExecution } from '../../../foreign-securities/helpers/security-execution-enums.helper.js';
@@ -50,10 +48,10 @@ import { ledgerEntryFromMainTransaction } from '../../helpers/common-charge-ledg
 import { splitFeeTransactions } from '../../helpers/fee-transactions.js';
 import {
   buildDisposalEntry,
+  buildDisposalExchangeRateEntry,
   buildDistributionEntry,
   buildIncomeEntry,
   buildIncomeReversalEntry,
-  buildSaleRevaluationEntry,
   calculateDisposalGain,
   classifySecurityExecution,
   currencyOfLabel,
@@ -81,8 +79,6 @@ import {
   updateLedgerBalanceByEntry,
   validateTransactionBasicVariables,
 } from '../../helpers/utils.helper.js';
-import { LedgerProvider } from '../../providers/ledger.provider.js';
-import { REVALUATION_LEDGER_DESCRIPTION } from './financial-ledger-generation/revaluation-ledger-generation.resolver.js';
 
 /** Below this, an amount is float noise rather than something to book */
 const MIN_AMOUNT = 0.005;
@@ -203,53 +199,34 @@ function bankProfitLossProblems(params: {
 }
 
 /**
- * The dates an acquisition was booked on:
- * - `rateDate`: the point the ledger priced its cost at, which is the rate the securities account
- *   took the units in at — a dividend in kind's value date (`distributionValueDate`, as
- *   `buildDistributionEntry` books it), a purchase's cash transaction's
- *   (`transactionExchangeRateDate`, as the purchase's base entry books it).
- * - `ledgerDate`: the invoice date of the record that booked it, which is what the year-end
- *   revaluation decides by whether it counted the lot — a dividend in kind's trade date (as
- *   `buildDistributionEntry` books it), a purchase's cash transaction's event date (as
- *   `ledgerEntryFromMainTransaction` books it). A booked purchase always has an event date, since
- *   the base entry's invoice date is taken from it; the fall back to the rate date's day only
- *   covers the nullable column type.
- *
- * Null for a purchase whose cash movement was not found.
+ * The point the ledger priced an acquisition's cost at, which is the rate the securities account
+ * took the units in at: a dividend in kind's value date (`distributionValueDate`, as
+ * `buildDistributionEntry` books it), a purchase's cash transaction's
+ * (`transactionExchangeRateDate`, as the purchase's base entry books it). Null for a purchase
+ * whose cash movement was not found.
  */
-function acquisitionDates(
+function acquisitionRateDate(
   acquisition: SecurityExecutionRow,
-  transaction:
-    | (Parameters<typeof transactionExchangeRateDate>[0] & {
-        event_date: TimelessDateString | null;
-      })
-    | undefined,
-): { rateDate: TimelessDateString | Date; ledgerDate: TimelessDateString } | null {
+  transaction: Parameters<typeof transactionExchangeRateDate>[0] | undefined,
+): TimelessDateString | Date | null {
   if (isDividendInKindDistribution(acquisition)) {
-    return { rateDate: distributionValueDate(acquisition), ledgerDate: acquisition.trade_date };
+    return distributionValueDate(acquisition);
   }
-  const rateDate = transaction ? transactionExchangeRateDate(transaction) : null;
-  if (!transaction || !rateDate) {
-    return null;
-  }
-  return {
-    rateDate,
-    ledgerDate:
-      transaction.event_date ??
-      (rateDate instanceof Date ? dateToTimelessDateString(rateDate) : rateDate),
-  };
+  return transaction ? transactionExchangeRateDate(transaction) : null;
 }
 
 /**
- * The sale revaluation entry of a foreign-currency disposal (`buildSaleRevaluationEntry`): each
- * lot's cost × (the cash leg's rate − the rate the securities account carries the lot at). The
- * carrying rate is the one the lot was booked at, or the one the last revaluation it was held over
- * moved it to.
+ * The exchange-rate entry of a foreign-currency disposal (`buildDisposalExchangeRateEntry`): each
+ * lot's cost × (the cash leg's rate − the rate the lot's cost was booked at).
+ *
+ * The year-end revaluations the lot was held over are ignored: the disposal's rate PnL is measured
+ * from the purchase alone. When a revaluation was booked on the lot, the securities account keeps
+ * it after the disposal, and the next year-end revaluation reverses it.
  *
  * Null after recording why it cannot be booked. The disposal entry is booked either way, and the
  * year-end revaluation takes up the rate PnL this leaves out.
  */
-async function saleRevaluationEntry(params: {
+async function disposalExchangeRateEntry(params: {
   injector: Injector;
   ownerId: string;
   defaultLocalCurrency: Currency;
@@ -268,75 +245,50 @@ async function saleRevaluationEntry(params: {
 
   try {
     const historyById = new Map(params.history.map(row => [row.id, row]));
-    const securitiesAccountId = disposalEntry.creditAccountID1;
-    const [transactionsByExecutionId, securitiesAccountRecords] = await Promise.all([
-      injector
-        .get(ForeignSecuritiesProvider)
-        .getSecurityOwnerTransactionsByExecutionId(execution, params.ownerId),
-      injector
-        .get(LedgerProvider)
-        .getLedgerRecordsByFinancialEntityIdLoader.load(securitiesAccountId),
-    ]);
-    const revaluationDates = securitiesAccountRecords
-      .filter(record => record.description?.includes(REVALUATION_LEDGER_DESCRIPTION))
-      .map(record => record.invoice_date);
+    const transactionsByExecutionId = await injector
+      .get(ForeignSecuritiesProvider)
+      .getSecurityOwnerTransactionsByExecutionId(execution, params.ownerId);
 
-    const carryingRates = await Promise.all(
+    const purchaseRates = await Promise.all(
       costBasis.lots.map(async lot => {
         const acquisition = historyById.get(lot.executionId);
-        const booked =
+        const bookedAt =
           acquisition &&
-          acquisitionDates(acquisition, transactionsByExecutionId.get(lot.executionId));
-        if (!booked) {
+          acquisitionRateDate(acquisition, transactionsByExecutionId.get(lot.executionId));
+        if (!bookedAt) {
           throw new LedgerError(
-            `the cash movement of the purchase of ${lot.units} units on ${lot.tradeDate} was not found, so the rate the securities account carries them at is unknown`,
+            `the cash movement of the purchase of ${lot.units} units on ${lot.tradeDate} was not found, so the rate they were bought at is unknown`,
           );
         }
-        // The revaluation counts records by their invoice date, not the date they were priced at
-        const revaluedOn = lastRevaluationOver(
-          booked.ledgerDate,
-          disposalEntry.invoiceDate,
-          revaluationDates,
-        );
         return injector
           .get(ExchangeProvider)
-          .getExchangeRates(
-            disposalEntry.currency,
-            defaultLocalCurrency,
-            revaluedOn ?? booked.rateDate,
-          );
+          .getExchangeRates(disposalEntry.currency, defaultLocalCurrency, bookedAt);
       }),
     );
 
     const { ratePnL } = calculateDisposalPnL({
       proceedsForeign: params.proceedsForeign,
       saleRate: disposalEntry.localCurrencyDebitAmount1 / disposalEntry.debitAmount1!,
-      lots: costBasis.lots.map((lot, index) => ({ ...lot, rate: carryingRates[index]! })),
+      lots: costBasis.lots.map((lot, index) => ({ ...lot, rate: purchaseRates[index]! })),
     });
     if (Math.abs(ratePnL) < MIN_AMOUNT) {
       return null;
     }
-    const exchangeKey: SecuritiesTaxCategoryKey =
-      ratePnL > 0
-        ? 'FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN'
-        : 'FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS';
-    if (
-      !requireTaxCategories(
-        [exchangeKey],
-        params.taxCategories,
-        params.errors,
-        params.missingTaxCategories,
-      )
-    ) {
+    const ids = requireTaxCategories(
+      ['FOREIGN_SECURITIES_EXCHANGE_RATE'],
+      params.taxCategories,
+      params.errors,
+      params.missingTaxCategories,
+    );
+    if (!ids) {
       return null;
     }
 
-    return buildSaleRevaluationEntry(disposalEntry, {
+    return buildDisposalExchangeRateEntry(disposalEntry, {
       ratePnL,
-      exchangeGainTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN,
-      exchangeLossTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS,
+      exchangeRateTaxCategoryId: ids.FOREIGN_SECURITIES_EXCHANGE_RATE,
       localCurrency: defaultLocalCurrency,
-      description: `${kind === 'SALE' ? 'Sale' : 'Redemption'} revaluation: ${costBasis.redeemedUnits} × ${describeSecurity(execution)}`,
+      description: `Exchange rate on ${kind === 'SALE' ? 'sale' : 'redemption'}: ${costBasis.redeemedUnits} × ${describeSecurity(execution)}`,
     });
   } catch (e) {
     params.errors.add(
@@ -348,9 +300,9 @@ async function saleRevaluationEntry(params: {
 
 /**
  * The entries of a disposal — a sale or a redemption — from the FIFO lots it draws on: the
- * disposal entry (cost out, price PnL, withheld tax) and, for a foreign-currency one, the sale
- * revaluation entry (rate PnL). Throws a `LedgerError` for anything that prevents the disposal
- * entry; the sale revaluation entry is left out, with its own error, when it cannot be booked.
+ * disposal entry (cost out, price PnL, withheld tax) and, for a foreign-currency one, the
+ * exchange-rate entry (rate PnL). Throws a `LedgerError` for anything that prevents the disposal
+ * entry; the exchange-rate entry is left out, with its own error, when it cannot be booked.
  */
 async function disposalLedgerEntries(params: {
   injector: Injector;
@@ -401,11 +353,7 @@ async function disposalLedgerEntries(params: {
     withheldTax,
   });
   const gainOrLossKeys: SecuritiesTaxCategoryKey[] =
-    gain >= MIN_AMOUNT
-      ? ['FOREIGN_SECURITIES_SALE_GAIN']
-      : gain <= -MIN_AMOUNT
-        ? ['FOREIGN_SECURITIES_SALE_LOSS']
-        : [];
+    Math.abs(gain) >= MIN_AMOUNT ? ['FOREIGN_SECURITIES_SALE_GAIN'] : [];
   const ids = requireTaxCategories(
     [...gainOrLossKeys, ...withholdingKeys],
     params.taxCategories,
@@ -420,13 +368,12 @@ async function disposalLedgerEntries(params: {
     costForeign: costBasis.costForeign,
     withheldTax,
     gainTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_GAIN,
-    lossTaxCategoryId: params.taxCategories.FOREIGN_SECURITIES_SALE_LOSS,
     withholdingTaxCategoryId: withholdingKeys.length ? ids[withholdingKeys[0]] : undefined,
   });
   const proceedsForeign =
     (baseEntry.debitAmount1 ?? baseEntry.localCurrencyDebitAmount1) + withheldTax;
-  const revaluationEntry = isForeign
-    ? await saleRevaluationEntry({
+  const exchangeRateEntry = isForeign
+    ? await disposalExchangeRateEntry({
         injector,
         ownerId,
         defaultLocalCurrency,
@@ -453,7 +400,7 @@ async function disposalLedgerEntries(params: {
     params.errors.add(problem);
   }
 
-  return revaluationEntry ? [disposalEntry, revaluationEntry] : [disposalEntry];
+  return exchangeRateEntry ? [disposalEntry, exchangeRateEntry] : [disposalEntry];
 }
 
 /**
@@ -792,7 +739,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     const entriesPromises: Array<Promise<unknown>> = [];
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
-    const saleRevaluationLedgerEntries: StrictLedgerProto[] = [];
+    const disposalExchangeRateLedgerEntries: StrictLedgerProto[] = [];
     const distributionLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
     const miscExpensesLedgerEntries: LedgerProto[] = [];
@@ -850,8 +797,9 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       return matchedPayments.find(payment => payment.execution === original)?.transaction ?? null;
     };
 
-    // Each resolves to its entries (the main one, then a sale's revaluation) rather than pushing
-    // them, so the entries keep the transactions' order however the lookups interleave.
+    // Each resolves to its entries (the main one, then a disposal's exchange-rate entry) rather
+    // than pushing them, so the entries keep the transactions' order however the lookups
+    // interleave.
     const mainTransactionsPromises = mainTransactions.map(async transaction => {
       let baseEntry: StrictLedgerProto;
       try {
@@ -870,7 +818,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
         throw e;
       }
 
-      const [ledgerEntry, ...revaluationEntries] = await securitiesLedgerEntries({
+      const [ledgerEntry, ...exchangeRateEntries] = await securitiesLedgerEntries({
         injector,
         ownerId: charge.owner_id,
         locality,
@@ -883,7 +831,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
         errors,
         missingTaxCategories,
       });
-      const entries = [ledgerEntry!, ...revaluationEntries];
+      const entries = [ledgerEntry!, ...exchangeRateEntries];
       for (const entry of entries) {
         updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
       }
@@ -1020,9 +968,9 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     for (const entries of await Promise.all(mainTransactionsPromises)) {
       if (entries) {
-        const [mainEntry, ...revaluationEntries] = entries;
+        const [mainEntry, ...exchangeRateEntries] = entries;
         financialAccountLedgerEntries.push(mainEntry!);
-        saleRevaluationLedgerEntries.push(...revaluationEntries);
+        disposalExchangeRateLedgerEntries.push(...exchangeRateEntries);
       }
     }
 
@@ -1036,7 +984,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     const records = [
       ...financialAccountLedgerEntries,
-      ...saleRevaluationLedgerEntries,
+      ...disposalExchangeRateLedgerEntries,
       ...distributionLedgerEntries,
       ...feeFinancialAccountLedgerEntries,
       ...miscExpensesLedgerEntries,

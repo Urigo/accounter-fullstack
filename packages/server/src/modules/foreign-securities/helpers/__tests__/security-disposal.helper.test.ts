@@ -9,7 +9,6 @@ import {
   getDisposalProceeds,
   getExecutionBankRate,
   isDisposalExecution,
-  lastRevaluationOver,
   lowerOfTwo,
 } from '../security-disposal.helper.js';
 
@@ -67,29 +66,6 @@ describe('calculateDisposalPnL', () => {
 
     expect(pnl.ratePnL).toBe(0);
     expect(pnl.localPnL).toBeCloseTo(100, 6);
-  });
-});
-
-describe('lastRevaluationOver', () => {
-  const revaluations = ['2022-12-31', '2023-12-31', '2024-12-31'] as const;
-
-  it('is the latest revaluation between the booking and the disposal', () => {
-    expect(lastRevaluationOver('2022-05-01', '2025-03-01', revaluations)).toBe('2024-12-31');
-    expect(lastRevaluationOver('2024-12-31', '2025-03-01', revaluations)).toBe('2024-12-31');
-    expect(lastRevaluationOver('2022-05-01', '2024-06-01', revaluations)).toBe('2023-12-31');
-  });
-
-  it('is null for a lot booked after the last revaluation', () => {
-    expect(lastRevaluationOver('2025-01-10', '2025-03-01', revaluations)).toBeNull();
-  });
-
-  it('ignores a revaluation on the day of the disposal, which no longer held the lot', () => {
-    expect(lastRevaluationOver('2024-06-01', '2024-12-31', revaluations)).toBeNull();
-    expect(lastRevaluationOver('2023-06-01', '2024-12-31', revaluations)).toBe('2023-12-31');
-  });
-
-  it('is null when the year-end was never revalued', () => {
-    expect(lastRevaluationOver('2024-05-01', '2025-03-01', ['2023-12-31'])).toBeNull();
   });
 });
 

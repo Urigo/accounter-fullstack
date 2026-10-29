@@ -66,7 +66,7 @@ collection department and pay. The notice must contain:
 
 1. **Real, CPI-indexed gain.** The bank's `real_profit_loss_nis` uses the individual's exchange-rate
    rule, and the ledger's sale gain (after #4791) is an accounting figure: its currency part is
-   measured from the carrying rate, and may stay in the year-end revaluation. #4791's
+   measured from the purchase's ledger rate, ignoring year-end revaluations. #4791's
    `getSecurityCapitalGain` gives the tax figure: cost at the original purchase rate, plus the CPI
    inflationary amount.
 2. **Carried-forward losses** (§92(ב)). Her "no-advance" sentence depends on them, but they aren't

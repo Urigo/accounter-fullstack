@@ -355,19 +355,20 @@ export function calculateDisposalGain(
 /**
  * A disposal — a sale, or a bond redemption: the bank debit stays as it is, the securities account
  * is credited with the FIFO purchase cost (in the cash currency, at the cash leg's rate) and the
- * difference is the price gain (second credit) or loss (second debit). Tax withheld from the
- * proceeds is a second debit, so it cannot be booked together with a loss.
+ * difference is the price gain (second credit) or loss (second debit), both on the one sale gain
+ * tax category. Tax withheld from the proceeds is a second debit, so it cannot be booked together
+ * with a loss.
  *
  * Crediting the cost at the cash leg's rate leaves the securities account's local balance off by
- * the rate PnL; `buildSaleRevaluationEntry` books that.
+ * the rate PnL; `buildDisposalExchangeRateEntry` books that.
  */
 export function buildDisposalEntry(
   base: StrictLedgerProto,
   params: {
     costForeign: number;
     withheldTax: number;
+    /** Where the price gain or loss is booked */
     gainTaxCategoryId?: string;
-    lossTaxCategoryId?: string;
     withholdingTaxCategoryId?: string;
   },
 ): StrictLedgerProto {
@@ -378,16 +379,14 @@ export function buildDisposalEntry(
   });
 
   let gainOrLoss: { debit2?: SecondaryLine; credit2?: SecondaryLine } = {};
-  if (gain >= MIN_AMOUNT) {
+  if (Math.abs(gain) >= MIN_AMOUNT) {
     if (!params.gainTaxCategoryId) {
-      throw new LedgerError('A gain tax category is required to book a disposal gain');
+      throw new LedgerError(
+        `A gain tax category is required to book a disposal ${gain > 0 ? 'gain' : 'loss'}`,
+      );
     }
-    gainOrLoss = { credit2: { accountId: params.gainTaxCategoryId, amount: gain } };
-  } else if (gain <= -MIN_AMOUNT) {
-    if (!params.lossTaxCategoryId) {
-      throw new LedgerError('A loss tax category is required to book a disposal loss');
-    }
-    gainOrLoss = { debit2: { accountId: params.lossTaxCategoryId, amount: -gain } };
+    const line = { accountId: params.gainTaxCategoryId, amount: Math.abs(gain) };
+    gainOrLoss = gain > 0 ? { credit2: line } : { debit2: line };
   }
 
   if ((withholding.debit2 && gainOrLoss.debit2) || (withholding.credit2 && gainOrLoss.credit2)) {
@@ -401,22 +400,22 @@ export function buildDisposalEntry(
 
 /**
  * The rate PnL of a disposal: the disposal entry credits the securities account with the units'
- * cost at the cash leg's rate, while the account carries them at the rate they were booked at, or
- * revalued to at the last year-end. This local-currency entry books the difference, so the account
- * gives up exactly what it carried the units at:
- * - a gain (the cost is worth more now): Dr securities account, Cr exchange gain
- * - a loss: Dr exchange loss, Cr securities account
+ * cost at the cash leg's rate, while their cost was booked at the rate they were bought at. This
+ * local-currency entry books the difference since the purchase, ignoring any year-end revaluation
+ * the units were held over (which the account keeps until the next year-end revaluation reverses
+ * it):
+ * - a gain (the cost is worth more now): Dr securities account, Cr exchange rate
+ * - a loss: Dr exchange rate, Cr securities account
  *
  * Null when there is nothing worth booking.
  */
-export function buildSaleRevaluationEntry(
+export function buildDisposalExchangeRateEntry(
   /** The disposal entry, whose first credit is the securities account */
   disposal: StrictLedgerProto,
   params: {
-    /** Σ lot cost × (cash leg's rate − lot's carrying rate) */
+    /** Σ lot cost × (cash leg's rate − lot's purchase rate) */
     ratePnL: number;
-    exchangeGainTaxCategoryId?: string;
-    exchangeLossTaxCategoryId?: string;
+    exchangeRateTaxCategoryId?: string;
     localCurrency: Currency;
     description: string;
   },
@@ -425,20 +424,18 @@ export function buildSaleRevaluationEntry(
   if (Math.abs(ratePnL) < MIN_AMOUNT) {
     return null;
   }
-  const isGain = ratePnL > 0;
-  const exchangeAccountId = isGain
-    ? params.exchangeGainTaxCategoryId
-    : params.exchangeLossTaxCategoryId;
+  const exchangeAccountId = params.exchangeRateTaxCategoryId;
   if (!exchangeAccountId) {
     throw new LedgerError(
-      `An exchange ${isGain ? 'gain' : 'loss'} tax category is required to book the rate PnL of "${disposal.description ?? disposal.id}"`,
+      `An exchange rate tax category is required to book the rate PnL of "${disposal.description ?? disposal.id}"`,
     );
   }
+  const isGain = ratePnL > 0;
   const securitiesAccountId = disposal.creditAccountID1;
   const amount = Math.abs(ratePnL);
 
   return {
-    id: `${disposal.id}|sale-revaluation`, // NOTE: this field is dummy
+    id: `${disposal.id}|exchange-rate`, // NOTE: this field is dummy
     invoiceDate: disposal.invoiceDate,
     valueDate: disposal.valueDate,
     currency: params.localCurrency,
