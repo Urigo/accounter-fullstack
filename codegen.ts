@@ -231,6 +231,21 @@ const config: CodegenConfig = {
         },
       },
     },
+    // The schema awareness graphcache needs to match fragments on unions and
+    // interfaces (`Charge` and every mutation result union). Minified, with
+    // scalars, enums and inputs left out, since the cache never reads them —
+    // it ships in the client bundle.
+    'packages/client/src/gql/introspection.ts': {
+      plugins: ['urql-introspection'],
+      config: {
+        module: 'es2015',
+        useTypeImports: true,
+        includeScalars: false,
+        includeEnums: false,
+        includeInputs: false,
+        includeDirectives: false,
+      },
+    },
     'packages/gmail-listener/src/gql/': {
       preset: 'client',
       config: {

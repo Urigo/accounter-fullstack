@@ -14,6 +14,7 @@ import { authExchange } from '@urql/exchange-auth';
 import { retryExchange } from '@urql/exchange-retry';
 import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
 import { ROUTES } from '../router/routes.js';
+import { createCacheExchange } from './urql-cache.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
 export type TokenCacheMode = 'on' | 'off';
@@ -241,6 +242,9 @@ export function getUrqlClient(): Client {
 
   globalClient = createClient({
     url,
+    // Paint from the cache, then always revalidate. `cache-first` would serve stale data to screens
+    // that were written against a client with no cache and so never had to think about staleness.
+    requestPolicy: 'cache-and-network',
     exchanges: [
       // Dev only, and first so it observes every operation and result. Tree-shaken
       // from production builds by the constant condition.
@@ -250,9 +254,11 @@ export function getUrqlClient(): Client {
           handleUrqlError(result);
         },
       }),
-      // `cacheExchange` belongs here, between the error handler and auth, when
-      // normalized caching lands. Nothing occupies the slot today: passing an
-      // explicit `exchanges` array means urql installs no cache of its own.
+      // After the error handler, so it still sees every result, cached ones
+      // included; before auth and retry, so a cache hit never reaches them.
+      // Built per client: a new client (business-scope change, logout) starts
+      // with an empty cache.
+      createCacheExchange(),
 
       authExchange(async utils => {
         if (!isDevAuthEnabled) {
@@ -366,7 +372,7 @@ export function resetUrqlClient(): void {
  *
  * `resetUrqlClient` alone only clears the singleton, so anything already
  * holding the old `Client` — every mounted `useQuery`, via the Provider — keeps
- * using it, along with its bearer token and any cache an exchange is holding.
+ * using it, along with its bearer token and its normalized cache.
  * Both callers need the swap as well, so they share this rather than each
  * remembering to make the second call.
  */
