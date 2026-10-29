@@ -15,6 +15,13 @@ import { useApiMutation } from './use-api-mutation.js';
       success
       chargeId
       deletedChargeId
+      charge {
+        id
+        ...ChargeMutationResultFields
+        additionalDocuments {
+          id
+        }
+      }
     }
   }
 `;

@@ -498,6 +498,11 @@ export default gql`
     charge: Charge!
   }
 
+  extend type DeleteDocumentResult {
+    " the charge the deleted document belonged to, unless it was left empty and deleted too "
+    charge: Charge
+  }
+
   extend interface FinancialAccount {
     charges(filter: ChargeFilter): [Charge!]!
   }

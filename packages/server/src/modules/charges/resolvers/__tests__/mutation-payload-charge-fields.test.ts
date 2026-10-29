@@ -6,9 +6,9 @@ import type { IGetChargesByIdsResult } from '../../types.js';
 import { chargesResolvers } from '../charges.resolver.js';
 
 /**
- * The charge fields that let a transaction mutation payload carry the parent charge back to the
- * client (#4481): a change to a transaction moves its charge's amounts, dates, counts and approval,
- * and the client patches the charge from the payload.
+ * The charge fields that let a transaction or document mutation payload carry the parent charge
+ * back to the client (#4481): a change to a transaction or a document moves its charge's amounts,
+ * dates, counts and approval, and the client patches the charge from the payload.
  */
 
 const CHARGE_ID = 'cc000000-0000-4000-8000-000000000001';
@@ -67,5 +67,36 @@ describe('Transaction.charge', () => {
     const { context: ctx } = context({ charges: {} });
 
     await expect(charge(TRANSACTION_ID, {}, ctx)).rejects.toThrow();
+  });
+});
+
+describe('DeleteDocumentResult.charge', () => {
+  type Parent = { success: boolean; chargeId: string | null; deletedChargeId: string | null };
+  const charge = (chargesResolvers.DeleteDocumentResult as { charge: FieldResolver<Parent> })
+    .charge;
+
+  it('resolves the charge the document was deleted from', async () => {
+    const { context: ctx } = context();
+
+    await expect(
+      charge({ success: true, chargeId: CHARGE_ID, deletedChargeId: null }, {}, ctx),
+    ).resolves.toBe(storedCharge);
+  });
+
+  it('is null when the deletion left that charge empty and it was deleted too', async () => {
+    const { context: ctx, chargesProvider } = context();
+
+    await expect(
+      charge({ success: true, chargeId: CHARGE_ID, deletedChargeId: CHARGE_ID }, {}, ctx),
+    ).resolves.toBeNull();
+    expect(chargesProvider.getChargeByIdLoader.load).not.toHaveBeenCalled();
+  });
+
+  it('is null when the document had no charge', async () => {
+    const { context: ctx } = context();
+
+    await expect(
+      charge({ success: true, chargeId: null, deletedChargeId: null }, {}, ctx),
+    ).resolves.toBeNull();
   });
 });

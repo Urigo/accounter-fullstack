@@ -664,6 +664,19 @@ export const chargesResolvers: ChargesModule.Resolvers &
   ConversionTransaction: {
     ...commonTransactionFields,
   },
+  DeleteDocumentResult: {
+    charge: async ({ chargeId, deletedChargeId }, _, { injector }) => {
+      if (!chargeId || deletedChargeId) {
+        return null;
+      }
+      try {
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        return charge ?? null;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch charge for deleted document', error);
+      }
+    },
+  },
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,
     updatedAt: DbCharge => DbCharge.updated_at,

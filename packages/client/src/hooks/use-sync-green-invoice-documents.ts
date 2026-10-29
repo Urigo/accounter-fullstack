@@ -12,6 +12,7 @@ import { useApiMutation } from './use-api-mutation.js';
     syncGreenInvoiceDocuments(ownerId: $ownerId) {
       id
       ...NewFetchedDocumentFields
+      ...DocumentMutationResultFields
     }
   }
 `;

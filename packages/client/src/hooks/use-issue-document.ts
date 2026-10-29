@@ -20,6 +20,11 @@ import { useApiMutation } from './use-api-mutation.js';
       chargeId: $chargeId
     ) {
       id
+      ...ChargeMutationResultFields
+      additionalDocuments {
+        id
+        ...TableDocumentsRowFields
+      }
     }
   }
 `;
