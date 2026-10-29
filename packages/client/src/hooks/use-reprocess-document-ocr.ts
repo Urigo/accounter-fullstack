@@ -18,6 +18,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
         updatedFields
         document {
           id
+          ...DocumentMutationResultFields
         }
       }
       ... on CommonError {
@@ -36,6 +37,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
         updatedFields
         document {
           id
+          ...DocumentMutationResultFields
         }
       }
       ... on CommonError {

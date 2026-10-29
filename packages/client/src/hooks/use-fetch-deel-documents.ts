@@ -7,6 +7,10 @@ import { useApiMutation } from './use-api-mutation.js';
   mutation FetchDeelDocuments {
     fetchDeelDocuments {
       id
+      ...ChargeMutationResultFields
+      additionalDocuments {
+        id
+      }
     }
   }
 `;

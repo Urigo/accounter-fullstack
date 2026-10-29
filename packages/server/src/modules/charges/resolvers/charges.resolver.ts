@@ -37,7 +37,7 @@ import type {
   IGetChargesByIdsResult,
   IUpdateChargeParams,
 } from '../types.js';
-import { commonChargeFields, commonDocumentsFields } from './common.js';
+import { commonChargeFields, commonDocumentsFields, commonTransactionFields } from './common.js';
 
 async function chargeTypeChecker(
   chargeType: ChargeTypeEnum,
@@ -657,6 +657,25 @@ export const chargesResolvers: ChargesModule.Resolvers &
   },
   Receipt: {
     ...commonDocumentsFields,
+  },
+  CommonTransaction: {
+    ...commonTransactionFields,
+  },
+  ConversionTransaction: {
+    ...commonTransactionFields,
+  },
+  DeleteDocumentResult: {
+    charge: async ({ chargeId, deletedChargeId }, _, { injector }) => {
+      if (!chargeId || deletedChargeId) {
+        return null;
+      }
+      try {
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        return charge ?? null;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch charge for deleted document', error);
+      }
+    },
   },
   ChargeMetadata: {
     createdAt: DbCharge => DbCharge.created_at,

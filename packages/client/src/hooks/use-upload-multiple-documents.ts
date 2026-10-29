@@ -24,6 +24,7 @@ import { useApiMutation } from './use-api-mutation.js';
         document {
           id
           ...NewFetchedDocumentFields
+          ...DocumentMutationResultFields
         }
       }
     }
