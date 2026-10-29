@@ -86,6 +86,7 @@ __metadata:
     "@types/react-dom": "npm:19.3.0"
     "@urql/devtools": "npm:2.0.3"
     "@urql/exchange-auth": "npm:3.0.0"
+    "@urql/exchange-graphcache": "npm:9.0.2"
     "@urql/exchange-retry": "npm:2.0.0"
     "@vitejs/plugin-react": "npm:6.1.2"
     autoprefixer: "npm:10.6.1"
@@ -2413,6 +2414,19 @@ __metadata:
   peerDependencies:
     graphql: ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
   checksum: 10c0/44085b0ab4b75eb604f09d08b5c92599aab644d2290074c424f8af3b83991bf911a041aba1599f3c2d3275d5fa0040a6d11d317d023bb6df46dd864d1fb58efc
+  languageName: node
+  linkType: hard
+
+"@graphql-codegen/urql-introspection@npm:4.0.1":
+  version: 4.0.1
+  resolution: "@graphql-codegen/urql-introspection@npm:4.0.1"
+  dependencies:
+    "@graphql-codegen/plugin-helpers": "npm:^6.3.0"
+    "@urql/introspection": "npm:^0.3.2"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+  checksum: 10c0/b89d712956de53e2829d30b73cbd0df7376b742af6f3456cbd66670702b30be7d56841b1304e9e95200a0794747883737de14e999af2a327fad03de1953491dd
   languageName: node
   linkType: hard
 
@@ -10411,6 +10425,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@urql/exchange-graphcache@npm:9.0.2":
+  version: 9.0.2
+  resolution: "@urql/exchange-graphcache@npm:9.0.2"
+  dependencies:
+    "@0no-co/graphql.web": "npm:^1.0.13"
+    "@urql/core": "npm:^6.0.3"
+    wonka: "npm:^6.3.2"
+  peerDependencies:
+    "@urql/core": ^6.0.0
+  checksum: 10c0/338c54b572bc277f8fa7a8f100e146f60f2bbf2e2ed3d5a7767951b19e46543703a7fd30646cff9dbb633790e82e040afff29c64d25e42d01ad4eff768eefcef
+  languageName: node
+  linkType: hard
+
 "@urql/exchange-retry@npm:2.0.0":
   version: 2.0.0
   resolution: "@urql/exchange-retry@npm:2.0.0"
@@ -10420,6 +10447,15 @@ __metadata:
   peerDependencies:
     "@urql/core": ^6.0.0
   checksum: 10c0/37a4dbea6b158c73521fc58e33c2b73ad4568e221e3e2fce373a5cadb21b93f345b4a3e574646b2b1e3f598db4d6fcf62cb6d21d5abd11a3ca88d39c248894fd
+  languageName: node
+  linkType: hard
+
+"@urql/introspection@npm:^0.3.2":
+  version: 0.3.3
+  resolution: "@urql/introspection@npm:0.3.3"
+  peerDependencies:
+    graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+  checksum: 10c0/315533524aeadf9f61d4a9c34a72f3aa734a9a811e7526dff61dea6123afe256cbd25c55477d3937a4a07738db705ad0510a6e58501020c7eb48690ac74dbd98
   languageName: node
   linkType: hard
 
@@ -10722,6 +10758,7 @@ __metadata:
     "@graphql-codegen/typescript-graphql-request": "npm:7.1.0"
     "@graphql-codegen/typescript-operations": "npm:6.2.0"
     "@graphql-codegen/typescript-resolvers": "npm:6.1.1"
+    "@graphql-codegen/urql-introspection": "npm:4.0.1"
     "@graphql-eslint/eslint-plugin": "npm:4.4.2"
     "@graphql-hive/cli": "npm:0.68.1"
     "@graphql-inspector/cli": "npm:7.0.2"

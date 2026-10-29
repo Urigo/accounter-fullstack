@@ -2,31 +2,15 @@
 
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { Client, Provider, fetchExchange } from 'urql';
+import { Provider, type Client } from 'urql';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { makeScriptedClient } from '../../../../../__tests__/helpers/scripted-client.js';
 import { SimilarChargesByIdModal } from '../similar-charges-by-id-modal.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 function makeClient(similarCharges: unknown[], operations: string[] = []): Client {
-  const mockFetch = (async (_url: string, init: RequestInit) => {
-    operations.push((JSON.parse(String(init.body)) as { operationName: string }).operationName);
-    const payload = JSON.stringify({ data: { similarCharges } });
-    return {
-      status: 200,
-      ok: true,
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      text: async () => payload,
-      json: async () => JSON.parse(payload),
-    } as unknown as Response;
-  }) as unknown as typeof fetch;
-
-  return new Client({
-    url: 'http://localhost/graphql',
-    exchanges: [fetchExchange],
-    fetch: mockFetch,
-    preferGetMethod: false,
-  });
+  return makeScriptedClient({ operations, fallback: () => ({ similarCharges }) });
 }
 
 describe('SimilarChargesByIdModal', () => {

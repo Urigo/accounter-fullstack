@@ -113,8 +113,14 @@ export const DownloadChargesCsv = ({ chargeIds, businessName }: Props): ReactEle
     if (chargeIds.length === 0) {
       return { fileContent: '', fileName };
     }
+    // `network-only`: `toPromise` settles on the first result, which under the client's
+    // `cache-and-network` default may be a stale cached copy — not what an export should contain.
     const { data, error } = await client
-      .query(ChargesForCsvExportDocument, { chargeIDs: chargeIds })
+      .query(
+        ChargesForCsvExportDocument,
+        { chargeIDs: chargeIds },
+        { requestPolicy: 'network-only' },
+      )
       .toPromise();
     // On a network/GraphQL error `data` is undefined; without this guard we'd silently download a
     // header-only CSV. Surface the failure and abort so no misleading empty file is produced.

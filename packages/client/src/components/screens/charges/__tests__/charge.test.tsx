@@ -3,34 +3,15 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
-import { Client, Provider, fetchExchange } from 'urql';
+import { Provider, type Client } from 'urql';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { makeScriptedClient } from '../../../../__tests__/helpers/scripted-client.js';
 import { Charge } from '../charge.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-/** Builds an urql client backed by a scripted, request-recording fetch. */
 function makeClient(operations: string[]): Client {
-  const mockFetch = (async (_url: string, init: RequestInit) => {
-    const body = JSON.parse(String(init.body)) as { operationName: string };
-    operations.push(body.operationName);
-    const payload = JSON.stringify({ data: { charge: null } });
-    return {
-      status: 200,
-      ok: true,
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      text: async () => payload,
-      json: async () => JSON.parse(payload),
-    } as unknown as Response;
-  }) as unknown as typeof fetch;
-
-  return new Client({
-    url: 'http://localhost/graphql',
-    exchanges: [fetchExchange],
-    fetch: mockFetch,
-    // Keep every operation on POST so the harness can read the body.
-    preferGetMethod: false,
-  });
+  return makeScriptedClient({ operations, fallback: () => ({ charge: null }) });
 }
 
 let container: HTMLDivElement;

@@ -3,8 +3,9 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
-import { Client, Provider, fetchExchange } from 'urql';
+import { Provider, type Client } from 'urql';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { makeScriptedClient } from '../../../__tests__/helpers/scripted-client.js';
 import { ChargesTable } from '../charges-table.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -21,12 +22,12 @@ function makeCharge(overrides: Record<string, unknown> = {}) {
     maxDebitDate: null,
     maxEventDate: '2024-01-01',
     maxDocumentsDate: null,
-    totalAmount: { raw: -100, currency: 'ILS' },
-    vat: { raw: -15 },
-    counterparty: { name: 'Acme', id: 'business-1' },
+    totalAmount: { __typename: 'FinancialAmount', raw: -100, currency: 'ILS' },
+    vat: { __typename: 'FinancialAmount', raw: -15 },
+    counterparty: { __typename: 'LtdFinancialEntity', name: 'Acme', id: 'business-1' },
     userDescription: null as string | null,
-    tags: [{ id: 'tag-1', name: 'Office', namePath: null }],
-    taxCategory: { id: 'tax-1', name: 'Expenses' },
+    tags: [{ __typename: 'Tag', id: 'tag-1', name: 'Office', namePath: null }],
+    taxCategory: { __typename: 'TaxCategory', id: 'tax-1', name: 'Expenses' },
     metadata: {
       __typename: 'ChargeMetadata',
       transactionsCount: 1,
@@ -37,41 +38,22 @@ function makeCharge(overrides: Record<string, unknown> = {}) {
       invalidLedger: null,
     },
     accountantApproval: 'UNAPPROVED',
-    validationData: { missingInfo: [] as string[] },
-    missingInfoSuggestions: { description: null as string | null, tags: [] },
+    validationData: { __typename: 'ValidationData', missingInfo: [] as string[] },
+    missingInfoSuggestions: {
+      __typename: 'ChargeSuggestions',
+      description: null as string | null,
+      tags: [],
+    },
     ...overrides,
   };
 }
 
-/** Builds an urql client backed by a scripted, request-recording fetch. */
 function makeClient(
   operations: string[],
   responses: Record<string, (variables: Record<string, unknown>) => unknown>,
+  { cache = false }: { cache?: boolean } = {},
 ): Client {
-  const mockFetch = (async (_url: string, init: RequestInit) => {
-    const body = JSON.parse(String(init.body)) as {
-      operationName: string;
-      variables?: Record<string, unknown>;
-    };
-    operations.push(body.operationName);
-    const data = (responses[body.operationName] ?? (() => ({})))(body.variables ?? {});
-    const payload = JSON.stringify({ data });
-    return {
-      status: 200,
-      ok: true,
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      text: async () => payload,
-      json: async () => JSON.parse(payload),
-    } as unknown as Response;
-  }) as unknown as typeof fetch;
-
-  return new Client({
-    url: 'http://localhost/graphql',
-    exchanges: [fetchExchange],
-    fetch: mockFetch,
-    // Keep every operation on POST so the harness can read the body.
-    preferGetMethod: false,
-  });
+  return makeScriptedClient({ operations, responses, cache });
 }
 
 describe('charges table row refetch', () => {
@@ -152,6 +134,77 @@ describe('charges table row refetch', () => {
     expect(operations).toContain('RefetchChargeForChargesTable');
     expect(container.textContent).toContain('Confirmed description');
     expect(container.textContent).not.toContain('Suggested description');
+  });
+
+  it('repaints the row through the production normalized cache', async () => {
+    const operations: string[] = [];
+    const client = makeClient(
+      operations,
+      {
+        UpdateCharge: () => ({
+          updateCharge: {
+            __typename: 'UpdateChargeSuccessfulResult',
+            charge: makeCharge({ userDescription: 'Confirmed description' }),
+          },
+        }),
+        SimilarCharges: () => ({ similarCharges: [] }),
+        RefetchChargeForChargesTable: () => ({
+          charge: makeCharge({ userDescription: 'Confirmed description' }),
+        }),
+      },
+      { cache: true },
+    );
+
+    await renderTable(
+      client,
+      makeCharge({
+        validationData: { missingInfo: ['DESCRIPTION'] },
+        missingInfoSuggestions: { description: 'Suggested description', tags: [] },
+      }),
+    );
+
+    await click(confirmButtons()[0]);
+
+    expect(operations).toContain('UpdateCharge');
+    expect(container.textContent).toContain('Confirmed description');
+    expect(container.textContent).not.toContain('Suggested description');
+  });
+
+  it('repaints a row whose charge came back as a different type', async () => {
+    const operations: string[] = [];
+    const asTrip = () =>
+      makeCharge({
+        __typename: 'BusinessTripCharge',
+        userDescription: 'Confirmed description',
+        businessTrip: { __typename: 'BusinessTrip', id: 'trip-1', name: 'Berlin offsite' },
+      });
+    const client = makeClient(
+      operations,
+      {
+        UpdateCharge: () => ({
+          updateCharge: { __typename: 'UpdateChargeSuccessfulResult', charge: asTrip() },
+        }),
+        SimilarCharges: () => ({ similarCharges: [] }),
+        RefetchChargeForChargesTable: () => ({ charge: asTrip() }),
+      },
+      { cache: true },
+    );
+
+    await renderTable(
+      client,
+      makeCharge({
+        validationData: { __typename: 'ValidationData', missingInfo: ['DESCRIPTION'] },
+        missingInfoSuggestions: {
+          __typename: 'ChargeSuggestions',
+          description: 'Suggested description',
+          tags: [],
+        },
+      }),
+    );
+
+    await click(confirmButtons()[0]);
+
+    expect(container.textContent).toContain('Berlin offsite');
   });
 
   it('keeps the row refetchable after the row data was replaced by an earlier refetch', async () => {

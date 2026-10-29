@@ -11,7 +11,12 @@ export async function businessLoader({ params }: LoaderFunctionArgs) {
   const { businessId } = validateBusinessParams(params);
 
   const client = getUrqlClient();
-  const result = await client.query(BusinessScreenDocument, { businessId }).toPromise();
+  // `network-only`: `toPromise` settles on the first result, which under the client's
+  // `cache-and-network` default may be the cached copy, and the screen pauses its own query when
+  // loader data is present, so nothing would revalidate it.
+  const result = await client
+    .query(BusinessScreenDocument, { businessId }, { requestPolicy: 'network-only' })
+    .toPromise();
 
   // GraphQL errors are now handled by toast notifications in urql-client
   // Only throw for 404 to show the error boundary

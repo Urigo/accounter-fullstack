@@ -7,6 +7,7 @@ const {
   authExchangeMock,
   appendHeadersMock,
   retryExchangeMock,
+  createCacheExchangeMock,
 } = vi.hoisted(() => {
   const appendHeaders = vi.fn((operation: any, headers: Record<string, string>) => ({
     ...operation,
@@ -23,9 +24,11 @@ const {
     },
   }));
   return {
-    createClientMock: vi.fn((_options: { url: string; exchanges: unknown[] }) => ({
-      mockClient: true,
-    })),
+    createClientMock: vi.fn(
+      (_options: { url: string; exchanges: unknown[]; requestPolicy?: string }) => ({
+        mockClient: true,
+      }),
+    ),
     mapExchangeMock: vi.fn(() => ({ mockMapExchange: true })),
     authExchangeMock: vi.fn(),
     appendHeadersMock: appendHeaders,
@@ -37,6 +40,8 @@ const {
         ) => boolean;
       }) => ({ mockRetryExchange: true }),
     ),
+    // A distinct object per call, so a test can tell one client's cache from the next one's.
+    createCacheExchangeMock: vi.fn(() => ({ mockCacheExchange: true })),
   };
 });
 
@@ -67,6 +72,10 @@ vi.mock('urql', () => ({
 
 vi.mock('@urql/exchange-retry', () => ({
   retryExchange: retryExchangeMock,
+}));
+
+vi.mock('../providers/urql-cache.js', () => ({
+  createCacheExchange: createCacheExchangeMock,
 }));
 
 vi.mock('@urql/devtools', () => ({
@@ -405,6 +414,55 @@ describe('URQL auth exchange hardening', () => {
     expect(authIndex).toBeGreaterThanOrEqual(0);
     expect(retryIndex).toBeGreaterThan(authIndex);
     expect(fetchIndex).toBeGreaterThan(retryIndex);
+  });
+
+  it('places the cache exchange after the error handler and before authExchange', async () => {
+    // The error handler must still see every result, cached ones included; a cache hit must never
+    // reach auth or retry.
+    await initializeAuth(async () => 'token-123');
+
+    const { exchanges } = createClientMock.mock.calls[0][0];
+    const mapIndex = exchanges.findIndex((e: unknown) => e === mapExchangeMock.mock.results[0].value);
+    const cacheIndex = exchanges.findIndex(
+      (e: unknown) => e === createCacheExchangeMock.mock.results[0].value,
+    );
+    const authIndex = exchanges.findIndex((e: unknown) => e === authExchangeMock.mock.results[0].value);
+
+    expect(mapIndex).toBeGreaterThanOrEqual(0);
+    expect(cacheIndex).toBe(mapIndex + 1);
+    expect(authIndex).toBe(cacheIndex + 1);
+  });
+
+  it('paints from the cache and revalidates by default', async () => {
+    await initializeAuth(async () => 'token-123');
+
+    expect(createClientMock.mock.calls[0][0].requestPolicy).toBe('cache-and-network');
+  });
+
+  it('gives every new client an empty cache, so no entity survives a scope change or logout', async () => {
+    const { urql } = await initializeAuth(async () => 'token-123');
+    const cacheOf = (call: number) =>
+      createClientMock.mock.calls[call][0].exchanges.find(
+        (e: unknown) => (e as { mockCacheExchange?: boolean })?.mockCacheExchange === true,
+      );
+
+    const builtBefore = createClientMock.mock.calls.length;
+    const initialCache = cacheOf(builtBefore - 1);
+
+    // With no Provider mounted, a reset only drops the singleton; the next caller builds the client.
+    urql.setBusinessScope(['business-b']);
+    urql.getUrqlClient();
+    const afterScopeChange = cacheOf(createClientMock.mock.calls.length - 1);
+
+    // Logout goes through the same reset (use-logout.ts).
+    urql.resetUrqlClientAndNotify();
+    urql.getUrqlClient();
+    const afterLogout = cacheOf(createClientMock.mock.calls.length - 1);
+
+    expect(createClientMock.mock.calls.length).toBe(builtBefore + 2);
+    expect(createCacheExchangeMock).toHaveBeenCalledTimes(builtBefore + 2);
+    expect(afterScopeChange).not.toBe(initialCache);
+    expect(afterLogout).not.toBe(afterScopeChange);
   });
 
   it('retries network errors but never GraphQL errors', async () => {
