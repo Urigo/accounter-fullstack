@@ -23,6 +23,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   mutation GenerateRevaluationCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateRevaluationCharge(ownerId: $ownerId, date: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -31,6 +32,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   mutation GenerateBankDepositsRevaluationCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateBankDepositsRevaluationCharge(ownerId: $ownerId, date: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -39,6 +41,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   mutation GenerateTaxExpensesCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateTaxExpensesCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -47,6 +50,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   mutation GenerateDepreciationCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateDepreciationCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -55,6 +59,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   mutation GenerateRecoveryReserveCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateRecoveryReserveCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -63,6 +68,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   mutation GenerateVacationReserveCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateVacationReserveCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
