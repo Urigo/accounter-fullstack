@@ -69,7 +69,7 @@ __metadata:
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:4.0.0"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:3.0.0"
-    "@auth0/auth0-react": "npm:2.29.0"
+    "@auth0/auth0-react": "npm:2.30.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
     "@hookform/resolvers": "npm:6.0.0"
@@ -523,27 +523,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@auth0/auth0-react@npm:2.29.0":
-  version: 2.29.0
-  resolution: "@auth0/auth0-react@npm:2.29.0"
+"@auth0/auth0-react@npm:2.30.0":
+  version: 2.30.0
+  resolution: "@auth0/auth0-react@npm:2.30.0"
   dependencies:
-    "@auth0/auth0-spa-js": "npm:^2.29.0"
+    "@auth0/auth0-spa-js": "npm:^2.30.0"
   peerDependencies:
     react: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
     react-dom: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
-  checksum: 10c0/71cb62146302f11d79571d6d67754410e736cd8cba87f0fe4d4b8847f951edb0da7fc5db0834776422d9f46cf9da8819e9c07a3eb3f6903ef1a301fdd6a86169
+  checksum: 10c0/1d25d3c13f4db7e5787c74e51f4ebe2d3162cd2fb0abf8fe6f002802f0b50b7435891f2e8b3d473c412cd08a8edd5ac306f612d35f91de0a2e52965067efe178
   languageName: node
   linkType: hard
 
-"@auth0/auth0-spa-js@npm:^2.29.0":
-  version: 2.29.0
-  resolution: "@auth0/auth0-spa-js@npm:2.29.0"
+"@auth0/auth0-spa-js@npm:^2.30.0":
+  version: 2.30.0
+  resolution: "@auth0/auth0-spa-js@npm:2.30.0"
   dependencies:
     "@auth0/auth0-auth-js": "npm:^1.17.0"
     browser-tabs-lock: "npm:^1.3.0"
     dpop: "npm:^2.1.1"
     es-cookie: "npm:~1.3.2"
-  checksum: 10c0/6d7898395769f9a1bd035a2bd6c31f10b75ac560d3a3601566e729e53686e3d8655328dd2c911d8f7fb7f60986df5f8f5f1d7018e34288baf9c57fc92fe06737
+  checksum: 10c0/04d8599a859e960950ee6b160e20cd885f5594354d95d807ef2ccbd187e75bc934ec964675ae7629a5c36e74931091ea565c26700271ed8585e2fcd405113419
   languageName: node
   linkType: hard
 
