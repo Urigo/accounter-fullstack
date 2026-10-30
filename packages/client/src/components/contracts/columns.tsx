@@ -106,7 +106,7 @@ export const columns: ColumnDef<PaginatedTableFeaturesConfig, ContractRow>[] = [
   },
   {
     accessorKey: 'operationsLimit',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Operations Limit" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Operations / month" />,
     cell: ({ row }) => {
       const operationsLimit = row.getValue<bigint>('operationsLimit');
       if (!operationsLimit) {

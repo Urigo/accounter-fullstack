@@ -376,7 +376,11 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone, d
                           <Input
                             placeholder="30,000,000,000"
                             {...field}
-                            value={field.value?.toLocaleString()}
+                            // A new contract starts at 0n; rendering that as "0" would hide
+                            // the placeholder, so zero shows as an empty field. onChange still
+                            // stores 0n for an emptied input, so the form value never becomes
+                            // undefined.
+                            value={field.value ? field.value.toLocaleString() : ''}
                             onChange={event => {
                               const rawValue = event.target.value.replace(/[^0-9]/g, '');
                               field.onChange(rawValue ? BigInt(rawValue) : BigInt(0));
