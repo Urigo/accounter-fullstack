@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { createClientTool } from '../clients-write.js';
 import {
   authContext,
@@ -11,13 +12,16 @@ import {
   runTool,
 } from './review-write-harness.js';
 
-const created = (overrides: Record<string, unknown> = {}) => ({
-  __typename: 'Client',
+const NAME = 'Acme Learning Ltd.';
+const EMAILS = ['billing@acme.example', 'ops@acme.example'];
+
+/** What `client(businessId:)` returns once the Green Invoice step has run. */
+const readBack = (overrides: Record<string, unknown> = {}) => ({
   id: BIZ,
   ownerId: B1,
-  emails: ['billing@acme.example', 'ops@acme.example'],
+  emails: EMAILS,
   generatedDocumentType: 'PROFORMA',
-  originalBusiness: { id: BIZ, name: 'Acme Learning Ltd.' },
+  originalBusiness: { id: BIZ, name: NAME },
   integrations: {
     hiveId: null,
     linearId: null,
@@ -29,29 +33,53 @@ const created = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-/** The directory lookup finds a business that is not yet a client; the insert succeeds. */
-const fresh = (overrides: Record<string, unknown> = {}) =>
+/** A directory row for a business that is not (yet) a client. */
+const notAClient = { id: BIZ, name: NAME, isClient: false, clientInfo: null };
+
+/**
+ * The directory lookup finds a business that is not yet a client; the insert
+ * succeeds and — as upstream really does — returns the row before the Green
+ * Invoice id is written; the read-back then carries it.
+ */
+const fresh = (readBackOverrides: Record<string, unknown> = {}) =>
   mutationClient({
-    businesses: [{ id: BIZ, name: 'Acme Learning Ltd.', isClient: false }],
-    insertClient: created(overrides),
+    businesses: [notAClient],
+    insertClient: { __typename: 'Client', id: BIZ },
+    client: readBack(readBackOverrides),
   });
 
+/** An upstream that answers every operation with a GraphQL error, as the server does for an unknown id. */
+function erroringClient(message: string) {
+  const captured: string[] = [];
+  const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+    captured.push((JSON.parse(init.body as string) as { query: string }).query);
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ data: null, errors: [{ message }] }),
+    } as unknown as Response;
+  });
+  const client = new UpstreamGraphQLClient({
+    endpoint: 'http://localhost:4000/graphql',
+    timeoutMs: 1000,
+    fetchImpl: fetchImpl as unknown as typeof fetch,
+  });
+  return { client, captured };
+}
+
+const minimal = { businessId: BIZ, generatedDocumentType: 'PROFORMA' };
+
 describe('createClientTool — request', () => {
-  it('reads the business first, then sends only the given fields', async () => {
+  it('reads the business, sends the given fields, then reads the client back', async () => {
     const { client, captured } = fresh();
     const result = await runTool(
       createClientTool,
-      {
-        businessId: BIZ,
-        emails: ['billing@acme.example', 'ops@acme.example'],
-        generatedDocumentType: 'PROFORMA',
-        integrations: { hiveId: 'hive-org-1' },
-      },
+      { ...minimal, emails: EMAILS, integrations: { hiveId: 'hive-org-1' } },
       client,
     );
 
     expect(result.isError).toBeUndefined();
-    expect(rootFields(captured)).toEqual(['businesses', 'insertClient']);
+    expect(rootFields(captured)).toEqual(['businesses', 'insertClient', 'client']);
     const [lookup] = callsTo(captured, 'businesses');
     expect(lookup.query).toMatch(/^\s*query\b/);
     expect(lookup.variables).toEqual({ ids: [BIZ] });
@@ -61,11 +89,14 @@ describe('createClientTool — request', () => {
       fields: {
         businessId: BIZ,
         generatedDocumentType: 'PROFORMA',
-        emails: ['billing@acme.example', 'ops@acme.example'],
+        emails: EMAILS,
         integrations: { hiveId: 'hive-org-1' },
       },
     });
     expect(insert.headers['x-business-scope']).toBe(B1);
+    const [read] = callsTo(captured, 'client');
+    expect(read.query).toMatch(/^\s*query\b/);
+    expect(read.variables).toEqual({ businessId: BIZ });
   });
 
   it('omits emails and integrations when not given, so upstream applies its own defaults', async () => {
@@ -95,11 +126,26 @@ describe('createClientTool — guards', () => {
     expect(captured).toHaveLength(0);
   });
 
+  it('rejects a malformed email before any round trip', async () => {
+    const { client, captured } = fresh();
+    const result = await runTool(
+      createClientTool,
+      { ...minimal, emails: ['billing@acme.example', 'not-an-email'] },
+      client,
+    );
+
+    expect(result.isError).toBe(true);
+    const structured = result.structuredContent as { code: string; issues?: Array<{ path: string }> };
+    expect(structured.code).toBe('VALIDATION_ERROR');
+    expect(structured.issues?.[0]?.path).toBe('emails.1');
+    expect(captured).toHaveLength(0);
+  });
+
   it('does not accept a Green Invoice id — upstream assigns that itself', async () => {
     const { client, captured } = fresh();
     const result = await runTool(
       createClientTool,
-      { businessId: BIZ, generatedDocumentType: 'PROFORMA', integrations: { greenInvoiceId: 'gi-x' } },
+      { ...minimal, integrations: { greenInvoiceId: 'gi-x' } },
       client,
     );
 
@@ -110,14 +156,17 @@ describe('createClientTool — guards', () => {
 
   it('refuses a business that is already a client and points at accounter_list_clients', async () => {
     const { client, captured } = mutationClient({
-      businesses: [{ id: BIZ, name: 'Acme Learning Ltd.', isClient: true }],
-      insertClient: created(),
+      businesses: [
+        {
+          id: BIZ,
+          name: NAME,
+          isClient: true,
+          clientInfo: { integrations: { greenInvoiceInfo: { greenInvoiceId: 'gi-1' } } },
+        },
+      ],
+      insertClient: { __typename: 'Client', id: BIZ },
     });
-    const result = await runTool(
-      createClientTool,
-      { businessId: BIZ, generatedDocumentType: 'PROFORMA' },
-      client,
-    );
+    const result = await runTool(createClientTool, minimal, client);
 
     expect(result.isError).toBe(true);
     const structured = result.structuredContent as {
@@ -126,35 +175,62 @@ describe('createClientTool — guards', () => {
       issues: Array<{ path: string; message: string }>;
     };
     expect(structured.code).toBe('VALIDATION_ERROR');
-    expect(structured.message).toMatch(/already a client/);
+    expect(structured.message).toMatch(/already a client$/);
     expect(structured.issues[0].path).toBe('businessId');
     expect(structured.issues[0].message).toContain('accounter_list_clients');
     expect(callsTo(captured, 'insertClient')).toHaveLength(0);
   });
 
-  it('refuses an id the lookup does not return', async () => {
-    const { client, captured } = mutationClient({ businesses: [], insertClient: created() });
-    const result = await runTool(
-      createClientTool,
-      { businessId: BIZ, generatedDocumentType: 'PROFORMA' },
-      client,
-    );
+  it('names a half-created client (row without a Green Invoice customer) instead of calling it done', async () => {
+    const { client, captured } = mutationClient({
+      businesses: [
+        { id: BIZ, name: NAME, isClient: true, clientInfo: { integrations: { greenInvoiceInfo: null } } },
+      ],
+      insertClient: { __typename: 'Client', id: BIZ },
+    });
+    const result = await runTool(createClientTool, minimal, client);
 
     expect(result.isError).toBe(true);
-    const structured = result.structuredContent as { code: string; message: string };
+    const structured = result.structuredContent as {
+      code: string;
+      message: string;
+      issues: Array<{ path: string; message: string }>;
+    };
+    expect(structured.code).toBe('VALIDATION_ERROR');
+    expect(structured.message).toMatch(/already a client but its Green Invoice customer is missing/);
+    expect(structured.issues[0].message).toContain('Accounter UI');
+    expect(callsTo(captured, 'insertClient')).toHaveLength(0);
+  });
+
+  it('turns the upstream error for an unknown business id into a validation error', async () => {
+    // `businesses(ids:)` does not return a shorter list for a missing id — it
+    // throws, and this is the message it throws with.
+    const { client, captured } = erroringClient('Error fetching some of the businesses');
+    const result = await runTool(createClientTool, minimal, client);
+
+    expect(result.isError).toBe(true);
+    const structured = result.structuredContent as {
+      code: string;
+      message: string;
+      issues: Array<{ path: string }>;
+    };
     expect(structured.code).toBe('VALIDATION_ERROR');
     expect(structured.message).toContain(BIZ);
-    expect(callsTo(captured, 'insertClient')).toHaveLength(0);
+    expect(structured.issues[0].path).toBe('businessId');
+    expect(captured).toHaveLength(1); // the pre-read only; no mutation followed
+  });
+
+  it('passes any other upstream error on the pre-read through unchanged', async () => {
+    const { client } = erroringClient('Context creation failed');
+    const result = await runTool(createClientTool, minimal, client);
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('UPSTREAM_ERROR');
   });
 
   it('refuses an ambiguous write target', async () => {
     const { client, captured } = fresh();
-    const result = await runTool(
-      createClientTool,
-      { businessId: BIZ, generatedDocumentType: 'PROFORMA' },
-      client,
-      authContext([B1, B2]),
-    );
+    const result = await runTool(createClientTool, minimal, client, authContext([B1, B2]));
 
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
@@ -163,7 +239,7 @@ describe('createClientTool — guards', () => {
 });
 
 describe('createClientTool — result mapping', () => {
-  it('reports the client under its business id and the Green Invoice id upstream assigned', async () => {
+  it('reports the client from the read-back, including the Green Invoice id upstream assigned', async () => {
     const { client } = fresh({
       integrations: {
         hiveId: 'hive-org-1',
@@ -176,12 +252,7 @@ describe('createClientTool — result mapping', () => {
     });
     const result = await runTool(
       createClientTool,
-      {
-        businessId: BIZ,
-        emails: ['billing@acme.example', 'ops@acme.example'],
-        generatedDocumentType: 'PROFORMA',
-        integrations: { hiveId: 'hive-org-1' },
-      },
+      { ...minimal, emails: EMAILS, integrations: { hiveId: 'hive-org-1' } },
       client,
     );
 
@@ -206,9 +277,9 @@ describe('createClientTool — result mapping', () => {
     expect(structured.clients).toEqual([
       {
         businessId: BIZ,
-        name: 'Acme Learning Ltd.',
+        name: NAME,
         ownerId: B1,
-        emails: ['billing@acme.example', 'ops@acme.example'],
+        emails: EMAILS,
         generatedDocumentType: 'PROFORMA',
         integrations: { greenInvoiceId: 'gi-1', hiveId: 'hive-org-1' },
       },
@@ -216,13 +287,9 @@ describe('createClientTool — result mapping', () => {
     expect(result.content[0]?.text).toContain('Green Invoice customer gi-1');
   });
 
-  it('reports a null Green Invoice id when upstream returned none', async () => {
+  it('reports a null Green Invoice id when the read-back has none', async () => {
     const { client } = fresh({ integrations: { greenInvoiceInfo: null } });
-    const result = await runTool(
-      createClientTool,
-      { businessId: BIZ, generatedDocumentType: 'PROFORMA' },
-      client,
-    );
+    const result = await runTool(createClientTool, minimal, client);
 
     const structured = result.structuredContent as {
       greenInvoiceId: string | null;
@@ -232,20 +299,17 @@ describe('createClientTool — result mapping', () => {
     expect(structured.clients[0].integrations).toEqual({});
   });
 
-  it('maps an upstream CommonError to a non-retryable upstream error', async () => {
-    const { client } = mutationClient({
-      businesses: [{ id: BIZ, name: 'Acme Learning Ltd.', isClient: false }],
+  it('maps an upstream CommonError to a non-retryable upstream error, without reading back', async () => {
+    const { client, captured } = mutationClient({
+      businesses: [notAClient],
       insertClient: { __typename: 'CommonError', message: 'Failed to create Client' },
     });
-    const result = await runTool(
-      createClientTool,
-      { businessId: BIZ, generatedDocumentType: 'PROFORMA' },
-      client,
-    );
+    const result = await runTool(createClientTool, minimal, client);
 
     expect(result.isError).toBe(true);
     const structured = result.structuredContent as { code: string; retryable: boolean };
     expect(structured.code).toBe('UPSTREAM_ERROR');
     expect(structured.retryable).toBe(false);
+    expect(callsTo(captured, 'client')).toHaveLength(0);
   });
 });
