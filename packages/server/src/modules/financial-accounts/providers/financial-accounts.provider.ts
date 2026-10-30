@@ -86,9 +86,25 @@ const deleteFinancialAccount = sql<IDeleteFinancialAccountQuery>`
  * The bank's own running balance, read off the newest ingested transaction per
  * (account, currency). Banks report the balance after every movement
  * (`transactions.current_balance`), so the latest row is the latest balance the
- * bank told us about. Same-day ties are broken by the bank's own sequence:
- * `serial_number` for Poalim ILS rows, `event_number` for Poalim foreign-currency
- * rows, then insertion time for every other source.
+ * bank told us about.
+ *
+ * Same-day ties are broken by each bank's own ordering, joined through the
+ * raw-list key of the source:
+ * - Poalim ILS: `serial_number`; Poalim foreign currency: `event_number`.
+ * - Discount: `operation_order`. Discount's API returns the day's rows with an
+ *   `OperationOrder` position (present on posted and on future entries alike),
+ *   and `BalanceAfterOperation` moves with it — so it is the posting order.
+ *   `operation_number` is the bank's reference for the movement (reused as the
+ *   counter-account hint in the extended transactions view), is 0/NULL for many
+ *   rows, and does not follow posting order, so it is not used.
+ * - Otsar Hahayal ILS: `last_transaction_of_day`, the bank's own end-of-day
+ *   marker (TRUE sorts after FALSE). It only separates the last row from the
+ *   rest; two earlier same-day rows still fall through to `created_at`.
+ * Sources with no usable sequence (Otsar Hahayal foreign currency, Kraken,
+ * Etana, …) fall through to `created_at`. That is only a tie-break of last
+ * resort: Discount and Otsar Hahayal are ingested in one multi-row INSERT, so
+ * their same-day rows share `created_at` exactly — which is why their own
+ * columns are joined above rather than relying on insertion time.
  */
 const getLatestAccountBalances = sql<IGetLatestAccountBalancesQuery>`
   SELECT DISTINCT ON (t.account_id, t.currency)
@@ -104,14 +120,18 @@ const getLatestAccountBalances = sql<IGetLatestAccountBalancesQuery>`
   LEFT JOIN accounter_schema.transactions_raw_list rl ON rl.id = t.source_id
   LEFT JOIN accounter_schema.poalim_ils_account_transactions pi ON pi.id = rl.poalim_ils_id
   LEFT JOIN accounter_schema.poalim_foreign_account_transactions pf ON pf.id = rl.poalim_foreign_id
+  LEFT JOIN accounter_schema.bank_discount_transactions bd ON bd.id = rl.bank_discount_id
+  LEFT JOIN accounter_schema.otsar_hahayal_ils_account_transactions oi ON oi.id = rl.otsar_hahayal_ils_id
   WHERE fa.type = 'BANK_ACCOUNT'
     AND ($isAccountIds = 0 OR t.account_id IN $$accountIds)
+    AND ($isOwnerIds = 0 OR t.owner_id IN $$ownerIds)
     AND ($asOfDate ::TEXT IS NULL OR t.event_date <= $asOfDate ::DATE)
   ORDER BY
     t.account_id,
     t.currency,
     t.event_date DESC,
-    COALESCE(pi.serial_number, pf.event_number) DESC NULLS LAST,
+    COALESCE(pi.serial_number, pf.event_number, bd.operation_order) DESC NULLS LAST,
+    oi.last_transaction_of_day DESC NULLS LAST,
     t.created_at DESC;`;
 
 @Injectable({
@@ -186,12 +206,17 @@ export class FinancialAccountsProvider {
 
   public async getLatestAccountBalances(params: {
     accountIds?: readonly string[] | null;
+    /** Owning businesses to restrict to; defense in depth on top of RLS. */
+    ownerIds?: readonly string[] | null;
     asOfDate?: string | null;
   }) {
     const accountIds = params.accountIds?.length ? [...params.accountIds] : [null];
+    const ownerIds = params.ownerIds?.length ? [...params.ownerIds] : [null];
     const queryParams: IGetLatestAccountBalancesParams = {
       accountIds,
       isAccountIds: params.accountIds?.length ? 1 : 0,
+      ownerIds,
+      isOwnerIds: params.ownerIds?.length ? 1 : 0,
       asOfDate: params.asOfDate ?? null,
     };
     return getLatestAccountBalances.run(queryParams, this.db);

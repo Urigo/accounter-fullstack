@@ -37,10 +37,10 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           return account;
         });
     },
-    financialAccountBalances: async (_, { accountIds, asOfDate }, { injector }) => {
+    financialAccountBalances: async (_, { accountIds, ownerIds, asOfDate }, { injector }) => {
       return injector
         .get(FinancialAccountsProvider)
-        .getLatestAccountBalances({ accountIds, asOfDate });
+        .getLatestAccountBalances({ accountIds, ownerIds, asOfDate });
     },
   },
   FinancialAccountBalance: {

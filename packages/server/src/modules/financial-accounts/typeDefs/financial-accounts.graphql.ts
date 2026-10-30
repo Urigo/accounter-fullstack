@@ -8,6 +8,8 @@ export default gql`
     " The latest balance each bank account reported, per currency (from the running balance on the newest ingested transaction) "
     financialAccountBalances(
       accountIds: [UUID!]
+      " only balances of accounts owned by any of these (admin) businesses "
+      ownerIds: [UUID!]
       asOfDate: TimelessDate
     ): [FinancialAccountBalance!]! @requiresAuth
   }

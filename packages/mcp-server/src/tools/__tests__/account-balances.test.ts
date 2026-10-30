@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
-import { ACCOUNT_BALANCES_CAVEATS, getAccountBalancesTool } from '../account-balances.js';
+import {
+  ACCOUNT_BALANCES_CAVEATS,
+  getAccountBalancesTool,
+  todayInIsrael,
+} from '../account-balances.js';
 import { executeRegisteredTool } from '../execute.js';
 
 function authContext(memberBusinessIds: string[], roleId = 'business_owner'): McpAuthContext {
@@ -115,8 +119,51 @@ describe('getAccountBalancesTool', () => {
     expect(result.isError).toBeUndefined();
     expect((sent as { variables: unknown }).variables).toEqual({
       accountIds: [accountId],
+      ownerIds: ['b1'],
       asOfDate: '2026-09-30',
     });
+  });
+
+  it('forwards the resolved scope upstream as ownerIds even when no filter is given', async () => {
+    let sent: unknown;
+    const client = clientReturning([], body => (sent = body));
+    await run(client, {});
+
+    expect((sent as { variables: unknown }).variables).toEqual({
+      accountIds: null,
+      ownerIds: ['b1'],
+      asOfDate: null,
+    });
+  });
+
+  it('narrows ownerIds when memberBusinessIds narrows the scope', async () => {
+    let sent: unknown;
+    const client = clientReturning([], body => (sent = body));
+    await executeRegisteredTool({
+      tool: getAccountBalancesTool,
+      rawArgs: { memberBusinessIds: ['b2'] },
+      auth: authContext(['b1', 'b2']),
+      correlationId: 'c',
+      client,
+      authorization: 'Bearer t',
+    });
+
+    expect((sent as { variables: { ownerIds: string[] } }).variables.ownerIds).toEqual(['b2']);
+  });
+
+  it('measures daysOld against today in Israel, not the UTC date', async () => {
+    // 22:30 UTC on the 24th is already 00:30 on the 25th in Israel (UTC+2 in
+    // late October): a balance from the 24th is one day old there, zero in UTC.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-24T22:30:00Z'));
+    try {
+      expect(todayInIsrael()).toBe('2026-10-25');
+      const result = await run(clientReturning([balance('1001', 'ILS', 100, '2026-10-24')]), {});
+      const { balances } = result.structuredContent as { balances: Array<{ daysOld: number }> };
+      expect(balances[0].daysOld).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('rejects a malformed date', async () => {

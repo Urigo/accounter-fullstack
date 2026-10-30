@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import type { McpGetAccountBalancesQuery } from '../gql/index.js';
+import type {
+  McpGetAccountBalancesQuery,
+  McpGetAccountBalancesQueryVariables,
+} from '../gql/index.js';
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { normalizeAmount } from './entity-shapes.js';
 import { resultEnvelopeDescription, shapeListResult } from './output.js';
@@ -46,8 +49,8 @@ const getAccountBalancesInput = z.object({
 type GetAccountBalancesInput = z.infer<typeof getAccountBalancesInput>;
 
 const GET_ACCOUNT_BALANCES_QUERY = /* GraphQL */ `
-  query McpGetAccountBalances($accountIds: [UUID!], $asOfDate: TimelessDate) {
-    financialAccountBalances(accountIds: $accountIds, asOfDate: $asOfDate) {
+  query McpGetAccountBalances($accountIds: [UUID!], $ownerIds: [UUID!], $asOfDate: TimelessDate) {
+    financialAccountBalances(accountIds: $accountIds, ownerIds: $ownerIds, asOfDate: $asOfDate) {
       account {
         id
         name
@@ -117,21 +120,44 @@ function totalsByCurrency(rows: readonly NormalizedBalance[]) {
     .sort((a, b) => a.currency.localeCompare(b.currency));
 }
 
+/**
+ * Today's calendar date in Israel, as `YYYY-MM-DD`. The banks post in Israel
+ * time, so "how old is this balance" is measured against Israel's today — not
+ * the UTC date, which lags it by two or three hours every evening and would
+ * report a balance as a day fresher than it is.
+ */
+export function todayInIsrael(now: Date = new Date()): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
 async function getAccountBalancesHandler(
   input: GetAccountBalancesInput,
   context: ToolExecutionContext,
 ): Promise<ToolResult> {
+  // The resolved scope goes upstream as `ownerIds` as well — the same defense in
+  // depth as `accounter_get_contracts`: the policy layer has already validated it
+  // against the caller's memberships, and RLS narrows upstream too, but the query
+  // states the predicate explicitly rather than trusting either alone.
+  const memberBusinessIds = context.readScope.memberBusinessIds;
+  const variables: McpGetAccountBalancesQueryVariables = {
+    accountIds: input.accountIds ?? null,
+    ownerIds: memberBusinessIds.length > 0 ? [...memberBusinessIds] : null,
+    asOfDate: input.asOfDate ?? null,
+  };
   const data = await context.client.query<McpGetAccountBalancesQuery>(
-    {
-      query: GET_ACCOUNT_BALANCES_QUERY,
-      variables: { accountIds: input.accountIds ?? null, asOfDate: input.asOfDate ?? null },
-    },
+    { query: GET_ACCOUNT_BALANCES_QUERY, variables },
     context.upstream,
   );
 
   const referenceDay = input.asOfDate
     ? parseCalendarDate(input.asOfDate)
-    : parseCalendarDate(new Date().toISOString().slice(0, 10));
+    : parseCalendarDate(todayInIsrael());
   const rows = data.financialAccountBalances
     .map(row => normalizeBalance(row, referenceDay))
     .sort(
