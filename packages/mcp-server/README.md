@@ -353,9 +353,11 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   operations count, e.g. `30000000000` for 30B a month — not millions; 0 when omitted), `isActive`
   (default true) and `deactivateContractIds` (upstream `deactivateContracts`, the UI's renewal
   path). The enums are validated locally and pinned to the schema by `schema-contract.test.ts`.
-  Upstream `createContract` deactivates the listed contracts **before** inserting the new row and
-  does not roll that back when the insert fails, reporting only a generic error — so the description
-  says to re-read with `accounter_get_contracts` before retrying.
+  Upstream `createContract` deactivates the listed contracts **before** inserting the new row, does
+  not check that they belong to the client, and does not roll that back when the insert fails,
+  reporting only a generic error — so the tool pre-reads `contractsByClient` and refuses any id that
+  is not one of that client's contracts, and its description says to re-read with
+  `accounter_get_contracts` before retrying.
 
 All seven require `business_owner`/`accountant`, target exactly one business, are audit-logged, and
 are never retried.

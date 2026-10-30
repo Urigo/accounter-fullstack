@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpCreateContractMutation } from '../gql/index.js';
+import type {
+  McpClientContractsForDeactivationQuery,
+  McpCreateContractMutation,
+} from '../gql/index.js';
 import { parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { DOCUMENT_TYPES } from './document-details.js';
 import { CURRENCIES } from './documents-edit-write.js';
@@ -76,7 +79,10 @@ const createContractInput = z.object({
   endDate: calendarDate.describe('Last day of the term (YYYY-MM-DD); not before `startDate`.'),
   amount: z
     .object({
-      value: z.number().describe('The fee per billing cycle (per month or per year).'),
+      value: z
+        .number()
+        .positive()
+        .describe('The fee per billing cycle (per month or per year); must be above zero.'),
       currency: z.enum(CURRENCIES),
     })
     .describe('The fee charged each billing cycle, with its currency.'),
@@ -128,11 +134,26 @@ const createContractInput = z.object({
     .optional()
     .describe(
       'Contracts to mark inactive in the same call — the previous term when this one is a renewal ' +
-        '(ids from `accounter_get_contracts`). They are deactivated BEFORE the new row is inserted ' +
-        'and are not rolled back if the insert fails.',
+        '(ids from `accounter_get_contracts`). Every id must be one of this client’s contracts; the ' +
+        'tool checks that first and refuses the whole call otherwise, since upstream deactivates ' +
+        'them BEFORE the new row is inserted and does not roll that back if the insert fails.',
     ),
 });
 type CreateContractInput = z.infer<typeof createContractInput>;
+
+// Pre-read before a renewal: upstream deactivates `deactivateContracts` one by
+// one *before* the insert and never rolls that back, and it does not check that
+// the ids belong to the client — so a wrong id would silently switch off some
+// other client's contract. The tool checks every id against the client's own
+// contracts first and refuses the whole call if any is foreign.
+const CLIENT_CONTRACTS_QUERY = /* GraphQL */ `
+  query McpClientContractsForDeactivation($clientId: UUID!) {
+    contractsByClient(clientId: $clientId) {
+      id
+      isActive
+    }
+  }
+`;
 
 const CREATE_CONTRACT_MUTATION = /* GraphQL */ `
   mutation McpCreateContract($input: CreateContractInput!) {
@@ -199,6 +220,25 @@ async function createContractHandler(
     throw new ToolInputError('endDate is before startDate', [
       { path: 'endDate', message: `must be on or after startDate (${input.startDate})` },
     ]);
+  }
+
+  if (input.deactivateContractIds?.length) {
+    const existing = await context.client.query<McpClientContractsForDeactivationQuery>(
+      { query: CLIENT_CONTRACTS_QUERY, variables: { clientId: input.clientId } },
+      context.upstream,
+    );
+    const owned = new Set((existing.contractsByClient ?? []).map(contract => contract.id));
+    const foreign = input.deactivateContractIds.filter(id => !owned.has(id));
+    if (foreign.length > 0) {
+      throw new ToolInputError(
+        `deactivateContractIds names ${foreign.length} contract${foreign.length === 1 ? '' : 's'} that ` +
+          `do not belong to client ${input.clientId}: ${foreign.join(', ')}`,
+        foreign.map(id => ({
+          path: 'deactivateContractIds',
+          message: `${id} is not one of this client's contracts (accounter_get_contracts with clientIds); nothing was changed`,
+        })),
+      );
+    }
   }
 
   const fields = contractInputOf(input);
@@ -278,7 +318,8 @@ export const createContractTool: ToolDefinition<typeof createContractInput> = {
     '`operationsLimit` (the FULL monthly operations count, e.g. 30000000000 for 30B a month; 0 when ' +
     'omitted) ' +
     'and `isActive` (default true). For a renewal, `deactivateContractIds` retires the previous ' +
-    'term in the same call; upstream deactivates those BEFORE inserting the new row and does not ' +
+    'term in the same call; the tool first checks every id is one of this client’s contracts and ' +
+    'refuses the call if any is not. Upstream deactivates those BEFORE inserting the new row and does not ' +
     'roll that back if the insert fails, so after an upstream error re-read with ' +
     '`accounter_get_contracts` before retrying. One row is created per call — a multi-year ' +
     'agreement billed annually is one contract spanning the whole term with the yearly fee as ' +
