@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpCreateClientMutation, McpFindBusinessForClientQuery } from '../gql/index.js';
+import type {
+  McpCreateClientMutation,
+  McpFindBusinessForClientQuery,
+  McpReadCreatedClientQuery,
+} from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
 import { DOCUMENT_TYPES } from './document-details.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
@@ -39,7 +43,14 @@ import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './sc
  * `CommonError`, but the `clients` row from step 1 already exists. The
  * description therefore says to check `accounter_list_clients` after any
  * upstream error instead of calling again — the second call would hit the
- * primary key on `business_id` and fail too.
+ * primary key on `business_id` and fail too. The pre-read also recognises
+ * that half-created state (a client row with no Green Invoice id) and names
+ * it, rather than reporting "already a client" as if all were well.
+ *
+ * The mutation's return value is the row *as inserted in step 1*, so it never
+ * carries the Green Invoice id from step 3. The tool therefore reads the client
+ * back with `client(businessId:)` after a successful insert and reports from
+ * that read; the mutation selects only the id.
  *
  * The same primary key is why the tool reads the business first and refuses
  * one that is already a client: upstream collapses every failure into the
@@ -89,12 +100,12 @@ const createClientInput = z.object({
         'Refused when the business is already a client.',
     ),
   emails: z
-    .array(z.string().min(1).max(200))
+    .array(z.email().max(200))
     .max(MAX_EMAILS)
     .optional()
     .describe(
-      'Billing emails the client’s documents are sent to. Duplicates are dropped case-insensitively ' +
-        'upstream. Omitting it stores an empty list.',
+      'Billing emails the client’s documents are sent to; each must be a well-formed address. ' +
+        'Duplicates are dropped case-insensitively upstream. Omitting it stores an empty list.',
     ),
   generatedDocumentType: z
     .enum(DOCUMENT_TYPES)
@@ -106,11 +117,18 @@ const createClientInput = z.object({
 });
 type CreateClientInput = z.infer<typeof createClientInput>;
 
-// `isClient` hangs off `LtdFinancialEntity`, not off the `Business` interface
-// that `businesses(ids:)` is typed to — same inline fragment as the directory
-// tool, and `Business.__resolveType` returns `LtdFinancialEntity` for every
-// node, so the fragment matches. An unknown id makes the resolver throw, which
-// surfaces as a non-retryable UPSTREAM_ERROR before anything is written.
+// `isClient` and `clientInfo` hang off `LtdFinancialEntity`, not off the
+// `Business` interface that `businesses(ids:)` is typed to — same inline
+// fragment as the directory tool, and `Business.__resolveType` returns
+// `LtdFinancialEntity` for every node, so the fragment matches. `clientInfo`
+// is selected down to the Green Invoice id only: that field resolves from a
+// value already loaded, while the rest of `GreenInvoiceClient` calls the
+// external Green Invoice API.
+//
+// An unknown id does not come back as a missing row: the resolver loads every
+// id and throws `Error fetching some of the businesses` when any is missing,
+// which reaches this tool as an UpstreamError — mapped to a ToolInputError on
+// `businessId` below, since it is the caller's input that is wrong.
 const FIND_BUSINESS_QUERY = /* GraphQL */ `
   query McpFindBusinessForClient($ids: [UUID!]!) {
     businesses(ids: $ids) {
@@ -118,34 +136,59 @@ const FIND_BUSINESS_QUERY = /* GraphQL */ `
       ... on LtdFinancialEntity {
         name
         isClient
+        clientInfo {
+          integrations {
+            greenInvoiceInfo {
+              greenInvoiceId
+            }
+          }
+        }
       }
     }
   }
 `;
 
+/** The message upstream `businesses(ids:)` throws when any requested id does not exist. */
+const UNKNOWN_BUSINESS_UPSTREAM_MESSAGE = 'Error fetching some of the businesses';
+
+// Read back after the insert. Upstream `insertClient` returns the `clients` row
+// as inserted — *before* `addGreenInvoiceClient` writes the Green Invoice id
+// onto it — so the mutation's own return value never carries that id. This is
+// the one query that returns the row as it stands now.
+const READ_CREATED_CLIENT_QUERY = /* GraphQL */ `
+  query McpReadCreatedClient($businessId: UUID!) {
+    client(businessId: $businessId) {
+      id
+      ownerId
+      emails
+      generatedDocumentType
+      originalBusiness {
+        id
+        name
+      }
+      integrations {
+        hiveId
+        linearId
+        slackChannelKey
+        notionId
+        workflowyUrl
+        greenInvoiceInfo {
+          greenInvoiceId
+        }
+      }
+    }
+  }
+`;
+
+// Only the id is selected: every other field is read back afterwards (see
+// `READ_CREATED_CLIENT_QUERY`), because what this returns is the row before the
+// Green Invoice step touched it.
 const CREATE_CLIENT_MUTATION = /* GraphQL */ `
   mutation McpCreateClient($fields: ClientInsertInput!) {
     insertClient(fields: $fields) {
       __typename
       ... on Client {
         id
-        ownerId
-        emails
-        generatedDocumentType
-        originalBusiness {
-          id
-          name
-        }
-        integrations {
-          hiveId
-          linearId
-          slackChannelKey
-          notionId
-          workflowyUrl
-          greenInvoiceInfo {
-            greenInvoiceId
-          }
-        }
       }
       ... on CommonError {
         message
@@ -180,10 +223,25 @@ async function createClientHandler(
   input: CreateClientInput,
   context: ToolExecutionContext,
 ): Promise<ToolResult> {
-  const found = await context.client.query<McpFindBusinessForClientQuery>(
-    { query: FIND_BUSINESS_QUERY, variables: { ids: [input.businessId] } },
-    context.upstream,
-  );
+  let found: McpFindBusinessForClientQuery;
+  try {
+    found = await context.client.query<McpFindBusinessForClientQuery>(
+      { query: FIND_BUSINESS_QUERY, variables: { ids: [input.businessId] } },
+      context.upstream,
+    );
+  } catch (error) {
+    if (
+      error instanceof UpstreamError &&
+      error.message.includes(UNKNOWN_BUSINESS_UPSTREAM_MESSAGE)
+    ) {
+      throw new ToolInputError(`No business with id ${input.businessId}`, [
+        { path: 'businessId', message: 'look the business up with accounter_list_businesses' },
+      ]);
+    }
+    throw error;
+  }
+  // The resolver has thrown for any missing id by now; an empty list here would
+  // mean upstream changed its contract, so it is treated as the same input error.
   const business = (found.businesses ?? []).find(row => row.id === input.businessId);
   if (!business) {
     throw new ToolInputError(`No business with id ${input.businessId}`, [
@@ -192,6 +250,26 @@ async function createClientHandler(
   }
   const name = 'name' in business ? business.name : input.businessId;
   if ('isClient' in business && business.isClient) {
+    const hasGreenInvoice =
+      'clientInfo' in business &&
+      !!business.clientInfo?.integrations.greenInvoiceInfo?.greenInvoiceId;
+    // The row exists but the Green Invoice step never completed: a previous
+    // insert failed half-way. Nothing this tool can send would finish it —
+    // `insertClient` would hit the primary key — so it has to be repaired in the
+    // Accounter UI, and the message must not read as plain "already done".
+    if (!hasGreenInvoice) {
+      throw new ToolInputError(
+        `"${name}" is already a client but its Green Invoice customer is missing`,
+        [
+          {
+            path: 'businessId',
+            message:
+              'the client row exists without a Green Invoice id — an earlier creation failed half-way; ' +
+              'fix it in the Accounter UI (client → integrations) rather than calling this tool again',
+          },
+        ],
+      );
+    }
     throw new ToolInputError(`"${name}" is already a client`, [
       {
         path: 'businessId',
@@ -215,8 +293,16 @@ async function createClientHandler(
     );
   }
 
+  // Read the row back: the mutation returned it before the Green Invoice id was
+  // written, so only a fresh read reports what the client actually holds now.
+  const readBack = await context.client.query<McpReadCreatedClientQuery>(
+    { query: READ_CREATED_CLIENT_QUERY, variables: { businessId: result.id } },
+    context.upstream,
+  );
+  const row = readBack.client;
+
   const integrations: Record<string, string> = {};
-  const greenInvoiceId = result.integrations.greenInvoiceInfo?.greenInvoiceId;
+  const greenInvoiceId = row.integrations.greenInvoiceInfo?.greenInvoiceId;
   if (greenInvoiceId) integrations.greenInvoiceId = greenInvoiceId;
   for (const key of [
     'hiveId',
@@ -225,15 +311,15 @@ async function createClientHandler(
     'notionId',
     'workflowyUrl',
   ] as const) {
-    const value = result.integrations[key];
+    const value = row.integrations[key];
     if (value) integrations[key] = value;
   }
   const client = {
-    businessId: result.id,
-    name: result.originalBusiness.name,
-    ownerId: result.ownerId,
-    emails: [...result.emails],
-    generatedDocumentType: result.generatedDocumentType,
+    businessId: row.id,
+    name: row.originalBusiness.name,
+    ownerId: row.ownerId,
+    emails: [...row.emails],
+    generatedDocumentType: row.generatedDocumentType,
     integrations,
   };
 
@@ -274,10 +360,14 @@ export const createClientTool: ToolDefinition<typeof createClientInput> = {
     '`generatedDocumentType` (PROFORMA, INVOICE, …; the contract’s own `documentType` is what ' +
     'actually gets issued) and optional `integrations` ids (`hiveId`, `linearId`, ' +
     '`slackChannelKey`, `notionId`, `workflowyUrl`). Upstream also creates a customer in Green ' +
-    'Invoice from the business’s directory details and stores its id on the client, reported as ' +
-    '`greenInvoiceId`; that step is not part of the same transaction, so after an upstream error ' +
-    'check `accounter_list_clients` before calling again — the client row may already exist and a ' +
-    'retry would fail on it. A business that is already a client is refused before any write. ' +
+    'Invoice from the business’s directory details and stores its id on the client; the tool reads ' +
+    'the client back after the insert and reports that id as `greenInvoiceId` (the insert’s own ' +
+    'return value predates it). That step is not part of the same transaction, so after an upstream ' +
+    'error check `accounter_list_clients` before calling again — the client row may already exist ' +
+    'and a retry would fail on it. A business that is already a client is refused before any write, ' +
+    'with a distinct message when its row exists but the Green Invoice customer is missing (a ' +
+    'half-finished earlier creation, to be repaired in the Accounter UI). An unknown `businessId` is ' +
+    'a validation error. ' +
     'The echo under `clients` is the new client with its `businessId` (a client’s id is its ' +
     'business id), also reported as `clientBusinessId`, alongside `setFields`. ' +
     writeResultDescription('clients') +
