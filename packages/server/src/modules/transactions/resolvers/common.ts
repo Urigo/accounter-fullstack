@@ -62,7 +62,7 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
     injector
       .get(TransactionsProvider)
       .transactionByIdLoader.load(transactionId)
-      .then(res => formatFinancialAmount(res.current_balance)),
+      .then(res => formatFinancialAmount(res.current_balance, res.currency)),
   createdAt: async (transactionId, __dirname, { injector }) =>
     injector
       .get(TransactionsProvider)

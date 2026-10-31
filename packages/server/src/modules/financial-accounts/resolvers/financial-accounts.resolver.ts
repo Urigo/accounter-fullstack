@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import type { Writeable } from '../../../shared/types/index.js';
 import { FinancialAccountsTaxCategoriesProvider } from '../providers/financial-accounts-tax-categories.provider.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
@@ -36,6 +37,29 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           return account;
         });
     },
+    financialAccountBalances: async (_, { accountIds, ownerIds, asOfDate }, { injector }) => {
+      return injector
+        .get(FinancialAccountsProvider)
+        .getLatestAccountBalances({ accountIds, ownerIds, asOfDate });
+    },
+  },
+  FinancialAccountBalance: {
+    id: row => `${row.account_id}:${row.currency}`,
+    account: async (row, _, { injector }) => {
+      const account = await injector
+        .get(FinancialAccountsProvider)
+        .getFinancialAccountByAccountIDLoader.load(row.account_id);
+      if (!account) {
+        throw new GraphQLError(`Financial account ${row.account_id} not found`);
+      }
+      return account;
+    },
+    currency: row => formatCurrency(row.currency),
+    balance: row => formatFinancialAmount(row.current_balance, row.currency),
+    asOfDate: row => row.event_date,
+    valueDate: row => row.debit_date,
+    transactionId: row => row.transaction_id,
+    ownerId: row => row.owner_id,
   },
   Mutation: {
     deleteFinancialAccount: async (_, { id }, { injector }) => {
