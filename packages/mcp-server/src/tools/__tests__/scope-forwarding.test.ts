@@ -144,6 +144,27 @@ function dataFor(query: string): unknown {
       },
     };
   }
+  if (query.includes('createContract')) {
+    return {
+      createContract: {
+        id: 'k1',
+        ownerId: B1,
+        isActive: true,
+        startDate: '2026-11-01',
+        endDate: '2028-10-31',
+        billingCycle: 'ANNUAL',
+        documentType: 'PROFORMA',
+        product: 'HIVE',
+        plan: 'ENTERPRISE',
+        purchaseOrders: [],
+        remarks: null,
+        msCloud: null,
+        operationsLimit: 0,
+        amount: { raw: 100000, currency: 'USD' },
+        client: { id: 'b1', originalBusiness: { id: 'b1', name: 'Vendor' } },
+      },
+    };
+  }
   if (query.includes('allCharges')) {
     return {
       allCharges: {
@@ -216,6 +237,15 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_update_document: { memberBusinessId: B1, documentId: 'd1', chargeId: 'c1' },
   accounter_delete_document: { memberBusinessId: B1, documentId: 'd1' },
   accounter_create_business: { memberBusinessId: B1, name: 'Vendor', country: 'USA' },
+  accounter_create_contract: {
+    memberBusinessId: B1,
+    clientId: 'b1',
+    startDate: '2026-11-01',
+    endDate: '2028-10-31',
+    amount: { value: 100000, currency: 'USD' },
+    billingCycle: 'ANNUAL',
+    documentType: 'PROFORMA',
+  },
 };
 
 describe('registry-wide business-scope forwarding', () => {
