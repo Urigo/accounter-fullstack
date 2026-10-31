@@ -72,7 +72,7 @@ __metadata:
     "@auth0/auth0-react": "npm:2.29.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
-    "@hookform/resolvers": "npm:6.0.0"
+    "@hookform/resolvers": "npm:7.0.0"
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.5.0"
     "@mui/x-charts": "npm:8.29.3"
@@ -3672,15 +3672,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hookform/resolvers@npm:6.0.0":
-  version: 6.0.0
-  resolution: "@hookform/resolvers@npm:6.0.0"
+"@hookform/resolvers@npm:7.0.0":
+  version: 7.0.0
+  resolution: "@hookform/resolvers@npm:7.0.0"
   dependencies:
     "@standard-schema/utils": "npm:^0.3.0"
   peerDependencies:
-    "@sinclair/typebox": ">=0.25.24"
     "@standard-schema/spec": ^1.0.0
-    "@typeschema/main": ">=0.13.7"
     "@vinejs/vine": ^2.0.0 || ^3.0.0 || ^4.0.0
     ajv: ^8.12.0
     ajv-errors: ^3.0.0
@@ -3699,16 +3697,13 @@ __metadata:
     react-hook-form: ^7.55.0
     superstruct: ">=0.12.0"
     typanion: ^3.3.2
+    typebox: ^1.0.0
     valibot: ">=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc"
     vest: ">=6.0.0"
     yup: ^1.0.0
     zod: ^3.25.0 || ^4.0.0
   peerDependenciesMeta:
-    "@sinclair/typebox":
-      optional: true
     "@standard-schema/spec":
-      optional: true
-    "@typeschema/main":
       optional: true
     "@vinejs/vine":
       optional: true
@@ -3744,6 +3739,8 @@ __metadata:
       optional: true
     typanion:
       optional: true
+    typebox:
+      optional: true
     valibot:
       optional: true
     vest:
@@ -3752,7 +3749,7 @@ __metadata:
       optional: true
     zod:
       optional: true
-  checksum: 10c0/97ca7f437ae6ab810f9fa5189de3291a1a9542e5be5d89731a95db0a26a98554857f892c450065cbc033ee0b9327da61a044343dad9f135c405dbbd6e50b6543
+  checksum: 10c0/9ee4ce5f8f08dc73268ddad451b21f38d3367f61b3ec75b54dc77691650af336514dd948d09a36cb4caab730c2901bbaa07428239f187e335a9ca2f97a2b69fd
   languageName: node
   linkType: hard
 
