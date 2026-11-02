@@ -38,7 +38,9 @@ export const Counterparty = ({
   const { name, id } = counterparty ?? { name: 'Missing', id: undefined };
 
   return (
-    <div className="whitespace-normal">
+    // `wrap-anywhere`: counterparty names (security identifiers above all) can be one long
+    // unbroken token; without it the cell's min-content width pushes the table past the pane.
+    <div className="whitespace-normal wrap-anywhere">
       <Indicator inline size={12} disabled={!isError} color="red">
         {!isError && id && <CounterpartyLink id={id} name={name} />}
         {isError && name}

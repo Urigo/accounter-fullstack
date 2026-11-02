@@ -14,7 +14,7 @@ export const BusinessTrip = ({ id, name }: BusinessTripProps): ReactElement => {
       target="_blank"
       rel="noreferrer"
       onClick={event => event.stopPropagation()}
-      className="inline-flex items-center font-semibold"
+      className="inline-flex items-center font-semibold wrap-anywhere"
     >
       {name}
     </Link>

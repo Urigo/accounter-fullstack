@@ -55,7 +55,7 @@ export const Tags = ({
         <ListCapsule
           items={tags.map(t => (
             <div key={t.id} className="flex items-center gap-4">
-              <div>
+              <div className="wrap-anywhere">
                 {t.namePath && (
                   <div className="text-xs opacity-65">{`${t.namePath.join(' > ')} >`}</div>
                 )}
