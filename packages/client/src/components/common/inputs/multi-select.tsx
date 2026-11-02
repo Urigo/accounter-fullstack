@@ -1,6 +1,7 @@
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { CheckIcon, ChevronDown, WandSparkles, XCircle, XIcon } from 'lucide-react';
+import { commandSearchFilter, useCommandListScrollReset } from '../../../lib/command-search.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Badge } from '../../ui/badge.js';
@@ -142,6 +143,16 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     const [selectedValues, setSelectedValues] = React.useState<string[]>(defaultValue);
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
+    // The search lives here, outside the popover content, so it is cleared whenever the popover
+    // opens or closes (adjusting state during render, as React recommends over an effect) — the
+    // same fresh start the uncontrolled input used to get from remounting.
+    const [search, setSearch] = React.useState('');
+    const [searchOpenState, setSearchOpenState] = React.useState(isPopoverOpen);
+    if (searchOpenState !== isPopoverOpen) {
+      setSearchOpenState(isPopoverOpen);
+      setSearch('');
+    }
+    const listRef = useCommandListScrollReset(search);
     // Snapshot of the selection taken when the popover opens, used to order the
     // option list (selected first) without reshuffling while the user toggles items.
     const [orderSnapshot, setOrderSnapshot] = React.useState<string[]>(defaultValue);
@@ -321,9 +332,14 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
           container={portalContainer}
           onEscapeKeyDown={() => setIsPopoverOpen(false)}
         >
-          <Command>
-            <CommandInput placeholder="Search..." onKeyDown={handleInputKeyDown} />
-            <CommandList>
+          <Command filter={commandSearchFilter}>
+            <CommandInput
+              placeholder="Search..."
+              onKeyDown={handleInputKeyDown}
+              value={search}
+              onValueChange={setSearch}
+            />
+            <CommandList ref={listRef}>
               <CommandEmpty>No results found.</CommandEmpty>
               <CommandGroup>
                 <CommandItem key="all" onSelect={toggleAll} className="cursor-pointer">
