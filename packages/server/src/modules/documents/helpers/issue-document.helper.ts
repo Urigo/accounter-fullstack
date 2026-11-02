@@ -13,6 +13,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import {
+  addDaysToTimelessDate,
   addMonthsToTimelessDate,
   endOfTimelessMonth,
   maxTimelessDate,
@@ -278,19 +279,103 @@ export function filterAndHandleSwiftTransactions(
     return incomeTransactions;
   }
 
-  if (swiftTransactions.length === 1 && incomeTransactions.length === 1) {
-    const incomeTransaction = incomeTransactions[0];
-    return [
-      {
-        ...incomeTransaction,
-        amount: (Number(incomeTransaction.amount) - Number(swiftTransactions[0].amount)).toFixed(2),
-      },
-    ];
+  if (swiftTransactions.length !== incomeTransactions.length) {
+    throw new GraphQLError(
+      `Unable to process transactions. Found ${incomeTransactions.length} income transactions but ${swiftTransactions.length} swift fee transactions`,
+    );
   }
 
-  throw new GraphQLError(
-    "Unable to process transactions. Couldn't match swift fees to transactions",
+  // All fees are the same: no need to know which fee belongs to which income
+  const swiftAmount = Number(swiftTransactions[0].amount);
+  if (swiftTransactions.every(swift => Number(swift.amount) === swiftAmount)) {
+    return incomeTransactions.map(income => applySwiftFee(income, swiftTransactions[0]));
+  }
+
+  const matches = matchSwiftFeesByDate(incomeTransactions, swiftTransactions);
+  return incomeTransactions.map((income, index) =>
+    applySwiftFee(income, swiftTransactions[matches[index]]),
   );
+}
+
+function applySwiftFee(
+  income: IGetTransactionsByChargeIdsResult,
+  swift: IGetTransactionsByChargeIdsResult,
+): IGetTransactionsByChargeIdsResult {
+  return {
+    ...income,
+    amount: (Number(income.amount) - Number(swift.amount)).toFixed(2),
+  };
+}
+
+/**
+ * Pairs each income transaction with a swift fee transaction dated the same day as the income or a
+ * day before it. Returns, per income index, the index of its matched swift transaction. Pairs are
+ * resolved by elimination: an income (or swift) left with a single candidate is locked in, which
+ * narrows down the others. Throws if any income can't be matched, or the pairing is ambiguous.
+ */
+function matchSwiftFeesByDate(
+  incomeTransactions: IGetTransactionsByChargeIdsResult[],
+  swiftTransactions: IGetTransactionsByChargeIdsResult[],
+): number[] {
+  const matchError = new GraphQLError(
+    "Unable to process transactions. Couldn't match swift fees to income transactions by date",
+  );
+
+  // candidates[i] = indexes of the swift transactions that may belong to income i
+  const candidates = incomeTransactions.map(income => {
+    const validDates = new Set([income.event_date, addDaysToTimelessDate(income.event_date, -1)]);
+    return new Set(
+      swiftTransactions.flatMap((swift, swiftIndex) =>
+        validDates.has(swift.event_date) ? [swiftIndex] : [],
+      ),
+    );
+  });
+
+  const matches = new Array<number | undefined>(incomeTransactions.length).fill(undefined);
+  const lock = (incomeIndex: number, swiftIndex: number) => {
+    matches[incomeIndex] = swiftIndex;
+    candidates[incomeIndex] = new Set([swiftIndex]);
+    for (const [index, swiftIndexes] of candidates.entries()) {
+      if (index !== incomeIndex) {
+        swiftIndexes.delete(swiftIndex);
+      }
+    }
+  };
+
+  let progress = true;
+  while (progress) {
+    progress = false;
+    for (let incomeIndex = 0; incomeIndex < incomeTransactions.length; incomeIndex++) {
+      if (matches[incomeIndex] !== undefined) continue;
+      const swiftIndexes = candidates[incomeIndex];
+      if (swiftIndexes.size === 0) {
+        throw matchError;
+      }
+      if (swiftIndexes.size === 1) {
+        lock(incomeIndex, [...swiftIndexes][0]);
+        progress = true;
+      }
+    }
+    for (let swiftIndex = 0; swiftIndex < swiftTransactions.length; swiftIndex++) {
+      if (matches.includes(swiftIndex)) continue;
+      const incomeIndexes = candidates.flatMap((swiftIndexes, incomeIndex) =>
+        matches[incomeIndex] === undefined && swiftIndexes.has(swiftIndex) ? [incomeIndex] : [],
+      );
+      if (incomeIndexes.length === 0) {
+        throw matchError;
+      }
+      if (incomeIndexes.length === 1) {
+        lock(incomeIndexes[0], swiftIndex);
+        progress = true;
+      }
+    }
+  }
+
+  if (matches.includes(undefined)) {
+    // ambiguous: several equally valid pairings
+    throw matchError;
+  }
+  return matches as number[];
 }
 
 export function getLinkedDocumentsAttributes(
