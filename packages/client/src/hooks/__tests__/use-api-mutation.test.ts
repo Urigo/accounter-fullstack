@@ -2,7 +2,7 @@
 
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TypedDocumentNode } from 'urql';
 import {
   useApiMutation,
@@ -24,7 +24,10 @@ const { toastMock, useMutationMock } = vi.hoisted(() => {
 });
 
 vi.mock('sonner', () => ({ toast: toastMock }));
-vi.mock('urql', () => ({ useMutation: useMutationMock }));
+vi.mock('urql', async importOriginal => ({
+  ...(await importOriginal<typeof import('urql')>()),
+  useMutation: useMutationMock,
+}));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -334,6 +337,157 @@ describe('useApiMutation', () => {
       // `handleCommonErrors` raised the toast; the hook must not add a second one.
       expect(toastMock.error).toHaveBeenCalledTimes(1);
       consoleError.mockRestore();
+    });
+  });
+
+  describe('dedupe', () => {
+    const WINDOW = 20_000;
+
+    /** A fresh document per test, so the module-level guard never leaks between tests. */
+    const dedupeOptions = () => ({
+      ...baseOptions,
+      document: {} as TypedDocumentNode<Data, Variables>,
+      dedupe: { windowMs: WINDOW },
+    });
+
+    /** A mutation that stays in flight until `settle` is called. */
+    function deferredMutate() {
+      let settle: (value: unknown) => void = () => undefined;
+      const mutate = vi.fn(
+        () =>
+          new Promise(resolve => {
+            settle = resolve;
+          }),
+      );
+      return { mutate, settle: (value: unknown) => settle(value) };
+    }
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('sends a single request for concurrent calls with the same variables', async () => {
+      const { mutate, settle } = deferredMutate();
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      let second: unknown = 'unset';
+      await act(async () => {
+        const first = current().execute({ tagName: 'travel' });
+        second = await current().execute({ tagName: 'travel' });
+        settle({ data: { addTag: true } });
+        await first;
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      expect(second).toBeUndefined();
+      expect(toastMock.warning).toHaveBeenCalledWith(
+        'Duplicate request blocked',
+        expect.objectContaining({ id: 'addTag-duplicate' }),
+      );
+    });
+
+    it('blocks a repeat within the window and allows it once the window passes', async () => {
+      vi.useFakeTimers();
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+      });
+      vi.advanceTimersByTime(WINDOW - 1);
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+      });
+      expect(mutate).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(2);
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+      });
+      expect(mutate).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not block calls with different variables', async () => {
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'food' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
+    });
+
+    it('lifts the guard at once when the resolver reports a failure itself', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = resolveWith({ addTag: false });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        select: (data: Data) => {
+          if (!data.addTag) {
+            throw new Error('Tag was not added');
+          }
+          return data.addTag;
+        },
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
+      consoleError.mockRestore();
+    });
+
+    it('keeps the guard after a network error, since the request may have run', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = vi.fn().mockResolvedValue({
+        error: { graphQLErrors: [], networkError: new Error('offline') },
+      });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      consoleError.mockRestore();
+    });
+
+    it('is shared between instances of the hook', async () => {
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const options = dedupeOptions();
+      const first = await renderHook(options);
+      const second = await renderHook(options);
+
+      await act(async () => {
+        await first.current().execute({ tagName: 'travel' });
+        await second.current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing unless enabled', async () => {
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(baseOptions);
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
     });
   });
 
