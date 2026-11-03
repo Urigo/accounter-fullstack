@@ -78,7 +78,9 @@ The first two write tools are in (`accounter_update_charges_tags`, `accounter_up
 behind `MCP_ENABLE_WRITE_TOOLS`, default off). The client deliberately never retries a mutation, so
 the server cannot double-apply one on its own — but a _client_ that retries a call whose result it
 never saw can. Tag updates are naturally idempotent and unaffected; document uploads are not, and
-would produce a duplicate document.
+would produce a duplicate document — and with `newCharge`, a duplicate _charge_ holding duplicates
+of every document. Until this is solved, the tool description tells the model to look for the charge
+after a `TIMEOUT_ERROR` rather than resend.
 
 - [ ] Decide whether an idempotency key belongs on the tool input, or on a dedupe check upstream
       (`batchUploadDocuments` already computes a content hash — see `upload.helper.ts`)
