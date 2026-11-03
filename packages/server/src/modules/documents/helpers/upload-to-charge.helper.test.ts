@@ -25,15 +25,22 @@ vi.mock('../../accountant-approval/helpers/degrade-charges.helper.js', () => ({
 }));
 
 const OWNER_ID = 'bb000000-0000-4000-8000-000000000001';
+/** Another business in the caller's read scope — its tags load, but are not this charge's. */
+const OTHER_OWNER_ID = 'bb000000-0000-4000-8000-000000000002';
 const EXISTING_CHARGE_ID = 'cc000000-0000-4000-8000-000000000001';
 const NEW_CHARGE_ID = 'cc000000-0000-4000-8000-000000000002';
 const TAG_A = 'aa000000-0000-4000-8000-00000000000a';
 const TAG_B = 'aa000000-0000-4000-8000-00000000000b';
+const FOREIGN_TAG = 'aa000000-0000-4000-8000-00000000000f';
 const TX_CLIENT = { transactionClient: true };
 
 const getDocumentFromFileMock = vi.mocked(getDocumentFromFile);
 
-function setup({ knownTagIds = [TAG_A, TAG_B], insertFails = false } = {}) {
+function setup({
+  knownTagIds = [TAG_A, TAG_B],
+  foreignTagIds = [FOREIGN_TAG],
+  insertFails = false,
+} = {}) {
   const insertDocuments = vi.fn(
     async ({ documents }: { documents: Array<{ serialNumber: string; chargeId: string }> }) => {
       if (insertFails) {
@@ -49,7 +56,11 @@ function setup({ knownTagIds = [TAG_A, TAG_B], insertFails = false } = {}) {
   const insertChargeTag = vi.fn().mockResolvedValue([]);
   const transaction = vi.fn(async (fn: (client: unknown) => Promise<unknown>) => fn(TX_CLIENT));
   const loadMany = vi.fn(async (ids: string[]) =>
-    ids.map(id => (knownTagIds.includes(id) ? { id } : undefined)),
+    ids.map(id => {
+      if (knownTagIds.includes(id)) return { id, owner_id: OWNER_ID };
+      if (foreignTagIds.includes(id)) return { id, owner_id: OTHER_OWNER_ID };
+      return undefined;
+    }),
   );
 
   const injector = {
@@ -115,6 +126,17 @@ describe('validateUploadTarget', () => {
     ).rejects.toThrow(TAG_B);
   });
 
+  it('refuses a visible tag owned by another business, naming it', async () => {
+    // Reads span the multi-business scope, so the tag loads; the charge_tags
+    // foreign key would accept it too. Only the ownership check stops it.
+    const { injector } = setup();
+    await expect(
+      validateUploadTarget(injector, { newCharge: { tagIds: [TAG_A, FOREIGN_TAG] } }),
+    ).rejects.toThrow(
+      `Tag id(s) belong to a different business than the charge being created: ${FOREIGN_TAG}`,
+    );
+  });
+
   it('de-duplicates tag ids', async () => {
     const { injector } = setup();
     await expect(
@@ -134,6 +156,19 @@ describe('uploadDocumentsToCharge', () => {
     ).rejects.toThrow(/Unknown tag/);
     expect(getDocumentFromFileMock).not.toHaveBeenCalled();
     expect(generateCharge).not.toHaveBeenCalled();
+  });
+
+  it('does no external work when a tag belongs to another business', async () => {
+    const { injector, generateCharge, insertChargeTag } = setup();
+    await expect(
+      uploadDocumentsToCharge(injector, {
+        sources: [source('one')],
+        newCharge: { tagIds: [FOREIGN_TAG] },
+      }),
+    ).rejects.toThrow(/different business/);
+    expect(getDocumentFromFileMock).not.toHaveBeenCalled();
+    expect(generateCharge).not.toHaveBeenCalled();
+    expect(insertChargeTag).not.toHaveBeenCalled();
   });
 
   describe('existing charge', () => {

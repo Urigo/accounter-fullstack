@@ -174,7 +174,8 @@ const newChargeInput = z
       .optional()
       .describe(
         'Tags to set on the new charge, e.g. the owner tag for an expense paid personally. Use ' +
-          'accounter_list_tags to find ids; an unknown id fails the call before anything is uploaded.',
+          'accounter_list_tags to find ids, and pass only tags of the business you are writing to: an ' +
+          'unknown id, or a tag of another business, fails the call before anything is uploaded.',
       ),
   })
   .strict();

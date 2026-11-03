@@ -42,8 +42,13 @@ export function describeUploadError(error: unknown): string {
 
 /**
  * Check where an upload is going before any of its (slow, paid) external work starts: an existing
- * charge or a new one, never both, and a new charge's tags must exist. Returns the de-duplicated
- * tag ids to set on a new charge.
+ * charge or a new one, never both, and a new charge's tags must exist and belong to the business
+ * the charge is created for. Returns the de-duplicated tag ids to set on a new charge.
+ *
+ * Existence alone is not enough: RLS lets a request READ every business in its scope, but WRITES
+ * only to its single write-target business, and `charge_tags.tag_id` is a bare foreign key. So a
+ * tag of another in-scope business would load fine here and then be linked to this business's
+ * charge.
  */
 export async function validateUploadTarget(
   injector: Injector,
@@ -60,13 +65,28 @@ export async function validateUploadTarget(
     return [];
   }
 
-  const tags = await injector.get(TagsProvider).getTagByIDLoader.loadMany(tagIds);
-  const unknown = tagIds.filter((_id, index) => {
+  const [tags, { ownerId }] = await Promise.all([
+    injector.get(TagsProvider).getTagByIDLoader.loadMany(tagIds),
+    injector.get(AdminContextProvider).getVerifiedAdminContext(),
+  ]);
+
+  const unknown: string[] = [];
+  const foreign: string[] = [];
+  for (const [index, id] of tagIds.entries()) {
     const tag = tags[index];
-    return !tag || tag instanceof Error;
-  });
+    if (!tag || tag instanceof Error) {
+      unknown.push(id);
+    } else if (tag.owner_id !== ownerId) {
+      foreign.push(id);
+    }
+  }
   if (unknown.length > 0) {
     throw new GraphQLError(`Unknown tag id(s): ${unknown.join(', ')}`);
+  }
+  if (foreign.length > 0) {
+    throw new GraphQLError(
+      `Tag id(s) belong to a different business than the charge being created: ${foreign.join(', ')}`,
+    );
   }
   return tagIds;
 }
