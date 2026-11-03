@@ -18,28 +18,46 @@ function scoreHaystack(haystack: string, search: string): number {
 }
 
 /**
- * A `filter` for cmdk's `Command` that matches case-insensitively, by substring, and ranks
- * prefix matches above word-start matches above any other substring match.
- *
- * cmdk's default filter is a fuzzy scorer over `value` plus `keywords`. Our items set `value`
- * to an internal id (usually a UUID), so short queries fuzzy-matched hex characters of the id
- * and pulled in unrelated options, and letter case nudged the score enough to reorder results.
- * Here, when an item has keywords, only the keywords are searched and `value` is ignored; an
- * item without keywords falls back to its `value` (which cmdk derives from the item's text).
+ * Scores `search` against an option's searchable texts: case-insensitive substring matching,
+ * with a prefix match (1) above a word-start match (0.75) above any other substring (0.5).
+ * Returns 0 for no match and 1 for an empty search. Blank haystacks are skipped.
  */
-export function commandSearchFilter(value: string, search: string, keywords?: string[]): number {
+export function scoreSearch(search: string, haystacks: Array<string | null | undefined>): number {
   const needle = normalize(search);
   if (!needle) return 1;
 
-  const meaningfulKeywords = keywords?.filter(keyword => keyword.trim() !== '') ?? [];
-  const haystacks = meaningfulKeywords.length > 0 ? meaningfulKeywords : [value];
-
   let best = 0;
   for (const haystack of haystacks) {
+    if (!haystack?.trim()) continue;
     best = Math.max(best, scoreHaystack(normalize(haystack), needle));
     if (best === 1) break;
   }
   return best;
+}
+
+/**
+ * Filters `options` down to those matching `search` and orders them by `scoreSearch`, breaking
+ * ties by their position in `options`. An empty search returns `options` as given.
+ *
+ * Render the result inside a `Command` with `shouldFilter={false}`. cmdk's own `filter` prop
+ * can't give a stable order: cmdk sorts the items as they currently sit in the DOM and skips
+ * sorting entirely on an empty search, so with few distinct scores the order of tied results
+ * depended on what had been typed before, and clearing the search didn't restore the list.
+ * Searching only the given texts also keeps internal ids (cmdk item `value`s, usually UUIDs)
+ * out of the match.
+ */
+export function rankOptions<T>(
+  options: readonly T[],
+  search: string,
+  getHaystacks: (option: T) => Array<string | null | undefined>,
+): T[] {
+  if (!normalize(search)) return [...options];
+
+  return options
+    .map((option, index) => ({ option, index, score: scoreSearch(search, getHaystacks(option)) }))
+    .filter(entry => entry.score > 0)
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(entry => entry.option);
 }
 
 /**

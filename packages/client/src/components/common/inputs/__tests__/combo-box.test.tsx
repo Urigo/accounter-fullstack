@@ -236,4 +236,37 @@ describe('ComboBox search', () => {
     act(() => item?.click());
     expect(changes).toEqual(['deadbeef-0000-4000-8000-000000000004']);
   });
+
+  /**
+   * cmdk sorts by score using the items' *current* DOM order and skips sorting on an empty
+   * search, so with tied scores the order used to depend on what had been typed before. The
+   * earlier query must keep every item matched (so none unmounts and gets re-inserted by React
+   * in data order) while reordering them.
+   */
+  it('keeps tied results in data order regardless of earlier searches', () => {
+    const TIED = [
+      { value: 'd', label: 'Delta ltd' },
+      { value: 'a', label: 'Alpha ltd' },
+      { value: 'c', label: 'Charlie ltd' },
+    ];
+    act(() => {
+      root.render(<ComboBox data={TIED} value={null} />);
+    });
+    act(() => trigger().click());
+
+    const dataOrder = ['Delta ltd', 'Alpha ltd', 'Charlie ltd'];
+    type('ltd');
+    expect(visibleLabels()).toEqual(dataOrder);
+
+    // Every label contains an "a", but only "Alpha ltd" starts with one.
+    type('a');
+    expect(visibleLabels()).toEqual(['Alpha ltd', 'Delta ltd', 'Charlie ltd']);
+
+    type('ltd');
+    expect(visibleLabels()).toEqual(dataOrder);
+
+    type('a');
+    type('');
+    expect(visibleLabels()).toEqual(dataOrder);
+  });
 });

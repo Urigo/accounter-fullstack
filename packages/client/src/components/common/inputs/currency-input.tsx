@@ -1,4 +1,4 @@
-import { forwardRef, useId, useState, type ComponentProps } from 'react';
+import { forwardRef, useId, useMemo, useState, type ComponentProps } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
 import { Currency } from '../../../gql/graphql.js';
 import {
@@ -6,7 +6,7 @@ import {
   currencyCodeToName,
   currencyCodeToSymbol,
 } from '../../../helpers/currency.js';
-import { commandSearchFilter, useCommandListScrollReset } from '../../../lib/command-search.js';
+import { rankOptions, useCommandListScrollReset } from '../../../lib/command-search.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
 import {
@@ -170,9 +170,19 @@ function CurrencyOptionsList({
 }) {
   const [search, setSearch] = useState('');
   const listRef = useCommandListScrollReset(search);
+  // The code, name and symbol are all searchable; the visible label is not what is searched.
+  const rankedCurrencies = useMemo(
+    () =>
+      rankOptions(currencies, search, currency => [
+        currency,
+        currencyCodeToName(currency),
+        currencyCodeToSymbol(currency),
+      ]),
+    [currencies, search],
+  );
 
   return (
-    <Command filter={commandSearchFilter}>
+    <Command shouldFilter={false}>
       <CommandInput
         placeholder="Search currency..."
         form={form}
@@ -182,14 +192,8 @@ function CurrencyOptionsList({
       <CommandList ref={listRef}>
         <CommandEmpty>No currency found.</CommandEmpty>
         <CommandGroup>
-          {currencies.map(currency => (
-            <CommandItem
-              key={currency}
-              value={currency}
-              // The code is listed explicitly: with keywords present, the filter ignores `value`.
-              keywords={[currency, currencyCodeToName(currency), currencyCodeToSymbol(currency)]}
-              onSelect={() => onSelect(currency)}
-            >
+          {rankedCurrencies.map(currency => (
+            <CommandItem key={currency} value={currency} onSelect={() => onSelect(currency)}>
               <span className="w-9 shrink-0 text-center font-medium text-gray-500 dark:text-gray-400">
                 {currencyCodeToSymbol(currency)}
               </span>
