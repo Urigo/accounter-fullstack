@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useReducer,
   useRef,
   useState,
   type CSSProperties,
@@ -49,8 +50,21 @@ export interface EditSplitViewerControls {
   expanded: boolean;
 }
 
+/** Below this rendered width (px), the form pane counts as narrow. */
+export const NARROW_FORM_WIDTH = 480;
+
+/** What the split tells its form about the space it has. */
+export interface EditSplitFormLayout {
+  /**
+   * Whether the form pane is rendered under `NARROW_FORM_WIDTH`, e.g. dragged to its 320px minimum.
+   * The form's grid breakpoints follow the viewport, not the pane, so it needs to be told.
+   */
+  narrow: boolean;
+}
+
 export interface DocumentEditSplitProps {
-  form: ReactNode;
+  /** The form pane's content, or a function of the pane's layout. */
+  form: ReactNode | ((layout: EditSplitFormLayout) => ReactNode);
   /** The document in the viewer pane. Stacked, Expand opens it in the overlay. */
   entry?: DocumentViewerEntry;
   /** Renders the viewer pane's content, usually a `DocumentViewer`. */
@@ -86,8 +100,13 @@ export function DocumentEditSplit({
   const showButtonRef = useRef<HTMLButtonElement>(null);
   const viewerPaneRef = useRef<HTMLDivElement>(null);
   const endDragRef = useRef<(() => void) | null>(null);
-  /** Where focus goes once a Hide or Show has rendered; `null` on mount and for outside changes. */
-  const focusAfterToggleRef = useRef<'show' | 'viewer' | null>(null);
+  /**
+   * Where focus goes once a Hide or Show has rendered, and the `hidden` value that render must
+   * have; `null` on mount and for outside changes.
+   */
+  const focusAfterToggleRef = useRef<{ target: 'show' | 'viewer'; hidden: boolean } | null>(null);
+  /** Forces the render after a Hide or Show, so its focus request is settled there either way. */
+  const [, settleToggle] = useReducer((n: number) => n + 1, 0);
   const formPaneId = useId();
   /** The form pane's share of the split; `null` is the default 50/50. Remembered per browser. */
   const {
@@ -100,6 +119,11 @@ export function DocumentEditSplit({
   const [wantsExpanded, setWantsExpanded] = useState(false);
   const sideBySide = useMediaQuery(SPLIT_MEDIA_QUERY);
   const openViewer = useDocumentViewer(s => s.open);
+  // Narrowing to the stacked layout drops a pending Expand, so widening again starts collapsed
+  // instead of suddenly covering the form. Adjusted while rendering, so no frame shows it.
+  if (!sideBySide && wantsExpanded) {
+    setWantsExpanded(false);
+  }
   // Stacked, Expand opens the overlay instead; a hidden pane has nothing to expand.
   const expanded = wantsExpanded && sideBySide && !hidden;
 
@@ -107,20 +131,64 @@ export function DocumentEditSplit({
   useEffect(() => () => endDragRef.current?.(), []);
 
   // The button that was clicked disappears with the toggle, so focus moves to its counterpart.
+  // Runs after every render, and the click forces one: a request the parent didn't apply (so
+  // `hidden` didn't change) is dropped there instead of firing on some later, unrelated change.
   useEffect(() => {
-    const target = focusAfterToggleRef.current;
+    const request = focusAfterToggleRef.current;
+    if (!request) {
+      return;
+    }
     focusAfterToggleRef.current = null;
-    if (target === 'show') {
+    if (request.hidden !== hidden) {
+      return;
+    }
+    if (request.target === 'show') {
       showButtonRef.current?.focus();
-    } else if (target === 'viewer') {
+    } else {
       viewerPaneRef.current
         ?.querySelector<HTMLElement>('button[aria-label="Hide document"]')
         ?.focus();
     }
-  }, [hidden]);
+  });
+
+  // Esc while expanded collapses the viewer instead of closing the whole sheet, which would drop
+  // unsaved edits. Radix hears Esc in the document's capture phase, ahead of any React handler, so
+  // this listens on `window` (whose capture phase runs first) and marks the key handled; the sheet
+  // ignores a handled Esc.
+  //
+  // Keys from inside the split count, and so do keys with no focused control: Safari and Firefox
+  // on macOS don't focus a button on click, and `inert` drops focus from the form, so the target is
+  // often the body or the sheet's dialog content, an ancestor of the split. An overlay or a menu
+  // portaled elsewhere keeps its own Esc (its target neither is inside the split nor contains it),
+  // and so does a field that cancels an edit on Esc.
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const { target } = event;
+      const split = rootRef.current;
+      if (
+        event.key !== 'Escape' ||
+        event.defaultPrevented ||
+        !split ||
+        !(target instanceof Node) ||
+        !(split.contains(target) || target === document.body || target.contains(split)) ||
+        (target instanceof Element && target.closest('[data-local-escape]'))
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      setWantsExpanded(false);
+    };
+    window.addEventListener('keydown', onKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', onKeyDown, { capture: true });
+  }, [expanded]);
 
   const hide = (): void => {
-    focusAfterToggleRef.current = 'show';
+    focusAfterToggleRef.current = { target: 'show', hidden: true };
+    settleToggle();
     setWantsExpanded(false);
     onHiddenChange(true);
   };
@@ -131,11 +199,16 @@ export function DocumentEditSplit({
   } else if (entry) {
     // The trigger sits in the sheet's dialog, so this resolves to the overlay (full screen under
     // 1024px), which hands focus back to it on close.
+    //
+    // Known trade-off: the store holds one `current`, so this replaces a docked document that the
+    // sheet had suspended. Closing the overlay and then the sheet leaves no docked viewer behind;
+    // the user reopens it from its row.
     toggleExpand = (trigger): void => openViewer(entry, { trigger });
   }
 
   const show = (): void => {
-    focusAfterToggleRef.current = 'viewer';
+    focusAfterToggleRef.current = { target: 'viewer', hidden: false };
+    settleToggle();
     onHiddenChange(false);
   };
 
@@ -160,6 +233,9 @@ export function DocumentEditSplit({
   }, []);
 
   const separatorValue = editSplitSeparatorAria(ratio, layout);
+  const formLayout: EditSplitFormLayout = {
+    narrow: layout != null && layout.form > 0 && layout.form < NARROW_FORM_WIDTH,
+  };
 
   const measure = (): { split: number; ratio: number } => {
     const split = rootRef.current?.getBoundingClientRect().width ?? 0;
@@ -277,14 +353,16 @@ export function DocumentEditSplit({
             // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- see above
             tabIndex={0}
             data-dragging={dragging || undefined}
-            className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none hover:bg-blue-500/20 focus-visible:bg-blue-500/30 focus-visible:outline-none data-dragging:bg-blue-500/30"
+            // Inside the viewer pane (`left-0`), so it never covers the form pane's scrollbar.
+            // Focus is a solid bar, as on the docked column's handle.
+            className="absolute inset-y-0 left-0 z-10 w-2 cursor-col-resize touch-none hover:bg-blue-500/20 focus-visible:bg-blue-600 focus-visible:outline-none data-dragging:bg-blue-500/30 dark:focus-visible:bg-blue-400"
             onPointerDown={onHandlePointerDown}
             onKeyDown={onHandleKeyDown}
             onDoubleClick={() => setRatio(null)}
           />
         )}
-        {/* Stays mounted while hidden, so Show brings back the same zoom and scroll without
-            reloading the image. */}
+        {/* Stays mounted while hidden, so Show keeps the zoom without reloading the image; the
+            viewer puts back the scroll position the browser drops under `display: none`. */}
         <div
           data-slot="edit-split-viewer-content"
           hidden={hidden}
@@ -307,12 +385,15 @@ export function DocumentEditSplit({
         id={formPaneId}
         data-vaul-no-drag
         data-slot="edit-split-form"
+        // Covered by the expanded viewer: out of the tab order and the accessibility tree.
+        inert={expanded}
+        aria-hidden={expanded || undefined}
         className={cn(
           'min-h-0 flex-1 overflow-y-auto overscroll-contain',
           !hidden && 'lg:w-(--edit-split-form) lg:min-w-80 lg:flex-none',
         )}
       >
-        {form}
+        {typeof form === 'function' ? form(formLayout) : form}
       </div>
     </div>
   );

@@ -188,12 +188,12 @@ describe('DockedDocumentViewer', () => {
   it('Expand toggles and resets on close', () => {
     openDoc();
     const expand = (): HTMLButtonElement | null =>
-      container.querySelector('button[aria-label="Expand document viewer"]');
-    expect(expand()?.getAttribute('aria-pressed')).toBe('false');
+      container.querySelector('button[data-slot="viewer-expand"]');
+    expect(expand()?.getAttribute('aria-label')).toBe('Expand document viewer');
 
     act(() => expand()?.click());
     expect(useDocumentViewer.getState().expanded).toBe(true);
-    expect(expand()?.getAttribute('aria-pressed')).toBe('true');
+    expect(expand()?.getAttribute('aria-label')).toBe('Restore document viewer width');
     const viewer = container.querySelector('[data-slot="document-viewer"]');
     expect(viewer?.className).toContain('absolute');
     // The section stays in the flow as a spacer of the same width; the handle hides.
@@ -362,6 +362,49 @@ describe('DockedDocumentViewer', () => {
     expect(width(section)).toBe('clamp(420px, 52%, 100% - 480px)');
   });
 
+  it('suspended by the edit sheet and resumed, puts back the scroll the browser dropped', () => {
+    // Layout passes run at once here.
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    openDoc();
+    const canvas = region()!.querySelector<HTMLElement>('[data-slot="document-viewer-canvas"]')!;
+    const setCanvas = (w: number, h: number): void => {
+      Object.defineProperty(canvas, 'clientWidth', { configurable: true, value: w });
+      Object.defineProperty(canvas, 'clientHeight', { configurable: true, value: h });
+    };
+    const scrollTo = (y: number): void =>
+      act(() => {
+        canvas.scrollTop = y;
+        canvas.dispatchEvent(new Event('scroll'));
+      });
+    setCanvas(666, 816);
+    const image = canvas.querySelector('img')!;
+    Object.defineProperty(image, 'naturalWidth', { configurable: true, value: 2480 });
+    Object.defineProperty(image, 'naturalHeight', { configurable: true, value: 3508 });
+    act(() => {
+      image.dispatchEvent(new Event('load'));
+    });
+    // Within the page's scroll range (about 119px at this size).
+    scrollTo(100);
+
+    let resume: () => void = () => {};
+    act(() => {
+      resume = useDocumentViewer.getState().suspend();
+    });
+    // What `display: none` does in Chromium: no size, and the scroll reset.
+    setCanvas(0, 0);
+    fireResize();
+    scrollTo(0);
+
+    act(() => resume());
+    setCanvas(666, 816);
+    fireResize();
+    expect(Math.abs(canvas.scrollTop - 100)).toBeLessThan(1);
+  });
+
   it('ignores Esc while suspended', () => {
     openDoc();
     let resume: () => void = () => {};
@@ -416,6 +459,19 @@ describe('DockedDocumentViewer stepper', () => {
     expect(region()?.getAttribute('aria-label')).toBe('Document viewer: Receipt s3');
     expect(stepper()?.textContent).toContain('3/3');
     expect(useDocumentViewer.getState().placement).toBe('docked');
+  });
+
+  it('stepping onto the last document keeps focus on Next, so Esc still closes', () => {
+    openWith(siblings[1], siblings);
+    const next = container.querySelector<HTMLButtonElement>('button[aria-label="Next document"]')!;
+    act(() => next.focus());
+    act(() => next.click());
+    expect(useDocumentViewer.getState().current?.id).toBe('s3');
+    expect(next.getAttribute('aria-disabled')).toBe('true');
+    expect(document.activeElement).toBe(next);
+
+    key(next, { key: 'Escape' });
+    expect(useDocumentViewer.getState().current).toBeNull();
   });
 
   it('steps with [ and ] from anywhere on the page', () => {

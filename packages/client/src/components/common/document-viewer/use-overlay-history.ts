@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigate, type Location, type Path } from 'react-router-dom';
 
 /** The `history.state` flag that marks the entry the full-screen overlay pushed. */
@@ -35,7 +35,9 @@ function currentPath(location: Location): Partial<Path> {
  * Where the overlay's history entry is:
  * - `idle`: none pushed.
  * - `pushing`: pushed, but the location doesn't carry the flag yet. A data router navigates
- *   asynchronously, and StrictMode re-runs the mount effect before the location updates.
+ *   asynchronously, and StrictMode re-runs the mount effect before the location updates. If another
+ *   navigation lands first (an unflagged location with a new key), the push was superseded and the
+ *   phase goes back to `idle`.
  * - `pushed`: the current entry is the overlay's.
  * - `leaving`: `navigate(-1)` is on its way; the Back path finishes the close.
  */
@@ -46,6 +48,12 @@ export interface UseOverlayHistoryOptions {
   active: boolean;
   /** Closes the viewer in the store. */
   close: () => void;
+  /**
+   * The id of the document the overlay is showing. A ✕ goes back first and closes when Back lands;
+   * if another document was opened (or stepped to) in between, that one stays open. An id, not the
+   * entry: the store swaps in a fresh entry object for the same document after an edit is saved.
+   */
+  entryId?: string | null;
 }
 
 /**
@@ -62,31 +70,55 @@ export interface UseOverlayHistoryOptions {
  *
  * The sheet above a modal and the docked column never touch history: `active` is false for them.
  */
-export function useOverlayHistory({ active, close }: UseOverlayHistoryOptions): () => void {
+export function useOverlayHistory({
+  active,
+  close,
+  entryId = null,
+}: UseOverlayHistoryOptions): () => void {
   const location = useLocation();
   const navigate = useNavigate();
   const phaseRef = useRef<Phase>('idle');
+  /** The location key the push was made from, to tell a superseded push from a pending one. */
+  const pushedFromKeyRef = useRef<string | null>(null);
+  /** The document a ✕ asked to close, while its back navigation is on the way. */
+  const closingEntryIdRef = useRef<string | null>(null);
+  const entryIdRef = useRef(entryId);
+  // A layout effect, so it is current before the effect below and before any click handler.
+  useLayoutEffect(() => {
+    entryIdRef.current = entryId;
+  });
   /** The location key a leftover flag was last cleared on, so StrictMode doesn't replace twice. */
   const clearedKeyRef = useRef<string | null>(null);
   const flagged = isDocViewerState(location.state);
 
   useEffect(() => {
-    const phase = phaseRef.current;
-
-    if (flagged && phase === 'pushing') {
+    if (flagged && phaseRef.current === 'pushing') {
       phaseRef.current = 'pushed';
     }
 
+    if (!flagged && phaseRef.current === 'pushing' && location.key !== pushedFromKeyRef.current) {
+      // Another navigation won the race and the push never landed. Start over, so the overlay
+      // pushes its entry again (below) and Back doesn't leave the page.
+      phaseRef.current = 'idle';
+    }
+
+    const phase = phaseRef.current;
     if (!flagged && (phase === 'pushed' || phase === 'leaving')) {
       // Back (or ✕ through Back) left the overlay's entry.
       phaseRef.current = 'idle';
-      close();
-      return;
+      const reopened = phase === 'leaving' && closingEntryIdRef.current !== entryIdRef.current;
+      closingEntryIdRef.current = null;
+      if (!reopened) {
+        close();
+        return;
+      }
+      // ✕ was for another document: the one opened since stays, and gets its own entry below.
     }
 
-    if (active && !flagged && phase === 'idle') {
+    if (active && !flagged && phaseRef.current === 'idle') {
       // The ref is set first: StrictMode's second run happens before the location updates.
       phaseRef.current = 'pushing';
+      pushedFromKeyRef.current = location.key;
       // `preventScrollReset`: the page under the overlay keeps its scroll position.
       navigate(currentPath(location), {
         state: { ...stateObject(location.state), docViewer: true },
@@ -117,6 +149,7 @@ export function useOverlayHistory({ active, close }: UseOverlayHistoryOptions): 
     }
     if (phaseRef.current === 'pushed') {
       phaseRef.current = 'leaving';
+      closingEntryIdRef.current = entryIdRef.current;
       navigate(-1);
       return;
     }

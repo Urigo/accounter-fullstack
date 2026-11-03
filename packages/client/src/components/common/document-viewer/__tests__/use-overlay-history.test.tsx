@@ -53,7 +53,8 @@ function Harness(): null {
     s => !!s.current && s.placement === 'overlay' && s.overlayMode === 'fullscreen',
   );
   const close = useDocumentViewer(s => s.close);
-  requestClose = useOverlayHistory({ active, close });
+  const entryId = useDocumentViewer(s => s.current?.id ?? null);
+  requestClose = useOverlayHistory({ active, close, entryId });
   return null;
 }
 
@@ -332,6 +333,124 @@ describe('useOverlayHistory with a data router', () => {
     await openDoc();
     await act(async () => requestClose());
     expect(loads()).toBeGreaterThan(initial);
+    router.dispose();
+  });
+});
+
+describe('useOverlayHistory races with a data router', () => {
+  /**
+   * A route whose loader can be held, so a navigation stays pending until `release()`: the push
+   * (or the Back) is on its way, but the location hasn't changed yet.
+   */
+  async function mountHeld(): Promise<{
+    router: ReturnType<typeof createMemoryRouter>;
+    hold: () => void;
+    release: () => Promise<void>;
+  }> {
+    let gate: Promise<void> | null = null;
+    let open: (() => void) | null = null;
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/documents',
+          loader: async () => {
+            if (gate) {
+              await gate;
+            }
+            return null;
+          },
+          element: (
+            <>
+              <LocationProbe />
+              <Harness />
+            </>
+          ),
+        },
+      ],
+      { initialEntries: ['/documents'] },
+    );
+    await act(async () =>
+      root.render(
+        <StrictMode>
+          <RouterProvider router={router} />
+        </StrictMode>,
+      ),
+    );
+    return {
+      router,
+      hold: () => {
+        gate = new Promise(resolve => {
+          open = resolve;
+        });
+      },
+      release: async () => {
+        gate = null;
+        await act(async () => open?.());
+      },
+    };
+  }
+
+  it('pushes again when another navigation lands before its push, so Back still closes', async () => {
+    const { router, hold, release } = await mountHeld();
+    hold();
+    await openDoc();
+    // The push is pending; a search-param change supersedes it.
+    await act(async () => {
+      void router.navigate('/documents?page=2');
+    });
+    await release();
+
+    expect(router.state.location.search).toBe('?page=2');
+    expect(isDocViewerState(router.state.location.state)).toBe(true);
+    await act(async () => router.navigate(-1));
+    expect(useDocumentViewer.getState().current).toBeNull();
+    expect(router.state.location.search).toBe('?page=2');
+    router.dispose();
+  });
+
+  it('✕ before the push lands closes, then steps off the entry once it lands', async () => {
+    const { router, hold, release } = await mountHeld();
+    const firstKey = router.state.location.key;
+    hold();
+    await openDoc();
+    await act(async () => requestClose());
+    expect(useDocumentViewer.getState().current).toBeNull();
+
+    await release();
+    expect(useDocumentViewer.getState().current).toBeNull();
+    expect(isDocViewerState(router.state.location.state)).toBe(false);
+    expect(router.state.location.key).toBe(firstKey);
+    router.dispose();
+  });
+
+  it('✕ still closes when the shown entry is refreshed (same id) before Back lands', async () => {
+    const { router, hold, release } = await mountHeld();
+    await openDoc(DOC_A);
+    hold();
+    await act(async () => requestClose());
+    // An edit saved meanwhile swaps in a fresh entry object for the same document.
+    await act(async () => useDocumentViewer.getState().open({ ...DOC_A, title: 'Renamed' }));
+    await release();
+
+    expect(useDocumentViewer.getState().current).toBeNull();
+    expect(isDocViewerState(router.state.location.state)).toBe(false);
+    router.dispose();
+  });
+
+  it('a document opened while ✕ goes back stays open, with its own entry', async () => {
+    const { router, hold, release } = await mountHeld();
+    await openDoc(DOC_A);
+    expect(isDocViewerState(router.state.location.state)).toBe(true);
+
+    hold();
+    await act(async () => requestClose());
+    await openDoc(DOC_B);
+    await release();
+
+    expect(useDocumentViewer.getState().current?.id).toBe('doc-b');
+    expect(isDocViewerState(router.state.location.state)).toBe(true);
+    await act(async () => router.navigate(-1));
+    expect(useDocumentViewer.getState().current).toBeNull();
     router.dispose();
   });
 });

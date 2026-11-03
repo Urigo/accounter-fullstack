@@ -243,7 +243,9 @@ export function DockedViewerPanel({
           // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- see above
           tabIndex={0}
           data-dragging={dragging || undefined}
-          className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize touch-none hover:bg-blue-500/20 focus-visible:bg-blue-500/30 focus-visible:outline-none data-dragging:bg-blue-500/30"
+          // Inside the section (`left-0`), so it never covers the page column's scrollbar. Focus
+          // is a solid bar: a translucent tint alone doesn't reach the 3:1 a focus indicator needs.
+          className="absolute inset-y-0 left-0 z-10 w-2 cursor-col-resize touch-none hover:bg-blue-500/20 focus-visible:bg-blue-600 focus-visible:outline-none data-dragging:bg-blue-500/30 dark:focus-visible:bg-blue-400"
           onPointerDown={onHandlePointerDown}
           onKeyDown={onHandleKeyDown}
           onDoubleClick={() => setRatio(null)}

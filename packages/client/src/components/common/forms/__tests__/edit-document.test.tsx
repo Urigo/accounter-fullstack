@@ -7,10 +7,13 @@ import type { ModifyDocumentFieldsProps } from '../modify-document-fields.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { useQueryMock, updateDocumentMock } = vi.hoisted(() => ({
+const { useQueryMock, updateDocumentMock, toastErrorMock } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
   updateDocumentMock: vi.fn<(variables: unknown) => Promise<unknown>>(),
+  toastErrorMock: vi.fn<(title: string, options?: { description?: string }) => void>(),
 }));
+
+vi.mock('sonner', () => ({ toast: { error: toastErrorMock } }));
 
 vi.mock('urql', () => ({ useQuery: useQueryMock }));
 
@@ -31,7 +34,7 @@ vi.mock('../modify-document-fields.js', () => ({
   ),
 }));
 
-const { EditDocument } = await import('../edit-document.js');
+const { EditDocument, formColumns } = await import('../edit-document.js');
 const { resetDocumentViewerStore, useDocumentViewer } = await import(
   '../../../../hooks/use-document-viewer.js'
 );
@@ -338,6 +341,39 @@ describe('EditDocument Save & next, review fixes', () => {
     expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 
+  it('a throw after the save is caught and releases the buttons', async () => {
+    updateDocumentMock.mockResolvedValue({ __typename: 'UpdateDocumentSuccessfulResult' });
+    onChange.mockImplementationOnce(() => {
+      throw new Error('list refresh failed');
+    });
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unhandled = vi.fn<(reason: unknown) => void>();
+    process.on('unhandledRejection', unhandled);
+    try {
+      renderSheet();
+      typeInto('Serial', '1043');
+      await act(async () => {
+        saveAndNext()?.click();
+      });
+      // Let any stray rejection reach the process before checking.
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(unhandled).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalledWith('Save & next failed', expect.any(Error));
+      // The same error toast the mutation hooks raise.
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        'Error',
+        expect.objectContaining({ description: expect.stringContaining('Save & next failed') }),
+      );
+      expect(onNavigate).not.toHaveBeenCalled();
+      // Released: Save & next is usable again (the edit is still dirty).
+      expect(saveAndNext()?.disabled).toBe(false);
+    } finally {
+      process.off('unhandledRejection', unhandled);
+      consoleError.mockRestore();
+    }
+  });
+
   it('gives up the keyboard while the viewer pane is hidden', () => {
     renderSheet();
     expect(useDocumentViewer.getState().keyboardOwners).toHaveLength(1);
@@ -385,6 +421,7 @@ describe('EditDocument remembered pane and live preview', () => {
 
   it.each([
     ['half-typed', 'https://'],
+    ['host still being typed', 'https://exam'],
     ['not a URL', 'scan.jpg'],
     ['another scheme', 'javascript:alert(1)'],
     ['empty', ''],
@@ -398,5 +435,17 @@ describe('EditDocument remembered pane and live preview', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('formColumns', () => {
+  it('drops to one column in a narrow pane, whatever the viewer does', () => {
+    expect(formColumns(true, false)).toBe(1);
+    expect(formColumns(true, true)).toBe(1);
+  });
+
+  it('uses two columns beside the viewer and four once it is hidden', () => {
+    expect(formColumns(false, false)).toBe(2);
+    expect(formColumns(false, true)).toBe(4);
   });
 });

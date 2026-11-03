@@ -84,6 +84,38 @@ describe('EditDocumentModal', () => {
     expect(content?.className).not.toContain('h-[90vh]');
   });
 
+  it('stays open on an Esc that something inside already handled, and closes otherwise', async () => {
+    const { PopUpDrawer } = await import('../drawer.js');
+    const onClose = vi.fn<() => void>();
+    act(() =>
+      root.render(
+        <PopUpDrawer position="bottom" opened onClose={onClose}>
+          <button type="button">inside</button>
+        </PopUpDrawer>,
+      ),
+    );
+    const inside = [...document.body.querySelectorAll('button')].find(
+      b => b.textContent === 'inside',
+    )!;
+    const escape = (): void => {
+      act(() => {
+        inside.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        );
+      });
+    };
+
+    // Handled first, as the edit split does for its expanded viewer (without stopping it).
+    const handle = (event: KeyboardEvent): void => event.preventDefault();
+    window.addEventListener('keydown', handle, { capture: true });
+    escape();
+    window.removeEventListener('keydown', handle, { capture: true });
+    expect(onClose).not.toHaveBeenCalled();
+
+    escape();
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('remounts the form for another document', () => {
     render('doc-1');
     render('doc-2');

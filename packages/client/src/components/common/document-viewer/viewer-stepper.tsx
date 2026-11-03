@@ -14,6 +14,11 @@ export interface ViewerStepperProps {
 /**
  * `‹ 3/12 ›`: steps through the documents of the table the viewer was opened from, in its order.
  * No wrap-around, so each arrow is disabled at its end.
+ *
+ * Disabled with `aria-disabled` and a no-op click, not `disabled`: stepping onto the last document
+ * with the keyboard would otherwise disable the focused button, dropping focus to the body, where
+ * Esc no longer reaches the docked viewer. The position is a polite live region, so each step is
+ * announced.
  */
 export function ViewerStepper({ index, total, onStep }: ViewerStepperProps): ReactElement {
   const atStart = index <= 0;
@@ -29,10 +34,14 @@ export function ViewerStepper({ index, total, onStep }: ViewerStepperProps): Rea
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 aria-disabled:cursor-default aria-disabled:opacity-50"
           aria-label="Previous document"
-          disabled={atStart}
-          onClick={() => onStep(-1)}
+          aria-disabled={atStart || undefined}
+          onClick={() => {
+            if (!atStart) {
+              onStep(-1);
+            }
+          }}
         >
           <ChevronLeft className="size-4" />
         </Button>
@@ -41,7 +50,7 @@ export function ViewerStepper({ index, total, onStep }: ViewerStepperProps): Rea
         <span aria-hidden>
           {index + 1}/{total}
         </span>
-        <span className="sr-only">
+        <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
           Document {index + 1} of {total}
         </span>
       </span>
@@ -49,10 +58,14 @@ export function ViewerStepper({ index, total, onStep }: ViewerStepperProps): Rea
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 aria-disabled:cursor-default aria-disabled:opacity-50"
           aria-label="Next document"
-          disabled={atEnd}
-          onClick={() => onStep(1)}
+          aria-disabled={atEnd || undefined}
+          onClick={() => {
+            if (!atEnd) {
+              onStep(1);
+            }
+          }}
         >
           <ChevronRight className="size-4" />
         </Button>

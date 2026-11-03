@@ -18,13 +18,41 @@ type DocumentsTableRowProps<TData extends { id: string }> = {
  * One documents-table row. It highlights while its document is open in the shared viewer.
  *
  * The boolean selector means a swap re-renders only the two rows whose answer changed. The
- * highlight is `data-viewing`, so `data-state` stays free for row selection.
+ * highlight is `data-viewing` plus an inset ring, so `data-state` stays free for row selection and
+ * the row keeps whatever background its caller gave it.
  */
+/** The viewing outline's width and its edges on a cell, as inset box-shadow offsets. */
+const OUTLINE_PX = 2;
+const OUTLINE_EDGES = {
+  top: `0 ${OUTLINE_PX}px`,
+  bottom: `0 -${OUTLINE_PX}px`,
+  left: `${OUTLINE_PX}px 0`,
+  right: `-${OUTLINE_PX}px 0`,
+};
+
+/**
+ * The viewing outline for one cell: top and bottom edges on every cell, plus the left edge on the
+ * first and the right edge on the last. On the cells rather than the `<tr>`, where a ring can be
+ * clipped or painted over by cell backgrounds depending on the browser. The colour comes from the
+ * row's `--viewing-outline`, so dark mode can change it.
+ */
+export function viewingOutline(index: number, count: number): string {
+  const edges = [OUTLINE_EDGES.top, OUTLINE_EDGES.bottom];
+  if (index === 0) {
+    edges.push(OUTLINE_EDGES.left);
+  }
+  if (index === count - 1) {
+    edges.push(OUTLINE_EDGES.right);
+  }
+  return edges.map(edge => `inset ${edge} 0 0 var(--viewing-outline)`).join(', ');
+}
+
 export function DocumentsTableRow<TData extends { id: string }>({
   row,
   className,
 }: DocumentsTableRowProps<TData>): ReactElement {
   const viewing = useDocumentViewer(s => s.current?.id === row.original.id);
+  const cells = row.getVisibleCells();
 
   return (
     <TableRow
@@ -32,14 +60,18 @@ export function DocumentsTableRow<TData extends { id: string }>({
       data-viewing={viewing || undefined}
       className={cn(
         className,
-        // The selected-state variants too: `TableRow`'s `data-[state=selected]:bg-gray-100` is more
-        // specific than a plain background, so a selected row would otherwise lose the highlight.
+        // An outline, not a background: a background would replace the row's own tint (twMerge
+        // drops e.g. the "linked document" `bg-blue-100`), and hover and selection backgrounds
+        // would fight it. The outline is drawn on the cells (below), over all of them.
         viewing &&
-          'bg-blue-50 hover:bg-blue-50 data-[state=selected]:bg-blue-50 dark:bg-blue-950/40 dark:hover:bg-blue-950/40 dark:data-[state=selected]:bg-blue-950/40',
+          '[--viewing-outline:var(--color-blue-500)] dark:[--viewing-outline:var(--color-blue-400)]',
       )}
     >
-      {row.getVisibleCells().map(cell => (
-        <TableCell key={cell.id}>
+      {cells.map((cell, index) => (
+        <TableCell
+          key={cell.id}
+          style={viewing ? { boxShadow: viewingOutline(index, cells.length) } : undefined}
+        >
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}

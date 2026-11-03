@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent, type ReactElement } from 
 import { ArrowRight } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Button } from '@/components/ui/button.js';
 import { Label } from '@/components/ui/label.js';
@@ -128,6 +129,17 @@ export function nextSiblingId(
   return index === -1 ? null : (siblingIds?.[index + 1] ?? null);
 }
 
+/**
+ * The form grid's column count: one in a narrow pane (the split's 320px minimum can't fit two),
+ * two beside the viewer, four once the viewer is hidden.
+ */
+export function formColumns(narrow: boolean, viewerHidden: boolean): number {
+  if (narrow) {
+    return 1;
+  }
+  return viewerHidden ? 4 : 2;
+}
+
 /** `value`, once it has held still for `delayMs`. */
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -229,12 +241,26 @@ export const EditDocument = ({
     }
     savingNextRef.current = true;
     setSavingNext(true);
-    void handleSubmit(onSaveAndNext)(event).finally(() => {
-      savingNextRef.current = false;
-      if (mountedRef.current) {
-        setSavingNext(false);
-      }
-    });
+    handleSubmit(onSaveAndNext)(event)
+      .catch((error: unknown) => {
+        // The save itself reports through the hook's toast; this is a throw after it (say, in the
+        // list's `onChange`). Shown and logged, not rethrown, so it can't surface as an unhandled
+        // rejection, and the buttons are released below either way. The toast matches the one
+        // `useApiMutation` raises.
+        // eslint-disable-next-line no-console
+        console.error('Save & next failed', error);
+        toast.error('Error', {
+          description: 'Save & next failed. Check the document before moving on.',
+          duration: 100_000,
+          closeButton: true,
+        });
+      })
+      .finally(() => {
+        savingNextRef.current = false;
+        if (mountedRef.current) {
+          setSavingNext(false);
+        }
+      });
   };
 
   const amountCurrency = watch('amount.currency');
@@ -267,12 +293,13 @@ export const EditDocument = ({
       entry={viewerSource}
       hidden={viewerHidden}
       onHiddenChange={setViewerHidden}
-      form={
+      form={({ narrow }) => (
         <Form {...formManager}>
           <form onSubmit={handleSubmit(onSubmit)} className="px-5 pt-1">
             {/* The grid's breakpoints follow the viewport, not this pane, so the column count
-                follows the viewer instead: two beside it, four once it is hidden. */}
-            <SimpleGrid cols={viewerHidden ? 4 : 2}>
+                follows the pane instead: one when it is narrow, two beside the viewer, four once
+                the viewer is hidden. */}
+            <SimpleGrid cols={formColumns(narrow, viewerHidden)}>
               <ModifyDocumentFields document={document} formManager={formManager} />
 
               <div className="space-y-2">
@@ -310,7 +337,7 @@ export const EditDocument = ({
             </div>
           </form>
         </Form>
-      }
+      )}
       viewer={({ onHide, onToggleExpand, expanded }) => (
         <DocumentViewer
           source={viewerSource}
