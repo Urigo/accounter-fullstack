@@ -13,6 +13,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import {
+  addDaysToTimelessDate,
   addMonthsToTimelessDate,
   endOfTimelessMonth,
   maxTimelessDate,
@@ -278,19 +279,124 @@ export function filterAndHandleSwiftTransactions(
     return incomeTransactions;
   }
 
-  if (swiftTransactions.length === 1 && incomeTransactions.length === 1) {
-    const incomeTransaction = incomeTransactions[0];
-    return [
-      {
-        ...incomeTransaction,
-        amount: (Number(incomeTransaction.amount) - Number(swiftTransactions[0].amount)).toFixed(2),
-      },
-    ];
+  if (swiftTransactions.length !== incomeTransactions.length) {
+    throw new GraphQLError(
+      `Unable to process transactions. Found ${incomeTransactions.length} income transactions but ${swiftTransactions.length} swift fee transactions`,
+    );
   }
 
-  throw new GraphQLError(
-    "Unable to process transactions. Couldn't match swift fees to transactions",
+  // All fees are the same: no need to know which fee belongs to which income
+  const swiftAmount = Number(swiftTransactions[0].amount);
+  if (swiftTransactions.every(swift => Number(swift.amount) === swiftAmount)) {
+    return incomeTransactions.map(income => applySwiftFee(income, swiftTransactions[0]));
+  }
+
+  const matches = matchSwiftFeesByDate(incomeTransactions, swiftTransactions);
+  return incomeTransactions.map((income, index) =>
+    applySwiftFee(income, swiftTransactions[matches[index]]),
   );
+}
+
+function applySwiftFee(
+  income: IGetTransactionsByChargeIdsResult,
+  swift: IGetTransactionsByChargeIdsResult,
+): IGetTransactionsByChargeIdsResult {
+  return {
+    ...income,
+    amount: (Number(income.amount) - Number(swift.amount)).toFixed(2),
+  };
+}
+
+/** The date a transaction hit the account: its debit date, falling back to its event date. */
+function getTransactionDebitDate(
+  transaction: IGetTransactionsByChargeIdsResult,
+): TimelessDateString {
+  return transaction.debit_date_override ?? transaction.debit_date ?? transaction.event_date;
+}
+
+/**
+ * Pairs each income transaction with a swift fee debited the same day as the income or a day before
+ * it, and returns, per income index, the index of its matched swift transaction. Fees with the same
+ * amount are interchangeable, so the pairing only has to be unique up to fee amount. Throws if no
+ * full pairing exists, or if valid pairings disagree on the fee amount of any income.
+ */
+function matchSwiftFeesByDate(
+  incomeTransactions: IGetTransactionsByChargeIdsResult[],
+  swiftTransactions: IGetTransactionsByChargeIdsResult[],
+): number[] {
+  const matchError = new GraphQLError(
+    "Unable to process transactions. Couldn't match swift fees to income transactions by date",
+  );
+
+  // candidates[i] = indexes of the swift transactions that may belong to income i
+  const candidates = incomeTransactions.map(income => {
+    const incomeDate = getTransactionDebitDate(income);
+    const validDates = new Set([incomeDate, addDaysToTimelessDate(incomeDate, -1)]);
+    return swiftTransactions.flatMap((swift, swiftIndex) =>
+      validDates.has(getTransactionDebitDate(swift)) ? [swiftIndex] : [],
+    );
+  });
+
+  const pairing = findFullPairing(candidates, swiftTransactions.length);
+  if (!pairing) {
+    throw matchError;
+  }
+
+  // The pairing is ambiguous if some income could take a fee of a different amount, while the rest
+  // of the incomes still get paired
+  const feeAmount = (swiftIndex: number) => Number(swiftTransactions[swiftIndex].amount);
+  for (const [incomeIndex, swiftIndexes] of candidates.entries()) {
+    const pairedAmount = feeAmount(pairing[incomeIndex]);
+    for (const swiftIndex of swiftIndexes) {
+      if (feeAmount(swiftIndex) === pairedAmount) continue;
+      const forcedCandidates = candidates.map((otherSwiftIndexes, otherIncomeIndex) =>
+        otherIncomeIndex === incomeIndex
+          ? [swiftIndex]
+          : otherSwiftIndexes.filter(otherSwiftIndex => otherSwiftIndex !== swiftIndex),
+      );
+      if (findFullPairing(forcedCandidates, swiftTransactions.length)) {
+        throw matchError;
+      }
+    }
+  }
+
+  return pairing;
+}
+
+/**
+ * Finds a one-to-one pairing of every income with one of its candidate swift transactions
+ * (bipartite matching by augmenting paths). Returns, per income index, the paired swift index, or
+ * `null` if no such pairing exists.
+ */
+function findFullPairing(candidates: number[][], swiftCount: number): number[] | null {
+  const incomeOfSwift = new Array<number | undefined>(swiftCount).fill(undefined);
+
+  const assign = (incomeIndex: number, visited: Set<number>): boolean => {
+    for (const swiftIndex of candidates[incomeIndex]) {
+      if (visited.has(swiftIndex)) continue;
+      visited.add(swiftIndex);
+      const currentIncome = incomeOfSwift[swiftIndex];
+      if (currentIncome === undefined || assign(currentIncome, visited)) {
+        incomeOfSwift[swiftIndex] = incomeIndex;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (let incomeIndex = 0; incomeIndex < candidates.length; incomeIndex++) {
+    if (!assign(incomeIndex, new Set())) {
+      return null;
+    }
+  }
+
+  const swiftOfIncome = new Array<number>(candidates.length);
+  for (const [swiftIndex, incomeIndex] of incomeOfSwift.entries()) {
+    if (incomeIndex !== undefined) {
+      swiftOfIncome[incomeIndex] = swiftIndex;
+    }
+  }
+  return swiftOfIncome;
 }
 
 export function getLinkedDocumentsAttributes(

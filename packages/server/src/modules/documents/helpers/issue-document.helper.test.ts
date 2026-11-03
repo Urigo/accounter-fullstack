@@ -2,15 +2,18 @@ import type { Injector } from 'graphql-modules';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentIssueInput } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
   insertNewDocumentFromGreenInvoice,
 } from '../../green-invoice/helpers/green-invoice.helper.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
 import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
 import {
   executeDocumentIssue,
+  filterAndHandleSwiftTransactions,
   getDraftTypeOutOfIssuedDocument,
   validateDocumentLinkType,
 } from './issue-document.helper.js';
@@ -254,5 +257,193 @@ describe('executeDocumentIssue - linked documents', () => {
       'Only a credit invoice can cancel',
     );
     expect(addDocuments).not.toHaveBeenCalled();
+  });
+});
+
+describe('filterAndHandleSwiftTransactions', () => {
+  const SWIFT_BUSINESS_ID = 'bb000000-0000-4000-8000-00000000000f';
+  let transactionCounter = 0;
+
+  // `date` is the debit date; the event date is set apart from it, so matching on it would fail
+  function transaction(
+    amount: string,
+    date: string,
+    businessId: string | null = 'bb000000-0000-4000-8000-000000000001',
+    overrides: Partial<IGetTransactionsByChargeIdsResult> = {},
+  ): IGetTransactionsByChargeIdsResult {
+    transactionCounter++;
+    return {
+      id: `tx-${transactionCounter}`,
+      amount,
+      business_id: businessId,
+      event_date: '2025-06-01' as TimelessDateString,
+      debit_date: date as TimelessDateString,
+      debit_date_override: null,
+      ...overrides,
+    } as IGetTransactionsByChargeIdsResult;
+  }
+  const income = (
+    amount: string,
+    date: string,
+    overrides?: Partial<IGetTransactionsByChargeIdsResult>,
+  ) => transaction(amount, date, undefined, overrides);
+  const swift = (
+    amount: string,
+    date: string,
+    overrides?: Partial<IGetTransactionsByChargeIdsResult>,
+  ) => transaction(amount, date, SWIFT_BUSINESS_ID, overrides);
+
+  const amountsById = (transactions: IGetTransactionsByChargeIdsResult[]) =>
+    transactions.map(tx => [tx.id, tx.amount]);
+
+  it('returns only positive incomes when there are no swift fees', () => {
+    const incomeA = income('100', '2026-01-10');
+    const expense = income('-50', '2026-01-10');
+    expect(filterAndHandleSwiftTransactions([incomeA, expense], SWIFT_BUSINESS_ID)).toEqual([
+      incomeA,
+    ]);
+  });
+
+  it('subtracts a single swift fee from a single income', () => {
+    const incomeA = income('1000', '2026-01-10');
+    const result = filterAndHandleSwiftTransactions(
+      [incomeA, swift('-15', '2026-01-09')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([[incomeA.id, '1015.00']]);
+  });
+
+  it('throws when income and swift counts differ', () => {
+    expect(() =>
+      filterAndHandleSwiftTransactions(
+        [income('1000', '2026-01-10'), income('500', '2026-02-10'), swift('-15', '2026-01-10')],
+        SWIFT_BUSINESS_ID,
+      ),
+    ).toThrow('Found 2 income transactions but 1 swift fee transactions');
+  });
+
+  it('subtracts the fee from every income when all swift fees are equal, regardless of dates', () => {
+    const incomeA = income('1000', '2026-01-10');
+    const incomeB = income('500', '2026-03-10');
+    const result = filterAndHandleSwiftTransactions(
+      [incomeA, swift('-15', '2026-05-01'), incomeB, swift('-15', '2026-06-01')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '515.00'],
+    ]);
+  });
+
+  it('matches differing swift fees by same-day or day-before date', () => {
+    const incomeA = income('1000', '2026-01-10');
+    const incomeB = income('500', '2026-02-10');
+    const result = filterAndHandleSwiftTransactions(
+      [swift('-20', '2026-02-09'), incomeA, incomeB, swift('-15', '2026-01-10')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '520.00'],
+    ]);
+  });
+
+  it('resolves a swift fee that fits two incomes by elimination', () => {
+    // the 01-10 fee fits both incomes (same day for A, day before for B); the 01-11 fee fits only B
+    const incomeA = income('1000', '2026-01-10');
+    const incomeB = income('500', '2026-01-11');
+    const result = filterAndHandleSwiftTransactions(
+      [incomeA, incomeB, swift('-15', '2026-01-10'), swift('-20', '2026-01-11')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '520.00'],
+    ]);
+  });
+
+  it.each([
+    ['two days before', '2026-01-08'],
+    ['a day after', '2026-01-11'],
+  ])('throws when a differing swift fee is dated %s its income', (_label, swiftDate) => {
+    expect(() =>
+      filterAndHandleSwiftTransactions(
+        [
+          income('1000', '2026-01-10'),
+          income('500', '2026-02-10'),
+          swift('-15', swiftDate),
+          swift('-20', '2026-02-10'),
+        ],
+        SWIFT_BUSINESS_ID,
+      ),
+    ).toThrow("Couldn't match swift fees to income transactions by date");
+  });
+
+  it('treats differing fees with equal amounts as interchangeable', () => {
+    // A and B can take either -15 fee; both pairings give them the same amount
+    const incomeA = income('1000', '2026-01-10');
+    const incomeB = income('500', '2026-01-10');
+    const incomeC = income('700', '2026-02-10');
+    const result = filterAndHandleSwiftTransactions(
+      [
+        incomeA,
+        incomeB,
+        incomeC,
+        swift('-15', '2026-01-10'),
+        swift('-15', '2026-01-10'),
+        swift('-20', '2026-02-10'),
+      ],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '515.00'],
+      [incomeC.id, '720.00'],
+    ]);
+  });
+
+  it('matches on the debit date override when set', () => {
+    const incomeA = income('1000', '2026-01-10', {
+      debit_date_override: '2026-01-20' as TimelessDateString,
+    });
+    const incomeB = income('500', '2026-02-10');
+    const result = filterAndHandleSwiftTransactions(
+      [incomeA, incomeB, swift('-15', '2026-01-19'), swift('-20', '2026-02-10')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '520.00'],
+    ]);
+  });
+
+  it('falls back to the event date when there is no debit date', () => {
+    const incomeA = income('1000', '2026-01-10', {
+      debit_date: null,
+      event_date: '2026-03-01' as TimelessDateString,
+    });
+    const incomeB = income('500', '2026-02-10');
+    const result = filterAndHandleSwiftTransactions(
+      [incomeA, incomeB, swift('-15', '2026-02-28'), swift('-20', '2026-02-10')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '520.00'],
+    ]);
+  });
+
+  it('throws when the date matching is ambiguous', () => {
+    expect(() =>
+      filterAndHandleSwiftTransactions(
+        [
+          income('1000', '2026-01-10'),
+          income('500', '2026-01-10'),
+          swift('-15', '2026-01-10'),
+          swift('-20', '2026-01-10'),
+        ],
+        SWIFT_BUSINESS_ID,
+      ),
+    ).toThrow("Couldn't match swift fees to income transactions by date");
   });
 });
