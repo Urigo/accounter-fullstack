@@ -41,6 +41,9 @@ export const useIssueMonthlyDocuments = (): UseIssueMonthlyDocuments => {
       return void 0;
     },
     successToast: { description: 'Documents issued successfully' },
+    // Issuing creates real documents and emails them to clients, so an accidental repeat of the
+    // same batch cannot be undone.
+    dedupe: { windowMs: 20_000 },
   });
 
   return {

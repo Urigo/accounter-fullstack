@@ -1,7 +1,42 @@
 import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { toast, type ExternalToast } from 'sonner';
-import { useMutation, type AnyVariables, type CombinedError, type TypedDocumentNode } from 'urql';
+import {
+  stringifyVariables,
+  useMutation,
+  type AnyVariables,
+  type CombinedError,
+  type TypedDocumentNode,
+} from 'urql';
 import { handleCommonErrors, type NonCommonError } from '../helpers/error-handling.js';
+
+/** Whether `data` holds a `CommonError` under `path`, as `handleCommonErrors` detects it. */
+function isCommonErrorResult(data: unknown, path: PropertyKey | undefined): boolean {
+  if (path === undefined || !data || typeof data !== 'object' || !(path in data)) {
+    return false;
+  }
+  const content = (data as Record<PropertyKey, unknown>)[path];
+  return (
+    !!content &&
+    typeof content === 'object' &&
+    (content as { __typename?: unknown }).__typename === 'CommonError'
+  );
+}
+
+/**
+ * Calls of a deduplicated mutation that are in flight or settled recently, keyed by the mutation
+ * document and then by its serialized variables. Module-level on purpose: every mounted instance
+ * of a hook shares it, so a second component — or a remount — is blocked too.
+ */
+const recentCalls = new WeakMap<object, Map<string, { expiresAt: number }>>();
+
+function getRecentCalls(document: object): Map<string, { expiresAt: number }> {
+  let calls = recentCalls.get(document);
+  if (!calls) {
+    calls = new Map();
+    recentCalls.set(document, calls);
+  }
+  return calls;
+}
 
 /** A constant, or a value derived from the mutation variables. */
 type FromVariables<TVariables, TValue> = TValue | ((variables: TVariables) => TValue);
@@ -83,6 +118,21 @@ export type UseApiMutationOptions<
    * server-provided reason instead of its generic message. Defaults to `errorMessage`.
    */
   errorDescription?: (error: unknown, variables: TVariables) => ReactNode;
+  /**
+   * Blocks a repeat of this mutation with identical variables while the first call is in flight
+   * and for `windowMs` after it settles — for non-idempotent writes with external effects, such as
+   * issuing documents, where an accidental double submit cannot be undone. A blocked call sends no
+   * request, raises a warning toast and resolves to `undefined`.
+   *
+   * When the resolver returns a `CommonError` under `commonErrorPath` — its report that the
+   * operation failed as a whole — the guard is lifted at once so the user can retry. In every other
+   * failure it is kept, since the mutation may still have run, fully or partly: a network or
+   * GraphQL error, an empty response, or a result `select` rejects (batch mutations report partial
+   * failures that way).
+   *
+   * Opt-in, because some mutations are legitimately repeated with identical variables (toggles).
+   */
+  dedupe?: { windowMs: number };
 };
 
 export type UseApiMutation<TVariables extends AnyVariables, TResult> = {
@@ -142,13 +192,52 @@ export function useApiMutation<
 
   const execute = useCallback(
     async (variables: TVariables): Promise<TResult | void> => {
-      const { commonErrorPath, select, successToast, onSuccess, errorToast, errorDescription } =
-        optionsRef.current;
+      const {
+        document,
+        commonErrorPath,
+        select,
+        successToast,
+        onSuccess,
+        errorToast,
+        errorDescription,
+        dedupe,
+      } = optionsRef.current;
       const notificationId = resolve(optionsRef.current.notificationId, variables);
       const errorMessage = resolve(optionsRef.current.errorMessage, variables);
 
+      // Claimed synchronously, before anything is awaited, so even two clicks in the same tick
+      // cannot both get through.
+      let release: ((keepWindow: boolean) => void) | undefined;
+      if (dedupe) {
+        const calls = getRecentCalls(document);
+        const key = stringifyVariables(variables);
+        const existing = calls.get(key);
+        if (existing && existing.expiresAt > Date.now()) {
+          toast.warning('Duplicate request blocked', {
+            description: 'This exact operation was just submitted, so it was not sent again.',
+            // Its own id, so it does not replace the in-flight call's loading toast.
+            id: `${notificationId}-duplicate`,
+          });
+          return void 0;
+        }
+        const entry = { expiresAt: Number.POSITIVE_INFINITY };
+        calls.set(key, entry);
+        release = keepWindow => {
+          if (keepWindow) {
+            entry.expiresAt = Date.now() + dedupe.windowMs;
+          } else if (calls.get(key) === entry) {
+            calls.delete(key);
+          }
+        };
+      }
+
       toast.loading(resolve(optionsRef.current.loadingMessage, variables), { id: notificationId });
 
+      // Whether the server may have run the mutation, for the dedupe guard. Pessimistic: only a
+      // `CommonError` result proves it did not. A network error may hide a request that did run,
+      // a GraphQL error may come from a resolver that failed halfway through its side effects,
+      // and a result `select` rejects may describe a partly applied batch.
+      let mayHaveRun = true;
       try {
         const res = await mutate(variables);
 
@@ -156,9 +245,16 @@ export function useApiMutation<
         // carries an error, so a missing result is already reported to the user.
         const data = handleCommonErrors(res, errorMessage, notificationId, commonErrorPath);
         if (!data) {
+          // Only a `CommonError` is the resolver's own report that the operation failed as a
+          // whole. Anything else — including an empty response — keeps the guard.
+          if (isCommonErrorResult(res.data, commonErrorPath)) {
+            mayHaveRun = false;
+          }
           return void 0;
         }
 
+        // A result `select` rejects still keeps the guard: batch mutations report partial
+        // failures this way, and retrying them would repeat the parts that succeeded.
         const result = select ? select(data, variables) : (data as unknown as TResult);
 
         const successOptions = resolve(successToast, result, variables);
@@ -180,6 +276,8 @@ export function useApiMutation<
           ...errorToast,
           id: notificationId,
         });
+      } finally {
+        release?.(mayHaveRun);
       }
       return void 0;
     },
