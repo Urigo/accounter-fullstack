@@ -55,7 +55,9 @@ export const Tags = ({
         <ListCapsule
           items={tags.map(t => (
             <div key={t.id} className="flex items-center gap-4">
-              <div className="wrap-anywhere">
+              {/* `break-words`, not `wrap-anywhere`: wrap tag names only between words.
+                  `wrap-anywhere` lets the column shrink to one character, splitting words apart. */}
+              <div className="break-words">
                 {t.namePath && (
                   <div className="text-xs opacity-65">{`${t.namePath.join(' > ')} >`}</div>
                 )}
