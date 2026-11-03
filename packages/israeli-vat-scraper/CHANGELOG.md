@@ -1,5 +1,36 @@
 # @accounter-toolkit/israeli-vat-scraper
 
+## 0.1.14
+
+### Patch Changes
+
+- [#4643](https://github.com/Urigo/accounter-fullstack/pull/4643) [`0cec65f`](https://github.com/Urigo/accounter-fullstack/commit/0cec65f89583a24fd86ff49c884b555a51e6866a) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.13.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.13.0) (from `25.12.0`, in `dependencies`)
+
+- [#4684](https://github.com/Urigo/accounter-fullstack/pull/4684) [`8a9c5be`](https://github.com/Urigo/accounter-fullstack/commit/8a9c5be6042af604d8ca8058aa1a0b0965579cfc) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.14.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.14.0) (from `25.13.0`, in `dependencies`)
+
+- [#4723](https://github.com/Urigo/accounter-fullstack/pull/4723) [`35a00dd`](https://github.com/Urigo/accounter-fullstack/commit/35a00dd2b79ef43c684be0dcb74fb8a80b88320e) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.14.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.14.0) (from `25.13.0`, in `dependencies`)
+
+- [#4763](https://github.com/Urigo/accounter-fullstack/pull/4763) [`d4f979f`](https://github.com/Urigo/accounter-fullstack/commit/d4f979ff3ea72e7508db7801d3e74d9dccb6bbf9) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.15.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.15.0) (from `25.14.0`, in `dependencies`)
+
+- [#4771](https://github.com/Urigo/accounter-fullstack/pull/4771) [`b13ce9c`](https://github.com/Urigo/accounter-fullstack/commit/b13ce9c11b690909367418625e2307421bae54f2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4772](https://github.com/Urigo/accounter-fullstack/pull/4772) [`593ec81`](https://github.com/Urigo/accounter-fullstack/commit/593ec810870358bee0d9d0b5806e03bd32ee735b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4773](https://github.com/Urigo/accounter-fullstack/pull/4773) [`f92ab61`](https://github.com/Urigo/accounter-fullstack/commit/f92ab612b56409ed71d733e888b62838b5300fbf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4780](https://github.com/Urigo/accounter-fullstack/pull/4780) [`793503f`](https://github.com/Urigo/accounter-fullstack/commit/793503fb68471a79873c86f572509f783230935f) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.15.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.15.0) (from `25.14.0`, in `dependencies`)
+
+- [#4792](https://github.com/Urigo/accounter-fullstack/pull/4792) [`5e77e66`](https://github.com/Urigo/accounter-fullstack/commit/5e77e66344233868d7db934346ef4f91bd67197b) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
 ## 0.1.13
 
 ### Patch Changes
