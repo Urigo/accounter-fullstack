@@ -481,8 +481,8 @@ export const routes: RouteObject[] = [
                 path: 'issue-documents',
                 element: withSuspense(IssueDocuments),
                 handle: {
-                  title: 'Issue Documents',
-                  breadcrumb: 'Issue Documents',
+                  title: 'Issue Monthly Documents',
+                  breadcrumb: 'Issue Monthly Documents',
                 },
               },
             ],
