@@ -198,6 +198,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const isClient = business && 'clientInfo' in business && !!business.clientInfo;
   const isLocalEntity = locality === userContext?.context.locality;
+  const isIsraeli = locality === CountryCode.Israel;
 
   const fillEmptyFields = (fields: RegistryFormFields) => {
     for (const name of REGISTRY_FORM_FIELDS) {
@@ -350,7 +351,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                 )}
               />
 
-              {isLocalEntity && (
+              {(isLocalEntity || isIsraeli) && (
                 <FormField
                   control={form.control}
                   name="localName"
@@ -388,9 +389,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                 )}
               />
 
-              {locality === CountryCode.Israel && (
-                <IsraeliCorporationLookup govId={govId} onApply={fillEmptyFields} />
-              )}
+              {isIsraeli && <IsraeliCorporationLookup govId={govId} onApply={fillEmptyFields} />}
 
               <FormField
                 control={form.control}

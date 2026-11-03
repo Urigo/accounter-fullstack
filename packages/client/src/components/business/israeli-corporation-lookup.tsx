@@ -11,6 +11,7 @@ import {
 import { formatTimelessDate } from '@/helpers/dates.js';
 import { isValidIsraeliId, normalizeIsraeliId } from '@/helpers/israeli-id.js';
 import { cn } from '@/lib/utils.js';
+import { SUPPRESS_ERROR_TOAST_CONTEXT } from '@/providers/urql-error-handler.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -258,6 +259,8 @@ export function IsraeliCorporationLookup({
     query: IsraeliCorporationLookupDocument,
     variables: { corporationNumber: debouncedId ?? '' },
     pause: !debouncedId || debouncedId !== lookupId,
+    // The component shows its own notice when the registry can't be reached
+    context: SUPPRESS_ERROR_TOAST_CONTEXT,
   });
 
   if (invalidMessage) {

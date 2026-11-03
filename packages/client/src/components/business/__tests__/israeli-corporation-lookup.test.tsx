@@ -99,6 +99,8 @@ describe('IsraeliCorporationLookup', () => {
     expect(lastQueryArgs()).toMatchObject({
       variables: { corporationNumber: '516232675' },
       pause: false,
+      // failures show an inline notice, not the global error toast
+      context: { suppressErrorToast: true },
     });
     const text = container.textContent;
     expect(text).toContain('הגילדה למוצרי תוכנה בע"מ');
