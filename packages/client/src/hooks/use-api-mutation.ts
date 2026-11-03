@@ -9,6 +9,19 @@ import {
 } from 'urql';
 import { handleCommonErrors, type NonCommonError } from '../helpers/error-handling.js';
 
+/** Whether `data` holds a `CommonError` under `path`, as `handleCommonErrors` detects it. */
+function isCommonErrorResult(data: unknown, path: PropertyKey | undefined): boolean {
+  if (path === undefined || !data || typeof data !== 'object' || !(path in data)) {
+    return false;
+  }
+  const content = (data as Record<PropertyKey, unknown>)[path];
+  return (
+    !!content &&
+    typeof content === 'object' &&
+    (content as { __typename?: unknown }).__typename === 'CommonError'
+  );
+}
+
 /**
  * Calls of a deduplicated mutation that are in flight or settled recently, keyed by the mutation
  * document and then by its serialized variables. Module-level on purpose: every mounted instance
@@ -111,9 +124,11 @@ export type UseApiMutationOptions<
    * issuing documents, where an accidental double submit cannot be undone. A blocked call sends no
    * request, raises a warning toast and resolves to `undefined`.
    *
-   * When the resolver returns a failure of its own (a `CommonError`, or a result `select` rejects),
-   * the guard is lifted at once so the user can retry. After a network or GraphQL error it is
-   * kept: the mutation may still have run, fully or partly, on the server.
+   * When the resolver returns a `CommonError` under `commonErrorPath` — its report that the
+   * operation failed as a whole — the guard is lifted at once so the user can retry. In every other
+   * failure it is kept, since the mutation may still have run, fully or partly: a network or
+   * GraphQL error, an empty response, or a result `select` rejects (batch mutations report partial
+   * failures that way).
    *
    * Opt-in, because some mutations are legitimately repeated with identical variables (toggles).
    */
@@ -219,9 +234,9 @@ export function useApiMutation<
       toast.loading(resolve(optionsRef.current.loadingMessage, variables), { id: notificationId });
 
       // Whether the server may have run the mutation, for the dedupe guard. Pessimistic: only a
-      // result the resolver itself returned as a failure proves it did not. A network error may
-      // hide a request that did run, and a GraphQL error may come from a resolver that failed
-      // halfway through its side effects.
+      // `CommonError` result proves it did not. A network error may hide a request that did run,
+      // a GraphQL error may come from a resolver that failed halfway through its side effects,
+      // and a result `select` rejects may describe a partly applied batch.
       let mayHaveRun = true;
       try {
         const res = await mutate(variables);
@@ -230,22 +245,17 @@ export function useApiMutation<
         // carries an error, so a missing result is already reported to the user.
         const data = handleCommonErrors(res, errorMessage, notificationId, commonErrorPath);
         if (!data) {
-          // A `CommonError` result is the resolver's own, clean report of a failure.
-          if (!res.error) {
+          // Only a `CommonError` is the resolver's own report that the operation failed as a
+          // whole. Anything else — including an empty response — keeps the guard.
+          if (isCommonErrorResult(res.data, commonErrorPath)) {
             mayHaveRun = false;
           }
           return void 0;
         }
 
-        // From here on the server has answered successfully, even if `select` rejects the answer
-        // below; a rejected answer is a clean failure, a successful one keeps the window.
-        let result: TResult;
-        try {
-          result = select ? select(data, variables) : (data as unknown as TResult);
-        } catch (e) {
-          mayHaveRun = false;
-          throw e;
-        }
+        // A result `select` rejects still keeps the guard: batch mutations report partial
+        // failures this way, and retrying them would repeat the parts that succeeded.
+        const result = select ? select(data, variables) : (data as unknown as TResult);
 
         const successOptions = resolve(successToast, result, variables);
         if (successOptions !== false) {

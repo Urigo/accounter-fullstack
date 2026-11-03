@@ -422,7 +422,27 @@ describe('useApiMutation', () => {
       expect(mutate).toHaveBeenCalledTimes(2);
     });
 
-    it('lifts the guard at once when the resolver reports a failure itself', async () => {
+    it('lifts the guard at once when the resolver returns a `CommonError`', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = vi.fn().mockResolvedValue({
+        data: { addTag: { __typename: 'CommonError', message: 'Tag already exists' } },
+      });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        commonErrorPath: 'addTag' as const,
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
+      consoleError.mockRestore();
+    });
+
+    it('keeps the guard when `select` rejects the result, which may describe a partial batch', async () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const mutate = resolveWith({ addTag: false });
       useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
@@ -441,7 +461,25 @@ describe('useApiMutation', () => {
         await current().execute({ tagName: 'travel' });
       });
 
-      expect(mutate).toHaveBeenCalledTimes(2);
+      expect(mutate).toHaveBeenCalledTimes(1);
+      consoleError.mockRestore();
+    });
+
+    it('keeps the guard after a response with neither data nor error', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = vi.fn().mockResolvedValue({});
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        commonErrorPath: 'addTag' as const,
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
       consoleError.mockRestore();
     });
 
