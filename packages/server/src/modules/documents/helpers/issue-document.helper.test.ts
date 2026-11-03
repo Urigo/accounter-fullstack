@@ -264,22 +264,34 @@ describe('filterAndHandleSwiftTransactions', () => {
   const SWIFT_BUSINESS_ID = 'bb000000-0000-4000-8000-00000000000f';
   let transactionCounter = 0;
 
+  // `date` is the debit date; the event date is set apart from it, so matching on it would fail
   function transaction(
     amount: string,
-    eventDate: string,
+    date: string,
     businessId: string | null = 'bb000000-0000-4000-8000-000000000001',
+    overrides: Partial<IGetTransactionsByChargeIdsResult> = {},
   ): IGetTransactionsByChargeIdsResult {
     transactionCounter++;
     return {
       id: `tx-${transactionCounter}`,
       amount,
       business_id: businessId,
-      event_date: eventDate as TimelessDateString,
+      event_date: '2025-06-01' as TimelessDateString,
+      debit_date: date as TimelessDateString,
+      debit_date_override: null,
+      ...overrides,
     } as IGetTransactionsByChargeIdsResult;
   }
-  const income = (amount: string, eventDate: string) => transaction(amount, eventDate);
-  const swift = (amount: string, eventDate: string) =>
-    transaction(amount, eventDate, SWIFT_BUSINESS_ID);
+  const income = (
+    amount: string,
+    date: string,
+    overrides?: Partial<IGetTransactionsByChargeIdsResult>,
+  ) => transaction(amount, date, undefined, overrides);
+  const swift = (
+    amount: string,
+    date: string,
+    overrides?: Partial<IGetTransactionsByChargeIdsResult>,
+  ) => transaction(amount, date, SWIFT_BUSINESS_ID, overrides);
 
   const amountsById = (transactions: IGetTransactionsByChargeIdsResult[]) =>
     transactions.map(tx => [tx.id, tx.amount]);
@@ -365,6 +377,60 @@ describe('filterAndHandleSwiftTransactions', () => {
         SWIFT_BUSINESS_ID,
       ),
     ).toThrow("Couldn't match swift fees to income transactions by date");
+  });
+
+  it('treats differing fees with equal amounts as interchangeable', () => {
+    // A and B can take either -15 fee; both pairings give them the same amount
+    const incomeA = income('1000', '2026-01-10');
+    const incomeB = income('500', '2026-01-10');
+    const incomeC = income('700', '2026-02-10');
+    const result = filterAndHandleSwiftTransactions(
+      [
+        incomeA,
+        incomeB,
+        incomeC,
+        swift('-15', '2026-01-10'),
+        swift('-15', '2026-01-10'),
+        swift('-20', '2026-02-10'),
+      ],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '515.00'],
+      [incomeC.id, '720.00'],
+    ]);
+  });
+
+  it('matches on the debit date override when set', () => {
+    const incomeA = income('1000', '2026-01-10', {
+      debit_date_override: '2026-01-20' as TimelessDateString,
+    });
+    const incomeB = income('500', '2026-02-10');
+    const result = filterAndHandleSwiftTransactions(
+      [incomeA, incomeB, swift('-15', '2026-01-19'), swift('-20', '2026-02-10')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '520.00'],
+    ]);
+  });
+
+  it('falls back to the event date when there is no debit date', () => {
+    const incomeA = income('1000', '2026-01-10', {
+      debit_date: null,
+      event_date: '2026-03-01' as TimelessDateString,
+    });
+    const incomeB = income('500', '2026-02-10');
+    const result = filterAndHandleSwiftTransactions(
+      [incomeA, incomeB, swift('-15', '2026-02-28'), swift('-20', '2026-02-10')],
+      SWIFT_BUSINESS_ID,
+    );
+    expect(amountsById(result)).toEqual([
+      [incomeA.id, '1015.00'],
+      [incomeB.id, '520.00'],
+    ]);
   });
 
   it('throws when the date matching is ambiguous', () => {
