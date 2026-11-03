@@ -1,6 +1,7 @@
 import React, { useMemo, type ComponentProps, type Ref } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
 import { useMediaQuery } from '../../../hooks/use-media-query.js';
+import { rankOptions, useCommandListScrollReset } from '../../../lib/command-search.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Button } from '../../ui/button.js';
@@ -214,22 +215,31 @@ function OptionsList({
   data: Array<Option>;
   value?: string | null;
 }) {
+  // The popover/drawer content unmounts on close, so the search starts empty on every open.
+  const [search, setSearch] = React.useState('');
+  const listRef = useCommandListScrollReset(search);
+  const rankedOptions = useMemo(
+    () => rankOptions(data, search, option => [option.label, option.description]),
+    [data, search],
+  );
+
   return (
-    <Command>
-      <CommandInput placeholder={placeholder ?? 'Filter options...'} />
-      <CommandList>
+    // Filtering and ordering happen in `rankOptions`; see there for why cmdk's own filter isn't used.
+    <Command shouldFilter={false}>
+      <CommandInput
+        placeholder={placeholder ?? 'Filter options...'}
+        value={search}
+        onValueChange={setSearch}
+      />
+      <CommandList ref={listRef}>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup>
-          {data.map(option => (
+          {rankedOptions.map(option => (
             <CommandItem
               key={option.value}
-              keywords={[option.label, option.description ?? '']}
               value={option.value}
-              onSelect={value => {
-                onChange?.(
-                  data.find(option => option.value.toLowerCase() === value.toLowerCase())?.value ??
-                    null,
-                );
+              onSelect={() => {
+                onChange?.(option.value);
                 setOpen(false);
               }}
             >

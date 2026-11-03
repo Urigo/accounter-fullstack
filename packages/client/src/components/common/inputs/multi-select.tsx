@@ -1,13 +1,13 @@
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { CheckIcon, ChevronDown, WandSparkles, XCircle, XIcon } from 'lucide-react';
+import { rankOptions, useCommandListScrollReset } from '../../../lib/command-search.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -142,6 +142,16 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     const [selectedValues, setSelectedValues] = React.useState<string[]>(defaultValue);
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
+    // The search lives here, outside the popover content, so it is cleared whenever the popover
+    // opens or closes (adjusting state during render, as React recommends over an effect) — the
+    // same fresh start the uncontrolled input used to get from remounting.
+    const [search, setSearch] = React.useState('');
+    const [searchOpenState, setSearchOpenState] = React.useState(isPopoverOpen);
+    if (searchOpenState !== isPopoverOpen) {
+      setSearchOpenState(isPopoverOpen);
+      setSearch('');
+    }
+    const listRef = useCommandListScrollReset(search);
     // Snapshot of the selection taken when the popover opens, used to order the
     // option list (selected first) without reshuffling while the user toggles items.
     const [orderSnapshot, setOrderSnapshot] = React.useState<string[]>(defaultValue);
@@ -153,6 +163,12 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
         ...options.filter(option => !selected.has(option.value)),
       ];
     }, [options, orderSnapshot]);
+
+    const rankedOptions = React.useMemo(
+      () => rankOptions(orderedOptions, search, option => [option.label, option.description]),
+      [orderedOptions, search],
+    );
+    const isSearching = search.trim() !== '';
 
     const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Enter') {
@@ -321,29 +337,45 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
           container={portalContainer}
           onEscapeKeyDown={() => setIsPopoverOpen(false)}
         >
-          <Command>
-            <CommandInput placeholder="Search..." onKeyDown={handleInputKeyDown} />
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
+          {/* Filtering and ordering happen in `rankOptions`; see there for why cmdk's own
+              filter isn't used. */}
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Search..."
+              onKeyDown={handleInputKeyDown}
+              value={search}
+              onValueChange={setSearch}
+            />
+            <CommandList ref={listRef}>
+              {/* Not `CommandEmpty`: the Close item below is always mounted, so cmdk's count of
+                  items never reaches zero. */}
+              {isSearching && rankedOptions.length === 0 && (
+                <div className="py-6 text-center text-sm">No results found.</div>
+              )}
               <CommandGroup>
-                <CommandItem key="all" onSelect={toggleAll} className="cursor-pointer">
-                  <div
-                    className={cn(
-                      'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-gray-900',
-                      selectedValues.length === options.length
-                        ? 'bg-gray-900 text-gray-50'
-                        : 'opacity-50 [&_svg]:invisible',
-                    )}
-                  >
-                    <CheckIcon className="h-4 w-4" />
-                  </div>
-                  <span>(Select All)</span>
-                </CommandItem>
-                {orderedOptions.map(option => {
+                {/* "Select All" selects every option, not just the matches, so it is hidden
+                    while a search narrows the list. */}
+                {!isSearching && (
+                  <CommandItem key="all" onSelect={toggleAll} className="cursor-pointer">
+                    <div
+                      className={cn(
+                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-gray-900',
+                        selectedValues.length === options.length
+                          ? 'bg-gray-900 text-gray-50'
+                          : 'opacity-50 [&_svg]:invisible',
+                      )}
+                    >
+                      <CheckIcon className="h-4 w-4" />
+                    </div>
+                    <span>(Select All)</span>
+                  </CommandItem>
+                )}
+                {rankedOptions.map(option => {
                   const isSelected = selectedValues.includes(option.value);
                   return (
                     <CommandItem
                       key={option.value}
+                      value={option.value}
                       onSelect={() => toggleOption(option.value)}
                       className="cursor-pointer"
                     >

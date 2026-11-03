@@ -192,10 +192,25 @@ export function NegatableMultiSelect({
     onExcludedChange?.(excludedValue.filter(v => v !== option));
   }
 
-  function selectAllVisible(): void {
-    const visible = filtered.map(option => option.value);
+  // Derived rather than stored, so it follows every change to the selection: it unchecks as
+  // soon as one visible option is unchecked, and checks once they are all selected, however that
+  // happened. "Selected" means included or excluded, matching each row's checkbox.
+  const allVisibleSelected =
+    filtered.length > 0 && filtered.every(option => isMember(option.value));
+
+  /**
+   * Selects every visible option, or deselects them all when they already are. Options hidden
+   * by the search keep their state either way.
+   */
+  function toggleAllVisible(): void {
+    const visible = new Set(filtered.map(option => option.value));
+    if (allVisibleSelected) {
+      onValueChange(value.filter(v => !visible.has(v)));
+      onExcludedChange?.(excludedValue.filter(v => !visible.has(v)));
+      return;
+    }
     onValueChange(Array.from(new Set([...value, ...visible])));
-    onExcludedChange?.(excludedValue.filter(v => !visible.includes(v)));
+    onExcludedChange?.(excludedValue.filter(v => !visible.has(v)));
   }
 
   function clearAll(): void {
@@ -326,8 +341,13 @@ export function NegatableMultiSelect({
             <CommandEmpty>{emptyText}</CommandEmpty>
 
             <CommandGroup>
-              <CommandItem onSelect={selectAllVisible} className="cursor-pointer gap-2">
-                <Checkbox checked={false} aria-hidden tabIndex={-1} className="opacity-70" />
+              <CommandItem onSelect={toggleAllVisible} className="cursor-pointer gap-2">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  aria-hidden
+                  tabIndex={-1}
+                  className={cn(!allVisibleSelected && 'opacity-70')}
+                />
                 <span className="font-medium text-muted-foreground">
                   {query ? '(Select all visible)' : '(Select All)'}
                 </span>
