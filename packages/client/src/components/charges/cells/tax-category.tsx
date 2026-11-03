@@ -12,7 +12,7 @@ export type TaxCategoryProps = {
 export const TaxCategory = ({ taxCategory, isMissing }: TaxCategoryProps): ReactElement => {
   return (
     <Indicator inline size={12} disabled={!isMissing} color="red">
-      <span className="wrap-anywhere">{taxCategory?.name ?? 'N/A'}</span>
+      {taxCategory?.name ?? 'N/A'}
     </Indicator>
   );
 };
