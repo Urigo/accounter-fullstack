@@ -32,9 +32,13 @@ const REPORTED_VALUE_MAX_LENGTH = 60;
 
 /** A Deel API call that failed, with the endpoint and the reason in its message */
 export class DeelApiError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+  /** What failed, without the response body or the values Deel sent — safe to show the user */
+  public readonly publicMessage: string;
+
+  constructor(message: string, options?: ErrorOptions & { publicMessage?: string }) {
     super(message, options);
     this.name = 'DeelApiError';
+    this.publicMessage = options?.publicMessage ?? message;
   }
 }
 
@@ -239,7 +243,9 @@ export class DeelClientProvider {
             );
           }
           const body = await res.text().catch(() => '');
-          throw new DeelApiError(describeHttpFailure(label, res, body, sentToken));
+          throw new DeelApiError(describeHttpFailure(label, res, body, sentToken), {
+            publicMessage: describeHttpFailure(label, res, '', sentToken),
+          });
         }
 
         try {
@@ -308,6 +314,7 @@ export class DeelClientProvider {
     if (!parsed.success) {
       throw new DeelApiError(
         `Deel API ${label} returned an unexpected payload:\n${formatZodIssues(parsed.error.issues)}`,
+        { publicMessage: `Deel API ${label} returned an unexpected payload` },
       );
     }
     return parsed.data;

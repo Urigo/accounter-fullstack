@@ -90,12 +90,14 @@ export class DeelContractsProvider {
   public async insertDeelContract(params: IInsertDeelContractParams) {
     try {
       const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-      // invalidate cache
-      return insertDeelContract.run(reassureOwnerIdExists(params, ownerId), this.db);
+      const result = await insertDeelContract.run(reassureOwnerIdExists(params, ownerId), this.db);
+      if (params.contractId) {
+        this.getEmployeeByContractIdLoader.clear(params.contractId);
+        this.getEmployeeIDByContractIdLoader.clear(params.contractId);
+      }
+      return result;
     } catch (e) {
-      const message = `Error inserting Deel contract [${params.contractId}]`;
-      console.error(`${message}: ${e}`);
-      throw new Error(message, { cause: e });
+      throw new Error(`Error inserting Deel contract [${params.contractId}]`, { cause: e });
     }
   }
 }

@@ -63,6 +63,7 @@ vi.mock('../../../helpers/cross-year-ledger.helper.js', () => ({
 }));
 
 vi.mock('../../../../deel/helpers/deel.helper.js', () => ({
+  getDeelBusinessIdForLedger: vi.fn(async () => null),
   getDeelEmployeeId: vi.fn(async () => undefined),
   isDeelDocument: vi.fn(() => false),
 }));
