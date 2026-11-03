@@ -55,6 +55,11 @@
       "matchPackageNames": ["prettier", "@theguild/prettier-config"]
     },
     {
+      "description": "TypeScript 7 is the Go rewrite. It ships no programmatic compiler API until 7.1, so typescript-eslint refuses to load (typescript-eslint#10940), which fails `yarn lint` and, through the seven packages whose build is `yarn lint && bob build`, `yarn build` too. It also ships no `lib/tsserver.js`, which breaks the `js/ts.tsdk.path` pin in .vscode/settings.json. Remove this cap once typescript-eslint supports TS7, and re-point the tsdk path in the same change.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
+    },
+    {
       "description": "Frozen/retired packages - no dependency upgrades. Keep last: rules are applied in order and this must win over the broad rules above.",
       "matchFileNames": [
         "packages/gmail-listener/package.json",
