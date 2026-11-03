@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act, createRef } from 'react';
+import { act, createRef, useState, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { NegatableMultiSelect } from '../negatable-multi-select.js';
@@ -209,5 +209,142 @@ describe('NegatableMultiSelect', () => {
       />,
     );
     expect(container.textContent).toContain('All counterparties');
+  });
+});
+
+/**
+ * "Select All" / "Select all visible" used to render a permanently unchecked box and only ever
+ * add options, so there was no way to clear a whole list in one click.
+ */
+describe('NegatableMultiSelect select all', () => {
+  const state: { value: string[]; excluded: string[] } = { value: [], excluded: [] };
+
+  function Harness({
+    negatable = false,
+    initialValue = [],
+    initialExcluded = [],
+  }: {
+    negatable?: boolean;
+    initialValue?: string[];
+    initialExcluded?: string[];
+  }): ReactElement {
+    const [value, setValue] = useState(initialValue);
+    const [excluded, setExcluded] = useState(initialExcluded);
+    state.value = value;
+    state.excluded = excluded;
+    return (
+      <NegatableMultiSelect
+        options={OPTIONS}
+        value={value}
+        onValueChange={setValue}
+        excludedValue={excluded}
+        onExcludedChange={setExcluded}
+        negatable={negatable}
+      />
+    );
+  }
+
+  function open(ui: ReactElement = <Harness />): void {
+    render(ui);
+    act(() => container.querySelector<HTMLElement>('[role="combobox"]')!.click());
+  }
+
+  function items(): HTMLElement[] {
+    return [...document.querySelectorAll<HTMLElement>('[cmdk-item]')];
+  }
+
+  function item(text: string): HTMLElement {
+    const found = items().find(candidate => candidate.textContent?.includes(text));
+    if (!found) {
+      throw new Error(`no item containing "${text}"`);
+    }
+    return found;
+  }
+
+  /** The Radix checkbox's state for the row containing `text`. */
+  function checkState(text: string): string | null {
+    return item(text).querySelector('[data-slot="checkbox"]')?.getAttribute('data-state') ?? null;
+  }
+
+  const SELECT_ALL = '(Select All)';
+
+  function click(text: string): void {
+    act(() => item(text).click());
+  }
+
+  function type(text: string): void {
+    const input = document.querySelector<HTMLInputElement>('[cmdk-input]')!;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    act(() => {
+      setter?.call(input, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  it('checks itself along with every option', () => {
+    open();
+    expect(checkState(SELECT_ALL)).toBe('unchecked');
+
+    click(SELECT_ALL);
+    expect(state.value).toEqual(['a', 'b', 'c']);
+    expect(checkState(SELECT_ALL)).toBe('checked');
+    for (const label of ['Alpha', 'Bravo', 'Charlie']) {
+      expect(checkState(label)).toBe('checked');
+    }
+  });
+
+  it('unchecks every option when clicked again', () => {
+    open();
+    click(SELECT_ALL);
+    click(SELECT_ALL);
+
+    expect(state.value).toEqual([]);
+    expect(state.excluded).toEqual([]);
+    expect(checkState(SELECT_ALL)).toBe('unchecked');
+    for (const label of ['Alpha', 'Bravo', 'Charlie']) {
+      expect(checkState(label)).toBe('unchecked');
+    }
+  });
+
+  it('unchecks itself when one option is unchecked, and rechecks when it is checked again', () => {
+    open();
+    click(SELECT_ALL);
+
+    click('Bravo');
+    expect(state.value).toEqual(['a', 'c']);
+    expect(checkState(SELECT_ALL)).toBe('unchecked');
+
+    click('Bravo');
+    expect(checkState(SELECT_ALL)).toBe('checked');
+  });
+
+  it('is checked when every option was selected one by one', () => {
+    open(<Harness initialValue={['a', 'b', 'c']} />);
+    expect(checkState(SELECT_ALL)).toBe('checked');
+  });
+
+  it('only toggles the visible options while searching', () => {
+    open(<Harness initialValue={['c']} />);
+    // Only "Alpha" matches.
+    type('al');
+    const visibleSelectAll = '(Select all visible)';
+    expect(checkState(visibleSelectAll)).toBe('unchecked');
+
+    click(visibleSelectAll);
+    expect([...state.value].sort()).toEqual(['a', 'c']);
+    expect(checkState(visibleSelectAll)).toBe('checked');
+
+    click(visibleSelectAll);
+    // "Charlie" was not visible for "al", so its selection is kept.
+    expect(state.value).toEqual(['c']);
+  });
+
+  it('treats excluded options as selected in negatable mode, and clears them too', () => {
+    open(<Harness negatable initialValue={['a', 'c']} initialExcluded={['b']} />);
+    expect(checkState(SELECT_ALL)).toBe('checked');
+
+    click(SELECT_ALL);
+    expect(state.value).toEqual([]);
+    expect(state.excluded).toEqual([]);
   });
 });
