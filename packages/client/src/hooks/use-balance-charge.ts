@@ -3,6 +3,7 @@ import {
   type GenerateBalanceChargeMutation,
   type GenerateBalanceChargeMutationVariables,
 } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -32,6 +33,7 @@ export const useGenerateBalanceCharge = (): UseGenerateBalanceCharge => {
 
   const { fetching, execute } = useApiMutation({
     document: GenerateBalanceChargeDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: NOTIFICATION_ID,
     loadingMessage: 'Generating balance charge',
     errorMessage: 'Error generating charge',

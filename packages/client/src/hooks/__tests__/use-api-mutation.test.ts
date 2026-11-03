@@ -3,7 +3,7 @@
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TypedDocumentNode } from 'urql';
+import type { AnyVariables, TypedDocumentNode } from 'urql';
 import {
   useApiMutation,
   type UseApiMutation,
@@ -41,13 +41,15 @@ const DOCUMENT = {} as TypedDocumentNode<Data, Variables>;
 /** Resolves the mutation with `data`, as a successful urql `OperationResult` would. */
 const resolveWith = (data: Data) => vi.fn().mockResolvedValue({ data });
 
-async function renderHook<TKey extends keyof Data | undefined, TResult>(
-  options: UseApiMutationOptions<Data, Variables, TKey, TResult>,
-) {
+async function renderHook<
+  TKey extends keyof Data | undefined,
+  TResult,
+  TVariables extends AnyVariables = Variables,
+>(options: UseApiMutationOptions<Data, TVariables, TKey, TResult>) {
   const container = document.createElement('div');
   document.body.append(container);
 
-  const renders: UseApiMutation<Variables, TResult>[] = [];
+  const renders: UseApiMutation<TVariables, TResult>[] = [];
 
   function Harness(): null {
     renders.push(useApiMutation(options));
@@ -350,6 +352,15 @@ describe('useApiMutation', () => {
       dedupe: { windowMs: WINDOW },
     });
 
+    type FileVariables = { file: File; chargeId: string };
+
+    /** Like `dedupeOptions`, for an upload-shaped mutation whose variables carry a `File`. */
+    const fileOptions = () => ({
+      ...baseOptions,
+      document: {} as TypedDocumentNode<Data, FileVariables>,
+      dedupe: { windowMs: WINDOW },
+    });
+
     /** A mutation that stays in flight until `settle` is called. */
     function deferredMutate() {
       let settle: (value: unknown) => void = () => undefined;
@@ -513,6 +524,34 @@ describe('useApiMutation', () => {
       });
 
       expect(mutate).toHaveBeenCalledTimes(1);
+    });
+
+    it('blocks a re-submit of the same `File` object', async () => {
+      const mutate = vi.fn().mockResolvedValue({ data: { addTag: true } });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook<undefined, unknown, FileVariables>(fileOptions());
+      const file = new File(['a'], 'invoice.pdf');
+
+      await act(async () => {
+        await current().execute({ file, chargeId: 'charge-1' });
+        await current().execute({ file, chargeId: 'charge-1' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not block a different `File` with otherwise identical variables', async () => {
+      // Without `includeFiles`, urql serializes every file as `null`, so these two would collide.
+      const mutate = vi.fn().mockResolvedValue({ data: { addTag: true } });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook<undefined, unknown, FileVariables>(fileOptions());
+
+      await act(async () => {
+        await current().execute({ file: new File(['a'], 'a.pdf'), chargeId: 'charge-1' });
+        await current().execute({ file: new File(['b'], 'b.pdf'), chargeId: 'charge-1' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
     });
 
     it('does nothing unless enabled', async () => {

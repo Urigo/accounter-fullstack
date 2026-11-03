@@ -13,6 +13,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fromPromise, fromValue, mergeMap, pipe } from 'wonka';
 import { DynamicReportTemplateDocument } from '../../../../gql/graphql.js';
+import { resetMutationDedupe } from '../../../../helpers/mutation-dedupe.js';
 import {
   useCommentsLayer,
   type CommentsLayer,
@@ -223,6 +224,8 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  // Posting a comment is deduplicated, and several tests post the same draft on the same thread.
+  resetMutationDedupe();
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);

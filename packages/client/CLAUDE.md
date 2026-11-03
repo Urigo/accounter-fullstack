@@ -18,6 +18,12 @@ React SPA built with Vite, urql (GraphQL), shadcn/ui, and Tailwind CSS.
 - Queries: use `useQuery` from urql directly in components.
 - Mutations: wrap in a custom hook under `src/hooks/` that handles `useMutation`, error handling via
   `handleCommonErrors`, and toast notifications. Components consume the simplified return value.
+- Mutation dedupe: a mutation that creates records, reaches an external service (Green Invoice,
+  Auth0, Cloudinary) or costs money (OCR) passes `dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS }`
+  to `useApiMutation` (constant from `src/helpers/mutation-dedupe.ts`), so an accidental repeat with
+  identical variables is blocked. Leave it off for updates, toggles and deletes: they are safe to
+  repeat, and the guard would block a deliberate A → B → A. Hooks that call `useMutation` directly
+  use `claimMutationCall` from the same module.
 
 ## Tables (TanStack Table v9)
 
