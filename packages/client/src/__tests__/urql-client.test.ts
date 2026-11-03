@@ -65,6 +65,12 @@ vi.mock('urql', () => ({
   Provider: ({ children }: { children?: unknown }) => children,
 }));
 
+const { resetMutationDedupeMock } = vi.hoisted(() => ({ resetMutationDedupeMock: vi.fn() }));
+
+vi.mock('../helpers/mutation-dedupe.js', () => ({
+  resetMutationDedupe: resetMutationDedupeMock,
+}));
+
 vi.mock('@urql/exchange-retry', () => ({
   retryExchange: retryExchangeMock,
 }));
@@ -461,5 +467,25 @@ describe('URQL auth exchange hardening', () => {
 
     expect(enrichedOperation.context.fetchOptions.headers.Authorization).toBe('Bearer token-abc');
     expect(enrichedOperation.context.fetchOptions.headers['X-Dev-Auth']).toBeUndefined();
+  });
+
+  it('resets the mutation dedupe guard on a business-scope switch', async () => {
+    // Most mutations take their owner from the scope header, not their variables, so the same
+    // call for another business is not a duplicate.
+    const { urql } = await initializeAuth(async () => 'token-123', ['business-a']);
+    resetMutationDedupeMock.mockClear();
+
+    urql.setBusinessScope(['business-b']);
+
+    expect(resetMutationDedupeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets the mutation dedupe guard when the client is reset, as on logout', async () => {
+    const { urql } = await initializeAuth(async () => 'token-123');
+    resetMutationDedupeMock.mockClear();
+
+    urql.resetUrqlClientAndNotify();
+
+    expect(resetMutationDedupeMock).toHaveBeenCalledTimes(1);
   });
 });

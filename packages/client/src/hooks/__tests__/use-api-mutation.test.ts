@@ -433,14 +433,37 @@ describe('useApiMutation', () => {
       expect(mutate).toHaveBeenCalledTimes(2);
     });
 
-    it('lifts the guard at once when the resolver returns a `CommonError`', async () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-      const mutate = vi.fn().mockResolvedValue({
+    /** A mutation whose resolver reports a `CommonError` under `addTag`. */
+    const commonErrorMutate = () =>
+      vi.fn().mockResolvedValue({
         data: { addTag: { __typename: 'CommonError', message: 'Tag already exists' } },
       });
+
+    it('keeps the guard after a `CommonError` by default, since the resolver may have half-run', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = commonErrorMutate();
       useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
       const { current } = await renderHook({
         ...dedupeOptions(),
+        commonErrorPath: 'addTag' as const,
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      consoleError.mockRestore();
+    });
+
+    it('lifts the guard at once on a `CommonError` with `liftOnCommonError`', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = commonErrorMutate();
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        dedupe: { windowMs: WINDOW, liftOnCommonError: true },
         commonErrorPath: 'addTag' as const,
       });
 

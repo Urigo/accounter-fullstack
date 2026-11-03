@@ -72,7 +72,7 @@ describe('useReprocessDocumentOcr dedupe', () => {
     );
   });
 
-  it('lifts the guard when the resolver returns a `CommonError`', async () => {
+  it('keeps the guard after a `CommonError`, which may follow a paid OCR call', async () => {
     const mutate = vi.fn().mockResolvedValue({ data: { reprocessDocumentOcr: failure } });
     const hook = await renderHook(mutate);
 
@@ -81,7 +81,7 @@ describe('useReprocessDocumentOcr dedupe', () => {
       await hook().reprocessDocumentOcr('doc-2');
     });
 
-    expect(mutate).toHaveBeenCalledTimes(2);
+    expect(mutate).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the guard after a partly failed batch', async () => {
@@ -98,7 +98,7 @@ describe('useReprocessDocumentOcr dedupe', () => {
     expect(mutate).toHaveBeenCalledTimes(1);
   });
 
-  it('lifts the guard when every document in the batch failed', async () => {
+  it('keeps the guard even when every document in the batch failed', async () => {
     const mutate = vi.fn().mockResolvedValue({
       data: { batchReprocessDocumentsOcr: [failure, failure] },
     });
@@ -109,6 +109,6 @@ describe('useReprocessDocumentOcr dedupe', () => {
       await hook().batchReprocessDocumentsOcr(['doc-5', 'doc-6']);
     });
 
-    expect(mutate).toHaveBeenCalledTimes(2);
+    expect(mutate).toHaveBeenCalledTimes(1);
   });
 });

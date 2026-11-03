@@ -79,8 +79,8 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
       const message = `Error re-running OCR for document ID [${documentId}]`;
       const notificationId = `${NOTIFICATION_ID}-${documentId}`;
 
-      // Every run is a paid OCR call, so a repeat is blocked for the window. Only a
-      // `CommonError` — the resolver's own report that it failed — lifts the guard early.
+      // Every run is a paid OCR call, so a repeat is blocked for the window — after a failure too:
+      // the server reports any error as a `CommonError`, including one after OCR already ran.
       const release = claimMutationCall(
         ReprocessDocumentOcrDocument,
         { documentId },
@@ -90,7 +90,6 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
         notifyDuplicateBlocked(notificationId);
         return void 0;
       }
-      let mayHaveRun = true;
 
       toast.loading('Re-running OCR', {
         id: notificationId,
@@ -102,7 +101,6 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
         if (data) {
           const result = data.reprocessDocumentOcr;
           if (result.__typename === 'CommonError') {
-            mayHaveRun = false;
             throw new Error(result.message);
           }
           if (result.updatedFields.length === 0) {
@@ -129,7 +127,7 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
           closeButton: true,
         });
       } finally {
-        release(mayHaveRun);
+        release(true);
       }
       return void 0;
     },
@@ -142,7 +140,7 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
       // A fixed id for the batch: joining every UUID could grow unbounded.
       const notificationId = `${NOTIFICATION_ID}-batch`;
 
-      // As for a single document; the guard lifts early only if every document failed.
+      // As for a single document: even an all-failed batch may have paid for OCR.
       const release = claimMutationCall(
         BatchReprocessDocumentsOcrDocument,
         { documentIds },
@@ -152,7 +150,6 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
         notifyDuplicateBlocked(notificationId);
         return void 0;
       }
-      let mayHaveRun = true;
 
       toast.loading(`Re-running OCR for ${documentIds.length} documents`, {
         id: notificationId,
@@ -167,7 +164,6 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
 
           // Every document failed — surface the combined message through the error branch below.
           if (failures.length > 0 && failures.length === results.length) {
-            mayHaveRun = false;
             throw new Error(failures.map(failure => failure.message).join('\n'));
           }
 
@@ -201,7 +197,7 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
           closeButton: true,
         });
       } finally {
-        release(mayHaveRun);
+        release(true);
       }
       return void 0;
     },

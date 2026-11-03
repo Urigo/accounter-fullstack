@@ -18,8 +18,10 @@ type CallEntry = { expiresAt: number };
 let recentCalls = new WeakMap<object, Map<string, CallEntry>>();
 
 /**
- * Forgets every recorded call. For tests: the guard is module-level, so without it a test that
- * repeats an earlier test's mutation with the same variables would be blocked.
+ * Forgets every recorded call. Called whenever the urql client is reset — a business-scope switch
+ * or a logout — because most mutations take their owner from the request scope, not from their
+ * variables: the same call for another business or user is not a duplicate. Tests use it too, as
+ * the guard is module-level.
  */
 export function resetMutationDedupe(): void {
   recentCalls = new WeakMap();
@@ -36,8 +38,8 @@ function getRecentCalls(document: object): Map<string, CallEntry> {
 
 /**
  * Ends a claimed call. `keepWindow: true` keeps the guard for the window from now on — use it
- * whenever the mutation may have run. `false` lifts it at once, for a failure the resolver itself
- * reported (a `CommonError`), so the user can retry.
+ * whenever the mutation may have run. `false` lifts it at once, so the user can retry; only for a
+ * failure that guarantees nothing ran on the server.
  */
 export type ReleaseMutationCall = (keepWindow: boolean) => void;
 

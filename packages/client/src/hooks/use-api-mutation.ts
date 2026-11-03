@@ -107,18 +107,19 @@ export type UseApiMutationOptions<
    * issuing documents, where an accidental double submit cannot be undone. A blocked call sends no
    * request, raises a warning toast and resolves to `undefined`.
    *
-   * When the resolver returns a `CommonError` under `commonErrorPath` — its report that the
-   * operation failed as a whole — the guard is lifted at once so the user can retry. In every other
-   * failure it is kept, since the mutation may still have run, fully or partly: a network or
-   * GraphQL error, an empty response, or a result `select` rejects (batch mutations report partial
-   * failures that way).
+   * The guard is kept after every failure, since the mutation may still have run, fully or partly:
+   * a network or GraphQL error, an empty response, a result `select` rejects (batch mutations
+   * report partial failures that way), and a `CommonError` too — resolvers here commonly catch
+   * everything into a `CommonError`, including failures after an external upload or a first
+   * insert. Set `liftOnCommonError` only for a mutation whose resolver returns its `CommonError`
+   * before any side effect; the guard is then lifted at once so the user can retry.
    *
    * Opt-in, because some mutations are legitimately repeated with identical variables (toggles,
    * and updates generally: A → B → A within the window would be blocked). Turn it on for
    * mutations that create records, reach an external service or cost money, with
    * `{ windowMs: MUTATION_DEDUPE_WINDOW_MS }` from `helpers/mutation-dedupe.ts`.
    */
-  dedupe?: { windowMs: number };
+  dedupe?: { windowMs: number; liftOnCommonError?: boolean };
 };
 
 export type UseApiMutation<TVariables extends AnyVariables, TResult> = {
@@ -205,10 +206,10 @@ export function useApiMutation<
 
       toast.loading(resolve(optionsRef.current.loadingMessage, variables), { id: notificationId });
 
-      // Whether the server may have run the mutation, for the dedupe guard. Pessimistic: only a
-      // `CommonError` result proves it did not. A network error may hide a request that did run,
-      // a GraphQL error may come from a resolver that failed halfway through its side effects,
-      // and a result `select` rejects may describe a partly applied batch.
+      // Whether the server may have run the mutation, for the dedupe guard. Pessimistic: a network
+      // error may hide a request that did run, a GraphQL error or a `CommonError` may come from a
+      // resolver that failed halfway through its side effects, and a result `select` rejects may
+      // describe a partly applied batch. Only a hook's `liftOnCommonError` vouches otherwise.
       let mayHaveRun = true;
       try {
         const res = await mutate(variables);
@@ -217,9 +218,9 @@ export function useApiMutation<
         // carries an error, so a missing result is already reported to the user.
         const data = handleCommonErrors(res, errorMessage, notificationId, commonErrorPath);
         if (!data) {
-          // Only a `CommonError` is the resolver's own report that the operation failed as a
-          // whole. Anything else — including an empty response — keeps the guard.
-          if (isCommonErrorResult(res.data, commonErrorPath)) {
+          // Only a `CommonError` the hook vouches for (`liftOnCommonError`) proves nothing ran.
+          // Anything else — including an empty response — keeps the guard.
+          if (dedupe?.liftOnCommonError && isCommonErrorResult(res.data, commonErrorPath)) {
             mayHaveRun = false;
           }
           return void 0;
