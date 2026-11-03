@@ -4,6 +4,7 @@ import { type Row } from '@tanstack/react-table';
 import { ChargeExtendedInfoForChargeMatchesDocument } from '@/gql/graphql.js';
 import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { TableSkeleton } from '../common/index.js';
+import { useReconcileViewerRows } from '../documents-table/data-table.js';
 import { DocumentsTable } from '../documents-table/index.js';
 import { TransactionsTable } from '../transactions-table/index.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
@@ -45,6 +46,8 @@ export function ChargeMatchesRowExtensions({ row }: Props) {
   const hasTransactions = !!transactions && transactions.length > 0;
   const documents = chargeData?.charge.additionalDocuments;
   const hasDocuments = !!documents && documents.length > 0;
+  // The documents table unmounts while fetching, so the viewer's row reconcile runs here instead.
+  useReconcileViewerRows(fetchingData ? null : (documents?.map(document => document.id) ?? []));
 
   return (
     <Accordion
