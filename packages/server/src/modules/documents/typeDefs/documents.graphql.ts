@@ -44,18 +44,23 @@ export default gql`
     uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " Attach uploaded files to a charge. Without chargeId, one new charge is created for the batch (see newCharge) — only once at least one file has been processed, so a batch that fails entirely leaves no empty charge. Results are positional — one entry per input file. "
     batchUploadDocuments(
       documents: [FileScalar!]!
       isSensitive: Boolean
       chargeId: UUID
+      " Settings for the charge created when chargeId is omitted; must not be combined with chargeId "
+      newCharge: NewDocumentsChargeInput
     ): [UploadDocumentResult!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
-    " Attach documents to a charge by fetching them from URLs server-side, so the bytes never travel through the caller. Google Drive share links are resolved through the Drive API; every other URL must answer with a PDF or an image. Results are positional — one entry per input URL, so a partial failure names the URL that failed. "
+    " Attach documents to a charge by fetching them from URLs server-side, so the bytes never travel through the caller. Google Drive share links are resolved through the Drive API; every other URL must answer with a PDF or an image. Without chargeId, one new charge is created for the batch (see newCharge) — only once at least one document has been processed. Results are positional — one entry per input URL, so a partial failure names the URL that failed. "
     batchUploadDocumentsFromUrls(
       urls: [String!]!
       isSensitive: Boolean
       chargeId: UUID
+      " Settings for the charge created when chargeId is omitted; must not be combined with chargeId "
+      newCharge: NewDocumentsChargeInput
     ): [UploadDocumentResult!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
@@ -63,6 +68,8 @@ export default gql`
       sharedFolderUrl: String!
       isSensitive: Boolean
       chargeId: UUID
+      " Settings for the charge created when chargeId is omitted; must not be combined with chargeId "
+      newCharge: NewDocumentsChargeInput
     ): [UploadDocumentResult!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
@@ -80,6 +87,14 @@ export default gql`
     chargeSpreadDocuments(chargeId: UUID!, documentIdsToKeep: [UUID!]): [Charge!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+  }
+
+  " Settings for the charge a batch upload creates when no chargeId is given "
+  input NewDocumentsChargeInput {
+    " Description of the new charge; defaults to 'New uploaded documents' "
+    userDescription: String
+    " Tags to set on the new charge "
+    tagIds: [UUID!]
   }
 
   " All possible document types "

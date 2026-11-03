@@ -38,12 +38,13 @@ Baseline latency targets and the load profile are captured by
 Tools contribute low-cardinality label counters through their `observe` hook. These answer product
 questions about how the connector is actually being used, not operational ones:
 
-| Counter                  | Label                           | Answers                                                         |
-| ------------------------ | ------------------------------- | --------------------------------------------------------------- |
-| `glossary_term_requests` | canonical glossary term         | Which terminology callers look up most (≤62 labels).            |
-| `glossary_term_misses`   | folded, 40-char-clipped request | Terms callers asked for that the glossary does not define yet.  |
-| `glossary_mode`          | `index` \| `full`               | Browse-the-index-first vs. direct lookup.                       |
-| `document_upload_source` | `urls` \| `inline`              | Whether uploads arrive as links or as base64 through the model. |
+| Counter                  | Label                           | Answers                                                          |
+| ------------------------ | ------------------------------- | ---------------------------------------------------------------- |
+| `glossary_term_requests` | canonical glossary term         | Which terminology callers look up most (≤62 labels).             |
+| `glossary_term_misses`   | folded, 40-char-clipped request | Terms callers asked for that the glossary does not define yet.   |
+| `glossary_mode`          | `index` \| `full`               | Browse-the-index-first vs. direct lookup.                        |
+| `document_upload_source` | `urls` \| `inline`              | Whether uploads arrive as links or as base64 through the model.  |
+| `document_upload_target` | `existing` \| `new`             | Whether uploads attach to a charge or create one for themselves. |
 
 ```bash
 curl -s "$MCP_BASE_URL/metrics" | jq '.labeledTotals'

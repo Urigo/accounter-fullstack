@@ -79,6 +79,35 @@ function uploadClient(responses: unknown[]) {
   return { client, captured };
 }
 
+interface CapturedJson {
+  query: string;
+  variables: Record<string, unknown>;
+  headers: Record<string, string>;
+}
+
+function urlClient(responses: unknown[]) {
+  const captured: CapturedJson[] = [];
+  const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+    const body = JSON.parse(String(init.body));
+    captured.push({
+      query: body.query,
+      variables: body.variables,
+      headers: init.headers as Record<string, string>,
+    });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ data: { batchUploadDocumentsFromUrls: responses } }),
+    } as unknown as Response;
+  });
+  const client = new UpstreamGraphQLClient({
+    endpoint: 'http://localhost:4000/graphql',
+    timeoutMs: 1000,
+    fetchImpl: fetchImpl as unknown as typeof fetch,
+  });
+  return { client, captured };
+}
+
 const ok = (id: string, documentType: string | null = 'INVOICE') => ({
   __typename: 'UploadDocumentSuccessfulResult',
   document: { id, documentType },
@@ -165,7 +194,7 @@ describe('uploadDocumentsTool — multipart envelope', () => {
 });
 
 describe('uploadDocumentsTool — input guards', () => {
-  it('requires a chargeId, so the tool can never create a charge', async () => {
+  it('requires an explicit target, so leaving chargeId out never creates a charge', async () => {
     const { client, captured } = uploadClient([]);
     const result = await run({ documents: [doc()] }, client);
 
@@ -360,35 +389,6 @@ describe('uploadDocumentsTool — policy', () => {
  * JSON mutation rather than the multipart one.
  */
 describe('uploadDocumentsTool — documentUrls', () => {
-  interface CapturedJson {
-    query: string;
-    variables: Record<string, unknown>;
-    headers: Record<string, string>;
-  }
-
-  function urlClient(responses: unknown[]) {
-    const captured: CapturedJson[] = [];
-    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
-      const body = JSON.parse(String(init.body));
-      captured.push({
-        query: body.query,
-        variables: body.variables,
-        headers: init.headers as Record<string, string>,
-      });
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ data: { batchUploadDocumentsFromUrls: responses } }),
-      } as unknown as Response;
-    });
-    const client = new UpstreamGraphQLClient({
-      endpoint: 'http://localhost:4000/graphql',
-      timeoutMs: 1000,
-      fetchImpl: fetchImpl as unknown as typeof fetch,
-    });
-    return { client, captured };
-  }
-
   const DRIVE_URL = 'https://drive.google.com/file/d/abc123/view';
 
   it('sends the URLs as a plain JSON mutation, not multipart', async () => {
@@ -493,5 +493,146 @@ describe('uploadDocumentsTool — documentUrls', () => {
     expect(audit).toBeDefined();
     expect(audit).toContain('"documentUrlsCount":1');
     expect(audit).not.toContain('hunter2');
+  });
+});
+
+describe('uploadDocumentsTool — newCharge', () => {
+  const NEW_CHARGE = 'cc000000-0000-4000-8000-0000000000ff';
+  const TAG = 'aa000000-0000-4000-8000-0000000000aa';
+  const created = (id: string) => ({
+    __typename: 'UploadDocumentSuccessfulResult',
+    document: { id, documentType: 'RECEIPT', charge: { id: NEW_CHARGE } },
+  });
+
+  it('rejects a call carrying both chargeId and newCharge', async () => {
+    const { client, captured } = uploadClient([]);
+    const result = await run({ chargeId: CHARGE, newCharge: {}, documents: [doc()] }, client);
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    expect(captured).toHaveLength(0);
+  });
+
+  it('rejects an unknown newCharge field', async () => {
+    const { client, captured } = uploadClient([]);
+    const result = await run(
+      { newCharge: { description: 'Fuel', ownerId: B2 }, documents: [doc()] },
+      client,
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    expect(captured).toHaveLength(0);
+  });
+
+  it('forwards newCharge instead of chargeId, renaming description to userDescription', async () => {
+    const { client, captured } = uploadClient([created('d1')]);
+    await run(
+      { newCharge: { description: '  Fuel - personal card ', tagIds: [TAG] }, documents: [doc()] },
+      client,
+    );
+
+    const { variables, query } = captured[0].operations;
+    expect(query).toContain('newCharge: $newCharge');
+    expect(variables.newCharge).toEqual({ userDescription: 'Fuel - personal card', tagIds: [TAG] });
+    expect(variables).not.toHaveProperty('chargeId');
+  });
+
+  it('sends only the newCharge fields the caller passed — `{}` is a valid request', async () => {
+    const { client, captured } = urlClient([created('d1')]);
+    const result = await run({ newCharge: {}, documentUrls: ['https://example.com/a.pdf'] }, client);
+
+    expect(result.isError).toBeUndefined();
+    expect(captured[0].variables.newCharge).toEqual({});
+    expect(captured[0].variables).not.toHaveProperty('chargeId');
+  });
+
+  it('does not send newCharge when attaching to an existing charge', async () => {
+    const { client, captured } = urlClient([ok('d1')]);
+    await run({ chargeId: CHARGE, documentUrls: ['https://example.com/a.pdf'] }, client);
+
+    expect(captured[0].variables).not.toHaveProperty('newCharge');
+    expect(captured[0].variables.chargeId).toBe(CHARGE);
+  });
+
+  it('reports the created charge and tells the caller how to add more to it', async () => {
+    const { client } = uploadClient([
+      created('d1'),
+      { __typename: 'CommonError', message: 'b.pdf: OCR failed' },
+      created('d3'),
+    ]);
+    const result = await run(
+      {
+        newCharge: { description: 'Deel payment' },
+        documents: [
+          doc({ filename: 'a.pdf' }),
+          doc({ filename: 'b.pdf' }),
+          doc({ filename: 'c.pdf' }),
+        ],
+      },
+      client,
+    );
+
+    const structured = result.structuredContent as {
+      chargeId: string | null;
+      chargeCreated: boolean;
+      uploadedCount: number;
+      failedCount: number;
+      results: Array<Record<string, unknown>>;
+    };
+    expect(structured).toMatchObject({
+      chargeId: NEW_CHARGE,
+      chargeCreated: true,
+      uploadedCount: 2,
+      failedCount: 1,
+    });
+    // The charge id is reported once, at the top, not on every entry.
+    expect(structured.results[0]).toEqual({
+      filename: 'a.pdf',
+      status: 'uploaded',
+      documentId: 'd1',
+      documentType: 'RECEIPT',
+    });
+    expect(result.content[0].text).toContain(`Created charge ${NEW_CHARGE}`);
+    expect(result.content[0].text).toContain(`chargeId: "${NEW_CHARGE}"`);
+  });
+
+  it('reports no charge when every document failed', async () => {
+    const { client } = urlClient([
+      { __typename: 'CommonError', message: 'https://example.com/a.pdf: HTTP 404' },
+    ]);
+    const result = await run(
+      { newCharge: {}, documentUrls: ['https://example.com/a.pdf'] },
+      client,
+    );
+
+    const structured = result.structuredContent as { chargeId: unknown; chargeCreated: boolean };
+    expect(structured).toMatchObject({ chargeId: null, chargeCreated: false });
+    expect(result.content[0].text).toMatch(/no charge was created/);
+  });
+
+  it('keeps reporting the given chargeId when attaching to an existing charge', async () => {
+    const { client } = uploadClient([ok('d1')]);
+    const result = await run({ chargeId: CHARGE, documents: [doc()] }, client);
+
+    expect(result.structuredContent).toMatchObject({ chargeId: CHARGE, chargeCreated: false });
+  });
+
+  it('audits the call without logging the new charge description', async () => {
+    const { client } = uploadClient([created('d1')]);
+    const lines: string[] = [];
+    const write = vi.spyOn(console, 'log').mockImplementation(line => void lines.push(String(line)));
+    try {
+      await run(
+        { newCharge: { description: 'Dinner with Jane Doe' }, documents: [doc()] },
+        client,
+      );
+    } finally {
+      write.mockRestore();
+    }
+
+    const audit = lines.find(line => line.includes('"audit":true'));
+    expect(audit).toBeDefined();
+    expect(audit).not.toContain('Jane Doe');
   });
 });
