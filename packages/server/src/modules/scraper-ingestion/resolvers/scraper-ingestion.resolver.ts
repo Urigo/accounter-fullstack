@@ -1,3 +1,4 @@
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { withScraperUploadErrors } from '../helpers/upload-error.helper.js';
 import { IsracardAmexScraperIngestionProvider } from '../providers/isracard-amex-scraper-ingestion.provider.js';
 import { OtsarHahayalScraperIngestionProvider } from '../providers/otsar-hahayal-scraper-ingestion.provider.js';
@@ -79,10 +80,13 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
       ),
 
     uploadOtsarHahayalCreditCardTransactions: (_, { transactions }, { injector }) =>
-      withScraperUploadErrors('uploadOtsarHahayalCreditCardTransactions', () =>
-        injector
+      withScraperUploadErrors('uploadOtsarHahayalCreditCardTransactions', async () => {
+        const { restatedChargeIds, ...result } = await injector
           .get(OtsarHahayalScraperIngestionProvider)
-          .uploadOtsarHahayalCreditCardTransactions(transactions),
-      ),
+          .uploadOtsarHahayalCreditCardTransactions(transactions);
+        // A restatement rewrites an existing transaction (date, description): re-flag its charge.
+        await degradeChargesAccountantApproval(injector, restatedChargeIds);
+        return result;
+      }),
   },
 };
