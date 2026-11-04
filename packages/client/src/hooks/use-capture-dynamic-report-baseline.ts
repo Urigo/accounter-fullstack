@@ -3,6 +3,7 @@ import {
   type CaptureDynamicReportBaselineMutation,
   type CaptureDynamicReportBaselineMutationVariables,
 } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -34,6 +35,7 @@ const NOTIFICATION_ID = 'captureDynamicReportBaseline';
 export const useCaptureDynamicReportBaseline = (): UseCaptureDynamicReportBaseline => {
   const { fetching, execute } = useApiMutation({
     document: CaptureDynamicReportBaselineDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: variables => `${NOTIFICATION_ID}-${variables.name}`,
     // The mutation backs the toolbar's Save review, so its messages speak of a review.
     loadingMessage: 'Saving review',

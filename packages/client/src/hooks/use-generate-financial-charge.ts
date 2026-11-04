@@ -18,6 +18,11 @@ import {
   type GenerateVacationReserveChargeMutationVariables,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
+import {
+  claimMutationCall,
+  MUTATION_DEDUPE_WINDOW_MS,
+  notifyDuplicateBlocked,
+} from '../helpers/mutation-dedupe.js';
 
 /* GraphQL */ `
   mutation GenerateRevaluationCharge($ownerId: UUID!, $date: TimelessDate!) {
@@ -99,6 +104,16 @@ type UseGenerateFinancialCharge = {
 
 const NOTIFICATION_ID = 'generateFinancialCharge';
 
+/** Each type's own mutation document, which keys its dedupe guard. */
+const FINANCIAL_CHARGE_DOCUMENTS: Record<FinancialChargeEnum, object> = {
+  [FinancialChargeEnum.Revaluation]: GenerateRevaluationChargeDocument,
+  [FinancialChargeEnum.BankDeposits]: GenerateBankDepositsRevaluationChargeDocument,
+  [FinancialChargeEnum.TaxExpenses]: GenerateTaxExpensesChargeDocument,
+  [FinancialChargeEnum.Depreciation]: GenerateDepreciationChargeDocument,
+  [FinancialChargeEnum.RecoveryReserve]: GenerateRecoveryReserveChargeDocument,
+  [FinancialChargeEnum.VacationReserve]: GenerateVacationReserveChargeDocument,
+};
+
 export const useGenerateFinancialCharge = (): UseGenerateFinancialCharge => {
   // TODO: add authentication
   // TODO: add local data update method after chang e
@@ -133,6 +148,20 @@ export const useGenerateFinancialCharge = (): UseGenerateFinancialCharge => {
       const { type, ...variables } = variablesAndType;
       const message = `Error generating financial charge [${type}]`;
       const notificationId = `${NOTIFICATION_ID}-${type}`;
+
+      // Every call inserts a new charge, with no check for an existing one, so a repeat is
+      // blocked for the window. These mutations have no `CommonError` result: any failure may
+      // have run, so the window is always kept.
+      const release = claimMutationCall(
+        FINANCIAL_CHARGE_DOCUMENTS[type],
+        variables,
+        MUTATION_DEDUPE_WINDOW_MS,
+      );
+      if (!release) {
+        notifyDuplicateBlocked(notificationId);
+        return false;
+      }
+
       toast.loading('Generating financial charge', {
         id: notificationId,
       });
@@ -195,6 +224,8 @@ export const useGenerateFinancialCharge = (): UseGenerateFinancialCharge => {
           closeButton: true,
         });
         return false;
+      } finally {
+        release(true);
       }
       return false;
     },

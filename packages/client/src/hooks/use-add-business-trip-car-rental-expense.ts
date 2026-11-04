@@ -3,6 +3,7 @@ import {
   type AddBusinessTripCarRentalExpenseMutation,
   type AddBusinessTripCarRentalExpenseMutationVariables,
 } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -27,6 +28,7 @@ export const useAddBusinessTripCarRentalExpense = (): UseAddBusinessTripCarRenta
 
   const { fetching, execute } = useApiMutation({
     document: AddBusinessTripCarRentalExpenseDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: NOTIFICATION_ID,
     loadingMessage: 'Adding car rental expense...',
     errorMessage: 'Error adding business trip car rental expense',

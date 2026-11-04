@@ -1,13 +1,12 @@
 import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { toast, type ExternalToast } from 'sonner';
-import {
-  stringifyVariables,
-  useMutation,
-  type AnyVariables,
-  type CombinedError,
-  type TypedDocumentNode,
-} from 'urql';
+import { useMutation, type AnyVariables, type CombinedError, type TypedDocumentNode } from 'urql';
 import { handleCommonErrors, type NonCommonError } from '../helpers/error-handling.js';
+import {
+  claimMutationCall,
+  notifyDuplicateBlocked,
+  type ReleaseMutationCall,
+} from '../helpers/mutation-dedupe.js';
 
 /** Whether `data` holds a `CommonError` under `path`, as `handleCommonErrors` detects it. */
 function isCommonErrorResult(data: unknown, path: PropertyKey | undefined): boolean {
@@ -20,22 +19,6 @@ function isCommonErrorResult(data: unknown, path: PropertyKey | undefined): bool
     typeof content === 'object' &&
     (content as { __typename?: unknown }).__typename === 'CommonError'
   );
-}
-
-/**
- * Calls of a deduplicated mutation that are in flight or settled recently, keyed by the mutation
- * document and then by its serialized variables. Module-level on purpose: every mounted instance
- * of a hook shares it, so a second component — or a remount — is blocked too.
- */
-const recentCalls = new WeakMap<object, Map<string, { expiresAt: number }>>();
-
-function getRecentCalls(document: object): Map<string, { expiresAt: number }> {
-  let calls = recentCalls.get(document);
-  if (!calls) {
-    calls = new Map();
-    recentCalls.set(document, calls);
-  }
-  return calls;
 }
 
 /** A constant, or a value derived from the mutation variables. */
@@ -124,15 +107,19 @@ export type UseApiMutationOptions<
    * issuing documents, where an accidental double submit cannot be undone. A blocked call sends no
    * request, raises a warning toast and resolves to `undefined`.
    *
-   * When the resolver returns a `CommonError` under `commonErrorPath` — its report that the
-   * operation failed as a whole — the guard is lifted at once so the user can retry. In every other
-   * failure it is kept, since the mutation may still have run, fully or partly: a network or
-   * GraphQL error, an empty response, or a result `select` rejects (batch mutations report partial
-   * failures that way).
+   * The guard is kept after every failure, since the mutation may still have run, fully or partly:
+   * a network or GraphQL error, an empty response, a result `select` rejects (batch mutations
+   * report partial failures that way), and a `CommonError` too — resolvers here commonly catch
+   * everything into a `CommonError`, including failures after an external upload or a first
+   * insert. Set `liftOnCommonError` only for a mutation whose resolver returns its `CommonError`
+   * before any side effect; the guard is then lifted at once so the user can retry.
    *
-   * Opt-in, because some mutations are legitimately repeated with identical variables (toggles).
+   * Opt-in, because some mutations are legitimately repeated with identical variables (toggles,
+   * and updates generally: A → B → A within the window would be blocked). Turn it on for
+   * mutations that create records, reach an external service or cost money, with
+   * `{ windowMs: MUTATION_DEDUPE_WINDOW_MS }` from `helpers/mutation-dedupe.ts`.
    */
-  dedupe?: { windowMs: number };
+  dedupe?: { windowMs: number; liftOnCommonError?: boolean };
 };
 
 export type UseApiMutation<TVariables extends AnyVariables, TResult> = {
@@ -207,36 +194,22 @@ export function useApiMutation<
 
       // Claimed synchronously, before anything is awaited, so even two clicks in the same tick
       // cannot both get through.
-      let release: ((keepWindow: boolean) => void) | undefined;
+      let release: ReleaseMutationCall | undefined;
       if (dedupe) {
-        const calls = getRecentCalls(document);
-        const key = stringifyVariables(variables);
-        const existing = calls.get(key);
-        if (existing && existing.expiresAt > Date.now()) {
-          toast.warning('Duplicate request blocked', {
-            description: 'This exact operation was just submitted, so it was not sent again.',
-            // Its own id, so it does not replace the in-flight call's loading toast.
-            id: `${notificationId}-duplicate`,
-          });
+        const claim = claimMutationCall(document, variables, dedupe.windowMs);
+        if (!claim) {
+          notifyDuplicateBlocked(notificationId);
           return void 0;
         }
-        const entry = { expiresAt: Number.POSITIVE_INFINITY };
-        calls.set(key, entry);
-        release = keepWindow => {
-          if (keepWindow) {
-            entry.expiresAt = Date.now() + dedupe.windowMs;
-          } else if (calls.get(key) === entry) {
-            calls.delete(key);
-          }
-        };
+        release = claim;
       }
 
       toast.loading(resolve(optionsRef.current.loadingMessage, variables), { id: notificationId });
 
-      // Whether the server may have run the mutation, for the dedupe guard. Pessimistic: only a
-      // `CommonError` result proves it did not. A network error may hide a request that did run,
-      // a GraphQL error may come from a resolver that failed halfway through its side effects,
-      // and a result `select` rejects may describe a partly applied batch.
+      // Whether the server may have run the mutation, for the dedupe guard. Pessimistic: a network
+      // error may hide a request that did run, a GraphQL error or a `CommonError` may come from a
+      // resolver that failed halfway through its side effects, and a result `select` rejects may
+      // describe a partly applied batch. Only a hook's `liftOnCommonError` vouches otherwise.
       let mayHaveRun = true;
       try {
         const res = await mutate(variables);
@@ -245,9 +218,9 @@ export function useApiMutation<
         // carries an error, so a missing result is already reported to the user.
         const data = handleCommonErrors(res, errorMessage, notificationId, commonErrorPath);
         if (!data) {
-          // Only a `CommonError` is the resolver's own report that the operation failed as a
-          // whole. Anything else — including an empty response — keeps the guard.
-          if (isCommonErrorResult(res.data, commonErrorPath)) {
+          // Only a `CommonError` the hook vouches for (`liftOnCommonError`) proves nothing ran.
+          // Anything else — including an empty response — keeps the guard.
+          if (dedupe?.liftOnCommonError && isCommonErrorResult(res.data, commonErrorPath)) {
             mayHaveRun = false;
           }
           return void 0;

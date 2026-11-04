@@ -8,6 +8,11 @@ import {
   type ReprocessDocumentOcrMutation,
 } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
+import {
+  claimMutationCall,
+  MUTATION_DEDUPE_WINDOW_MS,
+  notifyDuplicateBlocked,
+} from '../helpers/mutation-dedupe.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -73,6 +78,19 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
     async (documentId: string) => {
       const message = `Error re-running OCR for document ID [${documentId}]`;
       const notificationId = `${NOTIFICATION_ID}-${documentId}`;
+
+      // Every run is a paid OCR call, so a repeat is blocked for the window — after a failure too:
+      // the server reports any error as a `CommonError`, including one after OCR already ran.
+      const release = claimMutationCall(
+        ReprocessDocumentOcrDocument,
+        { documentId },
+        MUTATION_DEDUPE_WINDOW_MS,
+      );
+      if (!release) {
+        notifyDuplicateBlocked(notificationId);
+        return void 0;
+      }
+
       toast.loading('Re-running OCR', {
         id: notificationId,
         description: 'Reading the stored file again — this can take a while',
@@ -108,6 +126,8 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
           duration: 100_000,
           closeButton: true,
         });
+      } finally {
+        release(true);
       }
       return void 0;
     },
@@ -119,6 +139,18 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
       const message = 'Error re-running OCR';
       // A fixed id for the batch: joining every UUID could grow unbounded.
       const notificationId = `${NOTIFICATION_ID}-batch`;
+
+      // As for a single document: even an all-failed batch may have paid for OCR.
+      const release = claimMutationCall(
+        BatchReprocessDocumentsOcrDocument,
+        { documentIds },
+        MUTATION_DEDUPE_WINDOW_MS,
+      );
+      if (!release) {
+        notifyDuplicateBlocked(notificationId);
+        return void 0;
+      }
+
       toast.loading(`Re-running OCR for ${documentIds.length} documents`, {
         id: notificationId,
         description: 'Reading the stored files again — this can take a while',
@@ -164,6 +196,8 @@ export const useReprocessDocumentOcr = (): UseReprocessDocumentOcr => {
           duration: 100_000,
           closeButton: true,
         });
+      } finally {
+        release(true);
       }
       return void 0;
     },

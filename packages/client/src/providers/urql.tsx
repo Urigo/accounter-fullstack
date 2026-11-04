@@ -12,6 +12,7 @@ import {
 import { devtoolsExchange } from '@urql/devtools';
 import { authExchange } from '@urql/exchange-auth';
 import { retryExchange } from '@urql/exchange-retry';
+import { resetMutationDedupe } from '../helpers/mutation-dedupe.js';
 import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
 import { ROUTES } from '../router/routes.js';
 import { handleUrqlError } from './urql-error-handler.js';
@@ -372,6 +373,8 @@ export function resetUrqlClient(): void {
  */
 export function resetUrqlClientAndNotify(): void {
   resetUrqlClient();
+  // A new scope or user: an identical mutation is no longer a duplicate of the last one.
+  resetMutationDedupe();
   onClientReset?.(getUrqlClient());
 }
 
