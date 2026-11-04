@@ -44,7 +44,7 @@
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
-    "@vitejs/plugin-react": "6.1.2",
+    "@vitejs/plugin-react": "6.2.1",
     "msw": "3.0.3",
     "tsup": "9.0.0",
     "typescript": "6.0.3",
