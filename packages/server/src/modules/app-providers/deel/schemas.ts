@@ -116,7 +116,7 @@ export const retrieveInvoicesSchema = z
     data: z.array(invoiceSchema),
     page: z
       .object({
-        total_rows: z.number().int().positive(),
+        total_rows: z.number().int().nonnegative(),
         items_per_page: z.number().int().min(1).max(99),
         offset: z.number().int().min(0),
       })
@@ -290,31 +290,14 @@ export const paymentReceiptsSchema = z
       .describe('Three-letter currency code for the payment, following ISO 4217.'),
     payment_method: z
       .object({
+        // Not used by the books, and Deel keeps adding methods — a value outside the known ones
+        // must not fail the whole receipts list.
         type: z
-          .enum([
-            'ach',
-            'alviere_ach',
-            'adyen_card',
-            'bank_transfer',
-            'bt_card',
-            'bt_pay_pal',
-            'brex',
-            'coinbase',
-            'client_balance',
-            'eor_funding_balance',
-            'fee_credits',
-            'go_cardless',
-            'go_cardless_becs',
-            'mercury_wire',
-            'pay_pal',
-            'stablecoin_transfer',
-            'stripe_ach',
-            'stripe_bacs_debit',
-            'stripe_card',
-            'stripe_sepa_debit',
-            'transferwise',
-          ])
-          .optional(),
+          .string()
+          .optional()
+          .describe(
+            'Payment method type. Known values: ach, alviere_ach, adyen_card, bank_transfer, bt_card, bt_pay_pal, brex, coinbase, client_balance, eor_funding_balance, fee_credits, go_cardless, go_cardless_becs, mercury_wire, pay_pal, stablecoin_transfer, stripe_ach, stripe_bacs_debit, stripe_card, stripe_sepa_debit, transferwise',
+          ),
       })
       .optional()
       .describe('Payment method details for the transaction'),
