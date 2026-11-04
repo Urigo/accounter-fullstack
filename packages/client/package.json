@@ -78,7 +78,7 @@
   "devDependencies": {
     "@storybook/addon-a11y": "10.6.5",
     "@storybook/react-vite": "10.6.5",
-    "@tailwindcss/vite": "4.3.3",
+    "@tailwindcss/vite": "4.3.4",
     "@types/chart.js": "4.0.1",
     "@types/deep-equal": "1.0.4",
     "@types/react": "19.3.0",
@@ -88,12 +88,12 @@
     "autoprefixer": "10.6.2",
     "happy-dom": "21.0.4",
     "storybook": "10.6.5",
-    "tailwindcss": "4.3.3",
+    "tailwindcss": "4.3.4",
     "tailwindcss-animate": "1.0.7",
     "typescript": "6.0.3",
     "vite": "8.3.5",
     "vite-plugin-node-polyfills": "0.28.0",
-    "wrangler": "4.156.1"
+    "wrangler": "4.156.2"
   },
   "overrides": {
     "react-is": "19.3.1"
