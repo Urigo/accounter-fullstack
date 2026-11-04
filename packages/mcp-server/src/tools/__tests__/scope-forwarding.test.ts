@@ -144,6 +144,24 @@ function dataFor(query: string): unknown {
       },
     };
   }
+  if (query.includes('insertClient')) {
+    return { insertClient: { __typename: 'Client', id: 'b1' } };
+  }
+  if (query.includes('businesses(')) {
+    return { businesses: [{ id: 'b1', name: 'Vendor', isClient: false, clientInfo: null }] };
+  }
+  if (query.includes('client(businessId')) {
+    return {
+      client: {
+        id: 'b1',
+        ownerId: B1,
+        emails: [],
+        generatedDocumentType: 'PROFORMA',
+        originalBusiness: { id: 'b1', name: 'Vendor' },
+        integrations: { greenInvoiceInfo: { greenInvoiceId: 'gi-1' } },
+      },
+    };
+  }
   if (query.includes('allCharges')) {
     return {
       allCharges: {
@@ -216,6 +234,7 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_update_document: { memberBusinessId: B1, documentId: 'd1', chargeId: 'c1' },
   accounter_delete_document: { memberBusinessId: B1, documentId: 'd1' },
   accounter_create_business: { memberBusinessId: B1, name: 'Vendor', country: 'USA' },
+  accounter_create_client: { memberBusinessId: B1, businessId: 'b1', generatedDocumentType: 'PROFORMA' },
 };
 
 describe('registry-wide business-scope forwarding', () => {
