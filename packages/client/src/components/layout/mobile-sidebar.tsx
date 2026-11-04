@@ -16,7 +16,7 @@ export function MobileSidebar(): JSX.Element {
         ...link,
         sub: link.sub.map(sublink => {
           // Handle the Generate Uniform Files action
-          if (sublink.title === 'Generate Uniform Files') {
+          if (sublink.actionId === 'uniform-format-files') {
             return {
               ...sublink,
               action: () => {
