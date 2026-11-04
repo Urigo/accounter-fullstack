@@ -20,6 +20,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -50,6 +51,7 @@ import {
   standardPlan,
   type TimelessDateString,
 } from '@/helpers/index.js';
+import { formatCompactNumber } from '@/helpers/numbers.js';
 import { useCreateContract } from '@/hooks/use-create-contract.js';
 import { useUpdateContract } from '@/hooks/use-update-contract.js';
 
@@ -76,6 +78,14 @@ import { useUpdateContract } from '@/hooks/use-update-contract.js';
     }
   }
 `;
+
+/**
+ * A limit below this is almost certainly a value typed in millions (a 500M plan
+ * entered as `500`): no real plan has under a million operations a month, so
+ * the dialog shows a hint — not a validation error, since the server accepts
+ * any non-negative value and a tiny limit is still a legal contract.
+ */
+const LOOKS_LIKE_MILLIONS_BELOW = 1_000_000n;
 
 const contractFormSchema = z.object({
   id: z.uuid().optional(),
@@ -361,18 +371,34 @@ export function ModifyContractDialog({ clientId, contract, contractId, onDone, d
                     name="operationsLimit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Operations Limit</FormLabel>
+                        <FormLabel>Operations limit (operations / month)</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="500"
+                            placeholder="30,000,000,000"
                             {...field}
-                            value={field.value?.toLocaleString()}
+                            // A new contract starts at 0n; rendering that as "0" would hide
+                            // the placeholder, so zero shows as an empty field. onChange still
+                            // stores 0n for an emptied input, so the form value never becomes
+                            // undefined.
+                            value={field.value ? field.value.toLocaleString() : ''}
                             onChange={event => {
                               const rawValue = event.target.value.replace(/[^0-9]/g, '');
                               field.onChange(rawValue ? BigInt(rawValue) : BigInt(0));
                             }}
                           />
                         </FormControl>
+                        <FormDescription>
+                          {field.value > 0n
+                            ? `= ${formatCompactNumber(field.value)} operations a month. `
+                            : ''}
+                          The full number, not millions.
+                        </FormDescription>
+                        {field.value > 0n && field.value < LOOKS_LIKE_MILLIONS_BELOW && (
+                          <p className="text-sm text-amber-600 dark:text-amber-500">
+                            Looks like millions — enter the full number (30B a month is
+                            30,000,000,000).
+                          </p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
