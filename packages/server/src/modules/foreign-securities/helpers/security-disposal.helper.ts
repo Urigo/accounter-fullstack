@@ -1,5 +1,4 @@
 import { Currency, SecurityTradeType } from '../../../shared/enums.js';
-import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { SecurityExecutionRow } from '../types.js';
 import { executionAmountInCurrency } from './match-security-executions.helper.js';
 import { TRANSFER_PAIRING_WINDOW_DAYS, type FifoCostBasis } from './security-cost-basis.helper.js';
@@ -20,9 +19,9 @@ import {
  * - local (ILS) PnL     = F × R_s − C × R_lot = price PnL + rate PnL
  *
  * Which rates go in depends on the question. The ledger counts the sale at the rate its cash leg
- * was booked at and each lot at the rate the securities account carries it at; a tax computation
- * counts both at the representative rate of their trade dates; the bank cross-check, at the bank's
- * own rates.
+ * was booked at and each lot at the rate its cost was booked at, ignoring year-end revaluations; a
+ * tax computation counts both at the representative rate of their trade dates; the bank
+ * cross-check, at the bank's own rates.
  */
 
 /** Fractional units (funds, ETFs) leave float residue; anything below this counts as nothing */
@@ -97,32 +96,6 @@ export function calculateDisposalPnL(params: {
     localPnL: proceedsLocal - costLocal,
     lots,
   };
-}
-
-/**
- * The last revaluation of the securities account a lot was held over: the latest revaluation on or
- * after the day the lot's cost was booked and before the disposal. It moved the lot's local
- * carrying value to that day's rate; with none (null), the lot is still carried at the rate it was
- * booked at.
- *
- * Read from the revaluations actually booked rather than assumed from the calendar, so a year whose
- * revaluation was never booked leaves the lot where it was. One booked after the disposal's ledger
- * was generated is only seen once that ledger is regenerated.
- *
- * Both dates are ledger (invoice) dates, not rate dates, since that is what a revaluation decides
- * by whether it counted a record: `bookedOn` is the invoice date of the record that booked the lot,
- * `disposedOn` the disposal entry's.
- */
-export function lastRevaluationOver(
-  bookedOn: TimelessDateString,
-  disposedOn: TimelessDateString,
-  revaluationDates: readonly TimelessDateString[],
-): TimelessDateString | null {
-  return revaluationDates.reduce<TimelessDateString | null>(
-    (latest, date) =>
-      date >= bookedOn && date < disposedOn && (!latest || date > latest) ? date : latest,
-    null,
-  );
 }
 
 function toNumber(value: string | null | undefined): number {
