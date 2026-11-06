@@ -140,6 +140,8 @@ const config: CodegenConfig = {
           FinancialEntity:
             '../modules/financial-entities/types.js#IGetFinancialEntitiesByIdsResult',
           ForeignSecuritiesCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
+          FinancialAccountBalance:
+            '../modules/financial-accounts/types.js#IGetLatestAccountBalancesResult',
           ForeignSecuritiesFinancialAccount:
             '../modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           GreenInvoiceClient: 'string',
