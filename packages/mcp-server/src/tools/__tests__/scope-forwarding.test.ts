@@ -132,6 +132,18 @@ function dataFor(query: string): unknown {
   if (query.includes('deleteDocument')) {
     return { deleteDocument: { success: true, chargeId: 'c1', deletedChargeId: null } };
   }
+  if (query.includes('updateBusiness(')) {
+    return {
+      updateBusiness: {
+        __typename: 'LtdFinancialEntity',
+        id: 'b-1',
+        name: 'Vendor',
+        city: 'Seattle',
+        isActive: true,
+        country: { code: 'USA' },
+      },
+    };
+  }
   if (query.includes('insertNewBusiness')) {
     return {
       insertNewBusiness: {
@@ -216,6 +228,7 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_update_document: { memberBusinessId: B1, documentId: 'd1', chargeId: 'c1' },
   accounter_delete_document: { memberBusinessId: B1, documentId: 'd1' },
   accounter_create_business: { memberBusinessId: B1, name: 'Vendor', country: 'USA' },
+  accounter_update_business: { memberBusinessId: B1, businessId: 'b-1', city: 'Seattle' },
 };
 
 describe('registry-wide business-scope forwarding', () => {

@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpCreateBusinessMutation, McpFindBusinessByNameQuery } from '../gql/index.js';
+import type {
+  McpCreateBusinessMutation,
+  McpFindBusinessByNameQuery,
+  McpUpdateBusinessMutation,
+} from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
 import { countryCodeInput } from './country-codes.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
@@ -53,7 +57,7 @@ export const PCN874_RECORD_TYPES = [
 
 const MAX_SUGGESTION_ENTRIES = 50;
 
-const suggestionsInput = z
+export const suggestionsInput = z
   .object({
     phrases: z
       .array(z.string().min(1).max(200))
@@ -327,4 +331,261 @@ export const createBusinessTool: ToolDefinition<typeof createBusinessInput> = {
   },
   handler: createBusinessHandler,
   observe,
+};
+
+/**
+ * Write tool: edit an existing business — its contact details (address, city,
+ * zip, country, phone, website, email), identifiers, bookkeeping attributes and
+ * matching suggestions.
+ *
+ * The create tool fills a business in once; this is for everything learned
+ * later — typically the vendor's address, tax id and billing email read off the
+ * first invoice that arrives. The input mirrors upstream `UpdateBusinessInput`
+ * field for field, like {@link createBusinessTool} mirrors the insert.
+ *
+ * Facts read off `updateBusiness` → `updateSingleBusiness` that shape it:
+ *
+ * - Every column is written as `COALESCE($new, column)` (financial entity and
+ *   business row alike), so an absent field keeps its value and there is no way
+ *   to clear one — the tool therefore exposes no `null`.
+ * - Suggestions replace per list: a given `phrases` / `emails` / `tagIds` list
+ *   overwrites the stored one wholesale (`updateSuggestions` with `merge=false`),
+ *   an omitted list is kept.
+ * - `taxCategory` upserts the business's tax-category match for `ownerId` — the
+ *   write target here.
+ * - Unlike `insertNewBusiness`, a new `sortCode` does not refill `irsCode` from
+ *   the sort code's default.
+ * - When the business is a client linked to Green Invoice, the helper then
+ *   pushes the updated address, city, zip, country and phone to that client.
+ * - The steps are not one transaction, but each field is a plain set, so
+ *   sending the same call again after an error converges rather than
+ *   duplicating anything.
+ */
+
+export const UPDATE_BUSINESS_TOOL_NAME = 'accounter_update_business';
+
+const updateBusinessInput = z.object({
+  memberBusinessId: writeTargetBusinessIdInput,
+  businessId: z
+    .string()
+    .min(1)
+    .describe('The business to edit (an id from accounter_list_businesses).'),
+  name: z.string().min(1).max(200).optional().describe('Rename the business.'),
+  country: countryCodeInput
+    .optional()
+    .describe('ISO 3166-1 alpha-3 country code (ISR, USA, GBR, DEU, …); any case.'),
+  hebrewName: z.string().min(1).max(200).optional(),
+  governmentId: z
+    .string()
+    .min(1)
+    .max(50)
+    .optional()
+    .describe('Registration / tax id (ח.פ. or ע.מ. for Israeli businesses, an EIN for a US one).'),
+  sortCode: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      'Sort-code key (accounter_list_sort_codes). Unlike on create, this does not refill `irsCode`; ' +
+        'pass that too if it should change.',
+    ),
+  taxCategoryId: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Tax category its charges are booked to (accounter_list_tax_categories).'),
+  irsCode: z.number().int().optional().describe('IRS code override (Israeli tax authority).'),
+  pcn874RecordType: z.enum(PCN874_RECORD_TYPES).optional(),
+  address: z.string().min(1).max(300).optional().describe('Street address.'),
+  city: z.string().min(1).max(100).optional(),
+  zipCode: z.string().min(1).max(20).optional(),
+  email: z
+    .string()
+    .min(1)
+    .max(200)
+    .optional()
+    .describe(
+      'Contact email(s) — the "General Contacts" field in the UI, stored as one comma-separated ' +
+        'string. Replaces what is there, so include any existing address to keep.',
+    ),
+  phoneNumber: z.string().min(1).max(50).optional(),
+  website: z.string().min(1).max(300).optional(),
+  exemptDealer: z.boolean().optional(),
+  optionalVat: z.boolean().optional(),
+  isReceiptEnough: z.boolean().optional(),
+  isDocumentsOptional: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  suggestions: suggestionsInput.describe(
+    'Auto-matching hints. Each list given (`phrases`, `emails`, `tagIds`) REPLACES the stored ' +
+      'list — send the full list, not just additions; a list left out is kept.',
+  ),
+});
+type UpdateBusinessInput = z.infer<typeof updateBusinessInput>;
+
+const UPDATE_BUSINESS_MUTATION = /* GraphQL */ `
+  mutation McpUpdateBusiness($businessId: UUID!, $ownerId: UUID!, $fields: UpdateBusinessInput!) {
+    updateBusiness(businessId: $businessId, ownerId: $ownerId, fields: $fields) {
+      __typename
+      ... on LtdFinancialEntity {
+        id
+        name
+        hebrewName
+        governmentId
+        address
+        city
+        zipCode
+        email
+        phoneNumber
+        website
+        isActive
+        country {
+          code
+        }
+        taxCategory {
+          id
+          name
+        }
+      }
+      ... on CommonError {
+        message
+      }
+    }
+  }
+`;
+
+/** The upstream `fields` object: only what the caller passed. */
+function updateFieldsOf(input: UpdateBusinessInput): Record<string, unknown> {
+  const fields: Record<string, unknown> = {};
+  const copy = <K extends keyof UpdateBusinessInput>(key: K, upstreamKey: string = key) => {
+    if (input[key] !== undefined) fields[upstreamKey] = input[key];
+  };
+  copy('name');
+  copy('country');
+  copy('hebrewName');
+  copy('governmentId');
+  copy('sortCode');
+  copy('taxCategoryId', 'taxCategory');
+  copy('irsCode');
+  copy('pcn874RecordType');
+  copy('address');
+  copy('city');
+  copy('zipCode');
+  copy('email');
+  copy('phoneNumber');
+  copy('website');
+  copy('exemptDealer');
+  copy('optionalVat', 'optionalVAT');
+  copy('isReceiptEnough');
+  copy('isDocumentsOptional');
+  copy('isActive');
+  if (input.suggestions) {
+    const s = input.suggestions;
+    const suggestions: Record<string, unknown> = {};
+    if (s.phrases !== undefined) suggestions.phrases = s.phrases;
+    if (s.emails !== undefined) suggestions.emails = s.emails;
+    if (s.tagIds !== undefined) suggestions.tags = s.tagIds.map(id => ({ id }));
+    if (s.description !== undefined) suggestions.description = s.description;
+    if (s.priority !== undefined) suggestions.priority = s.priority;
+    if (Object.keys(suggestions).length > 0) fields.suggestions = suggestions;
+  }
+  return fields;
+}
+
+async function updateBusinessHandler(
+  input: UpdateBusinessInput,
+  context: ToolExecutionContext,
+): Promise<ToolResult> {
+  const fields = updateFieldsOf(input);
+  if (Object.keys(fields).length === 0) {
+    throw new ToolInputError('Nothing to update', [
+      { path: 'businessId', message: 'pass at least one field to change besides `businessId`' },
+    ]);
+  }
+
+  // The single-write-target policy rule guarantees exactly one id here.
+  const ownerId = context.readScope.memberBusinessIds[0];
+  const data = await context.client.mutate<McpUpdateBusinessMutation>(
+    {
+      query: UPDATE_BUSINESS_MUTATION,
+      variables: { businessId: input.businessId, ownerId, fields },
+    },
+    context.upstream,
+  );
+
+  const result = data.updateBusiness;
+  if (result.__typename !== 'LtdFinancialEntity') {
+    throw new UpstreamError(
+      'UPSTREAM_ERROR',
+      result.__typename === 'CommonError' ? result.message : 'Business update failed',
+      false,
+    );
+  }
+
+  const business = {
+    id: result.id,
+    name: result.name,
+    hebrewName: result.hebrewName ?? null,
+    governmentId: result.governmentId ?? null,
+    address: result.address ?? null,
+    city: result.city ?? null,
+    zipCode: result.zipCode ?? null,
+    email: result.email ?? null,
+    phoneNumber: result.phoneNumber ?? null,
+    website: result.website ?? null,
+    isActive: result.isActive,
+    country: result.country?.code ?? null,
+    taxCategory: result.taxCategory
+      ? { id: result.taxCategory.id, name: result.taxCategory.name }
+      : null,
+  };
+
+  return shapeWriteResult({
+    action: 'update_business',
+    outcome: {
+      businessId: business.id,
+      updatedFields: Object.keys(fields),
+      scope: { memberBusinessIds: context.readScope.memberBusinessIds },
+    },
+    items: { key: 'businesses', values: [business] },
+    summary: `Updated ${Object.keys(fields).length} field(s) on business "${business.name}" (${business.id}).`,
+  });
+}
+
+function observeUpdate(input: UpdateBusinessInput): ToolObservation {
+  return {
+    fields: {
+      updatedFieldCount: Object.keys(updateFieldsOf(input)).length,
+      hasSuggestions: input.suggestions !== undefined,
+    },
+  };
+}
+
+export const updateBusinessTool: ToolDefinition<typeof updateBusinessInput> = {
+  name: UPDATE_BUSINESS_TOOL_NAME,
+  description:
+    'Edit an existing business in the directory — e.g. fill in a vendor’s address, tax id and ' +
+    'billing email from its first invoice. Takes `businessId` plus any of the fields ' +
+    '`accounter_create_business` takes: `name`, `country` (ISO alpha-3), `hebrewName`, ' +
+    '`governmentId`, `sortCode`, `taxCategoryId`, `irsCode`, `pcn874RecordType`, `address`, ' +
+    '`city`, `zipCode`, `email` (the UI’s "General Contacts", one comma-separated string), ' +
+    '`phoneNumber`, `website`, the `exemptDealer` / `optionalVat` / `isReceiptEnough` / ' +
+    '`isDocumentsOptional` / `isActive` flags and `suggestions`. Only the fields you pass change; ' +
+    'a field cannot be cleared through this tool. Each `suggestions` list you pass REPLACES the ' +
+    'stored one, so send the full list. A new `sortCode` does not refill `irsCode`. When the ' +
+    'business is a client linked to Green Invoice, the address, city, zip, country and phone are ' +
+    'pushed there too. Every field is a plain set, so resending the same call after an error is ' +
+    'safe. The echo under `businesses` is the business as it now stands, alongside `businessId` ' +
+    'and `updatedFields`. ' +
+    writeResultDescription('businesses') +
+    ' ' +
+    WRITE_SCOPE_DESCRIPTION_SUFFIX,
+  inputSchema: updateBusinessInput,
+  policy: {
+    requiredRoles: ['business_owner', 'accountant'],
+    requiresBusinessScope: true,
+    dataClassification: 'business',
+    mutating: true,
+  },
+  handler: updateBusinessHandler,
+  observe: observeUpdate,
 };

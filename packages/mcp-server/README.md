@@ -38,9 +38,10 @@ Phase 2 (write scope) has landed behind the `MCP_ENABLE_WRITE_TOOLS` flag, which
 default**: `accounter_update_charges_tags` and `accounter_upload_documents` first, then the six
 review/matching tools (`accounter_update_charge`, `accounter_merge_charges`,
 `accounter_update_transactions`, `accounter_update_document`, `accounter_delete_document`,
-`accounter_create_business`) that let a model act on what it finds in the missing-information views.
-See [Write tools](#write-tools) for the model, and [Known limitations](#known-limitations) for what
-is still out of scope.
+`accounter_create_business`) that let a model act on what it finds in the missing-information views,
+and `accounter_update_business` to fill in a business's details after it exists. See
+[Write tools](#write-tools) for the model, and [Known limitations](#known-limitations) for what is
+still out of scope.
 
 ## Tools
 
@@ -347,7 +348,15 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   first and refuses an exact match with the existing id in the error (`allowDuplicateName: true`
   overrides), and its description says to look the name up again after any upstream error.
 
-All six require `business_owner`/`accountant`, target exactly one business, are audit-logged, and
+- **`accounter_update_business`** — edit an existing business: mirrors `UpdateBusinessInput` field
+  for field (the same fields as create, all optional, plus the required `businessId`), sending only
+  what was passed, with the write target as `ownerId`. Upstream writes every column as
+  `COALESCE($new, column)`, so a field cannot be cleared and the tool exposes no `null`; each
+  `suggestions` list given replaces the stored list; a new `sortCode` does not refill `irsCode` (it
+  does on insert); and for a client linked to Green Invoice the helper pushes address, city, zip,
+  country and phone there too. A call that changes nothing is refused before any round trip.
+
+All seven require `business_owner`/`accountant`, target exactly one business, are audit-logged, and
 are never retried.
 
 ## Upstream GraphQL client
@@ -756,7 +765,7 @@ The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream m
 
 ## Write tools
 
-Eight mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
+Nine mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
 | Tool                            | What it does                                                                             |
 | ------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -768,6 +777,7 @@ Eight mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRIT
 | `accounter_update_document`     | Moves a document to another charge and/or fixes its extracted fields and parties         |
 | `accounter_delete_document`     | Deletes a document (and its charge, when the document was all it held)                   |
 | `accounter_create_business`     | Adds a business to the directory for use as a counterparty                               |
+| `accounter_update_business`     | Edits an existing business's contact details, identifiers and bookkeeping attributes     |
 
 The last six exist for one workflow: a model reviews the missing-information charges (no
 counterparty, no document, no tag, no transaction) with the read tools, proposes a fix per charge,
