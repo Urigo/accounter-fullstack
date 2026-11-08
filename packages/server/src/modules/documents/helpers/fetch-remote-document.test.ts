@@ -6,6 +6,7 @@ import {
   isBlockedIp,
   MAX_REMOTE_DOCUMENT_BYTES,
   RemoteDocumentError,
+  sniffDocumentType,
 } from './fetch-remote-document.helper.js';
 
 /**
@@ -148,6 +149,65 @@ describe('fetchRemoteDocument', () => {
     );
   });
 
+  it('accepts a PDF served as application/octet-stream, typing it from its bytes', async () => {
+    // Stripe's hosted invoice/receipt PDF links answer this way.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        response({ headers: { 'content-type': 'application/octet-stream' }, body: '%PDF-1.4 x' }),
+      ),
+    );
+
+    const file = await fetchRemoteDocument('https://pay.example.com/invoice/acct_x/live_y/pdf');
+    expect(file.type).toBe('application/pdf');
+    expect(file.name).toBe('document.pdf');
+  });
+
+  it('accepts a PDF served with no Content-Type at all', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          ({
+            status: 200,
+            ok: true,
+            headers: new Headers(),
+            arrayBuffer: async () => new TextEncoder().encode('%PDF-1.7 fake').buffer,
+          }) as unknown as Response,
+      ),
+    );
+
+    const file = await fetchRemoteDocument('https://example.com/download?id=1');
+    expect(file.type).toBe('application/pdf');
+  });
+
+  it('refuses an octet-stream body that is not a PDF or an image', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        response({
+          headers: { 'content-type': 'application/octet-stream' },
+          body: '<html>%PDF-1.4</html>',
+        }),
+      ),
+    );
+
+    await expect(fetchRemoteDocument('https://example.com/a.pdf')).rejects.toThrow(
+      /Unsupported content type "application\/octet-stream"/,
+    );
+  });
+
+  it('never sniffs a declared non-generic type — HTML that starts with %PDF is still refused', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ headers: { 'content-type': 'text/html' }, body: '%PDF-1.4' })),
+    );
+
+    await expect(fetchRemoteDocument('https://example.com/a.pdf')).rejects.toThrow(
+      /Unsupported content type "text\/html"/,
+    );
+  });
+
   it('refuses a body over the size cap even when Content-Length lied', async () => {
     const oversize = new Uint8Array(MAX_REMOTE_DOCUMENT_BYTES + 1);
     vi.stubGlobal(
@@ -182,6 +242,37 @@ describe('fetchRemoteDocument', () => {
     );
 
     await expect(fetchRemoteDocument('https://example.com/a.pdf')).rejects.toThrow(/HTTP 404/);
+  });
+});
+
+describe('sniffDocumentType', () => {
+  const bytes = (...values: Array<number | string>) =>
+    new Uint8Array(
+      values.flatMap(value =>
+        typeof value === 'string' ? [...value].map(char => char.charCodeAt(0)) : [value],
+      ),
+    );
+
+  it.each([
+    ['application/pdf', bytes('%PDF-1.7')],
+    ['image/png', bytes(0x89, 'PNG', 0x0d, 0x0a, 0x1a, 0x0a)],
+    ['image/jpeg', bytes(0xff, 0xd8, 0xff, 0xe0)],
+    ['image/webp', bytes('RIFF', 0, 0, 0, 0, 'WEBP')],
+    ['image/tiff', bytes('II', 0x2a, 0x00)],
+    ['image/tiff', bytes('MM', 0x00, 0x2a)],
+    ['image/heic', bytes(0, 0, 0, 0x18, 'ftypheic')],
+    ['image/heif', bytes(0, 0, 0, 0x18, 'ftypmif1')],
+  ])('recognizes %s', (expected, input) => {
+    expect(sniffDocumentType(input)).toBe(expected);
+  });
+
+  it.each([
+    ['HTML', bytes('<!doctype html>')],
+    ['a PDF marker not at offset 0', bytes(' %PDF-1.7')],
+    ['a GIF (not an accepted type)', bytes('GIF89a')],
+    ['an empty buffer', bytes()],
+  ])('rejects %s', (_label, input) => {
+    expect(sniffDocumentType(input)).toBeNull();
   });
 });
 

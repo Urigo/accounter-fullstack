@@ -39,6 +39,54 @@ export const ALLOWED_REMOTE_MIME_TYPES = new Set([
   'image/tiff',
 ]);
 
+/**
+ * Content types that say nothing about the file. Some hosts serve real
+ * documents this way — Stripe's hosted invoice and receipt PDF links answer with
+ * `application/octet-stream` — so for these, and only these, the type is taken
+ * from the file's leading bytes instead (see {@link sniffDocumentType}). A
+ * *declared* type outside the allowlist, `text/html` above all, is still refused
+ * without looking at the body.
+ */
+export const GENERIC_REMOTE_MIME_TYPES = new Set([
+  '',
+  'application/octet-stream',
+  'binary/octet-stream',
+  'application/binary',
+  'application/download',
+  'application/x-download',
+  'application/force-download',
+]);
+
+/**
+ * Identify a document from its magic bytes, returning one of
+ * {@link ALLOWED_REMOTE_MIME_TYPES} or `null`.
+ *
+ * Deliberately narrow: only signatures that open the file at offset 0 (or, for
+ * the ISO-BMFF HEIC container, its fixed `ftyp` box) count, so an HTML page that
+ * happens to mention `%PDF` somewhere is not a PDF.
+ */
+export function sniffDocumentType(bytes: Uint8Array): string | null {
+  const startsWith = (signature: number[], offset = 0) =>
+    bytes.length >= offset + signature.length &&
+    signature.every((byte, index) => bytes[offset + index] === byte);
+  const ascii = (offset: number, length: number) =>
+    String.fromCharCode(...bytes.subarray(offset, offset + length));
+
+  if (startsWith([0x25, 0x50, 0x44, 0x46, 0x2d])) return 'application/pdf'; // %PDF-
+  if (startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'image/png';
+  if (startsWith([0xff, 0xd8, 0xff])) return 'image/jpeg';
+  if (ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') return 'image/webp';
+  if (startsWith([0x49, 0x49, 0x2a, 0x00]) || startsWith([0x4d, 0x4d, 0x00, 0x2a])) {
+    return 'image/tiff';
+  }
+  if (ascii(4, 4) === 'ftyp') {
+    const brand = ascii(8, 4);
+    if (['heic', 'heix', 'hevc', 'hevx'].includes(brand)) return 'image/heic';
+    if (['mif1', 'msf1', 'heif'].includes(brand)) return 'image/heif';
+  }
+  return null;
+}
+
 /** Thrown for every refusal here, so the resolver can report it per URL. */
 export class RemoteDocumentError extends Error {}
 
@@ -114,6 +162,13 @@ export function assertFetchableUrl(rawUrl: string): URL {
   return url;
 }
 
+function unsupportedContentType(contentType: string): RemoteDocumentError {
+  return new RemoteDocumentError(
+    `Unsupported content type "${contentType || 'unknown'}" — expected a PDF or an image. ` +
+      `A share link that renders a web page will land here; use a direct download link.`,
+  );
+}
+
 /** Best-effort filename: the last path segment, else a generic one. */
 function filenameFromUrl(url: URL, contentType: string): string {
   const segment = decodeURIComponent(url.pathname.split('/').findLast(Boolean) ?? '');
@@ -172,11 +227,9 @@ export async function fetchRemoteDocument(rawUrl: string): Promise<File> {
       .split(';')[0]
       .trim()
       .toLowerCase();
-    if (!ALLOWED_REMOTE_MIME_TYPES.has(contentType)) {
-      throw new RemoteDocumentError(
-        `Unsupported content type "${contentType || 'unknown'}" — expected a PDF or an image. ` +
-          `A share link that renders a web page will land here; use a direct download link.`,
-      );
+    const isGenericType = GENERIC_REMOTE_MIME_TYPES.has(contentType);
+    if (!isGenericType && !ALLOWED_REMOTE_MIME_TYPES.has(contentType)) {
+      throw unsupportedContentType(contentType);
     }
 
     // Trust the declared length only to fail early; the real check is on the
@@ -204,7 +257,19 @@ export async function fetchRemoteDocument(rawUrl: string): Promise<File> {
       );
     }
 
-    return new File([buffer], filenameFromUrl(url, contentType), { type: contentType });
+    // A generic declared type is resolved from the bytes, never trusted as-is:
+    // whatever the sniffer cannot place as a PDF or an image is refused exactly
+    // as a declared `text/html` would have been.
+    let documentType = contentType;
+    if (isGenericType) {
+      const sniffed = sniffDocumentType(new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 16)));
+      if (!sniffed) {
+        throw unsupportedContentType(contentType);
+      }
+      documentType = sniffed;
+    }
+
+    return new File([buffer], filenameFromUrl(url, documentType), { type: documentType });
   } finally {
     clearTimeout(timeout);
   }
