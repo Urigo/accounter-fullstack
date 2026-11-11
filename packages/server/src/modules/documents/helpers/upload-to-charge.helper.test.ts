@@ -294,3 +294,28 @@ describe('uploadDocumentsToCharge', () => {
     });
   });
 });
+
+describe('failure logging', () => {
+  it('logs only the host of a URL source, not its path or query', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { injector } = setup();
+    const url = 'https://invoices.example.com/i/secret-invoice-path?token=secret-query';
+
+    const results = await uploadDocumentsToCharge(injector, {
+      sources: [
+        { label: url, load: async () => new Blob(['bad-url'], { type: 'application/pdf' }) },
+      ],
+      chargeId: EXISTING_CHARGE_ID,
+    });
+
+    // The caller sent the URL, so its own result still names it
+    expect(results).toEqual([
+      expect.objectContaining({ message: expect.stringContaining(url) as unknown }),
+    ]);
+    const logged = consoleError.mock.calls.flat().map(String).join('\n');
+    expect(logged).toContain('invoices.example.com');
+    expect(logged).not.toContain('secret-invoice-path');
+    expect(logged).not.toContain('secret-query');
+    consoleError.mockRestore();
+  });
+});

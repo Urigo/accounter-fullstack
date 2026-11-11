@@ -140,6 +140,21 @@ async function createChargeWithDocuments(
  *   the whole batch, and only after processing, once at least one document made it: a batch that
  *   fails entirely creates nothing.
  */
+/**
+ * A source URL can work as a bearer credential (a hosted-invoice or signed download link), so only
+ * its host is logged. Other labels (file names, `document #n`) are logged as they are.
+ */
+function labelForLog(label: string): string {
+  if (URL.canParse(label)) {
+    const url = new URL(label);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.host;
+    }
+    return `a ${url.protocol} URL`;
+  }
+  return `"${label}"`;
+}
+
 export async function uploadDocumentsToCharge(
   injector: Injector,
   {
@@ -169,7 +184,10 @@ export async function uploadDocumentsToCharge(
         const document = await getDocumentFromFile(injector, file, chargeId ?? null, isSensitive);
         return { index, document };
       } catch (error) {
-        console.error(`Failed processing uploaded document "${label}":`, error);
+        const errorClass = error instanceof Error ? error.constructor.name : typeof error;
+        console.error(
+          `Failed processing uploaded document from ${labelForLog(label)}: ${errorClass}`,
+        );
         return { index, message: describeFailure(error) };
       }
     }),
