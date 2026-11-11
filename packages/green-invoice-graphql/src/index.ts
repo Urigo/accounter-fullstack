@@ -1,38 +1,16 @@
 import type { Sdk } from './__generated__/sdk.js';
+import { obtainAccessToken } from './access-token.js';
 import { getMeshSDK } from './mesh-client.js';
 
-async function obtainAccessToken(id: string, secret: string) {
-  try {
-    const authParams = {
-      grant_type: 'client_credentials',
-      client_id: id,
-      client_secret: secret,
-    };
-    const res = await fetch('https://api.morning.co/idp/v1/oauth/token', {
-      method: 'POST',
-      body: JSON.stringify(authParams),
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (res.status !== 200) {
-      throw Error(
-        `Failed to obtain access token, status code: ${res.status}, response: ${await res.text()}`,
-      );
-    }
-
-    const data = await res.json();
-    return data.accessToken;
-  } catch (e) {
-    console.error('Failed to obtain access token', e);
-    throw Error('Failed to obtain access token', { cause: e });
-  }
-}
-
+/**
+ * Obtains a new access token and returns an SDK bound to it. Every call requests a new token; to
+ * reuse tokens across requests, use `createGreenInvoiceSdk` with a shared `GreenInvoiceTokenCache`.
+ */
 export const init = async (
   id: string,
   secret: string,
 ): Promise<{ sdk: Sdk; authToken: string }> => {
-  const greenInvoiceToken = await obtainAccessToken(id, secret);
+  const { accessToken: greenInvoiceToken } = await obtainAccessToken(id, secret);
 
   const sdk = getMeshSDK({ authToken: greenInvoiceToken });
 
@@ -41,4 +19,17 @@ export const init = async (
 
 export * from './__generated__/types.js';
 export * from './__generated__/sdk.js';
-export { getMeshSDK, type GreenInvoiceContext } from './mesh-client.js';
+export {
+  createGreenInvoiceSdk,
+  getMeshSDK,
+  type GreenInvoiceContext,
+  type GreenInvoiceSdkOptions,
+} from './mesh-client.js';
+export {
+  GreenInvoiceTokenCache,
+  isUnauthorizedError,
+  obtainAccessToken,
+  type AccessToken,
+  type GreenInvoiceTokenCacheOptions,
+  type GreenInvoiceTokenSource,
+} from './access-token.js';
