@@ -3,7 +3,7 @@ import type { AccountantStatus, Pcn874RecordType } from '../../../__generated__/
 import { log } from '../../../observability/log.js';
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { DocumentType, type Currency } from '../../../shared/enums.js';
-import { formatCurrency } from '../../../shared/helpers/index.js';
+import { allSettledOrThrow, formatCurrency } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
@@ -74,6 +74,51 @@ export function isVatReportRelevantDocument(
   return isInvoice(doc.type);
 }
 
+/** A document field the VAT report cannot be computed without. */
+export type VatReportDocumentField = 'amount' | 'currency' | 'date';
+
+/**
+ * A VAT-relevant document the report left out because it lacks a field the tax adjustment
+ * needs. Its charge is listed under `missingInfo` instead (#4946).
+ */
+export type IncompleteVatReportDocument = {
+  documentId: string;
+  chargeId: string;
+  missingFields: VatReportDocumentField[];
+};
+
+/**
+ * The fields `adjustTaxRecord` needs that `doc` is missing. These are document data-quality
+ * problems: the report lists the document's charge as missing info rather than failing (#4946).
+ */
+export function getVatReportDocumentMissingFields(
+  doc: Pick<IGetDocumentsByFiltersResult, 'total_amount' | 'currency_code' | 'date'>,
+): VatReportDocumentField[] {
+  const missing: VatReportDocumentField[] = [];
+  if (!doc.total_amount) {
+    missing.push('amount');
+  }
+  if (!doc.currency_code) {
+    missing.push('currency');
+  }
+  if (!doc.date) {
+    missing.push('date');
+  }
+  return missing;
+}
+
+/** One line naming each incomplete document, for errors that must not ignore them. */
+export function describeIncompleteVatReportDocuments(
+  documents: ReadonlyArray<IncompleteVatReportDocument>,
+): string {
+  return documents
+    .map(
+      ({ documentId, chargeId, missingFields }) =>
+        `document ID=${documentId} (charge ID=${chargeId}) is missing ${missingFields.join(', ')}`,
+    )
+    .join('; ');
+}
+
 export const MONTHLY_VAT_AMOUNT_TOLERANCE = 0.01;
 
 export function calculateMonthlyVatTotalAmount(
@@ -107,18 +152,16 @@ export async function adjustTaxRecord(
   const { charge, doc, business } = rawRecord;
   const currency = formatCurrency(doc.currency_code);
 
-  if (!doc.total_amount) {
-    throw new Error(`Amount missing for invoice ID=${doc.id}`);
+  // `getVatRecords` sets documents missing these fields aside (see
+  // `getVatReportDocumentMissingFields`) before calling this, so these guards only narrow types.
+  if (!doc.total_amount || !doc.currency_code || !doc.date) {
+    const missing = getVatReportDocumentMissingFields(doc).join(', ');
+    throw new Error(`Invoice ID=${doc.id} is missing ${missing}`);
   }
 
-  if (!doc.currency_code) {
-    throw new Error(`Currency missing for invoice ID=${doc.id}`);
-  }
-  if (!doc.date) {
-    throw new Error(`Date is missing for invoice ID=${doc.id}`);
-  }
-
-  const [isProperty, { transactionsMinEventDate }, { documentsMinDate }] = await Promise.all([
+  // Not `Promise.all`: a rejected branch must not let the request end while the others still
+  // query its DB client (#4871).
+  const [isProperty, { transactionsMinEventDate }, { documentsMinDate }] = await allSettledOrThrow([
     injector
       .get(DepreciationProvider)
       .getDepreciationRecordsByChargeIdLoader.load(charge.id)

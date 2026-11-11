@@ -127,7 +127,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
       transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
-    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [], incompleteDocuments: [] } as never);
 
     const result = await generateLedgerRecordsForMonthlyVat(
       { ...chargeBase, user_description: 'VAT for 03-04/2026' } as never,
@@ -151,7 +151,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
       transactionsMinDebitDate: null,
       transactionsMinEventDate: null,
     } as never);
-    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [], incompleteDocuments: [] } as never);
 
     const result = await generateLedgerRecordsForMonthlyVat(
       { ...chargeBase, user_description: 'VAT for 04/2026' } as never,
@@ -175,7 +175,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
       transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
-    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [], incompleteDocuments: [] } as never);
 
     const result = await generateLedgerRecordsForMonthlyVat(
       { ...chargeBase, user_description: 'VAT for 04/2026' } as never,
@@ -200,6 +200,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
     vi.mocked(getVatRecords).mockResolvedValue({
       income: [{ roundedVATToAdd: 130 }],
       expenses: [{ roundedVATToAdd: 10 }],
+      incompleteDocuments: [],
     } as never);
 
     const result = await generateLedgerRecordsForMonthlyVat(
@@ -225,6 +226,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
     vi.mocked(getVatRecords).mockResolvedValue({
       income: [{ roundedVATToAdd: 130 }],
       expenses: [{ roundedVATToAdd: 10 }],
+      incompleteDocuments: [],
     } as never);
 
     const result = await generateLedgerRecordsForMonthlyVat(
@@ -245,6 +247,36 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
     expect(result.errors).not.toContain('Monthly VAT validation requires transactions amount');
   });
 
+  it('flags a month whose VAT leaves out documents with missing data (#4946)', async () => {
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -120,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({
+      income: [{ roundedVATToAdd: 130 }],
+      expenses: [{ roundedVATToAdd: 10 }],
+      incompleteDocuments: [
+        { documentId: 'doc-1', chargeId: 'charge-1', missingFields: ['currency'] },
+      ],
+    } as never);
+
+    const result = await generateLedgerRecordsForMonthlyVat(
+      { ...chargeBase, user_description: 'VAT for 04/2026' } as never,
+      { insertLedgerRecordsIfNotExists: false },
+      { injector: makeInjector() } as never,
+      {} as never,
+    );
+
+    if (!result || 'message' in result) {
+      throw new Error('Expected GeneratedLedgerRecords result');
+    }
+
+    expect(result.errors).toContain(
+      'Monthly VAT for 04/2026 leaves out documents with missing data: document ID=doc-1 (charge ID=charge-1) is missing currency',
+    );
+  });
+
   it('rejects a property charge without a property VAT category before starting any branch', async () => {
     // Returning this error after the transaction and misc-expense branches had
     // started would end the request while they still query its DB client.
@@ -253,7 +285,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
       transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
-    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [], incompleteDocuments: [] } as never);
 
     const result = await generateLedgerRecordsForMonthlyVat(
       { ...chargeBase, is_property: true, user_description: 'VAT for 04/2026' } as never,
@@ -287,7 +319,7 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
         if (requestDone) {
           queriesAfterRequest.push('SELECT documents');
         }
-        return { income: [], expenses: [] } as never;
+        return { income: [], expenses: [], incompleteDocuments: [] } as never;
       });
 
     const resultPromise = (async () => {

@@ -1,12 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import type { Injector } from 'graphql-modules';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Currency, DocumentType } from '../../../../shared/enums.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
+import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import type { IGetDocumentsByFiltersResult } from '../../../documents/types.js';
 import {
+  adjustTaxRecord,
   calculateMonthlyVatTotalAmount,
+  describeIncompleteVatReportDocuments,
+  getVatReportDocumentMissingFields,
   isVatReportRelevantDocument,
   isWithinMonthlyVatAmountTolerance,
   type RawVatReportRecord,
+  type VatReportRecordSources,
 } from '../vat-report.helper.js';
+
+vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
+  getChargeTransactionsMeta: vi.fn(async () => ({ transactionsMinEventDate: '2026-04-15' })),
+  getChargeDocumentsMeta: vi.fn(async () => ({ documentsMinDate: '2026-04-15' })),
+}));
 
 function createVatRecord(roundedVATToAdd?: number): RawVatReportRecord {
   return {
@@ -94,5 +107,97 @@ describe('isVatReportRelevantDocument', () => {
     expect(isVatReportRelevantDocument(createDocument({ charge_id: null }))).toBe(false);
     expect(isVatReportRelevantDocument(createDocument({ creditor_id: null }))).toBe(false);
     expect(isVatReportRelevantDocument(createDocument({ debtor_id: null }))).toBe(false);
+  });
+});
+
+describe('getVatReportDocumentMissingFields', () => {
+  const complete = { total_amount: 117, currency_code: 'ILS', date: '2026-04-15' } as const;
+
+  it('returns nothing for a document the tax adjustment can compute', () => {
+    expect(getVatReportDocumentMissingFields(complete)).toEqual([]);
+  });
+
+  it('names each missing field', () => {
+    expect(getVatReportDocumentMissingFields({ ...complete, total_amount: null })).toEqual([
+      'amount',
+    ]);
+    expect(getVatReportDocumentMissingFields({ ...complete, currency_code: null })).toEqual([
+      'currency',
+    ]);
+    expect(getVatReportDocumentMissingFields({ ...complete, date: null })).toEqual(['date']);
+    expect(
+      getVatReportDocumentMissingFields({ total_amount: null, currency_code: null, date: null }),
+    ).toEqual(['amount', 'currency', 'date']);
+  });
+
+  it('describes incomplete documents in one line', () => {
+    expect(
+      describeIncompleteVatReportDocuments([
+        { documentId: 'doc-1', chargeId: 'charge-1', missingFields: ['currency'] },
+        { documentId: 'doc-2', chargeId: 'charge-2', missingFields: ['amount', 'date'] },
+      ]),
+    ).toBe(
+      'document ID=doc-1 (charge ID=charge-1) is missing currency; document ID=doc-2 (charge ID=charge-2) is missing amount, date',
+    );
+  });
+});
+
+describe('adjustTaxRecord failures', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function sources(): VatReportRecordSources {
+    return {
+      charge: { id: 'charge-1', is_property: false },
+      doc: {
+        id: 'doc-1',
+        type: DocumentType.Invoice,
+        total_amount: 117,
+        vat_amount: 17,
+        currency_code: 'ILS',
+        date: '2026-04-15',
+      },
+      business: { id: 'business-1' },
+    } as unknown as VatReportRecordSources;
+  }
+
+  function injectorWithDepreciation(load: () => Promise<unknown>) {
+    const providers = new Map<unknown, unknown>([
+      [
+        AdminContextProvider,
+        {
+          getVerifiedAdminContext: vi
+            .fn()
+            .mockResolvedValue({ defaultLocalCurrency: Currency.Ils, locality: 'ISR' }),
+        },
+      ],
+      [DepreciationProvider, { getDepreciationRecordsByChargeIdLoader: { load } }],
+    ]);
+    return { get: (token: unknown) => providers.get(token) } as unknown as Injector;
+  }
+
+  it('rejects without logging, leaving the log line to the caller (#4946)', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
+      adjustTaxRecord(
+        sources(),
+        injectorWithDepreciation(async () => {
+          throw new Error('depreciation lookup failed');
+        }),
+      ),
+    ).rejects.toThrow('depreciation lookup failed');
+
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('names the missing fields if called with an incomplete document', async () => {
+    const record = sources();
+    record.doc = { ...record.doc, currency_code: null, date: null };
+
+    await expect(
+      adjustTaxRecord(record, injectorWithDepreciation(async () => [])),
+    ).rejects.toThrow('Invoice ID=doc-1 is missing currency, date');
   });
 });
