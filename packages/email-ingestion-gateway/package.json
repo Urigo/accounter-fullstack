@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "dotenv": "18.0.9",
-    "graphql": "16.14.2",
+    "graphql": "16.15.0",
     "graphql-request": "7.4.0",
     "inline-css": "4.0.3",
     "playwright": "1.64.1",
