@@ -113,7 +113,8 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
     //
     // A `GraphQLError` passes yoga's default `maskedErrors` unchanged, so the
     // message, `code` and `extensions.http` (which sets the response status) all
-    // reach the gateway. Only the status is a wire contract: the gateway keys its
+    // reach the gateway. The underlying error stays in the log above only: a pg
+    // error's `detail`/`where` can carry row values and SQL. Only the status is a wire contract: the gateway keys its
     // retry decision on it — see
     // `__tests__/email-ingestion-control-http-status.test.ts`, which asserts the
     // status through a real yoga instance with masking left on.
@@ -121,7 +122,6 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
     throw new GraphQLError('Failed to process ingest control request', {
       extensions: {
         code: isDeadConnection ? 'SERVICE_UNAVAILABLE' : 'INTERNAL_SERVER_ERROR',
-        cause: err,
         ...(isDeadConnection ? { http: { status: 503 } } : {}),
       },
     });

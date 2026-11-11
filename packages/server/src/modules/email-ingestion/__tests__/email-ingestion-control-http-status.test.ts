@@ -131,4 +131,18 @@ describe('requestIngestControl HTTP status', () => {
     expect(body.errors?.[0]?.message).toBe('Failed to process ingest control request');
     expect(body.errors?.[0]?.extensions?.code).toBe('INTERNAL_SERVER_ERROR');
   });
+
+  it('does not return the underlying database error to the gateway', async () => {
+    const err = Object.assign(new Error('duplicate key value violates unique constraint'), {
+      code: '23505',
+      detail: 'Key (alias)=(secret-alias@example.com) already exists.',
+      where: 'SQL statement "INSERT INTO accounter_schema.alias_routing ..."',
+    });
+    const { body } = await post(makeYoga(err));
+
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain('secret-alias@example.com');
+    expect(serialized).not.toContain('INSERT INTO');
+    expect(body.errors?.[0]?.extensions).not.toHaveProperty('cause');
+  });
 });
