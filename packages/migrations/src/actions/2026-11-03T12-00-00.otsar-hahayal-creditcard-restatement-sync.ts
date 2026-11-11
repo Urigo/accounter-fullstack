@@ -11,7 +11,9 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  * the insert trigger created for it.
  *
  * Only fields the insert trigger derives from the source row are touched — the transaction keeps
- * its charge, business, overrides and `is_fee` flag (which a user may have changed).
+ * its charge, business, overrides and `is_fee` flag (which a user may have changed). When the
+ * restated row carries a different `masked_pan`, the account is re-resolved with the insert
+ * trigger's lookup, so the transaction follows the card it was charged on.
  *
  * Idempotent. Rollback (the migrator has no down step):
  *   DROP TRIGGER IF EXISTS update_otsar_hahayal_creditcard_transaction
@@ -25,8 +27,20 @@ export default {
       RETURNS trigger LANGUAGE plpgsql AS
     $$
     DECLARE
-        currency_var accounter_schema.currency;
+        currency_var   accounter_schema.currency;
+        account_id_var UUID;
     BEGIN
+        IF NEW.masked_pan IS DISTINCT FROM OLD.masked_pan THEN
+          SELECT id
+          INTO account_id_var
+          FROM accounter_schema.financial_accounts
+          WHERE account_number = NEW.masked_pan::TEXT AND type = 'CREDIT_CARD';
+
+          IF account_id_var IS NULL THEN
+            RAISE EXCEPTION 'Credit card account not found for masked PAN: %', NEW.masked_pan;
+          END IF;
+        END IF;
+
         currency_var := CASE NEW.charge_currency
           WHEN 'שקל חדש'    THEN 'ILS'::accounter_schema.currency
           WHEN 'דולר ארה"ב' THEN 'USD'::accounter_schema.currency
@@ -39,6 +53,7 @@ export default {
 
         UPDATE accounter_schema.transactions
         SET
+            account_id = COALESCE(account_id_var, account_id),
             source_description = NULLIF(TRIM(CONCAT_WS(' ',
                 NULLIF(TRIM(NEW.name), ''),
                 NULLIF(TRIM(NEW.notes), '')
@@ -58,13 +73,15 @@ export default {
       ON accounter_schema.otsar_hahayal_creditcard_transactions;
 
     CREATE TRIGGER update_otsar_hahayal_creditcard_transaction
-      AFTER UPDATE OF date, charge_date, name, notes, charge_amount, charge_currency
+      AFTER UPDATE OF date, charge_date, name, notes, charge_amount, charge_currency, masked_pan
       ON accounter_schema.otsar_hahayal_creditcard_transactions
       FOR EACH ROW
       WHEN (
-        (OLD.date, OLD.charge_date, OLD.name, OLD.notes, OLD.charge_amount, OLD.charge_currency)
+        (OLD.date, OLD.charge_date, OLD.name, OLD.notes, OLD.charge_amount, OLD.charge_currency,
+         OLD.masked_pan)
         IS DISTINCT FROM
-        (NEW.date, NEW.charge_date, NEW.name, NEW.notes, NEW.charge_amount, NEW.charge_currency)
+        (NEW.date, NEW.charge_date, NEW.name, NEW.notes, NEW.charge_amount, NEW.charge_currency,
+         NEW.masked_pan)
       )
       EXECUTE FUNCTION accounter_schema.update_otsar_hahayal_creditcard_transaction_handler();
   `,

@@ -1,4 +1,5 @@
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { withScraperUploadErrors } from '../helpers/upload-error.helper.js';
 import { IsracardAmexScraperIngestionProvider } from '../providers/isracard-amex-scraper-ingestion.provider.js';
 import { OtsarHahayalScraperIngestionProvider } from '../providers/otsar-hahayal-scraper-ingestion.provider.js';
@@ -80,13 +81,17 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
       ),
 
     uploadOtsarHahayalCreditCardTransactions: (_, { transactions }, { injector }) =>
-      withScraperUploadErrors('uploadOtsarHahayalCreditCardTransactions', async () => {
-        const { restatedChargeIds, ...result } = await injector
-          .get(OtsarHahayalScraperIngestionProvider)
-          .uploadOtsarHahayalCreditCardTransactions(transactions);
-        // A restatement rewrites an existing transaction (date, description): re-flag its charge.
-        await degradeChargesAccountantApproval(injector, restatedChargeIds);
-        return result;
-      }),
+      withScraperUploadErrors('uploadOtsarHahayalCreditCardTransactions', () =>
+        // One transaction for the source updates, inserts and approval reset: if any step fails,
+        // nothing is committed, so a retry still sees the restatements and re-flags their charges.
+        injector.get(TenantAwareDBClient).transaction(async () => {
+          const { restatedChargeIds, ...result } = await injector
+            .get(OtsarHahayalScraperIngestionProvider)
+            .uploadOtsarHahayalCreditCardTransactions(transactions);
+          // A restatement rewrites an existing transaction (date, description): re-flag its charge.
+          await degradeChargesAccountantApproval(injector, restatedChargeIds);
+          return result;
+        }),
+      ),
   },
 };
