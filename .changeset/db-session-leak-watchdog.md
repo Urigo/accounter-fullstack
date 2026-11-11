@@ -9,13 +9,14 @@ Fix request-scoped DB sessions leaking, and make the leak watchdog fire before P
   `POSTGRES_CLIENT_MAX_IDLE_MS` now defaults to 240s, and `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS`
   defaults to it instead of 900s. Like the aborted ceiling, the active one is never below
   `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`.
-- **Before deploying**, check the environment:
-  - A `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS` (or other ceiling) **above** 240s must be removed, or
-    the idle-in-transaction timeout raised.
-  - The active and aborted ceilings are floored at `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`, so with
-    the other defaults a `POSTGRES_STATEMENT_TIMEOUT_MS` above 210s also stops the server from
-    starting. Raising the statement timeout past that means raising
-    `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` to at least the statement timeout + 30s + two sweeps.
+- **Before deploying**, check the environment. Every effective ceiling (client, active, aborted)
+  must be at most `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` minus two sweep intervals: 240s with the
+  defaults (300s timeout, 30s sweeps).
+  - A configured ceiling above that limit must be lowered or removed, or the idle-in-transaction
+    timeout raised.
+  - The active and aborted ceilings are floored at `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`, so a
+    statement timeout above the limit minus 30s (210s with the defaults) also needs a higher
+    idle-in-transaction timeout.
 - The watchdog's reclaim line and the `[db] Error on checked-out client` line name the GraphQL
   operation and the request id. The error line is now a single line without the pg stack.
 - Request lifecycle state for DB clients now lives in one shared `context.dbRequest` object. The
