@@ -1,5 +1,5 @@
 import { useExtendContext, YogaInitialContext } from 'graphql-yoga';
-import type { Plugin } from '@envelop/types';
+import type { Plugin } from '@envelop/core';
 import type { DBProvider } from '../modules/app-providers/db.provider.js';
 import { handleDevBypassAuth } from '../modules/auth/providers/auth-context.provider.js';
 import type { BusinessScopeParseResult } from '../shared/types/auth.js';

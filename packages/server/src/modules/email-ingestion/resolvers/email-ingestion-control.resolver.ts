@@ -111,11 +111,10 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
     // Control is safe to retry — it has no side effect before `issueGrant`, which is
     // the last step and is not reached when this throws.
     //
-    // Only the *status* survives to the gateway: yoga's default `maskedErrors`
-    // replaces the message with "Unexpected error." and drops `code`, but
-    // `maskError` deliberately copies `extensions.http` onto the masked error, which
-    // is what sets the response status. `code` below is for server-side reading and
-    // the tests, not a wire contract — see
+    // A `GraphQLError` passes yoga's default `maskedErrors` unchanged, so the
+    // message, `code` and `extensions.http` (which sets the response status) all
+    // reach the gateway. Only the status is a wire contract: the gateway keys its
+    // retry decision on it — see
     // `__tests__/email-ingestion-control-http-status.test.ts`, which asserts the
     // status through a real yoga instance with masking left on.
     const isDeadConnection = isConnectionLevelError(err);

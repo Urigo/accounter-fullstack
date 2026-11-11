@@ -333,7 +333,6 @@ __metadata:
     "@accounter/shaam6111-generator": "workspace:^"
     "@ai-sdk/anthropic": "npm:4.0.102"
     "@envelop/core": "npm:5.6.1"
-    "@envelop/generic-auth": "npm:11.2.3"
     "@envelop/graphql-modules": "npm:9.2.1"
     "@google-cloud/pubsub": "npm:6.4.1"
     "@graphql-hive/yoga": "npm:0.50.0"
@@ -1509,35 +1508,6 @@ __metadata:
     "@whatwg-node/promise-helpers": "npm:^1.2.4"
     tslib: "npm:^2.5.0"
   checksum: 10c0/f7fa0980933979861af53c774eb82d6fece4cb3844ac9363723b245f77eaa34ce04b64d8dfd8f97c7bfcabeeb73ca0d43c273f62a9a5eccd071bbb4d2fc1def6
-  languageName: node
-  linkType: hard
-
-"@envelop/extended-validation@npm:^7.2.3":
-  version: 7.2.3
-  resolution: "@envelop/extended-validation@npm:7.2.3"
-  dependencies:
-    "@graphql-tools/utils": "npm:^12.0.3"
-    tslib: "npm:^2.5.0"
-  peerDependencies:
-    "@envelop/core": ^5.6.1
-    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/5efca5b574f96aa268b5bd7087839e8f82b73e7bd2434b241f1f918744964e12c45de45f5f864b184e9562fa73b68afbb686b298d637cea59a58cf5a6abf7901
-  languageName: node
-  linkType: hard
-
-"@envelop/generic-auth@npm:11.2.3":
-  version: 11.2.3
-  resolution: "@envelop/generic-auth@npm:11.2.3"
-  dependencies:
-    "@envelop/extended-validation": "npm:^7.2.3"
-    "@graphql-tools/executor": "npm:^2.0.3"
-    "@graphql-tools/utils": "npm:^12.0.3"
-    "@whatwg-node/promise-helpers": "npm:^1.2.1"
-    tslib: "npm:^2.5.0"
-  peerDependencies:
-    "@envelop/core": ^5.6.1
-    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/c0f1b7826f0b92a77519c3cd374e3c4cca94f7f8e8788be6707f39745f9054342fc9cd2b495661d2c7584db99cb29e206fbb4c2ace2319584ef53084ca31f078
   languageName: node
   linkType: hard
 
