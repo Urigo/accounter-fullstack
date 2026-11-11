@@ -5,9 +5,11 @@
 
 Stop logging credentials and personal data:
 
-- The Green Invoice Mesh client pins its transport logger to `info`, so `DEBUG` / `LOG_LEVEL` can no
-  longer turn on the REST transport's request dumps (`Authorization: Bearer …` headers and response
-  bodies). Adds `@graphql-hive/logger` as a dependency.
+- The Green Invoice Mesh client sets its transport log level from a new `GREEN_INVOICE_LOG_LEVEL`
+  env var (`trace` | `debug` | `info` | `warn` | `error`, default `info`; an unknown value warns
+  and falls back to `info`). The generic `DEBUG` / `LOG_LEVEL` no longer turn on the REST
+  transport's request dumps (`Authorization: Bearer …` headers and response bodies). Adds
+  `@graphql-hive/logger` as a dependency.
 - Yoga's log level is pinned to `info`. Hive forwards its logs to it, so `DEBUG=1` no longer adds
   per-request debug lines.
 - Recovery-reserve calculation no longer prints employee first names or reserve amounts.

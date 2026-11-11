@@ -5,14 +5,17 @@ const CLIENT_ID = '11111111-1111-4111-8111-111111111111';
 const BODY_MARKER = 'Client tax ID 515151515';
 
 const CONSOLE_METHODS = ['log', 'info', 'warn', 'error', 'debug', 'trace'] as const;
+const ENV_VARS = ['DEBUG', 'LOG_LEVEL', 'GREEN_INVOICE_LOG_LEVEL'] as const;
 
 describe('getMeshSDK logging', () => {
-  const previousDebug = process.env['DEBUG'];
+  const previousEnv = Object.fromEntries(ENV_VARS.map(name => [name, process.env[name]]));
   let output: string[];
 
   beforeEach(() => {
-    // The logger is built when the module loads, so reload it with DEBUG set
-    process.env['DEBUG'] = '1';
+    for (const name of ENV_VARS) {
+      delete process.env[name];
+    }
+    // The logger is built when the module loads, so each test reloads it under its own env
     vi.resetModules();
     output = [];
     for (const method of CONSOLE_METHODS) {
@@ -32,14 +35,18 @@ describe('getMeshSDK logging', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    if (previousDebug === undefined) {
-      delete process.env['DEBUG'];
-    } else {
-      process.env['DEBUG'] = previousDebug;
+    for (const name of ENV_VARS) {
+      const previous = previousEnv[name];
+      if (previous === undefined) {
+        delete process.env[name];
+      } else {
+        process.env[name] = previous;
+      }
     }
   });
 
-  it('logs no token, headers or response body even with DEBUG set', async () => {
+  /** Loads the client under the current env, makes one call, and returns everything logged */
+  async function callAndCaptureLogs(): Promise<string> {
     const { getMeshSDK } = await import('../mesh-client.js');
     const fetchFn = (async () =>
       new Response(JSON.stringify({ id: CLIENT_ID, name: BODY_MARKER, country: 'IL' }), {
@@ -52,9 +59,39 @@ describe('getMeshSDK logging', () => {
     });
     expect(getClient).toMatchObject({ name: BODY_MARKER });
 
-    const logged = output.join('\n');
+    return output.join('\n');
+  }
+
+  function expectNothingSensitive(logged: string) {
     expect(logged).not.toContain(TOKEN);
     expect(logged.toLowerCase()).not.toContain('authorization');
     expect(logged).not.toContain(BODY_MARKER);
+  }
+
+  it.each([
+    ['DEBUG', '1'],
+    ['LOG_LEVEL', 'debug'],
+  ])('logs no token, headers or response body with %s=%s', async (name, value) => {
+    process.env[name] = value;
+
+    expectNothingSensitive(await callAndCaptureLogs());
+  });
+
+  it('logs the upstream request only when GREEN_INVOICE_LOG_LEVEL opts in to debug', async () => {
+    process.env['GREEN_INVOICE_LOG_LEVEL'] = 'debug';
+
+    const logged = await callAndCaptureLogs();
+
+    expect(logged).toContain('Fetching');
+    expect(logged).toContain(TOKEN);
+  });
+
+  it('falls back to info, with a warning, for an unknown GREEN_INVOICE_LOG_LEVEL', async () => {
+    process.env['GREEN_INVOICE_LOG_LEVEL'] = 'verbose';
+
+    const logged = await callAndCaptureLogs();
+
+    expect(logged).toContain('Ignoring unknown GREEN_INVOICE_LOG_LEVEL "verbose"; using "info"');
+    expectNothingSensitive(logged);
   });
 });
