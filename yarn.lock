@@ -272,7 +272,7 @@ __metadata:
     concurrently: "npm:10.0.6"
     date-fns: "npm:4.4.0"
     node-fetch: "npm:3.3.2"
-    node-xlsx: "npm:0.24.0"
+    node-xlsx: "npm:0.25.0"
     nodemon: "npm:3.1.14"
     playwright: "npm:1.65.0"
     puppeteer: "npm:25.16.0"
@@ -373,7 +373,7 @@ __metadata:
     jose: "npm:6.2.15"
     json-bigint-patch: "npm:0.0.9"
     node-cache: "npm:5.1.2"
-    node-xlsx: "npm:0.24.0"
+    node-xlsx: "npm:0.25.0"
     nodemon: "npm:3.1.14"
     pg: "npm:8.23.1"
     pino-pretty: "npm:13.2.0"
@@ -19802,14 +19802,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-xlsx@npm:0.24.0":
-  version: 0.24.0
-  resolution: "node-xlsx@npm:0.24.0"
-  dependencies:
-    xlsx: "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+"node-xlsx@npm:0.25.0":
+  version: 0.25.0
+  resolution: "node-xlsx@npm:0.25.0"
   bin:
-    node-xlsx: dist/bin/cli.js
-  checksum: 10c0/df1b85e7f00f4c849574287f02571593a37800e805db85cb1e38b04759fa9f2bc88c766fe0ed13aae61b27b4a84a126fd58534312f002759abf7e23abc60ce19
+    node-xlsx: ./dist/bin/cli.mjs
+  checksum: 10c0/1b63f4c4905b442982aa0c66edde3e56c270735be562221287ea57a5bca46bdcc50344ec9168cc1fa4cdf2c93f90dff7ea0f7835e2f150afd6ca9ca2afed3717
   languageName: node
   linkType: hard
 
@@ -25997,15 +25995,6 @@ __metadata:
     is-wsl: "npm:^3.1.0"
     powershell-utils: "npm:^0.1.0"
   checksum: 10c0/578c084dde46135792cbc7395e325ea370318f2e2f3f76aa3e581071dd17bb2a0ac9e77fea28f1916134c29277599383e9f2a471f47017dd419c6d35bed56689
-  languageName: node
-  linkType: hard
-
-"xlsx@npm:@e965/xlsx@0.20.3":
-  version: 0.20.3
-  resolution: "@e965/xlsx@npm:0.20.3"
-  bin:
-    xlsx: bin/xlsx.njs
-  checksum: 10c0/29416c391f55010af50eab38f8d3d3622e656463edb1670e58071a7ed250888a49e63d61fc6a12ed6e431ea045424868cc488374f3ded841e7ae472fbd0a2720
   languageName: node
   linkType: hard
 
