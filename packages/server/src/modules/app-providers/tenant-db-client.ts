@@ -94,6 +94,10 @@ export interface WatchdogOptions {
     lastQuery: string | null;
     operationInFlight: boolean;
     requestAborted: boolean;
+    /** The GraphQL operation that owns the client, when known. */
+    operationName: string | null;
+    /** The request that owns the client, when known. */
+    requestId: string | null;
   }) => void;
 }
 
@@ -134,6 +138,8 @@ export function startTenantDbClientWatchdog(options: WatchdogOptions): { stop: (
         lastQuery: client.lastQuery,
         operationInFlight,
         requestAborted,
+        operationName: client.operationName,
+        requestId: client.requestId,
       };
       options.onLeak?.(info);
       void client.dispose().catch(error => {
@@ -238,6 +244,21 @@ export class TenantAwareDBClient {
     return this.disposalRequested;
   }
 
+  /** The GraphQL operation that owns this client, for log lines. */
+  public get operationName(): string | null {
+    return this.context?.operationName ?? null;
+  }
+
+  /** The request that owns this client, for log lines. */
+  public get requestId(): string | null {
+    return this.context?.requestId ?? null;
+  }
+
+  /** ` operation=… request=…`, appended to every log line about this client. */
+  private get logSuffix(): string {
+    return ` operation=${this.operationName ?? 'unknown'} request=${this.requestId ?? 'unknown'}`;
+  }
+
   /**
    * Per-operation mode: commit and release the connection after every
    * top-level query/transaction (the pre-request-scoped behavior). Defaults to
@@ -259,7 +280,17 @@ export class TenantAwareDBClient {
     // context (direct construction), fall back to commit-and-release per
     // operation since nothing would ever call dispose().
     this.context = context;
-    if (context) {
+    if (context?.dbClientsDisposed) {
+      // Constructed after the end-of-execution pass drained the list — by work
+      // that outlived its request. Registering would put it on a list nothing
+      // drains any more, so it would hold its connection (and an open
+      // transaction) until the watchdog or Postgres killed it. Commit and
+      // release after every query instead.
+      this.autoRelease = true;
+      process.stderr.write(
+        `[db] TenantAwareDBClient created after request cleanup; running in autoRelease mode.${this.logSuffix}\n`,
+      );
+    } else if (context) {
       (context.dbClientsToDispose ??= []).push(this);
       this.autoRelease = false;
     } else {
@@ -425,8 +456,15 @@ export class TenantAwareDBClient {
       // `idle_in_transaction_session_timeout` — emits an unhandled 'error'
       // event, which surfaces as an uncaughtException and takes down the whole
       // process. Absorb it and let the pool discard the connection instead.
-      const onClientError = (error: Error) => {
-        console.error('[db] Error on checked-out client, discarding connection:', error);
+      const onClientError = (error: Error & { code?: string }) => {
+        // One line, no pg stack: the stack says nothing about who held the
+        // connection, while the operation and last query do.
+        process.stderr.write(
+          `[db] Error on checked-out client, discarding connection: ` +
+            `${error.code ? `code=${error.code} ` : ''}${error.message}` +
+            ` idleMs=${Date.now() - this.lastActivityAt} lastQuery=${this.lastQuery ?? 'unknown'}` +
+            `${this.logSuffix}\n`,
+        );
         this.sessionOpen = false;
         // Hand the connection back to the pool as destroyed. Merely dropping
         // our own reference would leave the pool counting it as checked out

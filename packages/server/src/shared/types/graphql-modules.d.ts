@@ -9,6 +9,12 @@ declare global {
       dbClientsToDispose?: DisposableDbClient[];
       /** See `AccounterContext.executionInFlight`. */
       executionInFlight?: boolean;
+      /** See `AccounterContext.dbClientsDisposed`. */
+      dbClientsDisposed?: boolean;
+      /** See `AccounterContext.requestId`. */
+      requestId?: string;
+      /** See `AccounterContext.operationName`. */
+      operationName?: string;
     }
   }
 }

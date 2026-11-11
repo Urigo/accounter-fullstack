@@ -247,4 +247,74 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     watchdog.stop();
     await client.dispose();
   });
+
+  it('holds no connection when constructed after request cleanup', async () => {
+    // Work that outlived its request constructs a client after dbCleanupPlugin
+    // already drained the list. Registered there, nothing would ever dispose it
+    // and it would sit `idle in transaction` until Postgres killed it (#4871).
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const context = {
+      dbClientsToDispose: [],
+      dbClientsDisposed: true,
+      operationName: 'VatReport',
+      requestId: 'req-1',
+    } as unknown as GraphQLModules.GlobalContext;
+    const before = getTenantDbClientStats().holdingConnection;
+
+    const client = buildClient(poolClient, context);
+    await client.query('SELECT 1');
+
+    expect(context.dbClientsToDispose).toEqual([]);
+    expect(client.autoRelease).toBe(true);
+    expect(poolClient.release).toHaveBeenCalled();
+    expect(getTenantDbClientStats().holdingConnection).toBe(before);
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('operation=VatReport request=req-1'));
+    stderr.mockRestore();
+  });
+
+  it('names the operation and request of a reclaimed client', async () => {
+    vi.useFakeTimers();
+    const context = {
+      operationName: 'ChargesScreen',
+      requestId: 'req-2',
+    } as GraphQLModules.GlobalContext;
+    const client = buildClient(poolClient, context);
+    await client.query('SELECT 1');
+
+    const onLeak = vi.fn();
+    const watchdog = startTenantDbClientWatchdog({ maxIdleMs: 1000, intervalMs: 100, onLeak });
+    await vi.advanceTimersByTimeAsync(1500);
+
+    expect(onLeak).toHaveBeenCalledWith(
+      expect.objectContaining({ operationName: 'ChargesScreen', requestId: 'req-2' }),
+    );
+
+    watchdog.stop();
+    await vi.waitFor(() => expect(poolClient.release).toHaveBeenCalled());
+  });
+
+  it('logs a killed session as one line naming the operation, without the pg stack', async () => {
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const client = buildClient(poolClient, {
+      operationName: 'VatReport',
+      requestId: 'req-3',
+    } as GraphQLModules.GlobalContext);
+    await client.query('SELECT 1');
+
+    const error = Object.assign(
+      new Error('terminating connection due to idle-in-transaction timeout'),
+      { code: '25P03' },
+    );
+    poolClient.emit('error', error);
+
+    const lines = stderr.mock.calls.map(([chunk]) => String(chunk));
+    const line = lines.find(l => l.startsWith('[db] Error on checked-out client'));
+    expect(line).toBeDefined();
+    expect(line).toContain('code=25P03');
+    expect(line).toContain('lastQuery=SELECT 1');
+    expect(line).toContain('operation=VatReport request=req-3');
+    expect(line!.trimEnd()).not.toContain('\n');
+    stderr.mockRestore();
+  });
 });
+

@@ -1,3 +1,4 @@
+import { parse } from 'graphql';
 import { describe, expect, it, vi } from 'vitest';
 import { dbCleanupPlugin } from '../db-cleanup-plugin.js';
 import type { AccounterContext } from '../../shared/types/index.js';
@@ -161,5 +162,54 @@ describe('dbCleanupPlugin', () => {
 
     expect(() => onContextBuilding(context)).not.toThrow();
     expect(context.dbClientsToDispose).toEqual([]);
+  });
+
+  it('gives every request an id for DB log lines', () => {
+    const context = buildContext(new AbortController());
+
+    onContextBuilding(context);
+
+    expect(context.requestId).toEqual(expect.any(String));
+    expect(context.requestId).not.toHaveLength(0);
+  });
+
+  it('records the operation name, from the request or from the document', () => {
+    const plugin = dbCleanupPlugin();
+
+    const named = buildContext(new AbortController());
+    plugin.onExecute!({ args: { contextValue: named, operationName: 'VatReport' } } as never);
+    expect(named.operationName).toBe('VatReport');
+
+    const fromDocument = buildContext(new AbortController());
+    plugin.onExecute!({
+      args: { contextValue: fromDocument, document: parse('query AllCharges { __typename }') },
+    } as never);
+    expect(fromDocument.operationName).toBe('AllCharges');
+
+    const anonymous = buildContext(new AbortController());
+    plugin.onExecute!({
+      args: { contextValue: anonymous, document: parse('{ __typename }') },
+    } as never);
+    expect(anonymous.operationName).toBe('anonymous');
+  });
+
+  it('marks the context once end-of-execution disposal has run, but not on abort', async () => {
+    const controller = new AbortController();
+    const context = buildContext(controller);
+    const plugin = dbCleanupPlugin();
+    onContextBuilding(context);
+
+    const hooks = plugin.onExecute!({ args: { contextValue: context } } as never) as {
+      onExecuteDone: (payload: { result: unknown }) => Promise<void>;
+    };
+
+    // An abort defers disposal; the end-of-execution pass still drains the list.
+    controller.abort();
+    await vi.waitFor(() => expect(context.dbClientsToDispose).toEqual([]));
+    expect(context.dbClientsDisposed).toBeUndefined();
+
+    await hooks.onExecuteDone({ result: {} });
+    // From here on a newly constructed DB client must not hold a connection.
+    expect(context.dbClientsDisposed).toBe(true);
   });
 });

@@ -5,6 +5,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import {
+  allSettledOrThrow,
   endOfTimelessMonth,
   getMonthFromDescription,
   getTimelessDateYearMonth,
@@ -220,7 +221,9 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       };
     }
 
-    await Promise.all([...mainTransactionsPromises, miscExpensesLedgerPromise]);
+    // Not `Promise.all`: if the misc-expenses branch throws, the transaction
+    // branches must not keep querying after the request has returned.
+    await allSettledOrThrow([...mainTransactionsPromises, miscExpensesLedgerPromise]);
     for (const { income, expenses, ledgerDate, vatDate } of vatRecords) {
       const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
         income as RawVatReportRecord[],

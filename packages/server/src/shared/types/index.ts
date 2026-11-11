@@ -87,6 +87,17 @@ export type AccounterContext = YogaInitialContext & {
    * gone away.
    */
   executionInFlight?: boolean;
+  /**
+   * Set once the end-of-execution pass has drained `dbClientsToDispose`. A
+   * TenantAwareDBClient constructed after this — by work that outlived its
+   * request — would register on a list nothing drains any more, so it runs in
+   * autoRelease mode instead and never holds a connection between queries.
+   */
+  dbClientsDisposed?: boolean;
+  /** Identifies this request in DB log lines (the OTel trace id when tracing is on). */
+  requestId?: string;
+  /** The GraphQL operation being executed, for DB log lines. */
+  operationName?: string;
 };
 
 /**

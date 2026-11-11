@@ -83,7 +83,14 @@ async function main() {
     activeMaxIdleMs: env.postgres.activeClientMaxIdleMs,
     abortedMaxIdleMs: env.postgres.abortedClientMaxIdleMs,
     intervalMs: env.postgres.watchdogIntervalMs,
-    onLeak: ({ idleMs, lastQuery, operationInFlight, requestAborted }) => {
+    onLeak: ({
+      idleMs,
+      lastQuery,
+      operationInFlight,
+      requestAborted,
+      operationName,
+      requestId,
+    }) => {
       const state = requestAborted
         ? ' (caller aborted; deferred disposal never completed)'
         : operationInFlight
@@ -91,7 +98,8 @@ async function main() {
           : '';
       process.stderr.write(
         `[db] Reclaiming leaked connection after ${Math.round(idleMs / 1000)}s idle${state}. ` +
-          `Last query: ${lastQuery ?? 'unknown'}\n`,
+          `Last query: ${lastQuery ?? 'unknown'} ` +
+          `operation=${operationName ?? 'unknown'} request=${requestId ?? 'unknown'}\n`,
       );
     },
   });

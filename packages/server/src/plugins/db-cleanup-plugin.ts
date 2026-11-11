@@ -1,4 +1,7 @@
+import { randomUUID } from 'node:crypto';
+import { Kind, type DocumentNode } from 'graphql';
 import { Plugin } from 'graphql-yoga';
+import { isSpanContextValid, trace } from '@opentelemetry/api';
 import { AccounterContext } from '../shared/types/index.js';
 
 export function dbCleanupPlugin(): Plugin<AccounterContext> {
@@ -9,6 +12,7 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
       // during initial context building phase.
       const accounterContext = context as AccounterContext;
       accounterContext.dbClientsToDispose = [];
+      accounterContext.requestId = currentRequestId();
 
       // Dispose when the client goes away.
       //
@@ -48,6 +52,9 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
       // Marks the window in which a quiet DB client belongs to a live request
       // rather than a leak. See `TenantAwareDBClient.operationInFlight`.
       context.executionInFlight = true;
+      // Names the operation in DB log lines (leak reclaimed, session killed), so
+      // a leak can be traced to the request that caused it.
+      context.operationName = args.operationName ?? operationNameOf(args.document) ?? 'anonymous';
 
       return {
         async onExecuteDone({ result }) {
@@ -98,8 +105,27 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
 async function endExecution(context: AccounterContext) {
   if (context) {
     context.executionInFlight = false;
+    // Set before draining, so a client constructed while disposal is still
+    // running is covered too. From here on nothing will dispose a newly
+    // registered client, so TenantAwareDBClient must not hold a connection.
+    context.dbClientsDisposed = true;
   }
   await disposeClients(context);
+}
+
+/** The OTel trace id when tracing is on (so a log line pivots to the trace), else a random id. */
+function currentRequestId(): string {
+  const spanContext = trace.getActiveSpan()?.spanContext();
+  return spanContext && isSpanContextValid(spanContext) ? spanContext.traceId : randomUUID();
+}
+
+function operationNameOf(document: DocumentNode | undefined): string | undefined {
+  for (const definition of document?.definitions ?? []) {
+    if (definition.kind === Kind.OPERATION_DEFINITION && definition.name) {
+      return definition.name.value;
+    }
+  }
+  return undefined;
 }
 
 async function disposeClients(context: AccounterContext, options?: { whenIdle?: boolean }) {
