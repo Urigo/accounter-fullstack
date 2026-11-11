@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Currency } from '../../enums.js';
-import { formatCurrency } from '../amount.js';
+import { formatCurrency, formatFinancialIntAmount } from '../amount.js';
 
 describe('formatCurrency', () => {
   // The Poalim securities feed spells its currencies out in Hebrew. Every label
@@ -26,5 +26,19 @@ describe('formatCurrency', () => {
 
   it('defaults a missing currency to ILS', () => {
     expect(formatCurrency(null)).toBe(Currency.Ils);
+  });
+});
+
+describe('formatFinancialIntAmount', () => {
+  it('rounds a non-integer amount without logging it', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(formatFinancialIntAmount(1234.6, Currency.Ils)).toEqual({
+      raw: 1235,
+      formatted: '₪ 1,235',
+      currency: Currency.Ils,
+    });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

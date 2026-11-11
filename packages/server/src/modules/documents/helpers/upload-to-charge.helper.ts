@@ -23,6 +23,11 @@ export type NewUploadChargeInput = {
 export type DocumentSource = {
   /** Prefixes this source's failure message, e.g. the URL or the file name. */
   label: string;
+  /**
+   * The label is a user-supplied URL. Such a link can work as a bearer credential (a hosted-invoice
+   * or signed download link), so logs show only its host.
+   */
+  isUrl?: boolean;
   load: () => Promise<File | Blob>;
 };
 
@@ -131,6 +136,24 @@ async function createChargeWithDocuments(
 }
 
 /**
+ * How a source is named in the server log. A URL source logs only its host, and a fixed label when
+ * it doesn't parse, so no path or query reaches the log. Other labels (file names, `document #n`)
+ * are logged as they are.
+ */
+function labelForLog({ label, isUrl }: DocumentSource): string {
+  if (!isUrl) {
+    return `"${label}"`;
+  }
+  if (URL.canParse(label)) {
+    const url = new URL(label);
+    if ((url.protocol === 'http:' || url.protocol === 'https:') && url.host) {
+      return url.host;
+    }
+  }
+  return 'an unparsable URL';
+}
+
+/**
  * Shared body of the batch upload mutations: load and process every source independently, then
  * store the ones that succeeded on the target charge.
  *
@@ -163,13 +186,16 @@ export async function uploadDocumentsToCharge(
   await releaseDbConnectionForExternalWork(injector);
 
   const settled = await Promise.all(
-    sources.map(async ({ label, load }, index) => {
+    sources.map(async (source, index) => {
       try {
-        const file = await load();
+        const file = await source.load();
         const document = await getDocumentFromFile(injector, file, chargeId ?? null, isSensitive);
         return { index, document };
       } catch (error) {
-        console.error(`Failed processing uploaded document "${label}":`, error);
+        const errorClass = error instanceof Error ? error.constructor.name : typeof error;
+        console.error(
+          `Failed processing uploaded document from ${labelForLog(source)}: ${errorClass}`,
+        );
         return { index, message: describeFailure(error) };
       }
     }),

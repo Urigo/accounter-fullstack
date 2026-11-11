@@ -126,11 +126,8 @@ export const formatFinancialIntAmount = (
   rawAmount?: number | string | null,
   rawCurrency?: string | null,
 ): FinancialIntAmount => {
-  let amount = formatAmount(rawAmount);
-  if (!Number.isInteger(amount)) {
-    console.warn(`formatStringifyIntAmount got a non-integer amount${amount}. Rounding it.`);
-    amount = Math.round(formatAmount(amount));
-  }
+  // Rounds silently: a warning here fired on nearly every VAT-report row and printed amounts
+  const amount = Math.round(formatAmount(rawAmount));
   const currency = formatCurrency(rawCurrency);
   return {
     raw: amount,

@@ -175,6 +175,9 @@ async function main() {
   const { application, transformedSchema } = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
+    // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`, which Yoga's default would follow.
+    // `useHive` forwards its own logs to this logger, so this one level covers Hive too.
+    logging: env.logging.level,
     plugins: [
       correlationIdPlugin(),
       dbCleanupPlugin(),

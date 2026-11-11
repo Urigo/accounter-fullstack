@@ -159,15 +159,9 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
     // skip if salary record outside of employee's employment dates
     const salaryMonthStart = `${salaryRecord.month}-01` as TimelessDateString;
     if (employee.startDate > endOfTimelessMonth(salaryMonthStart)) {
-      console.log(
-        `salary record of employee ${employee.employee.first_name} before start date - ${employee.startDate}`,
-      );
       continue;
     }
     if (employee.endDate && employee.endDate < salaryMonthStart) {
-      console.log(
-        `salary record of employee ${employee.employee.first_name} after end date - ${employee.endDate}`,
-      );
       continue;
     }
 
@@ -239,11 +233,8 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
 
   let recoveryReserveAmount = 0;
 
-  let reservePrompt = `Recovery reserve for ${year}:`;
   for (const employeeData of Array.from(employeeMap.values())) {
-    const employeeReserve = employeeData.totalRecoveryAmount - employeeData.payedRecoveryAmount;
-    reservePrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${employeeReserve}`;
-    recoveryReserveAmount += employeeReserve;
+    recoveryReserveAmount += employeeData.totalRecoveryAmount - employeeData.payedRecoveryAmount;
   }
 
   const prevRecoveryReserveAmount = recoveryLedgerRecords.reduce((acc, record) => {
@@ -265,9 +256,6 @@ export async function calculateRecoveryReserveAmount(injector: Injector, year: n
     return acc + Number(record.credit_local_amount1) * factor;
   }, 0);
   recoveryReserveAmount -= prevRecoveryReserveAmount;
-  reservePrompt += `\n- Prev reserve: ${prevRecoveryReserveAmount}`;
-
-  console.debug(reservePrompt);
 
   return { recoveryReserveAmount };
 }

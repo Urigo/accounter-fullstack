@@ -31,7 +31,11 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     business: async (_, { id }, { injector }) => {
       const dbFe = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(id);
       if (!dbFe) {
-        throw new Error(`Business ID="${id}" not found`);
+        // A GraphQLError reaches the client as is; a plain Error is masked as `Unexpected error.`
+        // and logged as a server fault.
+        throw new GraphQLError(`Business ID="${id}" not found`, {
+          extensions: { code: 'NOT_FOUND' },
+        });
       }
 
       return dbFe;

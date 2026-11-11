@@ -27,20 +27,8 @@ export const normalizeDocumentType = (type: document_type): DocumentType => {
 
 export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
   id: documentRoot => documentRoot.id,
-  image: documentRoot => {
-    const url = documentRoot.image_url ?? null;
-    if (!url) {
-      console.log('no image url', documentRoot.image_url, documentRoot.id);
-    }
-    return url;
-  },
-  file: documentRoot => {
-    const url = documentRoot.file_url ?? null;
-    if (!url) {
-      console.log('no file url', documentRoot.file_url, documentRoot.id);
-    }
-    return url;
-  },
+  image: documentRoot => documentRoot.image_url ?? null,
+  file: documentRoot => documentRoot.file_url ?? null,
   isReviewed: documentRoot => documentRoot.is_reviewed,
   documentType: documentRoot => normalizeDocumentType(documentRoot.type),
   description: documentRoot => documentRoot.description,

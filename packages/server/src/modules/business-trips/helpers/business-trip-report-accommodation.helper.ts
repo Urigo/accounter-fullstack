@@ -129,14 +129,10 @@ async function expenseAccommodationTaxableAmounts(
   const { localAmount, foreignAmount } = await getExpenseAmountsData(injector, businessTripExpense);
 
   if (!businessTripExpense.nights_count) {
-    console.error(
-      `Nights count not found for accommodation trip expense ID ${businessTripExpense.id}`,
-    );
     throw new BusinessTripError('Accommodation expenses: some expenses are missing nights count');
   }
 
   if (!Number.isInteger(businessTripExpense.nights_count)) {
-    console.error(`Nights count must be an integer`);
     throw new BusinessTripError('Accommodation expenses: nights count must be an integer');
   }
 

@@ -187,15 +187,17 @@ export async function updateGreenInvoiceClient(
     localClientPromise,
   ]);
 
-  // No try/catch: `parseStoredClientIntegrations` never throws, so an unreadable
-  // stored value simply leaves `greenInvoiceId` undefined and falls into the
-  // guard below — which warns, rather than returning silently as the old catch did.
+  // No try/catch: `parseStoredClientIntegrations` never throws. It logs an
+  // unreadable stored value itself and leaves `greenInvoiceId` undefined.
   const greenInvoiceId =
     parseStoredClientIntegrations(localClient?.integrations).greenInvoiceId ?? undefined;
-  if (!localBusiness?.name || !greenInvoiceId) {
-    // We cannot update a client in Green Invoice without its ID.
+  if (!greenInvoiceId) {
+    // Not a Green Invoice client (most businesses aren't): nothing to sync.
+    return;
+  }
+  if (!localBusiness?.name) {
     console.warn(
-      `Cannot update Green Invoice client: missing local business name or client ID for business${clientId}`,
+      `Cannot update Green Invoice client: missing local business name for business ${clientId}`,
     );
     return;
   }

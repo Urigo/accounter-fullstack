@@ -134,12 +134,12 @@ export const reportsResolvers: ReportsModule.Resolvers = {
         .get(AdminContextProvider)
         .getVerifiedAdminContext();
       return raw.localAmountBeforeVAT
-        ? formatFinancialIntAmount(raw.localAmountBeforeVAT, defaultLocalCurrency)
+        ? formatFinancialIntAmount(Math.round(raw.localAmountBeforeVAT), defaultLocalCurrency)
         : null;
     },
     taxReducedForeignAmount: raw =>
       raw.foreignAmountBeforeVAT
-        ? formatFinancialIntAmount(raw.foreignAmountBeforeVAT, raw.currencyCode)
+        ? formatFinancialIntAmount(Math.round(raw.foreignAmountBeforeVAT), raw.currencyCode)
         : null,
     localVat: async (raw, _, { injector }) => {
       const { defaultLocalCurrency } = await injector

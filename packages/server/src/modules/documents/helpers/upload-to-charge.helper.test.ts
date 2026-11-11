@@ -294,3 +294,53 @@ describe('uploadDocumentsToCharge', () => {
     });
   });
 });
+
+describe('failure logging', () => {
+  function failingSource(label: string, isUrl?: boolean): DocumentSource {
+    return { label, isUrl, load: async () => new Blob(['bad'], { type: 'application/pdf' }) };
+  }
+
+  async function uploadAndCaptureLog(source: DocumentSource) {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { injector } = setup();
+    const results = await uploadDocumentsToCharge(injector, {
+      sources: [source],
+      chargeId: EXISTING_CHARGE_ID,
+    });
+    const logged = consoleError.mock.calls.flat().map(String).join('\n');
+    consoleError.mockRestore();
+    return { results, logged };
+  }
+
+  it('logs only the host of a URL source, not its path or query', async () => {
+    const url = 'https://invoices.example.com/i/secret-invoice-path?token=secret-query';
+
+    const { results, logged } = await uploadAndCaptureLog(failingSource(url, true));
+
+    // The caller sent the URL, so its own result still names it
+    expect(results).toEqual([
+      expect.objectContaining({ message: expect.stringContaining(url) as unknown }),
+    ]);
+    expect(logged).toContain('invoices.example.com');
+    expect(logged).not.toContain('secret-invoice-path');
+    expect(logged).not.toContain('secret-query');
+  });
+
+  it.each([
+    '//invoices.example.com/i/secret-invoice-path?token=secret-query',
+    'invoices.example.com/i/secret-invoice-path?token=secret-query',
+    'not a url secret-invoice-path secret-query',
+  ])('logs a fixed label for a URL source that does not parse: %s', async url => {
+    const { logged } = await uploadAndCaptureLog(failingSource(url, true));
+
+    expect(logged).toContain('an unparsable URL');
+    expect(logged).not.toContain('secret-invoice-path');
+    expect(logged).not.toContain('secret-query');
+  });
+
+  it('logs a file name label as is', async () => {
+    const { logged } = await uploadAndCaptureLog(failingSource('bad-scan.pdf'));
+
+    expect(logged).toContain('"bad-scan.pdf"');
+  });
+});
