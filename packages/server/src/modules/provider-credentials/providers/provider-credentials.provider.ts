@@ -3,6 +3,7 @@ import { Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment } from '../../../shared/types/index.js';
+import { GreenInvoiceTokenCacheProvider } from '../../app-providers/green-invoice-token-cache.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { decryptCredential, encryptCredential } from '../helpers/encryption.js';
 import {
@@ -93,6 +94,7 @@ export class ProviderCredentialsProvider {
   constructor(
     private db: TenantAwareDBClient,
     @Inject(ENVIRONMENT) private env: Environment,
+    private greenInvoiceTokens: GreenInvoiceTokenCacheProvider,
   ) {}
 
   private get encryptionKey(): string {
@@ -123,13 +125,15 @@ export class ProviderCredentialsProvider {
       await this.assertOwnBusiness(options.businessId);
     }
 
-    return this.write(async () => {
-      const credentials = await upsertProviderCredentials.run(
-        { provider, encrypted, businessId: options.businessId ?? null },
-        this.db,
-      );
-      return credentials[0]?.updated_at;
-    });
+    return this.evictingCachedToken(provider, () =>
+      this.write(async () => {
+        const credentials = await upsertProviderCredentials.run(
+          { provider, encrypted, businessId: options.businessId ?? null },
+          this.db,
+        );
+        return credentials[0]?.updated_at;
+      }),
+    );
   }
 
   /**
@@ -153,7 +157,27 @@ export class ProviderCredentialsProvider {
   }
 
   async deleteCredentials(provider: ProviderKey): Promise<void> {
-    await this.write(() => deleteProviderCredentials.run({ provider }, this.db));
+    await this.evictingCachedToken(provider, () =>
+      this.write(() => deleteProviderCredentials.run({ provider }, this.db)),
+    );
+  }
+
+  /**
+   * Run a write that replaces or removes the provider's credentials. For Green Invoice, the app-wide
+   * token cache is then cleared, so the displaced API key and its token don't outlive the change.
+   *
+   * The whole cache is cleared, rather than the previous key looked up and evicted, because that
+   * lookup can't be made atomic with the write: two overlapping changes (A→B, B→C) could both see A,
+   * leaving B's token cached. Clearing after every committed write (writes commit immediately) needs
+   * no lookup, and also advances the cache's epoch, so an SDK built from the old credentials stops
+   * using the cache. The cost is one token request per tenant after a (rare) credential change.
+   */
+  private async evictingCachedToken<T>(provider: ProviderKey, run: () => Promise<T>): Promise<T> {
+    const result = await run();
+    if (provider === 'green_invoice') {
+      this.greenInvoiceTokens.clear();
+    }
+    return result;
   }
 
   private async assertOwnBusiness(businessId: string): Promise<void> {

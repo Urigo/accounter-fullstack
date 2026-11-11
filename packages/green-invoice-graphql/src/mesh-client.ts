@@ -3,6 +3,7 @@ import { getSdkRequesterForUnifiedGraph } from '@graphql-mesh/fusion-runtime';
 import * as restTransport from '@graphql-mesh/transport-rest';
 import { getSdk, type Sdk } from './__generated__/sdk.js';
 import supergraph from './__generated__/supergraph.js';
+import { isUnauthorizedError, type GreenInvoiceTokenSource } from './access-token.js';
 
 export type GreenInvoiceContext = {
   /** Fills `{context.authToken}` in the composed operation headers */
@@ -60,4 +61,73 @@ export function getMeshSDK(context: GreenInvoiceContext): Sdk {
   return getSdk((document, variables, operationContext?: object) =>
     requester(document, variables, { ...context, ...operationContext }),
   );
+}
+
+export type GreenInvoiceSdkOptions = {
+  /** API key ID */
+  id: string;
+  /** API key secret */
+  secret: string;
+  /** Supplies the access token for each call; share one cache across requests to reuse tokens */
+  tokenCache: GreenInvoiceTokenSource;
+  /** Replaces the HTTP client for the upstream calls, e.g. to run tests offline */
+  fetch?: typeof fetch;
+  /**
+   * `tokenCache.epoch` as observed **before** `id` and `secret` were read. If any key is evicted
+   * after that, the credentials may be outdated and this SDK stops using the cache (see
+   * `GetTokenOptions.epoch`). Defaults to the epoch when the SDK is created.
+   */
+  epoch?: number;
+};
+
+/**
+ * An SDK that takes its access token from `tokenCache` on every call, instead of being bound to one
+ * token. If the API rejects the token (HTTP 401), the token is dropped from the cache and the call is
+ * retried once with a new one; a 401 means the request was rejected before it had any effect, so
+ * this is safe for mutations too.
+ */
+export function createGreenInvoiceSdk({
+  id,
+  secret,
+  tokenCache,
+  fetch: fetchFn,
+  epoch = tokenCache.epoch,
+}: GreenInvoiceSdkOptions): Sdk {
+  const tokenOptions = { epoch };
+
+  /** Runs one operation with the given token; the token wins over any caller-supplied `authToken` */
+  const execute = async (
+    document: Parameters<typeof requester>[0],
+    variables: Parameters<typeof requester>[1],
+    operationContext: object | undefined,
+    token: string,
+  ) => {
+    const context: Partial<GreenInvoiceContext> = {};
+    if (fetchFn) {
+      context.fetch = fetchFn;
+    }
+    return requester(document, variables, { ...context, ...operationContext, authToken: token });
+  };
+
+  return getSdk(async (document, variables, operationContext?: object) => {
+    const token = await tokenCache.getToken(id, secret, tokenOptions);
+    try {
+      return await execute(document, variables, operationContext, token);
+    } catch (error) {
+      if (!isUnauthorizedError(error)) {
+        throw error;
+      }
+      tokenCache.invalidate(id, token);
+      const newToken = await tokenCache.getToken(id, secret, tokenOptions);
+      try {
+        return await execute(document, variables, operationContext, newToken);
+      } catch (retryError) {
+        // the replacement was rejected too: don't leave it cached for the next caller
+        if (isUnauthorizedError(retryError)) {
+          tokenCache.invalidate(id, newToken);
+        }
+        throw retryError;
+      }
+    }
+  });
 }

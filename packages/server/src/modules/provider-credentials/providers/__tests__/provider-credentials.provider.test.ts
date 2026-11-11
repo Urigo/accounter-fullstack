@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { QueryResult, QueryResultRow } from 'pg';
+import { GreenInvoiceTokenCacheProvider } from '../../../app-providers/green-invoice-token-cache.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import type { Environment } from '../../../../shared/types/index.js';
 import { encryptCredential } from '../../helpers/encryption.js';
@@ -17,6 +18,7 @@ const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff';
 describe('ProviderCredentialsProvider', () => {
   let provider: ProviderCredentialsProvider;
   let db: Mocked<TenantAwareDBClient>;
+  let tokenCache: GreenInvoiceTokenCacheProvider;
 
   beforeEach(() => {
     db = {
@@ -25,7 +27,9 @@ describe('ProviderCredentialsProvider', () => {
       query: vi.fn(),
     } as unknown as Mocked<TenantAwareDBClient>;
 
-    provider = new ProviderCredentialsProvider(db, env);
+    tokenCache = new GreenInvoiceTokenCacheProvider();
+    vi.spyOn(tokenCache, 'clear');
+    provider = new ProviderCredentialsProvider(db, env, tokenCache);
   });
 
   /** Answer the ownership check and the UPDATE; everything else returns no rows */
@@ -233,6 +237,66 @@ describe('ProviderCredentialsProvider', () => {
       expect(db.query).toHaveBeenCalledTimes(1);
       const [sql] = db.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toMatch(/DELETE/i);
+    });
+  });
+
+  describe('Green Invoice token cache eviction', () => {
+    function writesSucceed() {
+      db.query.mockResolvedValue({ rows: [], rowCount: 1 } as unknown as QueryResultWithRows);
+    }
+
+    it('clears the token cache after the credentials are replaced', async () => {
+      writesSucceed();
+
+      await provider.setCredentials('green_invoice', { id: 'new-id', secret: 'new-secret' });
+
+      expect(tokenCache.clear).toHaveBeenCalledOnce();
+      // no separate lookup of the displaced key
+      expect(db.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears the token cache after the credentials are deleted', async () => {
+      writesSucceed();
+
+      await provider.deleteCredentials('green_invoice');
+
+      expect(tokenCache.clear).toHaveBeenCalledOnce();
+    });
+
+    it('evicts every displaced key when changes overlap', async () => {
+      // two operations replace the credentials concurrently (A→B and B→C); each write must be
+      // followed by its own eviction, whichever key it displaced
+      const other = new ProviderCredentialsProvider(db, env, tokenCache);
+      writesSucceed();
+
+      await Promise.all([
+        provider.setCredentials('green_invoice', { id: 'key-b', secret: 'secret-b' }),
+        other.setCredentials('green_invoice', { id: 'key-c', secret: 'secret-c' }),
+      ]);
+
+      const writeOrder = db.query.mock.invocationCallOrder;
+      const clearOrder = vi.mocked(tokenCache.clear).mock.invocationCallOrder;
+      expect(writeOrder).toHaveLength(2);
+      expect(clearOrder).toHaveLength(2);
+      expect(Math.min(...clearOrder)).toBeGreaterThan(Math.min(...writeOrder));
+      expect(Math.max(...clearOrder)).toBeGreaterThan(Math.max(...writeOrder));
+    });
+
+    it('keeps the cache when the write fails', async () => {
+      db.query.mockRejectedValue(new Error('write failed'));
+
+      await expect(provider.deleteCredentials('green_invoice')).rejects.toThrow('write failed');
+
+      expect(tokenCache.clear).not.toHaveBeenCalled();
+    });
+
+    it('leaves the cache alone for other providers', async () => {
+      writesSucceed();
+
+      await provider.setCredentials('deel', { apiToken: 'token' });
+      await provider.deleteCredentials('deel');
+
+      expect(tokenCache.clear).not.toHaveBeenCalled();
     });
   });
 });

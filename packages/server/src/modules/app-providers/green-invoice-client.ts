@@ -5,7 +5,7 @@ import {
   _DOLLAR_defs_addClientRequest_Input,
   _DOLLAR_defs_getClientResponse,
   _DOLLAR_defs_updateClientRequest_Input,
-  init,
+  createGreenInvoiceSdk,
   updateClient_mutationMutationVariables,
   type Sdk,
 } from '@accounter/green-invoice-graphql';
@@ -14,6 +14,7 @@ import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
 import { AdminContextProvider } from '../admin-context/providers/admin-context.provider.js';
 import { ProviderCredentialsProvider } from '../provider-credentials/providers/provider-credentials.provider.js';
+import { GreenInvoiceTokenCacheProvider } from './green-invoice-token-cache.js';
 
 export type ExpenseDraft = NonNullable<
   Extract<
@@ -26,22 +27,25 @@ export type ExpenseDraft = NonNullable<
   global: true,
 })
 export class GreenInvoiceClientProvider {
-  private initPromise: ReturnType<typeof init> | null = null;
+  private initPromise: Promise<Sdk> | null = null;
 
   constructor(
     private adminContextProvider: AdminContextProvider,
     @Inject(ENVIRONMENT) private env: Environment,
     private credentialsProvider: ProviderCredentialsProvider,
+    private tokenCache: GreenInvoiceTokenCacheProvider,
   ) {}
 
-  public authToken: string | null = null;
-
-  private init(): ReturnType<typeof init> {
+  private init(): Promise<Sdk> {
     this.initPromise ??= this._doInit();
     return this.initPromise;
   }
 
-  private async _doInit(): ReturnType<typeof init> {
+  private async _doInit(): Promise<Sdk> {
+    // Read before the credentials: if they are removed or replaced (which evicts the key) after this
+    // point, the SDK sees a newer epoch and stops using the shared cache, so the old key can't put
+    // its token back. Credential writes commit before evicting, so a later read sees the new state.
+    const epoch = this.tokenCache.epoch;
     const fromDb = await this.credentialsProvider.getGreenInvoiceCredentials();
     const creds = fromDb ?? null;
 
@@ -51,16 +55,18 @@ export class GreenInvoiceClientProvider {
       });
     }
 
-    return init(creds.id, creds.secret);
+    // the access token comes from the app-wide cache on each call, so it is reused across operations
+    return createGreenInvoiceSdk({
+      id: creds.id,
+      secret: creds.secret,
+      tokenCache: this.tokenCache,
+      epoch,
+    });
   }
 
   public async getSDK(): Promise<Sdk> {
     try {
-      const { sdk, authToken } = await this.init();
-
-      this.authToken = authToken;
-
-      return sdk;
+      return await this.init();
     } catch (e) {
       const message = 'Green Invoice SDK error';
       console.error(`${message}: ${e}`);
