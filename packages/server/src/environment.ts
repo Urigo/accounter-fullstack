@@ -258,6 +258,14 @@ const EmailIngestionModel = zod.object({
   ),
 });
 
+// One level for Yoga and Hive (whose Yoga plugin logs through Yoga's logger). Validated here so a
+// typo fails startup, and never derived from `DEBUG`, which Yoga would otherwise follow.
+const LoggingModel = zod.object({
+  SERVER_LOG_LEVEL: emptyString(
+    zod.enum(['debug', 'info', 'warn', 'error']).optional().default('info'),
+  ),
+});
+
 const PriceIndexSyncModel = zod.object({
   PRICE_INDEX_SYNC_ENABLED: emptyString(
     zod
@@ -317,6 +325,7 @@ const configs = {
   emailIngestion: EmailIngestionModel.safeParse(process.env),
   gatewayControlPlane: GatewayControlPlaneModel.safeParse(process.env),
   priceIndexSync: PriceIndexSyncModel.safeParse(process.env),
+  logging: LoggingModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -351,6 +360,7 @@ const otel = extractConfig(configs.otel);
 const emailIngestion = extractConfig(configs.emailIngestion);
 const gatewayControlPlane = extractConfig(configs.gatewayControlPlane);
 const priceIndexSync = extractConfig(configs.priceIndexSync);
+const logging = extractConfig(configs.logging);
 
 export const env = {
   postgres: {
@@ -439,5 +449,8 @@ export const env = {
   },
   priceIndexSync: {
     enabled: priceIndexSync.PRICE_INDEX_SYNC_ENABLED === '1',
+  },
+  logging: {
+    level: logging.SERVER_LOG_LEVEL,
   },
 } as const;

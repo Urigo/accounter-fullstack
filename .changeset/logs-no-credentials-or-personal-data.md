@@ -10,8 +10,9 @@ Stop logging credentials and personal data:
   and falls back to `info`). The generic `DEBUG` / `LOG_LEVEL` no longer turn on the REST
   transport's request dumps (`Authorization: Bearer …` headers and response bodies). Adds
   `@graphql-hive/logger` as a dependency.
-- Yoga's log level is pinned to `info`. Hive forwards its logs to it, so `DEBUG=1` no longer adds
-  per-request debug lines.
+- The server's log level comes from a new, validated `SERVER_LOG_LEVEL` (`debug` | `info` | `warn` |
+  `error`, default `info`; an unknown value fails startup). It is one setting for Yoga and Hive,
+  which forwards its logs to Yoga's logger, and `DEBUG=1` no longer adds per-request debug lines.
 - Recovery-reserve calculation no longer prints employee first names or reserve amounts.
 - A rejected JWT logs only its jose `code` and `message`, never the claims; an expired one isn't
   logged.

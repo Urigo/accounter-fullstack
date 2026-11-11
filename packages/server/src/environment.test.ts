@@ -123,3 +123,47 @@ describe('postgres pool configuration', () => {
     ).rejects.toBeDefined();
   });
 });
+
+describe('server log level', () => {
+  const KEYS = ['SERVER_LOG_LEVEL', 'DEBUG', ...Object.keys(REQUIRED)];
+  let original: Record<string, string | undefined>;
+
+  beforeEach(() => {
+    original = Object.fromEntries(KEYS.map(key => [key, process.env[key]]));
+    delete process.env['SERVER_LOG_LEVEL'];
+    delete process.env['DEBUG'];
+  });
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(original)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    vi.resetModules();
+  });
+
+  it.each([
+    ['unset', {}],
+    ['empty', { SERVER_LOG_LEVEL: '' }],
+  ])('defaults to info when %s', async (_, overrides) => {
+    const env = await loadEnv({ ...REQUIRED, ...overrides });
+    expect(env.logging.level).toBe('info');
+  });
+
+  it('does not follow DEBUG', async () => {
+    const env = await loadEnv({ ...REQUIRED, DEBUG: '1' });
+    expect(env.logging.level).toBe('info');
+  });
+
+  it('accepts an explicit level', async () => {
+    const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'debug' });
+    expect(env.logging.level).toBe('debug');
+  });
+
+  it('rejects an unknown level at startup', async () => {
+    await expect(loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'verbose' })).rejects.toBeDefined();
+  });
+});
