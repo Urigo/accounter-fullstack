@@ -159,6 +159,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       return uploadDocumentsToCharge(injector, {
         sources: urls.map(url => ({
           label: url,
+          isUrl: true,
           // A Drive share link is not a download link — `/file/d/<id>/view`
           // answers with an HTML page — so those go through the Drive API.
           load: () =>
