@@ -135,7 +135,7 @@ function vatRecord(overrides: Partial<RawVatReportRecord> = {}): RawVatReportRec
 }
 
 function records(income: RawVatReportRecord[], expenses: RawVatReportRecord[]): VatReportRecords {
-  return { income, expenses, missingInfo: [], differentMonthDoc: [], businessTrips: [] };
+  return { income, expenses, missingInfo: [], differentMonthDoc: [], businessTrips: [], incompleteDocuments: [] };
 }
 
 function createInjector(defaultLocalCurrency: Currency = Currency.Ils) {

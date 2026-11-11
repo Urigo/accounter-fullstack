@@ -5,7 +5,10 @@ import type {
 } from '../../__generated__/types.js';
 import type { IGetChargesByIdsResult } from '../charges/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '../ledger/types.js';
-import type { RawVatReportRecord } from './helpers/vat-report.helper.js';
+import type {
+  IncompleteVatReportDocument,
+  RawVatReportRecord,
+} from './helpers/vat-report.helper.js';
 
 export type { currency } from './__generated__/balance-report.types.js';
 export type * from './__generated__/types.js';
@@ -100,6 +103,12 @@ export type VatReportRecords = {
   missingInfo: IGetChargesByIdsResult[];
   differentMonthDoc: IGetChargesByIdsResult[];
   businessTrips: IGetChargesByIdsResult[];
+  /**
+   * VAT-relevant documents left out of `income`/`expenses` because they lack an amount, currency
+   * or date. Always filled, also when the charge buckets are skipped, so callers whose output must
+   * cover the whole month (PCN874, ledger) can refuse or flag it (#4946).
+   */
+  incompleteDocuments: IncompleteVatReportDocument[];
 };
 
 /**

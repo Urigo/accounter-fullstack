@@ -2,7 +2,7 @@ import type { Injector } from 'graphql-modules';
 import type { AccountantStatus, Pcn874RecordType } from '../../../__generated__/types.js';
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { DocumentType, type Currency } from '../../../shared/enums.js';
-import { formatCurrency } from '../../../shared/helpers/index.js';
+import { allSettledOrThrow, formatCurrency } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
@@ -73,6 +73,51 @@ export function isVatReportRelevantDocument(
   return isInvoice(doc.type);
 }
 
+/** A document field the VAT report cannot be computed without. */
+export type VatReportDocumentField = 'amount' | 'currency' | 'date';
+
+/**
+ * A VAT-relevant document the report left out because it lacks a field the tax adjustment
+ * needs. Its charge is listed under `missingInfo` instead (#4946).
+ */
+export type IncompleteVatReportDocument = {
+  documentId: string;
+  chargeId: string;
+  missingFields: VatReportDocumentField[];
+};
+
+/**
+ * The fields `adjustTaxRecord` needs that `doc` is missing. These are document data-quality
+ * problems: the report lists the document's charge as missing info rather than failing (#4946).
+ */
+export function getVatReportDocumentMissingFields(
+  doc: Pick<IGetDocumentsByFiltersResult, 'total_amount' | 'currency_code' | 'date'>,
+): VatReportDocumentField[] {
+  const missing: VatReportDocumentField[] = [];
+  if (!doc.total_amount) {
+    missing.push('amount');
+  }
+  if (!doc.currency_code) {
+    missing.push('currency');
+  }
+  if (!doc.date) {
+    missing.push('date');
+  }
+  return missing;
+}
+
+/** One line naming each incomplete document, for errors that must not ignore them. */
+export function describeIncompleteVatReportDocuments(
+  documents: ReadonlyArray<IncompleteVatReportDocument>,
+): string {
+  return documents
+    .map(
+      ({ documentId, chargeId, missingFields }) =>
+        `document ID=${documentId} (charge ID=${chargeId}) is missing ${missingFields.join(', ')}`,
+    )
+    .join('; ');
+}
+
 export const MONTHLY_VAT_AMOUNT_TOLERANCE = 0.01;
 
 export function calculateMonthlyVatTotalAmount(
@@ -103,114 +148,102 @@ export async function adjustTaxRecord(
   const { defaultLocalCurrency, locality } = await injector
     .get(AdminContextProvider)
     .getVerifiedAdminContext();
-  try {
-    const { charge, doc, business } = rawRecord;
-    const currency = formatCurrency(doc.currency_code);
+  const { charge, doc, business } = rawRecord;
+  const currency = formatCurrency(doc.currency_code);
 
-    if (!doc.total_amount) {
-      throw new Error(`Amount missing for invoice ID=${doc.id}`);
+  // `getVatRecords` sets documents missing these fields aside (see
+  // `getVatReportDocumentMissingFields`) before calling this, so these guards only narrow types.
+  if (!doc.total_amount || !doc.currency_code || !doc.date) {
+    const missing = getVatReportDocumentMissingFields(doc).join(', ');
+    throw new Error(`Invoice ID=${doc.id} is missing ${missing}`);
+  }
+
+  // Not `Promise.all`: a rejected branch must not let the request end while the others still
+  // query its DB client (#4871).
+  const [isProperty, { transactionsMinEventDate }, { documentsMinDate }] = await allSettledOrThrow([
+    injector
+      .get(DepreciationProvider)
+      .getDepreciationRecordsByChargeIdLoader.load(charge.id)
+      .then(records => records.length > 0),
+    // Pass the charge row (not its id) so the enriched fast path serves the
+    // precomputed transaction/document meta instead of firing loader batches.
+    getChargeTransactionsMeta(charge, injector),
+    getChargeDocumentsMeta(charge, injector),
+  ]);
+
+  const isDecreasedVat = charge.is_property;
+
+  if (isDecreasedVat && !isProperty) {
+    throw new Error(`Charge ${charge.id} is marked as property, but has no depreciation records.`);
+  }
+
+  // get exchange rate
+  const rate = doc.exchange_rate_override
+    ? Number(doc.exchange_rate_override)
+    : await injector
+        .get(ExchangeProvider)
+        .getExchangeRates(currency, defaultLocalCurrency, doc.date);
+
+  const creditInvoiceFactor = doc.type === DocumentType.CreditInvoice ? -1 : 1;
+  const vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
+  const totalAmount = doc.total_amount * creditInvoiceFactor;
+  const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
+
+  const isLocal = business.country === locality;
+
+  const partialRecord: RawVatReportRecord = {
+    businessId: business.id,
+    chargeAccountantStatus: charge.accountant_status,
+    chargeDate: transactionsMinEventDate ?? documentsMinDate!, // must have min_date, as will throw if local doc is missing date
+    chargeId: charge.id,
+    currencyCode: currency,
+    documentDate: doc.date,
+    documentId: doc.id,
+    documentSerial: doc.serial_number,
+    documentUrl: doc.image_url,
+    documentAmount: String(creditInvoiceFactor * totalAmount),
+    foreignVat: doc.currency_code === defaultLocalCurrency ? null : vatAmount,
+    localVat: doc.currency_code === defaultLocalCurrency ? vatAmount : null,
+    isProperty,
+    vatNumber: isLocal ? business.vat_number : undefined,
+    isExpense:
+      doc.type === DocumentType.CreditInvoice
+        ? doc.debtor_id !== doc.owner_id
+        : doc.debtor_id === doc.owner_id,
+    allocationNumber: doc.allocation_number,
+    pcn874RecordType: business.pcn874_record_type_override ?? undefined,
+  };
+
+  // set default amountBeforeVAT
+  if (!vatAmount) {
+    partialRecord.localAmountBeforeVAT = (totalAmount - noVatAmount) * rate;
+  } else if (partialRecord.businessId) {
+    const vatValue = await injector.get(VatProvider).getVatValueByDateLoader.load(doc.date);
+    if (!vatValue) {
+      throw new Error(`VAT value is missing for invoice ID=${doc.id}`);
     }
-
-    if (!doc.currency_code) {
-      throw new Error(`Currency missing for invoice ID=${doc.id}`);
-    }
-    if (!doc.date) {
-      throw new Error(`Date is missing for invoice ID=${doc.id}`);
-    }
-
-    const [isProperty, { transactionsMinEventDate }, { documentsMinDate }] = await Promise.all([
-      injector
-        .get(DepreciationProvider)
-        .getDepreciationRecordsByChargeIdLoader.load(charge.id)
-        .then(records => records.length > 0),
-      // Pass the charge row (not its id) so the enriched fast path serves the
-      // precomputed transaction/document meta instead of firing loader batches.
-      getChargeTransactionsMeta(charge, injector),
-      getChargeDocumentsMeta(charge, injector),
-    ]);
-
-    const isDecreasedVat = charge.is_property;
-
-    if (isDecreasedVat && !isProperty) {
-      throw new Error(
-        `Charge ${charge.id} is marked as property, but has no depreciation records.`,
+    const convertedVat = vatValue / (1 + vatValue);
+    const tiplessTotalAmount = totalAmount - noVatAmount;
+    const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - vatAmount);
+    if (vatDiff > 0.005) {
+      console.error(
+        `Expected VAT amount is not ${vatValue * 100}%, but got ${
+          vatAmount / (tiplessTotalAmount - vatAmount)
+        } for invoice ID=${doc.id}`,
       );
     }
 
-    // get exchange rate
-    let rate = 1;
-    if (doc.exchange_rate_override) {
-      rate = Number(doc.exchange_rate_override);
-    } else {
-      rate = await injector
-        .get(ExchangeProvider)
-        .getExchangeRates(currency, defaultLocalCurrency, doc.date);
-    }
+    // decorate record with additional fields
+    const vatAfterDeduction = vatAmount * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
+    const amountBeforeVAT = totalAmount - vatAfterDeduction;
 
-    const creditInvoiceFactor = doc.type === DocumentType.CreditInvoice ? -1 : 1;
-    const vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
-    const totalAmount = doc.total_amount * creditInvoiceFactor;
-    const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
-
-    const isLocal = business.country === locality;
-
-    const partialRecord: RawVatReportRecord = {
-      businessId: business.id,
-      chargeAccountantStatus: charge.accountant_status,
-      chargeDate: transactionsMinEventDate ?? documentsMinDate!, // must have min_date, as will throw if local doc is missing date
-      chargeId: charge.id,
-      currencyCode: currency,
-      documentDate: doc.date,
-      documentId: doc.id,
-      documentSerial: doc.serial_number,
-      documentUrl: doc.image_url,
-      documentAmount: String(creditInvoiceFactor * totalAmount),
-      foreignVat: doc.currency_code === defaultLocalCurrency ? null : vatAmount,
-      localVat: doc.currency_code === defaultLocalCurrency ? vatAmount : null,
-      isProperty,
-      vatNumber: isLocal ? business.vat_number : undefined,
-      isExpense:
-        doc.type === DocumentType.CreditInvoice
-          ? doc.debtor_id !== doc.owner_id
-          : doc.debtor_id === doc.owner_id,
-      allocationNumber: doc.allocation_number,
-      pcn874RecordType: business.pcn874_record_type_override ?? undefined,
-    };
-
-    // set default amountBeforeVAT
-    if (!vatAmount) {
-      partialRecord.localAmountBeforeVAT = (totalAmount - noVatAmount) * rate;
-    } else if (partialRecord.businessId) {
-      const vatValue = await injector.get(VatProvider).getVatValueByDateLoader.load(doc.date);
-      if (!vatValue) {
-        throw new Error(`VAT value is missing for invoice ID=${doc.id}`);
-      }
-      const convertedVat = vatValue / (1 + vatValue);
-      const tiplessTotalAmount = totalAmount - noVatAmount;
-      const vatDiff = Math.abs(tiplessTotalAmount * convertedVat - vatAmount);
-      if (vatDiff > 0.005) {
-        console.error(
-          `Expected VAT amount is not ${vatValue * 100}%, but got ${
-            vatAmount / (tiplessTotalAmount - vatAmount)
-          } for invoice ID=${doc.id}`,
-        );
-      }
-
-      // decorate record with additional fields
-      const vatAfterDeduction = vatAmount * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
-      const amountBeforeVAT = totalAmount - vatAfterDeduction;
-
-      partialRecord.foreignVatAfterDeduction = vatAfterDeduction;
-      partialRecord.localVatAfterDeduction = vatAfterDeduction * rate;
-      partialRecord.foreignAmountBeforeVAT = amountBeforeVAT;
-      partialRecord.localAmountBeforeVAT = amountBeforeVAT * rate;
-      partialRecord.roundedVATToAdd = Math.round(vatAfterDeduction * rate);
-      partialRecord.eventLocalAmount = totalAmount * rate;
-    }
-
-    return partialRecord;
-  } catch (e) {
-    console.error(e);
-    throw e;
+    partialRecord.foreignVatAfterDeduction = vatAfterDeduction;
+    partialRecord.localVatAfterDeduction = vatAfterDeduction * rate;
+    partialRecord.foreignAmountBeforeVAT = amountBeforeVAT;
+    partialRecord.localAmountBeforeVAT = amountBeforeVAT * rate;
+    partialRecord.roundedVATToAdd = Math.round(vatAfterDeduction * rate);
+    partialRecord.eventLocalAmount = totalAmount * rate;
   }
+
+  return partialRecord;
 }
