@@ -53,7 +53,7 @@
     "graphql": "16.15.0",
     "graphql-request": "7.4.0",
     "inline-css": "4.0.3",
-    "playwright": "1.64.1",
+    "playwright": "1.65.0",
     "postal-mime": "4.2.0",
     "zod": "4.6.7"
   },
