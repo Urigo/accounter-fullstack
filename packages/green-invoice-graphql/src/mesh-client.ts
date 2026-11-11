@@ -72,6 +72,12 @@ export type GreenInvoiceSdkOptions = {
   tokenCache: GreenInvoiceTokenSource;
   /** Replaces the HTTP client for the upstream calls, e.g. to run tests offline */
   fetch?: typeof fetch;
+  /**
+   * `tokenCache.epoch` as observed **before** `id` and `secret` were read. If any key is evicted
+   * after that, the credentials may be outdated and this SDK stops using the cache (see
+   * `GetTokenOptions.epoch`). Defaults to the epoch when the SDK is created.
+   */
+  epoch?: number;
 };
 
 /**
@@ -85,7 +91,10 @@ export function createGreenInvoiceSdk({
   secret,
   tokenCache,
   fetch: fetchFn,
+  epoch = tokenCache.epoch,
 }: GreenInvoiceSdkOptions): Sdk {
+  const tokenOptions = { epoch };
+
   /** Runs one operation with the given token; the token wins over any caller-supplied `authToken` */
   const execute = async (
     document: Parameters<typeof requester>[0],
@@ -101,7 +110,7 @@ export function createGreenInvoiceSdk({
   };
 
   return getSdk(async (document, variables, operationContext?: object) => {
-    const token = await tokenCache.getToken(id, secret);
+    const token = await tokenCache.getToken(id, secret, tokenOptions);
     try {
       return await execute(document, variables, operationContext, token);
     } catch (error) {
@@ -109,7 +118,7 @@ export function createGreenInvoiceSdk({
         throw error;
       }
       tokenCache.invalidate(id, token);
-      const newToken = await tokenCache.getToken(id, secret);
+      const newToken = await tokenCache.getToken(id, secret, tokenOptions);
       try {
         return await execute(document, variables, operationContext, newToken);
       } catch (retryError) {

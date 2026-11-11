@@ -1,6 +1,7 @@
 import { Injectable, Scope } from 'graphql-modules';
 import {
   GreenInvoiceTokenCache,
+  type GetTokenOptions,
   type GreenInvoiceTokenSource,
 } from '@accounter/green-invoice-graphql';
 
@@ -22,8 +23,12 @@ export class GreenInvoiceTokenCacheProvider implements GreenInvoiceTokenSource {
     return this.cache;
   }
 
-  public getToken(id: string, secret: string): Promise<string> {
-    return this.tokenCache.getToken(id, secret);
+  public get epoch(): number {
+    return this.tokenCache.epoch;
+  }
+
+  public getToken(id: string, secret: string, options?: GetTokenOptions): Promise<string> {
+    return this.tokenCache.getToken(id, secret, options);
   }
 
   public invalidate(id: string, token?: string): void {

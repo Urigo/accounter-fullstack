@@ -94,13 +94,24 @@ export type GreenInvoiceTokenCacheOptions = {
 
 /** Supplies access tokens per API key; `GreenInvoiceTokenCache` is the standard implementation */
 export interface GreenInvoiceTokenSource {
-  getToken(id: string, secret: string): Promise<string>;
+  getToken(id: string, secret: string, options?: GetTokenOptions): Promise<string>;
   /**
    * Called with a token the API rejected (HTTP 401), before asking for a new one; called without a
    * token when the API key itself was removed or replaced
    */
   invalidate(id: string, token?: string): void;
+  /** Advances whenever a key is evicted entirely; see {@link GetTokenOptions.epoch} */
+  readonly epoch?: number;
 }
+
+export type GetTokenOptions = {
+  /**
+   * The cache's `epoch` as observed before the caller read the credentials it passes. If a key was
+   * evicted since, the credentials may have been removed or replaced in the meantime, so the token is
+   * requested without reading or writing the cache: a removed key can't put its token back.
+   */
+  epoch?: number;
+};
 
 /** Entries hold a hash of the secret, only to notice a rotated secret, never the secret itself */
 type CacheEntry = AccessToken & { secretHash: string };
@@ -123,6 +134,7 @@ export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
   private readonly fetchFn: typeof fetch | undefined;
   private readonly now: () => number;
   private readonly refreshMarginMs: number;
+  private evictions = 0;
 
   constructor(options: GreenInvoiceTokenCacheOptions = {}) {
     this.fetchFn = options.fetch;
@@ -130,11 +142,22 @@ export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
     this.refreshMarginMs = options.refreshMarginMs ?? DEFAULT_REFRESH_MARGIN_MS;
   }
 
+  /** Advances whenever a key is evicted entirely (`invalidate` without a token) */
+  public get epoch(): number {
+    return this.evictions;
+  }
+
   /**
    * Returns a token for the API key: the cached one while it is valid for longer than the refresh
-   * margin and was issued for the same secret, otherwise a new one (shared with concurrent callers)
+   * margin and was issued for the same secret, otherwise a new one (shared with concurrent callers).
+   * With a stale `options.epoch`, a new token that bypasses the cache.
    */
-  public async getToken(id: string, secret: string): Promise<string> {
+  public async getToken(id: string, secret: string, options?: GetTokenOptions): Promise<string> {
+    if (options?.epoch !== undefined && options.epoch < this.evictions) {
+      const { accessToken } = await obtainAccessToken(id, secret, this.fetchFn, this.now);
+      return accessToken;
+    }
+
     const secretHash = hashSecret(secret);
     const entry = this.entries.get(id);
     if (
@@ -174,12 +197,14 @@ export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
    * Drops the cached token for an API key ID. With `token` (the API rejected it), the entry is
    * dropped only if it still holds that token, so a rejection of an old token doesn't discard one
    * that was refreshed in the meantime. Without `token` (the key was removed or replaced), the key is
-   * evicted entirely, and a token request already in flight for it won't be cached either.
+   * evicted entirely, and a token request already in flight for it won't be cached either; the
+   * `epoch` advances, so callers holding credentials read before now stop using the cache.
    */
   public invalidate(id: string, token?: string): void {
     if (token === undefined) {
       this.entries.delete(id);
       this.inFlight.delete(id);
+      this.evictions += 1;
       return;
     }
     if (this.entries.get(id)?.accessToken === token) {

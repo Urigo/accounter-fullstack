@@ -42,6 +42,10 @@ export class GreenInvoiceClientProvider {
   }
 
   private async _doInit(): Promise<Sdk> {
+    // Read before the credentials: if they are removed or replaced (which evicts the key) after this
+    // point, the SDK sees a newer epoch and stops using the shared cache, so the old key can't put
+    // its token back. Credential writes commit before evicting, so a later read sees the new state.
+    const epoch = this.tokenCache.epoch;
     const fromDb = await this.credentialsProvider.getGreenInvoiceCredentials();
     const creds = fromDb ?? null;
 
@@ -56,6 +60,7 @@ export class GreenInvoiceClientProvider {
       id: creds.id,
       secret: creds.secret,
       tokenCache: this.tokenCache,
+      epoch,
     });
   }
 

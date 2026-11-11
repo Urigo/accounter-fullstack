@@ -186,6 +186,17 @@ describe('GreenInvoiceTokenCache', () => {
     expect(upstream.tokenRequests).toHaveLength(4);
   });
 
+  it('only advances the epoch when a key is evicted entirely', async () => {
+    const { tokenCache } = setup();
+
+    const token = await tokenCache.getToken('key-id', 'key-secret');
+    tokenCache.invalidate('key-id', token);
+    expect(tokenCache.epoch).toBe(0);
+
+    tokenCache.invalidate('key-id');
+    expect(tokenCache.epoch).toBe(1);
+  });
+
   it('only invalidates the token that was rejected', async () => {
     const { upstream, tokenCache } = setup();
 
@@ -202,6 +213,53 @@ describe('GreenInvoiceTokenCache', () => {
 });
 
 describe('createGreenInvoiceSdk', () => {
+  it('does not let an SDK built before its key was evicted repopulate the cache', async () => {
+    const { upstream, tokenCache, createSdk } = setup();
+    const staleSdk = createSdk();
+
+    // the credentials are removed or replaced elsewhere
+    tokenCache.invalidate('key-id');
+
+    // the stale SDK still works, with tokens of its own
+    await staleSdk.getClient_query({ id: CLIENT_ID });
+    await staleSdk.getClient_query({ id: CLIENT_ID });
+    expect(upstream.tokenRequests).toHaveLength(2);
+
+    // ...but nothing it requested was cached
+    await tokenCache.getToken('key-id', 'key-secret');
+    expect(upstream.tokenRequests).toHaveLength(3);
+  });
+
+  it('bypasses the cache when the given epoch predates an eviction', async () => {
+    const { upstream, tokenCache } = setup();
+
+    // the epoch is read, then the key is evicted while the credentials are being read
+    const epoch = tokenCache.epoch;
+    tokenCache.invalidate('key-id');
+    const sdk = createGreenInvoiceSdk({
+      id: 'key-id',
+      secret: 'key-secret',
+      tokenCache,
+      fetch: upstream.fetchFn,
+      epoch,
+    });
+
+    await sdk.getClient_query({ id: CLIENT_ID });
+    await tokenCache.getToken('key-id', 'key-secret');
+    expect(upstream.tokenRequests).toHaveLength(2);
+  });
+
+  it('caches normally for an SDK built after the eviction', async () => {
+    const { upstream, tokenCache, createSdk } = setup();
+    tokenCache.invalidate('key-id');
+
+    const sdk = createSdk();
+    await sdk.getClient_query({ id: CLIENT_ID });
+    await sdk.getClient_query({ id: CLIENT_ID });
+
+    expect(upstream.tokenRequests).toHaveLength(1);
+  });
+
   it('replaces a rejected token and retries the call once', async () => {
     const { upstream, createSdk } = setup();
     const sdk = createSdk();

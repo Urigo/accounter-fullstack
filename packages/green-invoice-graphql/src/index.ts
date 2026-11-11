@@ -30,6 +30,7 @@ export {
   isUnauthorizedError,
   obtainAccessToken,
   type AccessToken,
+  type GetTokenOptions,
   type GreenInvoiceTokenCacheOptions,
   type GreenInvoiceTokenSource,
 } from './access-token.js';
