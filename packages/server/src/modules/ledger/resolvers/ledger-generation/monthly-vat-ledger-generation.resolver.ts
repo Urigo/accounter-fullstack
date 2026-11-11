@@ -108,8 +108,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       .get(UnbalancedBusinessesProvider)
       .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
 
-    const [vatRecords, transactions, unbalancedBusinesses] = await Promise.all([
-      Promise.all(vatRecordsPromises),
+    // Not `Promise.all`: each month is a full getVatRecords run, and a failure
+    // in any branch must not return the request while the others still query.
+    const [vatRecords, transactions, unbalancedBusinesses] = await allSettledOrThrow([
+      allSettledOrThrow(vatRecordsPromises),
       transactionsPromise,
       unbalancedBusinessesPromise,
     ]);

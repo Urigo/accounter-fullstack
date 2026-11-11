@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Pool, PoolClient } from 'pg';
 import type { AuthContext } from '../../../shared/types/auth.js';
+import type { DbRequestState } from '../../../shared/types/index.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { DBProvider } from '../db.provider.js';
 import {
@@ -34,6 +35,20 @@ const authContext: AuthContext = {
   activeReadScope: { businessIds: ['business-456'] },
 } as unknown as AuthContext;
 
+/** A context carrying live request state, as `dbCleanupPlugin` sets it up. */
+function requestContext(state: Partial<DbRequestState> = {}) {
+  return {
+    dbRequest: {
+      clientsToDispose: [],
+      executionInFlight: false,
+      disposed: false,
+      requestId: 'req',
+      operationName: null,
+      ...state,
+    },
+  } as unknown as GraphQLModules.GlobalContext & { dbRequest: DbRequestState };
+}
+
 function buildClient(poolClient: FakePoolClient, context?: GraphQLModules.GlobalContext) {
   const dbProvider = {
     pool: { connect: vi.fn().mockResolvedValue(poolClient as unknown as PoolClient) } as unknown as
@@ -47,11 +62,7 @@ function buildClient(poolClient: FakePoolClient, context?: GraphQLModules.Global
 
   // A GraphQL context puts the client in request-scoped mode: the connection is
   // held until dispose(), which is exactly the lifecycle that can leak.
-  return new TenantAwareDBClient(
-    dbProvider,
-    authContextProvider,
-    context ?? ({} as GraphQLModules.GlobalContext),
-  );
+  return new TenantAwareDBClient(dbProvider, authContextProvider, context ?? requestContext());
 }
 
 describe('TenantAwareDBClient connection-leak safeguards', () => {
@@ -127,7 +138,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     // running with nothing to write through, which is exactly how an upload
     // ended at "TenantAwareDBClient is already disposed" on its final INSERT.
     vi.useFakeTimers();
-    const context = { executionInFlight: true } as GraphQLModules.GlobalContext;
+    const context = requestContext({ executionInFlight: true });
     const client = buildClient(poolClient, context);
     await client.query('SELECT 1');
 
@@ -158,7 +169,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     // tighter ceiling reclaims it; a request still doing real work keeps
     // querying and never reaches it.
     vi.useFakeTimers();
-    const context = { executionInFlight: true } as GraphQLModules.GlobalContext;
+    const context = requestContext({ executionInFlight: true });
     const client = buildClient(poolClient, context);
     await client.query('SELECT 1');
     await client.disposeWhenIdle();
@@ -182,7 +193,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
   });
 
   it('keeps serving queries after a disposal deferred by an in-flight operation', async () => {
-    const context = { executionInFlight: true } as GraphQLModules.GlobalContext;
+    const context = requestContext({ executionInFlight: true });
     const client = buildClient(poolClient, context);
     await client.query('SELECT 1');
 
@@ -193,7 +204,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     await expect(client.query('INSERT INTO documents DEFAULT VALUES')).resolves.toBeDefined();
 
     // Execution ends; the deferred disposal comes due on the next query boundary.
-    context.executionInFlight = false;
+    context.dbRequest.executionInFlight = false;
     await client.query('SELECT 2');
     await vi.waitFor(() => expect(poolClient.release).toHaveBeenCalled());
   });
@@ -208,9 +219,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
   });
 
   it('hands the connection back for long external work, then reopens on demand', async () => {
-    const client = buildClient(poolClient, {
-      executionInFlight: true,
-    } as GraphQLModules.GlobalContext);
+    const client = buildClient(poolClient, requestContext({ executionInFlight: true }));
     await client.query('SELECT 1');
     expect(getTenantDbClientStats().holdingConnection).toBe(1);
 
@@ -253,18 +262,17 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     // already drained the list. Registered there, nothing would ever dispose it
     // and it would sit `idle in transaction` until Postgres killed it (#4871).
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
-    const context = {
-      dbClientsToDispose: [],
-      dbClientsDisposed: true,
+    const context = requestContext({
+      disposed: true,
       operationName: 'VatReport',
       requestId: 'req-1',
-    } as unknown as GraphQLModules.GlobalContext;
+    });
     const before = getTenantDbClientStats().holdingConnection;
 
     const client = buildClient(poolClient, context);
     await client.query('SELECT 1');
 
-    expect(context.dbClientsToDispose).toEqual([]);
+    expect(context.dbRequest.clientsToDispose).toEqual([]);
     expect(client.autoRelease).toBe(true);
     expect(poolClient.release).toHaveBeenCalled();
     expect(getTenantDbClientStats().holdingConnection).toBe(before);
@@ -274,10 +282,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
 
   it('names the operation and request of a reclaimed client', async () => {
     vi.useFakeTimers();
-    const context = {
-      operationName: 'ChargesScreen',
-      requestId: 'req-2',
-    } as GraphQLModules.GlobalContext;
+    const context = requestContext({ operationName: 'ChargesScreen', requestId: 'req-2' });
     const client = buildClient(poolClient, context);
     await client.query('SELECT 1');
 
@@ -295,10 +300,10 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
 
   it('logs a killed session as one line naming the operation, without the pg stack', async () => {
     const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
-    const client = buildClient(poolClient, {
-      operationName: 'VatReport',
-      requestId: 'req-3',
-    } as GraphQLModules.GlobalContext);
+    const client = buildClient(
+      poolClient,
+      requestContext({ operationName: 'VatReport', requestId: 'req-3' }),
+    );
     await client.query('SELECT 1');
 
     const error = Object.assign(
@@ -315,6 +320,46 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     expect(line).toContain('operation=VatReport request=req-3');
     expect(line!.trimEnd()).not.toContain('\n');
     stderr.mockRestore();
+  });
+
+  it('holds no connection when built a context without request state', async () => {
+    // What graphql-modules hands a client constructed after its operation was
+    // destroyed: a fresh copy of a context whose fields are all gone.
+    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const before = getTenantDbClientStats().holdingConnection;
+
+    const client = buildClient(poolClient, { moduleId: 'charges' } as never);
+    await client.query('SELECT 1');
+
+    expect(client.autoRelease).toBe(true);
+    expect(poolClient.release).toHaveBeenCalled();
+    expect(getTenantDbClientStats().holdingConnection).toBe(before);
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('outside a live request'));
+    stderr.mockRestore();
+  });
+
+  it('keeps a long transaction alive while its callback queries the raw connection', async () => {
+    // Callbacks such as the SHAAM import query the PoolClient they are handed,
+    // not TenantAwareDBClient.query, so those statements must count as activity.
+    vi.useFakeTimers();
+    const client = buildClient(poolClient);
+    await client.query('SELECT 1');
+
+    const onLeak = vi.fn();
+    const watchdog = startTenantDbClientWatchdog({ maxIdleMs: 1000, intervalMs: 100, onLeak });
+
+    await client.transaction(async tx => {
+      for (let i = 0; i < 4; i++) {
+        await vi.advanceTimersByTimeAsync(500);
+        await tx.query('INSERT INTO businesses DEFAULT VALUES');
+      }
+    });
+
+    expect(onLeak).not.toHaveBeenCalled();
+    expect(client.lastQuery).toBe('INSERT INTO businesses DEFAULT VALUES');
+
+    watchdog.stop();
+    await client.dispose();
   });
 });
 

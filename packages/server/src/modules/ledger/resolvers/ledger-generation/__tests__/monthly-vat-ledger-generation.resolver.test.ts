@@ -265,4 +265,48 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
     expect(result).toMatchObject({ __typename: 'CommonError' });
     expect(generateMiscExpensesLedger).not.toHaveBeenCalled();
   });
+
+  it('does not return while another month is still loading its VAT records', async () => {
+    // Each month is a full getVatRecords run. Returning on the first rejection
+    // would leave the others querying a DB client the request has disposed.
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -100,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    let releaseSibling!: () => void;
+    const sibling = new Promise<void>(resolve => {
+      releaseSibling = resolve;
+    });
+    let requestDone = false;
+    const queriesAfterRequest: string[] = [];
+    vi.mocked(getVatRecords)
+      .mockRejectedValueOnce(new Error('Currency missing'))
+      .mockImplementationOnce(async () => {
+        await sibling;
+        if (requestDone) {
+          queriesAfterRequest.push('SELECT documents');
+        }
+        return { income: [], expenses: [] } as never;
+      });
+
+    const resultPromise = (async () => {
+      try {
+        return await generateLedgerRecordsForMonthlyVat(
+          { ...chargeBase, user_description: 'VAT for 03-04/2026' } as never,
+          { insertLedgerRecordsIfNotExists: false },
+          { injector: makeInjector() } as never,
+          {} as never,
+        );
+      } finally {
+        requestDone = true;
+      }
+    })();
+    setTimeout(releaseSibling, 20);
+
+    await expect(resultPromise).resolves.toMatchObject({ __typename: 'CommonError' });
+    await new Promise(resolve => setTimeout(resolve, 30));
+    expect(queriesAfterRequest).toEqual([]);
+  });
 });
+

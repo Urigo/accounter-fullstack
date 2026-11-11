@@ -75,29 +75,49 @@ export type DisposableDbClient = {
   disposeWhenIdle?: () => Promise<boolean>;
 };
 
-export type AccounterContext = YogaInitialContext & {
-  env: Environment;
-  pool: pg.Pool;
-  rawAuth?: RawAuth;
-  dbClientsToDispose?: DisposableDbClient[];
+/**
+ * Per-request DB lifecycle state, shared by `dbCleanupPlugin` and every
+ * TenantAwareDBClient the request constructs.
+ *
+ * It is one object, stored on the context, and only ever **mutated in place**,
+ * never replaced. That is load-bearing: graphql-modules does not inject the
+ * Yoga context into operation-scoped providers, but a per-module *copy* of it
+ * taken when the module context is first built (`merge`, an object spread). A
+ * flag the plugin assigns on the context afterwards is invisible to the
+ * client; a field changed on an object both sides hold a reference to is not.
+ * Once the operation is destroyed, a newly built copy has no state at all, which
+ * is how a client constructed by work that outlived its request recognises that
+ * it must not hold a connection.
+ */
+export type DbRequestState = {
+  /** Clients to dispose at end of request. Drained and refilled in place. */
+  clientsToDispose: DisposableDbClient[];
   /**
    * True while GraphQL execution for this request is running. Read by
    * TenantAwareDBClient (and its watchdog) to tell a request that is merely
    * quiet on the database — fetching a file, waiting on OCR — from one that has
    * gone away.
    */
-  executionInFlight?: boolean;
+  executionInFlight: boolean;
   /**
-   * Set once the end-of-execution pass has drained `dbClientsToDispose`. A
-   * TenantAwareDBClient constructed after this — by work that outlived its
-   * request — would register on a list nothing drains any more, so it runs in
-   * autoRelease mode instead and never holds a connection between queries.
+   * Set once the end-of-execution pass has drained `clientsToDispose`. A client
+   * constructed after this would register on a list nothing drains any more, so
+   * it runs in autoRelease mode instead and never holds a connection between
+   * queries.
    */
-  dbClientsDisposed?: boolean;
+  disposed: boolean;
   /** Identifies this request in DB log lines (the OTel trace id when tracing is on). */
-  requestId?: string;
+  requestId: string;
   /** The GraphQL operation being executed, for DB log lines. */
-  operationName?: string;
+  operationName: string | null;
+};
+
+export type AccounterContext = YogaInitialContext & {
+  env: Environment;
+  pool: pg.Pool;
+  rawAuth?: RawAuth;
+  /** Per-request DB lifecycle state, created by `dbCleanupPlugin`. See {@link DbRequestState}. */
+  dbRequest?: DbRequestState;
 };
 
 /**

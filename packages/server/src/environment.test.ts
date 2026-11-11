@@ -149,6 +149,17 @@ describe('postgres pool configuration', () => {
     ).rejects.toBeDefined();
   });
 
+  it('caps the statement timeout at 210s under the default idle-in-transaction timeout', async () => {
+    // The active and aborted ceilings are floored at the statement timeout + 30s,
+    // and must leave two 30s sweeps before the 300s Postgres timeout.
+    const env = await loadEnv({ ...REQUIRED, POSTGRES_STATEMENT_TIMEOUT_MS: '210000' });
+    expect(env.postgres.abortedClientMaxIdleMs).toBe(240_000);
+
+    await expect(
+      loadEnv({ ...REQUIRED, POSTGRES_STATEMENT_TIMEOUT_MS: '210001' }),
+    ).rejects.toBeDefined();
+  });
+
   it('starts when a raised idle-in-transaction timeout clears every ceiling', async () => {
     const env = await loadEnv({
       ...REQUIRED,
