@@ -4,6 +4,7 @@ import { connectTestDb } from '../../../../__tests__/helpers/db-connection.js';
 import { runMigrationsIfNeeded } from '../../../../__tests__/helpers/db-migrations.js';
 import type { Environment } from '../../../../shared/types/index.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
+import { GreenInvoiceTokenCacheProvider } from '../../../app-providers/green-invoice-token-cache.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import type { AuthContextProvider } from '../../../auth/providers/auth-context.provider.js';
 import { ProviderCredentialsProvider } from '../provider-credentials.provider.js';
@@ -36,7 +37,7 @@ function createProvider(tenantId: string) {
       }),
   } as unknown as AuthContextProvider;
   const db = new TenantAwareDBClient(new DBProvider(pool), authContextProvider);
-  return new ProviderCredentialsProvider(db, env);
+  return new ProviderCredentialsProvider(db, env, new GreenInvoiceTokenCacheProvider());
 }
 
 async function seedBusiness(id: string, ownerId: string | null, name: string) {

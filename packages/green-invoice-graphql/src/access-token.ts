@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 const TOKEN_URL = 'https://api.morning.co/idp/v1/oauth/token';
 
 /** Used when the token response doesn't say when the token expires (tokens are valid for an hour) */
@@ -26,6 +28,7 @@ function getJwtExpiry(token: string): number | null {
   }
 }
 
+/** Picks the token's expiry: its JWT `exp` claim, else the response's expiry fields, else one hour */
 function getExpiresAt(data: Record<string, unknown>, accessToken: string, now: number): number {
   const fromJwt = getJwtExpiry(accessToken);
   if (fromJwt) {
@@ -92,11 +95,20 @@ export type GreenInvoiceTokenCacheOptions = {
 /** Supplies access tokens per API key; `GreenInvoiceTokenCache` is the standard implementation */
 export interface GreenInvoiceTokenSource {
   getToken(id: string, secret: string): Promise<string>;
-  /** Called with a token the API rejected (HTTP 401), before asking for a new one */
+  /**
+   * Called with a token the API rejected (HTTP 401), before asking for a new one; called without a
+   * token when the API key itself was removed or replaced
+   */
   invalidate(id: string, token?: string): void;
 }
 
-type CacheEntry = AccessToken & { secret: string };
+/** Entries hold a hash of the secret, only to notice a rotated secret, never the secret itself */
+type CacheEntry = AccessToken & { secretHash: string };
+
+/** One-way digest of a secret, used to compare secrets without keeping them in memory */
+function hashSecret(secret: string): string {
+  return createHash('sha256').update(secret).digest('hex');
+}
 
 /**
  * Caches access tokens per API key ID, to share across requests. A token is reused until shortly
@@ -104,7 +116,10 @@ type CacheEntry = AccessToken & { secret: string };
  */
 export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
   private readonly entries = new Map<string, CacheEntry>();
-  private readonly inFlight = new Map<string, { secret: string; promise: Promise<CacheEntry> }>();
+  private readonly inFlight = new Map<
+    string,
+    { secretHash: string; promise: Promise<CacheEntry> }
+  >();
   private readonly fetchFn: typeof fetch | undefined;
   private readonly now: () => number;
   private readonly refreshMarginMs: number;
@@ -115,18 +130,29 @@ export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
     this.refreshMarginMs = options.refreshMarginMs ?? DEFAULT_REFRESH_MARGIN_MS;
   }
 
+  /**
+   * Returns a token for the API key: the cached one while it is valid for longer than the refresh
+   * margin and was issued for the same secret, otherwise a new one (shared with concurrent callers)
+   */
   public async getToken(id: string, secret: string): Promise<string> {
+    const secretHash = hashSecret(secret);
     const entry = this.entries.get(id);
-    if (entry && entry.secret === secret && this.now() < entry.expiresAt - this.refreshMarginMs) {
+    if (
+      entry &&
+      entry.secretHash === secretHash &&
+      this.now() < entry.expiresAt - this.refreshMarginMs
+    ) {
       return entry.accessToken;
     }
 
     let request = this.inFlight.get(id);
-    if (!request || request.secret !== secret) {
+    if (!request || request.secretHash !== secretHash) {
+      this.dropExpired();
       const promise = obtainAccessToken(id, secret, this.fetchFn, this.now)
         .then(token => {
-          const newEntry = { ...token, secret };
-          // a request for older credentials must not overwrite the newer one's token
+          const newEntry = { ...token, secretHash };
+          // only the current request may store its token: one for older credentials, or one whose
+          // key was invalidated while it was in flight, must not (re)populate the cache
           if (this.inFlight.get(id)?.promise === promise) {
             this.entries.set(id, newEntry);
           }
@@ -137,7 +163,7 @@ export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
             this.inFlight.delete(id);
           }
         });
-      request = { secret, promise };
+      request = { secretHash, promise };
       this.inFlight.set(id, request);
     }
 
@@ -145,21 +171,39 @@ export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
   }
 
   /**
-   * Drops the cached token for an API key ID, e.g. after the API rejected it. When `token` is given,
-   * the entry is dropped only if it still holds that token, so a rejection of an old token doesn't
-   * discard one that was refreshed in the meantime.
+   * Drops the cached token for an API key ID. With `token` (the API rejected it), the entry is
+   * dropped only if it still holds that token, so a rejection of an old token doesn't discard one
+   * that was refreshed in the meantime. Without `token` (the key was removed or replaced), the key is
+   * evicted entirely, and a token request already in flight for it won't be cached either.
    */
   public invalidate(id: string, token?: string): void {
-    if (token === undefined || this.entries.get(id)?.accessToken === token) {
+    if (token === undefined) {
+      this.entries.delete(id);
+      this.inFlight.delete(id);
+      return;
+    }
+    if (this.entries.get(id)?.accessToken === token) {
       this.entries.delete(id);
     }
   }
 
   public clear(): void {
     this.entries.clear();
+    this.inFlight.clear();
+  }
+
+  /** Drops expired entries, so keys that are no longer used don't stay cached */
+  private dropExpired(): void {
+    const now = this.now();
+    for (const [id, entry] of this.entries) {
+      if (entry.expiresAt <= now) {
+        this.entries.delete(id);
+      }
+    }
   }
 }
 
+/** The upstream HTTP status of an SDK error, as `@graphql-mesh/transport-rest` reports it */
 function getResponseStatus(error: unknown): unknown {
   if (typeof error !== 'object' || error === null) {
     return undefined;

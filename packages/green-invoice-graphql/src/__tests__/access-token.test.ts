@@ -168,6 +168,24 @@ describe('GreenInvoiceTokenCache', () => {
     expect(await tokenCache.getToken('key-id', 'key-secret')).toBe('opaque-2');
   });
 
+  it('evicts a removed API key, including a token request in flight for it', async () => {
+    const { upstream, tokenCache } = setup();
+
+    const first = await tokenCache.getToken('key-id', 'key-secret');
+    tokenCache.invalidate('key-id');
+    const second = await tokenCache.getToken('key-id', 'key-secret');
+    expect(second).not.toBe(first);
+    expect(upstream.tokenRequests).toHaveLength(2);
+
+    // evicted while its token request is in flight: the late token is not cached
+    tokenCache.invalidate('key-id');
+    const pending = tokenCache.getToken('key-id', 'key-secret-2');
+    tokenCache.invalidate('key-id');
+    await pending;
+    await tokenCache.getToken('key-id', 'key-secret-2');
+    expect(upstream.tokenRequests).toHaveLength(4);
+  });
+
   it('only invalidates the token that was rejected', async () => {
     const { upstream, tokenCache } = setup();
 
@@ -202,8 +220,8 @@ describe('createGreenInvoiceSdk', () => {
     ]);
   });
 
-  it('gives up after one retry', async () => {
-    const { upstream, createSdk } = setup();
+  it('gives up after one retry and drops the rejected replacement', async () => {
+    const { upstream, tokenCache, createSdk } = setup();
     upstream.rejectedTokens.add(upstream.issuedToken(1));
     upstream.rejectedTokens.add(upstream.issuedToken(2));
 
@@ -214,5 +232,19 @@ describe('createGreenInvoiceSdk', () => {
     expect(isUnauthorizedError(error)).toBe(true);
     expect(upstream.tokenRequests).toHaveLength(2);
     expect(upstream.apiRequests).toHaveLength(2);
+
+    // the next caller doesn't start from the rejected replacement
+    expect(await tokenCache.getToken('key-id', 'key-secret')).toBe(upstream.issuedToken(3));
+    expect(upstream.tokenRequests).toHaveLength(3);
+  });
+
+  it('sends the cached token even if the caller passes its own', async () => {
+    const { upstream, createSdk } = setup();
+
+    await createSdk().getClient_query({ id: CLIENT_ID }, { authToken: 'caller-token' });
+
+    expect(upstream.apiRequests.map(request => request.authorization)).toEqual([
+      `Bearer ${upstream.issuedToken(1)}`,
+    ]);
   });
 });

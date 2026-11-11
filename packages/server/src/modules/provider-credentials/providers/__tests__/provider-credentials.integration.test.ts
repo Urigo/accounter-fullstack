@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, type Mocked } from 'vitest';
 import { encryptCredential } from '../../helpers/encryption.js';
 import { ProviderCredentialsProvider } from '../provider-credentials.provider.js';
+import { GreenInvoiceTokenCacheProvider } from '../../../app-providers/green-invoice-token-cache.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import type { Environment } from '../../../../shared/types/index.js';
 
@@ -13,7 +14,7 @@ function createProvider(_options: { businessId: string | null }) {
   const db = { query } as unknown as Mocked<TenantAwareDBClient>;
 
   return {
-    provider: new ProviderCredentialsProvider(db, env),
+    provider: new ProviderCredentialsProvider(db, env, new GreenInvoiceTokenCacheProvider()),
     query,
   };
 }
@@ -24,12 +25,13 @@ describe('ProviderCredentialsProvider integration', () => {
 
     const original = { id: 'gi-id', secret: 'gi-secret' };
 
-    // setCredentials writes to DB
+    // setCredentials reads the previous credentials (none), then writes to DB
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
     query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
     await provider.setCredentials('green_invoice', original);
 
     // Capture the encrypted blob that was stored
-    const [, params] = query.mock.calls[0] as [string, unknown[]];
+    const [, params] = query.mock.calls[1] as [string, unknown[]];
     const encryptedBlob = params[1] as string;
 
     // getGreenInvoiceCredentials reads from DB — return the encrypted blob
@@ -61,7 +63,9 @@ describe('ProviderCredentialsProvider integration', () => {
   it('delete followed by get returns null', async () => {
     const { provider, query } = createProvider({ businessId: 'tenant-a' });
 
-    // deleteCredentials
+    // deleteCredentials reads the previous credentials, then deletes them
+    const blob = encryptCredential(JSON.stringify({ id: 'gi-id', secret: 'gi-secret' }), TEST_KEY);
+    query.mockResolvedValueOnce({ rows: [{ payload: blob }], rowCount: 1 });
     query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     await provider.deleteCredentials('green_invoice');
 

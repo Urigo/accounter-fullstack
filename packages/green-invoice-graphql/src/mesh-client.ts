@@ -86,17 +86,18 @@ export function createGreenInvoiceSdk({
   tokenCache,
   fetch: fetchFn,
 }: GreenInvoiceSdkOptions): Sdk {
+  /** Runs one operation with the given token; the token wins over any caller-supplied `authToken` */
   const execute = async (
     document: Parameters<typeof requester>[0],
     variables: Parameters<typeof requester>[1],
     operationContext: object | undefined,
     token: string,
   ) => {
-    const context: GreenInvoiceContext = { authToken: token };
+    const context: Partial<GreenInvoiceContext> = {};
     if (fetchFn) {
       context.fetch = fetchFn;
     }
-    return requester(document, variables, { ...context, ...operationContext });
+    return requester(document, variables, { ...context, ...operationContext, authToken: token });
   };
 
   return getSdk(async (document, variables, operationContext?: object) => {
@@ -109,7 +110,15 @@ export function createGreenInvoiceSdk({
       }
       tokenCache.invalidate(id, token);
       const newToken = await tokenCache.getToken(id, secret);
-      return execute(document, variables, operationContext, newToken);
+      try {
+        return await execute(document, variables, operationContext, newToken);
+      } catch (retryError) {
+        // the replacement was rejected too: don't leave it cached for the next caller
+        if (isUnauthorizedError(retryError)) {
+          tokenCache.invalidate(id, newToken);
+        }
+        throw retryError;
+      }
     }
   });
 }

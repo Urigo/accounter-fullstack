@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { QueryResult, QueryResultRow } from 'pg';
+import { GreenInvoiceTokenCacheProvider } from '../../../app-providers/green-invoice-token-cache.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import type { Environment } from '../../../../shared/types/index.js';
 import { encryptCredential } from '../../helpers/encryption.js';
@@ -17,6 +18,7 @@ const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff';
 describe('ProviderCredentialsProvider', () => {
   let provider: ProviderCredentialsProvider;
   let db: Mocked<TenantAwareDBClient>;
+  let tokenCache: GreenInvoiceTokenCacheProvider;
 
   beforeEach(() => {
     db = {
@@ -25,7 +27,9 @@ describe('ProviderCredentialsProvider', () => {
       query: vi.fn(),
     } as unknown as Mocked<TenantAwareDBClient>;
 
-    provider = new ProviderCredentialsProvider(db, env);
+    tokenCache = new GreenInvoiceTokenCacheProvider();
+    vi.spyOn(tokenCache, 'invalidate');
+    provider = new ProviderCredentialsProvider(db, env, tokenCache);
   });
 
   /** Answer the ownership check and the UPDATE; everything else returns no rows */
@@ -59,9 +63,8 @@ describe('ProviderCredentialsProvider', () => {
       const validPayload = { id: 'my-id', secret: 'my-secret' };
       await provider.setCredentials('green_invoice', validPayload);
 
-      expect(db.query).toHaveBeenCalledTimes(1);
-      const [sql, params] = db.query.mock.calls[0] as [string, unknown[]];
-      expect(sql).toMatch(/INSERT/i);
+      expect(upsertCalls()).toHaveLength(1);
+      const [sql, params] = upsertCalls()[0];
       expect(sql).toMatch(/provider_credentials/i);
       // The encrypted blob should not equal the plaintext
       expect(params[1]).not.toContain('my-secret');
@@ -233,6 +236,62 @@ describe('ProviderCredentialsProvider', () => {
       expect(db.query).toHaveBeenCalledTimes(1);
       const [sql] = db.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toMatch(/DELETE/i);
+    });
+  });
+
+  describe('Green Invoice token cache eviction', () => {
+    const previousBlob = encryptCredential(
+      JSON.stringify({ id: 'old-id', secret: 'old-secret' }),
+      TEST_KEY,
+    );
+
+    /** The stored Green Invoice credentials are `old-id`; writes succeed */
+    function mockStoredGreenInvoiceKey() {
+      db.query.mockImplementation((async (sql: string) => {
+        if (/SELECT payload/.test(sql)) {
+          return { rows: [{ payload: previousBlob }], rowCount: 1 };
+        }
+        return { rows: [], rowCount: 1 };
+      }) as unknown as typeof db.query);
+    }
+
+    it('evicts the previous API key when the credentials are replaced', async () => {
+      mockStoredGreenInvoiceKey();
+
+      await provider.setCredentials('green_invoice', { id: 'new-id', secret: 'new-secret' });
+
+      expect(tokenCache.invalidate).toHaveBeenCalledExactlyOnceWith('old-id');
+    });
+
+    it('evicts the API key when the credentials are deleted', async () => {
+      mockStoredGreenInvoiceKey();
+
+      await provider.deleteCredentials('green_invoice');
+
+      expect(tokenCache.invalidate).toHaveBeenCalledExactlyOnceWith('old-id');
+    });
+
+    it('keeps the cache when the write fails', async () => {
+      db.query.mockImplementation((async (sql: string) => {
+        if (/SELECT payload/.test(sql)) {
+          return { rows: [{ payload: previousBlob }], rowCount: 1 };
+        }
+        throw new Error('write failed');
+      }) as unknown as typeof db.query);
+
+      await expect(provider.deleteCredentials('green_invoice')).rejects.toThrow('write failed');
+
+      expect(tokenCache.invalidate).not.toHaveBeenCalled();
+    });
+
+    it('leaves the cache alone for other providers', async () => {
+      mockStoredGreenInvoiceKey();
+
+      await provider.setCredentials('deel', { apiToken: 'token' });
+      await provider.deleteCredentials('deel');
+
+      expect(tokenCache.invalidate).not.toHaveBeenCalled();
+      expect(callsMatching(/SELECT payload/)).toHaveLength(0);
     });
   });
 });
