@@ -59,10 +59,13 @@ const PostgresModel = zod.object({
    * Postgres-side backstop against leaked sessions: a connection left `idle in
    * transaction` this long is terminated by the server.
    *
-   * Must stay comfortably above the longest legitimate in-request pause. The
-   * request-scoped session model keeps a transaction open across external I/O
-   * (document OCR, Green Invoice, Cloudinary), so a too-aggressive value would
-   * kill live requests. 5 minutes bounds a leak without touching real traffic.
+   * Must stay comfortably above the longest legitimate in-request pause.
+   * Document ingestion hands its connection back for the download / Cloudinary /
+   * OCR stretch (`releaseDbConnectionForExternalWork`), but other external I/O —
+   * Green Invoice, for one — still runs inside the request's open transaction,
+   * so a too-aggressive value would kill live requests. 5 minutes bounds a leak
+   * without touching real traffic. Every watchdog ceiling must stay below it by
+   * two sweeps (see `watchdogCeilingProblems`).
    */
   POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: emptyString(NumberFromString)
     .optional()
