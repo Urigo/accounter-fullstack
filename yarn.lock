@@ -36,7 +36,7 @@ __metadata:
   dependencies:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.10#~/.yarn/patches/@slonik-pg-driver-npm-49.10.10-f26fa3e252.patch"
     "@types/pg": "npm:8.23.1"
-    pg-promise: "npm:12.7.1"
+    pg-promise: "npm:12.8.0"
     slonik: "npm:49.10.10"
     tslib: "npm:2.9.1"
     zod: "npm:4.6.7"
@@ -163,7 +163,7 @@ __metadata:
     csv-parse: "npm:7.0.3"
     diary: "npm:0.4.5"
     dotenv: "npm:18.0.9"
-    pg-promise: "npm:12.7.1"
+    pg-promise: "npm:12.8.0"
     tsup: "npm:9.0.0"
   languageName: unknown
   linkType: soft
@@ -175,7 +175,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.12.1"
     diary: "npm:0.4.5"
     dotenv: "npm:18.0.9"
-    pg-promise: "npm:12.7.1"
+    pg-promise: "npm:12.8.0"
     tsup: "npm:9.0.0"
   languageName: unknown
   linkType: soft
@@ -237,7 +237,7 @@ __metadata:
     diary: "npm:0.4.5"
     dotenv: "npm:18.0.9"
     node-kraken-api: "npm:2.2.2"
-    pg-promise: "npm:12.7.1"
+    pg-promise: "npm:12.8.0"
     tsup: "npm:9.0.0"
   languageName: unknown
   linkType: soft
@@ -20816,17 +20816,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-promise@npm:12.7.1":
-  version: 12.7.1
-  resolution: "pg-promise@npm:12.7.1"
+"pg-promise@npm:12.8.0":
+  version: 12.8.0
+  resolution: "pg-promise@npm:12.8.0"
   dependencies:
     assert-options: "npm:0.8.3"
-    pg: "npm:8.23.0"
+    pg: "npm:8.23.1"
     pg-minify: "npm:1.8.0"
     spex: "npm:4.1.0"
   peerDependencies:
-    pg-query-stream: 4.17.0
-  checksum: 10c0/66b181f140b94dac636b626f9bdb871e6ab25fb80bcbb83115ebebdb23ad9a7b6ceb209ffa3577c14549fe4d0d603d643b44e3d75ae803b62c16a16f008d1235
+    pg-query-stream: 4.17.1
+  checksum: 10c0/b2d66c33e4adbf7d798230c14d25b09d1dc3e3081502c79f040b770f2fc7d8e3f3b0be159e80bcb6ebe55d15e9512f5adf41f6e935ef3b95da908930cceef303
   languageName: node
   linkType: hard
 
