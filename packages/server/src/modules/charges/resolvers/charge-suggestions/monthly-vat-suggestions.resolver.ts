@@ -40,7 +40,7 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
     );
     const [reportYear, reportMonth] = monthDate.split('-');
 
-    const { income, expenses } = await getVatRecords(
+    const { income, expenses, incompleteDocuments } = await getVatRecords(
       {
         filters: {
           financialEntityId: DbCharge.owner_id,
@@ -50,6 +50,11 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
       injector,
       { includeChargeBuckets: false },
     );
+
+    // The month's VAT leaves these documents out, so a match against it would be a guess.
+    if (incompleteDocuments.length > 0) {
+      return null;
+    }
 
     const monthlyVatTotalAmount = calculateMonthlyVatTotalAmount(
       income as RawVatReportRecord[],

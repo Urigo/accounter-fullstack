@@ -4,6 +4,7 @@ import { Currency, DocumentType } from '../../../../shared/enums.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import type { IGetDocumentsByFiltersResult } from '../../../documents/types.js';
+import { getChargeTransactionsMeta } from '../../../charges/helpers/common.helper.js';
 import {
   adjustTaxRecord,
   calculateMonthlyVatTotalAmount,
@@ -190,6 +191,34 @@ describe('adjustTaxRecord failures', () => {
     ).rejects.toThrow('depreciation lookup failed');
 
     expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it('waits for its sibling lookups before rejecting (#4871)', async () => {
+    let releaseMeta!: () => void;
+    const metaSettled = new Promise<void>(resolve => {
+      releaseMeta = resolve;
+    });
+    vi.mocked(getChargeTransactionsMeta).mockImplementationOnce((async () => {
+      await metaSettled;
+      return { transactionsMinEventDate: '2026-04-15' };
+    }) as never);
+
+    let settled = false;
+    const adjustment = adjustTaxRecord(
+      sources(),
+      injectorWithDepreciation(async () => {
+        throw new Error('depreciation lookup failed');
+      }),
+    ).finally(() => {
+      settled = true;
+    });
+    adjustment.catch(() => {});
+
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(settled).toBe(false);
+
+    releaseMeta();
+    await expect(adjustment).rejects.toThrow('depreciation lookup failed');
   });
 
   it('names the missing fields if called with an incomplete document', async () => {

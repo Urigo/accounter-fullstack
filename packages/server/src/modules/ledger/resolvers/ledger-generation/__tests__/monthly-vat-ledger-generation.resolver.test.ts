@@ -277,6 +277,57 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
     );
   });
 
+  it('does not store the ledger of a month that leaves out documents with missing data', async () => {
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -120,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({
+      income: [{ roundedVATToAdd: 130 }],
+      expenses: [{ roundedVATToAdd: 10 }],
+      incompleteDocuments: [
+        { documentId: 'doc-1', chargeId: 'charge-1', missingFields: ['currency'] },
+      ],
+    } as never);
+
+    const result = await generateLedgerRecordsForMonthlyVat(
+      { ...chargeBase, user_description: 'VAT for 04/2026' } as never,
+      { insertLedgerRecordsIfNotExists: true },
+      { injector: makeInjector() } as never,
+      {} as never,
+    );
+
+    if (!result || 'message' in result) {
+      throw new Error('Expected GeneratedLedgerRecords result');
+    }
+    // Still generated and returned for display, with the error explaining why it isn't stored.
+    expect(result.errors.some(error => error.includes('leaves out documents'))).toBe(true);
+    expect(storeInitialGeneratedRecords).not.toHaveBeenCalled();
+  });
+
+  it('stores the ledger of a complete month', async () => {
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -120,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({
+      income: [{ roundedVATToAdd: 130 }],
+      expenses: [{ roundedVATToAdd: 10 }],
+      incompleteDocuments: [],
+    } as never);
+
+    await generateLedgerRecordsForMonthlyVat(
+      { ...chargeBase, user_description: 'VAT for 04/2026' } as never,
+      { insertLedgerRecordsIfNotExists: true },
+      { injector: makeInjector() } as never,
+      {} as never,
+    );
+
+    expect(storeInitialGeneratedRecords).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects a property charge without a property VAT category before starting any branch', async () => {
     // Returning this error after the transaction and misc-expense branches had
     // started would end the request while they still query its DB client.

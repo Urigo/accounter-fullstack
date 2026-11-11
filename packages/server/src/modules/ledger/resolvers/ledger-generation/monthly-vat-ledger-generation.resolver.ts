@@ -93,17 +93,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         { includeChargeBuckets: false },
       );
 
-      // The month's VAT is computed without these documents, so the ledger would be wrong.
-      if (incompleteDocuments.length) {
-        const [year, month] = ledgerDate.split('-');
-        errors.add(
-          `Monthly VAT for ${month}/${year} leaves out documents with missing data: ${describeIncompleteVatReportDocuments(incompleteDocuments)}`,
-        );
-      }
-
       return {
         income,
         expenses,
+        incompleteDocuments,
         ledgerDate,
         vatDate,
       };
@@ -124,6 +117,19 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       transactionsPromise,
       unbalancedBusinessesPromise,
     ]);
+
+    // The VAT computed for a month leaves out its incomplete documents, so the ledger would be
+    // wrong: report them, and don't store it (see below) (#4946).
+    let hasIncompleteMonth = false;
+    for (const { incompleteDocuments, ledgerDate } of vatRecords) {
+      if (incompleteDocuments.length > 0) {
+        hasIncompleteMonth = true;
+        const [year, month] = ledgerDate.split('-');
+        errors.add(
+          `Monthly VAT for ${month}/${year} leaves out documents with missing data: ${describeIncompleteVatReportDocuments(incompleteDocuments)}`,
+        );
+      }
+    }
 
     if (charge.user_description && vatDates?.length === 1) {
       if (transactionDate == null) {
@@ -328,7 +334,9 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       ...miscExpensesLedgerEntries,
     ];
 
-    if (insertLedgerRecordsIfNotExists) {
+    // Only the first generation is stored, and a later one doesn't replace it, so storing a month
+    // that leaves documents out would keep it wrong after they are fixed.
+    if (insertLedgerRecordsIfNotExists && !hasIncompleteMonth) {
       await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
