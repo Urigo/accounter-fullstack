@@ -186,7 +186,9 @@ export const getVatRecords = async (
         (doc.type === DocumentType.CreditInvoice
           ? doc.debtor_id === reportIssuerId
           : doc.creditor_id === reportIssuerId) &&
-        Number(doc.total_amount) > 0 &&
+        // A missing amount still makes it a candidate, so the completeness check below lists it
+        // instead of the month silently leaving it out (#4946).
+        (doc.total_amount == null || Number(doc.total_amount) > 0) &&
         !isReimbursement
       ) {
         includedChargeIDs.add(charge.id);

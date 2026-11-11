@@ -292,6 +292,32 @@ describe('getVatRecords with incomplete documents (#4946)', () => {
     ]);
   });
 
+  it('lists an income invoice without an amount instead of leaving it out', async () => {
+    // Income invoices are only candidates with a positive amount; a missing one must not hide it.
+    const incomeInvoice = (id: string, totalAmount: number | null) => ({
+      ...expenseInvoice(id, '2024-01-10'),
+      creditor_id: OWNER_ID,
+      debtor_id: SUPPLIER_ID,
+      total_amount: totalAmount,
+    });
+    const { injector } = createInjector([
+      incomeInvoice('income-good', 117),
+      incomeInvoice('income-no-amount', null),
+      incomeInvoice('income-zero', 0),
+    ]);
+
+    const report = await getVatRecords({ filters }, injector, { includeChargeBuckets: false });
+
+    expect(report.income.map(record => record.documentId)).toEqual(['income-good']);
+    expect(report.incompleteDocuments).toEqual([
+      {
+        documentId: 'income-no-amount',
+        chargeId: 'charge-income-no-amount',
+        missingFields: ['amount'],
+      },
+    ]);
+  });
+
   it('still reports incomplete documents when the charge buckets are skipped', async () => {
     const { injector } = createInjector([
       expenseInvoice('good', '2024-01-10'),

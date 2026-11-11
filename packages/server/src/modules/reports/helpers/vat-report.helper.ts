@@ -141,6 +141,13 @@ export function isWithinMonthlyVatAmountTolerance(
   return Math.abs(expectedVatAmount + transactionsAmount) <= tolerance;
 }
 
+/**
+ * Turns one VAT-relevant document into its VAT report record: converts it to local currency and
+ * works out the VAT, after the deduction for property charges, and the amount before VAT.
+ *
+ * Expects a document with an amount, currency and date (`getVatRecords` sets the others aside).
+ * Rejects without logging on any other failure, so the caller logs it once (#4946).
+ */
 export async function adjustTaxRecord(
   rawRecord: VatReportRecordSources,
   injector: Injector,
