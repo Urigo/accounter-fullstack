@@ -3,6 +3,7 @@ import type { Injector } from 'graphql-modules';
 import type { QueryVatReportArgs } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
 import {
+  allSettledOrThrow,
   endOfTimelessMonth,
   getTimelessDateDay,
   startOfTimelessMonth,
@@ -12,7 +13,6 @@ import { BusinessTripsProvider } from '../../business-trips/providers/business-t
 import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
 import { validateCharge } from '../../charges/helpers/validate.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { IGetChargesByIdsResult } from '../../charges/types.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper.js';
@@ -35,6 +35,12 @@ export type GetVatRecordsOptions = {
   includeChargeBuckets?: boolean;
 };
 
+/**
+ * Every fan-out below uses `allSettledOrThrow`, not `Promise.all`: one failing
+ * branch must not let the request return while its siblings are still querying
+ * the request's DB client, which the cleanup plugin disposes at that point
+ * (#4871).
+ */
 export const getVatRecords = async (
   { filters }: Partial<QueryVatReportArgs>,
   injector: Injector,
@@ -100,7 +106,7 @@ export const getVatRecords = async (
       chargeType: filters?.chargesType,
     });
 
-    const [relevantDocuments, businesses, charges] = await Promise.all([
+    const [relevantDocuments, businesses, charges] = await allSettledOrThrow([
       relevantDocumentsPromise,
       businessesPromise,
       chargesPromise,
@@ -117,7 +123,7 @@ export const getVatRecords = async (
       docsCharges.push(...moreDocsCharges);
     }
 
-    const extendedCharges = await Promise.all(
+    const extendedCharges = await allSettledOrThrow(
       charges.map(async charge => {
         const { allBusinessIds } = await getChargeBusinesses(charge.id, injector);
         return {
@@ -190,7 +196,7 @@ export const getVatRecords = async (
 
     if (incomeRecords.length + expenseRecords.length > 0) {
       // TODO: what if no exchange dates found?
-      await Promise.all([
+      await allSettledOrThrow([
         ...incomeRecords.map(async rawRecord =>
           adjustTaxRecord(rawRecord, injector).then(res => {
             response.income.push(res);
@@ -207,13 +213,9 @@ export const getVatRecords = async (
     // validate charges for missing info (only needed by the VAT report screen —
     // the income/expenses-only callers skip this expensive per-charge pass)
     if (includeChargeBuckets) {
-      const validatedCharges = await Promise.all<{
-        charge: IGetChargesByIdsResult;
-        isValid: boolean;
-        businessTripId: string | null;
-      }>(
+      const validatedCharges = await allSettledOrThrow(
         charges.map(async charge => {
-          const [validation, businessTrip] = await Promise.all([
+          const [validation, businessTrip] = await allSettledOrThrow([
             validateCharge(charge, injector),
             injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
           ]);

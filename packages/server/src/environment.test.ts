@@ -29,6 +29,7 @@ const MANAGED_KEYS = [
   'POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS',
   'POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS',
   'POSTGRES_STATEMENT_TIMEOUT_MS',
+  'POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS',
   'POSTGRES_MONITOR_INTERVAL_MS',
   'POSTGRES_CONNECTION_TIMEOUT_MS',
 ];
@@ -59,7 +60,8 @@ describe('postgres pool configuration', () => {
   it('derives the watchdog interval when not configured', async () => {
     const env = await loadEnv(REQUIRED);
 
-    expect(env.postgres.clientMaxIdleMs).toBe(300_000);
+    expect(env.postgres.clientMaxIdleMs).toBe(240_000);
+    expect(env.postgres.activeClientMaxIdleMs).toBe(240_000);
     expect(env.postgres.watchdogIntervalMs).toBe(30_000);
   });
 
@@ -83,6 +85,7 @@ describe('postgres pool configuration', () => {
     const env = await loadEnv({
       ...REQUIRED,
       POSTGRES_STATEMENT_TIMEOUT_MS: '300000',
+      POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: '900000',
       POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS: '60000',
     });
 
@@ -93,6 +96,7 @@ describe('postgres pool configuration', () => {
     const env = await loadEnv({
       ...REQUIRED,
       POSTGRES_STATEMENT_TIMEOUT_MS: '120000',
+      POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: '900000',
       POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS: '400000',
     });
 
@@ -102,11 +106,25 @@ describe('postgres pool configuration', () => {
   it('never lets the active ceiling fall below the ordinary one', async () => {
     const env = await loadEnv({
       ...REQUIRED,
+      POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: '900000',
       POSTGRES_CLIENT_MAX_IDLE_MS: '600000',
       POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS: '60000',
     });
 
     expect(env.postgres.activeClientMaxIdleMs).toBe(600_000);
+  });
+
+  it('keeps the active ceiling above the statement timeout', async () => {
+    // An executing request may be mid-query when the watchdog sweeps, and a
+    // query bumps activity only at its start and end.
+    const env = await loadEnv({
+      ...REQUIRED,
+      POSTGRES_STATEMENT_TIMEOUT_MS: '300000',
+      POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: '900000',
+    });
+
+    expect(env.postgres.clientMaxIdleMs).toBe(240_000);
+    expect(env.postgres.activeClientMaxIdleMs).toBe(330_000);
   });
 
   it('accepts 0 for the monitor interval, which disables the heartbeat', async () => {
@@ -121,6 +139,89 @@ describe('postgres pool configuration', () => {
     await expect(
       loadEnv({ ...REQUIRED, POSTGRES_CONNECTION_TIMEOUT_MS: '0' }),
     ).rejects.toBeDefined();
+  });
+
+  it('refuses to start when a watchdog ceiling would lose the race to Postgres', async () => {
+    // The old 15-minute in-flight default: Postgres kills the session at 5
+    // minutes, so the watchdog — and its log line — could never fire first.
+    await expect(
+      loadEnv({ ...REQUIRED, POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS: '900000' }),
+    ).rejects.toBeDefined();
+  });
+
+  it('caps the statement timeout at 210s under the default idle-in-transaction timeout', async () => {
+    // The active and aborted ceilings are floored at the statement timeout + 30s,
+    // and must leave two 30s sweeps before the 300s Postgres timeout.
+    const env = await loadEnv({ ...REQUIRED, POSTGRES_STATEMENT_TIMEOUT_MS: '210000' });
+    expect(env.postgres.abortedClientMaxIdleMs).toBe(240_000);
+
+    await expect(
+      loadEnv({ ...REQUIRED, POSTGRES_STATEMENT_TIMEOUT_MS: '210001' }),
+    ).rejects.toBeDefined();
+  });
+
+  it('starts when a raised idle-in-transaction timeout clears every ceiling', async () => {
+    const env = await loadEnv({
+      ...REQUIRED,
+      POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: '1000000',
+      POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS: '900000',
+    });
+
+    expect(env.postgres.activeClientMaxIdleMs).toBe(900_000);
+  });
+});
+
+describe('watchdogCeilingProblems', () => {
+  const DEFAULTS = {
+    idleInTransactionTimeoutMs: 300_000,
+    clientMaxIdleMs: 240_000,
+    activeClientMaxIdleMs: 240_000,
+    abortedClientMaxIdleMs: 150_000,
+    watchdogIntervalMs: 30_000,
+  };
+
+  /** The module validates on import, so it needs a valid environment to load at all. */
+  async function load() {
+    const original = Object.fromEntries(Object.keys(REQUIRED).map(key => [key, process.env[key]]));
+    try {
+      await loadEnv(REQUIRED);
+      const { watchdogCeilingProblems } = await import('./environment.js');
+      return watchdogCeilingProblems;
+    } finally {
+      for (const [key, value] of Object.entries(original)) {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
+    }
+  }
+
+  it('accepts the defaults', async () => {
+    const watchdogCeilingProblems = await load();
+
+    expect(watchdogCeilingProblems(DEFAULTS)).toEqual([]);
+  });
+
+  it.each([
+    ['clientMaxIdleMs', 'POSTGRES_CLIENT_MAX_IDLE_MS'],
+    ['activeClientMaxIdleMs', 'POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS'],
+    ['abortedClientMaxIdleMs', 'POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS'],
+  ] as const)('flags %s at or above the idle-in-transaction timeout', async (key, variable) => {
+    const watchdogCeilingProblems = await load();
+
+    const problems = watchdogCeilingProblems({ ...DEFAULTS, [key]: 300_000 });
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain(variable);
+  });
+
+  it('flags a ceiling inside the two-sweep margin', async () => {
+    const watchdogCeilingProblems = await load();
+
+    // Below the timeout, but a sweep could land after Postgres already acted.
+    expect(watchdogCeilingProblems({ ...DEFAULTS, clientMaxIdleMs: 240_001 })).toHaveLength(1);
   });
 });
 

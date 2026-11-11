@@ -5,6 +5,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import {
+  allSettledOrThrow,
   endOfTimelessMonth,
   getMonthFromDescription,
   getTimelessDateYearMonth,
@@ -107,8 +108,10 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       .get(UnbalancedBusinessesProvider)
       .getChargeUnbalancedBusinessesByChargeIds.load(chargeId);
 
-    const [vatRecords, transactions, unbalancedBusinesses] = await Promise.all([
-      Promise.all(vatRecordsPromises),
+    // Not `Promise.all`: each month is a full getVatRecords run, and a failure
+    // in any branch must not return the request while the others still query.
+    const [vatRecords, transactions, unbalancedBusinesses] = await allSettledOrThrow([
+      allSettledOrThrow(vatRecordsPromises),
       transactionsPromise,
       unbalancedBusinessesPromise,
     ]);
@@ -146,6 +149,19 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     const financialAccountLedgerEntries: LedgerProto[] = [];
     const miscExpensesLedgerEntries: LedgerProto[] = [];
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
+
+    // Checked before any branch starts: returning after they had started would
+    // end the request while they still query its DB client.
+    const isProperty = charge.is_property;
+    if (isProperty && !propertyOutputVatTaxCategoryId) {
+      console.error(
+        `Charge ID="${chargeId}" is marked as property but no Property Output VAT tax category is configured in admin context`,
+      );
+      return {
+        __typename: 'CommonError',
+        message: `One of the charges is marked as property but no Property Output VAT tax category is configured in admin context`,
+      };
+    }
 
     // for each transaction, create a ledger record
     const mainTransactionsPromises = transactions.map(async preValidatedTransaction => {
@@ -209,18 +225,9 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       });
     });
 
-    const isProperty = charge.is_property;
-    if (isProperty && !propertyOutputVatTaxCategoryId) {
-      console.error(
-        `Charge ID="${chargeId}" is marked as property but no Property Output VAT tax category is configured in admin context`,
-      );
-      return {
-        __typename: 'CommonError',
-        message: `One of the charges is marked as property but no Property Output VAT tax category is configured in admin context`,
-      };
-    }
-
-    await Promise.all([...mainTransactionsPromises, miscExpensesLedgerPromise]);
+    // Not `Promise.all`: if the misc-expenses branch throws, the transaction
+    // branches must not keep querying after the request has returned.
+    await allSettledOrThrow([...mainTransactionsPromises, miscExpensesLedgerPromise]);
     for (const { income, expenses, ledgerDate, vatDate } of vatRecords) {
       const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
         income as RawVatReportRecord[],

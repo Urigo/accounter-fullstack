@@ -52,6 +52,7 @@ vi.mock('../../../helpers/utils.helper.js', () => {
 type InjectorOptions = {
   transactions?: unknown[];
   unbalancedBusinesses?: Array<{ business_id: string }>;
+  propertyOutputVatTaxCategoryId?: string | null;
 };
 
 function makeInjector(options: InjectorOptions = {}): Injector {
@@ -72,7 +73,10 @@ function makeInjector(options: InjectorOptions = {}): Injector {
               vatBusinessId: 'vat-business-id',
               inputVatTaxCategoryId: 'input-vat-tax-category-id',
               outputVatTaxCategoryId: 'output-vat-tax-category-id',
-              propertyOutputVatTaxCategoryId: 'property-output-vat-tax-category-id',
+              propertyOutputVatTaxCategoryId:
+                'propertyOutputVatTaxCategoryId' in options
+                  ? options.propertyOutputVatTaxCategoryId
+                  : 'property-output-vat-tax-category-id',
             },
             general: {
               taxCategories: {
@@ -240,4 +244,69 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
     );
     expect(result.errors).not.toContain('Monthly VAT validation requires transactions amount');
   });
+
+  it('rejects a property charge without a property VAT category before starting any branch', async () => {
+    // Returning this error after the transaction and misc-expense branches had
+    // started would end the request while they still query its DB client.
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -100,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+
+    const result = await generateLedgerRecordsForMonthlyVat(
+      { ...chargeBase, is_property: true, user_description: 'VAT for 04/2026' } as never,
+      { insertLedgerRecordsIfNotExists: false },
+      { injector: makeInjector({ propertyOutputVatTaxCategoryId: null }) } as never,
+      {} as never,
+    );
+
+    expect(result).toMatchObject({ __typename: 'CommonError' });
+    expect(generateMiscExpensesLedger).not.toHaveBeenCalled();
+  });
+
+  it('does not return while another month is still loading its VAT records', async () => {
+    // Each month is a full getVatRecords run. Returning on the first rejection
+    // would leave the others querying a DB client the request has disposed.
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -100,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    let releaseSibling!: () => void;
+    const sibling = new Promise<void>(resolve => {
+      releaseSibling = resolve;
+    });
+    let requestDone = false;
+    const queriesAfterRequest: string[] = [];
+    vi.mocked(getVatRecords)
+      .mockRejectedValueOnce(new Error('Currency missing'))
+      .mockImplementationOnce(async () => {
+        await sibling;
+        if (requestDone) {
+          queriesAfterRequest.push('SELECT documents');
+        }
+        return { income: [], expenses: [] } as never;
+      });
+
+    const resultPromise = (async () => {
+      try {
+        return await generateLedgerRecordsForMonthlyVat(
+          { ...chargeBase, user_description: 'VAT for 03-04/2026' } as never,
+          { insertLedgerRecordsIfNotExists: false },
+          { injector: makeInjector() } as never,
+          {} as never,
+        );
+      } finally {
+        requestDone = true;
+      }
+    })();
+    setTimeout(releaseSibling, 20);
+
+    await expect(resultPromise).resolves.toMatchObject({ __typename: 'CommonError' });
+    await new Promise(resolve => setTimeout(resolve, 30));
+    expect(queriesAfterRequest).toEqual([]);
+  });
 });
+

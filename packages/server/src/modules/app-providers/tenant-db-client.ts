@@ -5,6 +5,7 @@ import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { resolveWriteTargetBusinessId } from '../../shared/helpers/auth-scope.js';
 import type { AuthContext } from '../../shared/types/auth.js';
+import type { DbRequestState } from '../../shared/types/index.js';
 import { AuthContextProvider } from '../auth/providers/auth-context.provider.js';
 import { DBProvider } from './db.provider.js';
 
@@ -94,6 +95,10 @@ export interface WatchdogOptions {
     lastQuery: string | null;
     operationInFlight: boolean;
     requestAborted: boolean;
+    /** The GraphQL operation that owns the client, when known. */
+    operationName: string | null;
+    /** The request that owns the client, when known. */
+    requestId: string | null;
   }) => void;
 }
 
@@ -134,6 +139,8 @@ export function startTenantDbClientWatchdog(options: WatchdogOptions): { stop: (
         lastQuery: client.lastQuery,
         operationInFlight,
         requestAborted,
+        operationName: client.operationName,
+        requestId: client.requestId,
       };
       options.onLeak?.(info);
       void client.dispose().catch(error => {
@@ -207,7 +214,13 @@ export class TenantAwareDBClient {
   private authContext: AuthContext | null = null;
   private authContextInitialized = false;
   private clientErrorListener: ((error: Error) => void) | null = null;
-  private readonly context: GraphQLModules.GlobalContext | undefined;
+  /**
+   * The owning request's lifecycle state, captured by reference at
+   * construction. Read through this reference — never through the injected
+   * context, which is a per-module copy that misses later assignments and is
+   * emptied when the operation is destroyed. See `DbRequestState`.
+   */
+  private readonly request: DbRequestState | null;
 
   /** Timestamp of the last query issued, for leak detection. See the watchdog. */
   public lastActivityAt = Date.now();
@@ -226,7 +239,7 @@ export class TenantAwareDBClient {
    * OCR — apart from one that has gone away.
    */
   public get operationInFlight(): boolean {
-    return this.context?.executionInFlight === true;
+    return this.request?.executionInFlight === true;
   }
 
   /**
@@ -236,6 +249,21 @@ export class TenantAwareDBClient {
    */
   public get requestAborted(): boolean {
     return this.disposalRequested;
+  }
+
+  /** The GraphQL operation that owns this client, for log lines. */
+  public get operationName(): string | null {
+    return this.request?.operationName ?? null;
+  }
+
+  /** The request that owns this client, for log lines. */
+  public get requestId(): string | null {
+    return this.request?.requestId ?? null;
+  }
+
+  /** ` operation=… request=…`, appended to every log line about this client. */
+  private get logSuffix(): string {
+    return ` operation=${this.operationName ?? 'unknown'} request=${this.requestId ?? 'unknown'}`;
   }
 
   /**
@@ -255,16 +283,59 @@ export class TenantAwareDBClient {
   ) {
     // Register for end-of-request disposal (commit + release of the
     // request-scoped connection). dbCleanupPlugin drains this list once the
-    // response — including any @defer/@stream tail — is fully sent. Absent
-    // context (direct construction), fall back to commit-and-release per
-    // operation since nothing would ever call dispose().
-    this.context = context;
-    if (context) {
-      (context.dbClientsToDispose ??= []).push(this);
+    // response — including any @defer/@stream tail — is fully sent.
+    const request = context?.dbRequest ?? null;
+    this.request = request;
+    if (request && !request.disposed) {
+      request.clientsToDispose.push(this);
       this.autoRelease = false;
-    } else {
-      this.autoRelease = true;
+      return;
     }
+
+    // Nothing will ever dispose this client, so it must not hold a connection
+    // between queries: commit and release after each one instead.
+    this.autoRelease = true;
+    if (context) {
+      // A context without live request state is work that outlived its
+      // request: either the end-of-execution pass already ran (`disposed`), or
+      // the operation was destroyed and graphql-modules built this client a
+      // fresh, empty context. Registered, it would hold its connection (and an
+      // open transaction) until the watchdog or Postgres killed it. Without
+      // context at all (direct construction — scripts, test harnesses) this is
+      // the expected mode and not worth a line.
+      process.stderr.write(
+        `[db] TenantAwareDBClient created outside a live request; running in autoRelease mode.${this.logSuffix}\n`,
+      );
+    }
+  }
+
+  /**
+   * The same connection, except that every `query` records activity at its
+   * start and its end, as {@link query} does.
+   */
+  private withActivityTracking(client: PoolClient): PoolClient {
+    return new Proxy(client, {
+      get: (target, property) => {
+        if (property === 'query') {
+          return (...args: unknown[]) => {
+            const [config] = args;
+            const text =
+              typeof config === 'string'
+                ? config
+                : String((config as { text?: unknown } | null)?.text ?? '');
+            this.markActivity(text);
+            const result: unknown = (target.query as (...queryArgs: unknown[]) => unknown)(...args);
+            // Promise form: record completion too. The callback and Submittable
+            // forms return no promise; their start is recorded above.
+            return result instanceof Promise
+              ? result.finally(() => this.markActivity(text))
+              : result;
+          };
+        }
+        const value: unknown = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
   }
 
   /** Records query activity so the watchdog can tell a busy client from a leaked one. */
@@ -371,20 +442,25 @@ export class TenantAwareDBClient {
     try {
       let result: T;
 
+      // The callback queries the raw connection, bypassing query(), so its
+      // statements must record activity too: otherwise a long transaction looks
+      // idle to the watchdog from its first statement on.
+      const trackedClient = this.withActivityTracking(client);
+
       // Use a savepoint for all nested scopes (depth > 1) to isolate failures
       // and allow partial success/failure within the shared transaction.
       if (this.transactionDepth > 1) {
         const savepointName = `sp_${this.transactionDepth}`;
         try {
           await client.query(`SAVEPOINT ${savepointName}`);
-          result = await fn(client);
+          result = await fn(trackedClient);
           await client.query(`RELEASE SAVEPOINT ${savepointName}`);
         } catch (error) {
           await client.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
           throw error;
         }
       } else {
-        result = await fn(client);
+        result = await fn(trackedClient);
         // Outermost scope: commit promptly — explicit transactions are used by
         // mutations whose success response must reflect durable state.
         await this.endSession('COMMIT');
@@ -425,8 +501,15 @@ export class TenantAwareDBClient {
       // `idle_in_transaction_session_timeout` — emits an unhandled 'error'
       // event, which surfaces as an uncaughtException and takes down the whole
       // process. Absorb it and let the pool discard the connection instead.
-      const onClientError = (error: Error) => {
-        console.error('[db] Error on checked-out client, discarding connection:', error);
+      const onClientError = (error: Error & { code?: string }) => {
+        // One line, no pg stack: the stack says nothing about who held the
+        // connection, while the operation and last query do.
+        process.stderr.write(
+          `[db] Error on checked-out client, discarding connection: ` +
+            `${error.code ? `code=${error.code} ` : ''}${error.message}` +
+            ` idleMs=${Date.now() - this.lastActivityAt} lastQuery=${this.lastQuery ?? 'unknown'}` +
+            `${this.logSuffix}\n`,
+        );
         this.sessionOpen = false;
         // Hand the connection back to the pool as destroyed. Merely dropping
         // our own reference would leave the pool counting it as checked out
