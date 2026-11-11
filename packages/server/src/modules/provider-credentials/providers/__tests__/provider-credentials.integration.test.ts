@@ -25,13 +25,12 @@ describe('ProviderCredentialsProvider integration', () => {
 
     const original = { id: 'gi-id', secret: 'gi-secret' };
 
-    // setCredentials reads the previous credentials (none), then writes to DB
-    query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    // setCredentials writes to DB
     query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
     await provider.setCredentials('green_invoice', original);
 
     // Capture the encrypted blob that was stored
-    const [, params] = query.mock.calls[1] as [string, unknown[]];
+    const [, params] = query.mock.calls[0] as [string, unknown[]];
     const encryptedBlob = params[1] as string;
 
     // getGreenInvoiceCredentials reads from DB — return the encrypted blob
@@ -63,9 +62,7 @@ describe('ProviderCredentialsProvider integration', () => {
   it('delete followed by get returns null', async () => {
     const { provider, query } = createProvider({ businessId: 'tenant-a' });
 
-    // deleteCredentials reads the previous credentials, then deletes them
-    const blob = encryptCredential(JSON.stringify({ id: 'gi-id', secret: 'gi-secret' }), TEST_KEY);
-    query.mockResolvedValueOnce({ rows: [{ payload: blob }], rowCount: 1 });
+    // deleteCredentials
     query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
     await provider.deleteCredentials('green_invoice');
 

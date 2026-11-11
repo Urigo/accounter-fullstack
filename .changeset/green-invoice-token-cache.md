@@ -10,7 +10,8 @@ call and, if the API answers 401, drops the token and retries once with a new on
 is rejected too is dropped as well). The cache keeps only a hash of each secret, and
 `invalidate(id)` evicts a removed key entirely. `obtainAccessToken` and `isUnauthorizedError` are
 exported too; `init` is unchanged. The server now keeps one app-wide token cache instead of
-requesting a new token for every GraphQL operation that calls Green Invoice, and evicts the previous
-API key from it when Green Invoice credentials are replaced or deleted. Each eviction advances the
-cache's `epoch`; an SDK built from credentials read before an eviction (`createGreenInvoiceSdk`'s
-`epoch` option) gets uncached tokens, so a removed key can't put its token back.
+requesting a new token for every GraphQL operation that calls Green Invoice, and clears it when
+Green Invoice credentials are replaced or deleted. Each eviction (`invalidate(id)` or `clear()`)
+advances the cache's `epoch`; an SDK built from credentials read before an eviction
+(`createGreenInvoiceSdk`'s `epoch` option) gets uncached tokens, so a removed key can't put its token
+back.

@@ -197,6 +197,20 @@ describe('GreenInvoiceTokenCache', () => {
     expect(tokenCache.epoch).toBe(1);
   });
 
+  it('clears every key, advances the epoch and drops tokens requested in flight', async () => {
+    const { upstream, tokenCache } = setup();
+
+    await tokenCache.getToken('key-a', 'secret-a');
+    const pending = tokenCache.getToken('key-b', 'secret-b');
+    tokenCache.clear();
+    await pending;
+    expect(tokenCache.epoch).toBe(1);
+
+    await tokenCache.getToken('key-a', 'secret-a');
+    await tokenCache.getToken('key-b', 'secret-b');
+    expect(upstream.tokenRequests).toHaveLength(4);
+  });
+
   it('only invalidates the token that was rejected', async () => {
     const { upstream, tokenCache } = setup();
 

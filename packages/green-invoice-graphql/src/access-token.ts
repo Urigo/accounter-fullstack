@@ -212,9 +212,14 @@ export class GreenInvoiceTokenCache implements GreenInvoiceTokenSource {
     }
   }
 
+  /**
+   * Evicts every key, like `invalidate(id)` for each: tokens requested in flight aren't cached, and
+   * the `epoch` advances. For when credentials changed but it isn't known which key they displaced.
+   */
   public clear(): void {
     this.entries.clear();
     this.inFlight.clear();
+    this.evictions += 1;
   }
 
   /** Drops expired entries, so keys that are no longer used don't stay cached */

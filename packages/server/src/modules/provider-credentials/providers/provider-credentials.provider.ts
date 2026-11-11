@@ -163,18 +163,19 @@ export class ProviderCredentialsProvider {
   }
 
   /**
-   * Run a write that replaces or removes the provider's credentials. For Green Invoice, the access
-   * token cached app-wide for the previous API key is then evicted, so the removed key and its token
-   * don't outlive the change in the shared cache.
+   * Run a write that replaces or removes the provider's credentials. For Green Invoice, the app-wide
+   * token cache is then cleared, so the displaced API key and its token don't outlive the change.
+   *
+   * The whole cache is cleared, rather than the previous key looked up and evicted, because that
+   * lookup can't be made atomic with the write: two overlapping changes (A→B, B→C) could both see A,
+   * leaving B's token cached. Clearing after every committed write (writes commit immediately) needs
+   * no lookup, and also advances the cache's epoch, so an SDK built from the old credentials stops
+   * using the cache. The cost is one token request per tenant after a (rare) credential change.
    */
   private async evictingCachedToken<T>(provider: ProviderKey, run: () => Promise<T>): Promise<T> {
-    if (provider !== 'green_invoice') {
-      return run();
-    }
-    const previous = await this.getGreenInvoiceCredentials();
     const result = await run();
-    if (previous) {
-      this.greenInvoiceTokens.invalidate(previous.id);
+    if (provider === 'green_invoice') {
+      this.greenInvoiceTokens.clear();
     }
     return result;
   }

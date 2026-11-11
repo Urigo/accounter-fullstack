@@ -34,4 +34,9 @@ export class GreenInvoiceTokenCacheProvider implements GreenInvoiceTokenSource {
   public invalidate(id: string, token?: string): void {
     this.tokenCache.invalidate(id, token);
   }
+
+  /** Evicts every key and advances the epoch (see `GreenInvoiceTokenCache.clear`) */
+  public clear(): void {
+    this.tokenCache.clear();
+  }
 }
