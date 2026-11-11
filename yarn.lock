@@ -107,7 +107,7 @@ __metadata:
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:1.68.0"
     next-themes: "npm:0.4.6"
-    pdfjs-dist: "npm:6.4.299"
+    pdfjs-dist: "npm:6.5.438"
     radix-ui: "npm:1.8.1"
     react: "npm:19.3.1"
     react-day-picker: "npm:10.0.2"
@@ -4936,7 +4936,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/canvas@npm:^1.0.10":
+"@napi-rs/canvas@npm:^1.0.13":
   version: 1.1.0
   resolution: "@napi-rs/canvas@npm:1.1.0"
   dependencies:
@@ -20744,15 +20744,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pdfjs-dist@npm:6.4.299":
-  version: 6.4.299
-  resolution: "pdfjs-dist@npm:6.4.299"
+"pdfjs-dist@npm:6.5.438":
+  version: 6.5.438
+  resolution: "pdfjs-dist@npm:6.5.438"
   dependencies:
-    "@napi-rs/canvas": "npm:^1.0.10"
+    "@napi-rs/canvas": "npm:^1.0.13"
   dependenciesMeta:
     "@napi-rs/canvas":
       optional: true
-  checksum: 10c0/f64c9bfda0838a2aba815b2083a1273df4611c749532a959296501270c589cb813c48429a8730a5ca033244d3dd8176c305c6241c8f6d9ebce069d9a9dba3e67
+  checksum: 10c0/5b8ed4ddaddb678297b11a9b8559d474d04aa5ef27847d3c9771af8cfef1d45a2f5f01154a683629b352d3f3a9f32059b2c29d30e7c91cdd1eca1e602fedb071
   languageName: node
   linkType: hard
 
