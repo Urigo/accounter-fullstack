@@ -148,6 +148,19 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     const miscExpensesLedgerEntries: LedgerProto[] = [];
     const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
 
+    // Checked before any branch starts: returning after they had started would
+    // end the request while they still query its DB client.
+    const isProperty = charge.is_property;
+    if (isProperty && !propertyOutputVatTaxCategoryId) {
+      console.error(
+        `Charge ID="${chargeId}" is marked as property but no Property Output VAT tax category is configured in admin context`,
+      );
+      return {
+        __typename: 'CommonError',
+        message: `One of the charges is marked as property but no Property Output VAT tax category is configured in admin context`,
+      };
+    }
+
     // for each transaction, create a ledger record
     const mainTransactionsPromises = transactions.map(async preValidatedTransaction => {
       try {
@@ -209,17 +222,6 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
       });
     });
-
-    const isProperty = charge.is_property;
-    if (isProperty && !propertyOutputVatTaxCategoryId) {
-      console.error(
-        `Charge ID="${chargeId}" is marked as property but no Property Output VAT tax category is configured in admin context`,
-      );
-      return {
-        __typename: 'CommonError',
-        message: `One of the charges is marked as property but no Property Output VAT tax category is configured in admin context`,
-      };
-    }
 
     // Not `Promise.all`: if the misc-expenses branch throws, the transaction
     // branches must not keep querying after the request has returned.

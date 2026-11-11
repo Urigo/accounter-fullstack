@@ -52,6 +52,7 @@ vi.mock('../../../helpers/utils.helper.js', () => {
 type InjectorOptions = {
   transactions?: unknown[];
   unbalancedBusinesses?: Array<{ business_id: string }>;
+  propertyOutputVatTaxCategoryId?: string | null;
 };
 
 function makeInjector(options: InjectorOptions = {}): Injector {
@@ -72,7 +73,10 @@ function makeInjector(options: InjectorOptions = {}): Injector {
               vatBusinessId: 'vat-business-id',
               inputVatTaxCategoryId: 'input-vat-tax-category-id',
               outputVatTaxCategoryId: 'output-vat-tax-category-id',
-              propertyOutputVatTaxCategoryId: 'property-output-vat-tax-category-id',
+              propertyOutputVatTaxCategoryId:
+                'propertyOutputVatTaxCategoryId' in options
+                  ? options.propertyOutputVatTaxCategoryId
+                  : 'property-output-vat-tax-category-id',
             },
             general: {
               taxCategories: {
@@ -239,5 +243,26 @@ describe('generateLedgerRecordsForMonthlyVat validation', () => {
       'Monthly VAT validation requires at least one transaction date',
     );
     expect(result.errors).not.toContain('Monthly VAT validation requires transactions amount');
+  });
+
+  it('rejects a property charge without a property VAT category before starting any branch', async () => {
+    // Returning this error after the transaction and misc-expense branches had
+    // started would end the request while they still query its DB client.
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -100,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+
+    const result = await generateLedgerRecordsForMonthlyVat(
+      { ...chargeBase, is_property: true, user_description: 'VAT for 04/2026' } as never,
+      { insertLedgerRecordsIfNotExists: false },
+      { injector: makeInjector({ propertyOutputVatTaxCategoryId: null }) } as never,
+      {} as never,
+    );
+
+    expect(result).toMatchObject({ __typename: 'CommonError' });
+    expect(generateMiscExpensesLedger).not.toHaveBeenCalled();
   });
 });

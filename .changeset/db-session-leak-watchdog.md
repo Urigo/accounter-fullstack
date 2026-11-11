@@ -6,7 +6,8 @@ Fix request-scoped DB sessions leaking, and make the leak watchdog fire before P
 
 - Every watchdog ceiling must now be at most `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` minus two
   sweep intervals, and the server refuses to start otherwise. `POSTGRES_CLIENT_MAX_IDLE_MS` now
-  defaults to 240s, and `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS` defaults to it instead of 900s. A
+  defaults to 240s, and `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS` defaults to it instead of 900s (and, like the aborted ceiling,
+  is never below `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`). A
   deployment that sets `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS` to 240s or more must remove it or raise
   the idle-in-transaction timeout.
 - The watchdog's reclaim line and the `[db] Error on checked-out client` line name the GraphQL

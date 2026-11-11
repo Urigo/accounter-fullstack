@@ -94,7 +94,10 @@ const PostgresModel = zod.object({
   POSTGRES_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(240_000),
   /**
    * The same ceiling for a client whose GraphQL operation is *still executing*.
-   * Defaults to `POSTGRES_CLIENT_MAX_IDLE_MS`, and is never lower than it.
+   * Defaults to `POSTGRES_CLIENT_MAX_IDLE_MS`, and is never lower than it — nor
+   * than `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`, since a long query bumps activity
+   * only at its start and end, and a lower ceiling would reclaim the client of a
+   * request whose query is still legitimately running.
    *
    * It used to default to 15 minutes, for document ingestion, which is quiet on
    * the database while it downloads a file, uploads it to Cloudinary and waits
@@ -358,6 +361,15 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
 }
 
 const postgres = extractConfig(configs.postgres);
+
+/**
+ * Lowest ceiling that cannot reclaim a client mid-query: a long query bumps
+ * activity only at its start and end, so a ceiling below the statement timeout
+ * would reclaim a connection out from under a query that is still running. The
+ * margin keeps a query that runs right up to the statement timeout from being
+ * caught at the boundary.
+ */
+const longQueryFloorMs = postgres.POSTGRES_STATEMENT_TIMEOUT_MS + 30_000;
 const cloudinary = extractConfig(configs.cloudinary);
 const hive = extractConfig(configs.hive);
 const googleDrive = extractConfig(configs.googleDrive);
@@ -384,18 +396,17 @@ export const env = {
     idleInTransactionTimeoutMs: postgres.POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS,
     idleTimeoutMs: postgres.POSTGRES_IDLE_TIMEOUT_MS,
     clientMaxIdleMs: postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+    // Both floored at `longQueryFloorMs` rather than merely documented as
+    // needing to clear it: these apply while a request is still executing, so a
+    // query may well be running when the watchdog sweeps.
     activeClientMaxIdleMs: Math.max(
       postgres.POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS ?? postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
       postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+      longQueryFloorMs,
     ),
-    // Floored above the statement timeout rather than merely documented as
-    // needing to be: a long query bumps activity only at its start and end, so
-    // an aborted ceiling below it would reclaim a connection out from under a
-    // query that is still running. The margin is what keeps a query that runs
-    // right up to the statement timeout from being caught at the boundary.
     abortedClientMaxIdleMs: Math.max(
       postgres.POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS,
-      postgres.POSTGRES_STATEMENT_TIMEOUT_MS + 30_000,
+      longQueryFloorMs,
     ),
     watchdogIntervalMs:
       postgres.POSTGRES_WATCHDOG_INTERVAL_MS ??
@@ -496,7 +507,7 @@ export function watchdogCeilingProblems(settings: WatchdogCeilingSettings): stri
     [
       'POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS',
       settings.activeClientMaxIdleMs,
-      'defaults to, and is never lower than, POSTGRES_CLIENT_MAX_IDLE_MS',
+      'defaults to POSTGRES_CLIENT_MAX_IDLE_MS; never lower than it or POSTGRES_STATEMENT_TIMEOUT_MS + 30s',
     ],
     [
       'POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS',

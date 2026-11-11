@@ -114,6 +114,19 @@ describe('postgres pool configuration', () => {
     expect(env.postgres.activeClientMaxIdleMs).toBe(600_000);
   });
 
+  it('keeps the active ceiling above the statement timeout', async () => {
+    // An executing request may be mid-query when the watchdog sweeps, and a
+    // query bumps activity only at its start and end.
+    const env = await loadEnv({
+      ...REQUIRED,
+      POSTGRES_STATEMENT_TIMEOUT_MS: '300000',
+      POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: '900000',
+    });
+
+    expect(env.postgres.clientMaxIdleMs).toBe(240_000);
+    expect(env.postgres.activeClientMaxIdleMs).toBe(330_000);
+  });
+
   it('accepts 0 for the monitor interval, which disables the heartbeat', async () => {
     const env = await loadEnv({ ...REQUIRED, POSTGRES_MONITOR_INTERVAL_MS: '0' });
 
