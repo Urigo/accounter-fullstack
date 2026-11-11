@@ -11,13 +11,18 @@
 # DB settings go to $CLAUDE_ENV_FILE instead of a .env file (the repo's .env.template defaults).
 # If Docker can't start or the migrations fail, the DB steps are skipped with a warning and
 # GraphQL-only codegen runs, so the rest of the session still works.
+#
+# The hook runs again when a session resumes, but not when the container's Docker daemon dies
+# mid-session (it can, across a worker restart), which takes Postgres down with it. To recover, run
+# the hook by hand from the repo root: `bash .claude/hooks/session-start.sh`. It is idempotent.
 set -euo pipefail
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
-cd "$CLAUDE_PROJECT_DIR"
+# CLAUDE_PROJECT_DIR is set when Claude Code runs the hook, not when it is run by hand.
+cd "${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
 
 # A SessionStart hook's stdout is added to Claude's context, so the commands' output (tens of KB
 # of yarn and build logs) goes to a log file instead. Only a short summary reaches stdout (fd 3);
@@ -92,6 +97,10 @@ persist_env POSTGRES_HOST localhost
 persist_env POSTGRES_PORT 5432
 persist_env POSTGRES_DB accounter
 persist_env POSTGRES_SSL 0
+# The server refuses to load its environment without this key, so every test that imports it
+# (integration tests included) would exit before running. A real key from the environment's
+# secrets wins; otherwise an all-zero dev-only key, which encrypts nothing that matters here.
+persist_env CREDENTIALS_ENCRYPTION_KEY "${CREDENTIALS_ENCRYPTION_KEY:-$(printf '%064d' 0)}"
 
 db_ready=false
 if command -v docker > /dev/null 2>&1; then
