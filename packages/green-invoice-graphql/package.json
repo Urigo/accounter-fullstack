@@ -54,6 +54,7 @@
     "test": "node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
   "dependencies": {
+    "@graphql-hive/logger": "1.1.1",
     "@graphql-mesh/fusion-runtime": "1.13.4",
     "@graphql-mesh/transport-rest": "0.12.4",
     "graphql": "16.15.0"

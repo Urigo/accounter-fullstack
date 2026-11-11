@@ -1,3 +1,4 @@
+import { LegacyLogger, Logger } from '@graphql-hive/logger';
 import { getSdkRequesterForUnifiedGraph } from '@graphql-mesh/fusion-runtime';
 import * as restTransport from '@graphql-mesh/transport-rest';
 import { getSdk, type Sdk } from './__generated__/sdk.js';
@@ -11,6 +12,14 @@ export type GreenInvoiceContext = {
 };
 
 /**
+ * The REST transport logs every upstream request at debug level, headers (`Authorization: Bearer
+ * <token>`) and response bodies included. A Hive `Logger` with no explicit level follows the
+ * `DEBUG` / `LOG_LEVEL` env vars, and fusion-runtime's fallback when no logger is passed has changed
+ * between releases, so the level is pinned here: no env var can turn those dumps on.
+ */
+const log = new Logger({ level: 'info' });
+
+/**
  * Executes operations in-process against the composed supergraph, with no gateway server. Built once
  * per process (the counterpart of Mesh v0's cached `getBuiltMesh()`), since building it parses the
  * supergraph.
@@ -20,6 +29,7 @@ const requester = getSdkRequesterForUnifiedGraph({
   // Passed explicitly: otherwise the runtime resolves it with a name-based dynamic import
   // (`@graphql-mesh/transport-${kind}`), which only works if the package happens to be hoisted.
   transports: { rest: restTransport },
+  transportContext: { log, logger: LegacyLogger.from(log) },
 });
 
 /**

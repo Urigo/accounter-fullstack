@@ -207,6 +207,7 @@ __metadata:
     "@graphql-codegen/typescript": "npm:7.0.1"
     "@graphql-codegen/typescript-generic-sdk": "npm:6.0.0"
     "@graphql-codegen/typescript-operations": "npm:7.0.1"
+    "@graphql-hive/logger": "npm:1.1.1"
     "@graphql-mesh/compose-cli": "npm:1.8.4"
     "@graphql-mesh/fusion-runtime": "npm:1.13.4"
     "@graphql-mesh/transport-rest": "npm:0.12.4"
@@ -2692,7 +2693,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/logger@npm:^1.1.0, @graphql-hive/logger@npm:^1.1.1":
+"@graphql-hive/logger@npm:1.1.1, @graphql-hive/logger@npm:^1.1.0, @graphql-hive/logger@npm:^1.1.1":
   version: 1.1.1
   resolution: "@graphql-hive/logger@npm:1.1.1"
   peerDependencies:

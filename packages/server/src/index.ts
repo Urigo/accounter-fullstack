@@ -175,6 +175,9 @@ async function main() {
   const { application, transformedSchema } = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
+    // Pinned: Yoga's default level follows `DEBUG=1`, which would add per-request debug lines in
+    // production. `useHive` forwards its own logs to this logger, so this level covers Hive too.
+    logging: 'info',
     plugins: [
       correlationIdPlugin(),
       dbCleanupPlugin(),
