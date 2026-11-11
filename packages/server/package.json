@@ -43,7 +43,7 @@
     "@envelop/core": "5.6.1",
     "@envelop/generic-auth": "11.2.3",
     "@envelop/graphql-modules": "9.2.1",
-    "@google-cloud/pubsub": "6.3.2",
+    "@google-cloud/pubsub": "6.4.1",
     "@graphql-hive/yoga": "0.50.0",
     "@graphql-tools/utils": "13.2.1",
     "@graphql-yoga/plugin-defer-stream": "3.24.6",
