@@ -1,8 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import { Kind, type DocumentNode } from 'graphql';
 import { Plugin } from 'graphql-yoga';
-import { isSpanContextValid, trace } from '@opentelemetry/api';
 import type { AccounterContext, DbRequestState } from '../shared/types/index.js';
+import { requestIdOf } from './correlation-id-plugin.js';
 
 export function dbCleanupPlugin(): Plugin<AccounterContext> {
   return {
@@ -17,7 +16,7 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
         clientsToDispose: [],
         executionInFlight: false,
         disposed: false,
-        requestId: currentRequestId(),
+        requestId: requestIdOf(accounterContext.request),
         operationName: null,
       };
       accounterContext.dbRequest = state;
@@ -120,12 +119,6 @@ async function endExecution(state: DbRequestState | undefined) {
   // registered client, so TenantAwareDBClient must not hold a connection.
   state.disposed = true;
   await disposeClients(state);
-}
-
-/** The OTel trace id when tracing is on (so a log line pivots to the trace), else a random id. */
-function currentRequestId(): string {
-  const spanContext = trace.getActiveSpan()?.spanContext();
-  return spanContext && isSpanContextValid(spanContext) ? spanContext.traceId : randomUUID();
 }
 
 function operationNameOf(document: DocumentNode | undefined): string | undefined {
