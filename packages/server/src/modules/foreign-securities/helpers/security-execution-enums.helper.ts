@@ -79,8 +79,10 @@ export const tryToSecurityTradeType = (raw: string): SecurityTradeType | null =>
 export const CANCELLED_EXECUTION_FLAG = 'כן';
 
 /**
- * Whether the bank cancelled this execution. A cancellation keeps the original's trade type but
- * negates its values, so its cash moves the other way: a cancelled dividend takes money out.
+ * Whether the bank cancelled this execution. A cancellation's cash moves the other way from the
+ * original's: a cancelled dividend takes money out, a cancelled buy brings it back. The bank
+ * reports it either under the original's trade type or as the opposite trade
+ * (`cancelledTradeType`).
  */
 export const isCancelledExecution = (execution: {
   is_cancel_transaction: string | null;

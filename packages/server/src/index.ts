@@ -83,7 +83,14 @@ async function main() {
     activeMaxIdleMs: env.postgres.activeClientMaxIdleMs,
     abortedMaxIdleMs: env.postgres.abortedClientMaxIdleMs,
     intervalMs: env.postgres.watchdogIntervalMs,
-    onLeak: ({ idleMs, lastQuery, operationInFlight, requestAborted }) => {
+    onLeak: ({
+      idleMs,
+      lastQuery,
+      operationInFlight,
+      requestAborted,
+      operationName,
+      requestId,
+    }) => {
       const state = requestAborted
         ? ' (caller aborted; deferred disposal never completed)'
         : operationInFlight
@@ -91,7 +98,8 @@ async function main() {
           : '';
       process.stderr.write(
         `[db] Reclaiming leaked connection after ${Math.round(idleMs / 1000)}s idle${state}. ` +
-          `Last query: ${lastQuery ?? 'unknown'}\n`,
+          `Last query: ${lastQuery ?? 'unknown'} ` +
+          `operation=${operationName ?? 'unknown'} request=${requestId ?? 'unknown'}\n`,
       );
     },
   });
@@ -175,6 +183,12 @@ async function main() {
   const { application, transformedSchema } = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
+    // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`, which Yoga's default would follow.
+    // `useHive` forwards its own logs to this logger, so this one level covers Hive too.
+    logging: env.logging.level,
+    // Yoga's 25 MB default is too small for the email-ingestion gateway, which sends up
+    // to 20 MB of attachments (`MAX_EXTRACTED_BYTES`) base64-inlined in JSON, ~27 MB.
+    maxRequestBodySize: 50_000_000,
     plugins: [
       correlationIdPlugin(),
       dbCleanupPlugin(),

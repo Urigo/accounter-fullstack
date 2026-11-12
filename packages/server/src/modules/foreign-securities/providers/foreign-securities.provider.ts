@@ -2,12 +2,14 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import type { SecurityTradeType } from '../../../shared/enums.js';
 import {
   addDaysToTimelessDate,
   compareTimelessDates,
   maxTimelessDate,
   minTimelessDate,
 } from '../../../shared/helpers/timeless-date.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
@@ -20,10 +22,12 @@ import {
   type AccountTuple,
   type MatchableTransaction,
 } from '../helpers/match-security-executions.helper.js';
+import { tradeTypeToRaw } from '../helpers/security-execution-enums.helper.js';
 import { extractTransactionSecurityKeys } from '../helpers/security-key.helper.js';
 import type {
   ChargeSecurityProto,
   IGetFilteredSecurityExecutionsQuery,
+  IGetOwnerSecurityExecutionsByTradeDatesQuery,
   IGetSecuritiesByKeysQuery,
   IGetSecurityExecutionsByBusinessIdsQuery,
   IGetSecurityExecutionsByChargeIdsQuery,
@@ -251,6 +255,69 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
     AND ($toTradeDate::DATE IS NULL OR t.trade_date <= $toTradeDate)
   ORDER BY t.trade_date DESC, t.id DESC
   LIMIT $limit! OFFSET $offset!;`;
+
+/**
+ * Every execution of one owner, of the given trade types, traded within a date range (both ends
+ * inclusive), oldest first — a period's disposals, for a tax report.
+ *
+ * Addressed by owner rather than by security business: a report over a period must see every
+ * execution of the owner, including one whose Poalim key resolves to no security business (yet),
+ * so the identifier bridge is a LEFT join and the business may be null. Same column list as
+ * `getSecurityExecutions`, so the rows are `SecurityExecutionRow`s.
+ *
+ * Tenant scoping is RLS, on both tables.
+ */
+const getOwnerSecurityExecutionsByTradeDates = sql<IGetOwnerSecurityExecutionsByTradeDatesQuery>`
+  SELECT
+    t.id,
+    t.owner_id,
+    t.security,
+    t.bank_number,
+    t.branch_number,
+    t.account_number,
+    t.trade_date,
+    t.value_date,
+    t.settlement_date,
+    t.payment_date,
+    t.trade_type,
+    t.transaction_type,
+    t.nv,
+    t.trade_price,
+    t.trade_gross_value_trade_currency,
+    t.net_value_trade_currency,
+    t.net_value_settlement_currency,
+    t.net_value_nis,
+    t.trade_currency,
+    t.settlement_currency,
+    t.trade_commission_value_trade_currency,
+    t.trade_commission_value_nis,
+    t.commissions_currency,
+    t.management_fees_value_trade_currency,
+    t.israe_tax_value,
+    t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
+    t.real_profit_loss_nis,
+    t.payment_type,
+    t.symbol,
+    t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
+    si.business_id AS "security_business_id?"
+  FROM accounter_schema.poalim_securities_transactions t
+  LEFT JOIN accounter_schema.security_identifiers si
+    ON si.owner_id = t.owner_id
+    AND si.identifier_type = 'POALIM_SECURITY_KEY'
+    AND si.identifier_value = t.security
+  WHERE t.owner_id = $ownerId!
+    AND t.trade_date >= $fromDate!
+    AND t.trade_date <= $toDate!
+    AND t.trade_type IN $$tradeTypes
+  ORDER BY t.trade_date, t.id;`;
 
 /**
  * The executions a charge books directly, through `charges_securities_executions` — those with no
@@ -669,6 +736,31 @@ export class ForeignSecuritiesProvider {
       this.ownerHistoryCache.set(cacheKey, cached);
     }
     return cached;
+  }
+
+  /**
+   * Every execution of the owner of the given trade types, traded from `fromDate` to `toDate`
+   * (inclusive), oldest first, each with the security business its Poalim key resolves to (null
+   * when none does). Empty when no trade type is given.
+   */
+  public async getOwnerExecutionsByTradeDates(params: {
+    ownerId: string;
+    fromDate: TimelessDateString;
+    toDate: TimelessDateString;
+    tradeTypes: readonly SecurityTradeType[];
+  }): Promise<(SecurityExecutionRow & { security_business_id: string | null })[]> {
+    if (params.tradeTypes.length === 0) {
+      return [];
+    }
+    return getOwnerSecurityExecutionsByTradeDates.run(
+      {
+        ownerId: params.ownerId,
+        fromDate: params.fromDate,
+        toDate: params.toDate,
+        tradeTypes: [...new Set(params.tradeTypes.map(tradeType => tradeTypeToRaw[tradeType]))],
+      },
+      this.db,
+    );
   }
 
   /** Memo for {@link getSecurityOwnerTransactionsByExecutionId}; the provider lives for one operation. */

@@ -58,9 +58,17 @@ describe('TenantAwareDBClient', () => {
 
     const authContextProvider = {getAuthContext: () => Promise.resolve(mockAuthContext)} as AuthContextProvider;
 
-    // Request-scoped mode requires a GraphQL context (dbCleanupPlugin disposes
-    // the client at request end); without one the client auto-releases.
-    mockContext = {} as GraphQLModules.GlobalContext;
+    // Request-scoped mode requires live request state (dbCleanupPlugin disposes
+    // the client at request end); without it the client auto-releases.
+    mockContext = {
+      dbRequest: {
+        clientsToDispose: [],
+        executionInFlight: true,
+        disposed: false,
+        requestId: 'req',
+        operationName: null,
+      },
+    } as unknown as GraphQLModules.GlobalContext;
     tenantDBClient = new TenantAwareDBClient(mockDBProvider, authContextProvider, mockContext);
   });
 
@@ -163,7 +171,7 @@ describe('TenantAwareDBClient', () => {
 
     it('should register for disposal and stay request-scoped when a context is provided', () => {
       expect(tenantDBClient.autoRelease).toBe(false);
-      expect(mockContext.dbClientsToDispose).toContain(tenantDBClient);
+      expect(mockContext.dbRequest?.clientsToDispose).toContain(tenantDBClient);
     });
 
     it('should reuse existing transaction', async () => {

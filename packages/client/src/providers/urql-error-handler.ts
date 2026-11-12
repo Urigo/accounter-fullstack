@@ -1,7 +1,19 @@
 import { toast } from 'sonner';
 import type { OperationResult } from 'urql';
 
+/**
+ * Query context for operations that report their own failures inline (e.g. a lookup whose
+ * component shows a notice), so a failure doesn't also raise a global toast. Module-level so the
+ * object stays referentially stable: urql treats `context` as a hook dependency.
+ */
+export const SUPPRESS_ERROR_TOAST_CONTEXT = { suppressErrorToast: true };
+
 export function handleUrqlError(result: OperationResult) {
+  // Operations that opted out own their error reporting, network errors included.
+  if (result.operation?.context?.suppressErrorToast) {
+    return;
+  }
+
   // Handle network errors
   if (result.error?.networkError) {
     console.error('Network Error:', result.error.networkError);

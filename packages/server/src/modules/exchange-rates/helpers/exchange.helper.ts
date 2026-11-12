@@ -51,6 +51,14 @@ export function defineConversionBaseAndQuote(transactions: Array<IGetTransaction
   return { baseTransaction, quoteTransaction, miscTransactions };
 }
 
+/** No exchange rate of a currency is known for a date */
+export class ExchangeRateNotAvailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ExchangeRateNotAvailableError';
+  }
+}
+
 export function getRateForCurrency(
   currencyCode: Currency,
   exchangeRates: IGetExchangeRatesByDatesResult,
@@ -75,7 +83,7 @@ export function getRateForCurrency(
       'usd' | 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek';
     const rate = parseFloat(exchangeRates[currencyKey] ?? '');
     if (Number.isNaN(rate)) {
-      throw new Error(
+      throw new ExchangeRateNotAvailableError(
         `Exchange rates for date ${exchangeRates.exchange_date}, currency ${currencyCode} not found`,
       );
     }

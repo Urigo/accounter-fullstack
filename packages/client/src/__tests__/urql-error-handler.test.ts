@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OperationResult } from 'urql';
-import { handleUrqlError } from '../providers/urql-error-handler.js';
+import { handleUrqlError, SUPPRESS_ERROR_TOAST_CONTEXT } from '../providers/urql-error-handler.js';
 
 const { toastErrorMock } = vi.hoisted(() => ({
   toastErrorMock: vi.fn(),
@@ -69,5 +69,17 @@ describe('handleUrqlError', () => {
     handleUrqlError(networkErrorResult('mutation'));
 
     expect(toastErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays silent for a query that reports its own failures', () => {
+    // e.g. the registry lookup, which shows an inline notice instead
+    const operation = { kind: 'query', context: SUPPRESS_ERROR_TOAST_CONTEXT };
+    handleUrqlError({
+      ...resultWithCode('INTERNAL_SERVER_ERROR', 'query'),
+      operation,
+    } as unknown as OperationResult);
+    handleUrqlError({ ...networkErrorResult('query'), operation } as unknown as OperationResult);
+
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 });

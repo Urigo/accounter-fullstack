@@ -5,7 +5,11 @@ import { Metrics } from '../../observability/metrics.js';
 import { RateLimiter } from '../../rate-limit/limiter.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { SEARCH_CHARGES_TOOL_NAME, searchChargesTool } from '../charges.js';
-import { DOCUMENT_SOURCE_COUNTER, uploadDocumentsTool } from '../documents-write.js';
+import {
+  DOCUMENT_SOURCE_COUNTER,
+  DOCUMENT_TARGET_COUNTER,
+  uploadDocumentsTool,
+} from '../documents-write.js';
 import { executeRegisteredTool, TOOL_CALL_EVENT } from '../execute.js';
 import { toolRegistry } from '../registry-instance.js';
 import { updateChargesTagsTool } from '../tags-write.js';
@@ -447,9 +451,11 @@ describe('write tool usage logging', () => {
       tool: 'accounter_upload_documents',
       outcome: 'success',
       documentSource: 'urls',
+      targetCharge: 'existing',
       requestedDocumentCount: 1,
       uploadedCount: 1,
       failedCount: 0,
+      chargeCreated: false,
     });
   });
 
@@ -458,6 +464,7 @@ describe('write tool usage logging', () => {
     await runUpload(metrics);
 
     expect(metrics.snapshot().labeledTotals[DOCUMENT_SOURCE_COUNTER]).toEqual({ urls: 1 });
+    expect(metrics.snapshot().labeledTotals[DOCUMENT_TARGET_COUNTER]).toEqual({ existing: 1 });
   });
 
   it('never logs the URLs themselves — a signed link carries an access token', async () => {

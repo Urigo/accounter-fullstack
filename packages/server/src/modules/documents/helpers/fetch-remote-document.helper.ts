@@ -89,7 +89,8 @@ export function assertFetchableUrl(rawUrl: string): URL {
   try {
     url = new URL(rawUrl);
   } catch {
-    throw new RemoteDocumentError(`Not a valid URL: "${rawUrl}"`);
+    // No echo of the value: the message is logged, and the client's result already names the URL
+    throw new RemoteDocumentError('Not a valid URL');
   }
 
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {

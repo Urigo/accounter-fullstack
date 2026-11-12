@@ -2,6 +2,24 @@ import { useCallback, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { toast, type ExternalToast } from 'sonner';
 import { useMutation, type AnyVariables, type CombinedError, type TypedDocumentNode } from 'urql';
 import { handleCommonErrors, type NonCommonError } from '../helpers/error-handling.js';
+import {
+  claimMutationCall,
+  notifyDuplicateBlocked,
+  type ReleaseMutationCall,
+} from '../helpers/mutation-dedupe.js';
+
+/** Whether `data` holds a `CommonError` under `path`, as `handleCommonErrors` detects it. */
+function isCommonErrorResult(data: unknown, path: PropertyKey | undefined): boolean {
+  if (path === undefined || !data || typeof data !== 'object' || !(path in data)) {
+    return false;
+  }
+  const content = (data as Record<PropertyKey, unknown>)[path];
+  return (
+    !!content &&
+    typeof content === 'object' &&
+    (content as { __typename?: unknown }).__typename === 'CommonError'
+  );
+}
 
 /** A constant, or a value derived from the mutation variables. */
 type FromVariables<TVariables, TValue> = TValue | ((variables: TVariables) => TValue);
@@ -83,6 +101,25 @@ export type UseApiMutationOptions<
    * server-provided reason instead of its generic message. Defaults to `errorMessage`.
    */
   errorDescription?: (error: unknown, variables: TVariables) => ReactNode;
+  /**
+   * Blocks a repeat of this mutation with identical variables while the first call is in flight
+   * and for `windowMs` after it settles — for non-idempotent writes with external effects, such as
+   * issuing documents, where an accidental double submit cannot be undone. A blocked call sends no
+   * request, raises a warning toast and resolves to `undefined`.
+   *
+   * The guard is kept after every failure, since the mutation may still have run, fully or partly:
+   * a network or GraphQL error, an empty response, a result `select` rejects (batch mutations
+   * report partial failures that way), and a `CommonError` too — resolvers here commonly catch
+   * everything into a `CommonError`, including failures after an external upload or a first
+   * insert. Set `liftOnCommonError` only for a mutation whose resolver returns its `CommonError`
+   * before any side effect; the guard is then lifted at once so the user can retry.
+   *
+   * Opt-in, because some mutations are legitimately repeated with identical variables (toggles,
+   * and updates generally: A → B → A within the window would be blocked). Turn it on for
+   * mutations that create records, reach an external service or cost money, with
+   * `{ windowMs: MUTATION_DEDUPE_WINDOW_MS }` from `helpers/mutation-dedupe.ts`.
+   */
+  dedupe?: { windowMs: number; liftOnCommonError?: boolean };
 };
 
 export type UseApiMutation<TVariables extends AnyVariables, TResult> = {
@@ -142,13 +179,38 @@ export function useApiMutation<
 
   const execute = useCallback(
     async (variables: TVariables): Promise<TResult | void> => {
-      const { commonErrorPath, select, successToast, onSuccess, errorToast, errorDescription } =
-        optionsRef.current;
+      const {
+        document,
+        commonErrorPath,
+        select,
+        successToast,
+        onSuccess,
+        errorToast,
+        errorDescription,
+        dedupe,
+      } = optionsRef.current;
       const notificationId = resolve(optionsRef.current.notificationId, variables);
       const errorMessage = resolve(optionsRef.current.errorMessage, variables);
 
+      // Claimed synchronously, before anything is awaited, so even two clicks in the same tick
+      // cannot both get through.
+      let release: ReleaseMutationCall | undefined;
+      if (dedupe) {
+        const claim = claimMutationCall(document, variables, dedupe.windowMs);
+        if (!claim) {
+          notifyDuplicateBlocked(notificationId);
+          return void 0;
+        }
+        release = claim;
+      }
+
       toast.loading(resolve(optionsRef.current.loadingMessage, variables), { id: notificationId });
 
+      // Whether the server may have run the mutation, for the dedupe guard. Pessimistic: a network
+      // error may hide a request that did run, a GraphQL error or a `CommonError` may come from a
+      // resolver that failed halfway through its side effects, and a result `select` rejects may
+      // describe a partly applied batch. Only a hook's `liftOnCommonError` vouches otherwise.
+      let mayHaveRun = true;
       try {
         const res = await mutate(variables);
 
@@ -156,9 +218,16 @@ export function useApiMutation<
         // carries an error, so a missing result is already reported to the user.
         const data = handleCommonErrors(res, errorMessage, notificationId, commonErrorPath);
         if (!data) {
+          // Only a `CommonError` the hook vouches for (`liftOnCommonError`) proves nothing ran.
+          // Anything else — including an empty response — keeps the guard.
+          if (dedupe?.liftOnCommonError && isCommonErrorResult(res.data, commonErrorPath)) {
+            mayHaveRun = false;
+          }
           return void 0;
         }
 
+        // A result `select` rejects still keeps the guard: batch mutations report partial
+        // failures this way, and retrying them would repeat the parts that succeeded.
         const result = select ? select(data, variables) : (data as unknown as TResult);
 
         const successOptions = resolve(successToast, result, variables);
@@ -180,6 +249,8 @@ export function useApiMutation<
           ...errorToast,
           id: notificationId,
         });
+      } finally {
+        release?.(mayHaveRun);
       }
       return void 0;
     },

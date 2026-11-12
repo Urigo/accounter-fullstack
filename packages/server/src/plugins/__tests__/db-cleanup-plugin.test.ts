@@ -1,3 +1,4 @@
+import { parse } from 'graphql';
 import { describe, expect, it, vi } from 'vitest';
 import { dbCleanupPlugin } from '../db-cleanup-plugin.js';
 import type { AccounterContext } from '../../shared/types/index.js';
@@ -21,7 +22,7 @@ describe('dbCleanupPlugin', () => {
 
     onContextBuilding(context);
 
-    expect(context.dbClientsToDispose).toEqual([]);
+    expect(context.dbRequest?.clientsToDispose).toEqual([]);
   });
 
   it('disposes clients when the client cancels the request mid-execution', async () => {
@@ -32,14 +33,14 @@ describe('dbCleanupPlugin', () => {
     onContextBuilding(context);
 
     const dispose = vi.fn().mockResolvedValue(undefined);
-    context.dbClientsToDispose!.push({ dispose });
+    context.dbRequest!.clientsToDispose.push({ dispose });
 
     controller.abort();
 
     await vi.waitFor(() => {
       expect(dispose).toHaveBeenCalledTimes(1);
       // Cleared so a later disposal pass cannot double-dispose.
-      expect(context.dbClientsToDispose).toEqual([]);
+      expect(context.dbRequest?.clientsToDispose).toEqual([]);
     });
   });
 
@@ -53,14 +54,14 @@ describe('dbCleanupPlugin', () => {
 
     const dispose = vi.fn().mockResolvedValue(undefined);
     const disposeWhenIdle = vi.fn().mockResolvedValue(true); // deferred
-    context.dbClientsToDispose!.push({ dispose, disposeWhenIdle });
+    context.dbRequest!.clientsToDispose.push({ dispose, disposeWhenIdle });
 
     controller.abort();
 
     await vi.waitFor(() => {
       expect(disposeWhenIdle).toHaveBeenCalledTimes(1);
       // Still registered: it holds a connection the end-of-execution pass must release.
-      expect(context.dbClientsToDispose).toHaveLength(1);
+      expect(context.dbRequest?.clientsToDispose).toHaveLength(1);
     });
     expect(dispose).not.toHaveBeenCalled();
   });
@@ -71,7 +72,7 @@ describe('dbCleanupPlugin', () => {
     onContextBuilding(context);
 
     const disposeWhenIdle = vi.fn().mockResolvedValue(false); // nothing in flight
-    context.dbClientsToDispose!.push({
+    context.dbRequest!.clientsToDispose.push({
       dispose: vi.fn().mockResolvedValue(undefined),
       disposeWhenIdle,
     });
@@ -80,7 +81,7 @@ describe('dbCleanupPlugin', () => {
 
     await vi.waitFor(() => {
       expect(disposeWhenIdle).toHaveBeenCalledTimes(1);
-      expect(context.dbClientsToDispose).toEqual([]);
+      expect(context.dbRequest?.clientsToDispose).toEqual([]);
     });
   });
 
@@ -92,7 +93,7 @@ describe('dbCleanupPlugin', () => {
     onContextBuilding(context);
 
     const disposeWhenIdle = vi.fn().mockRejectedValue(new Error('boom'));
-    context.dbClientsToDispose!.push({
+    context.dbRequest!.clientsToDispose.push({
       dispose: vi.fn().mockResolvedValue(undefined),
       disposeWhenIdle,
     });
@@ -101,7 +102,7 @@ describe('dbCleanupPlugin', () => {
 
     await vi.waitFor(() => {
       expect(disposeWhenIdle).toHaveBeenCalledTimes(1);
-      expect(context.dbClientsToDispose).toHaveLength(1);
+      expect(context.dbRequest?.clientsToDispose).toHaveLength(1);
     });
   });
 
@@ -111,18 +112,18 @@ describe('dbCleanupPlugin', () => {
     onContextBuilding(context);
 
     const dispose = vi.fn().mockResolvedValue(undefined);
-    context.dbClientsToDispose!.push({ dispose });
+    context.dbRequest!.clientsToDispose.push({ dispose });
 
     const hooks = plugin.onExecute!({ args: { contextValue: context } } as never) as {
       onExecuteDone: (payload: { result: unknown }) => Promise<void>;
     };
     // The window in which a DB client that has gone quiet belongs to a live
     // request rather than to a leak.
-    expect(context.executionInFlight).toBe(true);
+    expect(context.dbRequest?.executionInFlight).toBe(true);
 
     await hooks.onExecuteDone({ result: {} });
 
-    expect(context.executionInFlight).toBe(false);
+    expect(context.dbRequest?.executionInFlight).toBe(false);
     expect(dispose).toHaveBeenCalledTimes(1);
   });
 
@@ -134,7 +135,7 @@ describe('dbCleanupPlugin', () => {
 
     const first = vi.fn().mockResolvedValue(undefined);
     const second = vi.fn().mockResolvedValue(undefined);
-    context.dbClientsToDispose!.push({ dispose: first }, { dispose: second });
+    context.dbRequest!.clientsToDispose.push({ dispose: first }, { dispose: second });
 
     controller.abort();
 
@@ -153,13 +154,65 @@ describe('dbCleanupPlugin', () => {
     // the plugin must handle this case explicitly rather than silently
     // attaching a listener that will never run.
     expect(() => onContextBuilding(context)).not.toThrow();
-    expect(context.dbClientsToDispose).toEqual([]);
+    expect(context.dbRequest?.clientsToDispose).toEqual([]);
   });
 
   it('does not throw when the context carries no request signal', () => {
     const context = {} as AccounterContext;
 
     expect(() => onContextBuilding(context)).not.toThrow();
-    expect(context.dbClientsToDispose).toEqual([]);
+    expect(context.dbRequest?.clientsToDispose).toEqual([]);
+  });
+
+  it('gives every request an id for DB log lines', () => {
+    const context = buildContext(new AbortController());
+
+    onContextBuilding(context);
+
+    expect(context.dbRequest?.requestId).toEqual(expect.any(String));
+    expect(context.dbRequest?.requestId).not.toHaveLength(0);
+  });
+
+  it('records the operation name, from the request or from the document', () => {
+    const plugin = dbCleanupPlugin();
+
+    const named = buildContext(new AbortController());
+    onContextBuilding(named);
+    plugin.onExecute!({ args: { contextValue: named, operationName: 'VatReport' } } as never);
+    expect(named.dbRequest?.operationName).toBe('VatReport');
+
+    const fromDocument = buildContext(new AbortController());
+    onContextBuilding(fromDocument);
+    plugin.onExecute!({
+      args: { contextValue: fromDocument, document: parse('query AllCharges { __typename }') },
+    } as never);
+    expect(fromDocument.dbRequest?.operationName).toBe('AllCharges');
+
+    const anonymous = buildContext(new AbortController());
+    onContextBuilding(anonymous);
+    plugin.onExecute!({
+      args: { contextValue: anonymous, document: parse('{ __typename }') },
+    } as never);
+    expect(anonymous.dbRequest?.operationName).toBe('anonymous');
+  });
+
+  it('marks the context once end-of-execution disposal has run, but not on abort', async () => {
+    const controller = new AbortController();
+    const context = buildContext(controller);
+    const plugin = dbCleanupPlugin();
+    onContextBuilding(context);
+
+    const hooks = plugin.onExecute!({ args: { contextValue: context } } as never) as {
+      onExecuteDone: (payload: { result: unknown }) => Promise<void>;
+    };
+
+    // An abort defers disposal; the end-of-execution pass still drains the list.
+    controller.abort();
+    await vi.waitFor(() => expect(context.dbRequest?.clientsToDispose).toEqual([]));
+    expect(context.dbRequest?.disposed).toBe(false);
+
+    await hooks.onExecuteDone({ result: {} });
+    // From here on a newly constructed DB client must not hold a connection.
+    expect(context.dbRequest?.disposed).toBe(true);
   });
 });

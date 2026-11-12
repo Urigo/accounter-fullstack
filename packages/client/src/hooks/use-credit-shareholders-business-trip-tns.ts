@@ -2,6 +2,7 @@ import {
   CreditShareholdersBusinessTripTravelAndSubsistenceDocument,
   type CreditShareholdersBusinessTripTravelAndSubsistenceMutationVariables,
 } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -28,6 +29,7 @@ export const useCreditShareholdersBusinessTripTnS =
 
     const { fetching, execute } = useApiMutation({
       document: CreditShareholdersBusinessTripTravelAndSubsistenceDocument,
+      dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
       notificationId: variables => `${NOTIFICATION_ID}-${variables.businessTripId}`,
       loadingMessage: 'Crediting Shareholders',
       errorMessage: variables =>

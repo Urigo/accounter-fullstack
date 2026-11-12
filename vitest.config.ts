@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defaultExclude, defineConfig } from 'vitest/config';
@@ -12,15 +13,24 @@ if (nodeMajor >= 24) {
 }
 
 const __dirname = import.meta.dirname;
+const graphqlCjsEntry = createRequire(import.meta.url).resolve('graphql');
 
-const alias = {
-  '@': resolve(__dirname, 'packages/client/src'),
-  '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
-  '@accounter/modern-poalim-scraper': resolve(
-    __dirname,
-    'packages/modern-poalim-scraper/src/index.ts',
-  ),
-};
+const alias = [
+  { find: '@', replacement: resolve(__dirname, 'packages/client/src') },
+  {
+    find: '@accounter/pcn874-generator',
+    replacement: resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
+  },
+  {
+    find: '@accounter/modern-poalim-scraper',
+    replacement: resolve(__dirname, 'packages/modern-poalim-scraper/src/index.ts'),
+  },
+  // `graphql` ships CJS (`main`) and ESM (`module`) entries with no `exports` map. Vite
+  // resolves source imports to the ESM one while externalized deps (yoga, envelop) load
+  // the CJS one under Node, so tests would see two `GraphQLError` classes and yoga would
+  // mask errors that pass in production. Pin the CJS entry Node itself resolves.
+  { find: /^graphql$/, replacement: graphqlCjsEntry },
+];
 
 // Vitest 5 defaults `extends` to true, so every inline project below inherits the
 // root `test` options (and the root Vite config, plugins included). Options common

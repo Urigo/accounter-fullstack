@@ -32,6 +32,8 @@ export default gql`
     FOREIGN_SECURITIES_SALE_LOSS
     FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN
     FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS
+    " investment advice and portfolio management; counted with the fees as securities expenses "
+    FINANCIAL_CONSULTANCY
   }
 
   " the tenant's securities ledger configuration "

@@ -1,14 +1,26 @@
+import { randomUUID } from 'node:crypto';
+import { Kind, type DocumentNode } from 'graphql';
 import { Plugin } from 'graphql-yoga';
-import { AccounterContext } from '../shared/types/index.js';
+import { isSpanContextValid, trace } from '@opentelemetry/api';
+import type { AccounterContext, DbRequestState } from '../shared/types/index.js';
 
 export function dbCleanupPlugin(): Plugin<AccounterContext> {
   return {
     onContextBuilding({ context }) {
-      // Initialize the cleanup list
       // Cast to AccounterContext to avoid potential readonly issues or type mismatches
       // during initial context building phase.
       const accounterContext = context as AccounterContext;
-      accounterContext.dbClientsToDispose = [];
+      // One object, only ever mutated in place: DB clients see a per-module copy
+      // of the context, which shares this reference but not later assignments.
+      // See `DbRequestState`.
+      const state: DbRequestState = {
+        clientsToDispose: [],
+        executionInFlight: false,
+        disposed: false,
+        requestId: currentRequestId(),
+        operationName: null,
+      };
+      accounterContext.dbRequest = state;
 
       // Dispose when the client goes away.
       //
@@ -33,21 +45,24 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
       const signal = accounterContext.request?.signal;
       if (signal) {
         if (signal.aborted) {
-          void disposeClients(accounterContext, { whenIdle: true });
+          void disposeClients(state, { whenIdle: true });
           return;
         }
-        signal.addEventListener(
-          'abort',
-          () => void disposeClients(accounterContext, { whenIdle: true }),
-          { once: true },
-        );
+        signal.addEventListener('abort', () => void disposeClients(state, { whenIdle: true }), {
+          once: true,
+        });
       }
     },
     onExecute({ args }) {
-      const context = args.contextValue as AccounterContext;
-      // Marks the window in which a quiet DB client belongs to a live request
-      // rather than a leak. See `TenantAwareDBClient.operationInFlight`.
-      context.executionInFlight = true;
+      const state = (args.contextValue as AccounterContext).dbRequest;
+      if (state) {
+        // Marks the window in which a quiet DB client belongs to a live request
+        // rather than a leak. See `TenantAwareDBClient.operationInFlight`.
+        state.executionInFlight = true;
+        // Names the operation in DB log lines (leak reclaimed, session killed),
+        // so a leak can be traced to the request that caused it.
+        state.operationName = args.operationName ?? operationNameOf(args.document) ?? 'anonymous';
+      }
 
       return {
         async onExecuteDone({ result }) {
@@ -61,19 +76,19 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
               next: async () => {
                 const next = await originalIterator.next();
                 if (next.done) {
-                  await endExecution(context);
+                  await endExecution(state);
                 }
                 return next;
               },
               return: async () => {
                 // If the stream is cancelled/closed early
-                await endExecution(context);
+                await endExecution(state);
                 return originalIterator.return
                   ? originalIterator.return()
                   : { done: true, value: undefined };
               },
               throw: async e => {
-                await endExecution(context);
+                await endExecution(state);
                 return originalIterator.throw
                   ? originalIterator.throw(e)
                   : { done: true, value: undefined };
@@ -86,7 +101,7 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
             // Regular execution (single response), clean up immediately.
             // CRITICAL: Must await to ensure connections are released before response is sent.
             // Without await, connections accumulate under load faster than they're freed.
-            await endExecution(context);
+            await endExecution(state);
           }
         },
       };
@@ -95,21 +110,37 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
 }
 
 /** Execution is over: nothing is in flight any more, so disposal is unconditional. */
-async function endExecution(context: AccounterContext) {
-  if (context) {
-    context.executionInFlight = false;
-  }
-  await disposeClients(context);
-}
-
-async function disposeClients(context: AccounterContext, options?: { whenIdle?: boolean }) {
-  // Ensure context still exists and hasn't been corrupted
-  if (!context?.dbClientsToDispose) {
+async function endExecution(state: DbRequestState | undefined) {
+  if (!state) {
     return;
   }
+  state.executionInFlight = false;
+  // Set before draining, so a client constructed while disposal is still
+  // running is covered too. From here on nothing will dispose a newly
+  // registered client, so TenantAwareDBClient must not hold a connection.
+  state.disposed = true;
+  await disposeClients(state);
+}
 
-  const clients = context.dbClientsToDispose;
-  context.dbClientsToDispose = []; // prevent double disposal
+/** The OTel trace id when tracing is on (so a log line pivots to the trace), else a random id. */
+function currentRequestId(): string {
+  const spanContext = trace.getActiveSpan()?.spanContext();
+  return spanContext && isSpanContextValid(spanContext) ? spanContext.traceId : randomUUID();
+}
+
+function operationNameOf(document: DocumentNode | undefined): string | undefined {
+  for (const definition of document?.definitions ?? []) {
+    if (definition.kind === Kind.OPERATION_DEFINITION && definition.name) {
+      return definition.name.value;
+    }
+  }
+  return undefined;
+}
+
+async function disposeClients(state: DbRequestState, options?: { whenIdle?: boolean }) {
+  // Drained in place (never reassigned), so every holder of the state object
+  // keeps seeing the live list. Emptying it first prevents double disposal.
+  const clients = state.clientsToDispose.splice(0);
 
   const settled = await Promise.allSettled(
     clients.map(client =>
@@ -133,6 +164,6 @@ async function disposeClients(context: AccounterContext, options?: { whenIdle?: 
     return outcome?.status !== 'fulfilled' || outcome.value === true;
   });
   if (unreleased.length) {
-    context.dbClientsToDispose = [...unreleased, ...(context.dbClientsToDispose ?? [])];
+    state.clientsToDispose.unshift(...unreleased);
   }
 }

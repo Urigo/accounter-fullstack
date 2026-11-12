@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, type Mocked } from 'vitest';
 import { encryptCredential } from '../../helpers/encryption.js';
 import { ProviderCredentialsProvider } from '../provider-credentials.provider.js';
+import { GreenInvoiceTokenCacheProvider } from '../../../app-providers/green-invoice-token-cache.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import type { Environment } from '../../../../shared/types/index.js';
 
@@ -13,7 +14,7 @@ function createProvider(_options: { businessId: string | null }) {
   const db = { query } as unknown as Mocked<TenantAwareDBClient>;
 
   return {
-    provider: new ProviderCredentialsProvider(db, env),
+    provider: new ProviderCredentialsProvider(db, env, new GreenInvoiceTokenCacheProvider()),
     query,
   };
 }

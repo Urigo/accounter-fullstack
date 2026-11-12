@@ -62,7 +62,7 @@ export const Description = ({
 
   return (
     <>
-      <div className="flex flex-wrap whitespace-normal">
+      <div className="flex flex-wrap whitespace-normal wrap-anywhere">
         <Indicator inline size={12} disabled={!isMissing} color="red">
           <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{cellText}</p>
         </Indicator>

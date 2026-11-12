@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { FetchDeelDocumentsDocument, type FetchDeelDocumentsMutation } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -23,6 +24,7 @@ const NOTIFICATION_ID = 'fetch-deel-documents';
 export const useFetchDeelDocuments = (): UseFetchDeelDocuments => {
   const { fetching, execute } = useApiMutation({
     document: FetchDeelDocumentsDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: NOTIFICATION_ID,
     loadingMessage: 'Fetching Deel documents',
     errorMessage: 'Failed to fetch Deel documents',

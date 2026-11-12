@@ -59,10 +59,13 @@ const PostgresModel = zod.object({
    * Postgres-side backstop against leaked sessions: a connection left `idle in
    * transaction` this long is terminated by the server.
    *
-   * Must stay comfortably above the longest legitimate in-request pause. The
-   * request-scoped session model keeps a transaction open across external I/O
-   * (document OCR, Green Invoice, Cloudinary), so a too-aggressive value would
-   * kill live requests. 5 minutes bounds a leak without touching real traffic.
+   * Must stay comfortably above the longest legitimate in-request pause.
+   * Document ingestion hands its connection back for the download / Cloudinary /
+   * OCR stretch (`releaseDbConnectionForExternalWork`), but other external I/O —
+   * Green Invoice, for one — still runs inside the request's open transaction,
+   * so a too-aggressive value would kill live requests. 5 minutes bounds a leak
+   * without touching real traffic. Every watchdog ceiling must stay below it by
+   * two sweeps (see `watchdogCeilingProblems`).
    */
   POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: emptyString(NumberFromString)
     .optional()
@@ -83,21 +86,32 @@ const PostgresModel = zod.object({
   /**
    * Client-side counterpart to the above: a TenantAwareDBClient whose last
    * query finished this long ago is force-disposed by the watchdog, returning
-   * its connection to the pool. Same reasoning for the default.
+   * its connection to the pool.
+   *
+   * Must sit below `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` by at least two
+   * sweep intervals (enforced at startup, see `watchdogCeilingProblems`). If
+   * Postgres gets there first, it kills the session, the client's error handler
+   * drops it, and the watchdog's line — the only one that names the last query
+   * and the operation — is never written. The default is 300s - 2 x 30s.
    */
-  POSTGRES_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(300_000),
+  POSTGRES_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(240_000),
   /**
    * The same ceiling for a client whose GraphQL operation is *still executing*.
+   * Defaults to `POSTGRES_CLIENT_MAX_IDLE_MS`, and is never lower than it — nor
+   * than `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`, since a long query bumps activity
+   * only at its start and end, and a lower ceiling would reclaim the client of a
+   * request whose query is still legitimately running.
    *
-   * Such a request is allowed to be quiet on the database for much longer than
-   * an ordinary one: document ingestion fetches a file, uploads it to Cloudinary
-   * and waits on OCR before it writes anything. Reclaiming its client on the
-   * ordinary ceiling would leave the request running with no connection, so its
-   * final INSERT fails with "already disposed" after all the expensive work.
-   * Still bounded, because the executing flag lives on a request context that a
-   * missed lifecycle hook could leave set forever.
+   * It used to default to 15 minutes, for document ingestion, which is quiet on
+   * the database while it downloads a file, uploads it to Cloudinary and waits
+   * on OCR. That allowance could never take effect: a client holding a
+   * connection that long is `idle in transaction`, and Postgres terminates it at
+   * `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` first. Ingestion now hands its
+   * connection back for the external stretch (`releaseDbConnectionForExternalWork`),
+   * so it is not a connection holder at all while it waits. Like every ceiling,
+   * this must stay below the idle-in-transaction timeout (enforced at startup).
    */
-  POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(900_000),
+  POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional(),
   /**
    * Ceiling for a client whose caller already hung up.
    *
@@ -258,6 +272,14 @@ const EmailIngestionModel = zod.object({
   ),
 });
 
+// One level for Yoga and Hive (whose Yoga plugin logs through Yoga's logger). Validated here so a
+// typo fails startup, and never derived from `DEBUG`, which Yoga would otherwise follow.
+const LoggingModel = zod.object({
+  SERVER_LOG_LEVEL: emptyString(
+    zod.enum(['debug', 'info', 'warn', 'error']).optional().default('info'),
+  ),
+});
+
 const PriceIndexSyncModel = zod.object({
   PRICE_INDEX_SYNC_ENABLED: emptyString(
     zod
@@ -317,6 +339,7 @@ const configs = {
   emailIngestion: EmailIngestionModel.safeParse(process.env),
   gatewayControlPlane: GatewayControlPlaneModel.safeParse(process.env),
   priceIndexSync: PriceIndexSyncModel.safeParse(process.env),
+  logging: LoggingModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -341,6 +364,15 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
 }
 
 const postgres = extractConfig(configs.postgres);
+
+/**
+ * Lowest ceiling that cannot reclaim a client mid-query: a long query bumps
+ * activity only at its start and end, so a ceiling below the statement timeout
+ * would reclaim a connection out from under a query that is still running. The
+ * margin keeps a query that runs right up to the statement timeout from being
+ * caught at the boundary.
+ */
+const longQueryFloorMs = postgres.POSTGRES_STATEMENT_TIMEOUT_MS + 30_000;
 const cloudinary = extractConfig(configs.cloudinary);
 const hive = extractConfig(configs.hive);
 const googleDrive = extractConfig(configs.googleDrive);
@@ -351,6 +383,7 @@ const otel = extractConfig(configs.otel);
 const emailIngestion = extractConfig(configs.emailIngestion);
 const gatewayControlPlane = extractConfig(configs.gatewayControlPlane);
 const priceIndexSync = extractConfig(configs.priceIndexSync);
+const logging = extractConfig(configs.logging);
 
 export const env = {
   postgres: {
@@ -366,18 +399,17 @@ export const env = {
     idleInTransactionTimeoutMs: postgres.POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS,
     idleTimeoutMs: postgres.POSTGRES_IDLE_TIMEOUT_MS,
     clientMaxIdleMs: postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+    // Both floored at `longQueryFloorMs` rather than merely documented as
+    // needing to clear it: these apply while a request is still executing, so a
+    // query may well be running when the watchdog sweeps.
     activeClientMaxIdleMs: Math.max(
-      postgres.POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS,
+      postgres.POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS ?? postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
       postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+      longQueryFloorMs,
     ),
-    // Floored above the statement timeout rather than merely documented as
-    // needing to be: a long query bumps activity only at its start and end, so
-    // an aborted ceiling below it would reclaim a connection out from under a
-    // query that is still running. The margin is what keeps a query that runs
-    // right up to the statement timeout from being caught at the boundary.
     abortedClientMaxIdleMs: Math.max(
       postgres.POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS,
-      postgres.POSTGRES_STATEMENT_TIMEOUT_MS + 30_000,
+      longQueryFloorMs,
     ),
     watchdogIntervalMs:
       postgres.POSTGRES_WATCHDOG_INTERVAL_MS ??
@@ -440,4 +472,66 @@ export const env = {
   priceIndexSync: {
     enabled: priceIndexSync.PRICE_INDEX_SYNC_ENABLED === '1',
   },
+  logging: {
+    level: logging.SERVER_LOG_LEVEL,
+  },
 } as const;
+
+/** The settings {@link watchdogCeilingProblems} checks. */
+export type WatchdogCeilingSettings = Pick<
+  (typeof env)['postgres'],
+  | 'idleInTransactionTimeoutMs'
+  | 'clientMaxIdleMs'
+  | 'activeClientMaxIdleMs'
+  | 'abortedClientMaxIdleMs'
+  | 'watchdogIntervalMs'
+>;
+
+/**
+ * Every leak-watchdog ceiling must leave the watchdog time to act before
+ * Postgres does.
+ *
+ * Postgres terminates a session left `idle in transaction` for
+ * `idleInTransactionTimeoutMs`. A leaked client is noticed by the watchdog only
+ * on a sweep, so up to one interval after its ceiling has passed; a second
+ * interval of margin absorbs timer drift and a sweep that lands just short. If
+ * Postgres wins that race, the connection is dropped through the client's error
+ * handler instead, and the watchdog's line — the one that names the last query
+ * and the leaking operation — is never written. That is what happened in the
+ * 2026-10-09 production logs (#4871): 19 sessions killed, no watchdog lines.
+ *
+ * @returns one message per ceiling that is too high; empty when all are fine.
+ */
+export function watchdogCeilingProblems(settings: WatchdogCeilingSettings): string[] {
+  const margin = 2 * settings.watchdogIntervalMs;
+  const limit = settings.idleInTransactionTimeoutMs - margin;
+  const ceilings: Array<[name: string, value: number, note?: string]> = [
+    ['POSTGRES_CLIENT_MAX_IDLE_MS', settings.clientMaxIdleMs],
+    [
+      'POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS',
+      settings.activeClientMaxIdleMs,
+      'defaults to POSTGRES_CLIENT_MAX_IDLE_MS; never lower than it or POSTGRES_STATEMENT_TIMEOUT_MS + 30s',
+    ],
+    [
+      'POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS',
+      settings.abortedClientMaxIdleMs,
+      'never lower than POSTGRES_STATEMENT_TIMEOUT_MS + 30s',
+    ],
+  ];
+
+  return ceilings
+    .filter(([, value]) => value > limit)
+    .map(
+      ([name, value, note]) =>
+        `${name} is effectively ${value}ms${note ? ` (${note})` : ''}, but must be at most ` +
+        `${limit}ms: POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS (${settings.idleInTransactionTimeoutMs}ms) ` +
+        `minus two watchdog sweeps (2 x ${settings.watchdogIntervalMs}ms). Lower the ceiling or raise ` +
+        `the idle-in-transaction timeout.`,
+    );
+}
+
+const watchdogProblems = watchdogCeilingProblems(env.postgres);
+if (watchdogProblems.length) {
+  console.error('❌ Invalid environment variables:', watchdogProblems.join('\n'));
+  process.exit(1);
+}

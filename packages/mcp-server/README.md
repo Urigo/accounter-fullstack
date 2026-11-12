@@ -293,13 +293,16 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   resolving them here would mean guessing which of several same-named tags was meant — the model
   resolves them with `accounter_list_tags` first. Incremental, not a replacement, and removals run
   before additions so an id in both lists ends up added. Requires `business_owner`/`accountant`.
-- **`accounter_upload_documents`** — attach 1–10 documents to an **existing** charge, given either
-  as `documentUrls` (preferred — the server fetches them, so there is no size limit) or as inline
-  base64 `documents`; exactly one of the two per call. `chargeId` is required (upstream would
-  otherwise create a new charge) and `isSensitive` is pinned to `false`. Each inline file is
-  validated for encoding, MIME type, and size _before_ anything is uploaded. Upstream returns one
-  result per input, so partial failure is reported positionally rather than collapsed. See
-  [Uploading by URL](#uploading-by-url) and
+- **`accounter_upload_documents`** — upload 1–10 documents, given either as `documentUrls`
+  (preferred — the server fetches them, so there is no size limit) or as inline base64 `documents`;
+  exactly one of the two per call. The target is explicit too: `chargeId` attaches them to an
+  **existing** charge, `newCharge` (optional `description` and `tagIds`) creates **one** new charge
+  for all of them — the same document-only charge the ingestion email produces, for expenses with no
+  transaction in Accounter. The new charge is created only if at least one document succeeds, and
+  its id comes back as `chargeId` with `chargeCreated: true`. `isSensitive` is pinned to `false`.
+  Each inline file is validated for encoding, MIME type, and size _before_ anything is uploaded.
+  Upstream returns one result per input, so partial failure is reported positionally rather than
+  collapsed. See [Uploading by URL](#uploading-by-url) and
   [Why inline upload is small](#why-inline-upload-is-small). Requires `business_owner`/`accountant`.
 - **`accounter_update_charge`** — edit a charge's own fields: `userDescription`, `type` (the
   `ChargeType` vocabulary shared with `byChargeTypes` — PAYROLL, FINANCIAL, BUSINESS_TRIP,
@@ -555,9 +558,10 @@ caller looks up is the clearest available read on the vocabulary they arrived wi
 
 The write tools use it too. A write result has none of the shared list-shape fields, so without a
 hook its usage line would record _that_ a write happened and nothing about what it did:
-`accounter_upload_documents` reports `documentSource` (`urls` vs `inline`),
-`requestedDocumentCount`, `uploadedCount` and `failedCount` plus a `document_upload_source` counter,
-and `accounter_update_charges_tags` reports `requestedChargeCount`, `updatedChargeCount`,
+`accounter_upload_documents` reports `documentSource` (`urls` vs `inline`), `targetCharge`
+(`existing` vs `new`), `requestedDocumentCount`, `uploadedCount`, `failedCount` and `chargeCreated`
+plus `document_upload_source` and `document_upload_target` counters, and
+`accounter_update_charges_tags` reports `requestedChargeCount`, `updatedChargeCount`,
 `addedTagCount` and `removedTagCount` — the gap between requested and updated is how a model working
 from stale charge ids becomes visible. This line is the complement to the `audit: true` line each
 write already emits _before_ its handler runs: the audit line names the records, this one says what
@@ -772,7 +776,7 @@ Nine mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE
 | Tool                            | What it does                                                                             |
 | ------------------------------- | ---------------------------------------------------------------------------------------- |
 | `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names)             |
-| `accounter_upload_documents`    | Attaches documents — by URL or inline base64 — to an **existing** charge                 |
+| `accounter_upload_documents`    | Uploads documents — by URL or inline base64 — to an existing charge or a new one         |
 | `accounter_update_charge`       | Edits a charge's description, type, optional-documents/VAT flags and business trip       |
 | `accounter_merge_charges`       | Folds charges into a base charge (transactions, documents and ledger move; rest deleted) |
 | `accounter_update_transactions` | Sets counterparty, charge and/or fee flag on a batch of bank/card rows                   |
@@ -810,12 +814,19 @@ Four properties hold for every mutating tool, enforced centrally rather than per
 
 Two tool-specific rules worth knowing:
 
-- `accounter_upload_documents` requires `chargeId`. The upstream mutation _creates a new charge_
-  when it is omitted, which is not a side effect the model should trigger by leaving a field blank.
-  `isSensitive` is pinned to `false` and is deliberately absent from the input schema — the upstream
-  name is misleading, since `getOcrData` returns early with `documentType: UNPROCESSED` whenever it
-  is set, so `true` does not so much mark a document sensitive as skip OCR entirely and land it with
-  no amount, date, counterparty, or serial.
+- `accounter_upload_documents` requires exactly one of `chargeId` or `newCharge`. The upstream
+  mutation _creates a new charge_ whenever `chargeId` is omitted, which is not a side effect the
+  model should trigger by leaving a field blank — so creating one takes an explicit `newCharge`
+  object (`{}` is enough). Upstream creates that charge, its description, its tags and its documents
+  in one transaction, after OCR and only if at least one document succeeded, so a failed call leaves
+  no empty charge. No transaction is matched or merged into it: it waits in the regular
+  charge-matching queue, exactly like a charge from the ingestion email. A `newCharge` call that
+  times out may still have completed, so the tool description tells the model to look for the charge
+  before resending (see I6 in `docs/todo.md`). `isSensitive` is pinned to `false` and is
+  deliberately absent from the input schema — the upstream name is misleading, since `getOcrData`
+  returns early with `documentType: UNPROCESSED` whenever it is set, so `true` does not so much mark
+  a document sensitive as skip OCR entirely and land it with no amount, date, counterparty, or
+  serial.
 - `accounter_update_charges_tags` is incremental, not a replacement: tags not named in
   `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
   ends up added.

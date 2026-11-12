@@ -108,6 +108,10 @@ export function calculateDisposalPnL(params: {
  * Read from the revaluations actually booked rather than assumed from the calendar, so a year whose
  * revaluation was never booked leaves the lot where it was. One booked after the disposal's ledger
  * was generated is only seen once that ledger is regenerated.
+ *
+ * Both dates are ledger (invoice) dates, not rate dates, since that is what a revaluation decides
+ * by whether it counted a record: `bookedOn` is the invoice date of the record that booked the lot,
+ * `disposedOn` the disposal entry's.
  */
 export function lastRevaluationOver(
   bookedOn: TimelessDateString,

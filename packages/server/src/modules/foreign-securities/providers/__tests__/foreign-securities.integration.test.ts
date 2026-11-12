@@ -9,6 +9,7 @@ import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js'
 import type { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import type { FinancialBankAccountsProvider } from '../../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import type { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
+import { SecurityTradeType } from '../../../../shared/enums.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
 import { ForeignSecuritiesProvider, MAX_CHARGE_LINK_SECURITIES } from '../foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../security-businesses.provider.js';
@@ -766,6 +767,63 @@ function ownedBuckets<T>(byBusinessId: Map<string, T[]>): T[][] {
     (bucket): bucket is T[] => bucket !== undefined,
   );
 }
+
+describe('getOwnerExecutionsByTradeDates', () => {
+  it('returns the trade types asked for, within the inclusive trade-date range', async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'ZZ0000000101',
+      securityKeys: ['8000001'],
+    });
+    // both bounds are in
+    await insertExecution({ security: '8000001', tradeDate: '2025-01-01', tradeType: 'מכירה', nv: '1' });
+    await insertExecution({ security: '8000001', tradeDate: '2025-06-30', tradeType: 'פדיון', nv: '2' });
+    // a key with no security business still counts
+    await insertExecution({ security: '8000002', tradeDate: '2025-03-15', tradeType: 'מכירה', nv: '3' });
+    // outside the range
+    await insertExecution({ security: '8000001', tradeDate: '2024-12-31', tradeType: 'מכירה' });
+    await insertExecution({ security: '8000001', tradeDate: '2025-07-01', tradeType: 'מכירה' });
+    // another trade type
+    await insertExecution({ security: '8000001', tradeDate: '2025-03-01', tradeType: 'קניה' });
+    // another owner
+    await insertExecution({
+      ownerId: OTHER_OWNER_ID,
+      security: '8000001',
+      tradeDate: '2025-03-01',
+      tradeType: 'מכירה',
+    });
+
+    const executions = await createProvider([]).getOwnerExecutionsByTradeDates({
+      ownerId: TEST_OWNER_ID,
+      fromDate: '2025-01-01',
+      toDate: '2025-06-30',
+      tradeTypes: [SecurityTradeType.Sell, SecurityTradeType.Redemption],
+    });
+
+    expect(
+      executions
+        .map(execution => [execution.trade_date, execution.nv, execution.security_business_id])
+        .sort(([a], [b]) => String(a).localeCompare(String(b))),
+    ).toEqual([
+      ['2025-01-01', '1', APPLE_BUSINESS_ID],
+      ['2025-03-15', '3', null],
+      ['2025-06-30', '2', APPLE_BUSINESS_ID],
+    ]);
+  });
+
+  it('is empty when no trade type is asked for', async () => {
+    await insertExecution({ security: '8000001', tradeDate: '2025-03-01', tradeType: 'מכירה' });
+
+    const executions = await createProvider([]).getOwnerExecutionsByTradeDates({
+      ownerId: TEST_OWNER_ID,
+      fromDate: '2025-01-01',
+      toDate: '2025-06-30',
+      tradeTypes: [],
+    });
+
+    expect(executions).toEqual([]);
+  });
+});
 
 describe('getExecutionsBySecurityBusiness', () => {
   it('gives every security business its own executions, chronologically', async () => {

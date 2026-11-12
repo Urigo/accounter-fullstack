@@ -77,3 +77,54 @@ describe('CurrencyInput refs', () => {
     expect(currencyRef).toHaveBeenCalledWith(button);
   });
 });
+
+/**
+ * Searching by code (`usd`, `ILS`) works only because the code is part of the searched
+ * keywords; the option's visible label is not what the search looks at.
+ */
+describe('CurrencyInput search', () => {
+  function openPicker(): void {
+    render(<CurrencyInput value={10} currencyCodeProps={{ value: Currency.Ils }} />);
+    const button = container.querySelector<HTMLButtonElement>('button');
+    if (!button) {
+      throw new Error('no currency picker rendered');
+    }
+    act(() => button.click());
+  }
+
+  function type(text: string): void {
+    const input = document.querySelector<HTMLInputElement>('[cmdk-input]');
+    if (!input) {
+      throw new Error('no search input rendered');
+    }
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    act(() => {
+      setter?.call(input, text);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  function visibleItems(): string[] {
+    return [...document.querySelectorAll('[cmdk-item]')].map(item => item.textContent ?? '');
+  }
+
+  it('finds a currency by its code, in any case', () => {
+    openPicker();
+
+    type('usd');
+    const lower = visibleItems();
+    expect(lower[0]).toContain('(USD)');
+    for (const item of lower) {
+      expect(item.toLowerCase()).toContain('usd');
+    }
+
+    type('USD');
+    expect(visibleItems()).toEqual(lower);
+  });
+
+  it('finds the shekel by ILS', () => {
+    openPicker();
+    type('ILS');
+    expect(visibleItems()[0]).toContain('(ILS)');
+  });
+});

@@ -24,6 +24,7 @@ import { MonthPickerInput } from '../../../common/inputs/month-picker-input.js';
 import { Button } from '../../../ui/button.js';
 import { Form } from '../../../ui/form.js';
 import { Label } from '../../../ui/label.js';
+import { Spinner } from '../../../ui/spinner.js';
 import {
   Table,
   TableBody,
@@ -109,7 +110,7 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
       generateDocumentsInfo: documentDrafts,
     },
   });
-  const { issueDocuments } = useIssueMonthlyDocuments();
+  const { issueDocuments, fetching: issuing } = useIssueMonthlyDocuments();
 
   const [{ data: openContractsData }] = useQuery({
     query: AllOpenContractsDocument,
@@ -152,7 +153,9 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
   return (
     <div className="p-2">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        {/* Issuing runs only from the confirmation dialog; a native submit (e.g. Enter in a field)
+            must not bypass it. */}
+        <form onSubmit={event => event.preventDefault()}>
           {/* date input for issueMonth */}
           <div className="flex gap-2 items-center mb-4">
             <Label>Issue Month:</Label>
@@ -262,7 +265,10 @@ export const IssueDocumentsTable = ({ drafts }: IssueDocumentsTableProps): React
               onConfirm={form.handleSubmit(onSubmit)}
               title={`Are you sure you want to issue ${controlledFields.length} documents?`}
             >
-              <Button>Issue</Button>
+              <Button disabled={issuing}>
+                {issuing && <Spinner />}
+                Issue
+              </Button>
             </ConfirmationModal>
           </div>
         </form>

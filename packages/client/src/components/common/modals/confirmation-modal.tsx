@@ -1,4 +1,11 @@
-import { useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type ReactElement,
+  type SetStateAction,
+} from 'react';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -32,6 +39,16 @@ export function ConfirmationModal({
   const setOpen = setExternalOpen ?? setLocalOpen;
   const open = externalOpen ?? localOpen;
 
+  // Confirm fires at most once per opening. Closing the dialog plays an exit animation, during
+  // which its content stays mounted and clickable, so a double-click on Confirm would otherwise
+  // run `onConfirm` twice — and for non-idempotent actions, perform them twice.
+  const confirmedRef = useRef(false);
+  useEffect(() => {
+    if (open) {
+      confirmedRef.current = false;
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && (
@@ -60,6 +77,10 @@ export function ConfirmationModal({
           </Button>
           <Button
             onClick={() => {
+              if (confirmedRef.current) {
+                return;
+              }
+              confirmedRef.current = true;
               setOpen(false);
               onConfirm();
             }}

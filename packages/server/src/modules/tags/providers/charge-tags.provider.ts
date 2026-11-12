@@ -1,6 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
-import { sql } from '@pgtyped/runtime';
+import { sql, type IDatabaseConnection } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
@@ -92,12 +92,12 @@ export class ChargeTagsProvider {
     return clearAllChargeTags.run(params, this.db);
   }
 
-  public async insertChargeTag(params: IInsertChargeTagParams) {
+  public async insertChargeTag(params: IInsertChargeTagParams, dbConnection?: IDatabaseConnection) {
     if (params.chargeId) {
       this.invalidateTagsByChargeID(params.chargeId);
     }
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    return insertChargeTag.run(reassureOwnerIdExists(params, ownerId), this.db);
+    return insertChargeTag.run(reassureOwnerIdExists(params, ownerId), dbConnection ?? this.db);
   }
 
   public async updateChargeTagPart(params: IUpdateChargeTagPartParams) {

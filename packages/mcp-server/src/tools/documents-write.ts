@@ -15,7 +15,8 @@ import type {
 import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './scope-input.js';
 
 /**
- * Write tool: attach documents to an existing charge.
+ * Write tool: attach documents to an existing charge, or to a new charge created
+ * for them.
  *
  * The tool has two branches, and which one a call takes decides who moves the
  * bytes:
@@ -42,10 +43,15 @@ import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './sc
  *    sidesteps this entirely: `batchUploadDocumentsFromUrls` takes plain
  *    strings, so it is an ordinary JSON mutation.
  *
- * 2. `batchUploadDocuments` **creates a new charge when `chargeId` is omitted**.
+ * 2. Both upload mutations **create a new charge when `chargeId` is omitted**.
  *    That is a side effect the model should never trigger by leaving a field
- *    blank, so `chargeId` is required here: this tool attaches to an existing
- *    charge or it fails.
+ *    blank, so this tool requires exactly one explicit target: `chargeId` for an
+ *    existing charge, or a `newCharge` object (possibly empty) to create one.
+ *    Upstream creates that charge — with its description and tags, in one
+ *    transaction with the documents — only after processing, once at least one
+ *    document succeeded, so a call that fails entirely creates nothing. The new
+ *    charge is what the document-ingestion email would have produced: no
+ *    transaction, OCR'd documents, waiting in the regular charge-matching queue.
  *
  * `isSensitive` is pinned and deliberately absent from the input schema — see
  * {@link PINNED_IS_SENSITIVE}.
@@ -144,15 +150,55 @@ const documentInput = z.object({
     ),
 });
 
+/** Max tags set on a new charge. */
+export const MAX_NEW_CHARGE_TAGS = 20;
+/** Max length of a new charge's description. */
+export const MAX_NEW_CHARGE_DESCRIPTION_LENGTH = 500;
+
+const newChargeInput = z
+  .object({
+    description: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_NEW_CHARGE_DESCRIPTION_LENGTH)
+      .optional()
+      .describe(
+        'Description of the new charge, e.g. `Fuel - personal card` or `Deel payment REC-2026-19`. ' +
+          'Defaults to `New uploaded documents`.',
+      ),
+    tagIds: z
+      .array(z.string().min(1))
+      .min(1)
+      .max(MAX_NEW_CHARGE_TAGS)
+      .optional()
+      .describe(
+        'Tags to set on the new charge, e.g. the owner tag for an expense paid personally. Use ' +
+          'accounter_list_tags to find ids, and pass only tags of the business you are writing to: an ' +
+          'unknown id, or a tag of another business, fails the call before anything is uploaded.',
+      ),
+  })
+  .strict();
+
 const uploadDocumentsInput = z
   .object({
     memberBusinessId: writeTargetBusinessIdInput,
     chargeId: z
       .string()
       .min(1)
+      .optional()
       .describe(
-        'The EXISTING charge to attach the documents to. Required — this tool never creates a charge. ' +
-          'Use accounter_search_charges to find one.',
+        'The EXISTING charge to attach the documents to. Use accounter_search_charges to find one. ' +
+          'Mutually exclusive with `newCharge`.',
+      ),
+    newCharge: newChargeInput
+      .optional()
+      .describe(
+        'Create ONE new charge holding every document of this call, instead of attaching to an ' +
+          'existing one. Use it for an expense with no bank or card transaction in Accounter to attach ' +
+          'to — cash, personal card, an account Accounter does not scrape, a late document. `{}` is ' +
+          'valid (default description, no tags). The charge is created only if at least one document ' +
+          'is processed successfully. Mutually exclusive with `chargeId`.',
       ),
     documentUrls: z
       .array(z.url().max(2048))
@@ -183,6 +229,14 @@ const uploadDocumentsInput = z
   .refine(input => !!input.documentUrls !== !!input.documents, {
     message: 'Provide exactly one of `documentUrls` or `documents` — not both, and not neither.',
     path: ['documentUrls'],
+  })
+  // Same reasoning: a charge is created only when asked for by name, so leaving
+  // `chargeId` out is a mistake to report, never a request for a new charge.
+  .refine(input => !!input.chargeId !== !!input.newCharge, {
+    message:
+      'Provide exactly one of `chargeId` (attach to an existing charge) or `newCharge` (create a ' +
+      'new charge for these documents) — not both, and not neither.',
+    path: ['chargeId'],
   });
 type UploadDocumentsInput = z.infer<typeof uploadDocumentsInput>;
 
@@ -190,14 +244,23 @@ const BATCH_UPLOAD_DOCUMENTS_MUTATION = /* GraphQL */ `
   mutation McpBatchUploadDocuments(
     $documents: [FileScalar!]!
     $chargeId: UUID
+    $newCharge: NewDocumentsChargeInput
     $isSensitive: Boolean
   ) {
-    batchUploadDocuments(documents: $documents, chargeId: $chargeId, isSensitive: $isSensitive) {
+    batchUploadDocuments(
+      documents: $documents
+      chargeId: $chargeId
+      newCharge: $newCharge
+      isSensitive: $isSensitive
+    ) {
       __typename
       ... on UploadDocumentSuccessfulResult {
         document {
           id
           documentType
+          charge {
+            id
+          }
         }
       }
       ... on CommonError {
@@ -212,14 +275,23 @@ const BATCH_UPLOAD_DOCUMENTS_FROM_URLS_MUTATION = /* GraphQL */ `
   mutation McpBatchUploadDocumentsFromUrls(
     $urls: [String!]!
     $chargeId: UUID
+    $newCharge: NewDocumentsChargeInput
     $isSensitive: Boolean
   ) {
-    batchUploadDocumentsFromUrls(urls: $urls, chargeId: $chargeId, isSensitive: $isSensitive) {
+    batchUploadDocumentsFromUrls(
+      urls: $urls
+      chargeId: $chargeId
+      newCharge: $newCharge
+      isSensitive: $isSensitive
+    ) {
       __typename
       ... on UploadDocumentSuccessfulResult {
         document {
           id
           documentType
+          charge {
+            id
+          }
         }
       }
       ... on CommonError {
@@ -280,6 +352,8 @@ type UploadOutcome =
       status: 'uploaded';
       documentId: string | null;
       documentType: string | null;
+      /** The charge the document landed on — how a newly created charge's id is learned. */
+      chargeId: string | null;
     }
   | { label: string | undefined; status: 'failed'; message: string };
 
@@ -301,6 +375,7 @@ function toOutcomes(
         status: 'uploaded' as const,
         documentId: result.document?.id ?? null,
         documentType: result.document?.documentType ?? null,
+        chargeId: result.document?.charge?.id ?? null,
       };
     }
     return {
@@ -309,6 +384,23 @@ function toOutcomes(
       message: result.__typename === 'CommonError' ? result.message : 'Unknown upload failure',
     };
   });
+}
+
+/**
+ * The target-charge variables: exactly one of the two, and of `newCharge` only
+ * the fields the caller passed.
+ */
+function targetVariables(input: UploadDocumentsInput) {
+  if (input.chargeId) {
+    return { chargeId: input.chargeId };
+  }
+  const { description, tagIds } = input.newCharge ?? {};
+  return {
+    newCharge: {
+      ...(description === undefined ? {} : { userDescription: description }),
+      ...(tagIds === undefined ? {} : { tagIds }),
+    },
+  };
 }
 
 /** The URL branch: the server fetches, so nothing here touches bytes. */
@@ -320,7 +412,7 @@ async function uploadFromUrls(
   const data = await context.client.mutate<McpBatchUploadDocumentsFromUrlsMutation>(
     {
       query: BATCH_UPLOAD_DOCUMENTS_FROM_URLS_MUTATION,
-      variables: { urls, chargeId: input.chargeId, isSensitive: PINNED_IS_SENSITIVE },
+      variables: { urls, ...targetVariables(input), isSensitive: PINNED_IS_SENSITIVE },
     },
     context.upstream,
     // Upstream fetches each URL, uploads it to Cloudinary and OCRs it before it
@@ -366,7 +458,7 @@ async function uploadInline(
         // placeholders; `map` (built by the client from `files`) points each
         // form part at its position here.
         documents: documents.map(() => null),
-        chargeId: input.chargeId,
+        ...targetVariables(input),
         isSensitive: PINNED_IS_SENSITIVE,
       },
     },
@@ -393,18 +485,56 @@ async function uploadDocumentsHandler(
     : await uploadInline(input.documents!, input, context);
 
   // The label means different things per branch, so it is named for what it is
-  // rather than reported under a `filename` key holding a URL.
-  const results = outcomes.map(({ label, ...rest }) =>
-    source === 'urls' ? { url: label, ...rest } : { filename: label, ...rest },
-  );
+  // rather than reported under a `filename` key holding a URL. The per-document
+  // charge id is folded into the one top-level `chargeId` below.
+  const results = outcomes.map(outcome => {
+    const entry =
+      outcome.status === 'uploaded'
+        ? {
+            status: outcome.status,
+            documentId: outcome.documentId,
+            documentType: outcome.documentType,
+          }
+        : { status: outcome.status, message: outcome.message };
+    return source === 'urls'
+      ? { url: outcome.label, ...entry }
+      : { filename: outcome.label, ...entry };
+  });
 
   const uploadedCount = results.filter(result => result.status === 'uploaded').length;
   const failedCount = results.length - uploadedCount;
+  const failedSuffix = failedCount === 0 ? '' : `; ${failedCount} failed`;
+
+  // A new charge exists only if a document landed on it, and every document of
+  // the call lands on the same one.
+  let createdChargeId: string | null = null;
+  if (input.newCharge) {
+    for (const outcome of outcomes) {
+      if (outcome.status === 'uploaded' && outcome.chargeId) {
+        createdChargeId = outcome.chargeId;
+        break;
+      }
+    }
+  }
+  const chargeId = input.chargeId ?? createdChargeId;
+
+  let summary: string;
+  if (input.chargeId) {
+    summary = `Uploaded ${uploadedCount} document(s) to charge ${input.chargeId}${failedSuffix}.`;
+  } else if (createdChargeId) {
+    summary =
+      `Created charge ${createdChargeId} with ${uploadedCount} document(s)${failedSuffix}. ` +
+      `To add more documents to this charge, call again with \`chargeId: "${createdChargeId}"\` ` +
+      'instead of `newCharge`.';
+  } else {
+    summary = `No document was uploaded, so no charge was created${failedSuffix}.`;
+  }
 
   return shapeWriteResult({
     action: 'upload_documents',
     outcome: {
-      chargeId: input.chargeId,
+      chargeId,
+      chargeCreated: createdChargeId !== null,
       source,
       uploadedCount,
       failedCount,
@@ -412,10 +542,7 @@ async function uploadDocumentsHandler(
       scope: { memberBusinessIds: context.readScope.memberBusinessIds },
     },
     items: { key: 'results', values: results },
-    summary:
-      failedCount === 0
-        ? `Uploaded ${uploadedCount} document(s) to charge ${input.chargeId}.`
-        : `Uploaded ${uploadedCount} document(s) to charge ${input.chargeId}; ${failedCount} failed.`,
+    summary,
   });
 }
 
@@ -426,6 +553,12 @@ async function uploadDocumentsHandler(
  * and its size ceiling.
  */
 export const DOCUMENT_SOURCE_COUNTER = 'document_upload_source';
+
+/**
+ * Where a call put its documents: `existing` (a `chargeId`) or `new` (a
+ * `newCharge`). Answers how often uploads stand in for the ingestion email.
+ */
+export const DOCUMENT_TARGET_COUNTER = 'document_upload_target';
 
 /**
  * Usage telemetry for one upload.
@@ -443,25 +576,40 @@ export const DOCUMENT_SOURCE_COUNTER = 'document_upload_source';
  */
 function observe(input: UploadDocumentsInput, result: ToolResult): ToolObservation {
   const source = input.documentUrls ? 'urls' : 'inline';
+  const target = input.newCharge ? 'new' : 'existing';
   const structured = result.structuredContent as
-    { uploadedCount?: number; failedCount?: number } | undefined;
+    { uploadedCount?: number; failedCount?: number; chargeCreated?: boolean } | undefined;
   return {
     fields: {
       documentSource: source,
+      targetCharge: target,
       requestedDocumentCount: (input.documentUrls ?? input.documents ?? []).length,
       uploadedCount: structured?.uploadedCount,
       failedCount: structured?.failedCount,
+      chargeCreated: structured?.chargeCreated,
     },
-    counters: [[DOCUMENT_SOURCE_COUNTER, source]],
+    counters: [
+      [DOCUMENT_SOURCE_COUNTER, source],
+      [DOCUMENT_TARGET_COUNTER, target],
+    ],
   };
 }
 
 export const uploadDocumentsTool: ToolDefinition<typeof uploadDocumentsInput> = {
   name: UPLOAD_DOCUMENTS_TOOL_NAME,
   description:
-    'Attach one or more documents (invoices, receipts, contracts) to an EXISTING charge. This tool ' +
-    'never creates a charge: `chargeId` is required and must already exist. ' +
-    'Provide EXACTLY ONE of two inputs. ' +
+    'Upload one or more documents (invoices, receipts, contracts) and OCR them. ' +
+    'Choose EXACTLY ONE target: `chargeId` attaches them to an EXISTING charge; `newCharge` creates ' +
+    'ONE new charge holding all documents of the call — for an expense with no bank or card ' +
+    'transaction in Accounter (cash, personal card, an unscraped account, a late document), the ' +
+    'same as forwarding them to the document-ingestion email: the new charge has no transaction and ' +
+    'waits in the regular charge-matching queue. `newCharge` takes an optional `description` and ' +
+    '`tagIds` (accounter_list_tags), and is created only if at least one document succeeds; the ' +
+    'result returns its `chargeId` with `chargeCreated: true`. For more documents than one call ' +
+    'takes, create the charge with the first call and pass the returned `chargeId` to the next. ' +
+    'If a `newCharge` call ends in TIMEOUT_ERROR it may still have completed — look for the charge ' +
+    '(accounter_search_charges) before sending it again, or you may create a duplicate. ' +
+    'Provide EXACTLY ONE of two document inputs. ' +
     '(1) `documentUrls` — PREFERRED: http(s) links the server fetches itself, with no size limit, ' +
     'since the bytes never pass through the conversation. Google Drive share links work. If the file ' +
     'is on disk and you have a shell, put it somewhere fetchable first and pass the resulting link. ' +

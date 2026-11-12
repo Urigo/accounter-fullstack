@@ -34,7 +34,10 @@ export const useGetFinancialEntities = (): UseGetFinancialEntities => {
   useQueryErrorToast(error, 'financial entities');
 
   const financialEntities = useMemo(() => {
-    return data?.allFinancialEntities?.nodes.sort((a, b) => (a.name > b.name ? 1 : -1)) ?? [];
+    // Case-insensitive, so lower-case names are not all pushed below every capitalised one.
+    return [...(data?.allFinancialEntities?.nodes ?? [])].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+    );
   }, [data]);
 
   const selectableFinancialEntities = useMemo(() => {

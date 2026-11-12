@@ -16,7 +16,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "26.12.1"
+    "node": "26.13.0"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -41,20 +41,20 @@
   },
   "dependencies": {
     "@opentelemetry/api": "1.10.0",
-    "@opentelemetry/auto-instrumentations-node": "0.82.0",
-    "@opentelemetry/exporter-trace-otlp-http": "0.300.0",
-    "@opentelemetry/resources": "3.0.0",
-    "@opentelemetry/sdk-node": "0.300.0",
-    "@opentelemetry/sdk-trace": "3.0.0",
-    "@opentelemetry/semantic-conventions": "1.43.0",
-    "dotenv": "18.0.8",
-    "jose": "6.2.13",
+    "@opentelemetry/auto-instrumentations-node": "0.83.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.301.1",
+    "@opentelemetry/resources": "3.1.1",
+    "@opentelemetry/sdk-node": "0.301.1",
+    "@opentelemetry/sdk-trace": "3.1.1",
+    "@opentelemetry/semantic-conventions": "1.45.0",
+    "dotenv": "18.0.10",
+    "jose": "6.2.17",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@types/node": "25.9.9",
+    "@types/node": "26.6.6",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   }
 }

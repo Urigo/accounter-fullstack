@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { CloseDocumentDocument, type CloseDocumentMutationVariables } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -22,6 +23,7 @@ export const useCloseDocument = (): UseCloseDocument => {
 
   const { fetching, execute } = useApiMutation({
     document: CloseDocumentDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: variables => `${NOTIFICATION_ID}-${variables.documentId}`,
     loadingMessage: 'Closing Document...',
     errorMessage: variables => `Error closing document ID [${variables.documentId}]`,

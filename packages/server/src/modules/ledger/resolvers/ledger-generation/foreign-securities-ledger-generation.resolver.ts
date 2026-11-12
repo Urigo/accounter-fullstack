@@ -23,6 +23,7 @@ import { AdminContextProvider } from '../../../admin-context/providers/admin-con
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
+import { cancelledTradeType } from '../../../foreign-securities/helpers/security-cancellations.helper.js';
 import {
   calculateFifoCostBasis,
   type FifoCostBasis,
@@ -202,20 +203,41 @@ function bankProfitLossProblems(params: {
 }
 
 /**
- * The point the ledger priced an acquisition's cost at, which is the rate the securities account
- * took the units in at: a dividend in kind's value date (`distributionValueDate`, as
- * `buildDistributionEntry` books it), a purchase's cash transaction's
- * (`transactionExchangeRateDate`, as the purchase's base entry books it). Null for a purchase
- * whose cash movement was not found.
+ * The dates an acquisition was booked on:
+ * - `rateDate`: the point the ledger priced its cost at, which is the rate the securities account
+ *   took the units in at — a dividend in kind's value date (`distributionValueDate`, as
+ *   `buildDistributionEntry` books it), a purchase's cash transaction's
+ *   (`transactionExchangeRateDate`, as the purchase's base entry books it).
+ * - `ledgerDate`: the invoice date of the record that booked it, which is what the year-end
+ *   revaluation decides by whether it counted the lot — a dividend in kind's trade date (as
+ *   `buildDistributionEntry` books it), a purchase's cash transaction's event date (as
+ *   `ledgerEntryFromMainTransaction` books it). A booked purchase always has an event date, since
+ *   the base entry's invoice date is taken from it; the fall back to the rate date's day only
+ *   covers the nullable column type.
+ *
+ * Null for a purchase whose cash movement was not found.
  */
-function acquisitionRateDate(
+function acquisitionDates(
   acquisition: SecurityExecutionRow,
-  transaction: Parameters<typeof transactionExchangeRateDate>[0] | undefined,
-): TimelessDateString | Date | null {
+  transaction:
+    | (Parameters<typeof transactionExchangeRateDate>[0] & {
+        event_date: TimelessDateString | null;
+      })
+    | undefined,
+): { rateDate: TimelessDateString | Date; ledgerDate: TimelessDateString } | null {
   if (isDividendInKindDistribution(acquisition)) {
-    return distributionValueDate(acquisition);
+    return { rateDate: distributionValueDate(acquisition), ledgerDate: acquisition.trade_date };
   }
-  return transaction ? transactionExchangeRateDate(transaction) : null;
+  const rateDate = transaction ? transactionExchangeRateDate(transaction) : null;
+  if (!transaction || !rateDate) {
+    return null;
+  }
+  return {
+    rateDate,
+    ledgerDate:
+      transaction.event_date ??
+      (rateDate instanceof Date ? dateToTimelessDateString(rateDate) : rateDate),
+  };
 }
 
 /**
@@ -262,22 +284,27 @@ async function saleRevaluationEntry(params: {
     const carryingRates = await Promise.all(
       costBasis.lots.map(async lot => {
         const acquisition = historyById.get(lot.executionId);
-        const bookedAt =
+        const booked =
           acquisition &&
-          acquisitionRateDate(acquisition, transactionsByExecutionId.get(lot.executionId));
-        if (!bookedAt) {
+          acquisitionDates(acquisition, transactionsByExecutionId.get(lot.executionId));
+        if (!booked) {
           throw new LedgerError(
             `the cash movement of the purchase of ${lot.units} units on ${lot.tradeDate} was not found, so the rate the securities account carries them at is unknown`,
           );
         }
+        // The revaluation counts records by their invoice date, not the date they were priced at
         const revaluedOn = lastRevaluationOver(
-          bookedAt instanceof Date ? dateToTimelessDateString(bookedAt) : bookedAt,
-          disposalEntry.valueDate,
+          booked.ledgerDate,
+          disposalEntry.invoiceDate,
           revaluationDates,
         );
         return injector
           .get(ExchangeProvider)
-          .getExchangeRates(disposalEntry.currency, defaultLocalCurrency, revaluedOn ?? bookedAt);
+          .getExchangeRates(
+            disposalEntry.currency,
+            defaultLocalCurrency,
+            revaluedOn ?? booked.rateDate,
+          );
       }),
     );
 
@@ -459,15 +486,18 @@ async function securitiesLedgerEntries(params: {
     return [baseEntry];
   }
 
-  const kind = classifySecurityExecution(execution);
+  // A cancellation sends the cash back the other way, and is booked by what it cancels. A cancelled
+  // buy (which the bank may report as a sale) needs only the base entry, as the buy did. A
+  // cancelled dividend or interest payment books as the mirror of its income entry; a cancelled
+  // sale or redemption would also have to restore the units' cost, which is not supported.
+  const isCancellation = isCancelledExecution(execution);
+  const kind = classifySecurityExecution(
+    isCancellation ? { trade_type: cancelledTradeType(execution) } : execution,
+  );
   if (kind === 'OTHER') {
     return [baseEntry];
   }
 
-  // A cancellation keeps the original's trade type but sends the cash back the other way. A
-  // cancelled dividend or interest payment books as the mirror of its income entry; a cancelled
-  // sale or redemption would also have to restore the units' cost, which is not supported.
-  const isCancellation = isCancelledExecution(execution);
   if (isCancellation && (kind === 'SALE' || kind === 'REDEMPTION')) {
     errors.add(
       `Transaction ${transactionDescription} reverses a cancelled ${kind === 'SALE' ? 'sale' : 'redemption'} of ${describeSecurity(execution)}, and booking the reversal is not supported yet`,

@@ -18,12 +18,14 @@ export function DashboardLayout({ children, filtersContext }: DashboardLayoutPro
     <main>
       <NavigationProgress />
       <Header />
-      <div className="flex h-screen overflow-hidden bg-gray-100">
+      <div className="flex h-screen overflow-hidden bg-gray-100 print:block print:h-auto print:overflow-visible print:bg-white">
         <Sidebar />
         <div
-          className={`overflow-scroll flex flex-col justify-start gap-10 z-0 my-20 pl-10 flex-1 ${isMinimized ? 'pr-10' : 'pr-5'} transition-all`}
+          className={`overflow-scroll flex flex-col justify-start gap-10 z-0 my-20 pl-10 flex-1 ${isMinimized ? 'pr-10' : 'pr-5'} transition-all print:m-0 print:block print:overflow-visible print:p-0`}
         >
-          <Breadcrumbs />
+          <div className="print:hidden">
+            <Breadcrumbs />
+          </div>
           {children}
         </div>
       </div>

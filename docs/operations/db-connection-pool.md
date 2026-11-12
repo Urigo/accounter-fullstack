@@ -82,8 +82,31 @@ does not run", so no single mechanism is trusted:
    still doing real work keeps querying and never reaches it; one whose execution died with the
    abort goes silent at once and is reclaimed within a sweep or two. All three must stay above
    `POSTGRES_STATEMENT_TIMEOUT_MS`, since a long query bumps activity only at its start and end —
-   for the aborted ceiling this is enforced, not just documented: a configured value below
-   `POSTGRES_STATEMENT_TIMEOUT_MS + 30s` is raised to that floor.
+   for the aborted and active ceilings this is enforced, not just documented: a configured value
+   below `POSTGRES_STATEMENT_TIMEOUT_MS + 30s` is raised to that floor.
+
+   All three must also stay **below** `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` by at least two
+   sweep intervals, and the server refuses to start otherwise. The watchdog only notices a leak on a
+   sweep, so up to one interval after its ceiling. If Postgres gets there first, it terminates the
+   session, the client's error handler drops it, and the watchdog's
+   `[db] Reclaiming leaked connection … operation=… request=…` line is never written. That line is
+   the one that names the leaking operation. In the 2026-10-09 production logs Postgres killed 19
+   sessions and the watchdog logged nothing (#4871).
+
+   Every line about a request-scoped client names its GraphQL operation and request id: the
+   watchdog's reclaim line, the `[db] Error on checked-out client …` line (one line, no pg stack),
+   and `[db] TenantAwareDBClient created outside a live request …`. The last one means that work
+   outlived its request and constructed a client after the end-of-execution disposal pass, or after
+   graphql-modules destroyed the operation. Such a client commits and releases after every query, so
+   it cannot hold a connection.
+
+   The client and `dbCleanupPlugin` share lifecycle state through one object, `context.dbRequest`,
+   which is only ever mutated in place. graphql-modules does not inject the Yoga context into
+   operation-scoped providers, but a per-module copy taken when the module context is first built. A
+   flag assigned on the context later never reaches that copy, and a client built after the
+   operation is destroyed gets an empty one. Fan-outs whose branches query the database use
+   `allSettledOrThrow` (`shared/helpers/promises.ts`) rather than `Promise.all`, so a failing branch
+   cannot return the request while its siblings still query.
 
 3. **`connectionTimeoutMillis`** — an exhausted pool now produces fast, loud errors naming the
    operation instead of silently hanging forever.
@@ -91,17 +114,17 @@ does not run", so no single mechanism is trusted:
 
 ## Configuration
 
-| Variable                                  | Default  | Notes                                                                                                        |
-| ----------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
-| `POSTGRES_MAX_CLIENTS`                    | `20`     | Pool size. Keep well under the server's `max_connections`.                                                   |
-| `POSTGRES_CONNECTION_TIMEOUT_MS`          | `10000`  | Rejects `0`, so "wait forever" is unreachable.                                                               |
-| `POSTGRES_STATEMENT_TIMEOUT_MS`           | `120000` | Bounds a pathological query. Raise if bulk jobs need it.                                                     |
-| `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` | `300000` | See the warning below before lowering.                                                                       |
-| `POSTGRES_CLIENT_MAX_IDLE_MS`             | `300000` | Client-side counterpart of the above.                                                                        |
-| `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS`      | `900000` | Ceiling while GraphQL execution is still running.                                                            |
-| `POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS`     | `150000` | Ceiling once the caller hung up; bounds deferred disposal. Floored at `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`. |
-| `POSTGRES_WATCHDOG_INTERVAL_MS`           | derived  | Sweep interval; defaults to `min(30s, client max idle)`.                                                     |
-| `POSTGRES_MONITOR_INTERVAL_MS`            | `30000`  | `0` disables the heartbeat.                                                                                  |
+| Variable                                  | Default  | Notes                                                                                                                                                                                                                                     |
+| ----------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_MAX_CLIENTS`                    | `20`     | Pool size. Keep well under the server's `max_connections`.                                                                                                                                                                                |
+| `POSTGRES_CONNECTION_TIMEOUT_MS`          | `10000`  | Rejects `0`, so "wait forever" is unreachable.                                                                                                                                                                                            |
+| `POSTGRES_STATEMENT_TIMEOUT_MS`           | `120000` | Bounds a pathological query. Raise if bulk jobs need it, but past 210s (with the other defaults) the startup check fails unless `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` is raised to at least the statement timeout + 30s + two sweeps. |
+| `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` | `300000` | See the warning below before lowering.                                                                                                                                                                                                    |
+| `POSTGRES_CLIENT_MAX_IDLE_MS`             | `240000` | Client-side counterpart of the above: the timeout minus two sweeps.                                                                                                                                                                       |
+| `POSTGRES_ACTIVE_CLIENT_MAX_IDLE_MS`      | derived  | Ceiling while GraphQL execution is still running. Defaults to the client max idle; never below it or `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`.                                                                                               |
+| `POSTGRES_ABORTED_CLIENT_MAX_IDLE_MS`     | `150000` | Ceiling once the caller hung up; bounds deferred disposal. Floored at `POSTGRES_STATEMENT_TIMEOUT_MS + 30s`.                                                                                                                              |
+| `POSTGRES_WATCHDOG_INTERVAL_MS`           | derived  | Sweep interval; defaults to `min(30s, client max idle)`.                                                                                                                                                                                  |
+| `POSTGRES_MONITOR_INTERVAL_MS`            | `30000`  | `0` disables the heartbeat.                                                                                                                                                                                                               |
 
 ### Why the idle timeouts are 5 minutes and not 60 seconds
 

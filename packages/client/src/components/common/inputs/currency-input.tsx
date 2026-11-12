@@ -1,4 +1,4 @@
-import { forwardRef, useId, useState, type ComponentProps } from 'react';
+import { forwardRef, useId, useMemo, useState, type ComponentProps } from 'react';
 import { Check, ChevronDownIcon } from 'lucide-react';
 import { Currency } from '../../../gql/graphql.js';
 import {
@@ -6,6 +6,7 @@ import {
   currencyCodeToName,
   currencyCodeToSymbol,
 } from '../../../helpers/currency.js';
+import { rankOptions, useCommandListScrollReset } from '../../../lib/command-search.js';
 import { cn } from '../../../lib/utils.js';
 import { usePortalContainer } from '../../../providers/portal-container.js';
 import {
@@ -138,35 +139,71 @@ function CurrencySelect({
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="end" container={portalContainer}>
-        <Command>
-          <CommandInput placeholder="Search currency..." form={form} />
-          <CommandList>
-            <CommandEmpty>No currency found.</CommandEmpty>
-            <CommandGroup>
-              {currencies.map(currency => (
-                <CommandItem
-                  key={currency}
-                  value={currency}
-                  keywords={[currencyCodeToName(currency), currencyCodeToSymbol(currency)]}
-                  onSelect={() => {
-                    onChange?.(currency);
-                    setOpen(false);
-                  }}
-                >
-                  <span className="w-9 shrink-0 text-center font-medium text-gray-500 dark:text-gray-400">
-                    {currencyCodeToSymbol(currency)}
-                  </span>
-                  <span className="truncate">{currencyCodeToLabel(currency)}</span>
-                  <Check
-                    className={cn('ml-auto', value === currency ? 'opacity-100' : 'opacity-0')}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        <CurrencyOptionsList
+          currencies={currencies}
+          value={value}
+          form={form}
+          onSelect={currency => {
+            onChange?.(currency);
+            setOpen(false);
+          }}
+        />
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * Split out of `CurrencySelect` so its search state lives inside the popover content, which
+ * unmounts on close: every open starts with an empty search and the list scrolled to the top.
+ */
+function CurrencyOptionsList({
+  currencies,
+  value,
+  form,
+  onSelect,
+}: {
+  currencies: Currency[];
+  value?: Currency | null;
+  form?: string;
+  onSelect: (currency: Currency) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const listRef = useCommandListScrollReset(search);
+  // The code, name and symbol are all searchable; the visible label is not what is searched.
+  const rankedCurrencies = useMemo(
+    () =>
+      rankOptions(currencies, search, currency => [
+        currency,
+        currencyCodeToName(currency),
+        currencyCodeToSymbol(currency),
+      ]),
+    [currencies, search],
+  );
+
+  return (
+    <Command shouldFilter={false}>
+      <CommandInput
+        placeholder="Search currency..."
+        form={form}
+        value={search}
+        onValueChange={setSearch}
+      />
+      <CommandList ref={listRef}>
+        <CommandEmpty>No currency found.</CommandEmpty>
+        <CommandGroup>
+          {rankedCurrencies.map(currency => (
+            <CommandItem key={currency} value={currency} onSelect={() => onSelect(currency)}>
+              <span className="w-9 shrink-0 text-center font-medium text-gray-500 dark:text-gray-400">
+                {currencyCodeToSymbol(currency)}
+              </span>
+              <span className="truncate">{currencyCodeToLabel(currency)}</span>
+              <Check className={cn('ml-auto', value === currency ? 'opacity-100' : 'opacity-0')} />
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
   );
 }
 

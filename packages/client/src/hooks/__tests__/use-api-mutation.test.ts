@@ -2,8 +2,8 @@
 
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TypedDocumentNode } from 'urql';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AnyVariables, TypedDocumentNode } from 'urql';
 import {
   useApiMutation,
   type UseApiMutation,
@@ -24,7 +24,10 @@ const { toastMock, useMutationMock } = vi.hoisted(() => {
 });
 
 vi.mock('sonner', () => ({ toast: toastMock }));
-vi.mock('urql', () => ({ useMutation: useMutationMock }));
+vi.mock('urql', async importOriginal => ({
+  ...(await importOriginal<typeof import('urql')>()),
+  useMutation: useMutationMock,
+}));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -38,13 +41,15 @@ const DOCUMENT = {} as TypedDocumentNode<Data, Variables>;
 /** Resolves the mutation with `data`, as a successful urql `OperationResult` would. */
 const resolveWith = (data: Data) => vi.fn().mockResolvedValue({ data });
 
-async function renderHook<TKey extends keyof Data | undefined, TResult>(
-  options: UseApiMutationOptions<Data, Variables, TKey, TResult>,
-) {
+async function renderHook<
+  TKey extends keyof Data | undefined,
+  TResult,
+  TVariables extends AnyVariables = Variables,
+>(options: UseApiMutationOptions<Data, TVariables, TKey, TResult>) {
   const container = document.createElement('div');
   document.body.append(container);
 
-  const renders: UseApiMutation<Variables, TResult>[] = [];
+  const renders: UseApiMutation<TVariables, TResult>[] = [];
 
   function Harness(): null {
     renders.push(useApiMutation(options));
@@ -334,6 +339,255 @@ describe('useApiMutation', () => {
       // `handleCommonErrors` raised the toast; the hook must not add a second one.
       expect(toastMock.error).toHaveBeenCalledTimes(1);
       consoleError.mockRestore();
+    });
+  });
+
+  describe('dedupe', () => {
+    const WINDOW = 20_000;
+
+    /** A fresh document per test, so the module-level guard never leaks between tests. */
+    const dedupeOptions = () => ({
+      ...baseOptions,
+      document: {} as TypedDocumentNode<Data, Variables>,
+      dedupe: { windowMs: WINDOW },
+    });
+
+    type FileVariables = { file: File; chargeId: string };
+
+    /** Like `dedupeOptions`, for an upload-shaped mutation whose variables carry a `File`. */
+    const fileOptions = () => ({
+      ...baseOptions,
+      document: {} as TypedDocumentNode<Data, FileVariables>,
+      dedupe: { windowMs: WINDOW },
+    });
+
+    /** A mutation that stays in flight until `settle` is called. */
+    function deferredMutate() {
+      let settle: (value: unknown) => void = () => undefined;
+      const mutate = vi.fn(
+        () =>
+          new Promise(resolve => {
+            settle = resolve;
+          }),
+      );
+      return { mutate, settle: (value: unknown) => settle(value) };
+    }
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('sends a single request for concurrent calls with the same variables', async () => {
+      const { mutate, settle } = deferredMutate();
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      let second: unknown = 'unset';
+      await act(async () => {
+        const first = current().execute({ tagName: 'travel' });
+        second = await current().execute({ tagName: 'travel' });
+        settle({ data: { addTag: true } });
+        await first;
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      expect(second).toBeUndefined();
+      expect(toastMock.warning).toHaveBeenCalledWith(
+        'Duplicate request blocked',
+        expect.objectContaining({ id: 'addTag-duplicate' }),
+      );
+    });
+
+    it('blocks a repeat within the window and allows it once the window passes', async () => {
+      vi.useFakeTimers();
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+      });
+      vi.advanceTimersByTime(WINDOW - 1);
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+      });
+      expect(mutate).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(2);
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+      });
+      expect(mutate).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not block calls with different variables', async () => {
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'food' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
+    });
+
+    /** A mutation whose resolver reports a `CommonError` under `addTag`. */
+    const commonErrorMutate = () =>
+      vi.fn().mockResolvedValue({
+        data: { addTag: { __typename: 'CommonError', message: 'Tag already exists' } },
+      });
+
+    it('keeps the guard after a `CommonError` by default, since the resolver may have half-run', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = commonErrorMutate();
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        commonErrorPath: 'addTag' as const,
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      consoleError.mockRestore();
+    });
+
+    it('lifts the guard at once on a `CommonError` with `liftOnCommonError`', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = commonErrorMutate();
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        dedupe: { windowMs: WINDOW, liftOnCommonError: true },
+        commonErrorPath: 'addTag' as const,
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
+      consoleError.mockRestore();
+    });
+
+    it('keeps the guard when `select` rejects the result, which may describe a partial batch', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = resolveWith({ addTag: false });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        select: (data: Data) => {
+          if (!data.addTag) {
+            throw new Error('Tag was not added');
+          }
+          return data.addTag;
+        },
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      consoleError.mockRestore();
+    });
+
+    it('keeps the guard after a response with neither data nor error', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = vi.fn().mockResolvedValue({});
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook({
+        ...dedupeOptions(),
+        commonErrorPath: 'addTag' as const,
+      });
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      consoleError.mockRestore();
+    });
+
+    it('keeps the guard after a network error, since the request may have run', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const mutate = vi.fn().mockResolvedValue({
+        error: { graphQLErrors: [], networkError: new Error('offline') },
+      });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(dedupeOptions());
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+      consoleError.mockRestore();
+    });
+
+    it('is shared between instances of the hook', async () => {
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const options = dedupeOptions();
+      const first = await renderHook(options);
+      const second = await renderHook(options);
+
+      await act(async () => {
+        await first.current().execute({ tagName: 'travel' });
+        await second.current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+    });
+
+    it('blocks a re-submit of the same `File` object', async () => {
+      const mutate = vi.fn().mockResolvedValue({ data: { addTag: true } });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook<undefined, unknown, FileVariables>(fileOptions());
+      const file = new File(['a'], 'invoice.pdf');
+
+      await act(async () => {
+        await current().execute({ file, chargeId: 'charge-1' });
+        await current().execute({ file, chargeId: 'charge-1' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not block a different `File` with otherwise identical variables', async () => {
+      // Without `includeFiles`, urql serializes every file as `null`, so these two would collide.
+      const mutate = vi.fn().mockResolvedValue({ data: { addTag: true } });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook<undefined, unknown, FileVariables>(fileOptions());
+
+      await act(async () => {
+        await current().execute({ file: new File(['a'], 'a.pdf'), chargeId: 'charge-1' });
+        await current().execute({ file: new File(['b'], 'b.pdf'), chargeId: 'charge-1' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
+    });
+
+    it('does nothing unless enabled', async () => {
+      const mutate = resolveWith({ addTag: true });
+      useMutationMock.mockReturnValue([{ fetching: false }, mutate]);
+      const { current } = await renderHook(baseOptions);
+
+      await act(async () => {
+        await current().execute({ tagName: 'travel' });
+        await current().execute({ tagName: 'travel' });
+      });
+
+      expect(mutate).toHaveBeenCalledTimes(2);
     });
   });
 
