@@ -225,5 +225,39 @@ describe('getVatRecords fan-outs', () => {
 
     expect(db.queriesAfterDisposal).toEqual([]);
   });
-});
 
+  it('logs every failing document on one line, not only the first', async () => {
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    vi.mocked(adjustTaxRecord).mockImplementation((async ({ doc }: { doc: { id: string } }) => {
+      if (doc.id !== 'good') {
+        throw new Error(`Currency missing for invoice ID=${doc.id}`);
+      }
+      return { documentId: doc.id } as RawVatReportRecord;
+    }) as never);
+    const { injector } = createInjector([
+      expenseInvoice('bad-1', '2024-01-10'),
+      expenseInvoice('good', '2024-01-11'),
+      expenseInvoice('bad-2', '2024-01-12'),
+    ]);
+
+    await expect(
+      getVatRecords({ filters }, injector, { includeChargeBuckets: false }),
+    ).rejects.toThrow('Currency missing for invoice ID=bad-1');
+
+    const lines = stdout.mock.calls.map(([chunk]) => JSON.parse(String(chunk)));
+    stdout.mockRestore();
+    expect(lines).toEqual([
+      expect.objectContaining({
+        msg: 'vat-report-records-failed',
+        level: 'warn',
+        failedRecordCount: 2,
+        failedRecords: [
+          { documentId: 'bad-1', message: 'Currency missing for invoice ID=bad-1' },
+          { documentId: 'bad-2', message: 'Currency missing for invoice ID=bad-2' },
+        ],
+        error: expect.objectContaining({ stack: expect.any(String) }),
+        requestId: null,
+      }),
+    ]);
+  });
+});

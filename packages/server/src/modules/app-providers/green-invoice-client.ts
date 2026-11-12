@@ -1,6 +1,6 @@
 import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
-import { Inject, Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import {
   _DOLLAR_defs_addClientRequest_Input,
   _DOLLAR_defs_getClientResponse,
@@ -9,6 +9,7 @@ import {
   updateClient_mutationMutationVariables,
   type Sdk,
 } from '@accounter/green-invoice-graphql';
+import { log, markLogged, scrubText, wasLogged, type LogFields } from '../../observability/log.js';
 import { todayTimelessDate } from '../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
@@ -34,7 +35,24 @@ export class GreenInvoiceClientProvider {
     @Inject(ENVIRONMENT) private env: Environment,
     private credentialsProvider: ProviderCredentialsProvider,
     private tokenCache: GreenInvoiceTokenCacheProvider,
+    // Optional: absent when the provider is built directly (tests, scripts).
+    @Optional() @Inject(CONTEXT) private requestContext?: GraphQLModules.GlobalContext,
   ) {}
+
+  /** Logs a failed call with the operation and request it belongs to; see {@link failure}. */
+  private fail(
+    message: string,
+    greenInvoiceCall: string,
+    error: unknown,
+    fields?: LogFields,
+  ): Error {
+    const requestLog = this.requestContext?.requestLog;
+    return failure(message, greenInvoiceCall, error, {
+      ...fields,
+      operationName: requestLog?.operationName ?? null,
+      requestId: requestLog?.requestId ?? null,
+    });
+  }
 
   private init(): Promise<Sdk> {
     this.initPromise ??= this._doInit();
@@ -68,9 +86,7 @@ export class GreenInvoiceClientProvider {
     try {
       return await this.init();
     } catch (e) {
-      const message = 'Green Invoice SDK error';
-      console.error(`${message}: ${e}`);
-      throw new Error(message, { cause: e });
+      throw this.fail('Green Invoice SDK error', 'init', e);
     }
   }
 
@@ -157,7 +173,9 @@ export class GreenInvoiceClientProvider {
               expense.number !== null ||
               expense.vat !== 0
             ) {
-              console.log(`Finally, it took only ${(15 - retryCounter) * 2} seconds...`);
+              log('info', 'green-invoice-expense-draft-ready', {
+                waitedSeconds: (15 - retryCounter) * 2,
+              });
               return items[0];
             }
           }
@@ -166,7 +184,7 @@ export class GreenInvoiceClientProvider {
         retryCounter -= 1;
       }
 
-      console.log('Failed to fetch OCR data, returning empty draft');
+      log('warn', 'green-invoice-expense-draft-timeout', { detail: 'returning an empty draft' });
       const emptyDraft = {
         expense: {
           documentType: '_405', // "receipt on donation" which is not supported, resulting in unprocessed document
@@ -179,9 +197,7 @@ export class GreenInvoiceClientProvider {
       } as ExpenseDraft;
       return emptyDraft;
     } catch (e) {
-      const message = 'Green Invoice Add Expense Draft error';
-      console.error(`${message}: ${e}`);
-      throw new Error(message, { cause: e });
+      throw this.fail('Green Invoice Add Expense Draft error', 'addExpenseDraftByFile', e);
     }
   }
 
@@ -297,9 +313,7 @@ export class GreenInvoiceClientProvider {
       }
       return client as _DOLLAR_defs_getClientResponse;
     } catch (error) {
-      const message = 'Green Invoice Create Client error';
-      console.error(`${message}: ${error}`);
-      throw new Error(message, { cause: error });
+      throw this.fail('Green Invoice Create Client error', 'createClient', error);
     }
   }
 
@@ -323,9 +337,9 @@ export class GreenInvoiceClientProvider {
       return client as _DOLLAR_defs_getClientResponse;
     } catch (error) {
       this.invalidateClient(args.id);
-      const message = 'Green Invoice Update Client error';
-      console.error(`${message}: ${error}`);
-      throw new Error(message, { cause: error });
+      throw this.fail('Green Invoice Update Client error', 'updateClient', error, {
+        greenInvoiceClientId: args.id,
+      });
     }
   }
 
@@ -346,13 +360,106 @@ export class GreenInvoiceClientProvider {
       return client as _DOLLAR_defs_getClientResponse;
     } catch (error) {
       this.invalidateClient(clientId);
-      const message = 'Green Invoice Delete Client error';
-      console.error(`${message}: ${error}`);
-      throw new Error(message, { cause: error });
+      throw this.fail('Green Invoice Delete Client error', 'deleteClient', error, {
+        greenInvoiceClientId: clientId,
+      });
     }
   }
 
   public invalidateClient(clientId: string) {
     this.clientLoader.clear(clientId);
   }
+}
+
+/** What Green Invoice said about a failed call. Never the response body, which can echo client data. */
+export type UpstreamErrorDetails = {
+  /** HTTP status of the upstream response. */
+  status: number | null;
+  /** Green Invoice's own `errorCode`. */
+  upstreamCode: number | string | null;
+  /**
+   * Green Invoice's own `errorMessage`, which says why it rejected the call. Cleaned: it can echo the
+   * client's data, so digit runs (tax ids, phone numbers), emails and credentials are masked, and it
+   * is capped at 200 characters. Both the log line and the message thrown to the user carry it.
+   */
+  upstreamMessage: string | null;
+};
+
+const MAX_UPSTREAM_MESSAGE_LENGTH = 200;
+
+/** See {@link UpstreamErrorDetails.upstreamMessage}. */
+export function cleanUpstreamMessage(message: string): string {
+  const cleaned = scrubText(message).replaceAll(/\d{5,}/g, '[number]');
+  return cleaned.length > MAX_UPSTREAM_MESSAGE_LENGTH
+    ? `${cleaned.slice(0, MAX_UPSTREAM_MESSAGE_LENGTH)}…`
+    : cleaned;
+}
+
+/**
+ * Finds the upstream response behind an SDK error: the REST transport puts it on the GraphQL error's
+ * `extensions.response`, and the SDK throws several errors as an `AggregateError`. Follows `cause`, so
+ * it also works on an error this provider already wrapped.
+ */
+export function upstreamErrorDetails(error: unknown, depth = 0): UpstreamErrorDetails | null {
+  if (typeof error !== 'object' || error === null || depth > 4) {
+    return null;
+  }
+  if (error instanceof AggregateError) {
+    for (const inner of error.errors) {
+      const found = upstreamErrorDetails(inner, depth + 1);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  const response = (error as { extensions?: { response?: { status?: unknown; body?: unknown } } })
+    .extensions?.response;
+  if (response) {
+    const body =
+      typeof response.body === 'object' && response.body !== null
+        ? (response.body as { errorCode?: unknown; errorMessage?: unknown })
+        : {};
+    return {
+      status: typeof response.status === 'number' ? response.status : null,
+      upstreamCode:
+        typeof body.errorCode === 'number' || typeof body.errorCode === 'string'
+          ? body.errorCode
+          : null,
+      upstreamMessage:
+        typeof body.errorMessage === 'string' ? cleanUpstreamMessage(body.errorMessage) : null,
+    };
+  }
+  return upstreamErrorDetails((error as { cause?: unknown }).cause, depth + 1);
+}
+
+/**
+ * Logs a failed Green Invoice call with the upstream reason, and returns the error to throw.
+ *
+ * Logged here, not only at the GraphQL boundary: callers such as `updateClient` turn the error into a
+ * `CommonError`, so it may never reach it, and only this site has the upstream response. The thrown
+ * message carries the reason too, so a `CommonError` built from it tells the user why. An error that
+ * already went through here (`getSDK` failing inside `updateClient`) is rethrown as is, so one
+ * failure is one line.
+ */
+function failure(
+  message: string,
+  greenInvoiceCall: string,
+  error: unknown,
+  fields?: LogFields,
+): Error {
+  if (error instanceof Error && wasLogged(error)) {
+    return error;
+  }
+  const upstream = upstreamErrorDetails(error);
+  log('error', 'green-invoice-call-failed', {
+    // Not `operation`: easy to mistake for the GraphQL `operationName` this line also carries.
+    greenInvoiceCall,
+    ...fields,
+    ...upstream,
+    message: error instanceof Error ? error.message : String(error),
+  });
+  const reason = upstream?.upstreamMessage ?? (error instanceof Error ? error.message : undefined);
+  const wrapped = new Error(reason ? `${message}: ${reason}` : message, { cause: error });
+  markLogged(wrapped);
+  return wrapped;
 }
