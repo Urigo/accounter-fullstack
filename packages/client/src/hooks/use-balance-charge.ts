@@ -14,6 +14,7 @@ import { useApiMutation } from './use-api-mutation.js';
   ) {
     generateBalanceCharge(description: $description, balanceRecords: $balanceRecords) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;

@@ -14,6 +14,7 @@ import { useApiMutation } from './use-api-mutation.js';
       ... on UploadDocumentSuccessfulResult {
         document {
           id
+          ...DocumentMutationResultFields
           charge {
             id
           }

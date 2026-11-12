@@ -485,6 +485,24 @@ export default gql`
     charge: Charge
   }
 
+  extend interface Transaction {
+    " the charge the transaction belongs to "
+    charge: Charge!
+  }
+
+  extend type CommonTransaction {
+    charge: Charge!
+  }
+
+  extend type ConversionTransaction {
+    charge: Charge!
+  }
+
+  extend type DeleteDocumentResult {
+    " the charge the deleted document belonged to, unless it was left empty and deleted too "
+    charge: Charge
+  }
+
   extend interface FinancialAccount {
     charges(filter: ChargeFilter): [Charge!]!
   }

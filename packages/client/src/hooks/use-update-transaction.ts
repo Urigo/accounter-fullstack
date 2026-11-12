@@ -11,6 +11,7 @@ import { useApiMutation } from './use-api-mutation.js';
       __typename
       ... on Transaction {
         id
+        ...TransactionMutationResultFields
       }
       ... on CommonError {
         message

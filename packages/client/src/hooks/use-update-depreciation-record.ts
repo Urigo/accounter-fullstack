@@ -15,6 +15,11 @@ import { useApiMutation } from './use-api-mutation.js';
       }
       ... on DepreciationRecord {
         id
+        ...DepreciationRecordRowFields
+        charge {
+          id
+          ...ChargeMutationResultFields
+        }
       }
     }
   }

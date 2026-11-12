@@ -16,6 +16,7 @@ import { useApiMutation } from './use-api-mutation.js';
       ... on UpdateDocumentSuccessfulResult {
         document {
           id
+          ...DocumentMutationResultFields
         }
         deletedChargeId
       }

@@ -10,6 +10,7 @@ import { useApiMutation } from './use-api-mutation.js';
   mutation UpdateMiscExpense($id: UUID!, $fields: UpdateMiscExpenseInput!) {
     updateMiscExpense(id: $id, fields: $fields) {
       id
+      ...MiscExpenseMutationResultFields
     }
   }
 `;

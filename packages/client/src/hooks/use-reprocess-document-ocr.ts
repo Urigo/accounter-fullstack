@@ -23,6 +23,7 @@ import {
         updatedFields
         document {
           id
+          ...DocumentMutationResultFields
         }
       }
       ... on CommonError {
@@ -41,6 +42,7 @@ import {
         updatedFields
         document {
           id
+          ...DocumentMutationResultFields
         }
       }
       ... on CommonError {

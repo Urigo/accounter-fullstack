@@ -52,7 +52,9 @@ export class AccountantApprovalProvider {
 
     const [newCharge] = await degradeChargeAccountantApproval.run({ chargeId }, this.db);
     if (newCharge) {
-      this.charges.getChargeByIdLoader.prime(newCharge.id, newCharge);
+      // `prime` is a no-op for a key already in the cache, and callers usually load the charge
+      // before degrading it - clear first, or later loads in this operation keep serving APPROVED
+      this.charges.getChargeByIdLoader.clear(newCharge.id).prime(newCharge.id, newCharge);
     }
     return newCharge;
   }

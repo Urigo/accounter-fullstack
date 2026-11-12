@@ -14,6 +14,7 @@ import { useApiMutation } from './use-api-mutation.js';
       ... on InsertDocumentSuccessfulResult {
         document {
           id
+          ...DocumentMutationResultFields
         }
       }
       ... on CommonError {

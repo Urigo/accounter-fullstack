@@ -28,6 +28,7 @@ import {
   mutation GenerateRevaluationCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateRevaluationCharge(ownerId: $ownerId, date: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -36,6 +37,7 @@ import {
   mutation GenerateBankDepositsRevaluationCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateBankDepositsRevaluationCharge(ownerId: $ownerId, date: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -44,6 +46,7 @@ import {
   mutation GenerateTaxExpensesCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateTaxExpensesCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -52,6 +55,7 @@ import {
   mutation GenerateDepreciationCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateDepreciationCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -60,6 +64,7 @@ import {
   mutation GenerateRecoveryReserveCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateRecoveryReserveCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;
@@ -68,6 +73,7 @@ import {
   mutation GenerateVacationReserveCharge($ownerId: UUID!, $date: TimelessDate!) {
     generateVacationReserveCharge(ownerId: $ownerId, year: $date) {
       id
+      ...ChargeMutationResultFields
     }
   }
 `;

@@ -144,6 +144,8 @@ export default gql`
   " array of ledger records linked to the charge "
   type Ledger {
     records: [LedgerRecord!]!
+    " the charge the ledger belongs to "
+    charge: Charge!
     balance: LedgerBalanceInfo
     validate: LedgerValidation!
   }

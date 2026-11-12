@@ -2,6 +2,7 @@ import { errorSimplifier } from '../../../shared/errors.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
+import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   calculateTotalAmount,
   getChargeDocumentsMeta,
@@ -121,6 +122,29 @@ export const commonDocumentsFields: ChargesModule.DocumentResolvers = {
       return charge ?? null;
     } catch (error) {
       throw errorSimplifier('Failed to fetch charge for document', error);
+    }
+  },
+};
+
+export const commonTransactionFields:
+  ChargesModule.CommonTransactionResolvers | ChargesModule.ConversionTransactionResolvers = {
+  charge: async (transactionId, _, { injector }) => {
+    try {
+      const transaction = await injector
+        .get(TransactionsProvider)
+        .transactionByIdLoader.load(transactionId);
+      if (transaction instanceof Error) {
+        throw transaction;
+      }
+      const charge = await injector
+        .get(ChargesProvider)
+        .getChargeByIdLoader.load(transaction.charge_id);
+      if (!charge) {
+        throw new Error(`Charge ID="${transaction.charge_id}" not found`);
+      }
+      return charge;
+    } catch (error) {
+      throw errorSimplifier('Failed to fetch charge for transaction', error);
     }
   },
 };

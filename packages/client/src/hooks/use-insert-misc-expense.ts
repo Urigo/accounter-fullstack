@@ -11,6 +11,7 @@ import { useApiMutation } from './use-api-mutation.js';
   mutation InsertMiscExpense($chargeId: UUID!, $fields: InsertMiscExpenseInput!) {
     insertMiscExpense(chargeId: $chargeId, fields: $fields) {
       id
+      ...MiscExpenseMutationResultFields
     }
   }
 `;

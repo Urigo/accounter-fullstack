@@ -160,6 +160,8 @@ export class MiscExpensesProvider {
 
   public async updateExpense(params: IUpdateExpenseParams) {
     if (params.miscExpenseId) await this.invalidateById(params.miscExpenseId);
+    // `invalidateById` clears the charge the expense is leaving; clear the one it moves to as well
+    if (params.chargeId) await this.invalidateByChargeId(params.chargeId);
     return updateExpense.run(params, this.db);
   }
 

@@ -10,6 +10,16 @@ import { useApiMutation } from './use-api-mutation.js';
       ... on Ledger {
         records {
           id
+          ...LedgerRecordsTableFields
+        }
+        charge {
+          id
+          ...ChargeMutationResultFields
+          ledger {
+            records {
+              id
+            }
+          }
         }
       }
       ... on CommonError {
