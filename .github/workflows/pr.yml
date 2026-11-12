@@ -63,7 +63,9 @@ jobs:
       # every `uses:` step, so the payload can't be patched in an earlier step.
       # Instead, fetch the action at its pinned commit and run its bundled entry
       # point here, with `GITHUB_EVENT_PATH` pointing at a patched copy of the
-      # event. Renovate doesn't track `ACTION_SHA`: bump it by hand.
+      # event. Renovate tracks `ACTION_SHA` and its version comment through a
+      # regex custom manager in renovate.json: keep `ACTION_REPO` directly above
+      # `ACTION_SHA`, in this format, or it stops matching.
       - name: Create/Update Changesets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
