@@ -115,7 +115,7 @@ describe('TenantAwareDBClient across the graphql-modules execution lifecycle', (
     const { app, poolClient, captured } = setup();
     await runRequest(app);
     poolClient.release.mockClear();
-    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
 
     // Work that outlived its request asks the same injector for a client.
     const late = captured.injector!.get(TenantAwareDBClient);
@@ -125,7 +125,7 @@ describe('TenantAwareDBClient across the graphql-modules execution lifecycle', (
     expect(late.autoRelease).toBe(true);
     expect(poolClient.release).toHaveBeenCalled();
     expect(getTenantDbClientStats().holdingConnection).toBe(0);
-    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('outside a live request'));
-    stderr.mockRestore();
+    expect(stdout).toHaveBeenCalledWith(expect.stringContaining('"db-client-outside-live-request"'));
+    stdout.mockRestore();
   });
 });

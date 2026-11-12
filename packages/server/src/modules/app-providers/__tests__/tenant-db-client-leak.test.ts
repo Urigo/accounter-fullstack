@@ -35,6 +35,14 @@ const authContext: AuthContext = {
   activeReadScope: { businessIds: ['business-456'] },
 } as unknown as AuthContext;
 
+/** The JSON log records written through a `process.stdout.write` spy. */
+function logRecords(write: { mock: { calls: unknown[][] } }): Array<Record<string, unknown>> {
+  return write.mock.calls
+    .map(([chunk]) => String(chunk))
+    .filter(line => line.startsWith('{'))
+    .map(line => JSON.parse(line) as Record<string, unknown>);
+}
+
 /** A context carrying live request state, as `dbCleanupPlugin` sets it up. */
 function requestContext(state: Partial<DbRequestState> = {}) {
   return {
@@ -261,7 +269,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     // Work that outlived its request constructs a client after dbCleanupPlugin
     // already drained the list. Registered there, nothing would ever dispose it
     // and it would sit `idle in transaction` until Postgres killed it (#4871).
-    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
     const context = requestContext({
       disposed: true,
       operationName: 'VatReport',
@@ -276,8 +284,14 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     expect(client.autoRelease).toBe(true);
     expect(poolClient.release).toHaveBeenCalled();
     expect(getTenantDbClientStats().holdingConnection).toBe(before);
-    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('operation=VatReport request=req-1'));
-    stderr.mockRestore();
+    expect(logRecords(stdout)).toContainEqual(
+      expect.objectContaining({
+        msg: 'db-client-outside-live-request',
+        operationName: 'VatReport',
+        requestId: 'req-1',
+      }),
+    );
+    stdout.mockRestore();
   });
 
   it('names the operation and request of a reclaimed client', async () => {
@@ -299,7 +313,7 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
   });
 
   it('logs a killed session as one line naming the operation, without the pg stack', async () => {
-    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
     const client = buildClient(
       poolClient,
       requestContext({ operationName: 'VatReport', requestId: 'req-3' }),
@@ -312,20 +326,24 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     );
     poolClient.emit('error', error);
 
-    const lines = stderr.mock.calls.map(([chunk]) => String(chunk));
-    const line = lines.find(l => l.startsWith('[db] Error on checked-out client'));
+    const lines = stdout.mock.calls.map(([chunk]) => String(chunk));
+    const line = lines.find(l => l.includes('"db-checked-out-client-error"'));
     expect(line).toBeDefined();
-    expect(line).toContain('code=25P03');
-    expect(line).toContain('lastQuery=SELECT 1');
-    expect(line).toContain('operation=VatReport request=req-3');
     expect(line!.trimEnd()).not.toContain('\n');
-    stderr.mockRestore();
+    expect(JSON.parse(line!)).toMatchObject({
+      level: 'error',
+      code: '25P03',
+      lastQuery: 'SELECT 1',
+      operationName: 'VatReport',
+      requestId: 'req-3',
+    });
+    stdout.mockRestore();
   });
 
   it('holds no connection when built a context without request state', async () => {
     // What graphql-modules hands a client constructed after its operation was
     // destroyed: a fresh copy of a context whose fields are all gone.
-    const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
     const before = getTenantDbClientStats().holdingConnection;
 
     const client = buildClient(poolClient, { moduleId: 'charges' } as never);
@@ -334,8 +352,10 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     expect(client.autoRelease).toBe(true);
     expect(poolClient.release).toHaveBeenCalled();
     expect(getTenantDbClientStats().holdingConnection).toBe(before);
-    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('outside a live request'));
-    stderr.mockRestore();
+    expect(logRecords(stdout)).toContainEqual(
+      expect.objectContaining({ msg: 'db-client-outside-live-request' }),
+    );
+    stdout.mockRestore();
   });
 
   it('keeps a long transaction alive while its callback queries the raw connection', async () => {
