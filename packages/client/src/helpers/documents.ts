@@ -42,3 +42,40 @@ export function getDocumentNameFromType(documentType: DocumentType): string {
       throw new Error(`Unsupported document type: ${documentType}`);
   }
 }
+
+/** First Strong Isolate / Pop Directional Isolate: keep a Hebrew name from reordering the arrow. */
+const FSI = '⁨';
+const PDI = '⁩';
+
+function isolate(text: string): string {
+  return `${FSI}${text}${PDI}`;
+}
+
+/**
+ * Title and subtitle for the document viewer, e.g. `{ title: 'Tax Invoice 1042', subtitle: 'Acme
+ * Ltd → Your Company Ltd' }`. A missing serial or party is simply left out, and an unknown type
+ * falls back to "Document" instead of throwing like `getDocumentNameFromType`.
+ */
+export function getDocumentViewerLabels(input: {
+  documentType?: DocumentType | null;
+  serialNumber?: string | null;
+  creditor?: { name: string } | null;
+  debtor?: { name: string } | null;
+}): { title: string; subtitle?: string } {
+  let typeName: string | null = null;
+  if (input.documentType) {
+    try {
+      typeName = getDocumentNameFromType(input.documentType);
+    } catch {
+      typeName = null;
+    }
+  }
+  const title = [typeName ?? 'Document', input.serialNumber?.trim()].filter(Boolean).join(' ');
+
+  const parties = [input.creditor?.name, input.debtor?.name]
+    .map(name => name?.trim())
+    .filter((name): name is string => !!name)
+    .map(isolate);
+
+  return parties.length > 0 ? { title, subtitle: parties.join(' → ') } : { title };
+}

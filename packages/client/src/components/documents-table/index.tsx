@@ -23,19 +23,22 @@ export const DocumentsTable = ({
   columnIds,
   withChargeLink,
 }: Props): ReactElement => {
-  const { table, editDocumentId, closeEditDocument } = useDocumentsTable({
-    documentsProps,
-    onChange,
-    onChargeDeleted,
-    columnIds,
-    withChargeLink,
-  });
+  const { table, editDocumentId, editSiblingIds, closeEditDocument, navigateEditDocument } =
+    useDocumentsTable({
+      documentsProps,
+      onChange,
+      onChargeDeleted,
+      columnIds,
+      withChargeLink,
+    });
 
   return (
     <>
       <DocumentsDataTable table={table} />
       <EditDocumentModal
         documentId={editDocumentId}
+        siblingIds={editSiblingIds}
+        onNavigate={navigateEditDocument}
         onDone={closeEditDocument}
         onChange={() => onChange?.()}
         onChargeDeleted={onChargeDeleted}
