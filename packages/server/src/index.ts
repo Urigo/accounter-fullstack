@@ -16,6 +16,7 @@ import { DBProvider } from './modules/app-providers/db.provider.js';
 import { startTenantDbClientWatchdog } from './modules/app-providers/tenant-db-client.js';
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
 import { PriceIndexSyncProvider } from './modules/price-indexes/providers/price-index-sync.provider.js';
+import { createYogaLogger, log, serializeError, setLogLevel } from './observability/log.js';
 import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
@@ -33,6 +34,10 @@ const PRICE_INDEX_SYNC_HOUR_UTC = 17;
 const PRICE_INDEX_SYNC_MINUTE_UTC = 0;
 
 async function main() {
+  // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`. One level for this server's own
+  // structured logs, Yoga and Hive (which forwards its logs to Yoga's logger).
+  setLogLevel(env.logging.level);
+
   await startTelemetry();
 
   // Create a shared connection pool for the entire application
@@ -67,9 +72,9 @@ async function main() {
   });
 
   if (env.auth0) {
-    console.log(`Auth0 configured: ${env.auth0.domain}`);
+    log('info', 'auth0-configured', { domain: env.auth0.domain });
   } else {
-    console.log('Auth0 not configured');
+    log('info', 'auth0-not-configured');
   }
 
   const dbProvider = new DBProvider(pool);
@@ -113,21 +118,17 @@ async function main() {
         })
       : null;
   const auth0Provider = new Auth0ManagementProvider(env);
+  // A plain-object `meta` becomes the record's fields; anything else (an array of results) goes
+  // under `meta`.
+  const metaFields = (meta: unknown) =>
+    meta === undefined
+      ? undefined
+      : typeof meta === 'object' && meta !== null && !Array.isArray(meta)
+        ? (meta as Record<string, unknown>)
+        : { meta };
   const logger: Logger = {
-    info: (message, meta) => {
-      if (meta !== undefined) {
-        console.log(message, meta);
-        return;
-      }
-      console.log(message);
-    },
-    error: (message, meta) => {
-      if (meta !== undefined) {
-        console.error(message, meta);
-        return;
-      }
-      console.error(message);
-    },
+    info: (message, meta) => log('info', message, metaFields(meta)),
+    error: (message, meta) => log('error', message, metaFields(meta)),
   };
 
   const cleanupSchedule = env.auth0
@@ -183,9 +184,9 @@ async function main() {
   const { application, transformedSchema } = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
-    // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`, which Yoga's default would follow.
-    // `useHive` forwards its own logs to this logger, so this one level covers Hive too.
-    logging: env.logging.level,
+    // Single-line JSON at the level set above. `useHive` forwards its own logs to this logger, so
+    // the one level covers Hive too.
+    logging: createYogaLogger(),
     // Yoga's 25 MB default is too small for the email-ingestion gateway, which sends up
     // to 20 MB of attachments (`MAX_EXTRACTED_BYTES`) base64-inlined in JSON, ~27 MB.
     maxRequestBodySize: 50_000_000,
@@ -232,10 +233,11 @@ async function main() {
     if (isShuttingDown) return;
     isShuttingDown = true;
 
+    // A crash takes the process down (`fatal`); a signal is an ordinary stop.
     if (err) {
-      process.stderr.write(`[shutdown] Reason: ${reason} ${String(err)}\n`);
+      log('fatal', 'server-shutting-down', { reason, error: serializeError(err) });
     } else {
-      process.stderr.write(`[shutdown] Reason: ${reason}\n`);
+      log('info', 'server-shutting-down', { reason });
     }
 
     // Stop accepting new connections
@@ -251,7 +253,7 @@ async function main() {
     // Allow in-flight requests some time to complete, then close the pool
     const FORCE_EXIT_TIMEOUT_MS = 10_000;
     const forceExitTimer = setTimeout(() => {
-      process.stderr.write('[shutdown] Force exiting after timeout\n');
+      log('fatal', 'server-shutdown-timed-out', { timeoutMs: FORCE_EXIT_TIMEOUT_MS });
       process.exit(exitCode);
     }, FORCE_EXIT_TIMEOUT_MS);
     // Do not keep the event loop alive just for the timer
@@ -260,13 +262,13 @@ async function main() {
     try {
       await pool.end();
     } catch (e) {
-      process.stderr.write(`[shutdown] Error while closing DB pool ${String(e)}\n`);
+      log('error', 'server-shutdown-pool-close-failed', { error: serializeError(e) });
     }
 
     try {
       await shutdownTelemetry();
     } catch (e) {
-      process.stderr.write(`[shutdown] Error while shutting down telemetry ${String(e)}\n`);
+      log('error', 'server-shutdown-telemetry-failed', { error: serializeError(e) });
     } finally {
       clearTimeout(forceExitTimer);
       process.exit(exitCode);
@@ -276,7 +278,7 @@ async function main() {
   // Pool errors: log but don't shutdown on transient errors
   // The pool will attempt to recover from connection issues automatically
   pool.on('error', err => {
-    process.stderr.write(`[pool] Unexpected error on idle client: ${String(err)}\n`);
+    log('error', 'db-pool-idle-client-error', { error: serializeError(err) });
     // Only shutdown on critical errors that indicate the pool is permanently broken
     // For now, log and let the pool attempt recovery
     // If queries start failing consistently, they'll be caught by application error handlers
@@ -285,24 +287,24 @@ async function main() {
   // OS signals
   process.on('SIGINT', () =>
     gracefulShutdown('SIGINT', undefined, 0).catch(e =>
-      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
   process.on('SIGTERM', () =>
     gracefulShutdown('SIGTERM', undefined, 0).catch(e =>
-      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
 
   // Unhandled errors
   process.on('unhandledRejection', reason =>
     gracefulShutdown('unhandledRejection', reason, 1).catch(e =>
-      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
   process.on('uncaughtException', err =>
     gracefulShutdown('uncaughtException', err, 1).catch(e =>
-      process.stderr.write(`[shutdown] Fatal error during shutdown: ${String(e)}\n`),
+      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
 
@@ -311,7 +313,7 @@ async function main() {
       port: 4000,
     },
     () => {
-      process.stdout.write('GraphQL API located at http://localhost:4000/graphql\n');
+      log('info', 'server-listening', { url: 'http://localhost:4000/graphql' });
     },
   );
 }
