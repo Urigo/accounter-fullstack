@@ -42,8 +42,17 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
     businesses: async (_, { ids }, { injector }) => {
       const businesses = await injector.get(BusinessesProvider).getBusinessByIdLoader.loadMany(ids);
-      if (businesses.some(business => !business || business instanceof Error)) {
+      // A failed load is an outage, not a bad id: keep it a plain error, which yoga masks.
+      if (businesses.some(business => business instanceof Error)) {
         throw new Error(`Error fetching some of the businesses`);
+      }
+      // A missing id is the caller's mistake, so say which one — as a `GraphQLError`,
+      // which yoga's default `maskedErrors` passes through instead of "Unexpected error."
+      const missingIds = ids.filter((_, index) => !businesses[index]);
+      if (missingIds.length > 0) {
+        throw new GraphQLError(
+          `Businesses not found: ${missingIds.map(id => `ID="${id}"`).join(', ')}`,
+        );
       }
 
       return businesses as IGetBusinessesByIdsResult[];

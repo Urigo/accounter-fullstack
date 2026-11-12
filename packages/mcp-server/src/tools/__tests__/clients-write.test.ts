@@ -205,7 +205,7 @@ describe('createClientTool — guards', () => {
   it('turns the upstream error for an unknown business id into a validation error', async () => {
     // `businesses(ids:)` does not return a shorter list for a missing id — it
     // throws, and this is the message it throws with.
-    const { client, captured } = erroringClient('Error fetching some of the businesses');
+    const { client, captured } = erroringClient(`Businesses not found: ID="${BIZ}"`);
     const result = await runTool(createClientTool, minimal, client);
 
     expect(result.isError).toBe(true);
@@ -220,8 +220,13 @@ describe('createClientTool — guards', () => {
     expect(captured).toHaveLength(1); // the pre-read only; no mutation followed
   });
 
-  it('passes any other upstream error on the pre-read through unchanged', async () => {
-    const { client } = erroringClient('Context creation failed');
+  it.each([
+    ['an unrelated failure', 'Context creation failed'],
+    // What a failed business load (an outage, not a bad id) reaches us as once
+    // yoga has masked it.
+    ['a masked failure', 'Unexpected error.'],
+  ])('passes %s on the pre-read through unchanged', async (_label, message) => {
+    const { client } = erroringClient(message);
     const result = await runTool(createClientTool, minimal, client);
 
     expect(result.isError).toBe(true);

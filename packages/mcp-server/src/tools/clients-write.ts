@@ -126,9 +126,12 @@ type CreateClientInput = z.infer<typeof createClientInput>;
 // external Green Invoice API.
 //
 // An unknown id does not come back as a missing row: the resolver loads every
-// id and throws `Error fetching some of the businesses` when any is missing,
-// which reaches this tool as an UpstreamError — mapped to a ToolInputError on
-// `businessId` below, since it is the caller's input that is wrong.
+// id and throws a `GraphQLError` (`Businesses not found: …`) when any is
+// missing, which reaches this tool as an UpstreamError — mapped to a
+// ToolInputError on `businessId` below, since it is the caller's input that is
+// wrong. It has to be a `GraphQLError`: yoga masks any other error as
+// "Unexpected error.", and a failed load still throws one of those, so an
+// outage keeps surfacing as an upstream error rather than as a bad id.
 const FIND_BUSINESS_QUERY = /* GraphQL */ `
   query McpFindBusinessForClient($ids: [UUID!]!) {
     businesses(ids: $ids) {
@@ -149,7 +152,7 @@ const FIND_BUSINESS_QUERY = /* GraphQL */ `
 `;
 
 /** The message upstream `businesses(ids:)` throws when any requested id does not exist. */
-const UNKNOWN_BUSINESS_UPSTREAM_MESSAGE = 'Error fetching some of the businesses';
+const UNKNOWN_BUSINESS_UPSTREAM_MESSAGE = 'Businesses not found';
 
 // Read back after the insert. Upstream `insertClient` returns the `clients` row
 // as inserted — *before* `addGreenInvoiceClient` writes the Green Invoice id
