@@ -1,0 +1,184 @@
+Pager usage is off.
+Timing is off.
+================ 1. server version and collation provider ================
+                                   version                                    
+------------------------------------------------------------------------------
+ PostgreSQL 18.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 13.2.0, 64-bit
+
+      datname      | datlocprovider | datcollate |  datctype  | datcollversion 
+-------------------+----------------+------------+------------+----------------
+ accounter_prod_db | c              | en_US.utf8 | en_US.utf8 | 2.38
+
+================ 2. extensions and versions ================
+ extname | extversion |   schema   
+---------+------------+------------
+ pg_trgm | 1.6        | public
+ plpgsql | 1.0        | pg_catalog
+
+================ 3. RLS coverage summary ================
+ tables | rls_enabled | rls_forced 
+--------+-------------+------------
+    101 |          60 |         60
+
+---- tables WITHOUT RLS. has_owner_id = true means tenant data with no policy ----
+                   relname                   |        owner        | has_owner_id 
+---------------------------------------------+---------------------+--------------
+ salaries                                    | prod_group          | t
+ amex_creditcard_transactions                | prod_group          | f
+ api_key_permission_overrides                | prod_group          | f
+ api_keys                                    | prod_group          | f
+ audit_logs                                  | prod_group          | f
+ bank_discount_transactions                  | prod_group          | f
+ business_trips_tax_variables                | prod_group          | f
+ business_users                              | prod_group          | f
+ businesses_green_invoice_match              | prod_group          | f
+ cal_creditcard_transactions                 | prod_group          | f
+ countries                                   | prod_group          | f
+ crypto_currencies                           | prod_group          | f
+ crypto_exchange_rates                       | prod_group          | f
+ depreciation_categories                     | prod_group          | f
+ etana_account_transactions                  | prod_group          | f
+ etherscan_transactions                      | prod_group          | f
+ exchange_rates                              | prod_group          | f
+ invitations                                 | prod_group          | f
+ isracard_creditcard_transactions            | prod_group          | f
+ kraken_ledger_records                       | prod_group          | f
+ kraken_trades                               | prod_group          | f
+ max_creditcard_transactions                 | prod_group          | f
+ migration                                   | prod_group          | f
+ permissions                                 | prod_group          | f
+ poalim_cad_account_transactions             | prod_group          | f
+ poalim_deposits_account_transactions        | prod_group          | f
+ poalim_deposits_account_transactions_manual | prod_group          | f
+ poalim_eur_account_transactions             | prod_group          | f
+ poalim_foreign_account_transactions         | prod_group          | f
+ poalim_gbp_account_transactions             | prod_group          | f
+ poalim_ils_account_transactions             | prod_group          | f
+ poalim_swift_account_transactions           | prod_group          | f
+ poalim_usd_account_transactions             | prod_group          | f
+ recovery                                    | prod_group          | f
+ role_permissions                            | prod_group          | f
+ roles                                       | prod_group          | f
+ super_admins                                | accounter_prod_user | f
+ transactions_raw_list                       | prod_group          | f
+ user_permission_overrides                   | prod_group          | f
+ users                                       | prod_group          | f
+ vat_value                                   | prod_group          | f
+
+---- tables WITH RLS enabled but NOT forced (owner escapes its own policy) ----
+ relname | owner 
+---------+-------
+
+================ 4. table ownership distribution ================
+        owner        | relkind | count 
+---------------------+---------+-------
+ accounter_prod_user | r       |    17
+ accounter_prod_user | v       |     2
+ prod_group          | r       |    84
+ prod_group          | v       |     1
+
+================ 5. views: security_invoker must stay UNSET ================
+               relname               |        owner        | reloptions 
+-------------------------------------+---------------------+------------
+ extended_business_trip_transactions | accounter_prod_user | 
+ extended_charges                    | accounter_prod_user | 
+ extended_tags                       | prod_group          | 
+
+================ 6. roles and attributes ================
+        rolname         | rolsuper | rolbypassrls | rolcreatedb | rolcreaterole | rolcanlogin | rolinherit 
+------------------------+----------+--------------+-------------+---------------+-------------+------------
+ accounter_admin        | f        | t            | t           | t             | t           | t
+ accounter_prod_user    | f        | f            | f           | f             | t           | t
+ accounter_staging_user | f        | f            | f           | f             | t           | t
+ azuresu                | t        | t            | t           | t             | t           | t
+ prod_group             | f        | f            | f           | f             | f           | t
+
+---- role memberships (INHERIT TRUE is why FORCE RLS is load-bearing) ----
+       member        |      granted_role      | admin_option | inherit_option 
+---------------------+------------------------+--------------+----------------
+ accounter_admin     | accounter_prod_user    | t            | f
+ accounter_admin     | accounter_staging_user | t            | f
+ accounter_admin     | azure_pg_admin         | t            | t
+ accounter_admin     | pg_read_all_settings   | t            | t
+ accounter_admin     | pg_read_all_stats      | t            | t
+ accounter_admin     | pg_stat_scan_tables    | t            | t
+ accounter_admin     | prod_group             | t            | f
+ accounter_admin     | prod_group             | f            | t
+ accounter_prod_user | prod_group             | f            | t
+
+================ 7. RLS helper functions: owner + SECURITY DEFINER ================
+          proname           |        owner        | security_definer | provolatile |        proconfig         
+----------------------------+---------------------+------------------+-------------+--------------------------
+ get_current_auth_type      | prod_group          | t                | s           | {search_path=pg_catalog}
+ get_current_business_id    | prod_group          | t                | s           | {search_path=pg_catalog}
+ get_current_business_scope | accounter_prod_user | t                | s           | {search_path=pg_catalog}
+ get_current_user_id        | prod_group          | t                | s           | {search_path=pg_catalog}
+
+================ 8. tenant_isolation policies ================
+ policy_count | polcmd | polpermissive 
+--------------+--------+---------------
+           62 | *      | t
+            1 | a      | t
+           50 | d      | f
+            3 | r      | t
+            4 | w      | f
+            1 | w      | t
+
+---- representative policy definitions ----
+     tablename      |          policyname          | permissive  |  cmd   |                               qual                               |                                                   with_check                                                   
+--------------------+------------------------------+-------------+--------+------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------
+ charges            | tenant_isolation             | PERMISSIVE  | ALL    | (owner_id = ANY (accounter_schema.get_current_business_scope())) | (owner_id = accounter_schema.get_current_business_id())
+ charges            | tenant_isolation_delete      | RESTRICTIVE | DELETE | (owner_id = accounter_schema.get_current_business_id())          | 
+ documents          | tenant_isolation             | PERMISSIVE  | ALL    | (owner_id = ANY (accounter_schema.get_current_business_scope())) | (owner_id = accounter_schema.get_current_business_id())
+ documents          | tenant_isolation_delete      | RESTRICTIVE | DELETE | (owner_id = accounter_schema.get_current_business_id())          | 
+ financial_entities | allow_bootstrap_owner_update | PERMISSIVE  | UPDATE | (id = accounter_schema.get_current_business_id())                | (owner_id = id)
+ financial_entities | allow_bootstrap_root         | PERMISSIVE  | ALL    | (id = accounter_schema.get_current_business_id())                | ((id = accounter_schema.get_current_business_id()) OR (owner_id = accounter_schema.get_current_business_id()))
+ financial_entities | tenant_isolation             | PERMISSIVE  | ALL    | (owner_id = ANY (accounter_schema.get_current_business_scope())) | (owner_id = accounter_schema.get_current_business_id())
+ financial_entities | tenant_isolation_delete      | RESTRICTIVE | DELETE | (owner_id = accounter_schema.get_current_business_id())          | 
+ tags               | tenant_isolation             | PERMISSIVE  | ALL    | (owner_id = ANY (accounter_schema.get_current_business_scope())) | (owner_id = accounter_schema.get_current_business_id())
+ tags               | tenant_isolation_delete      | RESTRICTIVE | DELETE | (owner_id = accounter_schema.get_current_business_id())          | 
+ transactions       | tenant_isolation             | PERMISSIVE  | ALL    | (owner_id = ANY (accounter_schema.get_current_business_scope())) | (owner_id = accounter_schema.get_current_business_id())
+ transactions       | tenant_isolation_delete      | RESTRICTIVE | DELETE | (owner_id = accounter_schema.get_current_business_id())          | 
+
+================ 9. trigram indexes and validity ================
+      schema      |            index_name            |     table_name     | indisvalid | indisready |  size   
+------------------+----------------------------------+--------------------+------------+------------+---------
+ accounter_schema | idx_charges_desc_trgm            | charges            | t          | t          | 832 kB
+ accounter_schema | idx_docs_desc_trgm               | documents          | t          | t          | 1392 kB
+ accounter_schema | idx_docs_remarks_trgm            | documents          | t          | t          | 1288 kB
+ accounter_schema | idx_docs_serial_trgm             | documents          | t          | t          | 912 kB
+ accounter_schema | idx_financial_entities_name_trgm | financial_entities | t          | t          | 472 kB
+ accounter_schema | idx_trans_src_ref_trgm           | transactions       | t          | t          | 1352 kB
+ accounter_schema | idx_trans_src_trgm               | transactions       | t          | t          | 2912 kB
+
+---- any INVALID index anywhere in the schema (planner silently ignores these) ----
+ relname | indisvalid | indisready 
+---------+------------+------------
+
+================ 10. expression indexes (own statistics, need ANALYZE) ================
+                    index_name                     |            table_name            |                                                                                                                                                                                                                                           definition                                                                                                                                                                                                                                            
+---------------------------------------------------+----------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ amex_creditcard_transactions_dedup_uindex         | amex_creditcard_transactions     | CREATE UNIQUE INDEX amex_creditcard_transactions_dedup_uindex ON accounter_schema.amex_creditcard_transactions USING btree (card, COALESCE(full_purchase_date, full_purchase_date_outbound), full_payment_date, COALESCE(payment_sum, payment_sum_outbound), voucher_number, COALESCE(voucher_number_ratz, voucher_number_ratz_outbound), supplier_id, current_payment_currency, COALESCE(full_supplier_name_heb, full_supplier_name_outbound), more_info, deal_sum) NULLS NOT DISTINCT
+ idx_documents_owner_vat_report_date               | documents                        | CREATE INDEX idx_documents_owner_vat_report_date ON accounter_schema.documents USING btree (owner_id, COALESCE(vat_report_date_override, date))
+ email_ingestion_alias_routing_alias_active_unique | email_ingestion_alias_routing    | CREATE UNIQUE INDEX email_ingestion_alias_routing_alias_active_unique ON accounter_schema.email_ingestion_alias_routing USING btree (lower(alias)) WHERE (is_active = true)
+ isracard_creditcard_transactions_dedup_uindex     | isracard_creditcard_transactions | CREATE UNIQUE INDEX isracard_creditcard_transactions_dedup_uindex ON accounter_schema.isracard_creditcard_transactions USING btree (card, COALESCE(full_purchase_date, full_purchase_date_outbound), full_payment_date, COALESCE(payment_sum, payment_sum_outbound), voucher_number, COALESCE(voucher_number_ratz, voucher_number_ratz_outbound), supplier_id, current_payment_currency, COALESCE(full_supplier_name_heb, full_supplier_name_outbound), more_info, deal_sum) NULLS NOT DISTINCT
+ idx_transactions_owner_effective_debit_date       | transactions                     | CREATE INDEX idx_transactions_owner_effective_debit_date ON accounter_schema.transactions USING btree (owner_id, COALESCE(debit_date_override, debit_date))
+
+================ 11. row counts for the main tenant tables ================
+       t        | count 
+----------------+-------
+ charges        | 26358
+ documents      |  9381
+ ledger_records | 24176
+ transactions   | 29357
+
+================ 12. database size ================
+ db_size 
+---------
+ 99 MB
+
+================ end of snapshot ================
+        captured_at_utc        
+-------------------------------
+ 2026-09-02 09:57:16.709766+00
+
