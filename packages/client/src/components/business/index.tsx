@@ -22,6 +22,7 @@ import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
 import { ProviderIntegrations } from '../admin-settings/provider-integrations/index.js';
 import { AdminBusinessSection } from './admin/admin-business-section.js';
 import { FinancialAccountsSection } from './admin/financial-account-section.js';
+import { SecuritiesSettingsSection } from './admin/securities-settings-section.js';
 import { BalanceSection } from './balance-section.js';
 import { BusinessHeader } from './business-header.js';
 import { ChargesSection } from './charges-section.js';
@@ -260,7 +261,10 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
                 <FinancialAccountsSection adminId={business.id} />
               </TabsContent>
               <TabsContent value="admin" className="mt-0">
-                <AdminBusinessSection data={business} />
+                <div className="flex flex-col gap-4">
+                  <AdminBusinessSection data={business} />
+                  <SecuritiesSettingsSection adminBusinessId={business.id} />
+                </div>
               </TabsContent>
               <TabsContent value="admin-config" className="mt-0">
                 <ProviderIntegrations />
