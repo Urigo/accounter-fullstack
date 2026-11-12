@@ -258,13 +258,15 @@ export async function fetchRemoteDocument(rawUrl: string): Promise<File> {
     }
 
     // A generic declared type is resolved from the bytes, never trusted as-is:
-    // whatever the sniffer cannot place as a PDF or an image is refused exactly
-    // as a declared `text/html` would have been.
+    // whatever the sniffer cannot place as a PDF or an image is refused.
     let documentType = contentType;
     if (isGenericType) {
       const sniffed = sniffDocumentType(new Uint8Array(buffer, 0, Math.min(buffer.byteLength, 16)));
       if (!sniffed) {
-        throw unsupportedContentType(contentType);
+        throw new RemoteDocumentError(
+          `Unsupported content type "${contentType || 'unknown'}" — the file at this URL is not ` +
+            `a PDF or a supported image.`,
+        );
       }
       documentType = sniffed;
     }
