@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
-import type { Injector } from 'graphql-modules';
+import { CONTEXT, type Injector } from 'graphql-modules';
 import type { QueryVatReportArgs } from '../../../__generated__/types.js';
+import { log, serializeError } from '../../../observability/log.js';
 import { DocumentType } from '../../../shared/enums.js';
 import {
   allSettledOrThrow,
@@ -50,6 +51,14 @@ export const getVatRecords = async (
   const {
     authorities: { vatReportExcludedBusinessNames },
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+  // Every document whose record fails, not only the first one `allSettledOrThrow` rethrows.
+  const failedRecords: Array<{ documentId: string; error: unknown }> = [];
+  const adjust = (rawRecord: VatReportRecordSources) =>
+    adjustTaxRecord(rawRecord, injector).catch((error: unknown) => {
+      failedRecords.push({ documentId: rawRecord.doc.id, error });
+      throw error;
+    });
 
   try {
     const response: VatReportRecords = {
@@ -198,12 +207,12 @@ export const getVatRecords = async (
       // TODO: what if no exchange dates found?
       await allSettledOrThrow([
         ...incomeRecords.map(async rawRecord =>
-          adjustTaxRecord(rawRecord, injector).then(res => {
+          adjust(rawRecord).then(res => {
             response.income.push(res);
           }),
         ),
         ...expenseRecords.map(async rawRecord =>
-          adjustTaxRecord(rawRecord, injector).then(res => {
+          adjust(rawRecord).then(res => {
             response.expenses.push(res);
           }),
         ),
@@ -253,7 +262,32 @@ export const getVatRecords = async (
 
     return response;
   } catch (e) {
-    console.error('Error fetching vat report records:', e);
+    // The only line with the stack: the error is rethrown as a plain `GraphQLError` so the user sees
+    // its message, which the request log records as an expected error. `warn`, not `error`: most
+    // failures here are a document missing an amount, currency or date, which is the user's data to
+    // fix (#4946 turns those into per-document findings instead of a failed report).
+    log('warn', 'vat-report-records-failed', {
+      failedRecordCount: failedRecords.length,
+      failedRecords: failedRecords.slice(0, MAX_LOGGED_FAILED_RECORDS).map(failure => ({
+        documentId: failure.documentId,
+        message: failure.error instanceof Error ? failure.error.message : String(failure.error),
+      })),
+      error: serializeError(e),
+      requestId: requestIdFrom(injector),
+    });
     throw new GraphQLError((e as Error)?.message ?? 'Error fetching vat report records');
   }
 };
+
+/** Failing documents listed on the `vat-report-records-failed` line; the count covers the rest. */
+const MAX_LOGGED_FAILED_RECORDS = 20;
+
+/** The request id of the operation `injector` belongs to, when it belongs to one. */
+function requestIdFrom(injector: Injector): string | null {
+  try {
+    return (injector.get(CONTEXT) as GraphQLModules.GlobalContext).requestLog?.requestId ?? null;
+  } catch {
+    // Not an operation injector (a script or test): there is no request.
+    return null;
+  }
+}
