@@ -40,7 +40,9 @@ export const Counterparty = ({
   return (
     // `wrap-anywhere`: counterparty names (security identifiers above all) can be one long
     // unbroken token; without it the cell's min-content width pushes the table past the pane.
-    <div className="whitespace-normal wrap-anywhere">
+    // `min-w-28` keeps the column from being squeezed to a few letters per line when the table
+    // is tight — ordinary names then still wrap at spaces, only an unbroken token breaks inside.
+    <div className="min-w-28 whitespace-normal wrap-anywhere">
       <Indicator inline size={12} disabled={!isError} color="red">
         {!isError && id && <CounterpartyLink id={id} name={name} />}
         {isError && name}
