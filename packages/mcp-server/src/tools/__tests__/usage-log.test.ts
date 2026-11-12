@@ -137,6 +137,22 @@ function dataFor(query: string): unknown {
       },
     };
   }
+  if (query.includes('insertClient')) {
+    return {
+      insertClient: {
+        __typename: 'Client',
+        id: 'b1',
+        ownerId: B1,
+        emails: [],
+        generatedDocumentType: 'PROFORMA',
+        originalBusiness: { id: 'b1', name: 'Vendor' },
+        integrations: { greenInvoiceInfo: { greenInvoiceId: 'gi-1' } },
+      },
+    };
+  }
+  if (query.includes('businesses(')) {
+    return { businesses: [{ id: 'b1', name: 'Vendor', isClient: false, clientInfo: null }] };
+  }
   if (query.includes('allCharges')) {
     return {
       allCharges: {
@@ -228,6 +244,7 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
     billingCycle: 'ANNUAL',
     documentType: 'PROFORMA',
   },
+  accounter_create_client: { memberBusinessId: B1, businessId: 'b1', generatedDocumentType: 'PROFORMA' },
 };
 
 interface UsageLine {

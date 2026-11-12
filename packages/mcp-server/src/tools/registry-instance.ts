@@ -3,6 +3,7 @@ import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
 import { mergeChargesTool, updateChargeTool } from './charges-write.js';
 import { searchChargesTool } from './charges.js';
+import { createClientTool } from './clients-write.js';
 import { listClientsTool } from './clients.js';
 import { createContractTool } from './contracts-write.js';
 import { getContractsTool } from './contracts.js';
@@ -96,3 +97,6 @@ toolRegistry.register(createBusinessTool);
 // Recording a signed customer's billing agreement is the other write workflow;
 // it keys on a client, which the read tools above enumerate.
 toolRegistry.register(createContractTool);
+// Onboarding a customer continues from the directory: once the business exists,
+// this makes it a client, which is what a billing contract is keyed on.
+toolRegistry.register(createClientTool);

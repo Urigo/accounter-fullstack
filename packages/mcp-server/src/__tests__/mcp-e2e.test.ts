@@ -372,6 +372,7 @@ const WRITE_TOOLS = [
   'accounter_delete_document',
   'accounter_create_business',
   'accounter_create_contract',
+  'accounter_create_client',
 ];
 
 describe('discovery and the 401 challenge', () => {
