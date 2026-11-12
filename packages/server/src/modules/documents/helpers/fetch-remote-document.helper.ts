@@ -1,3 +1,4 @@
+import type { LookupAddress } from 'node:dns';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 
@@ -190,16 +191,27 @@ export function assertFetchableUrl(rawUrl: string): URL {
  * name that points at a private address gets past it. This check closes that
  * case. It does not close DNS rebinding, because `fetch` resolves the name
  * again and can get a different answer. It fails closed: a name that does not
- * resolve is refused.
+ * resolve is refused, and so is one still resolving when `signal` aborts.
  */
-export async function assertResolvesToPublicAddress(url: URL): Promise<void> {
+export async function assertResolvesToPublicAddress(url: URL, signal: AbortSignal): Promise<void> {
   const hostname = url.hostname.replace(/^\[|\]$/g, '');
   if (isIP(hostname)) {
     // A literal address has already been judged by assertFetchableUrl.
     return;
   }
-  const addresses = await lookup(hostname, { all: true }).catch(() => {
-    throw new RemoteDocumentError(`Could not resolve host: ${hostname}`);
+  // `lookup` takes no signal, so the deadline is raced instead: a stalled
+  // resolver would otherwise hold the request past FETCH_TIMEOUT_MS. The lookup
+  // itself runs on, but nothing waits for it.
+  const timedOut = () => new RemoteDocumentError(`Timed out resolving host: ${hostname}`);
+  if (signal.aborted) {
+    throw timedOut();
+  }
+  const addresses = await new Promise<LookupAddress[]>((resolve, reject) => {
+    const onAbort = () => reject(timedOut());
+    signal.addEventListener('abort', onAbort, { once: true });
+    void lookup(hostname, { all: true })
+      .then(resolve, () => reject(new RemoteDocumentError(`Could not resolve host: ${hostname}`)))
+      .finally(() => signal.removeEventListener('abort', onAbort));
   });
   if (addresses.length === 0 || addresses.some(({ address }) => isBlockedIp(address))) {
     throw new RemoteDocumentError(
@@ -215,14 +227,21 @@ function unsupportedContentType(contentType: string): RemoteDocumentError {
   );
 }
 
-/** Best-effort filename: the last path segment, else a generic one. */
-function filenameFromUrl(url: URL, contentType: string): string {
+/**
+ * Best-effort filename: the last path segment, else a generic one. When the
+ * type was read from the bytes, the segment's own extension says nothing about
+ * the file, so it is replaced: `/invoice.bin` holding a PDF becomes
+ * `invoice.pdf`.
+ */
+function filenameFromUrl(url: URL, contentType: string, typeFromBytes: boolean): string {
+  const extension =
+    (contentType === 'application/pdf' ? 'pdf' : contentType.split('/')[1]) || 'bin';
   const segment = decodeURIComponent(url.pathname.split('/').findLast(Boolean) ?? '');
-  if (segment && /\.[a-z0-9]{2,5}$/i.test(segment)) {
-    return segment;
+  const segmentExtension = /\.[a-z0-9]{2,5}$/i;
+  if (segment && segmentExtension.test(segment)) {
+    return typeFromBytes ? segment.replace(segmentExtension, `.${extension}`) : segment;
   }
-  const extension = contentType === 'application/pdf' ? 'pdf' : contentType.split('/')[1];
-  return `document.${extension || 'bin'}`;
+  return `document.${extension}`;
 }
 
 /**
@@ -239,7 +258,7 @@ export async function fetchRemoteDocument(rawUrl: string): Promise<File> {
     let response: Response | undefined;
 
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-      await assertResolvesToPublicAddress(url);
+      await assertResolvesToPublicAddress(url, controller.signal);
       response = await fetch(url, {
         redirect: 'manual',
         signal: controller.signal,
@@ -319,7 +338,9 @@ export async function fetchRemoteDocument(rawUrl: string): Promise<File> {
       documentType = sniffed;
     }
 
-    return new File([buffer], filenameFromUrl(url, documentType), { type: documentType });
+    return new File([buffer], filenameFromUrl(url, documentType, isGenericType), {
+      type: documentType,
+    });
   } finally {
     clearTimeout(timeout);
   }

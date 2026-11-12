@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
 import {
   assertFetchableUrl,
+  assertResolvesToPublicAddress,
+  FETCH_TIMEOUT_MS,
   fetchRemoteDocument,
   isBlockedIp,
   MAX_REMOTE_DOCUMENT_BYTES,
@@ -51,6 +53,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe('isBlockedIp', () => {
@@ -179,6 +182,19 @@ describe('fetchRemoteDocument', () => {
     expect(file.name).toBe('document.pdf');
   });
 
+  it("names a sniffed file by its type, not by the URL's extension", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        response({ headers: { 'content-type': 'application/octet-stream' }, body: '%PDF-1.4 x' }),
+      ),
+    );
+
+    const file = await fetchRemoteDocument('https://example.com/files/invoice.bin');
+    expect(file.type).toBe('application/pdf');
+    expect(file.name).toBe('invoice.pdf');
+  });
+
   it('accepts a PDF served with no Content-Type at all', async () => {
     vi.stubGlobal(
       'fetch',
@@ -304,6 +320,21 @@ describe('fetchRemoteDocument', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('holds DNS resolution to the same deadline as the request', async () => {
+    vi.useFakeTimers();
+    // A resolver that never answers.
+    lookup.mockReturnValue(new Promise(() => {}));
+    const fetchMock = vi.fn(async () => response());
+    vi.stubGlobal('fetch', fetchMock);
+
+    const refused = expect(fetchRemoteDocument('https://stalled.example/a.pdf')).rejects.toThrow(
+      /Timed out resolving host: stalled\.example/,
+    );
+    await vi.advanceTimersByTimeAsync(FETCH_TIMEOUT_MS);
+    await refused;
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('does not resolve a literal public address — assertFetchableUrl already judged it', async () => {
     vi.stubGlobal(
       'fetch',
@@ -322,6 +353,15 @@ describe('fetchRemoteDocument', () => {
     const { Accept } = fetchMock.mock.calls[0]![1]!.headers as Record<string, string>;
     expect(Accept).toMatch(/^application\/pdf, /);
     expect(Accept).toMatch(/, application\/octet-stream;q=0\.1$/);
+  });
+});
+
+describe('assertResolvesToPublicAddress', () => {
+  it('does not start a lookup once the deadline has passed', async () => {
+    await expect(
+      assertResolvesToPublicAddress(new URL('https://example.com/a.pdf'), AbortSignal.abort()),
+    ).rejects.toThrow(/Timed out resolving host: example\.com/);
+    expect(lookup).not.toHaveBeenCalled();
   });
 });
 

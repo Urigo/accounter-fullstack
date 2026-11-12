@@ -9,5 +9,6 @@ non-generic type outside the allowlist (such as `text/html`) is still refused wi
 
 Because a generic type no longer stops an internal service's answer, every host is now resolved
 before it is fetched, both the submitted URL and each redirect target. A name that resolves to a
-private or loopback address, or doesn't resolve at all, is refused. The request's `Accept` header
-also lists `application/octet-stream`, at low priority.
+private or loopback address, or doesn't resolve within the fetch's 30-second deadline, is refused.
+The request's `Accept` header also lists `application/octet-stream`, at low priority, and a file
+typed from its bytes gets the matching extension (`/invoice.bin` holding a PDF is `invoice.pdf`).
