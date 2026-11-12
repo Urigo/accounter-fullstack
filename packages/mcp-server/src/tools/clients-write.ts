@@ -1,10 +1,6 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type {
-  McpCreateClientMutation,
-  McpFindBusinessForClientQuery,
-  McpReadCreatedClientQuery,
-} from '../gql/index.js';
+import type { McpCreateClientMutation, McpFindBusinessForClientQuery } from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
 import { DOCUMENT_TYPES } from './document-details.js';
 import { shapeWriteResult, writeResultDescription } from './output.js';
@@ -47,10 +43,8 @@ import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './sc
  * that half-created state (a client row with no Green Invoice id) and names
  * it, rather than reporting "already a client" as if all were well.
  *
- * The mutation's return value is the row *as inserted in step 1*, so it never
- * carries the Green Invoice id from step 3. The tool therefore reads the client
- * back with `client(businessId:)` after a successful insert and reports from
- * that read; the mutation selects only the id.
+ * The mutation returns the row as it stands after step 3, so its echo carries
+ * the Green Invoice id upstream assigned — the tool reports straight from it.
  *
  * The same primary key is why the tool reads the business first and refuses
  * one that is already a client: upstream collapses every failure into the
@@ -154,44 +148,29 @@ const FIND_BUSINESS_QUERY = /* GraphQL */ `
 /** The message upstream `businesses(ids:)` throws when any requested id does not exist. */
 const UNKNOWN_BUSINESS_UPSTREAM_MESSAGE = 'Businesses not found';
 
-// Read back after the insert. Upstream `insertClient` returns the `clients` row
-// as inserted — *before* `addGreenInvoiceClient` writes the Green Invoice id
-// onto it — so the mutation's own return value never carries that id. This is
-// the one query that returns the row as it stands now.
-const READ_CREATED_CLIENT_QUERY = /* GraphQL */ `
-  query McpReadCreatedClient($businessId: UUID!) {
-    client(businessId: $businessId) {
-      id
-      ownerId
-      emails
-      generatedDocumentType
-      originalBusiness {
-        id
-        name
-      }
-      integrations {
-        hiveId
-        linearId
-        slackChannelKey
-        notionId
-        workflowyUrl
-        greenInvoiceInfo {
-          greenInvoiceId
-        }
-      }
-    }
-  }
-`;
-
-// Only the id is selected: every other field is read back afterwards (see
-// `READ_CREATED_CLIENT_QUERY`), because what this returns is the row before the
-// Green Invoice step touched it.
 const CREATE_CLIENT_MUTATION = /* GraphQL */ `
   mutation McpCreateClient($fields: ClientInsertInput!) {
     insertClient(fields: $fields) {
       __typename
       ... on Client {
         id
+        ownerId
+        emails
+        generatedDocumentType
+        originalBusiness {
+          id
+          name
+        }
+        integrations {
+          hiveId
+          linearId
+          slackChannelKey
+          notionId
+          workflowyUrl
+          greenInvoiceInfo {
+            greenInvoiceId
+          }
+        }
       }
       ... on CommonError {
         message
@@ -296,16 +275,8 @@ async function createClientHandler(
     );
   }
 
-  // Read the row back: the mutation returned it before the Green Invoice id was
-  // written, so only a fresh read reports what the client actually holds now.
-  const readBack = await context.client.query<McpReadCreatedClientQuery>(
-    { query: READ_CREATED_CLIENT_QUERY, variables: { businessId: result.id } },
-    context.upstream,
-  );
-  const row = readBack.client;
-
   const integrations: Record<string, string> = {};
-  const greenInvoiceId = row.integrations.greenInvoiceInfo?.greenInvoiceId;
+  const greenInvoiceId = result.integrations.greenInvoiceInfo?.greenInvoiceId;
   if (greenInvoiceId) integrations.greenInvoiceId = greenInvoiceId;
   for (const key of [
     'hiveId',
@@ -314,15 +285,15 @@ async function createClientHandler(
     'notionId',
     'workflowyUrl',
   ] as const) {
-    const value = row.integrations[key];
+    const value = result.integrations[key];
     if (value) integrations[key] = value;
   }
   const client = {
-    businessId: row.id,
-    name: row.originalBusiness.name,
-    ownerId: row.ownerId,
-    emails: [...row.emails],
-    generatedDocumentType: row.generatedDocumentType,
+    businessId: result.id,
+    name: result.originalBusiness.name,
+    ownerId: result.ownerId,
+    emails: [...result.emails],
+    generatedDocumentType: result.generatedDocumentType,
     integrations,
   };
 
@@ -363,11 +334,10 @@ export const createClientTool: ToolDefinition<typeof createClientInput> = {
     '`generatedDocumentType` (PROFORMA, INVOICE, …; the contract’s own `documentType` is what ' +
     'actually gets issued) and optional `integrations` ids (`hiveId`, `linearId`, ' +
     '`slackChannelKey`, `notionId`, `workflowyUrl`). Upstream also creates a customer in Green ' +
-    'Invoice from the business’s directory details and stores its id on the client; the tool reads ' +
-    'the client back after the insert and reports that id as `greenInvoiceId` (the insert’s own ' +
-    'return value predates it). That step is not part of the same transaction, so after an upstream ' +
-    'error check `accounter_list_clients` before calling again — the client row may already exist ' +
-    'and a retry would fail on it. A business that is already a client is refused before any write, ' +
+    'Invoice from the business’s directory details and stores its id on the client, reported as ' +
+    '`greenInvoiceId`; that step is not part of the same transaction, so after an upstream error ' +
+    'check `accounter_list_clients` before calling again — the client row may already exist and a ' +
+    'retry would fail on it. A business that is already a client is refused before any write, ' +
     'with a distinct message when its row exists but the Green Invoice customer is missing (a ' +
     'half-finished earlier creation, to be repaired in the Accounter UI). An unknown `businessId` is ' +
     'a validation error. ' +

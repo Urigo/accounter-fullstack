@@ -354,9 +354,8 @@ The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
   the `integrations` ids `hiveId` / `linearId` / `slackChannelKey` / `notionId` / `workflowyUrl`).
   `greenInvoiceId` is deliberately not accepted: upstream `insertClient` inserts the row, then
   creates a **Green Invoice** customer from the business's directory record and stores the id it
-  gets back over anything passed in. The mutation returns the row as inserted, before that id is
-  written, so the tool reads the client back (`client(businessId:)`) after a successful insert and
-  reports from that read. The steps are not one transaction — a Green Invoice failure returns
+  gets back over anything passed in, then returns the client with that id, which the tool reports as
+  `greenInvoiceId`. The steps are not one transaction — a Green Invoice failure returns
   `CommonError` with the `clients` row already inserted, and a retry would then fail on the
   `business_id` primary key — so the tool reads the business first and refuses one that is already a
   client (naming the half-created case, a client row with no Green Invoice id, separately), maps

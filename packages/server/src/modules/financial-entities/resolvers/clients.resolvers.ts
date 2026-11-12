@@ -113,7 +113,17 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
         // create green invoice client record
         await addGreenInvoiceClient(insertClient.business_id, injector);
 
-        return insertClient;
+        // Return the row as it stands now, not `insertClient`: the Green Invoice step
+        // wrote the new customer's id onto it after the insert. `updateClient` cleared
+        // the loader's cache entry, so this reads the row fresh.
+        const client = await injector
+          .get(ClientsProvider)
+          .getClientByIdLoader.load(insertClient.business_id);
+        if (!client) {
+          throw new Error(`Client ID="${insertClient.business_id}" not found after creation`);
+        }
+
+        return client;
       } catch (e) {
         console.error(e);
         return {

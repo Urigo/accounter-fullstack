@@ -166,14 +166,9 @@ function dataFor(query: string): unknown {
     };
   }
   if (query.includes('insertClient')) {
-    return { insertClient: { __typename: 'Client', id: 'b1' } };
-  }
-  if (query.includes('businesses(')) {
-    return { businesses: [{ id: 'b1', name: 'Vendor', isClient: false, clientInfo: null }] };
-  }
-  if (query.includes('client(businessId')) {
     return {
-      client: {
+      insertClient: {
+        __typename: 'Client',
         id: 'b1',
         ownerId: B1,
         emails: [],
@@ -182,6 +177,9 @@ function dataFor(query: string): unknown {
         integrations: { greenInvoiceInfo: { greenInvoiceId: 'gi-1' } },
       },
     };
+  }
+  if (query.includes('businesses(')) {
+    return { businesses: [{ id: 'b1', name: 'Vendor', isClient: false, clientInfo: null }] };
   }
   if (query.includes('allCharges')) {
     return {
