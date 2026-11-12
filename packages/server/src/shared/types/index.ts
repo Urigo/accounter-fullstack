@@ -106,7 +106,7 @@ export type DbRequestState = {
    * queries.
    */
   disposed: boolean;
-  /** Identifies this request in DB log lines (the OTel trace id when tracing is on). */
+  /** Identifies this request in DB log lines. See `requestIdOf`. */
   requestId: string;
   /** The GraphQL operation being executed, for DB log lines. */
   operationName: string | null;
