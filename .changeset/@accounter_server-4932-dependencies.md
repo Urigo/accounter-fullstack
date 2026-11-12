@@ -1,0 +1,22 @@
+---
+"@accounter/server": patch
+---
+dependencies updates:
+  - Updated dependency [`@ai-sdk/anthropic@4.0.102` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/4.0.102) (from `4.0.95`, in `dependencies`)
+  - Updated dependency [`@google-cloud/pubsub@6.4.1` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.4.1) (from `6.3.2`, in `dependencies`)
+  - Updated dependency [`@graphql-hive/yoga@0.50.0` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.50.0) (from `0.49.9`, in `dependencies`)
+  - Updated dependency [`@graphql-tools/utils@13.2.2` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/13.2.2) (from `13.2.1`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/auto-instrumentations-node@0.83.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/auto-instrumentations-node/v/0.83.0) (from `0.82.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/exporter-trace-otlp-http@0.301.1` ↗︎](https://www.npmjs.com/package/@opentelemetry/exporter-trace-otlp-http/v/0.301.1) (from `0.300.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/resources@3.1.1` ↗︎](https://www.npmjs.com/package/@opentelemetry/resources/v/3.1.1) (from `3.0.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/sdk-node@0.301.1` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-node/v/0.301.1) (from `0.300.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/sdk-trace@3.1.1` ↗︎](https://www.npmjs.com/package/@opentelemetry/sdk-trace/v/3.1.1) (from `3.0.0`, in `dependencies`)
+  - Updated dependency [`@opentelemetry/semantic-conventions@1.45.0` ↗︎](https://www.npmjs.com/package/@opentelemetry/semantic-conventions/v/1.45.0) (from `1.44.0`, in `dependencies`)
+  - Updated dependency [`ai@7.0.170` ↗︎](https://www.npmjs.com/package/ai/v/7.0.170) (from `7.0.161`, in `dependencies`)
+  - Updated dependency [`auth0@7.7.0` ↗︎](https://www.npmjs.com/package/auth0/v/7.7.0) (from `7.6.0`, in `dependencies`)
+  - Updated dependency [`basic-auth@3.1.0` ↗︎](https://www.npmjs.com/package/basic-auth/v/3.1.0) (from `3.0.0`, in `dependencies`)
+  - Updated dependency [`dotenv@18.0.10` ↗︎](https://www.npmjs.com/package/dotenv/v/18.0.10) (from `18.0.9`, in `dependencies`)
+  - Updated dependency [`graphql@16.15.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.15.0) (from `16.14.2`, in `dependencies`)
+  - Updated dependency [`jose@6.2.17` ↗︎](https://www.npmjs.com/package/jose/v/6.2.17) (from `6.2.15`, in `dependencies`)
+  - Updated dependency [`playwright@1.65.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.65.0) (from `1.64.1`, in `dependencies`)
+  - Removed dependency [`@envelop/generic-auth@11.2.3` ↗︎](https://www.npmjs.com/package/@envelop/generic-auth/v/11.2.3) (from `dependencies`)
