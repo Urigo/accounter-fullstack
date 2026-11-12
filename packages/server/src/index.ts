@@ -96,16 +96,15 @@ async function main() {
       operationName,
       requestId,
     }) => {
-      const state = requestAborted
-        ? ' (caller aborted; deferred disposal never completed)'
-        : operationInFlight
-          ? ' (operation still marked in flight)'
-          : '';
-      process.stderr.write(
-        `[db] Reclaiming leaked connection after ${Math.round(idleMs / 1000)}s idle${state}. ` +
-          `Last query: ${lastQuery ?? 'unknown'} ` +
-          `operation=${operationName ?? 'unknown'} request=${requestId ?? 'unknown'}\n`,
-      );
+      log('error', 'db-leaked-connection-reclaimed', {
+        idleMs,
+        // `aborted`: the caller hung up and the deferred disposal never completed.
+        // `in-flight`: the operation is still marked as executing.
+        state: requestAborted ? 'aborted' : operationInFlight ? 'in-flight' : 'idle',
+        lastQuery: lastQuery ?? null,
+        operationName: operationName ?? null,
+        requestId: requestId ?? null,
+      });
     },
   });
 
