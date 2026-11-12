@@ -1,17 +1,53 @@
 # Plan: Structured logging + Slack notifications for `@accounter/server`
 
-> Status: **proposed — no code implemented yet.** This document is the plan only; implementation
-> lands in the follow-up PRs listed under "Migration plan". The design was fact-checked against the
-> pino / OpenTelemetry / Yoga / Slack docs and the repo, then reviewed from security, feasibility
-> and operability angles. Some runtime claims were verified by reading docs and source only, so the
-> day-0 spikes in PR 1a confirm them by running code.
+> Status: **proposed, partly superseded by merged work.** The tactical PRs of epic #4869 (#4947,
+> #4948, #4950, and #4954 under review) implemented part of this plan with a small in-house logger
+> instead of pino. See "Alignment with merged work" below; where it conflicts with later sections,
+> it wins. The design was fact-checked against the pino / OpenTelemetry / Yoga / Slack docs and the
+> repo, then reviewed from security, feasibility and operability angles. Some runtime claims were
+> verified by reading docs and source only, so the day-0 spikes confirm them by running code.
+
+## Alignment with merged work (epic #4869)
+
+| PR                    | What it changed                                                                                                                                                                                                                                                                                                                                                                                                                         | Effect on this plan                                                                                                                                                                                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #4947 (#4870), merged | `SERVER_LOG_LEVEL` (`LoggingModel`, `env.logging.level`, `debug`/`info`/`warn`/`error`, default `info`, fails startup on an unknown value, ignores `DEBUG`); Yoga `logging` level; Green Invoice Mesh client gets an explicit logger and `GREEN_INVOICE_LOG_LEVEL`; recovery-reserve prints, JWT claim dump and per-render document logs removed; URL upload sources log only the host; `business(id)` is a `NOT_FOUND` `GraphQLError`. | Extend the existing env model instead of adding a `LogModel`. No injected Green Invoice logger is needed. New rule: URLs are logged as host only. Tests that assert "no console output" become vacuous once their module logs through stdout, so port them to `captureLogs()` when the module migrates.   |
+| #4948 (#4873), merged | Green Invoice token cache (`GreenInvoiceTokenCacheProvider`, `createGreenInvoiceSdk`).                                                                                                                                                                                                                                                                                                                                                  | None for logging. The package still logs with `console.error` (`obtainAccessToken`), which the console shim covers. The per-row request burst (item 2) is deferred.                                                                                                                                       |
+| #4950 (#4871), merged | `context.dbRequest` (`DbRequestState`: `requestId`, `operationName`, `disposed`, `executionInFlight`), watchdog ceilings validated at startup, `TenantAwareDBClient` carries `operationName` and `requestId`, `allSettledOrThrow`.                                                                                                                                                                                                      | DB client lines carry explicit ids, so no ambient-context fields are needed for them. Rule: state shared with operation-scoped providers lives on one object mutated in place, because graphql-modules injects a per-module copy of the Yoga context. `onLeak` now fires before Postgres kills a session. |
+| #4954 (#4872), open   | `observability/log.ts` (`log(level, msg, fields)`, `serializeError`, `markLogged`/`wasLogged`, `createYogaLogger`), `requestLogPlugin` (`graphql-operation`, `graphql-error`), `requestIdOf`/`correlationIdOf`, `context.requestLog`, JSON DB / pool / Green Invoice / VAT records, `docs/operations/logging.md`.                                                                                                                       | This **is** the logging core, request log and Yoga adapter of PR 1a, 2b and 2d below. Adopt its API; pino and `AsyncLocalStorage` become a later swap behind it.                                                                                                                                          |
+
+Decisions that follow from the merged work:
+
+- **API.** `log(level, msg, fields)` and `logger.*` (`observability/log.ts`). `msg` is a stable
+  kebab-case event id, which replaces the separate `event` field and the pino-style
+  `log.error({ err }, msg)` examples below. A later `getLogger(import.meta.url)` returns the same
+  signatures with `module` and `component` bound.
+- **Seam.** Add one internal indirection (a writer plus an optional ambient-context provider) so
+  ambient context, `captureLogs`, Slack and an external sink can plug in without call-site changes.
+  Today `log()` writes straight to the process streams, and call sites thread request ids by hand.
+- **Request id.** `requestIdOf(request)` is validated `X-Request-Id`, then trace id, then UUID,
+  memoized per request. `correlationId` is a separate field. Both headers are validated
+  (`^[A-Za-z0-9._:-]{8,64}$`, otherwise mint or omit). This was raised in the #4954 review.
+- **Classification.** A deliberate `INTERNAL_SERVER_ERROR` `GraphQLError` is a server fault: `error`
+  level with detail, and alertable. The predicate lives in one shared helper used by the request log
+  plugin and the future `maskError` hook.
+- **Choke point.** Key-based redaction, a string length cap and a message cap and scrub in
+  `toJsonLine`/`serializeError`. The Yoga adapter does not pass raw `details` through.
+- **Output.** Decide one stdout stream (today warn and error go to stderr), add a `time` field and a
+  `fatal` level, and guard stdout against `EPIPE`.
+- **Docs.** `docs/operations/logging.md` is the runtime logging doc. This plan stays here, and
+  `docs/architecture/logging.md` is not created.
+- **Still open after #4954.** `errorSimplifier`, the `maskError` hook and shared classifier, the
+  crash path, the ambient-context seam, the Slack notifier, module sweeps and lint enforcement.
+  #4946 (VAT report data-quality) is unrelated to the plan.
 
 ## Context
 
-The server (`packages/server`) logs only through `console.*`: ~419 live calls in ~125 files (364
-`console.error`) plus 14 `process.stderr/stdout.write` calls (`src/index.ts`,
-`email-ingestion-tenant-context.helper.ts`). There is no logging library, no levels, no request
-context, and no enforcement (`no-console` is a warning, `eslint.config.mjs:94`).
+State when this plan was written, before #4947 to #4954: the server (`packages/server`) logs only
+through `console.*`: ~419 live calls in ~125 files (364 `console.error`) plus 14
+`process.stderr/stdout.write` calls (`src/index.ts`, `email-ingestion-tenant-context.helper.ts`).
+There is no logging library, no levels, no request context, and no enforcement (`no-console` is a
+warning, `eslint.config.mjs:94`).
 
 - Ad-hoc fragments: a `Logger {info,error}` interface
   (`src/jobs/cleanup-expired-invitations.ts:6-9`) re-implemented in `src/index.ts:102-117` and
@@ -49,8 +85,9 @@ notification hook for alerts and business events. Output stays on stdout (consol
 
 ## Design decisions
 
-1. **`pino` 10.4.0 (exact) behind our own `Logger` facade.** Already resolved in `yarn.lock` (via
-   fastify); `pino-pretty` is already the dev pipe.
+1. **`pino` 10.4.0 (exact) behind our own `log(level, msg, fields)` facade.** The facade exists
+   (#4954, `observability/log.ts`) as a small in-house writer; pino is the planned backend behind
+   it. Already resolved in `yarn.lock` (via fastify); `pino-pretty` is already the dev pipe.
    `yarn workspace @accounter/server add --exact pino@10.4.0` (lock diff: one extra descriptor on
    the same entry). Call sites only see our type; pino is importable only from
    `observability/logging` (ESLint-enforced at the end).
@@ -59,16 +96,18 @@ notification hook for alerts and business events. Output stays on stdout (consol
    package.
 3. **Ambient context via `AsyncLocalStorage` + pino `mixin`, not DI.** The 419 call sites are free
    functions/resolvers; DI would change constructors and break hand-built injectors
-   (`src/test-utils/ledger-injector.ts` throws on unknown tokens). Call sites use a module-level
-   `const log = getLogger(import.meta.url)`. Identity is **pushed** into the store by
-   `AuthContextProvider` once auth settles, so logging never triggers lazy auth/DB work.
-4. **Output:** JSON lines on stdout; string `level`; ISO `time`; `msg` key (keeps `pino-pretty`
-   zero-config and the documented pool-heartbeat shape valid). **Async**
-   `pino.destination({ dest: 1, sync: false })` (sync mode busy-sleeps on EAGAIN and can freeze the
-   event loop behind a slow pipe), with explicit `flushSync()` on the fatal/exit path and
-   `log.fatal` (always flushSync). Pass the destination straight to `pino()` until a second sink
-   exists; any future multistream entry must set `level: 'trace'`. Pretty output stays a dev-only
-   pipe (`| pino-pretty`), no format knob.
+   (`src/test-utils/ledger-injector.ts` throws on unknown tokens). Call sites keep calling
+   `log(level, msg, fields)`; a later `getLogger(import.meta.url)` binds `module`/`component`. Today
+   (#4954) identity is recorded on a shared `context.requestLog` object by `AuthContextProvider`
+   once auth settles, and the ALS store is the planned replacement behind the same API. Either way
+   logging never triggers lazy auth/DB work.
+4. **Output (target):** JSON lines on stdout (#4954 currently sends warn and error to stderr, to be
+   unified); string `level`; ISO `time`; `msg` key (keeps `pino-pretty` zero-config and the
+   documented pool-heartbeat shape valid). **Async** `pino.destination({ dest: 1, sync: false })`
+   (sync mode busy-sleeps on EAGAIN and can freeze the event loop behind a slow pipe), with explicit
+   `flushSync()` on the fatal/exit path and `log.fatal` (always flushSync). Pass the destination
+   straight to `pino()` until a second sink exists; any future multistream entry must set
+   `level: 'trace'`. Pretty output stays a dev-only pipe (`| pino-pretty`), no format knob.
 5. **Notifications are a separate subsystem** (typed catalog, queue, dedupe). A log line never pages
    anyone implicitly, so migrating the 364 `console.error` sites cannot flood Slack.
 6. **One failure → one log line → at most one alert**, enforced by a shared `WeakSet` of
@@ -90,8 +129,8 @@ pino mutates it).
 | `service`, `env`, `release`                       | static base (`accounter-server`; `OTEL_DEPLOYMENT_ENV`→`NODE_ENV`; `RELEASE`). pid/hostname dropped.                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `module`                                          | derived by `getLogger(import.meta.url)` from the path: `…/modules/<dir>/…` → `<dir>` (works in `src/`, `dist/` which mirrors src, and vitest); other top-level dirs map to `plugins`, `jobs`, `telemetry`, `shared`, `observability`; explicit override object for infra scopes: `getLogger({ module: 'startup' \| 'shutdown' \| 'process' \| 'db' \| 'http', component })`. **Rule: directory name == log module.** A test walks `src/modules` to prove every dir resolves. Unknown `SERVER_LOG_LEVEL_OVERRIDES` keys → one startup `warn`. |
 | `component`                                       | file name without extension (`charges.resolver`, `deel-client.provider`) or class name                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `event`                                           | optional stable dot-name (`db.pool.saturated`, `tenant.created`); required on alertable warn/error                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `requestId`                                       | UUID minted at the HTTP boundary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `event`                                           | superseded by `msg`, the stable kebab-case event id (`db-pool-heartbeat`, `tenant-created`); no separate field                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `requestId`                                       | `requestIdOf`: validated `X-Request-Id`, else trace id, else UUID, memoized per request and shared with the DB lines                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `correlationId`                                   | inbound `x-correlation-id` **only if** it matches `^[A-Za-z0-9._:-]{8,64}$`, else absent (same validation applied to the OTel span attribute)                                                                                                                                                                                                                                                                                                                                                                                                |
 | `trace_id`, `span_id`, `trace_flags`              | own mixin, OTel-spec snake_case (documented exception to camelCase); `trace_flags` `00` = unsampled (head sampling is 0.5)                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `operationName`, `authType`, `userId`, `tenantId` | ALS store; `operationName` from the parsed document only (GraphQL Name regex, ≤64 chars). `tenantId` = `AuthContext.tenant.businessId` (== owner id), omitted for the gateway identity (empty id).                                                                                                                                                                                                                                                                                                                                           |
@@ -129,9 +168,9 @@ gets an explicit `{ level }`.
   `Request`. Table-driven test: each secret at depth 1–4, in `msg` and `err.message`.
 - **Untrusted input:** facade-wide cap of 2000 chars per string field; access log records the
   **pathname only** (never query string/variables/body — `acceptInvitation(token)` variables are
-  bearer credentials); one summary per request for errors (`errorCount`, `codes`), per-error lines
-  only for unexpected errors, ≤5/request; auth rejections logged once per request as
-  `{event:'auth.rejected', code}`.
+  bearer credentials); each distinct error is logged once per operation with `count` and `paths`
+  (`graphql-error`), and the operation line carries `errorCount`/`errorCodes`; auth rejections
+  logged once per request as `{msg:'auth-rejected', code}`.
 - **ALS hygiene:** store holds primitives only (no request/context/injector);
   `withoutLogContext(fn)` (`als.exit`); long-lived things (notifier worker, timers, jobs) start in
   `main()` outside any store; `notify()` snapshots ids at enqueue time; borrower-owned listeners
@@ -140,6 +179,10 @@ gets an explicit `{ level }`.
   "logs carry the first caller's context or none". Tests: two sequential requests on one pooled
   connection then `'error'` emit; notifier enqueued from request A has no `requestId` in worker
   lines.
+- **Merged rules to preserve (#4947):** URLs are logged as host only (a link can work as a
+  credential); the logger never reads `DEBUG`; an expired JWT is not logged and any other jose error
+  logs only `{code, message}`. Sweep PRs must not regress these, and must port their "no console
+  output" tests to `captureLogs()`.
 - Production guards: clamp effective level to ≥`debug` unless `SERVER_LOG_ALLOW_TRACE=1`; raw
   upstream bodies logged only as `{status, bytes, contentType}`; log `fatal` + alert at startup if
   `ALLOW_DEV_AUTH=1` while the environment label is production (`auth-plugin.ts:36-40`; refusing to
@@ -171,8 +214,12 @@ packages/server/src/observability/notifications/
 packages/server/src/test-utils/capture-logs.ts   in-memory sink (excluded from dist by tsconfig.build.json)
 packages/server/src/plugins/request-logging-plugin.ts
 packages/server/scripts/notify-test.ts           `yarn workspace @accounter/server notify:test`
-docs/architecture/logging.md   docs/operations/slack-notifications.md
+docs/operations/logging.md (exists, #4954)   docs/operations/slack-notifications.md
 ```
+
+The tree above is the target after the pino and ambient-context swap. #4954 already ships
+`observability/log.ts` (the facade core, `serializeError`, `createYogaLogger`) and
+`plugins/request-log-plugin.ts`; they are the starting point for these files, not a parallel design.
 
 **Lazy facade (required):** `getLogger()` runs at module scope, before `initLogging` (`index.ts`
 awaits telemetry first), and pino children freeze level/destination/serializers/mixin. So
@@ -185,9 +232,10 @@ module **never imports `environment.ts`** (which `process.exit`s on invalid env 
 ### Public API
 
 ```ts
-const log = getLogger(import.meta.url);                      // once per file
-log.info({ event: 'deel.sync.completed', count }, 'Deel sync completed');
-log.error({ err, chargeId }, 'Failed to update charge');     // fields first, then message; no printf variadics
+import { log, serializeError } from '../../observability/log.js';   // exists (#4954)
+log('info', 'deel-sync-completed', { count });                       // msg = stable kebab-case event id
+log('error', 'charge-update-failed', { chargeId, error: serializeError(e) });
+// later: const log = getLogger(import.meta.url), same signatures with module/component bound
 runWithRequestContext(ctx, fn) / bindLogContext({ userId, tenantId, authType }) /
 runWithLogContext({ tenantId }, fn) / withoutLogContext(fn)   // all no-ops without a store
 notify({ type: 'tenant.created', … })                         // sync, never throws, returns void
@@ -258,9 +306,9 @@ await flushNotifications(deadlineMs)
 | `invitation.accepted`         | `invitations.resolver.ts` right after `await acceptInvitation(…)` returns (COMMIT is `accept-invitations.provider.ts:239`), outside the try that maps to `INVITATION_ACCEPT_FAILED`                                           | ids only (business name not available without an RLS-pinned query). Also add `log.error` in that resolver's catch (`:136-144`), which swallows the cause.                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `server.crashed`              | `index.ts:250-259` handlers                                                                                                                                                                                                   | See "Crash path". SIGINT/SIGTERM never alert.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `job.failed`                  | `index.ts:128-130` (single alert site; also when `result.errors > 0` — per-invitation failures are only counted, `cleanup-expired-invitations.ts:79-82`)                                                                      | `jobs/utils.ts:40-42` becomes log-only (+ `warn` for the silent overlap skip `:33-35`). `run-cron-jobs.helper.ts:92-96` is a user-triggered mutation stream → log-only, pass `tenantId` explicitly.                                                                                                                                                                                                                                                                                                                                                                               |
-| `db.pool.saturated`           | `pool-monitor.ts:50-52`                                                                                                                                                                                                       | Alert only on `waitingCount > 0` for 2 consecutive ticks (`saturated` at `:32` also fires for busy-not-wedged); re-notify 15 min then 1 h; one "recovered" message. Heartbeat keeps `msg:'db-pool-heartbeat'`, nested shape, `level:'error', saturated:true`.                                                                                                                                                                                                                                                                                                                     |
-| `db.connection.leaked`        | `index.ts:80-90` `onLeak`                                                                                                                                                                                                     | exclude `lastQuery` from Slack (truncated in the log only).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `graphql.internal-error`      | `createYoga({ maskedErrors: { maskError } })` wrapper in `index.ts`                                                                                                                                                           | See "GraphQL errors".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `db.pool.saturated`           | `pool-monitor.ts:50-52`                                                                                                                                                                                                       | Alert only on `waitingCount > 0` for 2 consecutive ticks (`saturated` at `:32` also fires for busy-not-wedged); re-notify 15 min then 1 h; one "recovered" message. An idle pool now reports every 5 min (#4954), a busy pool on every tick. Heartbeat keeps `msg:'db-pool-heartbeat'`, nested shape, `level:'error', saturated:true`.                                                                                                                                                                                                                                            |
+| `db.connection.leaked`        | `index.ts` `onLeak` and `tenant-db-client.ts` `onClientError`                                                                                                                                                                 | exclude `lastQuery` from Slack (truncated in the log only). `onLeak` receives `operationName`/`requestId` (#4950) and now fires before Postgres kills the session. Also alert on `db-checked-out-client-error` with `code=25P03` (the watchdog did not get there first); both carry the client's `requestId`.                                                                                                                                                                                                                                                                     |
+| `graphql.internal-error`      | `createYoga({ maskedErrors: { maskError } })` wrapper in `index.ts`                                                                                                                                                           | See "GraphQL errors". #4954 classifies in `request-log-plugin.ts` (`isOriginalGraphQLError`); move that predicate to a shared helper and treat a deliberate `INTERNAL_SERVER_ERROR` as a server fault.                                                                                                                                                                                                                                                                                                                                                                            |
 | `email-ingestion.quarantined` | wrap public `performIngest` (`email-ingestion-ingest.provider.ts:261`) in `runWithLogContext({tenantId})` and notify only when `result.outcome === QUARANTINED`                                                               | Never inside `recordNonInsert` (`:690-732`) or any `withTenantContext` callback (re-run on a dead connection, pre-COMMIT); never for IGNORED/SELF_ISSUED (`:334-355`).                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Wiring changes in existing code
@@ -269,8 +317,9 @@ await flushNotifications(deadlineMs)
   the **first statements of `main()`**; `initLogging(env.log)` and `initNotifications(env.slack)`
   next; replace all `stderr/stdout.write`, the Auth0 `console.log`s and the inline `Logger`;
   `createServer((req, res) => withRequestContext(req, () => yoga(req, res)))` (`als.run`);
-  `createYoga({ logging: yogaLogger, maskedErrors: { maskError } })`; warn inside the readiness
-  check callback (`:157-165`, Yoga swallows it). Plugin order:
+  `createYoga({ logging: createYogaLogger(), maskedErrors: { maskError } })` (`createYogaLogger`
+  exists, #4954); warn inside the readiness check callback (`:157-165`, Yoga swallows it). Plugin
+  order:
   `correlationId → requestLogging → dbCleanup → auth → useGraphQLModules → useSchema → defer → hive → readiness`
   (no separate error plugin).
 - **Crash path (the draft's flush was unreachable — `server.close()` is awaited before the
@@ -288,17 +337,22 @@ await flushNotifications(deadlineMs)
   absent" predicate would have. The Yoga adapter is the single log line (Error-like first arg →
   `log.error({err})`; string first arg → `log[level](attrs ?? {}, msg)`); Yoga's chatter
   ("Processing GraphQL Parameters") is `debug`, so it disappears at `info`.
-- **`requestLoggingPlugin`:** read `startedAt` from the ALS store (Yoga's `/health`, CORS, GraphiQL
-  handlers run before user plugins); `onParams` sets `operationName`; one line from `onResponse`
-  (status, `durationMs`, `operationName`, `errorCount`, `unexpectedErrorCount`;
+- **`requestLogPlugin` (delivered by #4954, `plugins/request-log-plugin.ts`):** one
+  `graphql-operation` line plus `graphql-error` lines. What remains is the original design notes:
+  read `startedAt` from the ALS store (Yoga's `/health`, CORS, GraphiQL handlers run before user
+  plugins); `onParams` sets `operationName`; one line from `onResponse` (status, `durationMs`,
+  `operationName`, `errorCount`, `unexpectedErrorCount`;
   `res.once('close', AsyncLocalStorage.bind(…))` for SSE/defer); skip successful
   `/health`,`/ready`,`/readiness`; whole body in try/catch (a plugin throw becomes a 500 with the
   stack); keep a `debug` "request started" line (the db-pool runbook looks for it). Fallback for
   tests that call `yoga.fetch()` directly: wrap in `als.run` inside `onRequest` and stash the store
   in a `WeakMap<Request,Store>`.
-- **`AuthContextProvider`** (`auth-context.provider.ts`): private `settle(ctx)` called at the four
-  success cache points (devBypass `:267-269`, apiKey `:289-291`, gateway `:412-413`, jwt `:501-503`)
-  after scoping → `bindLogContext({ authType, userId, tenantId: businessId || undefined })`. Not in
+- **`AuthContextProvider`** (`auth-context.provider.ts`; #4954 added `recordingIdentity`, which
+  writes `userId`/`businessId` into `context.requestLog`; confirm it records after the
+  business-scope header is applied and add an integration test through real graphql-modules): ALS
+  binding later via a private `settle(ctx)` called at the four success cache points (devBypass
+  `:267-269`, apiKey `:289-291`, gateway `:412-413`, jwt `:501-503`) after scoping →
+  `bindLogContext({ authType, userId, tenantId: businessId || undefined })`. Not in
   `applyRequestedReadScope` (gateway skips it; it can throw). No `AdminContextProvider` binding
   (`ownerId === tenant.businessId`). Fix the raw `auth0UserId` warn at `:475`. Email-ingestion:
   `runWithLogContext({tenantId})` inside `withTenantContext`/`withPoolReadRetry` and around
@@ -313,27 +367,33 @@ await flushNotifications(deadlineMs)
   (it records `url.full`, and the webhook URL is a bearer secret). NodeSDK 0.223 registers default
   OTLP logs/metrics exporters when `OTEL_ENABLED=1`; document it and optionally pass
   `logRecordProcessors: []` / `OTEL_LOGS_EXPORTER=none`.
-- **`pool-monitor.ts`**, **`jobs/*`**: heartbeat via logger with the exact existing key set (test
-  pins it). Jobs keep their local `Logger {info(message, meta), error(message, meta)}` interface (8
-  test injection sites); one shared `fromMessageMeta(log)` adapter replaces the two inline copies;
-  `{ error }` keys → `{ err }`; the CLI script stays log-only.
-- **`environment.ts`:** `LogModel`/`SlackModel` after `OtelModel` (`:240`) using `emptyString(...)`,
-  registered in `configs` (`:299-310`), `env.log`/`env.slack` after `otel:` (`:406-421`). Variables:
-  `SERVER_LOG_LEVEL` (enum incl. `silent`), `SERVER_LOG_LEVEL_OVERRIDES`, `SERVER_LOG_ALLOW_TRACE`,
-  plus the Slack set above. **Not** `LOG_LEVEL`: `@graphql-hive/logger` (via `useHive`) may read it
-  and throws on unknown values. Update both `.env.template`s (server Observability block after
-  `:81`, root after `:121`), `packages/server/README.md:98-149`.
+- **`pool-monitor.ts`** (done in #4954, `pool-monitor.test.ts`), **`jobs/*`**: heartbeat via `log()`
+  with the existing key set. Jobs keep their local
+  `Logger {info(message, meta), error(message, meta)}` interface (8 test injection sites); one
+  shared `fromMessageMeta(log)` adapter replaces the two inline copies; `{ error }` keys →
+  `{ err }`; the CLI script stays log-only.
+- **`environment.ts`:** `SERVER_LOG_LEVEL` already exists (#4947: `LoggingModel`, `env.logging`,
+  fail-fast); extend its enum with `fatal`/`silent` and add `SERVER_LOG_LEVEL_OVERRIDES` and
+  `SERVER_LOG_ALLOW_TRACE` to it. Add a `SlackModel` (fail-open) after it using `emptyString(...)`,
+  registered in `configs`, `env.slack` next to `env.logging`. Variables: the logging set above plus
+  the Slack set above. **Not** `LOG_LEVEL`: `@graphql-hive/logger` (via `useHive`) may read it and
+  throws on unknown values. Update both `.env.template`s (server Observability block after `:81`,
+  root after `:121`), `packages/server/README.md:98-149`.
 - **Tests:** `scripts/vitest-setup.ts` and `scripts/vitest-global-setup.ts` set
   `process.env.SERVER_LOG_LEVEL ||= 'silent'` (`||=`: CI sets blanks) and delete `SLACK_*`;
   `captureLogs()` builds its own logger with an explicit level. Console-asserting tests to migrate
-  with their module: `upload-error.helper.test.ts:61-66,131`, `clients.helper.test.ts:55-61`,
+  with their module (also from #4947: `auth-context.test.ts` JWT rejection,
+  `upload-to-charge.helper.test.ts` host-only labels, and the "no output" tests
+  `recovery-reserve.helper.test.ts` and `amount.test.ts`, which pass vacuously once the module logs
+  through stdout; `mesh-client-logging.test.ts` is package-level and stays):
+  `upload-error.helper.test.ts:61-66,131`, `clients.helper.test.ts:55-61`,
   `email-ingestion-ingest.provider.test.ts:856,874`,
   `dynamic-report-snapshots.integration.test.ts:534-543`, `pcn.helper.test.ts:1052-1075`.
   `environment*.test.ts` and `telemetry/__tests__/index.test.ts` stay on console. Silence-only spies
   are deleted (`auth0-management.test.ts:147`, `accept-invitations.provider.test.ts:435`,
   `dynamic-report-comments.*:454/109`, `vat-report-summary.resolver.test.ts:333`,
-  `pcn.helper.test.ts:651/666/712`). Env tests go in `src/environment-logging.test.ts` (so they run
-  under `yarn test`; `src/__tests__/**` is integration-only).
+  `pcn.helper.test.ts:651/666/712`). Env tests extend the existing `src/environment.test.ts` (runs
+  under `yarn test`; it already covers `SERVER_LOG_LEVEL`).
 - **Changesets:** each PR touching `packages/**` needs a hand-named `.changeset/<kebab>.md`
   (`'@accounter/server': minor|patch`); the auto-generated `@accounter_server-<n>-dependencies.md`
   does not satisfy `require-changeset.yml`.
@@ -343,17 +403,17 @@ await flushNotifications(deadlineMs)
 | PR    | Scope                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0     | Fix the stale module list in `packages/server/CLAUDE.md` (reality: 37 dirs, 35 registered; `priority` / `workspace-settings` don't exist — verify); introduce the per-directory `no-console: error` ratchet (each sweep PR adds its directories).                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| 1a    | Logging core + day-0 spikes (below) + `docs/architecture/logging.md` skeleton. **No call-site changes.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 1a    | **Delivered by #4954 once its review items land:** `observability/log.ts` core, `requestLogPlugin`, `createYogaLogger`, `docs/operations/logging.md`. First follow-up PR: the seam (writer plus ambient-context provider), `fatal`, `time`, stdout unification, EPIPE guard, redaction and caps, header-id validation, and the day-0 spikes.                                                                                                                                                                                                                                                                                                                                                           |
 | 1b    | Notifications core (Noop + Slack client/queue/format/throttle, injected `fetch`), env models + tests, `notify:test`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| 2a    | Infra logs: `index.ts` startup/shutdown/process handlers, crash path, pool-monitor, jobs, `onLeak`; update `db-connection-pool.md`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 2b    | ALS `withRequestContext` + `requestLoggingPlugin` + correlation-id validation; **console shim** routing un-migrated `console.*` through the logger as `module:'legacy-console'` (gains requestId/tenantId/redaction, JSON-escaped; removed in the final PR).                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 2a    | Infra logs: `index.ts` startup/shutdown/process handlers, crash path, jobs (pool-monitor and `onLeak` are done in #4954).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2b    | ALS `withRequestContext` behind the seam (the request log itself is delivered by #4954); **console shim** routing un-migrated `console.*` through the logger as `module:'legacy-console'` (gains requestId/tenantId/redaction, JSON-escaped; removed in the final PR).                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 2c    | `AuthContextProvider.settle()` binding + email-ingestion `runWithLogContext`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| 2d    | Yoga adapter + `maskError` hook + `errorSimplifier` + reported-WeakSet + `builder.ts` changes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 2d    | Yoga adapter and reported-error set exist (#4954); remaining: `maskError` hook with the shared classifier, `errorSimplifier`, `builder.ts` changes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 3a    | `onCommitted` + `tenant.created` + `invitation.accepted` (+ `docs/operations/slack-notifications.md`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 3b    | Infra alerts: `server.crashed`, `job.failed`, `db.pool.saturated`, `db.connection.leaked`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | 3c    | `graphql.internal-error` + `email-ingestion.quarantined`. Optional, **default off**: a ≤1-per-30-min digest of top-5 `errorSimplifier` call-site keys (`SLACK_SIMPLIFIED_DIGEST_THRESHOLD`), always counted in the heartbeat — surfaces systemic failures without reversing the "unexpected only" decision.                                                                                                                                                                                                                                                                                                                                                                                            |
 | 4a    | Pilot sweep of 2–3 small modules (tags, contracts, misc-expenses) to validate the codemod.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 4b    | Critical modules: `auth`, `email-ingestion`, `scraper-ingestion`, `app-providers` (delete `coinmarketcap.ts` TEMP lines; Deel raw bodies → `{status, bytes, contentType}`; `[db]` lines in `tenant-db-client.ts`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 4b    | Critical modules: `auth`, `email-ingestion`, `scraper-ingestion`, `app-providers` (delete `coinmarketcap.ts` TEMP lines; Deel raw bodies → `{status, bytes, contentType}`; the `[db]` lines are already JSON via #4954).                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 5…    | Sweeps by descending call count (documents, charges, business-trips, financial-entities, ledger, reports, deel, rest). Each migrates its asserting tests in the same PR.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Final | Remove console shim; `no-console: error` for `packages/server/src/**` with allowlist (`environment.ts` (tests assert it), `bootstrap-telemetry.ts`, `telemetry/index.ts:34,61,63`, `demo-fixtures/**`, `scripts/run-invitation-cleanup.ts`; `@whatwg-node/server` still writes raw `console.error` internally — documented); `no-restricted-imports` for `pino` layered before `eslint.config.mjs:354`, extended into `:354-373`, `'off'`→error in `:375-397`, off only for `observability/logging/**` + `test-utils/**`; remove the 3 stale `eslint-disable no-console`; `packages/server/CLAUDE.md` + `.claude/rules` "Logging" cheat-sheet; fix `docs/user-providers-credentials/blueprint.md:616`. |
 
@@ -369,16 +429,16 @@ rather than migrate `documents/resolvers/common.ts:33,40` (per-document log in l
 expensive debug payloads with `isLevelEnabled`; never log whole charge/document/contract/payroll
 objects.
 
-## Day-0 spikes (PR 1a — record outcomes in `docs/architecture/logging.md`)
+## Day-0 spikes (first follow-up PR — record outcomes in `docs/operations/logging.md`)
 
 `import { pino } from 'pino'` under the real ESM build with tsc 6 · `pino-pretty` with string levels
 (`-L/--minimumLevel` and `{levelLabel}` don't work with them) · backpressure:
 `node app | (sleep 5; cat)` with 100k lines, measure event-loop delay · ALS inside
 `@defer`/`@stream`/SSE resolvers after the first payload, with a keep-alive second request ·
 `OTEL_ENABLED=1`: in-request lines carry `trace_id`, no POST to `<endpoint>/v1/logs` · whether
-`useMaskedErrors` leaves `incremental[].errors` unmasked · whether `useHive` builds its own logger
-or uses `yoga.logger` (pass the adapter explicitly) · **Render staging:** how `level` / `msg` /
-`fatal` render (if `message` is required, set pino `messageKey:'message'` and pino-pretty
+`useMaskedErrors` leaves `incremental[].errors` unmasked · whether `useHive` logs through Yoga's
+logger (#4947/#4954 state it does; confirm) · **Render staging:** how `level` / `msg` / `fatal`
+render (if `message` is required, set pino `messageKey:'message'` and pino-pretty
 `--messageKey message`, keeping the pool heartbeat doc consistent).
 
 ## Future external log service (prepared, not built)
@@ -390,8 +450,8 @@ multistream entry at `level:'trace'`; sink errors isolated (never crash the proc
 backpressure policy; redaction/serialization always happen before any sink; third-party transports'
 string-level support must be tested first. A golden record-contract test pins the keys of a
 representative line (`level`, `time`, `msg`, `service/env/release`, `module/component`, `requestId`,
-…). `docs/architecture/logging.md` carries a delta table vs `mcp-server`/gateway (`message` vs
-`msg`, `timestamp` vs `time`) and a data-handling section (stores: host logs, Slack channels, Tempo;
+…). `docs/operations/logging.md` carries a delta table vs `mcp-server`/gateway (`message` vs `msg`,
+`timestamp` vs `time`) and a data-handling section (stores: host logs, Slack channels, Tempo;
 retention; "never log" dictionary). Candidate backend: OTLP logs → Grafana Loki (Tempo is the trace
 backend; Loki derived field on `"trace_id":"(\w+)"`). Require a processor/DPA/region review before
 any external sink lands.
