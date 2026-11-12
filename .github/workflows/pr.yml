@@ -41,38 +41,48 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      # The action diffs the package.json files in the working tree against
-      # `pull_request.base.sha` from the event payload. Left alone, that compares
-      # the default `refs/pull/<n>/merge` checkout (which already includes the
-      # latest `main`) with a base SHA that can lag behind `main`, so dependency
-      # bumps that land on `main` while the PR is open get credited to the PR.
-      # Check out the PR head and point the base at its merge base with the base
-      # branch instead, so only the PR's own dependency changes count. When those
-      # are empty, the action also deletes any `*-<PR>-dependencies.md` files it
-      # added earlier.
+      # The changesets-dependencies action diffs the package.json files in the
+      # working tree against `pull_request.base.sha` from the event payload. Left
+      # alone, that compares the default `refs/pull/<n>/merge` checkout (which
+      # already includes the latest `main`) with a base SHA that can lag behind
+      # `main`, so dependency bumps that land on `main` while the PR is open get
+      # credited to the PR. Check out the PR head and point the base at its merge
+      # base with the base branch instead, so only the PR's own dependency changes
+      # count. When those are empty, the action also deletes any
+      # `*-<PR>-dependencies.md` files it added earlier.
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Diff dependencies against the PR's merge base
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      # The runner rewrites `$GITHUB_EVENT_PATH` from the original event before
+      # every `uses:` step, so the payload can't be patched in an earlier step.
+      # Instead, fetch the action at its pinned commit and run its bundled entry
+      # point here, with `GITHUB_EVENT_PATH` pointing at a patched copy of the
+      # event. Renovate doesn't track `ACTION_SHA`: bump it by hand.
+      - name: Create/Update Changesets
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+          ACTION_REPO: the-guild-org/changesets-dependencies-action
+          ACTION_SHA: f11b16181c79e07d62b112c2f32c9db534a9df09 # v1.2.2
         run: |
           git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
           MERGE_BASE="$(git merge-base HEAD "origin/${BASE_REF}")"
           echo "Diffing dependencies against merge base ${MERGE_BASE} (origin/${BASE_REF})"
-          jq --arg sha "$MERGE_BASE" '.pull_request.base.sha = $sha' "$GITHUB_EVENT_PATH" > "$RUNNER_TEMP/event.json"
-          mv "$RUNNER_TEMP/event.json" "$GITHUB_EVENT_PATH"
+          EVENT_FILE="$RUNNER_TEMP/dependencies-event.json"
+          jq --arg sha "$MERGE_BASE" '.pull_request.base.sha = $sha' "$GITHUB_EVENT_PATH" > "$EVENT_FILE"
 
-      - name: setup environment
-        uses: ./.github/actions/setup
+          ACTION_DIR="$RUNNER_TEMP/changesets-dependencies-action"
+          git init -q "$ACTION_DIR"
+          git -C "$ACTION_DIR" fetch -q --depth 1 "https://github.com/${ACTION_REPO}.git" "$ACTION_SHA"
+          git -C "$ACTION_DIR" checkout -q --detach FETCH_HEAD
 
-      - name: Create/Update Changesets
-        uses: the-guild-org/changesets-dependencies-action@f11b16181c79e07d62b112c2f32c9db534a9df09 # v1.2.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH="$EVENT_FILE" node "$ACTION_DIR/dist/index.js"
 
   compile:
     name: Compile forked PR
