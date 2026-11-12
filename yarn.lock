@@ -72,7 +72,7 @@ __metadata:
     "@auth0/auth0-react": "npm:2.30.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
-    "@hookform/resolvers": "npm:7.0.5"
+    "@hookform/resolvers": "npm:7.0.6"
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.5.0"
     "@mui/x-charts": "npm:8.29.3"
@@ -130,7 +130,7 @@ __metadata:
     vaul: "npm:1.1.2"
     vite: "npm:8.3.8"
     vite-plugin-node-polyfills: "npm:0.28.0"
-    wrangler: "npm:4.160.0"
+    wrangler: "npm:4.160.1"
     zod: "npm:4.6.7"
     zustand: "npm:5.1.0"
   languageName: unknown
@@ -150,7 +150,7 @@ __metadata:
     postal-mime: "npm:4.2.1"
     tsx: "npm:4.23.15"
     typescript: "npm:6.0.3"
-    wrangler: "npm:4.160.0"
+    wrangler: "npm:4.160.1"
     zod: "npm:4.6.7"
   languageName: unknown
   linkType: soft
@@ -354,7 +354,7 @@ __metadata:
     "@types/node": "npm:26.6.6"
     "@types/pg": "npm:8.23.1"
     "@whatwg-node/fetch": "npm:0.12.1"
-    ai: "npm:7.0.169"
+    ai: "npm:7.0.170"
     async-mutex: "npm:0.5.0"
     auth0: "npm:7.7.0"
     basic-auth: "npm:3.1.0"
@@ -432,16 +432,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:4.0.142":
-  version: 4.0.142
-  resolution: "@ai-sdk/gateway@npm:4.0.142"
+"@ai-sdk/gateway@npm:4.0.143":
+  version: 4.0.143
+  resolution: "@ai-sdk/gateway@npm:4.0.143"
   dependencies:
     "@ai-sdk/provider": "npm:4.0.37"
     "@ai-sdk/provider-utils": "npm:5.0.79"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/4b5aa108a94eb224f945c3a0d927d51db726464b5a78a2418a0e7235c51e0021ce114f1c268955f91f9f42052f09ce65f8d584bda298d55a0cb6d4fed53cd4c9
+  checksum: 10c0/21a620832f23a851406236ac1a79c374bd716cd84f484d745e1946fb65d9d8208c496156d84d9d648bc6ced2ecbb1bdf4d7e4efe3a020a4c8d04d98fcdea298a
   languageName: node
   linkType: hard
 
@@ -4076,9 +4076,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hookform/resolvers@npm:7.0.5":
-  version: 7.0.5
-  resolution: "@hookform/resolvers@npm:7.0.5"
+"@hookform/resolvers@npm:7.0.6":
+  version: 7.0.6
+  resolution: "@hookform/resolvers@npm:7.0.6"
   dependencies:
     "@standard-schema/utils": "npm:^0.3.0"
   peerDependencies:
@@ -4153,7 +4153,7 @@ __metadata:
       optional: true
     zod:
       optional: true
-  checksum: 10c0/5821a5a8a1ffabbbc6359c9d7d9c9927f91034bd6ac991b6ce0f6fa239fc050bed461619ac7929c41f1ad0b7607fabf45304950a24bf6172b049b4ed0129668e
+  checksum: 10c0/9fafcfa47e7889da6504f34a1e296d8bcbbff6647268bde57ab02648da8937c5efb6857a582137b253aa2fbe4fafaa27768c1fe6d87c3925f1b84308ead3d769
   languageName: node
   linkType: hard
 
@@ -11268,16 +11268,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:7.0.169":
-  version: 7.0.169
-  resolution: "ai@npm:7.0.169"
+"ai@npm:7.0.170":
+  version: 7.0.170
+  resolution: "ai@npm:7.0.170"
   dependencies:
-    "@ai-sdk/gateway": "npm:4.0.142"
+    "@ai-sdk/gateway": "npm:4.0.143"
     "@ai-sdk/provider": "npm:4.0.37"
     "@ai-sdk/provider-utils": "npm:5.0.79"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/560e7873cb2056001c5c50772bd60160cb4e0e80414aba095d26fe500fd16e9ac4813e1eab382e1144bd56cca188d7bcaf226211550f1113f66097e315cda357
+  checksum: 10c0/57f35ad405dec8be3464f4a6e1488cc83e1bf7dd2c5f647326273c631dd69e33c1eb3eb0a7189814cad63054d20a943f3d84d245f9a856a464630b7f1ec90337
   languageName: node
   linkType: hard
 
@@ -19739,9 +19739,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"miniflare@npm:5.20261110.0-beta":
-  version: 5.20261110.0-beta
-  resolution: "miniflare@npm:5.20261110.0-beta"
+"miniflare@npm:5.20261110.1-beta":
+  version: 5.20261110.1-beta
+  resolution: "miniflare@npm:5.20261110.1-beta"
   dependencies:
     "@cspotcode/source-map-support": "npm:0.8.1"
     sharp: "npm:0.35.5"
@@ -19754,7 +19754,7 @@ __metadata:
   peerDependenciesMeta:
     kerberos:
       optional: true
-  checksum: 10c0/1b580859c52df1db9bc2c9846208aff732674dc69b17a7aac6d0a76c1c570af9feb95c3bad5e61eca84a840520da7ae25d5f7a8828716bcda949fcc2ec6b9fd1
+  checksum: 10c0/7c96d1ed05e9477dd16c710fbfe5d3be06a2de3f037ac046850e77f10ec46dbb017fea111bbf7fc9de20dae6409a89d45d85061eb1aa5d3a09d1c78e47eb710d
   languageName: node
   linkType: hard
 
@@ -26298,9 +26298,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wrangler@npm:4.160.0":
-  version: 4.160.0
-  resolution: "wrangler@npm:4.160.0"
+"wrangler@npm:4.160.1":
+  version: 4.160.1
+  resolution: "wrangler@npm:4.160.1"
   dependencies:
     "@cloudflare/kv-asset-handler": "npm:0.5.0"
     "@cloudflare/unenv-preset": "npm:2.16.2"
@@ -26308,7 +26308,7 @@ __metadata:
     blake3-wasm: "npm:2.1.5"
     esbuild: "npm:0.28.2"
     fsevents: "npm:2.3.3"
-    miniflare: "npm:5.20261110.0-beta"
+    miniflare: "npm:5.20261110.1-beta"
     path-to-regexp: "npm:6.3.0"
     unenv: "npm:2.0.0-rc.24"
     workerd: "npm:1.20261110.1"
@@ -26324,7 +26324,7 @@ __metadata:
     cf-wrangler: bin/cf-wrangler.js
     wrangler: bin/wrangler.js
     wrangler2: bin/wrangler.js
-  checksum: 10c0/aee97899b265c19c8ee8de32c8bada16554cf5babd1f63a6bf930048c7f8312105bbfc1f161978d258f5ec93b27a79ca4aac6be7dd4c7f6ab7b40ac0f806c409
+  checksum: 10c0/28ea414c7f360c8f5c9f66b44586a7c5c506b7b986338aeed852af38f19e0a4a0bd9b3dede8c26b7a65d993bdfcdfbb94ff80121a6f3d532291f219b912927f4
   languageName: node
   linkType: hard
 

@@ -31,7 +31,7 @@
     "@auth0/auth0-react": "2.30.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@hookform/resolvers": "7.0.5",
+    "@hookform/resolvers": "7.0.6",
     "@minoru/react-dnd-treeview": "3.5.4",
     "@mui/material": "9.5.0",
     "@mui/x-charts": "8.29.3",
@@ -93,7 +93,7 @@
     "typescript": "6.0.3",
     "vite": "8.3.8",
     "vite-plugin-node-polyfills": "0.28.0",
-    "wrangler": "4.160.0"
+    "wrangler": "4.160.1"
   },
   "overrides": {
     "react-is": "19.3.1"
