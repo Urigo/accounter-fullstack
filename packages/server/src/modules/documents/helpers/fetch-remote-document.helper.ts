@@ -1,3 +1,4 @@
+import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 
 /**
@@ -28,7 +29,7 @@ export const FETCH_TIMEOUT_MS = 30_000;
  * answers with `text/html` is a login page or an error, and storing it would
  * file a web page as a financial record.
  */
-export const ALLOWED_REMOTE_MIME_TYPES = new Set([
+const ALLOWED_REMOTE_MIME_TYPE_LIST = [
   'application/pdf',
   'image/png',
   'image/jpeg',
@@ -37,7 +38,13 @@ export const ALLOWED_REMOTE_MIME_TYPES = new Set([
   'image/heic',
   'image/heif',
   'image/tiff',
-]);
+] as const;
+
+/** One of {@link ALLOWED_REMOTE_MIME_TYPES}; the only types {@link sniffDocumentType} may return. */
+export type AllowedRemoteMimeType = (typeof ALLOWED_REMOTE_MIME_TYPE_LIST)[number];
+
+/** The allowlist as a set, for looking up an arbitrary header value. */
+export const ALLOWED_REMOTE_MIME_TYPES = new Set<string>(ALLOWED_REMOTE_MIME_TYPE_LIST);
 
 /**
  * Content types that say nothing about the file. Some hosts serve real
@@ -58,6 +65,16 @@ export const GENERIC_REMOTE_MIME_TYPES = new Set([
 ]);
 
 /**
+ * The request's `Accept` header. It lists the allowlist first and then
+ * `application/octet-stream` at low priority. Generic types are accepted, so
+ * the header has to say so: otherwise a server that negotiates strictly may
+ * answer an endpoint that serves only octet-stream with 406.
+ */
+const ACCEPT_HEADER = [...ALLOWED_REMOTE_MIME_TYPE_LIST, 'application/octet-stream;q=0.1'].join(
+  ', ',
+);
+
+/**
  * Identify a document from its magic bytes, returning one of
  * {@link ALLOWED_REMOTE_MIME_TYPES} or `null`.
  *
@@ -65,7 +82,7 @@ export const GENERIC_REMOTE_MIME_TYPES = new Set([
  * the ISO-BMFF HEIC container, its fixed `ftyp` box) count, so an HTML page that
  * happens to mention `%PDF` somewhere is not a PDF.
  */
-export function sniffDocumentType(bytes: Uint8Array): string | null {
+export function sniffDocumentType(bytes: Uint8Array): AllowedRemoteMimeType | null {
   const startsWith = (signature: number[], offset = 0) =>
     bytes.length >= offset + signature.length &&
     signature.every((byte, index) => bytes[offset + index] === byte);
@@ -126,11 +143,13 @@ export function isBlockedIp(address: string): boolean {
  * Reject a URL before it is fetched. Applied to the submitted URL and again to
  * every redirect target.
  *
- * Hostnames that are not literal IPs are checked by name only. Resolving them
- * here would not close the DNS-rebinding gap either (the name is resolved again
- * by `fetch`), so the meaningful guard is the response-side one: a redirect to
- * an internal host still has to pass this check, and the content-type check
- * rejects whatever an internal service would answer with.
+ * Hostnames that are not literal IPs are checked here by name only.
+ * {@link assertResolvesToPublicAddress} then resolves them before each request.
+ * Neither check closes DNS rebinding, because `fetch` resolves the name again.
+ * The content-type check in {@link fetchRemoteDocument} adds one more layer,
+ * but a weak one for generic types, which are accepted on their bytes. An
+ * internal file server that answers `application/octet-stream` with a real PDF
+ * passes it.
  */
 export function assertFetchableUrl(rawUrl: string): URL {
   let url: URL;
@@ -162,6 +181,33 @@ export function assertFetchableUrl(rawUrl: string): URL {
   return url;
 }
 
+/**
+ * Refuse a hostname that resolves to an address {@link isBlockedIp} blocks.
+ * Applied before every request, both to the submitted URL and to each redirect
+ * target.
+ *
+ * {@link assertFetchableUrl} can judge a name only by its spelling, so a public
+ * name that points at a private address gets past it. This check closes that
+ * case. It does not close DNS rebinding, because `fetch` resolves the name
+ * again and can get a different answer. It fails closed: a name that does not
+ * resolve is refused.
+ */
+export async function assertResolvesToPublicAddress(url: URL): Promise<void> {
+  const hostname = url.hostname.replace(/^\[|\]$/g, '');
+  if (isIP(hostname)) {
+    // A literal address has already been judged by assertFetchableUrl.
+    return;
+  }
+  const addresses = await lookup(hostname, { all: true }).catch(() => {
+    throw new RemoteDocumentError(`Could not resolve host: ${hostname}`);
+  });
+  if (addresses.length === 0 || addresses.some(({ address }) => isBlockedIp(address))) {
+    throw new RemoteDocumentError(
+      `Refusing to fetch a host that resolves to a private or loopback address: ${hostname}`,
+    );
+  }
+}
+
 function unsupportedContentType(contentType: string): RemoteDocumentError {
   return new RemoteDocumentError(
     `Unsupported content type "${contentType || 'unknown'}" — expected a PDF or an image. ` +
@@ -182,7 +228,8 @@ function filenameFromUrl(url: URL, contentType: string): string {
 /**
  * Fetch one document. Redirects are followed manually so each hop can be
  * re-validated; `fetch`'s own `redirect: 'follow'` would hide the intermediate
- * targets and defeat {@link assertFetchableUrl}.
+ * targets and defeat {@link assertFetchableUrl} and
+ * {@link assertResolvesToPublicAddress}.
  */
 export async function fetchRemoteDocument(rawUrl: string): Promise<File> {
   const controller = new AbortController();
@@ -192,10 +239,11 @@ export async function fetchRemoteDocument(rawUrl: string): Promise<File> {
     let response: Response | undefined;
 
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      await assertResolvesToPublicAddress(url);
       response = await fetch(url, {
         redirect: 'manual',
         signal: controller.signal,
-        headers: { Accept: [...ALLOWED_REMOTE_MIME_TYPES].join(', ') },
+        headers: { Accept: ACCEPT_HEADER },
       }).catch(error => {
         throw new RemoteDocumentError(
           `Failed fetching document: ${error instanceof Error ? error.message : String(error)}`,

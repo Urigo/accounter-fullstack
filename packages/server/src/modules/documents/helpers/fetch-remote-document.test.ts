@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
 import {
   assertFetchableUrl,
@@ -17,6 +17,17 @@ import {
  * pointing inside the network.
  */
 
+// Every host is resolved before it is fetched. The tests never touch real DNS:
+// each name resolves to a public documentation address unless a test says otherwise.
+const { lookup } = vi.hoisted(() => ({ lookup: vi.fn() }));
+vi.mock('node:dns/promises', () => ({ lookup }));
+
+const PUBLIC_ADDRESS = '203.0.113.10';
+
+/** What `lookup(hostname, { all: true })` resolves to. */
+const resolvesTo = (...addresses: string[]) =>
+  addresses.map(address => ({ address, family: address.includes(':') ? 6 : 4 }));
+
 const PDF_HEADERS = { 'content-type': 'application/pdf' };
 
 /** A minimal stand-in for `Response`, enough for the helper's use of it. */
@@ -32,6 +43,11 @@ function response(
     arrayBuffer: async () => new TextEncoder().encode(init.body ?? '%PDF-1.7 fake').buffer,
   } as unknown as Response;
 }
+
+beforeEach(() => {
+  lookup.mockReset();
+  lookup.mockResolvedValue(resolvesTo(PUBLIC_ADDRESS));
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -242,6 +258,70 @@ describe('fetchRemoteDocument', () => {
     );
 
     await expect(fetchRemoteDocument('https://example.com/a.pdf')).rejects.toThrow(/HTTP 404/);
+  });
+
+  it.each([
+    ['only a private address', ['10.0.0.5']],
+    ['a public and a private address', [PUBLIC_ADDRESS, '192.168.1.20']],
+    ['the IPv6 loopback', ['::1']],
+  ])('refuses a name that resolves to %s, before any request', async (_label, addresses) => {
+    lookup.mockResolvedValue(resolvesTo(...addresses));
+    const fetchMock = vi.fn(async () => response());
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchRemoteDocument('https://files.example.com/a.pdf')).rejects.toThrow(
+      /resolves to a private or loopback address: files\.example\.com/,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('resolves every redirect target too, not just the submitted URL', async () => {
+    lookup.mockImplementation(async (hostname: string) =>
+      hostname === 'internal.example.com' ? resolvesTo('10.0.0.5') : resolvesTo(PUBLIC_ADDRESS),
+    );
+    const fetchMock = vi.fn(async () =>
+      response({ status: 302, headers: { location: 'https://internal.example.com/a.pdf' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchRemoteDocument('https://example.com/invoice.pdf')).rejects.toThrow(
+      /resolves to a private or loopback address: internal\.example\.com/,
+    );
+    // The redirect target was never requested.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails closed on a name that does not resolve', async () => {
+    lookup.mockRejectedValue(
+      Object.assign(new Error('getaddrinfo ENOTFOUND'), { code: 'ENOTFOUND' }),
+    );
+    const fetchMock = vi.fn(async () => response());
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchRemoteDocument('https://nowhere.example/a.pdf')).rejects.toThrow(
+      /Could not resolve host: nowhere\.example/,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not resolve a literal public address — assertFetchableUrl already judged it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response()),
+    );
+
+    await fetchRemoteDocument(`https://${PUBLIC_ADDRESS}/a.pdf`);
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('advertises octet-stream at low priority, since it is accepted', async () => {
+    const fetchMock = vi.fn(async (_url: URL, _init?: RequestInit) => response());
+    vi.stubGlobal('fetch', fetchMock);
+
+    await fetchRemoteDocument('https://example.com/a.pdf');
+    const { Accept } = fetchMock.mock.calls[0]![1]!.headers as Record<string, string>;
+    expect(Accept).toMatch(/^application\/pdf, /);
+    expect(Accept).toMatch(/, application\/octet-stream;q=0\.1$/);
   });
 });
 
