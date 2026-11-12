@@ -9,19 +9,78 @@ the server's own records, Yoga and Hive (Hive forwards its logs to Yoga's logger
 effect. `fatal` (the process is going down) is always written.
 
 Levels: `fatal` the process is going down · `error` a server fault someone should look at · `warn`
-handled, degraded, or the user's data needs fixing · `info` lifecycle · `debug` detail.
+handled, degraded, or the user's data needs fixing · `info` lifecycle and one line per operation ·
+`debug` detail.
+
+## Per-operation lines
+
+Every GraphQL operation writes exactly one `graphql-operation` line when it ends:
+
+```json
+{
+  "msg": "graphql-operation",
+  "level": "info",
+  "operationName": "ChargesScreen",
+  "operationType": "query",
+  "durationMs": 184,
+  "errorCount": 0,
+  "errorCodes": [],
+  "aborted": false,
+  "userId": "…",
+  "businessId": "…",
+  "requestId": "…",
+  "correlationId": null
+}
+```
+
+- An operation rejected before execution (parse or validation errors, or a failure while building
+  the context) gets a line too, with its error codes.
+- A streamed (`@defer`) operation is logged when the stream ends, so `durationMs` covers all of it.
+- `aborted` means the caller hung up before the response was sent. The operation may still have run
+  to completion.
+- `userId` and `businessId` are internal IDs, set once authentication resolves. `businessId` is the
+  business the operation ran as. Neither is ever an email or a token.
+
+Each distinct error an execution returned gets one `graphql-error` line, written before Yoga masks
+it:
+
+```json
+{
+  "msg": "graphql-error",
+  "level": "error",
+  "operationName": "VatReport",
+  "message": "Amount missing for invoice ID=…",
+  "code": "INTERNAL_SERVER_ERROR",
+  "path": "vatReport.income",
+  "error": { "name": "Error", "message": "…", "stack": "at … | at …", "cause": { … } },
+  "requestId": "…"
+}
+```
+
+- `level` is `error` for an unexpected error and `warn` for an expected one (`FORBIDDEN`,
+  `NOT_FOUND`, …). Unexpected means Yoga masks it (the client sees `Unexpected error.`) or it was
+  thrown on purpose with `code: 'INTERNAL_SERVER_ERROR'` (`isUnexpectedGraphQLError` in
+  `observability/graphql-errors.ts`, the one predicate an alert must use too). Only an unexpected
+  error carries `error`, with the stack and `cause` chain.
+- Errors with the same code and message are logged once per operation, with `count` and the first
+  few `paths`. A rejected token failing every guarded field is one line.
+- Yoga's own log of the errors it masks is skipped for these, so each error is logged once.
+- An error whose cause a lower boundary already logged in full (`markLogged`) gets
+  `detailLogged: true` and no `error`: the line still ties it to the operation and request.
+- Errors are grouped across the whole operation, `@defer` chunks included, and written when it ends.
 
 ## Request IDs
 
-`requestId` ties a request's lines together: the DB lines (`db-leaked-connection-reclaimed`,
-`db-checked-out-client-error`, …). It comes from the `X-Request-Id` header, else the OpenTelemetry
-trace ID, else a random UUID.
+`requestId` ties a request's lines together: `graphql-operation`, `graphql-error`, the DB lines
+(`db-leaked-connection-reclaimed`, `db-checked-out-client-error`, …). It comes from the
+`X-Request-Id` header, else the OpenTelemetry trace ID, else a random UUID.
 
-`X-Correlation-Id` is not a request ID: the MCP server sends the same one on every upstream call of
-a tool run, retries included, so it groups those requests while `requestId` still tells them apart.
+`correlationId` on the `graphql-operation` line is the inbound `X-Correlation-Id`, or `null`. It is
+not a request ID: the MCP server sends the same one on every upstream call of a tool run, retries
+included, so it groups those requests while `requestId` still tells them apart.
 
 An inbound id is used only if it matches `^[A-Za-z0-9._:-]{8,64}$`; otherwise the request id is
-minted, and a correlation id is ignored (and not set as the OTel span attribute). A client can't
+minted and `correlationId` is `null` (the OTel span attribute follows the same rule). A client can't
 plant an id that collides with a real one, or put arbitrary text on every line of a request.
 
 ## Safety
@@ -67,7 +126,8 @@ does.
 - Internal IDs only. Never emails, names, tokens, request bodies or upstream response bodies. The
   safety checks above are a backstop, not a licence.
 - **Log once, at the boundary.** Don't log an error and rethrow it: a fan-out turns that into dozens
-  of copies of one failure. Throw with `cause` and let the boundary log it. Log where an error
-  _stops_ (a catch that swallows it, returns a `CommonError`, or retries), or where only that site
-  has the detail (e.g. the upstream status of a third-party call).
+  of copies of one failure. Throw with `cause` and let the boundary log it. Every error that reaches
+  the GraphQL response is already logged by `requestLogPlugin`, with its operation. Log where an
+  error _stops_ (a catch that swallows it, returns a `CommonError`, or retries), or where only that
+  site has the detail (e.g. the upstream status of a third-party call).
 - Findings about the user's own data are `info`. `error` is for server faults someone should act on.
