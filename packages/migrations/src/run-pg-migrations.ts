@@ -218,6 +218,7 @@ import migration_2026_10_19T12_00_00_security_businesses_is_foreign_by_issuer fr
 import migration_2026_10_21T12_00_00_price_indexes from './actions/2026-10-21T12-00-00.price-indexes.js';
 import migration_2026_10_21T14_00_00_charges_securities_executions from './actions/2026-10-21T14-00-00.charges-securities-executions.js';
 import migration_2026_10_25T12_00_00_provider_credentials_business_id from './actions/2026-10-25T12-00-00.provider-credentials-business-id.js';
+import migration_2026_10_26T12_00_00_merge_securities_sale_tax_categories from './actions/2026-10-26T12-00-00.merge-securities-sale-tax-categories.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -440,6 +441,7 @@ export const MIGRATIONS = [
   migration_2026_10_21T12_00_00_price_indexes,
   migration_2026_10_21T14_00_00_charges_securities_executions,
   migration_2026_10_25T12_00_00_provider_credentials_business_id,
+  migration_2026_10_26T12_00_00_merge_securities_sale_tax_categories,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

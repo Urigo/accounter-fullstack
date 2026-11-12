@@ -51,22 +51,16 @@ const SECURITIES_TAX_CATEGORIES = {
     field: 'localBondWithholdingTax',
     label: 'Local bond withholding tax',
   },
+  // a sale's or redemption's price gain or loss (formerly also `foreignSecuritiesSaleLoss`)
   FOREIGN_SECURITIES_SALE_GAIN: {
     field: 'foreignSecuritiesSaleGain',
     label: 'Gain from sale of foreign securities',
   },
-  FOREIGN_SECURITIES_SALE_LOSS: {
-    field: 'foreignSecuritiesSaleLoss',
-    label: 'Loss from sale of foreign securities',
-  },
-  // the exchange-rate part of a sale's PnL, apart from the price part above
-  FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: {
-    field: 'foreignSecuritiesSaleExchangeGain',
-    label: 'Exchange rate gain on sale of foreign securities',
-  },
-  FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: {
-    field: 'foreignSecuritiesSaleExchangeLoss',
-    label: 'Exchange rate loss on sale of foreign securities',
+  // the exchange-rate part of a sale's PnL, gain or loss, apart from the price part above
+  // (formerly split into `foreignSecuritiesSaleExchangeGain` and `foreignSecuritiesSaleExchangeLoss`)
+  FOREIGN_SECURITIES_EXCHANGE_RATE: {
+    field: 'foreignSecuritiesExchangeRate',
+    label: 'Exchange rate on foreign securities',
   },
   // not booked by the securities ledger: charges are tagged with it by hand. The semi-annual
   // securities report counts it, with the fees, as the securities expenses
