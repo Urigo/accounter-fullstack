@@ -112,12 +112,41 @@ export type DbRequestState = {
   operationName: string | null;
 };
 
+/**
+ * Per-operation state behind the `graphql-operation` log line, created by `requestLogPlugin`.
+ *
+ * Like {@link DbRequestState}, only ever mutated in place: `AuthContextProvider` reaches it through a
+ * per-module copy of the context, so the identity it records must land on this shared object.
+ */
+export type RequestLogState = {
+  /** `performance.now()` when the operation's parameters were parsed. */
+  startedAt: number;
+  requestId: string;
+  /** Inbound `X-Correlation-Id`, shared by every request of one multi-hop operation (MCP tool run). */
+  correlationId: string | null;
+  operationName: string | null;
+  operationType: 'query' | 'mutation' | 'subscription' | null;
+  /** Internal user ID of the authenticated caller, once auth has resolved. Never an email. */
+  userId: string | null;
+  /** The business the operation ran as (the tenant's write target), once auth has resolved. */
+  businessId: string | null;
+  /** True once execution started; errors before it (parse, validation, context) count separately. */
+  executed: boolean;
+  /** Errors returned by execution, counted before Yoga masks them. */
+  errorCount: number;
+  errorCodes: Set<string>;
+  /** Set once the line is written, so it is written exactly once. */
+  logged: boolean;
+};
+
 export type AccounterContext = YogaInitialContext & {
   env: Environment;
   pool: pg.Pool;
   rawAuth?: RawAuth;
   /** Per-request DB lifecycle state, created by `dbCleanupPlugin`. See {@link DbRequestState}. */
   dbRequest?: DbRequestState;
+  /** Per-operation request-log state, created by `requestLogPlugin`. See {@link RequestLogState}. */
+  requestLog?: RequestLogState;
 };
 
 /**
