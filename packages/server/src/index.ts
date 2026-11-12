@@ -186,6 +186,9 @@ async function main() {
     // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`, which Yoga's default would follow.
     // `useHive` forwards its own logs to this logger, so this one level covers Hive too.
     logging: env.logging.level,
+    // Yoga's 25 MB default is too small for the email-ingestion gateway, which sends up
+    // to 20 MB of attachments (`MAX_EXTRACTED_BYTES`) base64-inlined in JSON, ~27 MB.
+    maxRequestBodySize: 50_000_000,
     plugins: [
       correlationIdPlugin(),
       dbCleanupPlugin(),
