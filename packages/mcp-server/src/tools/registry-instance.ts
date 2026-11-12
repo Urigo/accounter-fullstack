@@ -1,4 +1,4 @@
-import { createBusinessTool } from './businesses-write.js';
+import { createBusinessTool, updateBusinessTool } from './businesses-write.js';
 import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
 import { mergeChargesTool, updateChargeTool } from './charges-write.js';
@@ -92,3 +92,4 @@ toolRegistry.register(updateTransactionsTool);
 toolRegistry.register(updateDocumentTool);
 toolRegistry.register(deleteDocumentTool);
 toolRegistry.register(createBusinessTool);
+toolRegistry.register(updateBusinessTool);

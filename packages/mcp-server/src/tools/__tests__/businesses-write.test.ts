@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { createBusinessTool } from '../businesses-write.js';
+import { createBusinessTool, updateBusinessTool } from '../businesses-write.js';
 import { COUNTRY_CODES, normalizeCountryCode } from '../country-codes.js';
 import {
   authContext,
@@ -191,6 +191,149 @@ describe('createBusinessTool — result mapping', () => {
       insertNewBusiness: { __typename: 'CommonError', message: 'Failed to create core business' },
     });
     const result = await runTool(createBusinessTool, { name: 'Alamo', country: 'USA' }, client);
+
+    expect(result.isError).toBe(true);
+    const structured = result.structuredContent as { code: string; retryable: boolean };
+    expect(structured.code).toBe('UPSTREAM_ERROR');
+    expect(structured.retryable).toBe(false);
+  });
+});
+
+const updated = (overrides: Record<string, unknown> = {}) => ({
+  __typename: 'LtdFinancialEntity',
+  id: BIZ,
+  name: 'Example Vendor Inc.',
+  hebrewName: null,
+  governmentId: '12-3456789',
+  address: '100 Example St, Suite 1',
+  city: 'Springfield',
+  zipCode: '12345',
+  email: 'billing@example.com',
+  phoneNumber: '+1 555-0100',
+  website: 'https://example.com',
+  isActive: true,
+  country: { code: 'USA' },
+  taxCategory: null,
+  ...overrides,
+});
+
+describe('updateBusinessTool — request', () => {
+  it('sends one mutation with the business id, the write target as ownerId, and only the given fields', async () => {
+    const { client, captured } = mutationClient({ updateBusiness: updated() });
+    const result = await runTool(
+      updateBusinessTool,
+      {
+        businessId: BIZ,
+        country: 'usa',
+        governmentId: '12-3456789',
+        address: '100 Example St, Suite 1',
+        city: 'Springfield',
+        zipCode: '12345',
+        phoneNumber: '+1 555-0100',
+        website: 'https://example.com',
+        email: 'billing@example.com',
+        optionalVat: true,
+        taxCategoryId: 'tc-1',
+        suggestions: { emails: ['billing@example.com'] },
+      },
+      client,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(rootFields(captured)).toEqual(['updateBusiness']);
+    const [update] = callsTo(captured, 'updateBusiness');
+    expect(update.query).toMatch(/^\s*mutation\b/);
+    expect(update.variables).toEqual({
+      businessId: BIZ,
+      ownerId: B1,
+      fields: {
+        country: 'USA',
+        governmentId: '12-3456789',
+        address: '100 Example St, Suite 1',
+        city: 'Springfield',
+        zipCode: '12345',
+        phoneNumber: '+1 555-0100',
+        website: 'https://example.com',
+        email: 'billing@example.com',
+        optionalVAT: true,
+        taxCategory: 'tc-1',
+        suggestions: { emails: ['billing@example.com'] },
+      },
+    });
+    expect(update.headers['x-business-scope']).toBe(B1);
+  });
+});
+
+describe('updateBusinessTool — guards', () => {
+  it('refuses a call that changes nothing, before any round trip', async () => {
+    const { client, captured } = mutationClient({ updateBusiness: updated() });
+    for (const input of [{ businessId: BIZ }, { businessId: BIZ, suggestions: {} }]) {
+      const result = await runTool(updateBusinessTool, input, client);
+      expect(result.isError).toBe(true);
+      expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    }
+    expect(captured).toHaveLength(0);
+  });
+
+  it('requires a businessId and rejects an unknown country', async () => {
+    const { client, captured } = mutationClient({ updateBusiness: updated() });
+    for (const input of [{ city: 'Springfield' }, { businessId: BIZ, country: 'US' }]) {
+      const result = await runTool(updateBusinessTool, input, client);
+      expect(result.isError).toBe(true);
+      expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    }
+    expect(captured).toHaveLength(0);
+  });
+
+  it('refuses an ambiguous write target', async () => {
+    const { client, captured } = mutationClient({ updateBusiness: updated() });
+    const result = await runTool(
+      updateBusinessTool,
+      { businessId: BIZ, city: 'Springfield' },
+      client,
+      authContext([B1, B2]),
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
+    expect(captured).toHaveLength(0);
+  });
+});
+
+describe('updateBusinessTool — result mapping', () => {
+  it('echoes the business as it now stands, with the fields sent', async () => {
+    const { client } = mutationClient({ updateBusiness: updated() });
+    const result = await runTool(
+      updateBusinessTool,
+      { businessId: BIZ, city: 'Springfield', zipCode: '12345' },
+      client,
+    );
+
+    const structured = result.structuredContent as {
+      ok: boolean;
+      action: string;
+      businessId: string;
+      updatedFields: string[];
+      businesses: Array<Record<string, unknown>>;
+    };
+    expect(structured.ok).toBe(true);
+    expect(structured.action).toBe('update_business');
+    expect(structured.businessId).toBe(BIZ);
+    expect(structured.updatedFields).toEqual(['city', 'zipCode']);
+    expect(structured.businesses[0]).toMatchObject({
+      id: BIZ,
+      city: 'Springfield',
+      zipCode: '12345',
+      country: 'USA',
+      taxCategory: null,
+    });
+  });
+
+  it('maps an upstream CommonError to a non-retryable upstream error', async () => {
+    const { client } = mutationClient({
+      updateBusiness: { __typename: 'CommonError', message: 'Failed to update business' },
+    });
+    const result = await runTool(updateBusinessTool, { businessId: BIZ, city: 'X' }, client);
 
     expect(result.isError).toBe(true);
     const structured = result.structuredContent as { code: string; retryable: boolean };
