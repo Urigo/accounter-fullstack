@@ -13,6 +13,7 @@ import { businessesUsageResolvers } from './resolvers/businesses-usage.resolver.
 import { businessesResolvers } from './resolvers/businesses.resolver.js';
 import { clientsResolvers } from './resolvers/clients.resolvers.js';
 import { financialEntitiesResolvers } from './resolvers/financial-entities.resolver.js';
+import { israeliCorporationsResolvers } from './resolvers/israeli-corporations.resolver.js';
 import { taxCategoriesResolvers } from './resolvers/tax-categories.resolver.js';
 import adminBusinesses from './typeDefs/admin-businesses.graphql.js';
 import businessesTransactions from './typeDefs/businesses-transactions.graphql.js';
@@ -20,6 +21,7 @@ import businessesUsage from './typeDefs/businesses-usage.graphql.js';
 import businesses from './typeDefs/businesses.graphql.js';
 import clients from './typeDefs/clients.graphql.js';
 import financialEntities from './typeDefs/financial-entities.graphql.js';
+import israeliCorporations from './typeDefs/israeli-corporations.graphql.js';
 import taxCategories from './typeDefs/tax-categories.graphql.js';
 
 const __dirname = import.meta.dirname;
@@ -35,6 +37,7 @@ export const financialEntitiesModule = createModule({
     taxCategories,
     adminBusinesses,
     clients,
+    israeliCorporations,
   ],
   resolvers: [
     financialEntitiesResolvers,
@@ -44,6 +47,7 @@ export const financialEntitiesModule = createModule({
     businessesResolvers,
     adminBusinessesResolvers,
     clientsResolvers,
+    israeliCorporationsResolvers,
   ],
   providers: () => [
     BusinessesProvider,

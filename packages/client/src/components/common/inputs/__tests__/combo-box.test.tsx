@@ -136,3 +136,137 @@ describe('ComboBox react-hook-form wiring', () => {
     expect(blurs).toBe(1);
   });
 });
+
+/**
+ * Searching (issue #4893). Options are keyed by UUID in real use, so the search must look at
+ * labels only, ignore letter case, and keep the best matches in view as the query changes.
+ */
+describe('ComboBox search', () => {
+  const ENTITIES = [
+    { value: '3f2a8c1e-0000-4000-8000-00000000abcd', label: 'Google Ltd' },
+    { value: '9b1d4e7a-0000-4000-8000-000000000002', label: 'amazon web services' },
+    { value: 'c0ffee00-0000-4000-8000-000000000003', label: 'Shufersal' },
+    { value: 'deadbeef-0000-4000-8000-000000000004', label: 'Bezeq', description: 'Telecom' },
+  ];
+
+  function open(): void {
+    act(() => {
+      root.render(<ComboBox data={ENTITIES} value={null} />);
+    });
+    act(() => trigger().click());
+  }
+
+  function input(): HTMLInputElement {
+    const found = document.querySelector<HTMLInputElement>('[cmdk-input]');
+    if (!found) {
+      throw new Error('no search input rendered');
+    }
+    return found;
+  }
+
+  function type(text: string): void {
+    // Go through the native setter so React's controlled-input tracking sees the change.
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    act(() => {
+      setter?.call(input(), text);
+      input().dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  function visibleLabels(): string[] {
+    return [...document.querySelectorAll('[cmdk-item]')].map(
+      item => item.querySelector('span')?.textContent ?? '',
+    );
+  }
+
+  it('matches regardless of letter case', () => {
+    open();
+    const results = ['goo', 'GOO', 'Goo', 'AMAZON', 'shuf', 'SHUF'].map(query => {
+      type(query);
+      return visibleLabels();
+    });
+    expect(results[0]).toEqual(['Google Ltd']);
+    expect(results[1]).toEqual(results[0]);
+    expect(results[2]).toEqual(results[0]);
+    expect(results[3]).toEqual(['amazon web services']);
+    expect(results[4]).toEqual(['Shufersal']);
+    expect(results[5]).toEqual(results[4]);
+  });
+
+  it('searches descriptions', () => {
+    open();
+    type('TELECOM');
+    expect(visibleLabels()).toEqual(['Bezeq']);
+  });
+
+  it('does not match on the option id', () => {
+    open();
+    type('abcd');
+    expect(visibleLabels()).toEqual([]);
+    expect(document.body.textContent).toContain('No results found.');
+  });
+
+  it('scrolls the list back to the top when the search changes', () => {
+    open();
+    const list = document.querySelector<HTMLElement>('[data-slot="command-list"]');
+    if (!list) {
+      throw new Error('no command list rendered');
+    }
+    list.scrollTop = 120;
+    type('e');
+    expect(list.scrollTop).toBe(0);
+  });
+
+  it('selects the clicked option by its value', () => {
+    const changes: Array<string | null> = [];
+    act(() => {
+      root.render(
+        <ComboBox
+          data={ENTITIES}
+          value={null}
+          onChange={(value): void => {
+            changes.push(value);
+          }}
+        />,
+      );
+    });
+    act(() => trigger().click());
+    type('bez');
+    const item = document.querySelector<HTMLElement>('[cmdk-item]');
+    act(() => item?.click());
+    expect(changes).toEqual(['deadbeef-0000-4000-8000-000000000004']);
+  });
+
+  /**
+   * cmdk sorts by score using the items' *current* DOM order and skips sorting on an empty
+   * search, so with tied scores the order used to depend on what had been typed before. The
+   * earlier query must keep every item matched (so none unmounts and gets re-inserted by React
+   * in data order) while reordering them.
+   */
+  it('keeps tied results in data order regardless of earlier searches', () => {
+    const TIED = [
+      { value: 'd', label: 'Delta ltd' },
+      { value: 'a', label: 'Alpha ltd' },
+      { value: 'c', label: 'Charlie ltd' },
+    ];
+    act(() => {
+      root.render(<ComboBox data={TIED} value={null} />);
+    });
+    act(() => trigger().click());
+
+    const dataOrder = ['Delta ltd', 'Alpha ltd', 'Charlie ltd'];
+    type('ltd');
+    expect(visibleLabels()).toEqual(dataOrder);
+
+    // Every label contains an "a", but only "Alpha ltd" starts with one.
+    type('a');
+    expect(visibleLabels()).toEqual(['Alpha ltd', 'Delta ltd', 'Charlie ltd']);
+
+    type('ltd');
+    expect(visibleLabels()).toEqual(dataOrder);
+
+    type('a');
+    type('');
+    expect(visibleLabels()).toEqual(dataOrder);
+  });
+});

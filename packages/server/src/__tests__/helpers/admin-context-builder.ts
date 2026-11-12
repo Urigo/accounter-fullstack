@@ -109,7 +109,9 @@ export async function buildAdminContextFromDb(
     },
     foreignSecurities: { 
       foreignSecuritiesBusinessId: null, 
-      foreignSecuritiesFeesCategoryId: null 
+      foreignSecuritiesFeesCategoryId: null,
+      sortCode: null,
+      taxCategories: {},
     },
     salaries: {
       zkufotExpensesTaxCategoryId: null,

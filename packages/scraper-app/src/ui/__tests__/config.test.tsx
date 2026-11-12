@@ -42,6 +42,15 @@ describe('Config tab navigation', () => {
     expect(screen.getByText(/no sources configured/i)).toBeTruthy();
   });
 
+  it('opens on the section it is asked for', async () => {
+    render(<Config initialSection="settings" />);
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: 'Settings' }).getAttribute('aria-selected')).toBe(
+        'true',
+      );
+    });
+  });
+
   it('shows server connection fields in Credentials tab', async () => {
     render(<Config />);
     await waitFor(() => screen.getByLabelText(/server url/i));

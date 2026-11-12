@@ -70,6 +70,9 @@ Errors: `<Alert variant="destructive">` with `AlertTitle` and `AlertDescription`
   `useMutation`, error handling via `handleCommonErrors`, and toast notifications (loading →
   success/error). Components consume the simplified `{ fetching, error, doAction }` return value —
   never call `useMutation` directly in a component.
+- Mutations that create records, reach an external service or cost money opt in to
+  `dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS }` (from `src/helpers/mutation-dedupe.ts`);
+  updates, toggles and deletes don't. See `packages/client/CLAUDE.md`.
 
 ## Dialogs
 

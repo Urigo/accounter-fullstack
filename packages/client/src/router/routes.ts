@@ -149,6 +149,7 @@ export const ROUTES = {
     CONTRACTS: '/businesses/contracts',
     DETAIL: (businessId: string) => `/businesses/${businessId}`,
     DETAIL_LEDGER: (businessId: string) => `/businesses/${businessId}/ledger`,
+    DETAIL_TAB: (businessId: string, tab: string) => `/businesses/${businessId}?tab=${tab}`,
     AUTH_MANAGEMENT: (businessId: string) => `/businesses/${businessId}/auth-management`,
   },
 
@@ -191,6 +192,8 @@ export const ROUTES = {
         ? `/reports/corporate-tax-ruling-compliance/${year}`
         : '/reports/corporate-tax-ruling-compliance',
     BALANCE: '/reports/balance',
+    CPI_CALCULATOR: '/reports/cpi-calculator',
+    SECURITIES_SEMI_ANNUAL: '/reports/securities-semi-annual',
     VALIDATE_REPORTS: '/reports/validate-reports',
   },
 

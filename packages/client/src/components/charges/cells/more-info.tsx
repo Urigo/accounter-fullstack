@@ -106,7 +106,7 @@ export const MoreInfo = ({
           <div className="whitespace-nowrap">Documents: {info?.documentsCount ?? 0}</div>
         </Indicator>
       ),
-      extraClassName: !isDocumentsMissing || !shouldHaveDocuments ? undefined : 'bg-yellow-400',
+      extraClassName: isDocumentsMissing && shouldHaveDocuments ? 'bg-yellow-400' : undefined,
     });
   }
 

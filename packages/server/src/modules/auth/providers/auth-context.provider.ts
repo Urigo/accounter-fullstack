@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
 import type { RawAuth } from '../../../plugins/auth-plugin.js';
 import {
   narrowReadScope,
@@ -506,6 +506,14 @@ export class AuthContextProvider {
       this.handlingAuth = null;
       if (error instanceof GraphQLError) {
         throw error;
+      }
+      if (error instanceof joseErrors.JOSEError) {
+        // jose errors carry the token's claims (`payload`, and again under `cause`), so only the
+        // code and message are logged. An expired token is routine and isn't logged at all.
+        if (!(error instanceof joseErrors.JWTExpired)) {
+          console.warn('AuthContext: Rejected JWT', { code: error.code, message: error.message });
+        }
+        return null;
       }
       console.error('AuthContext: Failed to process authentication token', error);
       return null;

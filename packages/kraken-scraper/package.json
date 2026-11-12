@@ -12,12 +12,12 @@
   "dependencies": {
     "@whatwg-node/fetch": "0.12.1",
     "diary": "0.4.5",
-    "dotenv": "18.0.7",
+    "dotenv": "18.0.10",
     "node-kraken-api": "2.2.2",
-    "pg-promise": "12.7.1"
+    "pg-promise": "12.8.0"
   },
   "devDependencies": {
-    "tsup": "8.5.1"
+    "tsup": "9.0.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

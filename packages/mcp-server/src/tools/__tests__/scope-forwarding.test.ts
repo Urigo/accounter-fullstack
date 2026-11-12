@@ -77,6 +77,110 @@ function dataFor(query: string): unknown {
       },
     };
   }
+  if (query.includes('mutation McpUpdateCharge')) {
+    return {
+      updateCharge: {
+        __typename: 'UpdateChargeSuccessfulResult',
+        charge: {
+          __typename: 'CommonCharge',
+          id: 'c1',
+          userDescription: 'x',
+          optionalDocuments: null,
+          optionalVAT: null,
+          counterparty: null,
+          tags: [],
+          metadata: { transactionsCount: 1, documentsCount: 1, invalidLedger: 'VALID' },
+        },
+      },
+    };
+  }
+  if (query.includes('mutation McpMergeCharges')) {
+    return {
+      mergeCharges: {
+        __typename: 'MergeChargeSuccessfulResult',
+        charge: {
+          __typename: 'CommonCharge',
+          id: 'c1',
+          userDescription: 'x',
+          optionalDocuments: null,
+          optionalVAT: null,
+          counterparty: null,
+          tags: [],
+          metadata: { transactionsCount: 1, documentsCount: 1, invalidLedger: 'VALID' },
+        },
+      },
+    };
+  }
+  if (query.includes('updateTransactions')) {
+    return {
+      updateTransactions: {
+        __typename: 'UpdatedTransactionsSuccessfulResult',
+        transactions: [{ id: 't1', chargeId: 'c1', isFee: false, counterparty: null }],
+        deletedChargeIds: [],
+      },
+    };
+  }
+  if (query.includes('mutation McpUpdateDocument')) {
+    return {
+      updateDocument: {
+        __typename: 'UpdateDocumentSuccessfulResult',
+        deletedChargeId: null,
+        document: { id: 'd1', documentType: 'RECEIPT', charge: { id: 'c1' } },
+      },
+    };
+  }
+  if (query.includes('deleteDocument')) {
+    return { deleteDocument: { success: true, chargeId: 'c1', deletedChargeId: null } };
+  }
+  if (query.includes('insertNewBusiness')) {
+    return {
+      insertNewBusiness: {
+        __typename: 'LtdFinancialEntity',
+        id: 'b-new',
+        name: 'Vendor',
+        hebrewName: null,
+        website: null,
+        country: { code: 'USA' },
+      },
+    };
+  }
+  if (query.includes('createContract')) {
+    return {
+      createContract: {
+        id: 'k1',
+        ownerId: B1,
+        isActive: true,
+        startDate: '2026-11-01',
+        endDate: '2028-10-31',
+        billingCycle: 'ANNUAL',
+        documentType: 'PROFORMA',
+        product: 'HIVE',
+        plan: 'ENTERPRISE',
+        purchaseOrders: [],
+        remarks: null,
+        msCloud: null,
+        operationsLimit: 0,
+        amount: { raw: 100000, currency: 'USD' },
+        client: { id: 'b1', originalBusiness: { id: 'b1', name: 'Vendor' } },
+      },
+    };
+  }
+  if (query.includes('insertClient')) {
+    return {
+      insertClient: {
+        __typename: 'Client',
+        id: 'b1',
+        ownerId: B1,
+        emails: [],
+        generatedDocumentType: 'PROFORMA',
+        originalBusiness: { id: 'b1', name: 'Vendor' },
+        integrations: { greenInvoiceInfo: { greenInvoiceId: 'gi-1' } },
+      },
+    };
+  }
+  if (query.includes('businesses(')) {
+    return { businesses: [{ id: 'b1', name: 'Vendor', isClient: false, clientInfo: null }] };
+  }
   if (query.includes('allCharges')) {
     return {
       allCharges: {
@@ -143,6 +247,22 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
     chargeId: 'c1',
     documents: [{ filename: 'a.pdf', mimeType: 'application/pdf', contentBase64: 'eA==' }],
   },
+  accounter_update_charge: { memberBusinessId: B1, chargeId: 'c1', userDescription: 'x' },
+  accounter_merge_charges: { memberBusinessId: B1, baseChargeId: 'c1', chargeIdsToMerge: ['c2'] },
+  accounter_update_transactions: { memberBusinessId: B1, transactionIds: ['t1'], counterpartyId: 'b1' },
+  accounter_update_document: { memberBusinessId: B1, documentId: 'd1', chargeId: 'c1' },
+  accounter_delete_document: { memberBusinessId: B1, documentId: 'd1' },
+  accounter_create_business: { memberBusinessId: B1, name: 'Vendor', country: 'USA' },
+  accounter_create_contract: {
+    memberBusinessId: B1,
+    clientId: 'b1',
+    startDate: '2026-11-01',
+    endDate: '2028-10-31',
+    amount: { value: 100000, currency: 'USD' },
+    billingCycle: 'ANNUAL',
+    documentType: 'PROFORMA',
+  },
+  accounter_create_client: { memberBusinessId: B1, businessId: 'b1', generatedDocumentType: 'PROFORMA' },
 };
 
 describe('registry-wide business-scope forwarding', () => {

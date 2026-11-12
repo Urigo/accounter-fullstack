@@ -3,6 +3,7 @@ import {
   type InsertMiscExpensesMutation,
   type InsertMiscExpensesMutationVariables,
 } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -29,6 +30,7 @@ export const useInsertMiscExpenses = (): UseInsertMiscExpenses => {
 
   const { fetching, execute } = useApiMutation({
     document: InsertMiscExpensesDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
     loadingMessage: 'Inserting misc expenses',
     errorMessage: 'Error creating misc expense',

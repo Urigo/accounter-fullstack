@@ -9,6 +9,7 @@ import {
 } from '../../documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { SecurityExecutionChargesProvider } from '../../foreign-securities/providers/security-execution-charges.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
 import type { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
@@ -58,16 +59,38 @@ const computeChargeValidation = async (
 ): Promise<ResolversTypes['ValidationData']> => {
   const missingInfo: Array<MissingChargeInfo> = [];
 
-  const [chargeType, { mainBusinessId }, taxCategoryId] = await Promise.all([
-    getChargeType(charge, injector),
-    getChargeBusinesses(charge, injector),
-    getChargeTaxCategoryId(charge, injector),
-  ]);
+  const [chargeType, { mainBusinessId, spansSeveralSecurities }, taxCategoryId] = await Promise.all(
+    [
+      getChargeType(charge, injector),
+      getChargeBusinesses(charge, injector),
+      getChargeTaxCategoryId(charge, injector),
+    ],
+  );
 
   const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const isGeneralFees =
     taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
+
+  // A securities charge can book executions with no cash leg (stock distributions), which have no
+  // transaction to show. Their counterparty is the distributed security's business (see
+  // `getChargeBusinesses`), but that business may not exist yet. Only the requirement to have them
+  // is waived: whatever transactions and counterparty such a charge does hold (say, a merged-in
+  // commission fee) are still validated.
+  const booksSecurityExecutions =
+    chargeType === ChargeTypeEnum.ForeignSecurities &&
+    (
+      await injector
+        .get(SecurityExecutionChargesProvider)
+        .linkedExecutionIdsByChargeIdLoader.load(charge.id)
+    ).length > 0;
+
+  // A securities charge can span several securities (say, a switch selling one fund to buy
+  // another). Each trade is booked against its own security, so having no single counterparty is
+  // a valid state — as long as every candidate is a traded security. Any other candidate,
+  // including the general securities business of an unrecognized trade, stays flagged.
+  const isMultiSecurityCharge =
+    chargeType === ChargeTypeEnum.ForeignSecurities && spansSeveralSecurities;
 
   // check for consistent counterparty business
   const businessNotRequired =
@@ -89,7 +112,11 @@ const computeChargeValidation = async (
     getChargeDocumentsMeta(charge, injector),
   ]);
 
-  const businessIsFine = businessNotRequired || !!business;
+  const businessIsFine =
+    businessNotRequired ||
+    !!business ||
+    (booksSecurityExecutions && !mainBusinessId) ||
+    isMultiSecurityCharge;
   if (!businessIsFine) {
     missingInfo.push(MissingChargeInfo.Counterparty);
   }
@@ -144,7 +171,9 @@ const computeChargeValidation = async (
   // validate transactions
   const hasTransaction = transactionsCount >= 1;
   const transactionsNotRequired = [ChargeTypeEnum.Financial].includes(chargeType);
-  const transactionsAreFine = transactionsNotRequired || (hasTransaction && !invalidTransactions);
+  const transactionsAreFine =
+    transactionsNotRequired ||
+    ((hasTransaction || booksSecurityExecutions) && !invalidTransactions);
   if (!transactionsAreFine) {
     missingInfo.push(MissingChargeInfo.Transactions);
   }

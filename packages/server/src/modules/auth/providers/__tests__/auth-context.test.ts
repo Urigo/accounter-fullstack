@@ -1,11 +1,14 @@
+import { inspect } from 'node:util';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as jose from 'jose';
 import { GraphQLError } from 'graphql';
 import { AuthContextProvider, handleDevBypassAuth } from '../auth-context.provider.js';
 import type { DBProvider } from '../../../app-providers/db.provider.js';
 
-vi.mock('jose', async () => {
+vi.mock('jose', async importOriginal => {
     return {
+        // Keep the real error classes: the provider tells them apart with `instanceof`
+        errors: (await importOriginal<typeof import('jose')>()).errors,
         createRemoteJWKSet: vi.fn(),
         jwtVerify: vi.fn(),
     }
@@ -536,5 +539,60 @@ describe('AuthContextProvider membership resolution', () => {
       { businessId: 'b-1', roleId: 'admin' },
       { businessId: 'b-2', roleId: 'accountant' },
     ]);
+  });
+});
+
+// jose errors carry the token's claims under `payload` and again under `cause`; a rejected or
+// expired token must not put them in the logs.
+describe('AuthContextProvider JWT rejection logging', () => {
+  const SUBJECT = 'auth0|log-marker-4870';
+  const payload = { sub: SUBJECT, azp: 'client-marker', scope: 'openid profile' };
+
+
+  async function authenticateWith(error: Error) {
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map(method =>
+      vi.spyOn(console, method).mockImplementation(() => {}),
+    );
+    vi.mocked(jose.createRemoteJWKSet).mockReturnValue({} as any);
+    vi.mocked(jose.jwtVerify).mockRejectedValue(error);
+    const provider = new AuthContextProvider(
+      { auth0: { domain: 'jwt-logging.auth0.com', audience: 'aud' } } as any,
+      { authType: 'jwt', token: 'some-token' } as any,
+      { query: vi.fn() } as any,
+    );
+    const result = await provider.getAuthContext();
+    // Rendered the way console renders it, so nested `payload` / `cause` fields show up
+    const calls = spies.flatMap(spy => spy.mock.calls);
+    const output = calls.map(args => args.map(arg => inspect(arg, { depth: 10 })).join(' ')).join('\n');
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
+    return { result, callCount: calls.length, output };
+  }
+
+  it('does not log an expired token', async () => {
+    const { result, callCount } = await authenticateWith(
+      new jose.errors.JWTExpired('"exp" claim timestamp check failed', payload, 'exp', 'check_failed'),
+    );
+
+    expect(result).toBeNull();
+    expect(callCount).toBe(0);
+  });
+
+  it('logs only the code and message of other JWT failures', async () => {
+    const { result, output } = await authenticateWith(
+      new jose.errors.JWTClaimValidationFailed(
+        'unexpected "aud" claim value',
+        payload,
+        'aud',
+        'check_failed',
+      ),
+    );
+
+    expect(result).toBeNull();
+    expect(output).toContain('ERR_JWT_CLAIM_VALIDATION_FAILED');
+    expect(output).not.toContain(SUBJECT);
+    expect(output).toContain('unexpected "aud" claim value');
+    expect(output).not.toContain('client-marker');
   });
 });

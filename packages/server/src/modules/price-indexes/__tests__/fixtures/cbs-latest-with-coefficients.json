@@ -1,0 +1,259 @@
+{
+  "month": [
+    {
+      "code": 120010,
+      "name": "Consumer Price Index - General",
+      "date": [
+        {
+          "year": 2026,
+          "percent": -0.5,
+          "percentYear": 1.6,
+          "currBase": {
+            "baseDesc": "Average 2024",
+            "value": 105.3
+          },
+          "prevBase": [
+            {
+              "coeff": 1.074,
+              "baseDesc": "Average 2022",
+              "value": 113.0922
+            },
+            {
+              "coeff": 1.059,
+              "baseDesc": "Average 2020",
+              "value": 119.7646398
+            },
+            {
+              "coeff": 1.003,
+              "baseDesc": "Average 2018",
+              "value": 120.1239337194
+            },
+            {
+              "coeff": 1.01,
+              "baseDesc": "Average 2016",
+              "value": 121.325173056594
+            },
+            {
+              "coeff": 0.989,
+              "baseDesc": "Average 2014",
+              "value": 119.990596152971
+            },
+            {
+              "coeff": 1.02,
+              "baseDesc": "Average 2012",
+              "value": 122.390408076031
+            },
+            {
+              "coeff": 1.052,
+              "baseDesc": "Average 2010",
+              "value": 128.754709295985
+            },
+            {
+              "coeff": 1.061,
+              "baseDesc": "Average 2008",
+              "value": 136.60874656304
+            },
+            {
+              "coeff": 1.051,
+              "baseDesc": "Average 2006",
+              "value": 143.575792637755
+            },
+            {
+              "coeff": 1.038,
+              "baseDesc": "Average 2002",
+              "value": 149.031672757989
+            },
+            {
+              "coeff": 1.068,
+              "baseDesc": "Average 2000",
+              "value": 159.165826505533
+            },
+            {
+              "coeff": 1.064,
+              "baseDesc": "Average 1998",
+              "value": 169.352439401887
+            },
+            {
+              "coeff": 1.581,
+              "baseDesc": "Average 1993",
+              "value": 267.746206694383
+            },
+            {
+              "coeff": 2.421,
+              "baseDesc": "Average 1987",
+              "value": 648.2135664071
+            },
+            {
+              "coeff": 1.775,
+              "baseDesc": "Average 1985",
+              "value": 1150.5790803726
+            },
+            {
+              "coeff": 225.0,
+              "baseDesc": "Average 1980",
+              "value": 258880.293083836
+            },
+            {
+              "coeff": 8.349,
+              "baseDesc": "Average 1976",
+              "value": 2161391.56695694
+            },
+            {
+              "coeff": 4.112,
+              "baseDesc": "Average 1969",
+              "value": 8887642.12332696
+            },
+            {
+              "coeff": 1.237,
+              "baseDesc": "Average 1964",
+              "value": 10994013.3065554
+            },
+            {
+              "coeff": 1.347,
+              "baseDesc": "January 1959",
+              "value": 14808935.9239302
+            },
+            {
+              "coeff": 2.753,
+              "baseDesc": "September 1951",
+              "value": 40769000.5985798
+            }
+          ],
+          "month": 9,
+          "monthDesc": "September"
+        },
+        {
+          "year": 2026,
+          "percent": 0.7,
+          "percentYear": 1.5,
+          "currBase": {
+            "baseDesc": "Average 2024",
+            "value": 105.8
+          },
+          "prevBase": [
+            {
+              "coeff": 1.074,
+              "baseDesc": "Average 2022",
+              "value": 113.6292
+            },
+            {
+              "coeff": 1.059,
+              "baseDesc": "Average 2020",
+              "value": 120.3333228
+            },
+            {
+              "coeff": 1.003,
+              "baseDesc": "Average 2018",
+              "value": 120.6943227684
+            },
+            {
+              "coeff": 1.01,
+              "baseDesc": "Average 2016",
+              "value": 121.901265996084
+            },
+            {
+              "coeff": 0.989,
+              "baseDesc": "Average 2014",
+              "value": 120.560352070127
+            },
+            {
+              "coeff": 1.02,
+              "baseDesc": "Average 2012",
+              "value": 122.97155911153
+            },
+            {
+              "coeff": 1.052,
+              "baseDesc": "Average 2010",
+              "value": 129.366080185329
+            },
+            {
+              "coeff": 1.061,
+              "baseDesc": "Average 2008",
+              "value": 137.257411076634
+            },
+            {
+              "coeff": 1.051,
+              "baseDesc": "Average 2006",
+              "value": 144.257539041543
+            },
+            {
+              "coeff": 1.038,
+              "baseDesc": "Average 2002",
+              "value": 149.739325525121
+            },
+            {
+              "coeff": 1.068,
+              "baseDesc": "Average 2000",
+              "value": 159.921599660829
+            },
+            {
+              "coeff": 1.064,
+              "baseDesc": "Average 1998",
+              "value": 170.156582039123
+            },
+            {
+              "coeff": 1.581,
+              "baseDesc": "Average 1993",
+              "value": 269.017556203853
+            },
+            {
+              "coeff": 2.421,
+              "baseDesc": "Average 1987",
+              "value": 651.291503569527
+            },
+            {
+              "coeff": 1.775,
+              "baseDesc": "Average 1985",
+              "value": 1156.04241883591
+            },
+            {
+              "coeff": 225.0,
+              "baseDesc": "Average 1980",
+              "value": 260109.54423808
+            },
+            {
+              "coeff": 8.349,
+              "baseDesc": "Average 1976",
+              "value": 2171654.58484373
+            },
+            {
+              "coeff": 4.112,
+              "baseDesc": "Average 1969",
+              "value": 8929843.65287742
+            },
+            {
+              "coeff": 1.237,
+              "baseDesc": "Average 1964",
+              "value": 11046216.5986094
+            },
+            {
+              "coeff": 1.347,
+              "baseDesc": "January 1959",
+              "value": 14879253.7583268
+            },
+            {
+              "coeff": 2.753,
+              "baseDesc": "September 1951",
+              "value": 40962585.5966737
+            }
+          ],
+          "month": 8,
+          "monthDesc": "August"
+        }
+      ]
+    }
+  ],
+  "quarter": null,
+  "paging": {
+    "total_items": 2,
+    "page_size": 100,
+    "current_page": 1,
+    "last_page": 1,
+    "first_url": "https://api.cbs.gov.il//index/data/price?Page=1&PageSize=100&id=120010&format=json&download=false&lang=en&last=2&coef=true",
+    "previous_url": null,
+    "current_url": "https://api.cbs.gov.il//index/data/price?Page=1&PageSize=100&id=120010&format=json&download=false&lang=en&last=2&coef=true",
+    "next_url": null,
+    "last_url": "https://api.cbs.gov.il//index/data/price?Page=1&PageSize=100&id=120010&format=json&download=false&lang=en&last=2&coef=true",
+    "base_url": null
+  }
+}

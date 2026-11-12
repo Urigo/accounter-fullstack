@@ -146,7 +146,7 @@ function parseForeignXls(buffer: Buffer, subAccount: string): ForeignAccountData
       credit: parseNumber(row[3] ?? 0),
       debit: parseNumber(row[4] ?? 0),
       description: String(row[5] ?? '').trim(),
-      sp: row[6] != null && Number(row[6]) !== 0 ? Number(row[6]) : null,
+      sp: row[6] == null || Number(row[6]) === 0 ? null : Number(row[6]),
       reference: String(row[7] ?? '').trim(),
       depositKey: isForeignSecuritiesOrDeposits ? String(row[8] ?? '').trim() : null,
       date: toTimelessDate(date),

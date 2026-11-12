@@ -11,6 +11,62 @@ export default gql`
     updateAdminContext(context: AdminContextInput!): AdminContextInfo!
       @requiresAuth
       @requiresRole(role: "business_owner")
+    " set or clear the tenant's securities tax categories and sort code "
+    updateSecuritiesContext(input: SecuritiesContextInput!): SecuritiesContext!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+  }
+
+  " the tax categories securities income, withheld tax and sale and redemption gains are booked to "
+  enum SecuritiesTaxCategoryKey {
+    FOREIGN_SECURITIES_FEES
+    FOREIGN_DIVIDEND_INCOME
+    LOCAL_DIVIDEND_INCOME
+    FOREIGN_DIVIDEND_WITHHOLDING_TAX
+    LOCAL_DIVIDEND_WITHHOLDING_TAX
+    FOREIGN_BOND_INTEREST_INCOME
+    LOCAL_BOND_INTEREST_INCOME
+    FOREIGN_BOND_WITHHOLDING_TAX
+    LOCAL_BOND_WITHHOLDING_TAX
+    FOREIGN_SECURITIES_SALE_GAIN
+    FOREIGN_SECURITIES_SALE_LOSS
+    FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN
+    FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS
+    " investment advice and portfolio management; counted with the fees as securities expenses "
+    FINANCIAL_CONSULTANCY
+  }
+
+  " the tenant's securities ledger configuration "
+  type SecuritiesContext {
+    id: ID!
+    " the general foreign-securities business "
+    foreignSecuritiesBusiness: Business
+    " the sort code new securities tax categories are created under "
+    sortCode: SortCode
+    " one entry per key, with a null tax category for an unassigned one "
+    taxCategories: [SecuritiesTaxCategoryAssignment!]!
+  }
+
+  " a securities tax category key and the tax category assigned to it "
+  type SecuritiesTaxCategoryAssignment {
+    id: ID!
+    key: SecuritiesTaxCategoryKey!
+    taxCategory: TaxCategory
+  }
+
+  " input variables for updateSecuritiesContext; omitted fields are left as they are "
+  input SecuritiesContextInput {
+    " null clears the stored business "
+    foreignSecuritiesBusinessId: UUID
+    " null clears the stored sort code "
+    sortCode: Int
+    taxCategories: [SecuritiesTaxCategoryAssignmentInput!]
+  }
+
+  " a tax category to assign to a securities key; a null taxCategoryId unassigns it "
+  input SecuritiesTaxCategoryAssignmentInput {
+    key: SecuritiesTaxCategoryKey!
+    taxCategoryId: UUID
   }
 
   " input variables for updateAdminContext "
@@ -79,7 +135,11 @@ export default gql`
     salaryExcessExpensesTaxCategoryId: UUID
     ledgerLock: TimelessDate
     foreignSecuritiesBusinessId: UUID
+      @deprecated(reason: "Use updateSecuritiesContext(input: { foreignSecuritiesBusinessId })")
     foreignSecuritiesFeesCategoryId: UUID
+      @deprecated(
+        reason: "Use updateSecuritiesContext with the FOREIGN_SECURITIES_FEES tax category"
+      )
     dateEstablished: TimelessDate
     initialAccounterYear: Int
   }
@@ -151,7 +211,12 @@ export default gql`
     salaryExcessExpensesTaxCategory: TaxCategory!
     ledgerLock: TimelessDate
     foreignSecuritiesBusiness: Business
+      @deprecated(reason: "Use securitiesContext.foreignSecuritiesBusiness")
     foreignSecuritiesFeesCategory: TaxCategory
+      @deprecated(
+        reason: "Use the FOREIGN_SECURITIES_FEES entry of securitiesContext.taxCategories"
+      )
+    securitiesContext: SecuritiesContext!
     dateEstablished: TimelessDate
     initialAccounterYear: Int
   }

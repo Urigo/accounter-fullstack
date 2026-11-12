@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isValidWildcardEmailPattern } from './email-pattern.helper.js';
+import { dedupeCaseInsensitive, dedupeExact } from './list-input-validation.helper.js';
 
 // A recognition email is either a concrete address or a wildcard pattern
 // (e.g. `*@cloudflare.com`) for suppliers that send from a unique address per
@@ -54,3 +55,24 @@ export const suggestionDataSchema = z
   .strict();
 
 export type SuggestionData = z.infer<typeof suggestionDataSchema>;
+
+/**
+ * Drop redundant entries from the list fields of a suggestion-data object
+ * before it is persisted, without changing what matches: recognition emails are
+ * de-duplicated case-insensitively, phrases and internal email links only when
+ * repeated exactly (see list-input-validation.helper.ts). This is the write-path
+ * safety net behind the UI checks; it also covers merges and legacy data. Shape
+ * validation is still performed by the caller via `suggestionDataSchema`.
+ */
+export function normalizeSuggestionListData(data: SuggestionData): SuggestionData {
+  const normalized: SuggestionData = { ...data };
+  normalized.phrases &&= dedupeExact(normalized.phrases);
+  normalized.emails &&= dedupeCaseInsensitive(normalized.emails);
+  if (normalized.emailListener?.internalEmailLinks) {
+    normalized.emailListener = {
+      ...normalized.emailListener,
+      internalEmailLinks: dedupeExact(normalized.emailListener.internalEmailLinks),
+    };
+  }
+  return normalized;
+}

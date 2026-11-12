@@ -210,6 +210,14 @@ import migration_2026_09_09T10_00_00_uuidv7_id_defaults from './actions/2026-09-
 import migration_2026_09_23T10_00_00_dynamic_report_snapshot_approvals from './actions/2026-09-23T10-00-00.dynamic-report-snapshot-approvals.js';
 import migration_2026_09_28T10_00_00_dynamic_report_comments from './actions/2026-09-28T10-00-00.dynamic-report-comments.js';
 import migration_2026_09_28T10_30_00_rls_dynamic_report_comments from './actions/2026-09-28T10-30-00.rls-dynamic-report-comments.js';
+import migration_2026_10_11T12_00_00_add_securities_context_to_user_context from './actions/2026-10-11T12-00-00.add-securities-context-to-user-context.js';
+import migration_2026_10_11T13_00_00_deprecate_legacy_foreign_securities_columns from './actions/2026-10-11T13-00-00.deprecate-legacy-foreign-securities-columns.js';
+import migration_2026_10_15T12_00_00_split_securities_withholding_tax_categories from './actions/2026-10-15T12-00-00.split-securities-withholding-tax-categories.js';
+import migration_2026_10_15T14_00_00_poalim_securities_transactions_restatable_dedup from './actions/2026-10-15T14-00-00.poalim-securities-transactions-restatable-dedup.js';
+import migration_2026_10_19T12_00_00_security_businesses_is_foreign_by_issuer from './actions/2026-10-19T12-00-00.security-businesses-is-foreign-by-issuer.js';
+import migration_2026_10_21T12_00_00_price_indexes from './actions/2026-10-21T12-00-00.price-indexes.js';
+import migration_2026_10_21T14_00_00_charges_securities_executions from './actions/2026-10-21T14-00-00.charges-securities-executions.js';
+import migration_2026_10_25T12_00_00_provider_credentials_business_id from './actions/2026-10-25T12-00-00.provider-credentials-business-id.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -424,6 +432,14 @@ export const MIGRATIONS = [
   migration_2026_09_23T10_00_00_dynamic_report_snapshot_approvals,
   migration_2026_09_28T10_00_00_dynamic_report_comments,
   migration_2026_09_28T10_30_00_rls_dynamic_report_comments,
+  migration_2026_10_11T12_00_00_add_securities_context_to_user_context,
+  migration_2026_10_11T13_00_00_deprecate_legacy_foreign_securities_columns,
+  migration_2026_10_15T12_00_00_split_securities_withholding_tax_categories,
+  migration_2026_10_15T14_00_00_poalim_securities_transactions_restatable_dedup,
+  migration_2026_10_19T12_00_00_security_businesses_is_foreign_by_issuer,
+  migration_2026_10_21T12_00_00_price_indexes,
+  migration_2026_10_21T14_00_00_charges_securities_executions,
+  migration_2026_10_25T12_00_00_provider_credentials_business_id,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import {
   EditIssuedDocumentForm,
   getDocumentTypeOptions,
+  getLinkTypeForDocumentType,
   type PreviewDocumentInput,
 } from '../../forms/index.js';
 import { IssueDocumentModal, type IssueDocumentData } from './issue-document-modal.js';
@@ -72,10 +73,14 @@ export function GenerateDocument({
 
   const updateFormData = useCallback(
     <T extends keyof PreviewDocumentInput>(field: T, value: PreviewDocumentInput[T]) => {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value,
-      }));
+      setFormData(prev => {
+        const next = { ...prev, [field]: value };
+        // the draft set the link type for its own type, so keep it in step when the type changes
+        if (field === 'type') {
+          next.linkType = getLinkTypeForDocumentType(next.type, next.linkedDocumentIds);
+        }
+        return next;
+      });
     },
     [],
   );

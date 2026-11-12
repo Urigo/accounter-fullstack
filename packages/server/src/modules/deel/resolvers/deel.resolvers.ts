@@ -1,10 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
-import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
+import { deleteChargesIfEmpty } from '../../charges/helpers/delete-empty-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { IGetChargesByIdsResult } from '../../charges/types.js';
-import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
-import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   createDeelInvoiceMatchFromUnmatchedInvoice,
   fetchAndFilterInvoices,
@@ -143,26 +141,18 @@ export const deelResolvers: DeelModule.Resolvers = {
           }
         }
 
-        // fetch charges, clean empty ones
-        const charges: IGetChargesByIdsResult[] = [];
-        await Promise.all(
-          Array.from(updatedChargeIdsSet).map(async chargeId => {
-            const [charge, transactions, documents] = await Promise.all([
-              injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-              injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
-              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
-            ]);
-            if (!charge) {
-              return;
-            }
-            if (documents.length === 0 && transactions.length === 0) {
-              await deleteCharges([charge.id], injector);
-            } else {
-              charges.push(charge);
-            }
-          }),
+        // clean empty charges, fetch the remaining ones
+        const deletedChargeIds = new Set(
+          await deleteChargesIfEmpty(Array.from(updatedChargeIdsSet), injector),
         );
-        return charges;
+        const charges = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.loadMany(
+            Array.from(updatedChargeIdsSet).filter(chargeId => !deletedChargeIds.has(chargeId)),
+          );
+        return charges.filter(
+          (charge): charge is IGetChargesByIdsResult => !!charge && !(charge instanceof Error),
+        );
       } catch (error) {
         const message = 'Error fetching Deel documents';
         console.error(message, error);

@@ -58,6 +58,23 @@ describe('scrapeCurrencyRates — happy path', () => {
   });
 });
 
+describe('scrapeCurrencyRates — JPY rate', () => {
+  it('converts the per-100-units JPY rate without floating-point noise', async () => {
+    mockFetch(`<?xml version="1.0" encoding="UTF-8"?>
+<message:StructureSpecificData xmlns:message="http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message">
+  <message:DataSet>
+    <Series BASE_CURRENCY="JPY">
+      <Obs TIME_PERIOD="2024-01-01" OBS_VALUE="1.8735"/>
+      <Obs TIME_PERIOD="2024-01-02" OBS_VALUE="1.885"/>
+    </Series>
+  </message:DataSet>
+</message:StructureSpecificData>`);
+
+    const result = await scrapeCurrencyRates(noop, new Date('2024-01-01'), new Date('2024-01-03'));
+    expect(result.map(r => r.rate)).toEqual([0.018735, 0.01885]);
+  });
+});
+
 describe('scrapeCurrencyRates — fetch error', () => {
   it('throws when the BOI fetch returns a non-OK status', async () => {
     mockFetch('', false);

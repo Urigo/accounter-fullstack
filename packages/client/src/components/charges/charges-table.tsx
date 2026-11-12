@@ -89,6 +89,12 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
         name
       }
     }
+    ... on ForeignSecuritiesCharge {
+      counterparties {
+        id
+        name
+      }
+    }
     metadata {
       transactionsCount
       documentsCount
@@ -181,6 +187,10 @@ export function convertChargeFragmentToTableRow(
                 id: fragmentData.counterparty.id,
               }
             : undefined,
+          counterparties:
+            fragmentData.__typename === 'ForeignSecuritiesCharge'
+              ? fragmentData.counterparties.map(({ id, name }) => ({ id, name }))
+              : undefined,
           type: fragmentData.__typename as ChargeType,
           isMissing: fragmentData.validationData?.missingInfo.includes(
             MissingChargeInfo.Counterparty,

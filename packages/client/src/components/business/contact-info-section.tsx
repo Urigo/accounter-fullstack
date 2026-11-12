@@ -29,12 +29,19 @@ import {
   type UpdateBusinessInput,
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { CountryCode } from '@/helpers/countries.js';
 import { dirtyFieldMarker, relevantDataPicker, type MakeBoolean } from '@/helpers/index.js';
+import { duplicateEmailError, hasNoDuplicateEmails } from '@/helpers/list-input-validation.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { UserContext } from '@/providers/user-provider.js';
 import { ComboBox } from '../common';
+import {
+  IsraeliCorporationLookup,
+  REGISTRY_FORM_FIELDS,
+  type RegistryFormFields,
+} from './israeli-corporation-lookup.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -75,8 +82,14 @@ const contactInfoSchema = z.object({
   localAddress: z.string().optional(),
   phone: z.string().optional(),
   website: z.url('Invalid URL').optional().or(z.literal('')),
-  generalContacts: z.array(z.email()).optional(),
-  billingEmails: z.array(z.email()).optional(),
+  generalContacts: z
+    .array(z.email())
+    .refine(hasNoDuplicateEmails, { message: 'Contacts must be unique' })
+    .optional(),
+  billingEmails: z
+    .array(z.email())
+    .refine(hasNoDuplicateEmails, { message: 'Billing emails must be unique' })
+    .optional(),
 });
 
 type ContactInfoFormValues = z.infer<typeof contactInfoSchema>;
@@ -153,6 +166,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
   const [newBillingEmail, setNewBillingEmail] = useState('');
 
   const locality = form.watch('locality');
+  const govId = form.watch('govId');
   const address = form.watch('address');
   const city = form.watch('city');
   const zipCode = form.watch('zipCode');
@@ -184,9 +198,25 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const isClient = business && 'clientInfo' in business && !!business.clientInfo;
   const isLocalEntity = locality === userContext?.context.locality;
+  const isIsraeli = locality === CountryCode.Israel;
+
+  const fillEmptyFields = (fields: RegistryFormFields) => {
+    for (const name of REGISTRY_FORM_FIELDS) {
+      const value = fields[name];
+      if (value && !form.getValues(name)?.trim()) {
+        form.setValue(name, value, { shouldDirty: true });
+      }
+    }
+  };
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
+      const conflict = duplicateEmailError(currentContacts, newContact);
+      if (conflict) {
+        form.setError('generalContacts', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('generalContacts');
       form.setValue('generalContacts', [...currentContacts, newContact.trim()], {
         shouldDirty: true,
       });
@@ -204,6 +234,12 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const addBillingEmail = (currentEmails: string[]) => {
     if (newBillingEmail.trim()) {
+      const conflict = duplicateEmailError(currentEmails, newBillingEmail);
+      if (conflict) {
+        form.setError('billingEmails', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('billingEmails');
       form.setValue('billingEmails', [...currentEmails, newBillingEmail.trim()], {
         shouldDirty: true,
       });
@@ -315,7 +351,7 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                 )}
               />
 
-              {isLocalEntity && (
+              {(isLocalEntity || isIsraeli) && (
                 <FormField
                   control={form.control}
                   name="localName"
@@ -352,6 +388,8 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                   </FormItem>
                 )}
               />
+
+              {isIsraeli && <IsraeliCorporationLookup govId={govId} onApply={fillEmptyFields} />}
 
               <FormField
                 control={form.control}

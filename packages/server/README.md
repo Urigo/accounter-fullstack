@@ -69,6 +69,16 @@ Note that nodemon's `--ignore` patterns are **not** anchored to the package dire
 `--ignore 'dist/**'` here would also silently swallow `../<generator>/dist/**` and break these
 watches. The server's own `dist` needs no ignore rule, as it is not under any `--watch` path.
 
+The trailing `|| exit 1` on the `--exec` command is load-bearing. `tsc` exits with code **2** on
+type errors, and nodemon reserves code 2: an exit with it less than 500 ms after the last watched
+file event reads to nodemon as a broken `--exec` command, and nodemon quits for good instead of
+waiting for the next change. Running `yarn generate:watch` alongside `yarn dev` produces exactly
+that timing. Codegen rewrites the `__generated__` files under `src` while a build is still running,
+each write resets nodemon's 500 ms clock, and `--delay 1` holds the restart back long enough for the
+half-regenerated build to fail first. Mapping every failure to exit code 1 makes it an ordinary
+crash: nodemon prints "app crashed - waiting for file changes", and the pending restart rebuilds
+against the finished types.
+
 ## Super-Admin & Client Onboarding
 
 Super-admins are platform operators identified by their Auth0 user ID in the `super_admins` DB

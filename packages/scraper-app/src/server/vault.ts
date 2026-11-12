@@ -1,10 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
 import { z, ZodError } from 'zod';
-
-export function getVaultPath(): string {
-  return process.env['VAULT_PATH'] ?? '.vault';
-}
 
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LEN = 32;
@@ -101,11 +96,12 @@ export const SettingsSchema = z.object({
   fetchBankOfIsraelRates: z.boolean().default(true),
   concurrentScraping: z.boolean().default(false),
   defaultDateRangeMonths: z.number().int().positive().default(3),
+  // Run history is kept in memory for the session; writing it to `historyFilePath` is opt-in.
+  // (Replaces the old `saveHistory` key, which defaulted to on — old vaults have it stripped.)
+  persistHistory: z.boolean().default(false),
   historyFilePath: z.string().default('./history.json'),
-  saveHistory: z.boolean().default(true),
   serverUrl: z.string().optional(),
   apiKey: z.string().optional(),
-  vaultPath: z.string().trim().min(1).optional(),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -144,8 +140,8 @@ export const VaultSchema = z.object({
     fetchBankOfIsraelRates: true,
     concurrentScraping: false,
     defaultDateRangeMonths: 3,
+    persistHistory: false,
     historyFilePath: './history.json',
-    saveHistory: true,
   }),
 });
 
@@ -218,18 +214,4 @@ export async function decryptVault(blob: string, password: string): Promise<Vaul
 
 export function defaultVault(): Vault {
   return VaultSchema.parse({ settings: {} });
-}
-
-export async function loadVaultFile(filePath: string, password: string): Promise<Vault | null> {
-  const blob = await readFile(filePath, 'utf8');
-  return decryptVault(blob.trim(), password);
-}
-
-export async function saveVaultFile(
-  filePath: string,
-  vault: Vault,
-  password: string,
-): Promise<void> {
-  const data = await encryptVault(vault, password);
-  await writeFile(filePath, data, 'utf8');
 }

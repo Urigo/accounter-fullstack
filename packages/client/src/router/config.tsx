@@ -156,6 +156,16 @@ const BalanceReport = lazy(() =>
     default: m.BalanceReport,
   })),
 );
+const PriceIndexCalculator = lazy(() =>
+  import('../components/screens/price-index-calculator/index.js').then(m => ({
+    default: m.PriceIndexCalculator,
+  })),
+);
+const SecuritiesSemiAnnualReport = lazy(() =>
+  import('../components/screens/reports/securities-semi-annual-report/index.js').then(m => ({
+    default: m.SecuritiesSemiAnnualReport,
+  })),
+);
 const ValidateReportsScreen = lazy(() =>
   import('../components/reports/validations/index.js').then(m => ({
     default: m.ValidateReportsScreen,
@@ -471,8 +481,8 @@ export const routes: RouteObject[] = [
                 path: 'issue-documents',
                 element: withSuspense(IssueDocuments),
                 handle: {
-                  title: 'Issue Documents',
-                  breadcrumb: 'Issue Documents',
+                  title: 'Issue Monthly Documents',
+                  breadcrumb: 'Issue Monthly Documents',
                 },
               },
             ],
@@ -617,6 +627,22 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Balance Report',
                   breadcrumb: 'Balance',
+                },
+              },
+              {
+                path: 'cpi-calculator',
+                element: withSuspense(PriceIndexCalculator),
+                handle: {
+                  title: 'CPI Linkage Calculator',
+                  breadcrumb: 'CPI Calculator',
+                },
+              },
+              {
+                path: 'securities-semi-annual',
+                element: withSuspense(SecuritiesSemiAnnualReport, <ReportSkeleton />),
+                handle: {
+                  title: 'Securities Semi-Annual Report',
+                  breadcrumb: 'Securities Semi-Annual',
                 },
               },
               {

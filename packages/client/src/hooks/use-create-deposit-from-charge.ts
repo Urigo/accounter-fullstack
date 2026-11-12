@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { CreateDepositFromChargeDocument } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -26,6 +27,7 @@ const NOTIFICATION_ID = 'createDepositFromCharge';
 export const useCreateDepositFromCharge = (): UseCreateDepositFromCharge => {
   const { fetching, execute } = useApiMutation({
     document: CreateDepositFromChargeDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: variables => `${NOTIFICATION_ID}-${variables.chargeId}`,
     loadingMessage: 'Creating deposit',
     errorMessage: variables => `Error creating deposit "${variables.name}" from charge`,

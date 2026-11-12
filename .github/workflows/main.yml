@@ -22,7 +22,7 @@ jobs:
 
   schema-publish:
     name: schema publish
-    needs: [graphql-breaking-changes, validate-schema]
+    needs: [validate-schema]
     uses: ./.github/workflows/graphql-schema-publish.yml
     secrets:
       hiveToken: ${{ secrets.HIVE_TOKEN }}

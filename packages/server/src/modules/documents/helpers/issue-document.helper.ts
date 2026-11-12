@@ -13,6 +13,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import {
+  addDaysToTimelessDate,
   addMonthsToTimelessDate,
   endOfTimelessMonth,
   maxTimelessDate,
@@ -34,7 +35,6 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 import {
   convertDocumentInputIntoGreenInvoiceInput,
-  getTypeFromGreenInvoiceDocument,
   getVatTypeFromGreenInvoiceDocument,
   insertNewDocumentFromGreenInvoice,
 } from '../../green-invoice/helpers/green-invoice.helper.js';
@@ -197,6 +197,69 @@ export function getTypeFromDocumentsAndTransactions(
   return DocumentType.Proforma;
 }
 
+/**
+ * Resolves the type of a document drafted out of an issued one, and whether it cancels that
+ * document. An invoice-receipt settles itself, so the only document to issue out of one is a credit
+ * invoice; any other document gets the type deduced from it, unless a type is requested. A credit
+ * invoice draft defaults to cancelling the document (the issue form can downgrade that to a plain
+ * link for a partial credit). Green Invoice issues an invoice-receipt already closed, so one can be
+ * credited while closed; an invoice must still be open, and nothing else can be credited.
+ */
+export function getDraftTypeOutOfIssuedDocument({
+  documentId,
+  documentType,
+  status,
+  requestedType,
+}: {
+  documentId: string;
+  documentType: DocumentType;
+  status: IGetIssuedDocumentsByIdsResult['status'];
+  requestedType?: DocumentType | null;
+}): { type: DocumentType; isCancellation: boolean } {
+  const type =
+    requestedType ??
+    (documentType === DocumentType.InvoiceReceipt
+      ? DocumentType.CreditInvoice
+      : // with a document to go by, the deduced type doesn't depend on the charge's transactions
+        getTypeFromDocumentsAndTransactions([{ type: documentType }], []));
+
+  const isCancellation = type === DocumentType.CreditInvoice;
+  if (!isCancellation) {
+    if (status !== 'OPEN') {
+      throw new GraphQLError(`Document with ID "${documentId}" is closed`);
+    }
+    return { type, isCancellation };
+  }
+
+  if (documentType !== DocumentType.Invoice && documentType !== DocumentType.InvoiceReceipt) {
+    throw new GraphQLError(
+      `Document with ID "${documentId}" can't be cancelled by a credit invoice - only invoices and invoice-receipts can`,
+    );
+  }
+  const isCancellable =
+    status === 'OPEN' || (documentType === DocumentType.InvoiceReceipt && status === 'CLOSED');
+  if (!isCancellable) {
+    throw new GraphQLError(
+      `Document with ID "${documentId}" can't be cancelled - its status is ${status}`,
+    );
+  }
+  return { type, isCancellation };
+}
+
+/**
+ * Only a credit invoice cancels the documents it links to. The issue form lets the type change after
+ * the draft set the link type, so a mismatch is rejected before it reaches Green Invoice.
+ */
+export function validateDocumentLinkType(
+  input: Pick<DocumentIssueInput, 'type' | 'linkType'>,
+): void {
+  if (input.linkType === 'CANCEL' && input.type !== DocumentType.CreditInvoice) {
+    throw new GraphQLError(
+      `Only a credit invoice can cancel the documents it links to - got ${input.type}`,
+    );
+  }
+}
+
 export function filterAndHandleSwiftTransactions(
   originTransactions: IGetTransactionsByChargeIdsResult[],
   swiftBusinessId: string | null,
@@ -216,19 +279,124 @@ export function filterAndHandleSwiftTransactions(
     return incomeTransactions;
   }
 
-  if (swiftTransactions.length === 1 && incomeTransactions.length === 1) {
-    const incomeTransaction = incomeTransactions[0];
-    return [
-      {
-        ...incomeTransaction,
-        amount: (Number(incomeTransaction.amount) - Number(swiftTransactions[0].amount)).toFixed(2),
-      },
-    ];
+  if (swiftTransactions.length !== incomeTransactions.length) {
+    throw new GraphQLError(
+      `Unable to process transactions. Found ${incomeTransactions.length} income transactions but ${swiftTransactions.length} swift fee transactions`,
+    );
   }
 
-  throw new GraphQLError(
-    "Unable to process transactions. Couldn't match swift fees to transactions",
+  // All fees are the same: no need to know which fee belongs to which income
+  const swiftAmount = Number(swiftTransactions[0].amount);
+  if (swiftTransactions.every(swift => Number(swift.amount) === swiftAmount)) {
+    return incomeTransactions.map(income => applySwiftFee(income, swiftTransactions[0]));
+  }
+
+  const matches = matchSwiftFeesByDate(incomeTransactions, swiftTransactions);
+  return incomeTransactions.map((income, index) =>
+    applySwiftFee(income, swiftTransactions[matches[index]]),
   );
+}
+
+function applySwiftFee(
+  income: IGetTransactionsByChargeIdsResult,
+  swift: IGetTransactionsByChargeIdsResult,
+): IGetTransactionsByChargeIdsResult {
+  return {
+    ...income,
+    amount: (Number(income.amount) - Number(swift.amount)).toFixed(2),
+  };
+}
+
+/** The date a transaction hit the account: its debit date, falling back to its event date. */
+function getTransactionDebitDate(
+  transaction: IGetTransactionsByChargeIdsResult,
+): TimelessDateString {
+  return transaction.debit_date_override ?? transaction.debit_date ?? transaction.event_date;
+}
+
+/**
+ * Pairs each income transaction with a swift fee debited the same day as the income or a day before
+ * it, and returns, per income index, the index of its matched swift transaction. Fees with the same
+ * amount are interchangeable, so the pairing only has to be unique up to fee amount. Throws if no
+ * full pairing exists, or if valid pairings disagree on the fee amount of any income.
+ */
+function matchSwiftFeesByDate(
+  incomeTransactions: IGetTransactionsByChargeIdsResult[],
+  swiftTransactions: IGetTransactionsByChargeIdsResult[],
+): number[] {
+  const matchError = new GraphQLError(
+    "Unable to process transactions. Couldn't match swift fees to income transactions by date",
+  );
+
+  // candidates[i] = indexes of the swift transactions that may belong to income i
+  const candidates = incomeTransactions.map(income => {
+    const incomeDate = getTransactionDebitDate(income);
+    const validDates = new Set([incomeDate, addDaysToTimelessDate(incomeDate, -1)]);
+    return swiftTransactions.flatMap((swift, swiftIndex) =>
+      validDates.has(getTransactionDebitDate(swift)) ? [swiftIndex] : [],
+    );
+  });
+
+  const pairing = findFullPairing(candidates, swiftTransactions.length);
+  if (!pairing) {
+    throw matchError;
+  }
+
+  // The pairing is ambiguous if some income could take a fee of a different amount, while the rest
+  // of the incomes still get paired
+  const feeAmount = (swiftIndex: number) => Number(swiftTransactions[swiftIndex].amount);
+  for (const [incomeIndex, swiftIndexes] of candidates.entries()) {
+    const pairedAmount = feeAmount(pairing[incomeIndex]);
+    for (const swiftIndex of swiftIndexes) {
+      if (feeAmount(swiftIndex) === pairedAmount) continue;
+      const forcedCandidates = candidates.map((otherSwiftIndexes, otherIncomeIndex) =>
+        otherIncomeIndex === incomeIndex
+          ? [swiftIndex]
+          : otherSwiftIndexes.filter(otherSwiftIndex => otherSwiftIndex !== swiftIndex),
+      );
+      if (findFullPairing(forcedCandidates, swiftTransactions.length)) {
+        throw matchError;
+      }
+    }
+  }
+
+  return pairing;
+}
+
+/**
+ * Finds a one-to-one pairing of every income with one of its candidate swift transactions
+ * (bipartite matching by augmenting paths). Returns, per income index, the paired swift index, or
+ * `null` if no such pairing exists.
+ */
+function findFullPairing(candidates: number[][], swiftCount: number): number[] | null {
+  const incomeOfSwift = new Array<number | undefined>(swiftCount).fill(undefined);
+
+  const assign = (incomeIndex: number, visited: Set<number>): boolean => {
+    for (const swiftIndex of candidates[incomeIndex]) {
+      if (visited.has(swiftIndex)) continue;
+      visited.add(swiftIndex);
+      const currentIncome = incomeOfSwift[swiftIndex];
+      if (currentIncome === undefined || assign(currentIncome, visited)) {
+        incomeOfSwift[swiftIndex] = incomeIndex;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (let incomeIndex = 0; incomeIndex < candidates.length; incomeIndex++) {
+    if (!assign(incomeIndex, new Set())) {
+      return null;
+    }
+  }
+
+  const swiftOfIncome = new Array<number>(candidates.length);
+  for (const [swiftIndex, incomeIndex] of incomeOfSwift.entries()) {
+    if (incomeIndex !== undefined) {
+      swiftOfIncome[incomeIndex] = swiftIndex;
+    }
+  }
+  return swiftOfIncome;
 }
 
 export function getLinkedDocumentsAttributes(
@@ -349,6 +517,26 @@ export const convertContractToDraft = async (
   return documentInput;
 };
 
+/**
+ * The linked documents (by Green Invoice ID) that are still open. One without a local record is
+ * assumed open, so it is closed as before.
+ */
+async function getOpenLinkedDocumentIds(
+  injector: Injector,
+  externalIds: string[],
+): Promise<string[]> {
+  if (!externalIds.length) {
+    return [];
+  }
+  const issuedDocuments = await injector
+    .get(IssuedDocumentsProvider)
+    .getIssuedDocumentsByExternalIdLoader.loadMany(externalIds);
+  return externalIds.filter((_, index) => {
+    const issuedDocument = issuedDocuments[index];
+    return !issuedDocument || issuedDocument instanceof Error || issuedDocument.status === 'OPEN';
+  });
+}
+
 export async function executeDocumentIssue(
   injector: Injector,
   adminBusinessId: string,
@@ -358,6 +546,9 @@ export async function executeDocumentIssue(
   chargeId?: string,
   sendEmail = false,
 ) {
+  // outside the try, which would replace the reason with a generic error
+  validateDocumentLinkType(initialInput);
+
   try {
     const coreInput = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
     const input = {
@@ -372,6 +563,18 @@ export async function executeDocumentIssue(
       emailContent,
       attachment,
     };
+
+    // A cancelling link makes Green Invoice cancel the linked documents on its own (and closing
+    // one that is no longer open fails), so only plainly linked documents are closed here - and
+    // only those still open: a partial credit links to an invoice-receipt that is already closed.
+    const isCancellation = initialInput.linkType === 'CANCEL';
+    const linkedDocumentIds = (coreInput.linkedDocumentIds ?? []).filter(
+      (id): id is string => !!id,
+    );
+    const linkedDocumentIdsToClose = isCancellation
+      ? []
+      : await getOpenLinkedDocumentIds(injector, linkedDocumentIds);
+
     const document = await injector.get(GreenInvoiceClientProvider).addDocuments({ input });
 
     if (!document) {
@@ -379,21 +582,17 @@ export async function executeDocumentIssue(
     }
 
     // validate all linked documents are closed
-    if (input.linkedDocumentIds?.length) {
-      await Promise.all(
-        input.linkedDocumentIds.map(async id => {
-          if (id) {
-            await injector
-              .get(GreenInvoiceClientProvider)
-              .closeDocument(id)
-              .catch(e => {
-                const message = `ERROR: Failed to close Green Invoice linked document with ID ${id}`;
-                console.error(`${message}: ${e}`);
-              });
-          }
-        }),
-      );
-    }
+    await Promise.all(
+      linkedDocumentIdsToClose.map(async id => {
+        await injector
+          .get(GreenInvoiceClientProvider)
+          .closeDocument(id)
+          .catch(e => {
+            const message = `ERROR: Failed to close Green Invoice linked document with ID ${id}`;
+            console.error(`${message}: ${e}`);
+          });
+      }),
+    );
 
     if ('id' in document && document.id) {
       const greenInvoiceDocument = await injector
@@ -417,26 +616,22 @@ export async function executeDocumentIssue(
         throw new GraphQLError('Failed to issue new document');
       }
 
-      // Close linked documents
-      if (coreInput.linkedDocumentIds?.length) {
-        await Promise.all(
-          coreInput.linkedDocumentIds.map(async id => {
-            if (id) {
-              await injector
-                .get(IssuedDocumentsProvider)
-                .updateIssuedDocumentByExternalId({ externalId: id, status: 'CLOSED' })
-                .catch(e => {
-                  const message = `Failed to close linked document with ID ${id}`;
-                  console.error(`${message}: ${e}`);
-                  throw new Error(message);
-                });
-            }
-          }),
-        );
-      }
-      if (getTypeFromGreenInvoiceDocument(coreInput.type) === DocumentType.CreditInvoice) {
-        // Close origin
-      }
+      // Close (or mark as cancelled) linked documents
+      await Promise.all(
+        (isCancellation ? linkedDocumentIds : linkedDocumentIdsToClose).map(async id => {
+          await injector
+            .get(IssuedDocumentsProvider)
+            .updateIssuedDocumentByExternalId({
+              externalId: id,
+              status: isCancellation ? 'CANCELLED_BY_OTHER_DOC' : 'CLOSED',
+            })
+            .catch(e => {
+              const message = `Failed to close linked document with ID ${id}`;
+              console.error(`${message}: ${e}`);
+              throw new Error(message);
+            });
+        }),
+      );
 
       return injector.get(ChargesProvider).getChargeByIdLoader.load(newDocument.charge_id);
     }

@@ -164,8 +164,11 @@ function RunRow({ record }: { record: RunRecord }): ReactElement {
   );
 }
 
-export function History(): ReactElement {
+export function History({
+  onNavigateSettings,
+}: { onNavigateSettings?: () => void } = {}): ReactElement {
   const [records, setRecords] = useState<RunRecord[]>([]);
+  const [persisted, setPersisted] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -173,7 +176,10 @@ export function History(): ReactElement {
     setLoading(true);
     setError(null);
     getHistory()
-      .then(setRecords)
+      .then(res => {
+        setRecords(res.records);
+        setPersisted(res.persisted);
+      })
       .catch(err => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
   }, []);
@@ -199,6 +205,24 @@ export function History(): ReactElement {
           Refresh
         </button>
       </div>
+
+      {!loading && !error && !persisted && (
+        <p className="notice">
+          Showing runs from this session only.
+          {onNavigateSettings ? (
+            <>
+              {' '}
+              To keep them, turn on{' '}
+              <button type="button" className="btn-link" onClick={onNavigateSettings}>
+                Save run history
+              </button>{' '}
+              in Config → Settings.
+            </>
+          ) : (
+            ' To keep them, turn on Save run history in Config → Settings.'
+          )}
+        </p>
+      )}
 
       {loading ? (
         <SkeletonTable rows={4} cols={7} />

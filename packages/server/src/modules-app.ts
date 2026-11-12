@@ -5,12 +5,15 @@ import { adminContextModule } from './modules/admin-context/index.js';
 import { AdminContextProvider } from './modules/admin-context/providers/admin-context.provider.js';
 import { annualAuditModule } from './modules/annual-audit/index.js';
 import { AnthropicProvider } from './modules/app-providers/anthropic.js';
+import { CbsPriceIndexClient } from './modules/app-providers/cbs-price-index-client.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
 import { DeelClientProvider } from './modules/app-providers/deel/deel-client.provider.js';
 import { GoogleDriveProvider } from './modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
+import { GreenInvoiceTokenCacheProvider } from './modules/app-providers/green-invoice-token-cache.js';
+import { IsraeliCorporationsRegistryClient } from './modules/app-providers/israeli-corporations-registry.js';
 import { TenantAwareDBClient } from './modules/app-providers/tenant-db-client.js';
 import { authDirectiveTransformer } from './modules/auth/directives/auth-directives.js';
 import { authModule } from './modules/auth/index.js';
@@ -38,6 +41,7 @@ import { greenInvoiceModule } from './modules/green-invoice/index.js';
 import { ledgerModule } from './modules/ledger/index.js';
 import { miscExpensesModule } from './modules/misc-expenses/index.js';
 import { onboardingModule } from './modules/onboarding/index.js';
+import { priceIndexesModule } from './modules/price-indexes/index.js';
 import { providerCredentialsModule } from './modules/provider-credentials/index.js';
 import { reportsModule } from './modules/reports/index.js';
 import { salariesModule } from './modules/salaries/index.js';
@@ -89,6 +93,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       emailIngestionModule,
       scraperIngestionModule,
       onboardingModule,
+      priceIndexesModule,
     ],
     providers: [
       {
@@ -116,7 +121,10 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       CloudinaryProvider,
       DeelClientProvider,
       GreenInvoiceClientProvider,
+      GreenInvoiceTokenCacheProvider,
       CoinMarketCapProvider,
+      CbsPriceIndexClient,
+      IsraeliCorporationsRegistryClient,
       AnthropicProvider,
       GoogleDriveProvider,
     ],

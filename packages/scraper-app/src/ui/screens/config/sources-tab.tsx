@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { ChangePill } from '../../components/change-pill.js';
 import { SkeletonRow } from '../../components/skeleton.js';
+import { useVaultChanges } from '../../contexts/vault-context.js';
 import { createSource, deleteSource, getSources, updateSource } from '../../lib/api.js';
+import { changeFor } from '../../lib/change-labels.js';
 import { SourceForm } from './source-forms.js';
 import {
   CONFIGURABLE_SOURCE_TYPES,
@@ -16,6 +19,7 @@ type DialogState =
   | null;
 
 export function SourcesTab(): ReactElement {
+  const changes = useVaultChanges();
   const [sources, setSources] = useState<SourceConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -117,6 +121,7 @@ export function SourcesTab(): ReactElement {
             <span style={{ flex: 1 }}>
               <strong>{SOURCE_LABELS[s.type]}</strong> — {displayName(s)}
             </span>
+            <ChangePill kind={changeFor(changes, 'sources', s.id)} />
             <button onClick={() => setDialog({ mode: 'edit', source: s })}>Edit</button>
             <button onClick={() => setDialog({ mode: 'confirm-delete', source: s })}>Delete</button>
           </li>

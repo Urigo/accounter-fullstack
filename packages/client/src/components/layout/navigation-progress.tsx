@@ -45,7 +45,7 @@ export function NavigationProgress() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 h-1">
+    <div className="fixed top-0 left-0 right-0 z-50 h-1 print:hidden">
       <Progress value={progress} className="h-1 rounded-none transition-all duration-300" />
     </div>
   );

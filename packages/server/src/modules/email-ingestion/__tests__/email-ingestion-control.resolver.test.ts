@@ -154,11 +154,9 @@ describe('Mutation.requestIngestControl', () => {
       resolveAlias: vi.fn().mockRejectedValue(new Error('Connection terminated unexpectedly')),
     });
 
-    const err = await resolver(
-      {} as never,
-      { input: baseInput },
-      { injector } as never,
-      {} as never,
+    // The resolver type allows a plain value, so wrap it to reach `.then`.
+    const err = await Promise.resolve(
+      resolver({} as never, { input: baseInput }, { injector } as never, {} as never),
     ).then(
       () => null,
       (e: GraphQLError) => e,
@@ -180,11 +178,9 @@ describe('Mutation.requestIngestControl', () => {
       resolveAlias: vi.fn().mockRejectedValue(statementError),
     });
 
-    const err = await resolver(
-      {} as never,
-      { input: baseInput },
-      { injector } as never,
-      {} as never,
+    // The resolver type allows a plain value, so wrap it to reach `.then`.
+    const err = await Promise.resolve(
+      resolver({} as never, { input: baseInput }, { injector } as never, {} as never),
     ).then(
       () => null,
       (e: GraphQLError) => e,

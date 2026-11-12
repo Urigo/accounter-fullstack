@@ -16,6 +16,10 @@ export default gql`
     provider: ProviderKey!
     "When the credentials were last updated"
     configuredAt: DateTime!
+    "The id of the business entity that represents the provider in the books, if set"
+    businessId: UUID
+    "The business entity that represents the provider in the books, if set"
+    business: Business
   }
 
   "Result returned after successfully saving provider credentials"
@@ -25,6 +29,8 @@ export default gql`
     provider: ProviderKey!
     "When the credentials were saved"
     configuredAt: DateTime!
+    "The business entity that represents the provider in the books, if set"
+    businessId: UUID
   }
 
   "Result returned after successfully deleting provider credentials"
@@ -55,7 +61,12 @@ export default gql`
   }
 
   extend type Mutation {
-    setDeelCredentials(apiToken: String!): SetProviderCredentialsResult!
+    "Save the Deel API token, and the business representing Deel in the books (kept when omitted)"
+    setDeelCredentials(apiToken: String!, businessId: UUID): SetProviderCredentialsResult!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
+    "Set the business entity that represents a connected provider in the books; null clears it"
+    setProviderBusiness(provider: ProviderKey!, businessId: UUID): SetProviderCredentialsResult!
       @requiresAuth
       @requiresRole(role: "business_owner")
   }

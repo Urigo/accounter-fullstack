@@ -7,6 +7,7 @@ import {
   ClientInfoForDocumentIssuingDocument,
   Currency,
   DocumentLanguage,
+  DocumentLinkType,
   DocumentType,
   DocumentVatType,
   IssueDocumentClientFieldsFragmentDoc,
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
+import { Switch } from '../../../ui/switch.js';
 import { Textarea } from '../../../ui/textarea.js';
 import { normalizeClientInfo } from '../../index.js';
 import { ClientForm } from './client-form.js';
@@ -37,6 +39,7 @@ import {
 } from './utils/enum-helpers.js';
 
 export * from './utils/enum-helpers.js';
+export * from './utils/link-type.js';
 export * from './types/document.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -162,6 +165,9 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
     formData.type === DocumentType.CreditInvoice;
   const shouldShowPayment =
     formData.type === DocumentType.Receipt || formData.type === DocumentType.InvoiceReceipt;
+  // A credit invoice cancels the documents it links to by default; a partial credit only links them
+  const canChooseCancellation =
+    formData.type === DocumentType.CreditInvoice && !!formData.linkedDocumentIds?.length;
 
   return (
     <>
@@ -181,7 +187,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.type}
                 onValueChange={(value: DocumentType) => updateFormData('type', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,7 +205,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.language}
                 onValueChange={(value: DocumentLanguage) => updateFormData('language', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,6 +219,28 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
             </div>
           </div>
 
+          {canChooseCancellation && (
+            <div className="flex flex-row items-center justify-between gap-4 rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="cancelLinkedDocuments">Cancel the original document</Label>
+                <p className="text-sm text-gray-500">
+                  Turn off for a partial credit - the credit invoice is only linked, and the
+                  original stays as it is.
+                </p>
+              </div>
+              <Switch
+                id="cancelLinkedDocuments"
+                checked={formData.linkType === DocumentLinkType.Cancel}
+                onCheckedChange={checked =>
+                  updateFormData(
+                    'linkType',
+                    checked ? DocumentLinkType.Cancel : DocumentLinkType.Link,
+                  )
+                }
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="currency">Currency</Label>
@@ -220,7 +248,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.currency}
                 onValueChange={(value: Currency) => updateFormData('currency', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -238,7 +266,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                 value={formData.vatType}
                 onValueChange={(value: DocumentVatType) => updateFormData('vatType', value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,7 +284,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
             <div className="space-y-2">
               <Label htmlFor="clientSelect">Select Client</Label>
               <Select value={selectedClientId} onValueChange={handleClientSelection}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Choose existing client or create new" />
                 </SelectTrigger>
                 <SelectContent>
@@ -377,7 +405,7 @@ export function EditIssuedDocumentForm({ formData, updateFormData }: GenerateDoc
                           updateDiscount('type', value)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

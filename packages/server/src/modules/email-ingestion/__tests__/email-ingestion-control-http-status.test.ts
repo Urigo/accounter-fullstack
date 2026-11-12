@@ -17,13 +17,10 @@ import { emailIngestionControlResolver } from '../resolvers/email-ingestion-cont
  *
  * `maskedErrors` is deliberately left at its default (on), matching
  * `packages/server/src/index.ts` — a harness that disabled it would not prove the
- * status survives in production. It does survive, but not because the error escapes
- * masking: yoga *does* replace the message with "Unexpected error." and drop
- * `extensions.code`. What rescues the status is that `maskError` explicitly copies
- * `extensions.http` onto the masked error, which
- * `getResponseInitByRespectingErrors` then reads. So the status is the only part of
- * the signal that crosses the wire — which is exactly the part the gateway keys on,
- * and the reason these tests assert the status rather than the body.
+ * status survives in production. The resolver throws a `GraphQLError`, which masking
+ * passes through unchanged, so message, `extensions.code` and `extensions.http` all
+ * reach the gateway. The gateway keys on the transport status only, which is why
+ * these tests focus on it.
  */
 function makeYoga(resolveAliasError: Error) {
   const controlProvider: Partial<EmailIngestionControlProvider> = {
@@ -111,9 +108,8 @@ describe('requestIngestControl HTTP status', () => {
     const { status, body } = await post(yoga);
 
     expect(status).toBe(503);
-    // Masked to a generic message by yoga's default `maskedErrors`; the status is
-    // what carries the retry signal.
-    expect(body.errors?.[0]?.message).toBe('Unexpected error.');
+    expect(body.errors?.[0]?.message).toBe('Failed to process ingest control request');
+    expect(body.errors?.[0]?.extensions?.code).toBe('SERVICE_UNAVAILABLE');
   });
 
   it('answers 503 for a socket errno too', async () => {
@@ -132,6 +128,21 @@ describe('requestIngestControl HTTP status', () => {
     const { status, body } = await post(makeYoga(err));
 
     expect(status).toBe(200);
-    expect(body.errors?.[0]?.message).toBe('Unexpected error.');
+    expect(body.errors?.[0]?.message).toBe('Failed to process ingest control request');
+    expect(body.errors?.[0]?.extensions?.code).toBe('INTERNAL_SERVER_ERROR');
+  });
+
+  it('does not return the underlying database error to the gateway', async () => {
+    const err = Object.assign(new Error('duplicate key value violates unique constraint'), {
+      code: '23505',
+      detail: 'Key (alias)=(secret-alias@example.com) already exists.',
+      where: 'SQL statement "INSERT INTO accounter_schema.alias_routing ..."',
+    });
+    const { body } = await post(makeYoga(err));
+
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain('secret-alias@example.com');
+    expect(serialized).not.toContain('INSERT INTO');
+    expect(body.errors?.[0]?.extensions).not.toHaveProperty('cause');
   });
 });

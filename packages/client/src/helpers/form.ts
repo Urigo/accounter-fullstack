@@ -1,4 +1,10 @@
-import type { ControllerFieldState } from 'react-hook-form';
+import type {
+  ControllerFieldState,
+  FieldValues,
+  Path,
+  PathValue,
+  UseFormReturn,
+} from 'react-hook-form';
 
 export type MakeBoolean<T> =
   T extends Record<string, unknown> ? { [K in keyof T]: MakeBoolean<T[K]> } : boolean | undefined;
@@ -103,4 +109,27 @@ export function isObjectEmpty(data: Record<string, unknown>): boolean {
 
 export function dirtyFieldMarker(fieldState: ControllerFieldState): string {
   return fieldState.isDirty ? 'border-1 border-green-500' : '';
+}
+
+/**
+ * Sets every field of a filter form to `values`, unsetting the ones it leaves out — "Clear all"
+ * and "Reset" in a filters dialog.
+ *
+ * Not `form.reset(values)`: a reset drops the registered fields, and each controller re-registers
+ * with the value it held when the dialog opened — so on a dialog opened over an applied filter,
+ * the cleared values silently come back and Apply re-sends them. Setting field by field keeps the
+ * registrations, and with them the new values.
+ */
+export function resetFilterForm<TValues extends FieldValues>(
+  form: Pick<UseFormReturn<TValues>, 'getValues' | 'setValue'>,
+  values: Partial<TValues>,
+): void {
+  const fields = new Set([...Object.keys(form.getValues()), ...Object.keys(values)]);
+  for (const field of fields) {
+    form.setValue(
+      field as Path<TValues>,
+      values[field as keyof TValues] as PathValue<TValues, Path<TValues>>,
+      { shouldDirty: true },
+    );
+  }
 }

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { TimelessDateString } from '@/helpers/index.js';
 import { CreateDepositDocument, type Currency } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -36,6 +37,7 @@ const NOTIFICATION_ID = 'createDeposit';
 export const useCreateDeposit = (): UseCreateDeposit => {
   const { fetching, execute } = useApiMutation({
     document: CreateDepositDocument,
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
     notificationId: variables =>
       `${NOTIFICATION_ID}-${variables.name}-${variables.currency}-${variables.openDate}-${variables.accountId ?? 'noAccount'}`,
     loadingMessage: 'Creating deposit',

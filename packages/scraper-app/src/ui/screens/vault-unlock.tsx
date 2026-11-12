@@ -1,72 +1,98 @@
-import { useRef, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
+import { ArrowLeft, CircleAlert, FileIcon, Lock } from 'lucide-react';
 import { useVault } from '../contexts/vault-context.js';
-import { ApiError } from '../lib/api.js';
+import { formatFileSize } from '../lib/vault-file.js';
 
 export function VaultUnlock(): ReactElement {
   const vault = useVault();
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await vault.unlock(password);
+    await vault.open(password);
     setLoading(false);
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadError(null);
-    try {
-      await vault.upload(file);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        // 409: vault exists, ask to overwrite
-        const confirmed = window.confirm(
-          'A vault already exists. Replace it with the uploaded file?',
-        );
-        if (confirmed) {
-          try {
-            await vault.upload(file, true);
-          } catch {
-            setUploadError('Failed to replace vault. Please try again.');
-          }
-        }
-      }
-    }
-    // Reset so the same file can be re-selected
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }
+  const file = vault.picked?.file;
 
   return (
-    <div>
-      <h1>Unlock Vault</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="password">Master password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            disabled={loading}
-            autoFocus
-          />
-        </div>
-        {vault.error && <p role="alert">{vault.error}</p>}
-        <button type="submit" disabled={loading}>
-          {loading ? 'Unlocking…' : 'Unlock'}
+    <main className="onboarding">
+      <div className="onboarding-inner onboarding-narrow">
+        <button type="button" className="back-link" onClick={vault.backToWelcome}>
+          <ArrowLeft size={16} /> Back
         </button>
-      </form>
-      <hr />
-      <div>
-        <label htmlFor="vault-upload">or upload a different vault</label>
-        <input ref={fileInputRef} id="vault-upload" type="file" onChange={handleFileChange} />
-        {uploadError && <p role="alert">{uploadError}</p>}
+
+        <div className="card stack">
+          <div className="row">
+            <div className="choice-icon" style={{ marginBottom: 0 }}>
+              <Lock size={18} />
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: '1.25rem' }}>Unlock your vault</h1>
+              <p className="muted small" style={{ margin: 0 }}>
+                The file is decrypted in memory. It is not copied to this machine.
+              </p>
+            </div>
+          </div>
+
+          {file && (
+            <div className="file-chip">
+              <FileIcon size={18} style={{ flex: 'none', color: 'var(--text-muted)' }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="file-chip-name">{file.name}</div>
+                <div className="muted small">{formatFileSize(file.size)}</div>
+              </div>
+              <button type="button" className="btn btn-ghost" onClick={vault.backToWelcome}>
+                Change
+              </button>
+            </div>
+          )}
+
+          <form className="stack" onSubmit={e => void handleSubmit(e)}>
+            <div className="field">
+              <label htmlFor="password">Master password</label>
+              <div className="input-group">
+                <input
+                  id="password"
+                  className="input"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  disabled={loading}
+                  aria-invalid={!!vault.error}
+                  aria-describedby={vault.error ? 'unlock-error' : undefined}
+                  autoComplete="current-password"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost input-addon"
+                  onClick={() => setShowPassword(s => !s)}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              {vault.error && (
+                <p id="unlock-error" role="alert" className="field-error">
+                  <CircleAlert size={16} style={{ flex: 'none', marginTop: 1 }} />
+                  {vault.error}
+                </p>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="btn btn-primary btn-lg btn-block"
+              disabled={loading || !password}
+            >
+              {loading ? 'Unlocking…' : 'Unlock'}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

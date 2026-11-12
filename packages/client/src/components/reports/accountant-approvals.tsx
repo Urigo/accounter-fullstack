@@ -1,14 +1,14 @@
-import { useContext, useEffect, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useMemo, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import {
   AccountantApprovalsChargesTableDocument,
   ChargeSortByField,
   type ChargeFilter,
 } from '../../gql/graphql.js';
-import { useUrlQuery } from '../../hooks/use-url-query.js';
+import { isObjectEmpty } from '../../helpers/form.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.js';
-import { ChargesFilters } from '../charges/charges-filters/index.js';
+import { ChargesFilters, useChargesFilter } from '../charges/charges-filters/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { SegmentedProgress } from '../ui/segmented-progress.js';
@@ -27,22 +27,20 @@ import { SegmentedProgress } from '../ui/segmented-progress.js';
 
 export const AccountantApprovals = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const { get } = useUrlQuery();
   const { userContext } = useContext(UserContext);
-  const [filter, setFilter] = useState<ChargeFilter>(
-    get('chargesFilters')
-      ? (JSON.parse(decodeURIComponent(get('chargesFilters') as string)) as ChargeFilter)
-      : {
-          byOwners: userContext?.context.adminBusinessId
-            ? [userContext?.context.adminBusinessId]
-            : [],
-          sortBy: {
-            field: ChargeSortByField.Date,
-            asc: false,
-          },
-          toAnyDate: null,
-          fromAnyDate: null,
-        },
+  const [appliedFilter, setFilter] = useChargesFilter();
+  const adminBusinessId = userContext?.context.adminBusinessId;
+  // With no filter in the URL, show the admin business's charges. Kept out of the URL until the
+  // user applies something, so opening the page doesn't add a history entry.
+  const filter = useMemo<ChargeFilter>(
+    () =>
+      isObjectEmpty(appliedFilter)
+        ? {
+            ...(adminBusinessId ? { byOwners: [adminBusinessId] } : {}),
+            sortBy: { field: ChargeSortByField.Date, asc: false },
+          }
+        : appliedFilter,
+    [appliedFilter, adminBusinessId],
   );
 
   const [{ data, fetching }] = useQuery({

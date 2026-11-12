@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { encodeFilters } from '../../router/routes.js';
 import { useUrlFilterState } from '../use-url-filter-state.js';
+import { useUrlPage } from '../use-url-page.js';
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -21,9 +22,15 @@ let root: Root;
 let router: ReturnType<typeof createBrowserRouter> | undefined;
 let filter: Partial<Filter>;
 let setFilter: Dispatch<SetStateAction<Partial<Filter>>>;
+let page: number;
+let setPage: Dispatch<SetStateAction<number>>;
+
+// As the charges screens use it: a new filter starts over from the first page.
+const RESET_PARAMS = ['page'];
 
 function Harness(): null {
-  [filter, setFilter] = useUrlFilterState(PARAM, schema);
+  [filter, setFilter] = useUrlFilterState(PARAM, schema, { resetParams: RESET_PARAMS });
+  [page, setPage] = useUrlPage();
   return null;
 }
 
@@ -43,6 +50,14 @@ async function mountAt(search: string): Promise<void> {
 
 async function update(value: SetStateAction<Partial<Filter>>): Promise<void> {
   await act(async () => setFilter(value));
+}
+
+async function goToPage(value: SetStateAction<number>): Promise<void> {
+  await act(async () => setPage(value));
+}
+
+function pageInUrl(): string | null {
+  return new URLSearchParams(window.location.search).get('page');
 }
 
 function paramInUrl(): string | null {
@@ -113,11 +128,11 @@ describe('useUrlFilterState', () => {
   it('keeps parameters written outside the router', async () => {
     await mountAt('');
     // As `useUrlQuery` does: a bare pushState the router never sees.
-    window.history.pushState(null, '', '/page?page=3');
+    window.history.pushState(null, '', '/page?view=compact');
 
     await update({ name: 'acme' });
     expect(paramInUrl()).toBe(encodeFilters({ name: 'acme' }));
-    expect(new URLSearchParams(window.location.search).get('page')).toBe('3');
+    expect(new URLSearchParams(window.location.search).get('view')).toBe('compact');
   });
 
   it('canonicalizes a URL holding the same filter in place, without a history entry', async () => {
@@ -150,5 +165,45 @@ describe('useUrlFilterState', () => {
     const before = filter;
     await traverse(() => window.dispatchEvent(new PopStateEvent('popstate')));
     expect(filter).toBe(before);
+  });
+
+  it('drops the reset params in the same history entry as a new filter', async () => {
+    await mountAt(searchFor({ name: 'first' }, { page: '3' }));
+    expect(page).toBe(3);
+    const length = window.history.length;
+
+    await update({ name: 'second' });
+    expect(paramInUrl()).toBe(encodeFilters({ name: 'second' }));
+    expect(pageInUrl()).toBeNull();
+    expect(page).toBe(0);
+    expect(window.history.length).toBe(length + 1);
+
+    // Back restores the filter and the page it was on, together.
+    await traverse(() => window.history.back());
+    expect(filter).toEqual({ name: 'first' });
+    expect(page).toBe(3);
+    expect(pageInUrl()).toBe('3');
+  });
+
+  it('keeps the reset params when only canonicalizing the URL', async () => {
+    await mountAt(searchFor({ name: 'acme', active: true, other: null }, { page: '2' }));
+    expect(paramInUrl()).toBe(encodeFilters({ active: true, name: 'acme' }));
+    expect(pageInUrl()).toBe('2');
+    expect(page).toBe(2);
+  });
+
+  it('pages back and forward without touching the filter', async () => {
+    await mountAt(searchFor({ name: 'acme' }));
+    const before = filter;
+
+    await goToPage(2);
+    await goToPage(current => current + 1);
+    expect(page).toBe(3);
+    expect(pageInUrl()).toBe('3');
+
+    await traverse(() => window.history.back());
+    expect(page).toBe(2);
+    expect(filter).toBe(before);
+    expect(paramInUrl()).toBe(encodeFilters({ name: 'acme' }));
   });
 });

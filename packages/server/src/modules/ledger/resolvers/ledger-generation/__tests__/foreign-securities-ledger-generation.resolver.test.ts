@@ -1,0 +1,2556 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SecuritiesTaxCategoryKey } from '../../../../../__generated__/types.js';
+import { TEST_TIMEZONES, useTimezone } from '../../../../../__tests__/helpers/timezones.js';
+import { Currency } from '../../../../../shared/enums.js';
+import type { TimelessDateString } from '../../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
+import { getChargeBusinesses } from '../../../../charges/helpers/common.helper.js';
+import type { IGetChargesByIdsResult } from '../../../../charges/types.js';
+import { ExchangeProvider } from '../../../../exchange-rates/providers/exchange.provider.js';
+import { FinancialAccountsProvider } from '../../../../financial-accounts/providers/financial-accounts.provider.js';
+import { FinancialEntitiesProvider } from '../../../../financial-entities/providers/financial-entities.provider.js';
+import { TaxCategoriesProvider } from '../../../../financial-entities/providers/tax-categories.provider.js';
+import { ForeignSecuritiesProvider } from '../../../../foreign-securities/providers/foreign-securities.provider.js';
+import type { SecurityExecutionRow } from '../../../../foreign-securities/types.js';
+import { MiscExpensesProvider } from '../../../../misc-expenses/providers/misc-expenses.provider.js';
+import { TransactionsProvider } from '../../../../transactions/providers/transactions.provider.js';
+import type { IGetTransactionsByChargeIdsResult } from '../../../../transactions/types.js';
+import { LedgerProvider } from '../../../providers/ledger.provider.js';
+import type { IGetLedgerRecordsByChargesIdsResult } from '../../../types.js';
+import { generateLedgerRecordsForForeignSecurities } from '../foreign-securities-ledger-generation.resolver.js';
+import {
+  buildTransaction as buildMockTransaction,
+  expectGeneratedRecords,
+  makeExchangeProvider,
+  makeFinancialEntitiesProvider,
+  makeInjector as makeMockInjector,
+  type MockRate,
+  type TransactionInput,
+} from './helpers/ledger-generation-mocks.js';
+
+vi.mock('../../../../charges/helpers/common.helper.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../../../charges/helpers/common.helper.js')>()),
+  getChargeBusinesses: vi.fn(),
+}));
+
+/*
+ * A foreign-securities charge: cash movements in the owner's bank account, each the cash leg of an
+ * execution in the securities portfolio (a buy, a sale, a dividend, a bond coupon, a redemption).
+ *
+ * The base entry books the bank account against the securities account. Income and redemptions are
+ * reshaped from it once the matched execution says what the movement was:
+ *  - dividends and bond interest are credited to (local or foreign) income, with any tax withheld
+ *    debited to a withholding-tax category;
+ *  - a sale or a redemption credits the securities account with the FIFO purchase cost and books
+ *    the difference as a price gain or loss; a second, local-currency entry books its rate PnL, so
+ *    the securities account gives up the units at the rate it carries them at.
+ *
+ * All IDs, amounts, rates and dates below are made up.
+ */
+
+const CHARGE_ID = 'charge-foreign-securities';
+const OWNER_ID = 'owner-business';
+
+const BANK_ACCOUNT_ID = 'account-bank';
+const SECURITIES_ACCOUNT_ID = 'account-foreign-securities';
+const SECURITY_BUSINESS_ID = 'business-security';
+const BANK_BUSINESS_ID = 'business-bank';
+
+const FEES_TAX_CATEGORY_ID = 'tax-category-securities-fees';
+
+const TAX_CATEGORIES: Record<SecuritiesTaxCategoryKey, string> = {
+  FOREIGN_SECURITIES_FEES: FEES_TAX_CATEGORY_ID,
+  FOREIGN_DIVIDEND_INCOME: 'tax-category-foreign-dividend-income',
+  LOCAL_DIVIDEND_INCOME: 'tax-category-local-dividend-income',
+  FOREIGN_DIVIDEND_WITHHOLDING_TAX: 'tax-category-foreign-dividend-withholding-tax',
+  LOCAL_DIVIDEND_WITHHOLDING_TAX: 'tax-category-local-dividend-withholding-tax',
+  FOREIGN_BOND_INTEREST_INCOME: 'tax-category-foreign-bond-interest-income',
+  LOCAL_BOND_INTEREST_INCOME: 'tax-category-local-bond-interest-income',
+  FOREIGN_BOND_WITHHOLDING_TAX: 'tax-category-foreign-bond-withholding-tax',
+  LOCAL_BOND_WITHHOLDING_TAX: 'tax-category-local-bond-withholding-tax',
+  FOREIGN_SECURITIES_SALE_GAIN: 'tax-category-foreign-securities-gain',
+  FOREIGN_SECURITIES_SALE_LOSS: 'tax-category-foreign-securities-loss',
+  FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN: 'tax-category-foreign-securities-exchange-gain',
+  FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: 'tax-category-foreign-securities-exchange-loss',
+  FINANCIAL_CONSULTANCY: 'tax-category-financial-consultancy',
+};
+
+const DAY: TimelessDateString = '2025-03-12';
+const USD_RATE = 3.5;
+/** A later day at another rate, for a payment cancelled after it was made */
+const LATER_DAY: TimelessDateString = '2025-03-19';
+const LATER_USD_RATE = 3.6;
+const LAST_YEAR_END: TimelessDateString = '2024-12-31';
+/**
+ * The day's rate, a later day's, and the day's again at the last year-end, so lots held over it
+ * carry no rate PnL
+ */
+const RATES: MockRate[] = [
+  [Currency.Usd, DAY, USD_RATE],
+  [Currency.Usd, LATER_DAY, LATER_USD_RATE],
+  [Currency.Usd, LAST_YEAR_END, USD_RATE],
+];
+
+const USD_LABEL = 'דולר ארה"ב';
+const ILS_LABEL = 'שקל חדש';
+
+/** The tax category the ledger books a financial account's movements in a currency to */
+function accountTaxCategoryId(accountId: string, currency: Currency): string {
+  return `tax-category:${accountId}:${currency}`;
+}
+
+const BANK_USD = accountTaxCategoryId(BANK_ACCOUNT_ID, Currency.Usd);
+const BANK_ILS = accountTaxCategoryId(BANK_ACCOUNT_ID, Currency.Ils);
+const SECURITIES_USD = accountTaxCategoryId(SECURITIES_ACCOUNT_ID, Currency.Usd);
+const SECURITIES_ILS = accountTaxCategoryId(SECURITIES_ACCOUNT_ID, Currency.Ils);
+
+function buildTransaction(
+  input: Partial<Omit<TransactionInput, 'chargeId' | 'ownerId'>> &
+    Pick<TransactionInput, 'id' | 'amount'>,
+): IGetTransactionsByChargeIdsResult {
+  return buildMockTransaction({
+    accountId: BANK_ACCOUNT_ID,
+    businessId: SECURITY_BUSINESS_ID,
+    currency: Currency.Usd,
+    debitDate: DAY,
+    description: `securities payment ${input.id}`,
+    ...input,
+    chargeId: CHARGE_ID,
+    ownerId: OWNER_ID,
+  });
+}
+
+/** The separate fee the bank charges in shekels for collecting a payment */
+const feeTransaction = buildTransaction({
+  id: 'transaction-fee',
+  amount: '-25',
+  currency: Currency.Ils,
+  businessId: BANK_BUSINESS_ID,
+  isFee: true,
+  description: 'securities payment fee',
+});
+
+const TRADE_TYPES = {
+  buy: 'קניה',
+  sell: 'מכירה',
+  dividend: 'דבידנד תשלום',
+  interest: 'ריבית תשלום',
+  redemption: 'פדיון',
+} as const;
+
+function buildExecution(
+  overrides: Partial<SecurityExecutionRow> & Pick<SecurityExecutionRow, 'id' | 'trade_type'>,
+): SecurityExecutionRow {
+  return {
+    owner_id: OWNER_ID,
+    security: '7654321',
+    bank_number: 12,
+    branch_number: 600,
+    account_number: 123456,
+    trade_date: DAY,
+    value_date: DAY,
+    settlement_date: DAY,
+    payment_date: null,
+    transaction_type: 'תשלומים ואירועי חברה',
+    nv: '0',
+    trade_price: '0',
+    trade_gross_value_trade_currency: '1000',
+    net_value_trade_currency: '1000',
+    net_value_settlement_currency: '1000',
+    net_value_nis: '3500',
+    trade_currency: USD_LABEL,
+    settlement_currency: USD_LABEL,
+    // the bank charges it as a separate fee transaction, never out of the payment itself
+    trade_commission_value_trade_currency: '7',
+    management_fees_value_trade_currency: '0',
+    israe_tax_value: '0',
+    nominal_profit_loss_nis: '0',
+    real_profit_loss_nis: '0',
+    payment_type: null,
+    symbol: 'MOCK',
+    isin: 'US0000000001',
+    issuer_country_code: 'US',
+    foreign_tax_value_settlement_currency: '0',
+    israel_tax_value_by_payments_settlement_currency: '0',
+    capital_tax_value_settlement_currency: '0',
+    is_cancel_transaction: 'לא',
+    ...overrides,
+  } as SecurityExecutionRow;
+}
+
+/** A purchase lot in the redemption's history */
+function buyExecution(id: string, tradeDate: TimelessDateString, units: number, cost: number) {
+  return buildExecution({
+    id,
+    trade_type: TRADE_TYPES.buy,
+    transaction_type: TRADE_TYPES.buy,
+    trade_date: tradeDate,
+    value_date: tradeDate,
+    nv: String(units),
+    trade_gross_value_trade_currency: String(cost),
+    net_value_trade_currency: String(-cost),
+    net_value_settlement_currency: String(-cost),
+    net_value_nis: String(-cost * USD_RATE),
+  });
+}
+
+function redemptionExecution(
+  units: number,
+  netProceeds: number,
+  overrides: Partial<SecurityExecutionRow> = {},
+) {
+  return buildExecution({
+    id: 'execution-redemption',
+    trade_type: TRADE_TYPES.redemption,
+    payment_type: 'פידיון',
+    nv: String(units),
+    trade_gross_value_trade_currency: String(netProceeds),
+    net_value_trade_currency: String(netProceeds),
+    net_value_settlement_currency: String(netProceeds),
+    net_value_nis: String(netProceeds * USD_RATE),
+    ...overrides,
+  });
+}
+
+function saleExecution(
+  units: number,
+  proceeds: number,
+  overrides: Partial<SecurityExecutionRow> = {},
+) {
+  return buildExecution({
+    id: 'execution-sale',
+    trade_type: TRADE_TYPES.sell,
+    transaction_type: TRADE_TYPES.sell,
+    nv: String(units),
+    trade_gross_value_trade_currency: String(proceeds),
+    net_value_trade_currency: String(proceeds),
+    net_value_settlement_currency: String(proceeds),
+    net_value_nis: '0',
+    ...overrides,
+  });
+}
+
+/** A local-currency record: one account on each side */
+function localRecord(debit: string, credit: string, amount: number) {
+  return {
+    currency: Currency.Ils,
+    debit1: debit,
+    debitForeign1: null,
+    debitLocal1: amount,
+    debit2: null,
+    debitForeign2: null,
+    debitLocal2: null,
+    credit1: credit,
+    creditForeign1: null,
+    creditLocal1: amount,
+    credit2: null,
+    creditForeign2: null,
+    creditLocal2: null,
+  };
+}
+
+const charge: IGetChargesByIdsResult = {
+  id: CHARGE_ID,
+  accountant_status: 'PENDING',
+  created_at: new Date('2025-03-14T00:00:00.000Z'),
+  documents_optional_flag: false,
+  invoice_payment_currency_diff: null,
+  is_property: false,
+  optional_vat: false,
+  owner_id: OWNER_ID,
+  tax_category_id: null,
+  type: 'FOREIGN_SECURITIES',
+  updated_at: new Date('2025-03-14T00:00:00.000Z'),
+  user_description: null,
+};
+
+type Scenario = {
+  transactions: IGetTransactionsByChargeIdsResult[];
+  /** The execution each transaction is matched to, by transaction id */
+  executions?: Record<string, SecurityExecutionRow>;
+  /** The ingested history of the security across the owner's accounts, for sales and redemptions */
+  history?: SecurityExecutionRow[];
+  /** Exchange rates; defaults to `RATES` */
+  rates?: MockRate[];
+  /**
+   * The cash movement each acquisition in the history was booked from, by execution id; defaults
+   * to one dated on each buy's trade date and debited on its value date
+   */
+  acquisitionTransactions?: Record<string, Partial<IGetTransactionsByChargeIdsResult>>;
+  /** The days the securities account was revalued; defaults to the last year-end */
+  revaluationDates?: TimelessDateString[];
+  /** Securities tax categories configured for the tenant; defaults to all of them */
+  taxCategories?: Partial<Record<SecuritiesTaxCategoryKey, string>>;
+  /** Executions with no cash leg that the charge books directly */
+  distributions?: SecurityExecutionRow[];
+  /**
+   * Whether a lookup by account number resolves another in-scope business's securities account,
+   * which the owner-scoped lookups must not book to
+   */
+  otherBusinessAccountByNumber?: boolean;
+  /** Entities the balance check treats as businesses; defaults to the bank only */
+  businessIds?: string[];
+};
+
+function makeInjector(scenario: Scenario) {
+  const foreignSecuritiesProvider = {
+    getChargeExecutionsByTransactionId: vi.fn(
+      async () => new Map(Object.entries(scenario.executions ?? {})),
+    ),
+    getSecurityAccountHistory: vi.fn(async () => scenario.history ?? []),
+    getSecurityOwnerHistory: vi.fn(async () => scenario.history ?? []),
+    getSecurityOwnerTransactionsByExecutionId: vi.fn(
+      async () =>
+        new Map(
+          Object.entries(
+            scenario.acquisitionTransactions ??
+              Object.fromEntries(
+                (scenario.history ?? [])
+                  .filter(execution => execution.trade_type === TRADE_TYPES.buy)
+                  .map(execution => [
+                    execution.id,
+                    {
+                      event_date: execution.trade_date,
+                      debit_date: execution.value_date ?? execution.trade_date,
+                      debit_date_override: null,
+                      debit_timestamp: null,
+                    },
+                  ]),
+              ),
+          ),
+        ),
+    ),
+    executionsByChargeIdLoader: { load: vi.fn(async () => scenario.distributions ?? []) },
+  };
+
+  const injector = makeMockInjector(
+    new Map<unknown, unknown>([
+      [
+        AdminContextProvider,
+        {
+          getVerifiedAdminContext: async () => ({
+            ownerId: OWNER_ID,
+            defaultLocalCurrency: Currency.Ils,
+            locality: 'ISR',
+            foreignSecurities: {
+              foreignSecuritiesBusinessId: null,
+              foreignSecuritiesFeesCategoryId: (scenario.taxCategories ?? TAX_CATEGORIES)
+                .FOREIGN_SECURITIES_FEES,
+              sortCode: null,
+              taxCategories: scenario.taxCategories ?? TAX_CATEGORIES,
+            },
+            financialAccounts: {
+              // the security business stands in for the securities account
+              internalWalletsIds: [SECURITY_BUSINESS_ID],
+              swiftBusinessId: null,
+            },
+          }),
+        },
+      ],
+      [
+        TransactionsProvider,
+        { transactionsByChargeIDLoader: { load: async () => scenario.transactions } },
+      ],
+      [
+        FinancialAccountsProvider,
+        {
+          getFinancialAccountsByOwnerIdLoader: {
+            load: async () => [
+              { id: BANK_ACCOUNT_ID, type: 'BANK_ACCOUNT' },
+              { id: SECURITIES_ACCOUNT_ID, type: 'FOREIGN_SECURITIES' },
+            ],
+          },
+          getFinancialAccountByAccountNumberLoader: {
+            load: async (accountNumber: string) =>
+              accountNumber === 'foreign_securities'
+                ? {
+                    id: scenario.otherBusinessAccountByNumber
+                      ? 'account-other-business-securities'
+                      : SECURITIES_ACCOUNT_ID,
+                  }
+                : null,
+          },
+        },
+      ],
+      [ExchangeProvider, makeExchangeProvider(scenario.rates ?? RATES)],
+      [
+        TaxCategoriesProvider,
+        {
+          taxCategoryByFinancialAccountIdsAndCurrenciesLoader: {
+            load: async ({
+              financialAccountId,
+              currency,
+            }: {
+              financialAccountId: string;
+              currency: Currency;
+            }) => ({ id: accountTaxCategoryId(financialAccountId, currency) }),
+          },
+        },
+      ],
+      [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
+      [
+        FinancialEntitiesProvider,
+        makeFinancialEntitiesProvider(scenario.businessIds ?? [BANK_BUSINESS_ID]),
+      ],
+      [ForeignSecuritiesProvider, foreignSecuritiesProvider],
+      [
+        LedgerProvider,
+        {
+          getLedgerRecordsByFinancialEntityIdLoader: {
+            load: async (entityId: string) =>
+              (scenario.revaluationDates ?? [LAST_YEAR_END]).map(date => ({
+                description: 'Revaluation of account "Foreign securities"',
+                invoice_date: date,
+                debit_entity1: entityId,
+              })),
+          },
+        },
+      ],
+    ]),
+  );
+
+  return { injector, foreignSecuritiesProvider };
+}
+
+async function generate(scenario: Scenario) {
+  const { injector, foreignSecuritiesProvider } = makeInjector(scenario);
+  const result = await generateLedgerRecordsForForeignSecurities(
+    charge as never,
+    { insertLedgerRecordsIfNotExists: false },
+    { injector } as never,
+    {} as never,
+  );
+  return { ...expectGeneratedRecords(result as never), foreignSecuritiesProvider };
+}
+
+function round(value: string | null | undefined): number | null {
+  return value == null ? null : Math.round(Number(value) * 1e6) / 1e6;
+}
+
+/** Both account slots of each side, with amounts rounded off float noise */
+function summarize(record: IGetLedgerRecordsByChargesIdsResult) {
+  return {
+    currency: record.currency,
+    debit1: record.debit_entity1,
+    debitForeign1: round(record.debit_foreign_amount1),
+    debitLocal1: round(record.debit_local_amount1),
+    debit2: record.debit_entity2,
+    debitForeign2: round(record.debit_foreign_amount2),
+    debitLocal2: round(record.debit_local_amount2),
+    credit1: record.credit_entity1,
+    creditForeign1: round(record.credit_foreign_amount1),
+    creditLocal1: round(record.credit_local_amount1),
+    credit2: record.credit_entity2,
+    creditForeign2: round(record.credit_foreign_amount2),
+    creditLocal2: round(record.credit_local_amount2),
+  };
+}
+
+/** A one-sided USD record line: entity, foreign amount, and its value at the day's rate */
+function usd(amount: number) {
+  return { foreign: amount, local: Math.round(amount * USD_RATE * 1e6) / 1e6 };
+}
+
+function recordOf(records: IGetLedgerRecordsByChargesIdsResult[], debitOrCredit: string) {
+  return records.find(
+    record => record.debit_entity1 === debitOrCredit || record.credit_entity1 === debitOrCredit,
+  );
+}
+
+/** Each entity's balance across the records, in foreign or local amounts: debits less credits */
+function netByEntity(records: IGetLedgerRecordsByChargesIdsResult[], amounts: 'foreign' | 'local') {
+  const net = new Map<string, number>();
+  const add = (entity: string | null, amount: string | null, sign: 1 | -1) => {
+    if (entity && amount != null) {
+      net.set(entity, (net.get(entity) ?? 0) + sign * Number(amount));
+    }
+  };
+  for (const record of records) {
+    add(record.debit_entity1, record[`debit_${amounts}_amount1`], 1);
+    add(record.debit_entity2, record[`debit_${amounts}_amount2`], 1);
+    add(record.credit_entity1, record[`credit_${amounts}_amount1`], -1);
+    add(record.credit_entity2, record[`credit_${amounts}_amount2`], -1);
+  }
+  return net;
+}
+
+/** What a cash-in movement looks like before this change, and still does when it can't be improved */
+function baseCashInRecord(amount: number) {
+  return {
+    currency: Currency.Usd,
+    debit1: BANK_USD,
+    debitForeign1: usd(amount).foreign,
+    debitLocal1: usd(amount).local,
+    debit2: null,
+    debitForeign2: null,
+    debitLocal2: null,
+    credit1: SECURITIES_USD,
+    creditForeign1: usd(amount).foreign,
+    creditLocal1: usd(amount).local,
+    credit2: null,
+    creditForeign2: null,
+    creditLocal2: null,
+  };
+}
+
+describe.each(TEST_TIMEZONES)('generateLedgerRecordsForForeignSecurities (TZ=%s)', timeZone => {
+  useTimezone(timeZone);
+
+  beforeEach(() => {
+    vi.mocked(getChargeBusinesses).mockResolvedValue({
+      mainBusinessId: SECURITY_BUSINESS_ID,
+    } as never);
+  });
+
+  describe('execution matching', () => {
+    it('keeps the base entry and reports a transaction with no matched execution', async () => {
+      const transaction = buildTransaction({ id: 'transaction-unmatched', amount: '1000' });
+
+      const { records, errors } = await generate({ transactions: [transaction] });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([
+        expect.stringContaining('no matched security execution'),
+      ]);
+      expect(errors[0]).toContain('securities payment transaction-unmatched');
+      expect(errors[0]).toContain(DAY);
+    });
+
+    it('asks the provider for the executions of this charge', async () => {
+      const transaction = buildTransaction({ id: 'transaction-1', amount: '1000' });
+
+      const { foreignSecuritiesProvider } = await generate({ transactions: [transaction] });
+
+      expect(foreignSecuritiesProvider.getChargeExecutionsByTransactionId).toHaveBeenCalledWith(
+        CHARGE_ID,
+        OWNER_ID,
+      );
+    });
+  });
+
+  describe('buys', () => {
+    it('books a buy against the securities account', async () => {
+      const transaction = buildTransaction({ id: 'transaction-buy', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: buyExecution('execution-buy', DAY, 10, 1000),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit1: SECURITIES_USD,
+          credit1: BANK_USD,
+        },
+      ]);
+    });
+
+    it('books a cancelled buy the bank reports as a sale as the cash coming back', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: saleExecution(10, 1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+    });
+  });
+
+  describe('sales', () => {
+    // 10 units bought on 15 Jan for 1,000 when the dollar was 3.70, sold on DAY for 1,100 at 3.50
+    const LOT_DAY: TimelessDateString = '2025-01-15';
+    const SALE_RATES: MockRate[] = [...RATES, [Currency.Usd, LOT_DAY, 3.7]];
+    const lot = () => buyExecution('execution-buy', LOT_DAY, 10, 1000);
+
+    it('credits the FIFO cost, books the price gain, and books the rate PnL apart', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors, foreignSecuritiesProvider } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: SALE_RATES,
+      });
+
+      expect(errors).toEqual([]);
+      expect(foreignSecuritiesProvider.getSecurityOwnerHistory).toHaveBeenCalledWith(
+        sale,
+        OWNER_ID,
+      );
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1100),
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(100).foreign,
+          creditLocal2: usd(100).local,
+        },
+        // the lot is carried at 3.70: 1,000 × (3.50 − 3.70)
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 200),
+      ]);
+      // the securities account gives up what it carried the lot at: 1,000 × 3.70
+      const securitiesCredit = records
+        .flatMap(record => [
+          record.credit_entity1 === SECURITIES_USD ? Number(record.credit_local_amount1) : 0,
+          record.debit_entity1 === SECURITIES_USD ? -Number(record.debit_local_amount1) : 0,
+        ])
+        .reduce((sum, amount) => sum + amount, 0);
+      expect(securitiesCredit).toBeCloseTo(3700, 6);
+    });
+
+    it('books an exchange gain when the dollar rose since the purchase', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '900' });
+      const sale = saleExecution(10, 900);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: [...RATES, [Currency.Usd, LOT_DAY, 3.3]],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(900),
+          debit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_LOSS,
+          debitForeign2: usd(100).foreign,
+          debitLocal2: usd(100).local,
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+        },
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 200),
+      ]);
+    });
+
+    it('measures the rate PnL of a lot held over a year-end from that year-end', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
+        // the year-end revaluation carried the lot from its purchase rate to 3.60
+        rates: [
+          [Currency.Usd, DAY, USD_RATE],
+          [Currency.Usd, LAST_YEAR_END, 3.6],
+        ],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 100),
+      );
+    });
+
+    it('keeps a lot held over a year-end that was never revalued at the rate it was booked at', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
+        rates: [
+          [Currency.Usd, DAY, USD_RATE],
+          [Currency.Usd, '2024-06-10', 3.4],
+        ],
+        revaluationDates: [],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(
+        // 1,000 × (3.50 − 3.40)
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 100),
+      );
+    });
+
+    it('carries a purchase at the rate of the cash movement it was booked from', async () => {
+      // the buy settled on its value date, but its cash movement was debited a day later
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: [...RATES, [Currency.Usd, '2025-01-16', 3.72]],
+        acquisitionTransactions: {
+          'execution-buy': {
+            event_date: '2025-01-15',
+            debit_date: '2025-01-15',
+            debit_date_override: '2025-01-16',
+            debit_timestamp: null,
+          },
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(
+        // 1,000 × (3.50 − 3.72)
+        localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 220),
+      );
+    });
+
+    describe('a trade and its debit on either side of a year-end', () => {
+      // the trade's day, which its record is booked on, and its debit's, which it is priced at
+      const TRADED_ON: TimelessDateString = '2024-12-30';
+      const DEBITED_ON: TimelessDateString = '2025-01-02';
+      const STRADDLE_RATES: MockRate[] = [
+        [Currency.Usd, DAY, USD_RATE],
+        [Currency.Usd, '2024-06-10', 3.4],
+        [Currency.Usd, TRADED_ON, 3.7],
+        [Currency.Usd, LAST_YEAR_END, 3.6],
+        [Currency.Usd, DEBITED_ON, 3.8],
+      ];
+      const straddling = (
+        input: Parameters<typeof buildTransaction>[0],
+      ): IGetTransactionsByChargeIdsResult => ({
+        ...buildTransaction({ ...input, debitDate: DEBITED_ON }),
+        event_date: TRADED_ON,
+      });
+
+      it('carries a lot bought before the year-end and debited after it at the year-end rate', async () => {
+        const buyTransaction = straddling({ id: 'transaction-buy', amount: '-1000' });
+        const saleTransaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const buy = buyExecution('execution-buy', TRADED_ON, 10, 1000);
+        const sale = saleExecution(10, 1100);
+        const scenario = {
+          history: [buy, sale],
+          rates: STRADDLE_RATES,
+          acquisitionTransactions: { [buy.id]: buyTransaction },
+        };
+
+        const bought = await generate({
+          ...scenario,
+          transactions: [buyTransaction],
+          executions: { [buyTransaction.id]: buy },
+        });
+        const sold = await generate({
+          ...scenario,
+          transactions: [saleTransaction],
+          executions: { [saleTransaction.id]: sale },
+        });
+
+        expect([...bought.errors, ...sold.errors]).toEqual([]);
+        // the year-end revaluation counted the buy, by its trade day, and moved it to 3.60
+        expect(sold.records.map(summarize)[1]).toEqual(
+          // 1,000 × (3.50 − 3.60)
+          localRecord(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS, SECURITIES_USD, 100),
+        );
+        // the buy is booked at 3.80, the year-end revaluation moves it to 3.60, and the sale
+        // gives up what that leaves
+        const revaluation = 1000 * (3.6 - 3.8);
+        const securitiesBalance =
+          (netByEntity([...bought.records, ...sold.records], 'local').get(SECURITIES_USD) ?? 0) +
+          revaluation;
+        expect(securitiesBalance).toBeCloseTo(0, 6);
+      });
+
+      it('does not carry a lot sold before the year-end and debited after it over that year-end', async () => {
+        const transaction = straddling({ id: 'transaction-sale', amount: '1100' });
+        const sale = saleExecution(10, 1100, { trade_date: TRADED_ON, value_date: DEBITED_ON });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [buyExecution('execution-buy', '2024-06-10', 10, 1000), sale],
+          rates: STRADDLE_RATES,
+        });
+
+        expect(errors).toEqual([]);
+        // the year-end revaluation counted the units as gone, so they are still carried at 3.40
+        expect(records.map(summarize)[1]).toEqual(
+          // 1,000 × (3.80 − 3.40)
+          localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 400),
+        );
+      });
+    });
+
+    it("books the sale without its rate PnL when the purchase's cash movement is not found", async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: SALE_RATES,
+        acquisitionTransactions: {},
+      });
+
+      expect(records).toHaveLength(1);
+      expect(records[0]!.credit_entity2).toBe(TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN);
+      expect(errors).toEqual([
+        expect.stringContaining(
+          'Could not book the exchange-rate part of the sale of MOCK (US0000000001) on 2025-03-12: the cash movement of the purchase of 10 units on 2025-01-15 was not found',
+        ),
+      ]);
+    });
+
+    it('leaves the securities account at zero after a buy and the sale of all of it', async () => {
+      const buyTransaction = buildTransaction({
+        id: 'transaction-buy',
+        amount: '-1000',
+        debitDate: LOT_DAY,
+      });
+      const saleTransaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const buy = lot();
+      const sale = saleExecution(10, 1100);
+      const scenario = {
+        history: [buy, sale],
+        rates: SALE_RATES,
+        acquisitionTransactions: { [buy.id]: buyTransaction },
+      };
+
+      const bought = await generate({
+        ...scenario,
+        transactions: [buyTransaction],
+        executions: { [buyTransaction.id]: buy },
+      });
+      const sold = await generate({
+        ...scenario,
+        transactions: [saleTransaction],
+        executions: { [saleTransaction.id]: sale },
+      });
+
+      expect([...bought.errors, ...sold.errors]).toEqual([]);
+      const securitiesBalance = (records: IGetLedgerRecordsByChargesIdsResult[]) =>
+        records.reduce(
+          (sum, record) =>
+            sum +
+            (record.debit_entity1 === SECURITIES_USD ? Number(record.debit_local_amount1) : 0) -
+            (record.credit_entity1 === SECURITIES_USD ? Number(record.credit_local_amount1) : 0),
+          0,
+        );
+      expect(securitiesBalance([...bought.records, ...sold.records])).toBeCloseTo(0, 6);
+    });
+
+    it('books no rate PnL for a sale in shekels', async () => {
+      const transaction = buildTransaction({
+        id: 'transaction-sale',
+        amount: '1100',
+        currency: Currency.Ils,
+      });
+      const ilsExecution = {
+        trade_currency: ILS_LABEL,
+        settlement_currency: ILS_LABEL,
+        trade_gross_value_trade_currency: '0',
+        net_value_trade_currency: '0',
+        net_value_settlement_currency: '0',
+      };
+      const sale = saleExecution(10, 1100, {
+        ...ilsExecution,
+        trade_gross_value_trade_currency: '1100',
+        net_value_nis: '1100',
+      });
+      const buy = buildExecution({
+        ...ilsExecution,
+        id: 'execution-buy',
+        trade_type: TRADE_TYPES.buy,
+        transaction_type: TRADE_TYPES.buy,
+        trade_date: LOT_DAY,
+        value_date: LOT_DAY,
+        nv: '10',
+        net_value_nis: '-1000',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [buy, sale],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          currency: Currency.Ils,
+          debit1: BANK_ILS,
+          debitForeign1: null,
+          debitLocal1: 1100,
+          debit2: null,
+          debitForeign2: null,
+          debitLocal2: null,
+          credit1: SECURITIES_ILS,
+          creditForeign1: null,
+          creditLocal1: 1000,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: null,
+          creditLocal2: 100,
+        },
+      ]);
+    });
+
+    describe("the bank's profit/loss", () => {
+      // at the bank's own rates (3.50 and 3.70): nominal 3,850 − 3,700 = 150, price 100 × 3.50
+      // = 350, rate 1,000 × (3.50 − 3.70) = −200, which the bank reports as a linkage of 200
+      const bankLot = () =>
+        buildExecution({
+          ...lot(),
+          personal_currency_rate: '-1',
+          trade_gross_value_nis: '3700',
+        });
+      const bankSale = (overrides: Partial<SecurityExecutionRow>) =>
+        saleExecution(10, 1100, {
+          personal_currency_rate: '-1',
+          trade_gross_value_nis: '3850',
+          nominal_profit_loss_nis: '150',
+          nominal_profit_loss_linkage: '200',
+          // the smaller of the two gains
+          real_profit_loss_nis: '150',
+          ...overrides,
+        });
+
+      it('agrees with a bank that reports the same', async () => {
+        const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const sale = bankSale({});
+
+        const { errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [bankLot(), sale],
+          rates: SALE_RATES,
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it("costs the sale from its own account's lots, as the bank does, past an older one elsewhere", async () => {
+        // an older, cheaper lot of the same security sits in another of the owner's accounts
+        const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const sale = bankSale({});
+        const elsewhere = buildExecution({
+          ...buyExecution('execution-buy-elsewhere', '2024-06-10', 10, 500),
+          account_number: 654321,
+        });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [elsewhere, bankLot(), sale],
+          rates: SALE_RATES,
+        });
+
+        expect(errors).toEqual([]);
+        // the cost and the price gain come from this account's lot alone: 1,000, and 100 × 3.50
+        expect(records.map(summarize)[0]).toEqual({
+          ...baseCashInRecord(1100),
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(100).foreign,
+          creditLocal2: usd(100).local,
+        });
+      });
+
+      it('reports each figure that disagrees, and still books the sale from its lots', async () => {
+        const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+        const sale = bankSale({ nominal_profit_loss_nis: '120', nominal_profit_loss_linkage: '230' });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: sale },
+          history: [bankLot(), sale],
+          rates: SALE_RATES,
+        });
+
+        expect(errors).toEqual([
+          expect.stringContaining('a nominal profit/loss of 120.00 ₪, where its FIFO lots come to 150.00 ₪'),
+          expect.stringContaining('linkage of 230.00 ₪'),
+        ]);
+        expect(errors[0]).toContain('the sale of MOCK (US0000000001) on 2025-03-12');
+        expect(records).toHaveLength(2);
+      });
+    });
+
+    it('books the sale and leaves out its rate PnL when the exchange category is missing', async () => {
+      // every tenant starts without it: the disposal must keep booking as it did
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+      const { FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: SALE_RATES,
+        taxCategories,
+      });
+
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1100),
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(100).foreign,
+          creditLocal2: usd(100).local,
+        },
+      ]);
+      expect(errors).toEqual([
+        expect.stringContaining(
+          'Missing securities tax category "Exchange rate loss on sale of foreign securities"',
+        ),
+      ]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_SECURITIES_SALE_EXCHANGE_LOSS']);
+    });
+
+    it('keeps the base entry of a sale with withheld tax', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1050' });
+      const sale = saleExecution(10, 1050, {
+        trade_gross_value_trade_currency: '1100',
+        capital_tax_value_settlement_currency: '50',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [lot(), sale],
+        rates: SALE_RATES,
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1050)]);
+      expect(errors).toEqual([
+        expect.stringContaining('booking tax withheld on a sale is not supported yet'),
+      ]);
+    });
+
+    it('keeps the base entry and explains a sale with no purchase in the history', async () => {
+      const transaction = buildTransaction({ id: 'transaction-sale', amount: '1100' });
+      const sale = saleExecution(10, 1100);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: sale },
+        history: [sale],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1100)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Could not find the purchase of 10 of 10 units of MOCK'),
+      ]);
+      expect(errors[0]).toContain('sold on 2025-03-12');
+    });
+
+    it("books a buy the bank cancelled as a sale as the buy's reversal", async () => {
+      // the bank's refund of a cancelled buy: a cancelled sale, with its value positive
+      const buyTransaction = buildTransaction({ id: 'transaction-buy', amount: '-1000' });
+      const refundTransaction = buildTransaction({ id: 'transaction-refund', amount: '1000' });
+
+      const { records, errors, foreignSecuritiesProvider } = await generate({
+        transactions: [buyTransaction, refundTransaction],
+        executions: {
+          [buyTransaction.id]: buyExecution('execution-buy', DAY, 10, 1000),
+          [refundTransaction.id]: saleExecution(10, 1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)[1]).toEqual(baseCashInRecord(1000));
+      // the refund reverses the buy at the same rate: both accounts are back where they started
+      for (const amounts of ['foreign', 'local'] as const) {
+        const net = netByEntity(records, amounts);
+        expect(net.get(SECURITIES_USD)).toBeCloseTo(0, 6);
+        expect(net.get(BANK_USD)).toBeCloseTo(0, 6);
+      }
+      expect(foreignSecuritiesProvider.getSecurityOwnerHistory).not.toHaveBeenCalled();
+    });
+
+    it('flags a sale the bank cancelled as a buy rather than booking it as one', async () => {
+      // the mirror of a buy cancelled as a sale, not seen so far: a cancellation reported as a buy
+      // with a buy's own values, cash going out — which reverses a sale, not books a purchase
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: buildExecution({
+            id: 'execution-cancellation',
+            trade_type: TRADE_TYPES.buy,
+            transaction_type: TRADE_TYPES.buy,
+            nv: '10',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled sale of MOCK (US0000000001)'),
+      ]);
+    });
+
+    it('keeps the base entry of a cancelled sale and says its reversal is not booked', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: saleExecution(10, -1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled sale of MOCK (US0000000001)'),
+      ]);
+    });
+  });
+
+  describe('a charge spanning several securities', () => {
+    it('lets every bought security keep its holding balance', async () => {
+      // two security businesses that are not internal wallets, so each trade is booked against
+      // its own security rather than the securities account
+      const alpha = 'business-security-alpha';
+      const beta = 'business-security-beta';
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+      const buyAlpha = buildTransaction({ id: 'transaction-buy-alpha', amount: '-1000', businessId: alpha });
+      const buyBeta = buildTransaction({ id: 'transaction-buy-beta', amount: '-1000', businessId: beta });
+
+      const { records, errors } = await generate({
+        transactions: [buyBeta, buyAlpha],
+        executions: {
+          [buyAlpha.id]: buyExecution('execution-buy-alpha', DAY, 10, 1000),
+          [buyBeta.id]: buyExecution('execution-buy-beta', DAY, 10, 1000),
+        },
+        businessIds: [BANK_BUSINESS_ID, alpha, beta],
+      });
+
+      expect(errors).toEqual([]);
+      // in the transactions' order, not the order their lookups happened to finish in
+      expect(records.map(record => record.debit_entity1)).toEqual([beta, alpha]);
+    });
+
+    it('reports a security sold beyond what the charge bought', async () => {
+      const alpha = 'business-security-alpha';
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+      const buyAlpha = buildTransaction({
+        id: 'transaction-buy-alpha',
+        amount: '-1000',
+        businessId: alpha,
+      });
+      const sellAlpha = buildTransaction({
+        id: 'transaction-sell-alpha',
+        amount: '1500',
+        businessId: alpha,
+      });
+
+      const buyAlphaExecution = buyExecution('execution-buy-alpha', DAY, 10, 1000);
+      const sellAlphaExecution = saleExecution(10, 1500, { id: 'execution-sell-alpha' });
+
+      const { errors } = await generate({
+        transactions: [buyAlpha, sellAlpha],
+        executions: {
+          [buyAlpha.id]: buyAlphaExecution,
+          [sellAlpha.id]: sellAlphaExecution,
+        },
+        // FIFO sells an older holding, bought before this charge for more than its own buy
+        history: [
+          buyExecution('execution-buy-older', '2024-06-01', 10, 1200),
+          buyAlphaExecution,
+          sellAlphaExecution,
+        ],
+        businessIds: [BANK_BUSINESS_ID, alpha],
+      });
+
+      // it took part in a buy, but the sale took out more cost than the charge put in, so its
+      // balance across the charge is a credit, not a holding
+      expect(errors).toEqual([expect.stringContaining(`Business "${alpha}" is unbalanced`)]);
+    });
+  });
+
+  describe('dividends', () => {
+    const dividendExecution = (overrides: Partial<SecurityExecutionRow> = {}) =>
+      buildExecution({
+        id: 'execution-dividend',
+        trade_type: TRADE_TYPES.dividend,
+        payment_type: 'דיבידנד',
+        ...overrides,
+      });
+
+    it('credits foreign dividend income when nothing was withheld, leaving the fee as is', async () => {
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [transaction, feeTransaction],
+        executions: { [transaction.id]: dividendExecution() },
+      });
+
+      expect(errors).toEqual([]);
+      expect(missingSecuritiesTaxCategories ?? []).toEqual([]);
+      expect(summarize(recordOf(records, BANK_USD)!)).toEqual({
+        ...baseCashInRecord(1000),
+        credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+      });
+      expect(summarize(recordOf(records, FEES_TAX_CATEGORY_ID)!)).toMatchObject({
+        currency: Currency.Ils,
+        debit1: FEES_TAX_CATEGORY_ID,
+        debitLocal1: 25,
+        credit1: BANK_ILS,
+        creditLocal1: 25,
+      });
+    });
+
+    it('credits local dividend income for an Israeli issuer', async () => {
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({ issuer_country_code: 'IL', isin: 'IL0000000001' }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        { ...baseCashInRecord(1000), credit1: TAX_CATEGORIES.LOCAL_DIVIDEND_INCOME },
+      ]);
+    });
+
+    it('books withheld tax as a second debit and the gross amount as income', async () => {
+      // 1,250 declared, 250 withheld abroad, 1,000 received
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            trade_gross_value_trade_currency: '1250',
+            foreign_tax_value_settlement_currency: '250',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          currency: Currency.Usd,
+          debit1: BANK_USD,
+          debitForeign1: usd(1000).foreign,
+          debitLocal1: usd(1000).local,
+          debit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          debitForeign2: usd(250).foreign,
+          debitLocal2: usd(250).local,
+          credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          creditForeign1: usd(1250).foreign,
+          creditLocal1: usd(1250).local,
+          credit2: null,
+          creditForeign2: null,
+          creditLocal2: null,
+        },
+      ]);
+    });
+
+    it('books a refund of withheld tax as a second credit', async () => {
+      // 950 declared, 50 of earlier withholding refunded, 1,000 received
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            trade_gross_value_trade_currency: '950',
+            israel_tax_value_by_payments_settlement_currency: '-50',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          creditForeign1: usd(950).foreign,
+          creditLocal1: usd(950).local,
+          credit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          creditForeign2: usd(50).foreign,
+          creditLocal2: usd(50).local,
+        },
+      ]);
+    });
+
+    it('books tax withheld on a local dividend to local dividend withholding tax, with no foreign amounts in shekels', async () => {
+      const transaction = buildTransaction({
+        id: 'transaction-dividend',
+        amount: '400',
+        currency: Currency.Ils,
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            issuer_country_code: 'IL',
+            isin: 'IL0000000001',
+            trade_currency: ILS_LABEL,
+            settlement_currency: ILS_LABEL,
+            trade_gross_value_trade_currency: '500',
+            net_value_trade_currency: '400',
+            net_value_settlement_currency: '400',
+            net_value_nis: '400',
+            israel_tax_value_by_payments_settlement_currency: '100',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          currency: Currency.Ils,
+          debit1: BANK_ILS,
+          debitForeign1: null,
+          debitLocal1: 400,
+          debit2: TAX_CATEGORIES.LOCAL_DIVIDEND_WITHHOLDING_TAX,
+          debitForeign2: null,
+          debitLocal2: 100,
+          credit1: TAX_CATEGORIES.LOCAL_DIVIDEND_INCOME,
+          creditForeign1: null,
+          creditLocal1: 500,
+          credit2: null,
+          creditForeign2: null,
+          creditLocal2: null,
+        },
+      ]);
+      expect(records[0].credit_entity1).not.toBe(SECURITIES_ILS);
+    });
+
+    it('books Israeli tax once when the bank restates it as capital tax', async () => {
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            trade_gross_value_trade_currency: '1250',
+            israel_tax_value_by_payments_settlement_currency: '250',
+            capital_tax_value_settlement_currency: '250',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          debitForeign2: usd(250).foreign,
+          debitLocal2: usd(250).local,
+          credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          creditForeign1: usd(1250).foreign,
+          creditLocal1: usd(1250).local,
+        },
+      ]);
+    });
+
+    it('keeps the base entry and names a missing income category', async () => {
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+      const { FOREIGN_DIVIDEND_INCOME: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: dividendExecution() },
+        taxCategories,
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Missing securities tax category "Foreign dividend income"'),
+      ]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_INCOME']);
+    });
+
+    it('names a missing withholding category only when tax was withheld', async () => {
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+      const { FOREIGN_DIVIDEND_WITHHOLDING_TAX: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const withoutTax = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: dividendExecution() },
+        taxCategories,
+      });
+      expect(withoutTax.errors).toEqual([]);
+      expect(withoutTax.records[0].credit_entity1).toBe(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME);
+
+      const withTax = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            trade_gross_value_trade_currency: '1250',
+            foreign_tax_value_settlement_currency: '250',
+          }),
+        },
+        taxCategories,
+      });
+      expect(withTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(withTax.errors).toEqual([
+        expect.stringContaining('Missing securities tax category "Foreign dividend withholding tax"'),
+      ]);
+      expect(withTax.missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_WITHHOLDING_TAX']);
+    });
+
+    it('books the reported tax and reports it when gross minus net disagrees', async () => {
+      const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({ trade_gross_value_trade_currency: '1010' }),
+        },
+      });
+
+      expect(records.map(summarize)).toEqual([
+        { ...baseCashInRecord(1000), credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME },
+      ]);
+      expect(errors).toEqual([expect.stringContaining('does not match gross minus net')]);
+    });
+
+    it('books a cancelled dividend as the mirror of its income entry, crediting its tax back', async () => {
+      // the bank reverses a 1,250 dividend that paid 1,000 after 250 withheld: its gross stays
+      // positive, while the cash and the tax come back negated
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({
+            trade_gross_value_trade_currency: '1250',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            foreign_tax_value_settlement_currency: '-250',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      // the dividend it cancels is not in the charge, which is the fallback's business below
+      expect(errors).toEqual([expect.stringContaining('that is not in this charge')]);
+      expect(records.map(summarize)).toEqual([
+        {
+          currency: Currency.Usd,
+          debit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          debitForeign1: usd(1250).foreign,
+          debitLocal1: usd(1250).local,
+          debit2: null,
+          debitForeign2: null,
+          debitLocal2: null,
+          credit1: BANK_USD,
+          creditForeign1: usd(1000).foreign,
+          creditLocal1: usd(1000).local,
+          credit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          creditForeign2: usd(250).foreign,
+          creditLocal2: usd(250).local,
+        },
+      ]);
+    });
+
+    it('nets a cancelled and re-executed dividend down to the replacement, at the original rate', async () => {
+      // a 1,250 dividend (250 withheld) is cancelled a week later, at another rate, and paid again
+      // as 1,240 (248 withheld)
+      const original = buildTransaction({ id: 'transaction-original', amount: '1000' });
+      const cancellation = buildTransaction({
+        id: 'transaction-cancellation',
+        amount: '-1000',
+        debitDate: LATER_DAY,
+      });
+      const replacement = buildTransaction({
+        id: 'transaction-replacement',
+        amount: '992',
+        debitDate: LATER_DAY,
+      });
+
+      const { records, errors } = await generate({
+        transactions: [original, cancellation, replacement],
+        executions: {
+          [original.id]: dividendExecution({
+            id: 'execution-original',
+            trade_gross_value_trade_currency: '1250',
+            foreign_tax_value_settlement_currency: '250',
+          }),
+          [cancellation.id]: dividendExecution({
+            id: 'execution-cancellation',
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
+            trade_gross_value_trade_currency: '1250',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            foreign_tax_value_settlement_currency: '-250',
+            is_cancel_transaction: 'כן',
+          }),
+          [replacement.id]: dividendExecution({
+            id: 'execution-replacement',
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
+            trade_gross_value_trade_currency: '1240',
+            net_value_trade_currency: '992',
+            net_value_settlement_currency: '992',
+            foreign_tax_value_settlement_currency: '248',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+
+      // the reversal is booked on its own day, at the rate of the dividend it cancels
+      const reversal = records.find(
+        record => record.debit_entity1 === TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+      )!;
+      expect(reversal.value_date).toBe(LATER_DAY);
+      expect(summarize(reversal)).toMatchObject({
+        debitLocal1: usd(1250).local,
+        creditLocal1: usd(1000).local,
+        creditLocal2: usd(250).local,
+      });
+
+      const foreign = netByEntity(records, 'foreign');
+      expect(foreign.get(BANK_USD)).toBeCloseTo(992);
+      expect(foreign.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX)).toBeCloseTo(248);
+      expect(foreign.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME)).toBeCloseTo(-1240);
+      expect(foreign.has(SECURITIES_USD)).toBe(false);
+
+      // income and withheld tax are left with the replacement's, at its rate, and nothing else
+      const local = netByEntity(records, 'local');
+      expect(local.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX)).toBeCloseTo(
+        248 * LATER_USD_RATE,
+        6,
+      );
+      expect(local.get(TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME)).toBeCloseTo(
+        -1240 * LATER_USD_RATE,
+        6,
+      );
+    });
+
+    it('prices a cancellation at its own rate, and says so, when the dividend it cancels is not in the charge', async () => {
+      const cancellation = buildTransaction({
+        id: 'transaction-cancellation',
+        amount: '-1000',
+        debitDate: LATER_DAY,
+      });
+
+      const { records, errors } = await generate({
+        transactions: [cancellation],
+        executions: {
+          [cancellation.id]: dividendExecution({
+            trade_date: LATER_DAY,
+            value_date: LATER_DAY,
+            trade_gross_value_trade_currency: '1250',
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            foreign_tax_value_settlement_currency: '-250',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([
+        expect.stringContaining(
+          "cancels a dividend of MOCK (US0000000001) that is not in this charge, so its reversal is priced at the cancellation day's rate",
+        ),
+      ]);
+      expect(records.map(summarize)).toEqual([
+        expect.objectContaining({
+          debit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+          debitLocal1: 1250 * LATER_USD_RATE,
+          credit1: BANK_USD,
+          creditLocal1: 1000 * LATER_USD_RATE,
+          credit2: TAX_CATEGORIES.FOREIGN_DIVIDEND_WITHHOLDING_TAX,
+          creditLocal2: 250 * LATER_USD_RATE,
+        }),
+      ]);
+    });
+
+    it('keeps the base entry of a cancellation whose cash came in, and says why', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: dividendExecution({ is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Expected money going out for the cancellation'),
+      ]);
+    });
+
+    describe('commission', () => {
+      /** The commission fee, which the bank keys to the security in its reference */
+      const commissionFee = (
+        amount: string,
+        id = 'transaction-commission',
+        description = "ניעז עמ' תשלום FSEC PYMNT FEE",
+      ) => ({
+        ...buildTransaction({
+          id,
+          amount,
+          currency: Currency.Ils,
+          businessId: BANK_BUSINESS_ID,
+          isFee: true,
+          description,
+        }),
+        source_reference: '7654321',
+      });
+      const dividendWithCommission = () =>
+        dividendExecution({
+          commissions_currency: ILS_LABEL,
+          trade_commission_value_nis: '25',
+        });
+
+      it('accepts a commission the charge has a matching fee for', async () => {
+        const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+        const { errors } = await generate({
+          transactions: [transaction, commissionFee('-25')],
+          executions: { [transaction.id]: dividendWithCommission() },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('reports a commission the charge has no fee for', async () => {
+        const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+        const { records, errors } = await generate({
+          transactions: [transaction],
+          executions: { [transaction.id]: dividendWithCommission() },
+        });
+
+        expect(records.map(summarize)).toEqual([
+          { ...baseCashInRecord(1000), credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME },
+        ]);
+        expect(errors).toEqual([
+          'A commission of 25.00 ILS was reported for MOCK (US0000000001), but the charge has no fee transaction for it',
+        ]);
+      });
+
+      it('counts the fee of a non-income execution of the same security', async () => {
+        const dividend = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+        const buy = buildTransaction({ id: 'transaction-buy', amount: '-2000' });
+
+        const { errors } = await generate({
+          transactions: [dividend, buy, commissionFee('-25'), commissionFee('-14', 'transaction-buy-commission')],
+          executions: {
+            [dividend.id]: dividendWithCommission(),
+            [buy.id]: buildExecution({
+              id: 'execution-buy',
+              trade_type: TRADE_TYPES.buy,
+              transaction_type: TRADE_TYPES.buy,
+              net_value_trade_currency: '-2000',
+              net_value_settlement_currency: '-2000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '14',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('does not report a commission mismatch of trades alone', async () => {
+        const buy = buildTransaction({ id: 'transaction-buy', amount: '-2000' });
+
+        const { errors } = await generate({
+          transactions: [buy],
+          executions: {
+            [buy.id]: buildExecution({
+              id: 'execution-buy',
+              trade_type: TRADE_TYPES.buy,
+              transaction_type: TRADE_TYPES.buy,
+              net_value_trade_currency: '-2000',
+              net_value_settlement_currency: '-2000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '14',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('counts the refunded commission of a cancelled and re-executed dividend', async () => {
+        // a dividend charged 25 is cancelled, its commission refunded, and paid again for 24.80
+        const original = buildTransaction({ id: 'transaction-original', amount: '1000' });
+        const cancellation = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+        const replacement = buildTransaction({ id: 'transaction-replacement', amount: '992' });
+
+        const { errors } = await generate({
+          transactions: [
+            original,
+            cancellation,
+            replacement,
+            commissionFee('-25', 'transaction-original-commission'),
+            commissionFee('25', 'transaction-commission-refund', 'ביטול עמלה ני"ע CANC SEC FEE'),
+            commissionFee('-24.80', 'transaction-replacement-commission'),
+          ],
+          executions: {
+            [original.id]: dividendExecution({
+              id: 'execution-original',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '25',
+            }),
+            [cancellation.id]: dividendExecution({
+              id: 'execution-cancellation',
+              net_value_trade_currency: '-1000',
+              net_value_settlement_currency: '-1000',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '-25',
+              is_cancel_transaction: 'כן',
+            }),
+            [replacement.id]: dividendExecution({
+              id: 'execution-replacement',
+              trade_gross_value_trade_currency: '992',
+              net_value_trade_currency: '992',
+              net_value_settlement_currency: '992',
+              commissions_currency: ILS_LABEL,
+              trade_commission_value_nis: '24.80',
+            }),
+          },
+        });
+
+        expect(errors).toEqual([]);
+      });
+
+      it('reports a fee that differs from the reported commission, and still books it', async () => {
+        const transaction = buildTransaction({ id: 'transaction-dividend', amount: '1000' });
+
+        const { records, errors } = await generate({
+          transactions: [transaction, commissionFee('-20')],
+          executions: { [transaction.id]: dividendWithCommission() },
+        });
+
+        expect(recordOf(records, FEES_TAX_CATEGORY_ID)).toBeDefined();
+        expect(errors).toEqual([
+          'Fee transactions for MOCK (US0000000001) charge 20.00 ILS, but the bank reported a commission of 25.00 ILS',
+        ]);
+      });
+    });
+  });
+
+  describe('bond interest', () => {
+    const interestExecution = (overrides: Partial<SecurityExecutionRow> = {}) =>
+      buildExecution({
+        id: 'execution-interest',
+        trade_type: TRADE_TYPES.interest,
+        payment_type: 'ריבית',
+        isin: 'FR0000000001',
+        issuer_country_code: 'FR',
+        ...overrides,
+      });
+
+    it('credits foreign bond interest income when nothing was withheld, leaving the fee as is', async () => {
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction, feeTransaction],
+        executions: { [transaction.id]: interestExecution() },
+      });
+
+      expect(errors).toEqual([]);
+      expect(summarize(recordOf(records, BANK_USD)!)).toEqual({
+        ...baseCashInRecord(1000),
+        credit1: TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+      });
+      expect(recordOf(records, FEES_TAX_CATEGORY_ID)?.credit_entity1).toBe(BANK_ILS);
+    });
+
+    it('books withheld tax to foreign or local bond withholding tax by the issuer', async () => {
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+      const taxed = {
+        trade_gross_value_trade_currency: '1100',
+        capital_tax_value_settlement_currency: '100',
+      };
+
+      const foreign = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: interestExecution(taxed) },
+      });
+      const local = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            ...taxed,
+            isin: 'IL0000000002',
+            issuer_country_code: 'IL',
+          }),
+        },
+      });
+
+      for (const [{ records, errors }, incomeTaxCategoryId, withholdingTaxCategoryId] of [
+        [
+          foreign,
+          TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+          TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
+        ],
+        [
+          local,
+          TAX_CATEGORIES.LOCAL_BOND_INTEREST_INCOME,
+          TAX_CATEGORIES.LOCAL_BOND_WITHHOLDING_TAX,
+        ],
+      ] as const) {
+        expect(errors).toEqual([]);
+        expect(records.map(summarize)).toEqual([
+          {
+            ...baseCashInRecord(1000),
+            debit2: withholdingTaxCategoryId,
+            debitForeign2: usd(100).foreign,
+            debitLocal2: usd(100).local,
+            credit1: incomeTaxCategoryId,
+            creditForeign1: usd(1100).foreign,
+            creditLocal1: usd(1100).local,
+          },
+        ]);
+      }
+    });
+
+    it('books the reported tax and reports it when gross minus net disagrees', async () => {
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            israel_tax_value_by_payments_settlement_currency: '20',
+          }),
+        },
+      });
+
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit2: TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
+          debitForeign2: usd(20).foreign,
+          debitLocal2: usd(20).local,
+          credit1: TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+          creditForeign1: usd(1020).foreign,
+          creditLocal1: usd(1020).local,
+        },
+      ]);
+      expect(errors).toEqual([expect.stringContaining('does not match gross minus net')]);
+    });
+
+    it('books a refund of withheld tax as a second credit', async () => {
+      // 950 declared, 50 of earlier withholding refunded, 1,000 received
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            trade_gross_value_trade_currency: '950',
+            israel_tax_value_by_payments_settlement_currency: '-50',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          credit1: TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+          creditForeign1: usd(950).foreign,
+          creditLocal1: usd(950).local,
+          credit2: TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
+          creditForeign2: usd(50).foreign,
+          creditLocal2: usd(50).local,
+        },
+      ]);
+    });
+
+    it('keeps the base entry and names a missing income category', async () => {
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+      const { FOREIGN_BOND_INTEREST_INCOME: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: interestExecution() },
+        taxCategories,
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([
+        expect.stringContaining('Missing securities tax category "Foreign bond interest income"'),
+      ]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_BOND_INTEREST_INCOME']);
+    });
+
+    it('names a missing withholding category only when tax was withheld', async () => {
+      const transaction = buildTransaction({ id: 'transaction-interest', amount: '1000' });
+      const { FOREIGN_BOND_WITHHOLDING_TAX: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const withoutTax = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: interestExecution() },
+        taxCategories,
+      });
+      expect(withoutTax.errors).toEqual([]);
+      expect(withoutTax.records[0].credit_entity1).toBe(
+        TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+      );
+
+      const withTax = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            trade_gross_value_trade_currency: '1100',
+            foreign_tax_value_settlement_currency: '100',
+          }),
+        },
+        taxCategories,
+      });
+      expect(withTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(withTax.errors).toEqual([
+        expect.stringContaining('Missing securities tax category "Foreign bond withholding tax"'),
+      ]);
+      expect(withTax.missingSecuritiesTaxCategories).toEqual(['FOREIGN_BOND_WITHHOLDING_TAX']);
+    });
+
+    it('books a cancelled interest payment as the mirror of its income entry', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: interestExecution({
+            net_value_trade_currency: '-1000',
+            net_value_settlement_currency: '-1000',
+            is_cancel_transaction: 'כן',
+          }),
+        },
+      });
+
+      expect(errors).toEqual([
+        expect.stringContaining('cancels an interest payment of MOCK (FR0000000001)'),
+      ]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit1: TAX_CATEGORIES.FOREIGN_BOND_INTEREST_INCOME,
+          credit1: BANK_USD,
+        },
+      ]);
+    });
+  });
+
+  describe('bond redemption', () => {
+    it('keeps the base entry of a cancelled redemption and says its reversal is not booked', async () => {
+      const transaction = buildTransaction({ id: 'transaction-cancellation', amount: '-1000' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: {
+          [transaction.id]: redemptionExecution(10, -1000, { is_cancel_transaction: 'כן' }),
+        },
+      });
+
+      expect(records).toHaveLength(1);
+      expect(summarize(records[0]!)).toMatchObject({ debit1: SECURITIES_USD, credit1: BANK_USD });
+      expect(errors).toEqual([
+        expect.stringContaining('reverses a cancelled redemption of MOCK (US0000000001)'),
+      ]);
+    });
+
+    it('credits the FIFO purchase cost and books the gain', async () => {
+      // lots: 10 for 1,000 and 10 for 1,200; 5 sold since, from the first lot.
+      // The redemption of the remaining 15 costs 5 × 100 + 10 × 120 = 1,700 and pays 1,900.
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1900' });
+      const redemption = redemptionExecution(15, 1900);
+
+      const { records, errors, foreignSecuritiesProvider } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [
+          buyExecution('execution-buy-1', '2023-01-10', 10, 1000),
+          buyExecution('execution-buy-2', '2023-06-10', 10, 1200),
+          buildExecution({
+            id: 'execution-sell',
+            trade_type: TRADE_TYPES.sell,
+            transaction_type: TRADE_TYPES.sell,
+            trade_date: '2024-01-10',
+            value_date: '2024-01-10',
+            nv: '5',
+            net_value_trade_currency: '550',
+            net_value_settlement_currency: '550',
+          }),
+          redemption,
+        ],
+      });
+
+      expect(errors).toEqual([]);
+      expect(foreignSecuritiesProvider.getSecurityOwnerHistory).toHaveBeenCalledWith(
+        redemption,
+        OWNER_ID,
+      );
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1900),
+          creditForeign1: usd(1700).foreign,
+          creditLocal1: usd(1700).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(200).foreign,
+          creditLocal2: usd(200).local,
+        },
+      ]);
+    });
+
+    it('books the rate PnL of a redemption apart, like a sale', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2025-01-15', 10, 1000), redemption],
+        rates: [...RATES, [Currency.Usd, '2025-01-15', 3.4]],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        baseCashInRecord(1000),
+        // 1,000 × (3.50 − 3.40)
+        localRecord(SECURITIES_USD, TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_EXCHANGE_GAIN, 100),
+      ]);
+    });
+
+    it('books a loss as a second debit', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 1200), redemption],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_LOSS,
+          debitForeign2: usd(200).foreign,
+          debitLocal2: usd(200).local,
+          creditForeign1: usd(1200).foreign,
+          creditLocal1: usd(1200).local,
+        },
+      ]);
+    });
+
+    it('books no secondary line at break-even', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 1000), redemption],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+    });
+
+    it('books tax withheld on a redemption to foreign bond withholding tax, with the gain on gross', async () => {
+      // 1,050 gross, 50 withheld, 1,000 received; cost 900, so the gain is 150
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000, {
+        trade_gross_value_trade_currency: '1050',
+        israel_tax_value_by_payments_settlement_currency: '50',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 900), redemption],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        {
+          ...baseCashInRecord(1000),
+          debit2: TAX_CATEGORIES.FOREIGN_BOND_WITHHOLDING_TAX,
+          debitForeign2: usd(50).foreign,
+          debitLocal2: usd(50).local,
+          creditForeign1: usd(900).foreign,
+          creditLocal1: usd(900).local,
+          credit2: TAX_CATEGORIES.FOREIGN_SECURITIES_SALE_GAIN,
+          creditForeign2: usd(150).foreign,
+          creditLocal2: usd(150).local,
+        },
+      ]);
+    });
+
+    it('books tax withheld on a redemption of a local bond to local bond withholding tax', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000, {
+        isin: 'IL0000000002',
+        issuer_country_code: 'IL',
+        trade_gross_value_trade_currency: '1050',
+        israel_tax_value_by_payments_settlement_currency: '50',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 900), redemption],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records[0].debit_entity2).toBe(TAX_CATEGORIES.LOCAL_BOND_WITHHOLDING_TAX);
+    });
+
+    it('needs the locality of a redeemed bond only when tax was withheld', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const unknownLocality = { isin: null, issuer_country_code: null };
+
+      const untaxed = redemptionExecution(10, 1000, unknownLocality);
+      const withoutTax = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: untaxed },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 1000), untaxed],
+      });
+      expect(withoutTax.errors).toEqual([]);
+      expect(withoutTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+
+      const taxed = redemptionExecution(10, 1000, {
+        ...unknownLocality,
+        trade_gross_value_trade_currency: '1050',
+        israel_tax_value_by_payments_settlement_currency: '50',
+      });
+      const withTax = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: taxed },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 900), taxed],
+      });
+      expect(withTax.records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(withTax.errors).toEqual([expect.stringContaining('is local or foreign')]);
+    });
+
+    it('keeps the base entry for a loss with withheld tax, which needs a third debit', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000, {
+        trade_gross_value_trade_currency: '1050',
+        israel_tax_value_by_payments_settlement_currency: '50',
+      });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 1200), redemption],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([expect.stringContaining('not supported')]);
+    });
+
+    it('keeps the base entry and explains a purchase missing from the scraped history', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000, { nominal_profit_loss_nis: '350' });
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2024-05-10', 4, 380), redemption],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toContain('purchase');
+      expect(errors[0]).toContain('6 of 10');
+      expect(errors[0]).toContain('2024-05-10');
+      expect(errors[0]).toContain('MOCK');
+      expect(errors[0]).toContain('350');
+    });
+
+    it('keeps the base entry when the history starts mid-position', async () => {
+      // 5 units sold before any purchase was scraped: an older holding comes first in FIFO
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [
+          buildExecution({
+            id: 'execution-sell',
+            trade_type: TRADE_TYPES.sell,
+            transaction_type: TRADE_TYPES.sell,
+            trade_date: '2023-01-10',
+            value_date: '2023-01-10',
+            nv: '5',
+            net_value_trade_currency: '500',
+            net_value_settlement_currency: '500',
+          }),
+          buyExecution('execution-buy', '2023-06-10', 10, 900),
+          redemption,
+        ],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([expect.stringContaining('starts mid-position')]);
+    });
+
+    it('keeps the base entry when the redeemed units came in with no known cost', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1000' });
+      const redemption = redemptionExecution(10, 1000);
+
+      const { records, errors } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [
+          buildExecution({
+            id: 'execution-transfer-in',
+            trade_type: 'העברה לזכות הפקדון',
+            transaction_type: 'העברות',
+            trade_date: '2023-01-10',
+            nv: '10',
+            net_value_trade_currency: '0',
+            net_value_settlement_currency: '0',
+          }),
+          redemption,
+        ],
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1000)]);
+      expect(errors).toEqual([expect.stringContaining('no known purchase cost')]);
+    });
+
+    it('keeps the base entry and names a missing gain category', async () => {
+      const transaction = buildTransaction({ id: 'transaction-redemption', amount: '1100' });
+      const redemption = redemptionExecution(10, 1100);
+      const { FOREIGN_SECURITIES_SALE_GAIN: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [transaction],
+        executions: { [transaction.id]: redemption },
+        history: [buyExecution('execution-buy', '2023-01-10', 10, 1000), redemption],
+        taxCategories,
+      });
+
+      expect(records.map(summarize)).toEqual([baseCashInRecord(1100)]);
+      expect(errors).toEqual([
+        expect.stringContaining(
+          'Missing securities tax category "Gain from sale of foreign securities"',
+        ),
+      ]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_SECURITIES_SALE_GAIN']);
+    });
+  });
+
+  it('reports each missing tax category once across transactions', async () => {
+    const first = buildTransaction({ id: 'transaction-dividend-1', amount: '1000' });
+    const second = buildTransaction({ id: 'transaction-dividend-2', amount: '500' });
+    const { FOREIGN_DIVIDEND_INCOME: _, ...taxCategories } = TAX_CATEGORIES;
+
+    const { missingSecuritiesTaxCategories } = await generate({
+      transactions: [first, second],
+      executions: {
+        [first.id]: buildExecution({ id: 'execution-1', trade_type: TRADE_TYPES.dividend }),
+        [second.id]: buildExecution({
+          id: 'execution-2',
+          trade_type: TRADE_TYPES.dividend,
+          trade_gross_value_trade_currency: '500',
+          net_value_trade_currency: '500',
+          net_value_settlement_currency: '500',
+        }),
+      },
+      taxCategories,
+    });
+
+    expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_INCOME']);
+  });
+
+  it('names a missing fees category, so it can be set from the charge', async () => {
+    const { FOREIGN_SECURITIES_FEES: _, ...taxCategories } = TAX_CATEGORIES;
+
+    const { records, errors, missingSecuritiesTaxCategories } = await generate({
+      transactions: [feeTransaction],
+      taxCategories,
+    });
+
+    expect(records).toEqual([]);
+    expect(errors).toEqual([
+      expect.stringContaining('Missing securities tax category "Foreign securities fees"'),
+    ]);
+    expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_SECURITIES_FEES']);
+  });
+
+  it('generates the fee entries of a charge with no main transaction instead of failing', async () => {
+    const { records, errors } = await generate({ transactions: [feeTransaction] });
+
+    expect(errors).toEqual([]);
+    expect(records.map(summarize)).toEqual([
+      expect.objectContaining({
+        currency: Currency.Ils,
+        debit1: FEES_TAX_CATEGORY_ID,
+        credit1: BANK_ILS,
+        creditLocal1: 25,
+      }),
+    ]);
+  });
+
+  describe('stock distributions booked directly', () => {
+    /** A dividend paid in shares: no cash leg, valued at units times price */
+    const distributionExecution = (overrides: Partial<SecurityExecutionRow> = {}) =>
+      buildExecution({
+        id: 'execution-distribution',
+        trade_type: 'הטבה חלוקת מניות',
+        payment_type: 'דיבידנד בעין',
+        nv: '10',
+        trade_price: '100',
+        trade_gross_value_trade_currency: '1000',
+        // the net value columns of a distribution hold its commission, not the shares' value
+        net_value_trade_currency: '0',
+        net_value_settlement_currency: '-7',
+        net_value_nis: '-25',
+        trade_gross_value_nis: String(1000 * USD_RATE),
+        personal_currency_rate: String(USD_RATE),
+        ...overrides,
+      });
+
+    const distributionRecord = {
+      currency: Currency.Usd,
+      debit1: SECURITIES_USD,
+      debitForeign1: usd(1000).foreign,
+      debitLocal1: usd(1000).local,
+      debit2: null,
+      debitForeign2: null,
+      debitLocal2: null,
+      credit1: TAX_CATEGORIES.FOREIGN_DIVIDEND_INCOME,
+      creditForeign1: usd(1000).foreign,
+      creditLocal1: usd(1000).local,
+      credit2: null,
+      creditForeign2: null,
+      creditLocal2: null,
+    };
+
+    beforeEach(() => {
+      // a charge created for a distribution has no counterparty
+      vi.mocked(getChargeBusinesses).mockResolvedValue({ mainBusinessId: null } as never);
+    });
+
+    it('debits the securities account and credits foreign dividend income at the gross value', async () => {
+      const { records, errors, missingSecuritiesTaxCategories } = await generate({
+        transactions: [],
+        distributions: [distributionExecution()],
+      });
+
+      expect(errors).toEqual([]);
+      expect(missingSecuritiesTaxCategories ?? []).toEqual([]);
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+      expect(records[0]!.description).toBe('Stock distribution: 10 × MOCK');
+    });
+
+    it('credits local dividend income for an Israeli issuer', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [
+          distributionExecution({ issuer_country_code: 'IL', isin: 'IL0000000001' }),
+        ],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([
+        { ...distributionRecord, credit1: TAX_CATEGORIES.LOCAL_DIVIDEND_INCOME },
+      ]);
+    });
+
+    it('books at the ledger rate and reports a different bank rate', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ personal_currency_rate: '3.6' })],
+      });
+
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+      expect(errors).toEqual([
+        expect.stringMatching(/ledger rate of 3\.5 ILS per USD, but the bank priced it at 3\.6$/),
+      ]);
+    });
+
+    it('falls back to the bank\'s local value when it reports no rate', async () => {
+      const { errors } = await generate({
+        transactions: [],
+        distributions: [
+          distributionExecution({ personal_currency_rate: '-1', trade_gross_value_nis: '3700' }),
+        ],
+      });
+
+      expect(errors).toEqual([expect.stringContaining('but the bank priced it at 3.7')]);
+    });
+
+    it('does not book a distribution with withheld tax', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ foreign_tax_value_settlement_currency: '150' })],
+      });
+
+      expect(records).toEqual([]);
+      expect(errors).toEqual([
+        expect.stringContaining('booking tax withheld on a stock distribution is not supported yet'),
+      ]);
+    });
+
+    it('does not book a distribution other than a dividend in kind', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ payment_type: null })],
+      });
+
+      expect(records).toEqual([]);
+      expect(errors).toEqual([
+        expect.stringContaining('only stock distributions paid as a dividend in kind are booked'),
+      ]);
+    });
+
+    it('does not book a cancelled distribution', async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution({ is_cancel_transaction: 'כן' })],
+      });
+
+      expect(records).toEqual([]);
+      expect(errors).toEqual([expect.stringContaining('cancellation of the stock distribution')]);
+    });
+
+    it('books a distribution the bank later cancelled, and says the reversal is not booked', async () => {
+      const distribution = distributionExecution();
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distribution],
+        history: [
+          distribution,
+          distributionExecution({ id: 'execution-cancellation', is_cancel_transaction: 'כן' }),
+        ],
+      });
+
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+      expect(errors).toEqual([
+        expect.stringContaining('reports a cancellation of the stock distribution'),
+      ]);
+    });
+
+    it('names a missing dividend income category', async () => {
+      const { FOREIGN_DIVIDEND_INCOME: _, ...taxCategories } = TAX_CATEGORIES;
+
+      const { records, missingSecuritiesTaxCategories } = await generate({
+        transactions: [],
+        distributions: [distributionExecution()],
+        taxCategories,
+      });
+
+      expect(records).toEqual([]);
+      expect(missingSecuritiesTaxCategories).toEqual(['FOREIGN_DIVIDEND_INCOME']);
+    });
+
+    it("debits the owner's own securities account, not one found by account number", async () => {
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distributionExecution()],
+        otherBusinessAccountByNumber: true,
+      });
+
+      expect(errors).toEqual([]);
+      expect(records.map(summarize)).toEqual([distributionRecord]);
+    });
+
+    it('reads the account history once for several distributions of one security', async () => {
+      const { records, foreignSecuritiesProvider } = await generate({
+        transactions: [],
+        distributions: [
+          distributionExecution({ id: 'execution-distribution-1' }),
+          distributionExecution({ id: 'execution-distribution-2' }),
+        ],
+      });
+
+      expect(records).toHaveLength(2);
+      expect(foreignSecuritiesProvider.getSecurityAccountHistory).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not take a later cancellation of another same-size distribution as its own', async () => {
+      const distribution = distributionExecution({ trade_date: '2024-03-12' });
+      const later = distributionExecution({ id: 'execution-later' });
+      const { records, errors } = await generate({
+        transactions: [],
+        distributions: [distribution],
+        history: [
+          distribution,
+          later,
+          distributionExecution({ id: 'execution-cancellation', is_cancel_transaction: 'כן' }),
+        ],
+      });
+
+      expect(errors).toEqual([]);
+      expect(records).toHaveLength(1);
+    });
+
+    describe('commission', () => {
+      const commissionFee = {
+        ...buildTransaction({
+          id: 'transaction-commission',
+          amount: '-25',
+          currency: Currency.Ils,
+          businessId: BANK_BUSINESS_ID,
+          isFee: true,
+          description: "ניעז עמ' תשלום FSEC PYMNT FEE",
+        }),
+        source_reference: '7654321',
+      };
+      const distributionWithCommission = () =>
+        distributionExecution({
+          commissions_currency: ILS_LABEL,
+          trade_commission_value_nis: '25',
+        });
+
+      it('asks to merge in the fee charge when the charge has no fee for the commission', async () => {
+        const { records, errors } = await generate({
+          transactions: [],
+          distributions: [distributionWithCommission()],
+        });
+
+        expect(records.map(summarize)).toEqual([distributionRecord]);
+        expect(errors).toEqual([
+          'A commission of 25.00 ILS was reported for MOCK (US0000000001), but the charge has no fee transaction for it — merge the charge holding the commission fee into this one',
+        ]);
+      });
+
+      it('counts the commission once when a merged-in transaction is also matched to the distribution', async () => {
+        const transaction = buildTransaction({ id: 'transaction-matched', amount: '0' });
+        const distribution = distributionWithCommission();
+        const { errors } = await generate({
+          transactions: [transaction, commissionFee],
+          executions: { [transaction.id]: distribution },
+          distributions: [distribution],
+        });
+
+        expect(errors.filter(error => error.includes('commission'))).toEqual([]);
+      });
+
+      it('books the merged fee and accepts the commission', async () => {
+        const { records, errors } = await generate({
+          transactions: [commissionFee],
+          distributions: [distributionWithCommission()],
+        });
+
+        expect(errors).toEqual([]);
+        expect(records.map(summarize)).toEqual([
+          distributionRecord,
+          expect.objectContaining({ debit1: FEES_TAX_CATEGORY_ID, credit1: BANK_ILS, creditLocal1: 25 }),
+        ]);
+      });
+    });
+  });
+});

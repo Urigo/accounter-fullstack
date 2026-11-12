@@ -1,5 +1,9 @@
 # Vault File Download & Upload
 
+> **Superseded.** The vault is no longer stored on the server's disk, so the vault path setting and
+> the upload/download endpoints described here were removed. The vault file is now opened in memory
+> and saved back from the browser. See the scraper-app README, "Your vault file".
+
 ## Overview
 
 Allow users to download their vault file as a backup and upload an existing vault file as an

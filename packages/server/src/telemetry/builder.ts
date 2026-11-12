@@ -1,6 +1,13 @@
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { NodeSDK, resources, tracing } from '@opentelemetry/sdk-node';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import {
+  AlwaysOffSampler,
+  AlwaysOnSampler,
+  ParentBasedSampler,
+  TraceIdRatioBasedSampler,
+} from '@opentelemetry/sdk-trace';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_NAMESPACE } from '@opentelemetry/semantic-conventions';
 import { env } from '../environment.js';
 
@@ -50,27 +57,27 @@ function buildSampler(
 ) {
   switch (samplerType) {
     case 'always_off':
-      return new tracing.AlwaysOffSampler();
+      return new AlwaysOffSampler();
     case 'parentbased_traceidratio': {
       const ratio = arg ?? 1.0;
-      return new tracing.ParentBasedSampler({
-        root: new tracing.TraceIdRatioBasedSampler(ratio),
+      return new ParentBasedSampler({
+        root: new TraceIdRatioBasedSampler(ratio),
       });
     }
     case 'traceidratio': {
       const ratio = arg ?? 1.0;
-      return new tracing.TraceIdRatioBasedSampler(ratio);
+      return new TraceIdRatioBasedSampler(ratio);
     }
     case 'parentbased_always_on':
-      return new tracing.ParentBasedSampler({
-        root: new tracing.AlwaysOnSampler(),
+      return new ParentBasedSampler({
+        root: new AlwaysOnSampler(),
       });
     case 'parentbased_always_off':
-      return new tracing.ParentBasedSampler({
-        root: new tracing.AlwaysOffSampler(),
+      return new ParentBasedSampler({
+        root: new AlwaysOffSampler(),
       });
     default:
-      return new tracing.AlwaysOnSampler();
+      return new AlwaysOnSampler();
   }
 }
 
@@ -85,7 +92,7 @@ export function buildOtelSdk(): NodeSDK | null {
     return null;
   }
 
-  const resource = resources.resourceFromAttributes({
+  const resource = resourceFromAttributes({
     [ATTR_SERVICE_NAME]: otel.serviceName,
     [ATTR_SERVICE_NAMESPACE]: otel.serviceNamespace,
     [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: otel.deploymentEnv,

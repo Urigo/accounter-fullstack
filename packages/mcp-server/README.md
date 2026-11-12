@@ -10,6 +10,8 @@ See the design docs:
   implementation plan
 - [`docs/operations-runbook.md`](./docs/operations-runbook.md) — incident handling, metrics, log
   queries, rollback
+- [`docs/connecting-clients.md`](./docs/connecting-clients.md) — connecting Claude and Cursor, and
+  the Auth0 app record for each
 - [`docs/submission-checklist.md`](./docs/submission-checklist.md) — connector submission readiness
 
 ## Status
@@ -32,10 +34,15 @@ operational metrics (request/outcome counters, a latency histogram, auth-failure
 at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
 backend via `traceparent` and `X-Correlation-Id`.
 
-Phase 2 (write scope) has landed its first two tools — `accounter_update_charges_tags` and
-`accounter_upload_documents` — behind the `MCP_ENABLE_WRITE_TOOLS` flag, which is **off by
-default**. See [Write tools](#write-tools) for the model, and
-[Known limitations](#known-limitations) for what is still out of scope.
+Phase 2 (write scope) has landed behind the `MCP_ENABLE_WRITE_TOOLS` flag, which is **off by
+default**: `accounter_update_charges_tags` and `accounter_upload_documents` first, then the six
+review/matching tools (`accounter_update_charge`, `accounter_merge_charges`,
+`accounter_update_transactions`, `accounter_update_document`, `accounter_delete_document`,
+`accounter_create_business`) that let a model act on what it finds in the missing-information views,
+and the two onboarding tools: `accounter_create_client`, which makes a directory business a client,
+and `accounter_create_contract`, which records a client's billing agreement. See
+[Write tools](#write-tools) for the model, and [Known limitations](#known-limitations) for what is
+still out of scope.
 
 ## Tools
 
@@ -149,9 +156,10 @@ scope, because it _is_ the scope.
   the answer can be followed into the portfolio. Three states stay distinct: the field is **absent**
   for a charge that is not a securities one and for one fetched without the flag, an **empty array**
   means the transaction descriptions carried no key the ingested feed knows, and
-  `referenceFound: false` on a present security means the reference scrape is stale for a key that
-  _is_ traded. Nesting executions multiplies the payload, so pair it with explicit `chargeIds` or a
-  small `pageSize`.
+  `referenceFound: false` on a present security means the bank's reference list has no row for this
+  key, typically because the position was closed before the list was scraped; descriptors then come
+  from the security business. Nesting executions multiplies the payload, so pair it with explicit
+  `chargeIds` or a small `pageSize`.
 
   Both charge tools build their filter from one definition (`tools/charge-filters.ts`), and
   `schema-contract.test.ts` checks that definition against `input ChargeFilter` in `schema.graphql`,
@@ -211,15 +219,16 @@ scope, because it _is_ the scope.
   to add a shekel column to a dollar one. Quantities and average costs are never summed at all.
 - **`accounter_get_security_executions`** — the **trade history** behind that portfolio: buys,
   sales, dividends, interest, redemptions, distributions and transfers, newest first, with dates,
-  direction, quantity, unit price, net value, commission and Israeli tax. Narrow by security
-  (`securityBusinessIds`, `isins` or `symbols` — three ways of naming one axis, so they union with
-  each other), by trade date, and by `tradeTypes`/`transactionTypes`. Really paginated upstream
-  (1-based `page` here, 0-based there) with `pagination` echoed. `includeCharges` additionally
-  resolves the charge each trade's cash movement landed on, and **requires naming the securities**:
-  the pairing is greedy and one-to-one over a security's whole history, so it cannot be computed
-  from a page — see the note in `docs/connector-gaps-and-decisions.md`. Asking for it unnarrowed is
-  refused here as a `VALIDATION_ERROR` rather than upstream as an `UPSTREAM_ERROR`, so the failure
-  says what to add.
+  direction, quantity, unit price, net value, commission and tax — the tax withheld from the cash
+  leg per kind (foreign, Israeli, capital) in the settlement currency, plus the bank's separate
+  Israeli-tax figure in the trade currency. Narrow by security (`securityBusinessIds`, `isins` or
+  `symbols` — three ways of naming one axis, so they union with each other), by trade date, and by
+  `tradeTypes`/`transactionTypes`. Really paginated upstream (1-based `page` here, 0-based there)
+  with `pagination` echoed. `includeCharges` additionally resolves the charge each trade's cash
+  movement landed on, and **requires naming the securities**: the pairing is greedy and one-to-one
+  over a security's whole history, so it cannot be computed from a page — see the note in
+  `docs/connector-gaps-and-decisions.md`. Asking for it unnarrowed is refused here as a
+  `VALIDATION_ERROR` rather than upstream as an `UPSTREAM_ERROR`, so the failure says what to add.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `memberBusinessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and
   size-capped (≤ 1000).
@@ -277,7 +286,7 @@ scope, because it _is_ the scope.
   exposed (the upstream filter is inverted, #4604). Requires `business_owner`/`accountant` role;
   `accounter_explain_terminology` topic `report` explains the fields.
 
-The two **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
+The **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
 [Write tools](#write-tools) for the rules they all share.
 
 - **`accounter_update_charges_tags`** — add and/or remove tags across 1–50 charges. Tags are given
@@ -285,14 +294,91 @@ The two **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; 
   resolving them here would mean guessing which of several same-named tags was meant — the model
   resolves them with `accounter_list_tags` first. Incremental, not a replacement, and removals run
   before additions so an id in both lists ends up added. Requires `business_owner`/`accountant`.
-- **`accounter_upload_documents`** — attach 1–10 documents to an **existing** charge, given either
-  as `documentUrls` (preferred — the server fetches them, so there is no size limit) or as inline
-  base64 `documents`; exactly one of the two per call. `chargeId` is required (upstream would
-  otherwise create a new charge) and `isSensitive` is pinned to `false`. Each inline file is
-  validated for encoding, MIME type, and size _before_ anything is uploaded. Upstream returns one
-  result per input, so partial failure is reported positionally rather than collapsed. See
-  [Uploading by URL](#uploading-by-url) and
+- **`accounter_upload_documents`** — upload 1–10 documents, given either as `documentUrls`
+  (preferred — the server fetches them, so there is no size limit) or as inline base64 `documents`;
+  exactly one of the two per call. The target is explicit too: `chargeId` attaches them to an
+  **existing** charge, `newCharge` (optional `description` and `tagIds`) creates **one** new charge
+  for all of them — the same document-only charge the ingestion email produces, for expenses with no
+  transaction in Accounter. The new charge is created only if at least one document succeeds, and
+  its id comes back as `chargeId` with `chargeCreated: true`. `isSensitive` is pinned to `false`.
+  Each inline file is validated for encoding, MIME type, and size _before_ anything is uploaded.
+  Upstream returns one result per input, so partial failure is reported positionally rather than
+  collapsed. See [Uploading by URL](#uploading-by-url) and
   [Why inline upload is small](#why-inline-upload-is-small). Requires `business_owner`/`accountant`.
+- **`accounter_update_charge`** — edit a charge's own fields: `userDescription`, `type` (the
+  `ChargeType` vocabulary shared with `byChargeTypes` — PAYROLL, FINANCIAL, BUSINESS_TRIP,
+  CREDITCARD_BANK, …), `optionalDocuments`, `optionalVat`, `isInvoicePaymentDifferentCurrency`,
+  `defaultTaxCategoryId`, `businessTripId` and `yearsOfRelevance` (the spread across accounting
+  years). Only the fields passed are sent, so an omitted field is left as is. It deliberately has no
+  `counterpartyId`: upstream derives a charge's counterparty from its transactions and documents
+  (the field exists on `UpdateChargeInput` but the resolver ignores it), so the schema rejects it
+  and points at the two tools below. The echo's `chargeType` uses the same typename map as the read
+  tools (`chargeTypeFromTypename`), so PAYROLL / INTERNAL / VAT read back as sent.
+- **`accounter_merge_charges`** — fold 1–20 charges into a base charge: their transactions,
+  documents and ledger records move onto it and they are deleted. This is the "receipt in its own
+  charge ↔ card row in another" fix; the base should be the charge holding the transaction. Refuses
+  a self-merge or a duplicated id before any round trip. The same optional fields as
+  `accounter_update_charge` apply to the base in the same call. Upstream returns the base charge as
+  loaded _before_ those fields are applied, so the tool re-reads the merged charge for its echo.
+- **`accounter_update_transactions`** — set `counterpartyId`, `chargeId` and/or `isFee` on 1–50
+  transactions in one upstream batch. This is where a charge's counterparty is actually set.
+  `chargeId` moves the rows onto another charge; upstream deletes the former charges the move left
+  with no transactions, documents or misc expenses and the tool relays them as `deletedChargeIds`.
+  The all-zero UUID unlinks: upstream then creates **one** new charge and moves every listed
+  transaction into it (not one charge per row). Reports `requestedCount` vs `updatedCount`, since
+  upstream skips ids it cannot resolve.
+- **`accounter_update_document`** — edit an existing document: `chargeId` moves it (the all-zero
+  UUID unlinks it), and upstream deletes the former charge when the move left it empty, reported as
+  `deletedChargeId`; `creditorId` / `debtorId` fix the parties the extractor read; and
+  `documentType`, `serialNumber`, `date` (a real calendar date, checked with the shared helper),
+  `amount`, `vat` and `description` fix extracted values. `amount` is `{ value, currency }` and sets
+  the document's currency; `vat` is a bare number in that currency, because upstream takes the
+  currency from `amount` only and would silently ignore one on `vat`.
+- **`accounter_delete_document`** — delete one document for good; the charge goes with it when the
+  document was all it held (`deletedChargeId`). Not reversible, so the description tells the model
+  to read it back first and to prefer `accounter_update_document` for a real document in the wrong
+  place.
+- **`accounter_create_business`** — add a business to the directory so it can be used as a
+  counterparty. Mirrors `InsertNewBusinessInput` field for field (`name`, a `country` validated
+  against the server's `CountryCode` enum, `hebrewName`, `governmentId`, `sortCode`,
+  `taxCategoryId`, `irsCode`, `pcn874RecordType`, address fields, `email`, `phoneNumber`, `website`,
+  the `exemptDealer` / `optionalVat` / `isReceiptEnough` / `isDocumentsOptional` / `isActive` flags
+  and matching `suggestions`), so the bookkeeping attributes are set in the same call. Upstream
+  `insertNewBusiness` is not atomic (financial entity first, business row second), and a model's
+  natural reaction to an error is to fix its input and call again — so the tool looks the name up
+  first and refuses an exact match with the existing id in the error (`allowDuplicateName: true`
+  overrides), and its description says to look the name up again after any upstream error.
+- **`accounter_create_client`** — make an existing directory business a **client**: the `clients`
+  row that `accounter_list_clients` enumerates and a contract is keyed on. Mirrors
+  `ClientInsertInput` (`businessId`, `emails`, the client-level default `generatedDocumentType`, and
+  the `integrations` ids `hiveId` / `linearId` / `slackChannelKey` / `notionId` / `workflowyUrl`).
+  `greenInvoiceId` is deliberately not accepted: upstream `insertClient` inserts the row, then
+  creates a **Green Invoice** customer from the business's directory record and stores the id it
+  gets back over anything passed in, then returns the client with that id, which the tool reports as
+  `greenInvoiceId`. The steps are not one transaction — a Green Invoice failure returns
+  `CommonError` with the `clients` row already inserted, and a retry would then fail on the
+  `business_id` primary key — so the tool reads the business first and refuses one that is already a
+  client (naming the half-created case, a client row with no Green Invoice id, separately), maps
+  upstream's error for an unknown id to a validation error, validates email format up front, and its
+  description says to check `accounter_list_clients` after any upstream error instead of calling
+  again.
+- **`accounter_create_contract`** — record a **client billing contract**, the row
+  `accounter_get_contracts` lists. Mirrors `CreateContractInput` field for field: `clientId` (a
+  client's business id), `startDate` / `endDate` (real calendar dates, end not before start),
+  `amount` `{ value, currency }` per `billingCycle` (MONTHLY / ANNUAL), the `documentType` issued
+  per billing, optional `product` (HIVE / STELLATE), `plan` (ENTERPRISE / PRO), `purchaseOrders`,
+  `remarks`, `msCloud` (link to the signed agreement), `operationsLimit` (the full monthly
+  operations count, e.g. `30000000000` for 30B a month — not millions; 0 when omitted), `isActive`
+  (default true) and `deactivateContractIds` (upstream `deactivateContracts`, the UI's renewal
+  path). The enums are validated locally and pinned to the schema by `schema-contract.test.ts`.
+  Upstream `createContract` deactivates the listed contracts **before** inserting the new row, does
+  not check that they belong to the client, and does not roll that back when the insert fails,
+  reporting only a generic error — so the tool pre-reads `contractsByClient` and refuses any id that
+  is not one of that client's contracts, and its description says to re-read with
+  `accounter_get_contracts` before retrying.
+
+All eight require `business_owner`/`accountant`, target exactly one business, are audit-logged, and
+are never retried.
 
 ## Upstream GraphQL client
 
@@ -487,9 +573,10 @@ caller looks up is the clearest available read on the vocabulary they arrived wi
 
 The write tools use it too. A write result has none of the shared list-shape fields, so without a
 hook its usage line would record _that_ a write happened and nothing about what it did:
-`accounter_upload_documents` reports `documentSource` (`urls` vs `inline`),
-`requestedDocumentCount`, `uploadedCount` and `failedCount` plus a `document_upload_source` counter,
-and `accounter_update_charges_tags` reports `requestedChargeCount`, `updatedChargeCount`,
+`accounter_upload_documents` reports `documentSource` (`urls` vs `inline`), `targetCharge`
+(`existing` vs `new`), `requestedDocumentCount`, `uploadedCount`, `failedCount` and `chargeCreated`
+plus `document_upload_source` and `document_upload_target` counters, and
+`accounter_update_charges_tags` reports `requestedChargeCount`, `updatedChargeCount`,
 `addedTagCount` and `removedTagCount` — the gap between requested and updated is how a model working
 from stale charge ids becomes visible. This line is the complement to the `audit: true` line each
 write already emits _before_ its handler runs: the audit line names the records, this one says what
@@ -546,10 +633,11 @@ curl http://localhost:3100/health
 The server handles `SIGINT`/`SIGTERM` by closing connections and exiting cleanly (forcing exit after
 a grace period).
 
-To connect this server to Claude Desktop as a custom connector — HTTPS tunnel, Auth0 application,
-connector fields, and a troubleshooting table — see
-[`docs/local-development.md`](./docs/local-development.md). Note that Claude requires an HTTPS
-connector URL, so `http://localhost:3100` cannot be used directly.
+To connect Claude or Cursor to the production server, see
+[`docs/connecting-clients.md`](./docs/connecting-clients.md). To connect a local server to Claude
+Desktop as a custom connector — HTTPS tunnel, Auth0 application, connector fields, and a
+troubleshooting table — see [`docs/local-development.md`](./docs/local-development.md). Note that
+Claude requires an HTTPS connector URL, so `http://localhost:3100` cannot be used directly.
 
 ### MCP endpoint
 
@@ -698,12 +786,28 @@ The automated equivalent of steps 1–12 (with the Auth0 verifier and upstream m
 
 ## Write tools
 
-Two mutating tools are available, and both are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
+Ten mutating tools are available, and all are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
-| Tool                            | What it does                                                                 |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names) |
-| `accounter_upload_documents`    | Attaches documents — by URL or inline base64 — to an **existing** charge     |
+| Tool                            | What it does                                                                             |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names)             |
+| `accounter_upload_documents`    | Uploads documents — by URL or inline base64 — to an existing charge or a new one         |
+| `accounter_update_charge`       | Edits a charge's description, type, optional-documents/VAT flags and business trip       |
+| `accounter_merge_charges`       | Folds charges into a base charge (transactions, documents and ledger move; rest deleted) |
+| `accounter_update_transactions` | Sets counterparty, charge and/or fee flag on a batch of bank/card rows                   |
+| `accounter_update_document`     | Moves a document to another charge and/or fixes its extracted fields and parties         |
+| `accounter_delete_document`     | Deletes a document (and its charge, when the document was all it held)                   |
+| `accounter_create_business`     | Adds a business to the directory for use as a counterparty                               |
+| `accounter_create_client`       | Makes a directory business a client (and creates its Green Invoice customer)             |
+| `accounter_create_contract`     | Records a client billing contract (optionally retiring the previous term)                |
+
+Six of them exist for one workflow: a model reviews the missing-information charges (no
+counterparty, no document, no tag, no transaction) with the read tools, proposes a fix per charge,
+and — once a person confirms — applies it through these rather than handing back a to-do list for
+the Accounter UI. `accounter_create_client` and `accounter_create_contract` serve the other,
+onboarding a signed customer: directory entry, then client, then the billing agreement against it.
+They are deliberately thin: each wraps one existing upstream mutation and adds only input
+validation, result mapping and the shared write guards.
 
 The default is off so that upgrading a running deployment never silently grants the model write
 access — an operator opts in per environment. `MCP_TOOL_ALLOWLIST` composes on top and can narrow
@@ -727,15 +831,37 @@ Four properties hold for every mutating tool, enforced centrally rather than per
 
 Two tool-specific rules worth knowing:
 
-- `accounter_upload_documents` requires `chargeId`. The upstream mutation _creates a new charge_
-  when it is omitted, which is not a side effect the model should trigger by leaving a field blank.
-  `isSensitive` is pinned to `false` and is deliberately absent from the input schema — the upstream
-  name is misleading, since `getOcrData` returns early with `documentType: UNPROCESSED` whenever it
-  is set, so `true` does not so much mark a document sensitive as skip OCR entirely and land it with
-  no amount, date, counterparty, or serial.
+- `accounter_upload_documents` requires exactly one of `chargeId` or `newCharge`. The upstream
+  mutation _creates a new charge_ whenever `chargeId` is omitted, which is not a side effect the
+  model should trigger by leaving a field blank — so creating one takes an explicit `newCharge`
+  object (`{}` is enough). Upstream creates that charge, its description, its tags and its documents
+  in one transaction, after OCR and only if at least one document succeeded, so a failed call leaves
+  no empty charge. No transaction is matched or merged into it: it waits in the regular
+  charge-matching queue, exactly like a charge from the ingestion email. A `newCharge` call that
+  times out may still have completed, so the tool description tells the model to look for the charge
+  before resending (see I6 in `docs/todo.md`). `isSensitive` is pinned to `false` and is
+  deliberately absent from the input schema — the upstream name is misleading, since `getOcrData`
+  returns early with `documentType: UNPROCESSED` whenever it is set, so `true` does not so much mark
+  a document sensitive as skip OCR entirely and land it with no amount, date, counterparty, or
+  serial.
 - `accounter_update_charges_tags` is incremental, not a replacement: tags not named in
   `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
   ends up added.
+- Emptied charges are cleaned up upstream. `updateTransactions` and `updateDocument` delete a former
+  charge any move (onto an existing charge or an all-zero-UUID unlink) left with no transactions,
+  documents or misc expenses, and report it (`deletedChargeIds` / `deletedChargeId`).
+  `accounter_update_transactions` and `accounter_update_document` relay those reports rather than
+  cleaning up themselves.
+- A charge's counterparty is **not** a charge field. `accounter_update_charge` rejects
+  `counterpartyId` on purpose — upstream computes the counterparty from the businesses on the
+  charge's transactions and the creditor/debtor on its documents, so the edit lives in
+  `accounter_update_transactions` and `accounter_update_document`. The
+  `UpdateChargeInput.counterpartyId` field in the schema is accepted and ignored by the resolver,
+  which is exactly the silent no-op the tool refuses to offer.
+- `accounter_merge_charges` and `accounter_delete_document` are not reversible from the MCP side.
+  Their descriptions tell the model to read the records back (`accounter_get_charges`,
+  `accounter_get_documents`) before calling, and a client building a review flow should put the
+  human confirmation in front of these two in particular.
 
 ### Uploading by URL
 

@@ -2,6 +2,7 @@ import {
   IssueMonthlyDocumentsDocument,
   type IssueMonthlyDocumentsMutationVariables,
 } from '../gql/graphql.js';
+import { MUTATION_DEDUPE_WINDOW_MS } from '../helpers/mutation-dedupe.js';
 import { useApiMutation } from './use-api-mutation.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -41,6 +42,9 @@ export const useIssueMonthlyDocuments = (): UseIssueMonthlyDocuments => {
       return void 0;
     },
     successToast: { description: 'Documents issued successfully' },
+    // Issuing creates real documents and emails them to clients, so an accidental repeat of the
+    // same batch cannot be undone.
+    dedupe: { windowMs: MUTATION_DEDUPE_WINDOW_MS },
   });
 
   return {

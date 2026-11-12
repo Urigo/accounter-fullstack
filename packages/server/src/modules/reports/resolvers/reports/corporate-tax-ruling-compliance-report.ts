@@ -9,6 +9,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import {
+  allSettledOrThrow,
   currentTenantYear,
   endOfTimelessYear,
   formatFinancialAmount,
@@ -334,7 +335,9 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
     injector.get(FinancialEntitiesProvider).getAllFinancialEntities(),
   ]);
 
-  const ledgerRecords = await Promise.all(
+  // Not `Promise.all`: a throwing generation must not let the request return
+  // (and its DB client be disposed) while the other charges still generate.
+  const ledgerRecords = await allSettledOrThrow(
     charges.map(charge =>
       ledgerGenerationByCharge(charge, { insertLedgerRecordsIfNotExists: false }, context, info),
     ),

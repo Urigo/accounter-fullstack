@@ -4,6 +4,11 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  IsraeliCorporationLookup,
+  REGISTRY_FORM_FIELDS,
+  type RegistryFormFields,
+} from '@/components/business/israeli-corporation-lookup.js';
+import {
   ModifyClientDialog,
   type ClientFormValues,
 } from '@/components/clients/modify-client-dialog.js';
@@ -37,7 +42,14 @@ import {
 import { Switch } from '@/components/ui/switch.js';
 import { Textarea } from '@/components/ui/textarea.js';
 import { DocumentType } from '@/gql/graphql.js';
+import { CountryCode } from '@/helpers/countries.js';
 import { pcn874RecordEnum } from '@/helpers/index.js';
+import {
+  duplicateEmailError,
+  hasNoDuplicateEmails,
+  hasNoPhraseOverlap,
+  phraseConflictError,
+} from '@/helpers/list-input-validation.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useGetSortCodes } from '@/hooks/use-get-sort-codes.js';
 import { useGetTags } from '@/hooks/use-get-tags.js';
@@ -57,7 +69,9 @@ const businessFormSchema = z
     address: z.string().optional(),
     city: z.string().optional(),
     zipCode: z.string().optional(),
-    generalContacts: z.array(z.email()),
+    generalContacts: z
+      .array(z.email())
+      .refine(hasNoDuplicateEmails, { message: 'Contacts must be unique' }),
     website: z.url().optional().or(z.literal('')),
     phone: z.string().optional(),
     taxCategory: z.string().optional(),
@@ -67,21 +81,32 @@ const businessFormSchema = z
     defaultDescription: z.string().optional(),
     defaultTags: z.array(z.string()),
     isClient: z.boolean().default(false).optional(),
-    transactionPhrases: z.array(z.string()),
-    emailAddresses: z.array(z.email()),
+    transactionPhrases: z.array(z.string()).refine(hasNoPhraseOverlap, {
+      message: 'Phrases must be unique and not overlap one another',
+    }),
+    emailAddresses: z
+      .array(z.email())
+      .refine(hasNoDuplicateEmails, { message: 'Emails must be unique' }),
   })
-  .refine(
-    data => {
-      if (data.locality === 'Israel') {
-        return !!data.localName && !!data.govId;
-      }
-      return true;
-    },
-    {
-      message: 'Local name and company number are required for Israeli businesses',
-      path: ['localName'],
-    },
-  );
+  .superRefine((data, ctx) => {
+    if (data.locality !== CountryCode.Israel) {
+      return;
+    }
+    if (!data.localName?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Local name is required for Israeli businesses',
+        path: ['localName'],
+      });
+    }
+    if (!data.govId?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Government ID is required for Israeli businesses',
+        path: ['govId'],
+      });
+    }
+  });
 
 type BusinessFormValues = z.infer<typeof businessFormSchema>;
 
@@ -224,12 +249,19 @@ function ContactInformationSection({ form }: SectionProps) {
   const { userContext } = useContext(UserContext);
   const { countries, fetching: fetchingCountries } = useAllCountries();
 
-  const { watch, setValue, control } = form;
+  const { watch, setValue, getValues, control } = form;
 
   const locality = watch('locality');
+  const govId = watch('govId');
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
+      const conflict = duplicateEmailError(currentContacts, newContact);
+      if (conflict) {
+        form.setError('generalContacts', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('generalContacts');
       setValue('generalContacts', [...currentContacts, newContact.trim()], {
         shouldDirty: true,
       });
@@ -245,7 +277,18 @@ function ContactInformationSection({ form }: SectionProps) {
     );
   };
 
-  const isLocalEntity = locality === userContext?.context.locality;
+  const isIsraeli = locality === CountryCode.Israel;
+  // Israeli businesses require these fields, so they show even when the tenant isn't Israeli
+  const showLocalFields = locality === userContext?.context.locality || isIsraeli;
+
+  const fillEmptyFields = (fields: RegistryFormFields) => {
+    for (const name of REGISTRY_FORM_FIELDS) {
+      const value = fields[name];
+      if (value && !getValues(name)?.trim()) {
+        setValue(name, value, { shouldDirty: true, shouldValidate: true });
+      }
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -287,7 +330,7 @@ function ContactInformationSection({ form }: SectionProps) {
           )}
         />
 
-        {isLocalEntity && (
+        {showLocalFields && (
           <>
             <FormField
               control={control}
@@ -316,6 +359,8 @@ function ContactInformationSection({ form }: SectionProps) {
                 </FormItem>
               )}
             />
+
+            {isIsraeli && <IsraeliCorporationLookup govId={govId} onApply={fillEmptyFields} />}
           </>
         )}
 
@@ -646,7 +691,13 @@ function AutoMatchingSection({ form }: SectionProps) {
 
   const addPhrase = () => {
     if (newPhrase.trim()) {
-      const currentPhrases = getValues('transactionPhrases');
+      const currentPhrases = getValues('transactionPhrases') ?? [];
+      const conflict = phraseConflictError(currentPhrases, newPhrase);
+      if (conflict) {
+        form.setError('transactionPhrases', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('transactionPhrases');
       form.setValue('transactionPhrases', [...currentPhrases, newPhrase.trim()], {
         shouldDirty: true,
       });
@@ -656,7 +707,13 @@ function AutoMatchingSection({ form }: SectionProps) {
 
   const addEmail = () => {
     if (newEmail.trim()) {
-      const currentEmails = getValues('emailAddresses');
+      const currentEmails = getValues('emailAddresses') ?? [];
+      const conflict = duplicateEmailError(currentEmails, newEmail);
+      if (conflict) {
+        form.setError('emailAddresses', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('emailAddresses');
       setValue('emailAddresses', [...currentEmails, newEmail.trim()], { shouldDirty: true });
       setNewEmail('');
     }

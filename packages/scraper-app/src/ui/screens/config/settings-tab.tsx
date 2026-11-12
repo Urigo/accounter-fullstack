@@ -1,39 +1,16 @@
-import { useEffect, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
 import type { Settings } from '../../../server/vault.js';
-import { getVaultPath, loadSettings, saveSettings, vaultDownload } from '../../lib/api.js';
-
-function getBasename(p: string) {
-  return p.split('/').pop()?.split('\\').pop() ?? '.vault';
-}
+import { loadSettings, saveSettings } from '../../lib/api.js';
 
 export function SettingsTab(): ReactElement {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [vaultPath, setVaultPath] = useState<string>('');
-  const [vaultPathLoaded, setVaultPathLoaded] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const savedVaultPathRef = useRef<string>('');
 
   useEffect(() => {
     loadSettings()
       .then(s => setSettings(s))
       .catch(() => setError('Failed to load settings'));
-    getVaultPath()
-      .then(r => {
-        setVaultPath(r.path);
-        savedVaultPathRef.current = r.path;
-        setVaultPathLoaded(true);
-      })
-      .catch(() => setVaultPathLoaded(true));
   }, []);
-
-  function handleCopyPath() {
-    void navigator.clipboard.writeText(vaultPath).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
 
   async function autoSave(patch: Partial<Settings>) {
     try {
@@ -44,7 +21,9 @@ export function SettingsTab(): ReactElement {
     }
   }
 
-  function handleToggle(key: 'showBrowser' | 'fetchBankOfIsraelRates' | 'concurrentScraping') {
+  function handleToggle(
+    key: 'showBrowser' | 'fetchBankOfIsraelRates' | 'concurrentScraping' | 'persistHistory',
+  ) {
     return (e: ChangeEvent<HTMLInputElement>) => {
       const value = e.target.checked;
       setSettings(s => (s ? { ...s, [key]: value } : s));
@@ -128,84 +107,40 @@ export function SettingsTab(): ReactElement {
             placeholder="e.g. 6"
           />
         </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <label htmlFor="historyFilePath" style={{ display: 'block', marginBottom: 4 }}>
-            History file path
-          </label>
-          <input
-            id="historyFilePath"
-            type="text"
-            defaultValue={settings.historyFilePath ?? ''}
-            onBlur={handleTextBlur('historyFilePath')}
-            style={{ padding: '4px 8px', width: '100%', maxWidth: 400 }}
-            placeholder="/path/to/history.json"
-          />
-        </div>
       </fieldset>
 
-      {vaultPathLoaded && (
-        <fieldset style={{ border: 'none', padding: 0, margin: '20px 0 0' }}>
-          <legend style={{ fontWeight: 'bold', marginBottom: 12 }}>Vault file</legend>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+      <fieldset style={{ border: 'none', padding: 0, margin: '20px 0 0' }}>
+        <legend style={{ fontWeight: 'bold', marginBottom: 12 }}>Run history</legend>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <input
+            id="persistHistory"
+            type="checkbox"
+            checked={settings.persistHistory}
+            onChange={handleToggle('persistHistory')}
+          />
+          Save run history to a file
+        </label>
+        <p style={{ margin: '0 0 10px 24px', fontSize: '0.85em', color: '#6b7280' }}>
+          When off, history is kept for this session only and nothing is written to disk.
+        </p>
+
+        {settings.persistHistory && (
+          <div style={{ marginBottom: 10, marginLeft: 24 }}>
+            <label htmlFor="historyFilePath" style={{ display: 'block', marginBottom: 4 }}>
+              History file path
+            </label>
             <input
-              id="vaultFilePath"
+              id="historyFilePath"
               type="text"
-              value={vaultPath}
-              onChange={e => setVaultPath(e.target.value)}
-              onBlur={async e => {
-                const val = e.target.value.trim();
-                if (!val) {
-                  setVaultPath(savedVaultPathRef.current);
-                  return;
-                }
-                if (val === savedVaultPathRef.current) {
-                  setVaultPath(val);
-                  return;
-                }
-                try {
-                  const updated = await saveSettings({ vaultPath: val });
-                  setSettings(updated);
-                  savedVaultPathRef.current = val;
-                  setVaultPath(val);
-                } catch {
-                  setError('Failed to save settings');
-                }
-              }}
-              aria-label="Vault file path"
-              style={{ padding: '4px 8px', width: '100%', maxWidth: 360 }}
-              placeholder=".vault"
+              defaultValue={settings.historyFilePath ?? ''}
+              onBlur={handleTextBlur('historyFilePath')}
+              style={{ padding: '4px 8px', width: '100%', maxWidth: 400 }}
+              placeholder="/path/to/history.json"
             />
-            <button
-              type="button"
-              onClick={handleCopyPath}
-              style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
-            >
-              {copied ? '✓ Copied' : 'Copy path'}
-            </button>
-            <button
-              type="button"
-              disabled={downloading}
-              onClick={async () => {
-                setDownloading(true);
-                try {
-                  await vaultDownload(getBasename(vaultPath || '.vault'));
-                } catch {
-                  setError('Failed to download vault.');
-                } finally {
-                  setDownloading(false);
-                }
-              }}
-              style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
-            >
-              {downloading ? 'Downloading…' : 'Download'}
-            </button>
           </div>
-          <p style={{ margin: 0, fontSize: '0.85em', color: '#6b7280' }}>
-            Back up this file to preserve your credentials.
-          </p>
-        </fieldset>
-      )}
+        )}
+      </fieldset>
     </div>
   );
 }

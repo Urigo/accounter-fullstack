@@ -6,10 +6,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { History, formatDuration } from '../screens/history.js';
 import type { RunRecord } from '../../shared/types.js';
 
-function mockFetch(records: RunRecord[]) {
+function mockFetch(records: RunRecord[], persisted = true) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => ({ ok: true, json: async () => records }) as Response),
+    vi.fn(async () => ({ ok: true, json: async () => ({ records, persisted }) }) as Response),
   );
 }
 
@@ -81,7 +81,7 @@ describe('History screen', () => {
   });
 
   it('Refresh button re-fetches data', async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => [] }) as Response);
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ records: [], persisted: true }) }) as Response);
     vi.stubGlobal('fetch', fetchMock);
 
     render(<History />);
@@ -90,5 +90,23 @@ describe('History screen', () => {
     const callsBefore = fetchMock.mock.calls.length;
     await userEvent.setup().click(screen.getByRole('button', { name: /refresh/i }));
     await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore));
+  });
+});
+
+describe('History screen — session-only history', () => {
+  it('says history is session-only when it is not persisted', async () => {
+    mockFetch([makeRecord()], false);
+    const onNavigateSettings = vi.fn();
+    render(<History onNavigateSettings={onNavigateSettings} />);
+    await waitFor(() => screen.getByText(/showing runs from this session only/i));
+    await userEvent.click(screen.getByRole('button', { name: /save run history/i }));
+    expect(onNavigateSettings).toHaveBeenCalled();
+  });
+
+  it('shows no session note when history is saved to a file', async () => {
+    mockFetch([makeRecord()], true);
+    render(<History />);
+    await waitFor(() => screen.getByRole('table', { name: /scrape history/i }));
+    expect(screen.queryByText(/this session only/i)).toBeNull();
   });
 });

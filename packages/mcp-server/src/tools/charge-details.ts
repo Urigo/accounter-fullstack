@@ -290,6 +290,8 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
           isin
           symbol
           engName
+          exchange
+          itemType
         }
         details {
           key
@@ -318,6 +320,18 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
             currency
           }
           israelTaxValue {
+            raw
+            currency
+          }
+          foreignTaxValue {
+            raw
+            currency
+          }
+          israelTaxValueByPayments {
+            raw
+            currency
+          }
+          capitalTaxValue {
             raw
             currency
           }
@@ -418,11 +432,13 @@ interface NormalizedCharge {
  * One security a charge's transaction descriptions referenced, plus the trades
  * behind the cash movement.
  *
- * `details` is the ingested reference row and is legitimately null: the feed can
- * be out of date, and saying so is more useful than dropping the key. Descriptors
- * come from the security *business* where both have them — its `currencyCode` is
- * the resolved `Currency` enum, while the reference feed's is a raw source string
- * that can still be a Hebrew label.
+ * `details` is the ingested reference row and is legitimately null: the bank's
+ * reference list only holds securities held when it was scraped, so a position
+ * closed before then never appears, and saying so is more useful than dropping
+ * the key. Descriptors come from the security *business* where both have them,
+ * falling back to the reference row — its `currencyCode` is the resolved
+ * `Currency` enum, while the reference feed's is a raw source string that can
+ * still be a Hebrew label.
  */
 function normalizeChargeSecurity(security: RawChargeSecurity) {
   return {
@@ -431,8 +447,8 @@ function normalizeChargeSecurity(security: RawChargeSecurity) {
     isin: security.securityBusiness?.isin ?? null,
     symbol: security.securityBusiness?.symbol ?? security.details?.symbol ?? null,
     name: security.securityBusiness?.engName ?? security.details?.engName ?? null,
-    exchange: security.details?.exchange ?? null,
-    itemType: security.details?.itemType ?? null,
+    exchange: security.securityBusiness?.exchange ?? security.details?.exchange ?? null,
+    itemType: security.securityBusiness?.itemType ?? security.details?.itemType ?? null,
     referenceAsOf: security.details?.asOfDate ?? null,
     referenceFound: security.details != null,
     executions: security.executions.map(execution => ({
@@ -447,6 +463,9 @@ function normalizeChargeSecurity(security: RawChargeSecurity) {
       netValue: normalizeAmount(execution.netValue),
       tradeCommission: normalizeAmount(execution.tradeCommission),
       israelTaxValue: normalizeAmount(execution.israelTaxValue),
+      foreignTaxValue: normalizeAmount(execution.foreignTaxValue),
+      israelTaxValueByPayments: normalizeAmount(execution.israelTaxValueByPayments),
+      capitalTaxValue: normalizeAmount(execution.capitalTaxValue),
     })),
   };
 }
@@ -557,9 +576,9 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
   const total =
     charges.length === 0
       ? 0
-      : !usingIds && !hasChargeIds
-        ? (filteredData?.allCharges.pageInfo.totalRecords ?? charges.length)
-        : charges.length;
+      : usingIds || hasChargeIds
+        ? charges.length
+        : (filteredData?.allCharges.pageInfo.totalRecords ?? charges.length);
 
   // Only a filtered request is paginated; a by-id request returns exactly the
   // ids asked for, so reporting a page over it would be meaningless.

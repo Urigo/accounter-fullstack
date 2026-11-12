@@ -36,10 +36,12 @@ import {
   executeDocumentIssue,
   filterAndHandleSwiftTransactions,
   getDocumentDateOutOfTransactions,
+  getDraftTypeOutOfIssuedDocument,
   getIncomeRecordsFromDocuments,
   getLinkedDocumentsAttributes,
   getPaymentsFromTransactions,
   getTypeFromDocumentsAndTransactions,
+  validateDocumentLinkType,
 } from '../helpers/issue-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
@@ -213,7 +215,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       };
       return draft;
     },
-    newDocumentDraftByDocument: async (_, { documentId }, { injector }) => {
+    newDocumentDraftByDocument: async (_, { documentId, type: requestedType }, { injector }) => {
       if (!documentId) {
         throw new GraphQLError('Document ID is required to fetch document draft');
       }
@@ -259,43 +261,50 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         ? injector.get(ClientsProvider).getClientByIdLoader.load(mainBusinessId)
         : Promise.resolve(undefined);
 
-      const openIssuedDocumentPromise = injector
+      const issuedDocumentPromise = injector
         .get(IssuedDocumentsProvider)
         .getIssuedDocumentsByIdLoader.load(document.id);
 
       const vatTypePromise = deduceVatTypeFromBusiness(injector, locality, mainBusinessId);
 
-      const [client, openIssuedDocument, vatType] = await Promise.all([
+      const [client, issuedDocument, vatType] = await Promise.all([
         clientPromise,
-        openIssuedDocumentPromise,
+        issuedDocumentPromise,
         vatTypePromise,
       ]);
 
-      if (!openIssuedDocument) {
+      if (!issuedDocument) {
         throw new GraphQLError(
           `Document with ID "${document.id}" doesn't seem like a document we issued`,
         );
       }
 
-      if (openIssuedDocument.status !== 'OPEN') {
-        throw new GraphQLError(`Document with ID "${document.id}" is closed`);
-      }
+      const { type, isCancellation } = getDraftTypeOutOfIssuedDocument({
+        documentId: document.id,
+        documentType: normalizeDocumentType(document.type),
+        status: issuedDocument.status,
+        requestedType,
+      });
 
       const greenInvoiceDocumentPromise: Promise<_DOLLAR_defs_Document | null> = injector
         .get(GreenInvoiceClientProvider)
-        .documentLoader.load(openIssuedDocument.external_id)
+        .documentLoader.load(issuedDocument.external_id)
         .then(res => {
           if (!res) {
             console.error(
               'Failed to fetch document from Green Invoice',
-              openIssuedDocument.external_id,
+              issuedDocument.external_id,
             );
             return null;
           }
           return res;
         });
 
-      const paymentPromise = getPaymentsFromTransactions(injector, transactions ?? []);
+      // A credit invoice undoes the document, not its payment: the charge's transactions are the
+      // payment the original already receipted, so the credit invoice doesn't carry them again
+      const paymentPromise = isCancellation
+        ? Promise.resolve(undefined)
+        : getPaymentsFromTransactions(injector, transactions ?? []);
 
       const greenInvoiceClientId = parseStoredClientIntegrations(
         client?.integrations ?? {},
@@ -320,20 +329,13 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
 
       const income = getIncomeRecordsFromDocuments([greenInvoiceDocument]);
 
-      const type = getTypeFromDocumentsAndTransactions(
-        [{ type: normalizeDocumentType(document.type) }],
-        transactions ?? [],
-      );
-
-      const linkedDocsAttributes = getLinkedDocumentsAttributes(
-        [openIssuedDocument],
-        type === DocumentType.CreditInvoice,
-      );
+      const linkedDocsAttributes = getLinkedDocumentsAttributes([issuedDocument], isCancellation);
 
       let remarks = greenInvoiceDocument.remarks;
       switch (type) {
         case DocumentType.Receipt:
         case DocumentType.InvoiceReceipt:
+        case DocumentType.CreditInvoice:
           remarks = `${getDocumentNameFromType(type)} for ${getDocumentNameFromGreenInvoiceType(greenInvoiceDocument.type)} ${greenInvoiceDocument.number}`;
           break;
       }
@@ -342,7 +344,11 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         remarks = client.remark;
       }
 
-      const documentDate = getDocumentDateOutOfTransactions(transactions ?? []);
+      // A credit invoice belongs to the VAT period it is issued in, so it isn't backdated to the
+      // original payment - with no date, Green Invoice dates it on issue
+      const documentDate = isCancellation
+        ? undefined
+        : getDocumentDateOutOfTransactions(transactions ?? []);
 
       const draft: ResolversTypes['DocumentDraft'] = {
         remarks,
@@ -523,6 +529,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       });
     },
     previewDocument: async (_, { input: initialInput }, { injector }) => {
+      validateDocumentLinkType(initialInput);
       try {
         const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
         const document = await injector

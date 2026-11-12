@@ -196,13 +196,17 @@ describe('AdminContextProvider', () => {
   });
 
   it('adds the security businesses to the internal wallets, once each', async () => {
+    const generalSecuritiesId = '0190a1b2-0000-7000-8000-0000000000e1';
     mockContextLoad(
-      { owner_id: 'test-owner-id', foreign_securities_business_id: 'general-securities' },
+      {
+        owner_id: 'test-owner-id',
+        securities_context: { foreignSecuritiesBusinessId: generalSecuritiesId },
+      },
       [
         { id: 'security-a', owner_id: 'test-owner-id' },
         { id: 'security-b', owner_id: 'test-owner-id' },
         // Already an internal wallet through the context itself.
-        { id: 'general-securities', owner_id: 'test-owner-id' },
+        { id: generalSecuritiesId, owner_id: 'test-owner-id' },
       ],
     );
 
@@ -210,8 +214,24 @@ describe('AdminContextProvider', () => {
 
     const walletIds = context!.financialAccounts.internalWalletsIds;
     expect(walletIds).toEqual(expect.arrayContaining(['security-a', 'security-b']));
-    expect(walletIds.filter(id => id === 'general-securities')).toHaveLength(1);
+    expect(walletIds.filter(id => id === generalSecuritiesId)).toHaveLength(1);
     expect(walletIds).not.toContain(undefined);
+  });
+
+  it('no longer reads the deprecated foreign securities columns', async () => {
+    mockContextLoad({
+      owner_id: 'test-owner-id',
+      foreign_securities_business_id: '0190a1b2-0000-7000-8000-0000000000e2',
+      foreign_securities_fees_category_id: '0190a1b2-0000-7000-8000-0000000000e3',
+    });
+
+    const context = await provider.getAdminContext();
+
+    expect(context!.foreignSecurities.foreignSecuritiesBusinessId).toBeNull();
+    expect(context!.foreignSecurities.foreignSecuritiesFeesCategoryId).toBeNull();
+    expect(context!.financialAccounts.internalWalletsIds).not.toContain(
+      '0190a1b2-0000-7000-8000-0000000000e2',
+    );
   });
 
   it('should invalidate cache on update', async () => {

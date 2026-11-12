@@ -216,6 +216,9 @@ function upstreamData(query: string, authorization?: string): unknown {
               netValue: { raw: -1000, currency: 'USD' },
               tradeCommission: { raw: 5, currency: 'USD' },
               israelTaxValue: null,
+              foreignTaxValue: null,
+              israelTaxValueByPayments: null,
+              capitalTaxValue: null,
             },
           },
         ],
@@ -358,6 +361,20 @@ async function callTool(name: string, args: JsonRecord, token: string) {
   return body.result;
 }
 
+/** Every mutating tool: all hidden unless `MCP_ENABLE_WRITE_TOOLS=1`. */
+const WRITE_TOOLS = [
+  'accounter_update_charges_tags',
+  'accounter_upload_documents',
+  'accounter_update_charge',
+  'accounter_merge_charges',
+  'accounter_update_transactions',
+  'accounter_update_document',
+  'accounter_delete_document',
+  'accounter_create_business',
+  'accounter_create_contract',
+  'accounter_create_client',
+];
+
 describe('discovery and the 401 challenge', () => {
   it('serves health without auth', async () => {
     const res = await getPath('/health');
@@ -418,8 +435,9 @@ describe('authenticated tool invocation', () => {
     expect(tools).not.toContain('accounter_smoke_ping');
     // MCP_ENABLE_WRITE_TOOLS is unset here, which is the default a deployment
     // upgrades into: the write tools must not appear.
-    expect(tools).not.toContain('accounter_update_charges_tags');
-    expect(tools).not.toContain('accounter_upload_documents');
+    for (const writeTool of WRITE_TOOLS) {
+      expect(tools).not.toContain(writeTool);
+    }
   });
 
   it('lists clients with their integrations flattened and scoped to the caller', async () => {
@@ -743,8 +761,9 @@ describe('write tools with MCP_ENABLE_WRITE_TOOLS=1', () => {
       (await res.json()) as { result: { tools: Array<{ name: string }> } }
     ).result.tools.map(t => t.name);
 
-    expect(tools).toContain('accounter_update_charges_tags');
-    expect(tools).toContain('accounter_upload_documents');
+    for (const writeTool of WRITE_TOOLS) {
+      expect(tools).toContain(writeTool);
+    }
     // Reads still lead: a tool that changes data should not be the first thing
     // the model reaches for.
     expect(tools.indexOf('accounter_update_charges_tags')).toBeGreaterThan(

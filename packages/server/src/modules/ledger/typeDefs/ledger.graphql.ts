@@ -154,6 +154,8 @@ export default gql`
     matches: [UUID!]!
     differences: [LedgerRecord!]!
     errors: [String!]!
+    " securities tax categories the tenant has yet to configure to generate this ledger "
+    missingSecuritiesTaxCategories: [SecuritiesTaxCategoryKey!]!
   }
 
   " result type for ledger records "

@@ -596,6 +596,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           differences: [],
           matches: records.map(r => r.id),
           errors: [],
+          missingSecuritiesTaxCategories: [],
         };
       }
       const currencyDiffErrors = await getInvoicePaymentCurrencyDiffErrors(charge, injector);
@@ -613,9 +614,11 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             differences: [],
             matches: [],
             errors: [...currencyDiffErrors],
+            missingSecuritiesTaxCategories: [],
           };
         }
 
+        const missingSecuritiesTaxCategories = generated.missingSecuritiesTaxCategories ?? [];
         const newRecords = generated.records as IGetLedgerRecordsByChargesIdsResult[];
 
         const fullMatching = ledgerRecordsGenerationFullMatchComparison(records, newRecords);
@@ -626,6 +629,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             differences: [],
             matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean) as string[],
             errors: [...generated.errors, ...currencyDiffErrors],
+            missingSecuritiesTaxCategories,
           };
         }
 
@@ -642,6 +646,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           differences: toUpdate,
           matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean) as string[],
           errors: [...generated.errors, ...currencyDiffErrors],
+          missingSecuritiesTaxCategories,
         };
       } catch (err) {
         console.error(err);
@@ -650,6 +655,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           differences: [],
           matches: [],
           errors: [...currencyDiffErrors],
+          missingSecuritiesTaxCategories: [],
         };
       }
     },

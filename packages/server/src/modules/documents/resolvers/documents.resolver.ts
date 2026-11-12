@@ -8,15 +8,19 @@ import { degradeChargesAccountantApproval } from '../../accountant-approval/help
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
-import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
+import { deleteChargesIfEmpty } from '../../charges/helpers/delete-empty-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
-import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   fetchRemoteDocument,
   RemoteDocumentError,
 } from '../helpers/fetch-remote-document.helper.js';
 import { MAX_REPROCESS_OCR_BATCH, reprocessDocumentsOcr } from '../helpers/reprocess-ocr.helper.js';
+import {
+  describeUploadError,
+  uploadDocumentsToCharge,
+  validateUploadTarget,
+} from '../helpers/upload-to-charge.helper.js';
 import {
   getDocumentFromFile,
   releaseDbConnectionForExternalWork,
@@ -24,12 +28,7 @@ import {
 import { basicDocumentValidation } from '../helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
-import type {
-  DocumentsModule,
-  IGetAllDocumentsResult,
-  IInsertDocumentsParams,
-  IUpdateDocumentParams,
-} from '../types.js';
+import type { DocumentsModule, IInsertDocumentsParams, IUpdateDocumentParams } from '../types.js';
 import {
   commonChargeFields,
   commonDocumentsFields,
@@ -137,137 +136,49 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
-    batchUploadDocuments: async (_, { documents, isSensitive, chargeId }, { injector }) => {
-      if (!chargeId) {
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
-        // generate new charge
-        const newCharge = await injector.get(ChargesProvider).generateCharge({
-          ownerId,
-          userDescription: 'New uploaded documents',
-        });
-        if (!newCharge) {
-          throw new GraphQLError(`Failed to generate new charge for new document`);
-        }
-        chargeId = newCharge.id;
-      }
-
-      const newDocuments: Array<IInsertDocumentsParams['documents'][number]> = [];
-      await Promise.all(
-        documents.map(async document => {
-          // get new document data
-          const newDocument = await getDocumentFromFile(injector, document, chargeId, isSensitive);
-          newDocuments.push(newDocument);
-        }),
-      );
-
-      const res = await injector
-        .get(DocumentsProvider)
-        .insertDocuments({ documents: newDocuments });
-
-      await degradeChargesAccountantApproval(injector, [chargeId]);
-
-      return res.map(document => ({ document: document as IGetAllDocumentsResult }));
+    batchUploadDocuments: async (
+      _,
+      { documents, isSensitive, chargeId, newCharge },
+      { injector },
+    ) => {
+      return uploadDocumentsToCharge(injector, {
+        sources: documents.map((document, index) => ({
+          label: ('name' in document && document.name) || `document #${index + 1}`,
+          load: async () => document,
+        })),
+        chargeId,
+        newCharge,
+        isSensitive,
+      });
     },
-    batchUploadDocumentsFromUrls: async (_, { urls, isSensitive, chargeId }, { injector }) => {
-      if (!chargeId) {
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
-        // generate new charge
-        const newCharge = await injector.get(ChargesProvider).generateCharge({
-          ownerId,
-          userDescription: 'New uploaded documents',
-        });
-        if (!newCharge) {
-          throw new GraphQLError(`Failed to generate new charge for new document`);
-        }
-        chargeId = newCharge.id;
-      }
-
-      // The fetch + OCR that follows is minutes of external I/O; the charge is
-      // already committed, so nothing needs the connection until the INSERT.
-      await releaseDbConnectionForExternalWork(injector);
-
-      // Results are positional and one URL's failure must not sink the batch, so
-      // each fetch is settled independently and its outcome is carried alongside
-      // the index it came from.
-      const settled = await Promise.all(
-        urls.map(async (url, index) => {
-          try {
-            // A Drive share link is not a download link — `/file/d/<id>/view`
-            // answers with an HTML page — so those go through the Drive API,
-            // which also reads files shared to the account rather than public.
-            const file = GoogleDriveProvider.isFileUrl(url)
-              ? await injector.get(GoogleDriveProvider).fetchFileFromUrl(url)
-              : await fetchRemoteDocument(url);
-            const document = await getDocumentFromFile(injector, file, chargeId, isSensitive);
-            return { index, document };
-          } catch (error) {
-            const message =
-              error instanceof RemoteDocumentError
-                ? error.message
-                : `Failed ingesting document from URL: ${error instanceof Error ? error.message : String(error)}`;
-            console.error(`Failed ingesting document from URL="${url}": ${error}`);
-            return { index, message };
-          }
-        }),
-      );
-
-      const fetched = settled.filter(
-        (
-          entry,
-        ): entry is { index: number; document: IInsertDocumentsParams['documents'][number] } =>
-          'document' in entry,
-      );
-
-      // The insert is the last step of a job that has already cost a download,
-      // a Cloudinary upload and an OCR pass per URL. Letting it throw turns all
-      // of that into one opaque top-level GraphQL error with no indication of
-      // which documents were lost or why, so it is reported the same positional
-      // way every other failure in this resolver is.
-      let inserted: Awaited<ReturnType<DocumentsProvider['insertDocuments']>> = [];
-      let insertError: string | undefined;
-      if (fetched.length) {
-        try {
-          inserted = await injector
-            .get(DocumentsProvider)
-            .insertDocuments({ documents: fetched.map(entry => entry.document) });
-        } catch (error) {
-          insertError = `failed storing the fetched document: ${
-            error instanceof Error ? error.message : String(error)
-          }`;
-          // Passed as a separate argument rather than interpolated, so the log
-          // keeps the stack and any nested `cause`.
-          console.error('Failed inserting documents fetched from URLs:', error);
-        }
-      }
-
-      if (inserted.length) {
-        await degradeChargesAccountantApproval(injector, [chargeId]);
-      }
-
-      // `insertDocuments` returns rows in the order it was given them, so the
-      // Nth inserted row belongs to the Nth successfully fetched URL.
-      const documentByIndex = new Map(
-        fetched.map((entry, position) => [entry.index, inserted[position]]),
-      );
-
-      return urls.map((url, index) => {
-        const document = documentByIndex.get(index);
-        if (document) {
-          return { document: document as IGetAllDocumentsResult };
-        }
-        const failure = settled.find(entry => entry.index === index);
-        const reason =
-          failure && 'message' in failure
-            ? failure.message
-            : (insertError ?? 'document was fetched but could not be stored');
-        return { __typename: 'CommonError' as const, message: `${url}: ${reason}` };
+    batchUploadDocumentsFromUrls: async (
+      _,
+      { urls, isSensitive, chargeId, newCharge },
+      { injector },
+    ) => {
+      return uploadDocumentsToCharge(injector, {
+        sources: urls.map(url => ({
+          label: url,
+          isUrl: true,
+          // A Drive share link is not a download link — `/file/d/<id>/view`
+          // answers with an HTML page — so those go through the Drive API.
+          load: () =>
+            GoogleDriveProvider.isFileUrl(url)
+              ? injector.get(GoogleDriveProvider).fetchFileFromUrl(url)
+              : fetchRemoteDocument(url),
+        })),
+        chargeId,
+        newCharge,
+        isSensitive,
+        describeFailure: error =>
+          error instanceof RemoteDocumentError
+            ? error.message
+            : `Failed ingesting document from URL: ${describeUploadError(error)}`,
       });
     },
     batchUploadDocumentsFromGoogleDrive: async (
       _,
-      { sharedFolderUrl, chargeId, isSensitive },
+      { sharedFolderUrl, chargeId, isSensitive, newCharge },
       { injector },
     ) => {
       const isValidGoogleDriveUrl = (url: string): boolean => {
@@ -285,6 +196,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         throw new GraphQLError('Invalid Google Drive folder URL');
       }
 
+      // Refuse a bad target before downloading the whole folder.
+      await validateUploadTarget(injector, { chargeId, newCharge });
+
       // Downloading a whole shared folder is external I/O — release the pooled
       // connection for its duration (see the helper).
       await releaseDbConnectionForExternalWork(injector);
@@ -293,48 +207,17 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         .get(GoogleDriveProvider)
         .fetchFilesFromSharedFolder(sharedFolderUrl);
 
-      if (!chargeId) {
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
-        // generate new charge
-        const newCharge = await injector.get(ChargesProvider).generateCharge({
-          ownerId,
-          userDescription: 'New uploaded documents',
-        });
-        if (!newCharge) {
-          throw new GraphQLError(`Failed to generate new charge for new document`);
-        }
-        chargeId = newCharge.id;
-      }
-
-      const newDocuments: Array<IInsertDocumentsParams['documents'][number]> = [];
-      await Promise.all(
-        files.map(async file => {
-          // get new document data
-          try {
-            const newDocument = await getDocumentFromFile(injector, file, chargeId, isSensitive);
-            newDocuments.push(newDocument);
-          } catch (error) {
-            // Skip this file and continue with other files
-            console.error(error);
-          }
-        }),
-      );
-
-      const res = await injector
-        .get(DocumentsProvider)
-        .insertDocuments({ documents: newDocuments });
-
-      await degradeChargesAccountantApproval(injector, [chargeId]);
-
-      return res.map(document => ({ document: document as IGetAllDocumentsResult }));
+      return uploadDocumentsToCharge(injector, {
+        sources: files.map((file, index) => ({
+          label: file.name || `file #${index + 1}`,
+          load: async () => file,
+        })),
+        chargeId,
+        newCharge,
+        isSensitive,
+      });
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
-      let postUpdateActions = async (): Promise<void> => void 0;
-      // set when the former charge is emptied by this update and therefore deleted, so the
-      // client can drop its row instead of refetching a charge that no longer exists
-      let deletedChargeId: string | null = null;
-
       try {
         let chargeId: string | undefined = undefined;
         // capture the document's current charge so it too gets re-flagged when
@@ -353,13 +236,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             throw new GraphQLError(`Document ID="${documentId}" not valid`);
           }
           if (document.charge_id) {
-            const [charge, transactions, documents] = await Promise.all([
-              injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
-              injector
-                .get(TransactionsProvider)
-                .transactionsByChargeIDLoader.load(document.charge_id),
-              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
-            ]);
+            const charge = await injector
+              .get(ChargesProvider)
+              .getChargeByIdLoader.load(document.charge_id);
             if (!charge) {
               throw new GraphQLError(
                 `Former document's charge ID ("${fields.chargeId}") not valid`,
@@ -377,23 +256,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               );
             }
             chargeId = newCharge.id;
-
-            if (documents.length === 1 && transactions.length === 0) {
-              postUpdateActions = async () => {
-                try {
-                  await deleteCharges([charge.id], injector);
-                  deletedChargeId = charge.id;
-                } catch (e) {
-                  if (e instanceof GraphQLError) {
-                    throw e;
-                  }
-                  console.error(e);
-                  throw new GraphQLError(
-                    `Failed to delete the empty former charge ID="${charge.id}"`,
-                  );
-                }
-              };
-            }
           }
         } else if (fields.chargeId) {
           // case new charge ID
@@ -432,7 +294,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           throw new Error(`Document ID="${documentId}" not found`);
         }
 
-        await postUpdateActions();
+        // the former charge may be left empty by the move - delete it to avoid a ghost charge, and
+        // report it so the client can drop its row instead of refetching a charge that no longer
+        // exists
+        const [deletedChargeId = null] = fields.chargeId
+          ? await deleteChargesIfEmpty([formerChargeId], injector, { keepChargeIds: [chargeId] })
+          : [];
 
         await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
 
@@ -461,20 +328,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
         if (res.length === 1) {
           await degradeChargesAccountantApproval(injector, [document.charge_id]);
-          let deletedChargeId: string | null = null;
-          if (document.charge_id) {
-            const [charge, transactions, documents] = await Promise.all([
-              injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
-              injector
-                .get(TransactionsProvider)
-                .transactionsByChargeIDLoader.load(document.charge_id),
-              injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(document.charge_id),
-            ]);
-            if (charge && documents.length === 0 && transactions.length === 0) {
-              await deleteCharges([charge.id], injector);
-              deletedChargeId = charge.id;
-            }
-          }
+          const [deletedChargeId = null] = await deleteChargesIfEmpty(
+            [document.charge_id],
+            injector,
+          );
           return {
             success: true,
             chargeId: document.charge_id ?? null,
@@ -649,6 +506,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
         const newChargeIds = await Promise.all(spreadPromises);
         chargeIds.push(...newChargeIds);
+
+        // the original charge may be left empty once all its documents are spread - delete it to
+        // avoid a ghost charge
+        const [deletedChargeId] = await deleteChargesIfEmpty([chargeId], injector);
+        if (deletedChargeId) {
+          chargeIds.splice(chargeIds.indexOf(deletedChargeId), 1);
+        }
 
         // the original charge lost documents; re-flag it for accountant review
         await degradeChargesAccountantApproval(injector, [chargeId]);

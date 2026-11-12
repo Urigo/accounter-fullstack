@@ -2,24 +2,35 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { compareTimelessDates } from '../../../shared/helpers/timeless-date.js';
+import type { SecurityTradeType } from '../../../shared/enums.js';
+import {
+  addDaysToTimelessDate,
+  compareTimelessDates,
+  maxTimelessDate,
+  minTimelessDate,
+} from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
+  CASH_SETTLEMENT_WINDOW_DAYS,
   matchExecutionsToTransactions,
   matchSecurityExecutions,
+  transactionCashDates,
   type AccountTuple,
   type MatchableTransaction,
 } from '../helpers/match-security-executions.helper.js';
-import { extractSecurityKeys } from '../helpers/security-key.helper.js';
+import { tradeTypeToRaw } from '../helpers/security-execution-enums.helper.js';
+import { extractTransactionSecurityKeys } from '../helpers/security-key.helper.js';
 import type {
   ChargeSecurityProto,
   IGetFilteredSecurityExecutionsQuery,
+  IGetOwnerSecurityExecutionsByTradeDatesQuery,
   IGetSecuritiesByKeysQuery,
   IGetSecurityExecutionsByBusinessIdsQuery,
+  IGetSecurityExecutionsByChargeIdsQuery,
   IGetSecurityExecutionsQuery,
   PaginatedSecurityExecutionsProto,
   SecurityExecutionRow,
@@ -49,8 +60,9 @@ const getSecuritiesByKeys = sql<IGetSecuritiesByKeysQuery>`
 
 /**
  * A prefilter, not the match itself: the ANY(...) predicates form a cross-product over the
- * charge's keys, accounts and settlement days. `matchSecurityExecutions` does the per-row
- * pairing in memory, where the account tuple, currency and direction are checked together.
+ * charge's keys and accounts, and the date range spans every day the charge's cash could belong
+ * to an execution. `matchSecurityExecutions` does the per-row pairing in memory, where the
+ * account tuple, key, amount, direction and dates are checked together.
  *
  * Tenant scoping is RLS again (FORCE ROW LEVEL SECURITY + tenant_isolation), hence no
  * owner_id predicate.
@@ -78,19 +90,30 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     trade_currency,
     settlement_currency,
     trade_commission_value_trade_currency,
+    trade_commission_value_nis,
+    commissions_currency,
     management_fees_value_trade_currency,
     israe_tax_value,
     nominal_profit_loss_nis,
+    nominal_profit_loss_linkage,
     real_profit_loss_nis,
     payment_type,
     symbol,
-    isin
+    isin,
+    issuer_country_code,
+    foreign_tax_value_settlement_currency,
+    israel_tax_value_by_payments_settlement_currency,
+    capital_tax_value_settlement_currency,
+    is_cancel_transaction,
+    trade_gross_value_nis,
+    personal_currency_rate
   FROM accounter_schema.poalim_securities_transactions
   WHERE security = ANY($securities!)
     AND bank_number = ANY($bankNumbers!)
     AND branch_number = ANY($branchNumbers!)
     AND account_number = ANY($accountNumbers!)
-    AND value_date = ANY($valueDates!);`;
+    AND COALESCE(value_date, trade_date) >= $fromDate!
+    AND trade_date <= $toDate!;`;
 
 /**
  * Every ingested execution of the given security businesses, unbounded by charge or date — the
@@ -130,13 +153,23 @@ const getSecurityExecutionsByBusinessIds = sql<IGetSecurityExecutionsByBusinessI
     t.trade_currency,
     t.settlement_currency,
     t.trade_commission_value_trade_currency,
+    t.trade_commission_value_nis,
+    t.commissions_currency,
     t.management_fees_value_trade_currency,
     t.israe_tax_value,
     t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
     t.real_profit_loss_nis,
     t.payment_type,
     t.symbol,
     t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
     si.business_id AS security_business_id
   FROM accounter_schema.poalim_securities_transactions t
   INNER JOIN accounter_schema.security_identifiers si
@@ -191,13 +224,23 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
     t.trade_currency,
     t.settlement_currency,
     t.trade_commission_value_trade_currency,
+    t.trade_commission_value_nis,
+    t.commissions_currency,
     t.management_fees_value_trade_currency,
     t.israe_tax_value,
     t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
     t.real_profit_loss_nis,
     t.payment_type,
     t.symbol,
     t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
     si.business_id AS security_business_id,
     COUNT(*) OVER () AS total_count
   FROM accounter_schema.poalim_securities_transactions t
@@ -214,6 +257,123 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
   LIMIT $limit! OFFSET $offset!;`;
 
 /**
+ * Every execution of one owner, of the given trade types, traded within a date range (both ends
+ * inclusive), oldest first — a period's disposals, for a tax report.
+ *
+ * Addressed by owner rather than by security business: a report over a period must see every
+ * execution of the owner, including one whose Poalim key resolves to no security business (yet),
+ * so the identifier bridge is a LEFT join and the business may be null. Same column list as
+ * `getSecurityExecutions`, so the rows are `SecurityExecutionRow`s.
+ *
+ * Tenant scoping is RLS, on both tables.
+ */
+const getOwnerSecurityExecutionsByTradeDates = sql<IGetOwnerSecurityExecutionsByTradeDatesQuery>`
+  SELECT
+    t.id,
+    t.owner_id,
+    t.security,
+    t.bank_number,
+    t.branch_number,
+    t.account_number,
+    t.trade_date,
+    t.value_date,
+    t.settlement_date,
+    t.payment_date,
+    t.trade_type,
+    t.transaction_type,
+    t.nv,
+    t.trade_price,
+    t.trade_gross_value_trade_currency,
+    t.net_value_trade_currency,
+    t.net_value_settlement_currency,
+    t.net_value_nis,
+    t.trade_currency,
+    t.settlement_currency,
+    t.trade_commission_value_trade_currency,
+    t.trade_commission_value_nis,
+    t.commissions_currency,
+    t.management_fees_value_trade_currency,
+    t.israe_tax_value,
+    t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
+    t.real_profit_loss_nis,
+    t.payment_type,
+    t.symbol,
+    t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
+    si.business_id AS "security_business_id?"
+  FROM accounter_schema.poalim_securities_transactions t
+  LEFT JOIN accounter_schema.security_identifiers si
+    ON si.owner_id = t.owner_id
+    AND si.identifier_type = 'POALIM_SECURITY_KEY'
+    AND si.identifier_value = t.security
+  WHERE t.owner_id = $ownerId!
+    AND t.trade_date >= $fromDate!
+    AND t.trade_date <= $toDate!
+    AND t.trade_type IN $$tradeTypes
+  ORDER BY t.trade_date, t.id;`;
+
+/**
+ * The executions a charge books directly, through `charges_securities_executions` — those with no
+ * cash leg to pair with (stock distributions). Same column list as `getSecurityExecutions`, so the
+ * rows are `SecurityExecutionRow`s, plus the charge each belongs to.
+ *
+ * Tenant scoping is RLS, on both tables.
+ */
+const getSecurityExecutionsByChargeIds = sql<IGetSecurityExecutionsByChargeIdsQuery>`
+  SELECT
+    t.id,
+    t.owner_id,
+    t.security,
+    t.bank_number,
+    t.branch_number,
+    t.account_number,
+    t.trade_date,
+    t.value_date,
+    t.settlement_date,
+    t.payment_date,
+    t.trade_type,
+    t.transaction_type,
+    t.nv,
+    t.trade_price,
+    t.trade_gross_value_trade_currency,
+    t.net_value_trade_currency,
+    t.net_value_settlement_currency,
+    t.net_value_nis,
+    t.trade_currency,
+    t.settlement_currency,
+    t.trade_commission_value_trade_currency,
+    t.trade_commission_value_nis,
+    t.commissions_currency,
+    t.management_fees_value_trade_currency,
+    t.israe_tax_value,
+    t.nominal_profit_loss_nis,
+    t.nominal_profit_loss_linkage,
+    t.real_profit_loss_nis,
+    t.payment_type,
+    t.symbol,
+    t.isin,
+    t.issuer_country_code,
+    t.foreign_tax_value_settlement_currency,
+    t.israel_tax_value_by_payments_settlement_currency,
+    t.capital_tax_value_settlement_currency,
+    t.is_cancel_transaction,
+    t.trade_gross_value_nis,
+    t.personal_currency_rate,
+    l.charge_id
+  FROM accounter_schema.charges_securities_executions l
+  INNER JOIN accounter_schema.poalim_securities_transactions t
+    ON t.id = l.execution_id
+  WHERE l.charge_id = ANY($chargeIds!)
+  ORDER BY t.trade_date, t.id;`;
+
+/**
  * How many securities `includeCharges` will pair at once.
  *
  * Each one costs its whole execution history plus a transactions query, because the pairing is
@@ -223,7 +383,11 @@ const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
 export const MAX_CHARGE_LINK_SECURITIES = 10;
 
 /** What the reverse match needs off a transaction, charge included so a row can link out. */
-type MatchedTransaction = MatchableTransaction & { charge_id: string };
+type MatchedTransaction = MatchableTransaction & {
+  charge_id: string;
+  /** The exact time of the cash leg, when known; what the ledger prices it at before its day */
+  debit_timestamp: Date | null;
+};
 
 /**
  * A Poalim security key, qualified by the owner it belongs to.
@@ -324,29 +488,33 @@ export class ForeignSecuritiesProvider {
   }
 
   /**
-   * Ingested portfolio executions matched to the charge's transactions, grouped by security
-   * key. Returns an empty map when the charge touches no resolvable Poalim account, so a
-   * charge whose accounts predate the bank-account backfill degrades to "no activity" rather
-   * than erroring.
+   * The executions that could pair with the given transactions, plus the Poalim identity of each
+   * account they touch. Null when the transactions touch no resolvable Poalim account or carry no
+   * date, so a charge whose accounts predate the bank-account backfill degrades to "no activity"
+   * rather than erroring.
    */
-  private async getMatchedExecutions(
+  private async getCandidateExecutions(
     transactions: readonly MatchableTransaction[],
     securityKeys: readonly string[],
-  ): Promise<Map<string, SecurityExecutionRow[]>> {
+  ): Promise<{
+    candidates: SecurityExecutionRow[];
+    accountTuples: Map<string, AccountTuple>;
+  } | null> {
     const accountTuples = await this.getAccountTuples([
       ...new Set(transactions.map(transaction => transaction.account_id)),
     ]);
     if (accountTuples.size === 0) {
-      return new Map();
+      return null;
     }
 
-    // An execution settles on the day its cash leg is debited, so those are the only days
-    // worth fetching. A transaction with no debit date can never pair up.
-    const valueDates = transactions
-      .map(transaction => transaction.debit_date_override ?? transaction.debit_date)
-      .filter((date): date is TimelessDateString => date != null);
-    if (valueDates.length === 0) {
-      return new Map();
+    // An execution's value date is at most the settlement window before the day its cash moves,
+    // and its trade is never after it — so those bound the days worth fetching. A transaction with
+    // no date at all can never pair up.
+    const cashDates = transactions.flatMap(transaction => transactionCashDates(transaction));
+    const earliestCashDate = minTimelessDate(...cashDates);
+    const latestCashDate = maxTimelessDate(...cashDates);
+    if (!earliestCashDate || !latestCashDate) {
+      return null;
     }
 
     const tuples = [...accountTuples.values()];
@@ -356,12 +524,277 @@ export class ForeignSecuritiesProvider {
         bankNumbers: [...new Set(tuples.map(tuple => tuple.bankNumber))],
         branchNumbers: [...new Set(tuples.map(tuple => tuple.branchNumber))],
         accountNumbers: [...new Set(tuples.map(tuple => tuple.accountNumber))],
-        valueDates,
+        fromDate: addDaysToTimelessDate(earliestCashDate, -CASH_SETTLEMENT_WINDOW_DAYS),
+        toDate: latestCashDate,
       },
       this.db,
     );
 
-    return matchSecurityExecutions(transactions, candidates, accountTuples);
+    return { candidates, accountTuples };
+  }
+
+  /**
+   * Ingested portfolio executions matched to the charge's main transactions, grouped by security
+   * key. Empty when the charge touches no resolvable Poalim account — see
+   * {@link getCandidateExecutions}.
+   *
+   * Fees are left out of the pairing, as in {@link getChargeExecutionsByTransactionId}: a fee is
+   * never the cash leg of an execution. The executions fetched are those of the securities the
+   * main transactions name, so this and the ledger's pairing see the same candidates.
+   */
+  private async getMatchedExecutions(
+    transactions: readonly (MatchableTransaction & { is_fee: boolean | null })[],
+  ): Promise<Map<string, SecurityExecutionRow[]>> {
+    const mainTransactions = transactions.filter(transaction => !transaction.is_fee);
+    const securityKeys = [
+      ...new Set(
+        mainTransactions.flatMap(transaction => extractTransactionSecurityKeys(transaction)),
+      ),
+    ];
+    if (securityKeys.length === 0) {
+      return new Map();
+    }
+    const candidateExecutions = await this.getCandidateExecutions(mainTransactions, securityKeys);
+    if (!candidateExecutions) {
+      return new Map();
+    }
+
+    return matchSecurityExecutions(
+      mainTransactions,
+      candidateExecutions.candidates,
+      candidateExecutions.accountTuples,
+    );
+  }
+
+  private async batchExecutionsByChargeIds(
+    chargeIds: readonly string[],
+  ): Promise<SecurityExecutionRow[][]> {
+    const rows = await getSecurityExecutionsByChargeIds.run(
+      { chargeIds: [...new Set(chargeIds)] },
+      this.db,
+    );
+    const byChargeId = new Map<string, SecurityExecutionRow[]>();
+    for (const { charge_id, ...execution } of rows) {
+      if (!charge_id) {
+        continue;
+      }
+      const executions = byChargeId.get(charge_id);
+      if (executions) {
+        executions.push(execution);
+      } else {
+        byChargeId.set(charge_id, [execution]);
+      }
+    }
+    return chargeIds.map(chargeId => byChargeId.get(chargeId) ?? []);
+  }
+
+  /**
+   * The executions each charge books directly (see `charges_securities_executions`), oldest
+   * first. Executions paired with a charge's cash transactions are not among them — those are
+   * reached through the transactions, as everywhere else in this provider.
+   */
+  public executionsByChargeIdLoader = new DataLoader((chargeIds: readonly string[]) =>
+    this.batchExecutionsByChargeIds(chargeIds),
+  );
+
+  /** Memo for {@link getChargeExecutionsByTransactionId}; the provider lives for one operation. */
+  private chargeExecutionsCache = new Map<string, Promise<Map<string, SecurityExecutionRow>>>();
+
+  /**
+   * The execution behind each of a charge's main (non-fee) transactions, keyed by transaction id —
+   * what the ledger needs to tell a dividend from a redemption. A transaction without an entry has
+   * no matching ingested execution.
+   *
+   * Fees are left out of the pairing: it is greedy and one-to-one, and a fee is never the cash leg
+   * of an execution, so letting one compete could only take a match away from the real one.
+   * Executions of other owners in the request's business scope are left out too — the bank's key
+   * is only unique within one owner.
+   */
+  public getChargeExecutionsByTransactionId(
+    chargeId: string,
+    ownerId: string,
+  ): Promise<Map<string, SecurityExecutionRow>> {
+    const cacheKey = ownedKey(ownerId, chargeId);
+    let cached = this.chargeExecutionsCache.get(cacheKey);
+    if (!cached) {
+      cached = this.loadChargeExecutionsByTransactionId(chargeId, ownerId);
+      this.chargeExecutionsCache.set(cacheKey, cached);
+    }
+    return cached;
+  }
+
+  private async loadChargeExecutionsByTransactionId(
+    chargeId: string,
+    ownerId: string,
+  ): Promise<Map<string, SecurityExecutionRow>> {
+    const transactions = (
+      await this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId)
+    ).filter(transaction => !transaction.is_fee);
+
+    const securityKeys = [
+      ...new Set(transactions.flatMap(transaction => extractTransactionSecurityKeys(transaction))),
+    ];
+    if (securityKeys.length === 0) {
+      return new Map();
+    }
+
+    const candidateExecutions = await this.getCandidateExecutions(transactions, securityKeys);
+    if (!candidateExecutions) {
+      return new Map();
+    }
+
+    const transactionByExecutionId = matchExecutionsToTransactions(
+      transactions,
+      candidateExecutions.candidates.filter(execution => execution.owner_id === ownerId),
+      candidateExecutions.accountTuples,
+    );
+
+    const executionsById = new Map(
+      candidateExecutions.candidates.map(execution => [execution.id, execution]),
+    );
+    const executionByTransactionId = new Map<string, SecurityExecutionRow>();
+    for (const [executionId, transaction] of transactionByExecutionId) {
+      const execution = executionsById.get(executionId);
+      if (execution) {
+        executionByTransactionId.set(transaction.id, execution);
+      }
+    }
+    return executionByTransactionId;
+  }
+
+  /**
+   * Every ingested execution of an execution's security in the same portfolio account, oldest
+   * first — what a stock distribution's cancellation is looked for in.
+   *
+   * Addressed through the security business, so every Poalim key the ISIN is known by counts, and
+   * narrowed to the execution's own bank/branch/account. Empty when the key belongs to no security
+   * business. FIFO reads {@link getSecurityOwnerHistory} instead.
+   */
+  public async getSecurityAccountHistory(
+    execution: Pick<
+      SecurityExecutionRow,
+      'security' | 'bank_number' | 'branch_number' | 'account_number'
+    >,
+    ownerId: string,
+  ): Promise<SecurityExecutionRow[]> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return [];
+    }
+
+    const executions = await getSecurityExecutionsByBusinessIds.run(
+      { businessIds: [securityBusiness.id] },
+      this.db,
+    );
+    return executions.filter(
+      row =>
+        row.owner_id === ownerId &&
+        row.bank_number === execution.bank_number &&
+        row.branch_number === execution.branch_number &&
+        row.account_number === execution.account_number,
+    );
+  }
+
+  /** Memo for {@link getSecurityOwnerHistory}; the provider lives for one operation. */
+  private ownerHistoryCache = new Map<string, Promise<SecurityExecutionRow[]>>();
+
+  /**
+   * Every ingested execution of an execution's security across all of the owner's portfolio
+   * accounts, oldest first — the history a disposal's FIFO purchase cost is replayed from.
+   *
+   * A sale draws only on its own account's lots; the history spans the owner's accounts so that a
+   * holding transferred between two of them brings its lots, and their cost, across. Addressed
+   * through the security business like {@link getSecurityAccountHistory}, and narrowed to the
+   * owner, since reads follow the request's whole business scope. Empty when the key belongs to no
+   * security business.
+   */
+  public async getSecurityOwnerHistory(
+    execution: Pick<SecurityExecutionRow, 'security'>,
+    ownerId: string,
+  ): Promise<SecurityExecutionRow[]> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return [];
+    }
+
+    const cacheKey = `${ownerId}:${securityBusiness.id}`;
+    let cached = this.ownerHistoryCache.get(cacheKey);
+    if (!cached) {
+      cached = getSecurityExecutionsByBusinessIds
+        .run({ businessIds: [securityBusiness.id] }, this.db)
+        .then(executions => executions.filter(row => row.owner_id === ownerId));
+      this.ownerHistoryCache.set(cacheKey, cached);
+    }
+    return cached;
+  }
+
+  /**
+   * Every execution of the owner of the given trade types, traded from `fromDate` to `toDate`
+   * (inclusive), oldest first, each with the security business its Poalim key resolves to (null
+   * when none does). Empty when no trade type is given.
+   */
+  public async getOwnerExecutionsByTradeDates(params: {
+    ownerId: string;
+    fromDate: TimelessDateString;
+    toDate: TimelessDateString;
+    tradeTypes: readonly SecurityTradeType[];
+  }): Promise<(SecurityExecutionRow & { security_business_id: string | null })[]> {
+    if (params.tradeTypes.length === 0) {
+      return [];
+    }
+    return getOwnerSecurityExecutionsByTradeDates.run(
+      {
+        ownerId: params.ownerId,
+        fromDate: params.fromDate,
+        toDate: params.toDate,
+        tradeTypes: [...new Set(params.tradeTypes.map(tradeType => tradeTypeToRaw[tradeType]))],
+      },
+      this.db,
+    );
+  }
+
+  /** Memo for {@link getSecurityOwnerTransactionsByExecutionId}; the provider lives for one operation. */
+  private ownerTransactionsCache = new Map<string, Promise<Map<string, MatchedTransaction>>>();
+
+  /**
+   * The cash transaction each of the owner's executions of an execution's security was paired
+   * with, by execution id — the movement a purchase's cost was booked from, and so the rate it was
+   * booked at. Pairs the same way the security's own page does (see
+   * {@link getSecurityBusinessHistory}). Empty when the key belongs to no security business.
+   */
+  public async getSecurityOwnerTransactionsByExecutionId(
+    execution: Pick<SecurityExecutionRow, 'security'>,
+    ownerId: string,
+  ): Promise<Map<string, MatchedTransaction>> {
+    const securityBusiness =
+      await this.securityBusinessesProvider.getSecurityBusinessByIdentifierLoader.load({
+        ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: execution.security,
+      });
+    if (!securityBusiness) {
+      return new Map();
+    }
+
+    const cacheKey = `${ownerId}:${securityBusiness.id}`;
+    let cached = this.ownerTransactionsCache.get(cacheKey);
+    if (!cached) {
+      cached = this.getSecurityBusinessHistory(securityBusiness.id, ownerId).then(
+        ({ transactionByExecutionId }) => transactionByExecutionId,
+      );
+      this.ownerTransactionsCache.set(cacheKey, cached);
+    }
+    return cached;
   }
 
   /**
@@ -370,7 +803,7 @@ export class ForeignSecuritiesProvider {
    *
    * The candidate transactions are the security business's own — which is what the counterparty
    * now is for a resolved trade — so this reads the same pairing the charge view shows, from
-   * the other end.
+   * the other end. Fees are left out, as on the charge side.
    */
   public async getSecurityBusinessHistory(businessId: string, ownerId: string) {
     const [executions, transactions] = await Promise.all([
@@ -386,7 +819,9 @@ export class ForeignSecuritiesProvider {
     ] as string[]);
 
     const transactionByExecutionId = matchExecutionsToTransactions(
-      transactions as unknown as MatchedTransaction[],
+      (transactions as unknown as Array<MatchedTransaction & { is_fee: boolean | null }>).filter(
+        transaction => !transaction.is_fee,
+      ),
       executions,
       accountTuples,
     );
@@ -613,19 +1048,22 @@ export class ForeignSecuritiesProvider {
 
   /**
    * The securities a charge's transactions reference, keyed off the security key each
-   * description carries. Keys with no ingested row are still returned, with a null
-   * `details`, so a stale or missing scrape is visible instead of silently dropping data.
+   * description carries, plus those of the executions the charge books directly (passed in as
+   * `linkedExecutions` — see `executionsByChargeIdLoader`). Keys with no ingested row are still
+   * returned, with a null `details`, so a stale or missing scrape is visible instead of silently
+   * dropping data.
    */
   public async getChargeSecurities(
     chargeId: string,
     ownerId: string,
+    linkedExecutions: readonly SecurityExecutionRow[] = [],
   ): Promise<ChargeSecurityProto[]> {
     const transactions =
       await this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId);
 
     const transactionIdsByKey = new Map<string, string[]>();
     for (const transaction of transactions) {
-      for (const key of extractSecurityKeys(transaction.source_description)) {
+      for (const key of extractTransactionSecurityKeys(transaction)) {
         const transactionIds = transactionIdsByKey.get(key);
         if (transactionIds) {
           transactionIds.push(transaction.id);
@@ -635,27 +1073,44 @@ export class ForeignSecuritiesProvider {
       }
     }
 
-    if (transactionIdsByKey.size === 0) {
+    const ownLinkedExecutions = linkedExecutions.filter(
+      execution => execution.owner_id === ownerId,
+    );
+    const keySet = new Set([
+      ...transactionIdsByKey.keys(),
+      ...ownLinkedExecutions.map(execution => execution.security),
+    ]);
+    if (keySet.size === 0) {
       return [];
     }
 
-    const keys = [...transactionIdsByKey.keys()].sort();
+    const keys = [...keySet].sort();
     const [details, executionsByKey] = await Promise.all([
       this.securityByKeyLoader.loadMany(keys.map(securityKey => ({ ownerId, securityKey }))),
-      this.getMatchedExecutions(transactions, keys),
+      transactionIdsByKey.size > 0
+        ? this.getMatchedExecutions(transactions)
+        : Promise.resolve(new Map<string, SecurityExecutionRow[]>()),
     ]);
 
     return keys.map((key, index) => {
       const detail = details[index];
+      // a linked execution can also be matched to a transaction after a merge; list it once
+      const executions = new Map(
+        [
+          ...(executionsByKey.get(key) ?? []),
+          ...ownLinkedExecutions.filter(execution => execution.security === key),
+        ].map(execution => [execution.id, execution]),
+      );
       return {
         id: `${chargeId}-${key}`,
+        chargeId,
         ownerId,
         securityKey: key,
         // loadMany surfaces a rejected key as an Error rather than throwing; treat it
         // the same as "not ingested" so one bad key can't blank the whole section.
         details: detail instanceof Error ? null : (detail as SecurityRow | null),
         transactionIds: transactionIdsByKey.get(key) ?? [],
-        executions: executionsByKey.get(key) ?? [],
+        executions: [...executions.values()],
       };
     });
   }

@@ -166,6 +166,9 @@ const config: CodegenConfig = {
           Salary: '../modules/salaries/types.js#IGetAllSalaryRecordsResult',
           SalaryCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           Security: '../modules/foreign-securities/types.js#SecurityRow',
+          SecuritiesContext: '../modules/admin-context/types.js#SecuritiesContextProto',
+          SecuritiesTaxCategoryAssignment:
+            '../modules/admin-context/types.js#SecuritiesTaxCategoryAssignmentProto',
           SecurityBusiness: '../modules/foreign-securities/types.js#SecurityBusinessRow',
           SecurityBusinessHistory:
             '../modules/foreign-securities/types.js#SecurityBusinessHistoryProto',
@@ -173,6 +176,9 @@ const config: CodegenConfig = {
             '../modules/foreign-securities/types.js#SecurityHistoryExecutionProto',
           SecurityHolding: '../modules/foreign-securities/types.js#SecurityHoldingProto',
           SecurityPosition: '../modules/foreign-securities/types.js#SecurityPositionWithIdProto',
+          SecurityCapitalGain: '../modules/foreign-securities/types.js#SecurityCapitalGainProto',
+          SecurityCapitalGainLot:
+            '../modules/foreign-securities/types.js#SecurityCapitalGainLotProto',
           SecurityExecution: '../modules/foreign-securities/types.js#SecurityExecutionRow',
           PaginatedSecurityExecutions:
             '../modules/foreign-securities/types.js#PaginatedSecurityExecutionsProto',

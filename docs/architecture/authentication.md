@@ -32,6 +32,13 @@ authorization, roles, and permissions.
 - **JWT Verification**: RS256 asymmetric signing, verified against Auth0 JWKS
 - **Multi-Tenant Isolation**: Enforced by RLS policies on all tenant tables
 
+## Identity Model
+
+Each local user maps to exactly one Auth0 user ID (`sub`), stored in `business_users.auth0_user_id`.
+Several sign-in methods per user (for example Google and email/password) are supported through Auth0
+account linking, which keeps that `sub` stable. See
+[Sign-in Methods](../operations/auth0-runbook.md#sign-in-methods) in the operations runbook.
+
 ## Configuration
 
-See `packages/server/.env.example` for required Auth0 environment variables.
+See `packages/server/.env.template` for required Auth0 environment variables.

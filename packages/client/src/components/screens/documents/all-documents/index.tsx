@@ -4,7 +4,8 @@ import {
   DocumentsScreenDocument,
   type DocumentsFilters as DocumentsFiltersType,
 } from '../../../../gql/graphql.js';
-import { useUrlQuery } from '../../../../hooks/use-url-query.js';
+import { isObjectEmpty } from '../../../../helpers/form.js';
+import { useUrlFilterState } from '../../../../hooks/use-url-filter-state.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import {
   DataTablePagination,
@@ -21,6 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '../../../ui/dropdown-menu.js';
+import { DOCUMENTS_FILTER_PARAM, documentsFilterUrlSchema } from './documents-filter-schema.js';
 import { DocumentsFilters } from './documents-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -35,38 +37,33 @@ import { DocumentsFilters } from './documents-filters.js';
 
 export const DocumentsReport = (): ReactElement => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const { get } = useUrlQuery();
-  const uriFilters = get('documentsFilters');
-  const initialFilters = useMemo(() => {
-    if (uriFilters) {
-      try {
-        return JSON.parse(decodeURIComponent(uriFilters)) as DocumentsFiltersType;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [uriFilters]);
-  const [filter, setFilter] = useState<DocumentsFiltersType | undefined>(initialFilters);
+  const [filter, setFilter] = useUrlFilterState<DocumentsFiltersType>(
+    DOCUMENTS_FILTER_PARAM,
+    documentsFilterUrlSchema,
+  );
+  // Nothing is fetched until a filter is applied — every filter the dialog applies carries at
+  // least its date range, and an unfiltered query would load every document.
+  const isFilterApplied = !isObjectEmpty(filter);
   const { setFiltersContext } = useContext(FiltersContext);
 
   const [{ data, fetching }, refetchDocuments] = useQuery({
     query: DocumentsScreenDocument,
     variables: {
-      filters: filter ?? {},
+      filters: filter,
     },
     pause: true,
   });
 
   // refetch documents on filter change
   useEffect(() => {
-    if (filter) {
+    if (isFilterApplied) {
       refetchDocuments();
     }
-  }, [filter, refetchDocuments]);
+  }, [isFilterApplied, filter, refetchDocuments]);
 
-  const documentsProps = useMemo(() => data?.documentsByFilters ?? [], [data?.documentsByFilters]);
+  // Back to an entry with no filter (or "Clear"): don't keep showing the last filter's results.
+  const documents = isFilterApplied ? data?.documentsByFilters : undefined;
+  const documentsProps = useMemo(() => documents ?? [], [documents]);
 
   // Stable identity: the hook memoizes its row data on it, so an inline arrow would rebuild every row
   // on every render.
@@ -97,10 +94,23 @@ export const DocumentsReport = (): ReactElement => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <DataTablePagination table={table} />
-        <DocumentsFilters filter={filter} setFilter={setFilter} initiallyOpened={!filter} />
+        <DocumentsFilters
+          filter={filter}
+          setFilter={setFilter}
+          initiallyOpened={!isFilterApplied}
+        />
       </div>,
     );
-  }, [fetching, filter, setFiltersContext, setFilter, pageIndex, pageSize, pageCount]);
+  }, [
+    fetching,
+    filter,
+    isFilterApplied,
+    setFiltersContext,
+    setFilter,
+    pageIndex,
+    pageSize,
+    pageCount,
+  ]);
 
   return (
     <PageLayout

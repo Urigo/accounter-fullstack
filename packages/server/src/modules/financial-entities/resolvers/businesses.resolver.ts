@@ -6,8 +6,9 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
-import { paginateBusinesses, resolveBusinessesFilters } from '../helpers/all-businesses.helper.js';
+import { paginateBusinesses } from '../helpers/all-businesses.helper.js';
 import {
+  normalizeSuggestionListData,
   SuggestionData,
   suggestionDataSchema,
 } from '../helpers/business-suggestion-data-schema.helper.js';
@@ -30,27 +31,40 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     business: async (_, { id }, { injector }) => {
       const dbFe = await injector.get(BusinessesProvider).getBusinessByIdLoader.load(id);
       if (!dbFe) {
-        throw new Error(`Business ID="${id}" not found`);
+        // A GraphQLError reaches the client as is; a plain Error is masked as `Unexpected error.`
+        // and logged as a server fault.
+        throw new GraphQLError(`Business ID="${id}" not found`, {
+          extensions: { code: 'NOT_FOUND' },
+        });
       }
 
       return dbFe;
     },
     businesses: async (_, { ids }, { injector }) => {
       const businesses = await injector.get(BusinessesProvider).getBusinessByIdLoader.loadMany(ids);
-      if (businesses.some(business => !business || business instanceof Error)) {
+      // A failed load is an outage, not a bad id: keep it a plain error, which yoga masks.
+      if (businesses.some(business => business instanceof Error)) {
         throw new Error(`Error fetching some of the businesses`);
+      }
+      // A missing id is the caller's mistake, so say which one — as a `GraphQLError`,
+      // which yoga's default `maskedErrors` passes through instead of "Unexpected error."
+      const missingIds = ids.filter((_, index) => !businesses[index]);
+      if (missingIds.length > 0) {
+        throw new GraphQLError(
+          `Businesses not found: ${missingIds.map(id => `ID="${id}"`).join(', ')}`,
+        );
       }
 
       return businesses as IGetBusinessesByIdsResult[];
     },
-    allBusinesses: async (_, { page, limit, name, isClient, filters }, { injector }) => {
+    allBusinesses: async (_, { page, limit, filters }, { injector }) => {
       // Every predicate is applied in SQL, *ahead of* the count and the slice — the entire
       // point of accepting them as arguments: `pageInfo` then describes the filtered directory
       // and every page comes back full. A caller filtering an already-sliced page could do
       // neither.
       const filteredBusinesses = await injector
         .get(BusinessesProvider)
-        .getBusinessesByFilters(resolveBusinessesFilters({ name, isClient, filters }));
+        .getBusinessesByFilters(filters ?? {});
 
       return paginateBusinesses(filteredBusinesses, page, limit);
     },
@@ -106,7 +120,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         }
 
         const suggestions: SuggestionData | undefined = fields.suggestions
-          ? {
+          ? normalizeSuggestionListData({
               tags: fields.suggestions.tags?.map(tag => tag.id),
               phrases: fields.suggestions.phrases?.map(phrase => phrase),
               description: fields.suggestions.description ?? undefined,
@@ -124,7 +138,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
                   }
                 : undefined,
               priority: fields.suggestions.priority ?? undefined,
-            }
+            })
           : undefined;
 
         const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({

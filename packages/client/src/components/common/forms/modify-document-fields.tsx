@@ -308,15 +308,13 @@ export const ModifyDocumentFields = ({
         control={control}
         defaultValue={document?.file}
         render={({ field }) => (
-          <div className="flex flex-row">
-            <FormItem>
-              <FormLabel>File URL</FormLabel>
-              <FormControl>
-                <Input className="grow" {...field} value={field.value?.toString()} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          </div>
+          <FormItem>
+            <FormLabel>File URL</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value?.toString()} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
 

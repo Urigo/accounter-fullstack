@@ -1,6 +1,8 @@
 # MCP Server — Local Development & Claude Connector Setup
 
 How to run `@accounter/mcp-server` locally and connect it to Claude Desktop as a custom connector.
+To connect a client to the production server, see
+[`connecting-clients.md`](./connecting-clients.md).
 
 For the server's own configuration reference see [`packages/mcp-server/README.md`](../README.md);
 for incident handling see [`operations-runbook.md`](./operations-runbook.md).
@@ -13,7 +15,7 @@ connector is rejected outright. The MCP server also requires a valid Auth0 beare
 setup needs three things beyond the server process:
 
 1. an HTTPS origin in front of port 3100 (a tunnel),
-2. an Auth0 application Claude can use to run the OAuth flow,
+2. an Auth0 application Claude can use to run the OAuth flow (the production one, step 4),
 3. `MCP_PUBLIC_BASE_URL` matching the tunnel origin exactly.
 
 > A stdio→HTTP bridge (e.g. `supergateway`) does **not** work. Those bridges have no OAuth client;
@@ -70,25 +72,24 @@ easiest thing to get wrong here.
 
 Restart the server; `.env` is only read at startup.
 
-## 4. Create the Auth0 application
+## 4. Use the production Claude connector app
 
-Claude can register its own client via Dynamic Client Registration, but **Auth0's DCR response is
-currently rejected by Claude** (see
-[`connector-gaps-and-decisions.md`](./connector-gaps-and-decisions.md) gap 1). Pre-register a
-first-party application instead:
+There is no separate Auth0 tenant for development: local development uses the production tenant and
+audience. Reuse the production Claude connector app, "Accounter MCP server"
+(`YHHwkpmelOQBnQw4WLctlIBcBsWrcuis`). Its configuration is recorded in
+[`connecting-clients.md`](./connecting-clients.md#tenant-configuration-record).
 
-1. Auth0 → **Applications → Create Application** → **Regular Web Applications**
-2. **Settings → Allowed Callback URLs**: `https://claude.ai/api/mcp/auth_callback` (per
-   [`spec.md`](./spec.md) §6.3)
-3. **Advanced Settings → Grant Types**: enable **Authorization Code** and **Refresh Token** (the
-   Accounter API's `token_lifetime` is 900s; without refresh, Claude drops every 15 minutes)
-4. Copy the **Client ID** and **Client Secret**
-
-The application must be authorized for the `https://api.accounter.com` API under **APIs → Accounter
-API → Application access → User-delegated access**.
-
-> Do not reuse the API's auto-created _"Accounter API (Test Application)"_ — it is coupled to the
-> API object and is an M2M client, not a web application.
+- Claude's connector connects from Anthropic's side, so a local MCP server needs the public tunnel
+  URL from step 2. The callback stays `https://claude.ai/api/mcp/auth_callback`, so no Auth0 change
+  is needed.
+- Tokens issued this way are **real production tokens** for your own account, valid against the
+  production API. Treat them as production credentials.
+- Your production Auth0 `sub` must be mapped in your local `business_users.auth0_user_id`, or calls
+  fail as not authorized.
+- **Never modify the production Auth0 apps** (callbacks, grant types, refresh-token settings) for
+  local testing.
+- If a dedicated dev tenant is introduced later, create a separate app there instead, following
+  [Adding another static-client MCP host](./connecting-clients.md#adding-another-static-client-mcp-host).
 
 ## 5. Add the connector in Claude Desktop
 
@@ -96,10 +97,10 @@ API → Application access → User-delegated access**.
 
 | Field                 | Value                                         |
 | --------------------- | --------------------------------------------- |
-| Name                  | `Accounter`                                   |
+| Name                  | `Accounter (local)`                           |
 | Remote MCP server URL | `https://<tunnel-host>/mcp` — **with** `/mcp` |
-| OAuth Client ID       | from step 4                                   |
-| OAuth Client Secret   | from step 4                                   |
+| OAuth Client ID       | `YHHwkpmelOQBnQw4WLctlIBcBsWrcuis`            |
+| OAuth Client Secret   | leave empty — the app is a public client      |
 
 Connect, and complete the Auth0 login in the browser.
 
@@ -154,7 +155,7 @@ Symptoms observed in practice, with the diagnosis for each:
 | "Server disconnected" via a stdio bridge              | bridge has no OAuth client; got `401` and exited                                    | use a native custom connector, not `supergateway` |
 | Connector URL rejected on entry                       | `http://localhost` is not HTTPS                                                     | tunnel (step 2)                                   |
 | Auth0 branded "Oops!, something went wrong"           | `/authorize` rejected by Auth0                                                      | read the tenant log — see below                   |
-| "Couldn't register with … sign-in service"            | Auth0 DCR response rejected by Claude                                               | pre-registered client (step 4)                    |
+| "Couldn't register with … sign-in service"            | no client ID set, so Claude tried DCR (gap 1)                                       | set the client ID (step 5)                        |
 | "no MCP server was found at the provided URL"         | connector URL path wrong — only exact `/mcp` works (`/` and `/mcp/` both `404`)     | fix the connector URL                             |
 | "Authorization with … failed"                         | `resource` mismatch — usually `/mcp` in `MCP_PUBLIC_BASE_URL`                       | step 3                                            |
 | "authorized, but … returned an error when connecting" | tunnel hostname does not resolve — `cloudflared` is running but never registered it | restart the tunnel (see below)                    |

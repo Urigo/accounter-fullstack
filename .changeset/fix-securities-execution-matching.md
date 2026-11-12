@@ -1,0 +1,28 @@
+---
+'@accounter/server': patch
+---
+
+Match more Poalim securities executions to the cash movement behind them. The matcher required the
+transaction's debit date to equal the execution's value date, but the two feeds disagree on dates:
+foreign-currency rows are debited around the trade date and executed on the settlement day, a
+back-dated correction is executed when posted, and a new issue can settle days late. A pair is now
+identified by account, security key, exact amount and direction. The date only ranks candidates: an
+exact debit-date or event-date match first, then the closest date within a settlement window.
+
+Also:
+
+- Domestic trades and securities fees carry the security key in their reference, not their
+  description, and are now recognized by it.
+- An amount column the feed leaves at `0` gives way to the next column in the same currency. This
+  fixes shekel trades, whose cash is reported in the NIS column, and their FIFO purchase cost. The
+  NIS column is only read for executions traded or settled in shekels; on a foreign-currency
+  execution it holds the commission.
+- Within the window, closeness is measured to the execution's whole trade-to-value span, so a
+  later trade's cash is not taken by an earlier neighbour. A pass re-seats pairs when that lets
+  more executions pair, and a transaction that names no security only pairs on an exact date.
+- A cancelled execution's direction is read from the sign of the value it reports. The bank books a
+  cancellation either under the original trade type with values negated, or as the opposite action
+  with positive values. Before, a cancellation could take the original payment's transaction.
+- Fee transactions no longer compete with main transactions for an execution.
+- The foreign-securities ledger reports a dividend or interest commission that has no matching fee
+  transaction in the charge, and a cancelled income payment it cannot book as a reversal yet.

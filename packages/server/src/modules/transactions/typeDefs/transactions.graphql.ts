@@ -209,5 +209,7 @@ export default gql`
   " result type for successful updateTransactions mutation "
   type UpdatedTransactionsSuccessfulResult {
     transactions: [UpdatedTransaction!]!
+    " former charges the update left with no transactions, documents or misc expenses, and therefore deleted "
+    deletedChargeIds: [UUID!]!
   }
 `;

@@ -1,11 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import {
-  getCurrentVaultPath,
-  getVault,
-  isLocked,
-  moveVaultFile,
-  updateVault,
-} from './vault-store.js';
+import { persistSessionHistory } from './history.js';
+import { getVault, isLocked, updateVault } from './vault-store.js';
 import { SettingsSchema, type Settings } from './vault.js';
 
 function guardLocked(reply: { status(code: number): { send(body: unknown): unknown } }) {
@@ -27,16 +22,25 @@ export async function registerSettingsRoutes(app: FastifyInstance): Promise<void
     const parsed = SettingsSchema.partial().safeParse(req.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.issues });
 
-    const newPath = parsed.data.vaultPath;
-    if (newPath !== undefined && newPath !== getCurrentVaultPath()) {
+    // Zod 4's `.partial()` still fills in field defaults, so the parsed object carries every
+    // defaulted key. Apply only the keys the client sent, or saving one toggle resets the others.
+    const sent = new Set(Object.keys(req.body ?? {}));
+    const patch = Object.fromEntries(
+      Object.entries(parsed.data).filter(([key]) => sent.has(key)),
+    ) as Partial<Settings>;
+
+    const wasPersisting = getVault().settings.persistHistory;
+    await updateVault(v => ({ ...v, settings: { ...v.settings, ...patch } }));
+
+    // Opting in keeps the runs already made this session, not just the ones that follow.
+    const { persistHistory, historyFilePath } = getVault().settings;
+    if (persistHistory && !wasPersisting) {
       try {
-        await moveVaultFile(newPath);
-      } catch {
-        return reply.status(500).send({ error: 'move-failed' });
+        await persistSessionHistory(historyFilePath);
+      } catch (err) {
+        req.log.error(err, 'failed to write session history');
       }
     }
-
-    await updateVault(v => ({ ...v, settings: { ...v.settings, ...parsed.data } }));
     return getVault().settings;
   });
 }

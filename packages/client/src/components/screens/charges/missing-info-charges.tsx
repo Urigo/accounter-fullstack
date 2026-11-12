@@ -1,12 +1,13 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ChargesTable } from '@/components/charges/charges-table.js';
-import { MissingInfoChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
+import { MissingInfoChargesDocument } from '../../../gql/graphql.js';
+import { isObjectEmpty } from '../../../helpers/form.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
+import { useUrlPage } from '../../../hooks/use-url-page.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
-import { ChargesFilters } from '../../charges/charges-filters/index.js';
+import { ChargesFilters, useChargesFilter } from '../../charges/charges-filters/index.js';
 import { Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { AccounterBarSpinner } from '../../ui/accounter-spinner.js';
@@ -31,28 +32,15 @@ import { LoadingOverlay } from '../../ui/overlay.js';
 export const MissingInfoCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const { get } = useUrlQuery();
-  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
-  const uriFilters = get('chargesFilters');
-  const initialFilters = useMemo(() => {
-    if (uriFilters) {
-      try {
-        return JSON.parse(decodeURIComponent(uriFilters)) as ChargeFilter;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (error) {
-        return undefined;
-      }
-    }
-    return undefined;
-  }, [uriFilters]);
-  const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
+  const [activePage, setActivePage] = useUrlPage();
+  const [filter, setFilter] = useChargesFilter();
 
   // Unlike All Charges, filters here are optional: the unfiltered list of
   // charges with missing info loads on mount.
   const [{ data, fetching }] = useQuery({
     query: MissingInfoChargesDocument,
     variables: {
-      filters: filter,
+      filters: isObjectEmpty(filter) ? undefined : filter,
       page: activePage,
       limit: 100,
     },

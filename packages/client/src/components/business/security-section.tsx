@@ -8,6 +8,7 @@ import {
   formatSecurityDecimal,
   SecurityExecutionsTable,
 } from '../securities/security-executions-table.js';
+import { SecurityHeading } from '../securities/security-heading.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -91,14 +92,13 @@ export function SecuritySection({ businessId }: Props): ReactElement {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <div className="flex flex-col gap-2">
-            <CardTitle>
-              {security.engName ?? security.isin}
-              {security.symbol && <span className="text-gray-500"> ({security.symbol})</span>}
-            </CardTitle>
-            {security.hebName && <CardDescription>{security.hebName}</CardDescription>}
+          <SecurityHeading
+            name={security.engName ?? security.isin}
+            symbol={security.symbol}
+            hebName={security.hebName}
+          >
             <SecurityDescriptorBadges security={security} />
-          </div>
+          </SecurityHeading>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

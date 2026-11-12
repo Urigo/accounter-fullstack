@@ -466,7 +466,10 @@ function executionsPayload(overrides: { totalRecords?: number; totalPages?: numb
             tradePrice: 250,
             netValue: amount(2500, 'USD'),
             tradeCommission: amount(5, 'USD'),
-            israelTaxValue: amount(90, 'ILS'),
+            israelTaxValue: amount(90, 'USD'),
+            foreignTaxValue: amount(12.5, 'USD'),
+            israelTaxValueByPayments: null,
+            capitalTaxValue: amount(0, 'USD'),
           },
         },
         {
@@ -483,6 +486,9 @@ function executionsPayload(overrides: { totalRecords?: number; totalPages?: numb
             netValue: amount(-1000, 'USD'),
             tradeCommission: amount(5, 'USD'),
             israelTaxValue: null,
+            foreignTaxValue: null,
+            israelTaxValueByPayments: null,
+            capitalTaxValue: null,
           },
         },
       ],
@@ -565,6 +571,17 @@ describe('accounter_get_security_executions', () => {
       ownerId: B1,
       isin: 'US67066G1040',
       tradeType: 'SELL',
+    });
+  });
+
+  it('reports each kind of withheld tax in its own currency', async () => {
+    const result = await runTool(getSecurityExecutionsTool, clientReturning(executionsPayload()), {});
+    const structured = result.structuredContent as unknown as ExecutionsStructured;
+    expect(structured.executions[0]).toMatchObject({
+      israelTaxValue: { value: 90, currency: 'USD' },
+      foreignTaxValue: { value: 12.5, currency: 'USD' },
+      israelTaxValueByPayments: null,
+      capitalTaxValue: { value: 0, currency: 'USD' },
     });
   });
 

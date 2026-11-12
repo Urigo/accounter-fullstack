@@ -21,6 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
     paymentType
     quantity
     tradePrice
+    tradeGrossValue {
+      formatted
+    }
     netValue {
       formatted
     }
@@ -31,6 +34,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
       formatted
     }
     israelTaxValue {
+      raw
+      formatted
+    }
+    foreignTaxValue {
+      raw
+      formatted
+    }
+    israelTaxValueByPayments {
+      raw
+      formatted
+    }
+    capitalTaxValue {
+      raw
       formatted
     }
   }
@@ -81,6 +97,56 @@ export const humanizeSecurityEnum = (value: string): string =>
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
+type TaxAmount = { raw: number; formatted: string } | null | undefined;
+
+/** Below this, a tax amount is the bank's zero padding rather than tax worth a line. */
+const MIN_TAX_AMOUNT = 0.005;
+
+export type SecurityTaxLine = {
+  /** Which tax this is; null for the bank's Israeli tax figure. */
+  label: string | null;
+  formatted: string;
+  /** The bank's Israeli tax figure shown under the per-kind amounts, which it does not add to. */
+  secondary?: boolean;
+};
+
+/**
+ * The tax lines of one execution. The bank reports the tax withheld from the cash leg per kind
+ * (foreign, Israeli, capital) in the settlement currency, which is what the ledger books, and
+ * separately an Israeli tax figure in the trade currency. Capital tax often restates the Israeli
+ * tax, so it is listed only when it differs. The per-kind amounts lead; that figure follows when
+ * it is non-zero, and stands alone, as it always did, on rows with no per-kind amount.
+ */
+export const securityTaxLines = (execution: {
+  israelTaxValue?: TaxAmount;
+  foreignTaxValue?: TaxAmount;
+  israelTaxValueByPayments?: TaxAmount;
+  capitalTaxValue?: TaxAmount;
+}): SecurityTaxLine[] => {
+  const isSignificant = (amount: TaxAmount): amount is NonNullable<TaxAmount> =>
+    amount != null && Math.abs(amount.raw) >= MIN_TAX_AMOUNT;
+
+  const capitalTax =
+    execution.capitalTaxValue?.raw === execution.israelTaxValueByPayments?.raw
+      ? null
+      : execution.capitalTaxValue;
+  const withheld: SecurityTaxLine[] = [
+    { label: 'Foreign', amount: execution.foreignTaxValue },
+    { label: 'Israel', amount: execution.israelTaxValueByPayments },
+    { label: 'Capital', amount: capitalTax },
+  ].flatMap(({ label, amount }) =>
+    isSignificant(amount) ? [{ label, formatted: amount.formatted }] : [],
+  );
+
+  const israelTax = execution.israelTaxValue;
+  if (!withheld.length) {
+    return israelTax ? [{ label: null, formatted: israelTax.formatted }] : [];
+  }
+  return isSignificant(israelTax)
+    ? [...withheld, { label: null, formatted: israelTax.formatted, secondary: true }]
+    : withheld;
+};
+
 export type SecurityExecutionRow = {
   execution: FragmentType<typeof SecurityExecutionFieldsFragmentDoc>;
   /** The charge behind this execution's cash movement, when one was matched. */
@@ -107,6 +173,7 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
           <TableHead>Type</TableHead>
           <TableHead>Quantity</TableHead>
           <TableHead>Price</TableHead>
+          <TableHead>Gross Value</TableHead>
           <TableHead>Net Value</TableHead>
           <TableHead>Commission</TableHead>
           <TableHead>Tax</TableHead>
@@ -143,12 +210,25 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
               {/* Quantities can be fractional for ETFs and mutual funds. */}
               <TableCell>{formatSecurityDecimal(execution.quantity)}</TableCell>
               <TableCell>{formatSecurityDecimal(execution.tradePrice)}</TableCell>
+              {/* A stock distribution's value is its gross value; its net value is only the commission. */}
+              <TableCell className="whitespace-nowrap">
+                {execution.tradeGrossValue?.formatted}
+              </TableCell>
               <TableCell className="whitespace-nowrap">{execution.netValue?.formatted}</TableCell>
               <TableCell className="whitespace-nowrap">
                 {(execution.tradeCommission ?? execution.managementFees)?.formatted}
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {execution.israelTaxValue?.formatted}
+                {securityTaxLines(execution).map(line => (
+                  <div
+                    key={line.label ?? 'israel-tax'}
+                    className={line.secondary ? 'text-xs text-gray-500' : undefined}
+                    title={line.label ? undefined : 'Israeli tax as the bank reports it'}
+                  >
+                    {line.label && <span className="text-gray-500">{line.label} </span>}
+                    {line.formatted}
+                  </div>
+                ))}
               </TableCell>
               {withChargeLink && (
                 <TableCell>

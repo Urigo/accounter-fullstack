@@ -173,6 +173,22 @@ jobs:
         shell: bash
         run: yarn generate:sql
 
+      # The server resolves these four sibling packages through their `dist`, so `tsc` can't
+      # type-resolve it until they are built (see packages/server/README.md). Same list as
+      # the server's `server:build:prod`.
+      - name: Build Server Workspace Generators
+        run:
+          yarn workspaces foreach --all --parallel --include @accounter/green-invoice-graphql
+          --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator
+          --include @accounter/shaam6111-generator run build
+
+      # The server's `yarn build` compiles through `tsconfig.build.json`, which leaves tests out,
+      # and lint and vitest both skip type checking, so nothing else in CI typechecks the
+      # server's test files: type errors in them used to reach main unnoticed (#4769). This
+      # runs `tsconfig.json`, which covers all of `src`, tests included.
+      - name: Typecheck server
+        run: yarn workspace @accounter/server typecheck
+
       - name: Run Server Tests (Integration)
         if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
         env:

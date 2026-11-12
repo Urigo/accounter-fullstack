@@ -35,6 +35,7 @@ import {
 } from '../ui/dialog.js';
 import { Form } from '../ui/form.js';
 import { Label } from '../ui/label.js';
+import { Spinner } from '../ui/spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip.js';
 
@@ -57,7 +58,7 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
     format(subMonths(new Date(), 1), 'yyyy-MM-dd') as TimelessDateString,
   );
   const [documentDrafts, setDocumentDrafts] = useState<PreviewDocumentInput[]>([]);
-  const { issueDocuments } = useIssueMonthlyDocuments();
+  const { issueDocuments, fetching: issuing } = useIssueMonthlyDocuments();
 
   const [{ data, fetching }, fetchDrafts] = useQuery({
     query: ContractBasedDocumentDraftsDocument,
@@ -136,7 +137,9 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
           <AccounterLoader />
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="min-w-5xl w-full">
+            {/* Issuing runs only from the confirmation dialog; a native submit (e.g. Enter in a
+                field) must not bypass it. */}
+            <form onSubmit={event => event.preventDefault()} className="min-w-5xl w-full">
               {/* date input for issueMonth */}
               <div className="flex gap-2 items-center mb-4">
                 <Label>Issue Month:</Label>
@@ -240,7 +243,10 @@ export const IssueDocumentsModal = ({ contractIds }: Props): ReactElement => {
                   onConfirm={form.handleSubmit(onSubmit)}
                   title={`Are you sure you want to issue ${controlledFields.length} documents?`}
                 >
-                  <Button>Issue</Button>
+                  <Button disabled={issuing}>
+                    {issuing && <Spinner />}
+                    Issue
+                  </Button>
                 </ConfirmationModal>
               </div>
             </form>

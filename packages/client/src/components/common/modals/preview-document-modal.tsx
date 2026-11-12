@@ -91,8 +91,8 @@ export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragmen
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query NewDocumentDraftByDocument($documentId: UUID!) {
-    newDocumentDraftByDocument(documentId: $documentId) {
+  query NewDocumentDraftByDocument($documentId: UUID!, $type: DocumentType) {
+    newDocumentDraftByDocument(documentId: $documentId, type: $type) {
       ...NewDocumentDraft
     }
   }
@@ -158,6 +158,7 @@ export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragmen
     }
     linkedDocumentIds
     linkedPaymentId
+    linkType
   }
 `;
 
@@ -221,6 +222,7 @@ export function convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
     })),
     linkedDocumentIds: documentDraft.linkedDocumentIds || undefined,
     linkedPaymentId: documentDraft.linkedPaymentId || undefined,
+    linkType: documentDraft.linkType || undefined,
     type: documentTypeOverride || documentDraft.type,
   };
 }
@@ -289,6 +291,7 @@ export function PreviewDocumentModal({
     pause: !documentId || !open,
     variables: {
       documentId: documentId || '',
+      type: documentType,
     },
   });
 

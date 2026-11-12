@@ -565,11 +565,11 @@ export class IsracardAmexScraperIngestionProvider {
         full_purchase_date_outbound: t.fullPurchaseDateOutbound ?? null,
         full_payment_date: t.fullPaymentDate ?? null,
         payment_sum:
-          t.paymentSum !== null && t.paymentSum !== undefined ? String(t.paymentSum) : null,
+          t.paymentSum === null || t.paymentSum === undefined ? null : String(t.paymentSum),
         payment_sum_outbound:
-          t.paymentSumOutbound !== null && t.paymentSumOutbound !== undefined
-            ? String(t.paymentSumOutbound)
-            : null,
+          t.paymentSumOutbound === null || t.paymentSumOutbound === undefined
+            ? null
+            : String(t.paymentSumOutbound),
         voucher_number: t.voucherNumber ?? null,
         supplier_id: t.supplierId ?? null,
         current_payment_currency: t.currentPaymentCurrency ?? null,
@@ -633,11 +633,11 @@ export class IsracardAmexScraperIngestionProvider {
         full_purchase_date_outbound: t.fullPurchaseDateOutbound ?? null,
         full_payment_date: t.fullPaymentDate ?? null,
         payment_sum:
-          t.paymentSum !== null && t.paymentSum !== undefined ? String(t.paymentSum) : null,
+          t.paymentSum === null || t.paymentSum === undefined ? null : String(t.paymentSum),
         payment_sum_outbound:
-          t.paymentSumOutbound !== null && t.paymentSumOutbound !== undefined
-            ? String(t.paymentSumOutbound)
-            : null,
+          t.paymentSumOutbound === null || t.paymentSumOutbound === undefined
+            ? null
+            : String(t.paymentSumOutbound),
         voucher_number: t.voucherNumber ?? null,
         supplier_id: t.supplierId ?? null,
         current_payment_currency: t.currentPaymentCurrency ?? null,

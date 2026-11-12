@@ -4,6 +4,7 @@ import { act, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { resetFilterForm } from '../../../../helpers/form.js';
 import { Form } from '../../../ui/form.js';
 import { buildEmptyFormValues } from '../constants.js';
 import { FreeTextField } from '../free-text-field.js';
@@ -110,16 +111,65 @@ describe('clearing a filter that was applied when the form opened', () => {
     expect(form.getValues('byBusinesses')).toEqual(['biz-2']);
   });
 
-  // "Clear all" and "Reset" both go through form.reset(), which writes the same
+  // "Clear all" and "Reset" both go through resetFilterForm, which writes the same
   // `undefined` the controller falls back over.
   it('empties the picker when the form is reset', () => {
     renderEntities({ byBusinesses: ['biz-1'], excludedBusinesses: ['biz-2'] });
     expect(chipLabels()).toEqual(['Business 1', 'Business 2']);
 
-    act(() => form.reset(buildEmptyFormValues()));
+    act(() => resetFilterForm(form, buildEmptyFormValues()));
 
     expect(chipLabels()).toEqual([]);
     expect(container.textContent).toContain('All counterparties');
+  });
+
+  /**
+   * The regression `form.reset(buildEmptyFormValues())` had: the fields re-registered with the
+   * values the dialog opened with, so the screen looked cleared while the form state — and Apply —
+   * still carried the old filter.
+   */
+  it('keeps "Clear all" cleared through a later edit and submit', async () => {
+    renderWith(
+      { byBusinesses: ['biz-1'], freeText: 'coffee', withoutInvoice: true },
+      control => (
+        <>
+          <NegatableMultiSelectField
+            control={control}
+            include="byBusinesses"
+            exclude="excludedBusinesses"
+            label="Financial Entities"
+            options={OPTIONS}
+            placeholder="All counterparties"
+          />
+          <FreeTextField control={control} />
+          <CompletenessSection control={control} />
+        </>
+      ),
+    );
+
+    act(() => resetFilterForm(form, buildEmptyFormValues()));
+    expect(form.getValues()).toEqual(buildEmptyFormValues());
+
+    // Turn one switch back on ("Without Invoice", the first), then Apply.
+    click('button[role="switch"]');
+    let submitted: ChargeFilterFormValues | undefined;
+    await act(async () => {
+      await form.handleSubmit(values => {
+        submitted = values;
+      })();
+    });
+    expect(submitted).toEqual({ ...buildEmptyFormValues(), withoutInvoice: true });
+  });
+
+  it('sets the given values on reset, and unsets the rest', () => {
+    renderEntities({ byBusinesses: ['biz-1'], fromAnyDate: '2026-01-01' });
+
+    act(() => resetFilterForm(form, { ...buildEmptyFormValues(), excludedBusinesses: ['biz-2'] }));
+
+    expect(form.getValues()).toEqual({
+      ...buildEmptyFormValues(),
+      excludedBusinesses: ['biz-2'],
+    });
   });
 
   // Same fallback, non-array fields: these clear from the header chips, which call

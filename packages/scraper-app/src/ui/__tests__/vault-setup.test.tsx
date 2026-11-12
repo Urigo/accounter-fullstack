@@ -4,29 +4,33 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { VaultContext, type VaultStatus } from '../contexts/vault-context.js';
+import type { VaultContextValue } from '../contexts/vault-context.js';
 import { VaultSetup } from '../screens/vault-setup.js';
+import { makeVaultCtx, WithVault } from './helpers/vault-ctx.js';
 
 function makeCtx(
-  create: () => Promise<void> = vi.fn().mockResolvedValue(undefined),
-  upload: () => Promise<void> = vi.fn().mockResolvedValue(undefined),
-  error: string | null = null,
+  create: VaultContextValue['create'] = vi.fn().mockResolvedValue(true),
+  overrides: Partial<VaultContextValue> = {},
 ) {
-  return {
-    status: 'no-file' as VaultStatus,
-    error,
-    unlock: vi.fn(),
-    create,
-    upload,
-  };
+  return makeVaultCtx({ phase: 'creating', origin: null, fileName: null, create, ...overrides });
 }
 
 function renderSetup(ctx = makeCtx()) {
   return render(
-    <VaultContext.Provider value={ctx}>
+    <WithVault ctx={ctx}>
       <VaultSetup />
-    </VaultContext.Provider>,
+    </WithVault>,
   );
+}
+
+async function completeWizard() {
+  await userEvent.type(screen.getByLabelText(/master password/i), 'securePwd1!');
+  await userEvent.type(screen.getByLabelText(/confirm password/i), 'securePwd1!');
+  await userEvent.click(screen.getByRole('button', { name: /next/i }));
+  await waitFor(() => screen.getByLabelText(/server url/i));
+  await userEvent.click(screen.getByRole('button', { name: /next/i }));
+  await waitFor(() => screen.getByText(/step 3/i));
+  await userEvent.click(screen.getByRole('button', { name: /create vault/i }));
 }
 
 describe('VaultSetup', () => {
@@ -101,7 +105,7 @@ describe('VaultSetup', () => {
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => screen.getByText(/step 2/i));
-    await userEvent.click(screen.getByRole('button', { name: /back/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^back$/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/step 1/i)).toBeTruthy();
@@ -109,30 +113,59 @@ describe('VaultSetup', () => {
   });
 });
 
-describe('VaultSetup — file upload', () => {
-  it('renders the upload file input alongside the wizard', () => {
+describe('VaultSetup — save step', () => {
+  it('asks the user to save the new vault file after creating it', async () => {
     renderSetup();
-    expect(screen.getByLabelText(/upload an existing vault/i)).toBeTruthy();
-    expect(screen.getByText(/step 1/i)).toBeTruthy();
+    await completeWizard();
+    await waitFor(() => screen.getByText(/your vault is ready/i));
+    expect(screen.getByRole('button', { name: /save vault file/i })).toBeTruthy();
   });
 
-  it('calls vault.upload when a file is selected', async () => {
-    const upload = vi.fn().mockResolvedValue(undefined);
-    renderSetup(makeCtx(vi.fn(), upload));
-    const file = new File(['blob'], 'test.vault');
-    await userEvent.upload(screen.getByLabelText(/upload an existing vault/i), file);
-    expect(upload).toHaveBeenCalledWith(file);
+  it('finishes setup once the file is saved', async () => {
+    const ctx = makeCtx();
+    renderSetup(ctx);
+    await completeWizard();
+    await userEvent.click(await screen.findByRole('button', { name: /save vault file/i }));
+    expect(ctx.save).toHaveBeenCalled();
+    expect(ctx.finishSetup).toHaveBeenCalled();
   });
 
-  it('shows uploadError when upload fails', async () => {
-    const upload = vi.fn().mockRejectedValue(new Error('fail'));
-    renderSetup(makeCtx(vi.fn(), upload));
-    await userEvent.upload(
-      screen.getByLabelText(/upload an existing vault/i),
-      new File(['b'], 'v'),
+  it('stays on the save step when the save dialog is cancelled', async () => {
+    const ctx = makeCtx(undefined, { save: vi.fn().mockResolvedValue('cancelled') });
+    renderSetup(ctx);
+    await completeWizard();
+    await userEvent.click(await screen.findByRole('button', { name: /save vault file/i }));
+    expect(ctx.finishSetup).not.toHaveBeenCalled();
+    expect(screen.getByText(/your vault is ready/i)).toBeTruthy();
+  });
+
+  it('lets the user skip saving for now', async () => {
+    const ctx = makeCtx();
+    renderSetup(ctx);
+    await completeWizard();
+    await userEvent.click(await screen.findByRole('button', { name: /do it later/i }));
+    expect(ctx.finishSetup).toHaveBeenCalled();
+  });
+
+  it('labels the button as a download when the browser cannot pick a save location', async () => {
+    renderSetup(makeCtx(undefined, { saveMode: 'download' }));
+    await completeWizard();
+    expect(await screen.findByRole('button', { name: /download vault file/i })).toBeTruthy();
+  });
+
+  it('keeps the wizard in place while the vault is being created', async () => {
+    renderSetup(makeCtx(vi.fn(() => new Promise<boolean>(() => undefined))));
+    await completeWizard();
+    expect(screen.getByRole('button', { name: /creating…/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /back to start/i }).hasAttribute('disabled')).toBe(
+      true,
     );
-    await waitFor(() =>
-      expect(screen.getByRole('alert').textContent).toContain('Failed to upload'),
-    );
+    expect(screen.getByRole('button', { name: /^back$/i }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('does not advance when creating the vault fails', async () => {
+    renderSetup(makeCtx(vi.fn().mockResolvedValue(false)));
+    await completeWizard();
+    expect(screen.queryByText(/your vault is ready/i)).toBeNull();
   });
 });

@@ -18,6 +18,7 @@ import type { AdminContextProvider } from '../../../admin-context/providers/admi
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
+import { SecurityExecutionChargesProvider } from '../../../foreign-securities/providers/security-execution-charges.provider.js';
 import { SecurityBusinessesProvider } from '../../../foreign-securities/providers/security-businesses.provider.js';
 import { PoalimScraperIngestionProvider } from '../poalim-scraper-ingestion.provider.js';
 
@@ -66,6 +67,7 @@ beforeAll(async () => {
     getVerifiedAdminContext: () =>
       Promise.resolve({
         ownerId: TEST_OWNER_ID,
+        locality: 'ISR',
         foreignSecurities: {
           foreignSecuritiesBusinessId: null,
           foreignSecuritiesFeesCategoryId: null,
@@ -77,6 +79,7 @@ beforeAll(async () => {
   provider = new PoalimScraperIngestionProvider(
     dbClient,
     authContextProvider,
+    adminContextProvider,
     new SecurityBusinessesProvider(
       dbClient,
       adminContextProvider,
@@ -89,6 +92,8 @@ beforeAll(async () => {
       businessesProvider,
       taxCategoriesProvider,
     ),
+    // Charges for stock distributions are covered by security-execution-charges.integration.test.ts
+    { ensureDistributionCharges: () => Promise.resolve([]) } as unknown as SecurityExecutionChargesProvider,
   );
 
   // poalim_securities.owner_id is a real FK, so the acting tenant must exist.
@@ -304,6 +309,25 @@ describe('uploadPoalimSwiftTransactions', () => {
     const result = await provider.uploadPoalimSwiftTransactions([baseSwift]);
     expect(result.inserted).toBe(0);
     expect(result.skipped).toBe(1);
+  });
+
+  it('does not report a blank placeholder against a stored null as a change', async () => {
+    await provider.uploadPoalimSwiftTransactions([baseSwift]);
+    const result = await provider.uploadPoalimSwiftTransactions([
+      { ...baseSwift, swiftRemittanceInformation70: ' ', swiftDetailsOfCharges71A: '' },
+    ]);
+    expect(result.changedTransactions).toEqual([]);
+  });
+
+  it('reports a real value against a stored null as a change', async () => {
+    await provider.uploadPoalimSwiftTransactions([baseSwift]);
+    const result = await provider.uploadPoalimSwiftTransactions([
+      { ...baseSwift, swiftRemittanceInformation70: 'INVOICE 42' },
+    ]);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual([
+      { field: 'swift_remittance_information_70', oldValue: 'null', newValue: 'INVOICE 42' },
+    ]);
   });
 });
 
@@ -584,6 +608,52 @@ describe('uploadPoalimSecuritiesTransactions', () => {
 
       expect(await securityBusinessesOfOwner()).toEqual([]);
     });
+
+    describe('is_foreign', () => {
+      // A dollar-denominated Israeli fund: the trade currency must not make it foreign.
+      const israeliFund: PoalimSecurityTransactionInput = {
+        ...baseTransaction,
+        security: '5129523',
+        isin: 'IL0000000001',
+        issuerCountryCode: 'IL',
+      };
+
+      const isForeignByIsin = async () => {
+        const { rows } = await pool.query(
+          `SELECT isin, is_foreign
+           FROM accounter_schema.businesses_securities
+           WHERE owner_id = $1
+           ORDER BY isin`,
+          [TEST_OWNER_ID],
+        );
+        return Object.fromEntries(rows.map(row => [row.isin, row.is_foreign]));
+      };
+
+      it('is derived from the issuer country, not assumed', async () => {
+        await provider.uploadPoalimSecuritiesTransactions([
+          { ...baseTransaction, issuerCountryCode: 'US' },
+          israeliFund,
+        ]);
+
+        expect(await isForeignByIsin()).toEqual({
+          IL0000000001: false,
+          US0000000001: true,
+        });
+      });
+
+      it('is corrected on a re-scrape when the stored flag is wrong', async () => {
+        await provider.uploadPoalimSecuritiesTransactions([israeliFund]);
+        await pool.query(
+          `UPDATE accounter_schema.businesses_securities SET is_foreign = true
+           WHERE owner_id = $1 AND isin = $2`,
+          [TEST_OWNER_ID, israeliFund.isin],
+        );
+
+        await provider.uploadPoalimSecuritiesTransactions([israeliFund]);
+
+        expect(await isForeignByIsin()).toEqual({ IL0000000001: false });
+      });
+    });
   });
 
   // The corporate-action dates are part of the dedup key and are null on a trade,
@@ -626,6 +696,162 @@ describe('uploadPoalimSecuritiesTransactions', () => {
         { field: 'is_cancel_transaction', oldValue: 'לא', newValue: 'כן' },
       ]),
     );
+  });
+
+  describe('restatement between scrape and settlement', () => {
+    const rowsOfSecurity = async () => {
+      const { rows } = await pool.query(
+        `SELECT id, value_date, settlement_date, trade_price, net_value_trade_currency, occurrence
+         FROM accounter_schema.poalim_securities_transactions
+         WHERE owner_id = $1 AND security = $2
+         ORDER BY occurrence, id`,
+        [TEST_OWNER_ID, baseTransaction.security],
+      );
+      return rows;
+    };
+
+    // A fund bought before its end-of-day price was fixed: the next scrape restates the price
+    // and net value and moves the value and settlement dates to the real settlement day.
+    const settled: PoalimSecurityTransactionInput = {
+      ...baseTransaction,
+      valueDate: '2024-01-18T00:00:00.0000000+02:00',
+      settlementDate: '2024-01-18T00:00:00.0000000+02:00',
+      tradePrice: 100.5,
+      netValueTradeCurrency: -1005,
+      tradeGrossValueTradeCurrency: 1005,
+    };
+
+    it('updates the existing row in place instead of inserting a second one', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+      const [before] = await rowsOfSecurity();
+
+      const result = await provider.uploadPoalimSecuritiesTransactions([settled]);
+
+      expect(result.inserted).toBe(0);
+      expect(result.skipped).toBe(1);
+      expect(result.changedTransactions).toEqual([
+        {
+          id: before.id,
+          changedFields: expect.arrayContaining([
+            { field: 'value_date', oldValue: '2024-01-16', newValue: '2024-01-18' },
+            { field: 'settlement_date', oldValue: '2024-01-17', newValue: '2024-01-18' },
+            { field: 'trade_price', oldValue: '100', newValue: '100.5' },
+            { field: 'net_value_trade_currency', oldValue: '-1000', newValue: '-1005' },
+          ]),
+        },
+      ]);
+
+      const rows = await rowsOfSecurity();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        id: before.id,
+        value_date: '2024-01-18',
+        settlement_date: '2024-01-18',
+        trade_price: '100.5',
+        net_value_trade_currency: '-1005',
+      });
+    });
+
+    it('restates a dividend whose value date moved', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([dividend]);
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        { ...dividend, valueDate: '2024-02-06T00:00:00.0000000+02:00' },
+      ]);
+
+      expect(result.inserted).toBe(0);
+      expect(await rowsOfSecurity()).toHaveLength(1);
+    });
+
+    it('keeps same-size executions of one scrape apart, and re-scrapes them in place', async () => {
+      const second = { ...baseTransaction, tradePrice: 101, netValueTradeCurrency: -1010 };
+
+      const first = await provider.uploadPoalimSecuritiesTransactions([baseTransaction, second]);
+      expect(first.inserted).toBe(2);
+
+      const again = await provider.uploadPoalimSecuritiesTransactions([
+        { ...second, valueDate: '2024-01-18T00:00:00.0000000+02:00' },
+        { ...baseTransaction, valueDate: '2024-01-18T00:00:00.0000000+02:00' },
+      ]);
+      expect(again.inserted).toBe(0);
+      expect(again.changedTransactions).toHaveLength(2);
+
+      const rows = await rowsOfSecurity();
+      expect(rows.map(row => [row.occurrence, row.trade_price, row.value_date])).toEqual([
+        [1, '100', '2024-01-18'],
+        [2, '101', '2024-01-18'],
+      ]);
+    });
+
+    // The scraper still uploads a truncated scrape (with a warning), so an upload can carry only
+    // some of a group's executions. Each must land on its own stored row.
+    it('updates the right execution from a partial re-upload', async () => {
+      const second = { ...baseTransaction, tradePrice: 101, netValueTradeCurrency: -1010 };
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction, second]);
+
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        { ...second, valueDate: '2024-01-18T00:00:00.0000000+02:00' },
+      ]);
+      expect(result.inserted).toBe(0);
+
+      const rows = await rowsOfSecurity();
+      expect(rows.map(row => [row.occurrence, row.trade_price, row.value_date])).toEqual([
+        [1, '100', '2024-01-16'],
+        [2, '101', '2024-01-18'],
+      ]);
+    });
+
+    it('adds an execution a later upload reports alongside a stored one', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        { ...baseTransaction, tradePrice: 99, netValueTradeCurrency: -990 },
+        baseTransaction,
+      ]);
+      expect(result.inserted).toBe(1);
+
+      const rows = await rowsOfSecurity();
+      expect(rows.map(row => [row.occurrence, row.trade_price])).toEqual([
+        [1, '100'],
+        [2, '99'],
+      ]);
+    });
+
+    it('collapses a row repeated verbatim within one payload', async () => {
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        baseTransaction,
+        baseTransaction,
+      ]);
+
+      expect(result.inserted).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(await rowsOfSecurity()).toHaveLength(1);
+    });
+
+    // A share consolidation moves units out of one security and into another on the same day:
+    // two actions, not a restatement, so both rows must survive.
+    it('keeps both legs of a consolidation', async () => {
+      const result = await provider.uploadPoalimSecuritiesTransactions([
+        {
+          ...dividend,
+          tradeType: 'העברה לחובת הפקדון',
+          paymentType: 'איחוד מניות',
+          nv: 12.5,
+          netValueTradeCurrency: 0,
+        },
+        {
+          ...dividend,
+          security: '7654321',
+          isin: 'US0000000002',
+          tradeType: 'העברה לזכות הפקדון',
+          paymentType: 'איחוד מניות',
+          nv: 12.5,
+          tradePrice: 110,
+          netValueTradeCurrency: 0,
+        },
+      ]);
+
+      expect(result.inserted).toBe(2);
+    });
   });
 
   it('summarises inserted rows with the trade date, type and account', async () => {

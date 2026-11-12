@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react';
 import { useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ChargeFilter } from '../../../gql/graphql.js';
+import { resetFilterForm } from '../../../helpers/form.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { accountantApprovalOptions } from '../../common/inputs/update-accountant-status.js';
 import { Accordion } from '../../ui/accordion.js';
@@ -112,7 +113,7 @@ export function ChargesFiltersForm({
           </div>
           <ActiveFilterChips
             sources={chipSources}
-            onClearAll={(): void => form.reset(buildEmptyFormValues())}
+            onClearAll={(): void => resetFilterForm(form, buildEmptyFormValues())}
           />
         </DialogHeader>
 
@@ -152,7 +153,7 @@ export function ChargesFiltersForm({
               type="button"
               variant="outline"
               size="sm"
-              onClick={(): void => form.reset(defaultFormValues)}
+              onClick={(): void => resetFilterForm(form, defaultFormValues)}
             >
               <RotateCcw className="size-3.5" />
               Reset
@@ -161,7 +162,7 @@ export function ChargesFiltersForm({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={(): void => form.reset(buildEmptyFormValues())}
+              onClick={(): void => resetFilterForm(form, buildEmptyFormValues())}
             >
               Clear all
             </Button>

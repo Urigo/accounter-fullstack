@@ -6,13 +6,21 @@ import { formatCurrency, resolveWriteTargetBusinessId } from '../../../shared/he
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import {
+  mergeSecuritiesContext,
+  parseStoredSecuritiesContext,
+  serializeSecuritiesContext,
+  type SecuritiesContextPatch,
+} from '../helpers/securities-context.helper.js';
 import type {
   AdminContext,
   IGetAdminContextsQuery,
   IGetAdminContextsResult,
+  IGetSecuritiesContextForUpdateQuery,
   IGetSecurityBusinessIdsQuery,
   IUpdateAdminContextParams,
   IUpdateAdminContextQuery,
+  IUpdateSecuritiesContextQuery,
 } from '../types.js';
 
 const getAdminContexts = sql<IGetAdminContextsQuery>`
@@ -278,14 +286,8 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $ledgerLock,
       ledger_lock
     ),
-    foreign_securities_business_id = COALESCE(
-      $foreignSecuritiesBusinessId,
-      foreign_securities_business_id
-    ),
-    foreign_securities_fees_category_id = COALESCE(
-      $foreignSecuritiesFeesCategoryId,
-      foreign_securities_fees_category_id
-    ),
+    -- foreign_securities_business_id and foreign_securities_fees_category_id are deprecated:
+    -- superseded by securities_context, where updateAdminContext writes them instead
     date_established = COALESCE(
       $dateEstablished,
       date_established
@@ -299,6 +301,25 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       locality
     )
   WHERE owner_id = $ownerId
+  RETURNING *;
+`;
+
+/** Locks the row, so concurrent patches of the jsonb document apply one after the other */
+const getSecuritiesContextForUpdate = sql<IGetSecuritiesContextForUpdateQuery>`
+  SELECT securities_context
+  FROM accounter_schema.user_context
+  WHERE owner_id = $ownerId!
+  FOR UPDATE;
+`;
+
+/**
+ * Replaces the whole jsonb document: the caller merges the change into the current value first
+ * (see `updateSecuritiesContext`), so a patch never has to be expressed in SQL.
+ */
+const updateSecuritiesContext = sql<IUpdateSecuritiesContextQuery>`
+  UPDATE accounter_schema.user_context
+  SET securities_context = $securitiesContext!
+  WHERE owner_id = $ownerId!
   RETURNING *;
 `;
 
@@ -318,6 +339,9 @@ export class AdminContextProvider {
   ) {}
 
   public normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
+    // The foreign-securities business and fees category come from `securities_context` alone: the
+    // `foreign_securities_*` columns it superseded are deprecated and no longer read.
+    const securities = parseStoredSecuritiesContext(rawContext.securities_context);
     const dividendPaymentBusinessIds = [
       '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
       '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
@@ -378,8 +402,10 @@ export class AdminContextProvider {
           rawContext.bank_deposit_interest_income_tax_category_id,
       },
       foreignSecurities: {
-        foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
-        foreignSecuritiesFeesCategoryId: rawContext.foreign_securities_fees_category_id,
+        foreignSecuritiesBusinessId: securities.foreignSecuritiesBusinessId,
+        foreignSecuritiesFeesCategoryId: securities.taxCategories.FOREIGN_SECURITIES_FEES ?? null,
+        sortCode: securities.sortCode,
+        taxCategories: securities.taxCategories,
       },
       dividends: {
         dividendWithholdingTaxBusinessId: rawContext.dividend_withholding_tax_business_id,
@@ -408,7 +434,7 @@ export class AdminContextProvider {
         etanaBusinessId: rawContext.etana_business_id,
         krakenBusinessId: rawContext.kraken_business_id,
         etherScanBusinessId: rawContext.etherscan_business_id,
-        foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
+        foreignSecuritiesBusinessId: securities.foreignSecuritiesBusinessId,
         bankAccountIds,
         creditCardIds,
         internalWalletsIds: [
@@ -417,7 +443,7 @@ export class AdminContextProvider {
           rawContext.etana_business_id,
           rawContext.kraken_business_id,
           rawContext.etherscan_business_id,
-          rawContext.foreign_securities_business_id,
+          securities.foreignSecuritiesBusinessId,
         ].filter(Boolean) as string[],
       },
       salaries: {
@@ -547,8 +573,32 @@ export class AdminContextProvider {
     return context;
   }
 
-  public async updateAdminContext(params: IUpdateAdminContextParams): Promise<AdminContext | null> {
+  public async updateAdminContext({
+    foreignSecuritiesBusinessId,
+    foreignSecuritiesFeesCategoryId,
+    ...params
+  }: IUpdateAdminContextParams & {
+    /** @deprecated stored in `securities_context`; use `updateSecuritiesContext` */
+    foreignSecuritiesBusinessId?: string | null;
+    /** @deprecated stored in `securities_context`; use `updateSecuritiesContext` */
+    foreignSecuritiesFeesCategoryId?: string | null;
+  }): Promise<AdminContext | null> {
     const ownerId = await this.resolveOwnerIdForRequest();
+
+    // The deprecated foreign-securities inputs are stored in `securities_context`, not in the
+    // `foreign_securities_*` columns they used to write.
+    if (foreignSecuritiesBusinessId || foreignSecuritiesFeesCategoryId) {
+      await this.updateSecuritiesContext({
+        ...(foreignSecuritiesBusinessId ? { foreignSecuritiesBusinessId } : {}),
+        ...(foreignSecuritiesFeesCategoryId
+          ? {
+              taxCategories: [
+                { key: 'FOREIGN_SECURITIES_FEES', taxCategoryId: foreignSecuritiesFeesCategoryId },
+              ],
+            }
+          : {}),
+      });
+    }
 
     this.cachedContext = null;
 
@@ -562,6 +612,49 @@ export class AdminContextProvider {
       return normalizedContext;
     }
     return null;
+  }
+
+  /**
+   * Applies a change to the tenant's securities context. Read, merged and written back whole, from
+   * the stored row rather than the request cache, and with the row locked for the duration: two
+   * requests patching different keys at once must not overwrite each other.
+   */
+  public async updateSecuritiesContext(patch: SecuritiesContextPatch): Promise<AdminContext> {
+    const ownerId = await this.resolveOwnerIdForRequest();
+
+    this.cachedContext = null;
+    this.cachedContextInitializing = null;
+    this.adminContextByOwnerIdLoader.clear(ownerId);
+
+    const updated = await this.db.transaction(async client => {
+      const [current] = await getSecuritiesContextForUpdate.run({ ownerId }, client);
+      if (!current) {
+        throw new GraphQLError('Admin context not found for the authenticated user.', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const securitiesContext = mergeSecuritiesContext(
+        parseStoredSecuritiesContext(current.securities_context),
+        patch,
+      );
+
+      const [row] = await updateSecuritiesContext.run(
+        { ownerId, securitiesContext: serializeSecuritiesContext(securitiesContext) },
+        client,
+      );
+      return row;
+    });
+    if (!updated) {
+      throw new GraphQLError('Error updating securities context');
+    }
+
+    const normalizedContext = await this.withOwnSecurityBusinesses(
+      this.normalizeContext(updated),
+      ownerId,
+    );
+    this.cachedContext = normalizedContext;
+    return normalizedContext;
   }
 
   private async batchAdminContextsByOwnerIds(ownerIds: readonly string[]) {

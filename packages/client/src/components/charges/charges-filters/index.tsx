@@ -1,17 +1,14 @@
 import {
   useCallback,
-  useEffect,
   useMemo,
   useState,
   type Dispatch,
   type ReactElement,
   type SetStateAction,
 } from 'react';
-import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { encodeFilters } from '@/router/routes.js';
+import { areFiltersEqual, normalizeFilter } from '@/router/routes.js';
 import type { ChargeFilter } from '../../../gql/graphql.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { Pagination } from '../../common/index.js';
 import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
@@ -20,6 +17,7 @@ import { ChargesFiltersForm } from './charges-filters-form.js';
 import { countActiveFilters } from './counts.js';
 
 export { chargesTypeFilterOptions } from './constants.js';
+export { useChargesFilter } from './use-charges-filter.js';
 
 interface ChargesFiltersProps {
   filter?: ChargeFilter;
@@ -41,37 +39,16 @@ export function ChargesFilters({
   withDefaultDateRange = true,
 }: ChargesFiltersProps): ReactElement {
   const [opened, setOpened] = useState(initiallyOpened);
-  const { get, set } = useUrlQuery();
 
   // Derived rather than held in state, so it stays correct when `filter` changes
   // from outside the modal (browser back/forward, a deep link).
   const activeCount = useMemo(() => countActiveFilters(filter), [filter]);
 
-  // update url on page change
-  useEffect(() => {
-    const newPage = activePage > 0 ? activePage.toFixed(0) : null;
-    const oldPage = get('page');
-    if (newPage !== oldPage) {
-      set('page', newPage);
-    }
-  }, [activePage, get, set]);
-
-  // update url on filter change
-  useEffect(() => {
-    const newFilter = encodeFilters(filter);
-    const oldFilter = get('chargesFilters');
-    if (newFilter !== oldFilter) {
-      set('chargesFilters', newFilter);
-      set('page');
-      setPage(0);
-    }
-  }, [filter, get, set, setPage]);
-
   const onSetFilter = useCallback(
     (newFilter: ChargeFilter) => {
-      // looks for actual changes before triggering update
-      if (!equal(newFilter, filter)) {
-        setFilter(newFilter);
+      // Only a real change: the screens re-query on every new filter object.
+      if (!areFiltersEqual(newFilter, filter)) {
+        setFilter(normalizeFilter(newFilter));
       }
     },
     [filter, setFilter],

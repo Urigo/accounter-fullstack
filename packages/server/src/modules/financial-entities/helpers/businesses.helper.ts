@@ -2,7 +2,10 @@ import type {
   SuggestionsEmailListenerConfigInput,
   UpdateBusinessInput,
 } from '../../../__generated__/types.js';
-import { suggestionDataSchema } from '../helpers/business-suggestion-data-schema.helper.js';
+import {
+  normalizeSuggestionListData,
+  suggestionDataSchema,
+} from '../helpers/business-suggestion-data-schema.helper.js';
 import type { Json, SuggestionData } from '../types.js';
 
 function mergeEmailListenerConfig(
@@ -55,11 +58,11 @@ export function updateSuggestions(
 
   const currentPhrases = currentSuggestionData.phrases ?? [];
   const newPhrases = newSuggestions.phrases ?? currentPhrases;
-  const phrases = merge ? Array.from(new Set([...currentPhrases, ...newPhrases])) : newPhrases;
+  const phrases = merge ? [...currentPhrases, ...newPhrases] : newPhrases;
 
   const currentEmails = currentSuggestionData.emails ?? [];
   const newEmails = newSuggestions.emails ?? currentEmails;
-  const emails = merge ? Array.from(new Set([...currentEmails, ...newEmails])) : newEmails;
+  const emails = merge ? [...currentEmails, ...newEmails] : newEmails;
 
   const currentEmailListener = currentSuggestionData.emailListener ?? undefined;
   const newEmailListener = newSuggestions.emailListener ?? undefined;
@@ -89,5 +92,5 @@ export function updateSuggestions(
     throw new Error('Invalid business suggestions format');
   }
 
-  return updatedSuggestions;
+  return normalizeSuggestionListData(updatedSuggestions);
 }

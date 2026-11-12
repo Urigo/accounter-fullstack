@@ -328,6 +328,26 @@ describe('validatePayload — valid fixtures', () => {
     expect(result.Account.Execution[0]?.TradeCurrency).toBe(currency);
   });
 
+  it('accepts a consolidation / capital reduction corporate action', () => {
+    const result = validatePayload('poalim-securities-transactions', {
+      Account: {
+        Execution: [
+          {
+            ...MINIMAL_EXECUTION,
+            TransactionType: 'תשלומים ואירועי חברה',
+            TradeType: 'הטבה חלוקת מניות',
+            PaymentType: 'איחוד/הפחתת הון',
+            PaymentDate: '2026-10-12T00:00:00.0000000+03:00',
+            ExDate: '2026-10-12T00:00:00.0000000+03:00',
+            NV: 0,
+            TradePrice: 0,
+          },
+        ],
+      },
+    });
+    expect(result.Account.Execution[0]?.PaymentType).toBe('איחוד/הפחתת הון');
+  });
+
   it('accepts a two-sided deposit transfer under the העברות category', () => {
     const result = validatePayload('poalim-securities-transactions', {
       Account: {

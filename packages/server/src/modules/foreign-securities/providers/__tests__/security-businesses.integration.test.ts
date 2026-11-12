@@ -234,6 +234,32 @@ describe('ensureSecurityBusiness', () => {
     expect(rows[0].count).toBe(2);
   });
 
+  it('brings is_foreign on an existing business in line with the payload', async () => {
+    const provider = createProvider();
+    const first = await provider.ensureSecurityBusiness(APPLE);
+
+    const securities = await provider.ensureSecurityBusinesses([
+      { ...APPLE, engName: 'APPLE INCORPORATED', isForeign: false },
+    ]);
+
+    const refreshed = securities.get(APPLE.isin);
+    expect(refreshed?.id).toBe(first.id);
+    expect(refreshed?.is_foreign).toBe(false);
+    // Only the flag is refreshed; the other descriptors keep their first recorded value.
+    expect(refreshed?.eng_name).toBe(APPLE.engName);
+    const loaded = await provider.getSecurityBusinessByIdLoader.load(first.id);
+    expect(loaded?.is_foreign).toBe(false);
+  });
+
+  it('keeps the stored is_foreign when the payload cannot tell', async () => {
+    const provider = createProvider();
+    await provider.ensureSecurityBusiness(APPLE);
+
+    const securities = await provider.ensureSecurityBusinesses([{ ...APPLE, isForeign: null }]);
+
+    expect(securities.get(APPLE.isin)?.is_foreign).toBe(true);
+  });
+
   it('is idempotent per ISIN — a second call returns the same business', async () => {
     const provider = createProvider();
 

@@ -4,6 +4,7 @@ import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBalanceCancellationByBusinessIdQuery,
+  IDeleteBalanceCancellationByChargeIdsQuery,
   IGetBalanceCancellationByChargesIdsQuery,
 } from '../types.js';
 
@@ -15,6 +16,10 @@ const getBalanceCancellationByChargesIds = sql<IGetBalanceCancellationByChargesI
 const deleteBalanceCancellationByBusinessId = sql<IDeleteBalanceCancellationByBusinessIdQuery>`
     DELETE FROM accounter_schema.charge_balance_cancellation
     WHERE business_id = $businessId;`;
+
+const deleteBalanceCancellationByChargeIds = sql<IDeleteBalanceCancellationByChargeIdsQuery>`
+    DELETE FROM accounter_schema.charge_balance_cancellation
+    WHERE charge_id IN $$chargeIds;`;
 
 @Injectable({
   scope: Scope.Operation,
@@ -40,6 +45,17 @@ export class BalanceCancellationProvider {
   public deleteBalanceCancellationByBusinessId(businessId: string) {
     return deleteBalanceCancellationByBusinessId.run({ businessId }, this.db);
   }
+
+  private async batchDeleteBalanceCancellationByChargeIds(chargeIds: readonly string[]) {
+    chargeIds.map(id => this.getBalanceCancellationByChargesIdLoader.clear(id));
+    await deleteBalanceCancellationByChargeIds.run({ chargeIds }, this.db);
+    return chargeIds.map(_id => void 0);
+  }
+
+  public deleteBalanceCancellationByChargeIdLoader = new DataLoader(
+    (chargeIds: readonly string[]) => this.batchDeleteBalanceCancellationByChargeIds(chargeIds),
+    { cache: false },
+  );
 
   public clearCache() {
     this.getBalanceCancellationByChargesIdLoader.clearAll();

@@ -114,5 +114,7 @@ yarn seed:admin-context # Seed admin context for server
 
 # Git & PR Conventions
 
+- NEVER commit, push, merge, rebase or otherwise write to main or prod. Always work on a feature
+  branch and open a PR.
 - Small, focused PRs; squash merge.
 - Always run `yarn lint` and `yarn generate` before committing.

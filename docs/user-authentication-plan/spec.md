@@ -77,11 +77,23 @@ to ensure zero-downtime migration:
     4. Server verifies invitation token (single-use), unblocks Auth0 user, links Auth0 ID to local
        business/role in `business_users` table
     5. User gains immediate business access upon first login
+
+    > Note (2026-10): steps 2–3 are not implemented. No password-setup email is sent
+    > (`sendPasswordResetEmail` has no callers), and accepting requires an already signed-in user
+    > with a verified matching email. Today invitees must sign in with Google using the invited
+    > email; email/password invitees are an open gap (to be filed as a follow-up under #4611).
+    > Current behaviour: [Invite New User](../operations/auth0-runbook.md#invite-new-user) in the
+    > operations runbook.
+
   - **Multi-Business Support**: If user is invited to additional businesses after initial
     activation, they accept invitations while authenticated, linking new business/role to existing
     Auth0 account (no additional Auth0 user creation)
   - **Email Verification**: Fully managed by Auth0 during password setup flow. Email changes are
     handled via Auth0's user profile management (out of scope for initial implementation)
+
+    > Note (2026-10): the password setup flow is not implemented (see the note under the invitation
+    > flow above).
+
   - **Invitation Token Security**: Tokens are single-use (marked with `accepted_at` timestamp) and
     expire after 7 days. Expired invitations trigger cleanup job to delete unused blocked Auth0
     accounts
@@ -107,6 +119,12 @@ to ensure zero-downtime migration:
   - **Social Logins**: Auth0 provides built-in support for social identity providers (Google,
     GitHub, Microsoft, etc.). Enabling social logins requires only Auth0 tenant configuration with
     zero code changes.
+
+    > Note (2026-10): each local user maps to exactly one Auth0 `sub`. A user who signed up with a
+    > social login has no email/password identity, and a second sign-in method creates a separate
+    > Auth0 user unless it is linked to the first through Auth0 account linking, which keeps the
+    > `sub` stable. See [Sign-in Methods](../operations/auth0-runbook.md#sign-in-methods).
+
   - **Multi-Factor Authentication (MFA)**: Auth0 supports MFA (TOTP, SMS, Push notifications) out of
     the box. Enabling MFA for high-security accounts requires only Auth0 tenant configuration.
   - **Email Customization**: Auth0 email templates can be customized for branding consistency
