@@ -65,15 +65,16 @@ it:
 - Errors with the same code and message are logged once per operation, with `count` and the first
   few `paths`. A rejected token failing every guarded field is one line.
 - Yoga's own log of the errors it masks is skipped for these, so each error is logged once.
-- An error whose cause a lower boundary already logged in full (`markLogged`) gets
+- An error whose cause a lower boundary already logged in full (`green-invoice-call-failed`) gets
   `detailLogged: true` and no `error`: the line still ties it to the operation and request.
 - Errors are grouped across the whole operation, `@defer` chunks included, and written when it ends.
 
 ## Request IDs
 
 `requestId` ties a request's lines together: `graphql-operation`, `graphql-error`, the DB lines
-(`db-leaked-connection-reclaimed`, `db-checked-out-client-error`, …). It comes from the
-`X-Request-Id` header, else the OpenTelemetry trace ID, else a random UUID.
+(`db-leaked-connection-reclaimed`, `db-checked-out-client-error`, …) and
+`green-invoice-call-failed`. It comes from the `X-Request-Id` header, else the OpenTelemetry trace
+ID, else a random UUID.
 
 `correlationId` on the `graphql-operation` line is the inbound `X-Correlation-Id`, or `null`. It is
 not a request ID: the MCP server sends the same one on every upstream call of a tool run, retries
@@ -96,16 +97,22 @@ Every record goes through the same checks, whatever the call site passed:
 - Errors keep an allowlist: name, message (capped at 500 characters), code, path, 8 stack frames and
   the `cause` chain. A `GraphQLError`'s `extensions` never get past `code`; a thrown plain object
   keeps only its name, message, code and status.
+- Green Invoice's own `upstreamMessage` can echo the client's data, so digit runs (tax ids, phone
+  numbers) are masked as `[number]` too, and it is capped at 200 characters, in the log line and in
+  the message thrown to the user.
 
 ## Other records
 
-| `msg`                            | Level        | Meaning                                                                                                                                                                                                                            |
-| -------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db-pool-heartbeat`              | info / error | Pool health. Every 30s while the pool is busy, every 5 minutes while idle. See [the DB pool runbook](./db-connection-pool.md).                                                                                                     |
-| `db-leaked-connection-reclaimed` | error        | The watchdog reclaimed a request-scoped connection nothing disposed.                                                                                                                                                               |
-| `db-checked-out-client-error`    | error        | A checked-out connection failed (e.g. Postgres killed an idle-in-transaction session).                                                                                                                                             |
-| `db-client-outside-live-request` | warn         | Work outlived its request and built a DB client; it runs in autoRelease mode.                                                                                                                                                      |
-| `server-shutting-down`           | fatal / info | The process is stopping: `fatal` with the `error` after a crash (`uncaughtException`, `unhandledRejection`), `info` on a signal. Then `server-shutdown-timed-out` / `server-shutdown-failed` (`fatal`) if it doesn't stop cleanly. |
+| `msg`                            | Level        | Meaning                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db-pool-heartbeat`              | info / error | Pool health. Every 30s while the pool is busy, every 5 minutes while idle. See [the DB pool runbook](./db-connection-pool.md).                                                                                                                                                                                                                                             |
+| `db-leaked-connection-reclaimed` | error        | The watchdog reclaimed a request-scoped connection nothing disposed.                                                                                                                                                                                                                                                                                                       |
+| `db-checked-out-client-error`    | error        | A checked-out connection failed (e.g. Postgres killed an idle-in-transaction session).                                                                                                                                                                                                                                                                                     |
+| `db-client-outside-live-request` | warn         | Work outlived its request and built a DB client; it runs in autoRelease mode.                                                                                                                                                                                                                                                                                              |
+| `green-invoice-call-failed`      | error        | A Green Invoice call failed: `greenInvoiceCall` (the SDK call), upstream `status`, Green Invoice's own `upstreamCode` / `upstreamMessage`, and the GraphQL `operationName` / `requestId`.                                                                                                                                                                                  |
+| `vat-report-records-failed`      | warn         | Building VAT report records failed: `failedRecordCount`, the failing `failedRecords` (document ID and message), the first error's stack. `warn` because most such failures are a document missing an amount, currency or date (#4946). The `graphql-error` line for it is a `warn` too, because the resolver rethrows a plain `GraphQLError` so the user sees the message. |
+| `server-shutting-down`           | fatal / info | The process is stopping: `fatal` with the `error` after a crash (`uncaughtException`, `unhandledRejection`), `info` on a signal. Then `server-shutdown-timed-out` / `server-shutdown-failed` (`fatal`) if it doesn't stop cleanly.                                                                                                                                         |
+| `vat-report-unexpected-vat-rate` | info         | A document's VAT amount doesn't match the VAT rate for its date (the user's data, not a fault).                                                                                                                                                                                                                                                                            |
 
 ## Writing logs
 
