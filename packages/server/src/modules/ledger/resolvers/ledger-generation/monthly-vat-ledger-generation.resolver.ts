@@ -18,6 +18,7 @@ import { getChargeTransactionsMeta } from '../../../charges/helpers/common.helpe
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import {
   calculateMonthlyVatTotalAmount,
+  describeIncompleteVatReportDocuments,
   isWithinMonthlyVatAmountTolerance,
   type RawVatReportRecord,
 } from '../../../reports/helpers/vat-report.helper.js';
@@ -86,7 +87,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       const ledgerDate = endOfTimelessMonth(timelessDateFromParts(year, month, 1));
       const monthDate = timelessDateFromParts(year, month, 15);
 
-      const { income, expenses } = await getVatRecords(
+      const { income, expenses, incompleteDocuments } = await getVatRecords(
         { filters: { financialEntityId: charge.owner_id, monthDate } },
         injector,
         { includeChargeBuckets: false },
@@ -95,6 +96,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       return {
         income,
         expenses,
+        incompleteDocuments,
         ledgerDate,
         vatDate,
       };
@@ -115,6 +117,19 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       transactionsPromise,
       unbalancedBusinessesPromise,
     ]);
+
+    // The VAT computed for a month leaves out its incomplete documents, so the ledger would be
+    // wrong: report them, and don't store it (see below) (#4946).
+    let hasIncompleteMonth = false;
+    for (const { incompleteDocuments, ledgerDate } of vatRecords) {
+      if (incompleteDocuments.length > 0) {
+        hasIncompleteMonth = true;
+        const [year, month] = ledgerDate.split('-');
+        errors.add(
+          `Monthly VAT for ${month}/${year} leaves out documents with missing data: ${describeIncompleteVatReportDocuments(incompleteDocuments)}`,
+        );
+      }
+    }
 
     if (charge.user_description && vatDates?.length === 1) {
       if (transactionDate == null) {
@@ -319,7 +334,9 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       ...miscExpensesLedgerEntries,
     ];
 
-    if (insertLedgerRecordsIfNotExists) {
+    // Only the first generation is stored, and a later one doesn't replace it, so storing a month
+    // that leaves documents out would keep it wrong after they are fixed.
+    if (insertLedgerRecordsIfNotExists && !hasIncompleteMonth) {
       await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 

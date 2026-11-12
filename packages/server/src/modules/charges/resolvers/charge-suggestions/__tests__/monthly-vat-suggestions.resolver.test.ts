@@ -39,7 +39,7 @@ describe('missingMonthlyVatInfoSuggestions', () => {
       transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
-    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [], incompleteDocuments: [] } as never);
     vi.mocked(calculateMonthlyVatTotalAmount).mockReturnValue(130);
     vi.mocked(isWithinMonthlyVatAmountTolerance).mockReturnValue(true);
 
@@ -72,7 +72,7 @@ describe('missingMonthlyVatInfoSuggestions', () => {
       transactionsMinDebitDate: '2026-02-03',
       transactionsMinEventDate: '2026-01-01',
     } as never);
-    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [], incompleteDocuments: [] } as never);
     vi.mocked(calculateMonthlyVatTotalAmount).mockReturnValue(130);
     vi.mocked(isWithinMonthlyVatAmountTolerance).mockReturnValue(true);
 
@@ -141,9 +141,35 @@ describe('missingMonthlyVatInfoSuggestions', () => {
       transactionsMinDebitDate: '2026-05-10',
       transactionsMinEventDate: null,
     } as never);
-    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [] } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({ income: [], expenses: [], incompleteDocuments: [] } as never);
     vi.mocked(calculateMonthlyVatTotalAmount).mockReturnValue(90);
     vi.mocked(isWithinMonthlyVatAmountTolerance).mockReturnValue(false);
+
+    const result = await missingMonthlyVatInfoSuggestions(
+      charge,
+      {} as never,
+      { injector } as never,
+      {} as never,
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when the month leaves out documents with missing data, even if the rest matches', async () => {
+    vi.mocked(getChargeTransactionsMeta).mockResolvedValue({
+      transactionsAmount: -130,
+      transactionsMinDebitDate: '2026-05-10',
+      transactionsMinEventDate: null,
+    } as never);
+    vi.mocked(getVatRecords).mockResolvedValue({
+      income: [],
+      expenses: [],
+      incompleteDocuments: [
+        { documentId: 'doc-1', chargeId: 'charge-2', missingFields: ['currency'] },
+      ],
+    } as never);
+    vi.mocked(calculateMonthlyVatTotalAmount).mockReturnValue(130);
+    vi.mocked(isWithinMonthlyVatAmountTolerance).mockReturnValue(true);
 
     const result = await missingMonthlyVatInfoSuggestions(
       charge,

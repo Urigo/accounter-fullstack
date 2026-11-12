@@ -18,6 +18,7 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper.js';
 import {
   adjustTaxRecord,
+  getVatReportDocumentMissingFields,
   isVatReportRelevantDocument,
   type RawVatReportRecord,
   type VatReportRecordSources,
@@ -58,6 +59,7 @@ export const getVatRecords = async (
       missingInfo: [],
       differentMonthDoc: [],
       businessTrips: [],
+      incompleteDocuments: [],
     };
 
     const docsChargesIDs = new Set<string>();
@@ -184,7 +186,9 @@ export const getVatRecords = async (
         (doc.type === DocumentType.CreditInvoice
           ? doc.debtor_id === reportIssuerId
           : doc.creditor_id === reportIssuerId) &&
-        Number(doc.total_amount) > 0 &&
+        // A missing amount still makes it a candidate, so the completeness check below lists it
+        // instead of the month silently leaving it out (#4946).
+        (doc.total_amount == null || Number(doc.total_amount) > 0) &&
         !isReimbursement
       ) {
         includedChargeIDs.add(charge.id);
@@ -194,15 +198,31 @@ export const getVatRecords = async (
       }
     });
 
-    if (incomeRecords.length + expenseRecords.length > 0) {
+    // A document without an amount, currency or date cannot be tax-adjusted. That is a data
+    // problem with one document, not a report failure: set it aside and list its charge under
+    // `missingInfo`, so the rest of the month still renders (#4946).
+    const incompleteChargeIDs = new Set<string>();
+    const isComplete = ({ doc, charge }: VatReportRecordSources) => {
+      const missingFields = getVatReportDocumentMissingFields(doc);
+      if (missingFields.length === 0) {
+        return true;
+      }
+      response.incompleteDocuments.push({ documentId: doc.id, chargeId: charge.id, missingFields });
+      incompleteChargeIDs.add(charge.id);
+      return false;
+    };
+    const completeIncomeRecords = incomeRecords.filter(isComplete);
+    const completeExpenseRecords = expenseRecords.filter(isComplete);
+
+    if (completeIncomeRecords.length + completeExpenseRecords.length > 0) {
       // TODO: what if no exchange dates found?
       await allSettledOrThrow([
-        ...incomeRecords.map(async rawRecord =>
+        ...completeIncomeRecords.map(async rawRecord =>
           adjustTaxRecord(rawRecord, injector).then(res => {
             response.income.push(res);
           }),
         ),
-        ...expenseRecords.map(async rawRecord =>
+        ...completeExpenseRecords.map(async rawRecord =>
           adjustTaxRecord(rawRecord, injector).then(res => {
             response.expenses.push(res);
           }),
@@ -231,7 +251,11 @@ export const getVatRecords = async (
       );
 
       for (const { charge, isValid, businessTripId } of validatedCharges) {
-        if (businessTripId) {
+        if (incompleteChargeIDs.has(charge.id)) {
+          // One of its documents was left out of income/expenses above, so it needs fixing
+          // whatever the charge-level validation says.
+          response.missingInfo.push(charge);
+        } else if (businessTripId) {
           // If valid and has business trip, add to business trips
           response.businessTrips.push(charge);
         } else if (isValid) {

@@ -44,7 +44,9 @@ function expenseInvoice(id: string, override: TimelessDateString) {
     debtor_id: OWNER_ID,
     type: DocumentType.Invoice,
     vat_amount: 17,
-    total_amount: 117,
+    total_amount: 117 as number | null,
+    currency_code: 'ILS' as string | null,
+    date: override as TimelessDateString | null,
     vat_report_date_override: override,
   };
 }
@@ -173,6 +175,7 @@ describe('getVatRecords fan-outs', () => {
   afterEach(() => {
     vi.mocked(adjustTaxRecord).mockImplementation(defaultAdjustTaxRecord as never);
     vi.mocked(validateCharge).mockImplementation(async () => ({ isValid: true }) as never);
+    vi.restoreAllMocks();
   });
 
   it('issues no query after the request ends when one charge validation rejects', async () => {
@@ -206,7 +209,7 @@ describe('getVatRecords fan-outs', () => {
     const sibling = deferred();
     vi.mocked(adjustTaxRecord).mockImplementation((async ({ doc }: { doc: { id: string } }) => {
       if (doc.id === 'bad') {
-        throw new Error('Currency missing');
+        throw new Error('VAT value is missing');
       }
       await sibling.promise;
       db.query('SELECT exchange_rates');
@@ -220,10 +223,112 @@ describe('getVatRecords fan-outs', () => {
     setTimeout(sibling.resolve, 20);
     await expect(
       getVatRecords({ filters }, injector, { includeChargeBuckets: false }).finally(db.dispose),
-    ).rejects.toThrow('Currency missing');
+    ).rejects.toThrow('VAT value is missing');
     await new Promise(resolve => setTimeout(resolve, 30));
 
     expect(db.queriesAfterDisposal).toEqual([]);
+  });
+
+  it('logs a failed tax adjustment exactly once', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(adjustTaxRecord).mockRejectedValue(new Error('VAT value is missing'));
+    const { injector } = createInjector([expenseInvoice('bad', '2024-01-10')]);
+
+    await expect(
+      getVatRecords({ filters }, injector, { includeChargeBuckets: false }),
+    ).rejects.toThrow('VAT value is missing');
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('getVatRecords with incomplete documents (#4946)', () => {
+  const filters = { monthDate: '2024-01-01' as TimelessDateString, financialEntityId: OWNER_ID };
+
+  function noCurrency(id: string, date: TimelessDateString) {
+    return { ...expenseInvoice(id, date), currency_code: null };
+  }
+
+  it('reports the rest of the month and lists a document without a currency under missingInfo', async () => {
+    const { injector } = createInjector([
+      expenseInvoice('good-1', '2024-01-10'),
+      noCurrency('no-currency', '2024-01-11'),
+      expenseInvoice('good-2', '2024-01-12'),
+    ]);
+
+    const report = await getVatRecords({ filters }, injector);
+
+    expect(report.expenses.map(record => record.documentId).sort()).toEqual(['good-1', 'good-2']);
+    expect(report.income).toEqual([]);
+    expect(report.missingInfo.map(charge => charge.id)).toEqual(['charge-no-currency']);
+    // A charge-level validation that passes must not move it to differentMonthDoc instead.
+    expect(report.differentMonthDoc).toEqual([]);
+    expect(report.incompleteDocuments).toEqual([
+      { documentId: 'no-currency', chargeId: 'charge-no-currency', missingFields: ['currency'] },
+    ]);
+    expect(adjustTaxRecord).not.toHaveBeenCalledWith(
+      expect.objectContaining({ doc: expect.objectContaining({ id: 'no-currency' }) }),
+      injector,
+    );
+  });
+
+  it('sets aside documents missing an amount or a date the same way', async () => {
+    const { injector } = createInjector([
+      { ...expenseInvoice('no-amount', '2024-01-10'), total_amount: null },
+      { ...expenseInvoice('no-date', '2024-01-11'), date: null },
+      expenseInvoice('good', '2024-01-12'),
+    ]);
+
+    const report = await getVatRecords({ filters }, injector);
+
+    expect(report.expenses.map(record => record.documentId)).toEqual(['good']);
+    expect(report.missingInfo.map(charge => charge.id).sort()).toEqual([
+      'charge-no-amount',
+      'charge-no-date',
+    ]);
+    expect(report.incompleteDocuments.map(doc => doc.missingFields)).toEqual([
+      ['amount'],
+      ['date'],
+    ]);
+  });
+
+  it('lists an income invoice without an amount instead of leaving it out', async () => {
+    // Income invoices are only candidates with a positive amount; a missing one must not hide it.
+    const incomeInvoice = (id: string, totalAmount: number | null) => ({
+      ...expenseInvoice(id, '2024-01-10'),
+      creditor_id: OWNER_ID,
+      debtor_id: SUPPLIER_ID,
+      total_amount: totalAmount,
+    });
+    const { injector } = createInjector([
+      incomeInvoice('income-good', 117),
+      incomeInvoice('income-no-amount', null),
+      incomeInvoice('income-zero', 0),
+    ]);
+
+    const report = await getVatRecords({ filters }, injector, { includeChargeBuckets: false });
+
+    expect(report.income.map(record => record.documentId)).toEqual(['income-good']);
+    expect(report.incompleteDocuments).toEqual([
+      {
+        documentId: 'income-no-amount',
+        chargeId: 'charge-income-no-amount',
+        missingFields: ['amount'],
+      },
+    ]);
+  });
+
+  it('still reports incomplete documents when the charge buckets are skipped', async () => {
+    const { injector } = createInjector([
+      expenseInvoice('good', '2024-01-10'),
+      noCurrency('no-currency', '2024-01-11'),
+    ]);
+
+    const report = await getVatRecords({ filters }, injector, { includeChargeBuckets: false });
+
+    expect(report.expenses.map(record => record.documentId)).toEqual(['good']);
+    expect(report.missingInfo).toEqual([]);
+    expect(report.incompleteDocuments.map(doc => doc.documentId)).toEqual(['no-currency']);
   });
 });
 
