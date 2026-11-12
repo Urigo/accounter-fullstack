@@ -1,8 +1,11 @@
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 import type { Pool } from 'pg';
 import { getTenantDbClientStats } from '../modules/app-providers/tenant-db-client.js';
+import { log } from './log.js';
 
 const NS_PER_MS = 1e6;
+/** How often an idle pool still reports, as proof the event loop is turning. */
+const DEFAULT_IDLE_REPORT_INTERVAL_MS = 5 * 60_000;
 
 export interface PoolMonitorOptions {
   pool: Pool;
@@ -10,6 +13,11 @@ export interface PoolMonitorOptions {
   intervalMs: number;
   /** Pool size, for saturation reporting. */
   max: number;
+  /**
+   * While the pool is idle (nothing checked out, waiting or held), report only this often instead of
+   * every `intervalMs`. Defaults to 5 minutes.
+   */
+  idleReportIntervalMs?: number;
 }
 
 /**
@@ -20,19 +28,36 @@ export interface PoolMonitorOptions {
  * `pool.connect()` forever. `waiting > 0` alongside `idle === 0` is that state,
  * visible in a single line, and the heartbeat continuing to print at all is
  * proof the event loop is still turning.
+ *
+ * An idle pool — nothing checked out, waiting or held — reports only every
+ * `idleReportIntervalMs`: at every tick it was most of the production log, and
+ * an idle snapshot says nothing the next one won't.
  */
-export function startPoolMonitor({ pool, intervalMs, max }: PoolMonitorOptions): {
+export function startPoolMonitor({
+  pool,
+  intervalMs,
+  max,
+  idleReportIntervalMs = DEFAULT_IDLE_REPORT_INTERVAL_MS,
+}: PoolMonitorOptions): {
   stop: () => void;
 } {
   const loopDelay = monitorEventLoopDelay({ resolution: 20 });
   loopDelay.enable();
+  let lastReportAt = Number.NEGATIVE_INFINITY;
 
   const timer = setInterval(() => {
     const clients = getTenantDbClientStats();
-    const saturated = pool.waitingCount > 0 || pool.totalCount - pool.idleCount >= max;
+    const checkedOut = pool.totalCount - pool.idleCount;
+    const saturated = pool.waitingCount > 0 || checkedOut >= max;
+    const idle = checkedOut === 0 && pool.waitingCount === 0 && clients.holdingConnection === 0;
+    const now = Date.now();
+    if (idle && now - lastReportAt < idleReportIntervalMs) {
+      // Not reset: the next reported p99 covers every tick since the last report.
+      return;
+    }
+    lastReportAt = now;
 
     const snapshot = {
-      msg: 'db-pool-heartbeat',
       pool: {
         total: pool.totalCount,
         idle: pool.idleCount,
@@ -48,9 +73,9 @@ export function startPoolMonitor({ pool, intervalMs, max }: PoolMonitorOptions):
 
     // A saturated pool is one step from wedging every request — say so loudly.
     if (saturated) {
-      console.error(JSON.stringify({ ...snapshot, level: 'error', saturated: true }));
+      log('error', 'db-pool-heartbeat', { ...snapshot, saturated: true });
     } else {
-      console.log(JSON.stringify(snapshot));
+      log('info', 'db-pool-heartbeat', snapshot);
     }
 
     loopDelay.reset();
