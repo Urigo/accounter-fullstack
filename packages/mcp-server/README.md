@@ -13,6 +13,8 @@ See the design docs:
 - [`docs/connecting-clients.md`](./docs/connecting-clients.md) — connecting Claude and Cursor, and
   the Auth0 app record for each
 - [`docs/submission-checklist.md`](./docs/submission-checklist.md) — connector submission readiness
+- [`docs/graphql-schema-tool-evaluation.md`](./docs/graphql-schema-tool-evaluation.md) — evaluation
+  of exposing a filtered GraphQL schema + a schema-navigation tool (proposal)
 
 ## Status
 
