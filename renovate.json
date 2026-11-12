@@ -15,6 +15,17 @@
       "(^|/)website-cf/action\\.ya?ml"
     ]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "changesets-dependencies-action, run from a `run:` step in pr.yml rather than `uses:`",
+      "fileMatch": ["^\\.github/workflows/pr\\.yml$"],
+      "matchStrings": [
+        "ACTION_REPO: (?<depName>[\\w.-]+/[\\w.-]+)\\s+ACTION_SHA: (?<currentDigest>[0-9a-f]{40}) # (?<currentValue>v\\S+)"
+      ],
+      "datasourceTemplate": "github-tags"
+    }
+  ],
   "recreateWhen": "auto",
   "prConcurrentLimit": 25,
   "labels": ["dependencies"],
