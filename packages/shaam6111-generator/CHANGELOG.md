@@ -1,5 +1,12 @@
 # @accounter/shaam6111-generator
 
+## 0.1.10
+
+### Patch Changes
+
+- [#4663](https://github.com/Urigo/accounter-fullstack/pull/4663) [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.6.7` ↗︎](https://www.npmjs.com/package/zod/v/4.6.7) (from `4.6.5`, in `dependencies`)
+
 ## 0.1.9
 
 ### Patch Changes

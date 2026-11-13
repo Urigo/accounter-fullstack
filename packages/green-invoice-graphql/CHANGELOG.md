@@ -1,5 +1,127 @@
 # @accounter-toolkit/green-invoice-graphql
 
+## 0.9.0
+
+### Minor Changes
+
+- [#4632](https://github.com/Urigo/accounter-fullstack/pull/4632) [`0aecf53`](https://github.com/Urigo/accounter-fullstack/commit/0aecf535d624a3f4c233075e8fde6faac67f4053) Thanks [@renovate](https://github.com/apps/renovate)! - Generate the SDK with GraphQL Code Generator v6 (`typescript` 6, `typescript-operations` 6). Schema
+  types now live in their own generated module (still re-exported from the package root), and operation
+  result types follow the v6 nullability rules: a nullable field is typed `T | null` and is always
+  present, instead of optional (`field?: T | null`).
+
+- [#4592](https://github.com/Urigo/accounter-fullstack/pull/4592) [`66402a5`](https://github.com/Urigo/accounter-fullstack/commit/66402a500987c81b2d3fc530694b0f996430983c) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Type the Green Invoice `Date` scalar as a `yyyy-mm-dd` string pattern
+  (`` `${number}-${number}-${number}` ``) instead of `string`, matching the server's
+  `TimelessDateString`, so document dates need no type assertion downstream.
+
+- [#529](https://github.com/Urigo/accounter-fullstack/pull/529) [`abd0493`](https://github.com/Urigo/accounter-fullstack/commit/abd0493a80c7da683ac67ac268a45abec9e8f936) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Migrate from GraphQL Mesh v0 to v1. The REST API is now composed with `mesh-compose` into a supergraph,
+  the typed SDK is generated with GraphQL Code Generator, and operations run in-process through
+  `@graphql-mesh/fusion-runtime`. The public API is unchanged (`init`, `getMeshSDK`, `Sdk` and the
+  generated type names), and the runtime Mesh dependencies drop from eight packages to two.
+  `getMeshSDK` also accepts an optional `fetch` in its context, for example to run tests offline.
+  The `GreenInvoiceNew` source is split into `GreenInvoiceFileUpload` and `GreenInvoiceOpenBanking`
+  so that each sets its `queryStringOptions` at source level, the only level Mesh's config accepts
+  (this also removes the `Configuration file is not valid!` warnings v0's `mesh build` printed). The
+  query strings sent to the API are unchanged.
+
+- [#4948](https://github.com/Urigo/accounter-fullstack/pull/4948) [`46dacae`](https://github.com/Urigo/accounter-fullstack/commit/46dacaedb5b1c3f47db731b88f207072ee1a2974) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Reuse Green Invoice access tokens across requests. The package adds `GreenInvoiceTokenCache`, which
+  caches a token per API key ID until 5 minutes before it expires and shares one token request between
+  concurrent callers, and `createGreenInvoiceSdk`, an SDK that takes its token from that cache on each
+  call and, if the API answers 401, drops the token and retries once with a new one (a replacement that
+  is rejected too is dropped as well). The cache keeps only a hash of each secret, and
+  `invalidate(id)` evicts a removed key entirely. `obtainAccessToken` and `isUnauthorizedError` are
+  exported too; `init` is unchanged. The server now keeps one app-wide token cache instead of
+  requesting a new token for every GraphQL operation that calls Green Invoice, and clears it when
+  Green Invoice credentials are replaced or deleted. Each eviction (`invalidate(id)` or `clear()`)
+  advances the cache's `epoch`; an SDK built from credentials read before an eviction
+  (`createGreenInvoiceSdk`'s `epoch` option) gets uncached tokens, so a removed key can't put its token
+  back.
+
+### Patch Changes
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.12.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.12.3) (from `1.12.1`, in `dependencies`)
+
+- [#4663](https://github.com/Urigo/accounter-fullstack/pull/4663) [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/transport-rest@0.12.3` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transport-rest/v/0.12.3) (from `0.12.2`, in `dependencies`)
+
+- [#4725](https://github.com/Urigo/accounter-fullstack/pull/4725) [`6a5f5b6`](https://github.com/Urigo/accounter-fullstack/commit/6a5f5b68ac675498cc3164ffc960d20c5524623c) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/transport-rest@0.12.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transport-rest/v/0.12.4) (from `0.12.3`, in `dependencies`)
+
+- [#4771](https://github.com/Urigo/accounter-fullstack/pull/4771) [`b13ce9c`](https://github.com/Urigo/accounter-fullstack/commit/b13ce9c11b690909367418625e2307421bae54f2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.0` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.0) (from `1.12.3`, in `dependencies`)
+
+- [#4772](https://github.com/Urigo/accounter-fullstack/pull/4772) [`593ec81`](https://github.com/Urigo/accounter-fullstack/commit/593ec810870358bee0d9d0b5806e03bd32ee735b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.0` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.0) (from `1.12.3`, in `dependencies`)
+
+- [#4773](https://github.com/Urigo/accounter-fullstack/pull/4773) [`f92ab61`](https://github.com/Urigo/accounter-fullstack/commit/f92ab612b56409ed71d733e888b62838b5300fbf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.0` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.0) (from `1.12.3`, in `dependencies`)
+
+- [#4801](https://github.com/Urigo/accounter-fullstack/pull/4801) [`66464f8`](https://github.com/Urigo/accounter-fullstack/commit/66464f894b95cc5abb558c3a73bdb1ddc243ff14) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.0` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.0) (from `1.12.3`, in `dependencies`)
+
+- [#4874](https://github.com/Urigo/accounter-fullstack/pull/4874) [`1dec193`](https://github.com/Urigo/accounter-fullstack/commit/1dec19379335c45fe21a7d4bd7667921783ac8da) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.1) (from `1.13.0`, in `dependencies`)
+
+- [#4894](https://github.com/Urigo/accounter-fullstack/pull/4894) [`aceaaf6`](https://github.com/Urigo/accounter-fullstack/commit/aceaaf6e20b5f77623489edd58ce5dc10cde0969) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.1) (from `1.13.0`, in `dependencies`)
+
+- [#4895](https://github.com/Urigo/accounter-fullstack/pull/4895) [`22fa0ec`](https://github.com/Urigo/accounter-fullstack/commit/22fa0ec02054f9286449c18253315fdad8394650) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.1) (from `1.13.0`, in `dependencies`)
+
+- [#4896](https://github.com/Urigo/accounter-fullstack/pull/4896) [`c1a9d43`](https://github.com/Urigo/accounter-fullstack/commit/c1a9d43cc77faa4b88ab8a9b0322d8dfe39c1a97) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.1) (from `1.13.0`, in `dependencies`)
+
+- [#4898](https://github.com/Urigo/accounter-fullstack/pull/4898) [`e02265e`](https://github.com/Urigo/accounter-fullstack/commit/e02265e2e2d4f6dd1a1139aa786cdb14a3304b36) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.2) (from `1.13.1`, in `dependencies`)
+
+- [#4913](https://github.com/Urigo/accounter-fullstack/pull/4913) [`0331df4`](https://github.com/Urigo/accounter-fullstack/commit/0331df4e3289bbce5a5dc236b09732d5ed35a892) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.2) (from `1.13.1`, in `dependencies`)
+
+- [#4914](https://github.com/Urigo/accounter-fullstack/pull/4914) [`89ae7a9`](https://github.com/Urigo/accounter-fullstack/commit/89ae7a990e6c9bc2c24843b7c26b7eeb3fdbd404) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`@graphql-mesh/fusion-runtime@1.13.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.13.4) (from `1.13.2`, in `dependencies`)
+
+- [#4923](https://github.com/Urigo/accounter-fullstack/pull/4923) [`40572a6`](https://github.com/Urigo/accounter-fullstack/commit/40572a61467039821782104d41c45ed10faa2448) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`graphql@16.15.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.15.0) (from `16.14.2`, in `dependencies`)
+
+- [#4947](https://github.com/Urigo/accounter-fullstack/pull/4947) [`6acbc70`](https://github.com/Urigo/accounter-fullstack/commit/6acbc70c0c9a955a7547cbcb2ee6d2ae21d9cfbc) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Added dependency [`@graphql-hive/logger@1.1.1` ↗︎](https://www.npmjs.com/package/@graphql-hive/logger/v/1.1.1) (to `dependencies`)
+
+- [#529](https://github.com/Urigo/accounter-fullstack/pull/529) [`abd0493`](https://github.com/Urigo/accounter-fullstack/commit/abd0493a80c7da683ac67ac268a45abec9e8f936) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Added dependency [`@graphql-mesh/fusion-runtime@1.12.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/fusion-runtime/v/1.12.1) (to `dependencies`)
+    - Added dependency [`@graphql-mesh/transport-rest@0.12.2` ↗︎](https://www.npmjs.com/package/@graphql-mesh/transport-rest/v/0.12.2) (to `dependencies`)
+    - Removed dependency [`@graphql-mesh/config@0.111.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/config/v/0.111.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/cross-helpers@0.4.16` ↗︎](https://www.npmjs.com/package/@graphql-mesh/cross-helpers/v/0.4.16) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/http@0.109.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/http/v/0.109.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/json-schema@0.112.4` ↗︎](https://www.npmjs.com/package/@graphql-mesh/json-schema/v/0.112.4) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/runtime@0.109.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/runtime/v/0.109.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/store@0.107.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/store/v/0.107.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/types@0.107.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/types/v/0.107.1) (from `dependencies`)
+    - Removed dependency [`@graphql-mesh/utils@0.107.1` ↗︎](https://www.npmjs.com/package/@graphql-mesh/utils/v/0.107.1) (from `dependencies`)
+    - Removed dependency [`path@0.12.7` ↗︎](https://www.npmjs.com/package/path/v/0.12.7) (from `dependencies`)
+
+- [#4947](https://github.com/Urigo/accounter-fullstack/pull/4947) [`6acbc70`](https://github.com/Urigo/accounter-fullstack/commit/6acbc70c0c9a955a7547cbcb2ee6d2ae21d9cfbc) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Stop logging credentials and personal data:
+  
+  - The Green Invoice Mesh client sets its transport log level from a new `GREEN_INVOICE_LOG_LEVEL`
+    env var (`trace` | `debug` | `info` | `warn` | `error`, default `info`; an unknown value warns
+    and falls back to `info`). The generic `DEBUG` / `LOG_LEVEL` no longer turn on the REST
+    transport's request dumps (`Authorization: Bearer …` headers and response bodies). Adds
+    `@graphql-hive/logger` as a dependency.
+  - The server's log level comes from a new, validated `SERVER_LOG_LEVEL` (`debug` | `info` | `warn` |
+    `error`, default `info`; an unknown value fails startup). It is one setting for Yoga and Hive,
+    which forwards its logs to Yoga's logger, and `DEBUG=1` no longer adds per-request debug lines.
+  - Recovery-reserve calculation no longer prints employee first names or reserve amounts.
+  - A rejected JWT logs only its jose `code` and `message`, never the claims; an expired one isn't
+    logged.
+  - A failed document upload from a URL logs only the URL's host and the error class, and `Not a valid
+    URL` no longer echoes the value.
+  - `formatFinancialIntAmount` rounds without warning, and the VAT report rounds its pre-VAT amounts
+    before formatting them.
+  - Removed per-render `no image url` / `no file url` logs, and the `console.error`s ahead of
+    accommodation `BusinessTripError`s. Updating a business that isn't a Green Invoice client no
+    longer warns.
+  - `business(id)` for a missing business is a `NOT_FOUND` `GraphQLError`, instead of a masked
+    `Unexpected error.`
+
 ## 0.8.7
 
 ### Patch Changes
