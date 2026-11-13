@@ -318,7 +318,7 @@ __metadata:
     typescript: "npm:6.0.3"
     vite: "npm:8.3.8"
     vitest: "npm:5.1.0"
-    ws: "npm:8.22.2"
+    ws: "npm:8.23.0"
     zod: "npm:4.6.7"
   languageName: unknown
   linkType: soft
@@ -26404,7 +26404,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:8.22.2, ws@npm:^8.15.0, ws@npm:^8.16.0, ws@npm:^8.21.0, ws@npm:^8.21.1, ws@npm:^8.21.3, ws@npm:^8.22.0, ws@npm:^8.5.0":
+"ws@npm:8.23.0":
+  version: 8.23.0
+  resolution: "ws@npm:8.23.0"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 10c0/1de9b70701c03cdb1b22abd17a1488dc6d22b4dc36a8c32b173d955356ea3634e78aea8ec734a78201dbb34f5a402d9603df32ef267bd477228cd54ae158e2f8
+  languageName: node
+  linkType: hard
+
+"ws@npm:^8.15.0, ws@npm:^8.16.0, ws@npm:^8.21.0, ws@npm:^8.21.1, ws@npm:^8.21.3, ws@npm:^8.22.0, ws@npm:^8.5.0":
   version: 8.22.2
   resolution: "ws@npm:8.22.2"
   peerDependencies:
