@@ -62,6 +62,6 @@
     "@types/node": "26.6.6",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "wrangler": "4.160.1"
+    "wrangler": "4.162.0"
   }
 }
