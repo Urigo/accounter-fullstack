@@ -303,6 +303,77 @@ export interface LedgerExpectation {
  * };
  * ```
  */
+/**
+ * Business trip data in a fixture
+ *
+ * A business-trip charge is only recognised as one once it is linked to a trip, and its
+ * transactions only pass ledger validation once they are matched to the trip's expenses — so a
+ * fixture for such a charge needs all four pieces below.
+ */
+export interface FixtureBusinessTrips {
+  /**
+   * The trips themselves. `name` is unique across the table.
+   */
+  trips: Array<{
+    id: string;
+    name: string;
+    /** Country code, e.g. 'FRA'. Must exist in the countries table. */
+    destination?: string | null;
+    tripPurpose?: string | null;
+    ownerId: string;
+  }>;
+
+  /**
+   * Links a charge to the trip it belongs to. Without it the charge is not a trip charge.
+   */
+  chargeLinks?: Array<{
+    businessTripId: string;
+    chargeId: string;
+    ownerId: string;
+  }>;
+
+  /**
+   * Trip expenses. An 'OTHER' expense also gets its detail row; the other categories carry
+   * category-specific detail tables that fixtures do not need yet.
+   */
+  expenses?: Array<{
+    id: string;
+    businessTripId: string;
+    category: 'FLIGHT' | 'ACCOMMODATION' | 'TRAVEL_AND_SUBSISTENCE' | 'OTHER' | 'CAR_RENTAL';
+    description?: string | null;
+    ownerId: string;
+  }>;
+
+  /**
+   * Matches a trip expense to the transaction that paid for it. Ledger generation rejects a trip
+   * transaction with no match, and one whose matched amounts do not add up to the transaction.
+   */
+  transactionMatches?: Array<{
+    businessTripExpenseId: string;
+    transactionId: string;
+    /** Signed amount, as the transaction carries it (e.g. '-360.00'). */
+    amount: string;
+    ownerId: string;
+  }>;
+}
+
+/**
+ * VAT rates in a fixture
+ *
+ * `vat_value` is global reference data with no owner: a document carrying a VAT amount is
+ * rejected by ledger generation unless a rate dated on or before the document covers it. Pick a
+ * date that only covers this fixture's own documents, so concurrently running suites are not
+ * given a rate they did not ask for.
+ */
+export interface FixtureVatValues {
+  values: Array<{
+    /** ISO date the rate takes effect from. */
+    date: string;
+    /** Rate as a fraction, e.g. 0.18 for 18%. */
+    percentage: number;
+  }>;
+}
+
 export interface Fixture {
   /**
    * Business entities in this fixture
@@ -338,6 +409,16 @@ export interface Fixture {
    * Documents in this fixture
    */
   documents?: FixtureDocuments;
+
+  /**
+   * Business trips, their charge links, expenses and transaction matches
+   */
+  businessTrips?: FixtureBusinessTrips;
+
+  /**
+   * VAT rates required by this fixture's documents
+   */
+  vatValues?: FixtureVatValues;
 
   /**
    * Expected outcomes for assertions
