@@ -288,8 +288,9 @@ export const getVatRecords = async (
   } catch (e) {
     // The only line with the stack: the error is rethrown as a plain `GraphQLError` so the user sees
     // its message, which the request log records as an expected error. `warn`, not `error`: most
-    // failures here are a document missing an amount, currency or date, which is the user's data to
-    // fix (#4946 turns those into per-document findings instead of a failed report).
+    // failures here are the user's data to fix, such as a missing VAT rate or a property charge
+    // without depreciation records. A document missing an amount, currency or date no longer gets
+    // here: it is set aside above and listed in `incompleteDocuments` (#4946).
     log('warn', 'vat-report-records-failed', {
       failedRecordCount: failedRecords.length,
       failedRecords: failedRecords.slice(0, MAX_LOGGED_FAILED_RECORDS).map(failure => ({
