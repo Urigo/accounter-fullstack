@@ -10,7 +10,8 @@ import type { DbRequestState } from '../../shared/types/index.js';
 import { AuthContextProvider } from '../auth/providers/auth-context.provider.js';
 import { DBProvider } from './db.provider.js';
 
-const { log } = getLogger(import.meta.url);
+// The DB client's lines (leaks, disposal, connection errors) share the `db` module with the pool's.
+const { log } = getLogger(import.meta.url, { module: 'db' });
 
 /**
  * Statements that may modify data (or session/schema state). Used to decide

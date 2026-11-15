@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 import { getTenantDbClientStats } from '../modules/app-providers/tenant-db-client.js';
 import { getLogger } from './log.js';
 
-const { log } = getLogger(import.meta.url);
+const { log } = getLogger(import.meta.url, { module: 'db' });
 
 const NS_PER_MS = 1e6;
 /** How often an idle pool still reports, as proof the event loop is turning. */

@@ -20,9 +20,11 @@ Every line says where it came from:
 | `env`       | `OTEL_DEPLOYMENT_ENV`, else `NODE_ENV`, else `development`.                                                                                                                                                                     |
 | `release`   | `RELEASE` (e.g. the deployed git sha or tag); omitted when unset.                                                                                                                                                               |
 
-`module` / `component` come from `getLogger(import.meta.url)` (see below); `service` / `env` /
-`release` are set once at startup. A module's directory name **is** its log module: a test walks
-`src/modules` to keep it that way. Lines still written with `console.*`, and Yoga's own lines
+`module` / `component` come from `getLogger(import.meta.url)` (see below). Infra scopes that cut
+across files replace the derived module: `getLogger(import.meta.url, { module: 'db' })` for the DB
+client, pool monitor and pool errors, `shutdown` for process shutdown in `index.ts`; `service` /
+`env` / `release` are set once at startup. A module's directory name **is** its log module: a test
+walks `src/modules` to keep it that way. Lines still written with `console.*`, and Yoga's own lines
 (`source: "yoga"`), carry no `module` / `component` yet.
 
 Levels: `fatal` the process is going down · `error` a server fault someone should look at · `warn`

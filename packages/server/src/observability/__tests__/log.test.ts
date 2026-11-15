@@ -271,6 +271,19 @@ describe('origin tags', () => {
     ]);
   });
 
+  it('lets an infra scope replace the derived module, keeping the component', () => {
+    const { log: dbLog } = getLogger(
+      'file:///app/packages/server/src/modules/app-providers/tenant-db-client.ts',
+      { module: 'db' },
+    );
+
+    dbLog('error', 'db-thing-failed');
+
+    expect(records()).toEqual([
+      expect.objectContaining({ msg: 'db-thing-failed', module: 'db', component: 'tenant-db-client' }),
+    ]);
+  });
+
   it('stamps base fields on every record, below the call site and never over msg/level/time', () => {
     setLogBaseFields({ service: 'accounter-server', env: 'test', release: 'abc123', msg: 'shadow' });
 

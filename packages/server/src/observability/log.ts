@@ -165,9 +165,13 @@ export function originOf(url: string): LogOrigin {
  * ```ts
  * const { log } = getLogger(import.meta.url);
  * ```
+ *
+ * `override` replaces part of the derived origin, for infra scopes that cut across files: the DB
+ * client and pool are `db`, process shutdown is `shutdown`
+ * (`getLogger(import.meta.url, { module: 'db' })`).
  */
-export function getLogger(url: string): ScopedLogger {
-  const origin = originOf(url);
+export function getLogger(url: string, override?: Partial<LogOrigin>): ScopedLogger {
+  const origin = { ...originOf(url), ...override };
   const scoped = (level: LogLevel, msg: string, fields?: LogFields) =>
     log(level, msg, { ...origin, ...fields });
   return {
