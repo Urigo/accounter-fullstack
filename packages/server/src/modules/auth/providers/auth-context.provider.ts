@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { GraphQLError } from 'graphql';
-import { Inject, Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
 import type { RawAuth } from '../../../plugins/auth-plugin.js';
 import {
@@ -96,6 +96,8 @@ export class AuthContextProvider {
     @Inject(ENVIRONMENT) private env: Environment,
     @Inject(RAW_AUTH) private rawAuth: RawAuth,
     @Inject(DBProvider) private db: DBProvider,
+    // Optional: absent when the provider is built directly (tests, scripts).
+    @Optional() @Inject(CONTEXT) private requestContext?: GraphQLModules.GlobalContext,
   ) {}
 
   /**
@@ -168,26 +170,41 @@ export class AuthContextProvider {
     }
 
     if (this.rawAuth.authType === 'jwt') {
-      this.handlingAuth = this.handleJwtAuth();
+      this.handlingAuth = this.recordingIdentity(this.handleJwtAuth());
       return this.handlingAuth;
     }
 
     if (this.rawAuth.authType === 'apiKey') {
-      this.handlingAuth = this.handleApiKeyAuth();
+      this.handlingAuth = this.recordingIdentity(this.handleApiKeyAuth());
       return this.handlingAuth;
     }
 
     if (this.rawAuth.authType === 'devBypass') {
-      this.handlingAuth = this.handleDevBypassAuth();
+      this.handlingAuth = this.recordingIdentity(this.handleDevBypassAuth());
       return this.handlingAuth;
     }
 
     if (this.rawAuth.authType === 'gatewayControlPlane') {
-      this.handlingAuth = this.handleGatewayControlPlaneAuth();
+      this.handlingAuth = this.recordingIdentity(this.handleGatewayControlPlaneAuth());
       return this.handlingAuth;
     }
 
     return null;
+  }
+
+  /**
+   * Records who the operation runs as on the request log (`requestLogPlugin`), once auth resolves.
+   * Internal IDs only: never the email or the token.
+   */
+  private recordingIdentity(pending: Promise<AuthContext | null>): Promise<AuthContext | null> {
+    return pending.then(context => {
+      const state = this.requestContext?.requestLog;
+      if (state && context) {
+        state.userId = context.user?.userId ?? null;
+        state.businessId = context.tenant.businessId || null;
+      }
+      return context;
+    });
   }
 
   /**

@@ -3,7 +3,10 @@ import { type Span, trace } from '@opentelemetry/api';
 import {
   CORRELATION_ID_ATTRIBUTE,
   CORRELATION_ID_HEADER,
+  correlationIdOf,
   correlationIdPlugin,
+  REQUEST_ID_HEADER,
+  requestIdOf,
 } from '../correlation-id-plugin.js';
 
 /** Minimal `onRequest` payload with only the header lookup the plugin uses. */
@@ -56,9 +59,67 @@ describe('correlationIdPlugin', () => {
     expect(getActiveSpan).not.toHaveBeenCalled();
   });
 
-  it('does not throw when there is no active span (OTEL disabled)', () => {
-    vi.spyOn(trace, 'getActiveSpan').mockReturnValue(undefined);
+  it('ignores a malformed correlation id', () => {
+    const getActiveSpan = vi.spyOn(trace, 'getActiveSpan');
 
-    expect(() => correlationIdPlugin().onRequest?.(onRequestArg('corr-1'))).not.toThrow();
+    correlationIdPlugin().onRequest?.(onRequestArg('corr id with spaces'));
+
+    expect(getActiveSpan).not.toHaveBeenCalled();
+  });
+
+  it('does not throw when there is no active span (OTEL disabled)', () => {
+    const getActiveSpan = vi.spyOn(trace, 'getActiveSpan').mockReturnValue(undefined);
+
+    expect(() => correlationIdPlugin().onRequest?.(onRequestArg('corr-0001'))).not.toThrow();
+    expect(getActiveSpan).toHaveBeenCalled();
+  });
+});
+
+describe('requestIdOf', () => {
+  const request = (headers: Record<string, string>) =>
+    new Request('http://localhost/graphql', { headers });
+
+  it('takes the OTel trace id first, so the line pivots to its trace', () => {
+    const traceId = '0af7651916cd43dd8448eb211c80319c';
+    vi.spyOn(trace, 'getActiveSpan').mockReturnValue({
+      spanContext: () => ({ traceId, spanId: 'b7ad6b7169203331', traceFlags: 1 }),
+    } as unknown as Span);
+
+    expect(requestIdOf(request({}))).toBe(traceId);
+    // A client can't override it, and an invalid header doesn't matter.
+    expect(requestIdOf(request({ [REQUEST_ID_HEADER]: 'req-0001' }))).toBe(traceId);
+    expect(requestIdOf(request({ [REQUEST_ID_HEADER]: 'req id 0001' }))).toBe(traceId);
+  });
+
+  it('takes a valid X-Request-Id when there is no trace', () => {
+    expect(requestIdOf(request({ [REQUEST_ID_HEADER]: ' req-0001 ' }))).toBe('req-0001');
+  });
+
+  it('never uses the correlation id, which spans several requests', () => {
+    const first = request({ [CORRELATION_ID_HEADER]: 'corr-0001' });
+    const retry = request({ [CORRELATION_ID_HEADER]: 'corr-0001' });
+
+    expect(requestIdOf(first)).not.toBe('corr-0001');
+    expect(requestIdOf(first)).not.toBe(requestIdOf(retry));
+    expect(correlationIdOf(first)).toBe('corr-0001');
+  });
+
+  it.each([
+    ['too short', 'req-1'],
+    ['too long', 'x'.repeat(65)],
+    ['spaces', 'req id 0001'],
+    ['other characters', 'req/0001"}'],
+  ])('mints its own id instead of a header that is %s', (_label, value) => {
+    const id = requestIdOf(request({ [REQUEST_ID_HEADER]: value }));
+
+    expect(id).not.toBe(value);
+    expect(id).toMatch(/^[A-Za-z0-9._:-]{8,64}$/);
+    expect(correlationIdOf(request({ [CORRELATION_ID_HEADER]: value }))).toBeNull();
+  });
+
+  it('returns the same id for the same request, even a random one', () => {
+    const req = request({});
+
+    expect(requestIdOf(req)).toBe(requestIdOf(req));
   });
 });

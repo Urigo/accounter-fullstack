@@ -53,7 +53,7 @@
     "html2canvas-pro": "2.6.4",
     "iconv-lite": "0.7.3",
     "json-bigint-patch": "0.0.9",
-    "lucide-react": "1.68.0",
+    "lucide-react": "1.73.0",
     "next-themes": "0.4.6",
     "pdfjs-dist": "6.5.438",
     "radix-ui": "1.8.1",
@@ -62,7 +62,7 @@
     "react-dnd": "16.0.1",
     "react-dom": "19.3.1",
     "react-error-boundary": "6.1.6",
-    "react-hook-form": "7.91.0",
+    "react-hook-form": "7.92.0",
     "react-number-format": "5.4.5",
     "react-router-dom": "7.18.5",
     "react-to-pdf": "3.2.2",
@@ -93,7 +93,7 @@
     "typescript": "6.0.3",
     "vite": "8.3.8",
     "vite-plugin-node-polyfills": "0.28.0",
-    "wrangler": "4.160.1"
+    "wrangler": "4.162.0"
   },
   "overrides": {
     "react-is": "19.3.1"

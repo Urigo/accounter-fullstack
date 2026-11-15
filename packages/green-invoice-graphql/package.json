@@ -55,14 +55,14 @@
   },
   "dependencies": {
     "@graphql-hive/logger": "1.1.1",
-    "@graphql-mesh/fusion-runtime": "1.13.4",
+    "@graphql-mesh/fusion-runtime": "1.13.5",
     "@graphql-mesh/transport-rest": "0.12.4",
     "graphql": "16.15.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "8.0.0",
     "@graphql-codegen/typescript": "7.0.1",
-    "@graphql-codegen/typescript-generic-sdk": "6.0.0",
+    "@graphql-codegen/typescript-generic-sdk": "6.0.1",
     "@graphql-codegen/typescript-operations": "7.0.1",
     "@graphql-mesh/compose-cli": "1.8.4",
     "@graphql-tools/utils": "13.2.2",
