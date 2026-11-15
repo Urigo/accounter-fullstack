@@ -1,5 +1,6 @@
 import { Kind, type DocumentNode } from 'graphql';
-import { Plugin } from 'graphql-yoga';
+import { isAsyncIterable, Plugin } from 'graphql-yoga';
+import { log, serializeError } from '../observability/log.js';
 import type { AccounterContext, DbRequestState } from '../shared/types/index.js';
 import { requestIdOf } from './correlation-id-plugin.js';
 
@@ -104,6 +105,23 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
           }
         },
       };
+    },
+    onResultProcess({ result, resultProcessor }) {
+      // A streamed (`@defer`) result Yoga can't send, because the request's `Accept` header has no
+      // streaming type, is answered with a 406 and dropped unread. Its end never comes, so the
+      // wrapper above never ends execution, and nothing aborts the request either: the 406 response
+      // finished normally. The request's client would keep its connection, transaction open, until
+      // the watchdog reclaimed it as a leak. Cancelling the stream ends execution through that
+      // wrapper. Yoga picks its result processor before user plugins run, so a missing one here
+      // means the 406.
+      if (resultProcessor || !isAsyncIterable(result)) {
+        return;
+      }
+      void result[Symbol.asyncIterator]()
+        .return?.()
+        ?.catch(error => {
+          log('error', 'db-refused-stream-cancel-failed', { error: serializeError(error) });
+        });
     },
   };
 }
