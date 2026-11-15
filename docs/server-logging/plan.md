@@ -10,19 +10,19 @@
 
 ## Where things stand (main at `5d1f6b4d7`)
 
-| Area                      | Implemented                                                                                                                                                                                                                                                                                                                    | Where                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| Logger                    | `log(level, msg, fields)` and `logger.*`; one JSON line per record on **stdout** for every level (`msg`, `level`, `time`, fields); `fatal` always written; `SERVER_LOG_LEVEL` threshold (`setLogLevel`); EPIPE-safe writer                                                                                                     | `observability/log.ts`                                                       |
-| Seams                     | `setLogWriter` (where a finished line goes) and `setLogContextProvider` (fields merged into every record). **Neither has a production user yet.**                                                                                                                                                                              | `observability/log.ts`                                                       |
-| Safety                    | Credential-named keys redacted at any depth; every string scrubbed (JWT, `Bearer`/`Basic`, Slack webhook URLs, emails) and capped at 2000 chars; `serializeError` allowlist (name, message ≤500, code, path, 8 frames, `cause` chain; `GraphQLError` extensions never past `code`); `scrubText` exported                       | `observability/log.ts`                                                       |
-| Log once                  | `markLogged` / `wasLogged`; the Yoga logger skips errors already logged                                                                                                                                                                                                                                                        | `observability/log.ts` (`createYogaLogger`)                                  |
-| Request id                | `requestIdOf`: OTel trace id, else a valid `X-Request-Id`, else UUID, memoized per request; `correlationIdOf` separate; both headers validated (`^[A-Za-z0-9._:-]{8,64}$`)                                                                                                                                                     | `plugins/correlation-id-plugin.ts`                                           |
-| Request log               | One `graphql-operation` line per operation (incl. rejected-before-execution and `@defer`), one `graphql-error` line per distinct error with `count`/`paths`, `detailLogged` when a lower boundary logged it; identity (`userId`, `businessId` after the scope header) on a shared `context.requestLog`                         | `plugins/request-log-plugin.ts`, `AuthContextProvider.recordingIdentity`     |
-| Error classification      | `isUnexpectedGraphQLError`: masked by Yoga, or thrown on purpose with `INTERNAL_SERVER_ERROR`; the one predicate an alert must use                                                                                                                                                                                             | `observability/graphql-errors.ts`                                            |
-| DB lines                  | `db-leaked-connection-reclaimed`, `db-checked-out-client-error` (with `code`), `db-client-outside-live-request`, disposal failures: JSON with `operationName` and `requestId`; `db-pool-heartbeat` every 5 min when idle; watchdog ceilings validated at startup; `allSettledOrThrow` for fan-outs                             | `tenant-db-client.ts`, `pool-monitor.ts`, `index.ts`, `db-cleanup-plugin.ts` |
-| Lifecycle                 | `server-listening`, `server-shutting-down` (`fatal` after a crash, `info` on a signal), `server-shutdown-*`, `db-pool-idle-client-error`; no `process.std*.write` left in `src`                                                                                                                                                | `index.ts`                                                                   |
-| Other fixed leaks (#4947) | Recovery-reserve prints, JWT claim dump, per-render document logs removed; URL upload sources log only the host; Green Invoice Mesh logger level (`GREEN_INVOICE_LOG_LEVEL`); the logger never reads `DEBUG`; Green Invoice failures log `green-invoice-call-failed` with a scrubbed, capped upstream reason; VAT report fixed | `modules/**`                                                                 |
-| Docs                      | Format, levels, safety, request ids, record catalog, "log once"                                                                                                                                                                                                                                                                | `docs/operations/logging.md`                                                 |
+| Area                             | Implemented                                                                                                                                                                                                                                                                                                                                                                                 | Where                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Logger                           | `log(level, msg, fields)` and `logger.*`; one JSON line per record on **stdout** for every level (`msg`, `level`, `time`, fields); `fatal` always written; `SERVER_LOG_LEVEL` threshold (`setLogLevel`); EPIPE-safe writer                                                                                                                                                                  | `observability/log.ts`                                                       |
+| Seams                            | `setLogWriter` (where a finished line goes) and `setLogContextProvider` (fields merged into every record). **Neither has a production user yet.**                                                                                                                                                                                                                                           | `observability/log.ts`                                                       |
+| Safety                           | Credential-named keys redacted at any depth; every string scrubbed (JWT, `Bearer`/`Basic`, Slack webhook URLs, emails) and capped at 2000 chars; `serializeError` allowlist (name, message ≤500, code, path, 8 frames, `cause` chain; `GraphQLError` extensions never past `code`); `scrubText` exported                                                                                    | `observability/log.ts`                                                       |
+| Log once                         | `markLogged` / `wasLogged`; the Yoga logger skips errors already logged                                                                                                                                                                                                                                                                                                                     | `observability/log.ts` (`createYogaLogger`)                                  |
+| Request id                       | `requestIdOf`: OTel trace id, else a valid `X-Request-Id`, else UUID, memoized per request; `correlationIdOf` separate; both headers validated (`^[A-Za-z0-9._:-]{8,64}$`)                                                                                                                                                                                                                  | `plugins/correlation-id-plugin.ts`                                           |
+| Request log                      | One `graphql-operation` line per operation (incl. rejected-before-execution and `@defer`), one `graphql-error` line per distinct error with `count`/`paths`, `detailLogged` when a lower boundary logged it; identity (`userId`, `businessId` after the scope header) on a shared `context.requestLog`                                                                                      | `plugins/request-log-plugin.ts`, `AuthContextProvider.recordingIdentity`     |
+| Error classification             | `isUnexpectedGraphQLError`: masked by Yoga, or thrown on purpose with `INTERNAL_SERVER_ERROR`; the one predicate an alert must use                                                                                                                                                                                                                                                          | `observability/graphql-errors.ts`                                            |
+| DB lines                         | `db-leaked-connection-reclaimed`, `db-checked-out-client-error` (with `code`), `db-client-outside-live-request`, disposal failures: JSON with `operationName` and `requestId`; `db-pool-heartbeat` every 5 min when idle; watchdog ceilings validated at startup; `allSettledOrThrow` for fan-outs                                                                                          | `tenant-db-client.ts`, `pool-monitor.ts`, `index.ts`, `db-cleanup-plugin.ts` |
+| Lifecycle                        | `server-listening`, `server-shutting-down` (`fatal` after a crash, `info` on a signal), `server-shutdown-*`, `db-pool-idle-client-error`; no `process.std*.write` left in `src`                                                                                                                                                                                                             | `index.ts`                                                                   |
+| Other fixed leaks (#4947, #4980) | Recovery- and vacation-reserve prints (vacation-reserve errors name employees by ID), JWT claim dump, per-render document logs removed; URL upload sources log only the host; Green Invoice Mesh logger level (`GREEN_INVOICE_LOG_LEVEL`); the logger never reads `DEBUG`; Green Invoice failures log `green-invoice-call-failed` with a scrubbed, capped upstream reason; VAT report fixed | `modules/**`                                                                 |
+| Docs                             | Format, levels, safety, request ids, record catalog, "log once"                                                                                                                                                                                                                                                                                                                             | `docs/operations/logging.md`                                                 |
 
 **Not done:**
 
@@ -30,19 +30,15 @@
   `release`. This is the original "clear where logs came from" requirement.
 - **No ambient context.** Only the request-log lines and the DB lines know the request id, user and
   business; any other `log()` call (and every `console.*`) knows nothing about the request.
-- **386 live `console.*` calls remain** in about 30 module directories (charges 39, documents 34,
+- **383 live `console.*` calls remain** in about 30 module directories (charges 39, documents 34,
   business-trips 34, financial-entities 33, app-providers 29, auth 24, deel 21, reports 20, ledger
-  20, transactions 11, tags 11, …), plus `errorSimplifier` (77 call sites, `shared/errors.ts`, still
+  17, transactions 11, tags 11, …), plus `errorSimplifier` (77 call sites, `shared/errors.ts`, still
   `console.error` with a multi-line dump), `jobs/utils.ts`, `plugins/auth-plugin.ts` and
   `telemetry/`. 20 test files spy on `console`. ESLint `no-console` is still only a warning.
 - **The crash path is unchanged:** `gracefulShutdown` awaits `server.close()` before arming the
   force-exit timer, the process handlers are registered at the end of `main()`, and `main()` has no
   `.catch`.
 - **No Slack notifier**, no `onCommitted` hook, no alerting of any kind.
-- **A live leak #4947 missed:** `modules/ledger/helpers/vacation-reserve.helper.ts` (the sibling of
-  the fixed recovery-reserve helper) still prints each employee's first name and reserve amount via
-  `console.log` (lines 116 and 122) and `console.debug(reservesPrompt)` (line 215). The recovery
-  reserve fix applies as is: delete the prints. This needs no logger, so it ships first (PR 0).
 - Open issue #4946 (VAT report data-quality) is a separate bug fix.
 
 ## Goals and decisions
@@ -235,18 +231,19 @@ reviewed; splice by node range, then Prettier; leave the 62 bare `console.error(
 - Where a helper logs an error and rethrows it, delete the log and let the boundary log it ("log
   once"). #4946 is the VAT example.
 - Delete rather than migrate: the `TEMP` lines in `coinmarketcap.ts` (`${res}` prints
-  `[object Response]`), the vacation-reserve prints below, and per-record debug lines such as
-  `pcn.helper.ts:86,238` (aggregate them into one summary line, or drop them). Guard expensive debug
-  payloads with `isLogLevelEnabled`. Deel's raw request and response dumps
-  (`deel-client.provider.ts`, 14 calls) become `{ status, bytes, contentType }`.
+  `[object Response]`) and per-record debug lines such as `pcn.helper.ts:86,238` (aggregate them
+  into one summary line, or drop them). Guard expensive debug payloads with `isLogLevelEnabled`.
+  Deel's raw request and response dumps (`deel-client.provider.ts`, 14 calls) become
+  `{ status, bytes, contentType }`.
 
-**Merged rules a sweep must not regress (#4947, #4954 stack):** URLs are logged as host only; an
-expired JWT is not logged and any other jose error logs only `{ code, message }`; Green Invoice
-upstream reasons stay scrubbed and capped; the logger never reads `DEBUG`. Tests that assert "no
-console output" (`recovery-reserve.helper.test.ts`, `amount.test.ts`, the JWT cases in
-`auth-context.test.ts`) pass vacuously once their module logs to stdout, so each sweep ports them to
-a `setLogWriter` capture (`src/test-utils/capture-logs.ts`, excluded from `dist`). The 20 test files
-that spy on `console` migrate with their module.
+**Merged rules a sweep must not regress (#4947, #4954 stack, #4980):** URLs are logged as host only;
+employees are named by ID, never by name, in logs and error messages; an expired JWT is not logged
+and any other jose error logs only `{ code, message }`; Green Invoice upstream reasons stay scrubbed
+and capped; the logger never reads `DEBUG`. Tests that assert "no console output"
+(`recovery-reserve.helper.test.ts`, `vacation-reserve.helper.test.ts`, `amount.test.ts`, the JWT
+cases in `auth-context.test.ts`) pass vacuously once their module logs to stdout, so each sweep
+ports them to a `setLogWriter` capture (`src/test-utils/capture-logs.ts`, excluded from `dist`). The
+20 test files that spy on `console` migrate with their module.
 
 **Enforcement.** Each sweep PR adds its directories to a per-directory `no-console: error` ratchet.
 The final PR makes it `error` for `packages/server/src/**` with the allowlist: `environment.ts`
@@ -273,7 +270,7 @@ processor / DPA / region review before any external sink lands.
 
 | PR  | Scope                                                                                                                                                                                                                                                                                                    |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Delete the vacation-reserve prints (names and amounts), with a "logs nothing" test like the recovery-reserve one. No logger needed.                                                                                                                                                                      |
+| 0   | **Done (#4980).** Delete the vacation-reserve prints (names and amounts), with a "logs nothing" test like the recovery-reserve one; its errors name employees by ID. No logger needed.                                                                                                                   |
 | A   | Origin tags: `getLogger`, base fields, per-module levels, `silent`; adopt in the nine files that use `log()`; module-walk test; docs. Add `capture-logs.ts`.                                                                                                                                             |
 | B   | Ambient context: `withRequestContext`, store, `setLogContextProvider` wiring, hygiene, `yoga.fetch()` fallback; spikes; optional console shim.                                                                                                                                                           |
 | C   | `errorSimplifier`, crash path, handlers first, `jobs/utils.ts`, `auth-plugin.ts`, `ALLOW_DEV_AUTH` guard.                                                                                                                                                                                                |
