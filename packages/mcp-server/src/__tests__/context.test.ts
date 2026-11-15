@@ -24,6 +24,32 @@ describe('createRequestContext', () => {
     expect(ctx.correlationId).toBe('trace-abc');
   });
 
+  it.each([
+    ['too short', 'abc'],
+    ['contains a space', 'has space'],
+    ['too long', 'a'.repeat(65)],
+    ['contains disallowed characters', 'trace"<script>'],
+  ])('replaces an invalid inbound correlation id (%s) with a generated one', (_, header) => {
+    const ctx = createRequestContext(req({ headers: { 'x-correlation-id': header } }));
+    expect(ctx.correlationId).not.toBe(header);
+    expect(ctx.correlationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it('accepts a 64-character inbound correlation id', () => {
+    const id = 'a'.repeat(64);
+    const ctx = createRequestContext(req({ headers: { 'x-correlation-id': id } }));
+    expect(ctx.correlationId).toBe(id);
+  });
+
+  it('trims a valid inbound correlation id and keeps it', () => {
+    const ctx = createRequestContext(
+      req({ headers: { 'x-correlation-id': '  run-1234.step:2  ' } }),
+    );
+    expect(ctx.correlationId).toBe('run-1234.step:2');
+  });
+
   it('captures method and route without the query string', () => {
     const ctx = createRequestContext(req({ method: 'POST', url: '/mcp?token=secret' }));
     expect(ctx.method).toBe('POST');
