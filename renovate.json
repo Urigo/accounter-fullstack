@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
-  "postUpdateOptions": ["yarnDedupeFewer"],
+  "postUpdateOptions": ["yarnDedupeHighest"],
   "automerge": false,
   "lockFileMaintenance": {
     "enabled": true,
