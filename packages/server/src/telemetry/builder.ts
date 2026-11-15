@@ -29,6 +29,21 @@ function shouldIgnoreIncomingRequest(url: string | undefined): boolean {
 }
 
 /**
+ * Outgoing Slack webhook calls are not traced: the webhook path is the credential, and the undici
+ * instrumentation records the full URL on the span.
+ */
+export function isSlackWebhookOrigin(origin: string | undefined): boolean {
+  if (!origin) {
+    return false;
+  }
+  try {
+    return new URL(origin).hostname === 'hooks.slack.com';
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Parses an OTLP header string of the form "key1=value1,key2=value2" into a
  * Record<string, string>. Returns undefined when the input is absent or empty.
  */
@@ -116,6 +131,9 @@ export function buildOtelSdk(): NodeSDK | null {
         },
         '@opentelemetry/instrumentation-http': {
           ignoreIncomingRequestHook: request => shouldIgnoreIncomingRequest(request.url),
+        },
+        '@opentelemetry/instrumentation-undici': {
+          ignoreRequestHook: request => isSlackWebhookOrigin(request.origin),
         },
         '@opentelemetry/instrumentation-graphql': {
           enabled: true,

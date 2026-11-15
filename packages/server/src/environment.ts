@@ -1,5 +1,6 @@
 import { config as dotenv } from 'dotenv';
 import zod from 'zod';
+import { parseSlackConfig } from './observability/notifications/config.js';
 
 // Prefer isolated test env file when provided, otherwise fall back to repo-level .env
 dotenv({
@@ -476,6 +477,13 @@ export const env = {
     level: logging.SERVER_LOG_LEVEL,
   },
 } as const;
+
+/**
+ * Slack notification settings. Kept off `env` on purpose: `env` is spread into the GraphQL context,
+ * and the webhook URLs are credentials. Fail-open — invalid values are dropped and reported in
+ * `slackEnv.problems`, never a reason to exit.
+ */
+export const slackEnv = parseSlackConfig(process.env);
 
 /** The settings {@link watchdogCeilingProblems} checks. */
 export type WatchdogCeilingSettings = Pick<
