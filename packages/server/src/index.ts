@@ -233,11 +233,12 @@ async function main() {
     if (isShuttingDown) return;
     isShuttingDown = true;
 
-    // A crash takes the process down (`fatal`); a signal is an ordinary stop.
-    if (err) {
-      log('fatal', 'server-shutting-down', { reason, error: serializeError(err) });
-    } else {
+    // A crash takes the process down (`fatal`); a signal is an ordinary stop. Told apart by the exit
+    // code, not by `err`: a promise can reject with `undefined`, `null` or `0`.
+    if (exitCode === 0) {
       log('info', 'server-shutting-down', { reason });
+    } else {
+      log('fatal', 'server-shutting-down', { reason, error: serializeError(err) });
     }
 
     // Stop accepting new connections

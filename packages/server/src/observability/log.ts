@@ -326,8 +326,15 @@ export function scrubText(text: string): string {
   return out;
 }
 
+/**
+ * Scrubs, then cuts at `max` characters. Scrubbing first matters: a cut through a JWT or a `Bearer`
+ * credential leaves a fragment the patterns no longer recognise.
+ */
 function cap(text: string, max: number): string {
-  return text.length > max ? `${text.slice(0, max)}…[${text.length - max} more]` : text;
+  const scrubbed = scrubText(text);
+  return scrubbed.length > max
+    ? `${scrubbed.slice(0, max)}…[${scrubbed.length - max} more]`
+    : scrubbed;
 }
 
 /**
@@ -348,7 +355,7 @@ function toJsonLine(record: LogFields): string {
         return serializeError(raw);
       }
       if (typeof value === 'string') {
-        return cap(scrubText(value), MAX_STRING_LENGTH);
+        return cap(value, MAX_STRING_LENGTH);
       }
       if (typeof value === 'bigint') {
         return value.toString();
@@ -367,11 +374,16 @@ function toJsonLine(record: LogFields): string {
       return value;
     });
   } catch (error) {
+    // A getter or `toJSON` threw. This record skips the replacer, so its strings get the same
+    // scrubbing and caps by hand.
     return JSON.stringify({
-      msg: record['msg'],
+      msg: cap(String(record['msg']), MAX_STRING_LENGTH),
       level: record['level'],
       time: record['time'],
-      logError: error instanceof Error ? error.message : 'unserializable record',
+      logError:
+        error instanceof Error
+          ? cap(error.message, MAX_ERROR_MESSAGE_LENGTH)
+          : 'unserializable record',
     });
   }
 }

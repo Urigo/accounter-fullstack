@@ -149,6 +149,31 @@ describe('log', () => {
     expect(record.error.message.length).toBeLessThan(550);
   });
 
+  it('scrubs an error message before cutting it, so a cut never splits a JWT', () => {
+    const jwt = `eyJhbGciOiJIUzI1NiJ9.${'eyJzdWIiOiIxIn0'.repeat(10)}.c2lnbmF0dXJl`;
+    // The token straddles the 500-character message cap.
+    log('error', 'failed', { error: new Error(`${'x'.repeat(480)} ${jwt}`) });
+
+    const [line] = lines(stdout);
+    expect(line).not.toContain('eyJ');
+  });
+
+  it('scrubs and caps the fallback record when a field cannot be serialized', () => {
+    const hostile = {
+      get value(): never {
+        throw new Error(`cannot read for jane@example.com ${'y'.repeat(1000)}`);
+      },
+    };
+
+    log('error', 'hostile-field', { hostile });
+
+    const record = records()[0] as { logError: string };
+    expect(record).toMatchObject({ msg: 'hostile-field', level: 'error' });
+    expect(record.logError).toContain('[email]');
+    expect(record.logError).not.toContain('jane@example.com');
+    expect(record.logError.length).toBeLessThan(550);
+  });
+
   it('merges the context provider under the call site fields', () => {
     setLogContextProvider(() => ({ requestId: 'req-ctx-01', operationName: 'FromContext' }));
 
