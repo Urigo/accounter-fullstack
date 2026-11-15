@@ -168,3 +168,21 @@ another sink), so neither needs call sites to change. The default writer swallow
   error _stops_ (a catch that swallows it, returns a `CommonError`, or retries), or where only that
   site has the detail (e.g. the upstream status of a third-party call).
 - Findings about the user's own data are `info`. `error` is for server faults someone should act on.
+
+### Field dictionary
+
+Use these names for the same things everywhere, so one query finds them across modules:
+
+| Field                                                   | Meaning                                                                 |
+| ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `chargeId`, `businessId`, `transactionId`, `documentId` | Internal UUIDs of the record the line is about.                         |
+| `userId`                                                | Internal user id (never the Auth0 id).                                  |
+| `count`                                                 | How many items the line covers (records processed, failures, retries).  |
+| `durationMs`                                            | Elapsed milliseconds, as a number.                                      |
+| `error`                                                 | `serializeError(error)`: never the raw error, never under another name. |
+
+- camelCase ids, one per field: `chargeId`, not `charge: { id }` and never the whole domain object.
+- Never emails, people's or businesses' names, amounts, Auth0 ids, tokens, or request / upstream
+  bodies. Log the id and look the rest up.
+- `module`, `component`, `service`, `env`, `release` and `msg` / `level` / `time` are set by the
+  logger; don't pass them as fields.
