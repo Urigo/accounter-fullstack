@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
@@ -9,7 +10,20 @@ import { calculateVacationReserveAmount } from '../vacation-reserve.helper.js';
 /* All names, IDs and amounts below are made up. */
 const EMPLOYEE_NAME = 'Zebulon';
 
-function makeInjector() {
+const DEFAULT_SALARIES = [
+  // Before the employee's start date: skipped
+  { employee_id: 'employee', month: '2023-01', job_percentage: '100' },
+  {
+    employee_id: 'employee',
+    month: '2024-03',
+    job_percentage: '100',
+    base_salary: '10000',
+    global_additional_hours: '0',
+    vacation_days_balance: '2',
+  },
+];
+
+function makeInjector(salaries: unknown[] = DEFAULT_SALARIES) {
   const providers = new Map<unknown, unknown>([
     [
       AdminContextProvider,
@@ -26,18 +40,7 @@ function makeInjector() {
     [
       SalariesProvider,
       {
-        getSalaryRecordsByDates: async () => [
-          // Before the employee's start date: skipped
-          { employee_id: 'employee', month: '2023-01', job_percentage: '100' },
-          {
-            employee_id: 'employee',
-            month: '2024-03',
-            job_percentage: '100',
-            base_salary: '10000',
-            global_additional_hours: '0',
-            vacation_days_balance: '2',
-          },
-        ],
+        getSalaryRecordsByDates: async () => salaries,
       },
     ],
     [
@@ -76,5 +79,21 @@ describe('calculateVacationReserveAmount', () => {
     for (const spy of spies) {
       expect(spy).not.toHaveBeenCalled();
     }
+  });
+
+  it.each([
+    ['has no salary records', []],
+    [
+      'has no valid salary amount',
+      [{ employee_id: 'employee', month: '2024-03', job_percentage: '100', base_salary: '0' }],
+    ],
+  ])('names the employee by ID, not first name, when it %s', async (_, salaries) => {
+    const error = await calculateVacationReserveAmount(makeInjector(salaries), 2024).catch(
+      (error: unknown) => error,
+    );
+
+    expect(error).toBeInstanceOf(GraphQLError);
+    expect((error as GraphQLError).message).toContain('employee');
+    expect((error as GraphQLError).message).not.toContain(EMPLOYEE_NAME);
   });
 });

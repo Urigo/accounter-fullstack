@@ -139,7 +139,7 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
 
   for (const employeeData of Array.from(employeeMap.values())) {
     if (!employeeData.latestSalary || !employeeData.firstSalary) {
-      throw new GraphQLError(`Employee ${employeeData.employee.first_name} has no salary records`);
+      throw new GraphQLError(`Employee ${employeeData.employee.business_id} has no salary records`);
     }
     // calculate cumulative vacation days by seniority
     const isFirstSalaryHourly =
@@ -175,7 +175,7 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
         Number(employeeData.latestSalary.global_additional_hours);
     if (!latestSalaryAmount || Number.isNaN(latestSalaryAmount)) {
       throw new GraphQLError(
-        `Employee ${employeeData.employee.first_name} has no valid salary amount for last month`,
+        `Employee ${employeeData.employee.business_id} has no valid salary amount for last month`,
       );
     }
     const dailySalary = latestSalaryAmount / AVERAGE_MONTHLY_WORK_DAYS;
