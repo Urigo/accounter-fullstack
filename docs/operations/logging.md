@@ -11,6 +11,20 @@ effect. `fatal` (the process is going down) is always written.
 Levels: `fatal` the process is going down · `error` a server fault someone should look at · `warn`
 handled, degraded, or the user's data needs fixing · `info` lifecycle · `debug` detail.
 
+## Request IDs
+
+`requestId` names a request in the DB lines (leak reclaimed, session killed). It is the
+OpenTelemetry trace ID when there is one (so it pivots to the trace, and a client can't override
+it), else the `X-Request-Id` header, else a random UUID.
+
+`X-Correlation-Id` is not a request ID: the MCP server sends the same one on every upstream call of
+a tool run, retries included, so it groups those requests while `requestId` still tells them apart.
+
+An inbound id is used only if it matches `^[A-Za-z0-9._:-]{8,64}$`; otherwise the request id is
+minted, and a correlation id is ignored (and not set as the OTel span attribute). That keeps
+arbitrary text off every line of a request. It bounds only length and characters: it doesn't make an
+inbound id unique (a client can send the same one on several requests) or prove where it came from.
+
 ## Safety
 
 Every record goes through the same checks, whatever the call site passed:
