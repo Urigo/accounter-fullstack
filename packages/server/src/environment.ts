@@ -300,8 +300,10 @@ const LoggingModel = zod.object({
     }
     return levels;
   }),
-  // The deployed version (e.g. a git sha or tag), stamped on every log line as `release`.
+  // The deployed version (e.g. a git sha or tag), stamped on every log line as `release`. Falls back
+  // to the commit Render sets on every deploy, so Render needs no extra configuration.
   RELEASE: emptyString(zod.string().optional()),
+  RENDER_GIT_COMMIT: emptyString(zod.string().optional()),
 });
 
 const PriceIndexSyncModel = zod.object({
@@ -499,7 +501,7 @@ export const env = {
   logging: {
     level: logging.SERVER_LOG_LEVEL,
     moduleLevels: logging.SERVER_LOG_LEVEL_OVERRIDES,
-    release: logging.RELEASE,
+    release: logging.RELEASE ?? logging.RENDER_GIT_COMMIT,
   },
 } as const;
 

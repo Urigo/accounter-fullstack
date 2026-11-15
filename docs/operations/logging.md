@@ -23,7 +23,7 @@ Every line says where it came from:
 | `component` | The file name without its extension (`tenant-db-client`, `charges.resolver`).                                                                                                                                                   |
 | `service`   | `accounter-server`.                                                                                                                                                                                                             |
 | `env`       | `OTEL_DEPLOYMENT_ENV`, else `NODE_ENV`, else `development`.                                                                                                                                                                     |
-| `release`   | `RELEASE` (e.g. the deployed git sha or tag); omitted when unset.                                                                                                                                                               |
+| `release`   | `RELEASE` (e.g. the deployed git sha or tag), else `RENDER_GIT_COMMIT` (set by Render on every deploy); omitted when neither is set.                                                                                            |
 
 `module` / `component` come from `getLogger(import.meta.url)` (see below). Infra scopes that cut
 across files replace the derived module: `getLogger(import.meta.url, { module: 'db' })` for the DB

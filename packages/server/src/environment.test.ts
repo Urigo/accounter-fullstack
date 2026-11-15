@@ -238,6 +238,8 @@ describe('server log level', () => {
     original = Object.fromEntries(KEYS.map(key => [key, process.env[key]]));
     delete process.env['SERVER_LOG_LEVEL'];
     delete process.env['SERVER_LOG_LEVEL_OVERRIDES'];
+    delete process.env['RELEASE'];
+    delete process.env['RENDER_GIT_COMMIT'];
     delete process.env['DEBUG'];
   });
 
@@ -278,6 +280,18 @@ describe('server log level', () => {
   it('rejects an unknown level at startup', async () => {
     await expect(loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'verbose' })).rejects.toBeDefined();
   });
+
+  it.each([
+    ['neither is set', {}, undefined],
+    ['only Render sets the commit', { RENDER_GIT_COMMIT: 'abc123' }, 'abc123'],
+    ['RELEASE is set', { RELEASE: 'v1.2.3', RENDER_GIT_COMMIT: 'abc123' }, 'v1.2.3'],
+  ])(
+    'takes release from RELEASE, else RENDER_GIT_COMMIT, when %s',
+    async (_, overrides, release) => {
+      const env = await loadEnv({ ...REQUIRED, ...overrides });
+      expect(env.logging.release).toBe(release);
+    },
+  );
 
   it('has no per-module levels by default', async () => {
     const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL_OVERRIDES: '' });
