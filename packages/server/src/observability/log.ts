@@ -222,7 +222,8 @@ export function createYogaLogger(): YogaLogger {
           text.push(arg);
         } else if (arg instanceof Error && error === undefined) {
           error = arg;
-        } else {
+        } else if (arg !== undefined && arg !== null) {
+          // Hive forwards `logger[level](msg, attrs)` with `attrs` undefined when it has none.
           details.push(arg);
         }
       }
@@ -233,7 +234,9 @@ export function createYogaLogger(): YogaLogger {
       if (details.length) {
         fields['details'] = details;
       }
-      const msg = text.join(' ') || (error instanceof Error ? error.message : 'yoga');
+      // A fixed `msg` when Yoga logs a bare error (it does for every error it masks): `msg` stays a
+      // stable identifier, and the text is in `error.message`, capped like any error message.
+      const msg = text.join(' ') || (error === undefined ? 'yoga' : 'yoga-error');
       log(level, msg, fields);
     };
   return { debug: at('debug'), info: at('info'), warn: at('warn'), error: at('error') };
@@ -351,27 +354,28 @@ function toJsonLine(record: LogFields): string {
       // `JSON.stringify` calls `toJSON` before the replacer, and `GraphQLError#toJSON` keeps every
       // extension: check the raw value, so every error goes through `serializeError`.
       const raw = (this as Record<string, unknown>)[key];
-      if (raw instanceof Error) {
-        return serializeError(raw);
+      // A serialized error goes through the cycle bookkeeping below like any other object: its
+      // `cause` is visited with it as `this`, and unwinding to an object that isn't on the stack
+      // would empty it.
+      const out = raw instanceof Error ? serializeError(raw) : value;
+      if (typeof out === 'string') {
+        return cap(out, MAX_STRING_LENGTH);
       }
-      if (typeof value === 'string') {
-        return cap(value, MAX_STRING_LENGTH);
+      if (typeof out === 'bigint') {
+        return out.toString();
       }
-      if (typeof value === 'bigint') {
-        return value.toString();
+      if (typeof out !== 'object' || out === null) {
+        return out;
       }
-      if (typeof value !== 'object' || value === null) {
-        return value;
-      }
-      // `this` is the object holding `value`: unwind to it, then check for a cycle.
+      // `this` is the object holding `out`: unwind to it, then check for a cycle.
       while (ancestors.length > 0 && ancestors.at(-1) !== this) {
         ancestors.pop();
       }
-      if (ancestors.includes(value)) {
+      if (ancestors.includes(out)) {
         return '[Circular]';
       }
-      ancestors.push(value);
-      return value;
+      ancestors.push(out);
+      return out;
     });
   } catch (error) {
     // A getter or `toJSON` threw. This record skips the replacer, so its strings get the same

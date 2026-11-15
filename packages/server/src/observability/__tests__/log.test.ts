@@ -89,6 +89,17 @@ describe('log', () => {
     });
   });
 
+  it('detects a cycle after an error with a cause', () => {
+    const request: Record<string, unknown> = {};
+    request['context'] = { error: new Error('outer', { cause: new Error('inner') }), request };
+
+    log('error', 'failed', { request });
+
+    expect(records()[0]).toMatchObject({
+      request: { context: { error: { cause: { message: 'inner' } }, request: '[Circular]' } },
+    });
+  });
+
   it("reduces a nested GraphQLError's extensions to its code", () => {
     // `GraphQLError#toJSON` runs before the replacer and keeps every extension, the upstream
     // response of a Green Invoice SDK error included.
@@ -264,6 +275,12 @@ describe('createYogaLogger', () => {
     });
   });
 
+  it('leaves out an undefined attributes argument, as Hive passes one', () => {
+    createYogaLogger().info('[hive] usage report sent', undefined);
+
+    expect(records()[0]).not.toHaveProperty('details');
+  });
+
   it('redacts credentials in the extra arguments it passes through', () => {
     createYogaLogger().info('[hive] request', { headers: { authorization: 'Bearer abcdefgh' } });
 
@@ -285,7 +302,7 @@ describe('createYogaLogger', () => {
     createYogaLogger().error(fresh);
 
     expect(records()).toEqual([
-      expect.objectContaining({ msg: 'not yet logged', error: expect.anything() }),
+      expect.objectContaining({ msg: 'yoga-error', error: expect.objectContaining({ message: 'not yet logged' }) }),
     ]);
   });
 });
