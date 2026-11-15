@@ -1,7 +1,10 @@
 import { parse } from 'graphql';
-import { describe, expect, it, vi } from 'vitest';
+import { createSchema, createYoga } from 'graphql-yoga';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { dbCleanupPlugin } from '../db-cleanup-plugin.js';
-import type { AccounterContext } from '../../shared/types/index.js';
+import { requestLogPlugin } from '../request-log-plugin.js';
+import type { AccounterContext, DbRequestState } from '../../shared/types/index.js';
 
 type ContextBuildingArg = Parameters<
   NonNullable<ReturnType<typeof dbCleanupPlugin>['onContextBuilding']>
@@ -214,5 +217,85 @@ describe('dbCleanupPlugin', () => {
     await hooks.onExecuteDone({ result: {} });
     // From here on a newly constructed DB client must not hold a connection.
     expect(context.dbRequest?.disposed).toBe(true);
+  });
+});
+
+describe('dbCleanupPlugin with a streamed (@defer) result', () => {
+  /**
+   * A real Yoga: the resolver registers a DB client the way TenantAwareDBClient does, so the test
+   * sees whether the request's connection is released once Yoga is done with the result.
+   */
+  function deferYoga() {
+    const dispose = vi.fn().mockResolvedValue(undefined);
+    let state: DbRequestState | undefined;
+    const schema = createSchema<AccounterContext>({
+      typeDefs: /* GraphQL */ `
+        type Query {
+          hello: String
+          slow: String
+        }
+      `,
+      resolvers: {
+        Query: {
+          hello: (_parent, _args, context) => {
+            state = context.dbRequest;
+            context.dbRequest?.clientsToDispose.push({ dispose });
+            return 'world';
+          },
+          slow: async () => {
+            await new Promise(resolve => setTimeout(resolve, 5));
+            return 'later';
+          },
+        },
+      },
+    });
+    const server = createYoga({
+      schema,
+      logging: false,
+      plugins: [requestLogPlugin(), dbCleanupPlugin(), useDeferStream()],
+    });
+    return { server, dispose, state: () => state };
+  }
+
+  async function postDeferred(server: ReturnType<typeof deferYoga>['server'], accept: string) {
+    const response = await server.fetch('http://localhost/graphql', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept },
+      body: JSON.stringify({ query: 'query Deferred { hello ... @defer { slow } }' }),
+    });
+    await response.text();
+    return response;
+  }
+
+  beforeEach(() => {
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('releases the connection once the stream is sent', async () => {
+    const { server, dispose, state } = deferYoga();
+
+    const response = await postDeferred(server, 'multipart/mixed');
+
+    expect(response.status).toBe(200);
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(state()?.executionInFlight).toBe(false);
+  });
+
+  it('releases the connection when Yoga refuses to send the stream (406)', async () => {
+    // The request accepts no streaming type, so Yoga answers 406 and drops the stream unread. Its
+    // end never comes, and nothing aborts the request (the response finished normally), so without
+    // this the client kept its connection until the watchdog reclaimed it as a leak.
+    const { server, dispose, state } = deferYoga();
+
+    const response = await postDeferred(server, 'application/json');
+
+    expect(response.status).toBe(406);
+    await vi.waitFor(() => expect(dispose).toHaveBeenCalledTimes(1));
+    expect(state()?.executionInFlight).toBe(false);
+    expect(state()?.disposed).toBe(true);
   });
 });

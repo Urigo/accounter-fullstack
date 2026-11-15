@@ -75,7 +75,10 @@ does not run", so no single mechanism is trusted:
    (`disposeWhenIdle`) rather than performed: the work finishes and writes, and the client is
    released at the end of execution. Disposing there is what turned a timed-out document upload into
    `TenantAwareDBClient is already disposed` at its final INSERT, throwing away the download,
-   Cloudinary upload and OCR that preceded it.
+   Cloudinary upload and OCR that preceded it. A streamed (`@defer`) result ends execution when its
+   stream ends. One Yoga refuses to send (a 406, when `Accept` names no streaming type) is cancelled
+   instead: its end never comes, and nothing aborts the request, because the 406 response finished
+   normally.
 2. **Watchdog** (`startTenantDbClientWatchdog`) — sweeps every connection holder and force-disposes
    any that has not issued a query within its ceiling. The predicate is _idle_ time, not age, so a
    slow-but-active request is untouched while a leaked one is reclaimed. Three ceilings, by what the
