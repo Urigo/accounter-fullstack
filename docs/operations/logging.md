@@ -8,6 +8,11 @@ in fields, never spliced into `msg`. `time` is ISO 8601.
 the server's own records, Yoga and Hive (Hive forwards its logs to Yoga's logger). `DEBUG=1` has no
 effect. `fatal` (the process is going down) is always written.
 
+`SERVER_LOG_LEVEL_OVERRIDES` sets a level per `module` (see [Origin tags](#origin-tags)), over
+`SERVER_LOG_LEVEL`: `deel=debug,db=warn`. A malformed pair or an unknown level fails startup; a
+module that matches nothing logs `log-level-override-unknown-module` at startup and is otherwise
+ignored. Yoga's and Hive's lines follow `SERVER_LOG_LEVEL` only.
+
 ## Origin tags
 
 Every line says where it came from:

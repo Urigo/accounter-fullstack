@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import { GraphQLError } from 'graphql';
 import type { YogaLogger } from 'graphql-yoga';
 
@@ -45,6 +46,9 @@ import type { YogaLogger } from 'graphql-yoga';
 /** `fatal`: the process is going down. Always written, whatever the configured level. */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
+/** A minimum level to write; `fatal` is always written, so it is never a threshold. */
+export type LogThreshold = Exclude<LogLevel, 'fatal'>;
+
 export type LogFields = Record<string, unknown>;
 
 /** Writes one finished line (newline included). */
@@ -63,18 +67,58 @@ const MAX_ERROR_MESSAGE_LENGTH = 500;
 /** Fields every record starts with; a field passed by a caller or the context can't replace them. */
 const RESERVED_KEYS = new Set(['msg', 'level', 'time']);
 
-let threshold: Exclude<LogLevel, 'fatal'> = 'info';
+let threshold: LogThreshold = 'info';
+let moduleThresholds = new Map<string, LogThreshold>();
 let baseFields: LogFields = {};
 let contextProvider: (() => LogFields | undefined) | undefined;
 let writer: LogWriter = writeToStdout;
 
 /** Sets the minimum level written, process-wide. Set once at startup from `SERVER_LOG_LEVEL`. */
-export function setLogLevel(level: Exclude<LogLevel, 'fatal'>): void {
+export function setLogLevel(level: LogThreshold): void {
   threshold = level;
 }
 
-export function isLogLevelEnabled(level: LogLevel): boolean {
-  return LEVEL_SCORE[level] >= LEVEL_SCORE[threshold];
+/**
+ * Per-module minimum levels, overriding the process-wide one for records of that `module` (from
+ * `SERVER_LOG_LEVEL_OVERRIDES`, e.g. `deel=debug,db=warn`). Pass nothing to remove them.
+ */
+export function setModuleLogLevels(levels?: Record<string, LogThreshold>): void {
+  moduleThresholds = new Map(Object.entries(levels ?? {}));
+}
+
+/** Whether a record at `level` is written, for `module` when it has its own level. */
+export function isLogLevelEnabled(level: LogLevel, module?: string): boolean {
+  const min = (module === undefined ? undefined : moduleThresholds.get(module)) ?? threshold;
+  return LEVEL_SCORE[level] >= LEVEL_SCORE[min];
+}
+
+/** Modules a scope can log as without a matching `src/modules` directory (see `originOf`). */
+const NON_DIRECTORY_MODULES = ['startup', 'db', 'shutdown'];
+
+/**
+ * Every `module` a record can carry: the `src/modules` directories, the top-level `src` directories
+ * and the infra scopes. Used to warn about a per-module level that matches nothing.
+ */
+export function knownLogModules(): Set<string> {
+  const known = new Set(NON_DIRECTORY_MODULES);
+  const directoriesOf = (url: URL) =>
+    readdirSync(url, { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name);
+  try {
+    // This file is `src/observability/log.ts` (or `dist/observability/log.js`, which mirrors it).
+    for (const name of directoriesOf(new URL('../', import.meta.url))) {
+      if (name !== 'modules' && name !== '__tests__' && name !== '__generated__') {
+        known.add(name);
+      }
+    }
+    for (const name of directoriesOf(new URL('../modules/', import.meta.url))) {
+      known.add(name);
+    }
+  } catch {
+    // Unreadable layout: the caller just can't tell unknown modules apart.
+  }
+  return known;
 }
 
 /**
@@ -100,7 +144,8 @@ export function setLogWriter(next?: LogWriter): void {
 
 /** Writes one record as a single JSON line. */
 export function log(level: LogLevel, msg: string, fields?: LogFields): void {
-  if (!isLogLevelEnabled(level)) {
+  const module = fields?.['module'];
+  if (!isLogLevelEnabled(level, typeof module === 'string' ? module : undefined)) {
     return;
   }
   const record: LogFields = { msg, level, time: new Date().toISOString() };

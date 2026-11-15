@@ -19,9 +19,11 @@ import { PriceIndexSyncProvider } from './modules/price-indexes/providers/price-
 import {
   createYogaLogger,
   getLogger,
+  knownLogModules,
   serializeError,
   setLogBaseFields,
   setLogLevel,
+  setModuleLogLevels,
 } from './observability/log.js';
 import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
@@ -49,12 +51,19 @@ async function main() {
   // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`. One level for this server's own
   // structured logs, Yoga and Hive (which forwards its logs to Yoga's logger).
   setLogLevel(env.logging.level);
+  setModuleLogLevels(env.logging.moduleLevels);
   // Origin fields on every line, alongside the per-file `module` / `component` from `getLogger`.
   setLogBaseFields({
     service: 'accounter-server',
     env: env.otel.deploymentEnv,
     release: env.logging.release,
   });
+  const knownModules = knownLogModules();
+  for (const module of Object.keys(env.logging.moduleLevels)) {
+    if (!knownModules.has(module)) {
+      log('warn', 'log-level-override-unknown-module', { overrideModule: module });
+    }
+  }
 
   await startTelemetry();
 

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import {
   createYogaLogger,
   getLogger,
+  knownLogModules,
   log,
   markLogged,
   originOf,
@@ -13,6 +14,7 @@ import {
   setLogContextProvider,
   setLogLevel,
   setLogWriter,
+  setModuleLogLevels,
 } from '../log.js';
 
 let stdout: MockInstance;
@@ -26,6 +28,7 @@ beforeEach(() => {
 afterEach(() => {
   setLogLevel('info');
   setLogBaseFields();
+  setModuleLogLevels();
   setLogContextProvider();
   setLogWriter();
   vi.restoreAllMocks();
@@ -294,6 +297,37 @@ describe('origin tags', () => {
       expect.objectContaining({ msg: 'with-base', service: 'accounter-server', env: 'test', release: 'abc123' }),
       expect.objectContaining({ msg: 'override', service: 'accounter-server', env: 'call-site' }),
     ]);
+  });
+});
+
+describe('per-module levels', () => {
+  const deel = getLogger('file:///app/packages/server/src/modules/deel/helpers/sync.helper.ts');
+  const charges = getLogger('file:///app/packages/server/src/modules/charges/helpers/x.helper.ts');
+
+  it("applies a module's own level, and the process-wide one to every other module", () => {
+    setModuleLogLevels({ deel: 'debug', charges: 'error' });
+
+    deel.debug('deel-detail');
+    charges.warn('charges-warning');
+    charges.error('charges-failed');
+    charges.fatal('charges-fatal');
+    log('debug', 'unscoped-detail');
+
+    expect(records().map(record => record['msg'])).toEqual([
+      'deel-detail',
+      'charges-failed',
+      'charges-fatal',
+    ]);
+  });
+
+  it('knows the module directories, the top-level directories and the infra scopes', () => {
+    const known = knownLogModules();
+
+    for (const module of ['charges', 'deel', 'plugins', 'observability', 'startup', 'db', 'shutdown']) {
+      expect(known).toContain(module);
+    }
+    expect(known).not.toContain('modules');
+    expect(known).not.toContain('__tests__');
   });
 });
 
