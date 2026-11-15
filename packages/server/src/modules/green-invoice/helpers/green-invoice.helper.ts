@@ -957,9 +957,9 @@ export async function insertNewDocumentFromGreenInvoice(
 
     return newDocument;
   } catch (e) {
-    throw new GraphQLError(
-      `Error adding Green Invoice document: ${e}\n\n${JSON.stringify(greenInvoiceDoc, null, 2)}`,
-    );
+    // The document itself stays out of the message: the request log records it, and the document
+    // carries client details and amounts.
+    throw new GraphQLError(`Error adding Green Invoice document ${greenInvoiceDoc.id}: ${e}`);
   }
 }
 
