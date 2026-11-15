@@ -145,4 +145,89 @@ describe('GreenInvoiceClientProvider failures', () => {
       requestId: 'req-1',
     });
   });
+
+  /** A provider whose SDK is `sdk` (or whose credentials are missing when `credentials` is null). */
+  function providerWith(sdk: object, credentials: object | null = { id: 'gi-id', secret: 's' }) {
+    createGreenInvoiceSdkMock.mockReturnValue(sdk as never);
+    return new GreenInvoiceClientProvider(
+      {} as AdminContextProvider,
+      {} as Environment,
+      {
+        getGreenInvoiceCredentials: vi.fn(async () => credentials),
+      } as unknown as ProviderCredentialsProvider,
+      new GreenInvoiceTokenCacheProvider(),
+    );
+  }
+
+  const logLines = (spy: { mock: { calls: unknown[][] } }) =>
+    spy.mock.calls.map(([chunk]) => String(chunk));
+
+  it('cleans a returned ErrorResponse like a thrown one, in the log and for the user', async () => {
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const provider = providerWith({
+      updateClient_mutation: vi.fn(async () => ({
+        updateClient: {
+          errorCode: 1110,
+          errorMessage: 'Tax id 512345678 already used by jane@example.com',
+        },
+      })),
+    });
+
+    const error = (await provider
+      .updateClient({ id: 'gi-1', input: { name: 'Client' } })
+      .catch((e: unknown) => e)) as Error;
+
+    expect(error.message).toBe(
+      'Green Invoice Update Client error: Tax id [number] already used by [email]',
+    );
+    const lines = logLines(stdout);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).not.toMatch(/512345678|jane@example\.com/);
+    expect(JSON.parse(lines[0])).toMatchObject({
+      status: null,
+      upstreamCode: 1110,
+      upstreamMessage: 'Tax id [number] already used by [email]',
+    });
+  });
+
+  it('keeps the name and code of a network failure, but no cause message', async () => {
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const socketError = Object.assign(new Error('connect ECONNREFUSED 10.0.0.1:443'), {
+      code: 'ECONNREFUSED',
+    });
+    const tokenError = new Error('Failed to obtain access token', {
+      cause: new Error('Failed to obtain access token, status code: 400, response: {"x":"body"}'),
+    });
+    const provider = providerWith({
+      updateClient_mutation: vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError('fetch failed', { cause: socketError }))
+        .mockRejectedValueOnce(tokenError),
+    });
+
+    await expect(provider.updateClient({ id: 'gi-1', input: { name: 'A' } })).rejects.toThrow();
+    await expect(provider.updateClient({ id: 'gi-2', input: { name: 'B' } })).rejects.toThrow();
+
+    const [network, token] = logLines(stdout);
+    expect(JSON.parse(network)).toMatchObject({
+      message: 'fetch failed',
+      causes: [{ name: 'Error', code: 'ECONNREFUSED' }],
+    });
+    expect(network).not.toContain('10.0.0.1');
+    expect(token).not.toContain('body');
+  });
+
+  it('logs a failed initialization once, however many callers share it', async () => {
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const provider = providerWith({}, null);
+
+    const [first, second] = await Promise.allSettled([provider.getSDK(), provider.getSDK()]);
+
+    expect(first.status).toBe('rejected');
+    expect(second.status).toBe('rejected');
+    expect((first as PromiseRejectedResult).reason).toBe(
+      (second as PromiseRejectedResult).reason,
+    );
+    expect(logLines(stdout)).toHaveLength(1);
+  });
 });

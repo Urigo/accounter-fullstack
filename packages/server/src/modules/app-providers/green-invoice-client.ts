@@ -55,7 +55,11 @@ export class GreenInvoiceClientProvider {
   }
 
   private init(): Promise<Sdk> {
-    this.initPromise ??= this._doInit();
+    // The failure is wrapped, and so logged, once inside the cached promise: concurrent callers then
+    // share one marked error instead of each logging the same failed initialization.
+    this.initPromise ??= this._doInit().catch((e: unknown) => {
+      throw this.fail('Green Invoice SDK error', 'init', e);
+    });
     return this.initPromise;
   }
 
@@ -82,12 +86,8 @@ export class GreenInvoiceClientProvider {
     });
   }
 
-  public async getSDK(): Promise<Sdk> {
-    try {
-      return await this.init();
-    } catch (e) {
-      throw this.fail('Green Invoice SDK error', 'init', e);
-    }
+  public getSDK(): Promise<Sdk> {
+    return this.init();
   }
 
   /**
@@ -304,7 +304,7 @@ export class GreenInvoiceClientProvider {
         throw new Error('Failed to create Green Invoice client');
       }
       if ('errorMessage' in client) {
-        throw new Error(`Failed to create Green Invoice client: ${client.errorMessage}`);
+        throw new GreenInvoiceErrorResponse('create Green Invoice client', client);
       }
 
       const { id } = client as _DOLLAR_defs_getClientResponse;
@@ -327,7 +327,7 @@ export class GreenInvoiceClientProvider {
         throw new Error('Failed to update Green Invoice client');
       }
       if ('errorMessage' in client) {
-        throw new Error(`Failed to update Green Invoice client: ${client.errorMessage}`);
+        throw new GreenInvoiceErrorResponse('update Green Invoice client', client);
       }
 
       const { id } = client as _DOLLAR_defs_getClientResponse;
@@ -353,7 +353,7 @@ export class GreenInvoiceClientProvider {
         throw new Error('Failed to delete Green Invoice client');
       }
       if ('errorMessage' in client) {
-        throw new Error(`Failed to delete Green Invoice client: ${client.errorMessage}`);
+        throw new GreenInvoiceErrorResponse('delete Green Invoice client', client);
       }
 
       this.invalidateClient(clientId);
@@ -396,6 +396,28 @@ export function cleanUpstreamMessage(message: string): string {
 }
 
 /**
+ * Green Invoice answered with an `ErrorResponse` instead of the result. Its message stays out of
+ * `message`: it is carried, cleaned, as {@link UpstreamErrorDetails} (see `upstreamErrorDetails`).
+ */
+export class GreenInvoiceErrorResponse extends Error {
+  readonly upstreamCode: number | string | null;
+  readonly upstreamMessage: string | null;
+
+  constructor(action: string, response: { errorCode?: unknown; errorMessage?: unknown }) {
+    super(`Failed to ${action}`);
+    this.name = 'GreenInvoiceErrorResponse';
+    this.upstreamCode =
+      typeof response.errorCode === 'number' || typeof response.errorCode === 'string'
+        ? response.errorCode
+        : null;
+    this.upstreamMessage =
+      typeof response.errorMessage === 'string'
+        ? cleanUpstreamMessage(response.errorMessage)
+        : null;
+  }
+}
+
+/**
  * Finds the upstream response behind an SDK error: the REST transport puts it on the GraphQL error's
  * `extensions.response`, and the SDK throws several errors as an `AggregateError`. Follows `cause`, so
  * it also works on an error this provider already wrapped.
@@ -403,6 +425,13 @@ export function cleanUpstreamMessage(message: string): string {
 export function upstreamErrorDetails(error: unknown, depth = 0): UpstreamErrorDetails | null {
   if (typeof error !== 'object' || error === null || depth > 4) {
     return null;
+  }
+  if (error instanceof GreenInvoiceErrorResponse) {
+    return {
+      status: null,
+      upstreamCode: error.upstreamCode,
+      upstreamMessage: error.upstreamMessage,
+    };
   }
   if (error instanceof AggregateError) {
     for (const inner of error.errors) {
@@ -451,15 +480,37 @@ function failure(
     return error;
   }
   const upstream = upstreamErrorDetails(error);
+  // Cleaned like Green Invoice's own message: an error here can embed upstream text.
+  const errorMessage = cleanUpstreamMessage(error instanceof Error ? error.message : String(error));
   log('error', 'green-invoice-call-failed', {
     // Not `operation`: easy to mistake for the GraphQL `operationName` this line also carries.
     greenInvoiceCall,
     ...fields,
     ...upstream,
-    message: error instanceof Error ? error.message : String(error),
+    message: errorMessage,
+    causes: causeChain(error),
   });
-  const reason = upstream?.upstreamMessage ?? (error instanceof Error ? error.message : undefined);
+  const reason = upstream?.upstreamMessage ?? (error instanceof Error ? errorMessage : undefined);
   const wrapped = new Error(reason ? `${message}: ${reason}` : message, { cause: error });
   markLogged(wrapped);
   return wrapped;
+}
+
+/**
+ * The name and code of each error under `error` (`fetch failed` → `ECONNREFUSED`), so this line keeps
+ * the underlying reason once the request log stops repeating it. Messages are left out: the access
+ * token error embeds the token endpoint's response body in its message.
+ */
+function causeChain(error: unknown): Array<{ name: string; code: string | number | null }> {
+  const chain: Array<{ name: string; code: string | number | null }> = [];
+  let current = error instanceof Error ? error.cause : undefined;
+  for (let depth = 0; current !== undefined && current !== null && depth < 4; depth += 1) {
+    const code = (current as { code?: unknown }).code;
+    chain.push({
+      name: current instanceof Error ? current.name : typeof current,
+      code: typeof code === 'string' || typeof code === 'number' ? code : null,
+    });
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return chain;
 }
