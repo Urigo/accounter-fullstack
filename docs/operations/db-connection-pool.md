@@ -12,7 +12,8 @@ every request hangs in `pool.connect()`:
 
 - CPU near zero, memory flat — the process is waiting, not working
 - the database looks perfectly healthy: low CPU, zero failed connections, no errors anywhere
-- Yoga logs `Processing GraphQL Parameters` with no matching `done.`
+- `graphql-operation` lines stop: an operation stuck in `pool.connect()` never finishes, so it is
+  never logged
 - new requests may stop appearing in the logs entirely, because the browser's ~6 sockets per origin
   are all consumed by hung requests and the rest queue client-side
 - only a process restart recovers it
@@ -39,21 +40,29 @@ names the code path it leaked from (it is the _last_ statement that ran on the s
 necessarily the culprit).
 
 From the app side, the heartbeat log (`msg: "db-pool-heartbeat"`, every
-`POSTGRES_MONITOR_INTERVAL_MS`) reports the same thing from inside the process:
+`POSTGRES_MONITOR_INTERVAL_MS` while anything is checked out, waiting or held, and every 5 minutes
+while the pool is idle) reports the same thing from inside the process:
 
 ```json
 {
   "msg": "db-pool-heartbeat",
+  "level": "error",
   "pool": { "total": 20, "idle": 0, "waiting": 7, "max": 20 },
   "sessions": { "holdingConnection": 20, "maxIdleMs": 431000 },
-  "eventLoopDelayP99Ms": 3
+  "eventLoopDelayP99Ms": 3,
+  "saturated": true
 }
 ```
 
 `waiting > 0` with `idle: 0` **is** the wedge. It is logged at error level with `saturated: true`. A
 high `sessions.maxIdleMs` means something is holding a connection without querying — a leak in
 progress. The heartbeat still printing at all proves the event loop is alive, which rules out a
-whole class of unrelated theories in one line.
+whole class of unrelated theories in one line. After a busy stretch, the first idle tick reports
+once, so a saturated line is followed by the recovery rather than by silence.
+
+A healthy heartbeat is an `info` record. With `SERVER_LOG_LEVEL=warn` or `error`, only saturated
+heartbeats are written, so there is no liveness line while the pool is healthy. Keep the level at
+`info` (the default) where that line matters.
 
 ## Layers of defence
 
@@ -88,17 +97,17 @@ does not run", so no single mechanism is trusted:
    All three must also stay **below** `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` by at least two
    sweep intervals, and the server refuses to start otherwise. The watchdog only notices a leak on a
    sweep, so up to one interval after its ceiling. If Postgres gets there first, it terminates the
-   session, the client's error handler drops it, and the watchdog's
-   `[db] Reclaiming leaked connection … operation=… request=…` line is never written. That line is
-   the one that names the leaking operation. In the 2026-10-09 production logs Postgres killed 19
-   sessions and the watchdog logged nothing (#4871).
+   session, the client's error handler drops it, and the watchdog's `db-leaked-connection-reclaimed`
+   line is never written. That line is the one that names the leaking operation. In the 2026-10-09
+   production logs Postgres killed 19 sessions and the watchdog logged nothing (#4871).
 
-   Every line about a request-scoped client names its GraphQL operation and request id: the
-   watchdog's reclaim line, the `[db] Error on checked-out client …` line (one line, no pg stack),
-   and `[db] TenantAwareDBClient created outside a live request …`. The last one means that work
-   outlived its request and constructed a client after the end-of-execution disposal pass, or after
-   graphql-modules destroyed the operation. Such a client commits and releases after every query, so
-   it cannot hold a connection.
+   Every line about a request-scoped client names its GraphQL operation and request id
+   (`operationName`, `requestId`; see [Logging](./logging.md)): the watchdog's
+   `db-leaked-connection-reclaimed`, `db-checked-out-client-error` (no pg stack), and
+   `db-client-outside-live-request`. The last one means that work outlived its request and
+   constructed a client after the end-of-execution disposal pass, or after graphql-modules destroyed
+   the operation. Such a client commits and releases after every query, so it cannot hold a
+   connection.
 
    The client and `dbCleanupPlugin` share lifecycle state through one object, `context.dbRequest`,
    which is only ever mutated in place. graphql-modules does not inject the Yoga context into

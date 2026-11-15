@@ -1,4 +1,5 @@
 import type { Pool, PoolClient } from 'pg';
+import { log, serializeError } from '../../../observability/log.js';
 
 /**
  * Error codes/messages that mean the connection itself died, as opposed to the
@@ -106,11 +107,10 @@ export async function withPoolReadRetry<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (err) {
     if (!isConnectionLevelError(err)) throw err;
-    process.stderr.write(
-      `[db] Retrying pool read on a fresh connection after a connection-level failure: ${
-        err instanceof Error ? err.message : String(err)
-      }\n`,
-    );
+    log('warn', 'db-pool-read-retry', {
+      detail: 'retrying on a fresh connection after a connection-level failure',
+      error: serializeError(err),
+    });
     return fn();
   }
 }
@@ -149,11 +149,10 @@ export async function withTenantContext<T>(
     return await runInTenantTransaction(pool, tenantId, fn);
   } catch (err) {
     if (!isConnectionLevelError(err)) throw err;
-    process.stderr.write(
-      `[db] Retrying tenant transaction on a fresh connection after a connection-level failure: ${
-        err instanceof Error ? err.message : String(err)
-      }\n`,
-    );
+    log('warn', 'db-tenant-transaction-retry', {
+      detail: 'retrying on a fresh connection after a connection-level failure',
+      error: serializeError(err),
+    });
     return runInTenantTransaction(pool, tenantId, fn);
   }
 }

@@ -3,6 +3,7 @@ import { Mutex } from 'async-mutex';
 import { GraphQLError } from 'graphql';
 import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { log, serializeError } from '../../observability/log.js';
 import { resolveWriteTargetBusinessId } from '../../shared/helpers/auth-scope.js';
 import type { AuthContext } from '../../shared/types/auth.js';
 import type { DbRequestState } from '../../shared/types/index.js';
@@ -144,7 +145,11 @@ export function startTenantDbClientWatchdog(options: WatchdogOptions): { stop: (
       };
       options.onLeak?.(info);
       void client.dispose().catch(error => {
-        console.error('Watchdog failed to dispose leaked TenantAwareDBClient:', error);
+        log('error', 'db-watchdog-dispose-failed', {
+          error: serializeError(error),
+          operationName: client.operationName,
+          requestId: client.requestId,
+        });
       });
     }
   }, options.intervalMs);
@@ -261,9 +266,9 @@ export class TenantAwareDBClient {
     return this.request?.requestId ?? null;
   }
 
-  /** ` operation=… request=…`, appended to every log line about this client. */
-  private get logSuffix(): string {
-    return ` operation=${this.operationName ?? 'unknown'} request=${this.requestId ?? 'unknown'}`;
+  /** Names the request this client belongs to, on every log line it writes. */
+  private get logFields(): { operationName: string | null; requestId: string | null } {
+    return { operationName: this.operationName, requestId: this.requestId };
   }
 
   /**
@@ -303,9 +308,10 @@ export class TenantAwareDBClient {
       // open transaction) until the watchdog or Postgres killed it. Without
       // context at all (direct construction — scripts, test harnesses) this is
       // the expected mode and not worth a line.
-      process.stderr.write(
-        `[db] TenantAwareDBClient created outside a live request; running in autoRelease mode.${this.logSuffix}\n`,
-      );
+      log('warn', 'db-client-outside-live-request', {
+        detail: 'running in autoRelease mode',
+        ...this.logFields,
+      });
     }
   }
 
@@ -504,12 +510,14 @@ export class TenantAwareDBClient {
       const onClientError = (error: Error & { code?: string }) => {
         // One line, no pg stack: the stack says nothing about who held the
         // connection, while the operation and last query do.
-        process.stderr.write(
-          `[db] Error on checked-out client, discarding connection: ` +
-            `${error.code ? `code=${error.code} ` : ''}${error.message}` +
-            ` idleMs=${Date.now() - this.lastActivityAt} lastQuery=${this.lastQuery ?? 'unknown'}` +
-            `${this.logSuffix}\n`,
-        );
+        log('error', 'db-checked-out-client-error', {
+          detail: 'discarding connection',
+          code: error.code ?? null,
+          message: error.message,
+          idleMs: Date.now() - this.lastActivityAt,
+          lastQuery: this.lastQuery ?? null,
+          ...this.logFields,
+        });
         this.sessionOpen = false;
         // Hand the connection back to the pool as destroyed. Merely dropping
         // our own reference would leave the pool counting it as checked out
@@ -558,7 +566,11 @@ export class TenantAwareDBClient {
     try {
       await this.activeClient.query(mode);
     } catch (error) {
-      console.error(`Failed to ${mode} transaction:`, error);
+      log('error', 'db-end-session-failed', {
+        mode,
+        error: serializeError(error),
+        ...this.logFields,
+      });
       this.releaseClient(true);
     }
   }
@@ -573,7 +585,7 @@ export class TenantAwareDBClient {
       try {
         this.activeClient.release(destroy);
       } catch (e) {
-        console.error('Error releasing client:', e);
+        log('error', 'db-release-client-failed', { error: serializeError(e), ...this.logFields });
       }
       this.activeClient = null;
     }
@@ -696,7 +708,10 @@ export class TenantAwareDBClient {
     }
     this.disposalRequested = false;
     void this.dispose().catch(error => {
-      console.error('Deferred TenantAwareDBClient disposal failed:', error);
+      log('error', 'db-deferred-dispose-failed', {
+        error: serializeError(error),
+        ...this.logFields,
+      });
     });
   }
 
@@ -727,10 +742,11 @@ export class TenantAwareDBClient {
         ),
       ]);
     } catch (e) {
-      console.warn(
-        'Timeout acquiring mutex during TenantAwareDBClient disposal. Connection may be in use.',
-        e,
-      );
+      log('warn', 'db-dispose-mutex-timeout', {
+        detail: 'connection may be in use; cleanup deferred until it is released',
+        error: serializeError(e),
+        ...this.logFields,
+      });
       // Mark disposed to prevent further usage, and schedule cleanup for when
       // the in-flight operation finishes — otherwise the held connection would
       // leak from the pool.
@@ -741,7 +757,10 @@ export class TenantAwareDBClient {
           this.releaseClient();
         })
         .catch(e2 => {
-          console.error('Deferred TenantAwareDBClient cleanup failed:', e2);
+          log('error', 'db-deferred-cleanup-failed', {
+            error: serializeError(e2),
+            ...this.logFields,
+          });
         });
       return;
     }

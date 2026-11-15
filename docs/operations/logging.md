@@ -13,9 +13,9 @@ handled, degraded, or the user's data needs fixing · `info` lifecycle · `debug
 
 ## Request IDs
 
-`requestId` names a request in the DB lines (leak reclaimed, session killed). It is the
-OpenTelemetry trace ID when there is one (so it pivots to the trace, and a client can't override
-it), else the `X-Request-Id` header, else a random UUID.
+`requestId` ties a request's lines together: the DB lines (`db-leaked-connection-reclaimed`,
+`db-checked-out-client-error`, …). It is the OpenTelemetry trace ID when there is one (so it pivots
+to the trace, and a client can't override it), else the `X-Request-Id` header, else a random UUID.
 
 `X-Correlation-Id` is not a request ID: the MCP server sends the same one on every upstream call of
 a tool run, retries included, so it groups those requests while `requestId` still tells them apart.
@@ -41,9 +41,14 @@ Every record goes through the same checks, whatever the call site passed:
 
 ## Other records
 
-| `msg`                  | Level        | Meaning                                                                                                                                                                                                                            |
-| ---------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `server-shutting-down` | fatal / info | The process is stopping: `fatal` with the `error` after a crash (`uncaughtException`, `unhandledRejection`), `info` on a signal. Then `server-shutdown-timed-out` / `server-shutdown-failed` (`fatal`) if it doesn't stop cleanly. |
+| `msg`                                                | Level        | Meaning                                                                                                                                                                                                                            |
+| ---------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db-pool-heartbeat`                                  | info / error | Pool health. Every `POSTGRES_MONITOR_INTERVAL_MS` (30s by default) while the pool is busy, every 5 minutes while idle, and once when it turns idle again. See [the DB pool runbook](./db-connection-pool.md).                      |
+| `db-leaked-connection-reclaimed`                     | error        | The watchdog reclaimed a request-scoped connection nothing disposed.                                                                                                                                                               |
+| `db-checked-out-client-error`                        | error        | A checked-out connection failed (e.g. Postgres killed an idle-in-transaction session).                                                                                                                                             |
+| `db-client-outside-live-request`                     | warn         | Work outlived its request and built a DB client; it runs in autoRelease mode.                                                                                                                                                      |
+| `db-pool-read-retry` / `db-tenant-transaction-retry` | warn         | Email ingestion retried a read or a tenant transaction on a fresh connection after a connection-level failure.                                                                                                                     |
+| `server-shutting-down`                               | fatal / info | The process is stopping: `fatal` with the `error` after a crash (`uncaughtException`, `unhandledRejection`), `info` on a signal. Then `server-shutdown-timed-out` / `server-shutdown-failed` (`fatal`) if it doesn't stop cleanly. |
 
 ## Writing logs
 
