@@ -20,8 +20,9 @@ handled, degraded, or the user's data needs fixing · `info` lifecycle · `debug
 a tool run, retries included, so it groups those requests while `requestId` still tells them apart.
 
 An inbound id is used only if it matches `^[A-Za-z0-9._:-]{8,64}$`; otherwise the request id is
-minted, and a correlation id is ignored (and not set as the OTel span attribute). A client can't
-plant an id that collides with a real one, or put arbitrary text on every line of a request.
+minted, and a correlation id is ignored (and not set as the OTel span attribute). That keeps
+arbitrary text off every line of a request. It bounds only length and characters: it doesn't make an
+inbound id unique (a client can send the same one on several requests) or prove where it came from.
 
 ## Safety
 

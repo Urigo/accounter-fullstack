@@ -21,8 +21,9 @@ export const REQUEST_ID_HEADER = 'x-request-id';
 
 /**
  * What an inbound request or correlation id must look like to be used as-is. Anything else is
- * ignored (a request id is minted instead): a client must not be able to plant an id that collides
- * with a real one, or smuggle arbitrary text into every log line of a request.
+ * ignored (a request id is minted instead), so a client can't put arbitrary text (spaces, quotes,
+ * a whole payload) on every log line of a request. It bounds only length and characters: a client
+ * can still reuse a valid id on several requests, and nothing proves where an id came from.
  */
 const VALID_ID = /^[A-Za-z0-9._:-]{8,64}$/;
 
