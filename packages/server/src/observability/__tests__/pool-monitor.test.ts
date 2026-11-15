@@ -55,6 +55,23 @@ describe('startPoolMonitor', () => {
     expect(heartbeats()).toHaveLength(3);
   });
 
+  it('reports the first idle tick after a busy one, so the recovery shows', () => {
+    const state = { totalCount: 3, idleCount: 1, waitingCount: 0 };
+    const monitor = startPoolMonitor({
+      pool: fakePool(state),
+      intervalMs: 1000,
+      max: 10,
+      idleReportIntervalMs: 5000,
+    });
+
+    vi.advanceTimersByTime(1000);
+    state.idleCount = 3;
+    vi.advanceTimersByTime(1000);
+    monitor.stop();
+
+    expect(heartbeats()).toHaveLength(2);
+  });
+
   it('reports a saturated pool at error level', () => {
     const monitor = startPoolMonitor({
       pool: fakePool({ totalCount: 10, idleCount: 0, waitingCount: 4 }),

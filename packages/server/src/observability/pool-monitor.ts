@@ -55,7 +55,9 @@ export function startPoolMonitor({
       // Not reset: the next reported p99 covers every tick since the last report.
       return;
     }
-    lastReportAt = now;
+    // A busy tick clears it, so the first idle tick after one reports: it shows the recovery (after a
+    // saturated line, silence would look the same as a stalled event loop).
+    lastReportAt = idle ? now : Number.NEGATIVE_INFINITY;
 
     const snapshot = {
       pool: {

@@ -57,7 +57,12 @@ while the pool is idle) reports the same thing from inside the process:
 `waiting > 0` with `idle: 0` **is** the wedge. It is logged at error level with `saturated: true`. A
 high `sessions.maxIdleMs` means something is holding a connection without querying — a leak in
 progress. The heartbeat still printing at all proves the event loop is alive, which rules out a
-whole class of unrelated theories in one line.
+whole class of unrelated theories in one line. After a busy stretch, the first idle tick reports
+once, so a saturated line is followed by the recovery rather than by silence.
+
+A healthy heartbeat is an `info` record. With `SERVER_LOG_LEVEL=warn` or `error`, only saturated
+heartbeats are written, so there is no liveness line while the pool is healthy. Keep the level at
+`info` (the default) where that line matters.
 
 ## Layers of defence
 
