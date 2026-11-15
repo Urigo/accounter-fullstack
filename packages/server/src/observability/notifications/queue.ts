@@ -101,6 +101,10 @@ export function createSlackQueue(options: SlackQueueOptions): SlackQueue {
       await sleep(delay);
       result = await postSlackMessage(fetchFn, url, message, timeoutMs);
     }
+    if (!result.ok && result.status === 400) {
+      // Slack rejected the blocks: degrade to the plain-text fallback once.
+      result = await postSlackMessage(fetchFn, url, { text: message.text, blocks: [] }, timeoutMs);
+    }
     lastSentAt = Date.now();
     if (result.ok) {
       stats.sent++;

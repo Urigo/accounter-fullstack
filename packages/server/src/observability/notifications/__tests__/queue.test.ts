@@ -68,6 +68,19 @@ describe('createSlackQueue', () => {
     ]);
   });
 
+  it('degrades to a text-only resend when Slack rejects the blocks (400)', async () => {
+    const fetch = fakeFetch(respond(400, 'invalid_blocks'), respond(200));
+    const queue = queueWith(fetch);
+    queue.enqueue({ text: 'fallback', blocks: [{ type: 'context', elements: [] }] });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(fetch.mock.calls[1]![1]?.body))).toEqual({
+      text: 'fallback',
+      blocks: [],
+    });
+    expect(await queue.flush(0)).toEqual({ sent: 1, failed: 0, dropped: 0 });
+  });
+
   it('opens a circuit on 404 and drops later messages, with one warning', async () => {
     const logs = captureLogs();
     const fetch = fakeFetch(respond(404, 'no_service'));
