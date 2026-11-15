@@ -113,15 +113,9 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     // skip if salary record outside of employee's employment dates
     const salaryMonthStart = `${salaryRecord.month}-01` as TimelessDateString;
     if (employee.employee.start_work_date > endOfTimelessMonth(salaryMonthStart)) {
-      console.log(
-        `salary record of employee ${employee.employee.first_name} before start date - ${employee.employee.start_work_date}`,
-      );
       continue;
     }
     if (employee.employee.end_work_date && employee.employee.end_work_date < salaryMonthStart) {
-      console.log(
-        `salary record of employee ${employee.employee.first_name} after end date - ${employee.employee.end_work_date}`,
-      );
       continue;
     }
 
@@ -143,7 +137,6 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
 
   let vacationReserveAmount = 0;
 
-  let reservesPrompt = `Vacation reserve for ${year}:`;
   for (const employeeData of Array.from(employeeMap.values())) {
     if (!employeeData.latestSalary || !employeeData.firstSalary) {
       throw new GraphQLError(`Employee ${employeeData.employee.first_name} has no salary records`);
@@ -187,7 +180,6 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     }
     const dailySalary = latestSalaryAmount / AVERAGE_MONTHLY_WORK_DAYS;
     const employeeReserve = Math.round(vacationDaysByJobPercentage * dailySalary);
-    reservesPrompt += `\n- Employee ${employeeData.employee.first_name} reserve: ${vacationDaysByJobPercentage} days; ${dailySalary.toFixed(2)} daily payment; ${employeeReserve}`;
     vacationReserveAmount += employeeReserve;
   }
 
@@ -209,10 +201,7 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     }
     return acc + Number(record.credit_local_amount1) * factor;
   }, 0);
-  reservesPrompt += `\n- Prev reserve: ${prevVacationReserveAmount}`;
   vacationReserveAmount -= prevVacationReserveAmount;
-
-  console.debug(reservesPrompt);
 
   return { vacationReserveAmount };
 }
