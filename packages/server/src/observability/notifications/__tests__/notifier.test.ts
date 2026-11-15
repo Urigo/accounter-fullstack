@@ -48,6 +48,18 @@ describe('initNotifications', () => {
     expect(initNotifications(config(), { envLabel: 'production' })).toBeInstanceOf(SlackNotifier);
   });
 
+  it('warns which types will not be delivered when only one webhook is set', () => {
+    const logs = captureLogs();
+    initNotifications(config({ eventsWebhookUrl: undefined }), { envLabel: 'production' });
+    expect(logs.records()).toContainEqual(
+      expect.objectContaining({
+        msg: 'slack-channel-disabled',
+        channel: 'events',
+        types: ['tenant.created', 'invitation.accepted'],
+      }),
+    );
+  });
+
   it('logs config problems as warnings without the values', () => {
     const logs = captureLogs();
     initNotifications(config({ problems: ['SLACK_ALERT_MENTION must be …; it is ignored.'] }), {

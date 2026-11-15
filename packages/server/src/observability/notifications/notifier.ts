@@ -174,6 +174,19 @@ export function initNotifications(config: SlackConfig, options: SlackNotifierOpt
     });
     return current;
   }
+  for (const [channel, url] of [
+    ['alerts', config.alertsWebhookUrl],
+    ['events', config.eventsWebhookUrl],
+  ] as const) {
+    if (!url) {
+      log('warn', 'slack-channel-disabled', {
+        channel,
+        types: Object.entries(NOTIFICATION_CHANNELS)
+          .filter(([, target]) => target === channel)
+          .map(([type]) => type),
+      });
+    }
+  }
   const notifier = new SlackNotifier(config, options);
   current = notifier;
   log('info', 'slack-notifications-enabled', { channels: notifier.channels });
