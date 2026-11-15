@@ -46,15 +46,25 @@ import type { YogaLogger } from 'graphql-yoga';
 /** `fatal`: the process is going down. Always written, whatever the configured level. */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
-/** A minimum level to write; `fatal` is always written, so it is never a threshold. */
-export type LogThreshold = Exclude<LogLevel, 'fatal'>;
+/**
+ * A minimum level to write. `fatal` is always written, so it is never a threshold; `silent` drops
+ * everything else (e.g. in tests).
+ */
+export type LogThreshold = Exclude<LogLevel, 'fatal'> | 'silent';
 
 export type LogFields = Record<string, unknown>;
 
 /** Writes one finished line (newline included). */
 export type LogWriter = (line: string, level: LogLevel) => void;
 
-const LEVEL_SCORE: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3, fatal: 4 };
+const LEVEL_SCORE: Record<LogLevel | 'silent', number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+  fatal: 4,
+  silent: 5,
+};
 
 /** Frames kept from a stack trace: enough to locate the throw, not a screenful per error. */
 const MAX_STACK_FRAMES = 8;
@@ -88,6 +98,9 @@ export function setModuleLogLevels(levels?: Record<string, LogThreshold>): void 
 
 /** Whether a record at `level` is written, for `module` when it has its own level. */
 export function isLogLevelEnabled(level: LogLevel, module?: string): boolean {
+  if (level === 'fatal') {
+    return true;
+  }
   const min = (module === undefined ? undefined : moduleThresholds.get(module)) ?? threshold;
   return LEVEL_SCORE[level] >= LEVEL_SCORE[min];
 }

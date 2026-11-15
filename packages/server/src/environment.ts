@@ -274,7 +274,7 @@ const EmailIngestionModel = zod.object({
 
 // One level for Yoga and Hive (whose Yoga plugin logs through Yoga's logger). Validated here so a
 // typo fails startup, and never derived from `DEBUG`, which Yoga would otherwise follow.
-const LOG_THRESHOLDS = ['debug', 'info', 'warn', 'error'] as const;
+const LOG_THRESHOLDS = ['debug', 'info', 'warn', 'error', 'silent'] as const;
 type LogThreshold = (typeof LOG_THRESHOLDS)[number];
 
 const LoggingModel = zod.object({

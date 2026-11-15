@@ -265,6 +265,11 @@ describe('server log level', () => {
     expect(env.logging.level).toBe('info');
   });
 
+  it('accepts silent', async () => {
+    const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'silent' });
+    expect(env.logging.level).toBe('silent');
+  });
+
   it('accepts an explicit level', async () => {
     const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'debug' });
     expect(env.logging.level).toBe('debug');

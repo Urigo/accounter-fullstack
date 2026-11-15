@@ -215,6 +215,23 @@ describe('log', () => {
     expect(records()).toEqual([expect.objectContaining({ msg: 'survives' })]);
   });
 
+  it('drops everything but fatal when silent, process-wide or for one module', () => {
+    setLogLevel('silent');
+    log('error', 'dropped');
+    log('fatal', 'still-written');
+    setLogLevel('info');
+    setModuleLogLevels({ deel: 'silent' });
+    log('error', 'deel-dropped', { module: 'deel' });
+    log('fatal', 'deel-fatal', { module: 'deel' });
+    log('info', 'other-module', { module: 'charges' });
+
+    expect(records().map(record => record['msg'])).toEqual([
+      'still-written',
+      'deel-fatal',
+      'other-module',
+    ]);
+  });
+
   it('sends finished lines to the configured writer', () => {
     const writer = vi.fn();
     setLogWriter(writer);

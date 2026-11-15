@@ -4,9 +4,9 @@ The server writes one JSON object per line, every level to stdout:
 `{"msg": …, "level": …, "time": …, …fields}`. `msg` is a stable identifier to filter on. Values are
 in fields, never spliced into `msg`. `time` is ISO 8601.
 
-`SERVER_LOG_LEVEL` (`debug` | `info` | `warn` | `error`, default `info`) sets the minimum level for
-the server's own records, Yoga and Hive (Hive forwards its logs to Yoga's logger). `DEBUG=1` has no
-effect. `fatal` (the process is going down) is always written.
+`SERVER_LOG_LEVEL` (`debug` | `info` | `warn` | `error` | `silent`, default `info`) sets the minimum
+level for the server's own records, Yoga and Hive (Hive forwards its logs to Yoga's logger).
+`DEBUG=1` has no effect. `fatal` (the process is going down) is always written, even at `silent`.
 
 `SERVER_LOG_LEVEL_OVERRIDES` sets a level per `module` (see [Origin tags](#origin-tags)), over
 `SERVER_LOG_LEVEL`: `deel=debug,db=warn`. A malformed pair or an unknown level fails startup; a
