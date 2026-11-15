@@ -93,6 +93,29 @@ describe('SlackNotifier', () => {
     expect(sent.find(s => s.url === OTHER)?.text).not.toContain('<!here>');
   });
 
+  it('caps alerts at 20 per minute, then sends one storm message', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetch = fakeFetch();
+      const notifier = new SlackNotifier(config(), { envLabel: 'production', fetch });
+      for (let i = 0; i < 25; i++) {
+        notifier.notify({ type: 'job.failed', title: 'Job failed', fields: { i } });
+      }
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(await notifier.flush(0)).toEqual({ sent: 21, failed: 0, dropped: 5 });
+      const last = JSON.parse(String(fetch.mock.calls.at(-1)![1]?.body)).text as string;
+      expect(last).toContain('Alert storm');
+
+      // A new window lets alerts through again.
+      await vi.advanceTimersByTimeAsync(60_000);
+      notifier.notify({ type: 'job.failed', title: 'Job failed', fields: { i: 'next' } });
+      await vi.advanceTimersByTimeAsync(2000);
+      expect((await notifier.flush(0)).sent).toBe(22);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shares one queue when both channels use the same webhook', async () => {
     const fetch = fakeFetch();
     const notifier = new SlackNotifier(config({ eventsWebhookUrl: webhook() }), {

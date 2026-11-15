@@ -13,6 +13,8 @@ export const NOTIFICATION_CHANNELS = {
   'db.connection.leaked': 'alerts',
   'graphql.internal-error': 'alerts',
   'email-ingestion.quarantined': 'alerts',
+  /** Sent by the notifier itself when the global alert cap is hit. */
+  'notifications.alert-storm': 'alerts',
 } as const satisfies Record<string, Channel>;
 
 export type NotificationType = keyof typeof NOTIFICATION_CHANNELS;

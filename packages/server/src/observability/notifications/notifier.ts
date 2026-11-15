@@ -34,9 +34,16 @@ function defaultFingerprint(notification: ServerNotification): string {
   return [notification.type, ...parts].join('|');
 }
 
+/** Global cap on alerts sent per minute, on top of the per-fingerprint dedupe. */
+const MAX_ALERTS_PER_MINUTE = 20;
+const CAP_WINDOW_MS = 60_000;
+
 export class SlackNotifier implements Notifier {
   private readonly queues = new Map<Channel, SlackQueue>();
   private readonly throttle;
+  private capWindowStart = Number.NEGATIVE_INFINITY;
+  private capCount = 0;
+  private capDropped = 0;
 
   constructor(
     private readonly config: SlackConfig,
@@ -94,6 +101,9 @@ export class SlackNotifier implements Notifier {
           return;
         }
         suppressed = decision.suppressed;
+        if (!this.underAlertCap(queue)) {
+          return;
+        }
       }
       queue.enqueue(
         formatSlackMessage(notification, {
@@ -116,8 +126,45 @@ export class SlackNotifier implements Notifier {
     }
   }
 
+  /**
+   * Fixed one-minute window. The alert that would exceed the cap is replaced by a single "alert
+   * storm" message; the rest of the window's alerts are dropped (and counted as dropped).
+   */
+  private underAlertCap(queue: SlackQueue): boolean {
+    const now = Date.now();
+    if (now - this.capWindowStart >= CAP_WINDOW_MS) {
+      this.capWindowStart = now;
+      this.capCount = 0;
+    }
+    this.capCount++;
+    if (this.capCount <= MAX_ALERTS_PER_MINUTE) {
+      return true;
+    }
+    if (this.capCount === MAX_ALERTS_PER_MINUTE + 1) {
+      queue.enqueue(
+        formatSlackMessage(
+          {
+            type: 'notifications.alert-storm',
+            title: 'Alert storm: further alerts suppressed',
+            fields: {
+              maxPerMinute: MAX_ALERTS_PER_MINUTE,
+              resumesAt: new Date(this.capWindowStart + CAP_WINDOW_MS).toISOString(),
+            },
+          },
+          {
+            envLabel: this.options.envLabel,
+            release: this.options.release,
+            mention: this.config.alertMention,
+          },
+        ),
+      );
+    }
+    this.capDropped++;
+    return false;
+  }
+
   async flush(timeoutMs = 5000): Promise<QueueStats> {
-    const total = { ...EMPTY_STATS };
+    const total = { ...EMPTY_STATS, dropped: this.capDropped };
     try {
       const results = await Promise.all(
         [...new Set(this.queues.values())].map(queue => queue.flush(timeoutMs)),
