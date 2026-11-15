@@ -19,6 +19,7 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper.js';
 import {
   adjustTaxRecord,
+  getVatReportDocumentMissingFields,
   isVatReportRelevantDocument,
   type RawVatReportRecord,
   type VatReportRecordSources,
@@ -67,6 +68,7 @@ export const getVatRecords = async (
       missingInfo: [],
       differentMonthDoc: [],
       businessTrips: [],
+      incompleteDocuments: [],
     };
 
     const docsChargesIDs = new Set<string>();
@@ -193,7 +195,9 @@ export const getVatRecords = async (
         (doc.type === DocumentType.CreditInvoice
           ? doc.debtor_id === reportIssuerId
           : doc.creditor_id === reportIssuerId) &&
-        Number(doc.total_amount) > 0 &&
+        // A missing amount still makes it a candidate, so the completeness check below lists it
+        // instead of the month silently leaving it out (#4946).
+        (doc.total_amount == null || Number(doc.total_amount) > 0) &&
         !isReimbursement
       ) {
         includedChargeIDs.add(charge.id);
@@ -203,15 +207,31 @@ export const getVatRecords = async (
       }
     });
 
-    if (incomeRecords.length + expenseRecords.length > 0) {
+    // A document without an amount, currency or date cannot be tax-adjusted. That is a data
+    // problem with one document, not a report failure: set it aside and list its charge under
+    // `missingInfo`, so the rest of the month still renders (#4946).
+    const incompleteChargeIDs = new Set<string>();
+    const isComplete = ({ doc, charge }: VatReportRecordSources) => {
+      const missingFields = getVatReportDocumentMissingFields(doc);
+      if (missingFields.length === 0) {
+        return true;
+      }
+      response.incompleteDocuments.push({ documentId: doc.id, chargeId: charge.id, missingFields });
+      incompleteChargeIDs.add(charge.id);
+      return false;
+    };
+    const completeIncomeRecords = incomeRecords.filter(isComplete);
+    const completeExpenseRecords = expenseRecords.filter(isComplete);
+
+    if (completeIncomeRecords.length + completeExpenseRecords.length > 0) {
       // TODO: what if no exchange dates found?
       await allSettledOrThrow([
-        ...incomeRecords.map(async rawRecord =>
+        ...completeIncomeRecords.map(async rawRecord =>
           adjust(rawRecord).then(res => {
             response.income.push(res);
           }),
         ),
-        ...expenseRecords.map(async rawRecord =>
+        ...completeExpenseRecords.map(async rawRecord =>
           adjust(rawRecord).then(res => {
             response.expenses.push(res);
           }),
@@ -240,7 +260,11 @@ export const getVatRecords = async (
       );
 
       for (const { charge, isValid, businessTripId } of validatedCharges) {
-        if (businessTripId) {
+        if (incompleteChargeIDs.has(charge.id)) {
+          // One of its documents was left out of income/expenses above, so it needs fixing
+          // whatever the charge-level validation says.
+          response.missingInfo.push(charge);
+        } else if (businessTripId) {
           // If valid and has business trip, add to business trips
           response.businessTrips.push(charge);
         } else if (isValid) {
@@ -264,8 +288,9 @@ export const getVatRecords = async (
   } catch (e) {
     // The only line with the stack: the error is rethrown as a plain `GraphQLError` so the user sees
     // its message, which the request log records as an expected error. `warn`, not `error`: most
-    // failures here are a document missing an amount, currency or date, which is the user's data to
-    // fix (#4946 turns those into per-document findings instead of a failed report).
+    // failures here are the user's data to fix, such as a missing VAT rate or a property charge
+    // without depreciation records. A document missing an amount, currency or date no longer gets
+    // here: it is set aside above and listed in `incompleteDocuments` (#4946).
     log('warn', 'vat-report-records-failed', {
       failedRecordCount: failedRecords.length,
       failedRecords: failedRecords.slice(0, MAX_LOGGED_FAILED_RECORDS).map(failure => ({

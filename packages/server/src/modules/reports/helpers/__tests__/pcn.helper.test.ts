@@ -26,6 +26,7 @@ type GetVatRecordsResponse = {
       missingInfo: Array<IGetChargesByIdsResult>;
       differentMonthDoc: Array<IGetChargesByIdsResult>;
       businessTrips: Array<IGetChargesByIdsResult>;
+      incompleteDocuments: [];
     };
 
 vi.mock('../../resolvers/get-vat-records.resolver.js', () => ({
@@ -732,6 +733,7 @@ describe('pcn.helper', () => {
         missingInfo: [],
         differentMonthDoc: [],
         businessTrips: [],
+        incompleteDocuments: [],
         filters,
       });
 
@@ -770,6 +772,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           });
           const injector = createMockInjector();
 
@@ -792,6 +795,52 @@ describe('pcn.helper', () => {
         },
       );
     });
+
+    describe('documents missing an amount, currency or date (#4946)', () => {
+      const income = [createMockVatRecord({ localAmountBeforeVAT: 1000 })];
+      const incompleteDocuments = [
+        { documentId: 'doc-1', chargeId: 'charge-1', missingFields: ['currency' as const] },
+      ];
+
+      beforeEach(() => {
+        vi.mocked(getVatRecords).mockReset();
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income,
+          expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+          incompleteDocuments,
+        });
+      });
+
+      it('refuses to build a PCN874 file that would leave them out', async () => {
+        await expect(
+          getPcn874String(createMockInjector(), FIXED_BUSINESS_ID, FIXED_REPORT_MONTH),
+        ).rejects.toThrow('document ID=doc-1 (charge ID=charge-1) is missing currency');
+      });
+
+      it('skips them in a filtered summary, like the unfiltered report does', async () => {
+        const records = await getVatReportSummaryRecords(
+          {
+            income: [],
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+            incompleteDocuments: [],
+            filters: {
+              monthDate: FIXED_REPORT_MONTH,
+              financialEntityId: FIXED_BUSINESS_ID,
+              chargesType: 'INCOME',
+            },
+          },
+          createMockInjector(),
+        );
+
+        expect(records).toEqual(income);
+      });
+    });
   });
 
   describe('month handling west of UTC (TZ=America/New_York)', () => {
@@ -807,6 +856,7 @@ describe('pcn.helper', () => {
         missingInfo: [],
         differentMonthDoc: [],
         businessTrips: [],
+        incompleteDocuments: [],
       });
     });
 
@@ -840,6 +890,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
           filters: {
             monthDate: '2024-01-01',
             financialEntityId: FIXED_BUSINESS_ID,
@@ -899,6 +950,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
@@ -949,6 +1001,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
@@ -995,6 +1048,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
@@ -1026,6 +1080,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
@@ -1057,6 +1112,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           } as any);
 
           const result = await getPcn874String(
@@ -1087,6 +1143,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           } as any);
 
           const result = await getPcn874String(
@@ -1132,6 +1189,7 @@ describe('pcn.helper', () => {
             missingInfo: [],
             differentMonthDoc: [],
             businessTrips: [],
+            incompleteDocuments: [],
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(injector, FIXED_BUSINESS_ID, '2024-1' as TimelessDateString);
@@ -1188,6 +1246,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1222,6 +1281,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1255,6 +1315,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1295,6 +1356,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1334,6 +1396,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1431,6 +1494,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1490,6 +1554,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1549,6 +1614,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
@@ -1624,6 +1690,7 @@ describe('pcn.helper', () => {
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
+          incompleteDocuments: [],
         } as GetVatRecordsResponse);
 
         const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);

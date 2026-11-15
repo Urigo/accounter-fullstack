@@ -11,7 +11,10 @@ import { TimelessDateString } from '../../../shared/types/index.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { getVatRecords } from '../resolvers/get-vat-records.resolver.js';
 import type { VatReportResultProto } from '../types.js';
-import type { RawVatReportRecord } from './vat-report.helper.js';
+import {
+  describeIncompleteVatReportDocuments,
+  type RawVatReportRecord,
+} from './vat-report.helper.js';
 
 type GeneratorParameters = Parameters<typeof pcnGenerator>;
 type Header = GeneratorParameters[0];
@@ -259,17 +262,28 @@ export const transactionsFromVatReportRecords = (
 /**
  * The records a PCN874 file is built from: the business's whole month, with no charge-type
  * filter and without the VAT report screen's charge buckets.
+ *
+ * A file that silently left out a document would under-report the month, so by default this
+ * rejects when any VAT-relevant document lacks an amount, currency or date. Pass
+ * `skipIncompleteDocuments` to get the records that could be computed instead, the way the VAT
+ * report screen shows them (it lists those documents' charges under `missingInfo`).
  */
 export async function getPcn874VatRecords(
   injector: Injector,
   businessId: string,
   monthDate: TimelessDateString,
+  { skipIncompleteDocuments = false }: { skipIncompleteDocuments?: boolean } = {},
 ): Promise<RawVatReportRecord[]> {
-  const { income, expenses } = await getVatRecords(
+  const { income, expenses, incompleteDocuments } = await getVatRecords(
     { filters: { monthDate, financialEntityId: businessId } },
     injector,
     { includeChargeBuckets: false },
   );
+  if (!skipIncompleteDocuments && incompleteDocuments.length) {
+    throw new Error(
+      `Cannot build the PCN874 records for ${monthDate}: ${describeIncompleteVatReportDocuments(incompleteDocuments)}`,
+    );
+  }
   return [...income, ...expenses];
 }
 
@@ -287,10 +301,13 @@ export async function getVatReportSummaryRecords(
   if (!filters?.chargesType || filters.chargesType === 'ALL') {
     return [...report.income, ...report.expenses];
   }
+  // Same records the unfiltered report would hold: documents it could not compute are skipped
+  // there too, and their charges are listed under `missingInfo`.
   return getPcn874VatRecords(
     injector,
     filters.financialEntityId,
     startOfTimelessMonth(filters.monthDate),
+    { skipIncompleteDocuments: true },
   );
 }
 
