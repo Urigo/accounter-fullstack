@@ -44,15 +44,17 @@ const MAX_LOGGED_PATHS = 5;
  *
  * - Exactly one `graphql-operation` line per operation, including one rejected before execution
  *   (parse or validation errors, a failure while building the context). A streamed (`@defer`)
- *   result is logged when the stream ends, so `durationMs` covers all of it.
+ *   result is logged when the stream ends, so `durationMs` covers all of it, or, if Yoga can't send
+ *   it at all (406), when Yoga gives up on it.
  * - Errors are logged as `graphql-error` lines **before** Yoga masks them, so the line has the real
  *   message (and, for an unexpected error, its stack and `cause` chain) together with the
- *   operation. "Unexpected" is `isUnexpectedGraphQLError`: masked by Yoga, or thrown on purpose with
- *   `INTERNAL_SERVER_ERROR`; those are logged at `error`, everything else at `warn`. Identical errors (same code and message) are logged once per operation with a
- *   `count`, so a missing token failing every guarded field is one line, not one per field. Each
- *   logged error is marked, and the Yoga logger skips it when Yoga logs it again as it masks it. An
- *   error whose cause a lower boundary already logged in full (`green-invoice-call-failed`) gets a
- *   `detailLogged: true` line without the stack: it still names the operation and request.
+ *   operation. "Unexpected" is `isUnexpectedGraphQLError`: masked by Yoga, or thrown on purpose
+ *   with `INTERNAL_SERVER_ERROR`; those are logged at `error`, everything else at `warn`. Identical
+ *   errors (same code and message) are logged once per operation with a `count`, so a missing token
+ *   failing every guarded field is one line, not one per field. Each logged error is marked, and
+ *   the Yoga logger skips it when Yoga logs it again as it masks it. An error whose cause a lower
+ *   boundary already logged in full (`green-invoice-call-failed`) gets a `detailLogged: true` line
+ *   without the stack: it still names the operation and request.
  * - Internal IDs only: `userId` and `businessId` are recorded by `AuthContextProvider` once auth
  *   resolves; never an email or a token. `requestId` is shared with the DB log lines (see
  *   `requestIdOf`).
@@ -121,6 +123,18 @@ export function requestLogPlugin(): Plugin<AccounterContext> {
         countErrors(state, result?.errors ?? []);
       }
       writeOperationLine(state, request);
+    },
+    onResultProcess({ request, result, resultProcessor, serverContext }) {
+      // A streamed result Yoga can't send (the `Accept` header has no streaming type, so it answers
+      // 406) is dropped without being read: its `finalAsyncIterator` never ends, so the operation,
+      // which already ran, is logged here. Yoga picks its result processor before user plugins run.
+      if (resultProcessor || !isAsyncIterable(result)) {
+        return;
+      }
+      const state = (serverContext as Partial<AccounterContext>).requestLog;
+      if (state) {
+        writeOperationLine(state, request);
+      }
     },
   };
 }

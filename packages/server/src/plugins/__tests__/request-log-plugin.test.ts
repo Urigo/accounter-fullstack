@@ -40,13 +40,13 @@ const schema = createSchema<AccounterContext>({
         await new Promise(resolve => setTimeout(resolve, 5));
         throw new GraphQLError('Not allowed', { extensions: { code: 'FORBIDDEN' } });
       },
-      // A failure a lower boundary already logged in full, as GreenInvoiceClientProvider does.
       // A server fault reported on purpose: passed through to the client, but still a fault.
       deliberateFault: () => {
         throw new GraphQLError('Failed to create the onboarding business', {
           extensions: { code: 'INTERNAL_SERVER_ERROR' },
         });
       },
+      // A failure a lower boundary already logged in full, as GreenInvoiceClientProvider does.
       upstream: () => {
         const error = new Error('Green Invoice Update Client error: Invalid tax id');
         markLogged(error);
@@ -268,6 +268,20 @@ describe('requestLogPlugin', () => {
     ]);
     expect(byMsg(ERROR_LOG_MSG)).toEqual([
       expect.objectContaining({ message: 'deferred failure', operationName: 'Deferred' }),
+    ]);
+  });
+
+  it('logs a streamed operation Yoga refuses to send (406) once, as it already ran', async () => {
+    const response = await yoga().fetch('http://localhost/graphql', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ query: 'query Deferred { hello ... @defer { slow } }' }),
+    });
+    await response.text();
+
+    expect(response.status).toBe(406);
+    expect(byMsg(OPERATION_LOG_MSG)).toEqual([
+      expect.objectContaining({ operationName: 'Deferred' }),
     ]);
   });
 
