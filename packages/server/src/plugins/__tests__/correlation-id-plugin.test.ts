@@ -68,9 +68,10 @@ describe('correlationIdPlugin', () => {
   });
 
   it('does not throw when there is no active span (OTEL disabled)', () => {
-    vi.spyOn(trace, 'getActiveSpan').mockReturnValue(undefined);
+    const getActiveSpan = vi.spyOn(trace, 'getActiveSpan').mockReturnValue(undefined);
 
-    expect(() => correlationIdPlugin().onRequest?.(onRequestArg('corr-1'))).not.toThrow();
+    expect(() => correlationIdPlugin().onRequest?.(onRequestArg('corr-0001'))).not.toThrow();
+    expect(getActiveSpan).toHaveBeenCalled();
   });
 });
 
@@ -78,7 +79,19 @@ describe('requestIdOf', () => {
   const request = (headers: Record<string, string>) =>
     new Request('http://localhost/graphql', { headers });
 
-  it('takes a valid X-Request-Id', () => {
+  it('takes the OTel trace id first, so the line pivots to its trace', () => {
+    const traceId = '0af7651916cd43dd8448eb211c80319c';
+    vi.spyOn(trace, 'getActiveSpan').mockReturnValue({
+      spanContext: () => ({ traceId, spanId: 'b7ad6b7169203331', traceFlags: 1 }),
+    } as unknown as Span);
+
+    expect(requestIdOf(request({}))).toBe(traceId);
+    // A client can't override it, and an invalid header doesn't matter.
+    expect(requestIdOf(request({ [REQUEST_ID_HEADER]: 'req-0001' }))).toBe(traceId);
+    expect(requestIdOf(request({ [REQUEST_ID_HEADER]: 'req id 0001' }))).toBe(traceId);
+  });
+
+  it('takes a valid X-Request-Id when there is no trace', () => {
     expect(requestIdOf(request({ [REQUEST_ID_HEADER]: ' req-0001 ' }))).toBe('req-0001');
   });
 

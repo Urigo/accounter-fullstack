@@ -13,8 +13,9 @@ handled, degraded, or the user's data needs fixing · `info` lifecycle · `debug
 
 ## Request IDs
 
-`requestId` names a request in the DB lines (leak reclaimed, session killed). It comes from the
-`X-Request-Id` header, else the OpenTelemetry trace ID, else a random UUID.
+`requestId` names a request in the DB lines (leak reclaimed, session killed). It is the
+OpenTelemetry trace ID when there is one (so it pivots to the trace, and a client can't override
+it), else the `X-Request-Id` header, else a random UUID.
 
 `X-Correlation-Id` is not a request ID: the MCP server sends the same one on every upstream call of
 a tool run, retries included, so it groups those requests while `requestId` still tells them apart.

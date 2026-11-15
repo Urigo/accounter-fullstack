@@ -33,7 +33,8 @@ const requestIds = new WeakMap<Request, string>();
  * The id that ties together every log line of one request: the `graphql-operation` line, its
  * `graphql-error` lines and the DB lines (leak reclaimed, session killed).
  *
- * Taken from a valid `X-Request-Id`, else the OTel trace id (so the line pivots to the trace), else a random
+ * The OTel trace id when there is one, so every line pivots to its trace (an unsampled request has
+ * a valid trace id too) and a client can't override it; else a valid `X-Request-Id`; else a random
  * UUID. Memoized per request, so every caller gets the same id even when it falls back to a random
  * one. Not `X-Correlation-Id`: that one deliberately spans hops (the MCP server sends the same id
  * on every upstream call of a tool run, retries included), so it can't tell one request from
@@ -45,7 +46,7 @@ export function requestIdOf(request: Request | undefined): string {
   }
   let id = requestIds.get(request);
   if (!id) {
-    id = headerId(request, REQUEST_ID_HEADER) ?? currentTraceId() ?? randomUUID();
+    id = currentTraceId() ?? headerId(request, REQUEST_ID_HEADER) ?? randomUUID();
     requestIds.set(request, id);
   }
   return id;
