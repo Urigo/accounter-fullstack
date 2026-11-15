@@ -3,12 +3,14 @@ import { Mutex } from 'async-mutex';
 import { GraphQLError } from 'graphql';
 import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
-import { log, serializeError } from '../../observability/log.js';
+import { getLogger, serializeError } from '../../observability/log.js';
 import { resolveWriteTargetBusinessId } from '../../shared/helpers/auth-scope.js';
 import type { AuthContext } from '../../shared/types/auth.js';
 import type { DbRequestState } from '../../shared/types/index.js';
 import { AuthContextProvider } from '../auth/providers/auth-context.provider.js';
 import { DBProvider } from './db.provider.js';
+
+const { log } = getLogger(import.meta.url);
 
 /**
  * Statements that may modify data (or session/schema state). Used to decide

@@ -1,8 +1,10 @@
 import { Kind, type DocumentNode } from 'graphql';
 import { isAsyncIterable, Plugin } from 'graphql-yoga';
-import { log, serializeError } from '../observability/log.js';
+import { getLogger, serializeError } from '../observability/log.js';
 import type { AccounterContext, DbRequestState } from '../shared/types/index.js';
 import { requestIdOf } from './correlation-id-plugin.js';
+
+const { log } = getLogger(import.meta.url);
 
 export function dbCleanupPlugin(): Plugin<AccounterContext> {
   return {

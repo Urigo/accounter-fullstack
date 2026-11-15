@@ -1,10 +1,15 @@
+import { readdirSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GraphQLError } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import {
   createYogaLogger,
+  getLogger,
   log,
   markLogged,
+  originOf,
   serializeError,
+  setLogBaseFields,
   setLogContextProvider,
   setLogLevel,
   setLogWriter,
@@ -20,6 +25,7 @@ beforeEach(() => {
 
 afterEach(() => {
   setLogLevel('info');
+  setLogBaseFields();
   setLogContextProvider();
   setLogWriter();
   vi.restoreAllMocks();
@@ -223,6 +229,58 @@ describe('log', () => {
 
     expect(() => log('info', 'into-a-closed-pipe')).not.toThrow();
     expect(process.stdout.listenerCount('error')).toBeGreaterThan(0);
+  });
+});
+
+describe('origin tags', () => {
+  it.each([
+    ['file:///app/packages/server/src/modules/charges/resolvers/charges.resolver.ts', 'charges', 'charges.resolver'],
+    ['/app/packages/server/dist/modules/deel/providers/deel-client.provider.js', 'deel', 'deel-client.provider'],
+    ['file:///app/packages/server/src/plugins/request-log-plugin.ts', 'plugins', 'request-log-plugin'],
+    ['file:///app/packages/server/dist/observability/pool-monitor.js', 'observability', 'pool-monitor'],
+    ['file:///app/packages/server/dist/index.js', 'startup', 'index'],
+    ['file:///app/packages/server/src/environment.ts', 'environment', 'environment'],
+    // The checkout itself under a `src`: the last one wins
+    ['file:///home/me/src/accounter/packages/server/src/modules/tags/index.ts', 'tags', 'index'],
+  ])('derives the origin of %s', (url, module, component) => {
+    expect(originOf(url)).toEqual({ module, component });
+  });
+
+  it('uses each module directory name as its log module', () => {
+    const modulesDir = fileURLToPath(new URL('../../modules/', import.meta.url));
+    const directories = readdirSync(modulesDir, { withFileTypes: true }).filter(entry =>
+      entry.isDirectory(),
+    );
+
+    expect(directories.length).toBeGreaterThan(0);
+    for (const { name } of directories) {
+      const url = pathToFileURL(`${modulesDir}${name}/helpers/some.helper.ts`).href;
+      expect(originOf(url).module).toBe(name);
+    }
+  });
+
+  it('binds module and component, and a call-site field overrides them', () => {
+    const scoped = getLogger('file:///app/packages/server/src/modules/deel/helpers/sync.helper.ts');
+
+    scoped.info('synced', { count: 1 });
+    scoped.log('warn', 'overridden', { component: 'custom' });
+
+    expect(records()).toEqual([
+      expect.objectContaining({ msg: 'synced', module: 'deel', component: 'sync.helper', count: 1 }),
+      expect.objectContaining({ msg: 'overridden', level: 'warn', module: 'deel', component: 'custom' }),
+    ]);
+  });
+
+  it('stamps base fields on every record, below the call site and never over msg/level/time', () => {
+    setLogBaseFields({ service: 'accounter-server', env: 'test', release: 'abc123', msg: 'shadow' });
+
+    log('info', 'with-base');
+    log('info', 'override', { env: 'call-site' });
+
+    expect(records()).toEqual([
+      expect.objectContaining({ msg: 'with-base', service: 'accounter-server', env: 'test', release: 'abc123' }),
+      expect.objectContaining({ msg: 'override', service: 'accounter-server', env: 'call-site' }),
+    ]);
   });
 });
 

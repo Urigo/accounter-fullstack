@@ -1,5 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
-import { log, serializeError } from '../../../observability/log.js';
+import { getLogger, serializeError } from '../../../observability/log.js';
+
+const { log } = getLogger(import.meta.url);
 
 /**
  * Error codes/messages that mean the connection itself died, as opposed to the

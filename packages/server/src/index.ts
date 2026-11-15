@@ -16,7 +16,13 @@ import { DBProvider } from './modules/app-providers/db.provider.js';
 import { startTenantDbClientWatchdog } from './modules/app-providers/tenant-db-client.js';
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
 import { PriceIndexSyncProvider } from './modules/price-indexes/providers/price-index-sync.provider.js';
-import { createYogaLogger, log, serializeError, setLogLevel } from './observability/log.js';
+import {
+  createYogaLogger,
+  getLogger,
+  serializeError,
+  setLogBaseFields,
+  setLogLevel,
+} from './observability/log.js';
 import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
@@ -24,6 +30,8 @@ import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
 import { requestLogPlugin } from './plugins/request-log-plugin.js';
 import { pgTypeParsers } from './shared/helpers/pg-type-parsers.js';
 import { AccounterContext } from './shared/types/index.js';
+
+const { log } = getLogger(import.meta.url);
 
 const { Pool } = pg;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -38,6 +46,12 @@ async function main() {
   // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`. One level for this server's own
   // structured logs, Yoga and Hive (which forwards its logs to Yoga's logger).
   setLogLevel(env.logging.level);
+  // Origin fields on every line, alongside the per-file `module` / `component` from `getLogger`.
+  setLogBaseFields({
+    service: 'accounter-server',
+    env: env.otel.deploymentEnv,
+    release: env.logging.release,
+  });
 
   await startTelemetry();
 

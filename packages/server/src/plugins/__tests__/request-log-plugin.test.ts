@@ -116,6 +116,8 @@ describe('requestLogPlugin', () => {
         msg: OPERATION_LOG_MSG,
         level: 'info',
         time: expect.any(String),
+        module: 'plugins',
+        component: 'request-log-plugin',
         operationName: 'Greeting',
         operationType: 'query',
         durationMs: expect.any(Number),

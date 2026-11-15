@@ -278,6 +278,8 @@ const LoggingModel = zod.object({
   SERVER_LOG_LEVEL: emptyString(
     zod.enum(['debug', 'info', 'warn', 'error']).optional().default('info'),
   ),
+  // The deployed version (e.g. a git sha or tag), stamped on every log line as `release`.
+  RELEASE: emptyString(zod.string().optional()),
 });
 
 const PriceIndexSyncModel = zod.object({
@@ -474,6 +476,7 @@ export const env = {
   },
   logging: {
     level: logging.SERVER_LOG_LEVEL,
+    release: logging.RELEASE,
   },
 } as const;
 

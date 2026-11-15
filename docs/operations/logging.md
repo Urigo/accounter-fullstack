@@ -8,6 +8,23 @@ in fields, never spliced into `msg`. `time` is ISO 8601.
 the server's own records, Yoga and Hive (Hive forwards its logs to Yoga's logger). `DEBUG=1` has no
 effect. `fatal` (the process is going down) is always written.
 
+## Origin tags
+
+Every line says where it came from:
+
+| Field       | Value                                                                                                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `module`    | `src/modules/<dir>/…` → `<dir>` (`charges`, `deel`, `app-providers`); any other nested file → its top-level directory (`plugins`, `observability`, `jobs`, …); `src/index.ts` → `startup`. Same in `dist`, which mirrors `src`. |
+| `component` | The file name without its extension (`tenant-db-client`, `charges.resolver`).                                                                                                                                                   |
+| `service`   | `accounter-server`.                                                                                                                                                                                                             |
+| `env`       | `OTEL_DEPLOYMENT_ENV`, else `NODE_ENV`, else `development`.                                                                                                                                                                     |
+| `release`   | `RELEASE` (e.g. the deployed git sha or tag); omitted when unset.                                                                                                                                                               |
+
+`module` / `component` come from `getLogger(import.meta.url)` (see below); `service` / `env` /
+`release` are set once at startup. A module's directory name **is** its log module: a test walks
+`src/modules` to keep it that way. Lines still written with `console.*`, and Yoga's own lines
+(`source: "yoga"`), carry no `module` / `component` yet.
+
 Levels: `fatal` the process is going down · `error` a server fault someone should look at · `warn`
 handled, degraded, or the user's data needs fixing · `info` lifecycle and one line per operation ·
 `debug` detail.
@@ -118,19 +135,23 @@ Every record goes through the same checks, whatever the call site passed:
 
 ## Writing logs
 
-Use `log` / `logger` from `packages/server/src/observability/log.ts`, not `console.*`:
+Use a file-scoped logger from `packages/server/src/observability/log.ts`, not `console.*`:
 
 ```ts
-import { log, serializeError } from '../../observability/log.js'
+import { getLogger, serializeError } from '../../observability/log.js'
+
+const { log } = getLogger(import.meta.url)
 
 log('error', 'thing-failed', { thingId, error: serializeError(error) })
 ```
 
-`log(level, msg, fields)` is the stable call-site API. Behind it, `setLogContextProvider` merges
-fields into every record (the seam for ambient request context via `AsyncLocalStorage`) and
-`setLogWriter` decides where a finished line goes (the seam for tests and another sink), so neither
-needs call sites to change. The default writer swallows a failed write (`EPIPE`), as `console.*`
-does.
+`getLogger` returns `log` and `debug` / `info` / `warn` / `error` / `fatal`, with the same
+signatures as the unscoped `log` / `logger`, adding the file's `module` and `component`. A call-site
+field overrides a bound one. `log(level, msg, fields)` is the stable call-site API. Behind it,
+`setLogContextProvider` merges fields into every record (the seam for ambient request context via
+`AsyncLocalStorage`) and `setLogWriter` decides where a finished line goes (the seam for tests and
+another sink), so neither needs call sites to change. The default writer swallows a failed write
+(`EPIPE`), as `console.*` does.
 
 - Internal IDs only. Never emails, names, tokens, request bodies or upstream response bodies. The
   safety checks above are a backstop, not a licence.
