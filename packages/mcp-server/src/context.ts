@@ -5,14 +5,16 @@ import type { IncomingMessage } from 'node:http';
  * Per-request context for observability.
  *
  * A `requestId` is minted fresh for every request. A `correlationId` is taken
- * from the inbound `x-correlation-id` header when present (so a trace can span
- * multiple hops) and otherwise generated. The correlation id is echoed back on
+ * from the inbound `x-correlation-id` header when it is a valid id (so a trace
+ * can span multiple hops) and generated otherwise. A valid id matches the same
+ * rule the server applies, so the MCP and server log lines of one tool run
+ * always share a correlation id. The correlation id is echoed back on
  * the response and propagated to upstream calls in later steps.
  */
 export interface RequestContext {
   /** Unique id for this single request. */
   requestId: string;
-  /** Trace id spanning hops; inherited from the inbound header when present. */
+  /** Trace id spanning hops; inherited from the inbound header when it is a valid id. */
   correlationId: string;
   /** HTTP method (e.g. GET, POST). */
   method: string;
@@ -24,6 +26,9 @@ export interface RequestContext {
 
 /** Header used to inherit/propagate the correlation id. */
 export const CORRELATION_ID_HEADER = 'x-correlation-id';
+
+/** Must match `VALID_ID` in packages/server/src/plugins/correlation-id-plugin.ts. */
+const VALID_ID = /^[A-Za-z0-9._:-]{8,64}$/;
 
 export function generateId(): string {
   return randomUUID();
@@ -56,7 +61,10 @@ export function createRequestContext(req: IncomingMessage): RequestContext {
   const route = extractRoute(req.url);
   return {
     requestId: generateId(),
-    correlationId: inboundCorrelationId || generateId(),
+    correlationId:
+      inboundCorrelationId && VALID_ID.test(inboundCorrelationId)
+        ? inboundCorrelationId
+        : generateId(),
     method: req.method ?? 'UNKNOWN',
     route,
     startTimeMs: performance.now(),
