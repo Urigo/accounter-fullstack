@@ -28,7 +28,8 @@ import type { YogaLogger } from 'graphql-yoga';
  *   redaction above is a backstop, not a licence.
  * - **Log once, at the boundary.** A helper that logs an error and rethrows it multiplies one failure
  *   into a line per call site, and a fan-out into dozens. Throw (with `cause`) and let the boundary
- *   log it. Log where the error *stops* — a catch that
+ *   log it: every error that reaches the GraphQL response is already logged by `requestLogPlugin`,
+ *   with the operation and request that produced it. Log where the error *stops* — a catch that
  *   swallows it, returns a `CommonError`, or retries — or where only that site knows the detail
  *   (e.g. the upstream status of a third-party call).
  * - Data-quality findings about the user's own records are `info`, not `error`: `error` is for
@@ -201,8 +202,9 @@ export function wasLogged(error: unknown): boolean {
  * Yoga's logger, writing single-line JSON records at the process-wide level. Hive forwards its own
  * logs to this logger too.
  *
- * Yoga logs every error it masks. One a boundary already logged in full (`markLogged`) is skipped
- * here; anything else is still logged.
+ * Yoga logs every error it masks. An execution error has already been logged by `requestLogPlugin`
+ * together with its operation, so it is skipped here; anything else (an error outside execution,
+ * e.g. while building the context) is still logged.
  */
 export function createYogaLogger(): YogaLogger {
   const at =
