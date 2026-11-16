@@ -270,7 +270,7 @@ export function SimilarChargesTable({
 
   return (
     <>
-      <DialogHeader className="flex flex-row items-center justify-between">
+      <DialogHeader className="flex flex-row items-center justify-between pr-8">
         <DialogTitle>{title}</DialogTitle>
         <Button onClick={onApproveSelected}>Approve selected</Button>
       </DialogHeader>
