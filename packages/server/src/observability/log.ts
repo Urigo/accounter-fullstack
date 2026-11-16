@@ -76,6 +76,8 @@ const MAX_STRING_LENGTH = 2000;
 const MAX_ERROR_MESSAGE_LENGTH = 500;
 /** Fields every record starts with; a field passed by a caller or the context can't replace them. */
 const RESERVED_KEYS = new Set(['msg', 'level', 'time']);
+/** Where a record came from (`getLogger`, `setLogBaseFields`); kept even by the fallback record. */
+const ORIGIN_KEYS = ['service', 'env', 'release', 'module', 'component'] as const;
 
 let threshold: LogThreshold = 'info';
 let moduleThresholds = new Map<string, LogThreshold>();
@@ -524,11 +526,20 @@ function toJsonLine(record: LogFields): string {
     });
   } catch (error) {
     // A getter or `toJSON` threw. This record skips the replacer, so its strings get the same
-    // scrubbing and caps by hand.
+    // scrubbing and caps by hand. The origin fields are kept, so the line still matches a query on
+    // them.
+    const origin: LogFields = {};
+    for (const key of ORIGIN_KEYS) {
+      const value = record[key];
+      if (typeof value === 'string') {
+        origin[key] = cap(value, MAX_STRING_LENGTH);
+      }
+    }
     return JSON.stringify({
       msg: cap(String(record['msg']), MAX_STRING_LENGTH),
       level: record['level'],
       time: record['time'],
+      ...origin,
       logError:
         error instanceof Error
           ? cap(error.message, MAX_ERROR_MESSAGE_LENGTH)

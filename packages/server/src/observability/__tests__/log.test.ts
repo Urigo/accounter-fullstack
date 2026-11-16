@@ -185,10 +185,21 @@ describe('log', () => {
       },
     };
 
-    log('error', 'hostile-field', { hostile });
+    setLogBaseFields({ service: 'accounter-server', env: 'test', release: 'abc123' });
+    const scoped = getLogger('file:///app/packages/server/src/modules/deel/helpers/sync.helper.ts');
+
+    scoped.error('hostile-field', { hostile });
 
     const record = records()[0] as { logError: string };
-    expect(record).toMatchObject({ msg: 'hostile-field', level: 'error' });
+    expect(record).toMatchObject({
+      msg: 'hostile-field',
+      level: 'error',
+      service: 'accounter-server',
+      env: 'test',
+      release: 'abc123',
+      module: 'deel',
+      component: 'sync.helper',
+    });
     expect(record.logError).toContain('[email]');
     expect(record.logError).not.toContain('jane@example.com');
     expect(record.logError.length).toBeLessThan(550);
