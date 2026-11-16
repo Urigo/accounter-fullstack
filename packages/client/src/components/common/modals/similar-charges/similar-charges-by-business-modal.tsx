@@ -74,7 +74,7 @@ export function SimilarChargesByBusinessModal({
   return (
     <Dialog open={shouldShowModal} onOpenChange={onDialogChange}>
       <DialogContent
-        className="overflow-scroll max-h-screen w-full sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]"
+        className="grid-cols-[minmax(0,1fr)] overflow-y-auto max-h-[calc(100vh-2rem)] w-max min-w-[min(32rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-4rem)]"
         onClick={e => e.stopPropagation()}
       >
         <ErrorBoundary fallback={<div>Error fetching similar charges</div>}>
