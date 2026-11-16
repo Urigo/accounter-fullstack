@@ -252,3 +252,69 @@ export function isSendable(content: string): boolean {
   const trimmed = content.trim();
   return trimmed.length > 0 && trimmed.length <= MAX_COMMENT_LENGTH;
 }
+
+/** A run of a comment's text: plain text, or a URL to render as a link. */
+export type CommentSegment =
+  { kind: 'text'; text: string } | { kind: 'link'; text: string; href: string };
+
+const URL_CANDIDATE = /https?:\/\/\S+/gi;
+const TRAILING_PUNCTUATION = /[.,;:!?'"]$/;
+const CLOSING_BRACKETS: Record<string, string> = { ')': '(', ']': '[' };
+
+function count(text: string, char: string): number {
+  return text.split(char).length - 1;
+}
+
+/**
+ * Drops what the sentence, not the URL, ends with: trailing punctuation, and a closing bracket the
+ * URL never opened — "(see https://x.com/a)." keeps `https://x.com/a`, while a Wikipedia-style
+ * `https://en.wikipedia.org/wiki/Foo_(bar)` keeps its balanced parenthesis.
+ */
+function trimUrlEnd(candidate: string): string {
+  let url = candidate;
+  for (;;) {
+    const last = url.at(-1);
+    if (!last) return url;
+    if (TRAILING_PUNCTUATION.test(last)) {
+      url = url.slice(0, -1);
+      continue;
+    }
+    const opening = CLOSING_BRACKETS[last];
+    if (opening && count(url, last) > count(url, opening)) {
+      url = url.slice(0, -1);
+      continue;
+    }
+    return url;
+  }
+}
+
+function safeHref(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Splits a comment into text and http(s) links, for rendering URLs as hyperlinks without ever
+ * treating the content as HTML. Only http and https become links; anything else stays text.
+ */
+export function linkifyComment(content: string): CommentSegment[] {
+  const segments: CommentSegment[] = [];
+  let textStart = 0;
+  const pushText = (end: number): void => {
+    if (end > textStart) segments.push({ kind: 'text', text: content.slice(textStart, end) });
+  };
+  for (const match of content.matchAll(URL_CANDIDATE)) {
+    const url = trimUrlEnd(match[0]);
+    const href = safeHref(url);
+    if (!href) continue;
+    pushText(match.index);
+    segments.push({ kind: 'link', text: url, href });
+    textStart = match.index + url.length;
+  }
+  pushText(content.length);
+  return segments;
+}

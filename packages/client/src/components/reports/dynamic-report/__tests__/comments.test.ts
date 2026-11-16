@@ -9,6 +9,7 @@ import {
   indexThreads,
   isSamePeriod,
   isSendable,
+  linkifyComment,
   MAX_COMMENT_LENGTH,
   messagePeriodChip,
   nodePath,
@@ -403,5 +404,63 @@ describe('isSendable', () => {
     expect(isSendable('ok')).toBe(true);
     expect(isSendable(`  ${'x'.repeat(MAX_COMMENT_LENGTH)}  `)).toBe(true);
     expect(isSendable('x'.repeat(MAX_COMMENT_LENGTH + 1))).toBe(false);
+  });
+});
+
+describe('linkifyComment', () => {
+  const links = (content: string): string[] =>
+    linkifyComment(content).flatMap(segment => (segment.kind === 'link' ? [segment.text] : []));
+  const rejoin = (content: string): string =>
+    linkifyComment(content)
+      .map(segment => segment.text)
+      .join('');
+
+  it('returns plain text as a single text segment', () => {
+    expect(linkifyComment('no links here')).toEqual([{ kind: 'text', text: 'no links here' }]);
+  });
+
+  it('returns nothing for an empty comment', () => {
+    expect(linkifyComment('')).toEqual([]);
+  });
+
+  it('splits a URL out of the surrounding text', () => {
+    expect(linkifyComment('see https://example.com/a?b=1#c for details')).toEqual([
+      { kind: 'text', text: 'see ' },
+      { kind: 'link', text: 'https://example.com/a?b=1#c', href: 'https://example.com/a?b=1#c' },
+      { kind: 'text', text: ' for details' },
+    ]);
+  });
+
+  it('finds several URLs, http and https, in any case', () => {
+    expect(links('HTTPS://A.example.com and http://b.example.com/x')).toEqual([
+      'HTTPS://A.example.com',
+      'http://b.example.com/x',
+    ]);
+  });
+
+  it('leaves trailing punctuation out of the link', () => {
+    expect(links('Go to https://example.com/a. Or https://example.com/b, or https://example.com/c?!')).toEqual([
+      'https://example.com/a',
+      'https://example.com/b',
+      'https://example.com/c',
+    ]);
+  });
+
+  it('leaves an unopened closing bracket out, and keeps a balanced one', () => {
+    expect(links('(see https://example.com/a).')).toEqual(['https://example.com/a']);
+    expect(links('[https://example.com/b]')).toEqual(['https://example.com/b']);
+    expect(links('https://en.wikipedia.org/wiki/Foo_(bar)')).toEqual([
+      'https://en.wikipedia.org/wiki/Foo_(bar)',
+    ]);
+  });
+
+  it('links only http and https', () => {
+    expect(links('javascript:alert(1) ftp://example.com mailto:a@b.c')).toEqual([]);
+    expect(links('https:// nothing after the scheme')).toEqual([]);
+  });
+
+  it('keeps every character of the comment, line breaks included', () => {
+    const content = 'line one https://example.com/x.\n\nline two (https://example.com/y)';
+    expect(rejoin(content)).toBe(content);
   });
 });
