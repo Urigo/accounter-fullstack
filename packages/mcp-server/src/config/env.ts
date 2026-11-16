@@ -11,29 +11,8 @@ import zod from 'zod';
  * with a clear, actionable error (fail-fast) rather than failing later at
  * request time.
  *
- * | Variable                    | Required | Default                  | Description                                                        |
- * | --------------------------- | -------- | ------------------------ | ------------------------------------------------------------------ |
- * | MCP_PUBLIC_BASE_URL         | yes      | —                        | Public HTTPS origin of this MCP server (used in OAuth metadata).   |
- * | AUTH0_ISSUER_URL            | yes      | —                        | Auth0 issuer/tenant URL used to validate access tokens.           |
- * | AUTH0_AUDIENCE              | yes      | —                        | Expected `aud` claim for incoming access tokens.                  |
- * | GRAPHQL_UPSTREAM_URL        | yes      | —                        | Base URL of the Accounter GraphQL server the tools call.          |
- * | MCP_SERVER_PORT             | no       | 3100                     | TCP port the HTTP transport listens on.                           |
- * | MCP_ENABLED                 | no       | 1                        | Master kill-switch (`1` on / `0` off).                            |
- * | MCP_TOOL_ALLOWLIST          | no       | '' (all tools)           | Comma-separated allowed tool names; empty ⇒ no restriction.       |
- * | MCP_ENABLE_WRITE_TOOLS      | no       | 0                        | Expose mutating (write) tools (`1` on / `0` off).                 |
- * | AUTH0_JWKS_URL              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`.      |
- * | GRAPHQL_UPSTREAM_TIMEOUT_MS | no       | 10000                    | Upstream GraphQL request timeout budget in milliseconds.          |
- * | GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS | no  | 300000                   | Budget for long-running upstream calls (uploads, VAT report).     |
- * | MCP_RATE_LIMIT_CONFIG       | no       | '' (defaults applied)    | Optional rate-limit override spec (parsed by the limiter later).  |
- * | OTEL_ENABLED                | no       | 0                        | Master switch for OpenTelemetry tracing (`1` on / `0` off).       |
- * | OTEL_SERVICE_NAME           | no       | accounter-mcp-server     | `service.name` resource attribute.                                |
- * | OTEL_SERVICE_NAMESPACE      | no       | accounter                | `service.namespace` resource attribute.                           |
- * | OTEL_DEPLOYMENT_ENV         | no       | NODE_ENV or development  | `deployment.environment.name` resource attribute.                 |
- * | OTEL_EXPORTER_OTLP_ENDPOINT | if OTEL  | —                        | OTLP/HTTP traces endpoint (required when OTEL_ENABLED=1).          |
- * | OTEL_EXPORTER_OTLP_HEADERS  | no       | —                        | OTLP exporter headers as `key=value,key=value`.                   |
- * | OTEL_TRACES_SAMPLER         | no       | always_on                | Sampler strategy (see builder.ts).                                |
- * | OTEL_TRACES_SAMPLER_ARG     | if ratio | —                        | Ratio 0–1, required for the ratio-based samplers.                 |
- * | OTEL_STARTUP_STRICT         | no       | —                        | `true` ⇒ a telemetry startup failure aborts the process.          |
+ * Every variable is documented in `packages/mcp-server/.env.template` (and the README's
+ * configuration table); `__tests__/env-template.test.ts` keeps both in sync with {@link envSchema}.
  *
  * Secrets are never embedded here; they are supplied via the environment only.
  */
@@ -58,7 +37,7 @@ const booleanFlag = (defaultValue: '0' | '1') =>
 export const envSchema = zod
   .object({
     // --- Required (no safe default) ---
-    MCP_PUBLIC_BASE_URL: zod.url({ message: 'MCP_PUBLIC_BASE_1URL must be a valid URL' }),
+    MCP_PUBLIC_BASE_URL: zod.url({ message: 'MCP_PUBLIC_BASE_URL must be a valid URL' }),
     AUTH0_ISSUER_URL: zod.url({ message: 'AUTH0_ISSUER_URL must be a valid URL' }),
     AUTH0_AUDIENCE: zod.string().min(1, { message: 'AUTH0_AUDIENCE must be a non-empty string' }),
     GRAPHQL_UPSTREAM_URL: zod.url({ message: 'GRAPHQL_UPSTREAM_URL must be a valid URL' }),
@@ -306,8 +285,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppConfig {
       process.env.TEST_ENV_FILE && process.env.TEST_ENV_FILE.trim() !== ''
         ? process.env.TEST_ENV_FILE
         : [resolve(packageRoot, '.env')],
-    // Only surface dotenv's own debug noise outside of release builds.
-    debug: !process.env.RELEASE && undefined,
     // dotenv >= 18 announces every injection on stderr (it used stdout before).
     // Keep it out of the startup output so a validation failure is the first
     // thing reported, and so the banner never interleaves with the logger.

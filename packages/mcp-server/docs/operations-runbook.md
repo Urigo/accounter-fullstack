@@ -375,8 +375,8 @@ functioning; the hosting tier is the lever.
 > **Note:** `MCP_TOOL_ALLOWLIST` is enforced (#4104) and can be used to disable a single misbehaving
 > tool without taking the connector down: set it to the tools you want to keep. **An empty value
 > means no restriction**, not "no tools" — to disable everything, use the kill-switch. Changing it
-> requires a process restart, and any allowlist you set should include `accounter_list_businesses`
-> or business discovery is lost.
+> requires a process restart, and any allowlist you set should include
+> `accounter_list_business_memberships` or business discovery is lost.
 
 ## 6. Configuration reference
 
