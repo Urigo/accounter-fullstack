@@ -130,17 +130,22 @@ type Props = {
 /**
  * The tenant's securities ledger configuration: the foreign-securities business, the sort code new
  * securities tax categories are created under, and the tax category of every securities key.
- * Shown only on the active tenant's own admin page, and only to the roles allowed to change it.
+ * Shown only on the admin page of the single business in the active scope, and only to the roles
+ * allowed to change it.
  */
 export function SecuritiesSettingsSection({ adminBusinessId }: Props): ReactElement | null {
   const { userContext } = useContext(UserContext);
+  const activeReadScope = userContext?.context.activeReadScope ?? [];
   const role = userContext?.context.memberships.find(
     membership => membership.businessId === adminBusinessId,
   )?.role;
 
-  // the configuration read and written is always the active tenant's, never the viewed page's
+  // The server reads and writes the configuration of the request's write target, not of the
+  // viewed page's business. Only a single-business scope pins that target to this page: in a
+  // wider one the server prefers the user's primary business, which need not be scope[0].
   if (
-    userContext?.context.adminBusinessId !== adminBusinessId ||
+    activeReadScope.length !== 1 ||
+    activeReadScope[0] !== adminBusinessId ||
     !role ||
     !EDITOR_ROLES.has(role)
   ) {
@@ -151,7 +156,7 @@ export function SecuritiesSettingsSection({ adminBusinessId }: Props): ReactElem
 }
 
 function SecuritiesSettingsCard({ adminBusinessId }: Props): ReactElement {
-  const { userContext, setUserContext } = useContext(UserContext);
+  const { refreshUserContext } = useContext(UserContext);
   const [{ data, fetching, error }, refetch] = useQuery({
     query: SecuritiesSettingsSectionDocument,
   });
@@ -206,17 +211,13 @@ function SecuritiesSettingsCard({ adminBusinessId }: Props): ReactElement {
       return;
     }
     setEdits(NO_EDITS);
-    if (changedInput.foreignSecuritiesBusinessId !== undefined && userContext) {
-      // the transactions counterparty cell reads it from the user context
-      setUserContext({
-        ...userContext,
-        context: {
-          ...userContext.context,
-          foreignSecuritiesBusinessId: saved.foreignSecuritiesBusiness?.id ?? null,
-        },
-      });
-    }
     reload();
+    if (changedInput.foreignSecuritiesBusinessId !== undefined) {
+      // The business is in the user context twice: as itself (the transactions counterparty cell)
+      // and among the internal wallets (`financialAccountsBusinessesIds`, the balance report's
+      // internal-transfer filter). Re-read the whole context rather than patching either.
+      await refreshUserContext?.();
+    }
   }
 
   const disabled = fetching || saving;

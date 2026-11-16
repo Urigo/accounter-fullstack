@@ -127,13 +127,16 @@ const securitiesContext = {
   ],
 };
 
-function userInfo(role: string): UserInfo {
+function userInfo(role: string, activeReadScope = ['owner']): UserInfo {
   return {
     username: 'user',
     context: {
-      memberships: [{ businessId: 'owner', role }],
-      activeReadScope: ['owner'],
-      adminBusinessId: 'owner',
+      memberships: [
+        { businessId: 'owner', role },
+        { businessId: 'another-owner', role },
+      ],
+      activeReadScope,
+      adminBusinessId: activeReadScope[0],
       defaultLocalCurrency: 'ILS',
       defaultCryptoConversionFiatCurrency: 'USD',
       financialAccountsBusinessesIds: [],
@@ -156,6 +159,7 @@ describe('SecuritiesSettingsSection', () => {
   let container: HTMLDivElement;
   let root: Root;
   const setUserContext = vi.fn();
+  const refreshUserContext = vi.fn<() => Promise<void>>();
 
   beforeEach(() => {
     container = document.createElement('div');
@@ -169,6 +173,8 @@ describe('SecuritiesSettingsSection', () => {
     refetchMock.mockReset();
     updateSecuritiesContextMock.mockReset();
     setUserContext.mockReset();
+    refreshUserContext.mockReset();
+    refreshUserContext.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -176,10 +182,16 @@ describe('SecuritiesSettingsSection', () => {
     container.remove();
   });
 
-  const render = (role: string, adminBusinessId = 'owner') =>
+  const render = (role: string, adminBusinessId = 'owner', activeReadScope?: string[]) =>
     act(() =>
       root.render(
-        <UserContext.Provider value={{ userContext: userInfo(role), setUserContext }}>
+        <UserContext.Provider
+          value={{
+            userContext: userInfo(role, activeReadScope),
+            setUserContext,
+            refreshUserContext,
+          }}
+        >
           <SecuritiesSettingsSection adminBusinessId={adminBusinessId} />
         </UserContext.Provider>,
       ),
@@ -226,10 +238,10 @@ describe('SecuritiesSettingsSection', () => {
     });
     expect(refetchMock).toHaveBeenCalledWith({ requestPolicy: 'network-only' });
     // the business did not change, so the user context is left alone
-    expect(setUserContext).not.toHaveBeenCalled();
+    expect(refreshUserContext).not.toHaveBeenCalled();
   });
 
-  it('sends null for a cleared setting and updates the user context for a new business', async () => {
+  it('sends null for a cleared setting and re-reads the user context for a new business', async () => {
     updateSecuritiesContextMock.mockResolvedValue({
       ...securitiesContext,
       foreignSecuritiesBusiness: { id: 'business-other', name: 'Other business' },
@@ -250,11 +262,10 @@ describe('SecuritiesSettingsSection', () => {
         taxCategories: [{ key: 'FOREIGN_SECURITIES_FEES', taxCategoryId: null }],
       },
     });
-    expect(setUserContext).toHaveBeenCalledWith(
-      expect.objectContaining({
-        context: expect.objectContaining({ foreignSecuritiesBusinessId: 'business-other' }),
-      }),
-    );
+    // the business is also among the internal wallets the user context lists, so it is re-read
+    // whole rather than patched
+    expect(refreshUserContext).toHaveBeenCalledTimes(1);
+    expect(setUserContext).not.toHaveBeenCalled();
   });
 
   it('keeps the edits when the server rejects them', async () => {
@@ -294,6 +305,14 @@ describe('SecuritiesSettingsSection', () => {
 
   it("is hidden on another business's admin page", () => {
     render('business_owner', 'another-owner');
+
+    expect(container.innerHTML).toBe('');
+    expect(useQueryMock).not.toHaveBeenCalled();
+  });
+
+  it('is hidden in a multi-business scope, even on the page of its first business', () => {
+    // the server may resolve such a scope to the user's primary business, not to scope[0]
+    render('business_owner', 'owner', ['owner', 'another-owner']);
 
     expect(container.innerHTML).toBe('');
     expect(useQueryMock).not.toHaveBeenCalled();

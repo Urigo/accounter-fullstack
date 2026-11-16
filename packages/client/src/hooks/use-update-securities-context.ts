@@ -48,8 +48,6 @@ export const useUpdateSecuritiesContext = (): UseUpdateSecuritiesContext => {
     notificationId: NOTIFICATION_ID,
     loadingMessage: 'Saving securities settings',
     errorMessage: 'Error saving securities settings',
-    // the server explains a rejected setting (a foreign tax category, an unknown sort code)
-    errorDescription: e => (e instanceof Error ? e.message : 'Error saving securities settings'),
     select: data => data.updateSecuritiesContext,
     successToast: { description: 'Securities settings saved' },
   });
