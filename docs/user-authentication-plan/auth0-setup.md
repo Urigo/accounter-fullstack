@@ -105,15 +105,19 @@ This is required because backend invitation flow creates blocked users with:
 
 Auth0 configuration is read from `packages/server/src/environment.ts`.
 
-Set the following env vars in `packages/server/.env` (see `packages/server/.env.template`). The
-server falls back to the root `.env`, which also holds `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` because
-the client needs them too:
+`AUTH0_DOMAIN` and `AUTH0_AUDIENCE` are shared with the client, so set them once, in the root `.env`
+(the server falls back to it). Don't also set them in `packages/server/.env`: a value there
+overrides the root one for the server only.
 
 ```bash
-# JWT verification
-AUTH0_DOMAIN=<tenant>.auth0.com
+# Root .env: JWT verification (shared with the client)
+AUTH0_DOMAIN= < tenant > .auth0.com
 AUTH0_AUDIENCE=https://api.accounter.com
+```
 
+Set the rest in `packages/server/.env` (see `packages/server/.env.template`):
+
+```bash
 # Management API credentials (M2M app)
 AUTH0_CLIENT_ID=<m2m-client-id>
 AUTH0_CLIENT_SECRET=<m2m-client-secret>

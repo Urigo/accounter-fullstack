@@ -86,16 +86,8 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 
 Use this flow when you want to run the app locally without logging in through Auth0.
 
-1. Seed demo data and copy the printed demo user ids:
-
-```bash
-ALLOW_DEMO_SEED=1 yarn seed:staging-demo
-```
-
-The seed script prints both `adminUserId` and `accountantUserId`.
-
-2. Configure local environment variables in the root `.env` (the server, the client and the seed
-   script all read it; set `DEMO_AUTH0_USER_ID` before seeding):
+1. Before seeding, configure the root `.env` (the server, the client and the seed script all read
+   it). `DEMO_AUTH0_USER_ID` is read when the seed runs, so set it now if you want one:
 
 ```bash
 # Bypass toggle (server + client)
@@ -103,8 +95,18 @@ ALLOW_DEV_AUTH=1
 
 # Optional: attach real Auth0 id to seeded demo admin user
 DEMO_AUTH0_USER_ID=
+```
 
-# Choose which seeded user to impersonate
+2. Seed demo data and copy the printed demo user ids:
+
+```bash
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+The seed script prints both `adminUserId` and `accountantUserId`. Choose which one to impersonate,
+in the root `.env`:
+
+```bash
 DEV_AUTH_USER_ID=<adminUserId-or-accountantUserId>
 ```
 
