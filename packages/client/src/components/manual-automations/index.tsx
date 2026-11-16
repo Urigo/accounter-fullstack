@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CronJobStep, CronJobStepState } from '../../gql/graphql.js';
-import { useRunCronJobs } from '../../hooks/use-run-cron-jobs.js';
+import { useRunManualAutomations } from '../../hooks/use-run-manual-automations.js';
 import { ROUTES } from '../../router/routes.js';
 import { ConfirmationModal } from '../common/modals/confirmation-modal.js';
 import { Tooltip } from '../common/tooltip.js';
@@ -24,14 +24,14 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../ui/empty.js
 import { Spinner } from '../ui/spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import {
-  groupCronJobEvents,
-  summarizeCronJobEvents,
-  type CronJobsRunEvent,
-  type CronJobStepView,
+  groupAutomationEvents,
+  summarizeAutomationEvents,
+  type AutomationStepView,
   type FilledDebitDate,
   type FlaggedFee,
+  type ManualAutomationsRunEvent,
   type MergedCharges,
-} from './cron-jobs-events.js';
+} from './manual-automations-events.js';
 
 /** Renders a date-only (`YYYY-MM-DD`) or ISO date-time value; date-only values stay local. */
 function formatDate(value: string | Date | null | undefined): string {
@@ -61,7 +61,7 @@ function ChargeLink({
   );
 }
 
-function StepStateIcon({ state }: { state: CronJobStepView['state'] }): ReactElement {
+function StepStateIcon({ state }: { state: AutomationStepView['state'] }): ReactElement {
   switch (state) {
     case CronJobStepState.Running:
       return <Spinner className="size-5" />;
@@ -85,7 +85,7 @@ function StepCard({
   children,
 }: {
   title: string;
-  step: CronJobStepView;
+  step: AutomationStepView;
   itemsCount: number;
   children: ReactNode;
 }): ReactElement {
@@ -193,7 +193,7 @@ function TransactionsTable({
   debitDateHeader,
 }: {
   rows: (FlaggedFee | FilledDebitDate)[];
-  /** Adds a column for the debit date the cron jobs filled in */
+  /** Adds a column for the debit date the automations filled in */
   debitDateHeader?: string;
 }): ReactElement {
   return (
@@ -230,34 +230,38 @@ function TransactionsTable({
   );
 }
 
-type CronJobsViewProps = {
+type ManualAutomationsViewProps = {
   /** True from the moment the run starts until its last streamed event arrives. */
   running: boolean;
   /** Events of the current run received so far. */
-  events: readonly CronJobsRunEvent[];
+  events: readonly ManualAutomationsRunEvent[];
   onRun: () => void;
 };
 
-/** The cron jobs screen, driven by props, so its states can be rendered without a server. */
-export function CronJobsView({ running, events, onRun }: CronJobsViewProps): ReactElement {
+/** The manual automations screen, driven by props, so its states can be rendered without a server. */
+export function ManualAutomationsView({
+  running,
+  events,
+  onRun,
+}: ManualAutomationsViewProps): ReactElement {
   const { steps, flaggedFees, mergedCharges, filledDebitDates } = useMemo(
-    () => groupCronJobEvents(events),
+    () => groupAutomationEvents(events),
     [events],
   );
   const hasRun = running || events.length > 0;
 
   return (
     <PageLayout
-      title="Cron Jobs"
+      title="Manual Automations"
       description="Flag foreign transfer fees, merge charges that share a transaction reference, and fill missing credit card debit dates"
       headerActions={
         <ConfirmationModal
           onConfirm={onRun}
-          title="Are you sure you want to manually execute cron jobs?"
+          title="Are you sure you want to run the manual automations?"
         >
           <Button disabled={running}>
             {running ? <Spinner /> : <CircleCheckBig className="size-4" />}
-            Run cron jobs
+            Run automations
           </Button>
         </ConfirmationModal>
       }
@@ -266,7 +270,7 @@ export function CronJobsView({ running, events, onRun }: CronJobsViewProps): Rea
         <div className="flex flex-col gap-4">
           {!running && (
             <p className="text-sm text-muted-foreground">
-              {summarizeCronJobEvents(events).description}
+              {summarizeAutomationEvents(events).description}
             </p>
           )}
           <StepCard
@@ -296,8 +300,8 @@ export function CronJobsView({ running, events, onRun }: CronJobsViewProps): Rea
           <EmptyHeader>
             <EmptyTitle>No run yet</EmptyTitle>
             <EmptyDescription>
-              Run the cron jobs to see every change they make. Results are shown for the current run
-              only. Changes already made stay in place even if a later step fails.
+              Run the automations to see every change they make. Results are shown for the current
+              run only. Changes already made stay in place even if a later step fails.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -306,7 +310,7 @@ export function CronJobsView({ running, events, onRun }: CronJobsViewProps): Rea
   );
 }
 
-export function CronJobs(): ReactElement {
-  const { running, events, runJobs } = useRunCronJobs();
-  return <CronJobsView running={running} events={events} onRun={() => void runJobs()} />;
+export function ManualAutomations(): ReactElement {
+  const { running, events, runJobs } = useRunManualAutomations();
+  return <ManualAutomationsView running={running} events={events} onRun={() => void runJobs()} />;
 }

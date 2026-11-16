@@ -182,12 +182,14 @@ export function UserNav(): JSX.Element | null {
               </Button>
             </Tooltip>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to={ROUTES.CHARGES.CRON_JOBS}>
-              <CircleCheckBig className="size-4" />
-              <span className="hidden sm:inline">Cron Jobs</span>
-            </Link>
-          </DropdownMenuItem>
+          <Tooltip content="Run data fix-ups on demand: flag fees, merge charges, fill debit dates">
+            <DropdownMenuItem asChild>
+              <Link to={ROUTES.CHARGES.MANUAL_AUTOMATIONS}>
+                <CircleCheckBig className="size-4" />
+                <span className="hidden sm:inline">Manual Automations</span>
+              </Link>
+            </DropdownMenuItem>
+          </Tooltip>
           <DropdownMenuItem>
             <LogoutButton />
           </DropdownMenuItem>

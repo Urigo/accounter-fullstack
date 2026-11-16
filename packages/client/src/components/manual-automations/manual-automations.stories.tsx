@@ -5,8 +5,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CronJobStep, CronJobStepState } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/index.js';
 import { Toaster } from '../ui/sonner.js';
-import type { CronJobsRunEvent } from './cron-jobs-events.js';
-import { CronJobs, CronJobsView } from './index.js';
+import { ManualAutomations, ManualAutomationsView } from './index.js';
+import type { ManualAutomationsRunEvent } from './manual-automations-events.js';
 
 // --- fixtures -------------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ function status(
   step: CronJobStep,
   state: CronJobStepState,
   extra: { affectedCount?: number; errors?: string[] } = {},
-): CronJobsRunEvent {
+): ManualAutomationsRunEvent {
   return {
     __typename: 'CronJobStepStatus',
     step,
@@ -43,7 +43,7 @@ function transaction(
   };
 }
 
-const flaggedFees: CronJobsRunEvent[] = [
+const flaggedFees: ManualAutomationsRunEvent[] = [
   {
     __typename: 'ForeignFeeTransactionFlagged',
     transaction: transaction('fee-1', {
@@ -64,7 +64,7 @@ const flaggedFees: CronJobsRunEvent[] = [
   },
 ];
 
-const mergedCharges: CronJobsRunEvent[] = [
+const mergedCharges: ManualAutomationsRunEvent[] = [
   {
     __typename: 'ChargesMergedByReference',
     reference: '4471902',
@@ -111,7 +111,7 @@ const mergedCharges: CronJobsRunEvent[] = [
   },
 ];
 
-const filledDebitDates: CronJobsRunEvent[] = [
+const filledDebitDates: ManualAutomationsRunEvent[] = [
   {
     __typename: 'CreditcardDebitDateFilled',
     debitDate: '2026-10-02',
@@ -145,7 +145,7 @@ const filledDebitDates: CronJobsRunEvent[] = [
 ];
 
 /** A full successful run, in the order the server streams it. */
-const completedRun: CronJobsRunEvent[] = [
+const completedRun: ManualAutomationsRunEvent[] = [
   status(CronJobStep.FlagForeignFees, CronJobStepState.Running),
   ...flaggedFees,
   status(CronJobStep.FlagForeignFees, CronJobStepState.Succeeded, { affectedCount: 2 }),
@@ -163,7 +163,10 @@ const completedRun: CronJobsRunEvent[] = [
  * Answers the `RunCronJobs` mutation the way the server does with `@stream`: one result per
  * event, each carrying everything received so far, with `hasNext` set until the last one.
  */
-function streamingExchange(events: readonly CronJobsRunEvent[], delayMs: number): Exchange {
+function streamingExchange(
+  events: readonly ManualAutomationsRunEvent[],
+  delayMs: number,
+): Exchange {
   return () => operations$ =>
     pipe(
       operations$,
@@ -198,7 +201,7 @@ function LiveStreamHarness({
   events,
   delayMs,
 }: {
-  events: readonly CronJobsRunEvent[];
+  events: readonly ManualAutomationsRunEvent[];
   delayMs: number;
 }): ReactElement {
   const client = useMemo(
@@ -207,7 +210,7 @@ function LiveStreamHarness({
   );
   return (
     <Provider value={client}>
-      <CronJobs />
+      <ManualAutomations />
       <Toaster />
     </Provider>
   );
@@ -216,11 +219,11 @@ function LiveStreamHarness({
 // --- stories --------------------------------------------------------------------------------
 
 const meta = {
-  title: 'Screens/CronJobs',
-  component: CronJobsView,
+  title: 'Screens/ManualAutomations',
+  component: ManualAutomationsView,
   parameters: { layout: 'padded' },
   args: { running: false, events: [], onRun: () => void 0 },
-} satisfies Meta<typeof CronJobsView>;
+} satisfies Meta<typeof ManualAutomationsView>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -289,7 +292,7 @@ export const StepFailed: Story = {
 };
 
 /**
- * The real screen against a mocked client that streams a full run: click "Run cron jobs",
+ * The real screen against a mocked client that streams a full run: click "Run automations",
  * confirm, and watch each step fill in as its events arrive.
  */
 export const LiveStream: Story = {
