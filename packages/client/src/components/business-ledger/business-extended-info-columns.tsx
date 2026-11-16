@@ -29,7 +29,10 @@ export const getBaseColumns = (): ColumnDef<PaginatedTableFeaturesConfig, Extend
     id: 'date',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
     cell: ({ row }) => <DateCell date={row.original.invoiceDate} />,
-    sortFn: 'datetime',
+    // Rows arrive in chronological order, the order their running balances are computed in, so sort by
+    // position. Unlike comparing dates, a descending sort then reverses same-day rows too, and the
+    // balance column reads in order either way.
+    sortFn: (rowA, rowB) => rowA.index - rowB.index,
   },
   {
     accessorKey: 'amount.raw',
