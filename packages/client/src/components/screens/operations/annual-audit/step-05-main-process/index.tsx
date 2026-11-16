@@ -73,7 +73,7 @@ function SlotRow({
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2" data-testid={`slot-${reportType}`}>
       <div className="w-32 text-sm font-medium">{label}</div>
-      <div className="flex min-w-56 items-center gap-1 text-sm">
+      <div className="flex w-72 items-center gap-1 truncate text-sm">
         <span className="text-muted-foreground">Baseline ({baselineYear}):</span>
         {baselineName ? (
           <a
