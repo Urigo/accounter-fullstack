@@ -62,7 +62,7 @@ export default {
             event_date = NEW.date,
             debit_date = NEW.charge_date,
             amount     = NEW.charge_amount * -1
-        WHERE origin_key = NEW.id
+        WHERE origin_key = NEW.id::TEXT
           AND source_origin = 'OTSAR_HAHAYAL_CREDIT_CARD';
 
         RETURN NEW;

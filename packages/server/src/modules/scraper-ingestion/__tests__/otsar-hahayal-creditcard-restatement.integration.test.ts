@@ -87,6 +87,7 @@ let db: TestDatabase;
 let yoga: { fetch: (url: string, init: RequestInit) => Response | Promise<Response> };
 let supplierId: string;
 let createdBusinessUserRow = false;
+let createdBusinessesAdminRow = false;
 
 type UploadResult = {
   inserted: number;
@@ -173,7 +174,7 @@ async function readState(): Promise<StoredState> {
               t.source_description, t.is_fee, c.accountant_status
        FROM ${qualifyTable('transactions')} t
        JOIN ${qualifyTable('charges')} c ON c.id = t.charge_id
-       WHERE t.origin_key = ANY($1::uuid[])
+       WHERE t.origin_key = ANY($1::text[])
        ORDER BY t.event_date`,
       [sourceRows.map(row => row.id)],
     );
@@ -213,7 +214,7 @@ async function removeUploads() {
     const { rows } = await client.query<{ id: string; charge_id: string | null }>(
       `SELECT s.id, t.charge_id
        FROM ${qualifyTable('otsar_hahayal_creditcard_transactions')} s
-       LEFT JOIN ${qualifyTable('transactions')} t ON t.origin_key = s.id
+       LEFT JOIN ${qualifyTable('transactions')} t ON t.origin_key = s.id::text
        WHERE s.resource_id = $1`,
       [RESOURCE_ID],
     );
@@ -241,6 +242,13 @@ beforeAll(async () => {
   try {
     await client.query('BEGIN');
     await client.query("SELECT set_config('app.current_business_id', $1, true)", [ADMIN_ID]);
+    // business_users references businesses_admin, which the admin seed doesn't create.
+    const adminRow = await client.query(
+      `INSERT INTO ${qualifyTable('businesses_admin')} (id, owner_id) VALUES ($1, $1)
+       ON CONFLICT DO NOTHING`,
+      [ADMIN_ID],
+    );
+    createdBusinessesAdminRow = adminRow.rowCount === 1;
     // The upload mutation requires the `scraper` role.
     const { rowCount } = await client.query(
       `INSERT INTO ${qualifyTable('business_users')} (user_id, business_id, role_id)
@@ -249,15 +257,18 @@ beforeAll(async () => {
     );
     createdBusinessUserRow = rowCount === 1;
     for (const pan of [CARD_PAN, REPLACEMENT_CARD_PAN]) {
-      await client.query(
-        `INSERT INTO ${qualifyTable('financial_accounts')}
-           (account_number, account_name, private_business, owner, type, owner_id)
-         SELECT $1, $1, 'BUSINESS', $2, 'CREDIT_CARD', $2
-         WHERE NOT EXISTS (
-           SELECT 1 FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1
-         )`,
-        [pan, ADMIN_ID],
+      const existing = await client.query(
+        `SELECT 1 FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
+        [pan],
       );
+      if (existing.rowCount === 0) {
+        await client.query(
+          `INSERT INTO ${qualifyTable('financial_accounts')}
+             (account_number, account_name, private_business, owner, type, owner_id)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [pan, pan, 'BUSINESS', ADMIN_ID, 'CREDIT_CARD', ADMIN_ID],
+        );
+      }
     }
     const supplier = await ensureFinancialEntity(client, {
       name: SUPPLIER_NAME,
@@ -302,6 +313,11 @@ afterAll(async () => {
     if (createdBusinessUserRow) {
       await client.query(`DELETE FROM ${qualifyTable('business_users')} WHERE user_id = $1`, [
         SCRAPER_USER_ID,
+      ]);
+    }
+    if (createdBusinessesAdminRow) {
+      await client.query(`DELETE FROM ${qualifyTable('businesses_admin')} WHERE id = $1`, [
+        ADMIN_ID,
       ]);
     }
   });
