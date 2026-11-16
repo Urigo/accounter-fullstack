@@ -190,6 +190,18 @@ describe('buildOtelSdk', () => {
       );
     });
 
+    it('does not trace outgoing Slack webhook calls (the path is the credential)', () => {
+      buildOtelSdk();
+
+      const [config] = vi.mocked(getNodeAutoInstrumentations).mock.calls[0]!;
+      const ignore = config?.['@opentelemetry/instrumentation-undici']?.ignoreRequestHook;
+      const request = (origin: string) =>
+        ({ origin, method: 'POST', path: '/services/x', headers: [] }) as never;
+      expect(ignore?.(request('https://hooks.slack.com'))).toBe(true);
+      expect(ignore?.(request('https://api.example.com'))).toBe(false);
+      expect(ignore?.(request('not a url'))).toBe(false);
+    });
+
     // ---- sampler selection ----
 
     describe('sampler configuration', () => {

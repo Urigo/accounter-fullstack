@@ -7,7 +7,7 @@ import { useSchema } from '@envelop/core';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useHive } from '@graphql-hive/yoga';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
-import { env } from './environment.js';
+import { env, slackEnv } from './environment.js';
 import { cleanupExpiredInvitations, type Logger } from './jobs/cleanup-expired-invitations.js';
 import { scheduleDailyAtUtc } from './jobs/utils.js';
 import { createGraphQLApp } from './modules-app.js';
@@ -17,6 +17,7 @@ import { startTenantDbClientWatchdog } from './modules/app-providers/tenant-db-c
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
 import { PriceIndexSyncProvider } from './modules/price-indexes/providers/price-index-sync.provider.js';
 import { createYogaLogger, log, serializeError, setLogLevel } from './observability/log.js';
+import { initNotifications } from './observability/notifications/notifier.js';
 import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
@@ -38,6 +39,12 @@ async function main() {
   // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`. One level for this server's own
   // structured logs, Yoga and Hive (which forwards its logs to Yoga's logger).
   setLogLevel(env.logging.level);
+
+  // Inert until here (and in development / test). Nothing sends notifications yet.
+  initNotifications(slackEnv, {
+    envLabel: env.otel.deploymentEnv,
+    release: process.env.RELEASE,
+  });
 
   await startTelemetry();
 
