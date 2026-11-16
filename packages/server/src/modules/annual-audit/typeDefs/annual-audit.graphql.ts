@@ -24,6 +24,17 @@ export default gql`
     setAnnualAuditStepStatus(input: SetAnnualAuditStepStatusInput!): AnnualAuditStepStatusInfo!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    setAnnualAuditWorkingTemplate(
+      input: SetAnnualAuditWorkingTemplateInput!
+    ): AnnualAuditStepStatusInfo!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+  }
+
+  " Report slot an annual audit dynamic report template serves "
+  enum AnnualAuditReportType {
+    BALANCE_SHEET
+    PROFIT_AND_LOSS
   }
 
   " User type classification for annual audit opening balance step "
@@ -80,6 +91,18 @@ export default gql`
     year: Int!
     " The name of the dynamic report template to lock as the final draft "
     templateName: String!
+    " The report the template is locked for. Omitted = both Balance Sheet and Profit and Loss "
+    reportType: AnnualAuditReportType
+  }
+
+  " Input for setting the working dynamic report template(s) of an annual audit (step 05) "
+  input SetAnnualAuditWorkingTemplateInput {
+    ownerId: UUID!
+    year: Int!
+    " The working template name. null clears the working template "
+    templateName: String
+    " The report the template is used for. Omitted = both Balance Sheet and Profit and Loss "
+    reportType: AnnualAuditReportType
   }
 
   " Generic input for manually setting any annual audit step status "

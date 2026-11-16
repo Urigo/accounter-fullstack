@@ -35,6 +35,7 @@ import { YearPicker } from './year-picker.js';
       stepId
       status
       notes
+      evidence
     }
   }
 `;
@@ -75,11 +76,16 @@ export const AnnualAuditFlow = (): ReactNode => {
     );
   }, [year, setFiltersContext, changeYear]);
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetchStepStatuses] = useQuery({
     query: AnnualAuditStepsStatusDocument,
     variables: { ownerId: adminBusinessId!, year },
     pause: !adminBusinessId,
   });
+  // No urql cache is installed, so a step that writes shared step data asks for a fresh copy
+  const refetchManualData = useCallback(
+    () => refetchStepStatuses({ requestPolicy: 'network-only' }),
+    [refetchStepStatuses],
+  );
   const isLoadingStepStatuses: boolean = !!(adminBusinessId && fetching);
 
   const totalSteps = 21;
@@ -231,6 +237,7 @@ export const AnnualAuditFlow = (): ReactNode => {
               icon={<FileText className="h-4 w-4" />}
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
+              refetchManualData={refetchManualData}
               year={year}
               adminBusinessId={adminBusinessId}
             />
@@ -293,12 +300,13 @@ export const AnnualAuditFlow = (): ReactNode => {
 
             <Step09SaveTemplate
               id="9"
-              title="Save Final Dynamic Report Template"
+              title="Save Final Dynamic Report Templates"
               icon={<FileText className="h-4 w-4" />}
               year={year}
               adminBusinessId={adminBusinessId}
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
+              refetchManualData={refetchManualData}
             />
 
             <Step10ExportTrialBalance

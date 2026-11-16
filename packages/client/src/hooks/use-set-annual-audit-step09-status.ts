@@ -4,6 +4,7 @@ import {
   type SetAnnualAuditStep09StatusMutationVariables,
 } from '../gql/graphql.js';
 import { useApiMutation } from './use-api-mutation.js';
+import { reportTypeLabel } from './use-set-annual-audit-working-template.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,13 +35,14 @@ const NOTIFICATION_ID = 'setAnnualAuditStep09Status';
 export const useSetAnnualAuditStep09Status = (): UseSetAnnualAuditStep09Status => {
   const { fetching, execute } = useApiMutation({
     document: SetAnnualAuditStep09StatusDocument,
-    notificationId: ({ input }) => `${NOTIFICATION_ID}-${input.ownerId}-${input.year}`,
+    notificationId: ({ input }) =>
+      `${NOTIFICATION_ID}-${input.ownerId}-${input.year}-${input.reportType ?? 'ALL'}`,
     loadingMessage: 'Locking template...',
     errorMessage: 'Error saving final dynamic report template selection',
     select: data => data.setAnnualAuditStep09Status,
     successToast: (_result, { input }) => ({
       title: 'Template locked',
-      description: `"${input.templateName}" saved as the final dynamic report template`,
+      description: `"${input.templateName}" locked as the final ${reportTypeLabel(input.reportType)} template`,
     }),
     // This flow keeps sonner's default toast lifetime rather than the app-wide long-lived one.
     errorToast: { duration: undefined, closeButton: undefined },

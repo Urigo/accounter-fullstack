@@ -4,6 +4,12 @@ import { getTimelessDateYear } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { DynamicReportProvider } from '../../reports/providers/dynamic-report.provider.js';
+import {
+  assignTemplateSlot,
+  resolveTemplateSlots,
+  templateSlotsToEvidence,
+  type TemplateSlots,
+} from '../helpers/template-slots.helper.js';
 import type {
   AnnualAuditOpeningBalanceStatusResult,
   AnnualAuditOpeningBalanceUserType,
@@ -12,11 +18,15 @@ import type {
   IGetBalanceChargeQuery,
   IGetStepStatusesQuery,
   IGetStepStatusQuery,
+  IRemoveWorkingTemplateQuery,
+  IRenameWorkingTemplateQuery,
   IResetStep09ForTemplateQuery,
+  IUpsertStep05EvidenceQuery,
   IUpsertStep09StatusQuery,
   IUpsertStepStatusQuery,
   SetAnnualAuditStep09StatusInput,
   SetAnnualAuditStepStatusInput,
+  SetAnnualAuditWorkingTemplateInput,
 } from '../types.js';
 
 const getStepStatuses = sql<IGetStepStatusesQuery>`
@@ -51,23 +61,87 @@ const upsertStepStatus = sql<IUpsertStepStatusQuery>`
 const upsertStep09Status = sql<IUpsertStep09StatusQuery>`
   INSERT INTO accounter_schema.annual_audit_step_status
     (owner_id, year, step_id, status, notes, evidence_json, completed_at)
-  VALUES ($ownerId, $year, '9', 'COMPLETED', NULL, $evidenceJson::jsonb, now())
+  VALUES (
+    $ownerId, $year, '9', $status, NULL, $evidenceJson::jsonb,
+    CASE WHEN $status = 'COMPLETED' THEN now() ELSE NULL END
+  )
   ON CONFLICT (owner_id, year, step_id) DO UPDATE
-    SET status        = 'COMPLETED',
+    SET status        = EXCLUDED.status,
         notes         = EXCLUDED.notes,
         evidence_json = EXCLUDED.evidence_json,
-        completed_at  = COALESCE(annual_audit_step_status.completed_at, now())
+        completed_at  = CASE
+          WHEN EXCLUDED.status = 'COMPLETED'
+            THEN COALESCE(annual_audit_step_status.completed_at, now())
+          ELSE NULL
+        END
   RETURNING owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at;
 `;
 
+/**
+ * Drops every step 09 evidence key (balanceSheetTemplateName, profitAndLossTemplateName or the
+ * legacy lockedTemplateName) that points at the given template, across all years, and moves those
+ * rows back to PENDING. Keys pointing at other templates are kept.
+ */
 const resetStep09ForTemplate = sql<IResetStep09ForTemplateQuery>`
   UPDATE accounter_schema.annual_audit_step_status
   SET status        = 'PENDING',
-      evidence_json = NULL,
+      evidence_json = (
+        SELECT COALESCE(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
+        FROM jsonb_each(evidence_json) AS e
+        WHERE e.value <> to_jsonb($templateName::text)
+      ),
       completed_at  = NULL
   WHERE owner_id = $ownerId
     AND step_id   = '9'
-    AND evidence_json->>'lockedTemplateName' = $templateName;
+    AND (
+      evidence_json->>'lockedTemplateName' = $templateName
+      OR evidence_json->>'balanceSheetTemplateName' = $templateName
+      OR evidence_json->>'profitAndLossTemplateName' = $templateName
+    );
+`;
+
+/** Writes step 05 (working templates) evidence; status and notes are left as they are. */
+const upsertStep05Evidence = sql<IUpsertStep05EvidenceQuery>`
+  INSERT INTO accounter_schema.annual_audit_step_status
+    (owner_id, year, step_id, status, evidence_json)
+  VALUES ($ownerId, $year, '5', 'PENDING', $evidenceJson::jsonb)
+  ON CONFLICT (owner_id, year, step_id) DO UPDATE
+    SET evidence_json = EXCLUDED.evidence_json
+  RETURNING owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at;
+`;
+
+/** Points step 05 working-template evidence at a renamed template, across all years. */
+const renameWorkingTemplate = sql<IRenameWorkingTemplateQuery>`
+  UPDATE accounter_schema.annual_audit_step_status
+  SET evidence_json = (
+    SELECT jsonb_object_agg(
+      e.key,
+      CASE WHEN e.value = to_jsonb($prevName::text) THEN to_jsonb($newName::text) ELSE e.value END
+    )
+    FROM jsonb_each(evidence_json) AS e
+  )
+  WHERE owner_id = $ownerId
+    AND step_id   = '5'
+    AND (
+      evidence_json->>'balanceSheetTemplateName' = $prevName
+      OR evidence_json->>'profitAndLossTemplateName' = $prevName
+    );
+`;
+
+/** Drops step 05 working-template evidence keys that point at a deleted template. */
+const removeWorkingTemplate = sql<IRemoveWorkingTemplateQuery>`
+  UPDATE accounter_schema.annual_audit_step_status
+  SET evidence_json = (
+    SELECT COALESCE(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
+    FROM jsonb_each(evidence_json) AS e
+    WHERE e.value <> to_jsonb($templateName::text)
+  )
+  WHERE owner_id = $ownerId
+    AND step_id   = '5'
+    AND (
+      evidence_json->>'balanceSheetTemplateName' = $templateName
+      OR evidence_json->>'profitAndLossTemplateName' = $templateName
+    );
 `;
 
 const getBalanceCharge = sql<IGetBalanceChargeQuery>`
@@ -242,32 +316,35 @@ export class AnnualAuditProvider {
   public async setStep09Status(
     input: SetAnnualAuditStep09StatusInput,
   ): Promise<AnnualAuditStepStatusResult> {
-    const { ownerId, year, templateName } = input;
+    const { ownerId, year, templateName, reportType } = input;
 
-    // Find currently locked template for this step (if any) so we can unlock it
-    const existingRows = await getStepStatus.run({ ownerId, year, stepId: '9' }, this.db);
-    const existing = existingRows[0];
-    if (existing?.evidence_json) {
-      const prevEvidence = existing.evidence_json as { lockedTemplateName?: string };
-      const prevTemplateName = prevEvidence.lockedTemplateName;
-      if (prevTemplateName && prevTemplateName !== templateName) {
-        // Unlock the previously locked template (best-effort; don't fail if already gone)
-        try {
-          await this.dynamicReportProvider.unlockTemplate({ name: prevTemplateName, ownerId });
-        } catch {
-          // Template may have been deleted; ignore
-        }
-        // Reset step 09 for any other audit years still referencing the unlocked template
-        await this.resetStep09ForTemplate(ownerId, prevTemplateName);
+    const [existing] = await getStepStatus.run({ ownerId, year, stepId: '9' }, this.db);
+    const prev = resolveTemplateSlots(existing?.evidence_json);
+    const next = assignTemplateSlot(prev, templateName, reportType);
+
+    // Unlock templates this year no longer references (best-effort; they may be gone already),
+    // and drop them from any other audit year still pointing at them.
+    const stillUsed = new Set([next.balanceSheet, next.profitAndLoss]);
+    const released = new Set(
+      [prev.balanceSheet, prev.profitAndLoss].filter(
+        (name): name is string => !!name && !stillUsed.has(name),
+      ),
+    );
+    for (const name of released) {
+      try {
+        await this.dynamicReportProvider.unlockTemplate({ name, ownerId });
+      } catch {
+        // Template may have been deleted; ignore
       }
+      await this.resetStep09ForTemplate(ownerId, name);
     }
 
-    // Lock the newly selected template
     await this.dynamicReportProvider.lockTemplate({ name: templateName, ownerId });
 
-    // Upsert step 09 as COMPLETED with the locked template name as evidence
-    const evidenceJson = JSON.stringify({ lockedTemplateName: templateName });
-    const [row] = await upsertStep09Status.run({ ownerId, year, evidenceJson }, this.db);
+    const status: AnnualAuditStepStatus =
+      next.balanceSheet && next.profitAndLoss ? 'COMPLETED' : 'IN_PROGRESS';
+    const evidenceJson = JSON.stringify(templateSlotsToEvidence(next));
+    const [row] = await upsertStep09Status.run({ ownerId, year, status, evidenceJson }, this.db);
 
     if (!row) {
       throw new Error('Failed to upsert annual audit step 09 status');
@@ -277,6 +354,73 @@ export class AnnualAuditProvider {
 
   public async resetStep09ForTemplate(ownerId: string, templateName: string): Promise<void> {
     await resetStep09ForTemplate.run({ ownerId, templateName }, this.db);
+  }
+
+  // ─── Step 05: working templates ──────────────────────────────────────────
+
+  public async setWorkingTemplate(
+    input: SetAnnualAuditWorkingTemplateInput,
+  ): Promise<AnnualAuditStepStatusResult> {
+    const { ownerId, year, reportType } = input;
+    const templateName = input.templateName || null;
+
+    if (templateName) {
+      const template = await this.dynamicReportProvider.getTemplate({
+        name: templateName,
+        ownerId,
+      });
+      if (!template) {
+        throw new Error(`Report template "${templateName}" not found`);
+      }
+    }
+
+    const [existing] = await getStepStatus.run({ ownerId, year, stepId: '5' }, this.db);
+    const current = this.readWorkingSlots(existing?.evidence_json);
+    const next = assignTemplateSlot(current, templateName, reportType);
+
+    // Keep any unrelated evidence keys step 05 may carry
+    const otherEvidence =
+      existing?.evidence_json && typeof existing.evidence_json === 'object'
+        ? Object.fromEntries(
+            Object.entries(existing.evidence_json as Record<string, unknown>).filter(
+              ([key]) => key !== 'balanceSheetTemplateName' && key !== 'profitAndLossTemplateName',
+            ),
+          )
+        : {};
+    const evidenceJson = JSON.stringify({ ...otherEvidence, ...templateSlotsToEvidence(next) });
+
+    const [row] = await upsertStep05Evidence.run({ ownerId, year, evidenceJson }, this.db);
+    if (!row) {
+      throw new Error('Failed to save annual audit working template');
+    }
+    return this.mapStepStatusRow(row);
+  }
+
+  /** Follows a dynamic report template rename in every year's working templates. */
+  public async renameWorkingTemplate(
+    ownerId: string,
+    prevName: string,
+    newName: string,
+  ): Promise<void> {
+    await renameWorkingTemplate.run({ ownerId, prevName, newName }, this.db);
+  }
+
+  /** Forgets a deleted dynamic report template in every year's working templates. */
+  public async removeWorkingTemplate(ownerId: string, templateName: string): Promise<void> {
+    await removeWorkingTemplate.run({ ownerId, templateName }, this.db);
+  }
+
+  /**
+   * Working slots are stored explicitly — unlike final templates, an unset working slot must not be
+   * filled from the other one, so clearing one report's working template doesn't silently keep it.
+   */
+  private readWorkingSlots(evidence: unknown): TemplateSlots {
+    const raw = (evidence ?? {}) as Record<string, unknown>;
+    const pick = (value: unknown) => (typeof value === 'string' && value ? value : null);
+    return {
+      balanceSheet: pick(raw.balanceSheetTemplateName),
+      profitAndLoss: pick(raw.profitAndLossTemplateName),
+    };
   }
 
   private mapStepStatusRow(r: {
