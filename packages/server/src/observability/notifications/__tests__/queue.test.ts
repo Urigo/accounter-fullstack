@@ -74,10 +74,8 @@ describe('createSlackQueue', () => {
     queue.enqueue({ text: 'fallback', blocks: [{ type: 'context', elements: [] }] });
     await vi.advanceTimersByTimeAsync(0);
     expect(fetch).toHaveBeenCalledTimes(2);
-    expect(JSON.parse(String(fetch.mock.calls[1]![1]?.body))).toEqual({
-      text: 'fallback',
-      blocks: [],
-    });
+    // No `blocks` key at all: an empty array might itself be rejected as `invalid_blocks`.
+    expect(JSON.parse(String(fetch.mock.calls[1]![1]?.body))).toEqual({ text: 'fallback' });
     expect(await queue.flush(0)).toEqual({ sent: 1, failed: 0, dropped: 0 });
   });
 

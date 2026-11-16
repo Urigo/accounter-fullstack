@@ -13,7 +13,8 @@ export type SlackBlock =
 export interface SlackMessage {
   /** Fallback for notifications and clients that do not render blocks. */
   text: string;
-  blocks: SlackBlock[];
+  /** Omitted (not `[]`) for the plain-text resend after Slack rejected the blocks. */
+  blocks?: SlackBlock[];
 }
 
 export interface FormatOptions {
@@ -51,7 +52,7 @@ function safe(text: string, max: number): string {
 export function formatSlackMessage(
   notification: ServerNotification,
   options: FormatOptions,
-): SlackMessage {
+): Required<SlackMessage> {
   const title = truncate(`[${options.envLabel}] ${notification.title}`, HEADER_MAX);
   const blocks: SlackBlock[] = [{ type: 'header', text: { type: 'plain_text', text: title } }];
 
