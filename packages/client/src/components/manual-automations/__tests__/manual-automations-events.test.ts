@@ -48,6 +48,19 @@ const merge: ManualAutomationsRunEvent = {
   ],
 };
 
+const deelCharge: ManualAutomationsRunEvent = {
+  __typename: 'DeelChargeSynced',
+  isNew: true,
+  invoiceCount: 2,
+  charge: {
+    id: 'charge-deel',
+    userDescription: 'Deel payment for Dana',
+    minDocumentsDate: '2026-02-01',
+    totalAmount: { formatted: '$ -4,920.00' },
+    counterparty: { id: 'business-deel', name: 'Deel' },
+  },
+};
+
 describe('groupAutomationEvents', () => {
   it('reports steps without a status as pending', () => {
     const { steps } = groupAutomationEvents([]);
@@ -77,6 +90,18 @@ describe('groupAutomationEvents', () => {
     expect(view.flaggedFees.map(fee => fee.transaction.id)).toEqual(['fee-1']);
     expect(view.mergedCharges).toEqual([merge]);
     expect(view.filledDebitDates).toEqual([]);
+    expect(view.deelCharges).toEqual([]);
+  });
+
+  it('collects the charges the Deel step pulled', () => {
+    const view = groupAutomationEvents([
+      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Running),
+      deelCharge,
+      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 1 }),
+    ]);
+
+    expect(view.deelCharges).toEqual([deelCharge]);
+    expect(view.steps[CronJobStep.FetchDeelDocuments].state).toBe(CronJobStepState.Succeeded);
   });
 });
 
@@ -95,12 +120,14 @@ describe('summarizeAutomationEvents', () => {
         debitDate: '2026-02-02',
         transaction: transaction('cc-2'),
       },
+      deelCharge,
     ]);
 
     expect(summary).toEqual({
       failed: false,
       withErrors: false,
-      description: '2 charges merged · 1 fee flagged · 2 debit dates filled',
+      description:
+        '2 charges merged · 1 fee flagged · 2 debit dates filled · 1 Deel charge pulled',
     });
   });
 

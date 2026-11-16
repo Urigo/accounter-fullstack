@@ -182,7 +182,7 @@ export function UserNav(): JSX.Element | null {
               </Button>
             </Tooltip>
           </DropdownMenuItem>
-          <Tooltip content="Run data fix-ups on demand: flag fees, merge charges, fill debit dates">
+          <Tooltip content="Run data fix-ups on demand: flag fees, merge charges, fill debit dates, pull Deel documents">
             <DropdownMenuItem asChild>
               <Link to={ROUTES.CHARGES.MANUAL_AUTOMATIONS}>
                 <CircleCheckBig className="size-4" />
