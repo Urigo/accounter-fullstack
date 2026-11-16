@@ -23,6 +23,7 @@ import {
   IsracardCredentials,
   IsracardOptions,
 } from './scrapers/scrapers-index.js';
+import { browserTarget, type BrowserOptions } from './utils/browser-launch.js';
 import { newPage } from './utils/browser-util.js';
 
 puppeteer.use(StealthPlugin());
@@ -30,15 +31,19 @@ puppeteer.use(StealthPlugin());
 export async function init({
   headless = true,
   userAgent,
+  browser: browserOptions,
 }: {
   headless?: boolean;
   userAgent?: string;
+  /** Overrides the browser to launch. Defaults to the installed Google Chrome. */
+  browser?: BrowserOptions;
 } = {}) {
   /* this initiates browser and returns every scraper as function */
   /* each scraper opens its own page                              */
   const browser = await puppeteer.launch({
     headless,
     args: userAgent ? [`--user-agent=${userAgent}`] : [],
+    ...browserTarget(browserOptions),
   });
 
   return {
@@ -72,7 +77,10 @@ export async function init({
       return max(page, credentials, options);
     },
     otsarHahayal: async (credentials: OtsarHahayalCredentials, options?: OtsarHahayalOptions) => {
-      return otsarHahayal(credentials, options);
+      return otsarHahayal(credentials, {
+        ...(browserOptions && { browser: browserOptions }),
+        ...options,
+      });
     },
     close: () => {
       return browser.close();
@@ -82,3 +90,4 @@ export async function init({
 
 export * from './zod-schemas/types.js';
 export { HapoalimOptions } from './scrapers/hapoalim.js';
+export type { BrowserOptions } from './utils/browser-launch.js';

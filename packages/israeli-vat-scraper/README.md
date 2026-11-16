@@ -2,6 +2,8 @@
 
 # Pre execution:
 
+- Install [Google Chrome](https://www.google.com/chrome/). The scraper launches the installed
+  Chrome, not a browser downloaded by puppeteer.
 - Add the following credentials as environment variables:
   - VAT_NUM
   - USER_CODE

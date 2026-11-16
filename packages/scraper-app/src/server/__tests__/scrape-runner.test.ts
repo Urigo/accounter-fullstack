@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { _resetRunState, startRun, type ScrapeTask } from '../scrape-runner.js';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
 import { UploadError } from '../graphql/upload-error.js';
+import { CHROME_MISSING_MESSAGE } from '../browser-errors.js';
 
 type TaskResult = { inserted: number; skipped: number; insertedIds: string[]; insertedTransactions: []; changedTransactions: [] };
 
@@ -107,6 +108,26 @@ describe('task error handling', () => {
 
     expect(events.some(e => e.type === 'task-done' && 'sourceId' in e && e.sourceId === 'src-2')).toBe(true);
     expect(events.at(-1)).toMatchObject({ type: 'run-complete', errors: 1 });
+  });
+
+  it('replaces a missing-browser launch error with an actionable message', async () => {
+    const events: ServerMessage[] = [];
+    const failing = makeTask('src-1', async () => {
+      throw new Error(
+        "Could not find Google Chrome executable for channel 'chrome' at:\n - /opt/google/chrome/chrome.",
+      );
+    });
+
+    const record = await startRun([failing], false, msg => events.push(msg));
+
+    const taskError = events.find(e => e.type === 'task-error');
+    expect(taskError).toMatchObject({
+      type: 'task-error',
+      sourceId: 'src-1',
+      message: CHROME_MISSING_MESSAGE,
+    });
+    expect((taskError as { stack?: string }).stack).toContain('Could not find Google Chrome');
+    expect(record.sources[0]).toMatchObject({ status: 'error', error: CHROME_MISSING_MESSAGE });
   });
 
   it('sends an upload error with its details and without a stack', async () => {

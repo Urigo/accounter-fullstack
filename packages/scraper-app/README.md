@@ -8,6 +8,19 @@ server.
 - **Node.js** v22 or later
 - A running [Accounter](../../README.md) server with a scraper API key configured
 - Yarn Berry (v4) — the repo uses Yarn workspaces
+- **Google Chrome** installed on the machine ([download](https://www.google.com/chrome/))
+
+### Why Google Chrome?
+
+The scrapers launch the Google Chrome installed on your machine, not a browser that puppeteer or
+Playwright downloads. Both libraries pin one exact browser build per version, and this repo never
+downloads it: the root `package.json` sets `"puppeteer": { "skipDownload": true }` so CI and the
+server/gateway deploys don't pull ~150 MB of Chrome they don't need, and Playwright never downloads
+browsers on `yarn install`. Using the installed Chrome means a puppeteer or Playwright upgrade needs
+no manual install step.
+
+If Chrome is missing, the source's row shows "Google Chrome is not installed" with a link to install
+it; install Chrome and run the scrape again.
 
 ## How to start
 

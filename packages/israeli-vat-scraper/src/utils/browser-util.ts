@@ -70,8 +70,11 @@ export const newPageByYear = async (
 
 export const newHomePage = async (showBrowser: boolean, logger: Logger): Promise<Page> => {
   try {
+    // Launch the installed Google Chrome: the repo never downloads puppeteer's pinned Chrome build
+    // (root `puppeteer.skipDownload`), so relying on it broke on every puppeteer bump.
     const browser = await puppeteer.launch({
       headless: !showBrowser,
+      channel: 'chrome',
     });
     const page = (await browser.pages())[0];
     if (!page) {

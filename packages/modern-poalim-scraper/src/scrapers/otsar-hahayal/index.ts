@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { browserTarget, type BrowserOptions } from '../../utils/browser-launch.js';
 import { getAccounts } from './accounts.js';
 import { getCreditCardTransactions } from './credit-card-transactions.js';
 import { getCreditCards } from './credit-cards.js';
@@ -21,6 +22,8 @@ export interface OtsarHahayalOptions {
   fromDate?: string;
   toDate?: string;
   headless?: boolean;
+  /** Overrides the browser to launch. Defaults to the installed Google Chrome. */
+  browser?: BrowserOptions;
 }
 
 const DEFAULT_OPTIONS: OtsarHahayalOptions = {
@@ -43,7 +46,10 @@ export async function otsarHahayal(
   ).toISOString();
   const options = { ...DEFAULT_OPTIONS, fromDate, toDate: now.toISOString(), ...userOptions };
 
-  const browser = await chromium.launch({ headless: options.headless === true });
+  const browser = await chromium.launch({
+    headless: options.headless === true,
+    ...browserTarget(options.browser),
+  });
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
 

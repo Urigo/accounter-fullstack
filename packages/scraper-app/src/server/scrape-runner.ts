@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { RunRecord as SerializedRunRecord, SourceRunRecord } from '../shared/types.js';
 import type { ServerMessage } from '../shared/ws-protocol.js';
+import { CHROME_MISSING_MESSAGE, isMissingBrowserError } from './browser-errors.js';
 import type { ScraperUploadResult } from './graphql/client.js';
 import { UploadError } from './graphql/upload-error.js';
 
@@ -108,7 +109,13 @@ export async function startRun(
           };
         }
         errorCount++;
-        const message = e instanceof Error ? e.message : String(e);
+        // A missing Chrome surfaces as a raw library message; tell the user how to fix it instead.
+        // The original stack is still sent below, so the library's message isn't lost.
+        const message = isMissingBrowserError(e)
+          ? CHROME_MISSING_MESSAGE
+          : e instanceof Error
+            ? e.message
+            : String(e);
         // An upload error is the server's answer, not a crash: its stack only points
         // into graphql-request, so show the server's code and hint instead.
         if (e instanceof UploadError) {
