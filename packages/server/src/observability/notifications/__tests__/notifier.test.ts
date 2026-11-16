@@ -116,6 +116,31 @@ describe('SlackNotifier', () => {
     }
   });
 
+  it('does not open a dedupe window for an alert the cap dropped', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetch = fakeFetch();
+      const notifier = new SlackNotifier(config(), { envLabel: 'production', fetch });
+      for (let i = 0; i < 20; i++) {
+        notifier.notify({ type: 'graphql.internal-error', title: 'Internal error', fields: { i } });
+      }
+      const pool = { type: 'db.pool.saturated', title: 'DB pool saturated' } as const;
+      notifier.notify(pool); // Capped: replaced by the storm message.
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(await notifier.flush(0)).toMatchObject({ sent: 21, dropped: 1 });
+
+      // Well inside the 300 s dedupe window, but no copy has reached Slack yet.
+      notifier.notify(pool);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect((await notifier.flush(0)).sent).toBe(22);
+      const text = JSON.stringify(JSON.parse(String(fetch.mock.calls.at(-1)![1]?.body)));
+      expect(text).toContain('DB pool saturated');
+      expect(text).not.toContain('similar suppressed');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shares one queue when both channels use the same webhook', async () => {
     const fetch = fakeFetch();
     const notifier = new SlackNotifier(config({ eventsWebhookUrl: webhook() }), {

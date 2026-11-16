@@ -94,16 +94,18 @@ export class SlackNotifier implements Notifier {
       }
       let suppressed = 0;
       if (channel === 'alerts') {
-        const decision = this.throttle.check(
-          notification.fingerprint ?? defaultFingerprint(notification),
-        );
+        const fingerprint = notification.fingerprint ?? defaultFingerprint(notification);
+        const decision = this.throttle.check(fingerprint);
         if (!decision.send) {
           return;
         }
-        suppressed = decision.suppressed;
+        // Only alerts that pass the dedupe count toward the cap, and a capped alert opens no
+        // dedupe window: its next occurrence must still reach Slack.
         if (!this.underAlertCap(queue)) {
           return;
         }
+        this.throttle.commit(fingerprint);
+        suppressed = decision.suppressed;
       }
       queue.enqueue(
         formatSlackMessage(notification, {
