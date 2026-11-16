@@ -85,12 +85,10 @@ export const envSchema = zod
       zod.string().optional().default('accounter-mcp-server'),
     ),
     OTEL_SERVICE_NAMESPACE: emptyStringAsUndefined(zod.string().optional().default('accounter')),
-    OTEL_DEPLOYMENT_ENV: emptyStringAsUndefined(
-      zod
-        .string()
-        .optional()
-        .default(process.env.NODE_ENV ?? 'development'),
-    ),
+    // No schema default: it falls back to NODE_ENV in `parseEnv`, read from the same source, so
+    // a NODE_ENV that `.env` supplies counts too. (A default here would read `process.env` when
+    // the module is imported, before `loadEnv` runs dotenv.)
+    OTEL_DEPLOYMENT_ENV: emptyStringAsUndefined(zod.string().optional()),
     OTEL_EXPORTER_OTLP_ENDPOINT: emptyStringAsUndefined(zod.string().optional()),
     OTEL_EXPORTER_OTLP_HEADERS: emptyStringAsUndefined(zod.string().optional()),
     OTEL_TRACES_SAMPLER: emptyStringAsUndefined(
@@ -171,7 +169,7 @@ export interface AppConfig {
     longTimeoutMs: number;
   };
   rateLimit: {
-    /** Raw config spec; parsed by the rate limiter in a later prompt. */
+    /** Raw `MCP_RATE_LIMIT_CONFIG` JSON; parsed by `parseRateLimitConfig` in `rate-limit/limiter.ts`. */
     raw: string;
   };
   otel: {
@@ -259,7 +257,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): AppConfig {
       enabled: raw.OTEL_ENABLED === '1',
       serviceName: raw.OTEL_SERVICE_NAME,
       serviceNamespace: raw.OTEL_SERVICE_NAMESPACE,
-      deploymentEnv: raw.OTEL_DEPLOYMENT_ENV,
+      deploymentEnv: raw.OTEL_DEPLOYMENT_ENV ?? source.NODE_ENV ?? 'development',
       exporterEndpoint: raw.OTEL_EXPORTER_OTLP_ENDPOINT,
       exporterHeaders: raw.OTEL_EXPORTER_OTLP_HEADERS,
       tracesSampler: raw.OTEL_TRACES_SAMPLER,
