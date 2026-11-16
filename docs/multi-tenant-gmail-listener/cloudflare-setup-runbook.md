@@ -91,12 +91,13 @@ $W secret list --name email-forward-04a7 # which values are secrets (the rest ar
    and leaves routing on the original, which looks like a deploy that did nothing.
 2. **Account for every var the Worker reads**: `CF_WEBHOOK_SECRET`, `GATEWAY_URL`,
    `EMAIL_FORWARD_DESTINATION`, `FALLBACK_EMAIL` (optional), `HEALTH_PROBE_TIMEOUT_MS` (optional).
-   Anything absent from `secret list` is a plain-text var, which `keep_vars: true` preserves — **do
-   not set `keep_vars: false` while `GATEWAY_URL` is still a var**, or the deploy deletes it and
-   every inbound email fails the health probe.
-3. **Preferably convert the remaining vars to secrets**, so the values are not readable from the
-   dashboard and `keep_vars` can eventually go away. Copy the current value out of the dashboard
-   first — this replaces it, and a typo here takes ingestion down:
+   All five are secrets, and `wrangler.jsonc` sets `keep_vars: false`: the config file is the source
+   of truth, so a deploy **deletes** any value that exists only as a dashboard plain-text var. Every
+   value the Worker needs must appear in `secret list` before you deploy — a missing `GATEWAY_URL`
+   makes every inbound email fail the health probe.
+3. **Add any missing value as a secret**, never as a dashboard Text var. If one shows in the
+   dashboard as Text, copy its value out first — `secret put` replaces it, and a typo here takes
+   ingestion down:
    ```bash
    $W secret put GATEWAY_URL                # paste the value the dashboard var currently holds
    $W secret list --name email-forward-04a7 # expect it to appear

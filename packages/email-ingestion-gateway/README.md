@@ -97,6 +97,9 @@ process with code `1`.
 
 ### Gateway service env (`.env` in the package root)
 
+[`.env.template`](./.env.template) documents every variable; copy it to `.env` for local
+development. The package reads only its own `.env`, never the repo root one.
+
 | Variable                      | Default                 | Description                                                                                     |
 | ----------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
 | `PORT`                        | `3000`                  | HTTP listen port.                                                                               |
@@ -106,11 +109,13 @@ process with code `1`.
 | `CF_IP_ALLOWLIST`             | `''` (disabled)         | Comma-separated source IPs / IPv4 CIDRs. Empty disables the IP check.                           |
 | `GATEWAY_SERVER_URL`          | `http://localhost:4000` | Base URL of the Accounter GraphQL server (`/graphql` is appended).                              |
 | `GATEWAY_CP_TOKEN`            | `''`                    | Shared secret sent as `X-Gateway-CP-Token` to authenticate as the `gateway_control_plane` role. |
+| `NODE_ENV`                    | _(none)_                | `production` makes `CF_WEBHOOK_SECRET` mandatory; `test` keeps the server from listening.       |
+| `DOTENV_DEBUG`                | _(none)_                | `1` shows dotenv's own load diagnostics (off by default).                                       |
+| `TEST_ENV_FILE`               | _(none)_                | Load this file instead of `.env` (shell or test harness only).                                  |
 
-> Set `TEST_ENV_FILE` to load an alternate dotenv file (used by tests). Set `DOTENV_DEBUG=1` to see
-> dotenv's own load diagnostics; they are off by default because the deployed container takes its
-> environment from the platform and has no `.env`, so the "failed to load … ENOENT" line was pure
-> noise at the top of every boot.
+> dotenv's diagnostics are off by default because the deployed container takes its environment from
+> the platform and has no `.env`, so the "failed to load … ENOENT" line was pure noise at the top of
+> every boot.
 
 ### Cloudflare Worker env (`.dev.vars` / Wrangler secrets)
 
@@ -188,12 +193,12 @@ A tight ceiling is not a safety measure here — it turns a slow-but-healthy col
 ceiling did exactly that in production, aborting 22 s before the gateway had even started. Raise it
 if your host is slower; it is tunable without a Worker deploy.
 
-Set all four as **secrets**
+Set all five as **secrets**
 (`yarn workspace @accounter/email-ingestion-gateway wrangler secret put <NAME>`), not as plain-text
-variables. `wrangler.jsonc` declares no `vars`, and `wrangler deploy` reconciles bindings against
-the config file: dashboard **Text** variables are deleted on the next deploy, while secrets are
-preserved. A silently-dropped `FALLBACK_EMAIL` is what turns a gateway rejection into a redelivery
-loop.
+variables. `wrangler.jsonc` declares no `vars` and sets `keep_vars: false`, so `wrangler deploy`
+reconciles bindings against the config file: dashboard **Text** variables are deleted on the next
+deploy, while secrets are preserved. A silently-dropped `FALLBACK_EMAIL` is what turns a gateway
+rejection into a redelivery loop.
 
 `EMAIL_FORWARD_DESTINATION` and `FALLBACK_EMAIL` should be **different** addresses. When they match,
 the Worker skips the fallback forward — both copies would reach the same mailbox, so the second adds
@@ -215,13 +220,11 @@ yarn workspace @accounter/email-ingestion-gateway dev
 yarn workspace @accounter/email-ingestion-gateway worker:dev
 ```
 
-A minimal local `.env`:
+Create the local env files from their templates, then fill in the placeholders:
 
 ```sh
-EMAIL_INGESTION_V2_ENABLED=1
-CF_WEBHOOK_SECRET=local-secret
-GATEWAY_SERVER_URL=http://localhost:4000
-GATEWAY_CP_TOKEN=local-cp-token
+cp packages/email-ingestion-gateway/.env.template packages/email-ingestion-gateway/.env
+cp packages/email-ingestion-gateway/.dev.vars.example packages/email-ingestion-gateway/.dev.vars
 ```
 
 `GATEWAY_CP_TOKEN` must match the server's `GATEWAY_CP_TOKEN` so the gateway can authenticate as the
@@ -232,7 +235,7 @@ GATEWAY_CP_TOKEN=local-cp-token
 The signature covers `` `${timestamp}.${rawBody}` ``. Example with `openssl`:
 
 ```bash
-SECRET=local-secret
+SECRET=replace-with-local-secret # your CF_WEBHOOK_SECRET
 TS=$(date +%s)
 BODY=$(cat fixture.eml)
 SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
