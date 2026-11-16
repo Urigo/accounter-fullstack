@@ -4,9 +4,33 @@ The server writes one JSON object per line, every level to stdout:
 `{"msg": …, "level": …, "time": …, …fields}`. `msg` is a stable identifier to filter on. Values are
 in fields, never spliced into `msg`. `time` is ISO 8601.
 
-`SERVER_LOG_LEVEL` (`debug` | `info` | `warn` | `error`, default `info`) sets the minimum level for
-the server's own records, Yoga and Hive (Hive forwards its logs to Yoga's logger). `DEBUG=1` has no
-effect. `fatal` (the process is going down) is always written.
+`SERVER_LOG_LEVEL` (`debug` | `info` | `warn` | `error` | `silent`, default `info`) sets the minimum
+level for the server's own records, Yoga and Hive (Hive forwards its logs to Yoga's logger).
+`DEBUG=1` has no effect. `fatal` (the process is going down) is always written, even at `silent`.
+
+`SERVER_LOG_LEVEL_OVERRIDES` sets a level per `module` (see [Origin tags](#origin-tags)), over
+`SERVER_LOG_LEVEL`: `deel=debug,db=warn`. A malformed pair or an unknown level fails startup; a
+module that matches nothing logs `log-level-override-unknown-module` at startup and is otherwise
+ignored. Yoga's and Hive's lines follow `SERVER_LOG_LEVEL` only.
+
+## Origin tags
+
+Every line says where it came from:
+
+| Field       | Value                                                                                                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `module`    | `src/modules/<dir>/…` → `<dir>` (`charges`, `deel`, `app-providers`); any other nested file → its top-level directory (`plugins`, `observability`, `jobs`, …); `src/index.ts` → `startup`. Same in `dist`, which mirrors `src`. |
+| `component` | The file name without its extension (`tenant-db-client`, `charges.resolver`).                                                                                                                                                   |
+| `service`   | `accounter-server`.                                                                                                                                                                                                             |
+| `env`       | `OTEL_DEPLOYMENT_ENV`, else `NODE_ENV`, else `development`.                                                                                                                                                                     |
+| `release`   | `RELEASE` (e.g. the deployed git sha or tag), else `RENDER_GIT_COMMIT` (set by Render on every deploy); omitted when neither is set.                                                                                            |
+
+`module` / `component` come from `getLogger(import.meta.url)` (see below). Infra scopes that cut
+across files replace the derived module: `getLogger(import.meta.url, { module: 'db' })` for the DB
+client, pool monitor and pool errors, `shutdown` for process shutdown in `index.ts`; `service` /
+`env` / `release` are set once at startup. A module's directory name **is** its log module: a test
+walks `src/modules` to keep it that way. Lines still written with `console.*`, and Yoga's own lines
+(`source: "yoga"`), carry no `module` / `component` yet.
 
 Levels: `fatal` the process is going down · `error` a server fault someone should look at · `warn`
 handled, degraded, or the user's data needs fixing · `info` lifecycle and one line per operation ·
@@ -118,19 +142,23 @@ Every record goes through the same checks, whatever the call site passed:
 
 ## Writing logs
 
-Use `log` / `logger` from `packages/server/src/observability/log.ts`, not `console.*`:
+Use a file-scoped logger from `packages/server/src/observability/log.ts`, not `console.*`:
 
 ```ts
-import { log, serializeError } from '../../observability/log.js'
+import { getLogger, serializeError } from '../../observability/log.js'
+
+const { log } = getLogger(import.meta.url)
 
 log('error', 'thing-failed', { thingId, error: serializeError(error) })
 ```
 
-`log(level, msg, fields)` is the stable call-site API. Behind it, `setLogContextProvider` merges
-fields into every record (the seam for ambient request context via `AsyncLocalStorage`) and
-`setLogWriter` decides where a finished line goes (the seam for tests and another sink), so neither
-needs call sites to change. The default writer swallows a failed write (`EPIPE`), as `console.*`
-does.
+`getLogger` returns `log` and `debug` / `info` / `warn` / `error` / `fatal`, with the same
+signatures as the unscoped `log` / `logger`, adding the file's `module` and `component`. A call-site
+field overrides a bound one. `log(level, msg, fields)` is the stable call-site API. Behind it,
+`setLogContextProvider` merges fields into every record (the seam for ambient request context via
+`AsyncLocalStorage`) and `setLogWriter` decides where a finished line goes (the seam for tests and
+another sink), so neither needs call sites to change. The default writer swallows a failed write
+(`EPIPE`), as `console.*` does.
 
 - Internal IDs only. Never emails, names, tokens, request bodies or upstream response bodies. The
   safety checks above are a backstop, not a licence.
@@ -140,3 +168,21 @@ does.
   error _stops_ (a catch that swallows it, returns a `CommonError`, or retries), or where only that
   site has the detail (e.g. the upstream status of a third-party call).
 - Findings about the user's own data are `info`. `error` is for server faults someone should act on.
+
+### Field dictionary
+
+Use these names for the same things everywhere, so one query finds them across modules:
+
+| Field                                                   | Meaning                                                                 |
+| ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `chargeId`, `businessId`, `transactionId`, `documentId` | Internal UUIDs of the record the line is about.                         |
+| `userId`                                                | Internal user id (never the Auth0 id).                                  |
+| `count`                                                 | How many items the line covers (records processed, failures, retries).  |
+| `durationMs`                                            | Elapsed milliseconds, as a number.                                      |
+| `error`                                                 | `serializeError(error)`: never the raw error, never under another name. |
+
+- camelCase ids, one per field: `chargeId`, not `charge: { id }` and never the whole domain object.
+- Never emails, people's or businesses' names, amounts, Auth0 ids, tokens, or request / upstream
+  bodies. Log the id and look the rest up.
+- `module`, `component`, `service`, `env`, `release` and `msg` / `level` / `time` are set by the
+  logger; don't pass them as fields.

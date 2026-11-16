@@ -226,12 +226,20 @@ describe('watchdogCeilingProblems', () => {
 });
 
 describe('server log level', () => {
-  const KEYS = ['SERVER_LOG_LEVEL', 'DEBUG', ...Object.keys(REQUIRED)];
+  const KEYS = [
+    'SERVER_LOG_LEVEL',
+    'SERVER_LOG_LEVEL_OVERRIDES',
+    'DEBUG',
+    ...Object.keys(REQUIRED),
+  ];
   let original: Record<string, string | undefined>;
 
   beforeEach(() => {
     original = Object.fromEntries(KEYS.map(key => [key, process.env[key]]));
     delete process.env['SERVER_LOG_LEVEL'];
+    delete process.env['SERVER_LOG_LEVEL_OVERRIDES'];
+    delete process.env['RELEASE'];
+    delete process.env['RENDER_GIT_COMMIT'];
     delete process.env['DEBUG'];
   });
 
@@ -259,6 +267,11 @@ describe('server log level', () => {
     expect(env.logging.level).toBe('info');
   });
 
+  it('accepts silent', async () => {
+    const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'silent' });
+    expect(env.logging.level).toBe('silent');
+  });
+
   it('accepts an explicit level', async () => {
     const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'debug' });
     expect(env.logging.level).toBe('debug');
@@ -267,4 +280,35 @@ describe('server log level', () => {
   it('rejects an unknown level at startup', async () => {
     await expect(loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'verbose' })).rejects.toBeDefined();
   });
+
+  it.each([
+    ['neither is set', {}, undefined],
+    ['only Render sets the commit', { RENDER_GIT_COMMIT: 'abc123' }, 'abc123'],
+    ['RELEASE is set', { RELEASE: 'v1.2.3', RENDER_GIT_COMMIT: 'abc123' }, 'v1.2.3'],
+  ])(
+    'takes release from RELEASE, else RENDER_GIT_COMMIT, when %s',
+    async (_, overrides, release) => {
+      const env = await loadEnv({ ...REQUIRED, ...overrides });
+      expect(env.logging.release).toBe(release);
+    },
+  );
+
+  it('has no per-module levels by default', async () => {
+    const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL_OVERRIDES: '' });
+    expect(env.logging.moduleLevels).toEqual({});
+  });
+
+  it('parses per-module levels', async () => {
+    const env = await loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL_OVERRIDES: 'deel=debug, db=warn,' });
+    expect(env.logging.moduleLevels).toEqual({ deel: 'debug', db: 'warn' });
+  });
+
+  it.each(['deel', 'deel=verbose', '=debug', 'deel=debug=warn'])(
+    'rejects the malformed per-module level %s at startup',
+    async value => {
+      await expect(
+        loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL_OVERRIDES: value }),
+      ).rejects.toBeDefined();
+    },
+  );
 });

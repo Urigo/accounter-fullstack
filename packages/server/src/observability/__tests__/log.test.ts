@@ -1,13 +1,20 @@
+import { readdirSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GraphQLError } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import {
   createYogaLogger,
+  getLogger,
+  knownLogModules,
   log,
   markLogged,
+  originOf,
   serializeError,
+  setLogBaseFields,
   setLogContextProvider,
   setLogLevel,
   setLogWriter,
+  setModuleLogLevels,
 } from '../log.js';
 
 let stdout: MockInstance;
@@ -20,6 +27,8 @@ beforeEach(() => {
 
 afterEach(() => {
   setLogLevel('info');
+  setLogBaseFields();
+  setModuleLogLevels();
   setLogContextProvider();
   setLogWriter();
   vi.restoreAllMocks();
@@ -206,6 +215,23 @@ describe('log', () => {
     expect(records()).toEqual([expect.objectContaining({ msg: 'survives' })]);
   });
 
+  it('drops everything but fatal when silent, process-wide or for one module', () => {
+    setLogLevel('silent');
+    log('error', 'dropped');
+    log('fatal', 'still-written');
+    setLogLevel('info');
+    setModuleLogLevels({ deel: 'silent' });
+    log('error', 'deel-dropped', { module: 'deel' });
+    log('fatal', 'deel-fatal', { module: 'deel' });
+    log('info', 'other-module', { module: 'charges' });
+
+    expect(records().map(record => record['msg'])).toEqual([
+      'still-written',
+      'deel-fatal',
+      'other-module',
+    ]);
+  });
+
   it('sends finished lines to the configured writer', () => {
     const writer = vi.fn();
     setLogWriter(writer);
@@ -223,6 +249,102 @@ describe('log', () => {
 
     expect(() => log('info', 'into-a-closed-pipe')).not.toThrow();
     expect(process.stdout.listenerCount('error')).toBeGreaterThan(0);
+  });
+});
+
+describe('origin tags', () => {
+  it.each([
+    ['file:///app/packages/server/src/modules/charges/resolvers/charges.resolver.ts', 'charges', 'charges.resolver'],
+    ['/app/packages/server/dist/modules/deel/providers/deel-client.provider.js', 'deel', 'deel-client.provider'],
+    ['file:///app/packages/server/src/plugins/request-log-plugin.ts', 'plugins', 'request-log-plugin'],
+    ['file:///app/packages/server/dist/observability/pool-monitor.js', 'observability', 'pool-monitor'],
+    ['file:///app/packages/server/dist/index.js', 'startup', 'index'],
+    ['file:///app/packages/server/src/environment.ts', 'environment', 'environment'],
+    // The checkout itself under a `src`: the last one wins
+    ['file:///home/me/src/accounter/packages/server/src/modules/tags/index.ts', 'tags', 'index'],
+  ])('derives the origin of %s', (url, module, component) => {
+    expect(originOf(url)).toEqual({ module, component });
+  });
+
+  it('uses each module directory name as its log module', () => {
+    const modulesDir = fileURLToPath(new URL('../../modules/', import.meta.url));
+    const directories = readdirSync(modulesDir, { withFileTypes: true }).filter(entry =>
+      entry.isDirectory(),
+    );
+
+    expect(directories.length).toBeGreaterThan(0);
+    for (const { name } of directories) {
+      const url = pathToFileURL(`${modulesDir}${name}/helpers/some.helper.ts`).href;
+      expect(originOf(url).module).toBe(name);
+    }
+  });
+
+  it('binds module and component, and a call-site field overrides them', () => {
+    const scoped = getLogger('file:///app/packages/server/src/modules/deel/helpers/sync.helper.ts');
+
+    scoped.info('synced', { count: 1 });
+    scoped.log('warn', 'overridden', { component: 'custom' });
+
+    expect(records()).toEqual([
+      expect.objectContaining({ msg: 'synced', module: 'deel', component: 'sync.helper', count: 1 }),
+      expect.objectContaining({ msg: 'overridden', level: 'warn', module: 'deel', component: 'custom' }),
+    ]);
+  });
+
+  it('lets an infra scope replace the derived module, keeping the component', () => {
+    const { log: dbLog } = getLogger(
+      'file:///app/packages/server/src/modules/app-providers/tenant-db-client.ts',
+      { module: 'db' },
+    );
+
+    dbLog('error', 'db-thing-failed');
+
+    expect(records()).toEqual([
+      expect.objectContaining({ msg: 'db-thing-failed', module: 'db', component: 'tenant-db-client' }),
+    ]);
+  });
+
+  it('stamps base fields on every record, below the call site and never over msg/level/time', () => {
+    setLogBaseFields({ service: 'accounter-server', env: 'test', release: 'abc123', msg: 'shadow' });
+
+    log('info', 'with-base');
+    log('info', 'override', { env: 'call-site' });
+
+    expect(records()).toEqual([
+      expect.objectContaining({ msg: 'with-base', service: 'accounter-server', env: 'test', release: 'abc123' }),
+      expect.objectContaining({ msg: 'override', service: 'accounter-server', env: 'call-site' }),
+    ]);
+  });
+});
+
+describe('per-module levels', () => {
+  const deel = getLogger('file:///app/packages/server/src/modules/deel/helpers/sync.helper.ts');
+  const charges = getLogger('file:///app/packages/server/src/modules/charges/helpers/x.helper.ts');
+
+  it("applies a module's own level, and the process-wide one to every other module", () => {
+    setModuleLogLevels({ deel: 'debug', charges: 'error' });
+
+    deel.debug('deel-detail');
+    charges.warn('charges-warning');
+    charges.error('charges-failed');
+    charges.fatal('charges-fatal');
+    log('debug', 'unscoped-detail');
+
+    expect(records().map(record => record['msg'])).toEqual([
+      'deel-detail',
+      'charges-failed',
+      'charges-fatal',
+    ]);
+  });
+
+  it('knows the module directories, the top-level directories and the infra scopes', () => {
+    const known = knownLogModules();
+
+    for (const module of ['charges', 'deel', 'plugins', 'observability', 'startup', 'db', 'shutdown']) {
+      expect(known).toContain(module);
+    }
+    expect(known).not.toContain('modules');
+    expect(known).not.toContain('__tests__');
   });
 });
 

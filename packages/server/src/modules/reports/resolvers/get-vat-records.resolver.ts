@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { CONTEXT, type Injector } from 'graphql-modules';
 import type { QueryVatReportArgs } from '../../../__generated__/types.js';
-import { log, serializeError } from '../../../observability/log.js';
+import { getLogger, serializeError } from '../../../observability/log.js';
 import { DocumentType } from '../../../shared/enums.js';
 import {
   allSettledOrThrow,
@@ -25,6 +25,8 @@ import {
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
 import type { VatReportRecords } from '../types.js';
+
+const { log } = getLogger(import.meta.url);
 
 export type GetVatRecordsOptions = {
   /**

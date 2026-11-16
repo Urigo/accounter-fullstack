@@ -9,13 +9,21 @@ import {
   updateClient_mutationMutationVariables,
   type Sdk,
 } from '@accounter/green-invoice-graphql';
-import { log, markLogged, scrubText, wasLogged, type LogFields } from '../../observability/log.js';
+import {
+  getLogger,
+  markLogged,
+  scrubText,
+  wasLogged,
+  type LogFields,
+} from '../../observability/log.js';
 import { todayTimelessDate } from '../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
 import { AdminContextProvider } from '../admin-context/providers/admin-context.provider.js';
 import { ProviderCredentialsProvider } from '../provider-credentials/providers/provider-credentials.provider.js';
 import { GreenInvoiceTokenCacheProvider } from './green-invoice-token-cache.js';
+
+const { log } = getLogger(import.meta.url);
 
 export type ExpenseDraft = NonNullable<
   Extract<

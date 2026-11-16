@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import { GraphQLError } from 'graphql';
 import type { YogaLogger } from 'graphql-yoga';
 
@@ -9,9 +10,15 @@ import type { YogaLogger } from 'graphql-yoga';
  * keeps a record whole in the log pipeline: a multi-line `util.inspect` dump or stack trace becomes
  * one record per line there, and those lines interleave across concurrent requests.
  *
- * `log(level, msg, fields)` is the stable call-site API. Behind it are two seams, so ambient request
- * context (`AsyncLocalStorage`), tests and another sink can plug in without touching call sites:
- * `setLogContextProvider` (fields merged into every record) and `setLogWriter` (where a line goes).
+ * `log(level, msg, fields)` is the stable call-site API. A file gets its own copy, tagged with where
+ * the line came from, from `getLogger(import.meta.url)`: `const { log } = getLogger(import.meta.url)`
+ * adds `module` (the `src/modules/<dir>`, or the top-level `src` directory) and `component` (the file
+ * name) to every record. `setLogBaseFields` adds process-wide fields (`service`, `env`, `release`),
+ * set once at startup.
+ *
+ * Behind it are two seams, so ambient request context (`AsyncLocalStorage`), tests and another sink
+ * can plug in without touching call sites: `setLogContextProvider` (fields merged into every record)
+ * and `setLogWriter` (where a line goes).
  *
  * Safety, applied to every record (`toJsonLine`):
  * - a field whose key names a credential (`authorization`, `cookie`, `*token`, `*secret`,
@@ -39,12 +46,25 @@ import type { YogaLogger } from 'graphql-yoga';
 /** `fatal`: the process is going down. Always written, whatever the configured level. */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
+/**
+ * A minimum level to write. `fatal` is always written, so it is never a threshold; `silent` drops
+ * everything else (e.g. in tests).
+ */
+export type LogThreshold = Exclude<LogLevel, 'fatal'> | 'silent';
+
 export type LogFields = Record<string, unknown>;
 
 /** Writes one finished line (newline included). */
 export type LogWriter = (line: string, level: LogLevel) => void;
 
-const LEVEL_SCORE: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3, fatal: 4 };
+const LEVEL_SCORE: Record<LogLevel | 'silent', number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+  fatal: 4,
+  silent: 5,
+};
 
 /** Frames kept from a stack trace: enough to locate the throw, not a screenful per error. */
 const MAX_STACK_FRAMES = 8;
@@ -57,17 +77,69 @@ const MAX_ERROR_MESSAGE_LENGTH = 500;
 /** Fields every record starts with; a field passed by a caller or the context can't replace them. */
 const RESERVED_KEYS = new Set(['msg', 'level', 'time']);
 
-let threshold: Exclude<LogLevel, 'fatal'> = 'info';
+let threshold: LogThreshold = 'info';
+let moduleThresholds = new Map<string, LogThreshold>();
+let baseFields: LogFields = {};
 let contextProvider: (() => LogFields | undefined) | undefined;
 let writer: LogWriter = writeToStdout;
 
 /** Sets the minimum level written, process-wide. Set once at startup from `SERVER_LOG_LEVEL`. */
-export function setLogLevel(level: Exclude<LogLevel, 'fatal'>): void {
+export function setLogLevel(level: LogThreshold): void {
   threshold = level;
 }
 
-export function isLogLevelEnabled(level: LogLevel): boolean {
-  return LEVEL_SCORE[level] >= LEVEL_SCORE[threshold];
+/**
+ * Per-module minimum levels, overriding the process-wide one for records of that `module` (from
+ * `SERVER_LOG_LEVEL_OVERRIDES`, e.g. `deel=debug,db=warn`). Pass nothing to remove them.
+ */
+export function setModuleLogLevels(levels?: Record<string, LogThreshold>): void {
+  moduleThresholds = new Map(Object.entries(levels ?? {}));
+}
+
+/** Whether a record at `level` is written, for `module` when it has its own level. */
+export function isLogLevelEnabled(level: LogLevel, module?: string): boolean {
+  if (level === 'fatal') {
+    return true;
+  }
+  const min = (module === undefined ? undefined : moduleThresholds.get(module)) ?? threshold;
+  return LEVEL_SCORE[level] >= LEVEL_SCORE[min];
+}
+
+/** Modules a scope can log as without a matching `src/modules` directory (see `originOf`). */
+const NON_DIRECTORY_MODULES = ['startup', 'db', 'shutdown'];
+
+/**
+ * Every `module` a record can carry: the `src/modules` directories, the top-level `src` directories
+ * and the infra scopes. Used to warn about a per-module level that matches nothing.
+ */
+export function knownLogModules(): Set<string> {
+  const known = new Set(NON_DIRECTORY_MODULES);
+  const directoriesOf = (url: URL) =>
+    readdirSync(url, { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name);
+  try {
+    // This file is `src/observability/log.ts` (or `dist/observability/log.js`, which mirrors it).
+    for (const name of directoriesOf(new URL('../', import.meta.url))) {
+      if (name !== 'modules' && name !== '__tests__' && name !== '__generated__') {
+        known.add(name);
+      }
+    }
+    for (const name of directoriesOf(new URL('../modules/', import.meta.url))) {
+      known.add(name);
+    }
+  } catch {
+    // Unreadable layout: the caller just can't tell unknown modules apart.
+  }
+  return known;
+}
+
+/**
+ * Process-wide fields on every record (`service`, `env`, `release`), below the context's and the call
+ * site's own. Set once at startup; pass nothing to remove them.
+ */
+export function setLogBaseFields(fields?: LogFields): void {
+  baseFields = { ...fields };
 }
 
 /**
@@ -85,7 +157,8 @@ export function setLogWriter(next?: LogWriter): void {
 
 /** Writes one record as a single JSON line. */
 export function log(level: LogLevel, msg: string, fields?: LogFields): void {
-  if (!isLogLevelEnabled(level)) {
+  const module = fields?.['module'];
+  if (!isLogLevelEnabled(level, typeof module === 'string' ? module : undefined)) {
     return;
   }
   const record: LogFields = { msg, level, time: new Date().toISOString() };
@@ -95,7 +168,7 @@ export function log(level: LogLevel, msg: string, fields?: LogFields): void {
   } catch {
     // A broken context provider must not cost the record.
   }
-  for (const source of [context, fields]) {
+  for (const source of [baseFields, context, fields]) {
     for (const [key, value] of Object.entries(source ?? {})) {
       // `msg`, `level` and `time` are what a log query filters on: a field must not shadow them.
       if (!RESERVED_KEYS.has(key)) {
@@ -113,6 +186,61 @@ export const logger = {
   error: (msg: string, fields?: LogFields) => log('error', msg, fields),
   fatal: (msg: string, fields?: LogFields) => log('fatal', msg, fields),
 };
+
+export type ScopedLogger = typeof logger & { log: typeof log };
+
+/** Where a log line came from: the log `module` and the `component` (file) within it. */
+export type LogOrigin = { module: string; component: string };
+
+/**
+ * The origin of a source file, from its URL or path. Works on `src` and on `dist`, which mirrors it:
+ * - `modules/<dir>/…` → `<dir>` (so a module's directory name is its log module);
+ * - any other nested file → its top-level directory (`plugins`, `observability`, `jobs`, …);
+ * - the top-level `index` → `startup`, any other top-level file → its own name.
+ *
+ * `component` is the file name without its extension (`tenant-db-client`, `charges.resolver`).
+ */
+export function originOf(url: string): LogOrigin {
+  const path = url.replaceAll('\\', '/');
+  // Greedy, so the last `/src/` or `/dist/` wins: the checkout itself may sit under a `src`.
+  const relative = /^.*\/(?:src|dist)\/(.+)$/.exec(path)?.[1] ?? path.split('/').at(-1) ?? path;
+  const segments = relative.split('/');
+  const component = (segments.at(-1) ?? relative).replace(/\.[^.]+$/, '');
+  if (segments.length === 1) {
+    return { module: component === 'index' ? 'startup' : component, component };
+  }
+  if (segments[0] === 'modules' && segments.length > 2) {
+    return { module: segments[1], component };
+  }
+  return { module: segments[0], component };
+}
+
+/**
+ * A logger whose records carry their origin (`module`, `component`; see `originOf`). Same
+ * signatures as `log` / `logger.*`, and a call site's own field overrides a bound one. The functions
+ * don't use `this`, so they can be destructured:
+ *
+ * ```ts
+ * const { log } = getLogger(import.meta.url);
+ * ```
+ *
+ * `override` replaces part of the derived origin, for infra scopes that cut across files: the DB
+ * client and pool are `db`, process shutdown is `shutdown`
+ * (`getLogger(import.meta.url, { module: 'db' })`).
+ */
+export function getLogger(url: string, override?: Partial<LogOrigin>): ScopedLogger {
+  const origin = { ...originOf(url), ...override };
+  const scoped = (level: LogLevel, msg: string, fields?: LogFields) =>
+    log(level, msg, { ...origin, ...fields });
+  return {
+    log: scoped,
+    debug: (msg, fields) => scoped('debug', msg, fields),
+    info: (msg, fields) => scoped('info', msg, fields),
+    warn: (msg, fields) => scoped('warn', msg, fields),
+    error: (msg, fields) => scoped('error', msg, fields),
+    fatal: (msg, fields) => scoped('fatal', msg, fields),
+  };
+}
 
 let stdoutGuarded = false;
 

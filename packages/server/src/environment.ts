@@ -274,10 +274,36 @@ const EmailIngestionModel = zod.object({
 
 // One level for Yoga and Hive (whose Yoga plugin logs through Yoga's logger). Validated here so a
 // typo fails startup, and never derived from `DEBUG`, which Yoga would otherwise follow.
+const LOG_THRESHOLDS = ['debug', 'info', 'warn', 'error', 'silent'] as const;
+type LogThreshold = (typeof LOG_THRESHOLDS)[number];
+
 const LoggingModel = zod.object({
-  SERVER_LOG_LEVEL: emptyString(
-    zod.enum(['debug', 'info', 'warn', 'error']).optional().default('info'),
-  ),
+  SERVER_LOG_LEVEL: emptyString(zod.enum(LOG_THRESHOLDS).optional().default('info')),
+  // Per-module levels, `<module>=<level>` pairs separated by commas: `deel=debug,db=warn`. Fails
+  // startup on a malformed pair or an unknown level; a module that matches nothing warns at startup.
+  SERVER_LOG_LEVEL_OVERRIDES: emptyString(zod.string().optional()).transform((raw, ctx) => {
+    const levels: Record<string, LogThreshold> = {};
+    for (const pair of (raw ?? '').split(',')) {
+      if (!pair.trim()) {
+        continue;
+      }
+      const [module, level, ...rest] = pair.split('=').map(part => part.trim());
+      const threshold = LOG_THRESHOLDS.find(candidate => candidate === level);
+      if (!module || !threshold || rest.length > 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Invalid SERVER_LOG_LEVEL_OVERRIDES entry "${pair.trim()}": expected <module>=<${LOG_THRESHOLDS.join('|')}>`,
+        });
+        return zod.NEVER;
+      }
+      levels[module] = threshold;
+    }
+    return levels;
+  }),
+  // The deployed version (e.g. a git sha or tag), stamped on every log line as `release`. Falls back
+  // to the commit Render sets on every deploy, so Render needs no extra configuration.
+  RELEASE: emptyString(zod.string().optional()),
+  RENDER_GIT_COMMIT: emptyString(zod.string().optional()),
 });
 
 const PriceIndexSyncModel = zod.object({
@@ -474,6 +500,8 @@ export const env = {
   },
   logging: {
     level: logging.SERVER_LOG_LEVEL,
+    moduleLevels: logging.SERVER_LOG_LEVEL_OVERRIDES,
+    release: logging.RELEASE ?? logging.RENDER_GIT_COMMIT,
   },
 } as const;
 

@@ -16,7 +16,15 @@ import { DBProvider } from './modules/app-providers/db.provider.js';
 import { startTenantDbClientWatchdog } from './modules/app-providers/tenant-db-client.js';
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
 import { PriceIndexSyncProvider } from './modules/price-indexes/providers/price-index-sync.provider.js';
-import { createYogaLogger, log, serializeError, setLogLevel } from './observability/log.js';
+import {
+  createYogaLogger,
+  getLogger,
+  knownLogModules,
+  serializeError,
+  setLogBaseFields,
+  setLogLevel,
+  setModuleLogLevels,
+} from './observability/log.js';
 import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
@@ -24,6 +32,11 @@ import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
 import { requestLogPlugin } from './plugins/request-log-plugin.js';
 import { pgTypeParsers } from './shared/helpers/pg-type-parsers.js';
 import { AccounterContext } from './shared/types/index.js';
+
+const { log } = getLogger(import.meta.url);
+// Infra scopes inside this file: the shared pool, and process shutdown (signals and crashes)
+const { log: dbLog } = getLogger(import.meta.url, { module: 'db' });
+const { log: shutdownLog } = getLogger(import.meta.url, { module: 'shutdown' });
 
 const { Pool } = pg;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -38,6 +51,19 @@ async function main() {
   // From SERVER_LOG_LEVEL (default `info`), never from `DEBUG`. One level for this server's own
   // structured logs, Yoga and Hive (which forwards its logs to Yoga's logger).
   setLogLevel(env.logging.level);
+  setModuleLogLevels(env.logging.moduleLevels);
+  // Origin fields on every line, alongside the per-file `module` / `component` from `getLogger`.
+  setLogBaseFields({
+    service: 'accounter-server',
+    env: env.otel.deploymentEnv,
+    release: env.logging.release,
+  });
+  const knownModules = knownLogModules();
+  for (const module of Object.keys(env.logging.moduleLevels)) {
+    if (!knownModules.has(module)) {
+      log('warn', 'log-level-override-unknown-module', { overrideModule: module });
+    }
+  }
 
   await startTelemetry();
 
@@ -97,7 +123,7 @@ async function main() {
       operationName,
       requestId,
     }) => {
-      log('error', 'db-leaked-connection-reclaimed', {
+      dbLog('error', 'db-leaked-connection-reclaimed', {
         idleMs,
         // `aborted`: the caller hung up and the deferred disposal never completed.
         // `in-flight`: the operation is still marked as executing.
@@ -238,9 +264,9 @@ async function main() {
     // A crash takes the process down (`fatal`); a signal is an ordinary stop. Told apart by the exit
     // code, not by `err`: a promise can reject with `undefined`, `null` or `0`.
     if (exitCode === 0) {
-      log('info', 'server-shutting-down', { reason });
+      shutdownLog('info', 'server-shutting-down', { reason });
     } else {
-      log('fatal', 'server-shutting-down', { reason, error: serializeError(err) });
+      shutdownLog('fatal', 'server-shutting-down', { reason, error: serializeError(err) });
     }
 
     // Stop accepting new connections
@@ -256,7 +282,7 @@ async function main() {
     // Allow in-flight requests some time to complete, then close the pool
     const FORCE_EXIT_TIMEOUT_MS = 10_000;
     const forceExitTimer = setTimeout(() => {
-      log('fatal', 'server-shutdown-timed-out', { timeoutMs: FORCE_EXIT_TIMEOUT_MS });
+      shutdownLog('fatal', 'server-shutdown-timed-out', { timeoutMs: FORCE_EXIT_TIMEOUT_MS });
       process.exit(exitCode);
     }, FORCE_EXIT_TIMEOUT_MS);
     // Do not keep the event loop alive just for the timer
@@ -265,13 +291,13 @@ async function main() {
     try {
       await pool.end();
     } catch (e) {
-      log('error', 'server-shutdown-pool-close-failed', { error: serializeError(e) });
+      shutdownLog('error', 'server-shutdown-pool-close-failed', { error: serializeError(e) });
     }
 
     try {
       await shutdownTelemetry();
     } catch (e) {
-      log('error', 'server-shutdown-telemetry-failed', { error: serializeError(e) });
+      shutdownLog('error', 'server-shutdown-telemetry-failed', { error: serializeError(e) });
     } finally {
       clearTimeout(forceExitTimer);
       process.exit(exitCode);
@@ -281,7 +307,7 @@ async function main() {
   // Pool errors: log but don't shutdown on transient errors
   // The pool will attempt to recover from connection issues automatically
   pool.on('error', err => {
-    log('error', 'db-pool-idle-client-error', { error: serializeError(err) });
+    dbLog('error', 'db-pool-idle-client-error', { error: serializeError(err) });
     // Only shutdown on critical errors that indicate the pool is permanently broken
     // For now, log and let the pool attempt recovery
     // If queries start failing consistently, they'll be caught by application error handlers
@@ -290,24 +316,24 @@ async function main() {
   // OS signals
   process.on('SIGINT', () =>
     gracefulShutdown('SIGINT', undefined, 0).catch(e =>
-      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
+      shutdownLog('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
   process.on('SIGTERM', () =>
     gracefulShutdown('SIGTERM', undefined, 0).catch(e =>
-      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
+      shutdownLog('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
 
   // Unhandled errors
   process.on('unhandledRejection', reason =>
     gracefulShutdown('unhandledRejection', reason, 1).catch(e =>
-      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
+      shutdownLog('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
   process.on('uncaughtException', err =>
     gracefulShutdown('uncaughtException', err, 1).catch(e =>
-      log('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
+      shutdownLog('fatal', 'server-shutdown-failed', { error: serializeError(e) }),
     ),
   );
 

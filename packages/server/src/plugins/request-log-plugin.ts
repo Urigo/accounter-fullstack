@@ -16,14 +16,16 @@ import {
   isUnexpectedGraphQLError,
 } from '../observability/graphql-errors.js';
 import {
+  getLogger,
   isGraphQLError,
-  log,
   markLogged,
   serializeError,
   wasLogged,
 } from '../observability/log.js';
 import type { AccounterContext, RequestLogState } from '../shared/types/index.js';
 import { correlationIdOf, requestIdOf } from './correlation-id-plugin.js';
+
+const { log } = getLogger(import.meta.url);
 
 /** `msg` of the one line written per GraphQL operation. */
 export const OPERATION_LOG_MSG = 'graphql-operation';

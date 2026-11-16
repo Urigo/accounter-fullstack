@@ -1,6 +1,6 @@
 import type { Injector } from 'graphql-modules';
 import type { AccountantStatus, Pcn874RecordType } from '../../../__generated__/types.js';
-import { log } from '../../../observability/log.js';
+import { getLogger } from '../../../observability/log.js';
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { DocumentType, type Currency } from '../../../shared/enums.js';
 import { allSettledOrThrow, formatCurrency } from '../../../shared/helpers/index.js';
@@ -17,6 +17,8 @@ import type { IGetDocumentsByFiltersResult } from '../../documents/types.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '../../financial-entities/types.js';
 import { VatProvider } from '../../vat/providers/vat.provider.js';
+
+const { log } = getLogger(import.meta.url);
 
 export type VatReportRecordSources = {
   charge: IGetChargesByIdsResult;
