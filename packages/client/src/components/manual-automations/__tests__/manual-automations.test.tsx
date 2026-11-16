@@ -172,7 +172,7 @@ describe('ManualAutomations screen', () => {
     expect(page.textContent).toContain('New');
   });
 
-  it('points to Admin Configurations when Deel is not connected', async () => {
+  it('points to the Admin Config tab when Deel is not connected', async () => {
     const page = await renderManualAutomations(
       {
         running: false,
@@ -191,9 +191,9 @@ describe('ManualAutomations screen', () => {
 
     expect(page.textContent).toContain("Deel isn't connected for this business.");
     const setupLink = page.querySelector(
-      `a[href="${ROUTES.BUSINESSES.DETAIL('business-admin')}?tab=admin"]`,
+      `a[href="${ROUTES.BUSINESSES.DETAIL('business-admin')}?tab=admin-config"]`,
     );
-    expect(setupLink?.textContent).toBe('Connect it in Admin Configurations');
+    expect(setupLink?.textContent).toBe('Connect it in Admin Config');
     expect(page.querySelector('[aria-label="Not configured"]')).not.toBeNull();
   });
 });

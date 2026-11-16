@@ -282,7 +282,7 @@ type ManualAutomationsViewProps = {
   /** Events of the current run received so far. */
   events: readonly ManualAutomationsRunEvent[];
   onRun: () => void;
-  /** The admin business, whose Admin Configurations tab is where Deel gets connected */
+  /** The admin business, whose Admin Config tab is where Deel gets connected */
   adminBusinessId?: string | null;
 };
 
@@ -356,11 +356,11 @@ export function ManualAutomationsView({
                     <Link
                       to={{
                         pathname: ROUTES.BUSINESSES.DETAIL(adminBusinessId),
-                        search: '?tab=admin',
+                        search: '?tab=admin-config',
                       }}
                       className="text-primary hover:underline"
                     >
-                      Connect it in Admin Configurations
+                      Connect it in Admin Config
                     </Link>
                   </>
                 )}

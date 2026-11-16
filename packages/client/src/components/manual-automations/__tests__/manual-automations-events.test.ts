@@ -131,6 +131,16 @@ describe('summarizeAutomationEvents', () => {
     });
   });
 
+  it('leaves Deel out when it is not connected', () => {
+    expect(
+      summarizeAutomationEvents([
+        status(CronJobStep.FetchDeelDocuments, CronJobStepState.NotConfigured, {
+          affectedCount: 0,
+        }),
+      ]).description,
+    ).toBe('0 charges merged · 0 fees flagged · 0 debit dates filled');
+  });
+
   it('flags failed and partially failed runs', () => {
     expect(
       summarizeAutomationEvents([

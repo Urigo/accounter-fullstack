@@ -107,7 +107,10 @@ export function summarizeAutomationEvents(events: readonly ManualAutomationsRunE
       `${plural(mergedAwayCount, 'charge')} merged`,
       `${plural(flaggedFees.length, 'fee')} flagged`,
       `${plural(filledDebitDates.length, 'debit date')} filled`,
-      `${plural(deelCharges.length, 'Deel charge')} pulled`,
+      // a business without Deel never ran the pull, so "0 pulled" would be misleading
+      ...(steps[CronJobStep.FetchDeelDocuments].state === CronJobStepState.NotConfigured
+        ? []
+        : [`${plural(deelCharges.length, 'Deel charge')} pulled`]),
     ].join(' · '),
   };
 }
