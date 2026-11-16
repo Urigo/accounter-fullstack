@@ -21,12 +21,14 @@ yarn install
 ```sh
 cp .env.template .env
 cp packages/server/.env.template packages/server/.env
+cp packages/client/.env.template packages/client/.env
 ```
 
 The root `.env` holds what several packages share (database, Auth0 domain and audience, scraper
-credentials); `packages/server/.env` holds the backend-only settings. Set shared values once, in the
-root `.env`: the package templates list them commented out, because a value in a package `.env`
-overrides the root one for that package only. Each template documents its variables.
+credentials); `packages/server/.env` and `packages/client/.env` hold each app's own settings. Set
+shared values once, in the root `.env`: the package templates list them commented out, because a
+value in a package `.env` overrides the root one for that package only. Each template documents its
+variables.
 
 4. Run setup:
 
@@ -64,9 +66,9 @@ different terminals.
 
 6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in via Auth0 Universal Login.
    Configure Auth0 before running the app: `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` and
-   `AUTH0_FRONTEND_CLIENT_ID` in the root `.env` (the server and the client share the first two),
-   and `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` and `AUTH0_MANAGEMENT_AUDIENCE` in
-   `packages/server/.env`.
+   `AUTH0_FRONTEND_CLIENT_ID`: the first two in the root `.env` (the server and the client share
+   them), the third in `packages/client/.env`. Then set `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` and
+   `AUTH0_MANAGEMENT_AUDIENCE` in `packages/server/.env`.
 
 7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, then run
    `yarn seed`.

@@ -104,7 +104,7 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 ```
 
 The seed script prints both `adminUserId` and `accountantUserId`. Choose which one to impersonate,
-in the root `.env`:
+in `packages/client/.env`:
 
 ```bash
 DEV_AUTH_USER_ID=<adminUserId-or-accountantUserId>
