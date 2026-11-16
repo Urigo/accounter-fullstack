@@ -344,9 +344,7 @@ export function TreeNodeRow({
           className="bg-muted/30 border-b border-border/50 py-2 overflow-x-auto"
           style={{ paddingInlineStart: `${indentPx + 32}px`, paddingInlineEnd: '8px' }}
         >
-          <div className="min-w-max">
-            <BusinessExtendedInfo businessID={node.id} filter={ledgerFilter} />
-          </div>
+          <BusinessExtendedInfo businessID={node.id} filter={ledgerFilter} />
         </div>
       )}
     </div>
