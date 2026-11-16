@@ -229,6 +229,8 @@ describe('server log level', () => {
   const KEYS = [
     'SERVER_LOG_LEVEL',
     'SERVER_LOG_LEVEL_OVERRIDES',
+    'RELEASE',
+    'RENDER_GIT_COMMIT',
     'DEBUG',
     ...Object.keys(REQUIRED),
   ];
