@@ -343,6 +343,12 @@ describe('per-module levels', () => {
     for (const module of ['charges', 'deel', 'plugins', 'observability', 'startup', 'db', 'shutdown']) {
       expect(known).toContain(module);
     }
+    // Top-level files log as their own name, and every shared scope is known
+    for (const module of ['environment', 'modules-app', 'jobs']) {
+      expect(known).toContain(module);
+    }
+    expect(known).not.toContain('index');
+    expect(known).not.toContain('environment.test');
     expect(known).not.toContain('modules');
     expect(known).not.toContain('__tests__');
   });

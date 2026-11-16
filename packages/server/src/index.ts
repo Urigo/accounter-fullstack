@@ -20,6 +20,7 @@ import {
   createYogaLogger,
   getLogger,
   knownLogModules,
+  LOG_SCOPES,
   serializeError,
   setLogBaseFields,
   setLogLevel,
@@ -35,8 +36,8 @@ import { AccounterContext } from './shared/types/index.js';
 
 const { log } = getLogger(import.meta.url);
 // Infra scopes inside this file: the shared pool, and process shutdown (signals and crashes)
-const { log: dbLog } = getLogger(import.meta.url, { module: 'db' });
-const { log: shutdownLog } = getLogger(import.meta.url, { module: 'shutdown' });
+const { log: dbLog } = getLogger(import.meta.url, { module: LOG_SCOPES.db });
+const { log: shutdownLog } = getLogger(import.meta.url, { module: LOG_SCOPES.shutdown });
 
 const { Pool } = pg;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;

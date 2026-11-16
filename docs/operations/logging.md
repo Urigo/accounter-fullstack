@@ -10,8 +10,9 @@ level for the server's own records, Yoga and Hive (Hive forwards its logs to Yog
 
 `SERVER_LOG_LEVEL_OVERRIDES` sets a level per `module` (see [Origin tags](#origin-tags)), over
 `SERVER_LOG_LEVEL`: `deel=debug,db=warn`. A malformed pair or an unknown level fails startup; a
-module that matches nothing logs `log-level-override-unknown-module` at startup and is otherwise
-ignored. Yoga's and Hive's lines follow `SERVER_LOG_LEVEL` only.
+module that matches nothing (not a `src/modules` directory, a top-level `src` directory or file, or
+a `LOG_SCOPES` scope) logs `log-level-override-unknown-module` at startup and is otherwise ignored.
+Yoga's and Hive's lines follow `SERVER_LOG_LEVEL` only.
 
 ## Origin tags
 
@@ -26,11 +27,12 @@ Every line says where it came from:
 | `release`   | `RELEASE` (e.g. the deployed git sha or tag), else `RENDER_GIT_COMMIT` (set by Render on every deploy); omitted when neither is set.                                                                                            |
 
 `module` / `component` come from `getLogger(import.meta.url)` (see below). Infra scopes that cut
-across files replace the derived module: `getLogger(import.meta.url, { module: 'db' })` for the DB
-client, pool monitor and pool errors, `shutdown` for process shutdown in `index.ts`; `service` /
-`env` / `release` are set once at startup. A module's directory name **is** its log module: a test
-walks `src/modules` to keep it that way. Lines still written with `console.*`, and Yoga's own lines
-(`source: "yoga"`), carry no `module` / `component` yet.
+across files replace the derived module with a `LOG_SCOPES` constant:
+`getLogger(import.meta.url, { module: LOG_SCOPES.db })` for the DB client, pool monitor and pool
+errors, `shutdown` for process shutdown in `index.ts`; `service` / `env` / `release` are set once at
+startup. A module's directory name **is** its log module: a test walks `src/modules` to keep it that
+way. Lines still written with `console.*`, and Yoga's own lines (`source: "yoga"`), carry no
+`module` / `component` yet.
 
 Levels: `fatal` the process is going down · `error` a server fault someone should look at · `warn`
 handled, degraded, or the user's data needs fixing · `info` lifecycle and one line per operation ·

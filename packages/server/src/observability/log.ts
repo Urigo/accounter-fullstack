@@ -105,28 +105,43 @@ export function isLogLevelEnabled(level: LogLevel, module?: string): boolean {
   return LEVEL_SCORE[level] >= LEVEL_SCORE[min];
 }
 
-/** Modules a scope can log as without a matching `src/modules` directory (see `originOf`). */
-const NON_DIRECTORY_MODULES = ['startup', 'db', 'shutdown'];
+/**
+ * Infra scopes that cut across files, passed as `getLogger(import.meta.url, { module: LOG_SCOPES.db })`.
+ * Use these constants rather than literals, so `knownLogModules` knows every scope.
+ */
+export const LOG_SCOPES = { db: 'db', shutdown: 'shutdown', jobs: 'jobs' } as const;
 
 /**
  * Every `module` a record can carry: the `src/modules` directories, the top-level `src` directories
- * and the infra scopes. Used to warn about a per-module level that matches nothing.
+ * and files (see `originOf`), and the infra scopes. Used to warn about a per-module level that
+ * matches nothing.
  */
 export function knownLogModules(): Set<string> {
-  const known = new Set(NON_DIRECTORY_MODULES);
-  const directoriesOf = (url: URL) =>
-    readdirSync(url, { withFileTypes: true })
-      .filter(entry => entry.isDirectory())
-      .map(entry => entry.name);
+  const known = new Set<string>(['startup', ...Object.values(LOG_SCOPES)]);
+  const entriesOf = (url: URL) => readdirSync(url, { withFileTypes: true });
   try {
     // This file is `src/observability/log.ts` (or `dist/observability/log.js`, which mirrors it).
-    for (const name of directoriesOf(new URL('../', import.meta.url))) {
-      if (name !== 'modules' && name !== '__tests__' && name !== '__generated__') {
-        known.add(name);
+    for (const entry of entriesOf(new URL('../', import.meta.url))) {
+      if (entry.isDirectory()) {
+        if (
+          entry.name !== 'modules' &&
+          entry.name !== '__tests__' &&
+          entry.name !== '__generated__'
+        ) {
+          known.add(entry.name);
+        }
+      } else if (
+        /\.[cm]?[jt]s$/.test(entry.name) &&
+        !/\.(d|test|spec)\.[cm]?[jt]s$/.test(entry.name)
+      ) {
+        // A top-level file logs as its own name (`environment`, `modules-app`), `index` as `startup`
+        known.add(originOf(entry.name).module);
       }
     }
-    for (const name of directoriesOf(new URL('../modules/', import.meta.url))) {
-      known.add(name);
+    for (const entry of entriesOf(new URL('../modules/', import.meta.url))) {
+      if (entry.isDirectory()) {
+        known.add(entry.name);
+      }
     }
   } catch {
     // Unreadable layout: the caller just can't tell unknown modules apart.
@@ -224,9 +239,9 @@ export function originOf(url: string): LogOrigin {
  * const { log } = getLogger(import.meta.url);
  * ```
  *
- * `override` replaces part of the derived origin, for infra scopes that cut across files: the DB
- * client and pool are `db`, process shutdown is `shutdown`
- * (`getLogger(import.meta.url, { module: 'db' })`).
+ * `override` replaces part of the derived origin, for infra scopes that cut across files (see
+ * `LOG_SCOPES`): the DB client and pool are `db`, process shutdown is `shutdown`, scheduled jobs are
+ * `jobs` (`getLogger(import.meta.url, { module: LOG_SCOPES.db })`).
  */
 export function getLogger(url: string, override?: Partial<LogOrigin>): ScopedLogger {
   const origin = { ...originOf(url), ...override };

@@ -3,7 +3,7 @@ import { Mutex } from 'async-mutex';
 import { GraphQLError } from 'graphql';
 import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
-import { getLogger, serializeError } from '../../observability/log.js';
+import { getLogger, LOG_SCOPES, serializeError } from '../../observability/log.js';
 import { resolveWriteTargetBusinessId } from '../../shared/helpers/auth-scope.js';
 import type { AuthContext } from '../../shared/types/auth.js';
 import type { DbRequestState } from '../../shared/types/index.js';
@@ -11,7 +11,7 @@ import { AuthContextProvider } from '../auth/providers/auth-context.provider.js'
 import { DBProvider } from './db.provider.js';
 
 // The DB client's lines (leaks, disposal, connection errors) share the `db` module with the pool's.
-const { log } = getLogger(import.meta.url, { module: 'db' });
+const { log } = getLogger(import.meta.url, { module: LOG_SCOPES.db });
 
 /**
  * Statements that may modify data (or session/schema state). Used to decide
