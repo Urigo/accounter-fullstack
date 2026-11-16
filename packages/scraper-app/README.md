@@ -5,7 +5,7 @@ server.
 
 ## Prerequisites
 
-- **Node.js** v22 or later
+- **Node.js** v26 (the version in the repo's `.node-version`)
 - A running [Accounter](../../README.md) server with a scraper API key configured
 - Yarn Berry (v4) — the repo uses Yarn workspaces
 
@@ -31,13 +31,13 @@ yarn workspace @accounter/scraper-app build
 
 This produces:
 
-- `dist/` — compiled Fastify server (run with `node dist/index.js`)
+- `dist/server/` — compiled Fastify server (run with `node dist/server/index.js`)
 - `dist/ui/` — compiled React SPA (served statically by the server)
 
 To run the production build:
 
 ```bash
-node packages/scraper-app/dist/index.js
+node packages/scraper-app/dist/server/index.js
 ```
 
 ## Your vault file
@@ -93,14 +93,22 @@ is running. Tabs keep each other up to date, so a change or save made in one sho
 
 ## Environment variables
 
-The app has no `.env` file: it does not load one, so set variables in the shell that starts it.
+The app has no `.env` file: the server loads none, so set variables in the shell that starts it.
 Everything else (bank credentials, the Accounter server URL and its API key) is configured in the
 app and kept in the encrypted vault, not in the environment.
+
+`dev:ui` runs Vite, which does load `.env` files from this package on its own and exposes any
+`VITE_`-prefixed variable to the browser bundle. The UI reads none, and `vite.config.ts` takes
+`PORT` from the shell, not from those files. Never put a secret in a `VITE_` variable.
 
 | Variable     | Default | Read by                      | Description                                                                                                                                                                                                |
 | ------------ | ------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PORT`       | `4001`  | server, `vite.config.ts`     | HTTP port the Fastify server listens on. `dev:ui` proxies `/api` and `/ws` to the same port, so set it for both when you change it.                                                                        |
 | `NODE_DEBUG` | unset   | puppeteer (via the scrapers) | Library debug output, e.g. `NODE_DEBUG=puppeteer:*` logs every browser protocol message (puppeteer reads `NODE_DEBUG`, not `DEBUG`). Local troubleshooting only: it can include page data and credentials. |
+
+Test-only: `src/server/__tests__/graphql-client.integration.test.ts` reads `ACCOUNTER_SERVER_URL`
+(default `http://localhost:4000/graphql`) and `SCRAPER_API_KEY` from the shell, or from a `.env` it
+loads relative to the directory vitest runs in (the repo root's `.env` for a normal run).
 
 ## Run history
 
