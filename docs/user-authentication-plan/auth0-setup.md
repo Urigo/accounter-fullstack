@@ -137,8 +137,8 @@ Notes:
 
 Auth0 frontend config is used in `packages/client/src/index.tsx`.
 
-Set in the root `.env` (or `packages/client/.env`). `vite.config.ts` exposes them to the app as
-`VITE_AUTH0_*`:
+Set in `packages/client/.env` (see `packages/client/.env.template`; the root `.env` works as a
+fallback). `build-env.ts` inlines them into the app as `VITE_AUTH0_*`:
 
 ```bash
 AUTH0_DOMAIN=<tenant>.auth0.com
