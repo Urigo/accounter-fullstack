@@ -16,4 +16,5 @@ See `README.md` for how generation works.
   `docs/mesh-v1-migration/plan.md`, Phase 3).
 - Unit tests (`src/__tests__`) inject `fetch` through the SDK context and never call the real API.
   `yarn workspace @accounter/green-invoice-graphql test` runs the compiled `src/dev-tests/e2e.ts`
-  (build first) against the real API and needs `GREEN_INVOICE_ID` / `GREEN_INVOICE_SECRET`.
+  (build first) against the real API and needs `GREEN_INVOICE_ID` / `GREEN_INVOICE_SECRET` (see
+  `.env.template`; set them in this package's `.env` or the root `.env`).

@@ -16,11 +16,17 @@ nvm use $(cat .node-version)
 yarn install
 ```
 
-3. Create `.env` file:
+3. Create the `.env` files:
 
 ```sh
 cp .env.template .env
+cp packages/server/.env.template packages/server/.env
 ```
+
+The root `.env` holds what several packages share (database, Auth0 domain and audience, scraper
+credentials); `packages/server/.env` holds the backend-only settings. Set shared values once, in the
+root `.env`: the package templates list them commented out, because a value in a package `.env`
+overrides the root one for that package only. Each template documents its variables.
 
 4. Run setup:
 
@@ -57,8 +63,10 @@ Or use the VSCode Terminals extension: `fabiospampinato.vscode-terminals` to run
 different terminals.
 
 6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in via Auth0 Universal Login.
-   Configure Auth0 variables in `.env` (`AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`,
-   `AUTH0_CLIENT_SECRET`, `AUTH0_MANAGEMENT_AUDIENCE`) before running the app.
+   Configure Auth0 before running the app: `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` and
+   `AUTH0_FRONTEND_CLIENT_ID` in the root `.env` (the server and the client share the first two),
+   and `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` and `AUTH0_MANAGEMENT_AUDIENCE` in
+   `packages/server/.env`.
 
 7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, then run
    `yarn seed`.
@@ -174,7 +182,7 @@ For Poalim Bank and Discount Bank accounts, your account may appear under multip
    - Go to "APIs & Services" > "Credentials"
    - Click "Create Credentials" > "API Key"
    - Restrict the key to Google Drive API only
-5. Add to your `.env`:
+5. Add to `packages/server/.env`:
    ```
    GOOGLE_DRIVE_API_KEY=your_api_key_here
    ```
@@ -183,7 +191,7 @@ For Poalim Bank and Discount Bank accounts, your account may appear under multip
 
 1. Sign up for an Anthropic API key at
    [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
-2. Add to your `.env`:
+2. Add to `packages/server/.env` (read directly by the `@ai-sdk/anthropic` library):
    ```
    ANTHROPIC_API_KEY=your_api_key_here
    ```

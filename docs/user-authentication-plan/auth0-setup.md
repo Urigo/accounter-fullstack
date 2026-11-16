@@ -105,13 +105,19 @@ This is required because backend invitation flow creates blocked users with:
 
 Auth0 configuration is read from `packages/server/src/environment.ts`.
 
-Set the following env vars (typically in your root `.env` that server loads):
+`AUTH0_DOMAIN` and `AUTH0_AUDIENCE` are shared with the client, so set them once, in the root `.env`
+(the server falls back to it). Don't also set them in `packages/server/.env`: a value there
+overrides the root one for the server only.
 
 ```bash
-# JWT verification
-AUTH0_DOMAIN=<tenant>.auth0.com
+# Root .env: JWT verification (shared with the client)
+AUTH0_DOMAIN= < tenant > .auth0.com
 AUTH0_AUDIENCE=https://api.accounter.com
+```
 
+Set the rest in `packages/server/.env` (see `packages/server/.env.template`):
+
+```bash
 # Management API credentials (M2M app)
 AUTH0_CLIENT_ID=<m2m-client-id>
 AUTH0_CLIENT_SECRET=<m2m-client-secret>
@@ -131,12 +137,13 @@ Notes:
 
 Auth0 frontend config is used in `packages/client/src/index.tsx`.
 
-Set in `packages/client/.env`:
+Set in the root `.env` (or `packages/client/.env`). `vite.config.ts` exposes them to the app as
+`VITE_AUTH0_*`:
 
 ```bash
-VITE_AUTH0_DOMAIN=<tenant>.auth0.com
-VITE_AUTH0_FRONTEND_CLIENT_ID=<regular-web-app-client-id>
-VITE_AUTH0_AUDIENCE=https://api.accounter.com
+AUTH0_DOMAIN=<tenant>.auth0.com
+AUTH0_FRONTEND_CLIENT_ID=<regular-web-app-client-id>
+AUTH0_AUDIENCE=https://api.accounter.com
 ```
 
 Notes:
@@ -193,7 +200,7 @@ Use this checklist after configuration:
 - [ ] M2M app exists and has required Management API scopes
 - [ ] `Username-Password-Authentication` connection enabled
 - [ ] Server Auth0 env vars set (`AUTH0_*`)
-- [ ] Client Auth0 env vars set (`VITE_AUTH0_*`)
+- [ ] Client Auth0 env vars set (`AUTH0_DOMAIN`, `AUTH0_FRONTEND_CLIENT_ID`, `AUTH0_AUDIENCE`)
 - [ ] Local user mapping exists in `business_users.auth0_user_id`
 
 ## 8. Validation Steps
@@ -233,8 +240,8 @@ Use this checklist after configuration:
     - Verify `Refresh Token Rotation` is enabled with valid expiration settings
     - Verify API `Allow Offline Access` is enabled
     - Verify callback/logout/web origins/cors values exactly match current frontend URL
-    - Verify client env values (`VITE_AUTH0_DOMAIN`, `VITE_AUTH0_FRONTEND_CLIENT_ID`,
-      `VITE_AUTH0_AUDIENCE`) match tenant configuration
+    - Verify client env values (`AUTH0_DOMAIN`, `AUTH0_FRONTEND_CLIENT_ID`, `AUTH0_AUDIENCE`) match
+      tenant configuration
     - Force a clean interactive login (logout + clear local session artifacts) to mint a new refresh
       token after config changes
     - Check Auth0 logs (`Monitoring -> Logs`) for the exact failure reason (`invalid_grant`,

@@ -195,7 +195,7 @@ async function main() {
       // Before useGraphQLModules, and so before Yoga's error masking: it logs errors unmasked.
       requestLogPlugin(),
       dbCleanupPlugin(),
-      authPlugin(),
+      authPlugin({ allowDevAuth: env.devAuth.enabled }),
       useGraphQLModules(application),
       useSchema(transformedSchema),
       useDeferStream(),

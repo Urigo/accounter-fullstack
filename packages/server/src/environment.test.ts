@@ -268,3 +268,41 @@ describe('server log level', () => {
     await expect(loadEnv({ ...REQUIRED, SERVER_LOG_LEVEL: 'verbose' })).rejects.toBeDefined();
   });
 });
+
+describe('dev auth bypass', () => {
+  const KEYS = ['ALLOW_DEV_AUTH', ...Object.keys(REQUIRED)];
+  let original: Record<string, string | undefined>;
+
+  beforeEach(() => {
+    original = Object.fromEntries(KEYS.map(key => [key, process.env[key]]));
+  });
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(original)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    vi.resetModules();
+  });
+
+  // An empty value stays in `process.env`, so a local `.env` cannot fill it in.
+  it('is off by default', async () => {
+    const env = await loadEnv({ ...REQUIRED, ALLOW_DEV_AUTH: '' });
+    expect(env.devAuth.enabled).toBe(false);
+  });
+
+  it.each([
+    ['1', true],
+    ['0', false],
+  ])('ALLOW_DEV_AUTH=%s gives %s', async (value, enabled) => {
+    const env = await loadEnv({ ...REQUIRED, ALLOW_DEV_AUTH: value });
+    expect(env.devAuth.enabled).toBe(enabled);
+  });
+
+  it('rejects any other value at startup', async () => {
+    await expect(loadEnv({ ...REQUIRED, ALLOW_DEV_AUTH: 'true' })).rejects.toBeDefined();
+  });
+});

@@ -32,8 +32,12 @@ type QueryablePool = {
  * 2. Extract `X-API-Key: <key>` (API Key)
  * 3. Add `rawAuth` object to Yoga context
  */
-export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
-  const allowDevAuth = process.env.ALLOW_DEV_AUTH === '1';
+export const authPlugin = ({
+  allowDevAuth = false,
+}: {
+  /** Honour `X-Dev-Auth`. Comes from `ALLOW_DEV_AUTH` (`env.devAuth.enabled`); local dev only. */
+  allowDevAuth?: boolean;
+} = {}): Plugin<{ rawAuth: RawAuth }> => {
   if (allowDevAuth) {
     // eslint-disable-next-line no-console
     console.warn('⚠️ DEV AUTH BYPASS ENABLED');

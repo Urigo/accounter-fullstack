@@ -257,26 +257,23 @@ const GatewayControlPlaneModel = zod.object({
   GATEWAY_CP_TOKEN: emptyString(zod.string().optional()),
 });
 
-const EmailIngestionModel = zod.object({
-  EMAIL_INGESTION_V2_ENABLED: emptyString(
-    zod
-      .union([zod.literal('1'), zod.literal('0')])
-      .optional()
-      .default('0'),
-  ),
-  EMAIL_INGESTION_SHADOW_MODE: emptyString(
-    zod
-      .union([zod.literal('1'), zod.literal('0')])
-      .optional()
-      .default('0'),
-  ),
-});
-
 // One level for Yoga and Hive (whose Yoga plugin logs through Yoga's logger). Validated here so a
 // typo fails startup, and never derived from `DEBUG`, which Yoga would otherwise follow.
 const LoggingModel = zod.object({
   SERVER_LOG_LEVEL: emptyString(
     zod.enum(['debug', 'info', 'warn', 'error']).optional().default('info'),
+  ),
+});
+
+// Local-development escape hatch: lets a request authenticate with `X-Dev-Auth: <user-id>` instead
+// of a JWT. Validated so that a value like `true` fails startup instead of silently leaving the
+// bypass off.
+const DevAuthModel = zod.object({
+  ALLOW_DEV_AUTH: emptyString(
+    zod
+      .union([zod.literal('1'), zod.literal('0')])
+      .optional()
+      .default('0'),
   ),
 });
 
@@ -327,19 +324,53 @@ const Auth0Model = zod.union([
     .transform(() => undefined),
 ]);
 
+const models = {
+  postgres: PostgresModel,
+  cloudinary: CloudinaryModel,
+  hive: HiveModel,
+  googleDrive: GoogleDriveModel,
+  auth0: Auth0Model,
+  credentials: CredentialsModel,
+  general: GeneralModel,
+  devAuth: DevAuthModel,
+  otel: OtelModel,
+  gatewayControlPlane: GatewayControlPlaneModel,
+  priceIndexSync: PriceIndexSyncModel,
+  logging: LoggingModel,
+};
+
+/** The variable names a model declares; a union contributes the keys of each object option. */
+function declaredKeys(model: zod.ZodType): string[] {
+  if (model instanceof zod.ZodObject) {
+    return Object.keys(model.shape);
+  }
+  if (model instanceof zod.ZodUnion) {
+    return (model.options as readonly zod.ZodType[]).flatMap(declaredKeys);
+  }
+  return [];
+}
+
+/**
+ * Every variable the schema declares. `packages/server/.env.template` must list exactly these
+ * (plus a short allowlist), which `environment-template.test.ts` enforces.
+ */
+export const ENV_SCHEMA_KEYS: ReadonlySet<string> = new Set(
+  Object.values(models).flatMap(model => declaredKeys(model)),
+);
+
 const configs = {
-  postgres: PostgresModel.safeParse(process.env),
-  cloudinary: CloudinaryModel.safeParse(process.env),
-  hive: HiveModel.safeParse(process.env),
-  googleDrive: GoogleDriveModel.safeParse(process.env),
-  auth0: Auth0Model.safeParse(process.env),
-  credentials: CredentialsModel.safeParse(process.env),
-  general: GeneralModel.safeParse(process.env),
-  otel: OtelModel.safeParse(process.env),
-  emailIngestion: EmailIngestionModel.safeParse(process.env),
-  gatewayControlPlane: GatewayControlPlaneModel.safeParse(process.env),
-  priceIndexSync: PriceIndexSyncModel.safeParse(process.env),
-  logging: LoggingModel.safeParse(process.env),
+  postgres: models.postgres.safeParse(process.env),
+  cloudinary: models.cloudinary.safeParse(process.env),
+  hive: models.hive.safeParse(process.env),
+  googleDrive: models.googleDrive.safeParse(process.env),
+  auth0: models.auth0.safeParse(process.env),
+  credentials: models.credentials.safeParse(process.env),
+  general: models.general.safeParse(process.env),
+  devAuth: models.devAuth.safeParse(process.env),
+  otel: models.otel.safeParse(process.env),
+  gatewayControlPlane: models.gatewayControlPlane.safeParse(process.env),
+  priceIndexSync: models.priceIndexSync.safeParse(process.env),
+  logging: models.logging.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -379,8 +410,8 @@ const googleDrive = extractConfig(configs.googleDrive);
 const auth0 = extractConfig(configs.auth0);
 const credentials = extractConfig(configs.credentials);
 const general = extractConfig(configs.general);
+const devAuth = extractConfig(configs.devAuth);
 const otel = extractConfig(configs.otel);
-const emailIngestion = extractConfig(configs.emailIngestion);
 const gatewayControlPlane = extractConfig(configs.gatewayControlPlane);
 const priceIndexSync = extractConfig(configs.priceIndexSync);
 const logging = extractConfig(configs.logging);
@@ -446,6 +477,9 @@ export const env = {
   general: {
     frontendUrl: general?.FRONTEND_URL,
   },
+  devAuth: {
+    enabled: devAuth.ALLOW_DEV_AUTH === '1',
+  },
   otel: {
     enabled: otel.OTEL_ENABLED === '1',
     serviceName: otel.OTEL_SERVICE_NAME,
@@ -461,10 +495,6 @@ export const env = {
         ? Number(otel.OTEL_TRACES_SAMPLER_ARG)
         : undefined,
     startupStrict: otel.OTEL_STARTUP_STRICT === 'true',
-  },
-  emailIngestion: {
-    v2Enabled: emailIngestion.EMAIL_INGESTION_V2_ENABLED === '1',
-    shadowMode: emailIngestion.EMAIL_INGESTION_SHADOW_MODE === '1',
   },
   gatewayControlPlane: {
     token: gatewayControlPlane.GATEWAY_CP_TOKEN,
