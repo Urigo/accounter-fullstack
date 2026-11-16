@@ -94,7 +94,8 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 The seed script prints both `adminUserId` and `accountantUserId`.
 
-2. Configure local environment variables:
+2. Configure local environment variables in the root `.env` (the server, the client and the seed
+   script all read it; set `DEMO_AUTH0_USER_ID` before seeding):
 
 ```bash
 # Bypass toggle (server + client)

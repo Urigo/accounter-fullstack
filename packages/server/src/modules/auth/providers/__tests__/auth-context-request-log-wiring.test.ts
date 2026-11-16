@@ -62,28 +62,20 @@ function buildYoga() {
   });
   return createYoga({
     logging: createYogaLogger(),
-    plugins: [requestLogPlugin(), authPlugin(), useGraphQLModules(application)],
+    plugins: [requestLogPlugin(), authPlugin({ allowDevAuth: true }), useGraphQLModules(application)],
     // authPlugin checks a dev-bypass user against the pool before trusting it.
     context: () => ({ pool: db }),
   });
 }
 
 let stdout: MockInstance;
-let previousAllowDevAuth: string | undefined;
 
 beforeAll(() => {
-  previousAllowDevAuth = process.env['ALLOW_DEV_AUTH'];
-  process.env['ALLOW_DEV_AUTH'] = '1';
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
 });
 
 afterAll(() => {
-  if (previousAllowDevAuth === undefined) {
-    delete process.env['ALLOW_DEV_AUTH'];
-  } else {
-    process.env['ALLOW_DEV_AUTH'] = previousAllowDevAuth;
-  }
   vi.restoreAllMocks();
 });
 

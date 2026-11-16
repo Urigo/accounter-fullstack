@@ -95,8 +95,7 @@ supports at least:
 6. OTEL_EXPORTER_OTLP_HEADERS: optional key-value header string
 7. OTEL_TRACES_SAMPLER: parentbased_traceidratio or always_on
 8. OTEL_TRACES_SAMPLER_ARG: numeric ratio for traceidratio
-9. OTEL_EXPORT_TIMEOUT_MS: optional exporter timeout
-10. OTEL_STARTUP_STRICT: optional, if true fail startup when telemetry init fails
+9. OTEL_STARTUP_STRICT: optional, if true fail startup when telemetry init fails
 
 Validation rules:
 

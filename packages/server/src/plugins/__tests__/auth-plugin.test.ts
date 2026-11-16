@@ -1,5 +1,5 @@
 import { createSchema, createYoga } from 'graphql-yoga';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { authPlugin, type RawAuth } from '../auth-plugin.js';
 import { handleDevBypassAuth } from '../../modules/auth/providers/auth-context.provider.js';
 
@@ -8,28 +8,17 @@ vi.mock('../../modules/auth/providers/auth-context.provider.js', () => ({
 }));
 
 describe('authPlugin', () => {
-  const originalAllowDevAuth = process.env.ALLOW_DEV_AUTH;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.ALLOW_DEV_AUTH;
   });
 
-  afterEach(() => {
-    if (originalAllowDevAuth === undefined) {
-      delete process.env.ALLOW_DEV_AUTH;
-    } else {
-      process.env.ALLOW_DEV_AUTH = originalAllowDevAuth;
-    }
-  });
-
-  const createTestYoga = () => {
+  const createTestYoga = (options?: Parameters<typeof authPlugin>[0]) => {
     const mockPool = {
       query: vi.fn(),
     };
 
     return createYoga({
-      plugins: [authPlugin()],
+      plugins: [authPlugin(options)],
       schema: createSchema({
         typeDefs: `type Query { test: String }`,
         resolvers: {
@@ -180,7 +169,7 @@ describe('authPlugin', () => {
     });
   });
 
-  it('should ignore X-Dev-Auth when ALLOW_DEV_AUTH is missing', async () => {
+  it('should ignore X-Dev-Auth when allowDevAuth is not set', async () => {
     vi.mocked(handleDevBypassAuth).mockResolvedValue({
       authType: 'devBypass',
       token: 'dev-user',
@@ -216,9 +205,8 @@ describe('authPlugin', () => {
     });
   });
 
-  it('should ignore X-Dev-Auth when ALLOW_DEV_AUTH is false', async () => {
-    process.env.ALLOW_DEV_AUTH = '0';
-    const yoga = createTestYoga();
+  it('should ignore X-Dev-Auth when allowDevAuth is false', async () => {
+    const yoga = createTestYoga({ allowDevAuth: false });
 
     const response = await yoga.fetch('http://localhost:4000/graphql', {
       method: 'POST',
@@ -240,8 +228,7 @@ describe('authPlugin', () => {
     });
   });
 
-  it('should call handleDevBypassAuth when ALLOW_DEV_AUTH=1 and X-Dev-Auth is present', async () => {
-    process.env.ALLOW_DEV_AUTH = '1';
+  it('should call handleDevBypassAuth when allowDevAuth is true and X-Dev-Auth is present', async () => {
     vi.mocked(handleDevBypassAuth).mockResolvedValue({
       authType: 'devBypass',
       token: 'dev-user',
@@ -256,7 +243,7 @@ describe('authPlugin', () => {
       },
     });
 
-    const yoga = createTestYoga();
+    const yoga = createTestYoga({ allowDevAuth: true });
 
     const response = await yoga.fetch('http://localhost:4000/graphql', {
       method: 'POST',

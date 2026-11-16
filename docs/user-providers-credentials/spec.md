@@ -861,7 +861,10 @@ Use the `createProvider()`-style helper (see `admin-context-integration.test.ts`
     documents are fetched
 12. **Env var cleanup** (coordinate with deployment): remove `GREEN_INVOICE_ID`,
     `GREEN_INVOICE_SECRET`, `DEEL_TOKEN` from `.env` and `environment.ts` after all tenants have
-    migrated their credentials via the UI
+    migrated their credentials via the UI. **Done:** the server no longer reads any of them, and
+    they are gone from `packages/server/.env.template`. `GREEN_INVOICE_ID` / `GREEN_INVOICE_SECRET`
+    survive only for the `green-invoice-graphql` dev e2e script (see that package's
+    `.env.template`).
 
 ---
 

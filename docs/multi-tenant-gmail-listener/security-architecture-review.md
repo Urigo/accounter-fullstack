@@ -119,6 +119,9 @@ tables, and a now-live MIME parser that should get fuzz coverage.
   the gateway flag gates). The rollback runbook implies a server lever that isn't real.
 - **Fix:** Wire the flag into the resolvers, or drop it and document that the gateway flag is the
   sole switch.
+- **✅ Resolved:** dropped from the server schema. `EMAIL_INGESTION_V2_ENABLED` /
+  `EMAIL_INGESTION_SHADOW_MODE` are gateway-only settings (`packages/email-ingestion-gateway`), and
+  the gateway flag is the sole switch. Setting them on the server has no effect.
 
 #### M4 — No retention/cleanup for any table
 
