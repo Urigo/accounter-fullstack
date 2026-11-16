@@ -275,7 +275,7 @@ beforeAll(async () => {
       type: 'business',
       ownerId: ADMIN_ID,
     });
-    await ensureBusinessForEntity(client, supplier.id);
+    await ensureBusinessForEntity(client, supplier.id, { ownerId: ADMIN_ID });
     supplierId = supplier.id;
     await client.query('COMMIT');
   } catch (error) {
