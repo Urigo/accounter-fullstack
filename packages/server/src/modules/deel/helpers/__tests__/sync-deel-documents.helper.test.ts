@@ -1,5 +1,6 @@
 import type { Injector } from 'graphql-modules';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import type { Invoice, PaymentReceipts } from '../../../app-providers/deel/schemas.js';
 import { deleteChargesIfEmpty } from '../../../charges/helpers/delete-empty-charges.helper.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
@@ -49,9 +50,11 @@ function buildInjector() {
     generateCharge,
     getChargeByIdLoader: { loadMany: async (ids: string[]) => ids.map(buildCharge) },
   };
-  const injector = {
-    get: (token: unknown) => (token === ChargesProvider ? chargesProvider : undefined),
-  } as unknown as Injector;
+  const providers = new Map<unknown, unknown>([
+    [ChargesProvider, chargesProvider],
+    [AdminContextProvider, { getVerifiedAdminContext: async () => ({ ownerId: 'owner-1' }) }],
+  ]);
+  const injector = { get: (token: unknown) => providers.get(token) } as unknown as Injector;
   return { injector, generateCharge };
 }
 
@@ -76,7 +79,7 @@ describe('syncDeelDocuments', () => {
     });
     const { injector } = buildInjector();
 
-    await expect(syncDeelDocuments(injector, 'owner-1')).resolves.toEqual({ charges: [] });
+    await expect(syncDeelDocuments(injector)).resolves.toEqual({ charges: [] });
     expect(fetchReceipts).not.toHaveBeenCalled();
   });
 
@@ -100,7 +103,7 @@ describe('syncDeelDocuments', () => {
     });
     const { injector, generateCharge } = buildInjector();
 
-    const { charges } = await syncDeelDocuments(injector, 'owner-1');
+    const { charges } = await syncDeelDocuments(injector);
 
     expect(charges.map(({ charge, isNew, invoiceCount }) => [charge.id, isNew, invoiceCount])).toEqual(
       [
@@ -121,6 +124,31 @@ describe('syncDeelDocuments', () => {
     expect(insertDeelInvoiceRecord).toHaveBeenCalledTimes(4);
   });
 
+  it('reuses the charge an unmatched invoice is already mapped to', async () => {
+    vi.mocked(fetchAndFilterInvoices).mockResolvedValue({
+      newInvoices: [invoice('f')],
+      unmatchedExistingInvoices: [],
+    });
+    vi.mocked(matchInvoicesWithPayments).mockResolvedValue({
+      matches: [],
+      unmatched: [invoice('f')],
+    });
+    vi.mocked(getChargeMatchesForPayments).mockResolvedValue({
+      receiptChargeMap: new Map(),
+      invoiceChargeMap: new Map([['f', 'mapped-charge']]),
+      newReceipts: [],
+    });
+    const { injector, generateCharge } = buildInjector();
+
+    const { charges } = await syncDeelDocuments(injector);
+
+    expect(charges.map(({ charge, isNew, invoiceCount }) => [charge.id, isNew, invoiceCount])).toEqual(
+      [['mapped-charge', false, 1]],
+    );
+    expect(generateCharge).not.toHaveBeenCalled();
+    expect(insertDeelInvoiceRecord).toHaveBeenCalledWith(injector, invoice('f'), 'mapped-charge');
+  });
+
   it('leaves out charges deleted as empty', async () => {
     vi.mocked(fetchAndFilterInvoices).mockResolvedValue({
       newInvoices: [invoice('a'), invoice('b')],
@@ -133,7 +161,7 @@ describe('syncDeelDocuments', () => {
     vi.mocked(deleteChargesIfEmpty).mockResolvedValue(['new-charge-1']);
     const { injector } = buildInjector();
 
-    const { charges } = await syncDeelDocuments(injector, 'owner-1');
+    const { charges } = await syncDeelDocuments(injector);
 
     expect(deleteChargesIfEmpty).toHaveBeenCalledWith(['new-charge-1', 'new-charge-2'], injector);
     expect(charges.map(({ charge }) => charge.id)).toEqual(['new-charge-2']);
@@ -150,7 +178,7 @@ describe('syncDeelDocuments', () => {
     });
     const { injector, generateCharge } = buildInjector();
 
-    await expect(syncDeelDocuments(injector, 'owner-1')).resolves.toEqual({ charges: [] });
+    await expect(syncDeelDocuments(injector)).resolves.toEqual({ charges: [] });
     expect(generateCharge).not.toHaveBeenCalled();
     expect(insertDeelInvoiceRecord).not.toHaveBeenCalled();
   });

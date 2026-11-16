@@ -1,4 +1,5 @@
 import type { Injector } from 'graphql-modules';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { deleteChargesIfEmpty } from '../../charges/helpers/delete-empty-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -28,11 +29,14 @@ export type SyncedDeelCharge = {
 /**
  * Pulls new Deel invoices and payments, records them, and attaches them to charges (creating
  * charges where needed). Charges that end up empty are deleted. Returns the remaining charges.
+ *
+ * Runs for the admin context's owner: new charges take it from the same place as the invoice
+ * records, documents and contracts the Deel helpers write.
  */
 export async function syncDeelDocuments(
   injector: Injector,
-  ownerId: string,
 ): Promise<{ charges: SyncedDeelCharge[] }> {
+  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const { newInvoices, unmatchedExistingInvoices } = await fetchAndFilterInvoices(injector);
   if (newInvoices.length === 0 && unmatchedExistingInvoices.length === 0) {
     // nothing to fetch or reconcile — skip the Deel API calls below
