@@ -979,7 +979,7 @@ export function DynamicReport() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col flex-1 min-h-96 bg-background">
       <Toolbar
         fromDate={fromDate}
         toDate={toDate}
