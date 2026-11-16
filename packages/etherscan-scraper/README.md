@@ -5,12 +5,11 @@ about wallets receiving tokens on the ERC-20 protocol.
 
 ### Getting Started
 
-1. Create `.env` file in this directory with the following:
+1. Create the `.env` file in this directory from the template, then fill in the values. Every
+   variable is documented in [`.env.template`](./.env.template):
 
-```
-ETHERSCAN_API_KEY=<API_KEY>
-WALLETS_TO_SCAN="<WALLET_ADDRESS:CONTRACT_ADDRESS>,<WALLET_ADDRESS:CONTRACT_ADDRESS>"
-DATABASE_URL="<>"
+```sh
+cp .env.template .env
 ```
 
 > The `ETHERSCAN_API_KEY` can be fetched from Etherscan account page.

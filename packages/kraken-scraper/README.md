@@ -5,13 +5,11 @@ and trade records.
 
 ### Getting Started
 
-1. Create `.env` file in this directory with the following:
+1. Create the `.env` file in this directory from the template, then fill in the values. Every
+   variable is documented in [`.env.template`](./.env.template):
 
-```
-KRAKEN_API_KEY="<>"
-KRAKEN_API_SECRET="<>"
-DATABASE_URL="<>"
-ACCOUNT_PREFIX="<>"
+```sh
+cp .env.template .env
 ```
 
 > The `KRAKEN_API_KEY` and `KRAKEN_API_SECRET` can be fetched from your Kraken account page, please

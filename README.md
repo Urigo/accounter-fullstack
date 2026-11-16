@@ -70,8 +70,9 @@ different terminals.
    them), the third in `packages/client/.env`. Then set `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` and
    `AUTH0_MANAGEMENT_AUDIENCE` in `packages/server/.env`.
 
-7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, then run
-   `yarn seed`.
+7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, set the
+   `SEED_*` variables (bank accounts, cards, currencies; see `.env.template`) in the root `.env`,
+   then run `yarn seed:production`.
 
 8. Load your data into the database (first set correct env vars):
 
