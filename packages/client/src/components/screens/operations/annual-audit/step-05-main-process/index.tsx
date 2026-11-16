@@ -89,6 +89,7 @@ export function Step05MainProcess(props: Step05Props) {
               toDate: `${props.year}-12-31` as TimelessDateString,
               templateName: prevYearLockedTemplateName,
             }),
+            openInNewTab: true,
           },
           {
             label: 'Profit and Loss',
@@ -98,12 +99,14 @@ export function Step05MainProcess(props: Step05Props) {
               toDate: `${props.year}-12-31` as TimelessDateString,
               templateName: prevYearLockedTemplateName,
             }),
+            openInNewTab: true,
           },
         ]
       : [
           {
             label: 'Create Dynamic Report Template',
             href: ROUTES.REPORTS.DYNAMIC_REPORT(),
+            openInNewTab: true,
           },
         ];
 
