@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type {
   CronJobStep,
@@ -66,18 +67,33 @@ function stepStatus(
 }
 
 /**
- * The error's message, followed by its innermost cause's message when there is one: wrapping
- * helpers (e.g. "Error fetching Deel invoices") keep the useful detail in the cause.
+ * A cause whose message is written for users: a `GraphQLError`, or a plain `Error` thrown by our
+ * own helpers. Subclasses (pg's `DatabaseError`, `ZodError`, `TypeError`, …) carry internals such
+ * as table and constraint names or raw validation dumps, so they stay in the server logs.
+ */
+function isDisplayableCause(error: unknown): error is Error {
+  return (
+    error instanceof GraphQLError ||
+    (error instanceof Error && Object.getPrototypeOf(error) === Error.prototype)
+  );
+}
+
+/**
+ * The error's message, followed by the message of its deepest displayable cause: wrapping helpers
+ * (e.g. "Error fetching Deel invoices") keep the useful detail in the cause. The walk stops at the
+ * first cause that isn't displayable; the full error is logged by the caller.
  */
 function errorMessage(error: unknown): string {
   if (!(error instanceof Error)) {
     return 'Unknown error';
   }
-  let rootCause: unknown = error;
-  while (rootCause instanceof Error && rootCause.cause instanceof Error) {
-    rootCause = rootCause.cause;
+  let shownCause: Error | null = null;
+  let current: Error = error;
+  while (isDisplayableCause(current.cause)) {
+    shownCause = current.cause;
+    current = current.cause;
   }
-  return rootCause === error ? error.message : `${error.message}: ${(rootCause as Error).message}`;
+  return shownCause ? `${error.message}: ${shownCause.message}` : error.message;
 }
 
 /**
@@ -200,9 +216,9 @@ async function* fillCreditcardDebitDates(
   return { affectedCount: filledCount, errors: [] };
 }
 
+// The sync runs for the admin context's owner, the same one the run gets, so it takes no ownerId
 async function* fetchDeelDocuments(
   injector: Injector,
-  ownerId: string,
 ): AsyncGenerator<CronJobEventProto, StepOutcome, undefined> {
   const credentials = await injector.get(ProviderCredentialsProvider).getDeelCredentials();
   if (!credentials?.apiToken) {
@@ -211,7 +227,7 @@ async function* fetchDeelDocuments(
 
   // The sync only knows which charges are left once it cleans up empty ones at the end, so its
   // changes are reported together, after it is done
-  const { charges } = await syncDeelDocuments(injector, ownerId);
+  const { charges } = await syncDeelDocuments(injector);
   for (const { charge, isNew, invoiceCount } of charges) {
     yield { __typename: 'DeelChargeSynced', charge, isNew, invoiceCount };
   }

@@ -12,6 +12,5 @@ export default gql`
     fetchDeelDocuments: [Charge!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
-      @deprecated(reason: "Use runCronJobs")
   }
 `;
