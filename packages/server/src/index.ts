@@ -38,6 +38,8 @@ const { log } = getLogger(import.meta.url);
 // Infra scopes inside this file: the shared pool, and process shutdown (signals and crashes)
 const { log: dbLog } = getLogger(import.meta.url, { module: LOG_SCOPES.db });
 const { log: shutdownLog } = getLogger(import.meta.url, { module: LOG_SCOPES.shutdown });
+// The scheduled jobs (invitation cleanup, price-index sync) log through the adapter in `main()`
+const { log: jobsLog } = getLogger(import.meta.url, { module: LOG_SCOPES.jobs });
 
 const { Pool } = pg;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -154,8 +156,8 @@ async function main() {
         ? (meta as Record<string, unknown>)
         : { meta };
   const logger: Logger = {
-    info: (message, meta) => log('info', message, metaFields(meta)),
-    error: (message, meta) => log('error', message, metaFields(meta)),
+    info: (message, meta) => jobsLog('info', message, metaFields(meta)),
+    error: (message, meta) => jobsLog('error', message, metaFields(meta)),
   };
 
   const cleanupSchedule = env.auth0
