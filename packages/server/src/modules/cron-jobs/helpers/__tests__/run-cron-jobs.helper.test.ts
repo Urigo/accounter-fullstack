@@ -4,6 +4,8 @@ import { degradeChargesAccountantApproval } from '../../../accountant-approval/h
 import { mergeChargesExecutor } from '../../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../../charges/types.js';
+import { syncDeelDocuments } from '../../../deel/helpers/sync-deel-documents.helper.js';
+import { ProviderCredentialsProvider } from '../../../provider-credentials/providers/provider-credentials.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { CronJobsProvider } from '../../providers/cron-jobs.provider.js';
 import type { IGetReferenceMergeCandidatesResult } from '../../types.js';
@@ -18,6 +20,9 @@ vi.mock('../../../charges/helpers/merge-charges.helper.js', () => ({
 }));
 vi.mock('../../../accountant-approval/helpers/degrade-charges.helper.js', () => ({
   degradeChargesAccountantApproval: vi.fn(),
+}));
+vi.mock('../../../deel/helpers/sync-deel-documents.helper.js', () => ({
+  syncDeelDocuments: vi.fn(),
 }));
 
 function buildCharge(
@@ -80,8 +85,13 @@ type CronJobsProviderMock = {
   calculateCreditcardDebitDate: ReturnType<typeof vi.fn>;
 };
 
-function buildInjector(cronJobsProvider: CronJobsProviderMock, charges: IGetChargesByIdsResult[]) {
+function buildInjector(
+  cronJobsProvider: CronJobsProviderMock,
+  charges: IGetChargesByIdsResult[],
+  { deelCredentials = null }: { deelCredentials?: { apiToken: string } | null } = {},
+) {
   const providers = new Map<unknown, unknown>([
+    [ProviderCredentialsProvider, { getDeelCredentials: async () => deelCredentials }],
     [CronJobsProvider, cronJobsProvider],
     [
       ChargesProvider,
@@ -153,6 +163,7 @@ describe('runCronJobs', () => {
   beforeEach(() => {
     vi.mocked(mergeChargesExecutor).mockReset().mockResolvedValue(undefined);
     vi.mocked(degradeChargesAccountantApproval).mockReset().mockResolvedValue(new Map());
+    vi.mocked(syncDeelDocuments).mockReset().mockResolvedValue({ charges: [] });
   });
 
   it('streams every change and a status per step', async () => {
@@ -171,7 +182,12 @@ describe('runCronJobs', () => {
           .mockResolvedValue([{ id: 'cc-1', debit_date_override: '2026-03-02' }]),
       },
       charges,
+      { deelCredentials: { apiToken: 'token' } },
     );
+    const deelCharge = buildCharge('deel-charge');
+    vi.mocked(syncDeelDocuments).mockResolvedValue({
+      charges: [{ charge: deelCharge, isNew: true, invoiceCount: 2 }],
+    });
 
     const events = await collect(runCronJobs(injector, 'owner-1'));
 
@@ -182,6 +198,8 @@ describe('runCronJobs', () => {
       'MERGE_CHARGES_BY_REFERENCE:SUCCEEDED',
       'FILL_CREDITCARD_DEBIT_DATES:RUNNING',
       'FILL_CREDITCARD_DEBIT_DATES:SUCCEEDED',
+      'FETCH_DEEL_DOCUMENTS:RUNNING',
+      'FETCH_DEEL_DOCUMENTS:SUCCEEDED',
     ]);
     expect(events.filter(event => event.__typename !== 'CronJobStepStatus')).toEqual([
       { __typename: 'ForeignFeeTransactionFlagged', transaction: 'fee-1' },
@@ -193,8 +211,12 @@ describe('runCronJobs', () => {
         mergedCharges: [expect.objectContaining({ id: 'charge-b', date: '2026-01-10' })],
       },
       { __typename: 'CreditcardDebitDateFilled', transaction: 'cc-1', debitDate: '2026-03-02' },
+      { __typename: 'DeelChargeSynced', charge: deelCharge, isNew: true, invoiceCount: 2 },
     ]);
     expect(mergeChargesExecutor).toHaveBeenCalledWith(['charge-b'], 'charge-a', injector);
+    expect(syncDeelDocuments).toHaveBeenCalledWith(injector, 'owner-1');
+    // debit dates step status, then the Deel step's RUNNING, synced charge and SUCCEEDED
+    expect(events.at(-4)).toMatchObject({ affectedCount: 1, errors: null });
     expect(events.at(-1)).toMatchObject({ affectedCount: 1, errors: null });
   });
 
@@ -215,8 +237,63 @@ describe('runCronJobs', () => {
       'FLAG_FOREIGN_FEES:FAILED',
       'MERGE_CHARGES_BY_REFERENCE:SKIPPED',
       'FILL_CREDITCARD_DEBIT_DATES:SKIPPED',
+      'FETCH_DEEL_DOCUMENTS:SKIPPED',
     ]);
     expect(events[1]).toMatchObject({ errors: ['DB is down'] });
+    expect(syncDeelDocuments).not.toHaveBeenCalled();
+  });
+
+  it('marks the Deel step as not configured when the business has no Deel credentials', async () => {
+    const injector = buildInjector(
+      {
+        flagForeignFeeTransactions: vi.fn().mockResolvedValue([]),
+        getReferenceMergeCandidates: vi.fn().mockResolvedValue([]),
+        calculateCreditcardDebitDate: vi.fn().mockResolvedValue([]),
+      },
+      [],
+    );
+
+    const events = await collect(runCronJobs(injector, 'owner-1'));
+
+    expect(statuses(events).slice(-2)).toEqual([
+      'FETCH_DEEL_DOCUMENTS:RUNNING',
+      'FETCH_DEEL_DOCUMENTS:NOT_CONFIGURED',
+    ]);
+    expect(events.at(-1)).toMatchObject({ affectedCount: 0, errors: null });
+    expect(syncDeelDocuments).not.toHaveBeenCalled();
+  });
+
+  it('reports the underlying cause when the Deel step fails', async () => {
+    const injector = buildInjector(
+      {
+        flagForeignFeeTransactions: vi.fn().mockResolvedValue([]),
+        getReferenceMergeCandidates: vi.fn().mockResolvedValue([]),
+        calculateCreditcardDebitDate: vi.fn().mockResolvedValue([]),
+      },
+      [],
+      { deelCredentials: { apiToken: 'token' } },
+    );
+    vi.mocked(syncDeelDocuments).mockRejectedValue(
+      new Error('Error fetching Deel invoices', {
+        cause: new Error('Deel contract ID [c-1] not found in DB'),
+      }),
+    );
+
+    const events = await collect(runCronJobs(injector, 'owner-1'));
+
+    expect(statuses(events)).toEqual([
+      'FLAG_FOREIGN_FEES:RUNNING',
+      'FLAG_FOREIGN_FEES:SUCCEEDED',
+      'MERGE_CHARGES_BY_REFERENCE:RUNNING',
+      'MERGE_CHARGES_BY_REFERENCE:SUCCEEDED',
+      'FILL_CREDITCARD_DEBIT_DATES:RUNNING',
+      'FILL_CREDITCARD_DEBIT_DATES:SUCCEEDED',
+      'FETCH_DEEL_DOCUMENTS:RUNNING',
+      'FETCH_DEEL_DOCUMENTS:FAILED',
+    ]);
+    expect(events.at(-1)).toMatchObject({
+      errors: ['Error fetching Deel invoices: Deel contract ID [c-1] not found in DB'],
+    });
   });
 
   it('still reports a merge whose accountant-review flagging failed', async () => {
@@ -286,6 +363,8 @@ describe('runCronJobs', () => {
       'MERGE_CHARGES_BY_REFERENCE:COMPLETED_WITH_ERRORS',
       'FILL_CREDITCARD_DEBIT_DATES:RUNNING',
       'FILL_CREDITCARD_DEBIT_DATES:SUCCEEDED',
+      'FETCH_DEEL_DOCUMENTS:RUNNING',
+      'FETCH_DEEL_DOCUMENTS:NOT_CONFIGURED',
     ]);
     expect(events[3]).toMatchObject({
       affectedCount: 0,

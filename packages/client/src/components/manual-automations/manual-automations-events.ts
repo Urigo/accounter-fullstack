@@ -30,6 +30,7 @@ export const AUTOMATION_STEPS = [
   CronJobStep.FlagForeignFees,
   CronJobStep.MergeChargesByReference,
   CronJobStep.FillCreditcardDebitDates,
+  CronJobStep.FetchDeelDocuments,
 ] as const;
 
 const PENDING_STEP: AutomationStepView = { state: 'PENDING', affectedCount: null, errors: [] };
@@ -43,6 +44,7 @@ export function groupAutomationEvents(
       [CronJobStep.FlagForeignFees]: PENDING_STEP,
       [CronJobStep.MergeChargesByReference]: PENDING_STEP,
       [CronJobStep.FillCreditcardDebitDates]: PENDING_STEP,
+      [CronJobStep.FetchDeelDocuments]: PENDING_STEP,
     },
     flaggedFees: [],
     mergedCharges: [],

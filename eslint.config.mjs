@@ -178,6 +178,7 @@ export default [
               'CronJobStepStatus',
               'CronJobsRun',
               'DateRange',
+              'DeelChargeSynced',
               'DocumentDiscount',
               'DocumentDraft',
               'DocumentIncomeRecord',

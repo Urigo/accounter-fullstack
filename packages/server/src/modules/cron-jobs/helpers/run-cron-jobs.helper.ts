@@ -12,6 +12,8 @@ import { degradeChargesAccountantApproval } from '../../accountant-approval/help
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
+import { syncDeelDocuments } from '../../deel/helpers/sync-deel-documents.helper.js';
+import { ProviderCredentialsProvider } from '../../provider-credentials/providers/provider-credentials.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { CronJobsProvider } from '../providers/cron-jobs.provider.js';
 import type { IGetReferenceMergeCandidatesResult } from '../types.js';
@@ -29,11 +31,19 @@ export type CronJobEventProto =
       baseCharge: IGetChargesByIdsResult;
       mergedCharges: MergedChargeSnapshot[];
     }
-  | { __typename: 'CreditcardDebitDateFilled'; transaction: string; debitDate: TimelessDateString };
+  | { __typename: 'CreditcardDebitDateFilled'; transaction: string; debitDate: TimelessDateString }
+  | {
+      __typename: 'DeelChargeSynced';
+      charge: IGetChargesByIdsResult;
+      isNew: boolean;
+      invoiceCount: number;
+    };
 
 type StepOutcome = {
   affectedCount: number;
   errors: string[];
+  /** Overrides the end state, which otherwise follows from `errors` */
+  state?: Extract<CronJobStepState, 'NOT_CONFIGURED'>;
 };
 
 type StepRunner = (
@@ -55,14 +65,25 @@ function stepStatus(
   };
 }
 
+/**
+ * The error's message, followed by its innermost cause's message when there is one: wrapping
+ * helpers (e.g. "Error fetching Deel invoices") keep the useful detail in the cause.
+ */
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unknown error';
+  if (!(error instanceof Error)) {
+    return 'Unknown error';
+  }
+  let rootCause: unknown = error;
+  while (rootCause instanceof Error && rootCause.cause instanceof Error) {
+    rootCause = rootCause.cause;
+  }
+  return rootCause === error ? error.message : `${error.message}: ${(rootCause as Error).message}`;
 }
 
 /**
  * Runs the cron jobs steps in order, yielding a status event when each step starts and ends, and
  * an event for every change a step makes. A failed step skips the steps after it; a step that
- * completes with item-level errors does not.
+ * completes with item-level errors, or that is not configured for the business, does not.
  */
 export async function* runCronJobs(
   injector: Injector,
@@ -72,6 +93,8 @@ export async function* runCronJobs(
     ['FLAG_FOREIGN_FEES', flagForeignFees],
     ['MERGE_CHARGES_BY_REFERENCE', mergeChargesByReference],
     ['FILL_CREDITCARD_DEBIT_DATES', fillCreditcardDebitDates],
+    // last, so a Deel failure (API, credentials, unknown contract) never blocks the fix-ups
+    ['FETCH_DEEL_DOCUMENTS', fetchDeelDocuments],
   ];
 
   let failed = false;
@@ -86,7 +109,7 @@ export async function* runCronJobs(
       const outcome = yield* run(injector, ownerId);
       yield stepStatus(
         step,
-        outcome.errors.length ? 'COMPLETED_WITH_ERRORS' : 'SUCCEEDED',
+        outcome.state ?? (outcome.errors.length ? 'COMPLETED_WITH_ERRORS' : 'SUCCEEDED'),
         outcome,
       );
     } catch (error) {
@@ -175,6 +198,24 @@ async function* fillCreditcardDebitDates(
     };
   }
   return { affectedCount: filledCount, errors: [] };
+}
+
+async function* fetchDeelDocuments(
+  injector: Injector,
+  ownerId: string,
+): AsyncGenerator<CronJobEventProto, StepOutcome, undefined> {
+  const credentials = await injector.get(ProviderCredentialsProvider).getDeelCredentials();
+  if (!credentials?.apiToken) {
+    return { affectedCount: 0, errors: [], state: 'NOT_CONFIGURED' };
+  }
+
+  // The sync only knows which charges are left once it cleans up empty ones at the end, so its
+  // changes are reported together, after it is done
+  const { charges } = await syncDeelDocuments(injector, ownerId);
+  for (const { charge, isNew, invoiceCount } of charges) {
+    yield { __typename: 'DeelChargeSynced', charge, isNew, invoiceCount };
+  }
+  return { affectedCount: charges.length, errors: [] };
 }
 
 export async function loadReferenceMergePlans(injector: Injector, ownerId: string) {
