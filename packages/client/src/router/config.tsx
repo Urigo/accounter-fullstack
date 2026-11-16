@@ -35,8 +35,8 @@ const ChargeMatchingReviewScreen = lazy(() =>
     default: m.ChargeMatchingReviewScreen,
   })),
 );
-const CronJobs = lazy(() =>
-  import('../components/cron-jobs/index.js').then(m => ({ default: m.CronJobs })),
+const ManualAutomations = lazy(() =>
+  import('../components/manual-automations/index.js').then(m => ({ default: m.ManualAutomations })),
 );
 
 // Businesses
@@ -344,11 +344,11 @@ export const routes: RouteObject[] = [
                 },
               },
               {
-                path: 'cron-jobs',
-                element: withSuspense(CronJobs, <PageSkeleton />),
+                path: 'manual-automations',
+                element: withSuspense(ManualAutomations, <PageSkeleton />),
                 handle: {
-                  title: 'Cron Jobs',
-                  breadcrumb: 'Cron Jobs',
+                  title: 'Manual Automations',
+                  breadcrumb: 'Manual Automations',
                 },
               },
               {

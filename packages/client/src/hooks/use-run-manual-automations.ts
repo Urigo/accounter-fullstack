@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation, type CombinedError } from 'urql';
 import {
-  summarizeCronJobEvents,
-  type CronJobsRunEvent,
-} from '../components/cron-jobs/cron-jobs-events.js';
+  summarizeAutomationEvents,
+  type ManualAutomationsRunEvent,
+} from '../components/manual-automations/manual-automations-events.js';
 import { RunCronJobsDocument } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
@@ -79,32 +79,32 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   }
 `;
 
-const NOTIFICATION_ID = 'run-cron-jobs';
-const ERROR_MESSAGE = 'Error running cron jobs';
+const NOTIFICATION_ID = 'run-manual-automations';
+const ERROR_MESSAGE = 'Error running automations';
 
-type UseRunCronJobs = {
+type UseRunManualAutomations = {
   /** True from the moment the run starts until its last streamed event arrives. */
   running: boolean;
   /** Events received so far, in the order they happened. */
-  events: readonly CronJobsRunEvent[];
+  events: readonly ManualAutomationsRunEvent[];
   error: CombinedError | undefined;
   runJobs: () => Promise<void>;
 };
 
-export const useRunCronJobs = (): UseRunCronJobs => {
+export const useRunManualAutomations = (): UseRunManualAutomations => {
   // `useMutation` updates its state on every streamed part, but clears `fetching` on the first
   // one — `hasNext` is what tells a run in progress from a finished one.
   const [{ fetching, hasNext, data, error }, mutate] = useMutation(RunCronJobsDocument);
 
   const runJobs = useCallback(async () => {
-    toast.loading('Running cron jobs', { id: NOTIFICATION_ID });
+    toast.loading('Running automations', { id: NOTIFICATION_ID });
     try {
       const res = await mutate({});
       const resData = handleCommonErrors(res, ERROR_MESSAGE, NOTIFICATION_ID);
       if (!resData) {
         return;
       }
-      const { failed, withErrors, description } = summarizeCronJobEvents(
+      const { failed, withErrors, description } = summarizeAutomationEvents(
         resData.runCronJobs.events,
       );
       if (failed) {

@@ -1,9 +1,9 @@
 import { CronJobStep, CronJobStepState, type RunCronJobsMutation } from '../../gql/graphql.js';
 
-export type CronJobsRunEvent = RunCronJobsMutation['runCronJobs']['events'][number];
+export type ManualAutomationsRunEvent = RunCronJobsMutation['runCronJobs']['events'][number];
 
-type EventOf<T extends CronJobsRunEvent['__typename']> = Extract<
-  CronJobsRunEvent,
+type EventOf<T extends ManualAutomationsRunEvent['__typename']> = Extract<
+  ManualAutomationsRunEvent,
   { __typename: T }
 >;
 
@@ -12,31 +12,33 @@ export type MergedCharges = EventOf<'ChargesMergedByReference'>;
 export type FilledDebitDate = EventOf<'CreditcardDebitDateFilled'>;
 
 /** A step that has not reported any status yet is `PENDING`. */
-export type CronJobStepView = {
+export type AutomationStepView = {
   state: CronJobStepState | 'PENDING';
   affectedCount: number | null;
   errors: readonly string[];
 };
 
-export type CronJobsRunView = {
-  steps: Record<CronJobStep, CronJobStepView>;
+export type ManualAutomationsRunView = {
+  steps: Record<CronJobStep, AutomationStepView>;
   flaggedFees: FlaggedFee[];
   mergedCharges: MergedCharges[];
   filledDebitDates: FilledDebitDate[];
 };
 
 /** Steps in execution order, as the server runs them. */
-export const CRON_JOB_STEPS = [
+export const AUTOMATION_STEPS = [
   CronJobStep.FlagForeignFees,
   CronJobStep.MergeChargesByReference,
   CronJobStep.FillCreditcardDebitDates,
 ] as const;
 
-const PENDING_STEP: CronJobStepView = { state: 'PENDING', affectedCount: null, errors: [] };
+const PENDING_STEP: AutomationStepView = { state: 'PENDING', affectedCount: null, errors: [] };
 
 /** Folds the streamed events into the latest state of each step and the changes it made. */
-export function groupCronJobEvents(events: readonly CronJobsRunEvent[]): CronJobsRunView {
-  const view: CronJobsRunView = {
+export function groupAutomationEvents(
+  events: readonly ManualAutomationsRunEvent[],
+): ManualAutomationsRunView {
+  const view: ManualAutomationsRunView = {
     steps: {
       [CronJobStep.FlagForeignFees]: PENDING_STEP,
       [CronJobStep.MergeChargesByReference]: PENDING_STEP,
@@ -76,13 +78,13 @@ function plural(count: number, singular: string, pluralForm = `${singular}s`): s
 }
 
 /** One-line outcome of a run, e.g. "3 charges merged · 5 fees flagged · 12 debit dates filled". */
-export function summarizeCronJobEvents(events: readonly CronJobsRunEvent[]): {
+export function summarizeAutomationEvents(events: readonly ManualAutomationsRunEvent[]): {
   failed: boolean;
   withErrors: boolean;
   description: string;
 } {
-  const { steps, flaggedFees, mergedCharges, filledDebitDates } = groupCronJobEvents(events);
-  const states = CRON_JOB_STEPS.map(step => steps[step].state);
+  const { steps, flaggedFees, mergedCharges, filledDebitDates } = groupAutomationEvents(events);
+  const states = AUTOMATION_STEPS.map(step => steps[step].state);
   // count the charges that were folded into others, not the merge groups
   const mergedAwayCount = mergedCharges.reduce((sum, merge) => sum + merge.mergedCharges.length, 0);
 

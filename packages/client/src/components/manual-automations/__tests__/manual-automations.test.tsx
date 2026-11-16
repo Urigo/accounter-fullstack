@@ -4,13 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CronJobStep, CronJobStepState } from '../../../gql/graphql.js';
 import { ROUTES } from '../../../router/routes.js';
-import type { CronJobsRunEvent } from '../cron-jobs-events.js';
-import { CronJobs } from '../index.js';
+import type { ManualAutomationsRunEvent } from '../manual-automations-events.js';
+import { ManualAutomations } from '../index.js';
 
-const { useRunCronJobsMock } = vi.hoisted(() => ({ useRunCronJobsMock: vi.fn() }));
+const { useRunManualAutomationsMock } = vi.hoisted(() => ({ useRunManualAutomationsMock: vi.fn() }));
 
-vi.mock('../../../hooks/use-run-cron-jobs.js', () => ({
-  useRunCronJobs: useRunCronJobsMock,
+vi.mock('../../../hooks/use-run-manual-automations.js', () => ({
+  useRunManualAutomations: useRunManualAutomationsMock,
 }));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -19,13 +19,13 @@ vi.mock('../../../hooks/use-run-cron-jobs.js', () => ({
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
-async function renderCronJobs(state: { running: boolean; events: CronJobsRunEvent[] }) {
-  useRunCronJobsMock.mockReturnValue({ ...state, error: undefined, runJobs: vi.fn() });
+async function renderManualAutomations(state: { running: boolean; events: ManualAutomationsRunEvent[] }) {
+  useRunManualAutomationsMock.mockReturnValue({ ...state, error: undefined, runJobs: vi.fn() });
   container = document.createElement('div');
   document.body.append(container);
   await act(async () => {
     root = createRoot(container!);
-    root.render(<MemoryRouter>{React.createElement(CronJobs)}</MemoryRouter>);
+    root.render(<MemoryRouter>{React.createElement(ManualAutomations)}</MemoryRouter>);
   });
   return container;
 }
@@ -37,7 +37,7 @@ afterEach(async () => {
   container = null;
 });
 
-const events: CronJobsRunEvent[] = [
+const events: ManualAutomationsRunEvent[] = [
   {
     __typename: 'CronJobStepStatus',
     step: CronJobStep.FlagForeignFees,
@@ -73,16 +73,16 @@ const events: CronJobsRunEvent[] = [
   },
 ];
 
-describe('CronJobs screen', () => {
+describe('ManualAutomations screen', () => {
   it('shows an empty state before the first run', async () => {
-    const page = await renderCronJobs({ running: false, events: [] });
+    const page = await renderManualAutomations({ running: false, events: [] });
 
     expect(page.textContent).toContain('No run yet');
     expect(page.querySelectorAll('table')).toHaveLength(0);
   });
 
   it('renders each step as its events stream in', async () => {
-    const page = await renderCronJobs({ running: true, events });
+    const page = await renderManualAutomations({ running: true, events });
 
     // done, with nothing to do
     expect(page.textContent).toContain('Nothing to update');
@@ -98,7 +98,7 @@ describe('CronJobs screen', () => {
   });
 
   it('shows step errors and the run summary once done', async () => {
-    const page = await renderCronJobs({
+    const page = await renderManualAutomations({
       running: false,
       events: [
         ...events,

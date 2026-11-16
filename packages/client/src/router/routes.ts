@@ -138,7 +138,7 @@ export const ROUTES = {
     MISSING_INFO: '/charges/missing-info',
     LEDGER_VALIDATION: '/charges/ledger-validation',
     MATCHING: '/charges/matching',
-    CRON_JOBS: '/charges/cron-jobs',
+    MANUAL_AUTOMATIONS: '/charges/manual-automations',
     DETAIL: (chargeId: string) => `/charges/${chargeId}`,
   },
 

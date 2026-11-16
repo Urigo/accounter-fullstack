@@ -222,7 +222,7 @@ describe('UserNav menu', () => {
     await cleanup();
   });
 
-  it('links to the cron jobs screen instead of running the jobs from the menu', async () => {
+  it('links to the manual automations screen instead of running the jobs from the menu', async () => {
     useAuth0Mock.mockReturnValue({
       isAuthenticated: true,
       user: { name: 'John Doe', email: 'john@example.com' },
@@ -231,8 +231,8 @@ describe('UserNav menu', () => {
 
     const { container, cleanup } = await renderUserNav();
 
-    const link = container.querySelector(`a[href="${ROUTES.CHARGES.CRON_JOBS}"]`);
-    expect(link?.textContent).toContain('Cron Jobs');
+    const link = container.querySelector(`a[href="${ROUTES.CHARGES.MANUAL_AUTOMATIONS}"]`);
+    expect(link?.textContent).toContain('Manual Automations');
 
     await cleanup();
   });

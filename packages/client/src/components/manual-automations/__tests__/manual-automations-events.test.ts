@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { CronJobStep, CronJobStepState } from '../../../gql/graphql.js';
 import {
-  groupCronJobEvents,
-  summarizeCronJobEvents,
-  type CronJobsRunEvent,
-} from '../cron-jobs-events.js';
+  groupAutomationEvents,
+  summarizeAutomationEvents,
+  type ManualAutomationsRunEvent,
+} from '../manual-automations-events.js';
 
 function status(
   step: CronJobStep,
   state: CronJobStepState,
   extra: { affectedCount?: number; errors?: string[] } = {},
-): CronJobsRunEvent {
+): ManualAutomationsRunEvent {
   return {
     __typename: 'CronJobStepStatus',
     step,
@@ -31,7 +31,7 @@ function transaction(id: string) {
   } as const;
 }
 
-const merge: CronJobsRunEvent = {
+const merge: ManualAutomationsRunEvent = {
   __typename: 'ChargesMergedByReference',
   reference: 'REF-1',
   baseCharge: {
@@ -47,15 +47,15 @@ const merge: CronJobsRunEvent = {
   ],
 };
 
-describe('groupCronJobEvents', () => {
+describe('groupAutomationEvents', () => {
   it('reports steps without a status as pending', () => {
-    const { steps } = groupCronJobEvents([]);
+    const { steps } = groupAutomationEvents([]);
 
     expect(Object.values(steps).map(step => step.state)).toEqual(['PENDING', 'PENDING', 'PENDING']);
   });
 
   it('keeps the latest status of each step and collects the changes', () => {
-    const events: CronJobsRunEvent[] = [
+    const events: ManualAutomationsRunEvent[] = [
       status(CronJobStep.FlagForeignFees, CronJobStepState.Running),
       { __typename: 'ForeignFeeTransactionFlagged', transaction: transaction('fee-1') },
       status(CronJobStep.FlagForeignFees, CronJobStepState.Succeeded, { affectedCount: 1 }),
@@ -63,7 +63,7 @@ describe('groupCronJobEvents', () => {
       merge,
     ];
 
-    const view = groupCronJobEvents(events);
+    const view = groupAutomationEvents(events);
 
     expect(view.steps[CronJobStep.FlagForeignFees]).toEqual({
       state: CronJobStepState.Succeeded,
@@ -78,9 +78,9 @@ describe('groupCronJobEvents', () => {
   });
 });
 
-describe('summarizeCronJobEvents', () => {
+describe('summarizeAutomationEvents', () => {
   it('counts merged-away charges, flagged fees and filled debit dates', () => {
-    const summary = summarizeCronJobEvents([
+    const summary = summarizeAutomationEvents([
       merge,
       { __typename: 'ForeignFeeTransactionFlagged', transaction: transaction('fee-1') },
       {
@@ -104,12 +104,12 @@ describe('summarizeCronJobEvents', () => {
 
   it('flags failed and partially failed runs', () => {
     expect(
-      summarizeCronJobEvents([
+      summarizeAutomationEvents([
         status(CronJobStep.FlagForeignFees, CronJobStepState.Failed, { errors: ['boom'] }),
       ]),
     ).toMatchObject({ failed: true, withErrors: false });
     expect(
-      summarizeCronJobEvents([
+      summarizeAutomationEvents([
         status(CronJobStep.MergeChargesByReference, CronJobStepState.CompletedWithErrors, {
           errors: ['one merge failed'],
         }),
