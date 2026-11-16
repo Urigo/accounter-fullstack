@@ -16,7 +16,7 @@ server.
 Run the Fastify server (serves the UI and handles scraping):
 
 ```bash
-yarn workspace @accounter-helper/scraper-app dev:server
+yarn workspace @accounter/scraper-app dev:server
 ```
 
 Then open [http://localhost:4001](http://localhost:4001) in your browser.
@@ -26,7 +26,7 @@ Then open [http://localhost:4001](http://localhost:4001) in your browser.
 ### Build for production
 
 ```bash
-yarn workspace @accounter-helper/scraper-app build
+yarn workspace @accounter/scraper-app build
 ```
 
 This produces:
@@ -93,9 +93,14 @@ is running. Tabs keep each other up to date, so a change or save made in one sho
 
 ## Environment variables
 
-| Variable | Default | Description                             |
-| -------- | ------- | --------------------------------------- |
-| `PORT`   | `4001`  | HTTP port the Fastify server listens on |
+The app has no `.env` file: it does not load one, so set variables in the shell that starts it.
+Everything else (bank credentials, the Accounter server URL and its API key) is configured in the
+app and kept in the encrypted vault, not in the environment.
+
+| Variable     | Default | Read by                      | Description                                                                                                                                                                                                |
+| ------------ | ------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`       | `4001`  | server, `vite.config.ts`     | HTTP port the Fastify server listens on. `dev:ui` proxies `/api` and `/ws` to the same port, so set it for both when you change it.                                                                        |
+| `NODE_DEBUG` | unset   | puppeteer (via the scrapers) | Library debug output, e.g. `NODE_DEBUG=puppeteer:*` logs every browser protocol message (puppeteer reads `NODE_DEBUG`, not `DEBUG`). Local troubleshooting only: it can include page data and credentials. |
 
 ## Run history
 
