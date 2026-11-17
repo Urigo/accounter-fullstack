@@ -442,6 +442,69 @@ describe('Step09SaveTemplate', () => {
     await cleanup();
   });
 
+  it("doesn't offer to lock a working template locked by another year", async () => {
+    const { container, cleanup } = await render({
+      adminBusinessId: 'owner-1',
+      templates: [
+        // Locked as another year's final template since it was picked as the working one
+        makeTemplate({ name: 'final-2023', isLocked: true }),
+        makeTemplate({ name: 'pnl-wip', isLocked: false }),
+      ],
+      manualData: workingEvidence({
+        balanceSheetTemplateName: 'final-2023',
+        profitAndLossTemplateName: 'pnl-wip',
+      }),
+    });
+
+    // Only the P&L working template can be locked from here
+    const button = container.querySelector('[data-testid="lock-working-templates"]');
+    expect(button?.textContent).toBe('Lock working template');
+    expect(slotItem(container, BS, 'final-2023')).toBeNull();
+    expect(slot(container, BS)?.querySelector('[data-testid="select-value"]')?.textContent).toBe(
+      'Working: final-2023 (locked by another year)',
+    );
+
+    setStep09StatusMock.mockResolvedValue({ stepId: '9' });
+    await act(async () => {
+      (button as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(setStep09StatusMock).toHaveBeenCalledTimes(1);
+    expect(setStep09StatusMock).toHaveBeenCalledWith({
+      input: { ownerId: 'owner-1', year: 2024, templateName: 'pnl-wip', reportType: PNL },
+    });
+
+    await cleanup();
+  });
+
+  it('stops locking working templates at the first failed save', async () => {
+    // The first save fails (the hook shows the error and resolves to nothing)
+    setStep09StatusMock.mockResolvedValueOnce(undefined);
+    const { container, cleanup } = await render({
+      adminBusinessId: 'owner-1',
+      templates: [
+        makeTemplate({ name: 'bs-wip', isLocked: false }),
+        makeTemplate({ name: 'pnl-wip', isLocked: false }),
+      ],
+      manualData: workingEvidence({
+        balanceSheetTemplateName: 'bs-wip',
+        profitAndLossTemplateName: 'pnl-wip',
+      }),
+    });
+
+    const button = container.querySelector(
+      '[data-testid="lock-working-templates"]',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      button.click();
+      await Promise.resolve();
+    });
+
+    expect(setStep09StatusMock).toHaveBeenCalledTimes(1);
+
+    await cleanup();
+  });
+
   it('hides "Lock working templates" once the working templates are the locked ones', async () => {
     const { container, cleanup } = await render({
       adminBusinessId: 'owner-1',

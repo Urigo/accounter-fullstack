@@ -67,6 +67,14 @@ function FinalSlot({
     [templates, lockedNames, workingName],
   );
 
+  let placeholder = 'Select a report template...';
+  if (workingName) {
+    // A working template locked by another year is hidden like any locked one: say why
+    placeholder = options.some(option => option.name === workingName)
+      ? `Working: ${workingName}`
+      : `Working: ${workingName} (locked by another year)`;
+  }
+
   return (
     <div
       className="flex flex-wrap items-center gap-x-4 gap-y-2"
@@ -76,7 +84,7 @@ function FinalSlot({
       <TemplateSelect
         value={finalName}
         options={options}
-        placeholder={workingName ? `Working: ${workingName}` : 'Select a report template...'}
+        placeholder={placeholder}
         onChange={name => {
           if (name) onSelect(reportType, name);
         }}
@@ -161,12 +169,16 @@ export function Step09SaveTemplate(props: Step09Props) {
     [adminBusinessId, year, setStep09Status, afterSave],
   );
 
-  // One click to lock what was worked on, for whichever reports differ from what's locked
+  // One click to lock what was worked on, for whichever reports differ from what's locked. A
+  // working template locked elsewhere (e.g. another year's final) is left out, as the pickers do.
   const pendingWorking = useMemo(() => {
+    const lockable = (name: string) =>
+      lockedNames.includes(name) || templates.some(t => t.name === name && !t.isLocked);
     const pending: Array<{ reportType: AnnualAuditReportType; templateName: string }> = [];
     if (
       working.balanceSheetTemplateName &&
-      working.balanceSheetTemplateName !== final.balanceSheetTemplateName
+      working.balanceSheetTemplateName !== final.balanceSheetTemplateName &&
+      lockable(working.balanceSheetTemplateName)
     ) {
       pending.push({
         reportType: AnnualAuditReportType.BalanceSheet,
@@ -175,7 +187,8 @@ export function Step09SaveTemplate(props: Step09Props) {
     }
     if (
       working.profitAndLossTemplateName &&
-      working.profitAndLossTemplateName !== final.profitAndLossTemplateName
+      working.profitAndLossTemplateName !== final.profitAndLossTemplateName &&
+      lockable(working.profitAndLossTemplateName)
     ) {
       pending.push({
         reportType: AnnualAuditReportType.ProfitAndLoss,
@@ -183,24 +196,28 @@ export function Step09SaveTemplate(props: Step09Props) {
       });
     }
     return pending;
-  }, [working, final]);
+  }, [working, final, lockedNames, templates]);
 
   const lockWorkingTemplates = useCallback(async () => {
     if (!adminBusinessId || pendingWorking.length === 0) return;
     const [first, second] = pendingWorking;
+    let savedAny = false;
     if (second && first.templateName === second.templateName) {
       // Same template for both reports: one call, no reportType
-      await setStep09Status({
+      savedAny = !!(await setStep09Status({
         input: { ownerId: adminBusinessId, year, templateName: first.templateName },
-      });
+      }));
     } else {
       for (const { reportType, templateName } of pendingWorking) {
-        await setStep09Status({
+        const saved = await setStep09Status({
           input: { ownerId: adminBusinessId, year, templateName, reportType },
         });
+        // Stop at the first failure (its error is already shown)
+        if (!saved) break;
+        savedAny = true;
       }
     }
-    afterSave();
+    if (savedAny) afterSave();
   }, [adminBusinessId, year, pendingWorking, setStep09Status, afterSave]);
 
   const description = useMemo(() => {
