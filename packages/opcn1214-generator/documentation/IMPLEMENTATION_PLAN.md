@@ -291,6 +291,7 @@ Working rules
 Verify bundle (run at the end of every step, in this order; all must pass)
   yarn workspace @accounter/opcn1214-generator typecheck
   yarn workspace @accounter/opcn1214-generator build        # runs `lint --fix` first, then bob
+  yarn eslint packages/opcn1214-generator/src                 # root config, no --fix: the repo-wide lint CI
   yarn prettier --check packages/opcn1214-generator
   yarn workspace @accounter/opcn1214-generator test --run   # last: catches anything lint --fix changed
   git status                                               # lint --fix may have edited files: commit them
