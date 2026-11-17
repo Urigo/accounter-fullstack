@@ -6,7 +6,9 @@ import {
   isDebitNaturedBalanceSheetCode,
   isDebitNaturedProfitLossCode,
   netAmountsByFinancialEntity,
+  profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
+  roundingTolerance,
   type Shaam6111Entry,
   type Shaam6111TaxAdjustmentInputs,
 } from '../shaam6111-computation.helper.js';
@@ -127,6 +129,16 @@ describe('buildProfitAndLossEntries', () => {
     // 1000 − 1300 − 3500 − 5300
     expect(amountOf(entries, 6666)).toBe(1000 - 50 - 500 - 50);
     expect(amountOf(entries, 5600)).toBe(100);
+  });
+
+  it('subtracts financing expenses (5000) in profit before tax (6666), per rule 3.1', () => {
+    const withFees = buildProfitAndLossEntries(
+      netAmountsByFinancialEntity([...LEDGER, entry('bank-fees', 'bank', 15)]),
+      new Map([...IRS_CODES, ['bank-fees', 5010]]),
+    );
+    expect(amountOf(withFees, 5010)).toBe(15);
+    expect(amountOf(withFees, 5000)).toBe(15);
+    expect(amountOf(withFees, 6666)).toBe(amountOf(entries, 6666)! - 15);
   });
 
   it('lists every 6111 P&L code once, sorted', () => {
@@ -287,5 +299,93 @@ describe('buildTaxAdjustmentEntries', () => {
         510,
       ),
     ).toBe(0);
+  });
+});
+
+describe('rounding to the shekel', () => {
+  const ROUNDING_IRS_CODES = new Map<string, number>([
+    ['bank', 7110],
+    ['share-capital', 9910],
+    ['revenue', 1030],
+    ['salaries', 3511],
+  ]);
+
+  it('allows half a shekel per rounded line, plus half a shekel for the total', () => {
+    expect(roundingTolerance(0)).toBe(0.5);
+    expect(roundingTolerance(4)).toBe(2.5);
+  });
+
+  it('sets 100 to 6666 when they differ only by rounding, and keeps 400 on the books', () => {
+    // revenue 1,000.60 and salaries 300.40 round to 1,001 and 300: 6666 = 701, the books 700.20
+    const profitAndLoss = buildProfitAndLossEntries(
+      netAmountsByFinancialEntity([
+        entry('bank', 'revenue', 1000.6),
+        entry('salaries', 'bank', 300.4),
+      ]),
+      ROUNDING_IRS_CODES,
+    );
+    expect(amountOf(profitAndLoss, 6666)).toBe(701);
+    expect(profitAndLossMatchesBooks(profitAndLoss, 700.2)).toBe(true);
+
+    const taxAdjustment = buildTaxAdjustmentEntries({
+      profitBeforeTax: 700.2,
+      profitAndLossTotal: 701,
+      researchAndDevelopmentAddBack: 0,
+      researchAndDevelopmentForTax: 0,
+      fines: 0,
+      untaxableGifts: 0,
+      businessTripsExcessExpenses: 0,
+      salaryExcessExpenses: 0,
+      reserves: 0,
+      nontaxableLinkage: 0,
+      taxableIncome: 700.2,
+      hasPreferredTaxRate: false,
+    });
+    // rule 3.7: 100 = 6666
+    expect(amountOf(taxAdjustment, 100)).toBe(701);
+    // the rounding difference is a deduction, so the taxable income stays the books' 700
+    expect(amountOf(taxAdjustment, 200)).toBe(1);
+    expect(amountOf(taxAdjustment, 400)).toBe(700);
+    expect(amountOf(taxAdjustment, 500)).toBe(700);
+  });
+
+  it('does not treat a real mapping gap as rounding', () => {
+    const profitAndLoss = buildProfitAndLossEntries(
+      netAmountsByFinancialEntity([entry('bank', 'revenue', 1000)]),
+      ROUNDING_IRS_CODES,
+    );
+    // the books also hold 300 of expenses that no IRS code carries into 6666
+    expect(profitAndLossMatchesBooks(profitAndLoss, 700)).toBe(false);
+  });
+
+  it('absorbs a rounding difference between the two sides of the balance sheet in 9980', () => {
+    // bank 1,000.80 funded by share capital 600.40 and revenue 400.40: 1,001 against 600 + 400
+    const net = netAmountsByFinancialEntity([
+      entry('bank', 'share-capital', 600.4),
+      entry('bank', 'revenue', 400.4),
+    ]);
+    const profitAndLoss = buildProfitAndLossEntries(net, ROUNDING_IRS_CODES);
+    const balanceSheet = buildBalanceSheetEntries(
+      net,
+      ROUNDING_IRS_CODES,
+      retainedProfitFromProfitAndLoss(profitAndLoss),
+      1,
+    );
+    expect(amountOf(balanceSheet, 7110)).toBe(1001);
+    expect(amountOf(balanceSheet, 9910)).toBe(600);
+    expect(amountOf(balanceSheet, 9980)).toBe(401);
+    expect(amountOf(balanceSheet, 9999)).toBe(amountOf(balanceSheet, 8888));
+  });
+
+  it('leaves a difference larger than rounding visible', () => {
+    // 100 left the bank to an entity with no IRS code: the sides really differ
+    const net = netAmountsByFinancialEntity([
+      entry('bank', 'share-capital', 1000),
+      entry('unmapped', 'bank', 100),
+    ]);
+    const balanceSheet = buildBalanceSheetEntries(net, ROUNDING_IRS_CODES, 0);
+    expect(amountOf(balanceSheet, 8888)).toBe(900);
+    expect(amountOf(balanceSheet, 9999)).toBe(1000);
+    expect(amountOf(balanceSheet, 9980)).toBe(0);
   });
 });

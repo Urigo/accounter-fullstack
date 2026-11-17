@@ -34,7 +34,9 @@ import {
   buildBalanceSheetEntries,
   buildProfitAndLossEntries,
   buildTaxAdjustmentEntries,
+  countRoundedLines,
   netAmountsByFinancialEntity,
+  profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
 } from './shaam6111-computation.helper.js';
 import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helper.js';
@@ -98,6 +100,7 @@ export async function getShaam6111Data(
     cumulativeNetByEntity,
     irsCodeByEntity,
     retainedProfitFromProfitAndLoss(cumulativeProfitAndLoss),
+    countRoundedLines(cumulativeProfitAndLoss, 'profitAndLoss'),
   );
 
   // Tax adjustments use the same computation as the tax report (annual workflow step 13). R&D is
@@ -126,6 +129,10 @@ export async function getShaam6111Data(
   );
   const taxAdjustment = buildTaxAdjustmentEntries({
     profitBeforeTax: profitBeforeTax.amount,
+    // rule 3.7 (100 = 6666) holds whenever the two differ only by rounding
+    profitAndLossTotal: profitAndLossMatchesBooks(profitAndLoss, profitBeforeTax.amount)
+      ? profitAndLoss.find(entry => entry.code === 6666)?.amount
+      : undefined,
     researchAndDevelopmentAddBack,
     researchAndDevelopmentForTax: taxAmounts.researchAndDevelopmentExpensesForTax,
     fines: taxAmounts.fines.amount,

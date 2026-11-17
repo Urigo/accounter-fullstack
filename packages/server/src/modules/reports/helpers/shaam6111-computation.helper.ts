@@ -307,6 +307,40 @@ function leafAmounts(
   return rounded;
 }
 
+/**
+ * The most a total can differ from the rounded total of its unrounded parts when it is summed from
+ * `lineCount` lines that were each rounded to the shekel: half a shekel per line, plus the half
+ * shekel of rounding the total itself.
+ */
+export function roundingTolerance(lineCount: number): number {
+  return lineCount / 2 + 0.5;
+}
+
+/** How many lines of a section were rounded on their own (non-zero lines that are not totals). */
+export function countRoundedLines(
+  entries: readonly Shaam6111Entry[],
+  section: 'profitAndLoss' | 'balanceSheet',
+): number {
+  const summaryCodes =
+    section === 'profitAndLoss' ? PROFIT_LOSS_SUMMARY_CODES : BALANCE_SHEET_SUMMARY_CODES;
+  return entries.filter(entry => entry.amount !== 0 && !summaryCodes.has(entry.code)).length;
+}
+
+/**
+ * Whether profit before tax per the 6111 lines (6666) differs from the books only by the
+ * rounding of its lines, as opposed to a P&L entity that is unmapped or mapped elsewhere.
+ */
+export function profitAndLossMatchesBooks(
+  profitAndLoss: readonly Shaam6111Entry[],
+  booksProfitBeforeTax: number,
+): boolean {
+  const profitAndLossTotal = profitAndLoss.find(entry => entry.code === 6666)?.amount ?? 0;
+  return (
+    Math.abs(profitAndLossTotal - booksProfitBeforeTax) <=
+    roundingTolerance(countRoundedLines(profitAndLoss, 'profitAndLoss'))
+  );
+}
+
 const PROFIT_LOSS_CODES: ReadonlySet<number> = new Set(
   Object.keys(PROFIT_LOSS_CODE_NAMES).map(Number),
 );
@@ -351,11 +385,20 @@ export function retainedProfitFromProfitAndLoss(entries: readonly Shaam6111Entry
  * account. Retained earnings (9980) are therefore the balance of entities mapped to 9980
  * (opening balances, dividends booked against equity) plus the cumulative retained profit of the
  * P&L.
+ *
+ * Every line is rounded to the shekel on its own, so with agorot in the books the two sides can
+ * differ by a few shekels even when every entity is mapped. A difference that rounding can explain
+ * (see `roundingTolerance`) is absorbed in 9980; a larger one is left visible, since it means a
+ * balance is missing from one side.
+ *
+ * @param retainedProfitRoundedLines how many rounded P&L lines `cumulativeRetainedProfit` was
+ *   summed from, so their rounding counts toward the tolerance too
  */
 export function buildBalanceSheetEntries(
   netByEntity: ReadonlyMap<string, number>,
   irsCodeByEntity: ReadonlyMap<string, number>,
   cumulativeRetainedProfit: number,
+  retainedProfitRoundedLines = 0,
 ): Shaam6111Entry[] {
   const map = leafAmounts(
     netByEntity,
@@ -366,12 +409,30 @@ export function buildBalanceSheetEntries(
   );
   map.set(9980, (map.get(9980) ?? 0) + Math.round(cumulativeRetainedProfit));
   applyRules(map, BALANCE_SHEET_SUMMARY_RULES);
+
+  const roundingResidue = (map.get(8888) ?? 0) - (map.get(9999) ?? 0);
+  if (roundingResidue !== 0) {
+    const roundedLines =
+      countRoundedLines(toEntries(map, BALANCE_SHEET_CODE_NAMES), 'balanceSheet') +
+      retainedProfitRoundedLines;
+    if (Math.abs(roundingResidue) <= roundingTolerance(roundedLines)) {
+      map.set(9980, (map.get(9980) ?? 0) + roundingResidue);
+      applyRules(map, BALANCE_SHEET_SUMMARY_RULES);
+    }
+  }
   return toEntries(map, BALANCE_SHEET_CODE_NAMES);
 }
 
 export type Shaam6111TaxAdjustmentInputs = {
-  /** Accounting profit before tax, per the books (feeds code 100). */
+  /** Accounting profit before tax, per the books. */
   profitBeforeTax: number;
+  /**
+   * Profit before tax per the 6111 P&L lines (6666), when it differs from the books only by
+   * rounding (see `profitAndLossMatchesBooks`). Rule 3.7 requires 100 to equal 6666, so 100 takes
+   * it, and the rounding difference joins the other adjustments (190 / 200) so that 400 and 500
+   * still match the books. Without it, 100 is the books' profit.
+   */
+  profitAndLossTotal?: number;
   /** Current-year R&D expense booked in the P&L, as a positive add-back. */
   researchAndDevelopmentAddBack: number;
   /**
@@ -400,6 +461,7 @@ export type Shaam6111TaxAdjustmentInputs = {
  * - 150 עלייה/ירידה בהפרשה לחופשה והבראה: the year's change in those provisions
  * - 190 / 200 הוצאות / הכנסות אחרות לתיאום: the net section 20A R&D timing difference and
  *   non-deductible linkage expenses (an addition goes to 190, a deduction to 200)
+ * - 100 = 6666 when that only differs from the books by rounding; the difference joins 190 / 200
  * - 400 = 100 + 370, 500 = 400 − 430 − 480 + 490
  * - 510 הכנסה חייבת במס בשיעור מיוחד: taxable income at the preferred rate, when there is one
  */
@@ -418,10 +480,13 @@ export function buildTaxAdjustmentEntries(inputs: Shaam6111TaxAdjustmentInputs):
     otherAdjustments += excessExpenses;
     excessExpenses = 0;
   }
+  const accountingProfit = inputs.profitAndLossTotal ?? Math.round(inputs.profitBeforeTax);
+  // the books' profit is what the tax is computed on: carry the rounding difference along
+  otherAdjustments += inputs.profitBeforeTax - accountingProfit;
   const otherAdjustmentsRounded = Math.round(otherAdjustments);
 
   const map: CodeAmounts = new Map([
-    [100, Math.round(inputs.profitBeforeTax)],
+    [100, accountingProfit],
     [110, Math.round(excessExpenses)],
     [150, Math.round(inputs.reserves)],
     [190, Math.max(otherAdjustmentsRounded, 0)],
