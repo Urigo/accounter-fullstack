@@ -4,6 +4,7 @@ import {
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
+  rdInvestments,
   relatedCompanies,
 } from '../fixtures/builders.js';
 
@@ -366,6 +367,38 @@ describe('canonicalize', () => {
     it('removes an empty list, as the parser reads a report without 1010 records', () => {
       expect(canonicalize(minimalInput({ relatedCompanies: [] }), OPTIONS)).not.toHaveProperty(
         'relatedCompanies',
+      );
+    });
+  });
+
+  describe('R&D investments (records 1030)', () => {
+    it('keeps R&D investments, in input order', () => {
+      const investments = rdInvestments(5);
+      expect(canonicalize(minimalInput({ rdInvestments: investments }), OPTIONS)).toEqual({
+        ...minimalInput({ rdInvestments: investments }),
+        meta: { softwareName: 'ACCOUNTER', saveDate: TODAY },
+      });
+    });
+
+    it('normalizes the name, pads the file number, rounds the amount and keeps an amount of 0', () => {
+      const result = canonicalize(
+        minimalInput({
+          rdInvestments: [
+            { companyName: '  חברת\u00A0 מו"פ ', companyFileNumber: '12', investmentAmount: 99.5 },
+            { companyName: 'B', companyFileNumber: '000000000', investmentAmount: 0 },
+          ],
+        }),
+        { ...OPTIONS, rounding: 'halfUp' },
+      );
+      expect(result.rdInvestments).toEqual([
+        { companyName: 'חברת מו"פ', companyFileNumber: '000000012', investmentAmount: 100 },
+        { companyName: 'B', investmentAmount: 0 },
+      ]);
+    });
+
+    it('removes an empty list, as the parser reads a report without 1030 records', () => {
+      expect(canonicalize(minimalInput({ rdInvestments: [] }), OPTIONS)).not.toHaveProperty(
+        'rdInvestments',
       );
     });
   });
