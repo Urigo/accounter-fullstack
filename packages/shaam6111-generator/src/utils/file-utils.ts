@@ -1,8 +1,9 @@
+import { encodeReportFile } from '../generators/generate-report-file.js';
 import { generateReport } from '../generators/generate-report.js';
 import { parseReport } from '../parsers/index.js';
 import { ReportData } from '../types/index.js';
 import { validateReport } from '../validation/index.js';
-import { fromWindows1255, toWindows1255 } from './encoding.js';
+import { fromWindows1255 } from './encoding.js';
 
 /**
  * Converts a SHAAM6111 report to a file with proper Windows-1255 encoding.
@@ -27,10 +28,10 @@ export function convertReportToFile(
     reportString = generateReport(report, validate);
   }
 
-  // Convert the report string to Windows-1255 encoding
-  let encodedReport: Buffer;
+  // Frame the record (CR LF + EOF marker) and convert it to Windows-1255 encoding
+  let encodedReport: Uint8Array<ArrayBuffer>;
   try {
-    encodedReport = toWindows1255(reportString);
+    encodedReport = encodeReportFile(reportString);
   } catch (error) {
     throw new Error(`Failed to encode report to Windows-1255: ${(error as Error).message}`, {
       cause: error,
@@ -38,7 +39,7 @@ export function convertReportToFile(
   }
 
   // Create and return a File object with .dat extension
-  return new File([new Uint8Array(encodedReport)], fileName, {
+  return new File([encodedReport], fileName, {
     type: 'application/octet-stream',
   });
 }

@@ -5,6 +5,7 @@ import {
   AccountingMethod,
   AccountingSystem,
   AuditOpinionType,
+  BusinessType,
   CurrencyType,
   IfrsReportingOption,
   ReportingMethod,
@@ -56,16 +57,18 @@ import { DataField } from './data-field.js';
   }
 `;
 
-const getBusinessTypeText = (type: string) => {
+const getBusinessTypeText = (type: BusinessType) => {
   switch (type) {
-    case '1':
+    case BusinessType.Industrial:
       return 'תעשייתי';
-    case '2':
+    case BusinessType.Commercial:
       return 'מסחרי';
-    case '3':
+    case BusinessType.Service:
       return 'נותני שירותים';
-    case '99':
+    case BusinessType.Multiple:
       return 'הדיווח כולל יותר מעסק אחד';
+    case BusinessType.Combination:
+      return 'שילוב';
     default:
       return '';
   }

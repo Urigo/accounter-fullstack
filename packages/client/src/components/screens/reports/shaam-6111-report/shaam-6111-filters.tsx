@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../ui/select.js';
+import { getShaam6111AvailableYears } from './years.js';
 
 type Shaam6111FiltersProps = {
   selectedBusiness?: string;
@@ -28,8 +29,6 @@ type Shaam6111FiltersProps = {
   setReferenceYear: (year?: string) => void;
 };
 
-const availableYears = ['2020', '2021', '2022', '2023', '2024']; // TODO: replace with business-specific years
-
 export function Shaam6111Filters({
   selectedBusiness,
   setSelectedBusiness,
@@ -39,6 +38,10 @@ export function Shaam6111Filters({
   setReferenceYear,
 }: Shaam6111FiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(!selectedYear || !selectedBusiness);
+  const availableYears = useMemo(
+    () => getShaam6111AvailableYears(undefined, selectedYear),
+    [selectedYear],
+  );
   const {
     selectableAdminBusinesses: businesses,
     fetching: businessesLoading,
@@ -109,7 +112,6 @@ export function Shaam6111Filters({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500">זמינות נתונים: {availableYears.join(', ')}</p>
           </div>
 
           <div className="space-y-2">
@@ -128,14 +130,15 @@ export function Shaam6111Filters({
                 <SelectItem key="none" value="none">
                   ללא
                 </SelectItem>
-                {availableYears.map(year => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
+                {availableYears
+                  .filter(year => year !== selectedYear)
+                  .map(year => (
+                    <SelectItem key={year} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500">זמינות נתונים: {availableYears.join(', ')}</p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

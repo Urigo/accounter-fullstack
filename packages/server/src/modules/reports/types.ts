@@ -5,6 +5,7 @@ import type {
 } from '../../__generated__/types.js';
 import type { IGetChargesByIdsResult } from '../charges/types.js';
 import type { IGetLedgerRecordsByDatesResult } from '../ledger/types.js';
+import type { Shaam6111Issue } from './helpers/shaam6111-computation.helper.js';
 import type {
   IncompleteVatReportDocument,
   RawVatReportRecord,
@@ -122,4 +123,6 @@ export type VatReportResultProto = VatReportRecords & {
 export type Shaam6111ReportProto = {
   reportData: Shaam6111Data;
   businessId: string;
+  /** Diagnostics found while computing the report (mapping gaps, missing header data) */
+  issues: Shaam6111Issue[];
 };
