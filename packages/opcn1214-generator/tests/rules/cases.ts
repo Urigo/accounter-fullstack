@@ -8,7 +8,12 @@ import { getLayout } from '../../src/layout/registry.js';
 import type { PhonePrefix, Report1214Input, Shareholder } from '../../src/model/input.js';
 import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
-import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
+import {
+  minimalInput,
+  rdInvestments,
+  rdInvestmentsTotal,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 import {
   dropLine,
   goldenBytes,
@@ -345,6 +350,24 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
       minimalInput({ declarations: { tookReportablePosition: true, reportablePositions: [12] } }),
     path: 'declarations.reportablePositions',
   },
+  'main.rd.records': {
+    kind: 'input',
+    fail: () => minimalInput({ amounts: { '165': 250_000 } }),
+    pass: () =>
+      minimalInput({ rdInvestments: rdInvestments(1), amounts: { '165': rdInvestmentsTotal(1) } }),
+    path: 'amounts["165"]',
+  },
+  'main.rd.total': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({
+        rdInvestments: rdInvestments(2),
+        amounts: { '165': rdInvestmentsTotal(2) + 1 },
+      }),
+    pass: () =>
+      minimalInput({ rdInvestments: rdInvestments(2), amounts: { '165': rdInvestmentsTotal(2) } }),
+    path: 'amounts["165"]',
+  },
   'main.cgUntransmitted.reason': {
     kind: 'input',
     fail: () => minimalInput({ capitalGainsSummary: { untransmittedCount: 2 } }),
@@ -449,6 +472,14 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => withShareholderCount(100),
     pass: () => withShareholderCount(99),
     path: 'shareholders',
+  },
+  'struct.rdInvestments.max': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({ rdInvestments: rdInvestments(6), amounts: { '165': rdInvestmentsTotal(6) } }),
+    pass: () =>
+      minimalInput({ rdInvestments: rdInvestments(5), amounts: { '165': rdInvestmentsTotal(5) } }),
+    path: 'rdInvestments',
   },
   'main.bankAccount.format': {
     kind: 'input',

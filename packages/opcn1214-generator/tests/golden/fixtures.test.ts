@@ -6,6 +6,7 @@ import { getLayout } from '../../src/layout/registry.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import * as kibbutz from '../fixtures/golden/kibbutz.input.js';
 import * as mainFull from '../fixtures/golden/main-full.input.js';
+import * as relatedAndRd from '../fixtures/golden/related-and-rd.input.js';
 import { unmappedHeaderKeys } from '../helpers/coverage.js';
 
 const LAYOUT = getLayout(2024);
@@ -76,5 +77,48 @@ describe('golden kibbutz', () => {
     const parsed = parse1214(text);
     expect(parsed.issues).toEqual([]);
     expect(parsed.report.shareholders).toEqual([]);
+  });
+});
+
+describe('golden related-and-rd', () => {
+  const { input, options } = relatedAndRd;
+
+  it('is valid against every rule: no errors and no warnings', () => {
+    expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it('has 3 related companies and 5 R&D investments whose total is code 165', () => {
+    expect(input.relatedCompanies).toHaveLength(3);
+    expect(input.rdInvestments).toHaveLength(5);
+    const total = (input.rdInvestments ?? []).reduce(
+      (sum, investment) => sum + investment.investmentAmount,
+      0,
+    );
+    expect(input.amounts['165']).toBe(total);
+  });
+
+  it('writes 1000, 3 × 1010, 1020, 5 × 1030, 9999, counted at 9999@139 and @149', () => {
+    const { text } = generate1214(input, options);
+    const lines = linesOf(text);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1010',
+      '1010',
+      '1010',
+      '1020',
+      '1030',
+      '1030',
+      '1030',
+      '1030',
+      '1030',
+      '9999',
+    ]);
+    expect(lines[10]?.slice(138, 140)).toBe('03');
+    expect(lines[10]?.slice(148, 150)).toBe('05');
+    // 1030@137: affiliation 1 (company) on every record.
+    expect(lines.slice(5, 10).map(line => line.slice(136, 137))).toEqual(['1', '1', '1', '1', '1']);
+    const parsed = parse1214(text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.rdInvestments).toEqual(input.rdInvestments);
   });
 });

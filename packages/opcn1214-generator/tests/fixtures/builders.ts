@@ -3,7 +3,7 @@
  * against EVERY rule of SPEC §10 (no errors and no warnings); later steps rely on that, so any
  * change here has to keep it so.
  */
-import type { RelatedCompany, Report1214Input } from '../../src/model/input.js';
+import type { RdInvestment, RelatedCompany, Report1214Input } from '../../src/model/input.js';
 
 /** Overrides for a builder: objects merge recursively, arrays and other values replace. */
 export type DeepPartial<T> = T extends readonly unknown[]
@@ -173,4 +173,21 @@ export function relatedCompanies(count: number): RelatedCompany[] {
     relationType: RELATION_TYPES[index % RELATION_TYPES.length]!,
     assessingOfficeCode: 10 + index,
   }));
+}
+
+/**
+ * `count` valid R&D investments (SPEC §7.2), every member set to a value that is written to the
+ * file; the i-th (0-based) invests 100,000 × (i + 1). Their total is `rdInvestmentsTotal(count)`.
+ */
+export function rdInvestments(count: number): RdInvestment[] {
+  return Array.from({ length: count }, (_, index) => ({
+    companyName: `חברת מו"פ ${index + 1} בע"מ`,
+    companyFileNumber: String(520_000_001 + index),
+    investmentAmount: 100_000 * (index + 1),
+  }));
+}
+
+/** The total investment of `rdInvestments(count)`, the code 165 that matches it. */
+export function rdInvestmentsTotal(count: number): number {
+  return rdInvestments(count).reduce((sum, investment) => sum + investment.investmentAmount, 0);
 }

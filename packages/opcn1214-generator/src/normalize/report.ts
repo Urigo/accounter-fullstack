@@ -8,6 +8,7 @@ import type { Report1214Input } from '../model/input.js';
 import type { NormalizedReport } from '../model/normalized.js';
 import type { ValidateOptions } from '../model/options.js';
 import { normalizeMain } from './main.js';
+import { normalizeRdInvestments } from './rd-investments.js';
 import { normalizeRelatedCompanies } from './related-companies.js';
 import { normalizeShareholders } from './shareholders.js';
 
@@ -25,6 +26,7 @@ export function normalizeReport(
     main.record,
     ...normalizeRelatedCompanies(input.relatedCompanies ?? [], layout, options),
     ...normalizeShareholders(input.shareholders, layout, options),
+    ...normalizeRdInvestments(input.rdInvestments ?? [], layout, options),
   ];
   // Stable: records of one type keep their input order.
   records.sort((a, b) => layout.records[a.recordType].order - layout.records[b.recordType].order);

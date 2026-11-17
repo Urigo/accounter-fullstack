@@ -6,6 +6,7 @@ import { MAIN_RULES } from './main-rules.js';
 import { SHAREHOLDER_RULES } from './shareholder-rules.js';
 import {
   mainCodePairsMax,
+  rdInvestmentsMax,
   relatedCompaniesMax,
   shareholdersMax,
   shareholdersMin,
@@ -21,6 +22,7 @@ const STRUCTURE_RULES: readonly ReportRule[] = [
   relatedCompaniesMax,
   shareholdersMin,
   shareholdersMax,
+  rdInvestmentsMax,
 ];
 
 /** All issues of `report`: normalizer notices and stages 3–5 (no fail-fast), sorted (SPEC §9.1). */

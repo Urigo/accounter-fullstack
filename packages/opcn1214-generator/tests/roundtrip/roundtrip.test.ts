@@ -14,6 +14,8 @@ import {
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
+  rdInvestments,
+  rdInvestmentsTotal,
   relatedCompanies,
 } from '../fixtures/builders.js';
 
@@ -205,6 +207,32 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
   [
     'three related companies with the other relation types',
     minimalInput({ relatedCompanies: relatedCompanies(8).slice(5) }),
+    OPTIONS,
+  ],
+  ['no R&D investments (an empty list)', minimalInput({ rdInvestments: [] }), OPTIONS],
+  [
+    'five R&D investments with code 165 equal to their total',
+    minimalInput({ rdInvestments: rdInvestments(5), amounts: { '165': rdInvestmentsTotal(5) } }),
+    OPTIONS,
+  ],
+  [
+    'R&D investments, optional members written as absent or padded, an amount of 0',
+    minimalInput({
+      rdInvestments: [
+        { companyName: '  חברת\u00A0 מו"פ ', companyFileNumber: '77', investmentAmount: 1500 },
+        { companyName: 'R&D Ltd', companyFileNumber: '', investmentAmount: 0 },
+      ],
+      amounts: { '165': 1500 },
+    }),
+    OPTIONS,
+  ],
+  [
+    'three related companies and five R&D investments',
+    minimalInput({
+      relatedCompanies: relatedCompanies(3),
+      rdInvestments: rdInvestments(5),
+      amounts: { '165': rdInvestmentsTotal(5) },
+    }),
     OPTIONS,
   ],
   [

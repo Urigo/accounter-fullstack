@@ -13,6 +13,7 @@ const DERIVED_KEYS: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
   '1000': ['hasForeignAppendix'],
   '1010': ['serialNumber'],
   '1020': ['serialNumber'],
+  '1030': ['affiliation'],
 };
 
 const DERIVED_CODES: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
@@ -66,14 +67,16 @@ export function codeKey(code: string): string {
  *   marks (836 → `declarations.familyCompany`); a code maps to `amounts["018"]`.
  * - Record 1010: a header key maps to `relatedCompanies[i].<key>`.
  * - Record 1020: a header key maps to `shareholders[i].<key>`.
+ * - Record 1030: a header key maps to `rdInvestments[i].<key>`.
  * - Derived values have no input path and map to `''` (report level): derived header keys
- *   (1000@832 `hasForeignAppendix`, 1010@137 and 1020@137 `serialNumber`) and derived codes (SPEC §7.4: 008,
+ *   (1000@832 `hasForeignAppendix`, 1010@137 and 1020@137 `serialNumber`, 1030@137
+ *   `affiliation`) and derived codes (SPEC §7.4: 008,
  *   028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
  *   (1000@833 `declarations.hasCapitalGainsAppendix`) keeps that property's path.
  *   Every field of the control record 9999 is derived, so its keys map to `''` as well.
- * - Records whose input is not modelled yet (1030, 2000, 2200, 30xx) map to `''`, so the parser
- *   can report issues on them; steps E2 (1030), F1 (2000), F2 (2200) and G1–G5 (30xx) replace
- *   this with their input paths.
+ * - Records whose input is not modelled yet (2000, 2200, 30xx) map to `''`, so the parser can
+ *   report issues on them; steps F1 (2000), F2 (2200) and G1–G5 (30xx) replace this with their
+ *   input paths.
  */
 export function pathFor(recordType: RecordType, inputIndex: number, key: string): string {
   const isCode = key.startsWith(CODE_KEY_PREFIX);
@@ -90,8 +93,9 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
       return `relatedCompanies[${inputIndex}].${key}`;
     case '1020':
       return `shareholders[${inputIndex}].${key}`;
-    // No input mapping yet: replaced by steps E2, F1, F2 and G1–G5.
     case '1030':
+      return `rdInvestments[${inputIndex}].${key}`;
+    // No input mapping yet: replaced by steps F1, F2 and G1–G5.
     case '2000':
     case '2200':
     case '3027':
