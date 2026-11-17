@@ -149,10 +149,11 @@ const summaryValidations: Record<
   6666: {
     formula: cumulativeCodeValidationFormula(
       6666,
-      [1000, 5000, 5100, 5200],
-      [1300, 2000, 2500, 3000, 3500, 5300],
+      [1000, 5100, 5200],
+      [1300, 2000, 2500, 3000, 3500, 5000, 5300],
     ),
-    description: '1000-1300-2000-2500-3000-3500+5000+5100+5200-5300',
+    // Rule 3.1: financing expenses (5000) are subtracted, like every other expense total
+    description: '1000-1300-2000-2500-3000-3500-5000+5100+5200-5300',
   },
 };
 

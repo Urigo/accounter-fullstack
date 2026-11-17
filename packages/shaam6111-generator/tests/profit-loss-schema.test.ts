@@ -34,7 +34,8 @@ const validProfitLossRecords = [
   { code: 5250, amount: 100 },
   { code: 5300, amount: 300 },
   { code: 5390, amount: 300 },
-  { code: 6666, amount: -3100 },
+  // 5000 - 3000 - 2000 - 1000 - 1500 - 2500 - 1000 + 500 + 700 - 300
+  { code: 6666, amount: -5100 },
 ];
 
 describe('profitLossArraySchema', () => {
@@ -82,6 +83,22 @@ describe('profitLossArraySchema', () => {
     ];
     const result = profitLossArraySchema.safeParse(validRecordsWithSummary);
     expect(result.success).toBe(true);
+  });
+
+  it('should subtract financing expenses (5000) in profit before tax (6666), per rule 3.1', () => {
+    const records = [
+      { code: 1000, amount: 5000 },
+      { code: 1010, amount: 5000 },
+      { code: 5000, amount: 400 },
+      { code: 5010, amount: 400 },
+      { code: 6666, amount: 4600 },
+    ];
+    expect(profitLossArraySchema.safeParse(records).success).toBe(true);
+
+    const addedInsteadOfSubtracted = records.map(record =>
+      record.code === 6666 ? { ...record, amount: 5400 } : record,
+    );
+    expect(profitLossArraySchema.safeParse(addedInsteadOfSubtracted).success).toBe(false);
   });
 
   it('should fail validation for incorrect summary calculations', () => {
