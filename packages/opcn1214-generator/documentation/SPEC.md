@@ -250,36 +250,37 @@ After transmission SHAAM returns one line per report: file number (9), tax year 
   `0`. An absent optional numeric value is all zeros.
 - Alphanumeric fields: right-aligned, left-padded with spaces, per the literal reading of p.61
   ("משרשרים רווחים משמאל"). An absent optional alphanumeric value is all spaces. The alignment is a
-  single constant `ALPHANUMERIC_PAD_SIDE = 'left'` in `src/encode/primitives.ts`; it is the first
-  item to verify on shopcn (§15 A-1).
+  single constant `ALPHANUMERIC_PAD_SIDE = 'left'` in `src/codec/padding.ts`; it is the first item
+  to verify on shopcn (§15 A-1).
 - Empty strings and strings that are empty after normalization (§4.3) count as absent.
 
 ### 4.2 Kinds
 
 `kind` (column in `fields.csv` / `codes.csv`) determines input type, validation and encoding:
 
-| Kind                       | Input (TS)                                        | Encoding                                                                                                              | Notes                                 |
-| -------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `text`                     | `string`                                          | normalized text, alnum padding                                                                                        | ≤ width                               |
-| `hebrewText`               | `string`                                          | as `text`; first character must be a Hebrew letter א–ת (U+05D0–U+05EA)                                                | spec "חייב אות עברית ראשונה"          |
-| `id9`                      | `string` of 1–9 digits                            | numeric, zero-padded to 9                                                                                             | strings keep leading zeros            |
-| `shareholderId`            | `string` of 1–9 digits                            | as `id9`; `999999964` (not registered in Israel) and `999999998` (public holding) are valid special values            | p.23                                  |
-| `year`                     | `number` (4 digits)                               | numeric                                                                                                               | must equal the layout year            |
-| `num`                      | `number` (non-negative integer) or digit `string` | numeric                                                                                                               | counts, codes, branch/account numbers |
-| `amount`                   | `number`, integer ≥ 0 (ILS)                       | numeric                                                                                                               | `rounding` option, §4.4               |
-| `amountX`                  | `number`, integer ≥ 0                             | digits, **alnum** padding                                                                                             | 1000@1091 (type alphanumeric in spec) |
-| `amountX100`               | `number` ≥ 0, ≤ 2 decimals (ILS with agorot)      | `round(value × 100)`, numeric                                                                                         | "נשמר * 100 מערכו"                    |
-| `rateX100`                 | `23 \| 50` (percent)                              | value × 100 → `2300` / `5000`, numeric                                                                                | capital-gains code 018                |
-| `percentX100`              | `number` 1–100, ≤ 2 decimals                      | `round(value × 100)` digits, alnum padding (`10.23` → `1023`)                                                         | 1000@949 (§15 A-2)                    |
-| `percentLiteral`           | `number` 1–100, ≤ 2 decimals                      | integer → zero-padded (`100` → `00100`); otherwise `toFixed(2)` then zero-padded (`10.23` → `10.23`, `5.5` → `05.50`) | 1020@199/204/209 (§15 A-3)            |
-| `date`                     | ISO `YYYY-MM-DD` string                           | `DD/MM/YYYY` (10, alphanumeric)                                                                                       | must be a real calendar date          |
-| `flag`                     | `boolean`                                         | `true` → `1`, `false`/absent → `0`                                                                                    | spec "1 - סומן"                       |
-| `yesNo`                    | `boolean`                                         | `true` → `1`, `false` → `2`, absent → `0` (only allowed when not required)                                            | spec "1-כן 2-לא"                      |
-| `enum`                     | literal union (see §7)                            | mapped numeric value, numeric                                                                                         | allowed values in `values` column     |
-| `phonePrefix`              | one of the allowed prefixes                       | prefix digits; padding per field type (alnum for 493/503, numeric for 822)                                            | §15 A-19                              |
-| `foreignCode`              | 2000 code string                                  | numeric(3)                                                                                                            | 2200 header                           |
-| `serial`, `count`, `const` | — (derived)                                       | numeric                                                                                                               | §7.4                                  |
-| `filler`                   | —                                                 | `0`s (numeric) or spaces (alphanumeric)                                                                               |                                       |
+| Kind                       | Input (TS)                                   | Encoding                                                                                                              | Notes                                    |
+| -------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `text`                     | `string`                                     | normalized text, alnum padding                                                                                        | ≤ width                                  |
+| `hebrewText`               | `string`                                     | as `text`; first character must be a Hebrew letter א–ת (U+05D0–U+05EA)                                                | spec "חייב אות עברית ראשונה"             |
+| `id9`                      | `string` of 1–9 digits                       | numeric, zero-padded to 9                                                                                             | strings keep leading zeros               |
+| `shareholderId`            | `string` of 1–9 digits                       | as `id9`; `999999964` (not registered in Israel) and `999999998` (public holding) are valid special values            | p.23                                     |
+| `year`                     | `number` (4 digits)                          | numeric                                                                                                               | must equal the layout year               |
+| `num`                      | `number` (non-negative integer)              | numeric                                                                                                               | counts, office codes, position numbers   |
+| `digits`                   | digit `string` (identifier)                  | numeric, zero-padded; decoded as the full-width string                                                                | phone numbers, withholder branch/account |
+| `amount`                   | `number`, integer ≥ 0 (ILS)                  | numeric                                                                                                               | `rounding` option, §4.4                  |
+| `amountX`                  | `number`, integer ≥ 0                        | digits, **alnum** padding                                                                                             | 1000@1091 (type alphanumeric in spec)    |
+| `amountX100`               | `number` ≥ 0, ≤ 2 decimals (ILS with agorot) | `round(value × 100)`, numeric                                                                                         | "נשמר * 100 מערכו"                       |
+| `rateX100`                 | `23 \| 50` (percent)                         | value × 100 → `2300` / `5000`, numeric                                                                                | capital-gains code 018                   |
+| `percentX100`              | `number` 1–100, ≤ 2 decimals                 | `round(value × 100)` digits, alnum padding (`10.23` → `1023`)                                                         | 1000@949 (§15 A-2)                       |
+| `percentLiteral`           | `number` 1–100, ≤ 2 decimals                 | integer → zero-padded (`100` → `00100`); otherwise `toFixed(2)` then zero-padded (`10.23` → `10.23`, `5.5` → `05.50`) | 1020@199/204/209 (§15 A-3)               |
+| `date`                     | ISO `YYYY-MM-DD` string                      | `DD/MM/YYYY` (10, alphanumeric)                                                                                       | must be a real calendar date             |
+| `flag`                     | `boolean`                                    | `true` → `1`, `false`/absent → `0`                                                                                    | spec "1 - סומן"                          |
+| `yesNo`                    | `boolean`                                    | `true` → `1`, `false` → `2`, absent → `0` (only allowed when not required)                                            | spec "1-כן 2-לא"                         |
+| `enum`                     | literal union (see §7)                       | mapped numeric value, numeric                                                                                         | allowed values in `values` column        |
+| `phonePrefix`              | one of the allowed prefixes                  | prefix digits; padding per field type (alnum for 493/503, numeric for 822)                                            | §15 A-19                                 |
+| `foreignCode`              | 2000 code string                             | numeric(3)                                                                                                            | 2200 header                              |
+| `serial`, `count`, `const` | — (derived)                                  | numeric                                                                                                               | §7.4                                     |
+| `filler`                   | —                                            | `0`s (numeric) or spaces (alphanumeric)                                                                               |                                          |
 
 Allowed phone prefixes (p.6–7):
 `02 03 04 08 09 072 073 074 076 077 050 052 053 054 055 057 058 059`.
@@ -295,8 +296,10 @@ Applied to every `text`/`hebrewText` value, in order:
    control injection" is explicitly **dropped**: controls occupy bytes and would corrupt widths.)
 3. Replace: NBSP U+00A0 → space; TAB → space; “ ” „ → `"`; ‘ ’ → `'`; – — → `-`.
 4. Trim, then collapse runs of spaces into one.
-5. Any remaining character that is a control character (CR, LF, …) or is not representable in
-   windows-1255 ⇒ `field.charset` error (the value is not modified further).
+5. Any remaining character that is a control character (U+0000–U+001F, U+007F) or is not in the
+   windows-1255 code page ⇒ `field.charset` error (the value is not modified further). The encoding
+   helper itself only checks code-page membership (CR/LF of the line separators are valid bytes);
+   the "no control characters in text" check belongs to the rule.
 
 Hebrew stays in **logical order** (as typed). Geresh/gershayim (U+05F3/U+05F4) and niqqud are
 representable in windows-1255 and are kept. Length checks run on the normalized value.
@@ -380,14 +383,17 @@ packages/opcn1214-generator/
 │   ├── normalize/
 │   │   ├── text.ts                     ← §4.3
 │   │   ├── report.ts                   ← input → NormalizedReport (+ §7.4 derivations)
-│   │   └── denormalize.ts              ← NormalizedReport → input (parse path)
-│   ├── encode/
-│   │   ├── primitives.ts               ← one encoder per kind (§4.2)
-│   │   ├── record.ts                   ← prefix + header + section → line
-│   │   ├── code-amount.ts, country-amount.ts
-│   │   ├── file.ts                     ← ordering (§3.3), 9999, CRLF
-│   │   └── windows1255.ts              ← iconv-lite wrapper (encode/decode)
-│   ├── decode/                         ← inverse of encode/
+│   │   ├── paths.ts                    ← pathFor(recordType, index, key), shared with the parser
+│   │   ├── denormalize.ts              ← NormalizedReport → input (parse path)
+│   │   └── canonical.ts                ← canonicalize(input, options), §8.4
+│   ├── codec/                          ← paired encode/decode (D-1)
+│   │   ├── types.ts, padding.ts, registry.ts
+│   │   ├── numeric.ts, text.ts, date.ts, boolean.ts, enum.ts, percent.ts, phone.ts
+│   │   ├── sections.ts                 ← code-amount and country-amount sections
+│   │   ├── record.ts                   ← prefix + header + section ↔ line
+│   │   └── windows1255.ts              ← iconv-lite wrapper
+│   ├── file/                           ← control.ts (9999), assemble.ts, split.ts, parse.ts
+│   ├── pipeline.ts                     ← runPipeline: year → shape → normalize → rules
 │   ├── validate/
 │   │   ├── issue.ts                    ← Issue, paths, sorting
 │   │   ├── rules.ts                    ← RULES catalogue (metadata only)
@@ -477,7 +483,8 @@ export interface FieldDef {
   readonly length: number
   readonly type: 'numeric' | 'alphanumeric'
   readonly required: 'yes' | 'no' | 'conditional'
-  readonly key: string // canonical key; '(derived) x' keys are computed
+  readonly key: string // canonical key without the '(derived) ' prefix of the CSV
+  readonly derived: boolean // true for rows whose CSV key starts with '(derived) '
   readonly kind: FieldKind
   readonly values?: readonly EnumValue[]
   readonly nameHe: string
@@ -507,7 +514,7 @@ export interface RecordDef {
     kind: 'codeAmount' | 'countryAmount'
     start: number
     length: number
-    maxEntries: number
+    maxEntries: number // 1000: 61; 2200: 10; other records: their number of codes
   }
   readonly minOccurs: number
   readonly maxOccurs: number
@@ -1062,9 +1069,13 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
 2. For each line: check form type (`1214`), record type (known for the year), 128-zero prefix, exact
    length. The tax year is read from the first 1000 record's position 146 and selects the layout; a
    file that does not start with a 1000 record is rejected.
-3. Check record order (§3.3) and occurrence limits; split reports at each 9999 (batch).
-4. Decode header fields by layout (inverse of §4.2). Numeric fields must be all digits; alphanumeric
-   values are trimmed of padding spaces. Dates must be valid `DD/MM/YYYY` or all spaces.
+3. Check record order (§3.3) and the **maximum** occurrences (minimums are business rules, e.g.
+   `struct.shareholders.min`, so a kibbutz file without 1020 records parses); split reports at each
+   9999 (batch). A tax year outside `supportedTaxYears()` is reported as
+   `struct.taxYear.unsupported`.
+4. Decode header fields by layout (inverse of §4.2); header fillers are ignored (only positions
+   9–136 are checked). Numeric fields must be all digits; alphanumeric values are trimmed of padding
+   spaces. Dates must be valid `DD/MM/YYYY` or all spaces.
 5. Decode sections: read `code(3)` + value(width of that code) repeatedly; stop at the first
    position where the remaining text is all `0` (padding). An unknown code, a truncated entry or a
    non-zero tail is a parse error. Duplicate codes are a parse error.
@@ -1090,7 +1101,12 @@ Structural problems from steps 1–6 throw `Opcn1214ParseError` with every probl
 - text normalized (§4.3); optional properties that encode to the empty/zero value removed (`false`
   flags, absent yes/no, empty strings); `amounts` entries with value `0` for non `zeroAllowed` codes
   removed; derived values not present in the input;
-- `meta.saveDate` and `meta.softwareName` set to the values actually written.
+- `meta.saveDate` and `meta.softwareName` set to the values actually written
+  (`canonicalize(input, options)` takes the same options as generation, for `today`);
+- digit-string inputs of numeric fields (`id9`, `shareholderId`, `digits`) zero-padded to the field
+  width (`'12'` → `'012'` for a 3-digit branch);
+- optional numeric header values equal to `0` removed (exception: `amountX` 1000@1091, where 0 is
+  meaningful).
 
 Round-trip requirements (tested, §13.6):
 
@@ -1143,10 +1159,10 @@ export interface RuleMeta {
 }
 ```
 
-**Path grammar:** JavaScript-style access from the root of `Report1214Input`: dot for properties,
-`[n]` for array indexes, `["code"]` for map keys. Examples: `company.phone.prefix`,
-`shareholders[3].fullName`, `amounts["080"]`,
-`foreignAppendix.countryBreakdown["420"].countries[2].country`,
+**Path grammar:** JavaScript-style access from the root of `Report1214Input`: dot for identifier
+properties, `["…"]` for property names that are not identifiers (all code keys), `[n]` for array
+indexes, `["code"]` for map keys. Examples: `company.phone.prefix`, `shareholders[3].fullName`,
+`amounts["080"]`, `foreignAppendix.countryBreakdown["420"].countries[2].country`,
 `capitalGains[1].improvements[0].date`. Issues found while parsing use the path of the reconstructed
 input when one exists, plus `line`/`column`.
 
@@ -1163,11 +1179,22 @@ code → rule ID.
 | 4. Business  | `NormalizedReport`      | `main.*`, `shareholders.*`, `foreign.*`, `cg.*`         | no              |
 | 5. Structure | `NormalizedReport`      | `struct.*`                                              | no              |
 
-All issues from stages 3–5 are collected (no fail-fast). The zod schema is generated per year from
-the layout (code maps, enum literals) plus the hand-written object shapes of §7.2; zod issues are
-mapped to `input.shape` issues with the zod path converted to the path grammar above.
+All issues from stages 3–5 are collected (no fail-fast). The zod schema deliberately accepts any
+string for phone prefixes and country codes (the TS types are literal unions): those are checked by
+`field.phonePrefix` and `foreign.breakdown.country.unknown`, so the rules stay reachable for untyped
+callers. Before zod runs, keys of code maps that are unknown or derived are reported as
+`input.unknownCode` / `input.derivedCode` and removed, so they are not reported twice. zod's
+`unrecognized_keys` issues become one `input.shape` issue per key, with the key appended to the
+path. The zod schema is generated per year from the layout (code maps, enum literals) plus the
+hand-written object shapes of §7.2; zod issues are mapped to `input.shape` issues with the zod path
+converted to the path grammar above.
 
 ### 9.3 Generic field rules (stage 3)
+
+Repeated slots: header keys with an index (`withholders[2].name`, `improvements[0].date`,
+`walletAddresses[1]`, `declarations.reportablePositions[3]`) form slots. A `required=yes` field
+inside a slot is required only when the slot is in use, i.e. another key of the same slot has a
+value (D-12).
 
 For every header field and every code with a value, the engine applies the rules implied by its
 `FieldDef`/`CodeDef`: `required`, `kind`, `length`, `values`, `zeroAllowed`. Conditional
@@ -1184,69 +1211,67 @@ Severity: **E** = error (blocks generation), **W** = warning. Source: **spec** =
 
 ### 10.1 Input and structure
 
-| Rule ID                            | Sev | Source  | Condition (violation)                                                                                                           | Ref           |
-| ---------------------------------- | --- | ------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `struct.taxYear.unsupported`       | E   | derived | `taxYear` not in `supportedTaxYears()`                                                                                          | —             |
-| `input.shape`                      | E   | derived | wrong JS type, missing required property, unknown property, `null`, array too long (e.g. > 4 withholders, > 2 wallet addresses) | —             |
-| `input.unknownCode`                | E   | spec    | an `amounts` / `countryBreakdown` key that is not a code of that record for the year                                            | p.13, 27, 34+ |
-| `input.derivedCode`                | E   | derived | caller passed a derived code (008, 028, 273, 277, 278, 280, 297, 501–505)                                                       | §7.4          |
-| `struct.relatedCompanies.max`      | E   | spec    | more than 3 related companies                                                                                                   | p.2           |
-| `struct.shareholders.min`          | E   | spec    | no shareholders and `declarations.isKibbutz` is not true                                                                        | p.1, 21       |
-| `struct.shareholders.max`          | E   | spec    | more than 99 shareholders                                                                                                       | p.2, 21       |
-| `struct.rdInvestments.max`         | E   | spec    | more than 5 R&D investments                                                                                                     | p.2           |
-| `struct.foreignCountryRecords.max` | E   | spec    | more than 30 country-breakdown records in total                                                                                 | p.3, 30       |
-| `struct.capitalGains.max`          | E   | spec    | more than 14 capital-gains appendices                                                                                           | p.1, 32       |
-| `struct.mainCodePairs.max`         | E   | spec    | more than 61 code-amount pairs in record 1000 (after derivations)                                                               | p.13          |
-| `struct.section.overflow`          | E   | spec    | a code-amount or country section exceeds its length (guard; cannot happen with 2024 tables)                                     | p.13          |
-| `struct.batch.size`                | E   | spec    | batch with 0 or more than 50 reports                                                                                            | p.1           |
+| Rule ID                       | Sev | Source  | Condition (violation)                                                                                                           | Ref           |
+| ----------------------------- | --- | ------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `struct.taxYear.unsupported`  | E   | derived | `taxYear` not in `supportedTaxYears()`                                                                                          | —             |
+| `input.shape`                 | E   | derived | wrong JS type, missing required property, unknown property, `null`, array too long (e.g. > 4 withholders, > 2 wallet addresses) | —             |
+| `input.unknownCode`           | E   | spec    | an `amounts` / `countryBreakdown` key that is not a code of that record for the year                                            | p.13, 27, 34+ |
+| `input.derivedCode`           | E   | derived | caller passed a derived code (008, 028, 273, 277, 278, 280, 297, 501–505)                                                       | §7.4          |
+| `struct.relatedCompanies.max` | E   | spec    | more than 3 related companies                                                                                                   | p.2           |
+| `struct.shareholders.min`     | E   | spec    | no shareholders and `declarations.isKibbutz` is not true                                                                        | p.1, 21       |
+| `struct.shareholders.max`     | E   | spec    | more than 99 shareholders                                                                                                       | p.2, 21       |
+| `struct.rdInvestments.max`    | E   | spec    | more than 5 R&D investments                                                                                                     | p.2           |
+| `struct.capitalGains.max`     | E   | spec    | more than 14 capital-gains appendices                                                                                           | p.1, 32       |
+| `struct.mainCodePairs.max`    | E   | spec    | more than 61 code-amount pairs in record 1000 (after derivations)                                                               | p.13          |
+| `struct.batch.size`           | E   | spec    | batch with 0 or more than 50 reports                                                                                            | p.1           |
 
 ### 10.2 Generic field rules (apply to every field/code by layout)
 
-| Rule ID                   | Sev | Source  | Condition (violation)                                                                                                                                     | Ref            |
-| ------------------------- | --- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `field.required`          | E   | spec    | field/code with `required=yes` absent (for codes not `zeroAllowed`, `0` counts as absent)                                                                 | per field      |
-| `field.numeric`           | E   | spec    | numeric field (`id9`, `shareholderId`, `num`, phone number, bank/branch/account) contains non-digits                                                      | type column    |
-| `field.length`            | E   | spec    | normalized text longer than width, or number with more digits than width                                                                                  | length column  |
-| `field.integer`           | E   | spec    | `amount`/`amountX`/`num` not an integer (`rounding: 'reject'`)                                                                                            | p.13 "no dots" |
-| `field.decimals`          | E   | spec    | `amountX100`/`percentX100`/`percentLiteral` with more than 2 decimals                                                                                     | p.10, 23, 35   |
-| `field.negative`          | E   | spec    | negative number                                                                                                                                           | p.13           |
-| `field.enum`              | E   | spec    | value not in `values` (e.g. code 014 ∉ {1, 2, 12}; 018 ∉ 2..7; 1010 relation type ∉ 1..8)                                                                 | values column  |
-| `field.date`              | E   | spec    | not a valid ISO date (input) / `DD/MM/YYYY` (parse)                                                                                                       | date fields    |
-| `field.percentRange`      | E   | spec    | percentage outside 1–100                                                                                                                                  | p.10, 23       |
-| `field.hebrewFirstLetter` | E   | spec    | `hebrewText` value whose first character is not א–ת                                                                                                       | p.9, 23, 34 …  |
-| `field.charset`           | E   | derived | control character or character not representable in windows-1255 (after §4.3)                                                                             | §4.3           |
-| `field.phonePrefix`       | W/E | spec    | prefix not in the allowed list: **W** and the prefix is dropped (SHAAM deletes it, p.6), which then raises `field.required` (E) for the required 1000@493 | p.6–7          |
-| `field.phoneNumber`       | E   | derived | phone/fax number is not exactly 7 digits (shorter numbers would be silently zero-padded)                                                                  | p.6            |
-| `field.taxYear`           | E   | spec    | 1000@146 tax year has ≠ 4 digits (guard; equals the layout year by construction)                                                                          | p.5            |
+| Rule ID                   | Sev | Source  | Condition (violation)                                                                                                                                | Ref            |
+| ------------------------- | --- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `field.required`          | E   | spec    | field/code with `required=yes` absent (for codes not `zeroAllowed`, `0` counts as absent)                                                            | per field      |
+| `field.numeric`           | E   | spec    | numeric field (`id9`, `shareholderId`, `num`, phone number, bank/branch/account) contains non-digits                                                 | type column    |
+| `field.length`            | E   | spec    | normalized text longer than width, or number with more digits than width                                                                             | length column  |
+| `field.integer`           | E   | spec    | `amount`/`amountX`/`num` not an integer (`rounding: 'reject'`)                                                                                       | p.13 "no dots" |
+| `field.decimals`          | E   | spec    | `amountX100`/`percentX100`/`percentLiteral` with more than 2 decimals                                                                                | p.10, 23, 35   |
+| `field.negative`          | E   | spec    | negative number                                                                                                                                      | p.13           |
+| `field.enum`              | E   | spec    | kinds `enum` and `rateX100` only: value not in `values` (code 014 ∉ {1, 2, 12}; 018 ∉ 2..7; 30xx 018 ∉ {23, 50}; relation type ∉ 1..8)               | values column  |
+| `field.date`              | E   | spec    | not a valid ISO date (input) / `DD/MM/YYYY` (parse)                                                                                                  | date fields    |
+| `field.percentRange`      | E   | spec    | percentage outside 1–100                                                                                                                             | p.10, 23       |
+| `field.hebrewFirstLetter` | E   | spec    | `hebrewText` value whose first character is not א–ת                                                                                                  | p.9, 23, 34 …  |
+| `field.charset`           | E   | derived | control character or character not representable in windows-1255 (after §4.3)                                                                        | §4.3           |
+| `field.phonePrefix`       | W   | spec    | prefix not in the allowed list: the prefix is dropped (SHAAM deletes it, p.6); for the required 1000@493 the follow-up `field.required` is the error | p.6–7          |
+| `field.phoneNumber`       | E   | derived | phone/fax number is not exactly 7 digits (shorter numbers would be silently zero-padded)                                                             | p.6            |
 
 ### 10.3 Record 1000 — conditional and cross-field rules
 
-| Rule ID                                     | Sev | Source  | Condition (violation)                                                                                      | Ref      |
-| ------------------------------------------- | --- | ------- | ---------------------------------------------------------------------------------------------------------- | -------- |
-| `main.familyCompany.fileNumber`             | E   | spec    | family company (836) without the taxpayer file number (837)                                                | p.7      |
-| `main.familyCompany.code080`                | E   | spec    | family company (836) without code 080 (0 allowed)                                                          | p.15     |
-| `main.houseCompany.code084`                 | E   | spec    | house company (846) without code 084 (0 allowed)                                                           | p.15     |
-| `main.investmentLaw.flag`                   | E   | spec    | code 101 or 102 filled but 849 not marked                                                                  | p.8      |
-| `main.beneficiaryEnterprise.noticeDate`     | E   | spec    | 851 marked without 852 (guaranteed by the input type; checked for JS callers and parsed files)             | p.8      |
-| `main.specialYear.balanceSheetDate`         | E   | spec    | 863 marked without 864 (same as above)                                                                     | p.8      |
-| `main.kibbutz.code226`                      | E   | spec\*  | `isKibbutz` but code 226 not filled; **W** if 226 = 9 ("other cooperative, not kibbutz") while `isKibbutz` | p.9, 18  |
-| `main.buildingIncome.code259`               | E   | spec    | `hasBuildingIncome` (884 = 1) without code 259                                                             | p.9      |
-| `main.cgReasons.otherText`                  | E   | spec    | reason "other" (967) marked without text (968)                                                             | p.11     |
-| `main.reportablePositions.required`         | E   | spec    | `tookReportablePosition` (1030 = 1) and no position numbers                                                | p.11     |
-| `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                      | p.11     |
-| `main.reportablePositions.unexpected`       | W   | derived | positions given while `tookReportablePosition` is false                                                    | p.11     |
-| `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                           | p.17     |
-| `main.rd.total`                             | W   | derived | sum of 1030 investment amounts ≠ code 165                                                                  | p.17     |
-| `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while capital-gains appendices exist                      | p.7      |
-| `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                            | p.10–11  |
-| `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                             | p.10–11  |
-| `main.appendixTotal.min`                    | W   | derived | `totalAppendicesCount` (960) given and < transmitted appendices (2000 + 30xx) + `untransmittedCount`       | p.10     |
-| `main.bankAccount.withNoBank`               | W   | derived | `noBankAccount` (1064) and `bankAccount` both given                                                        | p.12, 19 |
-| `main.bankAccount.format`                   | E   | spec    | bank not 2 digits, branch not 3 digits, or account longer than 9 digits                                    | p.19     |
-| `main.qualifyingCompany.purchaseAmounts`    | W   | derived | `purchased` but neither purchase amount given                                                              | p.12     |
-| `main.qualifyingCompany.amortizationAmount` | W   | derived | `amortizationClaimed` but no amortization amount                                                           | p.12     |
-| `main.attachments.code070`                  | W   | derived | donation receipts count > 0 but code 070 absent                                                            | p.10     |
-| `main.attachments.code010`                  | W   | derived | withholding certificates count > 0 but code 010 absent                                                     | p.10     |
+| Rule ID                                     | Sev | Source  | Condition (violation)                                                                                | Ref      |
+| ------------------------------------------- | --- | ------- | ---------------------------------------------------------------------------------------------------- | -------- |
+| `main.familyCompany.fileNumber`             | E   | spec    | family company (836) without the taxpayer file number (837)                                          | p.7      |
+| `main.familyCompany.code080`                | E   | spec    | family company (836) without code 080 (0 allowed)                                                    | p.15     |
+| `main.houseCompany.code084`                 | E   | spec    | house company (846) without code 084 (0 allowed)                                                     | p.15     |
+| `main.investmentLaw.flag`                   | E   | spec    | code 101 or 102 filled but 849 not marked                                                            | p.8      |
+| `main.beneficiaryEnterprise.noticeDate`     | E   | spec    | 851 marked without 852 (guaranteed by the input type; checked for JS callers and parsed files)       | p.8      |
+| `main.specialYear.balanceSheetDate`         | E   | spec    | 863 marked without 864 (same as above)                                                               | p.8      |
+| `main.kibbutz.code226`                      | E   | spec\*  | `isKibbutz` but code 226 not filled                                                                  | p.9, 18  |
+| `main.kibbutz.code226Other`                 | W   | derived | code 226 = 9 ("other cooperative, not kibbutz") while `isKibbutz`                                    | p.18     |
+| `main.buildingIncome.code259`               | E   | spec    | `hasBuildingIncome` (884 = 1) without code 259                                                       | p.9      |
+| `main.cgReasons.otherText`                  | E   | spec    | reason "other" (967) marked without text (968)                                                       | p.11     |
+| `main.reportablePositions.required`         | E   | spec    | `tookReportablePosition` (1030 = 1) and no position numbers                                          | p.11     |
+| `main.reportablePositions.max`              | E   | spec    | more than 5 positions                                                                                | p.11     |
+| `main.reportablePositions.unexpected`       | W   | derived | positions given while `tookReportablePosition` is false                                              | p.11     |
+| `main.rd.records`                           | E   | spec    | code 165 > 0 but no 1030 records                                                                     | p.17     |
+| `main.rd.total`                             | W   | derived | sum of 1030 investment amounts ≠ code 165                                                            | p.17     |
+| `main.capitalGains.flag`                    | E   | derived | `declarations.hasCapitalGainsAppendix === false` while capital-gains appendices exist                | p.7      |
+| `main.cgUntransmitted.reason`               | W   | derived | `untransmittedCount > 0` and none of the reasons 964–967 marked                                      | p.10–11  |
+| `main.cgUntransmitted.reasonWithoutCount`   | W   | derived | a reason 964–967 marked while `untransmittedCount` is 0/absent                                       | p.10–11  |
+| `main.appendixTotal.min`                    | W   | derived | `totalAppendicesCount` (960) given and < transmitted appendices (2000 + 30xx) + `untransmittedCount` | p.10     |
+| `main.bankAccount.withNoBank`               | W   | derived | `noBankAccount` (1064) and `bankAccount` both given                                                  | p.12, 19 |
+| `main.bankAccount.format`                   | E   | spec    | bank not 2 digits, branch not 3 digits, or account longer than 9 digits                              | p.19     |
+| `main.qualifyingCompany.purchaseAmounts`    | W   | derived | `purchased` but neither purchase amount given                                                        | p.12     |
+| `main.qualifyingCompany.amortizationAmount` | W   | derived | `amortizationClaimed` but no amortization amount                                                     | p.12     |
+| `main.attachments.code070`                  | W   | derived | donation receipts count > 0 but code 070 absent                                                      | p.10     |
+| `main.attachments.code010`                  | W   | derived | withholding certificates count > 0 but code 010 absent                                               | p.10     |
 
 \* The spec text for 877 is "required in the case of a kibbutz and when field 226 is filled" (§15
 A-13).
@@ -1285,14 +1310,13 @@ and `values` columns.)
 | Rule ID                        | Sev | Source  | Condition (violation)                                                                        | Ref      |
 | ------------------------------ | --- | ------- | -------------------------------------------------------------------------------------------- | -------- |
 | `cg.improvements.max`          | E   | spec    | more than 5 improvements in a 3077 appendix (report the excess via 962 / reason 965 instead) | p.10, 55 |
-| `cg.improvements.date`         | E   | spec    | an improvement without its date (271/305/339/373/407)                                        | p.55–56  |
 | `cg.improvements.code50Amount` | W   | derived | an improvement without `code50Amount`, or a `code50Amount` with no expense/depreciation      | p.58     |
 | `cg.virtualCurrency.wallet`    | E   | spec    | 3077 with code 071 = 1 and no wallet address ("יש להכניס כתובת הארנק", p.57)                 | p.57     |
-| `cg.code018`                   | E   | spec    | rate code 018 not 23 or 50 (generic `field.enum` with a capital-gains message)               | p.36     |
 
-Required dates (3050 purchase date and code-15 date; 3051 code-15 date; 3054 purchase date and
-code-15 date; 3077 code-15 and code-20 dates) and required codes (3051: 071 = 1, 016) are
-`required=yes` in the layout and covered by `field.required`.
+Improvement dates (271/305/339/373/407) are covered by the slot-aware `field.required` (§9.3); the
+rate code 018 by `field.enum`. Required dates (3050 purchase date and code-15 date; 3051 code-15
+date; 3054 purchase date and code-15 date; 3077 code-15 and code-20 dates) and required codes (3051:
+071 = 1, 016) are `required=yes` in the layout and covered by `field.required`.
 
 ### 10.7 Parse-only rules (`Opcn1214ParseError` issues)
 
@@ -1305,7 +1329,7 @@ code-15 date; 3077 code-15 and code-20 dates) and required codes (3051: 071 = 1,
 | `parse.recordType`      | unknown record type                                                                                          |
 | `parse.prefixFiller`    | positions 9–136 not all `0`                                                                                  |
 | `parse.order`           | record out of the §3.3 order, or a second 1000 before a 9999                                                 |
-| `parse.occurrences`     | record count limits of §3.2 exceeded                                                                         |
+| `parse.occurrences`     | maximum record counts of §3.2 exceeded (minimums are business rules)                                         |
 | `parse.control.missing` | report not terminated by 9999                                                                                |
 | `parse.control.counts`  | 9999 counts differ from the records present                                                                  |
 | `parse.multipleReports` | `parse1214` given a batch (use `parse1214Batch`)                                                             |
@@ -1369,62 +1393,12 @@ const { bytes, fileName, warnings } = generate1214(input) // cannot throw valida
 
 ## 12. Implementation plan
 
-Each phase ends with green CI (`yarn workspace @accounter/opcn1214-generator build` + `test`) and
-its acceptance criteria met. Phases are sized for one PR each.
-
-### P0 — Layout foundation
-
-- [ ] `scripts/generate-layout.ts` (CSV → `layout.generated.ts` + `codes.generated.ts`); add
-      `generate:layout` script and `tsx` dev dependency.
-- [ ] `src/layout/types.ts`, `registry.ts`, `2024/`, `2025/index.ts` (re-export 2024).
-- [ ] Tests: layout integrity (§13.2), codegen sync, registry (2024/2025 ok, 2023/2026 rejected).
-- [ ] Replace the placeholder `src/index.ts`; remove `--passWithNoTests` from the `test` script
-      (added only so CI passes while the package has no tests).
-- **Accept:** every record of 2024 passes the integrity test; `getLayout(2025)` deep-equals 2024
-  except `taxYear`.
-
-### P1 — Minimal fileable report (1000 + 1020 + 9999)
-
-- [ ] `encode/primitives.ts` for every kind; `encode/windows1255.ts`; text normalization.
-- [ ] Input types and zod schema for the main record and shareholders; normalizer for 1000/1020.
-- [ ] Code-amount encoder; record encoder; file assembler with 9999; derivations of §7.4 that apply.
-- [ ] Rule engine with §10.1, §10.2, §10.3, §10.4 rules.
-- [ ] `validate1214`, `generate1214`, error classes, `RULES`.
-- [ ] Golden fixtures `minimal` and `main-full` (§13.5).
-- **Accept:** `minimal` passes shopcn (§13.8) and the result is recorded in
-  `tests/fixtures/golden/VERIFICATION.md`. Every alphanumeric-padding / percentage / line-ending
-  ambiguity (§15 A-1…A-5) resolved by that check and the defaults updated if needed.
-
-### P2 — Related companies and R&D (1010, 1030)
-
-- [ ] Types, normalizer, encoders, rules; golden `related-and-rd`.
-- **Accept:** shopcn passes for the golden file.
-
-### P3 — Foreign appendix (2000, 2200)
-
-- [ ] Country table, country-amount encoder, breakdown rules (§10.5); golden `foreign`.
-- **Accept:** shopcn passes; `-88` only accepted for code 439.
-
-### P4 — Capital gains (ten record types)
-
-- [ ] Discriminated-union types, per-type normalizers, appendix/sequence numbering, ×100 scaling,
-      §10.6 rules; one golden per type plus `capital-gains-max` (14 appendices).
-- **Accept:** shopcn passes for every golden file.
-
-### P5 — Parser and response file
-
-- [ ] `decode/*`, `parse1214`, canonicalization, `parse.*` rules, `parseResponseFile`.
-- [ ] Round-trip tests over all golden files (§13.6).
-- **Accept:** both round-trip properties hold for every golden file and every valid generated
-  fixture.
-
-### P6 — Batch, docs, release wiring
-
-- [ ] `generate1214Batch`, `parse1214Batch` (≤ 50 reports).
-- [ ] README with usage, error-handling example, rule table generated from `RULES`.
-- [ ] Changeset; add the package to root `build:tools`; root `tsconfig.json` path alias (as the
-      sibling generators have).
-- **Accept:** a 50-report batch generates and parses; README examples are executed by a test.
+The step-by-step plan, with one test-driven prompt per step, is
+[`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md). Phase mapping: P0 = Part A (layout), P1 = Parts
+B–D (codecs, walking skeleton incl. the parser, record 1000), P2 = Part E (1010, 1030), P3 = Part F
+(2000, 2200), P4 = Part G (capital gains), P5 + P6 = Part H (batches, response file, property tests,
+release). The parser is built with the first report (Part C) and every later step adds encoding and
+decoding together.
 
 ---
 
@@ -1465,13 +1439,15 @@ value for **every** non-filler key of `fields.csv`. This catches unmapped fields
 
 ### 13.4 Rules
 
-- `tests/rules/cases.ts` exports
-  `Record<RuleId, { pass: Report1214Input; fail: Report1214Input; path?: string }>` typed against
-  the `RuleId` union, so a missing rule is a compile error.
+- `tests/rules/cases.ts` exports `RULE_CASES: { [K in RuleId]: RuleCase }` (a missing case is a type
+  error). `RuleCase` is one of: `{ kind: 'input'; fail(): unknown; pass(): unknown }`
+  (validate1214), `{ kind: 'file'; fail(): string | Uint8Array; pass(): … }` (issues from
+  `parse1214(...).issues` or from a thrown `Opcn1214ParseError`), `{ kind: 'batch'; … }`
+  (`generate1214Batch`), each with optional `path`.
 - `rules.test.ts` iterates `RULES`: the `fail` case yields exactly that rule ID (at `path`, with the
   catalogued severity), the `pass` case does not.
-- `coverage.test.ts` asserts `RULES` and the §10 catalogue (rule IDs parsed from this document) are
-  the same set — the spec and the code cannot drift apart.
+- `spec-sync.test.ts` asserts `RULES` and the §10 catalogue (the first cell of each §10 table row)
+  are the same set — the spec and the code cannot drift apart.
 
 ### 13.5 Golden files
 
@@ -1487,9 +1463,10 @@ value for **every** non-filler key of `fields.csv`. This catches unmapped fields
 | `hebrew-edge`       | Hebrew with geresh/gershayim, niqqud, max-width names, typographic quotes (normalized)       |
 | `batch-50`          | 50 minimal reports                                                                           |
 
-Each golden `.opcn` file is committed **after** it passes shopcn. `VERIFICATION.md` logs date,
-checker result and any change made. A golden file may only change with a major version bump (§6.5)
-or before the first release.
+Each golden `.opcn` file is committed as PENDING and verified on shopcn at the next checkpoint;
+`VERIFICATION.md` records its sha256, which the golden test asserts, so a changed golden cannot pass
+unnoticed. `VERIFICATION.md` also logs date, checker result and any change made. A golden file may
+only change with a major version bump (§6.5) or before the first release.
 
 ### 13.6 Round trip and determinism
 
@@ -1518,9 +1495,12 @@ phone prefix on the numeric field 822 (padding as specified).
 
 ### 13.9 CI
 
-`.github/workflows/opcn1214-generator-test.yml` (already on the branch): Node 22/24/26,
-`yarn install --immutable`, `build` (lint + bob), `test`. The root `yarn test` also runs the unit
-tests.
+`.github/workflows/opcn1214-generator-test.yml`: Node 22/24/26, `yarn install --immutable`,
+`typecheck` (src + tests + scripts via `tsconfig.typecheck.json`), `build` (lint + bob), `test`.
+Locally use the package scripts (`yarn workspace @accounter/opcn1214-generator test --run`); the
+root `yarn test` also runs these tests but its global setup needs Postgres. Tests that read files
+(SPEC.md, CSVs, goldens) resolve paths with `new URL(…, import.meta.url)` because the root runner
+uses the repository root as working directory.
 
 ---
 
