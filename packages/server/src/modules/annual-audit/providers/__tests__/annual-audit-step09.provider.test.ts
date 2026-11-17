@@ -496,15 +496,7 @@ describe('AnnualAuditProvider — working templates (step 05)', () => {
     ]);
   });
 
-  it('sets one report working template, keeping the other slot', async () => {
-    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
-      makeStepRow({
-        step_id: '5',
-        status: 'IN_PROGRESS',
-        evidence_json: { balanceSheetTemplateName: 'bs-wip' },
-      }),
-    ]);
-
+  it('sets one report working template as a patch, without reading the row', async () => {
     await provider.setWorkingTemplate({
       ownerId: 'owner-1',
       year: 2025,
@@ -512,18 +504,14 @@ describe('AnnualAuditProvider — working templates (step 05)', () => {
       reportType: 'PROFIT_AND_LOSS',
     });
 
-    expect(pgTypedRuntimeMock.runMocks.getStepStatusRun).toHaveBeenCalledWith(
-      { ownerId: 'owner-1', year: 2025, stepId: '5' },
-      db,
-    );
+    // The merge happens in SQL, so overlapping calls for different reports can't drop each other
+    expect(pgTypedRuntimeMock.runMocks.getStepStatusRun).not.toHaveBeenCalled();
     expect(pgTypedRuntimeMock.runMocks.upsertStep05EvidenceRun).toHaveBeenCalledWith(
       {
         ownerId: 'owner-1',
         year: 2025,
-        evidenceJson: JSON.stringify({
-          balanceSheetTemplateName: 'bs-wip',
-          profitAndLossTemplateName: 'pnl-wip',
-        }),
+        patch: JSON.stringify({ profitAndLossTemplateName: 'pnl-wip' }),
+        removedKeys: [],
       },
       db,
     );
@@ -532,31 +520,23 @@ describe('AnnualAuditProvider — working templates (step 05)', () => {
   });
 
   it('sets both reports when reportType is omitted', async () => {
-    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([]);
-
     await provider.setWorkingTemplate({ ownerId: 'owner-1', year: 2025, templateName: 'wip' });
 
     expect(pgTypedRuntimeMock.runMocks.upsertStep05EvidenceRun).toHaveBeenCalledWith(
       {
         ownerId: 'owner-1',
         year: 2025,
-        evidenceJson: JSON.stringify({
+        patch: JSON.stringify({
           balanceSheetTemplateName: 'wip',
           profitAndLossTemplateName: 'wip',
         }),
+        removedKeys: [],
       },
       db,
     );
   });
 
-  it('clears one report working template without inheriting the other', async () => {
-    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
-      makeStepRow({
-        step_id: '5',
-        evidence_json: { balanceSheetTemplateName: 'bs-wip', profitAndLossTemplateName: 'pnl-wip' },
-      }),
-    ]);
-
+  it('clears one report working template by removing only its key', async () => {
     await provider.setWorkingTemplate({
       ownerId: 'owner-1',
       year: 2025,
@@ -569,7 +549,8 @@ describe('AnnualAuditProvider — working templates (step 05)', () => {
       {
         ownerId: 'owner-1',
         year: 2025,
-        evidenceJson: JSON.stringify({ profitAndLossTemplateName: 'pnl-wip' }),
+        patch: JSON.stringify({}),
+        removedKeys: ['balanceSheetTemplateName'],
       },
       db,
     );

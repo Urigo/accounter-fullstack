@@ -9,11 +9,11 @@ import {
   assignTemplateSlot,
   readTemplateSlots,
   templateSlotsToEvidence,
-  type TemplateSlots,
 } from '../helpers/template-slots.helper.js';
 import type {
   AnnualAuditOpeningBalanceStatusResult,
   AnnualAuditOpeningBalanceUserType,
+  AnnualAuditReportType,
   AnnualAuditStepStatus,
   AnnualAuditStepStatusResult,
   IGetBalanceChargeQuery,
@@ -105,13 +105,19 @@ const resetStep09ForTemplate = sql<IResetStep09ForTemplateQuery>`
     );
 `;
 
-/** Writes step 05 (working templates) evidence; status and notes are left as they are. */
+/**
+ * Merges working-template changes into step 05 evidence in one statement: drops the cleared keys,
+ * then sets the patched ones. Other keys, the status and the notes are left as they are, and two
+ * overlapping calls for different reports can't overwrite each other.
+ */
 const upsertStep05Evidence = sql<IUpsertStep05EvidenceQuery>`
   INSERT INTO accounter_schema.annual_audit_step_status
     (owner_id, year, step_id, status, evidence_json)
-  VALUES ($ownerId, $year, '5', 'PENDING', $evidenceJson::jsonb)
+  VALUES ($ownerId, $year, '5', 'PENDING', $patch::jsonb)
   ON CONFLICT (owner_id, year, step_id) DO UPDATE
-    SET evidence_json = EXCLUDED.evidence_json
+    SET evidence_json =
+      (COALESCE(annual_audit_step_status.evidence_json, '{}'::jsonb) - $removedKeys::text[])
+      || EXCLUDED.evidence_json
   RETURNING owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at;
 `;
 
@@ -185,6 +191,12 @@ const getBalanceCharge = sql<IGetBalanceChargeQuery>`
     AND l.min_value_date <= make_date($year, 12, 31)
     AND l.max_value_date >= make_date($year, 12, 31)
     AND user_description ILIKE '%balance%'`;
+
+/** Step 05 evidence keys holding each report's working template. */
+const WORKING_TEMPLATE_KEYS: ReadonlyArray<{ reportType: AnnualAuditReportType; key: string }> = [
+  { reportType: 'BALANCE_SHEET', key: 'balanceSheetTemplateName' },
+  { reportType: 'PROFIT_AND_LOSS', key: 'profitAndLossTemplateName' },
+];
 
 @Injectable({
   scope: Scope.Operation,
@@ -393,22 +405,17 @@ export class AnnualAuditProvider {
       }
     }
 
-    const [existing] = await getStepStatus.run({ ownerId, year, stepId: '5' }, this.db);
-    const current = this.readWorkingSlots(existing?.evidence_json);
-    const next = assignTemplateSlot(current, templateName, reportType);
+    // Set the chosen report(s) to the template, or clear them, without reading the row first
+    const keys = WORKING_TEMPLATE_KEYS.filter(
+      ({ reportType: keyReportType }) => !reportType || keyReportType === reportType,
+    ).map(({ key }) => key);
+    const patch = templateName ? Object.fromEntries(keys.map(key => [key, templateName])) : {};
+    const removedKeys = templateName ? [] : keys;
 
-    // Keep any unrelated evidence keys step 05 may carry
-    const otherEvidence =
-      existing?.evidence_json && typeof existing.evidence_json === 'object'
-        ? Object.fromEntries(
-            Object.entries(existing.evidence_json as Record<string, unknown>).filter(
-              ([key]) => key !== 'balanceSheetTemplateName' && key !== 'profitAndLossTemplateName',
-            ),
-          )
-        : {};
-    const evidenceJson = JSON.stringify({ ...otherEvidence, ...templateSlotsToEvidence(next) });
-
-    const [row] = await upsertStep05Evidence.run({ ownerId, year, evidenceJson }, this.db);
+    const [row] = await upsertStep05Evidence.run(
+      { ownerId, year, patch: JSON.stringify(patch), removedKeys },
+      this.db,
+    );
     if (!row) {
       throw new Error('Failed to save annual audit working template');
     }
@@ -427,19 +434,6 @@ export class AnnualAuditProvider {
   /** Forgets a deleted dynamic report template in every year's working templates. */
   public async removeWorkingTemplate(ownerId: string, templateName: string): Promise<void> {
     await removeWorkingTemplate.run({ ownerId, templateName }, this.db);
-  }
-
-  /**
-   * Working slots are stored explicitly — unlike final templates, an unset working slot must not be
-   * filled from the other one, so clearing one report's working template doesn't silently keep it.
-   */
-  private readWorkingSlots(evidence: unknown): TemplateSlots {
-    const raw = (evidence ?? {}) as Record<string, unknown>;
-    const pick = (value: unknown) => (typeof value === 'string' && value ? value : null);
-    return {
-      balanceSheet: pick(raw.balanceSheetTemplateName),
-      profitAndLoss: pick(raw.profitAndLossTemplateName),
-    };
   }
 
   private mapStepStatusRow(r: {

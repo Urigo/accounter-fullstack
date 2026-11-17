@@ -135,17 +135,18 @@ function createContext(userId: string, { ownerId = TEST_OWNER_ID, roleId = 'acco
         auth0UserId === USER_1_AUTH0_ID ? { name: USER_1_NAME, email: 'grace@example.com' } : null,
       ),
   } as unknown as Auth0ManagementProvider;
+  // One operation-scoped DB client shared by the report providers, as in a real request, so a
+  // resolver's transaction() covers every provider call inside it
+  const db = createDbClient(ownerId);
+  const reportProvider = new DynamicReportProvider(db, createMockAdminContextProvider(ownerId));
   const services = new Map<unknown, unknown>([
+    [TenantAwareDBClient, db],
     [DynamicReportCommentsProvider, createCommentsProvider(ownerId)],
-    [DynamicReportProvider, createReportProvider(ownerId)],
+    [DynamicReportProvider, reportProvider],
     // Template rename/delete keep annual audit working-template pointers in sync through it
     [
       AnnualAuditProvider,
-      new AnnualAuditProvider(
-        createMockAdminContextProvider(ownerId),
-        createReportProvider(ownerId),
-        createDbClient(ownerId),
-      ),
+      new AnnualAuditProvider(createMockAdminContextProvider(ownerId), reportProvider, db),
     ],
     [
       BusinessUsersProvider,
@@ -919,6 +920,27 @@ describe('template lifecycle', () => {
       {},
     );
     expect(await workingEvidence()).toEqual({ profitAndLossTemplateName: 'other-template' });
+  });
+
+  it('a failed working-template sync rolls the template delete back', async () => {
+    vi.spyOn(AnnualAuditProvider.prototype, 'removeWorkingTemplate').mockRejectedValue(
+      new Error('sync failed'),
+    );
+
+    await expect(
+      reportMutations.deleteDynamicReportTemplate(
+        {},
+        { name: TEMPLATE_NAME },
+        createContext(USER_1),
+        {},
+      ),
+    ).rejects.toThrow();
+
+    const { rows } = await pool.query(
+      'SELECT name FROM accounter_schema.dynamic_report_templates WHERE owner_id = $1 AND name = $2',
+      [TEST_OWNER_ID, TEMPLATE_NAME],
+    );
+    expect(rows).toHaveLength(1);
   });
 
   it('Save as new (insertDynamicReportTemplate) starts with no threads', async () => {
