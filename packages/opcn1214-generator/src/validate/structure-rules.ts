@@ -22,3 +22,52 @@ export function mainCodePairsMax(report: NormalizedReport): Issue[] {
       }),
     );
 }
+
+/** Most shareholders (1020 records) in a report (p.2, p.21). */
+const MAX_SHAREHOLDERS = 99;
+
+function shareholderCount(report: NormalizedReport): number {
+  return report.records.filter(record => record.recordType === '1020').length;
+}
+
+/**
+ * struct.shareholders.min: no shareholders while the company is not a kibbutz (p.1, p.21); a
+ * kibbutz may report none.
+ */
+export function shareholdersMin(report: NormalizedReport): Issue[] {
+  const isKibbutz = report.records.some(
+    record => record.recordType === '1000' && record.values['declarations.isKibbutz'] === true,
+  );
+  if (isKibbutz || shareholderCount(report) > 0) {
+    return [];
+  }
+  return [
+    makeIssue('struct.shareholders.min', {
+      message:
+        'The report has no shareholders; only a kibbutz (declarations.isKibbutz) may have none.',
+      path: 'shareholders',
+      recordType: '1020',
+      value: 0,
+      expected: 'at least 1',
+      specRef: { page: 21 },
+    }),
+  ];
+}
+
+/** struct.shareholders.max: more than 99 shareholders (p.2, p.21). */
+export function shareholdersMax(report: NormalizedReport): Issue[] {
+  const count = shareholderCount(report);
+  if (count <= MAX_SHAREHOLDERS) {
+    return [];
+  }
+  return [
+    makeIssue('struct.shareholders.max', {
+      message: `The report has ${count} shareholders; at most ${MAX_SHAREHOLDERS} are allowed.`,
+      path: 'shareholders',
+      recordType: '1020',
+      value: count,
+      expected: `at most ${MAX_SHAREHOLDERS}`,
+      specRef: { page: 21 },
+    }),
+  ];
+}
