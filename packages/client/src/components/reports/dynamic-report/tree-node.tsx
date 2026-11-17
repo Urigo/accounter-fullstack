@@ -340,8 +340,12 @@ export function TreeNodeRow({
       </div>
 
       {isExpanded && !isGhost && (
+        // `contain-inline-size` keeps the ledger table out of the tree's `min-w-max` sizing (in
+        // tree-panel.tsx). Without it the whole tree grows to the table's unwrapped width, so its
+        // cells never wrap and the tree scrolls sideways. The panel takes the tree's width, and
+        // its own `overflow-x-auto` only kicks in if the table can't fit even when wrapped.
         <div
-          className="bg-muted/30 border-b border-border/50 py-2 overflow-x-auto"
+          className="bg-muted/30 border-b border-border/50 py-2 overflow-x-auto contain-inline-size"
           style={{ paddingInlineStart: `${indentPx + 32}px`, paddingInlineEnd: '8px' }}
         >
           <BusinessExtendedInfo businessID={node.id} filter={ledgerFilter} />
