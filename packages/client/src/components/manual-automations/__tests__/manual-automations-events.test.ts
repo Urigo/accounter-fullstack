@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CronJobStep, CronJobStepState } from '../../../gql/graphql.js';
 import {
+  AUTOMATION_STEPS,
   groupAutomationEvents,
   summarizeAutomationEvents,
   type ManualAutomationsRunEvent,
@@ -51,7 +52,8 @@ describe('groupAutomationEvents', () => {
   it('reports steps without a status as pending', () => {
     const { steps } = groupAutomationEvents([]);
 
-    expect(Object.values(steps).map(step => step.state)).toEqual(['PENDING', 'PENDING', 'PENDING']);
+    expect(Object.values(steps).map(step => step.state)).toEqual(AUTOMATION_STEPS.map(() => 'PENDING'));
+    expect(Object.keys(steps)).toEqual([...AUTOMATION_STEPS]);
   });
 
   it('keeps the latest status of each step and collects the changes', () => {
