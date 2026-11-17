@@ -301,6 +301,7 @@ export const paymentReceiptsSchema = z
             'brex',
             'coinbase',
             'client_balance',
+            'dbc_credits',
             'eor_funding_balance',
             'fee_credits',
             'go_cardless',
@@ -314,8 +315,6 @@ export const paymentReceiptsSchema = z
             'stripe_sepa_debit',
             'transferwise',
           ])
-          // Deel adds payment methods over time; an unknown one must not fail the whole fetch
-          .or(z.string())
           .optional(),
       })
       .optional()

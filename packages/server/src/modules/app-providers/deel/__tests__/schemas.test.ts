@@ -41,11 +41,17 @@ describe('retrievePaymentReceiptsSchema', () => {
     expect(() => retrievePaymentReceiptsSchema.parse(payload())).not.toThrow();
   });
 
-  it('accepts a payment method type Deel added after the enum was written', () => {
+  it('accepts the dbc_credits payment method', () => {
     const parsed = retrievePaymentReceiptsSchema.parse(
-      payload({ payment_method: { type: 'some_new_method' } }),
+      payload({ payment_method: { type: 'dbc_credits' } }),
     );
-    expect(parsed.data.rows[0].payment_method?.type).toBe('some_new_method');
+    expect(parsed.data.rows[0].payment_method?.type).toBe('dbc_credits');
+  });
+
+  it('rejects an unknown payment method type', () => {
+    expect(() =>
+      retrievePaymentReceiptsSchema.parse(payload({ payment_method: { type: 'some_new_method' } })),
+    ).toThrow();
   });
 
   it('accepts a worker without an id', () => {
