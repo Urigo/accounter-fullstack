@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card.js';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../ui/empty.js';
 import { Spinner } from '../ui/spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { canRunManualAutomations } from './manual-automations-access.js';
 import {
   groupAutomationEvents,
   summarizeAutomationEvents,
@@ -276,6 +277,10 @@ function TransactionsTable({
   );
 }
 
+const PAGE_TITLE = 'Manual Automations';
+const PAGE_DESCRIPTION =
+  'Flag foreign transfer fees, merge charges that share a transaction reference, fill missing credit card debit dates, and pull Deel documents';
+
 type ManualAutomationsViewProps = {
   /** True from the moment the run starts until its last streamed event arrives. */
   running: boolean;
@@ -284,6 +289,8 @@ type ManualAutomationsViewProps = {
   onRun: () => void;
   /** The admin business, whose Admin Config tab is where Deel gets connected */
   adminBusinessId?: string | null;
+  /** False when the server would refuse the run; the screen then explains instead of offering it. */
+  canRun?: boolean;
 };
 
 /** The manual automations screen, driven by props, so its states can be rendered without a server. */
@@ -292,6 +299,7 @@ export function ManualAutomationsView({
   events,
   onRun,
   adminBusinessId,
+  canRun = true,
 }: ManualAutomationsViewProps): ReactElement {
   const { steps, flaggedFees, mergedCharges, filledDebitDates, deelCharges } = useMemo(
     () => groupAutomationEvents(events),
@@ -299,10 +307,25 @@ export function ManualAutomationsView({
   );
   const hasRun = running || events.length > 0;
 
+  if (!canRun) {
+    return (
+      <PageLayout title={PAGE_TITLE} description={PAGE_DESCRIPTION}>
+        <Alert>
+          <AlertTitle>Only business owners can run automations</AlertTitle>
+          <AlertDescription>
+            Running the manual automations requires the business owner role in the selected
+            business. Ask a business owner to run them, or, if you own one of your businesses,
+            narrow the business scope to it.
+          </AlertDescription>
+        </Alert>
+      </PageLayout>
+    );
+  }
+
   return (
     <PageLayout
-      title="Manual Automations"
-      description="Flag foreign transfer fees, merge charges that share a transaction reference, fill missing credit card debit dates, and pull Deel documents"
+      title={PAGE_TITLE}
+      description={PAGE_DESCRIPTION}
       headerActions={
         <ConfirmationModal
           onConfirm={onRun}
@@ -394,6 +417,7 @@ export function ManualAutomations(): ReactElement {
       events={events}
       onRun={() => void runJobs()}
       adminBusinessId={userContext?.context.adminBusinessId}
+      canRun={canRunManualAutomations(userContext?.context)}
     />
   );
 }

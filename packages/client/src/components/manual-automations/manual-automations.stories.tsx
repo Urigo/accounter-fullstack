@@ -261,6 +261,11 @@ type Story = StoryObj<typeof meta>;
 /** Before the first run of the session. */
 export const NotRunYet: Story = {};
 
+/** A user without the business owner role, whom the server would refuse. */
+export const NotAllowed: Story = {
+  args: { canRun: false },
+};
+
 /** Mid-run: fees are done, merges are streaming in, debit dates have not started. */
 export const Running: Story = {
   args: {

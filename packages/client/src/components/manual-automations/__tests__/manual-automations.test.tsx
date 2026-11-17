@@ -22,16 +22,23 @@ let container: HTMLDivElement | null = null;
 
 async function renderManualAutomations(
   state: { running: boolean; events: ManualAutomationsRunEvent[] },
-  { adminBusinessId }: { adminBusinessId?: string } = {},
+  {
+    adminBusinessId = 'business-admin',
+    role = 'business_owner',
+  }: { adminBusinessId?: string; role?: string } = {},
 ) {
   useRunManualAutomationsMock.mockReturnValue({ ...state, error: undefined, runJobs: vi.fn() });
   container = document.createElement('div');
   document.body.append(container);
   await act(async () => {
     root = createRoot(container!);
-    const userContext = adminBusinessId
-      ? ({ context: { adminBusinessId } } as unknown as UserInfo)
-      : null;
+    const userContext = {
+      context: {
+        adminBusinessId,
+        activeReadScope: [adminBusinessId],
+        memberships: [{ businessId: adminBusinessId, role }],
+      },
+    } as unknown as UserInfo;
     root.render(
       <UserContext.Provider value={{ userContext, setUserContext: () => void 0 }}>
         <MemoryRouter>{React.createElement(ManualAutomations)}</MemoryRouter>
@@ -195,5 +202,23 @@ describe('ManualAutomations screen', () => {
     );
     expect(setupLink?.textContent).toBe('Connect it in Admin Config');
     expect(page.querySelector('[aria-label="Not configured"]')).not.toBeNull();
+  });
+
+  it('explains instead of offering a run to a non-owner', async () => {
+    const page = await renderManualAutomations(
+      { running: false, events: [] },
+      { role: 'accountant' },
+    );
+
+    expect(page.textContent).toContain('Only business owners can run automations');
+    expect(page.textContent).not.toContain('Run automations');
+    expect(page.textContent).not.toContain('No run yet');
+  });
+
+  it('offers the run to a business owner', async () => {
+    const page = await renderManualAutomations({ running: false, events: [] });
+
+    expect(page.textContent).toContain('Run automations');
+    expect(page.textContent).not.toContain('Only business owners');
   });
 });
