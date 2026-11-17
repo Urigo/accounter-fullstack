@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useClient } from 'urql';
 import { Shaam6111FileDocument } from '../../../../gql/graphql.js';
 import { downloadFile } from '../../../../helpers/files.js';
+import { SUPPRESS_ERROR_TOAST_CONTEXT } from '../../../../providers/urql-error-handler.js';
 import { Button } from '../../../ui/button.js';
 import { Spinner } from '../../../ui/spinner.js';
 
@@ -49,14 +50,21 @@ export function Shaam6111DownloadButton({ year, businessId, disabled }: Props): 
         .query(
           Shaam6111FileDocument,
           { year, businessId },
-          // the file reflects the current books: never serve it from cache
-          { requestPolicy: 'network-only' },
+          // This button reports its own failure: skip the client-wide error toast so a failed
+          // download (e.g. books changed since the panel loaded) shows one toast, not two. The
+          // file reflects the current books, so it is never served from a cache.
+          { ...SUPPRESS_ERROR_TOAST_CONTEXT, requestPolicy: 'network-only' },
         )
         .toPromise();
+      // `file` is null (with an error) while the report has blocking validation issues
       const file = data?.shaam6111.file;
       if (error || !file) {
         toast.error('Error', {
-          description: error?.message ?? 'Failed to generate the 6111 file',
+          // the GraphQL message, without urql's "[GraphQL] " / "[Network] " prefix
+          description:
+            error?.graphQLErrors[0]?.message ??
+            error?.networkError?.message ??
+            'Failed to generate the 6111 file',
         });
         return;
       }
@@ -70,16 +78,18 @@ export function Shaam6111DownloadButton({ year, businessId, disabled }: Props): 
     }
   }, [client, year, businessId]);
 
+  // The title sits on a wrapper: a disabled button has `pointer-events: none` and never shows it
   return (
-    <Button
-      variant="outline"
-      className="flex items-center gap-2"
-      onClick={download}
-      disabled={disabled || fetching}
-      title={disabled ? 'Resolve the blocking issues to download the file' : undefined}
-    >
-      {fetching ? <Spinner /> : <Download className="h-4 w-4" />}
-      הורד קובץ
-    </Button>
+    <span title={disabled ? 'Resolve the blocking issues to download the file' : undefined}>
+      <Button
+        variant="outline"
+        className="flex items-center gap-2"
+        onClick={download}
+        disabled={disabled || fetching}
+      >
+        {fetching ? <Spinner /> : <Download className="h-4 w-4" />}
+        הורד קובץ
+      </Button>
+    </span>
   );
 }
