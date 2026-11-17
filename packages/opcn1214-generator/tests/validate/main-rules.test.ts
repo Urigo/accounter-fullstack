@@ -312,3 +312,207 @@ describe('record 1000 conditional requirements (SPEC §10.3)', () => {
     });
   });
 });
+
+describe('record 1000 consistency warnings (SPEC §10.3)', () => {
+  const D5_RULES: readonly RuleId[] = [
+    'main.kibbutz.code226Other',
+    'main.reportablePositions.unexpected',
+    'main.cgUntransmitted.reason',
+    'main.cgUntransmitted.reasonWithoutCount',
+    'main.bankAccount.withNoBank',
+    'main.qualifyingCompany.purchaseAmounts',
+    'main.qualifyingCompany.amortizationAmount',
+    'main.attachments.code070',
+    'main.attachments.code010',
+  ];
+
+  it.each([
+    ['minimalInput', minimalInput()],
+    ['fullDeclarationsInput', fullDeclarationsInput()],
+    ['fullMainInput', fullMainInput()],
+  ])('%s raises none of them', (_, input) => {
+    const issues = runPipeline(input, OPTIONS).issues;
+    expect(issues.filter(issue => D5_RULES.includes(issue.ruleId))).toEqual([]);
+  });
+
+  it('main.kibbutz.code226Other: code 226 = 9 while kibbutz, at amounts["226"]', () => {
+    const input = minimalInput({ declarations: { isKibbutz: true }, amounts: { '226': 9 } });
+    expect(issuesOf(input, 'main.kibbutz.code226Other')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: 'amounts["226"]',
+        recordType: '1000',
+        code: '226',
+        value: 9,
+      }),
+    ]);
+    expect(issuesOf(minimalInput({ amounts: { '226': 9 } }), 'main.kibbutz.code226Other')).toEqual(
+      [],
+    );
+  });
+
+  it('main.reportablePositions.unexpected: positions without tookReportablePosition', () => {
+    const input = minimalInput({ declarations: { reportablePositions: [12, 7] } });
+    expect(issuesOf(input, 'main.reportablePositions.unexpected')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: 'declarations.reportablePositions',
+        field: expect.objectContaining({ position: 1034 }),
+      }),
+    ]);
+    expect(
+      issuesOf(
+        minimalInput({ declarations: { reportablePositions: [] } }),
+        'main.reportablePositions.unexpected',
+      ),
+    ).toEqual([]);
+  });
+
+  describe('main.cgUntransmitted', () => {
+    it.each([
+      ['lossOrNoGain', { lossOrNoGain: true }],
+      ['overFiveImprovementBalances', { overFiveImprovementBalances: true }],
+      ['over14Appendices', { over14Appendices: true }],
+      ['other', { other: true, otherText: 'העסקה בוטלה' }],
+    ])('reason: any one reason (%s) satisfies a positive count', (_, reasons) => {
+      const input = minimalInput({ capitalGainsSummary: { untransmittedCount: 1, reasons } });
+      expect(issuesOf(input, 'main.cgUntransmitted.reason')).toEqual([]);
+    });
+
+    it('reason: a count with every reason unmarked is reported at the reasons (964)', () => {
+      const input = minimalInput({
+        capitalGainsSummary: { untransmittedCount: 1, reasons: { lossOrNoGain: false } },
+      });
+      expect(issuesOf(input, 'main.cgUntransmitted.reason')).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          path: 'capitalGainsSummary.reasons',
+          field: expect.objectContaining({ position: 964 }),
+        }),
+      ]);
+    });
+
+    it.each([
+      ['absent', undefined],
+      ['0', 0],
+    ])('reasonWithoutCount: a reason with the count %s, at 962', (_, untransmittedCount) => {
+      const input = minimalInput({
+        capitalGainsSummary: { untransmittedCount, reasons: { other: true, otherText: 'אחר' } },
+      });
+      expect(issuesOf(input, 'main.cgUntransmitted.reasonWithoutCount')).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          path: 'capitalGainsSummary.untransmittedCount',
+          field: expect.objectContaining({ position: 962 }),
+        }),
+      ]);
+      expect(issuesOf(input, 'main.cgUntransmitted.reason')).toEqual([]);
+    });
+  });
+
+  it('main.bankAccount.withNoBank: 1064 marked with a bank account, at 1064', () => {
+    const input = minimalInput({
+      declarations: { noBankAccount: true },
+      bankAccount: { bank: '12', branch: '345', account: '678' },
+    });
+    expect(issuesOf(input, 'main.bankAccount.withNoBank')).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: 'declarations.noBankAccount',
+        field: expect.objectContaining({ position: 1064 }),
+      }),
+    ]);
+    expect(
+      issuesOf(
+        minimalInput({ declarations: { noBankAccount: true } }),
+        'main.bankAccount.withNoBank',
+      ),
+    ).toEqual([]);
+  });
+
+  describe('main.qualifyingCompany', () => {
+    it.each([
+      ['neither amount', {}, 1],
+      ['amounts of 0', { israeliPurchaseAmount: 0, foreignPurchaseAmount: 0 }, 1],
+      ['an Israeli amount', { israeliPurchaseAmount: 10 }, 0],
+      ['a foreign amount', { foreignPurchaseAmount: 10 }, 0],
+    ])('purchaseAmounts: purchased with %s', (_, amounts, count) => {
+      const input = minimalInput({ qualifyingCompany: { purchased: true, ...amounts } });
+      const issues = issuesOf(input, 'main.qualifyingCompany.purchaseAmounts');
+      expect(issues).toHaveLength(count);
+      if (count > 0) {
+        expect(issues[0]).toEqual(
+          expect.objectContaining({
+            severity: 'warning',
+            path: 'qualifyingCompany.israeliPurchaseAmount',
+            field: expect.objectContaining({ position: 1066 }),
+          }),
+        );
+      }
+    });
+
+    it('purchaseAmounts: not purchased calls for no amount', () => {
+      const input = minimalInput({ qualifyingCompany: { purchased: false } });
+      expect(issuesOf(input, 'main.qualifyingCompany.purchaseAmounts')).toEqual([]);
+    });
+
+    it('amortizationAmount: claimed without an amount, at 1091; 0 is an amount (A-21)', () => {
+      const claimed = minimalInput({ qualifyingCompany: { amortizationClaimed: true } });
+      expect(issuesOf(claimed, 'main.qualifyingCompany.amortizationAmount')).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          path: 'qualifyingCompany.amortizationAmount',
+          field: expect.objectContaining({ position: 1091 }),
+        }),
+      ]);
+      const zero = minimalInput({
+        qualifyingCompany: { amortizationClaimed: true, amortizationAmount: 0 },
+      });
+      expect(issuesOf(zero, 'main.qualifyingCompany.amortizationAmount')).toEqual([]);
+      const text = generate1214(zero, OPTIONS).text;
+      expect(
+        parse1214(text).issues.filter(
+          issue => issue.ruleId === 'main.qualifyingCompany.amortizationAmount',
+        ),
+      ).toEqual([]);
+    });
+  });
+
+  describe('main.attachments', () => {
+    it.each([
+      ['main.attachments.code070', { donationReceiptsCount: 2 }, '070'],
+      ['main.attachments.code010', { withholdingCertificatesCount: 3 }, '010'],
+    ] as const)('%s: a count without the code, at amounts["%s"]', (ruleId, attachments, code) => {
+      expect(issuesOf(minimalInput({ attachments }), ruleId)).toEqual([
+        expect.objectContaining({
+          severity: 'warning',
+          path: `amounts["${code}"]`,
+          recordType: '1000',
+          code,
+        }),
+      ]);
+    });
+
+    it('a count of 0 calls for no code', () => {
+      const input = minimalInput({
+        attachments: { donationReceiptsCount: 0, withholdingCertificatesCount: 0 },
+      });
+      const issues = runPipeline(input, OPTIONS).issues;
+      expect(issues.filter(issue => issue.ruleId.startsWith('main.attachments.'))).toEqual([]);
+    });
+  });
+
+  it('warnings are reported on parsed files too (positions without 1030 = yes)', () => {
+    const input = minimalInput({
+      declarations: { tookReportablePosition: true, reportablePositions: [12] },
+    });
+    // 1000@1030: 2 = no.
+    expect(
+      fileIssuesOf(
+        input,
+        { line: 1, position: 1030, value: '2' },
+        'main.reportablePositions.unexpected',
+      ),
+    ).toEqual([expect.objectContaining({ path: 'declarations.reportablePositions' })]);
+  });
+});
