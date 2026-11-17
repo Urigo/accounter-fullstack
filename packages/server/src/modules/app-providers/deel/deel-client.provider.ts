@@ -85,7 +85,7 @@ export class DeelClientProvider {
         throw new Error('Deel API returned an error');
       }
 
-      const data = retrievePaymentReceiptsSchema.parse(rawData);
+      const data = retrievePaymentReceiptsSchema.parse(rawData, { reportInput: true });
 
       return data;
     } catch (error) {
@@ -116,7 +116,7 @@ export class DeelClientProvider {
         throw new Error('Deel API returned an error');
       }
 
-      const data = retrievePaymentBreakdownSchema.parse(rawData);
+      const data = retrievePaymentBreakdownSchema.parse(rawData, { reportInput: true });
 
       return data;
     } catch (error) {
@@ -164,7 +164,7 @@ export class DeelClientProvider {
           throw new Error('Deel API returned an error');
         }
 
-        const data = retrieveInvoicesSchema.parse(rawData);
+        const data = retrieveInvoicesSchema.parse(rawData, { reportInput: true });
 
         if (data.data.length) {
           data.data = data.data.map(invoice => {
@@ -209,7 +209,7 @@ export class DeelClientProvider {
       }
       const rawData = await res.json();
 
-      const data = downloadInvoicePdfSchema.parse(rawData);
+      const data = downloadInvoicePdfSchema.parse(rawData, { reportInput: true });
 
       if (!data.data.url) {
         throw new Error('Deel invoice file download URL is missing');

@@ -572,7 +572,21 @@ export async function matchInvoicesWithPayments(
       Object.entries(optionalMatches[0]).map(([key, value]) => {
         adjustedBreakdown[`breakdown_${key}`] = value;
       });
-      matches.push({ ...(adjustedBreakdown as PrefixedBreakdown), ...invoice });
+      const match: DeelInvoiceMatch = { ...(adjustedBreakdown as PrefixedBreakdown), ...invoice };
+      // Deel sends some zero-amount breakdown rows without a payment currency, which the
+      // `currency` DB enum rejects. Fall back to the invoice's own currency and amount, as for
+      // unmatched invoices (`createDeelInvoiceMatchFromUnmatchedInvoice`). A non-zero invoice
+      // without a payment currency is unexpected: fail rather than guess what was paid.
+      if (!match.breakdown_payment_currency) {
+        if (Number(invoice.amount) !== 0) {
+          throw new Error(
+            `Deel payment breakdown for invoice ${invoice.id} has no payment currency, but the invoice amount is ${invoice.amount} ${invoice.currency}`,
+          );
+        }
+        match.breakdown_payment_currency = invoice.currency;
+        match.breakdown_total_payment_currency = invoice.amount;
+      }
+      matches.push(match);
       return;
     }
     if (

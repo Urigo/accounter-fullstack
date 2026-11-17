@@ -155,7 +155,7 @@ export type DownloadInvoicePdf = z.infer<typeof downloadInvoicePdfSchema>;
 
 export const workerSchema = z
   .object({
-    id: z.string().describe('Unique identifier for the worker.'),
+    id: z.string().nullable().describe('Unique identifier for the worker.'), // NOTE: by docs, not nullable
     contract_id: z.string().nullable().optional().describe("The worker's Deel contract ID."),
     name: z.string().optional().describe('Full name of the worker.'),
     picUrl: z.string().nullable().describe("URL to the worker's Deel avatar."),
@@ -301,6 +301,7 @@ export const paymentReceiptsSchema = z
             'brex',
             'coinbase',
             'client_balance',
+            'dbc_credits',
             'eor_funding_balance',
             'fee_credits',
             'go_cardless',
