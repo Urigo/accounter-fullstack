@@ -1,16 +1,20 @@
 /**
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
- * (meta, company, declarations, amounts) and records 1020.
+ * (meta, company, preparer, declarations, amounts) and records 1020.
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
+import { ENUM_INPUTS, enumLiteral } from './enums.js';
+import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
 
 /**
- * Header keys of record 1000 that are their own input path (SPEC §7.3). `taxYear` and the derived
- * keys (832 `hasForeignAppendix`, 833 `declarations.hasCapitalGainsAppendix`) are not input.
+ * Header keys of record 1000 that are their own input path (SPEC §7.3); the enum keys hold their
+ * code in the model (ENUM_INPUTS). Not listed: `taxYear`, the derived keys (832
+ * `hasForeignAppendix`, 833 `declarations.hasCapitalGainsAppendix`), the declaration objects
+ * marked by a presence flag (PRESENCE_OBJECTS) and the reportable positions.
  */
 export const MAIN_INPUT_KEYS = [
   'meta.softwareName',
@@ -28,13 +32,40 @@ export const MAIN_INPUT_KEYS = [
   'company.phone.number',
   'company.fax.prefix',
   'company.fax.number',
+  'preparer.officeName',
+  'preparer.contactName',
+  'preparer.name',
+  'preparer.profession',
+  'preparer.licensedDealerNumber',
+  'preparer.address',
+  'preparer.phone.prefix',
+  'preparer.phone.number',
+  'declarations.form6111Obligation',
+  'declarations.financialStatementsAttached',
+  'declarations.isHouseCompany',
+  'declarations.form1343Attached',
+  'declarations.form1344Attached',
+  'declarations.claimsCapitalInvestmentLawBenefits',
+  'declarations.preferredEnterprise',
+  'declarations.dividendDistributed',
+  'declarations.foreignInvestors',
+  'declarations.consolidatedReport',
+  'declarations.partnerInPartnership',
+  'declarations.isKibbutz',
   'declarations.hasTaxPlanningAction',
   'declarations.hadRelatedPartyTransactions',
   'declarations.controlsBodyOfPersons',
   'declarations.holdsRightsInBodyOfPersons',
   'declarations.appliesAccountingStandards',
+  'declarations.requestsAdvancePayments',
+  'declarations.hasBuildingIncome',
+  'declarations.isTrustBeneficiary',
   'declarations.directorsReceivedOpinion',
   'declarations.tookReportablePosition',
+  'declarations.nonDeductibleSalaryExpenses',
+  'declarations.fewMembersCompany62A',
+  'declarations.partOfMultinationalGroup',
+  'declarations.noBankAccount',
 ] as const;
 
 /** Header keys of record 1020 that are properties of a shareholder (`serialNumber` is derived). */
@@ -54,11 +85,14 @@ export const SHAREHOLDER_INPUT_KEYS = [
 /** An input object under construction. */
 export type InputTree = Record<string, unknown>;
 
+/** A value set into an input tree: a model value, an object or an array of model values. */
+export type InputValue = Primitive | InputTree | Primitive[];
+
 /**
  * Sets the dotted `key` (`company.phone.prefix`) of `target` to `value`, creating the objects on
  * the way. An undefined value is not set, so absent values leave no (empty) object behind.
  */
-export function setKey(target: InputTree, key: string, value: Primitive): void {
+export function setKey(target: InputTree, key: string, value: InputValue): void {
   if (value === undefined) {
     return;
   }
@@ -117,7 +151,27 @@ export function denormalize(report: NormalizedReport): Report1214Input {
     shareholders: report.records.filter(record => record.recordType === '1020').map(shareholder),
   };
   for (const key of MAIN_INPUT_KEYS) {
-    setKey(output, key, main.values[key]);
+    const value = main.values[key];
+    const codes = ENUM_INPUTS[key];
+    setKey(output, key, codes ? enumLiteral(codes, value) : value);
+  }
+  // A declaration object exists when its flag is marked (SPEC §7.3).
+  for (const [object, { flag, member }] of Object.entries(PRESENCE_OBJECTS)) {
+    if (main.values[flag] === true) {
+      setKey(output, object, {});
+      setKey(output, member, main.values[member]);
+    }
+  }
+  const positions = REPORTABLE_POSITION_KEYS.map(key => main.values[key]).filter(
+    value => value !== undefined,
+  );
+  if (positions.length > 0) {
+    setKey(output, REPORTABLE_POSITIONS, positions);
+  }
+  // 833 = yes can only come from hasCapitalGainsAppendix while the model has no capital-gains
+  // appendices or untransmitted count (SPEC §7.4).
+  if (main.values['declarations.hasCapitalGainsAppendix'] === true) {
+    setKey(output, 'declarations.hasCapitalGainsAppendix', true);
   }
   // The tree has the members of Report1214Input; values are typed by their layout kinds.
   return output as unknown as Report1214Input;

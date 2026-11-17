@@ -30,6 +30,16 @@ const company = z.strictObject({
   fax: phone.optional(),
 });
 
+const preparer = z.strictObject({
+  officeName: z.string().optional(),
+  contactName: z.string().optional(),
+  name: z.string().optional(),
+  profession: z.string().optional(),
+  licensedDealerNumber: z.string().optional(),
+  address: z.string().optional(),
+  phone: phone.optional(),
+});
+
 const declarations = z.strictObject({
   hasTaxPlanningAction: z.boolean(),
   hadRelatedPartyTransactions: z.boolean(),
@@ -38,6 +48,33 @@ const declarations = z.strictObject({
   appliesAccountingStandards: z.boolean(),
   directorsReceivedOpinion: z.boolean(),
   tookReportablePosition: z.boolean(),
+  /** Any length: main.reportablePositions.max reports more than five. */
+  reportablePositions: z.array(z.number().int()).optional(),
+  form6111Obligation: z.enum(['obliged', 'notObliged', 'notRelevant']).optional(),
+  financialStatementsAttached: z.boolean().optional(),
+  familyCompany: z.strictObject({ representativeFileNumber: z.string() }).optional(),
+  isHouseCompany: z.boolean().optional(),
+  form1343Attached: z.boolean().optional(),
+  form1344Attached: z.boolean().optional(),
+  claimsCapitalInvestmentLawBenefits: z.boolean().optional(),
+  preferredEnterprise: z.boolean().optional(),
+  beneficiaryEnterprise: z.strictObject({ noticeDate: isoDate }).optional(),
+  dividendDistributed: z.boolean().optional(),
+  specialYear: z.strictObject({ balanceSheetDate: isoDate }).optional(),
+  foreignInvestors: z.boolean().optional(),
+  consolidatedReport: z
+    .enum(['consolidatedUnderSection23', 'consolidatesWithParent', 'notRelevant'])
+    .optional(),
+  partnerInPartnership: z.boolean().optional(),
+  isKibbutz: z.boolean().optional(),
+  requestsAdvancePayments: z.boolean().optional(),
+  hasBuildingIncome: z.boolean().optional(),
+  isTrustBeneficiary: z.boolean().optional(),
+  nonDeductibleSalaryExpenses: z.boolean().optional(),
+  fewMembersCompany62A: z.boolean().optional(),
+  partOfMultinationalGroup: z.boolean().optional(),
+  noBankAccount: z.boolean().optional(),
+  hasCapitalGainsAppendix: z.boolean().optional(),
 });
 
 const shareholder = z.strictObject({
@@ -63,6 +100,7 @@ export const report1214InputSchema = z.strictObject({
     })
     .optional(),
   company,
+  preparer: preparer.optional(),
   declarations,
   amounts: z.partialRecord(z.enum(MAIN_FORM_INPUT_CODES), z.number().optional()),
   shareholders: z.array(shareholder),

@@ -9,8 +9,10 @@ import type { FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
 import { MAIN_INPUT_KEYS, setKey, SHAREHOLDER_INPUT_KEYS, type InputTree } from './denormalize.js';
+import { deriveHasCapitalGainsAppendix } from './derive.js';
 import { roundAmount } from './fields.js';
 import { DEFAULT_SOFTWARE_NAME } from './main.js';
+import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
 import { normalizeText } from './text.js';
 import { todayInJerusalem } from './today.js';
 
@@ -142,6 +144,31 @@ export function canonicalize(
   };
   for (const key of MAIN_INPUT_KEYS) {
     setKey(output, key, canonicalValue(fieldOf(mainDef, key), getKey(source, key), rounding));
+  }
+  for (const [object, { member }] of Object.entries(PRESENCE_OBJECTS)) {
+    if (getKey(source, object) !== undefined) {
+      setKey(output, object, {});
+      setKey(
+        output,
+        member,
+        canonicalValue(fieldOf(mainDef, member), getKey(source, member), rounding),
+      );
+    }
+  }
+  // Only the first five positions are written (SPEC §7.3).
+  const positions = REPORTABLE_POSITION_KEYS.map((key, index) =>
+    canonicalValue(
+      fieldOf(mainDef, key),
+      input.declarations.reportablePositions?.[index],
+      rounding,
+    ),
+  ).filter(value => value !== undefined);
+  if (positions.length > 0) {
+    setKey(output, REPORTABLE_POSITIONS, positions);
+  }
+  // 833 = yes is read back as hasCapitalGainsAppendix (denormalize); `false` writes no.
+  if (deriveHasCapitalGainsAppendix(input.declarations)) {
+    setKey(output, 'declarations.hasCapitalGainsAppendix', true);
   }
   // The tree has the members of Report1214Input; values keep their input types.
   return output as unknown as Report1214Input;
