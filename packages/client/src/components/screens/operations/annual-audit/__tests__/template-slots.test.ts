@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { findStepEvidence, parseFinalTemplates, parseLockedTemplates } from '../template-slots.js';
+import {
+  findStepEvidence,
+  parseFinalTemplates,
+  parseLockedTemplates,
+  parseWorkingTemplates,
+} from '../template-slots.js';
 
 describe('parseFinalTemplates', () => {
   it('uses a legacy single template for both reports', () => {
@@ -52,6 +57,15 @@ describe('parseLockedTemplates', () => {
     expect(parseLockedTemplates(JSON.stringify({ lockedTemplateName: 'legacy' }))).toEqual({
       balanceSheetTemplateName: 'legacy',
       profitAndLossTemplateName: 'legacy',
+    });
+  });
+});
+
+describe('parseWorkingTemplates', () => {
+  it('does not fill a missing slot from the other one', () => {
+    expect(parseWorkingTemplates(JSON.stringify({ balanceSheetTemplateName: 'bs' }))).toEqual({
+      balanceSheetTemplateName: 'bs',
+      profitAndLossTemplateName: null,
     });
   });
 });

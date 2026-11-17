@@ -162,7 +162,15 @@ describe('Step03OpeningBalance', () => {
         fetching: false,
       },
       adminBusinessId: 'owner-1',
-      manualData: [{ id: 'owner-1:2024:3', stepId: '3', status: 'COMPLETED', notes: 'already reviewed' }],
+      manualData: [
+        {
+          id: 'owner-1:2024:3',
+          stepId: '3',
+          status: 'COMPLETED',
+          notes: 'already reviewed',
+          evidence: null,
+        },
+      ],
     });
 
     const card = container.querySelector('[data-testid="base-step-card"]');
