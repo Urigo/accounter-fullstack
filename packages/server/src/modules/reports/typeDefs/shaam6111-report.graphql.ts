@@ -21,10 +21,7 @@ export default gql`
     id: ID!
     business: Business!
     year: Int!
-    """
-    The file to upload to SHAAM. Null, with an error, while the report has blocking validation
-    issues; nullable so that the rest of the report (data, validation) still resolves alongside it.
-    """
+    " The file to upload to SHAAM. Null (with an error) while the report has blocking validation issues, so data and validation still resolve alongside it "
     file: Shaam6111File
     data: Shaam6111Data!
     " SHAAM validation rules applied to the report, plus data-quality diagnostics "
