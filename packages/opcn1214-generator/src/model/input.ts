@@ -117,6 +117,8 @@ export interface Report1214Input {
   };
   /** Record 1000 code-amount section; derived codes (SPEC §7.4) are not accepted. */
   amounts: Partial<Record<MainFormInputCode, number>>;
+  /** Records 1010: at most 3 (struct.relatedCompanies.max). */
+  relatedCompanies?: RelatedCompany[];
   /** Records 1020: 1–99 (0 allowed only for a kibbutz). */
   shareholders: Shareholder[];
 }
@@ -230,6 +232,26 @@ export interface Declarations {
   /** 833: forces "yes" when capital-gains appendices exist but none are transmitted (otherwise
    *  derived from the appendices and `capitalGainsSummary.untransmittedCount`, SPEC §7.4). */
   hasCapitalGainsAppendix?: boolean;
+}
+
+/** A related company in Israel or abroad, record 1010 (SPEC §7.2). */
+export interface RelatedCompany {
+  /** 1010@139, ≤ 50. */
+  companyName: string;
+  /** 1010@189 "מספר תיק חברה". */
+  companyFileNumber?: string;
+  /** 1010@198 → 1..8 in this order. */
+  relationType:
+    | 'parent'
+    | 'subsidiary'
+    | 'partnership'
+    | 'kibbutzRelatedCorporation'
+    | 'jointlyControlled'
+    | 'granddaughter'
+    | 'grandmother'
+    | 'other';
+  /** 1010@199: the assessing office of the company's file, 2 digits. */
+  assessingOfficeCode?: number;
 }
 
 /** One shareholder, record 1020 (SPEC §7.2). */

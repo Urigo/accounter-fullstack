@@ -1136,8 +1136,8 @@ prefix, length) is not decoded further, but still counts for the order and 9999 
 `canonicalize(input)` returns the input as the parser would reconstruct it:
 
 - text normalized (§4.3); optional properties that encode to the empty/zero value removed (`false`
-  flags, absent yes/no, empty strings); `amounts` entries with value `0` for non `zeroAllowed` codes
-  removed; derived values not present in the input;
+  flags, absent yes/no, empty strings, an empty `relatedCompanies` list); `amounts` entries with
+  value `0` for non `zeroAllowed` codes removed; derived values not present in the input;
 - `meta.saveDate` and `meta.softwareName` set to the values actually written
   (`canonicalize(input, options)` takes the same options as generation, for `today`);
 - digit-string inputs of numeric fields (`id9`, `shareholderId`, `digits`) zero-padded to the field

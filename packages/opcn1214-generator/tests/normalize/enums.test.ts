@@ -5,9 +5,12 @@ import {
   enumCode,
   enumLiteral,
   FORM_6111_OBLIGATION_CODES,
+  RELATION_TYPE_CODES,
 } from '../../src/normalize/enums.js';
 
 const MAIN = getLayout(2024).records['1000'];
+const RELATED = getLayout(2024).records['1010'];
+const byValue = (a: number, b: number) => a - b;
 
 describe('enum literal ↔ code maps (SPEC §7.2)', () => {
   it('form6111Obligation: obliged/notObliged/notRelevant → 1/2/3', () => {
@@ -22,12 +25,32 @@ describe('enum literal ↔ code maps (SPEC §7.2)', () => {
     });
   });
 
+  it('relationType: parent … other → 1..8 (SPEC §7.2)', () => {
+    expect(RELATION_TYPE_CODES).toEqual({
+      parent: 1,
+      subsidiary: 2,
+      partnership: 3,
+      kibbutzRelatedCorporation: 4,
+      jointlyControlled: 5,
+      granddaughter: 6,
+      grandmother: 7,
+      other: 8,
+    });
+  });
+
+  it('relationType maps exactly the allowed values of 1010@198', () => {
+    const field = RELATED.fields.find(candidate => candidate.key === 'relationType');
+    expect(field?.kind).toBe('enum');
+    expect(Object.values(RELATION_TYPE_CODES).sort(byValue)).toEqual(
+      field?.values?.map(value => value.value).sort(byValue),
+    );
+  });
+
   it.each(Object.entries(ENUM_INPUTS))(
     '%s maps exactly the allowed values of its field',
     (key, codes) => {
       const field = MAIN.fields.find(candidate => candidate.key === key);
       expect(field?.kind).toBe('enum');
-      const byValue = (a: number, b: number) => a - b;
       expect(Object.values(codes ?? {}).sort(byValue)).toEqual(
         field?.values?.map(value => value.value).sort(byValue),
       );

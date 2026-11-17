@@ -3,7 +3,7 @@
  * against EVERY rule of SPEC §10 (no errors and no warnings); later steps rely on that, so any
  * change here has to keep it so.
  */
-import type { Report1214Input } from '../../src/model/input.js';
+import type { RelatedCompany, Report1214Input } from '../../src/model/input.js';
 
 /** Overrides for a builder: objects merge recursively, arrays and other values replace. */
 export type DeepPartial<T> = T extends readonly unknown[]
@@ -148,4 +148,29 @@ export function fullMainInput(overrides: DeepPartial<Report1214Input> = {}): Rep
   // A bank account and noBankAccount contradict each other (main.bankAccount.withNoBank).
   delete base.declarations.noBankAccount;
   return deepMerge(base, overrides) as Report1214Input;
+}
+
+/** The relation types of SPEC §7.2 in code order (1..8). */
+const RELATION_TYPES: ReadonlyArray<RelatedCompany['relationType']> = [
+  'parent',
+  'subsidiary',
+  'partnership',
+  'kibbutzRelatedCorporation',
+  'jointlyControlled',
+  'granddaughter',
+  'grandmother',
+  'other',
+];
+
+/**
+ * `count` valid related companies (SPEC §7.2), every member set to a value that is written to the
+ * file; the i-th (0-based) has relation type i + 1 (cycling through the eight types).
+ */
+export function relatedCompanies(count: number): RelatedCompany[] {
+  return Array.from({ length: count }, (_, index) => ({
+    companyName: `חברה קשורה ${index + 1} בע"מ`,
+    companyFileNumber: String(510_000_001 + index),
+    relationType: RELATION_TYPES[index % RELATION_TYPES.length]!,
+    assessingOfficeCode: 10 + index,
+  }));
 }

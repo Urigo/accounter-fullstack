@@ -8,7 +8,7 @@ import { getLayout } from '../../src/layout/registry.js';
 import type { PhonePrefix, Report1214Input, Shareholder } from '../../src/model/input.js';
 import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
 import {
   dropLine,
   goldenBytes,
@@ -430,6 +430,12 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
         ],
       }),
     path: 'shareholders[1].idNumber',
+  },
+  'struct.relatedCompanies.max': {
+    kind: 'input',
+    fail: () => minimalInput({ relatedCompanies: relatedCompanies(4) }),
+    pass: () => minimalInput({ relatedCompanies: relatedCompanies(3) }),
+    path: 'relatedCompanies',
   },
   'struct.shareholders.min': {
     kind: 'input',

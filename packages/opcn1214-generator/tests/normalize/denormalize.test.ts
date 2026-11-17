@@ -2,7 +2,7 @@ import { getLayout } from '../../src/layout/registry.js';
 import type { NormalizedRecord, NormalizedReport } from '../../src/model/normalized.js';
 import { denormalize } from '../../src/normalize/denormalize.js';
 import { normalizeReport } from '../../src/normalize/report.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
 const OPTIONS = { today: () => '2025-03-31' };
@@ -66,5 +66,31 @@ describe('denormalize: derived codes (SPEC §7.4)', () => {
       main.codes.set('297', 5);
     });
     expect(denormalize(report).declarations).not.toHaveProperty('form6111Obligation');
+  });
+});
+
+describe('denormalize: related companies (records 1010)', () => {
+  it('reads 1010 records back as relatedCompanies, relation type as its literal', () => {
+    const companies = relatedCompanies(3);
+    const report = normalizeReport(minimalInput({ relatedCompanies: companies }), LAYOUT, OPTIONS);
+    expect(denormalize(report).relatedCompanies).toEqual(companies);
+  });
+
+  it('keeps a relation type code without a literal as-is (a parsed file)', () => {
+    const report = normalizeReport(
+      minimalInput({ relatedCompanies: relatedCompanies(1) }),
+      LAYOUT,
+      OPTIONS,
+    );
+    const related = report.records.find(record => record.recordType === '1010');
+    if (!related) {
+      throw new Error('expected a 1010 record');
+    }
+    related.values.relationType = 9;
+    expect(denormalize(report).relatedCompanies?.[0]?.relationType).toBe(9);
+  });
+
+  it('leaves no relatedCompanies without 1010 records', () => {
+    expect(denormalize(reportWith(() => undefined))).not.toHaveProperty('relatedCompanies');
   });
 });

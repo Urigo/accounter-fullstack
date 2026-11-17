@@ -1,6 +1,11 @@
 import type { PhonePrefix, Report1214Input } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
+import {
+  fullDeclarationsInput,
+  fullMainInput,
+  minimalInput,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 
 const TODAY = '2025-03-31';
 const OPTIONS = { today: () => TODAY };
@@ -296,6 +301,43 @@ describe('canonicalize', () => {
         expect(result.capitalGainsSummary).toEqual({ untransmittedCount: 2 });
       },
     );
+  });
+
+  describe('related companies (records 1010)', () => {
+    it('keeps related companies, in input order', () => {
+      const companies = relatedCompanies(3);
+      expect(canonicalize(minimalInput({ relatedCompanies: companies }), OPTIONS)).toEqual({
+        ...minimalInput({ relatedCompanies: companies }),
+        meta: { softwareName: 'ACCOUNTER', saveDate: TODAY },
+      });
+    });
+
+    it('normalizes the name, pads the file number and removes members written as absent', () => {
+      const result = canonicalize(
+        minimalInput({
+          relatedCompanies: [
+            {
+              companyName: '  חברה\u00A0 קשורה ',
+              companyFileNumber: '12',
+              relationType: 'grandmother',
+              assessingOfficeCode: 0,
+            },
+            { companyName: 'B', companyFileNumber: '000000000', relationType: 'other' },
+          ],
+        }),
+        OPTIONS,
+      );
+      expect(result.relatedCompanies).toEqual([
+        { companyName: 'חברה קשורה', companyFileNumber: '000000012', relationType: 'grandmother' },
+        { companyName: 'B', relationType: 'other' },
+      ]);
+    });
+
+    it('removes an empty list, as the parser reads a report without 1010 records', () => {
+      expect(canonicalize(minimalInput({ relatedCompanies: [] }), OPTIONS)).not.toHaveProperty(
+        'relatedCompanies',
+      );
+    });
   });
 
   it('does not change its input', () => {
