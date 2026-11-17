@@ -49,7 +49,8 @@ export const RULES = deepFreeze([
     severity: 'error',
     source: 'spec',
     scope: 'input',
-    description: 'A code-map key (amounts) that is not a code of that record for the tax year.',
+    description:
+      'A code-map key (amounts, foreignAppendix.amounts) that is not a code of that record for the tax year.',
     specRef: { page: 13 },
   },
   {
@@ -417,6 +418,24 @@ export const RULES = deepFreeze([
     scope: '1020',
     description:
       'The same shareholder idNumber twice, compared zero-padded to 9 digits (999999964 and 999999998 excluded).',
+  },
+  {
+    id: 'foreign.otherIncome.description',
+    severity: 'error',
+    source: 'spec',
+    scope: '2000',
+    description:
+      'otherTaxableIncome (2000@187) > 0 without otherTaxableIncomeDescription (2000@137).',
+    specRef: { page: 26 },
+  },
+  {
+    id: 'foreign.refund.amount',
+    severity: 'warning',
+    source: 'derived',
+    scope: '2000',
+    description:
+      'taxRefundDeclaration (2000@247) is yes without a taxRefundDeclarationAmount (2000@248) > 0; 0 is written as absent.',
+    specRef: { page: 26 },
   },
   {
     id: 'parse.empty',

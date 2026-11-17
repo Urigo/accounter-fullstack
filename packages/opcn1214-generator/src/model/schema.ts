@@ -4,7 +4,7 @@
  * and dates only need the ISO form, so the semantic field rules stay reachable for untyped callers.
  */
 import { z } from 'zod';
-import { MAIN_FORM_INPUT_CODES } from './codes.generated.js';
+import { FOREIGN_APPENDIX_CODES, MAIN_FORM_INPUT_CODES } from './codes.generated.js';
 import type { SupportedTaxYear } from './input.js';
 
 /** `YYYY-MM-DD`; calendar validity is checked by field.date. */
@@ -132,6 +132,18 @@ const rdInvestment = z.strictObject({
   investmentAmount: z.number(),
 });
 
+const foreignAppendix = z.strictObject({
+  otherTaxableIncomeDescription: z.string().optional(),
+  otherTaxableIncome: z.number().optional(),
+  foreignTaxPaidOnOtherIncome: z.number().optional(),
+  totalForeignTaxableIncome: z.number().optional(),
+  totalForeignLoss: z.number().optional(),
+  participationExemptionHoldingCompany: z.number().optional(),
+  taxRefundDeclaration: z.boolean(),
+  taxRefundDeclarationAmount: z.number().optional(),
+  amounts: z.partialRecord(z.enum(FOREIGN_APPENDIX_CODES), z.number().optional()),
+});
+
 const shareholder = z.strictObject({
   idNumber: z.string(),
   fullName: z.string(),
@@ -171,6 +183,7 @@ export const report1214InputSchema = z.strictObject({
   shareholders: z.array(shareholder),
   /** Any length: struct.rdInvestments.max reports more than five. */
   rdInvestments: z.array(rdInvestment).optional(),
+  foreignAppendix: foreignAppendix.optional(),
 });
 
 /** The input schema of `taxYear` (SPEC §9.2: the schema is per year). */

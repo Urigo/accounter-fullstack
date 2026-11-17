@@ -1,6 +1,7 @@
 import type { PhonePrefix, Report1214Input } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  foreignAppendix,
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
@@ -400,6 +401,42 @@ describe('canonicalize', () => {
       expect(canonicalize(minimalInput({ rdInvestments: [] }), OPTIONS)).not.toHaveProperty(
         'rdInvestments',
       );
+    });
+  });
+
+  describe('foreign appendix (record 2000)', () => {
+    it('keeps a canonical foreign appendix as it is', () => {
+      const input = minimalInput({ foreignAppendix: foreignAppendix({ amounts: { '442': 0 } }) });
+      expect(canonicalize(input, OPTIONS)).toEqual({
+        ...input,
+        meta: { softwareName: 'ACCOUNTER', saveDate: TODAY },
+      });
+    });
+
+    it('normalizes the description, rounds, drops zero header amounts and non-zeroAllowed zero codes', () => {
+      const result = canonicalize(
+        minimalInput({
+          foreignAppendix: {
+            otherTaxableIncomeDescription: '  תמלוגים\u00A0 מחו"ל ',
+            otherTaxableIncome: 99.5,
+            totalForeignLoss: 0,
+            taxRefundDeclaration: false,
+            taxRefundDeclarationAmount: 0,
+            amounts: { '401': 0, '420': 0.4, '442': 0, '425': 2.5 },
+          },
+        }),
+        { ...OPTIONS, rounding: 'halfUp' },
+      );
+      expect(result.foreignAppendix).toEqual({
+        otherTaxableIncomeDescription: 'תמלוגים מחו"ל',
+        otherTaxableIncome: 100,
+        taxRefundDeclaration: false,
+        amounts: { '425': 3, '442': 0 },
+      });
+    });
+
+    it('leaves no foreignAppendix when the input has none', () => {
+      expect(canonicalize(minimalInput(), OPTIONS)).not.toHaveProperty('foreignAppendix');
     });
   });
 

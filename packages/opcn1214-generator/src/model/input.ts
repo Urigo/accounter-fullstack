@@ -3,7 +3,7 @@
  * strings, identification numbers as digit strings, booleans for flags and yes/no fields, code maps
  * keyed by the 3-digit code string.
  */
-import type { MainFormInputCode } from './codes.generated.js';
+import type { ForeignAppendixCode, MainFormInputCode } from './codes.generated.js';
 
 /** An ISO calendar date, `YYYY-MM-DD` (SPEC §7.2). */
 export type IsoDate = string;
@@ -130,6 +130,8 @@ export interface Report1214Input {
   shareholders: Shareholder[];
   /** Records 1030: at most 5 (struct.rdInvestments.max); their total is code 165. */
   rdInvestments?: RdInvestment[];
+  /** Record 2000 (0–1); its presence derives 1000@832 and 9999@143 (SPEC §7.4). */
+  foreignAppendix?: ForeignAppendix;
 }
 
 /** Company identity (SPEC §7.2), record 1000@137–512. */
@@ -303,4 +305,29 @@ export interface RdInvestment {
   companyFileNumber?: string;
   /** 1030@197, whole shekels. */
   investmentAmount: number;
+}
+
+/**
+ * The foreign appendix "נספח חו"ל", record 2000 (SPEC §7.2). Header amounts are whole shekels;
+ * an optional amount of 0 is written as absent.
+ */
+export interface ForeignAppendix {
+  /** 2000@137, ≤ 50; required when `otherTaxableIncome` > 0 (foreign.otherIncome.description). */
+  otherTaxableIncomeDescription?: string;
+  /** 2000@187 "הכנסה חייבת אחרת". */
+  otherTaxableIncome?: number;
+  /** 2000@199, foreign tax paid on the other taxable income. */
+  foreignTaxPaidOnOtherIncome?: number;
+  /** 2000@211, total foreign taxable income. */
+  totalForeignTaxableIncome?: number;
+  /** 2000@223, total foreign loss. */
+  totalForeignLoss?: number;
+  /** 2000@235, participation exemption of an Israeli holding company. */
+  participationExemptionHoldingCompany?: number;
+  /** 2000@247 "הצהרה – החזר מסים" (required yes/no). */
+  taxRefundDeclaration: boolean;
+  /** 2000@248; expected when `taxRefundDeclaration` (foreign.refund.amount). */
+  taxRefundDeclarationAmount?: number;
+  /** Record 2000 code-amount section; a 0 is written only for the zeroAllowed code 442 (SPEC §4.5). */
+  amounts: Partial<Record<ForeignAppendixCode, number>>;
 }
