@@ -3,6 +3,7 @@ import type { NormalizedRecord, NormalizedReport } from '../../src/model/normali
 import { denormalize } from '../../src/normalize/denormalize.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import {
+  breakdownCountries,
   foreignAppendix,
   minimalInput,
   rdInvestments,
@@ -123,6 +124,27 @@ describe('denormalize: foreign appendix (record 2000)', () => {
     const appendix = { taxRefundDeclaration: false, amounts: {} };
     const report = normalizeReport(minimalInput({ foreignAppendix: appendix }), LAYOUT, OPTIONS);
     expect(denormalize(report).foreignAppendix).toEqual(appendix);
+  });
+
+  it('groups the 2200 records under countryBreakdown, keyed by their code, without affiliation', () => {
+    const appendix = foreignAppendix({
+      amounts: { '420': 5000, '439': 1 },
+      countryBreakdown: {
+        '420': { deductionsOffsetsAndExemptions: 300, countries: breakdownCountries(3) },
+        '439': { countries: [{ country: '-88', income: 0 }] },
+      },
+    });
+    const report = normalizeReport(minimalInput({ foreignAppendix: appendix }), LAYOUT, OPTIONS);
+    expect(denormalize(report).foreignAppendix).toEqual(appendix);
+  });
+
+  it('leaves no countryBreakdown without 2200 records', () => {
+    const report = normalizeReport(
+      minimalInput({ foreignAppendix: foreignAppendix() }),
+      LAYOUT,
+      OPTIONS,
+    );
+    expect(denormalize(report).foreignAppendix).not.toHaveProperty('countryBreakdown');
   });
 
   it('leaves no foreignAppendix without a 2000 record, whatever 832 says', () => {

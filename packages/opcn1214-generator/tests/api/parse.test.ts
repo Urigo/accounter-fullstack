@@ -2,7 +2,9 @@ import { encodeWindows1255 } from '../../src/codec/windows1255.js';
 import { generate1214, Opcn1214ParseError, parse1214, type Issue } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  breakdownCountries,
   foreignAppendix,
+  foreignAppendixWithBreakdown,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
@@ -378,7 +380,13 @@ describe('parse1214', () => {
   });
 
   describe('foreign appendix (2000)', () => {
-    const appendix = foreignAppendix({ amounts: { '420': 50_000, '442': 0 } });
+    const appendix = foreignAppendix({
+      amounts: { '420': 50_000, '442': 0 },
+      countryBreakdown: {
+        '420': { countries: breakdownCountries(1) },
+        '442': { countries: breakdownCountries(1) },
+      },
+    });
     const foreign = generate1214(
       minimalInput({
         rdInvestments: rdInvestments(1),
@@ -399,8 +407,8 @@ describe('parse1214', () => {
     });
 
     it.each([
-      ['a 2000 record before 1030', [0, 1, 3, 2, 4], '1030', 4],
-      ['a 2000 record before 1020', [0, 3, 1, 2, 4], '1020', 3],
+      ['a 2000 record before 1030', [0, 1, 3, 2, 4, 5, 6], '1030', 4],
+      ['a 2000 record before 1020', [0, 3, 1, 2, 4, 5, 6], '1020', 3],
     ])('reports %s as parse.order', (_, order, recordType, line) => {
       const lines = foreign.split(CRLF);
       const reordered = [...order.map(index => lines[index]), ''].join(CRLF);
@@ -423,8 +431,8 @@ describe('parse1214', () => {
     });
 
     it('reports a 2000 record the 9999 record does not count (9999@143)', () => {
-      expect(parseErrorIssues(() => parse1214(tamper(foreign, 5, 143, '00')))).toEqual([
-        expect.objectContaining({ ruleId: 'parse.control.counts', line: 5, column: 143 }),
+      expect(parseErrorIssues(() => parse1214(tamper(foreign, 7, 143, '00')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.control.counts', line: 7, column: 143 }),
       ]);
     });
 
@@ -435,26 +443,141 @@ describe('parse1214', () => {
     });
   });
 
-  it('never lets anything but Opcn1214ParseError escape for corrupted golden files', () => {
-    const golden = goldenText('minimal');
-    const lines = golden.split(CRLF);
-    for (const [index, line] of lines.entries()) {
-      for (let position = 1; position <= line.length; position += 37) {
-        for (const value of ['X', ' ', '9', '\u05D0']) {
-          const corrupted = tamper(golden, index + 1, position, value);
-          try {
-            parse1214(corrupted);
-          } catch (error) {
-            expect(error).toBeInstanceOf(Opcn1214ParseError);
-            for (const issue of (error as Opcn1214ParseError).issues) {
-              expect(issue.line).toBeGreaterThan(0);
-              expect(issue.column).toBeGreaterThan(0);
+  describe('country breakdowns (2200)', () => {
+    const appendix = foreignAppendix({
+      amounts: { '420': 50_000, '439': 7000 },
+      countryBreakdown: {
+        '420': { deductionsOffsetsAndExemptions: 1234, countries: breakdownCountries(2) },
+        '439': { countries: [{ country: '-88', income: 7000 }] },
+      },
+    });
+    // Lines: 1000, 1020, 2000, 2200 (420), 2200 (439), 9999.
+    const breakdowns = generate1214(minimalInput({ foreignAppendix: appendix }), OPTIONS).text;
+    const SECTION = 187;
+
+    it('reads the 2200 records after 2000 back as foreignAppendix.countryBreakdown', () => {
+      const result = parse1214(breakdowns);
+      expect(result.report.foreignAppendix).toEqual(appendix);
+      expect(result.issues).toEqual([]);
+    });
+
+    it.each([
+      // The 2000 record after it is out of order too.
+      ['a 2200 record before 2000', [0, 1, 3, 2, 4, 5], 2, 3],
+      ['2200 records without a 2000 record', [0, 1, 3, 4, 5], 2, 3],
+    ])('reports %s as parse.order', (_, order, count, line) => {
+      const lines = breakdowns.split(CRLF);
+      const reordered = [...order.map(index => lines[index]), ''].join(CRLF);
+      const issues = parseErrorIssues(() => parse1214(reordered)).filter(
+        issue => issue.ruleId === 'parse.order',
+      );
+      expect(issues).toHaveLength(count);
+      expect(issues[0]).toEqual(expect.objectContaining({ recordType: '2200', line }));
+    });
+
+    it.each([
+      ['an affiliation other than 1', SECTION, '2', SECTION],
+      ['a malformed country code', SECTION + 1, 'A1B', SECTION + 1],
+      ['non-zero data after the last entry', SECTION + 1023, '7', SECTION + 1023],
+      ['an 11th entry', SECTION + 160, '1004000000000001', SECTION + 160],
+    ])('reports %s as parse.countrySection at its column', (_, position, value, column) => {
+      // Ten entries first, so that an 11th one can be added.
+      const ten = generate1214(
+        minimalInput({
+          foreignAppendix: foreignAppendixWithBreakdown('420', {
+            countries: breakdownCountries(10),
+          }),
+        }),
+        OPTIONS,
+      ).text;
+      expect(parseErrorIssues(() => parse1214(tamper(ten, 4, position, value)))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.countrySection',
+          line: 4,
+          column,
+          recordType: '2200',
+          recordIndex: 0,
+        }),
+      ]);
+    });
+
+    it('reports a non-digit income as parse.numeric, not parse.countrySection', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(breakdowns, 4, SECTION + 10, 'X')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.numeric', line: 4, column: SECTION + 10 }),
+      ]);
+    });
+
+    it('locates a header problem of a 2200 record at its breakdown', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(breakdowns, 5, 145, 'X')))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.numeric',
+          path: 'foreignAppendix.countryBreakdown["439"].deductionsOffsetsAndExemptions',
+          line: 5,
+          column: 145,
+        }),
+      ]);
+    });
+
+    it.each([
+      ['a code of record 2000 without a breakdown', 4, '401'],
+      ['a code that is not a 2000 code', 4, '999'],
+      ['no code', 4, '000'],
+      ['the code of an earlier 2200 record', 5, '420'],
+    ])('reports %s at 2200@137 as parse.fieldValue', (_, line, code) => {
+      expect(parseErrorIssues(() => parse1214(tamper(breakdowns, line, 137, code)))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.fieldValue',
+          line,
+          column: 137,
+          recordType: '2200',
+          value: code,
+        }),
+      ]);
+    });
+
+    it('locates business issues of 2200 records at their breakdown', () => {
+      // 2200@188: the country of the first entry of 439, '-88', turned into an unknown code.
+      const result = parse1214(tamper(breakdowns, 5, SECTION + 1, '001'));
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'foreign.breakdown.country.unknown',
+          path: 'foreignAppendix.countryBreakdown["439"].countries[0].country',
+          recordType: '2200',
+          recordIndex: 1,
+        }),
+      ]);
+    });
+
+    it('reports 2200 records the 9999 record does not count (9999@147)', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(breakdowns, 6, 147, '01')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.control.counts', line: 6, column: 147 }),
+      ]);
+    });
+  });
+
+  it.each(['minimal', 'foreign'])(
+    'never lets anything but Opcn1214ParseError escape for a corrupted %s golden',
+    name => {
+      const golden = goldenText(name);
+      const lines = golden.split(CRLF);
+      for (const [index, line] of lines.entries()) {
+        for (let position = 1; position <= line.length; position += 37) {
+          for (const value of ['X', ' ', '9', '\u05D0']) {
+            const corrupted = tamper(golden, index + 1, position, value);
+            try {
+              parse1214(corrupted);
+            } catch (error) {
+              expect(error).toBeInstanceOf(Opcn1214ParseError);
+              for (const issue of (error as Opcn1214ParseError).issues) {
+                expect(issue.line).toBeGreaterThan(0);
+                expect(issue.column).toBeGreaterThan(0);
+              }
             }
           }
         }
       }
-    }
-  });
+    },
+  );
 });
 
 describe('parse1214: declarations rebuilt from their flags (SPEC §7.3)', () => {

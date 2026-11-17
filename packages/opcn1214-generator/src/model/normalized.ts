@@ -17,7 +17,7 @@ export interface NormalizedRecord {
   codes: Map<string, number>;
   /** Country-amount section: 2200 only, otherwise []. */
   countries: Array<{ country: string; income: number }>;
-  /** key | `code:${code}` | `countries[${i}]` → input path. */
+  /** key | `code:${code}` | `countries[${i}].country` | `countries[${i}].income` → input path. */
   paths: Record<string, string>;
 }
 
