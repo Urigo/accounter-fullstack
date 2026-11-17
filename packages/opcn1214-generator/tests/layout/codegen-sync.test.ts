@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { renderLayoutModule } from '../../scripts/layout/render.js';
-import { layoutModuleUrl, layoutYears, readLayoutSources } from '../../scripts/layout/sources.js';
+import { renderCodesModule, renderLayoutModule } from '../../scripts/layout/render.js';
+import {
+  latestLayoutYear,
+  layoutModuleUrl,
+  layoutYears,
+  readLayoutSources,
+} from '../../scripts/layout/sources.js';
 
 describe('generated layout modules', () => {
   it('finds the 2024 layout data', () => {
@@ -15,4 +20,13 @@ describe('generated layout modules', () => {
     },
     30_000,
   );
+
+  it('src/model/codes.generated.ts is in sync with the newest layout', async () => {
+    const year = latestLayoutYear();
+    expect(year).toBe(2024);
+    const rendered = await renderCodesModule(year, readLayoutSources(year));
+    expect(rendered).toBe(
+      readFileSync(new URL('../../src/model/codes.generated.ts', import.meta.url), 'utf8'),
+    );
+  }, 30_000);
 });
