@@ -9,7 +9,7 @@ import {
 } from '../../../../../gql/graphql.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 import { selectableTemplateOptions, TemplateSelect } from '../template-select.js';
-import { parseFinalTemplates } from '../template-slots.js';
+import { parseLockedTemplates } from '../template-slots.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -97,7 +97,8 @@ export function Step09SaveTemplate(props: Step09Props) {
     [statusData, id],
   );
 
-  const final = useMemo(() => parseFinalTemplates(step09Record?.evidence), [step09Record]);
+  // What this year actually locks, per report: a report not locked yet stays empty in its picker
+  const final = useMemo(() => parseLockedTemplates(step09Record?.evidence), [step09Record]);
   const bothLocked = !!final.balanceSheetTemplateName && !!final.profitAndLossTemplateName;
 
   // Update status badge
@@ -130,10 +131,11 @@ export function Step09SaveTemplate(props: Step09Props) {
   const onTemplateSelected = useCallback(
     async (reportType: AnnualAuditReportType, templateName: string) => {
       if (!adminBusinessId) return;
-      await setStep09Status({
+      const saved = await setStep09Status({
         input: { ownerId: adminBusinessId, year, templateName, reportType },
       });
-      afterSave();
+      // A failed save already showed its error; nothing changed to refetch
+      if (saved) afterSave();
     },
     [adminBusinessId, year, setStep09Status, afterSave],
   );

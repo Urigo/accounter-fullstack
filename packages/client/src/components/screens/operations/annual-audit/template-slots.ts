@@ -34,8 +34,9 @@ function parseEvidence(evidence: string | null | undefined): TemplateSlotsEviden
 }
 
 /**
- * Final (step 09) templates. A single template — legacy `lockedTemplateName`, or only one slot
- * locked so far — serves both reports.
+ * Final (step 09) templates as last year's baseline: a single template — legacy
+ * `lockedTemplateName`, or only one report locked — serves both reports. For display only; step 09
+ * itself uses `parseLockedTemplates`.
  */
 export function parseFinalTemplates(evidence: string | null | undefined): TemplateSlots {
   const parsed = parseEvidence(evidence);
@@ -46,6 +47,21 @@ export function parseFinalTemplates(evidence: string | null | undefined): Templa
   return {
     balanceSheetTemplateName: bs ?? legacy ?? pnl,
     profitAndLossTemplateName: pnl ?? legacy ?? bs,
+  };
+}
+
+/**
+ * The templates a step 09 row actually locks, per report. The legacy `lockedTemplateName` (one
+ * template for both reports) fills either report, but a report nobody locked stays empty — unlike
+ * `parseFinalTemplates`, which fills it from the other report.
+ */
+export function parseLockedTemplates(evidence: string | null | undefined): TemplateSlots {
+  const parsed = parseEvidence(evidence);
+  if (!parsed) return EMPTY_SLOTS;
+  const legacy = asName(parsed.lockedTemplateName);
+  return {
+    balanceSheetTemplateName: asName(parsed.balanceSheetTemplateName) ?? legacy,
+    profitAndLossTemplateName: asName(parsed.profitAndLossTemplateName) ?? legacy,
   };
 }
 

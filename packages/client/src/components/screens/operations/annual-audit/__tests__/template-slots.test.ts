@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findStepEvidence, parseFinalTemplates } from '../template-slots.js';
+import { findStepEvidence, parseFinalTemplates, parseLockedTemplates } from '../template-slots.js';
 
 describe('parseFinalTemplates', () => {
   it('uses a legacy single template for both reports', () => {
@@ -37,6 +37,22 @@ describe('parseFinalTemplates', () => {
     expect(parseFinalTemplates(null)).toEqual(empty);
     expect(parseFinalTemplates('not json')).toEqual(empty);
     expect(parseFinalTemplates('"a string"')).toEqual(empty);
+  });
+});
+
+describe('parseLockedTemplates', () => {
+  it('leaves a report nobody locked empty', () => {
+    expect(parseLockedTemplates(JSON.stringify({ balanceSheetTemplateName: 'bs' }))).toEqual({
+      balanceSheetTemplateName: 'bs',
+      profitAndLossTemplateName: null,
+    });
+  });
+
+  it('uses a legacy single template for both reports', () => {
+    expect(parseLockedTemplates(JSON.stringify({ lockedTemplateName: 'legacy' }))).toEqual({
+      balanceSheetTemplateName: 'legacy',
+      profitAndLossTemplateName: 'legacy',
+    });
   });
 });
 

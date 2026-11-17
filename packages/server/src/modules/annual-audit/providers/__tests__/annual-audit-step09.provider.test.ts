@@ -59,12 +59,14 @@ vi.mock('@pgtyped/runtime', () => ({
 const dynamicReportProviderMock = {
   lockTemplate: vi.fn(),
   unlockTemplate: vi.fn(),
+  getTemplate: vi.fn(),
 };
 
 vi.mock('../../reports/providers/dynamic-report.provider.js', () => ({
   DynamicReportProvider: class {
     lockTemplate = dynamicReportProviderMock.lockTemplate;
     unlockTemplate = dynamicReportProviderMock.unlockTemplate;
+    getTemplate = dynamicReportProviderMock.getTemplate;
   },
 }));
 
@@ -104,6 +106,8 @@ describe('AnnualAuditProvider — setStep09Status', () => {
 
     db = { query: vi.fn() };
     adminContextProviderMock.getVerifiedAdminContext.mockResolvedValue({ ownerId: 'owner-1' });
+    // Templates are unlocked unless a test says otherwise
+    dynamicReportProviderMock.getTemplate.mockResolvedValue({ name: 'any', is_locked: false });
 
     provider = new AnnualAuditProvider(
       adminContextProviderMock as never,
@@ -250,6 +254,76 @@ describe('AnnualAuditProvider — setStep09Status', () => {
     });
     expect(pgTypedRuntimeMock.runMocks.resetStep09ForTemplateRun).toHaveBeenCalledWith(
       { ownerId: 'owner-1', templateName: 'bs-old' },
+      db,
+    );
+  });
+
+  it('replacing the only locked report keeps the other report unset', async () => {
+    // Only the Balance Sheet is locked so far
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({ status: 'IN_PROGRESS', evidence_json: { balanceSheetTemplateName: 'bs-a' } }),
+    ]);
+    dynamicReportProviderMock.unlockTemplate.mockResolvedValue({ name: 'bs-a', is_locked: false });
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'bs-c', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'bs-c',
+      reportType: 'BALANCE_SHEET',
+    });
+
+    // The old Balance Sheet template is released, not kept on as the P&L template
+    expect(dynamicReportProviderMock.unlockTemplate).toHaveBeenCalledWith({
+      name: 'bs-a',
+      ownerId: 'owner-1',
+    });
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2024,
+        status: 'IN_PROGRESS',
+        evidenceJson: JSON.stringify({ balanceSheetTemplateName: 'bs-c' }),
+      },
+      db,
+    );
+  });
+
+  it("refuses a template locked as another year's final template", async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([]);
+    dynamicReportProviderMock.getTemplate.mockResolvedValue({ name: 'final-2023', is_locked: true });
+
+    await expect(
+      provider.setStep09Status({
+        ownerId: 'owner-1',
+        year: 2024,
+        templateName: 'final-2023',
+        reportType: 'BALANCE_SHEET',
+      }),
+    ).rejects.toThrow('locked as another year\'s final template');
+    expect(dynamicReportProviderMock.lockTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).not.toHaveBeenCalled();
+  });
+
+  it("lets a year use its own locked template for the other report", async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({ status: 'IN_PROGRESS', evidence_json: { balanceSheetTemplateName: 'shared' } }),
+    ]);
+    dynamicReportProviderMock.getTemplate.mockResolvedValue({ name: 'shared', is_locked: true });
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'shared', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'shared',
+      reportType: 'PROFIT_AND_LOSS',
+    });
+
+    expect(dynamicReportProviderMock.getTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'COMPLETED' }),
       db,
     );
   });

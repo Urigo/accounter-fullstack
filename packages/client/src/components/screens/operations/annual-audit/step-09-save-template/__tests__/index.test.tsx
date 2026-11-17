@@ -311,6 +311,37 @@ describe('Step09SaveTemplate', () => {
     await cleanup();
   });
 
+  it('leaves a report that is not locked yet empty, so its template can be picked', async () => {
+    const stepStatuses = [
+      {
+        stepId: '9',
+        status: 'IN_PROGRESS',
+        evidence: JSON.stringify({ balanceSheetTemplateName: 'bs' }),
+      },
+    ];
+    setStep09StatusMock.mockResolvedValue({ stepId: '9', status: 'COMPLETED' });
+
+    const { container, cleanup } = await render({
+      adminBusinessId: 'owner-1',
+      stepStatuses,
+      templates: [makeTemplate({ name: 'bs', isLocked: true })],
+    });
+
+    const selectValue = (reportType: string) =>
+      slot(container, reportType)?.querySelector('[data-testid="select"]')?.getAttribute('data-value');
+    expect(selectValue(BS)).toBe('bs');
+    expect(selectValue(PNL)).toBe('');
+    expect(slot(container, PNL)?.textContent).not.toContain('Locked:');
+
+    // The Balance Sheet template can serve Profit and Loss too
+    await chooseInSlot(container, PNL, 'bs');
+    expect(setStep09StatusMock).toHaveBeenCalledWith({
+      input: { ownerId: 'owner-1', year: 2024, templateName: 'bs', reportType: PNL },
+    });
+
+    await cleanup();
+  });
+
   it('locks a template for the report whose picker changed', async () => {
     const templates = [makeTemplate({ name: 'template-A', isLocked: false })];
     setStep09StatusMock.mockResolvedValue({ stepId: '9', status: 'IN_PROGRESS' });

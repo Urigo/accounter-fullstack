@@ -21,21 +21,21 @@ function asName(value: unknown): string | null {
 }
 
 /**
- * Resolves the Balance Sheet and Profit and Loss template names out of a step evidence object.
- * A single template (legacy `lockedTemplateName`, or only one slot set) serves both reports.
+ * Reads the Balance Sheet and Profit and Loss template names that a step's evidence actually
+ * holds. The legacy `lockedTemplateName` (one template for both reports) fills either slot, but an
+ * unset slot is *not* filled from the other one: a report nobody locked stays unset. (Clients that
+ * only display last year's templates may fall back across slots; anything that writes must not.)
  */
-export function resolveTemplateSlots(evidence: unknown): TemplateSlots {
+export function readTemplateSlots(evidence: unknown): TemplateSlots {
   if (!evidence || typeof evidence !== 'object') {
     return { balanceSheet: null, profitAndLoss: null };
   }
   const { balanceSheetTemplateName, profitAndLossTemplateName, lockedTemplateName } =
     evidence as TemplateSlotsEvidence;
-  const bs = asName(balanceSheetTemplateName);
-  const pnl = asName(profitAndLossTemplateName);
   const legacy = asName(lockedTemplateName);
   return {
-    balanceSheet: bs ?? legacy ?? pnl,
-    profitAndLoss: pnl ?? legacy ?? bs,
+    balanceSheet: asName(balanceSheetTemplateName) ?? legacy,
+    profitAndLoss: asName(profitAndLossTemplateName) ?? legacy,
   };
 }
 

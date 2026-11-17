@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { getTimelessDateYear } from '../../../shared/helpers/index.js';
@@ -6,7 +7,7 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { DynamicReportProvider } from '../../reports/providers/dynamic-report.provider.js';
 import {
   assignTemplateSlot,
-  resolveTemplateSlots,
+  readTemplateSlots,
   templateSlotsToEvidence,
 } from '../helpers/template-slots.helper.js';
 import type {
@@ -74,16 +75,20 @@ const upsertStep09Status = sql<IUpsertStep09StatusQuery>`
 
 /**
  * Drops every step 09 evidence key (balanceSheetTemplateName, profitAndLossTemplateName or the
- * legacy lockedTemplateName) that points at the given template, across all years, and moves those
- * rows back to PENDING. Keys pointing at other templates are kept.
+ * legacy lockedTemplateName) that points at the given template, across all years. Keys pointing at
+ * other templates are kept. A row left with the other report's template goes to IN_PROGRESS (as
+ * setStep09Status would mark it); a row left with nothing goes to PENDING.
  */
 const resetStep09ForTemplate = sql<IResetStep09ForTemplateQuery>`
   UPDATE accounter_schema.annual_audit_step_status
-  SET status        = 'PENDING',
-      evidence_json = (
-        SELECT COALESCE(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
-        FROM jsonb_each(evidence_json) AS e
-        WHERE e.value <> to_jsonb($templateName::text)
+  SET (evidence_json, status) = (
+        SELECT remaining.evidence,
+               CASE WHEN remaining.evidence = '{}'::jsonb THEN 'PENDING' ELSE 'IN_PROGRESS' END
+        FROM (
+          SELECT COALESCE(jsonb_object_agg(e.key, e.value), '{}'::jsonb) AS evidence
+          FROM jsonb_each(evidence_json) AS e
+          WHERE e.value <> to_jsonb($templateName::text)
+        ) AS remaining
       ),
       completed_at  = NULL
   WHERE owner_id = $ownerId
@@ -270,8 +275,22 @@ export class AnnualAuditProvider {
     const { ownerId, year, templateName, reportType } = input;
 
     const [existing] = await getStepStatus.run({ ownerId, year, stepId: '9' }, this.db);
-    const prev = resolveTemplateSlots(existing?.evidence_json);
+    const prev = readTemplateSlots(existing?.evidence_json);
     const next = assignTemplateSlot(prev, templateName, reportType);
+
+    // A locked template that isn't already one of this year's is another year's final template:
+    // locking it here would let this year unlock it later, out from under that year.
+    if (templateName !== prev.balanceSheet && templateName !== prev.profitAndLoss) {
+      const template = await this.dynamicReportProvider.getTemplate({
+        name: templateName,
+        ownerId,
+      });
+      if (template?.is_locked) {
+        throw new GraphQLError(
+          `Report template "${templateName}" is locked as another year's final template`,
+        );
+      }
+    }
 
     // Unlock templates this year no longer references (best-effort; they may be gone already),
     // and drop them from any other audit year still pointing at them.
