@@ -6,6 +6,9 @@ export const RECORD_TERMINATOR = '\r\n';
 /** The file ends with X'0D0A1A': the last record's CR LF followed by SUB (X'1A'). */
 export const END_OF_FILE_MARKER = '\x1a';
 
+/** Every report record is exactly this many characters (header + filler + three sections). */
+export const REPORT_RECORD_LENGTH = 8612;
+
 /** The specification allows at most 10 reports (records) in a single file. */
 export const MAX_REPORTS_PER_FILE = 10;
 
@@ -24,6 +27,15 @@ export function frameReportFile(records: string | string[]): string {
     throw new Error(
       `A SHAAM 6111 file can contain at most ${MAX_REPORTS_PER_FILE} reports (got ${recordList.length})`,
     );
+  }
+  // A wrong-length record (a mis-padded field, a truncated or already-framed string) would put the
+  // CR LF at the wrong offset and misalign every record after it
+  for (const [index, record] of recordList.entries()) {
+    if (record.length !== REPORT_RECORD_LENGTH) {
+      throw new Error(
+        `SHAAM 6111 report ${index + 1} must be ${REPORT_RECORD_LENGTH} characters long (got ${record.length})`,
+      );
+    }
   }
   return recordList.map(record => record + RECORD_TERMINATOR).join('') + END_OF_FILE_MARKER;
 }

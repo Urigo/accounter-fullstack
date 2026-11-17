@@ -14,6 +14,7 @@ export {
   RECORD_TERMINATOR,
   END_OF_FILE_MARKER,
   MAX_REPORTS_PER_FILE,
+  REPORT_RECORD_LENGTH,
 } from './generators/index.js';
 
 // Export parsers

@@ -7,6 +7,7 @@ import {
 } from '../src/generators/generate-report-file.js';
 import { generateReport } from '../src/generators/generate-report.js';
 import { parseReport } from '../src/parsers/parse-report.js';
+import { convertReportToFile, readReportFromFile } from '../src/utils/file-utils.js';
 import { validReportData1 } from './fixtures/validDataSets/data1.js';
 
 describe('frameReportFile', () => {
@@ -31,6 +32,14 @@ describe('frameReportFile', () => {
     const record = generateReport(validReportData1, false);
     expect(() => frameReportFile([])).toThrow();
     expect(() => frameReportFile(Array.from({ length: 11 }, () => record))).toThrow();
+  });
+
+  it('rejects a record that is not exactly 8612 characters', () => {
+    const record = generateReport(validReportData1, false);
+    expect(() => frameReportFile(record.slice(0, -1))).toThrow(/report 1 must be 8612/);
+    expect(() => frameReportFile([record, `${record}0`])).toThrow(/report 2 must be 8612/);
+    // an already-framed string must not be framed twice
+    expect(() => frameReportFile(frameReportFile(record))).toThrow(/got 8615/);
   });
 
   it('can still be parsed back after framing', () => {
@@ -59,5 +68,24 @@ describe('encodeReportFile', () => {
     expect(bytes.includes(0xf4)).toBe(true);
     expect(bytes.includes(0xfa)).toBe(true);
     expect(bytes.includes(0xd7)).toBe(false);
+  });
+});
+
+describe('convertReportToFile / readReportFromFile', () => {
+  it('writes a framed Windows-1255 file that reads back to the same report', async () => {
+    const data = {
+      ...validReportData1,
+      header: { ...validReportData1.header, businessDescription: 'פיתוח תוכנה' },
+    };
+    const file = convertReportToFile(data, 'DKASPI.DAT', false);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+
+    expect(file.name).toBe('DKASPI.DAT');
+    expect(bytes).toHaveLength(8612 + 3);
+    expect(Array.from(bytes.slice(-3))).toEqual([0x0d, 0x0a, 0x1a]);
+
+    const parsed = await readReportFromFile(file, true, false);
+    expect(parsed).toEqual(parseReport(generateReport(data, false), false));
+    expect(typeof parsed !== 'string' && parsed.header.businessDescription).toBe('פיתוח תוכנה');
   });
 });
