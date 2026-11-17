@@ -51,10 +51,20 @@ export interface Codec {
   /** Returns exactly `shape.length` characters. Throws Opcn1214InternalError for a value that
    *  validation should have rejected (encoders never repair data). */
   encode(value: Primitive, shape: FieldShape): string
-  /** Inverse of encode. Throws CodecDecodeError (reason: 'numeric' | 'date' | 'format') for raw
-   *  text that cannot be decoded; the parser converts it into a parse.* issue. */
+  /** Inverse of encode. All-zero numeric text decodes to 0 and all-space text to undefined; the
+   *  record codec (B4) decides whether 0 means "absent" (it does for non-required header fields,
+   *  except amountX). Throws CodecDecodeError for raw text that cannot be decoded; the parser
+   *  converts it into a parse.* issue. */
   decode(raw: string, shape: FieldShape): Primitive
 }
+
+export class CodecDecodeError extends Error {
+  readonly reason: 'numeric' | 'date' | 'format' | 'section' | 'length'
+  readonly offset: number // 0-based offset within the decoded text (field, section or line)
+}
+
+// src/normalize/paths.ts — created in C1, shared by the normalizer and the parser (C7b)
+export function pathFor(recordType: RecordType, inputIndex: number, key: string): string
 
 // src/model/normalized.ts — created in C1
 export interface NormalizedRecord {
@@ -74,7 +84,7 @@ export interface NormalizedReport {
   omittedZeroCodes: Array<{ record: RecordType; recordIndex: number; code: string }>
 }
 
-// src/pipeline.ts — created in C3, extended in C5
+// src/pipeline.ts — created in C3 (year stage included), extended in C5 (shape stage)
 export function runPipeline(
   input: unknown,
   options?: ValidateOptions
@@ -86,7 +96,7 @@ Value conventions inside `NormalizedRecord.values` (by kind):
 | Kind(s)                                                                        | Value type in the model                       |
 | ------------------------------------------------------------------------------ | --------------------------------------------- |
 | `text`, `hebrewText`                                                           | normalized `string` (SPEC §4.3)               |
-| `id9`, `shareholderId`                                                         | digit `string` (kept as string)               |
+| `id9`, `shareholderId`, `digits`                                               | digit `string` (kept as string)               |
 | `num`, `year`, `count`, `serial`, `const`, `foreignCode`, `enum`               | `number` (enums already mapped to their code) |
 | `amount`, `amountX`, `amountX100`, `rateX100`, `percentX100`, `percentLiteral` | `number` in natural units (ILS, percent)      |
 | `date`                                                                         | ISO `YYYY-MM-DD` `string`                     |
@@ -99,25 +109,47 @@ A value that failed a type conversion in the normalizer (e.g. `'12a'` for a nume
 **as the raw input** so the field rules report it; encoders are never reached with it because
 generation stops on errors.
 
-### 1.3 Spec deltas introduced by this plan
+Facts that exist in the input but have no field of their own (a 6th reportable position, an explicit
+`hasCapitalGainsAppendix: false` while appendices exist, an invalid phone prefix that is dropped)
+are reported by the normalizer as `notices` with the rule ID that owns them; the engine merges
+notices with the other stages.
 
-Step A1 applies these to `SPEC.md` so the spec stays the single source of truth.
+### 1.3 Spec changes made with this plan
 
-| #    | Change                                                                                                                                                                                                                                                                       | Why                                                   |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| D-1  | `src/encode/` + `src/decode/` become `src/codec/` (paired codecs) and `src/file/` (assemble/split lines). `src/pipeline.ts` is added.                                                                                                                                        | Shared implementation, round-trip tests per primitive |
-| D-2  | The parser ships in Part C (walking skeleton), not in a late phase; each later record slice adds encode **and** decode together.                                                                                                                                             | No orphan code; round trip from the first report      |
-| D-3  | Canonical form (SPEC §8.4) additions: digit-string inputs mapped to numeric fields are canonicalized to the field width with zero padding (`'12'` → `'012'` for a 3-digit branch); optional numeric header values equal to `0` are absent.                                   | Makes `parse(generate(x)) = canonicalize(x)` exact    |
-| D-4  | Header fillers are ignored on decode (only the 9–136 prefix is checked, `parse.prefixFiller`); generation always writes zeros/spaces.                                                                                                                                        | Tolerant parser, strict generator                     |
-| D-5  | `main.kibbutz.code226` splits into `main.kibbutz.code226` (E: kibbutz without code 226) and `main.kibbutz.code226Other` (W: code 226 = 9 while kibbutz). `field.phonePrefix` is W only (the follow-up `field.required` is the error).                                        | One severity per rule ID                              |
-| D-6  | `cg.code018` is removed; code 018 in 30xx records is covered by `field.enum` (allowed values 23, 50).                                                                                                                                                                        | No duplicate rules                                    |
-| D-7  | Tests are type-checked by a dedicated `tsconfig.typecheck.json` (`typecheck` script); package tests run with the package Vitest config (the root `unit` project needs Postgres).                                                                                             | Type-safe tests, fast local runs                      |
-| D-8  | Phase mapping: P0 = Part A, P1 = Parts B–D, P2 = Part E, P3 = Part F, P4 = Part G, P5 + P6 = Part H.                                                                                                                                                                         | Plan/spec alignment                                   |
-| D-9  | `field.taxYear` is removed: the shape stage only admits supported years and the parser selects the layout from 1000@146, so the rule can never fire.                                                                                                                         | Every rule must have a failing case                   |
-| D-10 | `struct.section.overflow` is removed: with every code of a record filled, each section still fits (1000: 1295 of 2048; 2000: 765 of 1024; largest 30xx: 273 of 1024). A layout integrity test asserts this per year, and the section encoder keeps its internal-error guard. | Every rule must have a failing case                   |
-| D-11 | `struct.foreignCountryRecords.max` is removed: one 2200 record per per-country code and only 23 such codes exist, so input can produce at most 23 (< 30); parsed files exceeding 30 are reported by `parse.occurrences`.                                                     | Every rule must have a failing case                   |
+All rows below are **already applied** to `SPEC.md` (and D-13 to `layout/2024/fields.csv`) in the
+same commit as this plan; agents implement the spec as it now reads. The table is the change log.
 
-### 1.4 Test strategy at a glance
+| #    | Change                                                                                                                                                                                                                                                                                                         | Why                                                   |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| D-1  | `src/encode/` + `src/decode/` become `src/codec/` (paired codecs) and `src/file/` (assemble/split lines). `src/pipeline.ts` is added.                                                                                                                                                                          | Shared implementation, round-trip tests per primitive |
+| D-2  | The parser ships in Part C (walking skeleton), not in a late phase; each later record slice adds encode **and** decode together.                                                                                                                                                                               | No orphan code; round trip from the first report      |
+| D-3  | Canonical form (SPEC §8.4) additions: digit-string inputs mapped to numeric fields are canonicalized to the field width with zero padding (`'12'` → `'012'` for a 3-digit branch); optional numeric header values equal to `0` are absent.                                                                     | Makes `parse(generate(x)) = canonicalize(x)` exact    |
+| D-4  | Header fillers are ignored on decode (only the 9–136 prefix is checked, `parse.prefixFiller`); generation always writes zeros/spaces.                                                                                                                                                                          | Tolerant parser, strict generator                     |
+| D-5  | `main.kibbutz.code226` splits into `main.kibbutz.code226` (E: kibbutz without code 226) and `main.kibbutz.code226Other` (W: code 226 = 9 while kibbutz). `field.phonePrefix` is W only (the follow-up `field.required` is the error).                                                                          | One severity per rule ID                              |
+| D-6  | `cg.code018` is removed; code 018 in 30xx records is covered by `field.enum` (allowed values 23, 50).                                                                                                                                                                                                          | No duplicate rules                                    |
+| D-7  | Tests are type-checked by a dedicated `tsconfig.typecheck.json` (`typecheck` script); package tests run with the package Vitest config (the root `unit` project needs Postgres).                                                                                                                               | Type-safe tests, fast local runs                      |
+| D-8  | Phase mapping: P0 = Part A, P1 = Parts B–D, P2 = Part E, P3 = Part F, P4 = Part G, P5 + P6 = Part H.                                                                                                                                                                                                           | Plan/spec alignment                                   |
+| D-9  | `field.taxYear` is removed: the shape stage only admits supported years and the parser selects the layout from 1000@146, so the rule can never fire.                                                                                                                                                           | Every rule must have a failing case                   |
+| D-10 | `struct.section.overflow` is removed: with every code of a record filled, each section still fits (1000: 1295 of 2048; 2000: 765 of 1024; largest 30xx: 273 of 1024). A layout integrity test asserts this per year, and the section encoder keeps its internal-error guard.                                   | Every rule must have a failing case                   |
+| D-11 | `struct.foreignCountryRecords.max` is removed: one 2200 record per per-country code and only 23 such codes exist, so input can produce at most 23 (< 30); parsed files exceeding 30 are reported by `parse.occurrences`.                                                                                       | Every rule must have a failing case                   |
+| D-12 | Slot-aware `field.required`: a required field inside a repeated slot (`improvements[i].date`, …) is required only when another key of that slot has a value. `cg.improvements.date` is removed (covered).                                                                                                      | Empty slots must not raise errors                     |
+| D-13 | New kind `digits` for identifier digit strings stored in numeric fields (phone numbers, withholder branch/account; 27 rows of fields.csv); `num` is numbers only.                                                                                                                                              | `field.phoneNumber` and round trip need the string    |
+| D-14 | `field.enum` applies to kinds `enum` and `rateX100` only (special values of `shareholderId`, and `values` of `yesNo`/`flag`/`const`/`phonePrefix`, are documentation, not exhaustive lists). `field.charset` owns the "no control characters" check; the windows-1255 helper checks code-page membership only. | Precise rule scope; CRLF is encodable                 |
+| D-15 | Parser: only maximum occurrences are enforced (`struct.shareholders.min` handles the minimum); an unsupported year in a file is `struct.taxYear.unsupported`. Goldens are committed PENDING with their sha256 in `VERIFICATION.md`, asserted by the golden test. RuleCase kinds `input`, `file`, `batch`.      | Kibbutz files parse; goldens cannot change silently   |
+| D-16 | The zod schema accepts any string for phone prefixes and country codes (rules check them); unknown/derived code keys are reported before zod and removed; `unrecognized_keys` becomes one `input.shape` issue per key; path segments that are not identifiers use `["…"]`.                                     | Rules stay reachable; no double reports               |
+
+### 1.4 Plan review record
+
+An independent review (23 findings) was applied: blockers fixed — CRLF vs. the windows-1255 helper
+(B2), the `RuleId` circular type (C3), `struct.taxYear.unsupported` ordering (C3),
+schema-unreachable rules (C5, F2), empty improvement slots (D-12); majors — `digits` kind (D-13),
+decode/optional split (B1/B4), `field.enum` scope (D-14), zod issue mapping (C5/D3, D-16), file-case
+semantics and parse paths (C7b), notices for input-only facts (§1.2), `main-full` moved to D5,
+generated files ignored by lint and tests run last, file paths via `import.meta.url`, `typecheck` in
+CI, C7 split into C7a/C7b, golden sha256 guard, maxima-only parse occurrences; minors folded into
+the affected steps.
+
+### 1.5 Test strategy at a glance
 
 - **Unit tests per codec** with round trip (`decode(encode(v)) === v`) and exact-string asserts.
 - **Generic layout tests** that run every record type of the year through the record codec with
@@ -125,7 +157,9 @@ Step A1 applies these to `SPEC.md` so the spec stays the single source of truth.
 - **Rule cases**: `tests/rules/cases.ts` is typed `{ [K in RuleId]: RuleCase }`, so adding a rule
   without a pass/fail case is a type error; `rules.test.ts` runs every case.
 - **Golden files** (`tests/fixtures/golden/*.opcn`, windows-1255 bytes) for byte-level stability,
-  each verified once on SHAAM's structure checker by a human (checkpoints in Part 3).
+  each verified once on SHAAM's structure checker by a human (checkpoints in Part 3); their sha256
+  is recorded in `VERIFICATION.md` and asserted, so regenerating a golden is always a visible
+  change.
 - **Round trip** generate → parse → `canonicalize` for every fixture; parse → generate byte equality
   for every golden file; seeded randomized inputs at the end (H3).
 
@@ -173,7 +207,7 @@ response-file parsing were separated from parser hardening.
 
 | Step | Title                                                      | Adds rules                                                                                                                                                                                                                                                                                                  | Golden / checkpoint                    |
 | ---- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| A1   | Tooling baseline and spec deltas                           | —                                                                                                                                                                                                                                                                                                           |                                        |
+| A1   | Tooling baseline                                           | —                                                                                                                                                                                                                                                                                                           |                                        |
 | A2   | Layout generator v1: records and header fields             | —                                                                                                                                                                                                                                                                                                           |                                        |
 | A3   | Layout generator v2: codes, countries, code unions         | —                                                                                                                                                                                                                                                                                                           |                                        |
 | A4   | Layout registry, integrity tests, first public exports     | —                                                                                                                                                                                                                                                                                                           |                                        |
@@ -183,16 +217,17 @@ response-file parsing were separated from parser hardening.
 | B4   | Record codec and all-records round trip                    | —                                                                                                                                                                                                                                                                                                           |                                        |
 | C1   | Skeleton input model and normalizer (1000 core + 1020)     | —                                                                                                                                                                                                                                                                                                           |                                        |
 | C2   | File assembly and the 9999 control record                  | —                                                                                                                                                                                                                                                                                                           |                                        |
-| C3   | Validation framework and first field rules                 | `field.required` `field.numeric` `field.length` `field.charset`                                                                                                                                                                                                                                             |                                        |
+| C3   | Validation framework, year stage, first field rules        | `struct.taxYear.unsupported` `field.required` `field.numeric` `field.length` `field.charset`                                                                                                                                                                                                                |                                        |
 | C4   | Remaining generic field rules                              | `field.integer` `field.decimals` `field.negative` `field.enum` `field.date` `field.percentRange` `field.hebrewFirstLetter` `field.phonePrefix` `field.phoneNumber`                                                                                                                                          |                                        |
-| C5   | Shape stage (zod)                                          | `input.shape` `struct.taxYear.unsupported`                                                                                                                                                                                                                                                                  |                                        |
+| C5   | Shape stage (zod)                                          | `input.shape`                                                                                                                                                                                                                                                                                               |                                        |
 | C6   | Public API v1: `validate1214`, `generate1214`              | —                                                                                                                                                                                                                                                                                                           | `minimal` · **CP-1**                   |
-| C7   | Parser v1 and round trip                                   | `parse.empty` `parse.encoding` `parse.lineLength` `parse.formType` `parse.recordType` `parse.prefixFiller` `parse.order` `parse.control.missing` `parse.control.counts` `parse.numeric` `parse.date` `parse.codeSection`                                                                                    |                                        |
+| C7a  | Parser v1: happy path and round trip                       | —                                                                                                                                                                                                                                                                                                           |                                        |
+| C7b  | Parser v1: structural errors                               | `parse.empty` `parse.encoding` `parse.lineLength` `parse.formType` `parse.recordType` `parse.prefixFiller` `parse.order` `parse.control.missing` `parse.control.counts` `parse.numeric` `parse.date` `parse.codeSection`                                                                                    |                                        |
 | D1   | Declarations and preparer                                  | —                                                                                                                                                                                                                                                                                                           |                                        |
 | D2   | Other income, attachments, CG summary, qualifying company  | —                                                                                                                                                                                                                                                                                                           |                                        |
-| D3   | Derived main codes and code-map guards                     | `input.derivedCode` `input.unknownCode` `struct.mainCodePairs.max` `main.bankAccount.format`                                                                                                                                                                                                                | `main-full`                            |
+| D3   | Derived main codes and code-map guards                     | `input.derivedCode` `input.unknownCode` `struct.mainCodePairs.max` `main.bankAccount.format`                                                                                                                                                                                                                |                                        |
 | D4   | Record 1000 conditional requirements                       | `main.familyCompany.*` `main.houseCompany.code084` `main.investmentLaw.flag` `main.beneficiaryEnterprise.noticeDate` `main.specialYear.balanceSheetDate` `main.kibbutz.code226` `main.buildingIncome.code259` `main.cgReasons.otherText` `main.reportablePositions.required` `main.reportablePositions.max` |                                        |
-| D5   | Record 1000 warnings and shareholder rules                 | `main.kibbutz.code226Other` `main.reportablePositions.unexpected` `main.cgUntransmitted.*` `main.bankAccount.withNoBank` `main.qualifyingCompany.*` `main.attachments.*` `shareholders.*` `struct.shareholders.min` `struct.shareholders.max`                                                               | `kibbutz` · **CP-2**                   |
+| D5   | Record 1000 warnings and shareholder rules                 | `main.kibbutz.code226Other` `main.reportablePositions.unexpected` `main.cgUntransmitted.*` `main.bankAccount.withNoBank` `main.qualifyingCompany.*` `main.attachments.*` `shareholders.*` `struct.shareholders.min` `struct.shareholders.max`                                                               | `main-full` `kibbutz` · **CP-2**       |
 | E1   | Related companies (1010)                                   | `struct.relatedCompanies.max`                                                                                                                                                                                                                                                                               |                                        |
 | E2   | R&D investments (1030)                                     | `struct.rdInvestments.max` `main.rd.records` `main.rd.total`                                                                                                                                                                                                                                                | `related-and-rd`                       |
 | F1   | Foreign appendix (2000)                                    | `foreign.otherIncome.description` `foreign.refund.amount`                                                                                                                                                                                                                                                   |                                        |
@@ -201,7 +236,7 @@ response-file parsing were separated from parser hardening.
 | G2   | Securities with withholders: 3060, 3064                    | —                                                                                                                                                                                                                                                                                                           | `cg-60` `cg-64`                        |
 | G3   | No-withholding appendices: 3065, 3066                      | —                                                                                                                                                                                                                                                                                                           | `cg-65` `cg-66`                        |
 | G4   | Asset appendices: 3027, 3050, 3054, 3051                   | —                                                                                                                                                                                                                                                                                                           | `cg-27` `cg-50` `cg-54` `cg-51`        |
-| G5   | Other transactions: 3077                                   | `cg.improvements.*` `cg.virtualCurrency.wallet`                                                                                                                                                                                                                                                             | `cg-77` `capital-gains-max` · **CP-4** |
+| G5   | Other transactions: 3077                                   | `cg.improvements.max` `cg.improvements.code50Amount` `cg.virtualCurrency.wallet`                                                                                                                                                                                                                            | `cg-77` `capital-gains-max` · **CP-4** |
 | H1   | Parser hardening and batches                               | `parse.occurrences` `parse.multipleReports` `parse.derivedMismatch` `struct.batch.size`                                                                                                                                                                                                                     | `batch-50`                             |
 | H2   | Response file parser                                       | —                                                                                                                                                                                                                                                                                                           |                                        |
 | H3   | Property, determinism and edge-case suite                  | —                                                                                                                                                                                                                                                                                                           | `hebrew-edge`                          |
@@ -242,7 +277,9 @@ Working rules
    yarn workspace @accounter/opcn1214-generator add --exact <pkg>@<version>
 5. Tests live in packages/opcn1214-generator/tests/**, use Vitest globals, import from src/ (never
    dist/). Assert exact substrings of encoded lines at layout positions, e.g.
-   line.slice(pos - 1, pos - 1 + len), in addition to any snapshot.
+   line.slice(pos - 1, pos - 1 + len), in addition to any snapshot. Tests that read files (SPEC.md,
+   CSVs, generated modules, goldens) resolve paths with new URL('…', import.meta.url): the root test
+   runner uses the repository root as its working directory.
 6. Never hand-edit generated files (src/layout/*/layout.generated.ts, src/model/codes.generated.ts)
    or golden files (tests/fixtures/golden/*.opcn). Regenerate them with their scripts.
 7. If the spec is silent or ambiguous, choose the simplest behaviour consistent with SPEC §15,
@@ -251,12 +288,12 @@ Working rules
 8. Keep SPEC.md, RULES (src/validate/rules.ts) and tests/rules/cases.ts consistent: every rule ID
    added in a step exists in all three.
 
-Verify bundle (run at the end of every step; all must pass)
+Verify bundle (run at the end of every step, in this order; all must pass)
   yarn workspace @accounter/opcn1214-generator typecheck
-  yarn workspace @accounter/opcn1214-generator test --run
-  yarn workspace @accounter/opcn1214-generator lint
-  yarn workspace @accounter/opcn1214-generator build
+  yarn workspace @accounter/opcn1214-generator build        # runs `lint --fix` first, then bob
   yarn prettier --check packages/opcn1214-generator
+  yarn workspace @accounter/opcn1214-generator test --run   # last: catches anything lint --fix changed
+  git status                                               # lint --fix may have edited files: commit them
 (Do not use the root `yarn test`: its global setup requires Postgres.)
 
 Finish every step with one commit using the message given in the step, ending with the
@@ -279,14 +316,14 @@ The package currently contains only documentation, a placeholder src/index.ts an
 running `vitest --passWithNoTests`. Tests are not type-checked (tsconfig.json excludes tests/).
 
 Read first
-- IMPLEMENTATION_PLAN.md Part 1 (§1.3 spec deltas D-1..D-11)
-- SPEC.md §5.2, §5.5, §8.4, §10.3, §10.6, §12, §13
+- IMPLEMENTATION_PLAN.md Part 1 (contracts; §1.3 lists spec changes that are already applied)
+- SPEC.md §5.2, §5.5, §13.9
 - package.json, tsconfig.json, vitest.config.ts of this package; the root tsconfig.json comment on
   `incremental` and CLAUDE.md "TypeScript Build Cache"
 
 Goal
-A test/typecheck harness ready for TDD, the runtime and dev dependencies the plan needs, and
-SPEC.md updated with the plan's deltas.
+A test/typecheck harness ready for TDD, the runtime and dev dependencies the plan needs, and CI that
+runs the type check.
 
 Tests first
 1. tests/smoke.test.ts — imports `SPEC_STATUS` from src/index.ts and asserts it equals
@@ -300,19 +337,8 @@ Implementation
 - package.json scripts: "typecheck": "tsc -p tsconfig.typecheck.json"; "test": "vitest"
   (remove --passWithNoTests); "generate:layout": "tsx scripts/generate-layout.ts" (the script is
   created in A2 — add the script entry in A2 instead if your tooling rejects a missing file).
-- SPEC.md: apply deltas D-1..D-11 from IMPLEMENTATION_PLAN.md §1.3:
-  - §5.2 tree: replace encode/ and decode/ with codec/ (primitives, sections, record, windows1255)
-    and file/ (assemble, split, parse); add src/pipeline.ts and normalize/canonical.ts;
-    tsconfig.typecheck.json.
-  - §8.4: add the canonical-form rules of D-3.
-  - §8.2 step 4: header fillers are ignored on decode (D-4).
-  - §10.3: split main.kibbutz.code226 into code226 (E) and code226Other (W) (D-5); §10.2
-    field.phonePrefix severity W (D-5).
-  - §10.6: remove cg.code018 and say code 018 is covered by field.enum (D-6).
-  - §10.2: remove field.taxYear (D-9).
-  - §10.1: remove struct.section.overflow (D-10) and struct.foreignCountryRecords.max (D-11).
-  - §12: add the phase-to-part mapping of D-8 and a pointer to IMPLEMENTATION_PLAN.md.
-  - §13.9: test commands use the package config (D-7).
+- .github/workflows/opcn1214-generator-test.yml: add a "Typecheck" step
+  (yarn workspace @accounter/opcn1214-generator typecheck) between install and build.
 
 Wiring
 - The smoke test runs in `yarn workspace @accounter/opcn1214-generator test --run`.
@@ -328,8 +354,7 @@ smoke test (then remove it).
 Commit: "chore(opcn1214-generator): tooling baseline for implementation"
 
 Done when
-- The verify bundle passes with one test.
-- SPEC.md reflects D-1..D-11 and still passes prettier.
+- The verify bundle passes with one test; the workflow runs typecheck, build and test.
 ```
 
 #### A2 — Layout generator v1: records and header fields
@@ -356,8 +381,10 @@ Tests first
    quoted newlines, CRLF and LF line endings, trailing newline, Hebrew text; header row mapped to
    objects; a row with the wrong number of columns throws with its line number.
 2. tests/scripts/values.test.ts — the `values` grammar (`;`-separated items: `n`, `n..m`,
-   `n=label`): '1=yes;2=no' → [{value:1,label:'yes'},{value:2,label:'no'}]; '1..12' → 12 items;
-   '5;8;10;15;115;20'; '999999964=…;999999998=…'; '' → undefined; malformed input throws.
+   `n=label`; split each item on the FIRST '=' only): '1=yes;2=no' →
+   [{value:1,label:'yes'},{value:2,label:'no'}]; '1..12' → 12 items; '5;8;10;15;115;20';
+   '999999964=…;999999998=…'; the 1000@834 value whose label contains '=' ("… (code 297=8)");
+   '' → undefined; malformed input throws.
 3. tests/layout/codegen-sync.test.ts — renders the module in memory from the CSVs with the same
    function the script uses (including prettier formatting with the repo config) and asserts it
    equals the committed layout.generated.ts.
@@ -367,8 +394,9 @@ Tests first
    derived fields are exactly the rows whose CSV key starts with "(derived) ".
 
 Implementation
-- src/layout/types.ts — RecordType, FieldKind, CodeKind ('amount'|'amountX100'|'rateX100'|'enum'|
-  'num'), EnumValue, FieldDef (add `derived: boolean`; `key` without the "(derived) " prefix),
+- src/layout/types.ts — RecordType, FieldKind (SPEC §4.2, including 'digits'), CodeKind
+  ('amount'|'amountX100'|'rateX100'|'enum'|'num'), EnumValue, FieldDef (`derived: boolean`; `key`
+  without the "(derived) " prefix),
   CodeDef, RecordDef, YearLayout (SPEC §5.4). CodeDef/countries are declared now but stay empty
   until A3 (records get `codes: []`, layout gets `countries: new Map()`).
 - scripts/layout/csv.ts — small RFC-4180 parser (no dependency).
@@ -379,6 +407,8 @@ Implementation
 - scripts/generate-layout.ts — for each documentation/layout/<year>/ directory, read the CSVs, write
   src/layout/<year>/layout.generated.ts. Header comment: "Generated by scripts/generate-layout.ts
   from documentation/layout/<year>/ — do not edit."
+- package.json "lint": add --ignore-pattern '**/*.generated.ts' so `lint --fix` (run by `build`)
+  never rewrites generated files; the codegen-sync test is the guard.
 - src/layout/registry.ts — `getLayout(taxYear: number): YearLayout` for 2024 only for now
   (other years: throw a plain Error; A4 replaces it with the public error class).
 
@@ -441,6 +471,7 @@ Implementation
   `as const` arrays of each. JSDoc on each code literal: the Hebrew notesHe when present.
 - YearLayout.limits: { reportsPerFile: 50, capitalGainsAppendices: 14, mainCodePairs: 61,
   countriesPerRecord: 10 }.
+- RecordDef.section.maxEntries: 1000 → 61; 2200 → 10; every other record → its number of codes.
 
 Wiring
 - getLayout(2024) now returns codes and countries; codes.generated.ts is imported by nothing in
@@ -534,8 +565,8 @@ Read first
 - IMPLEMENTATION_PLAN.md §1.2; SPEC §4.1, §4.2 (kinds table), §4.4, §15 A-1, A-21.
 
 Goal
-src/codec/ with the contract, padding helpers and codecs for: num, id9, shareholderId, year, count,
-serial, const, foreignCode, amount, amountX, amountX100, rateX100, filler.
+src/codec/ with the contract, padding helpers and codecs for: num, digits, id9, shareholderId, year,
+count, serial, const, foreignCode, amount, amountX, amountX100, rateX100, filler.
 
 Tests first (tests/codec/numeric.test.ts, table-driven)
 1. padNumeric / padAlphanumeric — right-aligned; numeric pads '0' on the left; alphanumeric pads
@@ -547,13 +578,14 @@ Tests first (tests/codec/numeric.test.ts, table-driven)
    zeros, alphanumeric → spaces; undefined → zeros (numeric) or spaces (alphanumeric)).
 3. Encoders throw Opcn1214InternalError for: negative, non-integer amount, NaN, more than 2 decimals
    for ×100 kinds, value wider than the field, non-digit id9.
-4. Round trip: decode(encode(v)) equals v for representative values of each kind; decode of an
-   all-zero optional numeric field returns undefined (D-3); id9 decodes to the full-width string;
-   decode of non-digits throws CodecDecodeError with reason 'numeric'.
+4. Round trip: decode(encode(v)) equals v for representative values of each kind; all-zero numeric
+   text decodes to 0 (deciding "absent" is the record codec's job, B4); id9/shareholderId/digits
+   decode to the full-width digit string ('12' encoded in 3 → '012' → '012'); decode of non-digits
+   throws CodecDecodeError with reason 'numeric' and the offset of the first bad character.
 
 Implementation
-- src/codec/types.ts — Primitive, FieldShape, Codec, CodecDecodeError (internal, not exported from
-  index).
+- src/codec/types.ts — Primitive, FieldShape, Codec, CodecDecodeError (reason + offset, exactly as
+  in IMPLEMENTATION_PLAN.md §1.2; internal, not exported from index).
 - src/codec/padding.ts — padNumeric, padAlphanumeric, ALPHANUMERIC_PAD_SIDE (SPEC §15 A-1).
 - src/codec/numeric.ts — the codecs above. ×100 scaling uses Math.round(v * 100) after checking
   Math.abs(v * 100 - Math.round(v * 100)) <= 1e-6 (SPEC §4.4).
@@ -595,22 +627,27 @@ normalizeText, windows-1255 helpers and codecs for all remaining kinds.
 Tests first
 1. tests/normalize/text.test.ts — each §4.3 rule: NFC, bidi controls removed, NBSP/tab → space,
    typographic quotes and dashes replaced, trim and collapse; Hebrew stays in logical order;
-   geresh/gershayim and niqqud kept; control characters are NOT removed (validation reports them).
-2. tests/codec/windows1255.test.ts — encodeWindows1255('שלום abc') round-trips through
-   decodeWindows1255; byte length equals string length for representable text;
-   isWindows1255Representable is false for emoji, CJK, '\u0000'-'\u001F'; encodeWindows1255 throws
-   Opcn1214InternalError if any character is not representable (never emits '?').
+   geresh/gershayim and niqqud kept; control characters are NOT removed (validation reports them);
+   isAllowedTextChar(ch) is false for U+0000–U+001F, U+007F and anything not in windows-1255.
+2. tests/codec/windows1255.test.ts — encodeWindows1255('שלום abc\r\n') round-trips through
+   decodeWindows1255; byte length equals string length; isWindows1255Representable is true for
+   Hebrew, ASCII and CR/LF and false for emoji and CJK (iconv would emit '?' for them);
+   encodeWindows1255 throws Opcn1214InternalError if any character is not in the code page (never
+   emits '?'). The "no control characters in text" check is NOT here (D-14): it is
+   isAllowedTextChar in src/normalize/text.ts, used by field.charset in C3.
 3. tests/codec/text.test.ts — text/hebrewText alnum padding and round trip; value wider than field
    throws; date '2024-12-31' ↔ '31/12/2024', all spaces ↔ undefined, invalid raw date →
    CodecDecodeError('date'); flag true → '1', undefined → '0', '1' → true, '0' → undefined; yesNo
    true → '1', false → '2', undefined → '0'; enum 12 width 3 → '012' (value must be in shape.values,
    else InternalError); phonePrefix '02' in alphanumeric width 3 → ' 02' and in numeric width 3 →
-   '002' (A-19); percentX100 10.23 → ' 1023' (alnum, width 5); percentLiteral 100 → '00100',
+   '002' (A-19), and both decode back to '02' (strip padding, keep the prefix's own leading zero:
+   decode by stripping padding and leading zeros, then picking the allowed prefix with the same
+   significant digits: '002' → '02', ' 02' → '02', '052' → '052'); percentX100 10.23 → ' 1023' (alnum, width 5); percentLiteral 100 → '00100',
    10.23 → '10.23', 5.5 → '05.50', and decode back to numbers.
 4. tests/codec/registry.test.ts — every FieldKind and CodeKind resolves through codecFor.
 
 Implementation
-- src/normalize/text.ts — normalizeText(value: string): string.
+- src/normalize/text.ts — normalizeText(value: string): string; isAllowedTextChar(ch: string).
 - src/codec/windows1255.ts — iconv-lite wrappers (encode, decode, isWindows1255Representable).
 - src/codec/text.ts, src/codec/date.ts, src/codec/boolean.ts, src/codec/enum.ts,
   src/codec/percent.ts, src/codec/phone.ts.
@@ -702,8 +739,9 @@ generated sample values.
 
 Tests first
 1. tests/helpers/sample-values.ts (test helper) — sampleRecord(def): NormalizedRecord with a valid,
-   width-fitting value for every non-filler field (by kind) and, for code-amount records, three
-   codes of different kinds; for 2200 two countries.
+   width-fitting, NON-ZERO value for every non-filler field (by kind) and, for code-amount records,
+   up to three codes covering every code kind the record has (several records have only `amount`
+   codes); for 2200 two countries.
 2. tests/codec/record.test.ts — for every RecordDef of getLayout(2024):
    - encodeRecord(def, sampleRecord(def)) has length def.length, starts with '1214' + type +
      '0' × 128;
@@ -711,13 +749,19 @@ Tests first
    - decodeRecord(def, line, 0) deep-equals the sample (values, codes, countries).
 3. encodeRecord throws Opcn1214InternalError when the produced length differs (simulate with a
    corrupted RecordDef in the test).
-4. decodeRecord throws CodecDecodeError for a wrong length or a prefix mismatch, with the column.
+4. decodeRecord throws CodecDecodeError (reason 'length' or 'format', offset = column - 1) for a
+   wrong length or a prefix mismatch.
+5. Absent values: for header fields with required !== 'yes', decodeRecord maps a decoded 0 to
+   undefined (exception: amountX, where 0 is meaningful) and an all-zero digit string (id9,
+   shareholderId, digits) to undefined; required fields keep 0 (e.g. 9999 counts). Test with a
+   sample record whose optional numeric fields are undefined: encode → decode gives undefined.
 
 Implementation
 - src/model/normalized.ts — NormalizedRecord, NormalizedReport (as in §1.2; NormalizedReport.notices
   uses the Issue type from src/validate/issue.ts).
 - src/codec/record.ts — encodeRecord, decodeRecord (fillers: write zeros/spaces, ignore on decode
-  per D-4; derived fields are encoded/decoded like any other field).
+  (SPEC §8.2 step 4); derived fields are encoded/decoded like any other field; the absent-value
+  mapping of test 5).
 
 Wiring
 The record codec is the only way later code turns records into lines and back.
@@ -760,13 +804,15 @@ normalizeReport(input, layout, options) → NormalizedReport for the skeleton su
 
 Tests first
 1. tests/fixtures/builders.ts — `minimalInput(overrides?)`: a valid skeleton report (taxYear 2024,
-   company with file number, registered name, two addresses, phone; the seven required declarations;
-   amounts for the required codes 018, 072, 081, 094, 263; one shareholder). Deep-merge overrides.
+   company with file number, registered name, two addresses, phone; the seven required declarations
+   all `false`; amounts for the required codes with values valid for their allowed sets: 018 = 4,
+   072 = 0, 081 = 1000, 094 = 0, 263 = 1; one shareholder with a Hebrew name and dividend rights
+   100). Deep-merge overrides. Keep it valid against EVERY rule of SPEC §10 (later steps rely on it).
 2. tests/normalize/main.test.ts —
    - every 1000 key produced from the skeleton input has the expected value and path
      (e.g. paths['company.phone.number'] === 'company.phone.number');
-   - meta defaults: softwareName 'ACCOUNTER'; saveDate from options.today; default today is the
-     Asia/Jerusalem calendar date (test with an injected clock function);
+   - meta defaults: softwareName 'ACCOUNTER'; saveDate from options.today; default today is
+     todayInJerusalem(now = new Date()) — test it with fixed Date values around midnight UTC;
    - text fields pass through normalizeText;
    - derived: 832 false, 833 false (no appendices exist yet), code 273 for all four combinations of
      1029/1030, code 008 = 1 only when appliesAccountingStandards;
@@ -775,14 +821,18 @@ Tests first
 3. tests/normalize/shareholders.test.ts — one record per shareholder in input order, index and
    serialNumber (1-based), boolean/number mapping, paths `shareholders[i].<key>`.
 4. A digit string that is not all digits (e.g. company.fileNumber '12a') is kept as-is in values
-   (rules will reject it in C3).
+   (rules will reject it in C3). Phone numbers stay digit strings (kind `digits`).
 
 Implementation
 - src/model/input.ts — skeleton subset of SPEC §7.2. Mark with a TODO-free comment which SPEC
   section each interface implements; optional members not yet supported are simply absent.
 - src/model/index.ts — re-exports.
-- src/normalize/today.ts — todayInJerusalem(): IsoDate (Intl.DateTimeFormat with timeZone
-  'Asia/Jerusalem').
+- src/model/options.ts — ValidateOptions { rounding?: 'reject' | 'halfUp'; today?: () => IsoDate }
+  and GenerateOptions = ValidateOptions (SPEC §6.2).
+- src/normalize/today.ts — todayInJerusalem(now = new Date()): IsoDate (Intl.DateTimeFormat with
+  timeZone 'Asia/Jerusalem').
+- src/normalize/paths.ts — pathFor(recordType, inputIndex, key): the input path of a key (SPEC §7.3
+  and §9.1 path grammar); every normalizer uses it, and the parser reuses it in C7b.
 - src/normalize/main.ts, src/normalize/shareholders.ts, src/normalize/report.ts (orchestrates,
   orders records per SPEC §3.3, fills omittedZeroCodes and notices: []).
 - src/normalize/derive.ts — code 273 and 008 derivations as small pure functions.
@@ -867,7 +917,8 @@ Read first
 
 Goal
 Issue sorting, the RULES catalogue with a narrowed RuleId union, the engine, the internal
-runPipeline, and the rules field.required, field.numeric, field.length, field.charset.
+runPipeline with its year stage, and the rules struct.taxYear.unsupported, field.required,
+field.numeric, field.length, field.charset.
 
 Tests first
 1. tests/validate/issue.test.ts — compareIssues orders by reportIndex, record order (SPEC §3.3),
@@ -878,23 +929,35 @@ Tests first
 3. tests/rules/rules.test.ts — for every RULES entry: runPipeline(fail()) contains exactly one issue
    with that ruleId (at `path` when given, with the catalogued severity); runPipeline(pass()) has
    no issue with that ruleId. Also: pass() of every case has zero errors overall.
-4. tests/rules/spec-sync.test.ts — every RULES id appears in SPEC.md §10 (read the file, extract
-   backticked IDs from table rows). (Equality is enforced in H4.)
+4. tests/rules/spec-sync.test.ts — every RULES id appears in SPEC.md §10 (read the file via
+   import.meta.url; take the FIRST cell of each table row in §10.1–§10.7 and strip the backticks).
+   (Equality is enforced in H4.)
 5. Field rules details: required header field missing; required code missing (018); a required
    code that is not zeroAllowed given 0 counts as missing; '12a' in company.fileNumber →
    field.numeric; registered name of 51 characters → field.length; emoji / CR in a text field →
-   field.charset; issue carries `field` {position, length, nameHe} or `code`, and `specRef.page`.
+   field.charset (via isAllowedTextChar); issue carries `field` {position, length, nameHe} or
+   `code`, and `specRef.page`.
+6. Slot-aware required (SPEC §9.3, D-12): on a synthetic 3077 NormalizedRecord, an empty
+   improvements[1] slot raises nothing; improvements[1].expense set without improvements[1].date
+   raises field.required at that date key.
+7. struct.taxYear.unsupported: runPipeline({ ...minimalInput(), taxYear: 2023 }) returns exactly
+   that issue (path 'taxYear') and does not throw; nothing else runs after it.
 
 Implementation
 - src/validate/issue.ts — finish Issue (ruleId: RuleId), compareIssues, makeIssue helper.
-- src/validate/rules.ts — RULES `as const satisfies readonly RuleMeta[]`; RuleId derived from it;
-  RuleMeta per SPEC §9.1. Add the four rules (source/severity/scope/description/specRef from SPEC
-  §10.2).
+- src/validate/rules.ts — avoid a circular type: define RuleMetaInput (RuleMeta fields with
+  `id: string`); `export const RULES = [...] as const satisfies readonly RuleMetaInput[]`;
+  `export type RuleId = (typeof RULES)[number]['id']`;
+  `export type RuleMeta = Omit<RuleMetaInput, 'id'> & { id: RuleId }`. Add the five rules
+  (source/severity/scope/description/specRef from SPEC §10).
 - src/validate/field-rules.ts — one generic pass over every record's header fields and codes.
 - src/validate/engine.ts — runRules(report): Issue[] = report.notices + field stage + business
   stage + structure stage (the latter two are empty registries for now), sorted.
-- src/pipeline.ts — runPipeline(input, options): getLayout → normalizeReport → runRules. Assumes a
-  well-typed input (shape stage arrives in C5).
+- src/pipeline.ts — runPipeline(input: unknown, options): stage 1 checks input.taxYear against
+  supportedTaxYears() (struct.taxYear.unsupported, stop); then getLayout → normalizeReport →
+  runRules. Until C5 the rest of the input is assumed well-typed (cast after the year check).
+- A4's registry already builds an issue with ruleId 'struct.taxYear.unsupported'; it now type-checks
+  against the narrowed RuleId.
 
 Wiring
 runPipeline is the single validation entry point (C6's validate1214 and generate1214 call it).
@@ -908,7 +971,7 @@ Run the verify bundle.
 Commit: "feat(opcn1214-generator): validation engine and first field rules"
 
 Done when
-- The four rules pass the case harness; adding a RULES entry without a case fails typecheck.
+- The five rules pass the case harness; adding a RULES entry without a case fails typecheck.
 ```
 
 #### C4 — Remaining generic field rules
@@ -933,10 +996,12 @@ RULES entry, implementation and cases.
 Tests first
 1. Add a RULE_CASES entry for each rule (typecheck forces it), using a defect the skeleton input
    can express: 1.5 in an amount code (field.integer); -1 in an amount (field.negative); code 014 = 3
-   (field.enum); meta.saveDate '2024-02-30' (field.date); shareholders[0].dividendRightsPercent
+   (field.enum — applies to kinds `enum` and `rateX100` only, SPEC §10.2); meta.saveDate
+   '2024-02-30' (field.date); shareholders[0].dividendRightsPercent
    100.01 (field.percentRange) and 10.123 (field.decimals); shareholder fullName '1abc'
-   (field.hebrewFirstLetter); phone prefix '01' (field.phonePrefix); phone number '123'
-   (field.phoneNumber). Kinds the skeleton cannot express yet (amountX100, percentX100) get
+   (field.hebrewFirstLetter); phone prefix '01' (field.phonePrefix — build it with a cast; the
+   C5 schema accepts any string there so the rule stays reachable); phone number '123'
+   (field.phoneNumber, checked on the digit string: exactly 7 digits). Kinds the skeleton cannot express yet (amountX100, percentX100) get
    unit tests on synthetic NormalizedReports in tests/validate/field-rules.test.ts.
 2. Rounding option: { rounding: 'halfUp' } turns 1.5 into 2 with no issue; default rejects.
 3. Phone prefix: invalid prefix for company.phone produces field.phonePrefix (warning, path
@@ -975,33 +1040,39 @@ tax year and the JavaScript shape with strict zod schemas before normalization; 
 pipeline.
 
 Read first
-- SPEC §7.1 (strict objects, null rejected), §9.1 path grammar, §9.2 stages 1–2, §10.1
-  (input.shape, struct.taxYear.unsupported).
+- SPEC §7.1 (strict objects, null rejected), §9.1 path grammar, §9.2 (incl. the zod notes), §10.1
+  input.shape.
 
 Goal
-runPipeline(input: unknown) validates year and shape, then continues as before.
+runPipeline(input: unknown) validates the shape after the year stage, then continues as before.
 
 Tests first
 1. tests/model/schema.test.ts —
    - minimalInput() passes;
-   - unknown property at any depth → input.shape at that path (e.g. company.faxx);
+   - unknown property at any depth → input.shape at that path (e.g. company.faxx). zod 4 reports
+     these as one `unrecognized_keys` issue at the parent with a `keys` array: emit one issue per
+     key with the key appended to the path;
    - null for an optional property → input.shape;
    - wrong type ('2024' for taxYear) → input.shape at 'taxYear';
    - amounts with key '999' → input.shape at amounts["999"] (D3 refines this to input.unknownCode);
+   - amounts { '010': undefined } is accepted (optional values), and so is an object with
+     undefined optional members;
+   - company.phone.prefix '01' passes the shape stage (any string; field.phonePrefix reports it);
    - path conversion: zod path ['shareholders', 2, 'fullName'] → 'shareholders[2].fullName' and
      ['amounts', '018'] → 'amounts["018"]'.
-2. A compile-time test: `z.input<typeof report1214InputSchema>` is assignable to Report1214Input and
-   vice versa (expectTypeOf).
-3. RULE_CASES for input.shape and struct.taxYear.unsupported (taxYear 2023: exactly one issue, no
-   shape issues reported after it).
+2. A compile-time test: Report1214Input is assignable to `z.input<typeof report1214InputSchema>`
+   (one direction only — the schema is deliberately looser for phone prefixes and country codes).
+3. RULE_CASES for input.shape.
 
 Implementation
 - src/model/schema.ts — zod 4 strict schemas mirroring src/model/input.ts (z.strictObject;
-  z.partialRecord(z.enum(MAIN_FORM_INPUT_CODES), amount) for amounts; IsoDate as a regex-checked
-  string; digit strings as strings — semantic checks stay in field rules). Export a function
-  schemaFor(taxYear) even though both years share one schema today.
+  z.partialRecord(z.enum(MAIN_FORM_INPUT_CODES), z.number().optional()) for amounts; IsoDate as a
+  regex-checked string; digit strings, phone prefixes and (later) country codes as plain
+  z.string() — semantic checks stay in rules). Export schemaFor(taxYear) even though both years
+  share one schema today.
 - src/validate/shape.ts — zodIssuesToIssues(error): Issue[] with the path grammar.
-- src/pipeline.ts — stage 1 (year) and stage 2 (shape) before normalization; stop on their issues.
+- src/pipeline.ts — stage 2 (shape) after the year stage and before normalization; stop on its
+  issues.
 
 Wiring
 runPipeline is now safe for untrusted input.
@@ -1045,7 +1116,9 @@ Tests first
 3. tests/golden/golden.test.ts — for each tests/fixtures/golden/<name>.input.ts (exports a typed
    input and options with a fixed today), generate1214 bytes equal the committed <name>.opcn bytes.
    With UPDATE_GOLDEN=1 the test writes the files instead (document this in tests/fixtures/golden/
-   README.md: only for steps that intentionally add or change golden files).
+   README.md: only for steps that intentionally add or change golden files). The test also asserts
+   that each golden's sha256 equals the value in VERIFICATION.md, so changing a golden always
+   requires editing that table (and resetting a VERIFIED row to PENDING).
 4. exports.test.ts updated with the new public names.
 
 Implementation
@@ -1053,7 +1126,10 @@ Implementation
 - src/api/validate.ts, src/api/generate.ts (calls runPipeline; throws on errors; then
   renderReport; builds summary and fileName).
 - src/index.ts — export validate1214, generate1214, RULES, Report1214Input and its sub-types,
-  ValidateOptions, GenerateOptions, ValidationResult, GenerateResult, RuleMeta, RuleId.
+  IsoDate, PhonePrefix, the code unions of src/model/codes.generated.ts (MainFormCode,
+  MainFormInputCode, ForeignAppendixCode, CountryBreakdownCode, CapitalGainsSymbol,
+  CapitalGainsCode, CountryCode), ValidateOptions, GenerateOptions, ValidationResult,
+  GenerateResult, RuleMeta, RuleId.
 - packages/opcn1214-generator/.gitattributes — `*.opcn binary`.
 - tests/fixtures/golden/minimal.input.ts + minimal.opcn (generated with UPDATE_GOLDEN=1) and
   VERIFICATION.md (table: fixture | sha256 | generated on | shopcn result | notes) with `minimal`
@@ -1078,62 +1154,58 @@ Done when
 
 > **Human checkpoint CP-1 (after C6).** Upload `tests/fixtures/golden/minimal.opcn` unchanged to
 > <https://secapp.taxes.gov.il/shopcn>. Record the result in `VERIFICATION.md`. If it is rejected,
-> stop the plan and run a fix-up step (template at the end of Part 3) before C7: the most likely
+> stop the plan and run a fix-up step (template at the end of Part 3) before C7a: the most likely
 > causes are SPEC §15 A-1 (alphanumeric padding side), A-5 (line endings) and A-6 (encoding).
 
-#### C7 — Parser v1 and the round trip
+#### C7a — Parser v1: happy path and round trip
 
 ```text
-STEP C7 — Parser v1 and the round trip
+STEP C7a — Parser v1: happy path and round trip
 Apply the standing instructions (IMPLEMENTATION_PLAN.md, Part 3).
 
 Context
-The record codec already decodes any record. Parsing adds: byte decoding, line splitting, record
-order and control checks, decoding into a NormalizedReport, denormalizing into the public input,
-canonicalization and parse.* issues. From now on, every step that adds input must also extend
-denormalize/canonicalize and keep the round-trip tests green.
+The record codec already decodes any record. This step turns a well-formed file back into the
+public input: byte decoding, line splitting, decoding into a NormalizedReport, denormalizing and
+canonicalizing. Structural error reporting is C7b. From now on, every step that adds input must
+also extend denormalize/canonicalize and keep the round-trip tests green.
 
 Read first
-- SPEC §6.1 (parse1214), §6.2 (ParseResult), §8.2, §8.4 (+ D-3), §10.7; IMPLEMENTATION_PLAN.md §1.3.
+- SPEC §6.1 (parse1214), §6.2 (ParseOptions, ParseResult), §8.2 steps 1, 2, 4, 5, 7, §8.4.
 
 Goal
-Public parse1214 for the skeleton subset with structural parse errors and the two round-trip
-properties.
+Public parse1214 for the skeleton subset and both round-trip properties.
 
 Tests first
 1. tests/file/split.test.ts — windows-1255 bytes and strings; UTF-8 BOM stripped; CRLF and LF
-   accepted; one trailing empty line ignored; parse.encoding when bytes do not decode
-   (options.encoding 'utf-8' with invalid UTF-8).
-2. tests/fixtures/files.ts (helper) — `tamper(text, { line, position, value })` and `dropLine`.
-3. tests/api/parse.test.ts — structural errors thrown as Opcn1214ParseError with line/column and
-   ALL problems collected: parse.empty, parse.lineLength, parse.formType, parse.recordType,
-   parse.prefixFiller, parse.order (1020 before 1000), parse.control.missing,
-   parse.control.counts, parse.numeric, parse.date, parse.codeSection.
-4. Extend RuleCase with { kind: 'file'; fail(): string | Uint8Array; pass(): string | Uint8Array }
-   and add RULE_CASES for every parse.* rule above (checks the thrown error's issues).
-5. tests/roundtrip/roundtrip.test.ts — (a) parse1214(generate1214(x).bytes).report deep-equals
+   accepted; one trailing empty line ignored.
+2. tests/normalize/canonical.test.ts — canonicalize(input, options) per SPEC §8.4: text normalized,
+   empty optionals removed, digit strings padded to width (company.fileNumber '12345' →
+   '000012345'), zero codes removed unless zeroAllowed, meta.saveDate from options.today.
+3. tests/roundtrip/roundtrip.test.ts — (a) parse1214(generate1214(x).bytes).report deep-equals
    canonicalize(x) for minimalInput variants (with/without optional members, zero codes, digit
-   strings needing padding); (b) for every golden file, generate1214(parse(bytes).report with the
-   parsed saveDate/softwareName in meta).bytes equals the golden bytes.
-6. ParseResult.issues contains business/field issues of a structurally valid but invalid file
-   (e.g. tampered required phone number → field.required) and parse1214 does not throw for them.
+   strings needing padding); (b) for every golden file, generate1214 of the parsed report (with the
+   parsed saveDate/softwareName in meta) gives the golden bytes.
+4. ParseResult.issues contains field/business issues of a structurally valid but invalid file
+   (e.g. the registered name at 1000@175 replaced by 50 spaces → field.required at
+   company.registeredName) and parse1214 does not throw for them.
 
 Implementation
-- src/file/split.ts — decode + split lines.
-- src/file/parse.ts — order/occurrence checks for the record types known so far, decodeRecord per
-  line, control-record verification, build NormalizedReport (paths empty).
+- src/file/split.ts — decode bytes (options.encoding) + split lines.
+- src/file/parse.ts — decode every line with decodeRecord (record type from positions 5–8), select
+  the layout from the 1000 record's tax year, build the NormalizedReport (paths via pathFor, using
+  the emission index as the input index).
 - src/normalize/denormalize.ts — NormalizedReport → Report1214Input for the skeleton subset.
-- src/normalize/canonical.ts — canonicalize(input) per SPEC §8.4 + D-3.
-- src/errors.ts — Opcn1214ParseError. src/api/parse.ts — parse1214 (runs runRules on the decoded
-  report for ParseResult.issues).
-- RULES entries for the parse.* rules of this step (scope 'parse').
+- src/normalize/canonical.ts — canonicalize(input, options).
+- src/api/parse.ts — parse1214: split → parse → denormalize; ParseResult.issues = runRules on the
+  decoded report. For now a structural problem may surface as a thrown CodecDecodeError — C7b
+  turns those into Opcn1214ParseError.
 - src/index.ts — export parse1214, ParseOptions, ParseResult.
 
 Wiring
-generate1214 and parse1214 share the codecs and the model; the round-trip suite guards both.
+generate1214 and parse1214 share the codecs, model and paths.
 
 Out of scope
-parse.occurrences, parse.multipleReports, parse.derivedMismatch, batches (H1).
+Structural error collection and parse.* rules (C7b).
 
 Verify
 Run the verify bundle.
@@ -1141,8 +1213,65 @@ Run the verify bundle.
 Commit: "feat(opcn1214-generator): parser and round-trip guarantees"
 
 Done when
-- Both round-trip properties hold for the minimal fixtures; structural errors are reported
-  together with line and column.
+- Both round-trip properties hold for the minimal fixtures and the `minimal` golden.
+```
+
+#### C7b — Parser v1: structural errors
+
+```text
+STEP C7b — Parser v1: structural errors
+Apply the standing instructions (IMPLEMENTATION_PLAN.md, Part 3).
+
+Context
+C7a parses well-formed files. Malformed files must produce Opcn1214ParseError with every structural
+problem (not just the first), each with line and column, and the rule harness must accept file
+cases.
+
+Read first
+- SPEC §8.2 (all), §10.7, §13.4 (RuleCase kinds), §11.2.
+
+Goal
+Structural detection and the rules parse.empty, parse.encoding, parse.lineLength, parse.formType,
+parse.recordType, parse.prefixFiller, parse.order, parse.control.missing, parse.control.counts,
+parse.numeric, parse.date, parse.codeSection; the 'file' RuleCase kind.
+
+Tests first
+1. tests/fixtures/files.ts (helper) — tamper(text, { line, position, value }), dropLine(text, line),
+   swapLines(text, a, b).
+2. Extend RuleCase with { kind: 'file'; fail(): string | Uint8Array; pass(): string | Uint8Array }.
+   The runner collects issues as
+   `try { return parse1214(content).issues } catch (e) { if (e instanceof Opcn1214ParseError) return e.issues; throw e }`
+   so the same kind serves structural rules (thrown) and business rules on parsed files (D4, G5).
+3. RULE_CASES for every parse.* rule of this step, built with the helpers from the `minimal`
+   golden; parse.encoding via options.encoding 'utf-8' and invalid UTF-8 bytes.
+4. tests/api/parse.test.ts — a file with three independent defects on different lines reports all
+   three, sorted by line; every issue has line and column; CodecDecodeError never escapes
+   parse1214.
+5. A tax year in 1000@146 outside supportedTaxYears() → struct.taxYear.unsupported (thrown).
+
+Implementation
+- src/errors.ts — Opcn1214ParseError.
+- src/file/parse.ts — per-line checks (length, form type, record type, prefix zeros), order check
+  against SPEC §3.3 for the record types known so far, control-record presence and counts; catch
+  CodecDecodeError per line and convert it (reason → rule: numeric → parse.numeric, date →
+  parse.date, section → parse.codeSection, length → parse.lineLength, format → parse.formType or
+  parse.recordType by offset); continue with the next line.
+- src/validate/rules.ts — RULES entries (scope 'parse').
+
+Wiring
+parse1214 throws Opcn1214ParseError for structural problems and returns business issues otherwise.
+
+Out of scope
+parse.occurrences, parse.multipleReports, parse.derivedMismatch, batches (H1).
+
+Verify
+Run the verify bundle.
+
+Commit: "feat(opcn1214-generator): structural parse errors"
+
+Done when
+- Every listed parse.* rule passes its file case; malformed files never throw anything but
+  Opcn1214ParseError.
 ```
 
 ---
@@ -1185,8 +1314,9 @@ Tests first
    date; reportablePositions [12, 7] → 1034 = '012', 1037 = '007', 1040–1046 = '000';
    requestsAdvancePayments/hasBuildingIncome/partOfMultinationalGroup are yes/no (1/2/0 when absent);
    hasCapitalGainsAppendix true forces 833 = yes; preparer phone with valid prefix.
-2. Schema tests for the new members (strictness, reportablePositions array of integers 1–999, at
-   most 5 is NOT checked by the schema — main.reportablePositions.max in D4 reports it).
+2. Schema tests for the new members (strictness; reportablePositions is an array of integers with
+   no length limit in the schema — D4 reports more than 5 as a normalizer notice; the normalizer
+   writes the first five).
 3. Round trip: an input with every new member set (builder `fullDeclarationsInput()`).
 
 Implementation
@@ -1268,8 +1398,8 @@ Read first
   main.bankAccount.format.
 
 Goal
-Derived codes 028 (untransmitted part only; G1 adds transmitted appendices), 277/278/280, 297; the
-four rules; the `main-full` golden file.
+Derived codes 028 (untransmitted part only; G1 adds transmitted appendices), 277/278/280, 297 and
+the four rules.
 
 Tests first
 1. bankAccount { bank '12', branch '345', account '678' } → code 277 = 678, 278 = 12345 ('12' then
@@ -1281,27 +1411,25 @@ Tests first
    struct.mainCodePairs.max; bank '1' → main.bankAccount.format.
 3. Denormalize: 277/278/280 → bankAccount; 297 → form6111Obligation only when 834 is absent
    (834 is the source of truth; 297 is checked for consistency in H1 parse.derivedMismatch).
-4. Golden `main-full`: every 1000 field, 61 code pairs, bank account, 99 shareholders.
 
 Implementation
-Per the recipe; input.derivedCode/input.unknownCode are produced by the shape stage before zod
-(scan the amounts map keys against the year's CodeDefs).
+Per the recipe; input.derivedCode/input.unknownCode are produced by the shape stage BEFORE zod: scan
+the amounts map keys against the year's CodeDefs, report them, and remove those keys from the value
+handed to zod so they are not reported again as input.shape (SPEC §9.2).
 
 Wiring
-Derivations in normalizeReport; rules in the engine; golden in tests/fixtures/golden.
+Derivations in normalizeReport; rules in the shape stage and the engine.
 
 Out of scope
 Business rules (D4, D5).
 
 Verify
-Run the verify bundle; regenerate goldens only with UPDATE_GOLDEN=1 for `main-full` (minimal must not
-change — if it does, stop and explain).
+Run the verify bundle; the `minimal` golden must not change (if it does, stop and explain).
 
 Commit: "feat(opcn1214-generator): derived main-form codes and code-map rules"
 
 Done when
-- Derived codes are produced and protected; `main-full` is committed and listed PENDING in
-  VERIFICATION.md.
+- Derived codes are produced and protected against caller input.
 ```
 
 #### D4 — Record 1000 conditional requirements
@@ -1327,10 +1455,14 @@ main.reportablePositions.required, main.reportablePositions.max.
 Tests first
 1. RULE_CASES for each. Rules that the input types make unreachable from input
    (beneficiaryEnterprise.noticeDate, specialYear.balanceSheetDate, familyCompany.fileNumber when the
-   object exists) use 'file' cases built with tamper() on a generated file.
+   object exists) use 'file' cases built with tamper() on a generated file (C7b runner: business
+   issues come from parse1214(...).issues).
 2. Unit tests: code 080 = 0 satisfies main.familyCompany.code080 (zeroAllowed); the paths point at
    the controlling input property (e.g. amounts["080"] for the missing code,
    declarations.familyCompany for the flag).
+3. main.reportablePositions.max has no field of its own (only five positions exist): the normalizer
+   raises it as a notice (IMPLEMENTATION_PLAN.md §1.2) at declarations.reportablePositions[5] and
+   writes the first five positions.
 
 Implementation
 - src/validate/main-rules.ts — one small function per rule, registered in the business stage.
@@ -1366,11 +1498,12 @@ Read first
   IMPLEMENTATION_PLAN.md §1.3 D-5.
 
 Goal
-Rules: main.kibbutz.code226Other, main.reportablePositions.unexpected, main.cgUntransmitted.reason,
+Goldens `main-full` and `kibbutz`, and the rules main.kibbutz.code226Other,
+main.reportablePositions.unexpected, main.cgUntransmitted.reason,
 main.cgUntransmitted.reasonWithoutCount, main.bankAccount.withNoBank,
 main.qualifyingCompany.purchaseAmounts, main.qualifyingCompany.amortizationAmount,
 main.attachments.code070, main.attachments.code010, shareholders.dividendRights.total,
-shareholders.duplicateId, struct.shareholders.min, struct.shareholders.max. Golden `kibbutz`.
+shareholders.duplicateId, struct.shareholders.min, struct.shareholders.max.
 
 Tests first
 1. RULE_CASES for each rule; dividend rights total computed in hundredths (33.33 + 33.33 + 33.34
@@ -1379,6 +1512,11 @@ Tests first
 2. Shape: shareholders becomes `Shareholder[]` that may be empty (the min rule, not the schema,
    rejects empty lists for non-kibbutz companies).
 3. Golden `kibbutz`: isKibbutz, code 226, no shareholders; 9999 counts 00 shareholders.
+4. Golden `main-full`: every record-1000 header field set, 61 code pairs, bank account, 99
+   shareholders. It must be valid against EVERY rule of SPEC §10, including rules added in later
+   steps: no code 165 (main.rd.records in E2), dividend rights totalling exactly 100, not a
+   kibbutz, family/house-company codes present when flagged, no capital-gains or foreign flags
+   without the records. Assert validate1214(main-full).warnings is empty too.
 
 Implementation
 - src/validate/main-rules.ts (warnings), src/validate/shareholder-rules.ts,
@@ -1397,7 +1535,7 @@ Commit: "feat(opcn1214-generator): record 1000 warnings and shareholder rules"
 
 Done when
 - Every SPEC §10.3/§10.4 rule except main.rd.*, main.capitalGains.flag and main.appendixTotal.min
-  is implemented; `kibbutz` golden is PENDING in VERIFICATION.md.
+  is implemented; `main-full` and `kibbutz` goldens are PENDING in VERIFICATION.md.
 ```
 
 > **Human checkpoint CP-2 (after D5).** Verify `main-full` and `kibbutz` on shopcn; update
@@ -1569,7 +1707,8 @@ Tests first
    countries with affiliation 1; paths foreignAppendix.countryBreakdown["420"].countries[i].country;
    9999@147 count; records placed right after 2000.
 2. RULE_CASES for every listed rule ('-88' on 420 → unknownOnlyFor439; '-88' on 439 passes;
-   11 countries → countries.max; '999' → country.unknown; the same country twice → duplicate).
+   11 countries → countries.max; '001' → country.unknown (note: '999' is a real code, the UN);
+   the same country twice → duplicate). The schema accepts any string for country (SPEC §9.2).
 3. parse.countrySection for a malformed entry (affiliation 2) via tamper().
 4. Round trip; golden `foreign` (every per-country code, '-88' on 439, 10 countries on one code).
 
@@ -1631,6 +1770,8 @@ Tests first
 2. RULE_CASES: 15 appendices → struct.capitalGains.max; declarations.hasCapitalGainsAppendix false
    with appendices → main.capitalGains.flag; capitalGainsSummary.totalAppendicesCount lower than
    transmitted appendices (2000 + 30xx) + untransmittedCount → main.appendixTotal.min.
+   main.capitalGains.flag is raised by the normalizer as a notice (833 itself is derived as yes, so
+   the explicit `false` exists only in the input; IMPLEMENTATION_PLAN.md §1.2).
 3. Codes: amounts use 3-digit keys ('022', '056'); input.unknownCode/derivedCode apply.
 4. Round trip; golden `cg-63`.
 
@@ -1806,15 +1947,18 @@ Read first
   fields.csv/codes.csv rows for 3077.
 
 Goal
-3077 end to end; rules cg.improvements.max, cg.improvements.date, cg.improvements.code50Amount,
-cg.virtualCurrency.wallet; goldens `cg-77` and `capital-gains-max` (14 appendices of mixed types).
+3077 end to end; rules cg.improvements.max, cg.improvements.code50Amount, cg.virtualCurrency.wallet
+(improvement dates are covered by the slot-aware field.required, SPEC §9.3); goldens `cg-77` and
+`capital-gains-max` (14 appendices of mixed types).
 
 Tests first
 1. improvements[i] → keys improvements[i].expense/accumulatedDepreciation/date (×100 amounts) and
    code 50(i+1) from code50Amount; 245 = improvements.length; passing 501 in amounts →
    input.derivedCode.
-2. RULE_CASES for the four rules (six improvements → cg.improvements.max; the date requirement and
-   wallet rule also via 'file' cases where the input type makes them unreachable).
+2. RULE_CASES for the three rules (six improvements → cg.improvements.max, raised as a normalizer
+   notice since only five slots exist; the wallet rule also via a 'file' case). Plus: a 3077 with
+   one improvement raises no field.required for the empty slots 2–5, and a parsed file with
+   improvement 2's expense but no date raises field.required at capitalGains[i].improvements[1].date.
 3. Code 092 accepts a single digit (A-11); dates.code15 and dates.code20 required.
 4. capital-gains-max: 14 appendices across all ten types; asserts grouping, appendix numbers,
    sequence numbers, 9999@145 = 14, code 028.
@@ -1870,12 +2014,15 @@ Tests first
 2. parse1214Batch: splits at each 9999; returns one ParseResult per report; a missing 9999 between
    reports → parse.order or parse.control.missing at the right line.
 3. parse1214 given a batch → parse.multipleReports.
-4. parse.occurrences: 4 records 1010, 6 records 1030, 2 records 2000, 31 records 2200,
-   15 capital-gains records — each via a 'file' case.
+4. parse.occurrences (MAXIMA only; minOccurs is never enforced by the parser — the `kibbutz`
+   golden has no 1020 records and must keep parsing): 4 records 1010, 6 records 1030, 2 records
+   2000, 31 records 2200, 15 capital-gains records — each via a 'file' case.
 5. parse.derivedMismatch: tampered code 273 vs 1029/1030; 832 = yes without 2000; 833 = no with
    appendices; wrong 1020 serial; wrong appendix number or sequence; code 297 inconsistent with 834;
    code 028 inconsistent (each a tamper case; one rule ID, path/field identifies the value).
 6. Golden `batch-50` (50 minimal reports with distinct file numbers).
+7. Add RuleCase kind { kind: 'batch'; fail(): unknown[]; pass(): unknown[] } (runs
+   generate1214Batch and collects the thrown issues) for struct.batch.size.
 
 Implementation
 - src/api/generate.ts (batch), src/api/parse.ts (batch), src/file/parse.ts (splitting, occurrence
@@ -1979,7 +2126,8 @@ Out of scope
 New features.
 
 Verify
-Run the verify bundle; the property test must run in under 10 seconds.
+Run the verify bundle. Give the property test a generous per-test timeout (e.g. 60 s) instead of
+asserting its duration (CI runs on three Node versions).
 
 Commit: "test(opcn1214-generator): property, determinism and edge-case suite"
 
