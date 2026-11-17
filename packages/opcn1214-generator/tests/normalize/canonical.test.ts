@@ -1,6 +1,8 @@
 import type { CountryCode, PhonePrefix, Report1214Input } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  bettermentTaxAppendix,
+  forcedVirtualCurrencyAppendix,
   foreignAppendix,
   foreignAppendixWithBreakdown,
   fullDeclarationsInput,
@@ -8,12 +10,14 @@ import {
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
+  oilPartnershipAppendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
   section6Appendices,
   section6Appendix,
   securitiesAppendix,
+  sharesAppendix,
   withholders,
 } from '../fixtures/builders.js';
 
@@ -604,6 +608,50 @@ describe('canonicalize', () => {
         },
         { symbol: 66, foreignAsset: false, amounts: { '056': 4 } },
       ]);
+    });
+
+    it('keeps canonical 3027, 3050, 3051 and 3054 appendices in emission order', () => {
+      const appendices = [
+        forcedVirtualCurrencyAppendix(),
+        oilPartnershipAppendix(),
+        sharesAppendix(),
+        bettermentTaxAppendix(),
+      ];
+      expect(
+        canonicalize(minimalInput({ capitalGains: appendices }), OPTIONS).capitalGains,
+      ).toEqual([appendices[2], appendices[3], appendices[0], appendices[1]]);
+    });
+
+    it('canonicalizes asset appendices: text, empty dates, wallet slots, zero codes, ×100 amounts', () => {
+      const result = canonicalize(
+        minimalInput({
+          capitalGains: [
+            {
+              symbol: 27,
+              assetDetails: '  מניות\u00A0 בע"מ ',
+              buyerName: ' ',
+              dates: {},
+              amounts: { '015': 0, '020': 0.5, '027': 0 },
+            },
+            forcedVirtualCurrencyAppendix({ walletAddresses: [' ', ' 0xabc '] }),
+            forcedVirtualCurrencyAppendix({ walletAddresses: ['0xabc', ''] }),
+            forcedVirtualCurrencyAppendix({ walletAddresses: [' '] }),
+            bettermentTaxAppendix({ amounts: { '016': 0 } }),
+            oilPartnershipAppendix({ amounts: { '016': 0 } }),
+          ],
+        }),
+        { ...OPTIONS, rounding: 'halfUp' },
+      );
+      expect(result.capitalGains).toEqual([
+        { symbol: 27, assetDetails: 'מניות בע"מ', amounts: { '020': 0.5 } },
+        bettermentTaxAppendix({ amounts: { '016': undefined } }),
+        forcedVirtualCurrencyAppendix({ walletAddresses: ['', '0xabc'] }),
+        forcedVirtualCurrencyAppendix({ walletAddresses: ['0xabc'] }),
+        { ...forcedVirtualCurrencyAppendix(), walletAddresses: undefined },
+        oilPartnershipAppendix({ amounts: { '016': 0 } }),
+      ]);
+      expect(result.capitalGains?.[1]?.amounts).not.toHaveProperty('016');
+      expect(result.capitalGains?.[4]).not.toHaveProperty('walletAddresses');
     });
 
     it('removes an empty list, as the parser reads a report without capital-gains records', () => {

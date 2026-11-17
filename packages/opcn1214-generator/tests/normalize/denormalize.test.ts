@@ -3,17 +3,21 @@ import type { NormalizedRecord, NormalizedReport } from '../../src/model/normali
 import { denormalize } from '../../src/normalize/denormalize.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import {
+  bettermentTaxAppendix,
   breakdownCountries,
+  forcedVirtualCurrencyAppendix,
   foreignAppendix,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
+  oilPartnershipAppendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
   section6Appendices,
   section6Appendix,
   securitiesAppendix,
+  sharesAppendix,
   withholders,
 } from '../fixtures/builders.js';
 
@@ -198,6 +202,44 @@ describe('denormalize: capital-gains appendices (records 30xx)', () => {
     for (const appendix of capitalGains ?? []) {
       expect(appendix).not.toHaveProperty('sequenceNumber');
     }
+  });
+
+  it('reads asset records back: location literal, dates object, wallet addresses, no sequence', () => {
+    const appendices = [
+      forcedVirtualCurrencyAppendix({ walletAddresses: ['0x1'] }),
+      oilPartnershipAppendix(),
+      sharesAppendix({ assetLocation: 'israel', dates: { code20: undefined } }),
+      bettermentTaxAppendix(),
+      { symbol: 27 as const, amounts: {} },
+      forcedVirtualCurrencyAppendix({ assetLocation: 'abroad' }),
+    ];
+    const report = normalizeReport(minimalInput({ capitalGains: appendices }), LAYOUT, OPTIONS);
+    const capitalGains = denormalize(report).capitalGains;
+    expect(capitalGains).toEqual([
+      appendices[2],
+      appendices[4],
+      appendices[3],
+      appendices[0],
+      appendices[5],
+      appendices[1],
+    ]);
+    expect(capitalGains?.[0]).toMatchObject({ assetLocation: 'israel' });
+    expect((capitalGains?.[0] as { dates?: object }).dates).not.toHaveProperty('code20');
+    expect(capitalGains?.[1]).not.toHaveProperty('dates');
+    for (const appendix of capitalGains ?? []) {
+      expect(appendix).not.toHaveProperty('sequenceNumber');
+    }
+  });
+
+  it('reads an empty first wallet slot before a filled one back as an empty string', () => {
+    const report = normalizeReport(
+      minimalInput({
+        capitalGains: [forcedVirtualCurrencyAppendix({ walletAddresses: ['', '0x2'] })],
+      }),
+      LAYOUT,
+      OPTIONS,
+    );
+    expect(denormalize(report).capitalGains?.[0]).toMatchObject({ walletAddresses: ['', '0x2'] });
   });
 
   it('keeps an appendix with no header member and no codes', () => {

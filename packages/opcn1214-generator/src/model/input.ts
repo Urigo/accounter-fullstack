@@ -351,6 +351,10 @@ export interface CountryIncome {
  * (SPEC §7.4).
  */
 export type CapitalGainsAppendix =
+  | SharesAppendix
+  | BettermentTaxAppendix
+  | ForcedVirtualCurrencyAppendix
+  | OilPartnershipAppendix
   | SecuritiesAppendix
   | Section6SecuritiesAppendix
   | ReitAppendix
@@ -445,4 +449,89 @@ export interface NoWithholding1326Appendix {
   lossesCarriedForward?: number;
   /** Record 3066 code-amount section; no code of 3066 is zeroAllowed (SPEC §4.5). */
   amounts: Partial<Record<CapitalGainsCode<66>, number>>;
+}
+
+/** "מקום הנכס" of records 3027 (193) and 3051 (192): abroad → 1, israel → 2 (SPEC §7.2). */
+export type AssetLocation = 'abroad' | 'israel';
+
+/**
+ * Capital gains from shares, record 3027 (SPEC §7.2, p.34–36). Every date is optional; its
+ * "מספר בתל"ם" sequence (3027@255) is derived (SPEC §7.4).
+ */
+export interface SharesAppendix {
+  symbol: 27;
+  /** 3027@142 "הפקעה" (yes/no). */
+  expropriation?: boolean;
+  /** 3027@143 "פרטי הנכס", up to 50 characters; must start with a Hebrew letter. */
+  assetDetails?: string;
+  /** 3027@193 "מקום הנכס": abroad → 1, israel → 2. */
+  assetLocation?: AssetLocation;
+  /** 3027@194 "צד קשור" (yes/no). */
+  relatedParty?: boolean;
+  /** 3027@195 "שם הרוכש", up to 30 characters. */
+  buyerName?: string;
+  /** The dates of codes 15 (3027@225), 20 (235) and 53 (245), written DD/MM/YYYY. */
+  dates?: { code15?: IsoDate; code20?: IsoDate; code53?: IsoDate };
+  /**
+   * Record 3027 code-amount section: 020, 053 and 027 take agorot (written ×100), 018 is the rate
+   * 23 or 50 (written ×100); no code of 3027 is zeroAllowed (SPEC §4.5).
+   */
+  amounts: Partial<Record<CapitalGainsCode<27>, number>>;
+}
+
+/** Capital gains from an asset sale under betterment tax, record 3050 (SPEC §7.2, p.37–38). */
+export interface BettermentTaxAppendix {
+  symbol: 50;
+  /** 3050@142 "הפקעה" (yes/no). */
+  expropriation?: boolean;
+  /** 3050@143 "פרטי הנכס", up to 50 characters; must start with a Hebrew letter. */
+  assetDetails?: string;
+  /** 3050@193 "תאריך קניה" (required), written DD/MM/YYYY. */
+  purchaseDate: IsoDate;
+  /** The date of code 15 (3050@203, required), written DD/MM/YYYY. */
+  dates: { code15: IsoDate };
+  /**
+   * Record 3050 code-amount section: 014 is 10 or 20, 018 the rate 23 or 50 (written ×100); no
+   * code of 3050 is zeroAllowed (SPEC §4.5).
+   */
+  amounts: Partial<Record<CapitalGainsCode<50>, number>>;
+}
+
+/**
+ * A forced virtual-currency transaction, record 3051 (SPEC §7.2, p.39–40; virtual currency is
+ * normally reported with symbol 77, SPEC §3.7). Its "מספר בתל"ם" sequence (3051@234) is derived
+ * (SPEC §7.4).
+ */
+export interface ForcedVirtualCurrencyAppendix {
+  symbol: 51;
+  /** 3051@142 "פרטי הנכס", up to 50 characters; must start with a Hebrew letter. */
+  assetDetails?: string;
+  /** 3051@192 "מקום הנכס": abroad → 1, israel → 2. */
+  assetLocation?: AssetLocation;
+  /** 3051@193 "צד קשור" (yes/no). */
+  relatedParty?: boolean;
+  /** 3051@194 "שם הרוכש", up to 30 characters; must start with a Hebrew letter. */
+  buyerName?: string;
+  /** The date of code 15 (3051@224, required), written DD/MM/YYYY. */
+  dates: { code15: IsoDate };
+  /** 3051@236 and @386: one or two virtual wallet addresses, up to 150 characters each. */
+  walletAddresses?: [string] | [string, string];
+  /**
+   * Record 3051 code-amount section: 071 (= 1) and 016 are required (field.required); no code of
+   * 3051 is zeroAllowed (SPEC §4.5).
+   */
+  amounts: Partial<Record<CapitalGainsCode<51>, number>>;
+}
+
+/** Capital gains from an oil-partnership asset, record 3054 (SPEC §7.2, p.41–42). */
+export interface OilPartnershipAppendix {
+  symbol: 54;
+  /** 3054@142 "פרטי הנכס", up to 50 characters; must start with a Hebrew letter. */
+  assetDetails?: string;
+  /** 3054@192 "תאריך קניה" (required), written DD/MM/YYYY. */
+  purchaseDate: IsoDate;
+  /** The date of code 15 (3054@202, required), written DD/MM/YYYY. */
+  dates: { code15: IsoDate };
+  /** Record 3054 code-amount section: 016 is zeroAllowed (written when 0, SPEC §4.5). */
+  amounts: Partial<Record<CapitalGainsCode<54>, number>>;
 }
