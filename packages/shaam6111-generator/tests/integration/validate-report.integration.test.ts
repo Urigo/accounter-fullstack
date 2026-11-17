@@ -43,7 +43,7 @@ describe('Integration Test: validateReport', () => {
     reportContent += '050000000000200000'; // Code 5000, Amount 200000
     reportContent += '050510000000150000'; // Code 5051, Amount 150000
     reportContent += '050900000000050000'; // Code 5090, Amount 50000
-    reportContent += '066660000000250000'; // Code 6666, Amount 250000
+    reportContent += '06666-000000150000'; // Code 6666, Amount -150000 (100000 - 50000 - 200000)
 
     // Fill remaining profit/loss entries with filler records
     for (let i = 0; i < 142; i++) {
@@ -51,8 +51,8 @@ describe('Integration Test: validateReport', () => {
     }
 
     // Tax Adjustment Section (3 entries)
-    reportContent += '001000000000250000'; // Code 100, Amount 250000 (matches 6666 from profit/loss)
-    reportContent += '001040000000250000'; // Code 104, Amount 250000
+    reportContent += '00100-000000150000'; // Code 100, Amount -150000 (matches 6666 from profit/loss)
+    reportContent += '00104-000000150000'; // Code 104, Amount -150000 (equals 100, rule 2.6)
     reportContent += '004000000000300000'; // Code 400, Amount 300000
 
     // Fill remaining tax adjustment entries with filler records
@@ -97,7 +97,7 @@ describe('Integration Test: validateReport', () => {
     reportContent += '050000000000200000'; // Code 5000, Amount 200000
     reportContent += '050510000000150000'; // Code 5051, Amount 150000
     reportContent += '050900000000050000'; // Code 5090, Amount 50000
-    reportContent += '066660000000250000'; // Code 6666, Amount 250000
+    reportContent += '06666-000000150000'; // Code 6666, Amount -150000 (100000 - 50000 - 200000)
 
     // Fill remaining profit/loss entries with filler records
     for (let i = 0; i < 142; i++) {
@@ -150,7 +150,7 @@ describe('Integration Test: validateReport', () => {
     reportContent += '050000000000200000'; // Code 5000, Amount 200000
     reportContent += '050510000000150000'; // Code 5051, Amount 150000
     reportContent += '050900000000050000'; // Code 5090, Amount 50000
-    reportContent += '066660000000250000'; // Code 6666, Amount 250000
+    reportContent += '06666-000000150000'; // Code 6666, Amount -150000 (100000 - 50000 - 200000)
 
     // Fill remaining profit/loss entries with filler records
     for (let i = 0; i < 142; i++) {
@@ -158,8 +158,8 @@ describe('Integration Test: validateReport', () => {
     }
 
     // Tax Adjustment Section (3 entries)
-    reportContent += '001000000000250000'; // Code 100, Amount 250000 (matches 6666 from profit/loss)
-    reportContent += '001040000000250000'; // Code 104, Amount 250000
+    reportContent += '00100-000000150000'; // Code 100, Amount -150000 (matches 6666 from profit/loss)
+    reportContent += '00104-000000150000'; // Code 104, Amount -150000 (equals 100, rule 2.6)
     reportContent += '004000000000300000'; // Code 400, Amount 300000
 
     // Fill remaining tax adjustment entries with filler records
