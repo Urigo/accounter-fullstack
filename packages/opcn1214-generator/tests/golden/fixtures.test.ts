@@ -24,6 +24,7 @@ import * as cg65 from '../fixtures/golden/cg-65.input.js';
 import * as cg66 from '../fixtures/golden/cg-66.input.js';
 import * as cg77 from '../fixtures/golden/cg-77.input.js';
 import * as foreign from '../fixtures/golden/foreign.input.js';
+import * as hebrewEdge from '../fixtures/golden/hebrew-edge.input.js';
 import * as kibbutz from '../fixtures/golden/kibbutz.input.js';
 import * as mainFull from '../fixtures/golden/main-full.input.js';
 import * as relatedAndRd from '../fixtures/golden/related-and-rd.input.js';
@@ -562,5 +563,56 @@ describe('golden batch-50', () => {
       inputs.map(input => input.company.fileNumber),
     );
     expect(results.every(result => result.issues.length === 0)).toBe(true);
+  });
+});
+
+describe('golden hebrew-edge', () => {
+  const { input, options } = hebrewEdge;
+  const HEBREW_LETTERS = /[\u05D0-\u05EA]/u;
+  const FINAL_LETTERS = ['ך', 'ם', 'ן', 'ף', 'ץ'];
+
+  it('is valid against every rule: no errors and no warnings', () => {
+    expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it('holds final letters, geresh, gershayim, בע"מ and mixed Hebrew, Latin and digits', () => {
+    // Every string of the input, with its quotes unescaped.
+    const text = JSON.stringify(input).replaceAll('\\"', '"');
+    for (const letter of [...FINAL_LETTERS, '\u05F3', '\u05F4', 'בע"מ']) {
+      expect(text).toContain(letter);
+    }
+    expect(input.company.occupationDescription).toMatch(/[א-ת].*[A-Za-z].*\d/u);
+    expect(text).not.toMatch(/[\u0591-\u05C7\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/u);
+  });
+
+  it('writes full-width names without padding and right-aligns shorter text', () => {
+    const lines = linesOf(generate1214(input, options).text);
+    const main = lines[0] ?? '';
+    expect(main.slice(174, 224)).toBe(input.company.registeredName);
+    expect(lines[2]?.slice(147, 197)).toBe(input.shareholders[0]?.fullName);
+    expect(main.slice(292, 342)).toBe(` ${input.company.mailingAddress}`);
+    // Typographic quotes are written as ASCII '"' (SPEC §4.3).
+    expect(main.slice(562, 612).trimStart()).toBe('"משרד כהן ושות׳" רואי חשבון');
+  });
+
+  it('writes Hebrew letters as windows-1255 bytes 0xE0–0xFA and geresh/gershayim as 0xD7/0xD8', () => {
+    const { bytes, text } = generate1214(input, options);
+    expect(bytes.length).toBe(text.length);
+    const high = new Set([...bytes].filter(byte => byte >= 0x80));
+    expect(
+      [...high].every(byte => (byte >= 0xe0 && byte <= 0xfa) || byte === 0xd7 || byte === 0xd8),
+    ).toBe(true);
+    expect(high).toContain(0xd7);
+    expect(high).toContain(0xd8);
+    expect([...text].filter(char => HEBREW_LETTERS.test(char)).length).toBe(
+      [...bytes].filter(byte => byte >= 0xe0 && byte <= 0xfa).length,
+    );
+  });
+
+  it('parses back to its canonical text', () => {
+    const { report, issues } = parse1214(generate1214(input, options).bytes);
+    expect(issues).toEqual([]);
+    expect(report.company.registeredName).toBe(input.company.registeredName);
+    expect(report.preparer?.officeName).toBe('"משרד כהן ושות׳" רואי חשבון');
   });
 });
