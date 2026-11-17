@@ -57,7 +57,8 @@ export const SHAAM_6111_FILE_NAME = 'DKASPI.DAT';
 
 /**
  * Resolves each financial entity's 6111 code: its own IRS code, or else the default IRS code of
- * its sort code (the same fallback used when an entity is created).
+ * its owner's sort code (the same fallback used when an entity is created). A sort code of another
+ * business with the same key never applies.
  */
 function irsCodesByEntity(
   financialEntities: readonly IGetAllFinancialEntitiesResult[],
@@ -69,8 +70,7 @@ function irsCodesByEntity(
       entity.irs_code ??
       (entity.sort_code == null
         ? undefined
-        : (defaultIrsCodeBySortCode.get(`${entity.owner_id}:${entity.sort_code}`) ??
-          defaultIrsCodeBySortCode.get(`*:${entity.sort_code}`)));
+        : defaultIrsCodeBySortCode.get(`${entity.owner_id}:${entity.sort_code}`));
     if (irsCode != null) {
       irsCodes.set(entity.id, irsCode);
     }
@@ -195,7 +195,6 @@ export async function getShaam6111Data(
         `${sortCode.owner_id}:${sortCode.key}`,
         sortCode.default_irs_code,
       );
-      defaultIrsCodeBySortCode.set(`*:${sortCode.key}`, sortCode.default_irs_code);
     }
   }
   const irsCodeByEntity = irsCodesByEntity(financialEntities, defaultIrsCodeBySortCode);
@@ -273,7 +272,8 @@ export async function getShaam6111Data(
 
   const profitLossTotal = profitAndLoss.find(entry => entry.code === 6666)?.amount ?? 0;
   const booksProfitBeforeTax = Math.round(profitBeforeTax.amount);
-  if (profitLossTotal !== booksProfitBeforeTax) {
+  // each 6666 line is rounded to the shekel on its own: only a gap beyond that is a mapping problem
+  if (!profitAndLossMatchesBooks(profitAndLoss, profitBeforeTax.amount)) {
     issues.push({
       severity: 'ERROR',
       path: 'profitAndLoss.6666',
