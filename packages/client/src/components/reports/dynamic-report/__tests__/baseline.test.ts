@@ -85,6 +85,38 @@ describe('pickLatestBaselineId', () => {
       expect(pickLatestBaselineId(snapshots, view)).toBe('own-pnl');
     });
 
+    it('never picks a later year, for either report shape', () => {
+      const laterPnl = snapshot('later-pnl', { fromDate: '2026-01-01', toDate: '2026-12-31' });
+      const laterBs = snapshot('later-bs', { fromDate: '1900-01-01', toDate: '2026-12-31' });
+      // Nothing earlier: fall back to the newest snapshot rather than "matching" a later year
+      expect(pickLatestBaselineId([laterBs, laterPnl], view)).toBe('later-bs');
+      // An earlier period is picked even when a later one was saved after it
+      expect(
+        pickLatestBaselineId([laterPnl, snapshot('prior-pnl', priorProfitAndLoss)], view),
+      ).toBe('prior-pnl');
+      const bsView = { fromDate: '1900-01-01', toDate: '2025-12-31', scopeOwnerId: OWNER_A };
+      expect(
+        pickLatestBaselineId([laterBs, snapshot('prior-bs', priorBalanceSheet)], bsView),
+      ).toBe('prior-bs');
+    });
+
+    it('prefers the nearest earlier period over a more recent save of an older one', () => {
+      const snapshots = [
+        // Re-saved after an amended 2023 audit, so newer than the 2024 save
+        snapshot('pnl-2023-resaved', { fromDate: '2023-01-01', toDate: '2023-12-31' }),
+        snapshot('pnl-2024', priorProfitAndLoss),
+      ];
+      expect(pickLatestBaselineId(snapshots, view)).toBe('pnl-2024');
+    });
+
+    it('takes the newest save among saves of the nearest period', () => {
+      const snapshots = [
+        snapshot('pnl-2024-newer', priorProfitAndLoss),
+        snapshot('pnl-2024-older', priorProfitAndLoss),
+      ];
+      expect(pickLatestBaselineId(snapshots, view)).toBe('pnl-2024-newer');
+    });
+
     it('does not treat a half-year as the same shape as a full year', () => {
       const snapshots = [
         snapshot('half-year', { fromDate: '2024-01-01', toDate: '2024-06-30' }),
