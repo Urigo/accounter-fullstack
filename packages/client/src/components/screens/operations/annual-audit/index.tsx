@@ -313,6 +313,7 @@ export const AnnualAuditFlow = (): ReactNode => {
               adminBusinessId={adminBusinessId}
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
+              refetchManualData={refetchManualData}
             />
 
             <Step10ExportTrialBalance

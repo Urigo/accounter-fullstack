@@ -7,9 +7,14 @@ import {
   AnnualAuditStepStatus,
   Step09SaveTemplateStatusDocument,
 } from '../../../../../gql/graphql.js';
+import { Button } from '../../../../ui/button.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 import { selectableTemplateOptions, TemplateSelect } from '../template-select.js';
-import { parseLockedTemplates } from '../template-slots.js';
+import {
+  findStepEvidence,
+  parseLockedTemplates,
+  parseWorkingTemplates,
+} from '../template-slots.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,10 +33,13 @@ interface Step09Props extends BaseStepProps {
   adminBusinessId?: string;
 }
 
+const WORKING_TAG = 'working';
+
 interface FinalSlotProps {
   label: string;
   reportType: AnnualAuditReportType;
   finalName: string | null;
+  workingName: string | null;
   templates: ReadonlyArray<{ name: string; isLocked: boolean }>;
   /** Names this year's step 09 already locks — they stay selectable in both pickers */
   lockedNames: ReadonlyArray<string | null>;
@@ -43,14 +51,20 @@ function FinalSlot({
   label,
   reportType,
   finalName,
+  workingName,
   templates,
   lockedNames,
   onSelect,
   saving,
 }: FinalSlotProps): ReactElement {
   const options = useMemo(
-    () => selectableTemplateOptions(templates, lockedNames),
-    [templates, lockedNames],
+    () =>
+      selectableTemplateOptions(
+        templates,
+        lockedNames,
+        workingName ? { [workingName]: WORKING_TAG } : {},
+      ),
+    [templates, lockedNames, workingName],
   );
 
   return (
@@ -62,7 +76,7 @@ function FinalSlot({
       <TemplateSelect
         value={finalName}
         options={options}
-        placeholder="Select a report template..."
+        placeholder={workingName ? `Working: ${workingName}` : 'Select a report template...'}
         onChange={name => {
           if (name) onSelect(reportType, name);
         }}
@@ -76,7 +90,7 @@ function FinalSlot({
 
 export function Step09SaveTemplate(props: Step09Props) {
   const [status, setStatus] = useState<StepStatus>('pending');
-  const { adminBusinessId, id, onStatusChange, year } = props;
+  const { adminBusinessId, id, onStatusChange, year, manualData, refetchManualData } = props;
   const { fetching: saving, setStep09Status } = useSetAnnualAuditStep09Status();
 
   const [{ data: statusData, fetching: fetchingStatus }, refetchStatus] = useQuery({
@@ -99,6 +113,12 @@ export function Step09SaveTemplate(props: Step09Props) {
 
   // What this year actually locks, per report: a report not locked yet stays empty in its picker
   const final = useMemo(() => parseLockedTemplates(step09Record?.evidence), [step09Record]);
+  // Working templates are picked in step 05, which shares the page's step-status query
+  const working = useMemo(
+    () => parseWorkingTemplates(findStepEvidence(manualData, '5')),
+    [manualData],
+  );
+
   const bothLocked = !!final.balanceSheetTemplateName && !!final.profitAndLossTemplateName;
 
   // Update status badge
@@ -126,7 +146,8 @@ export function Step09SaveTemplate(props: Step09Props) {
     refetchStatus({ requestPolicy: 'network-only' });
     // Locking changes which templates are selectable
     refetchTemplates({ requestPolicy: 'network-only' });
-  }, [refetchStatus, refetchTemplates]);
+    refetchManualData?.();
+  }, [refetchStatus, refetchTemplates, refetchManualData]);
 
   const onTemplateSelected = useCallback(
     async (reportType: AnnualAuditReportType, templateName: string) => {
@@ -139,6 +160,48 @@ export function Step09SaveTemplate(props: Step09Props) {
     },
     [adminBusinessId, year, setStep09Status, afterSave],
   );
+
+  // One click to lock what was worked on, for whichever reports differ from what's locked
+  const pendingWorking = useMemo(() => {
+    const pending: Array<{ reportType: AnnualAuditReportType; templateName: string }> = [];
+    if (
+      working.balanceSheetTemplateName &&
+      working.balanceSheetTemplateName !== final.balanceSheetTemplateName
+    ) {
+      pending.push({
+        reportType: AnnualAuditReportType.BalanceSheet,
+        templateName: working.balanceSheetTemplateName,
+      });
+    }
+    if (
+      working.profitAndLossTemplateName &&
+      working.profitAndLossTemplateName !== final.profitAndLossTemplateName
+    ) {
+      pending.push({
+        reportType: AnnualAuditReportType.ProfitAndLoss,
+        templateName: working.profitAndLossTemplateName,
+      });
+    }
+    return pending;
+  }, [working, final]);
+
+  const lockWorkingTemplates = useCallback(async () => {
+    if (!adminBusinessId || pendingWorking.length === 0) return;
+    const [first, second] = pendingWorking;
+    if (second && first.templateName === second.templateName) {
+      // Same template for both reports: one call, no reportType
+      await setStep09Status({
+        input: { ownerId: adminBusinessId, year, templateName: first.templateName },
+      });
+    } else {
+      for (const { reportType, templateName } of pendingWorking) {
+        await setStep09Status({
+          input: { ownerId: adminBusinessId, year, templateName, reportType },
+        });
+      }
+    }
+    afterSave();
+  }, [adminBusinessId, year, pendingWorking, setStep09Status, afterSave]);
 
   const description = useMemo(() => {
     if (status !== 'completed') {
@@ -158,6 +221,7 @@ export function Step09SaveTemplate(props: Step09Props) {
             label="Balance Sheet"
             reportType={AnnualAuditReportType.BalanceSheet}
             finalName={final.balanceSheetTemplateName}
+            workingName={working.balanceSheetTemplateName}
             templates={templates}
             lockedNames={lockedNames}
             onSelect={onTemplateSelected}
@@ -167,11 +231,23 @@ export function Step09SaveTemplate(props: Step09Props) {
             label="Profit and Loss"
             reportType={AnnualAuditReportType.ProfitAndLoss}
             finalName={final.profitAndLossTemplateName}
+            workingName={working.profitAndLossTemplateName}
             templates={templates}
             lockedNames={lockedNames}
             onSelect={onTemplateSelected}
             saving={saving}
           />
+          {pendingWorking.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={saving}
+              onClick={lockWorkingTemplates}
+              data-testid="lock-working-templates"
+            >
+              Lock working {pendingWorking.length === 1 ? 'template' : 'templates'}
+            </Button>
+          )}
         </div>
       )}
     </BaseStepCard>

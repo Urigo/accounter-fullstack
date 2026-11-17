@@ -114,6 +114,8 @@ async function render(props: {
   id?: string;
   stepStatuses?: Array<{ stepId: string; status: string; evidence?: string | null }>;
   templates?: Array<{ id: string; name: string; isLocked: boolean; updated: Date }>;
+  /** The page's step-status rows — step 05's evidence holds the working templates */
+  manualData?: Array<{ id: string; stepId: string; status: string; notes: null; evidence: string | null }>;
 }): Promise<{ container: HTMLDivElement; cleanup: () => Promise<void> }> {
   const {
     year = 2024,
@@ -152,7 +154,7 @@ async function render(props: {
         year,
         adminBusinessId: adminBusinessId,
         onStatusChange: vi.fn(),
-        manualData: [],
+        manualData: (props.manualData ?? []) as never,
       }),
     );
     await Promise.resolve();
@@ -180,6 +182,12 @@ function slot(container: HTMLElement, reportType: string) {
 
 function slotItem(container: HTMLElement, reportType: string, name: string) {
   return slot(container, reportType)?.querySelector(`[data-testid="select-item-${name}"]`) ?? null;
+}
+
+function workingEvidence(evidence: Record<string, string>) {
+  return [
+    { id: 'w', stepId: '5', status: 'PENDING', notes: null, evidence: JSON.stringify(evidence) },
+  ];
 }
 
 async function chooseInSlot(container: HTMLElement, reportType: string, value: string) {
@@ -353,6 +361,102 @@ describe('Step09SaveTemplate', () => {
     expect(setStep09StatusMock).toHaveBeenCalledWith({
       input: { ownerId: 'owner-1', year: 2024, templateName: 'template-A', reportType: PNL },
     });
+
+    await cleanup();
+  });
+
+  it('lists the working template first, tagged, in its own slot', async () => {
+    const templates = [
+      makeTemplate({ name: 'aaa', isLocked: false }),
+      makeTemplate({ name: 'bs-wip', isLocked: false }),
+    ];
+
+    const { container, cleanup } = await render({
+      adminBusinessId: 'owner-1',
+      templates,
+      manualData: workingEvidence({ balanceSheetTemplateName: 'bs-wip' }),
+    });
+
+    const bsItems = slot(container, BS)?.querySelectorAll('option');
+    expect(bsItems?.[0]?.getAttribute('value')).toBe('bs-wip');
+    expect(bsItems?.[0]?.textContent).toContain('(working)');
+    expect(slotItem(container, PNL, 'bs-wip')?.textContent).not.toContain('(working)');
+
+    await cleanup();
+  });
+
+  it('"Lock working templates" locks each report\'s working template', async () => {
+    const templates = [
+      makeTemplate({ name: 'bs-wip', isLocked: false }),
+      makeTemplate({ name: 'pnl-wip', isLocked: false }),
+    ];
+    setStep09StatusMock.mockResolvedValue({ stepId: '9' });
+
+    const { container, cleanup } = await render({
+      adminBusinessId: 'owner-1',
+      templates,
+      manualData: workingEvidence({
+        balanceSheetTemplateName: 'bs-wip',
+        profitAndLossTemplateName: 'pnl-wip',
+      }),
+    });
+
+    const button = container.querySelector('[data-testid="lock-working-templates"]') as HTMLButtonElement;
+    expect(button.textContent).toBe('Lock working templates');
+    await act(async () => {
+      button.click();
+      await Promise.resolve();
+    });
+
+    expect(setStep09StatusMock).toHaveBeenCalledTimes(2);
+    expect(setStep09StatusMock).toHaveBeenNthCalledWith(1, {
+      input: { ownerId: 'owner-1', year: 2024, templateName: 'bs-wip', reportType: BS },
+    });
+    expect(setStep09StatusMock).toHaveBeenNthCalledWith(2, {
+      input: { ownerId: 'owner-1', year: 2024, templateName: 'pnl-wip', reportType: PNL },
+    });
+
+    await cleanup();
+  });
+
+  it('"Lock working template" uses one call when both reports share a working template', async () => {
+    setStep09StatusMock.mockResolvedValue({ stepId: '9' });
+
+    const { container, cleanup } = await render({
+      adminBusinessId: 'owner-1',
+      templates: [makeTemplate({ name: 'wip', isLocked: false })],
+      manualData: workingEvidence({ balanceSheetTemplateName: 'wip', profitAndLossTemplateName: 'wip' }),
+    });
+
+    const button = container.querySelector('[data-testid="lock-working-templates"]') as HTMLButtonElement;
+    await act(async () => {
+      button.click();
+      await Promise.resolve();
+    });
+
+    expect(setStep09StatusMock).toHaveBeenCalledTimes(1);
+    expect(setStep09StatusMock).toHaveBeenCalledWith({
+      input: { ownerId: 'owner-1', year: 2024, templateName: 'wip' },
+    });
+
+    await cleanup();
+  });
+
+  it('hides "Lock working templates" once the working templates are the locked ones', async () => {
+    const { container, cleanup } = await render({
+      adminBusinessId: 'owner-1',
+      stepStatuses: [
+        {
+          stepId: '9',
+          status: 'COMPLETED',
+          evidence: JSON.stringify({ balanceSheetTemplateName: 'wip', profitAndLossTemplateName: 'wip' }),
+        },
+      ],
+      templates: [makeTemplate({ name: 'wip', isLocked: true })],
+      manualData: workingEvidence({ balanceSheetTemplateName: 'wip', profitAndLossTemplateName: 'wip' }),
+    });
+
+    expect(container.querySelector('[data-testid="lock-working-templates"]')).toBeNull();
 
     await cleanup();
   });
