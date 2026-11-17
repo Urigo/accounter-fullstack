@@ -49,7 +49,7 @@ export const RULES = [
     source: 'derived',
     scope: 'input',
     description:
-      'A derived code (008, 028, 273, 277, 278, 280, 297) passed in a code map; the message names the input property that controls it.',
+      'A derived code (008, 028, 273, 277, 278, 280, 297; 3077: 501–505) passed in a code map; the message names the input property that controls it.',
   },
   {
     id: 'struct.relatedCompanies.max',
@@ -517,6 +517,32 @@ export const RULES = [
     source: 'derived',
     scope: '2200',
     description: 'The same country twice within one country breakdown.',
+  },
+  {
+    id: 'cg.improvements.max',
+    severity: 'error',
+    source: 'spec',
+    scope: '3077',
+    description:
+      'More than 5 improvements in a 3077 appendix (only five slots exist, 247–416); report the excess via 962 with reason 965 instead.',
+    specRef: { page: 55 },
+  },
+  {
+    id: 'cg.improvements.code50Amount',
+    severity: 'warning',
+    source: 'derived',
+    scope: '3077',
+    description:
+      'An improvement without code50Amount (code 501–505), or a code50Amount with neither expense nor accumulated depreciation.',
+    specRef: { page: 58 },
+  },
+  {
+    id: 'cg.virtualCurrency.wallet',
+    severity: 'error',
+    source: 'spec',
+    scope: '3077',
+    description: 'A 3077 appendix with code 071 = 1 (virtual currency) and no wallet address.',
+    specRef: { page: 57 },
   },
   {
     id: 'parse.empty',

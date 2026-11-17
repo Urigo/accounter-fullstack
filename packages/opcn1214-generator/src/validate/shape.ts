@@ -13,6 +13,7 @@ import {
   CAPITAL_GAINS_INPUT_KEYS,
   type CapitalGainsInputSymbol,
 } from '../normalize/capital-gains/index.js';
+import { IMPROVEMENT_SLOTS, improvementCode } from '../normalize/capital-gains/other.js';
 import { DERIVED_MAIN_CODE_SOURCES } from '../normalize/derive.js';
 import { makeIssue, type Issue } from './issue.js';
 
@@ -150,10 +151,29 @@ function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: un
   return { issues, value: kept };
 }
 
-/** The foreign appendix and the modelled capital-gains appendices have no derived codes (§7.4). */
+/** The foreign appendix and the capital-gains appendices but 3077 have no derived codes (§7.4). */
 const NO_DERIVED_CODES: Readonly<Partial<Record<string, readonly string[]>>> = {};
 
-/** True for a `symbol` the input model has an appendix type for. */
+/**
+ * The input properties the derived codes of the appendix at `index` of `capitalGains` come from
+ * (SPEC §7.4): 3077 codes 501–505 from the code-50 amounts of improvements 1–5.
+ */
+function capitalGainsDerivedSources(
+  symbol: CapitalGainsInputSymbol,
+  index: number,
+): Readonly<Partial<Record<string, readonly string[]>>> {
+  if (symbol !== 77) {
+    return NO_DERIVED_CODES;
+  }
+  return Object.fromEntries(
+    Array.from({ length: IMPROVEMENT_SLOTS }, (_, slot) => [
+      improvementCode(slot),
+      [`capitalGains[${index}].improvements[${slot}].code50Amount`],
+    ]),
+  );
+}
+
+/** True for a `symbol` the input model has an appendix type for (every capital-gains symbol). */
 function isInputSymbol(symbol: unknown): symbol is CapitalGainsInputSymbol {
   return typeof symbol === 'number' && Object.hasOwn(CAPITAL_GAINS_INPUT_KEYS, symbol);
 }
@@ -181,7 +201,7 @@ function scanCapitalGains(
       taxYear: layout.taxYear,
       record: layout.records[capitalGainsRecordType(appendix.symbol)],
       recordIndex,
-      derivedSources: NO_DERIVED_CODES,
+      derivedSources: capitalGainsDerivedSources(appendix.symbol, index),
     });
     issues.push(...amounts.issues);
     return { ...appendix, amounts: amounts.value };

@@ -6,10 +6,12 @@ import {
   forcedVirtualCurrencyAppendix,
   foreignAppendix,
   foreignAppendixWithBreakdown,
+  improvements,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
   oilPartnershipAppendix,
+  otherTransactionsAppendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -633,6 +635,51 @@ describe('parse1214', () => {
     });
   });
 
+  describe('other-transactions appendix (3077)', () => {
+    // Input order 77, 63; lines: 1000, 1020, 3063, 3077, 9999.
+    const input = minimalInput({
+      capitalGains: [
+        otherTransactionsAppendix({ improvements: improvements(1) }),
+        section6Appendix(),
+      ],
+    });
+    const file = generate1214(input, OPTIONS).text;
+
+    it('reads it back in file order: improvements with code-50 amounts, replacement asset, wallet', () => {
+      const result = parse1214(file);
+      expect(result.issues).toEqual([]);
+      expect(result.report.capitalGains).toEqual([
+        section6Appendix(),
+        otherTransactionsAppendix({ improvements: improvements(1) }),
+      ]);
+      expect(result.report).toEqual(canonicalize(input, OPTIONS));
+    });
+
+    it("reports improvement 2's expense without a date as field.required at its file-order path", () => {
+      // 3077@281: the expense of improvement 2 (slot 1); its date (3077@305) stays blank.
+      const result = parse1214(tamper(file, 4, 281, '000000012345'));
+      expect(result.issues.map(issue => [issue.ruleId, issue.path, issue.severity])).toEqual([
+        ['field.required', 'capitalGains[1].improvements[1].date', 'error'],
+        ['cg.improvements.code50Amount', 'capitalGains[1].improvements[1].code50Amount', 'warning'],
+      ]);
+      expect(result.report.capitalGains?.[1]).toMatchObject({
+        improvements: [improvements(1)[0], { expense: 123.45 }],
+      });
+    });
+
+    it('reports a code 071 = 1 without a wallet address as cg.virtualCurrency.wallet', () => {
+      const result = parse1214(tamper(file, 4, 489, ' '.repeat(150)));
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'cg.virtualCurrency.wallet',
+          path: 'capitalGains[1].walletAddresses',
+          recordType: '3077',
+          recordIndex: 0,
+        }),
+      ]);
+    });
+  });
+
   describe('asset appendices (3027, 3050, 3051, 3054)', () => {
     // Input order 51, 54, 50, 27; lines: 1000, 1020, 3027, 3050, 3051, 3054, 9999.
     const input = minimalInput({
@@ -711,6 +758,8 @@ describe('parse1214', () => {
     'cg-64',
     'cg-65',
     'cg-66',
+    'cg-77',
+    'capital-gains-max',
   ])('never lets anything but Opcn1214ParseError escape for a corrupted %s golden', name => {
     const golden = goldenText(name);
     const lines = golden.split(CRLF);

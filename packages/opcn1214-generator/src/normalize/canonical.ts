@@ -8,7 +8,7 @@ import { Opcn1214InternalError } from '../errors.js';
 import { capitalGainsRecordType } from '../layout/capital-gains.js';
 import { countryKey } from '../layout/countries.js';
 import { getLayout } from '../layout/registry.js';
-import type { FieldDef, FieldKind, RecordDef, YearLayout } from '../layout/types.js';
+import type { CodeDef, FieldDef, FieldKind, RecordDef, YearLayout } from '../layout/types.js';
 import {
   PHONE_PREFIXES,
   type CapitalGainsAppendix,
@@ -23,6 +23,7 @@ import {
   hasWithholders,
   placeCapitalGains,
 } from './capital-gains/index.js';
+import { improvementCode, improvementKey, readImprovements } from './capital-gains/other.js';
 import { readWithholders, withholderKey } from './capital-gains/securities.js';
 import {
   COUNTRY_BREAKDOWN_INPUT_KEYS,
@@ -53,6 +54,14 @@ function fieldOf(def: RecordDef, key: string): FieldDef {
     throw new Opcn1214InternalError(`Record ${def.type} has no field "${key}"`);
   }
   return field;
+}
+
+function codeOf(def: RecordDef, code: string): CodeDef {
+  const found = def.codes.find(candidate => candidate.code === code);
+  if (!found) {
+    throw new Opcn1214InternalError(`Record ${def.type} has no code ${code}`);
+  }
+  return found;
 }
 
 /** The value at the dotted `key` of `source`, or undefined. */
@@ -140,20 +149,29 @@ function canonicalBreakdowns(
   return Object.keys(output).length > 0 ? output : undefined;
 }
 
+/** A code value as the parser reads it back: rounded, a 0 removed unless the code is zeroAllowed. */
+function canonicalCodeValue(
+  def: CodeDef,
+  value: number | undefined,
+  rounding: GenerateOptions['rounding'],
+): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const rounded = roundAmount(def.kind, value, rounding);
+  return rounded !== 0 || def.zeroAllowed ? rounded : undefined;
+}
+
 function canonicalAmounts(
   def: RecordDef,
   amounts: Readonly<Partial<Record<string, number>>>,
   rounding: GenerateOptions['rounding'],
 ): Record<string, number> {
   const output: Record<string, number> = {};
-  for (const { code, derived, kind, zeroAllowed } of def.codes) {
-    const value = amounts[code];
-    if (derived || value === undefined) {
-      continue;
-    }
-    const rounded = roundAmount(kind, value, rounding);
-    if (rounded !== 0 || zeroAllowed) {
-      output[code] = rounded;
+  for (const code of def.codes) {
+    const value = code.derived ? undefined : canonicalCodeValue(code, amounts[code.code], rounding);
+    if (value !== undefined) {
+      output[code.code] = value;
     }
   }
   return output;
@@ -164,7 +182,9 @@ function canonicalAmounts(
  * (grouped by symbol ascending, input order within a symbol, SPEC §3.3), header members like any
  * header value (an empty `dates` removed), withholders slot by slot (readWithholders: each member
  * like a header value, trailing empty slots and an empty list removed), wallet addresses likewise
- * (readWalletAddresses: an empty slot before a filled one as `''`), amounts like the 1000 amounts.
+ * (readWalletAddresses: an empty slot before a filled one as `''`), the improvements of 3077
+ * likewise (readImprovements: the first five, each code-50 amount like a code value), amounts like
+ * the 1000 amounts.
  */
 function canonicalCapitalGains(
   layout: YearLayout,
@@ -198,6 +218,26 @@ function canonicalCapitalGains(
       : undefined;
     if (walletAddresses) {
       tree.walletAddresses = walletAddresses;
+    }
+    const improvements =
+      appendix.symbol === 77
+        ? readImprovements((slot, member) => {
+            const improvement = appendix.improvements?.[slot];
+            return member === 'code50Amount'
+              ? canonicalCodeValue(
+                  codeOf(def, improvementCode(slot)),
+                  improvement?.code50Amount,
+                  rounding,
+                )
+              : canonicalValue(
+                  fieldOf(def, improvementKey(slot, member)),
+                  improvement?.[member],
+                  rounding,
+                );
+          })
+        : undefined;
+    if (improvements) {
+      tree.improvements = improvements;
     }
     tree.amounts = canonicalAmounts(def, appendix.amounts, rounding);
     return tree;

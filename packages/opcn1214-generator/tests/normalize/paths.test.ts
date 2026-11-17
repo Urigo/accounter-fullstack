@@ -206,8 +206,47 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     },
   );
 
-  it('maps keys of record 3077, which has no input mapping yet, to the empty path', () => {
-    expect(pathFor('3077', 0, 'anything')).toBe('');
+  it('maps a record 3077 key into capitalGains[i]: improvement, replacement-asset and wallet slots', () => {
+    expect(pathFor('3077', 2, 'improvements[3].date')).toBe('capitalGains[2].improvements[3].date');
+    expect(pathFor('3077', 2, 'improvements[0].accumulatedDepreciation')).toBe(
+      'capitalGains[2].improvements[0].accumulatedDepreciation',
+    );
+    expect(pathFor('3077', 1, 'replacementAsset.price')).toBe(
+      'capitalGains[1].replacementAsset.price',
+    );
+    expect(pathFor('3077', 0, 'dates.code20')).toBe('capitalGains[0].dates.code20');
+    expect(pathFor('3077', 0, 'walletAddresses[1]')).toBe('capitalGains[0].walletAddresses[1]');
+    expect(pathFor('3077', 3, 'code:071')).toBe('capitalGains[3].amounts["071"]');
+  });
+
+  it('maps the derived codes 501–505 of record 3077 to the code-50 amount of their improvement', () => {
+    expect(
+      ['501', '502', '503', '504', '505'].map(code => pathFor('3077', 4, `code:${code}`)),
+    ).toEqual([0, 1, 2, 3, 4].map(slot => `capitalGains[4].improvements[${slot}].code50Amount`));
+  });
+
+  it('maps the derived keys of record 3077, the improvement count included, to the empty path', () => {
+    const derived = LAYOUT.records['3077'].fields.filter(field => field.derived);
+    expect(derived.map(field => field.key)).toEqual([
+      'transactionSymbol',
+      'appendixNumber',
+      'improvementCount',
+      'sequenceNumber',
+    ]);
+    for (const field of derived) {
+      expect(pathFor('3077', 1, field.key)).toBe('');
+    }
+  });
+
+  it('maps a key of every record type but 9999 to a non-empty input path', () => {
+    for (const def of Object.values(LAYOUT.records)) {
+      const field = def.fields.find(candidate => !candidate.derived && candidate.kind !== 'filler');
+      if (def.type === '9999') {
+        expect(field).toBeUndefined();
+      } else {
+        expect(pathFor(def.type, 0, field?.key ?? '')).not.toBe('');
+      }
+    }
   });
 
   it('maps the fields of the control record 9999, which are all derived, to the empty path', () => {
