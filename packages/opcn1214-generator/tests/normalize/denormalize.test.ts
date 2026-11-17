@@ -7,9 +7,12 @@ import {
   foreignAppendix,
   minimalInput,
   rdInvestments,
+  reitAppendix,
   relatedCompanies,
   section6Appendices,
   section6Appendix,
+  securitiesAppendix,
+  withholders,
 } from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
@@ -162,6 +165,21 @@ describe('denormalize: capital-gains appendices (records 30xx)', () => {
     const appendices = [section6Appendix(), section6Appendix({ foreignAsset: false })];
     const report = normalizeReport(minimalInput({ capitalGains: appendices }), LAYOUT, OPTIONS);
     expect(denormalize(report).capitalGains).toEqual(appendices);
+  });
+
+  it('reads 3060 and 3064 records back with their withholders, in file order', () => {
+    const appendices = [
+      reitAppendix({ withholders: withholders(4) }),
+      securitiesAppendix({ withholders: [{}, {}, { account: '000000001' }] }),
+      securitiesAppendix({ withholders: undefined }),
+    ];
+    const report = normalizeReport(minimalInput({ capitalGains: appendices }), LAYOUT, OPTIONS);
+    expect(denormalize(report).capitalGains).toEqual([
+      appendices[1],
+      { ...securitiesAppendix(), withholders: undefined },
+      appendices[0],
+    ]);
+    expect(denormalize(report).capitalGains?.[1]).not.toHaveProperty('withholders');
   });
 
   it('keeps an appendix with no header member and no codes', () => {

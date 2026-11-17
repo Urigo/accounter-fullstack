@@ -9,9 +9,12 @@ import type {
   CountryIncome,
   ForeignAppendix,
   RdInvestment,
+  ReitAppendix,
   RelatedCompany,
   Report1214Input,
   Section6SecuritiesAppendix,
+  SecuritiesAppendix,
+  Withholder,
 } from '../../src/model/input.js';
 
 /** Overrides for a builder: objects merge recursively, arrays and other values replace. */
@@ -270,4 +273,59 @@ export function section6Appendices(count: number): Section6SecuritiesAppendix[] 
   return Array.from({ length: count }, (_, index) =>
     section6Appendix({ amounts: { '022': 1000 * (index + 1) } }),
   );
+}
+
+/** Hebrew names of the withholding agents withholders(count) returns, in slot order. */
+const WITHHOLDER_NAMES = ['בנק הפועלים', 'בנק לאומי', 'בנק דיסקונט', 'בנק מזרחי טפחות'];
+
+/**
+ * `count` (at most 4) valid withholding agents, canonical (SPEC §8.4): a Hebrew name, a 3-digit
+ * branch and a 9-digit account; the i-th (0-based) has branch `01${i + 1}`.
+ */
+export function withholders(count: number): Withholder[] {
+  return WITHHOLDER_NAMES.slice(0, count).map((name, index) => ({
+    name,
+    branch: `01${index + 1}`,
+    account: `00012345${index}`,
+  }));
+}
+
+/**
+ * A valid capital-gains appendix for securities (SPEC §7.2, record 3060) with every header member
+ * set to a value that is written to the file (two withholders) and two codes (012, 056).
+ * `overrides` are deep-merged into it.
+ */
+export function securitiesAppendix(
+  overrides: DeepPartial<SecuritiesAppendix> = {},
+): SecuritiesAppendix {
+  const base: SecuritiesAppendix = {
+    symbol: 60,
+    foreignAsset: true,
+    soldToRelatedParty: false,
+    boughtFromRelatedParty: true,
+    gainFromInvestmentFund: false,
+    withholders: withholders(2),
+    lossesCarriedForward: 8000,
+    amounts: { '012': 40_000, '056': 2000 },
+  };
+  return deepMerge(base, overrides) as SecuritiesAppendix;
+}
+
+/**
+ * A valid capital-gains appendix for real-estate investment trusts (SPEC §7.2, record 3064) with
+ * every header member set to a value that is written to the file (one withholder) and two codes
+ * (013, 056). `overrides` are deep-merged into it.
+ */
+export function reitAppendix(overrides: DeepPartial<ReitAppendix> = {}): ReitAppendix {
+  const base: ReitAppendix = {
+    symbol: 64,
+    foreignAsset: false,
+    soldToRelatedParty: true,
+    boughtFromRelatedParty: false,
+    gainFromInvestmentFund: true,
+    withholders: withholders(1),
+    lossesCarriedForward: 5000,
+    amounts: { '013': 30_000, '056': 1500 },
+  };
+  return deepMerge(base, overrides) as ReitAppendix;
 }

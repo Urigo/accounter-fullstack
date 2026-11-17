@@ -1059,6 +1059,12 @@ transaction symbol (30xx@137) and the appendix number (30xx@139) are derived and
 When parsing, `capitalGains` lists the appendices in file order (grouped by type ascending), the
 symbol comes from the record type, and `capitalGains` exists only when the file has 30xx records.
 
+The withholders of 3060/3064/3065 are written slot by slot: `withholders[j]` fills the j-th slot
+(header keys `withholders[j].name`, `.branch`, `.account`), so an issue on it is reported at
+`capitalGains[i].withholders[j].<member>`. When parsing, `withholders` lists the slots up to the
+last one with any value; an empty slot before it is read back as `{}` (keeping the indices of the
+slots after it), and `withholders` is absent when no slot has a value.
+
 Only five reportable positions have a field: more than five raise one `main.reportablePositions.max`
 notice at `declarations.reportablePositions[5]` (the first position not written), and the first five
 are still written.
@@ -1194,7 +1200,10 @@ included, is `parse.order`, and the 9999 counts are compared with the records be
   code 277 holds it (`'678'` → `'000000678'`); breakdown country codes zero-padded to 3 digits
   (`'40'` → `'040'`), incomes of 0 kept;
 - optional numeric header values equal to `0` removed (exception: `amountX` 1000@1091, where 0 is
-  meaningful).
+  meaningful);
+- capital-gains appendices in emission order (grouped by record type ascending, §3.3), an empty
+  `capitalGains` list removed; `withholders` as the parser reads the slots back (§7.3): trailing
+  empty withholders and an empty list removed, an empty withholder before a filled one kept as `{}`.
 
 Round-trip requirements (tested, §13.6):
 

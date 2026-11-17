@@ -24,9 +24,12 @@ import {
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
+  reitAppendix,
   relatedCompanies,
   section6Appendices,
   section6Appendix,
+  securitiesAppendix,
+  withholders,
 } from '../fixtures/builders.js';
 
 const OPTIONS: GenerateOptions = { today: () => '2025-03-31' };
@@ -372,6 +375,34 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     OPTIONS,
   ],
   [
+    'capital gains: 3060 and 3064 appendices with withholders, mixed with 3063 (input order 64, 63, 60)',
+    minimalInput({
+      capitalGains: [
+        reitAppendix({ withholders: withholders(4) }),
+        section6Appendix(),
+        securitiesAppendix({
+          withholders: [
+            {},
+            { name: '  בנק\u00A0 מרכנתיל ', branch: '12', account: '345' },
+            { account: '0' },
+          ],
+        }),
+        { symbol: 60, amounts: {} },
+        {
+          symbol: 64,
+          foreignAsset: false,
+          soldToRelatedParty: false,
+          boughtFromRelatedParty: false,
+          gainFromInvestmentFund: false,
+          withholders: [],
+          lossesCarriedForward: 0,
+          amounts: { '013': 0, '033': 1, '063': 2, '085': 3, '087': 4, '056': 9_999_999_999 },
+        },
+      ],
+    }),
+    OPTIONS,
+  ],
+  [
     'amounts rounded half up',
     minimalInput({
       amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },
@@ -392,6 +423,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
       }),
       capitalGains: [
         section6Appendix({ lossesCarriedForward: 0.4, amounts: { '022': 2.5, '023': 0.4 } }),
+        securitiesAppendix({ lossesCarriedForward: 10.5, amounts: { '012': 0.4, '010': 1.5 } }),
+        reitAppendix({ lossesCarriedForward: 0.4, amounts: { '013': 2.5 } }),
       ],
     }),
     { ...OPTIONS, rounding: 'halfUp' },
