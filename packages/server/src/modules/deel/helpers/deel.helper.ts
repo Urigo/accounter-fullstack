@@ -355,7 +355,10 @@ export async function getDeelChargeDescription(
 
 export async function fetchAndFilterInvoices(injector: Injector) {
   try {
-    const invoices = await injector.get(DeelClientProvider).getSalaryInvoices(); // TODO: enable setting up period
+    const invoices = (await injector.get(DeelClientProvider).getSalaryInvoices()) // TODO: enable setting up period
+      // TODO: Temporary skip. Zero-amount invoices are payments covered by Deel prepaid credits.
+      // Revert this filter once the Deel credit feature is fully implemented.
+      .filter(invoice => Number(invoice.amount) !== 0);
     const contracts = await injector
       .get(DeelContractsProvider)
       .getEmployeeByContractIdLoader.loadMany(
