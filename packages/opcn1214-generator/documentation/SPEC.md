@@ -622,6 +622,7 @@ export interface GenerateResult {
   text: string // the file as a JS string (CRLF line endings)
   bytes: Uint8Array // windows-1255 — the artifact to upload
   fileName: string // suggestion: `1214_${fileNumber}_${taxYear}.txt` (batch: `1214_batch_${n}.txt`)
+  // fileNumber: the 9 digits as written at 1000@137 (zero-padded, e.g. '12' → '000000012')
   warnings: Issue[]
   summary: {
     reports: number
@@ -1390,7 +1391,7 @@ export class Opcn1214Error extends Error {
   readonly issues: readonly Issue[]
   constructor(message: string, issues: readonly Issue[])
 }
-export class Opcn1214ValidationError extends Opcn1214Error {} // generate1214 / generate1214Batch
+export class Opcn1214ValidationError extends Opcn1214Error {} // generate1214 / generate1214Batch; issues: errors, then warnings (each sorted)
 export class Opcn1214ParseError extends Opcn1214Error {} // parse1214 / parse1214Batch
 export class Opcn1214UnsupportedYearError extends Opcn1214Error {
   readonly taxYear: number
