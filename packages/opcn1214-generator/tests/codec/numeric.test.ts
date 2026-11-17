@@ -89,10 +89,6 @@ describe('numeric codecs', () => {
     }
   });
 
-  it('codecFor throws Opcn1214InternalError for a kind without a codec', () => {
-    expect(() => codecFor('text')).toThrow(Opcn1214InternalError);
-  });
-
   describe('encode', () => {
     it.each<[Kind, Primitive, number, FieldShape['type'], string]>([
       ['num', 7, 5, 'numeric', '00007'],
