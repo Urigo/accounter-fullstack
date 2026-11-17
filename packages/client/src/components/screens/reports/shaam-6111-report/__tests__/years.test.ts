@@ -26,4 +26,24 @@ describe('getShaam6111AvailableYears', () => {
     ]);
     expect(getShaam6111AvailableYears(2026, '2025')).toHaveLength(6);
   });
+
+  it('keeps every year in use, report year and comparison year alike, outside the range too', () => {
+    const years = getShaam6111AvailableYears(2026, '2025', '2018');
+    expect(years.at(-1)).toBe('2018');
+    expect(years).toContain('2025');
+    expect(getShaam6111AvailableYears(2026, '2026', '2019')).toEqual([
+      '2026',
+      '2025',
+      '2024',
+      '2023',
+      '2022',
+      '2021',
+      '2020',
+      '2019',
+    ]);
+  });
+
+  it('ignores years that are not set', () => {
+    expect(getShaam6111AvailableYears(2026, undefined, undefined)).toHaveLength(6);
+  });
 });

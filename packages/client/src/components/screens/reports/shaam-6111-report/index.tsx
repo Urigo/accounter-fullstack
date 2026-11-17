@@ -64,8 +64,21 @@ export function Shaam6111Report() {
     [setSearchParams],
   );
   const setSelectedYear = useCallback(
-    (year: string) => updateSearchParam('year', year),
-    [updateSearchParam],
+    (year: string) =>
+      setSearchParams(
+        previous => {
+          const next = new URLSearchParams(previous);
+          next.set('year', year);
+          // a year is not compared with itself: drop a comparison year equal to the new year, so
+          // it doesn't silently come back when the report year changes again
+          if (next.get('referenceYear') === year) {
+            next.delete('referenceYear');
+          }
+          return next;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
   );
   const setReferenceYear = useCallback(
     (year?: string) => updateSearchParam('referenceYear', year),
@@ -82,7 +95,7 @@ export function Shaam6111Report() {
   });
 
   const showReference = !!referenceYear && referenceYear !== selectedYear;
-  const [{ data: referenceData }] = useQuery({
+  const [{ data: referenceData, fetching: referenceFetching, error: referenceError }] = useQuery({
     query: Shaam6111ReportScreenDocument,
     variables: {
       year: showReference ? Number.parseInt(referenceYear, 10) : 0,
@@ -90,6 +103,11 @@ export function Shaam6111Report() {
     },
     pause: !showReference || !selectedBusiness,
   });
+
+  // Compare only once the comparison year has loaded: while it loads, or if it fails, the tabs
+  // would show the "changes vs year" badge with no change values, which reads as "no change"
+  const loadedReference =
+    showReference && !referenceFetching ? referenceData?.shaam6111.data : undefined;
 
   useEffect(() => {
     setFiltersContext(
@@ -127,11 +145,16 @@ export function Shaam6111Report() {
           <Content
             fetching={fetching}
             errorMessage={error?.message}
+            referenceErrorMessage={
+              showReference && referenceError
+                ? `שנת ההשוואה ${referenceYear}: ${referenceError.message}`
+                : undefined
+            }
             data={data}
-            referenceData={showReference ? referenceData : undefined}
+            referenceData={loadedReference ? referenceData : undefined}
             selectedBusiness={selectedBusiness}
             selectedYear={selectedYear}
-            referenceYear={showReference ? referenceYear : undefined}
+            referenceYear={loadedReference ? referenceYear : undefined}
           />
         </CardContent>
       </Card>
@@ -142,6 +165,7 @@ export function Shaam6111Report() {
 function Content({
   fetching,
   errorMessage,
+  referenceErrorMessage,
   data,
   referenceData,
   selectedBusiness,
@@ -150,6 +174,7 @@ function Content({
 }: {
   fetching: boolean;
   errorMessage?: string;
+  referenceErrorMessage?: string;
   data?: Shaam6111ReportScreenQuery;
   referenceData?: Shaam6111ReportScreenQuery;
   selectedBusiness?: string;
@@ -184,13 +209,18 @@ function Content({
   }
 
   return (
-    <Shaam6111ReportContent
-      data={reportData}
-      referenceData={referenceData?.shaam6111.data}
-      businessInfo={data.shaam6111.business}
-      selectedBusiness={selectedBusiness}
-      selectedYear={selectedYear}
-      referenceYear={referenceYear}
-    />
+    <>
+      {referenceErrorMessage && (
+        <p className="text-sm text-red-600 px-4 pt-4">{referenceErrorMessage}</p>
+      )}
+      <Shaam6111ReportContent
+        data={reportData}
+        referenceData={referenceData?.shaam6111.data}
+        businessInfo={data.shaam6111.business}
+        selectedBusiness={selectedBusiness}
+        selectedYear={selectedYear}
+        referenceYear={referenceYear}
+      />
+    </>
   );
 }

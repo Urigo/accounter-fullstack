@@ -39,8 +39,8 @@ export function Shaam6111Filters({
 }: Shaam6111FiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(!selectedYear || !selectedBusiness);
   const availableYears = useMemo(
-    () => getShaam6111AvailableYears(undefined, selectedYear),
-    [selectedYear],
+    () => getShaam6111AvailableYears(undefined, selectedYear, referenceYear),
+    [selectedYear, referenceYear],
   );
   const {
     selectableAdminBusinesses: businesses,

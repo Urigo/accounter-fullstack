@@ -3,19 +3,22 @@ const FIRST_REPORT_YEAR = 2020;
 
 /**
  * Tax years the report can be generated for, latest first: every closed year (up to last year),
- * so a new year shows up as soon as it ends. A year selected through the URL stays listed.
+ * so a new year shows up as soon as it ends. Years already in use (the report year and the
+ * comparison year, e.g. from the URL) stay listed even outside that range, so their selects never
+ * render blank.
  */
 export function getShaam6111AvailableYears(
   currentYear = new Date().getFullYear(),
-  selectedYear?: string,
+  ...keepYears: Array<string | undefined>
 ): string[] {
   const years: string[] = [];
   for (let year = currentYear - 1; year >= FIRST_REPORT_YEAR; year--) {
     years.push(String(year));
   }
-  if (selectedYear && !years.includes(selectedYear)) {
-    years.push(selectedYear);
-    years.sort((a, b) => Number(b) - Number(a));
+  for (const year of keepYears) {
+    if (year && !years.includes(year)) {
+      years.push(year);
+    }
   }
-  return years;
+  return years.sort((a, b) => Number(b) - Number(a));
 }
