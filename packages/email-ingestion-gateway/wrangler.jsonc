@@ -25,15 +25,13 @@
   // it. `wrangler whoami` prints it.
 
   // Wrangler treats this file as the source of truth and DELETES dashboard-set
-  // plain-text vars on deploy (secrets are always preserved). GATEWAY_URL is
-  // currently a plain-text var, and the Worker cannot run without it — with the
-  // default `false`, the first deploy would delete it and every inbound email would
-  // fail the health probe. This must stay true until GATEWAY_URL is a secret.
-  //
-  // Target state: all four values as secrets, then flip this to false so the file
-  // is the real source of truth and dashboard drift stops being invisible. Do not
-  // move GATEWAY_URL into a `vars` block here instead — this repo is public.
-  "keep_vars": true,
+  // plain-text vars on deploy (secrets are always preserved). Every Worker value
+  // (CF_WEBHOOK_SECRET, GATEWAY_URL, EMAIL_FORWARD_DESTINATION, FALLBACK_EMAIL,
+  // HEALTH_PROBE_TIMEOUT_MS) is a secret, so nothing here depends on dashboard
+  // vars, and a plain-text var added in the dashboard is removed on the next deploy
+  // instead of drifting invisibly. Add new values as secrets (see .dev.vars.example),
+  // never in a `vars` block here — this repo is public.
+  "keep_vars": false,
 
   // Both default to true when unspecified, and the live Worker has both OFF. Without
   // these, the first deploy would silently publish a `<name>.workers.dev` URL and
