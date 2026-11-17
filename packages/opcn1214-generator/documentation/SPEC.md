@@ -455,6 +455,7 @@ export type FieldKind =
   | 'shareholderId'
   | 'year'
   | 'num'
+  | 'digits'
   | 'amount'
   | 'amountX'
   | 'amountX100'

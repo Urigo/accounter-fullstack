@@ -50,7 +50,7 @@
     "build": "yarn lint && bob build",
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "generate:layout": "tsx scripts/generate-layout.ts",
-    "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
+    "lint": "eslint './src/**/*.{js,ts,tsx}' --ignore-pattern '**/*.generated.ts' --quiet --fix",
     "start": "node ./dist/esm/index.js",
     "test": "vitest",
     "test:watch": "vitest --watch",
