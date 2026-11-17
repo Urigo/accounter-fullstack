@@ -144,6 +144,33 @@ const filledDebitDates: ManualAutomationsRunEvent[] = [
   },
 ];
 
+const deelCharges: ManualAutomationsRunEvent[] = [
+  {
+    __typename: 'DeelChargeSynced',
+    isNew: true,
+    invoiceCount: 2,
+    charge: {
+      id: 'charge-deel-october',
+      userDescription: 'Deel payment for Dana, Omer',
+      minDocumentsDate: '2026-10-01',
+      totalAmount: { formatted: '$ -9,840.00' },
+      counterparty: { id: 'business-deel', name: 'Deel' },
+    },
+  },
+  {
+    __typename: 'DeelChargeSynced',
+    isNew: false,
+    invoiceCount: 1,
+    charge: {
+      id: 'charge-deel-september',
+      userDescription: 'Deel payment for Dana',
+      minDocumentsDate: '2026-09-01',
+      totalAmount: { formatted: '$ -4,920.00' },
+      counterparty: { id: 'business-deel', name: 'Deel' },
+    },
+  },
+];
+
 /** A full successful run, in the order the server streams it. */
 const completedRun: ManualAutomationsRunEvent[] = [
   status(CronJobStep.FlagForeignFees, CronJobStepState.Running),
@@ -155,6 +182,9 @@ const completedRun: ManualAutomationsRunEvent[] = [
   status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Running),
   ...filledDebitDates,
   status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Succeeded, { affectedCount: 3 }),
+  status(CronJobStep.FetchDeelDocuments, CronJobStepState.Running),
+  ...deelCharges,
+  status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 2 }),
 ];
 
 // --- live stream harness --------------------------------------------------------------------
@@ -253,6 +283,7 @@ export const NothingToUpdate: Story = {
       status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Succeeded, {
         affectedCount: 0,
       }),
+      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 0 }),
     ],
   },
 };
@@ -274,6 +305,8 @@ export const CompletedWithErrors: Story = {
       status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Succeeded, {
         affectedCount: 3,
       }),
+      ...deelCharges,
+      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 2 }),
     ],
   },
 };
@@ -287,6 +320,32 @@ export const StepFailed: Story = {
       }),
       status(CronJobStep.MergeChargesByReference, CronJobStepState.Skipped),
       status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Skipped),
+      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Skipped),
+    ],
+  },
+};
+
+/** The fix-ups ran, but the business has no Deel credentials, so the Deel pull did not. */
+export const DeelNotConfigured: Story = {
+  args: {
+    adminBusinessId: 'business-admin',
+    events: [
+      ...completedRun.slice(0, completedRun.indexOf(filledDebitDates.at(-1)!) + 2),
+      status(CronJobStep.FetchDeelDocuments, CronJobStepState.NotConfigured, { affectedCount: 0 }),
+    ],
+  },
+};
+
+/** Deel answered with an invoice for a contract that is not linked to a business yet. */
+export const DeelFailed: Story = {
+  args: {
+    events: [
+      ...completedRun.slice(0, completedRun.indexOf(filledDebitDates.at(-1)!) + 2),
+      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Failed, {
+        errors: [
+          'Error fetching Deel invoices: Deel contract ID [3xkq7m2] not found in DB. Match business to the following contract details: …',
+        ],
+      }),
     ],
   },
 };

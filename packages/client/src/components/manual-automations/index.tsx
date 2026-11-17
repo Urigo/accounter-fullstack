@@ -1,4 +1,4 @@
-import { useMemo, type ReactElement, type ReactNode } from 'react';
+import { useContext, useMemo, type ReactElement, type ReactNode } from 'react';
 import { format, parseISO } from 'date-fns';
 import {
   AlertTriangle,
@@ -7,11 +7,13 @@ import {
   CircleCheckBig,
   ExternalLink,
   MinusCircle,
+  Unplug,
   XCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CronJobStep, CronJobStepState } from '../../gql/graphql.js';
 import { useRunManualAutomations } from '../../hooks/use-run-manual-automations.js';
+import { UserContext } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
 import { ConfirmationModal } from '../common/modals/confirmation-modal.js';
 import { Tooltip } from '../common/tooltip.js';
@@ -27,6 +29,7 @@ import {
   groupAutomationEvents,
   summarizeAutomationEvents,
   type AutomationStepView,
+  type DeelCharge,
   type FilledDebitDate,
   type FlaggedFee,
   type ManualAutomationsRunEvent,
@@ -73,6 +76,8 @@ function StepStateIcon({ state }: { state: AutomationStepView['state'] }): React
       return <XCircle className="size-5 text-destructive" aria-label="Failed" />;
     case CronJobStepState.Skipped:
       return <MinusCircle className="size-5 text-muted-foreground" aria-label="Skipped" />;
+    case CronJobStepState.NotConfigured:
+      return <Unplug className="size-5 text-muted-foreground" aria-label="Not configured" />;
     default:
       return <Circle className="size-5 text-muted-foreground" aria-label="Pending" />;
   }
@@ -82,22 +87,27 @@ function StepCard({
   title,
   step,
   itemsCount,
+  notConfiguredHint,
   children,
 }: {
   title: string;
   step: AutomationStepView;
   itemsCount: number;
+  /** Shown when the step did not run because its integration is not set up */
+  notConfiguredHint?: ReactNode;
   children: ReactNode;
 }): ReactElement {
   const isDone =
     step.state === CronJobStepState.Succeeded ||
     step.state === CronJobStepState.CompletedWithErrors;
 
-  let placeholder: string | null = null;
+  let placeholder: ReactNode = null;
   if (step.state === 'PENDING') {
     placeholder = 'Waiting for previous steps';
   } else if (step.state === CronJobStepState.Skipped) {
     placeholder = 'Skipped, because a previous step failed';
+  } else if (step.state === CronJobStepState.NotConfigured) {
+    placeholder = notConfiguredHint ?? 'Not configured for this business';
   } else if (itemsCount === 0 && isDone) {
     placeholder = 'Nothing to update';
   } else if (itemsCount === 0 && step.state === CronJobStepState.Running) {
@@ -127,7 +137,7 @@ function StepCard({
           </Alert>
         )}
         {placeholder ? (
-          <p className="text-sm text-muted-foreground">{placeholder}</p>
+          <div className="text-sm text-muted-foreground">{placeholder}</div>
         ) : (
           itemsCount > 0 && children
         )}
@@ -188,6 +198,42 @@ function MergedChargesTable({ merges }: { merges: MergedCharges[] }): ReactEleme
   );
 }
 
+function DeelChargesTable({ charges }: { charges: DeelCharge[] }): ReactElement {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Charge</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Amount</TableHead>
+          <TableHead>Invoices</TableHead>
+          <TableHead>Change</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {charges.map(({ charge, isNew, invoiceCount }) => (
+          <TableRow key={charge.id}>
+            <TableCell>
+              <ChargeLink chargeId={charge.id}>
+                {charge.counterparty?.name ?? charge.userDescription ?? 'Charge'}
+              </ChargeLink>
+              {charge.counterparty?.name && charge.userDescription && (
+                <div className="text-xs text-muted-foreground">{charge.userDescription}</div>
+              )}
+            </TableCell>
+            <TableCell>{formatDate(charge.minDocumentsDate)}</TableCell>
+            <TableCell>{charge.totalAmount?.formatted}</TableCell>
+            <TableCell>{invoiceCount}</TableCell>
+            <TableCell>
+              <Badge variant={isNew ? 'default' : 'outline'}>{isNew ? 'New' : 'Updated'}</Badge>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 function TransactionsTable({
   rows,
   debitDateHeader,
@@ -236,6 +282,8 @@ type ManualAutomationsViewProps = {
   /** Events of the current run received so far. */
   events: readonly ManualAutomationsRunEvent[];
   onRun: () => void;
+  /** The admin business, whose Admin Config tab is where Deel gets connected */
+  adminBusinessId?: string | null;
 };
 
 /** The manual automations screen, driven by props, so its states can be rendered without a server. */
@@ -243,8 +291,9 @@ export function ManualAutomationsView({
   running,
   events,
   onRun,
+  adminBusinessId,
 }: ManualAutomationsViewProps): ReactElement {
-  const { steps, flaggedFees, mergedCharges, filledDebitDates } = useMemo(
+  const { steps, flaggedFees, mergedCharges, filledDebitDates, deelCharges } = useMemo(
     () => groupAutomationEvents(events),
     [events],
   );
@@ -253,7 +302,7 @@ export function ManualAutomationsView({
   return (
     <PageLayout
       title="Manual Automations"
-      description="Flag foreign transfer fees, merge charges that share a transaction reference, and fill missing credit card debit dates"
+      description="Flag foreign transfer fees, merge charges that share a transaction reference, fill missing credit card debit dates, and pull Deel documents"
       headerActions={
         <ConfirmationModal
           onConfirm={onRun}
@@ -294,6 +343,32 @@ export function ManualAutomationsView({
           >
             <TransactionsTable rows={filledDebitDates} debitDateHeader="Debit date set" />
           </StepCard>
+          <StepCard
+            title="Deel documents pulled"
+            step={steps[CronJobStep.FetchDeelDocuments]}
+            itemsCount={deelCharges.length}
+            notConfiguredHint={
+              <>
+                Deel isn&apos;t connected for this business.
+                {adminBusinessId && (
+                  <>
+                    {' '}
+                    <Link
+                      to={{
+                        pathname: ROUTES.BUSINESSES.DETAIL(adminBusinessId),
+                        search: '?tab=admin-config',
+                      }}
+                      className="text-primary hover:underline"
+                    >
+                      Connect it in Admin Config
+                    </Link>
+                  </>
+                )}
+              </>
+            }
+          >
+            <DeelChargesTable charges={deelCharges} />
+          </StepCard>
         </div>
       ) : (
         <Empty>
@@ -312,5 +387,13 @@ export function ManualAutomationsView({
 
 export function ManualAutomations(): ReactElement {
   const { running, events, runJobs } = useRunManualAutomations();
-  return <ManualAutomationsView running={running} events={events} onRun={() => void runJobs()} />;
+  const { userContext } = useContext(UserContext);
+  return (
+    <ManualAutomationsView
+      running={running}
+      events={events}
+      onRun={() => void runJobs()}
+      adminBusinessId={userContext?.context.adminBusinessId}
+    />
+  );
 }
