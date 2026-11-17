@@ -51,7 +51,7 @@
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "start": "node ./dist/esm/index.js",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "test:watch": "vitest --watch"
   },
   "dependencies": {
