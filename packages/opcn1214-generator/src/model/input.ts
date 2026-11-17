@@ -11,26 +11,30 @@ export type IsoDate = string;
 /** Tax years with a layout (SPEC §7.2, §14). */
 export type SupportedTaxYear = 2024 | 2025;
 
+/** Allowed phone prefixes (SPEC §4.2, p.6–7). */
+export const PHONE_PREFIXES = [
+  '02',
+  '03',
+  '04',
+  '08',
+  '09',
+  '072',
+  '073',
+  '074',
+  '076',
+  '077',
+  '050',
+  '052',
+  '053',
+  '054',
+  '055',
+  '057',
+  '058',
+  '059',
+] as const;
+
 /** Allowed phone prefixes (SPEC §4.2, §7.2). */
-export type PhonePrefix =
-  | '02'
-  | '03'
-  | '04'
-  | '08'
-  | '09'
-  | '072'
-  | '073'
-  | '074'
-  | '076'
-  | '077'
-  | '050'
-  | '052'
-  | '053'
-  | '054'
-  | '055'
-  | '057'
-  | '058'
-  | '059';
+export type PhonePrefix = (typeof PHONE_PREFIXES)[number];
 
 /** A phone or fax number (SPEC §7.2). */
 export interface Phone {

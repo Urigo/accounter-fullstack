@@ -20,14 +20,14 @@ export function normalizeReport(
   options: ValidateOptions = {},
 ): NormalizedReport {
   const main = normalizeMain(input, layout, options);
-  const records = [main.record, ...normalizeShareholders(input.shareholders, layout)];
+  const records = [main.record, ...normalizeShareholders(input.shareholders, layout, options)];
   // Stable: records of one type keep their input order.
   records.sort((a, b) => layout.records[a.recordType].order - layout.records[b.recordType].order);
   return {
     taxYear: input.taxYear,
     layout,
     records,
-    notices: [],
+    notices: main.notices,
     omittedZeroCodes: main.omittedZeroCodes.map(code => ({
       record: '1000',
       recordIndex: 0,
