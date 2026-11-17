@@ -19,6 +19,8 @@ const DERIVED_KEYS: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
   '3060': ['transactionSymbol', 'appendixNumber'],
   '3063': ['transactionSymbol', 'appendixNumber'],
   '3064': ['transactionSymbol', 'appendixNumber'],
+  '3065': ['transactionSymbol', 'appendixNumber', 'sequenceNumber'],
+  '3066': ['transactionSymbol', 'appendixNumber', 'sequenceNumber'],
 };
 
 const DERIVED_CODES: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
@@ -111,18 +113,19 @@ export function codeKey(code: string): string {
  *   breakdown itself, `foreignAppendix.countryBreakdown["420"]`; any other key, a header key or a
  *   country entry key (`countries[2].country`, `countries[2].income`), to
  *   `foreignAppendix.countryBreakdown["420"].<key>`.
- * - Records 3060, 3063, 3064: `inputIndex` is the index of the appendix in `capitalGains`
+ * - Records 3060, 3063, 3064, 3065, 3066: `inputIndex` is the index of the appendix in `capitalGains`
  *   (inputIndexOf gives it for a record); a header key maps to `capitalGains[i].<key>`
  *   (a withholder slot key too: `capitalGains[i].withholders[2].name`), a code to
  *   `capitalGains[i].amounts["022"]`.
  * - Derived values have no input path and map to `''` (report level): derived header keys
  *   (1000@832 `hasForeignAppendix`, 1010@137 and 1020@137 `serialNumber`, 1030@137
- *   `affiliation`, 30xx@137 `transactionSymbol` and 30xx@139 `appendixNumber`) and derived
+ *   `affiliation`, 30xx@137 `transactionSymbol`, 30xx@139 `appendixNumber` and the "מספר בתל"ם"
+ *   `sequenceNumber` (3065@325, 3066@154)) and derived
  *   codes (SPEC §7.4: 008, 028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
  *   (1000@833 `declarations.hasCapitalGainsAppendix`) keeps that property's path.
  *   Every field of the control record 9999 is derived, so its keys map to `''` as well.
  * - Capital-gains records whose input is not modelled yet map to `''`, so the parser can report
- *   issues on them; steps G3–G5 replace this with their input paths.
+ *   issues on them; steps G4–G5 replace this with their input paths.
  */
 export function pathFor(recordType: RecordType, inputIndex: number, key: string): string {
   const isCode = key.startsWith(CODE_KEY_PREFIX);
@@ -150,16 +153,16 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
     case '3060':
     case '3063':
     case '3064':
+    case '3065':
+    case '3066':
       return isCode
         ? `capitalGains[${inputIndex}].amounts["${code}"]`
         : `capitalGains[${inputIndex}].${key}`;
-    // No input mapping yet: replaced by steps G3–G5.
+    // No input mapping yet: replaced by steps G4–G5.
     case '3027':
     case '3050':
     case '3051':
     case '3054':
-    case '3065':
-    case '3066':
     case '3077':
       return '';
     // Control record: every field is derived (SPEC §7.4).

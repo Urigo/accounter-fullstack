@@ -13,6 +13,8 @@ import {
   breakdownCountries,
   foreignAppendixWithBreakdown,
   minimalInput,
+  noWithholding1322Appendix,
+  noWithholding1326Appendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -563,6 +565,331 @@ describe('end to end: appendices [64, 60, 63]', () => {
       securitiesAppendix(),
       section6Appendix(),
       reitAppendix(),
+    ]);
+  });
+});
+
+describe('normalizeReport: record 3065 (no withholding, form 1322)', () => {
+  const def = LAYOUT.records['3065'];
+
+  it('has the securities header with a withholding status and the sequence, one position later', () => {
+    const position = (key: string) => def.fields.find(f => f.key === key)?.position;
+    expect(def.fields.filter(f => f.kind !== 'filler').map(f => f.key)).toEqual([
+      'transactionSymbol',
+      'appendixNumber',
+      'foreignAsset',
+      'soldToRelatedParty',
+      'boughtFromRelatedParty',
+      'gainFromInvestmentFund',
+      'withholdingStatus',
+      ...[0, 1, 2, 3].flatMap(i => [
+        `withholders[${i}].name`,
+        `withholders[${i}].branch`,
+        `withholders[${i}].account`,
+      ]),
+      'lossesCarriedForward',
+      'sequenceNumber',
+    ]);
+    // 3060 has its first withholder at 146; 3065 has the withholding status there.
+    expect(LAYOUT.records['3060'].fields.find(f => f.key === 'withholders[0].name')?.position).toBe(
+      146,
+    );
+    expect(position('withholdingStatus')).toBe(146);
+    expect(position('withholders[0].name')).toBe(147);
+    expect(position('sequenceNumber')).toBe(325);
+  });
+
+  it('maps the header, the withholders and the status code, with input paths', () => {
+    const appendix = noWithholding1322Appendix();
+    const [record] = capitalGainsRecords(minimalInput({ capitalGains: [appendix] }));
+    expect(record?.recordType).toBe('3065');
+    expect(record?.inputIndex).toBe(0);
+    expect(record?.values).toEqual({
+      transactionSymbol: 65,
+      appendixNumber: 1,
+      sequenceNumber: 1,
+      foreignAsset: false,
+      soldToRelatedParty: true,
+      boughtFromRelatedParty: true,
+      gainFromInvestmentFund: false,
+      withholdingStatus: 2,
+      'withholders[0].name': 'בנק הפועלים',
+      'withholders[0].branch': '011',
+      'withholders[0].account': '000123450',
+      'withholders[1].name': 'בנק לאומי',
+      'withholders[1].branch': '012',
+      'withholders[1].account': '000123451',
+      lossesCarriedForward: 6000,
+    });
+    expect(record?.paths).toEqual({
+      transactionSymbol: '',
+      appendixNumber: '',
+      sequenceNumber: '',
+      foreignAsset: 'capitalGains[0].foreignAsset',
+      soldToRelatedParty: 'capitalGains[0].soldToRelatedParty',
+      boughtFromRelatedParty: 'capitalGains[0].boughtFromRelatedParty',
+      gainFromInvestmentFund: 'capitalGains[0].gainFromInvestmentFund',
+      withholdingStatus: 'capitalGains[0].withholdingStatus',
+      'withholders[0].name': 'capitalGains[0].withholders[0].name',
+      'withholders[0].branch': 'capitalGains[0].withholders[0].branch',
+      'withholders[0].account': 'capitalGains[0].withholders[0].account',
+      'withholders[1].name': 'capitalGains[0].withholders[1].name',
+      'withholders[1].branch': 'capitalGains[0].withholders[1].branch',
+      'withholders[1].account': 'capitalGains[0].withholders[1].account',
+      lossesCarriedForward: 'capitalGains[0].lossesCarriedForward',
+      'code:012': 'capitalGains[0].amounts["012"]',
+      'code:056': 'capitalGains[0].amounts["056"]',
+    });
+  });
+
+  it('sets every non-filler header field with four withholders', () => {
+    const report = reportOf(
+      minimalInput({ capitalGains: [noWithholding1322Appendix({ withholders: withholders(4) })] }),
+    );
+    expect(unmappedHeaderKeys(def, report.records)).toEqual([]);
+  });
+
+  it('writes the header at its layout positions', () => {
+    const [line] = linesOfType(
+      minimalInput({
+        capitalGains: [
+          noWithholding1322Appendix({
+            foreignAsset: true,
+            soldToRelatedParty: false,
+            boughtFromRelatedParty: true,
+            gainFromInvestmentFund: false,
+            withholdingStatus: 'notWithheldSecondHalf',
+            withholders: [{}, { name: 'בנק', branch: '12', account: '345' }],
+            lossesCarriedForward: 777,
+          }),
+        ],
+      }),
+      '3065',
+    );
+    expect(at(line, 137, 5)).toBe('65001');
+    expect(at(line, 142, 4)).toBe('1212');
+    expect(at(line, 146, 1)).toBe('3');
+    // Slot 0 is empty; slot 1 at 189 (name, padded on the left), 219 (branch), 222 (account).
+    expect(at(line, 147, 42)).toBe(' '.repeat(30) + '0'.repeat(12));
+    expect(at(line, 189, 30)).toBe('בנק'.padStart(30, ' '));
+    expect(at(line, 219, 3)).toBe('012');
+    expect(at(line, 222, 9)).toBe('000000345');
+    expect(at(line, 231, 84)).toBe((' '.repeat(30) + '0'.repeat(12)).repeat(2));
+    expect(at(line, 315, 10)).toBe('0000000777');
+    expect(at(line, 325, 2)).toBe('01');
+    expect(at(line, 327, 834)).toMatch(/^0+$/);
+    expect(at(line, 1161, 26)).toBe('0120000025000' + '0560000001250');
+  });
+
+  it('reports a withholder name that does not start with a Hebrew letter at its input path', () => {
+    const input = minimalInput({
+      capitalGains: [
+        section6Appendix(),
+        noWithholding1322Appendix({ withholders: [{}, { name: 'Bank Leumi' }] }),
+      ],
+    });
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({
+        ruleId: 'field.hebrewFirstLetter',
+        path: 'capitalGains[1].withholders[1].name',
+        recordType: '3065',
+        recordIndex: 0,
+      }),
+    ]);
+  });
+
+  it('reports a fifth withholder as input.shape', () => {
+    const input = minimalInput({
+      capitalGains: [
+        noWithholding1322Appendix({ withholders: [...withholders(4), { name: 'בנק' }] }),
+      ],
+    });
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({ ruleId: 'input.shape', path: 'capitalGains[0].withholders' }),
+    ]);
+  });
+});
+
+describe('normalizeReport: record 3066 (no withholding, form 1326)', () => {
+  const def = LAYOUT.records['3066'];
+
+  it('has a short header: foreign asset, withholding status, losses and the sequence', () => {
+    expect(
+      def.fields.filter(f => f.kind !== 'filler').map(f => [f.key, f.position, f.length]),
+    ).toEqual([
+      ['transactionSymbol', 137, 2],
+      ['appendixNumber', 139, 3],
+      ['foreignAsset', 142, 1],
+      ['withholdingStatus', 143, 1],
+      ['lossesCarriedForward', 144, 10],
+      ['sequenceNumber', 154, 2],
+    ]);
+  });
+
+  it('maps the header and the status code, with input paths', () => {
+    const [record] = capitalGainsRecords(
+      minimalInput({ capitalGains: [noWithholding1326Appendix()] }),
+    );
+    expect(record?.recordType).toBe('3066');
+    expect(record?.values).toEqual({
+      transactionSymbol: 66,
+      appendixNumber: 1,
+      sequenceNumber: 1,
+      foreignAsset: true,
+      withholdingStatus: 3,
+      lossesCarriedForward: 4000,
+    });
+    expect(record?.paths).toEqual({
+      transactionSymbol: '',
+      appendixNumber: '',
+      sequenceNumber: '',
+      foreignAsset: 'capitalGains[0].foreignAsset',
+      withholdingStatus: 'capitalGains[0].withholdingStatus',
+      lossesCarriedForward: 'capitalGains[0].lossesCarriedForward',
+      'code:022': 'capitalGains[0].amounts["022"]',
+      'code:056': 'capitalGains[0].amounts["056"]',
+    });
+  });
+
+  it('sets every non-filler header field of record 3066', () => {
+    const report = reportOf(minimalInput({ capitalGains: [noWithholding1326Appendix()] }));
+    expect(unmappedHeaderKeys(def, report.records)).toEqual([]);
+  });
+
+  it('writes the header at its layout positions', () => {
+    const [line] = linesOfType(
+      minimalInput({
+        capitalGains: [
+          noWithholding1326Appendix({
+            foreignAsset: false,
+            withholdingStatus: 'notWithheldFirstHalf',
+            lossesCarriedForward: 321,
+          }),
+        ],
+      }),
+      '3066',
+    );
+    expect(at(line, 137, 5)).toBe('66001');
+    expect(at(line, 142, 1)).toBe('2');
+    expect(at(line, 143, 1)).toBe('2');
+    expect(at(line, 144, 10)).toBe('0000000321');
+    expect(at(line, 154, 2)).toBe('01');
+    expect(at(line, 156, 1005)).toMatch(/^0+$/);
+    expect(at(line, 1161, 26)).toBe('0220000018000' + '0560000000900');
+  });
+
+  it('has no withholders member: one is input.shape', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [{ ...noWithholding1326Appendix(), withholders: withholders(1) }],
+    };
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({ ruleId: 'input.shape', path: 'capitalGains[0].withholders' }),
+    ]);
+  });
+});
+
+describe.each([
+  ['3065', 146, noWithholding1322Appendix],
+  ['3066', 143, noWithholding1326Appendix],
+] as const)('withholdingStatus of record %s (SPEC §7.3, §15 A-18)', (type, position, build) => {
+  const status = (
+    withholdingStatus: 'notWithheldFirstHalf' | 'notWithheldSecondHalf' | undefined,
+  ) =>
+    at(
+      linesOfType(minimalInput({ capitalGains: [build({ withholdingStatus })] }), type)[0],
+      position,
+      1,
+    );
+
+  it(`writes notWithheldFirstHalf → 2, notWithheldSecondHalf → 3, absent → 0 at ${position}`, () => {
+    expect(status('notWithheldFirstHalf')).toBe('2');
+    expect(status('notWithheldSecondHalf')).toBe('3');
+    expect(status(undefined)).toBe('0');
+  });
+
+  it('reads the status back as its literal, and an absent one as absent', () => {
+    for (const withholdingStatus of ['notWithheldFirstHalf', 'notWithheldSecondHalf'] as const) {
+      const input = minimalInput({ capitalGains: [build({ withholdingStatus })] });
+      const [appendix] = parse1214(generate1214(input, OPTIONS).text).report.capitalGains ?? [];
+      expect(appendix).toMatchObject({ withholdingStatus });
+    }
+    const appendix = { ...build() };
+    delete appendix.withholdingStatus;
+    const input = minimalInput({ capitalGains: [appendix] });
+    const [parsed] = parse1214(generate1214(input, OPTIONS).text).report.capitalGains ?? [];
+    expect(parsed).toEqual(appendix);
+    expect(parsed).not.toHaveProperty('withholdingStatus');
+  });
+});
+
+describe('the "מספר בתל"ם" sequence across mixed appendices (SPEC §7.4, §15 A-7)', () => {
+  // Input order 63, 65, 60, 66: emitted 3060, 3063, 3065, 3066.
+  const input = minimalInput({
+    capitalGains: [
+      section6Appendix(),
+      noWithholding1322Appendix(),
+      securitiesAppendix(),
+      noWithholding1326Appendix(),
+    ],
+  });
+
+  it('numbers 3065 and 3066 by their emission position among all appendices', () => {
+    expect(
+      capitalGainsRecords(input).map(r => [
+        r.recordType,
+        r.inputIndex,
+        r.values.appendixNumber,
+        r.values.sequenceNumber,
+      ]),
+    ).toEqual([
+      ['3060', 2, 1, undefined],
+      ['3063', 0, 1, undefined],
+      ['3065', 1, 1, 3],
+      ['3066', 3, 1, 4],
+    ]);
+  });
+
+  it('writes the sequence at 3065@325 and 3066@154, and keeps the input index in paths', () => {
+    const lines = linesOf(input);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1020',
+      '3060',
+      '3063',
+      '3065',
+      '3066',
+      '9999',
+    ]);
+    expect(at(lines[4], 325, 2)).toBe('03');
+    expect(at(lines[5], 154, 2)).toBe('04');
+    expect(at(lines.at(-1), 145, 2)).toBe('04');
+    const errors = validate1214(
+      minimalInput({
+        capitalGains: [
+          section6Appendix(),
+          noWithholding1322Appendix({ lossesCarriedForward: -1 }),
+          securitiesAppendix(),
+          noWithholding1326Appendix({ lossesCarriedForward: 1.5 }),
+        ],
+      }),
+      OPTIONS,
+    ).errors;
+    expect(errors.map(issue => [issue.ruleId, issue.path, issue.recordType])).toEqual([
+      ['field.negative', 'capitalGains[1].lossesCarriedForward', '3065'],
+      ['field.integer', 'capitalGains[3].lossesCarriedForward', '3066'],
+    ]);
+  });
+
+  it('generates the four records and parses them back in file order', () => {
+    const { text } = generate1214(input, OPTIONS);
+    const parsed = parse1214(text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains).toEqual([
+      securitiesAppendix(),
+      section6Appendix(),
+      noWithholding1322Appendix(),
+      noWithholding1326Appendix(),
     ]);
   });
 });

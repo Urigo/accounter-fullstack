@@ -2,7 +2,7 @@
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
  * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020, 1030,
- * 2000, 2200 and the capital-gains records of the modelled appendix types (3060, 3063, 3064).
+ * 2000, 2200 and the capital-gains records of the modelled appendix types (3060, 3063, 3064, 3065, 3066).
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
@@ -16,7 +16,12 @@ import {
 } from './capital-gains/index.js';
 import { readWithholders, withholderKey } from './capital-gains/securities.js';
 import { BANK_ACCOUNT_DIGITS, CODE_297_VALUES, type BankAccount } from './derive.js';
-import { ENUM_INPUTS, enumLiteral, RELATION_TYPE_CODES } from './enums.js';
+import {
+  ENUM_INPUTS,
+  enumLiteral,
+  RELATION_TYPE_CODES,
+  WITHHOLDING_STATUS_CODES,
+} from './enums.js';
 import {
   inputIndexOf,
   PRESENCE_OBJECTS,
@@ -238,8 +243,9 @@ function inputSymbol(record: NormalizedRecord): CapitalGainsInputSymbol | undefi
 
 /**
  * The capital-gains appendices of the 30xx `records` whose type has an input model, in file
- * order: the symbol of the record type, the header members, the withholders (readWithholders) and
- * the amounts (the transaction symbol and appendix number are derived).
+ * order: the symbol of the record type, the header members (the withholding status as its
+ * literal), the withholders (readWithholders) and the amounts (the transaction symbol, appendix
+ * number and "מספר בתל"ם" sequence are derived).
  */
 function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
   return records.flatMap(record => {
@@ -249,7 +255,12 @@ function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
     }
     const tree: InputTree = { symbol };
     for (const key of CAPITAL_GAINS_INPUT_KEYS[symbol]) {
-      setKey(tree, key, record.values[key]);
+      const value = record.values[key];
+      setKey(
+        tree,
+        key,
+        key === 'withholdingStatus' ? enumLiteral(WITHHOLDING_STATUS_CODES, value) : value,
+      );
     }
     const withholders = hasWithholders(symbol)
       ? readWithholders((slot, member) => record.values[withholderKey(slot, member)])
@@ -257,7 +268,7 @@ function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
     if (withholders) {
       tree.withholders = withholders;
     }
-    // No code of the modelled appendix types (3060, 3063, 3064) is derived (SPEC §7.4).
+    // No code of the modelled appendix types (3060, 3063, 3064, 3065, 3066) is derived (SPEC §7.4).
     tree.amounts = Object.fromEntries(record.codes);
     return [tree];
   });

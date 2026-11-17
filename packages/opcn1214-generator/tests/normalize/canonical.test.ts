@@ -6,6 +6,8 @@ import {
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
+  noWithholding1322Appendix,
+  noWithholding1326Appendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
@@ -556,6 +558,51 @@ describe('canonicalize', () => {
           gainFromInvestmentFund: false,
           amounts: { '056': 4 },
         },
+      ]);
+    });
+
+    it('keeps canonical 3065 and 3066 appendices, the withholding status as its literal', () => {
+      const appendices = [
+        noWithholding1326Appendix(),
+        noWithholding1322Appendix({ withholders: withholders(4) }),
+        securitiesAppendix(),
+      ];
+      expect(
+        canonicalize(minimalInput({ capitalGains: appendices }), OPTIONS).capitalGains,
+      ).toEqual([appendices[2], appendices[1], appendices[0]]);
+    });
+
+    it('canonicalizes 3065 withholders and removes zero losses and codes of 3065 and 3066', () => {
+      const result = canonicalize(
+        minimalInput({
+          capitalGains: [
+            {
+              symbol: 66,
+              foreignAsset: false,
+              lossesCarriedForward: 0,
+              amounts: { '022': 0, '056': 4 },
+            },
+            noWithholding1322Appendix({
+              withholders: [{ name: ' ' }, { name: '  בנק\u00A0 לאומי ', branch: '7' }, {}],
+              lossesCarriedForward: 0,
+              amounts: { '012': 0, '056': 5 },
+            }),
+          ],
+        }),
+        OPTIONS,
+      );
+      expect(result.capitalGains).toEqual([
+        {
+          symbol: 65,
+          foreignAsset: false,
+          soldToRelatedParty: true,
+          boughtFromRelatedParty: true,
+          gainFromInvestmentFund: false,
+          withholdingStatus: 'notWithheldFirstHalf',
+          withholders: [{}, { name: 'בנק לאומי', branch: '007' }],
+          amounts: { '056': 5 },
+        },
+        { symbol: 66, foreignAsset: false, amounts: { '056': 4 } },
       ]);
     });
 

@@ -1022,6 +1022,7 @@ a test asserts that every non-filler key in `fields.csv` is produced (§13.3).
 | `declarations.hasCapitalGainsAppendix` (833)         | derived, §7.4                                                        |
 | `qualifyingCompany.*` (1065–1091)                    | `qualifyingCompany.*` (`purchased`/`amortizationClaimed` are yes/no) |
 | `withholders[0..3].*` (3060/3064/3065)               | `withholders[i].*`                                                   |
+| `withholdingStatus` (3065@146, 3066@143)             | `withholdingStatus` (first/second half → 2/3), absent → `0`          |
 | `improvements[0..4].*` (3077)                        | `improvements[i].expense / accumulatedDepreciation / date`           |
 | `walletAddresses[0..1]` (3051/3077)                  | `walletAddresses[i]`                                                 |
 
@@ -1045,9 +1046,11 @@ and `.income`). When parsing, every 2200 record is grouped under the 2000 record
 Capital-gains appendices are keyed by their index in `capitalGains`: a header key of a 30xx record
 maps to `capitalGains[i].<key>` and a code to `capitalGains[i].amounts["022"]`, where `i` is the
 appendix's input index, not its position in the file (records are grouped by type, §3.3). The
-transaction symbol (30xx@137) and the appendix number (30xx@139) are derived and have no input path.
-When parsing, `capitalGains` lists the appendices in file order (grouped by type ascending), the
-symbol comes from the record type, and `capitalGains` exists only when the file has 30xx records.
+transaction symbol (30xx@137), the appendix number (30xx@139) and the "מספר בתל"ם" sequence
+(3065@325, 3066@154, §7.4) are derived and have no input path; the withholding status is read back
+as its literal (an absent status, written as 0, stays absent). When parsing, `capitalGains` lists
+the appendices in file order (grouped by type ascending), the symbol comes from the record type, and
+`capitalGains` exists only when the file has 30xx records.
 
 The withholders of 3060/3064/3065 are written slot by slot: `withholders[j]` fills the j-th slot
 (header keys `withholders[j].name`, `.branch`, `.account`), so an issue on it is reported at

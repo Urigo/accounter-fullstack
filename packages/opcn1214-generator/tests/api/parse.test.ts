@@ -5,6 +5,8 @@ import {
   foreignAppendix,
   foreignAppendixWithBreakdown,
   minimalInput,
+  noWithholding1322Appendix,
+  noWithholding1326Appendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -571,7 +573,63 @@ describe('parse1214', () => {
     });
   });
 
-  it.each(['minimal', 'foreign', 'cg-63', 'cg-60', 'cg-64'])(
+  describe('no-withholding appendices (3065, 3066)', () => {
+    // Input order 66, 63, 65; lines: 1000, 1020, 3063, 3065, 3066, 9999.
+    const input = minimalInput({
+      capitalGains: [
+        noWithholding1326Appendix(),
+        section6Appendix(),
+        noWithholding1322Appendix({ withholders: withholders(4) }),
+      ],
+    });
+    const file = generate1214(input, OPTIONS).text;
+
+    it('reads them back in file order, the withholding status as its literal', () => {
+      const result = parse1214(file);
+      expect(result.issues).toEqual([]);
+      expect(result.report.capitalGains).toEqual([
+        section6Appendix(),
+        noWithholding1322Appendix({ withholders: withholders(4) }),
+        noWithholding1326Appendix(),
+      ]);
+      expect(result.report).toEqual(canonicalize(input, OPTIONS));
+    });
+
+    it('reports a withholding status outside {2, 3} as field.enum at its file-order path', () => {
+      // 3066@143 = 4; 3065@146 = 1.
+      const result = parse1214(tamper(tamper(file, 5, 143, '4'), 4, 146, '1'));
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'field.enum',
+          path: 'capitalGains[1].withholdingStatus',
+          recordType: '3065',
+          recordIndex: 0,
+        }),
+        expect.objectContaining({
+          ruleId: 'field.enum',
+          path: 'capitalGains[2].withholdingStatus',
+          recordType: '3066',
+          recordIndex: 0,
+        }),
+      ]);
+      expect(result.report.capitalGains?.[2]).toMatchObject({ withholdingStatus: 4 });
+    });
+
+    it('locates a 3065 withholder problem at capitalGains[i].withholders[j]', () => {
+      // 3065@303: the branch of the fourth withholder (3060 has it at 302).
+      expect(parseErrorIssues(() => parse1214(tamper(file, 4, 303, 'X')))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.numeric',
+          path: 'capitalGains[1].withholders[3].branch',
+          recordType: '3065',
+          line: 4,
+          column: 303,
+        }),
+      ]);
+    });
+  });
+
+  it.each(['minimal', 'foreign', 'cg-63', 'cg-60', 'cg-64', 'cg-65', 'cg-66'])(
     'never lets anything but Opcn1214ParseError escape for a corrupted %s golden',
     name => {
       const golden = goldenText(name);
