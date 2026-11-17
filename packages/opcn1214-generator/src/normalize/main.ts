@@ -4,9 +4,10 @@ import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord } from '../model/normalized.js';
 import type { ValidateOptions } from '../model/options.js';
 import type { Issue } from '../validate/issue.js';
-import { deriveCode008, deriveCode273 } from './derive.js';
+import { deriveCode008, deriveCode273, deriveHasCapitalGainsAppendix } from './derive.js';
+import { CONSOLIDATED_REPORT_CODES, enumCode, FORM_6111_OBLIGATION_CODES } from './enums.js';
 import { headerValues, roundAmount } from './fields.js';
-import { codeKey, pathFor } from './paths.js';
+import { codeKey, pathFor, REPORTABLE_POSITION_KEYS } from './paths.js';
 import { phonePrefix } from './phone.js';
 import { normalizeText } from './text.js';
 import { todayInJerusalem } from './today.js';
@@ -22,6 +23,11 @@ export interface NormalizedMain {
   notices: Issue[];
 }
 
+/** A presence flag (SPEC §7.3): marked when the declaration object exists, else absent. */
+function marked(declaration: object | undefined): true | undefined {
+  return declaration === undefined ? undefined : true;
+}
+
 /**
  * Record 1000 of `input`: header values, derived values and the code-amount section. Amounts are
  * rounded per `options.rounding` (SPEC §4.4) before zero codes are omitted.
@@ -32,7 +38,7 @@ export function normalizeMain(
   options: ValidateOptions,
 ): NormalizedMain {
   const def = layout.records['1000'];
-  const { company, declarations, meta } = input;
+  const { company, declarations, meta, preparer } = input;
   const today = options.today ?? (() => todayInJerusalem());
   const notices: Issue[] = [];
   const prefix = (key: string, value: string | undefined) =>
@@ -59,16 +65,65 @@ export function normalizeMain(
       'company.phone.number': company.phone.number,
       'company.fax.prefix': prefix('company.fax.prefix', company.fax?.prefix),
       'company.fax.number': company.fax?.number,
-      // 832 and 833 (SPEC §7.4): the skeleton model has no foreign or capital-gains appendix.
+      'preparer.officeName': preparer?.officeName,
+      'preparer.contactName': preparer?.contactName,
+      'preparer.name': preparer?.name,
+      'preparer.profession': preparer?.profession,
+      'preparer.licensedDealerNumber': preparer?.licensedDealerNumber,
+      'preparer.address': preparer?.address,
+      'preparer.phone.prefix': prefix('preparer.phone.prefix', preparer?.phone?.prefix),
+      'preparer.phone.number': preparer?.phone?.number,
+      // 832 (SPEC §7.4): the model has no foreign appendix yet.
       hasForeignAppendix: false,
-      'declarations.hasCapitalGainsAppendix': false,
+      'declarations.hasCapitalGainsAppendix': deriveHasCapitalGainsAppendix(declarations),
+      'declarations.form6111Obligation': enumCode(
+        FORM_6111_OBLIGATION_CODES,
+        declarations.form6111Obligation,
+      ),
+      'declarations.financialStatementsAttached': declarations.financialStatementsAttached,
+      'declarations.familyCompany.isFamilyCompany': marked(declarations.familyCompany),
+      'declarations.familyCompany.representativeFileNumber':
+        declarations.familyCompany?.representativeFileNumber,
+      'declarations.isHouseCompany': declarations.isHouseCompany,
+      'declarations.form1343Attached': declarations.form1343Attached,
+      'declarations.form1344Attached': declarations.form1344Attached,
+      'declarations.claimsCapitalInvestmentLawBenefits':
+        declarations.claimsCapitalInvestmentLawBenefits,
+      'declarations.preferredEnterprise': declarations.preferredEnterprise,
+      'declarations.beneficiaryEnterprise.marked': marked(declarations.beneficiaryEnterprise),
+      'declarations.beneficiaryEnterprise.noticeDate':
+        declarations.beneficiaryEnterprise?.noticeDate,
+      'declarations.dividendDistributed': declarations.dividendDistributed,
+      'declarations.specialYear.marked': marked(declarations.specialYear),
+      'declarations.specialYear.balanceSheetDate': declarations.specialYear?.balanceSheetDate,
+      'declarations.foreignInvestors': declarations.foreignInvestors,
+      'declarations.consolidatedReport': enumCode(
+        CONSOLIDATED_REPORT_CODES,
+        declarations.consolidatedReport,
+      ),
+      'declarations.partnerInPartnership': declarations.partnerInPartnership,
+      'declarations.isKibbutz': declarations.isKibbutz,
       'declarations.hasTaxPlanningAction': declarations.hasTaxPlanningAction,
       'declarations.hadRelatedPartyTransactions': declarations.hadRelatedPartyTransactions,
       'declarations.controlsBodyOfPersons': declarations.controlsBodyOfPersons,
       'declarations.holdsRightsInBodyOfPersons': declarations.holdsRightsInBodyOfPersons,
       'declarations.appliesAccountingStandards': declarations.appliesAccountingStandards,
+      'declarations.requestsAdvancePayments': declarations.requestsAdvancePayments,
+      'declarations.hasBuildingIncome': declarations.hasBuildingIncome,
+      'declarations.isTrustBeneficiary': declarations.isTrustBeneficiary,
       'declarations.directorsReceivedOpinion': declarations.directorsReceivedOpinion,
       'declarations.tookReportablePosition': declarations.tookReportablePosition,
+      'declarations.nonDeductibleSalaryExpenses': declarations.nonDeductibleSalaryExpenses,
+      'declarations.fewMembersCompany62A': declarations.fewMembersCompany62A,
+      'declarations.partOfMultinationalGroup': declarations.partOfMultinationalGroup,
+      // Positions after the fifth have no field (SPEC §7.3).
+      ...Object.fromEntries(
+        REPORTABLE_POSITION_KEYS.map((key, index) => [
+          key,
+          declarations.reportablePositions?.[index],
+        ]),
+      ),
+      'declarations.noBankAccount': declarations.noBankAccount,
     },
     options.rounding,
   );

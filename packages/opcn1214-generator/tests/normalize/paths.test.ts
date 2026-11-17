@@ -13,6 +13,25 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     );
   });
 
+  it('maps a presence flag of record 1000 to the declaration object it stands for', () => {
+    expect(pathFor('1000', 0, 'declarations.familyCompany.isFamilyCompany')).toBe(
+      'declarations.familyCompany',
+    );
+    expect(pathFor('1000', 0, 'declarations.beneficiaryEnterprise.marked')).toBe(
+      'declarations.beneficiaryEnterprise',
+    );
+    expect(pathFor('1000', 0, 'declarations.specialYear.marked')).toBe('declarations.specialYear');
+    expect(pathFor('1000', 0, 'declarations.specialYear.balanceSheetDate')).toBe(
+      'declarations.specialYear.balanceSheetDate',
+    );
+  });
+
+  it('maps a reportable position slot to its array element', () => {
+    expect(pathFor('1000', 0, 'declarations.reportablePositions[3]')).toBe(
+      'declarations.reportablePositions[3]',
+    );
+  });
+
   it('maps a record 1000 code to its amounts entry', () => {
     expect(pathFor('1000', 0, 'code:018')).toBe('amounts["018"]');
   });

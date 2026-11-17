@@ -59,3 +59,54 @@ export function minimalInput(overrides: DeepPartial<Report1214Input> = {}): Repo
   };
   return deepMerge(base, overrides) as Report1214Input;
 }
+
+/**
+ * `minimalInput()` with the preparer and every optional declaration set (SPEC §7.2), each to a
+ * value that is written to the file (flags marked, yes/no members answered), plus the codes the
+ * declarations call for (080 family company, 084 house company, 226 kibbutz). `overrides` are
+ * deep-merged into it.
+ */
+export function fullDeclarationsInput(
+  overrides: DeepPartial<Report1214Input> = {},
+): Report1214Input {
+  const base = minimalInput({
+    preparer: {
+      officeName: 'משרד רואי חשבון',
+      contactName: 'דנה כהן',
+      name: 'יוסי לוי',
+      profession: 'רואה חשבון',
+      licensedDealerNumber: '012345678',
+      address: 'רחוב יפו 10, ירושלים',
+      phone: { prefix: '02', number: '6543210' },
+    },
+    declarations: {
+      tookReportablePosition: true,
+      reportablePositions: [12, 7, 345, 1, 999],
+      form6111Obligation: 'obliged',
+      financialStatementsAttached: true,
+      familyCompany: { representativeFileNumber: '300000007' },
+      isHouseCompany: true,
+      form1343Attached: true,
+      form1344Attached: true,
+      claimsCapitalInvestmentLawBenefits: true,
+      preferredEnterprise: true,
+      beneficiaryEnterprise: { noticeDate: '2023-05-14' },
+      dividendDistributed: true,
+      specialYear: { balanceSheetDate: '2024-09-30' },
+      foreignInvestors: true,
+      consolidatedReport: 'consolidatesWithParent',
+      partnerInPartnership: true,
+      isKibbutz: true,
+      requestsAdvancePayments: true,
+      hasBuildingIncome: false,
+      isTrustBeneficiary: true,
+      nonDeductibleSalaryExpenses: true,
+      fewMembersCompany62A: true,
+      partOfMultinationalGroup: true,
+      noBankAccount: true,
+      hasCapitalGainsAppendix: true,
+    },
+    amounts: { '080': 0, '084': 0, '226': 1 },
+  });
+  return deepMerge(base, overrides) as Report1214Input;
+}

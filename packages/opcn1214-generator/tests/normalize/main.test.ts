@@ -1,8 +1,10 @@
+import { renderReport } from '../../src/file/assemble.js';
 import { getLayout } from '../../src/layout/registry.js';
+import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import type { NormalizedRecord } from '../../src/model/normalized.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import { todayInJerusalem } from '../../src/normalize/today.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
 const TODAY = '2024-06-30';
@@ -14,6 +16,20 @@ function mainRecord(input = minimalInput(), options = OPTIONS): NormalizedRecord
     throw new Error('expected record 1000 first');
   }
   return record;
+}
+
+/** The record 1000 line of `input`. */
+function mainLine(input: Report1214Input): string {
+  const line = renderReport(normalizeReport(input, LAYOUT, OPTIONS)).lines[0];
+  if (line === undefined) {
+    throw new Error('expected a record 1000 line');
+  }
+  return line;
+}
+
+/** The `length` characters of `line` at the 1-based layout `position`. */
+function at(line: string, position: number, length: number): string {
+  return line.slice(position - 1, position - 1 + length);
 }
 
 describe('normalizeReport: record 1000 (skeleton)', () => {
@@ -308,5 +324,269 @@ describe('normalizeReport: record 1000 (skeleton)', () => {
       const codes = [...record.codes.keys()];
       expect(codes).toEqual([...codes].sort());
     });
+  });
+});
+
+describe('normalizeReport: record 1000 declarations and preparer', () => {
+  it('maps the preparer (1000@563–831) to its keys, encoded values and paths', () => {
+    const input = fullDeclarationsInput();
+    const record = mainRecord(input);
+    const line = mainLine(input);
+    const expected: Array<[string, unknown, number, string]> = [
+      ['preparer.officeName', 'משרד רואי חשבון', 563, 'משרד רואי חשבון'.padStart(50)],
+      ['preparer.contactName', 'דנה כהן', 613, 'דנה כהן'.padStart(50)],
+      ['preparer.name', 'יוסי לוי', 663, 'יוסי לוי'.padStart(50)],
+      ['preparer.profession', 'רואה חשבון', 713, 'רואה חשבון'.padStart(50)],
+      ['preparer.licensedDealerNumber', '012345678', 763, '012345678'],
+      ['preparer.address', 'רחוב יפו 10, ירושלים', 772, 'רחוב יפו 10, ירושלים'.padStart(50)],
+      // 822 is a numeric prefix field: zero-padded (SPEC §15 A-19).
+      ['preparer.phone.prefix', '02', 822, '002'],
+      ['preparer.phone.number', '6543210', 825, '6543210'],
+    ];
+    for (const [key, value, position, encoded] of expected) {
+      expect(record.values[key]).toBe(value);
+      expect(record.paths[key]).toBe(key);
+      expect(at(line, position, encoded.length)).toBe(encoded);
+    }
+  });
+
+  it('normalizes preparer text and drops an invalid preparer phone prefix with a notice', () => {
+    const report = normalizeReport(
+      fullDeclarationsInput({
+        preparer: { name: '  יוסי\u00A0 לוי ', phone: { prefix: '01' as PhonePrefix } },
+      }),
+      LAYOUT,
+      OPTIONS,
+    );
+    const record = report.records[0];
+    expect(record?.values['preparer.name']).toBe('יוסי לוי');
+    expect(record?.values).not.toHaveProperty(['preparer.phone.prefix']);
+    expect(record?.values['preparer.phone.number']).toBe('6543210');
+    expect(report.notices).toEqual([
+      expect.objectContaining({
+        ruleId: 'field.phonePrefix',
+        severity: 'warning',
+        path: 'preparer.phone.prefix',
+        value: '01',
+      }),
+    ]);
+  });
+
+  it('leaves every preparer field absent without a preparer', () => {
+    const record = mainRecord();
+    expect(Object.keys(record.values).filter(key => key.startsWith('preparer.'))).toEqual([]);
+    const line = mainLine(minimalInput());
+    expect(at(line, 763, 9)).toBe('000000000');
+    expect(at(line, 822, 3)).toBe('000');
+  });
+
+  it.each([
+    ['obliged', 1],
+    ['notObliged', 2],
+    ['notRelevant', 3],
+  ] as const)('form6111Obligation %s → 834 = %i', (form6111Obligation, code) => {
+    const input = minimalInput({ declarations: { form6111Obligation } });
+    const record = mainRecord(input);
+    expect(record.values['declarations.form6111Obligation']).toBe(code);
+    expect(record.paths['declarations.form6111Obligation']).toBe('declarations.form6111Obligation');
+    expect(at(mainLine(input), 834, 1)).toBe(String(code));
+  });
+
+  it.each([
+    ['consolidatedUnderSection23', 1],
+    ['consolidatesWithParent', 2],
+    ['notRelevant', 3],
+  ] as const)('consolidatedReport %s → 875 = %i', (consolidatedReport, code) => {
+    const input = minimalInput({ declarations: { consolidatedReport } });
+    const record = mainRecord(input);
+    expect(record.values['declarations.consolidatedReport']).toBe(code);
+    expect(record.paths['declarations.consolidatedReport']).toBe('declarations.consolidatedReport');
+    expect(at(mainLine(input), 875, 1)).toBe(String(code));
+  });
+
+  it('writes 0 for an absent enum declaration', () => {
+    const line = mainLine(minimalInput());
+    expect(at(line, 834, 1)).toBe('0');
+    expect(at(line, 875, 1)).toBe('0');
+  });
+
+  it('keeps an enum value that is not one of its literals as-is, for the field rules', () => {
+    const record = mainRecord(
+      minimalInput({ declarations: { form6111Obligation: 'sometimes' as 'obliged' } }),
+    );
+    expect(record.values['declarations.form6111Obligation']).toBe('sometimes');
+  });
+
+  it('familyCompany → 836 = 1 and 837 = representativeFileNumber', () => {
+    const input = minimalInput({
+      declarations: { familyCompany: { representativeFileNumber: '300000007' } },
+    });
+    const record = mainRecord(input);
+    const line = mainLine(input);
+    expect(record.values['declarations.familyCompany.isFamilyCompany']).toBe(true);
+    expect(record.paths['declarations.familyCompany.isFamilyCompany']).toBe(
+      'declarations.familyCompany',
+    );
+    expect(record.values['declarations.familyCompany.representativeFileNumber']).toBe('300000007');
+    expect(record.paths['declarations.familyCompany.representativeFileNumber']).toBe(
+      'declarations.familyCompany.representativeFileNumber',
+    );
+    expect(at(line, 836, 1)).toBe('1');
+    expect(at(line, 837, 9)).toBe('300000007');
+  });
+
+  it('beneficiaryEnterprise → 851 = 1 and 852 = the notice date', () => {
+    const input = minimalInput({
+      declarations: { beneficiaryEnterprise: { noticeDate: '2023-05-14' } },
+    });
+    const record = mainRecord(input);
+    const line = mainLine(input);
+    expect(record.values['declarations.beneficiaryEnterprise.marked']).toBe(true);
+    expect(record.paths['declarations.beneficiaryEnterprise.marked']).toBe(
+      'declarations.beneficiaryEnterprise',
+    );
+    expect(record.values['declarations.beneficiaryEnterprise.noticeDate']).toBe('2023-05-14');
+    expect(record.paths['declarations.beneficiaryEnterprise.noticeDate']).toBe(
+      'declarations.beneficiaryEnterprise.noticeDate',
+    );
+    expect(at(line, 851, 1)).toBe('1');
+    expect(at(line, 852, 10)).toBe('14/05/2023');
+  });
+
+  it('specialYear → 863 = 1 and 864 = the balance sheet date', () => {
+    const input = minimalInput({
+      declarations: { specialYear: { balanceSheetDate: '2024-09-30' } },
+    });
+    const record = mainRecord(input);
+    const line = mainLine(input);
+    expect(record.values['declarations.specialYear.marked']).toBe(true);
+    expect(record.paths['declarations.specialYear.marked']).toBe('declarations.specialYear');
+    expect(record.values['declarations.specialYear.balanceSheetDate']).toBe('2024-09-30');
+    expect(record.paths['declarations.specialYear.balanceSheetDate']).toBe(
+      'declarations.specialYear.balanceSheetDate',
+    );
+    expect(at(line, 863, 1)).toBe('1');
+    expect(at(line, 864, 10)).toBe('30/09/2024');
+  });
+
+  it('leaves the presence flags unmarked without their objects', () => {
+    const record = mainRecord();
+    const line = mainLine(minimalInput());
+    for (const key of [
+      'declarations.familyCompany.isFamilyCompany',
+      'declarations.familyCompany.representativeFileNumber',
+      'declarations.beneficiaryEnterprise.marked',
+      'declarations.beneficiaryEnterprise.noticeDate',
+      'declarations.specialYear.marked',
+      'declarations.specialYear.balanceSheetDate',
+    ]) {
+      expect(record.values).not.toHaveProperty([key]);
+    }
+    expect(at(line, 836, 10)).toBe('0000000000');
+    expect(at(line, 851, 1)).toBe('0');
+    expect(at(line, 852, 10)).toBe(' '.repeat(10));
+    expect(at(line, 863, 1)).toBe('0');
+    expect(at(line, 864, 10)).toBe(' '.repeat(10));
+  });
+
+  it('reportablePositions [12, 7] → 1034 = 012, 1037 = 007, 1040–1046 = 000', () => {
+    const input = minimalInput({
+      declarations: { tookReportablePosition: true, reportablePositions: [12, 7] },
+    });
+    const record = mainRecord(input);
+    const line = mainLine(input);
+    expect(record.values['declarations.reportablePositions[0]']).toBe(12);
+    expect(record.values['declarations.reportablePositions[1]']).toBe(7);
+    expect(record.values).not.toHaveProperty(['declarations.reportablePositions[2]']);
+    expect(record.paths['declarations.reportablePositions[0]']).toBe(
+      'declarations.reportablePositions[0]',
+    );
+    expect(record.paths['declarations.reportablePositions[1]']).toBe(
+      'declarations.reportablePositions[1]',
+    );
+    expect(at(line, 1034, 3)).toBe('012');
+    expect(at(line, 1037, 3)).toBe('007');
+    expect(at(line, 1040, 3)).toBe('000');
+    expect(at(line, 1043, 3)).toBe('000');
+    expect(at(line, 1046, 3)).toBe('000');
+  });
+
+  it('writes only the first five reportable positions', () => {
+    const input = minimalInput({
+      declarations: { tookReportablePosition: true, reportablePositions: [1, 2, 3, 4, 5, 6] },
+    });
+    const record = mainRecord(input);
+    expect(
+      Object.keys(record.values).filter(key => key.startsWith('declarations.reportablePositions')),
+    ).toHaveLength(5);
+    expect(at(mainLine(input), 1034, 15)).toBe('001002003004005');
+  });
+
+  it.each([
+    ['requestsAdvancePayments', 883],
+    ['hasBuildingIncome', 884],
+    ['partOfMultinationalGroup', 1033],
+  ] as const)('%s is yes/no at %i: 1, 2, and 0 when absent', (member, position) => {
+    const key = `declarations.${member}`;
+    for (const [value, encoded] of [
+      [true, '1'],
+      [false, '2'],
+      [undefined, '0'],
+    ] as const) {
+      const input = minimalInput({ declarations: { [member]: value } });
+      const record = mainRecord(input);
+      expect(record.values[key]).toBe(value);
+      expect(record.paths[key]).toBe(value === undefined ? undefined : key);
+      expect(at(mainLine(input), position, 1)).toBe(encoded);
+    }
+  });
+
+  it.each([
+    ['financialStatementsAttached', 835],
+    ['isHouseCompany', 846],
+    ['form1343Attached', 847],
+    ['form1344Attached', 848],
+    ['claimsCapitalInvestmentLawBenefits', 849],
+    ['preferredEnterprise', 850],
+    ['dividendDistributed', 862],
+    ['foreignInvestors', 874],
+    ['partnerInPartnership', 876],
+    ['isKibbutz', 877],
+    ['isTrustBeneficiary', 886],
+    ['nonDeductibleSalaryExpenses', 1031],
+    ['fewMembersCompany62A', 1032],
+    ['noBankAccount', 1064],
+  ] as const)('%s is a flag at %i: 1 when marked, 0 otherwise', (member, position) => {
+    const key = `declarations.${member}`;
+    const marked = minimalInput({ declarations: { [member]: true } });
+    expect(mainRecord(marked).values[key]).toBe(true);
+    expect(mainRecord(marked).paths[key]).toBe(key);
+    expect(at(mainLine(marked), position, 1)).toBe('1');
+    expect(at(mainLine(minimalInput({ declarations: { [member]: false } })), position, 1)).toBe(
+      '0',
+    );
+    expect(at(mainLine(minimalInput()), position, 1)).toBe('0');
+  });
+
+  describe('833 has capital-gains appendix (SPEC §7.4)', () => {
+    it('hasCapitalGainsAppendix true forces 833 = yes', () => {
+      const input = minimalInput({ declarations: { hasCapitalGainsAppendix: true } });
+      const record = mainRecord(input);
+      expect(record.values['declarations.hasCapitalGainsAppendix']).toBe(true);
+      expect(record.paths['declarations.hasCapitalGainsAppendix']).toBe(
+        'declarations.hasCapitalGainsAppendix',
+      );
+      expect(at(mainLine(input), 833, 1)).toBe('1');
+    });
+
+    it.each([false, undefined])('hasCapitalGainsAppendix %s leaves 833 derived (no)', value => {
+      const input = minimalInput({ declarations: { hasCapitalGainsAppendix: value } });
+      expect(mainRecord(input).values['declarations.hasCapitalGainsAppendix']).toBe(false);
+      expect(at(mainLine(input), 833, 1)).toBe('2');
+    });
+  });
+
+  it('raises no notices for the full declarations input', () => {
+    expect(normalizeReport(fullDeclarationsInput(), LAYOUT, OPTIONS).notices).toEqual([]);
   });
 });
