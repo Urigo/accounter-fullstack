@@ -28,8 +28,11 @@ export function handleCommonErrors<T extends object, K extends undefined | keyof
         throw new Error(message);
       }
 
+      // A resolver's own GraphQLError often carries no code, but its message is the reason the
+      // operation was rejected (the server masks unexpected errors, so no internals leak here).
+      const graphqlMessage = error.graphQLErrors?.[0]?.message;
       console.error(error);
-      throw new Error(`${baseMessage}: Error occurred`);
+      throw new Error(`${baseMessage}: ${graphqlMessage || 'Error occurred'}`);
     }
 
     if (!res.data) {
