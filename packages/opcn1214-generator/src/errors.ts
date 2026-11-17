@@ -94,6 +94,17 @@ export class Opcn1214ValidationError extends Opcn1214Error {
   }
 }
 
+/**
+ * Thrown by `parse1214` for a file with structural problems (SPEC §8.2 steps 1–6): carries every
+ * problem found, sorted by line and column, each with its line and column.
+ */
+export class Opcn1214ParseError extends Opcn1214Error {
+  constructor(issues: readonly Issue[], options?: ErrorOptions) {
+    super(`1214 file has ${count(issues.length, 'structural problem')}`, issues, options);
+    this.name = 'Opcn1214ParseError';
+  }
+}
+
 /** An invariant of the package was violated: a bug, never expected in production. */
 export class Opcn1214InternalError extends Error {
   constructor(message: string, options?: ErrorOptions) {

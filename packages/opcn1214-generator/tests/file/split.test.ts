@@ -1,5 +1,11 @@
 import { encodeWindows1255 } from '../../src/codec/windows1255.js';
-import { splitFile } from '../../src/file/split.js';
+import { splitFile as split } from '../../src/file/split.js';
+import type { ParseOptions } from '../../src/model/options.js';
+
+/** The text of each line. */
+function splitFile(content: string | Uint8Array, options?: ParseOptions): string[] {
+  return split(content, options).map(line => line.text);
+}
 
 const BOM = String.fromCodePoint(0xfe_ff);
 const UTF8_BOM_BYTES = [0xef, 0xbb, 0xbf];
@@ -41,5 +47,15 @@ describe('splitFile', () => {
     expect(splitFile('A\r\nB')).toEqual(['A', 'B']);
     expect(splitFile('A\r\n\r\n')).toEqual(['A', '']);
     expect(splitFile('')).toEqual([]);
+  });
+
+  it('marks the first undecodable character of a line', () => {
+    const utf8 = new Uint8Array([0x41, 0x0d, 0x0a, 0x42, 0x43, 0xc3, 0x0d, 0x0a]);
+    expect(split(utf8, { encoding: 'utf-8' })).toEqual([
+      { text: 'A' },
+      { text: 'BC\uFFFD', invalidAt: 2 },
+    ]);
+    expect(split(new Uint8Array([0x41, 0xff, 0x0a]))).toEqual([{ text: 'A\uFFFD', invalidAt: 1 }]);
+    expect(split('A\uFFFD')).toEqual([{ text: 'A\uFFFD' }]);
   });
 });

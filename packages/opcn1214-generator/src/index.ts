@@ -9,6 +9,7 @@ export { getLayout, supportedTaxYears } from './layout/registry.js';
 export {
   Opcn1214Error,
   Opcn1214InternalError,
+  Opcn1214ParseError,
   Opcn1214UnsupportedYearError,
   Opcn1214ValidationError,
 } from './errors.js';

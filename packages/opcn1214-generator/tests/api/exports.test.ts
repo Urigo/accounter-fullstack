@@ -43,6 +43,7 @@ describe('public API', () => {
       [
         'Opcn1214Error',
         'Opcn1214InternalError',
+        'Opcn1214ParseError',
         'Opcn1214UnsupportedYearError',
         'Opcn1214ValidationError',
         'RULES',
