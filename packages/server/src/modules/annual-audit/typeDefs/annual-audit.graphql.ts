@@ -26,6 +26,12 @@ export default gql`
       @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
+  " Report slot an annual audit dynamic report template serves "
+  enum AnnualAuditReportType {
+    BALANCE_SHEET
+    PROFIT_AND_LOSS
+  }
+
   " User type classification for annual audit opening balance step "
   enum AnnualAuditOpeningBalanceUserType {
     NEW
@@ -80,6 +86,8 @@ export default gql`
     year: Int!
     " The name of the dynamic report template to lock as the final draft "
     templateName: String!
+    " The report the template is locked for. Omitted = both Balance Sheet and Profit and Loss "
+    reportType: AnnualAuditReportType
   }
 
   " Generic input for manually setting any annual audit step status "

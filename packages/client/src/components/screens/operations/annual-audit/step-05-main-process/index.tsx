@@ -7,12 +7,14 @@ import { ROUTES } from '@/router/routes.js';
 // import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
 import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
+import { balanceSheetHref, profitAndLossHref } from '../report-links.js';
 import {
   BaseStepCard,
   type BaseStepProps,
   type StepAction,
   type StepStatus,
 } from '../step-base.js';
+import { findStepEvidence, parseFinalTemplates } from '../template-slots.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -42,16 +44,11 @@ export function Step05MainProcess(props: Step05Props) {
     pause: !adminBusinessId,
   });
 
-  const prevYearLockedTemplateName = useMemo<string | null>(() => {
-    const step09 = prevYearData?.annualAuditStepStatuses?.find(s => s.stepId === '9');
-    if (!step09?.evidence) return null;
-    try {
-      const parsed = JSON.parse(step09.evidence) as { lockedTemplateName?: string };
-      return parsed.lockedTemplateName ?? null;
-    } catch {
-      return null;
-    }
-  }, [prevYearData]);
+  // Last year's final templates, per report (a single legacy template serves both)
+  const baseline = useMemo(
+    () => parseFinalTemplates(findStepEvidence(prevYearData?.annualAuditStepStatuses, '9')),
+    [prevYearData],
+  );
 
   const persistedStepRecord = useMemo(() => {
     if (!Array.isArray(props.manualData)) return undefined;
@@ -79,36 +76,31 @@ export function Step05MainProcess(props: Step05Props) {
   useEffect(() => onStatusChange?.(id, status), [status, onStatusChange, id]);
 
   const actions = useMemo((): StepAction[] => {
-    const dynamicReportActions: StepAction[] = prevYearLockedTemplateName
-      ? [
-          {
-            label: 'Balance Sheet',
-            href: ROUTES.REPORTS.DYNAMIC_REPORT({
-              ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
-              fromDate: '1900-01-01' as TimelessDateString,
-              toDate: `${props.year}-12-31` as TimelessDateString,
-              templateName: prevYearLockedTemplateName,
-            }),
-            openInNewTab: true,
-          },
-          {
-            label: 'Profit and Loss',
-            href: ROUTES.REPORTS.DYNAMIC_REPORT({
-              ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
-              fromDate: `${props.year}-01-01` as TimelessDateString,
-              toDate: `${props.year}-12-31` as TimelessDateString,
-              templateName: prevYearLockedTemplateName,
-            }),
-            openInNewTab: true,
-          },
-        ]
-      : [
-          {
-            label: 'Create Dynamic Report Template',
-            href: ROUTES.REPORTS.DYNAMIC_REPORT(),
-            openInNewTab: true,
-          },
-        ];
+    const bsTemplate = baseline.balanceSheetTemplateName;
+    const pnlTemplate = baseline.profitAndLossTemplateName;
+
+    const dynamicReportActions: StepAction[] = [];
+    if (bsTemplate) {
+      dynamicReportActions.push({
+        label: 'Balance Sheet',
+        href: balanceSheetHref(adminBusinessId, props.year, bsTemplate),
+        openInNewTab: true,
+      });
+    }
+    if (pnlTemplate) {
+      dynamicReportActions.push({
+        label: 'Profit and Loss',
+        href: profitAndLossHref(adminBusinessId, props.year, pnlTemplate),
+        openInNewTab: true,
+      });
+    }
+    if (dynamicReportActions.length === 0) {
+      dynamicReportActions.push({
+        label: 'Create Dynamic Report Template',
+        href: ROUTES.REPORTS.DYNAMIC_REPORT(),
+        openInNewTab: true,
+      });
+    }
 
     return [
       ...dynamicReportActions,
@@ -128,7 +120,7 @@ export function Step05MainProcess(props: Step05Props) {
       { label: 'Review Tax Report', href: ROUTES.REPORTS.TAX(props.year) },
       // { label: 'Cash Flow Analysis', href: '/cashflow/analysis' },
     ];
-  }, [props.year, adminBusinessId, prevYearLockedTemplateName]);
+  }, [props.year, adminBusinessId, baseline]);
 
   return (
     <BaseStepCard
