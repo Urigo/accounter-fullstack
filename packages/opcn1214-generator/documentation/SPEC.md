@@ -598,7 +598,11 @@ export function parse1214(content: string | Uint8Array, options?: ParseOptions):
 /** Parses an OPCN batch file (1–50 reports). */
 export function parse1214Batch(content: string | Uint8Array, options?: ParseOptions): ParseResult[]
 
-/** Parses SHAAM's response file shumot.shg (§3.9). */
+/** Parses SHAAM's response file shumot.shg (§3.9): one ResponseRecord per non-blank line, in file
+ *  order. Bytes decode as windows-1255; CRLF or LF; blank lines are skipped; an empty file gives [].
+ *  Lines shorter than 15 characters (parse.lineLength) or with a non-digit file number or tax year
+ *  (parse.numeric) throw Opcn1214ParseError carrying every such line. Any 2-character code is
+ *  accepted; an unlisted one means 'General error; notify SHAAM'. */
 export function parseResponseFile(content: string | Uint8Array): ResponseRecord[]
 
 export function supportedTaxYears(): readonly number[] // [2024, 2025]
@@ -659,7 +663,7 @@ export interface ResponseRecord {
   code: string // '00', '05', …
   meaning: string // English text from §3.9
   accepted: boolean // code === '00'
-  detail?: string // trailing text for codes 08 / 33
+  detail?: string // trailing text for codes 08 / 33, trailing spaces trimmed; absent when empty
   line: number
 }
 ```
