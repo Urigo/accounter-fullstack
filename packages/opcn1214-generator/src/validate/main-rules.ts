@@ -5,6 +5,7 @@
 import { isAbsentValue } from '../codec/record.js';
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
+import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import type { FieldDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
 import {
@@ -393,6 +394,42 @@ function cgUntransmittedReasonWithoutCount(report: NormalizedReport): Issue[] {
     );
 }
 
+const TOTAL_APPENDICES = 'capitalGainsSummary.totalAppendicesCount';
+
+/**
+ * main.appendixTotal.min: the total number of appendices (960, "transmitted and not") is lower than
+ * the appendices the report transmits, the foreign appendix (2000) and the capital-gains records
+ * (30xx), plus the untransmitted ones (962) (p.10; SPEC §15 A-12). Checked only when 960 is above
+ * 0: 0 is written as absent.
+ */
+function appendixTotalMin(report: NormalizedReport): Issue[] {
+  const transmitted = report.records.filter(
+    record => record.recordType === '2000' || isCapitalGainsRecordType(record.recordType),
+  ).length;
+  return mainRecords(report).flatMap(record => {
+    const total = record.values[TOTAL_APPENDICES];
+    const untransmitted = record.values[UNTRANSMITTED_COUNT];
+    const expected =
+      transmitted + (isPositive(report, record, UNTRANSMITTED_COUNT) ? Number(untransmitted) : 0);
+    if (!isPositive(report, record, TOTAL_APPENDICES) || Number(total) >= expected) {
+      return [];
+    }
+    return [
+      {
+        ...fieldIssue(
+          'main.appendixTotal.min',
+          report,
+          record,
+          TOTAL_APPENDICES,
+          `${TOTAL_APPENDICES} (1000@960) is ${String(total)}, but the report transmits ${transmitted} appendices (2000 and 30xx records) and ${expected - transmitted} were not transmitted (1000@962).`,
+        ),
+        value: total,
+        expected: `at least ${expected}`,
+      },
+    ];
+  });
+}
+
 /** main.bankAccount.withNoBank: noBankAccount (1064) marked while a bank account is given (p.12). */
 function bankAccountWithNoBank(report: NormalizedReport): Issue[] {
   return mainRecords(report)
@@ -478,7 +515,8 @@ const attachmentsCode010 = countRequiresCode(
 
 /**
  * The conditional requirements and consistency warnings of record 1000
- * (main.reportablePositions.max and main.bankAccount.format are normalizer notices).
+ * (main.reportablePositions.max, main.bankAccount.format and main.capitalGains.flag are normalizer
+ * notices).
  */
 export const MAIN_RULES: readonly ReportRule[] = [
   familyCompanyFileNumber,
@@ -497,6 +535,7 @@ export const MAIN_RULES: readonly ReportRule[] = [
   rdTotal,
   cgUntransmittedReason,
   cgUntransmittedReasonWithoutCount,
+  appendixTotalMin,
   bankAccountWithNoBank,
   qualifyingCompanyPurchaseAmounts,
   qualifyingCompanyAmortizationAmount,

@@ -6,11 +6,18 @@ import { scaleBy100Exact } from '../codec/numeric.js';
 import { COUNTRY_INCOME_SHAPE } from '../codec/sections.js';
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
+import { capitalGainsRecordType } from '../layout/capital-gains.js';
 import { countryKey } from '../layout/countries.js';
 import { getLayout } from '../layout/registry.js';
-import type { CodeKind, FieldDef, FieldKind, RecordDef } from '../layout/types.js';
-import { PHONE_PREFIXES, type CountryBreakdown, type Report1214Input } from '../model/input.js';
+import type { CodeKind, FieldDef, FieldKind, RecordDef, YearLayout } from '../layout/types.js';
+import {
+  PHONE_PREFIXES,
+  type CapitalGainsAppendix,
+  type CountryBreakdown,
+  type Report1214Input,
+} from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
+import { CAPITAL_GAINS_INPUT_KEYS, placeCapitalGains } from './capital-gains/index.js';
 import {
   COUNTRY_BREAKDOWN_INPUT_KEYS,
   FOREIGN_APPENDIX_INPUT_KEYS,
@@ -168,13 +175,35 @@ function canonicalAmounts(
 }
 
 /**
+ * The capital-gains appendices as the parser reads their 30xx records back: in emission order
+ * (grouped by symbol ascending, input order within a symbol, SPEC §3.3), header members like any
+ * header value, amounts like the 1000 amounts.
+ */
+function canonicalCapitalGains(
+  layout: YearLayout,
+  appendices: readonly CapitalGainsAppendix[],
+  rounding: GenerateOptions['rounding'],
+): InputTree[] {
+  return placeCapitalGains(appendices).map(({ appendix }) => {
+    const def = layout.records[capitalGainsRecordType(appendix.symbol)];
+    const tree: InputTree = { symbol: appendix.symbol };
+    for (const key of CAPITAL_GAINS_INPUT_KEYS[appendix.symbol]) {
+      setKey(tree, key, canonicalValue(fieldOf(def, key), getKey(appendix, key), rounding));
+    }
+    tree.amounts = canonicalAmounts(def, appendix.amounts, rounding);
+    return tree;
+  });
+}
+
+/**
  * The canonical form of a valid `input` (SPEC §8.4) under the generation `options`: meta set to
  * the values written (software name default, also for a blank name; save date from
  * `options.today`), text normalized, digit strings padded to the field width (the bank account
  * number to 9 digits), ×100 kinds in hundredths, empty optional values, empty `relatedCompanies`
  * and `rdInvestments` lists, an empty `countryBreakdown` and non-zeroAllowed zero codes (of
- * `amounts` and `foreignAppendix.amounts`) removed, country codes zero-padded, amounts rounded per
- * `options.rounding`. `input` is not changed.
+ * `amounts`, `foreignAppendix.amounts` and the capital-gains amounts) removed, country codes
+ * zero-padded, capital-gains appendices in emission order and an empty `capitalGains` list
+ * removed, amounts rounded per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
   input: Report1214Input,
@@ -245,6 +274,11 @@ export function canonicalize(
     );
     output.foreignAppendix = tree;
   }
+  // No 30xx record is written for an empty list either.
+  const appendices = input.capitalGains ?? [];
+  if (appendices.length > 0) {
+    output.capitalGains = canonicalCapitalGains(layout, appendices, rounding);
+  }
   for (const key of MAIN_INPUT_KEYS) {
     setKey(output, key, canonicalValue(fieldOf(mainDef, key), getKey(source, key), rounding));
   }
@@ -270,10 +304,11 @@ export function canonicalize(
     setKey(output, REPORTABLE_POSITIONS, positions);
   }
   // 833 = yes is read back as hasCapitalGainsAppendix (denormalize) unless untransmitted
-  // appendices explain it; `false` writes no.
+  // appendices or capital-gains appendices explain it; `false` writes no.
   if (
     input.declarations.hasCapitalGainsAppendix === true &&
-    !hasUntransmittedAppendices(input.capitalGainsSummary)
+    !hasUntransmittedAppendices(input.capitalGainsSummary) &&
+    appendices.length === 0
   ) {
     setKey(output, 'declarations.hasCapitalGainsAppendix', true);
   }

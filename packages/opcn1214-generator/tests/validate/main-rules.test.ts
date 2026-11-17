@@ -7,11 +7,13 @@ import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import {
+  foreignAppendix,
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
+  section6Appendices,
 } from '../fixtures/builders.js';
 import { tamper } from '../fixtures/files.js';
 
@@ -625,6 +627,77 @@ describe('R&D investments and code 165 (SPEC §10.3)', () => {
     const fixed = tamper(text, { line: 3, position: 149, value: '00' });
     expect(parse1214(fixed).issues.filter(issue => issue.ruleId === 'main.rd.records')).toEqual([
       expect.objectContaining({ path: 'amounts["165"]' }),
+    ]);
+  });
+});
+
+describe('capital-gains appendices and record 1000 (SPEC §10.3)', () => {
+  function withTotal(
+    totalAppendicesCount: number | undefined,
+    overrides: Parameters<typeof minimalInput>[0] = {},
+  ) {
+    return minimalInput({
+      ...overrides,
+      capitalGainsSummary: { totalAppendicesCount, ...overrides.capitalGainsSummary },
+    });
+  }
+
+  it('main.appendixTotal.min: a total below the transmitted capital-gains appendices', () => {
+    const issues = issuesOf(
+      withTotal(1, { capitalGains: section6Appendices(2) }),
+      'main.appendixTotal.min',
+    );
+    expect(issues).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        path: 'capitalGainsSummary.totalAppendicesCount',
+        recordType: '1000',
+        recordIndex: 0,
+        value: 1,
+        expected: 'at least 2',
+        field: expect.objectContaining({ position: 960 }),
+      }),
+    ]);
+  });
+
+  it('main.appendixTotal.min: the foreign appendix counts once, untransmitted ones count too', () => {
+    const overrides = {
+      foreignAppendix: foreignAppendix(),
+      capitalGains: section6Appendices(2),
+      capitalGainsSummary: { untransmittedCount: 2, reasons: { other: true, otherText: 'סיבה' } },
+    };
+    expect(issuesOf(withTotal(4, overrides), 'main.appendixTotal.min')).toEqual([
+      expect.objectContaining({ value: 4, expected: 'at least 5' }),
+    ]);
+    expect(issuesOf(withTotal(5, overrides), 'main.appendixTotal.min')).toEqual([]);
+    expect(issuesOf(withTotal(9, overrides), 'main.appendixTotal.min')).toEqual([]);
+  });
+
+  it('main.appendixTotal.min: not checked when the total is absent or 0 (written as absent)', () => {
+    const overrides = { capitalGains: section6Appendices(2) };
+    expect(issuesOf(withTotal(undefined, overrides), 'main.appendixTotal.min')).toEqual([]);
+    expect(issuesOf(withTotal(0, overrides), 'main.appendixTotal.min')).toEqual([]);
+    expect(issuesOf(withTotal(1), 'main.appendixTotal.min')).toEqual([]);
+  });
+
+  it('main.appendixTotal.min is reported on parsed files too', () => {
+    const input = withTotal(2, { capitalGains: section6Appendices(2) });
+    // 1000@960: the total, 2 digits.
+    expect(
+      fileIssuesOf(input, { line: 1, position: 960, value: '01' }, 'main.appendixTotal.min'),
+    ).toEqual([expect.objectContaining({ path: 'capitalGainsSummary.totalAppendicesCount' })]);
+  });
+
+  it('struct.capitalGains.max: more than 14 appendices, at capitalGains', () => {
+    expect(
+      issuesOf(minimalInput({ capitalGains: section6Appendices(15) }), 'struct.capitalGains.max'),
+    ).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        path: 'capitalGains',
+        value: 15,
+        expected: 'at most 14',
+      }),
     ]);
   });
 });

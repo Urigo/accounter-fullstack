@@ -104,6 +104,28 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     expect(inputIndexOf({ ...record, recordType: '2200', values: {} })).toBe(0);
   });
 
+  it('maps a record 3063 key into its appendix capitalGains[i], by input index (SPEC §7.3)', () => {
+    expect(pathFor('3063', 2, 'foreignAsset')).toBe('capitalGains[2].foreignAsset');
+    expect(pathFor('3063', 0, 'lossesCarriedForward')).toBe('capitalGains[0].lossesCarriedForward');
+    expect(pathFor('3063', 4, 'code:022')).toBe('capitalGains[4].amounts["022"]');
+  });
+
+  it('maps the derived symbol and appendix number of record 3063 to the empty path', () => {
+    const derived = LAYOUT.records['3063'].fields.filter(field => field.derived);
+    expect(derived.map(field => field.key)).toEqual(['transactionSymbol', 'appendixNumber']);
+    for (const field of derived) {
+      expect(pathFor('3063', 1, field.key)).toBe('');
+    }
+  });
+
+  it('gives a capital-gains record its input index, which differs from its index by type', () => {
+    expect(inputIndexOf({ recordType: '3063', index: 0, inputIndex: 3, values: {} })).toBe(3);
+    // Without an input index (not set), the index among records of the type.
+    expect(inputIndexOf({ recordType: '3063', index: 2, values: {} })).toBe(2);
+    // Other records ignore it.
+    expect(inputIndexOf({ recordType: '1020', index: 1, inputIndex: 5, values: {} })).toBe(1);
+  });
+
   it.each(['3027', '3077'] as const)(
     'maps keys of record %s, which has no input mapping yet, to the empty path',
     recordType => {

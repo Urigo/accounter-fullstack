@@ -1052,6 +1052,13 @@ the n-th country entry is `foreignAppendix.countryBreakdown["420"].countries[n]`
 and `.income`). When parsing, every 2200 record is grouped under the 2000 record's
 `countryBreakdown`; there is no `countryBreakdown` without 2200 records.
 
+Capital-gains appendices are keyed by their index in `capitalGains`: a header key of a 30xx record
+maps to `capitalGains[i].<key>` and a code to `capitalGains[i].amounts["022"]`, where `i` is the
+appendix's input index, not its position in the file (records are grouped by type, §3.3). The
+transaction symbol (30xx@137) and the appendix number (30xx@139) are derived and have no input path.
+When parsing, `capitalGains` lists the appendices in file order (grouped by type ascending), the
+symbol comes from the record type, and `capitalGains` exists only when the file has 30xx records.
+
 Only five reportable positions have a field: more than five raise one `main.reportablePositions.max`
 notice at `declarations.reportablePositions[5]` (the first position not written), and the first five
 are still written.
@@ -1371,6 +1378,9 @@ A field these rules require is missing when the file would read it back as absen
 or, in an optional field, 0 or an all-zero digit string. So `reportablePositions: [0]` does not
 satisfy `main.reportablePositions.required`, nor `representativeFileNumber: '000000000'`
 `main.familyCompany.fileNumber`: the input and the file parsed from it are judged alike.
+
+For `main.appendixTotal.min`, 960 counts as given only when it is above 0: an optional count of 0 is
+written as absent (§8.4), so input and parsed files are judged alike.
 
 Spec rules that are **enforced by derivation** and therefore need no runtime rule: 834 ⇒ code 297
 (8/9); 882 ⇒ code 008 = 1; code 273 ↔ 1029/1030; 832/833 ↔ appendix records; code 028; serial and

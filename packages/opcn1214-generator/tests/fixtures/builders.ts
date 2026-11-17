@@ -11,6 +11,7 @@ import type {
   RdInvestment,
   RelatedCompany,
   Report1214Input,
+  Section6SecuritiesAppendix,
 } from '../../src/model/input.js';
 
 /** Overrides for a builder: objects merge recursively, arrays and other values replace. */
@@ -245,4 +246,28 @@ export function foreignAppendixWithBreakdown(
   const appendix = foreignAppendix({ amounts: { [code]: 5000 } });
   appendix.countryBreakdown = { [code]: breakdown };
   return deepMerge(appendix, overrides) as ForeignAppendix;
+}
+
+/**
+ * A valid capital-gains appendix for securities under section 6 (SPEC §7.2, record 3063) with every
+ * member set to a value that is written to the file and two codes (022, 056). `overrides` are
+ * deep-merged into it.
+ */
+export function section6Appendix(
+  overrides: DeepPartial<Section6SecuritiesAppendix> = {},
+): Section6SecuritiesAppendix {
+  const base: Section6SecuritiesAppendix = {
+    symbol: 63,
+    foreignAsset: true,
+    lossesCarriedForward: 12_000,
+    amounts: { '022': 50_000, '056': 3000 },
+  };
+  return deepMerge(base, overrides) as Section6SecuritiesAppendix;
+}
+
+/** `count` valid 3063 appendices; the i-th (0-based) has code 022 = 1000 × (i + 1). */
+export function section6Appendices(count: number): Section6SecuritiesAppendix[] {
+  return Array.from({ length: count }, (_, index) =>
+    section6Appendix({ amounts: { '022': 1000 * (index + 1) } }),
+  );
 }

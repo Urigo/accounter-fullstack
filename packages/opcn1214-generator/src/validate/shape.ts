@@ -4,10 +4,15 @@
  */
 import type { z } from 'zod';
 import { Opcn1214InternalError } from '../errors.js';
+import { capitalGainsRecordType } from '../layout/capital-gains.js';
 import { getLayout } from '../layout/registry.js';
 import type { CodeDef, RecordDef, YearLayout } from '../layout/types.js';
 import type { SupportedTaxYear } from '../model/input.js';
 import { schemaFor } from '../model/schema.js';
+import {
+  CAPITAL_GAINS_INPUT_KEYS,
+  type CapitalGainsInputSymbol,
+} from '../normalize/capital-gains/index.js';
 import { DERIVED_MAIN_CODE_SOURCES } from '../normalize/derive.js';
 import { makeIssue, type Issue } from './issue.js';
 
@@ -155,15 +160,51 @@ function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: un
   return { issues, value: kept };
 }
 
-/** The foreign appendix has no derived codes (SPEC §7.4). */
+/** The foreign appendix and the modelled capital-gains appendices have no derived codes (§7.4). */
 const NO_DERIVED_CODES: Readonly<Partial<Record<string, readonly string[]>>> = {};
+
+/** True for a `symbol` the input model has an appendix type for. */
+function isInputSymbol(symbol: unknown): symbol is CapitalGainsInputSymbol {
+  return typeof symbol === 'number' && Object.hasOwn(CAPITAL_GAINS_INPUT_KEYS, symbol);
+}
+
+/**
+ * The `amounts` of every capital-gains appendix of `appendices` scanned against the codes of its
+ * record type (30xx = 3000 + symbol): their issues, located by the appendix's index among those of
+ * its symbol, and a copy of `appendices` with the reported keys removed. Appendices that are not
+ * plain objects or have no modelled symbol are left to zod.
+ */
+function scanCapitalGains(
+  appendices: readonly unknown[],
+  layout: YearLayout,
+): { issues: Issue[]; value: unknown[] } {
+  const perSymbol = new Map<CapitalGainsInputSymbol, number>();
+  const issues: Issue[] = [];
+  const value = appendices.map((appendix, index) => {
+    if (!isPlainObject(appendix) || !isInputSymbol(appendix.symbol)) {
+      return appendix;
+    }
+    const recordIndex = perSymbol.get(appendix.symbol) ?? 0;
+    perSymbol.set(appendix.symbol, recordIndex + 1);
+    const amounts = scanCodeMap(appendix.amounts, {
+      path: `capitalGains[${index}].amounts`,
+      taxYear: layout.taxYear,
+      record: layout.records[capitalGainsRecordType(appendix.symbol)],
+      recordIndex,
+      derivedSources: NO_DERIVED_CODES,
+    });
+    issues.push(...amounts.issues);
+    return { ...appendix, amounts: amounts.value };
+  });
+  return { issues, value };
+}
 
 /**
  * The code maps of `input` scanned (scanCodeMap): their issues, and a shallow copy of `input` with
  * the reported keys removed. Record 1000 `amounts` and, when `foreignAppendix` is an object, its
  * `amounts` (record 2000) and `countryBreakdown` (records 2200, keyed by the per-country codes of
- * record 2000); the capital-gains appendices (G1) add theirs. Anything that is not a plain object
- * is left to zod.
+ * record 2000), and the `amounts` of every capital-gains appendix (scanCapitalGains). Anything that
+ * is not a plain object (or an array, for `capitalGains`) is left to zod.
  */
 function scanCodeMaps(input: unknown, layout: YearLayout): { issues: Issue[]; input: unknown } {
   if (!isPlainObject(input)) {
@@ -205,6 +246,11 @@ function scanCodeMaps(input: unknown, layout: YearLayout): { issues: Issue[]; in
       scannedAppendix.countryBreakdown = breakdowns.value;
     }
     scanned.foreignAppendix = scannedAppendix;
+  }
+  if (Array.isArray(input.capitalGains)) {
+    const appendices = scanCapitalGains(input.capitalGains, layout);
+    issues.push(...appendices.issues);
+    scanned.capitalGains = appendices.value;
   }
   return { issues, input: scanned };
 }

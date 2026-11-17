@@ -7,6 +7,7 @@ import type { YearLayout } from '../layout/types.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedReport } from '../model/normalized.js';
 import type { ValidateOptions } from '../model/options.js';
+import { normalizeCapitalGains } from './capital-gains/index.js';
 import { normalizeCountryBreakdowns, normalizeForeignAppendix } from './foreign.js';
 import { normalizeMain } from './main.js';
 import { normalizeRdInvestments } from './rd-investments.js';
@@ -26,6 +27,7 @@ export function normalizeReport(
   const foreign = input.foreignAppendix
     ? normalizeForeignAppendix(input.foreignAppendix, layout, options)
     : undefined;
+  const capitalGains = normalizeCapitalGains(input.capitalGains ?? [], layout, options);
   const records = [
     main.record,
     ...normalizeRelatedCompanies(input.relatedCompanies ?? [], layout, options),
@@ -35,8 +37,9 @@ export function normalizeReport(
     ...(input.foreignAppendix
       ? normalizeCountryBreakdowns(input.foreignAppendix, layout, options)
       : []),
+    ...capitalGains.records,
   ];
-  // Stable: records of one type keep their input order.
+  // Stable: records of one type keep their order (input order; emission order for 30xx).
   records.sort((a, b) => layout.records[a.recordType].order - layout.records[b.recordType].order);
   return {
     taxYear: input.taxYear,
@@ -50,6 +53,7 @@ export function normalizeReport(
         recordIndex: 0,
         code,
       })),
+      ...capitalGains.omittedZeroCodes,
     ],
   };
 }

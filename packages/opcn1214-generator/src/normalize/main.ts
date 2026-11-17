@@ -1,5 +1,6 @@
 /** Normalizer of record 1000, the main form (SPEC §7.2–§7.4, §4.5). */
-import type { YearLayout } from '../layout/types.js';
+import { Opcn1214InternalError } from '../errors.js';
+import type { RecordDef, YearLayout } from '../layout/types.js';
 import type { DerivedMainCode } from '../model/codes.generated.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord } from '../model/normalized.js';
@@ -33,8 +34,9 @@ export interface NormalizedMain {
   omittedZeroCodes: string[];
   /**
    * Raised while normalizing: invalid phone prefixes, which are dropped (field.phonePrefix), a
-   * malformed bank account (main.bankAccount.format) and positions after the fifth
-   * (main.reportablePositions.max).
+   * malformed bank account (main.bankAccount.format), positions after the fifth
+   * (main.reportablePositions.max) and an explicit "no capital-gains appendix" while appendices
+   * exist (main.capitalGains.flag).
    */
   notices: Issue[];
 }
@@ -87,6 +89,37 @@ function checkReportablePositionCount(positions: readonly number[] | undefined, 
       value: positions.length,
       expected: `at most ${max} positions`,
       specRef: { page: 11 },
+    }),
+  );
+}
+
+/** The key of 1000@833, which is derived but is also an input property (SPEC §7.3). */
+const HAS_CAPITAL_GAINS_APPENDIX = 'declarations.hasCapitalGainsAppendix';
+
+/**
+ * main.capitalGains.flag: `hasCapitalGainsAppendix` false while capital-gains appendices exist
+ * (p.7). 833 is derived as yes, so the explicit false exists only in the input and is reported as a
+ * notice (IMPLEMENTATION_PLAN.md §1.2).
+ */
+function checkCapitalGainsFlag(input: Report1214Input, def: RecordDef, notices: Issue[]) {
+  const count = input.capitalGains?.length ?? 0;
+  if (input.declarations.hasCapitalGainsAppendix !== false || count === 0) {
+    return;
+  }
+  const field = def.fields.find(candidate => candidate.key === HAS_CAPITAL_GAINS_APPENDIX);
+  if (!field) {
+    throw new Opcn1214InternalError(`Record 1000 has no field "${HAS_CAPITAL_GAINS_APPENDIX}"`);
+  }
+  notices.push(
+    makeIssue('main.capitalGains.flag', {
+      message: `${HAS_CAPITAL_GAINS_APPENDIX} is false, but the report has ${count} capital-gains appendices (1000@833 is derived from them as yes).`,
+      path: HAS_CAPITAL_GAINS_APPENDIX,
+      recordType: '1000',
+      recordIndex: 0,
+      field: { position: field.position, length: field.length, nameHe: field.nameHe },
+      value: false,
+      expected: 'true or absent',
+      specRef: { page: 7 },
     }),
   );
 }
@@ -151,7 +184,7 @@ export function normalizeMain(
       'preparer.phone.prefix': prefix('preparer.phone.prefix', preparer?.phone?.prefix),
       'preparer.phone.number': preparer?.phone?.number,
       hasForeignAppendix: deriveHasForeignAppendix(input),
-      'declarations.hasCapitalGainsAppendix': deriveHasCapitalGainsAppendix(input),
+      [HAS_CAPITAL_GAINS_APPENDIX]: deriveHasCapitalGainsAppendix(input),
       'declarations.form6111Obligation': enumCode(
         FORM_6111_OBLIGATION_CODES,
         declarations.form6111Obligation,
@@ -224,10 +257,11 @@ export function normalizeMain(
   );
 
   checkReportablePositionCount(declarations.reportablePositions, notices);
+  checkCapitalGainsFlag(input, def, notices);
   const bank = bankCodes(input.bankAccount, notices);
   const derivedCodes: Readonly<Record<DerivedMainCode, number | undefined>> = {
     '008': deriveCode008(declarations),
-    '028': deriveCode028(capitalGainsSummary),
+    '028': deriveCode028(input),
     '273': deriveCode273(declarations),
     '277': bank['277'],
     '278': bank['278'],

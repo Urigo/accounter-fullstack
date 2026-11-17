@@ -2,12 +2,14 @@
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
  * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020, 1030,
- * 2000 and 2200.
+ * 2000, 2200 and the capital-gains records of the modelled appendix types (3063).
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
+import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
+import { CAPITAL_GAINS_INPUT_KEYS, type CapitalGainsInputSymbol } from './capital-gains/index.js';
 import { BANK_ACCOUNT_DIGITS, CODE_297_VALUES, type BankAccount } from './derive.js';
 import { ENUM_INPUTS, enumLiteral, RELATION_TYPE_CODES } from './enums.js';
 import {
@@ -222,6 +224,35 @@ function foreignAppendix(
   return tree;
 }
 
+/** The transaction symbol of a capital-gains record type with an input model, else undefined. */
+function inputSymbol(record: NormalizedRecord): CapitalGainsInputSymbol | undefined {
+  const symbol = Number(record.recordType.slice(2));
+  return Object.hasOwn(CAPITAL_GAINS_INPUT_KEYS, symbol)
+    ? (symbol as CapitalGainsInputSymbol)
+    : undefined;
+}
+
+/**
+ * The capital-gains appendices of the 30xx `records` whose type has an input model, in file
+ * order: the symbol of the record type, the header members and the amounts (the transaction
+ * symbol and appendix number are derived).
+ */
+function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
+  return records.flatMap(record => {
+    const symbol = inputSymbol(record);
+    if (symbol === undefined) {
+      return [];
+    }
+    const tree: InputTree = { symbol };
+    for (const key of CAPITAL_GAINS_INPUT_KEYS[symbol]) {
+      setKey(tree, key, record.values[key]);
+    }
+    // No code of the modelled appendix types (3063) is derived (SPEC §7.4).
+    tree.amounts = Object.fromEntries(record.codes);
+    return [tree];
+  });
+}
+
 function shareholder(record: NormalizedRecord): InputTree {
   const tree: InputTree = {};
   for (const key of SHAREHOLDER_INPUT_KEYS) {
@@ -304,6 +335,14 @@ export function denormalize(report: NormalizedReport): Report1214Input {
     const breakdowns = report.records.filter(record => record.recordType === '2200');
     output.foreignAppendix = foreignAppendix(foreign, breakdowns);
   }
+  // Records 30xx in file order: grouped by type, as the generator writes them (SPEC §3.3).
+  const appendixRecords = report.records.filter(record =>
+    isCapitalGainsRecordType(record.recordType),
+  );
+  const appendices = capitalGains(appendixRecords);
+  if (appendices.length > 0) {
+    output.capitalGains = appendices;
+  }
   for (const key of MAIN_INPUT_KEYS) {
     const value = main.values[key];
     const codes = ENUM_INPUTS[key];
@@ -324,12 +363,13 @@ export function denormalize(report: NormalizedReport): Report1214Input {
   if (positions.length > 0) {
     setKey(output, REPORTABLE_POSITIONS, positions);
   }
-  // 833 = yes is read back as hasCapitalGainsAppendix only when untransmitted appendices do not
-  // already explain it (SPEC §7.3, §7.4); the model has no capital-gains appendices yet (G1).
+  // 833 = yes is read back as hasCapitalGainsAppendix only when neither untransmitted appendices
+  // nor capital-gains records already explain it (SPEC §7.3, §7.4).
   const untransmitted = main.values['capitalGainsSummary.untransmittedCount'];
   if (
     main.values['declarations.hasCapitalGainsAppendix'] === true &&
-    !(typeof untransmitted === 'number' && untransmitted > 0)
+    !(typeof untransmitted === 'number' && untransmitted > 0) &&
+    appendixRecords.length === 0
   ) {
     setKey(output, 'declarations.hasCapitalGainsAppendix', true);
   }

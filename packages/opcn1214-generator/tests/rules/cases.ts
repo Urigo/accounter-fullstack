@@ -17,6 +17,8 @@ import {
   rdInvestments,
   rdInvestmentsTotal,
   relatedCompanies,
+  section6Appendices,
+  section6Appendix,
 } from '../fixtures/builders.js';
 import {
   dropLine,
@@ -414,6 +416,46 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
       }),
     path: 'capitalGainsSummary.untransmittedCount',
   },
+  'main.capitalGains.flag': {
+    kind: 'input',
+    // 833 is derived as yes, so the explicit false exists only in the input (a normalizer notice).
+    fail: () =>
+      minimalInput({
+        declarations: { hasCapitalGainsAppendix: false },
+        capitalGains: [section6Appendix()],
+      }),
+    pass: () =>
+      minimalInput({
+        declarations: { hasCapitalGainsAppendix: true },
+        capitalGains: [section6Appendix()],
+      }),
+    path: 'declarations.hasCapitalGainsAppendix',
+  },
+  'main.appendixTotal.min': {
+    kind: 'input',
+    // Transmitted: the foreign appendix (2000) and one 3063; plus one untransmitted: 3 in total.
+    fail: () =>
+      minimalInput({
+        foreignAppendix: foreignAppendix(),
+        capitalGains: [section6Appendix()],
+        capitalGainsSummary: {
+          totalAppendicesCount: 2,
+          untransmittedCount: 1,
+          reasons: { lossOrNoGain: true },
+        },
+      }),
+    pass: () =>
+      minimalInput({
+        foreignAppendix: foreignAppendix(),
+        capitalGains: [section6Appendix()],
+        capitalGainsSummary: {
+          totalAppendicesCount: 3,
+          untransmittedCount: 1,
+          reasons: { lossOrNoGain: true },
+        },
+      }),
+    path: 'capitalGainsSummary.totalAppendicesCount',
+  },
   'main.bankAccount.withNoBank': {
     kind: 'input',
     fail: () =>
@@ -579,6 +621,12 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     pass: () =>
       minimalInput({ rdInvestments: rdInvestments(5), amounts: { '165': rdInvestmentsTotal(5) } }),
     path: 'rdInvestments',
+  },
+  'struct.capitalGains.max': {
+    kind: 'input',
+    fail: () => minimalInput({ capitalGains: section6Appendices(15) }),
+    pass: () => minimalInput({ capitalGains: section6Appendices(14) }),
+    path: 'capitalGains',
   },
   'main.bankAccount.format': {
     kind: 'input',

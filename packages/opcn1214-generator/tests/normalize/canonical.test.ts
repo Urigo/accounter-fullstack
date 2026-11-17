@@ -8,6 +8,8 @@ import {
   minimalInput,
   rdInvestments,
   relatedCompanies,
+  section6Appendices,
+  section6Appendix,
 } from '../fixtures/builders.js';
 
 const TODAY = '2025-03-31';
@@ -483,6 +485,59 @@ describe('canonicalize', () => {
 
     it('leaves no foreignAppendix when the input has none', () => {
       expect(canonicalize(minimalInput(), OPTIONS)).not.toHaveProperty('foreignAppendix');
+    });
+  });
+
+  describe('capital-gains appendices (records 30xx)', () => {
+    it('keeps canonical appendices as they are, in input order within a type', () => {
+      const appendices = section6Appendices(3);
+      expect(
+        canonicalize(minimalInput({ capitalGains: appendices }), OPTIONS).capitalGains,
+      ).toEqual(appendices);
+    });
+
+    it('rounds, drops zero header amounts and zero codes, keeps a "no" foreign asset', () => {
+      const result = canonicalize(
+        minimalInput({
+          capitalGains: [
+            { symbol: 63, foreignAsset: false, lossesCarriedForward: 0, amounts: {} },
+            section6Appendix({ lossesCarriedForward: 0.4, amounts: { '022': 2.5, '023': 0.4 } }),
+          ],
+        }),
+        { ...OPTIONS, rounding: 'halfUp' },
+      );
+      expect(result.capitalGains).toEqual([
+        { symbol: 63, foreignAsset: false, amounts: {} },
+        { symbol: 63, foreignAsset: true, amounts: { '022': 3, '056': 3000 } },
+      ]);
+    });
+
+    it('removes an empty list, as the parser reads a report without capital-gains records', () => {
+      expect(canonicalize(minimalInput({ capitalGains: [] }), OPTIONS)).not.toHaveProperty(
+        'capitalGains',
+      );
+    });
+
+    it.each([true, false])(
+      'drops hasCapitalGainsAppendix %s when appendices already make 833 = yes',
+      hasCapitalGainsAppendix => {
+        const result = canonicalize(
+          minimalInput({
+            declarations: { hasCapitalGainsAppendix },
+            capitalGains: [section6Appendix()],
+          }),
+          OPTIONS,
+        );
+        expect(result.declarations).not.toHaveProperty('hasCapitalGainsAppendix');
+      },
+    );
+
+    it('keeps hasCapitalGainsAppendix true with an empty list', () => {
+      const result = canonicalize(
+        minimalInput({ declarations: { hasCapitalGainsAppendix: true }, capitalGains: [] }),
+        OPTIONS,
+      );
+      expect(result.declarations.hasCapitalGainsAppendix).toBe(true);
     });
   });
 

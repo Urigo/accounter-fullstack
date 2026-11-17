@@ -5,6 +5,7 @@
  */
 import { z } from 'zod';
 import {
+  CAPITAL_GAINS_CODES,
   COUNTRY_BREAKDOWN_CODES,
   FOREIGN_APPENDIX_CODES,
   MAIN_FORM_INPUT_CODES,
@@ -158,6 +159,17 @@ const foreignAppendix = z.strictObject({
     .optional(),
 });
 
+/** Record 3063 (SPEC §7.2). */
+const section6SecuritiesAppendix = z.strictObject({
+  symbol: z.literal(63),
+  foreignAsset: z.boolean().optional(),
+  lossesCarriedForward: z.number().optional(),
+  amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[63]), z.number().optional()),
+});
+
+/** A capital-gains appendix, discriminated by its transaction symbol (SPEC §3.7). */
+const capitalGainsAppendix = z.discriminatedUnion('symbol', [section6SecuritiesAppendix]);
+
 const shareholder = z.strictObject({
   idNumber: z.string(),
   fullName: z.string(),
@@ -198,6 +210,8 @@ export const report1214InputSchema = z.strictObject({
   /** Any length: struct.rdInvestments.max reports more than five. */
   rdInvestments: z.array(rdInvestment).optional(),
   foreignAppendix: foreignAppendix.optional(),
+  /** Any length: struct.capitalGains.max reports more than fourteen. */
+  capitalGains: z.array(capitalGainsAppendix).optional(),
 });
 
 /** The input schema of `taxYear` (SPEC §9.2: the schema is per year). */
