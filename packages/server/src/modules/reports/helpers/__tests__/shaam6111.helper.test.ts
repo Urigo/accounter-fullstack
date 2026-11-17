@@ -36,6 +36,7 @@ const IRS_CODES = new Map<string, number>([
   ['salaries', 3511],
   ['gifts', 3625],
   ['current-taxes', 5610],
+  ['bank-fees', 5010],
 ]);
 
 const LEDGER = [
@@ -44,6 +45,8 @@ const LEDGER = [
   entry('salaries', 'bank', 3000),
   entry('gifts', 'bank', 200),
   entry('current-taxes', 'accrued-expenses', 400),
+  // financing expenses: 6666 subtracts 5000 (rule 3.1) on both the server and the generator side
+  entry('bank-fees', 'bank', 100),
 ];
 
 function buildReport(): Shaam6111Data {
@@ -55,7 +58,7 @@ function buildReport(): Shaam6111Data {
     retainedProfitFromProfitAndLoss(profitAndLoss),
   );
   const taxAdjustment = buildTaxAdjustmentEntries({
-    profitBeforeTax: 1800,
+    profitBeforeTax: 1700,
     researchAndDevelopmentAddBack: 0,
     researchAndDevelopmentForTax: 0,
     fines: 0,
@@ -64,7 +67,7 @@ function buildReport(): Shaam6111Data {
     salaryExcessExpenses: 0,
     reserves: 0,
     nontaxableLinkage: 0,
-    taxableIncome: 2000,
+    taxableIncome: 1900,
     hasPreferredTaxRate: false,
   });
   return {
@@ -116,7 +119,9 @@ describe('SHAAM 6111 report validation', () => {
     expect(parsed.profitAndLoss).toEqual(fileData.profitAndLoss);
     expect(parsed.taxAdjustment).toEqual(fileData.taxAdjustment);
     expect(parsed.balanceSheet).toEqual(fileData.balanceSheet);
-    expect(parsed.taxAdjustment.find(e => e.code === 500)?.amount).toBe(2000);
+    expect(parsed.profitAndLoss.find(e => e.code === 5000)?.amount).toBe(100);
+    expect(parsed.profitAndLoss.find(e => e.code === 6666)?.amount).toBe(1700);
+    expect(parsed.taxAdjustment.find(e => e.code === 500)?.amount).toBe(1900);
     expect(parsed.taxAdjustment.find(e => e.code === 110)?.amount).toBe(200);
   });
 
