@@ -31,9 +31,16 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     pass: () => minimalInput({ taxYear: 2025 }),
     path: 'taxYear',
   },
+  'input.shape': {
+    kind: 'input',
+    fail: () => ({ ...minimalInput(), company: { ...minimalInput().company, faxx: '1234567' } }),
+    pass: () => minimalInput({ company: { email: undefined } }),
+    path: 'company.faxx',
+  },
   'field.required': {
     kind: 'input',
-    fail: () => minimalInput({ company: { registeredName: undefined } }),
+    // An absent required property is input.shape; empty after normalization is field.required.
+    fail: () => minimalInput({ company: { registeredName: ' ' } }),
     pass: () => minimalInput(),
     path: 'company.registeredName',
   },

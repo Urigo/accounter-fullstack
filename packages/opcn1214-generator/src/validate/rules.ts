@@ -24,6 +24,14 @@ export const RULES = [
     description: 'taxYear is not one of supportedTaxYears().',
   },
   {
+    id: 'input.shape',
+    severity: 'error',
+    source: 'derived',
+    scope: 'input',
+    description:
+      'Wrong JavaScript type, missing required property, unknown property, null, or array too long.',
+  },
+  {
     id: 'field.required',
     severity: 'error',
     source: 'spec',
