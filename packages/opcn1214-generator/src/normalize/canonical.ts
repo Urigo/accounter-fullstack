@@ -9,6 +9,7 @@ import type { FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
 import {
+  FOREIGN_APPENDIX_INPUT_KEYS,
   MAIN_INPUT_KEYS,
   RD_INVESTMENT_INPUT_KEYS,
   RELATED_COMPANY_INPUT_KEYS,
@@ -117,8 +118,8 @@ function canonicalAmounts(
  * The canonical form of a valid `input` (SPEC §8.4) under the generation `options`: meta set to
  * the values written (software name default, save date from `options.today`), text normalized,
  * digit strings padded to the field width (the bank account number to 9 digits), empty optional
- * values, empty `relatedCompanies` and `rdInvestments` lists and non-zeroAllowed zero codes
- * removed, amounts rounded per `options.rounding`. `input` is not changed.
+ * values, empty `relatedCompanies` and `rdInvestments` lists and non-zeroAllowed zero codes (of
+ * `amounts` and `foreignAppendix.amounts`) removed, amounts rounded per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
   input: Report1214Input,
@@ -129,6 +130,7 @@ export function canonicalize(
   const relatedDef = layout.records['1010'];
   const shareholderDef = layout.records['1020'];
   const rdDef = layout.records['1030'];
+  const foreignDef = layout.records['2000'];
   const { rounding } = options;
   const today = options.today ?? (() => todayInJerusalem());
   const source: InputTree = {
@@ -171,6 +173,16 @@ export function canonicalize(
       }
       return tree;
     });
+  }
+  // The 2000 record: header members as written, amounts like the 1000 amounts.
+  if (input.foreignAppendix) {
+    const appendix = input.foreignAppendix;
+    const tree: InputTree = {};
+    for (const key of FOREIGN_APPENDIX_INPUT_KEYS) {
+      setKey(tree, key, canonicalValue(fieldOf(foreignDef, key), appendix[key], rounding));
+    }
+    tree.amounts = canonicalAmounts(foreignDef, appendix.amounts, rounding);
+    output.foreignAppendix = tree;
   }
   for (const key of MAIN_INPUT_KEYS) {
     setKey(output, key, canonicalValue(fieldOf(mainDef, key), getKey(source, key), rounding));

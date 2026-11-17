@@ -122,3 +122,8 @@ export function deriveHasCapitalGainsAppendix(
     hasUntransmittedAppendices(input.capitalGainsSummary)
   );
 }
+
+/** 1000@832, has a foreign appendix (SPEC §7.4): yes exactly when `foreignAppendix` exists. */
+export function deriveHasForeignAppendix(input: Pick<Report1214Input, 'foreignAppendix'>): boolean {
+  return input.foreignAppendix !== undefined;
+}

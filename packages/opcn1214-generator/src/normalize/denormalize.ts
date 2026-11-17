@@ -1,7 +1,8 @@
 /**
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
- * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020 and 1030.
+ * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020, 1030 and
+ * 2000.
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
@@ -14,7 +15,7 @@ import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from
 /**
  * Header keys of record 1000 that are their own input path (SPEC §7.3); the enum keys hold their
  * code in the model (ENUM_INPUTS). Not listed: `taxYear`, the derived keys (832
- * `hasForeignAppendix`, 833 `declarations.hasCapitalGainsAppendix`), the declaration objects
+ * `hasForeignAppendix`, read back from the presence of record 2000; 833 `declarations.hasCapitalGainsAppendix`), the declaration objects
  * marked by a presence flag (PRESENCE_OBJECTS) and the reportable positions.
  */
 export const MAIN_INPUT_KEYS = [
@@ -101,6 +102,18 @@ export const RD_INVESTMENT_INPUT_KEYS = [
   'investmentAmount',
 ] as const;
 
+/** Header keys of record 2000, the members of the foreign appendix besides `amounts`. */
+export const FOREIGN_APPENDIX_INPUT_KEYS = [
+  'otherTaxableIncomeDescription',
+  'otherTaxableIncome',
+  'foreignTaxPaidOnOtherIncome',
+  'totalForeignTaxableIncome',
+  'totalForeignLoss',
+  'participationExemptionHoldingCompany',
+  'taxRefundDeclaration',
+  'taxRefundDeclarationAmount',
+] as const;
+
 /** Header keys of record 1020 that are properties of a shareholder (`serialNumber` is derived). */
 export const SHAREHOLDER_INPUT_KEYS = [
   'idNumber',
@@ -162,6 +175,16 @@ function rdInvestment(record: NormalizedRecord): InputTree {
   for (const key of RD_INVESTMENT_INPUT_KEYS) {
     setKey(tree, key, record.values[key]);
   }
+  return tree;
+}
+
+function foreignAppendix(record: NormalizedRecord): InputTree {
+  const tree: InputTree = {};
+  for (const key of FOREIGN_APPENDIX_INPUT_KEYS) {
+    setKey(tree, key, record.values[key]);
+  }
+  // No code of record 2000 is derived (SPEC §7.4).
+  tree.amounts = Object.fromEntries(record.codes);
   return tree;
 }
 
@@ -239,6 +262,11 @@ export function denormalize(report: NormalizedReport): Report1214Input {
   const rd = report.records.filter(record => record.recordType === '1030');
   if (rd.length > 0) {
     output.rdInvestments = rd.map(rdInvestment);
+  }
+  // The appendix exists exactly when a 2000 record does; whether 832 agrees is checked by H1.
+  const foreign = report.records.find(record => record.recordType === '2000');
+  if (foreign) {
+    output.foreignAppendix = foreignAppendix(foreign);
   }
   for (const key of MAIN_INPUT_KEYS) {
     const value = main.values[key];

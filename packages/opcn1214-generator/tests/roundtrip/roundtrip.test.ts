@@ -9,8 +9,10 @@ import {
   type GenerateOptions,
   type Report1214Input,
 } from '../../src/index.js';
+import { FOREIGN_APPENDIX_CODES } from '../../src/model/codes.generated.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  foreignAppendix,
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
@@ -236,11 +238,54 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     OPTIONS,
   ],
   [
+    'a foreign appendix with every header member',
+    minimalInput({ foreignAppendix: foreignAppendix() }),
+    OPTIONS,
+  ],
+  [
+    'a foreign appendix with only the refund declaration (no) and no codes',
+    minimalInput({ foreignAppendix: { taxRefundDeclaration: false, amounts: {} } }),
+    OPTIONS,
+  ],
+  [
+    'a foreign appendix with every code, 442 = 0, zero codes and zero header amounts',
+    minimalInput({
+      foreignAppendix: {
+        otherTaxableIncomeDescription: '  הכנסה\u00A0 אחרת ',
+        otherTaxableIncome: 1,
+        totalForeignLoss: 0,
+        taxRefundDeclaration: false,
+        taxRefundDeclarationAmount: 0,
+        amounts: {
+          ...Object.fromEntries(FOREIGN_APPENDIX_CODES.map((code, index) => [code, index + 1])),
+          '401': 0,
+          '442': 0,
+          '494': 999_999_999_999,
+        },
+      },
+    }),
+    OPTIONS,
+  ],
+  [
+    'every record type of E and F: related companies, R&D investments and a foreign appendix',
+    fullMainInput({
+      relatedCompanies: relatedCompanies(3),
+      rdInvestments: rdInvestments(5),
+      amounts: { '165': rdInvestmentsTotal(5) },
+      foreignAppendix: foreignAppendix(),
+    }),
+    OPTIONS,
+  ],
+  [
     'amounts rounded half up',
     minimalInput({
       amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },
       otherTaxableIncome: { amount: 99.5 },
       qualifyingCompany: { foreignPurchaseAmount: 0.4, amortizationAmount: 0.4 },
+      foreignAppendix: foreignAppendix({
+        otherTaxableIncome: 0.5,
+        amounts: { '401': 0.4, '403': 2.5, '442': 0.4 },
+      }),
     }),
     { ...OPTIONS, rounding: 'halfUp' },
   ],

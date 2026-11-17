@@ -7,6 +7,7 @@ import type { YearLayout } from '../layout/types.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedReport } from '../model/normalized.js';
 import type { ValidateOptions } from '../model/options.js';
+import { normalizeForeignAppendix } from './foreign.js';
 import { normalizeMain } from './main.js';
 import { normalizeRdInvestments } from './rd-investments.js';
 import { normalizeRelatedCompanies } from './related-companies.js';
@@ -22,11 +23,15 @@ export function normalizeReport(
   options: ValidateOptions = {},
 ): NormalizedReport {
   const main = normalizeMain(input, layout, options);
+  const foreign = input.foreignAppendix
+    ? normalizeForeignAppendix(input.foreignAppendix, layout, options)
+    : undefined;
   const records = [
     main.record,
     ...normalizeRelatedCompanies(input.relatedCompanies ?? [], layout, options),
     ...normalizeShareholders(input.shareholders, layout, options),
     ...normalizeRdInvestments(input.rdInvestments ?? [], layout, options),
+    ...(foreign ? [foreign.record] : []),
   ];
   // Stable: records of one type keep their input order.
   records.sort((a, b) => layout.records[a.recordType].order - layout.records[b.recordType].order);
@@ -35,10 +40,13 @@ export function normalizeReport(
     layout,
     records,
     notices: main.notices,
-    omittedZeroCodes: main.omittedZeroCodes.map(code => ({
-      record: '1000',
-      recordIndex: 0,
-      code,
-    })),
+    omittedZeroCodes: [
+      ...main.omittedZeroCodes.map(code => ({ record: '1000' as const, recordIndex: 0, code })),
+      ...(foreign?.omittedZeroCodes ?? []).map(code => ({
+        record: '2000' as const,
+        recordIndex: 0,
+        code,
+      })),
+    ],
   };
 }

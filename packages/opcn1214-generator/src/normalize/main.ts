@@ -13,12 +13,13 @@ import {
   deriveCode273,
   deriveCode297,
   deriveHasCapitalGainsAppendix,
+  deriveHasForeignAppendix,
   malformedBankAccountMembers,
   type BankAccount,
 } from './derive.js';
 import { CONSOLIDATED_REPORT_CODES, enumCode, FORM_6111_OBLIGATION_CODES } from './enums.js';
-import { headerValues, roundAmount } from './fields.js';
-import { codeKey, pathFor, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
+import { codeSection, headerValues } from './fields.js';
+import { REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
 import { phonePrefix } from './phone.js';
 import { todayInJerusalem } from './today.js';
 
@@ -147,8 +148,7 @@ export function normalizeMain(
       'preparer.address': preparer?.address,
       'preparer.phone.prefix': prefix('preparer.phone.prefix', preparer?.phone?.prefix),
       'preparer.phone.number': preparer?.phone?.number,
-      // 832 (SPEC §7.4): the model has no foreign appendix yet.
-      hasForeignAppendix: false,
+      hasForeignAppendix: deriveHasForeignAppendix(input),
       'declarations.hasCapitalGainsAppendix': deriveHasCapitalGainsAppendix(input),
       'declarations.form6111Obligation': enumCode(
         FORM_6111_OBLIGATION_CODES,
@@ -232,27 +232,19 @@ export function normalizeMain(
     '280': bank['280'],
     '297': deriveCode297(declarations),
   };
-  const derivedValues: Readonly<Partial<Record<string, number>>> = derivedCodes;
-  const amounts: Readonly<Partial<Record<string, number>>> = input.amounts;
-  const codes = new Map<string, number>();
-  const omittedZeroCodes: string[] = [];
-  for (const { code, derived, kind, zeroAllowed } of def.codes) {
-    const input = derived ? derivedValues[code] : amounts[code];
-    if (input === undefined) {
-      continue;
-    }
-    const value = roundAmount(kind, input, options.rounding);
-    if (value === 0 && !zeroAllowed) {
-      omittedZeroCodes.push(code);
-      continue;
-    }
-    codes.set(code, value);
-    paths[codeKey(code)] = pathFor('1000', 0, codeKey(code));
-  }
+  // Derived codes come from derivedCodes only, never from input.amounts (SPEC §7.4).
+  const section = codeSection(def, 0, { ...input.amounts, ...derivedCodes }, options.rounding);
 
   return {
-    record: { recordType: '1000', index: 0, values, codes, countries: [], paths },
-    omittedZeroCodes,
+    record: {
+      recordType: '1000',
+      index: 0,
+      values,
+      codes: section.codes,
+      countries: [],
+      paths: { ...paths, ...section.paths },
+    },
+    omittedZeroCodes: section.omittedZeroCodes,
     notices,
   };
 }

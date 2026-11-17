@@ -139,10 +139,14 @@ function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: un
   return { issues, value: kept };
 }
 
+/** The foreign appendix has no derived codes (SPEC §7.4). */
+const NO_DERIVED_CODES: Readonly<Partial<Record<string, readonly string[]>>> = {};
+
 /**
  * The code maps of `input` scanned (scanCodeMap): their issues, and a shallow copy of `input` with
- * the reported keys removed. Record 1000 `amounts` today; the foreign appendix (F1) and the
- * capital-gains appendices (G1) add theirs.
+ * the reported keys removed. Record 1000 `amounts` and, when `foreignAppendix` is an object, its
+ * `amounts` (record 2000); the capital-gains appendices (G1) add theirs. Anything that is not a
+ * plain object is left to zod.
  */
 function scanCodeMaps(input: unknown, layout: YearLayout): { issues: Issue[]; input: unknown } {
   if (!isPlainObject(input)) {
@@ -155,7 +159,21 @@ function scanCodeMaps(input: unknown, layout: YearLayout): { issues: Issue[]; in
     recordIndex: 0,
     derivedSources: DERIVED_MAIN_CODE_SOURCES,
   });
-  return { issues: amounts.issues, input: { ...input, amounts: amounts.value } };
+  const scanned: Record<string, unknown> = { ...input, amounts: amounts.value };
+  const issues = [...amounts.issues];
+  const appendix = input.foreignAppendix;
+  if (isPlainObject(appendix)) {
+    const foreign = scanCodeMap(appendix.amounts, {
+      path: 'foreignAppendix.amounts',
+      taxYear: layout.taxYear,
+      record: layout.records['2000'],
+      recordIndex: 0,
+      derivedSources: NO_DERIVED_CODES,
+    });
+    issues.push(...foreign.issues);
+    scanned.foreignAppendix = { ...appendix, amounts: foreign.value };
+  }
+  return { issues, input: scanned };
 }
 
 /**
