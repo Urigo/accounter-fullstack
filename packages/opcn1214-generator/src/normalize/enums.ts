@@ -51,7 +51,7 @@ export const WITHHOLDING_STATUS_CODES = {
   notWithheldSecondHalf: 3,
 } as const satisfies EnumCodes<WithholdingStatus>;
 
-/** 3027@193 and 3051@192 "מקום הנכס": 1 abroad, 2 Israel. */
+/** 3027@193, 3051@192 and 3077@193 "מקום הנכס": 1 abroad, 2 Israel. */
 export const ASSET_LOCATION_CODES = {
   abroad: 1,
   israel: 2,

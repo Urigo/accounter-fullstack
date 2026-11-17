@@ -2,8 +2,7 @@
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
  * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020, 1030,
- * 2000, 2200 and the capital-gains records of the modelled appendix types (3027, 3050, 3051, 3054,
- * 3060, 3063, 3064, 3065, 3066).
+ * 2000, 2200 and the capital-gains records of all ten appendix types (3027 … 3077).
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
@@ -17,6 +16,12 @@ import {
   hasWithholders,
   type CapitalGainsInputSymbol,
 } from './capital-gains/index.js';
+import {
+  improvementCode,
+  improvementKey,
+  improvementSlotOfCode,
+  readImprovements,
+} from './capital-gains/other.js';
 import { readWithholders, withholderKey } from './capital-gains/securities.js';
 import { BANK_ACCOUNT_DIGITS, CODE_297_VALUES, type BankAccount } from './derive.js';
 import {
@@ -237,27 +242,27 @@ function foreignAppendix(
   return tree;
 }
 
-/** The transaction symbol of a capital-gains record type with an input model, else undefined. */
-function inputSymbol(record: NormalizedRecord): CapitalGainsInputSymbol | undefined {
+/** The transaction symbol of a capital-gains record (30xx → xx). */
+function inputSymbol(record: NormalizedRecord): CapitalGainsInputSymbol {
   const symbol = Number(record.recordType.slice(2));
-  return Object.hasOwn(CAPITAL_GAINS_INPUT_KEYS, symbol)
-    ? (symbol as CapitalGainsInputSymbol)
-    : undefined;
+  if (!Object.hasOwn(CAPITAL_GAINS_INPUT_KEYS, symbol)) {
+    throw new Opcn1214InternalError(`Record ${record.recordType} is not a capital-gains record`);
+  }
+  return symbol as CapitalGainsInputSymbol;
 }
 
 /**
- * The capital-gains appendices of the 30xx `records` whose type has an input model, in file
- * order: the symbol of the record type, the header members (the withholding status and asset
- * location as their literals, dates under `dates`), the withholders (readWithholders), the wallet
- * addresses (readWalletAddresses) and the amounts (the transaction symbol, appendix number and
- * "מספר בתל"ם" sequence are derived).
+ * The capital-gains appendices of the 30xx `records`, in file order: the symbol of the record
+ * type, the header members (the withholding status and asset location as their literals, dates
+ * under `dates`, the replacement asset under `replacementAsset`), the withholders
+ * (readWithholders), the wallet addresses (readWalletAddresses), the improvements of 3077
+ * (readImprovements, each with the code-50 amount of its code 501–505) and the input amounts (the
+ * transaction symbol, appendix number, improvement count, "מספר בתל"ם" sequence and codes 501–505
+ * are derived).
  */
 function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
-  return records.flatMap(record => {
+  return records.map(record => {
     const symbol = inputSymbol(record);
-    if (symbol === undefined) {
-      return [];
-    }
     const tree: InputTree = { symbol };
     for (const key of CAPITAL_GAINS_INPUT_KEYS[symbol]) {
       const value = record.values[key];
@@ -276,9 +281,24 @@ function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
     if (walletAddresses) {
       tree.walletAddresses = walletAddresses;
     }
-    // No code of the modelled appendix types is derived (SPEC §7.4; 3077 codes 501–505 are, G5).
-    tree.amounts = Object.fromEntries(record.codes);
-    return [tree];
+    const improvements =
+      symbol === 77
+        ? readImprovements((slot, member) =>
+            member === 'code50Amount'
+              ? record.codes.get(improvementCode(slot))
+              : record.values[improvementKey(slot, member)],
+          )
+        : undefined;
+    if (improvements) {
+      tree.improvements = improvements;
+    }
+    // Codes 501–505 of 3077 are read back as the improvements' code-50 amounts.
+    tree.amounts = Object.fromEntries(
+      [...record.codes].filter(
+        ([code]) => symbol !== 77 || improvementSlotOfCode(code) === undefined,
+      ),
+    );
+    return tree;
   });
 }
 

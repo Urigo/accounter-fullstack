@@ -29,6 +29,7 @@ import type {
   NoWithholding1322Appendix,
   NoWithholding1326Appendix,
   OilPartnershipAppendix,
+  OtherTransactionsAppendix,
   ParseOptions,
   ParseResult,
   Phone,
@@ -107,8 +108,45 @@ describe('public API', () => {
     expectTypeOf<BettermentTaxAppendix>().toExtend<CapitalGainsAppendix>();
     expectTypeOf<ForcedVirtualCurrencyAppendix>().toExtend<CapitalGainsAppendix>();
     expectTypeOf<OilPartnershipAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<OtherTransactionsAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<CapitalGainsAppendix['symbol']>().toEqualTypeOf<CapitalGainsSymbol>();
     expectTypeOf<CapitalGainsAppendix['symbol']>().toEqualTypeOf<
-      27 | 50 | 51 | 54 | 60 | 63 | 64 | 65 | 66
+      27 | 50 | 51 | 54 | 60 | 63 | 64 | 65 | 66 | 77
+    >();
+    expectTypeOf<keyof OtherTransactionsAppendix['amounts']>().toEqualTypeOf<
+      Exclude<CapitalGainsCode<77>, '501' | '502' | '503' | '504' | '505'>
+    >();
+    expectTypeOf<OtherTransactionsAppendix['dates']>().toEqualTypeOf<{
+      code15: IsoDate;
+      code20: IsoDate;
+    }>();
+    expectTypeOf<OtherTransactionsAppendix['improvements']>().toEqualTypeOf<
+      | Array<{
+          expense?: number;
+          accumulatedDepreciation?: number;
+          date: IsoDate;
+          code50Amount?: number;
+        }>
+      | undefined
+    >();
+    expectTypeOf<OtherTransactionsAppendix['replacementAsset']>().toEqualTypeOf<
+      { details?: string; purchaseDate?: IsoDate; price?: number } | undefined
+    >();
+    expectTypeOf<OtherTransactionsAppendix['walletAddresses']>().toEqualTypeOf<
+      [string] | [string, string] | undefined
+    >();
+    expectTypeOf<keyof OtherTransactionsAppendix>().toEqualTypeOf<
+      | 'symbol'
+      | 'expropriation'
+      | 'assetDetails'
+      | 'assetLocation'
+      | 'relatedParty'
+      | 'buyerName'
+      | 'dates'
+      | 'improvements'
+      | 'replacementAsset'
+      | 'walletAddresses'
+      | 'amounts'
     >();
     expectTypeOf<keyof SharesAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<27>>();
     expectTypeOf<keyof BettermentTaxAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<50>>();

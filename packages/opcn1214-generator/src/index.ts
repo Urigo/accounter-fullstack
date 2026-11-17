@@ -39,6 +39,7 @@ export type {
   NoWithholding1322Appendix,
   NoWithholding1326Appendix,
   OilPartnershipAppendix,
+  OtherTransactionsAppendix,
   Phone,
   PhonePrefix,
   PreparerDetails,
