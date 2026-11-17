@@ -226,7 +226,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.20.0"
     pino-pretty: "npm:13.2.0"
-    puppeteer: "npm:25.17.0"
+    puppeteer: "npm:25.18.0"
   languageName: unknown
   linkType: soft
 
@@ -276,7 +276,7 @@ __metadata:
     node-xlsx: "npm:0.25.0"
     nodemon: "npm:3.1.14"
     playwright: "npm:1.65.1"
-    puppeteer: "npm:25.17.0"
+    puppeteer: "npm:25.18.0"
     puppeteer-extra: "npm:3.3.6"
     puppeteer-extra-plugin-stealth: "npm:2.11.2"
     typescript: "npm:6.0.3"
@@ -21730,9 +21730,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer-core@npm:25.17.0":
-  version: 25.17.0
-  resolution: "puppeteer-core@npm:25.17.0"
+"puppeteer-core@npm:25.18.0":
+  version: 25.18.0
+  resolution: "puppeteer-core@npm:25.18.0"
   dependencies:
     "@puppeteer/browsers": "npm:3.2.7"
     chromium-bidi: "npm:157.0.8090-0"
@@ -21740,7 +21740,7 @@ __metadata:
     typed-query-selector: "npm:^2.12.3"
     webdriver-bidi-protocol: "npm:1.0.2"
     ws: "npm:^8.22.1"
-  checksum: 10c0/aa29a690968acd39f2d50c6f85319c553baa1b985209b8dc9938f861b50a90182b7a048ba7d03eb1528cfe1f4adcdd44b6c2485fd99dcf2e0f0c1bc5fa292969
+  checksum: 10c0/f9dfe06c75b4302cdcceb764a57b0381456c814032e0de48b3576053e1cfe9b0a3a4af54fa8315e0168abd5d125ebd4d0c42da2196e0b6f2fa4d204fb1c2e8aa
   languageName: node
   linkType: hard
 
@@ -21844,19 +21844,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:*, puppeteer@npm:25.17.0":
-  version: 25.17.0
-  resolution: "puppeteer@npm:25.17.0"
+"puppeteer@npm:*, puppeteer@npm:25.18.0":
+  version: 25.18.0
+  resolution: "puppeteer@npm:25.18.0"
   dependencies:
     "@puppeteer/browsers": "npm:3.2.7"
     chromium-bidi: "npm:157.0.8090-0"
     devtools-protocol: "npm:0.0.1717327"
     lilconfig: "npm:^3.1.4"
-    puppeteer-core: "npm:25.17.0"
+    puppeteer-core: "npm:25.18.0"
     typed-query-selector: "npm:^2.12.3"
   bin:
     puppeteer: lib/puppeteer/node/cli.js
-  checksum: 10c0/5e3c4f39d0f24a026a796adca4f545e72e2a4b487ee137b2599e460683d5dc4e59a8daa6a371136d4d0f0d5ed83f6c77a67f9f01f326b36cae5af02c9e0c0110
+  checksum: 10c0/168aed51faaa5bd8a83d0c2b97776317a472b4d5f2194302e9cdd1ab7d53bf1ba57c47f69310ce129177a70d84e5495b26566aa2a105573a821678f45bc494ce
   languageName: node
   linkType: hard
 
