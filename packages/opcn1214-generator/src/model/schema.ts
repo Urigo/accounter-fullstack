@@ -1,0 +1,74 @@
+/**
+ * Strict zod schemas of the public input (SPEC §7, §9.2 stage 2), mirroring `input.ts`. They check
+ * JavaScript shape only: digit strings, phone prefixes and (later) country codes are plain strings
+ * and dates only need the ISO form, so the semantic field rules stay reachable for untyped callers.
+ */
+import { z } from 'zod';
+import { MAIN_FORM_INPUT_CODES } from './codes.generated.js';
+import type { SupportedTaxYear } from './input.js';
+
+/** `YYYY-MM-DD`; calendar validity is checked by field.date. */
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected an ISO date (YYYY-MM-DD)');
+
+/** Any string: field.phonePrefix reports a prefix outside the allowed list. */
+const phone = z.strictObject({
+  prefix: z.string(),
+  number: z.string(),
+});
+
+const company = z.strictObject({
+  fileNumber: z.string(),
+  registeredName: z.string(),
+  withholdingFileNumber: z.string().optional(),
+  vatFileNumber: z.string().optional(),
+  occupationDescription: z.string().optional(),
+  mailingAddress: z.string(),
+  businessAddress: z.string(),
+  booksAddress: z.string().optional(),
+  email: z.string().optional(),
+  phone,
+  fax: phone.optional(),
+});
+
+const declarations = z.strictObject({
+  hasTaxPlanningAction: z.boolean(),
+  hadRelatedPartyTransactions: z.boolean(),
+  controlsBodyOfPersons: z.boolean(),
+  holdsRightsInBodyOfPersons: z.boolean(),
+  appliesAccountingStandards: z.boolean(),
+  directorsReceivedOpinion: z.boolean(),
+  tookReportablePosition: z.boolean(),
+});
+
+const shareholder = z.strictObject({
+  idNumber: z.string(),
+  fullName: z.string(),
+  isControllingShareholder: z.boolean(),
+  dividendRightsPercent: z.number().optional(),
+  votingRightsPercent: z.number().optional(),
+  otherRightsPercent: z.number().optional(),
+  isMaterialShareholder: z.boolean().optional(),
+  salaryMonths1To9: z.number().optional(),
+  salaryMonths10To12: z.number().optional(),
+  otherPayments: z.number().optional(),
+});
+
+/** The schema of a `Report1214Input` (SPEC §7.2); one schema serves every supported year today. */
+export const report1214InputSchema = z.strictObject({
+  taxYear: z.literal([2024, 2025]),
+  meta: z
+    .strictObject({
+      softwareName: z.string().optional(),
+      saveDate: isoDate.optional(),
+    })
+    .optional(),
+  company,
+  declarations,
+  amounts: z.partialRecord(z.enum(MAIN_FORM_INPUT_CODES), z.number().optional()),
+  shareholders: z.array(shareholder),
+});
+
+/** The input schema of `taxYear` (SPEC §9.2: the schema is per year). */
+export function schemaFor(_taxYear: SupportedTaxYear): typeof report1214InputSchema {
+  return report1214InputSchema;
+}

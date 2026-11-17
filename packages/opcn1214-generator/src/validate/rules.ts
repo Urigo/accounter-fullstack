@@ -32,6 +32,14 @@ export const RULES = [
       "taxYear has no SHAAM layout of its own yet and reuses an earlier year's layout (2025 → 2024, SPEC §14): the report is provisional.",
   },
   {
+    id: 'input.shape',
+    severity: 'error',
+    source: 'derived',
+    scope: 'input',
+    description:
+      'Wrong JavaScript type, missing required property, unknown property, null, or array too long.',
+  },
+  {
     id: 'field.required',
     severity: 'error',
     source: 'spec',
