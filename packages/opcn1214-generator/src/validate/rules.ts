@@ -37,7 +37,7 @@ export const RULES = [
     source: 'spec',
     scope: 'input',
     description:
-      'A code-map key (amounts, foreignAppendix.amounts) that is not a code of that record for the tax year.',
+      'A code-map key (amounts, foreignAppendix.amounts) that is not a code of that record for the tax year, or a foreignAppendix.countryBreakdown key that is not a per-country code of record 2000.',
     specRef: { page: 13 },
   },
   {
@@ -423,6 +423,63 @@ export const RULES = [
     specRef: { page: 26 },
   },
   {
+    id: 'foreign.breakdown.required',
+    severity: 'error',
+    source: 'spec',
+    scope: '2000',
+    description:
+      'A per-country code written in the 2000 section (442 = 0 included) without a countryBreakdown entry (record 2200).',
+    specRef: { page: 27 },
+  },
+  {
+    id: 'foreign.breakdown.orphan',
+    severity: 'error',
+    source: 'spec',
+    scope: '2200',
+    description: 'A countryBreakdown entry for a code not written in the 2000 section.',
+    specRef: { page: 30 },
+  },
+  {
+    id: 'foreign.breakdown.countries.min',
+    severity: 'error',
+    source: 'derived',
+    scope: '2200',
+    description: 'A country breakdown with no countries.',
+    specRef: { page: 31 },
+  },
+  {
+    id: 'foreign.breakdown.countries.max',
+    severity: 'error',
+    source: 'spec',
+    scope: '2200',
+    description: 'More than 10 countries in one country breakdown.',
+    specRef: { page: 30 },
+  },
+  {
+    id: 'foreign.breakdown.country.unknown',
+    severity: 'error',
+    source: 'spec',
+    scope: '2200',
+    description: 'A country code that is not in the country table of the tax year (countries.csv).',
+    specRef: { page: 32 },
+  },
+  {
+    id: 'foreign.breakdown.country.unknownOnlyFor439',
+    severity: 'error',
+    source: 'spec',
+    scope: '2200',
+    description:
+      'The country code -88 (country unknown) in the breakdown of a code other than 439.',
+    specRef: { page: 32 },
+  },
+  {
+    id: 'foreign.breakdown.country.duplicate',
+    severity: 'warning',
+    source: 'derived',
+    scope: '2200',
+    description: 'The same country twice within one country breakdown.',
+  },
+  {
     id: 'parse.empty',
     severity: 'error',
     source: 'derived',
@@ -475,7 +532,7 @@ export const RULES = [
     source: 'spec',
     scope: 'parse',
     description:
-      'A record out of the SPEC §3.3 order (the file must start with 1000), or a second 1000 before a 9999.',
+      'A record out of the SPEC §3.3 order (the file must start with 1000; a 2200 record must follow a 2000 record), or a second 1000 before a 9999.',
   },
   {
     id: 'parse.control.missing',
@@ -523,7 +580,16 @@ export const RULES = [
     source: 'spec',
     scope: 'parse',
     description:
-      'A header field that is well-formed for its type but not a value the field can hold: flag or yes/no digits other than the ones written, a phone prefix outside the allowed list.',
+      'A header field that is well-formed for its type but not a value the field can hold: flag or yes/no digits other than the ones written, a phone prefix outside the allowed list, a 2200 code (2200@137) that is not a per-country code of record 2000 or that an earlier 2200 record already has.',
+  },
+  {
+    id: 'parse.countrySection',
+    severity: 'error',
+    source: 'spec',
+    scope: 'parse',
+    description:
+      'A country-amount section (record 2200) with an affiliation other than 1, a malformed country code, a truncated entry, more than 10 entries, or non-zero data after the last entry.',
+    specRef: { page: 31 },
   },
 ] as const satisfies readonly RuleMetaInput[];
 

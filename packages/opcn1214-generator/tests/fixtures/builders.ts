@@ -3,7 +3,10 @@
  * against EVERY rule of SPEC §10 (no errors and no warnings); later steps rely on that, so any
  * change here has to keep it so.
  */
+import { COUNTRY_CODES } from '../../src/model/codes.generated.js';
 import type {
+  CountryBreakdown,
+  CountryIncome,
   ForeignAppendix,
   RdInvestment,
   RelatedCompany,
@@ -215,4 +218,31 @@ export function foreignAppendix(overrides: DeepPartial<ForeignAppendix> = {}): F
     amounts: { '401': 80_000, '425': 12_345, '494': 1 },
   };
   return deepMerge(base, overrides) as ForeignAppendix;
+}
+
+/**
+ * `count` valid countries of a breakdown (SPEC §7.2): distinct known country codes other than
+ * '-88', in table order; the i-th (0-based) earns 1000 × (i + 1).
+ */
+export function breakdownCountries(count: number): CountryIncome[] {
+  return COUNTRY_CODES.filter(country => country !== '-88')
+    .slice(0, count)
+    .map((country, index) => ({ country, income: 1000 * (index + 1) }));
+}
+
+/**
+ * `foreignAppendix()` with `code` (a per-country code) written with 5000 and broken down by
+ * `breakdown` (default: deductions 300 and two countries). `overrides` are deep-merged into it.
+ */
+export function foreignAppendixWithBreakdown(
+  code: keyof NonNullable<ForeignAppendix['countryBreakdown']>,
+  breakdown: CountryBreakdown = {
+    deductionsOffsetsAndExemptions: 300,
+    countries: breakdownCountries(2),
+  },
+  overrides: DeepPartial<ForeignAppendix> = {},
+): ForeignAppendix {
+  const appendix = foreignAppendix({ amounts: { [code]: 5000 } });
+  appendix.countryBreakdown = { [code]: breakdown };
+  return deepMerge(appendix, overrides) as ForeignAppendix;
 }

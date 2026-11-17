@@ -1,9 +1,11 @@
 import type { z } from 'zod';
+import type { CountryCode } from '../../src/model/codes.generated.js';
 import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import { report1214InputSchema, schemaFor } from '../../src/model/schema.js';
 import { checkShape, zodIssuesToIssues } from '../../src/validate/shape.js';
 import {
   foreignAppendix,
+  foreignAppendixWithBreakdown,
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
@@ -90,6 +92,41 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expect(shapePaths(input).sort()).toEqual([
       'foreignAppendix.countries',
       'foreignAppendix.taxRefundDeclaration',
+    ]);
+  });
+
+  it('accepts country breakdowns, any string as a country (foreign.breakdown.country.* check it)', () => {
+    const appendix = foreignAppendixWithBreakdown('420', {
+      deductionsOffsetsAndExemptions: 1,
+      countries: [
+        { country: '840', income: 1 },
+        { country: 'xyz' as CountryCode, income: 2 },
+      ],
+    });
+    expect(shapeIssues(minimalInput({ foreignAppendix: appendix }))).toEqual([]);
+    // Any number of countries: foreign.breakdown.countries.min / .max count them.
+    const empty = foreignAppendixWithBreakdown('420', { countries: [] });
+    expect(shapeIssues(minimalInput({ foreignAppendix: empty }))).toEqual([]);
+    const undefinedEntry = { ...foreignAppendix(), countryBreakdown: { '420': undefined } };
+    expect(shapeIssues(minimalInput({ foreignAppendix: undefinedEntry }))).toEqual([]);
+  });
+
+  it('rejects a breakdown without countries, with an unknown member, or with malformed entries', () => {
+    const input = {
+      ...minimalInput(),
+      foreignAppendix: {
+        ...foreignAppendix(),
+        countryBreakdown: {
+          '420': { deductions: 1 },
+          '439': { countries: [{ country: 840, income: 1 }, { country: '840' }] },
+        },
+      },
+    };
+    expect(shapePaths(input).sort()).toEqual([
+      'foreignAppendix.countryBreakdown["420"].countries',
+      'foreignAppendix.countryBreakdown["420"].deductions',
+      'foreignAppendix.countryBreakdown["439"].countries[0].country',
+      'foreignAppendix.countryBreakdown["439"].countries[1].income',
     ]);
   });
 
@@ -518,6 +555,42 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
           2024,
         ).map(issue => issue.path),
       ).toEqual(['foreignAppendix.amounts']);
+    });
+
+    it('reports a countryBreakdown key that is not a per-country code as input.unknownCode', () => {
+      const breakdown = { countries: [{ country: '840', income: 1 }] };
+      const input = {
+        ...minimalInput(),
+        foreignAppendix: {
+          ...foreignAppendix(),
+          countryBreakdown: { '420': breakdown, '401': breakdown, '999': breakdown },
+        },
+      };
+      expect(checkShape(input, 2024)).toEqual([
+        {
+          ruleId: 'input.unknownCode',
+          severity: 'error',
+          message: '"401" is not a per-country breakdown code of record 2000 for tax year 2024.',
+          path: 'foreignAppendix.countryBreakdown["401"]',
+          recordType: '2200',
+          code: '401',
+        },
+        expect.objectContaining({
+          ruleId: 'input.unknownCode',
+          path: 'foreignAppendix.countryBreakdown["999"]',
+        }),
+      ]);
+      // The input is not changed.
+      expect(Object.keys(input.foreignAppendix.countryBreakdown)).toEqual(['401', '420', '999']);
+    });
+
+    it('leaves a countryBreakdown that is not an object to zod', () => {
+      expect(
+        checkShape(
+          { ...minimalInput(), foreignAppendix: { ...foreignAppendix(), countryBreakdown: [] } },
+          2024,
+        ).map(issue => [issue.ruleId, issue.path]),
+      ).toEqual([['input.shape', 'foreignAppendix.countryBreakdown']]);
     });
 
     it('does not change the foreign appendix of its input', () => {

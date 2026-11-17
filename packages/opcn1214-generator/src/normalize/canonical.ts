@@ -2,13 +2,16 @@
  * Canonical form (SPEC §8.4): the input as the parser reconstructs it from the generated file, so
  * that parse1214(generate1214(x).bytes).report deep-equals canonicalize(x, options).
  */
+import { COUNTRY_INCOME_SHAPE } from '../codec/sections.js';
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
+import { countryKey } from '../layout/countries.js';
 import { getLayout } from '../layout/registry.js';
 import type { FieldDef, FieldKind, RecordDef } from '../layout/types.js';
-import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
+import { PHONE_PREFIXES, type CountryBreakdown, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
 import {
+  COUNTRY_BREAKDOWN_INPUT_KEYS,
   FOREIGN_APPENDIX_INPUT_KEYS,
   MAIN_INPUT_KEYS,
   RD_INVESTMENT_INPUT_KEYS,
@@ -95,6 +98,34 @@ function canonicalValue(
   }
 }
 
+/**
+ * The breakdowns of `breakdowns` as the parser reads their 2200 records back: deductions like any
+ * header amount, countries as their layout keys ('40' → '040'), incomes rounded (an income of 0
+ * is kept); an empty map is removed. Undefined entries are left out.
+ */
+function canonicalBreakdowns(
+  def: RecordDef,
+  breakdowns: Readonly<Partial<Record<string, CountryBreakdown>>> | undefined,
+  rounding: GenerateOptions['rounding'],
+): InputTree | undefined {
+  const output: InputTree = {};
+  for (const [code, breakdown] of Object.entries(breakdowns ?? {})) {
+    if (!breakdown) {
+      continue;
+    }
+    const tree: InputTree = {};
+    for (const key of COUNTRY_BREAKDOWN_INPUT_KEYS) {
+      setKey(tree, key, canonicalValue(fieldOf(def, key), breakdown[key], rounding));
+    }
+    tree.countries = breakdown.countries.map(({ country, income }) => ({
+      country: countryKey(country),
+      income: roundAmount(COUNTRY_INCOME_SHAPE.kind, income, rounding),
+    }));
+    output[code] = tree;
+  }
+  return Object.keys(output).length > 0 ? output : undefined;
+}
+
 function canonicalAmounts(
   def: RecordDef,
   amounts: Readonly<Partial<Record<string, number>>>,
@@ -118,8 +149,9 @@ function canonicalAmounts(
  * The canonical form of a valid `input` (SPEC §8.4) under the generation `options`: meta set to
  * the values written (software name default, save date from `options.today`), text normalized,
  * digit strings padded to the field width (the bank account number to 9 digits), empty optional
- * values, empty `relatedCompanies` and `rdInvestments` lists and non-zeroAllowed zero codes (of
- * `amounts` and `foreignAppendix.amounts`) removed, amounts rounded per `options.rounding`. `input` is not changed.
+ * values, empty `relatedCompanies` and `rdInvestments` lists, an empty `countryBreakdown` and
+ * non-zeroAllowed zero codes (of `amounts` and `foreignAppendix.amounts`) removed, country codes
+ * zero-padded, amounts rounded per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
   input: Report1214Input,
@@ -182,6 +214,11 @@ export function canonicalize(
       setKey(tree, key, canonicalValue(fieldOf(foreignDef, key), appendix[key], rounding));
     }
     tree.amounts = canonicalAmounts(foreignDef, appendix.amounts, rounding);
+    setKey(
+      tree,
+      'countryBreakdown',
+      canonicalBreakdowns(layout.records['2200'], appendix.countryBreakdown, rounding),
+    );
     output.foreignAppendix = tree;
   }
   for (const key of MAIN_INPUT_KEYS) {

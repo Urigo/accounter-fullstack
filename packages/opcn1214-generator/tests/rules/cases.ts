@@ -5,11 +5,14 @@
  */
 import { generate1214 } from '../../src/api/generate.js';
 import { getLayout } from '../../src/layout/registry.js';
+import type { CountryCode } from '../../src/model/codes.generated.js';
 import type { PhonePrefix, Report1214Input, Shareholder } from '../../src/model/input.js';
 import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import {
+  breakdownCountries,
   foreignAppendix,
+  foreignAppendixWithBreakdown,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
@@ -91,6 +94,24 @@ const beneficiaryEnterpriseInput = () =>
 /** minimalInput() with a special tax year. */
 const specialYearInput = () =>
   minimalInput({ declarations: { specialYear: { balanceSheetDate: '2024-09-30' } } });
+
+/** minimalInput() with code 420 of the foreign appendix broken down into `countries`. */
+function withCountries(
+  countries: Array<{ country: string; income: number }>,
+  code: '420' | '439' = '420',
+) {
+  return minimalInput({
+    foreignAppendix: foreignAppendixWithBreakdown(code, {
+      countries: countries.map(({ country, income }) => ({
+        country: country as CountryCode,
+        income,
+      })),
+    }),
+  });
+}
+
+/** Path of the breakdown of code 420. */
+const BREAKDOWN_420 = 'foreignAppendix.countryBreakdown["420"]';
 
 /** The `minimal` golden file text with one edit. */
 function minimalFile(edit?: Tamper): string {
@@ -472,6 +493,60 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     pass: () => minimalInput({ foreignAppendix: foreignAppendix() }),
     path: 'foreignAppendix.taxRefundDeclarationAmount',
   },
+  'foreign.breakdown.required': {
+    kind: 'input',
+    fail: () => minimalInput({ foreignAppendix: foreignAppendix({ amounts: { '420': 5000 } }) }),
+    pass: () => minimalInput({ foreignAppendix: foreignAppendixWithBreakdown('420') }),
+    path: BREAKDOWN_420,
+  },
+  'foreign.breakdown.orphan': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({
+        foreignAppendix: {
+          ...foreignAppendix(),
+          countryBreakdown: { '420': { countries: breakdownCountries(1) } },
+        },
+      }),
+    pass: () => minimalInput({ foreignAppendix: foreignAppendixWithBreakdown('420') }),
+    path: BREAKDOWN_420,
+  },
+  'foreign.breakdown.countries.min': {
+    kind: 'input',
+    fail: () => withCountries([]),
+    pass: () => withCountries(breakdownCountries(1)),
+    path: `${BREAKDOWN_420}.countries`,
+  },
+  'foreign.breakdown.countries.max': {
+    kind: 'input',
+    fail: () => withCountries(breakdownCountries(11)),
+    pass: () => withCountries(breakdownCountries(10)),
+    path: `${BREAKDOWN_420}.countries`,
+  },
+  'foreign.breakdown.country.unknown': {
+    kind: 'input',
+    // '999' is a real code (the UN); '001' is not in countries.csv.
+    fail: () => withCountries([{ country: '001', income: 5000 }]),
+    pass: () => withCountries([{ country: '999', income: 5000 }]),
+    path: `${BREAKDOWN_420}.countries[0].country`,
+  },
+  'foreign.breakdown.country.unknownOnlyFor439': {
+    kind: 'input',
+    fail: () => withCountries([{ country: '-88', income: 5000 }]),
+    pass: () => withCountries([{ country: '-88', income: 5000 }], '439'),
+    path: `${BREAKDOWN_420}.countries[0].country`,
+  },
+  'foreign.breakdown.country.duplicate': {
+    kind: 'input',
+    // '4' is written as '004', the same country.
+    fail: () =>
+      withCountries([
+        { country: '004', income: 3000 },
+        { country: '4', income: 2000 },
+      ]),
+    pass: () => withCountries(breakdownCountries(2)),
+    path: `${BREAKDOWN_420}.countries[1].country`,
+  },
   'struct.relatedCompanies.max': {
     kind: 'input',
     fail: () => minimalInput({ relatedCompanies: relatedCompanies(4) }),
@@ -590,5 +665,18 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => minimalFile({ line: 1, position: 878, value: '3' }),
     pass: () => minimalFile({ line: 1, position: 878, value: '1' }),
     path: 'declarations.hasTaxPlanningAction',
+  },
+  'parse.countrySection': {
+    kind: 'file',
+    // Line 4 is the 2200 record; 2200@187 is the affiliation of its first country entry.
+    fail: () =>
+      generatedFile(minimalInput({ foreignAppendix: foreignAppendixWithBreakdown('420') }), {
+        line: 4,
+        position: 187,
+        value: '2',
+      }),
+    pass: () =>
+      generatedFile(minimalInput({ foreignAppendix: foreignAppendixWithBreakdown('420') })),
+    path: '',
   },
 };

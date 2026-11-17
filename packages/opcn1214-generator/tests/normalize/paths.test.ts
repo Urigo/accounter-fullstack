@@ -1,6 +1,11 @@
 import { getLayout } from '../../src/layout/registry.js';
 import { DERIVED_MAIN_CODES } from '../../src/model/codes.generated.js';
-import { pathFor } from '../../src/normalize/paths.js';
+import {
+  countryEntryKey,
+  incomeEntryKey,
+  inputIndexOf,
+  pathFor,
+} from '../../src/normalize/paths.js';
 
 const LAYOUT = getLayout(2024);
 
@@ -79,7 +84,27 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     expect(pathFor('1000', 0, `code:${code}`)).toBe('');
   });
 
-  it.each(['2200', '3027', '3077'] as const)(
+  it('maps a record 2200, keyed by its 2000 code, into its breakdown (SPEC §7.3)', () => {
+    expect(pathFor('2200', 420, 'code')).toBe('foreignAppendix.countryBreakdown["420"]');
+    expect(pathFor('2200', 439, 'deductionsOffsetsAndExemptions')).toBe(
+      'foreignAppendix.countryBreakdown["439"].deductionsOffsetsAndExemptions',
+    );
+    expect(pathFor('2200', 420, countryEntryKey(2))).toBe(
+      'foreignAppendix.countryBreakdown["420"].countries[2].country',
+    );
+    expect(pathFor('2200', 420, incomeEntryKey(0))).toBe(
+      'foreignAppendix.countryBreakdown["420"].countries[0].income',
+    );
+  });
+
+  it('gives the pathFor input index of a record: its index, or the code of a 2200 record', () => {
+    const record = { index: 3, values: { code: 439 } };
+    expect(inputIndexOf({ ...record, recordType: '1020' })).toBe(3);
+    expect(inputIndexOf({ ...record, recordType: '2200' })).toBe(439);
+    expect(inputIndexOf({ ...record, recordType: '2200', values: {} })).toBe(0);
+  });
+
+  it.each(['3027', '3077'] as const)(
     'maps keys of record %s, which has no input mapping yet, to the empty path',
     recordType => {
       expect(pathFor(recordType, 0, 'anything')).toBe('');

@@ -12,3 +12,4 @@ the value below, so a golden cannot change without editing this table; a changed
 | main-full      | `157ddbc08af59ca535540bac0c45c1223b82313d6fabc8314ee2c349cf2dd9c0` | 2026-11-17   | PENDING       | Checkpoint CP-2 (after D5) |
 | kibbutz        | `fb59acc9b4d448b7766edac00e8f6d52ee12777664c01094fc3cb05926c6bc0b` | 2026-11-17   | PENDING       | Checkpoint CP-2 (after D5) |
 | related-and-rd | `68d1d649e89ae008e48833a1a14e88905fa036dd43b19029d3033037d2228690` | 2026-11-17   | PENDING       | Checkpoint CP-3            |
+| foreign        | `4ffc923fc10f39e21468c997911dda5cca4a4e257918655ae877ff0beaa7166e` | 2026-11-17   | PENDING       | Checkpoint CP-3            |

@@ -4,12 +4,20 @@
  * undecodable content) are collected for every line and thrown together as Opcn1214ParseError.
  */
 import { decodeRecord } from '../codec/record.js';
+import { COUNTRY_ENTRY_LENGTH } from '../codec/sections.js';
 import { CodecDecodeError, type CodecDecodeReason } from '../codec/types.js';
-import { Opcn1214ParseError, unsupportedTaxYearIssue } from '../errors.js';
+import { Opcn1214InternalError, Opcn1214ParseError, unsupportedTaxYearIssue } from '../errors.js';
 import { getLayout, supportedTaxYears } from '../layout/registry.js';
 import type { FieldDef, RecordDef, RecordType, YearLayout } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
-import { codeKey, pathFor } from '../normalize/paths.js';
+import {
+  BREAKDOWN_CODE_KEY,
+  codeKey,
+  countryEntryKey,
+  incomeEntryKey,
+  inputIndexOf,
+  pathFor,
+} from '../normalize/paths.js';
 import { isRecordType, makeIssue, recordRank, type Issue } from '../validate/issue.js';
 import type { RuleId } from '../validate/rules.js';
 import { controlValues } from './control.js';
@@ -185,16 +193,18 @@ function checkLine(
   return { type, decodable };
 }
 
-/** Rule of a CodecDecodeError: by reason, and for 'format' by where in the line it was raised. */
-function decodeRule(reason: CodecDecodeReason, offset: number): RuleId {
+/**
+ * Rule of a CodecDecodeError: by reason (a 'section' error by the section kind of the record of
+ * type `type`), and for 'format' by where in the line it was raised.
+ */
+function decodeRule(type: RecordType, reason: CodecDecodeReason, offset: number): RuleId {
   switch (reason) {
     case 'numeric':
       return 'parse.numeric';
     case 'date':
       return 'parse.date';
-    // Country-amount sections (2200) report here too until F2 adds parse.countrySection.
     case 'section':
-      return 'parse.codeSection';
+      return type === '2200' ? 'parse.countrySection' : 'parse.codeSection';
     case 'length':
       return 'parse.lineLength';
     case 'format':
@@ -214,6 +224,22 @@ function fieldAt(def: RecordDef, offset: number): FieldDef | undefined {
   );
 }
 
+/** 0-based offsets of 2200@137, the 2000 code of a breakdown; its input key (SPEC §7.3). */
+const BREAKDOWN_CODE = { start: 136, end: 139 } as const;
+const CODE_DIGITS = /^\d{3}$/;
+
+/**
+ * The pathFor `inputIndex` of the record of type `def.type` on `line`, before it is decoded: its
+ * index, or for a 2200 record the code at 2200@137 (undefined when that is not 3 digits).
+ */
+function lineInputIndex(def: RecordDef, line: string, recordIndex: number): number | undefined {
+  if (def.type !== '2200') {
+    return recordIndex;
+  }
+  const code = line.slice(BREAKDOWN_CODE.start, BREAKDOWN_CODE.end);
+  return CODE_DIGITS.test(code) ? Number(code) : undefined;
+}
+
 /** The parse issue of undecodable content of a record (offset within the line). */
 function decodeIssue(
   def: RecordDef,
@@ -223,26 +249,92 @@ function decodeIssue(
 ): Issue {
   const field = fieldAt(def, error.offset);
   const location = { ...at, column: error.offset + 1 };
-  const ruleId = decodeRule(error.reason, error.offset);
+  const ruleId = decodeRule(def.type, error.reason, error.offset);
+  const inputIndex = lineInputIndex(def, line, at.recordIndex);
   if (!field) {
     return parseIssue(ruleId, error.message, location);
   }
   const start = field.position - 1;
   return parseIssue(ruleId, error.message, location, {
-    path: pathFor(def.type, at.recordIndex, field.key),
+    path: inputIndex === undefined ? '' : pathFor(def.type, inputIndex, field.key),
     field: { position: field.position, length: field.length, nameHe: field.nameHe },
     value: line.slice(start, start + field.length),
   });
 }
 
-/** `record` with the input path of every value and code (emission index = input index). */
+/**
+ * `record` with the input path of every value, code and country entry (emission index = input
+ * index; a 2200 record is keyed by its code).
+ */
 function withPaths(record: NormalizedRecord): NormalizedRecord {
-  const keys = [...Object.keys(record.values), ...[...record.codes.keys()].map(codeKey)];
+  const keys = [
+    ...Object.keys(record.values),
+    ...[...record.codes.keys()].map(codeKey),
+    ...record.countries.flatMap((_, index) => [countryEntryKey(index), incomeEntryKey(index)]),
+  ];
   const paths: Record<string, string> = {};
   for (const key of keys) {
-    paths[key] = pathFor(record.recordType, record.index, key);
+    paths[key] = pathFor(record.recordType, inputIndexOf(record), key);
   }
   return { ...record, paths };
+}
+
+/**
+ * The structural issues of a decoded 2200 `record` on line `lineNumber` (SPEC §3.6): more country
+ * entries than one record holds (parse.countrySection, at the first extra entry), and a code
+ * (2200@137) that is not a per-country code of record 2000, or that an earlier 2200 record of the
+ * report already has (parse.fieldValue). `seenCodes` holds the codes of the earlier records; the
+ * record's code is added to it.
+ */
+function breakdownIssues(
+  layout: YearLayout,
+  record: NormalizedRecord,
+  lineNumber: number,
+  seenCodes: Set<string>,
+): Issue[] {
+  const def = layout.records['2200'];
+  const field = def.fields.find(candidate => candidate.key === BREAKDOWN_CODE_KEY);
+  if (!field || !def.section) {
+    throw new Opcn1214InternalError('Record 2200 has no code field or no section');
+  }
+  const at = { line: lineNumber, recordType: def.type, recordIndex: record.index };
+  const issues: Issue[] = [];
+  const max = layout.limits.countriesPerRecord;
+  if (record.countries.length > max) {
+    issues.push(
+      parseIssue(
+        'parse.countrySection',
+        `Record 2200 has ${record.countries.length} country entries; at most ${max} are allowed.`,
+        { ...at, column: def.section.start + max * COUNTRY_ENTRY_LENGTH },
+        { value: record.countries.length },
+      ),
+    );
+  }
+  const code = String(inputIndexOf(record)).padStart(field.length, '0');
+  const isPerCountry = layout.records['2000'].codes.some(
+    def2000 => def2000.perCountryBreakdown && def2000.code === code,
+  );
+  let problem: string | undefined;
+  if (!isPerCountry) {
+    problem = `${code} is not a per-country breakdown code of record 2000.`;
+  } else if (seenCodes.has(code)) {
+    problem = `A second 2200 record for code ${code}.`;
+  }
+  seenCodes.add(code);
+  if (problem) {
+    issues.push(
+      parseIssue(
+        'parse.fieldValue',
+        problem,
+        { ...at, column: field.position },
+        {
+          field: { position: field.position, length: field.length, nameHe: field.nameHe },
+          value: code,
+        },
+      ),
+    );
+  }
+  return issues;
 }
 
 /**
@@ -260,6 +352,9 @@ function orderProblem(type: RecordType, before: readonly RecordType[]): string |
   const latest = Math.max(...before.map(recordRank));
   if (recordRank(type) < latest) {
     return `Record ${type} comes after a record that must follow it (SPEC §3.3 order).`;
+  }
+  if (type === '2200' && !before.includes('2000')) {
+    return 'A 2200 record without a 2000 record before it: a country breakdown belongs to the foreign appendix.';
   }
   return undefined;
 }
@@ -322,6 +417,7 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
   const types: RecordType[] = [];
   const records: NormalizedRecord[] = [];
   let control: { record: NormalizedRecord; line: number } | undefined;
+  const breakdownCodes = new Set<string>();
   for (const [offset, line] of lines.entries()) {
     const lineNumber = offset + 1;
     const { type, decodable } = checkLine(line, lineNumber, layout, issues);
@@ -345,6 +441,9 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
       if (type === '9999') {
         control ||= { record, line: lineNumber };
       } else {
+        if (type === '2200') {
+          issues.push(...breakdownIssues(layout, record, lineNumber, breakdownCodes));
+        }
         records.push(withPaths(record));
       }
     } catch (error) {

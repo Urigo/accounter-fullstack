@@ -9,7 +9,9 @@ import {
 } from '../../src/index.js';
 import { getLayout } from '../../src/layout/registry.js';
 import {
+  breakdownCountries,
   foreignAppendix,
+  foreignAppendixWithBreakdown,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
@@ -187,7 +189,13 @@ describe('generate1214', () => {
     const input = minimalInput({
       rdInvestments: rdInvestments(1),
       amounts: { '165': rdInvestmentsTotal(1) },
-      foreignAppendix: foreignAppendix({ amounts: { '420': 50_000, '442': 0 } }),
+      foreignAppendix: foreignAppendix({
+        amounts: { '420': 50_000, '442': 0 },
+        countryBreakdown: {
+          '420': { countries: breakdownCountries(1) },
+          '442': { countries: [{ country: '840', income: 0 }] },
+        },
+      }),
     });
     const { summary, text } = generate1214(input, OPTIONS);
     const lines = text.split(CRLF);
@@ -196,11 +204,20 @@ describe('generate1214', () => {
       '1020',
       '1030',
       '2000',
+      '2200',
+      '2200',
       '9999',
       '',
     ]);
-    expect(summary.records).toEqual({ '1000': 1, '1020': 1, '1030': 1, '2000': 1, '9999': 1 });
-    const [main, , , foreign, control] = lines;
+    expect(summary.records).toEqual({
+      '1000': 1,
+      '1020': 1,
+      '1030': 1,
+      '2000': 1,
+      '2200': 2,
+      '9999': 1,
+    });
+    const [main, , , foreign, , , control] = lines;
     expect(foreign?.length).toBe(2184);
     expect(slice(main, 832, 1)).toBe('1');
     // 2000@137 description, @187–246 five amounts, @247 yes/no, @248 amount, @260 filler.
@@ -228,6 +245,84 @@ describe('generate1214', () => {
     expect(slice(control, 143, 2)).toBe('01');
   });
 
+  it('writes one 2200 record per breakdown right after 2000, sorted by code, counted at 9999@147', () => {
+    const input = minimalInput({
+      foreignAppendix: foreignAppendix({
+        amounts: { '439': 7000, '420': 50_000 },
+        countryBreakdown: {
+          '439': {
+            countries: [
+              { country: '-88', income: 4000 },
+              { country: '040', income: 3000 },
+            ],
+          },
+          '420': {
+            deductionsOffsetsAndExemptions: 1234,
+            countries: breakdownCountries(10),
+          },
+        },
+      }),
+    });
+    const { summary, text } = generate1214(input, OPTIONS);
+    const lines = text.split(CRLF);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1020',
+      '2000',
+      '2200',
+      '2200',
+      '9999',
+      '',
+    ]);
+    expect(summary.records['2200']).toBe(2);
+    const [, , , first, second, control] = lines;
+    expect(first?.length).toBe(1210);
+    // 2200@137 the code, @140 the deductions (12 digits), @152 a 35-zero filler.
+    expect(slice(first, 137, 3)).toBe('420');
+    expect(slice(first, 140, 12)).toBe('000000001234');
+    expect(slice(first, 152, 35)).toBe('0'.repeat(35));
+    // The section at 187: affiliation 1, country (3), income (12), ten entries, then zeros.
+    const entries = breakdownCountries(10)
+      .map(({ country, income }) => `1${country}${String(income).padStart(12, '0')}`)
+      .join('');
+    expect(entries).toHaveLength(160);
+    expect(slice(first, 187, 160)).toBe(entries);
+    expect(slice(first, 347, 864)).toBe('0'.repeat(864));
+    expect(slice(second, 137, 3)).toBe('439');
+    expect(slice(second, 140, 12)).toBe('0'.repeat(12));
+    // '-88' is written literally (SPEC §3.6).
+    expect(slice(second, 187, 32)).toBe('1-88000000004000' + '1040000000003000');
+    expect(slice(second, 219, 992)).toBe('0'.repeat(992));
+    expect(slice(control, 147, 2)).toBe('02');
+  });
+
+  it('writes 00 at 9999@147 without breakdowns', () => {
+    const lines = generate1214(
+      minimalInput({ foreignAppendix: foreignAppendix() }),
+      OPTIONS,
+    ).text.split(CRLF);
+    expect(lines.map(line => line.slice(4, 8))).toEqual(['1000', '1020', '2000', '9999', '']);
+    expect(slice(lines[3], 147, 2)).toBe('00');
+  });
+
+  it('throws for a per-country code without its breakdown and for an income it cannot write', () => {
+    expect(
+      generationError(minimalInput({ foreignAppendix: foreignAppendix({ amounts: { '420': 1 } }) }))
+        .issues,
+    ).toEqual([expect.objectContaining({ ruleId: 'foreign.breakdown.required' })]);
+    const negative = foreignAppendixWithBreakdown('420', {
+      countries: [{ country: '840', income: -5 }],
+    });
+    expect(generationError(minimalInput({ foreignAppendix: negative })).issues).toEqual([
+      expect.objectContaining({
+        ruleId: 'field.negative',
+        path: 'foreignAppendix.countryBreakdown["420"].countries[0].income',
+        recordType: '2200',
+        recordIndex: 0,
+      }),
+    ]);
+  });
+
   it('writes 832 = 2 and 00 at 9999@143 without a foreign appendix', () => {
     const lines = generate1214(minimalInput(), OPTIONS).text.split(CRLF);
     expect(slice(lines[0], 832, 1)).toBe('2');
@@ -245,7 +340,11 @@ describe('generate1214', () => {
 
   it('lists omitted zero codes of the foreign appendix', () => {
     const input = minimalInput({
-      foreignAppendix: { taxRefundDeclaration: false, amounts: { '401': 0, '442': 0 } },
+      foreignAppendix: {
+        taxRefundDeclaration: false,
+        amounts: { '401': 0, '442': 0 },
+        countryBreakdown: { '442': { countries: [{ country: '840', income: 0 }] } },
+      },
     });
     const { summary, text } = generate1214(input, OPTIONS);
     expect(summary.omittedZeroCodes).toEqual([{ record: '2000', recordIndex: 0, code: '401' }]);

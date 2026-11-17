@@ -5,7 +5,7 @@
 import type { z } from 'zod';
 import { Opcn1214InternalError } from '../errors.js';
 import { getLayout } from '../layout/registry.js';
-import type { RecordDef, YearLayout } from '../layout/types.js';
+import type { CodeDef, RecordDef, YearLayout } from '../layout/types.js';
 import type { SupportedTaxYear } from '../model/input.js';
 import { schemaFor } from '../model/schema.js';
 import { DERIVED_MAIN_CODE_SOURCES } from '../normalize/derive.js';
@@ -80,8 +80,10 @@ interface CodeMap {
   path: string;
   taxYear: number;
   record: RecordDef;
-  /** 0-based index of the record among records of its type. */
-  recordIndex: number;
+  /** 0-based index of the record among records of its type, when the map has one record. */
+  recordIndex?: number;
+  /** The keys the map accepts (default: the codes of `record`) and what they are, for messages. */
+  codes?: { defs: readonly CodeDef[]; description: string };
   /** The input properties each derived code of the record comes from (SPEC §7.4). */
   derivedSources: Readonly<Partial<Record<string, readonly string[]>>>;
 }
@@ -100,7 +102,11 @@ function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: un
   if (!isPlainObject(value)) {
     return { issues: [], value };
   }
-  const codes = new Map(map.record.codes.map(def => [def.code, def]));
+  const accepted = map.codes ?? {
+    defs: map.record.codes,
+    description: `a code of record ${map.record.type}`,
+  };
+  const codes = new Map(accepted.defs.map(def => [def.code, def]));
   const issues: Issue[] = [];
   const kept: Record<string, unknown> = {};
   for (const [key, amount] of Object.entries(value)) {
@@ -112,7 +118,7 @@ function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: un
     const details = {
       path: `${map.path}[${JSON.stringify(key)}]`,
       recordType: map.record.type,
-      recordIndex: map.recordIndex,
+      ...(map.recordIndex === undefined ? {} : { recordIndex: map.recordIndex }),
       code: key,
       ...primitive(amount),
     };
@@ -131,7 +137,7 @@ function scanCodeMap(value: unknown, map: CodeMap): { issues: Issue[]; value: un
       issues.push(
         makeIssue('input.unknownCode', {
           ...details,
-          message: `${JSON.stringify(key)} is not a code of record ${map.record.type} for tax year ${map.taxYear}.`,
+          message: `${JSON.stringify(key)} is not ${accepted.description} for tax year ${map.taxYear}.`,
         }),
       );
     }
@@ -145,8 +151,9 @@ const NO_DERIVED_CODES: Readonly<Partial<Record<string, readonly string[]>>> = {
 /**
  * The code maps of `input` scanned (scanCodeMap): their issues, and a shallow copy of `input` with
  * the reported keys removed. Record 1000 `amounts` and, when `foreignAppendix` is an object, its
- * `amounts` (record 2000); the capital-gains appendices (G1) add theirs. Anything that is not a
- * plain object is left to zod.
+ * `amounts` (record 2000) and `countryBreakdown` (records 2200, keyed by the per-country codes of
+ * record 2000); the capital-gains appendices (G1) add theirs. Anything that is not a plain object
+ * is left to zod.
  */
 function scanCodeMaps(input: unknown, layout: YearLayout): { issues: Issue[]; input: unknown } {
   if (!isPlainObject(input)) {
@@ -171,7 +178,23 @@ function scanCodeMaps(input: unknown, layout: YearLayout): { issues: Issue[]; in
       derivedSources: NO_DERIVED_CODES,
     });
     issues.push(...foreign.issues);
-    scanned.foreignAppendix = { ...appendix, amounts: foreign.value };
+    const scannedAppendix: Record<string, unknown> = { ...appendix, amounts: foreign.value };
+    if (isPlainObject(appendix.countryBreakdown)) {
+      // Keyed by the per-country codes of record 2000; none of them is derived.
+      const breakdowns = scanCodeMap(appendix.countryBreakdown, {
+        path: 'foreignAppendix.countryBreakdown',
+        taxYear: layout.taxYear,
+        record: layout.records['2200'],
+        codes: {
+          defs: layout.records['2000'].codes.filter(def => def.perCountryBreakdown),
+          description: 'a per-country breakdown code of record 2000',
+        },
+        derivedSources: NO_DERIVED_CODES,
+      });
+      issues.push(...breakdowns.issues);
+      scannedAppendix.countryBreakdown = breakdowns.value;
+    }
+    scanned.foreignAppendix = scannedAppendix;
   }
   return { issues, input: scanned };
 }

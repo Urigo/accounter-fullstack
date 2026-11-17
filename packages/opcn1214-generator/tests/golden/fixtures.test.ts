@@ -3,7 +3,9 @@
  */
 import { generate1214, parse1214, validate1214 } from '../../src/index.js';
 import { getLayout } from '../../src/layout/registry.js';
+import { COUNTRY_BREAKDOWN_CODES } from '../../src/model/codes.generated.js';
 import { normalizeReport } from '../../src/normalize/report.js';
+import * as foreign from '../fixtures/golden/foreign.input.js';
 import * as kibbutz from '../fixtures/golden/kibbutz.input.js';
 import * as mainFull from '../fixtures/golden/main-full.input.js';
 import * as relatedAndRd from '../fixtures/golden/related-and-rd.input.js';
@@ -120,5 +122,55 @@ describe('golden related-and-rd', () => {
     const parsed = parse1214(text);
     expect(parsed.issues).toEqual([]);
     expect(parsed.report.rdInvestments).toEqual(input.rdInvestments);
+  });
+});
+
+describe('golden foreign', () => {
+  const { input, options } = foreign;
+  const appendix = input.foreignAppendix;
+
+  it('is valid against every rule: no errors and no warnings', () => {
+    expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it('writes every per-country code, each with one breakdown, -88 on 439, ten countries on 420', () => {
+    const written = Object.keys(appendix?.amounts ?? {});
+    expect(COUNTRY_BREAKDOWN_CODES.filter(code => !written.includes(code))).toEqual([]);
+    expect(Object.keys(appendix?.countryBreakdown ?? {}).sort()).toEqual([
+      ...COUNTRY_BREAKDOWN_CODES,
+    ]);
+    expect(appendix?.countryBreakdown?.['439']?.countries).toContainEqual(
+      expect.objectContaining({ country: '-88' }),
+    );
+    expect(appendix?.countryBreakdown?.['420']?.countries).toHaveLength(
+      LAYOUT.limits.countriesPerRecord,
+    );
+  });
+
+  it('sets every non-filler header field of records 2000 and 2200', () => {
+    const report = normalizeReport(input, LAYOUT, options);
+    expect(unmappedHeaderKeys(LAYOUT.records['2000'], report.records)).toEqual([]);
+    expect(unmappedHeaderKeys(LAYOUT.records['2200'], report.records)).toEqual([]);
+  });
+
+  it('writes 1000, 1020, 2000 and 23 × 2200 sorted by code, counted at 9999@143 and @147', () => {
+    const { text } = generate1214(input, options);
+    const lines = linesOf(text);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1020',
+      '2000',
+      ...COUNTRY_BREAKDOWN_CODES.map(() => '2200'),
+      '9999',
+    ]);
+    // 2200@137: the code each record breaks down, ascending.
+    expect(lines.slice(3, -1).map(line => line.slice(136, 139))).toEqual([
+      ...COUNTRY_BREAKDOWN_CODES,
+    ]);
+    expect(lines.at(-1)?.slice(142, 144)).toBe('01');
+    expect(lines.at(-1)?.slice(146, 148)).toBe('23');
+    const parsed = parse1214(text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.foreignAppendix).toEqual(appendix);
   });
 });
