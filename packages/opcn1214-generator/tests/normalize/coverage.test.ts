@@ -1,6 +1,6 @@
 import { getLayout } from '../../src/layout/registry.js';
 import { normalizeReport } from '../../src/normalize/report.js';
-import { fullDeclarationsInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, fullMainInput } from '../fixtures/builders.js';
 import { unmappedHeaderKeys } from '../helpers/coverage.js';
 
 const LAYOUT = getLayout(2024);
@@ -23,8 +23,8 @@ describe('normalizer coverage (SPEC §13.3)', () => {
     ]);
   });
 
-  it('record 1000: only the header groups of step D2 remain unmapped', () => {
-    const input = fullDeclarationsInput({
+  it('record 1000: every non-filler header key is mapped', () => {
+    const input = fullMainInput({
       company: {
         withholdingFileNumber: '940000001',
         vatFileNumber: '514000009',
@@ -35,25 +35,7 @@ describe('normalizer coverage (SPEC §13.3)', () => {
       },
     });
     const report = normalizeReport(input, LAYOUT, { today: () => '2025-03-31' });
-    expect(unmappedHeaderKeys(MAIN, report.records)).toEqual([
-      'otherTaxableIncome.source',
-      'otherTaxableIncome.amount',
-      'otherTaxableIncome.ratePercent',
-      'attachments.donationReceiptsCount',
-      'attachments.withholdingCertificatesCount',
-      'capitalGainsSummary.totalAppendicesCount',
-      'capitalGainsSummary.untransmittedCount',
-      'capitalGainsSummary.reasons.lossOrNoGain',
-      'capitalGainsSummary.reasons.overFiveImprovementBalances',
-      'capitalGainsSummary.reasons.over14Appendices',
-      'capitalGainsSummary.reasons.other',
-      'capitalGainsSummary.reasons.otherText',
-      'qualifyingCompany.purchased',
-      'qualifyingCompany.israeliPurchaseAmount',
-      'qualifyingCompany.foreignPurchaseAmount',
-      'qualifyingCompany.amortizationClaimed',
-      'qualifyingCompany.amortizationAmount',
-    ]);
+    expect(unmappedHeaderKeys(MAIN, report.records)).toEqual([]);
   });
 
   it('every 1000 header key between positions 563 and 1064 outside the D2 groups is produced', () => {

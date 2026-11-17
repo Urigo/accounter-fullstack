@@ -66,6 +66,23 @@ export const MAIN_INPUT_KEYS = [
   'declarations.fewMembersCompany62A',
   'declarations.partOfMultinationalGroup',
   'declarations.noBankAccount',
+  'otherTaxableIncome.source',
+  'otherTaxableIncome.amount',
+  'otherTaxableIncome.ratePercent',
+  'attachments.donationReceiptsCount',
+  'attachments.withholdingCertificatesCount',
+  'capitalGainsSummary.totalAppendicesCount',
+  'capitalGainsSummary.untransmittedCount',
+  'capitalGainsSummary.reasons.lossOrNoGain',
+  'capitalGainsSummary.reasons.overFiveImprovementBalances',
+  'capitalGainsSummary.reasons.over14Appendices',
+  'capitalGainsSummary.reasons.other',
+  'capitalGainsSummary.reasons.otherText',
+  'qualifyingCompany.purchased',
+  'qualifyingCompany.israeliPurchaseAmount',
+  'qualifyingCompany.foreignPurchaseAmount',
+  'qualifyingCompany.amortizationClaimed',
+  'qualifyingCompany.amortizationAmount',
 ] as const;
 
 /** Header keys of record 1020 that are properties of a shareholder (`serialNumber` is derived). */
@@ -168,9 +185,13 @@ export function denormalize(report: NormalizedReport): Report1214Input {
   if (positions.length > 0) {
     setKey(output, REPORTABLE_POSITIONS, positions);
   }
-  // 833 = yes can only come from hasCapitalGainsAppendix while the model has no capital-gains
-  // appendices or untransmitted count (SPEC §7.4).
-  if (main.values['declarations.hasCapitalGainsAppendix'] === true) {
+  // 833 = yes is read back as hasCapitalGainsAppendix only when untransmitted appendices do not
+  // already explain it (SPEC §7.3, §7.4); the model has no capital-gains appendices yet (G1).
+  const untransmitted = main.values['capitalGainsSummary.untransmittedCount'];
+  if (
+    main.values['declarations.hasCapitalGainsAppendix'] === true &&
+    !(typeof untransmitted === 'number' && untransmitted > 0)
+  ) {
     setKey(output, 'declarations.hasCapitalGainsAppendix', true);
   }
   // The tree has the members of Report1214Input; values are typed by their layout kinds.

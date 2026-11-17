@@ -110,3 +110,38 @@ export function fullDeclarationsInput(
   });
   return deepMerge(base, overrides) as Report1214Input;
 }
+
+/**
+ * `fullDeclarationsInput()` with the remaining header groups of record 1000 set (SPEC §7.2): other
+ * taxable income, attachments (with the codes 070 and 010 they certify), the capital-gains summary
+ * and the qualifying company, each member to a value that is written to the file. 833 is derived
+ * from the untransmitted count, so `hasCapitalGainsAppendix` is left out (the input is canonical).
+ * `overrides` are deep-merged into it.
+ */
+export function fullMainInput(overrides: DeepPartial<Report1214Input> = {}): Report1214Input {
+  const base = deepMerge(fullDeclarationsInput(), {
+    otherTaxableIncome: { source: 'דמי שכירות', amount: 25_000, ratePercent: 10.23 },
+    attachments: { donationReceiptsCount: 2, withholdingCertificatesCount: 3 },
+    capitalGainsSummary: {
+      totalAppendicesCount: 4,
+      untransmittedCount: 3,
+      reasons: {
+        lossOrNoGain: true,
+        overFiveImprovementBalances: true,
+        over14Appendices: true,
+        other: true,
+        otherText: 'העסקה בוטלה',
+      },
+    },
+    qualifyingCompany: {
+      purchased: true,
+      israeliPurchaseAmount: 1_000_000,
+      foreignPurchaseAmount: 2_500_000,
+      amortizationClaimed: true,
+      amortizationAmount: 150_000,
+    },
+    amounts: { '010': 1200, '070': 500 },
+  }) as Report1214Input;
+  delete base.declarations.hasCapitalGainsAppendix;
+  return deepMerge(base, overrides) as Report1214Input;
+}

@@ -60,6 +60,55 @@ export interface Report1214Input {
   /** "המסייע/ת במילוי הדו"ח", 1000@563–831. */
   preparer?: PreparerDetails;
   declarations: Declarations;
+  /** "הכנסה חייבת אחרת בארץ ובחו"ל", 1000@887–953. */
+  otherTaxableIncome?: {
+    /** 887; must start with a Hebrew letter. */
+    source?: string;
+    /** 937. */
+    amount?: number;
+    /** 949: 1–100, ≤ 2 decimals (written × 100, SPEC §15 A-2). */
+    ratePercent?: number;
+  };
+  /** Numbers of certificates attached to the report, 1000@954–959. */
+  attachments?: {
+    /** 954: donation receipts for code 070 (section 46). */
+    donationReceiptsCount?: number;
+    /** 957: withholding certificates for code 010. */
+    withholdingCertificatesCount?: number;
+  };
+  /** Capital-gains appendices, transmitted and not, 1000@960–1017. */
+  capitalGainsSummary?: {
+    /** 960: all appendices, transmitted and not. */
+    totalAppendicesCount?: number;
+    /** 962 (→ 833 = yes when > 0, SPEC §7.4). */
+    untransmittedCount?: number;
+    /** 964–968: why appendices were not transmitted. */
+    reasons?: {
+      /** 964. */
+      lossOrNoGain?: boolean;
+      /** 965. */
+      overFiveImprovementBalances?: boolean;
+      /** 966. */
+      over14Appendices?: boolean;
+      /** 967. */
+      other?: boolean;
+      /** 968: required when `other`. */
+      otherText?: string;
+    };
+  };
+  /** "חברה מזכה" (part A of the form), 1000@1065–1102. */
+  qualifyingCompany?: {
+    /** 1065 (yes/no). */
+    purchased?: boolean;
+    /** 1066. */
+    israeliPurchaseAmount?: number;
+    /** 1078. */
+    foreignPurchaseAmount?: number;
+    /** 1090 (yes/no). */
+    amortizationClaimed?: boolean;
+    /** 1091: may be 0, which is written (SPEC §15 A-21). */
+    amortizationAmount?: number;
+  };
   /** Record 1000 code-amount section. */
   amounts: Partial<Record<MainFormInputCode, number>>;
   /** Records 1020: 1–99 (0 allowed only for a kibbutz). */
@@ -181,7 +230,7 @@ export interface Declarations {
   /** 1064. */
   noBankAccount?: boolean;
   /** 833: forces "yes" when capital-gains appendices exist but none are transmitted (otherwise
-   *  derived, SPEC §7.4). */
+   *  derived from the appendices and `capitalGainsSummary.untransmittedCount`, SPEC §7.4). */
   hasCapitalGainsAppendix?: boolean;
 }
 

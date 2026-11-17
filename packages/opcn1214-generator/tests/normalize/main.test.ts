@@ -4,7 +4,7 @@ import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import type { NormalizedRecord } from '../../src/model/normalized.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import { todayInJerusalem } from '../../src/normalize/today.js';
-import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
 const TODAY = '2024-06-30';
@@ -588,5 +588,154 @@ describe('normalizeReport: record 1000 declarations and preparer', () => {
 
   it('raises no notices for the full declarations input', () => {
     expect(normalizeReport(fullDeclarationsInput(), LAYOUT, OPTIONS).notices).toEqual([]);
+  });
+});
+
+describe('normalizeReport: record 1000 other income, attachments, capital-gains summary, qualifying company', () => {
+  it('maps every member to its key, encoded value and path', () => {
+    const input = fullMainInput();
+    const record = mainRecord(input);
+    const line = mainLine(input);
+    const expected: Array<[string, unknown, number, string]> = [
+      ['otherTaxableIncome.source', 'דמי שכירות', 887, 'דמי שכירות'.padStart(50)],
+      ['otherTaxableIncome.amount', 25_000, 937, '000000025000'],
+      // percentX100: × 100 with alphanumeric padding (SPEC §15 A-2).
+      ['otherTaxableIncome.ratePercent', 10.23, 949, ' 1023'],
+      ['attachments.donationReceiptsCount', 2, 954, '002'],
+      ['attachments.withholdingCertificatesCount', 3, 957, '003'],
+      ['capitalGainsSummary.totalAppendicesCount', 4, 960, '04'],
+      ['capitalGainsSummary.untransmittedCount', 3, 962, '03'],
+      ['capitalGainsSummary.reasons.lossOrNoGain', true, 964, '1'],
+      ['capitalGainsSummary.reasons.overFiveImprovementBalances', true, 965, '1'],
+      ['capitalGainsSummary.reasons.over14Appendices', true, 966, '1'],
+      ['capitalGainsSummary.reasons.other', true, 967, '1'],
+      ['capitalGainsSummary.reasons.otherText', 'העסקה בוטלה', 968, 'העסקה בוטלה'.padStart(50)],
+      ['qualifyingCompany.purchased', true, 1065, '1'],
+      ['qualifyingCompany.israeliPurchaseAmount', 1_000_000, 1066, '000001000000'],
+      ['qualifyingCompany.foreignPurchaseAmount', 2_500_000, 1078, '000002500000'],
+      ['qualifyingCompany.amortizationClaimed', true, 1090, '1'],
+      // amountX: digits with alphanumeric padding (SPEC §15 A-21).
+      ['qualifyingCompany.amortizationAmount', 150_000, 1091, '150000'.padStart(12)],
+    ];
+    for (const [key, value, position, encoded] of expected) {
+      expect(record.values[key]).toBe(value);
+      expect(record.paths[key]).toBe(key);
+      expect(at(line, position, encoded.length)).toBe(encoded);
+    }
+  });
+
+  it('otherTaxableIncome.ratePercent 10.23 → 949 = " 1023", 100 → "10000"', () => {
+    expect(at(mainLine(minimalInput({ otherTaxableIncome: { ratePercent: 10.23 } })), 949, 5)).toBe(
+      ' 1023',
+    );
+    expect(at(mainLine(minimalInput({ otherTaxableIncome: { ratePercent: 100 } })), 949, 5)).toBe(
+      '10000',
+    );
+  });
+
+  it('normalizes the text members', () => {
+    const record = mainRecord(
+      minimalInput({
+        otherTaxableIncome: { source: '  דמי\u00A0 שכירות ' },
+        capitalGainsSummary: { reasons: { other: true, otherText: '  ' } },
+      }),
+    );
+    expect(record.values['otherTaxableIncome.source']).toBe('דמי שכירות');
+    expect(record.values).not.toHaveProperty(['capitalGainsSummary.reasons.otherText']);
+  });
+
+  it('qualifyingCompany.amortizationAmount 0 is kept and written as "0" (SPEC §15 A-21)', () => {
+    const input = minimalInput({
+      qualifyingCompany: { amortizationClaimed: true, amortizationAmount: 0 },
+    });
+    const record = mainRecord(input);
+    expect(record.values['qualifyingCompany.amortizationAmount']).toBe(0);
+    expect(record.paths['qualifyingCompany.amortizationAmount']).toBe(
+      'qualifyingCompany.amortizationAmount',
+    );
+    expect(at(mainLine(input), 1091, 12)).toBe('0'.padStart(12));
+  });
+
+  it.each([
+    ['purchased', 1065],
+    ['amortizationClaimed', 1090],
+  ] as const)(
+    'qualifyingCompany.%s is yes/no at %i: 1, 2, and 0 when absent',
+    (member, position) => {
+      const key = `qualifyingCompany.${member}`;
+      for (const [value, encoded] of [
+        [true, '1'],
+        [false, '2'],
+        [undefined, '0'],
+      ] as const) {
+        const input = minimalInput({ qualifyingCompany: { [member]: value } });
+        const record = mainRecord(input);
+        expect(record.values[key]).toBe(value);
+        expect(record.paths[key]).toBe(value === undefined ? undefined : key);
+        expect(at(mainLine(input), position, 1)).toBe(encoded);
+      }
+    },
+  );
+
+  it('writes the absent value for every member when the groups are absent', () => {
+    const record = mainRecord();
+    for (const prefix of [
+      'otherTaxableIncome.',
+      'attachments.',
+      'capitalGainsSummary.',
+      'qualifyingCompany.',
+    ]) {
+      expect(Object.keys(record.values).filter(key => key.startsWith(prefix))).toEqual([]);
+    }
+    const line = mainLine(minimalInput());
+    expect(at(line, 887, 50)).toBe(' '.repeat(50));
+    expect(at(line, 937, 12)).toBe('0'.repeat(12));
+    expect(at(line, 949, 5)).toBe(' '.repeat(5));
+    expect(at(line, 954, 10)).toBe('0'.repeat(10));
+    expect(at(line, 964, 4)).toBe('0000');
+    expect(at(line, 968, 50)).toBe(' '.repeat(50));
+    expect(at(line, 1065, 1)).toBe('0');
+    expect(at(line, 1066, 24)).toBe('0'.repeat(24));
+    expect(at(line, 1090, 1)).toBe('0');
+    expect(at(line, 1091, 12)).toBe(' '.repeat(12));
+  });
+
+  it('writes 0 for false capital-gains reasons', () => {
+    const input = minimalInput({
+      capitalGainsSummary: {
+        reasons: {
+          lossOrNoGain: false,
+          overFiveImprovementBalances: false,
+          over14Appendices: false,
+          other: false,
+        },
+      },
+    });
+    expect(at(mainLine(input), 964, 4)).toBe('0000');
+  });
+
+  describe('833 has capital-gains appendix (SPEC §7.4)', () => {
+    it.each([true, false, undefined])(
+      'untransmittedCount > 0 makes 833 = yes (hasCapitalGainsAppendix %s)',
+      hasCapitalGainsAppendix => {
+        const input = minimalInput({
+          declarations: { hasCapitalGainsAppendix },
+          capitalGainsSummary: { untransmittedCount: 3 },
+        });
+        const record = mainRecord(input);
+        expect(record.values['declarations.hasCapitalGainsAppendix']).toBe(true);
+        expect(at(mainLine(input), 833, 1)).toBe('1');
+      },
+    );
+
+    it('untransmittedCount 0 leaves 833 = no', () => {
+      const input = minimalInput({ capitalGainsSummary: { untransmittedCount: 0 } });
+      expect(mainRecord(input).values['declarations.hasCapitalGainsAppendix']).toBe(false);
+      expect(at(mainLine(input), 833, 1)).toBe('2');
+    });
+  });
+
+  it('raises no notices for the full main input', () => {
+    expect(normalizeReport(fullMainInput(), LAYOUT, OPTIONS).notices).toEqual([]);
   });
 });
