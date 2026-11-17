@@ -9,6 +9,8 @@ import {
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
+  noWithholding1322Appendix,
+  noWithholding1326Appendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
@@ -214,6 +216,56 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
       ['input.unknownCode', 'capitalGains[0].amounts["012"]'],
       ['input.unknownCode', 'capitalGains[1].amounts["022"]'],
+    ]);
+  });
+
+  it('accepts 3065 and 3066 appendices, complete or with only the required members', () => {
+    expect(
+      shapeIssues(
+        minimalInput({
+          capitalGains: [
+            noWithholding1322Appendix({ withholders: withholders(4) }),
+            noWithholding1326Appendix(),
+            { symbol: 65, amounts: {} },
+            { symbol: 66, amounts: {} },
+            { symbol: 65, withholdingStatus: 'notWithheldSecondHalf', amounts: {} },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects an unknown withholding status, a fifth 3065 withholder and 3066 withholders', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        { ...noWithholding1322Appendix(), withholdingStatus: 2 },
+        { ...noWithholding1322Appendix(), withholders: [...withholders(4), { name: 'בנק' }] },
+        { ...noWithholding1326Appendix(), withholdingStatus: 'withheld' },
+        { ...noWithholding1326Appendix(), withholders: withholders(1), soldToRelatedParty: true },
+      ],
+    };
+    expect(shapePaths(input).sort()).toEqual([
+      'capitalGains[0].withholdingStatus',
+      'capitalGains[1].withholders',
+      'capitalGains[2].withholdingStatus',
+      'capitalGains[3].soldToRelatedParty',
+      'capitalGains[3].withholders',
+    ]);
+  });
+
+  it('rejects codes of another appendix type in the amounts of 3065 and 3066', () => {
+    // 022 is a code of 3066, not of 3065; 012 a code of 3065, not of 3066.
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        { ...noWithholding1322Appendix(), amounts: { '012': 1, '022': 2 } },
+        { ...noWithholding1326Appendix(), amounts: { '022': 1, '012': 3 } },
+      ],
+    };
+    expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.unknownCode', 'capitalGains[0].amounts["022"]'],
+      ['input.unknownCode', 'capitalGains[1].amounts["012"]'],
     ]);
   });
 

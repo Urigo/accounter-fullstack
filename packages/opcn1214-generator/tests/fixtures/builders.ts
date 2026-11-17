@@ -8,6 +8,8 @@ import type {
   CountryBreakdown,
   CountryIncome,
   ForeignAppendix,
+  NoWithholding1322Appendix,
+  NoWithholding1326Appendix,
   RdInvestment,
   ReitAppendix,
   RelatedCompany,
@@ -343,4 +345,44 @@ export function reitAppendix(overrides: DeepPartial<ReitAppendix> = {}): ReitApp
     amounts: { '013': 30_000, '056': 1500 },
   };
   return deepMerge(base, overrides) as ReitAppendix;
+}
+
+/**
+ * A valid capital-gains appendix for securities without withholding, form 1322 (SPEC §7.2, record
+ * 3065) with every header member set to a value that is written to the file (two withholders) and
+ * two codes (012, 056). `overrides` are deep-merged into it.
+ */
+export function noWithholding1322Appendix(
+  overrides: DeepPartial<NoWithholding1322Appendix> = {},
+): NoWithholding1322Appendix {
+  const base: NoWithholding1322Appendix = {
+    symbol: 65,
+    foreignAsset: false,
+    soldToRelatedParty: true,
+    boughtFromRelatedParty: true,
+    gainFromInvestmentFund: false,
+    withholdingStatus: 'notWithheldFirstHalf',
+    withholders: withholders(2),
+    lossesCarriedForward: 6000,
+    amounts: { '012': 25_000, '056': 1250 },
+  };
+  return deepMerge(base, overrides) as NoWithholding1322Appendix;
+}
+
+/**
+ * A valid capital-gains appendix for securities without withholding, form 1326 (SPEC §7.2, record
+ * 3066) with every header member set to a value that is written to the file and two codes (022,
+ * 056). `overrides` are deep-merged into it.
+ */
+export function noWithholding1326Appendix(
+  overrides: DeepPartial<NoWithholding1326Appendix> = {},
+): NoWithholding1326Appendix {
+  const base: NoWithholding1326Appendix = {
+    symbol: 66,
+    foreignAsset: true,
+    withholdingStatus: 'notWithheldSecondHalf',
+    lossesCarriedForward: 4000,
+    amounts: { '022': 18_000, '056': 900 },
+  };
+  return deepMerge(base, overrides) as NoWithholding1326Appendix;
 }
