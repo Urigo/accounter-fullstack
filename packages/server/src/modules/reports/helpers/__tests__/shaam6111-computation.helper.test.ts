@@ -3,6 +3,7 @@ import {
   buildBalanceSheetEntries,
   buildProfitAndLossEntries,
   buildTaxAdjustmentEntries,
+  fileEntries,
   isDebitNaturedBalanceSheetCode,
   isDebitNaturedProfitLossCode,
   netAmountsByFinancialEntity,
@@ -387,5 +388,36 @@ describe('rounding to the shekel', () => {
     expect(amountOf(balanceSheet, 8888)).toBe(900);
     expect(amountOf(balanceSheet, 9999)).toBe(1000);
     expect(amountOf(balanceSheet, 9980)).toBe(0);
+  });
+});
+
+describe('fileEntries', () => {
+  it('keeps non-zero lines and the mandatory totals only', () => {
+    const balanceSheet = [
+      { code: 7000, amount: 0 },
+      { code: 7110, amount: 0 },
+      { code: 7310, amount: 5 },
+      { code: 8888, amount: 0 },
+      { code: 9000, amount: 0 },
+      { code: 9999, amount: 0 },
+    ];
+    expect(fileEntries(balanceSheet, 'balanceSheet').map(e => e.code)).toEqual([
+      7000, 7310, 8888, 9000, 9999,
+    ]);
+    expect(
+      fileEntries(
+        [
+          { code: 1010, amount: 0 },
+          { code: 6666, amount: 0 },
+        ],
+        'profitAndLoss',
+      ).map(e => e.code),
+    ).toEqual([6666]);
+  });
+
+  it('fits a full report in the 150-line sections', () => {
+    const entries = buildProfitAndLossEntries(netAmountsByFinancialEntity(LEDGER), IRS_CODES);
+    expect(entries.length).toBeGreaterThan(150);
+    expect(fileEntries(entries, 'profitAndLoss').length).toBeLessThan(150);
   });
 });
