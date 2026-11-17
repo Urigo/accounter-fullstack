@@ -71,6 +71,23 @@ describe('taxAdjustmentArraySchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('should subtract code 184 (qualifying-company investment deduction) in code 370', () => {
+    // Spec rule 2.5: 370 = ... + 183 - 184 + 190 - ...
+    const records = [
+      { code: 110, amount: 5000 },
+      { code: 184, amount: 1000 },
+      { code: 370, amount: 4000 },
+    ];
+    expect(taxAdjustmentArraySchema.safeParse(records).success).toBe(true);
+
+    const addedInsteadOfSubtracted = [
+      { code: 110, amount: 5000 },
+      { code: 184, amount: 1000 },
+      { code: 370, amount: 6000 },
+    ];
+    expect(taxAdjustmentArraySchema.safeParse(addedInsteadOfSubtracted).success).toBe(false);
+  });
+
   it('should fail validation for incorrect summary calculations', () => {
     // Code 370 should equal the sum of codes 110 and 120, which is 8000
     // Setting it to 1000 should trigger a validation error
