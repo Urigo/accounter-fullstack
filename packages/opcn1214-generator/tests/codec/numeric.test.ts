@@ -219,9 +219,28 @@ describe('numeric codecs', () => {
       expect(decode(kind, '000')).toBe('000');
     });
 
-    it.each(NUMERIC_KINDS)('%s: all-space text decodes to undefined', kind => {
-      expect(decode(kind, '    ', 'alphanumeric')).toBeUndefined();
-      expect(decode(kind, '    ', 'numeric')).toBeUndefined();
+    it.each([...INTEGER_KINDS, ...DIGIT_STRING_KINDS, ...SCALED_KINDS])(
+      '%s: all-space text in a numeric field throws CodecDecodeError numeric at offset 0',
+      kind => {
+        const error = decodeError(() => decode(kind, '    ', 'numeric'));
+        expect(error.reason).toBe('numeric');
+        expect(error.offset).toBe(0);
+      },
+    );
+
+    it.each(NUMERIC_KINDS)(
+      '%s: all-space text in an alphanumeric field decodes to undefined',
+      kind => {
+        expect(decode(kind, '    ', 'alphanumeric')).toBeUndefined();
+      },
+    );
+
+    it('amountX: all-space alphanumeric text decodes to undefined', () => {
+      expect(decode('amountX', ' '.repeat(12), 'alphanumeric')).toBeUndefined();
+    });
+
+    it('filler: all-space text in a numeric field decodes to undefined', () => {
+      expect(decode('filler', '    ', 'numeric')).toBeUndefined();
     });
 
     it('filler: any content decodes to undefined (D-4)', () => {
