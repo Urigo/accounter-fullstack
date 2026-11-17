@@ -1086,8 +1086,11 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
    9999 (batch). A tax year outside `supportedTaxYears()` is reported as
    `struct.taxYear.unsupported`.
 4. Decode header fields by layout (inverse of §4.2); header fillers are ignored (only positions
-   9–136 are checked). Numeric fields must be all digits; alphanumeric values are trimmed of padding
-   spaces. Dates must be valid `DD/MM/YYYY` or all spaces.
+   9–136 are checked). Numeric fields must be all digits (`percentLiteral` may also hold one `.`
+   between digits); alphanumeric values are trimmed of padding spaces. Dates must be valid
+   `DD/MM/YYYY` or all spaces. Flag and yes/no fields accept only the digits they are written with
+   (flag `0`/`1`, yes/no `0`/`1`/`2`), and phone-prefix fields only an allowed prefix or the absent
+   value (spaces, or zeros in 822); any other value is a parse error (codec reason `format`).
 5. Decode sections: read `code(3)` + value(width of that code) repeatedly; stop at the first
    position where the remaining text is all `0` (padding). An unknown code, a truncated entry or a
    non-zero tail is a parse error. Duplicate codes are a parse error.

@@ -11,12 +11,13 @@ const DIGITS = /^\d+$/;
 /** Tolerance of the ×100 decimals check (SPEC §4.4). */
 const SCALE_EPSILON = 1e-6;
 
-function blank(shape: FieldShape): string {
+/** The absent value of a field: zeros (numeric) or spaces (alphanumeric). */
+export function blank(shape: FieldShape): string {
   return shape.type === 'numeric' ? '0'.repeat(shape.length) : ' '.repeat(shape.length);
 }
 
 /** Pads a digit string per the field type. */
-function pad(digits: string, shape: FieldShape): string {
+export function pad(digits: string, shape: FieldShape): string {
   return shape.type === 'numeric'
     ? padNumeric(digits, shape.length)
     : padAlphanumeric(digits, shape.length);
@@ -26,25 +27,25 @@ function show(value: Primitive): string {
   return typeof value === 'string' ? `"${value}"` : String(value);
 }
 
-function invalid(value: Primitive, shape: FieldShape, expected: string): Opcn1214InternalError {
+export function invalid(
+  value: Primitive,
+  shape: FieldShape,
+  expected: string,
+): Opcn1214InternalError {
   return new Opcn1214InternalError(
     `Cannot encode ${show(value)} as ${shape.kind}: expected ${expected}`,
   );
 }
 
-function encodeInteger(value: number, shape: FieldShape): string {
+export function encodeInteger(value: number, shape: FieldShape): string {
   if (!Number.isSafeInteger(value) || value < 0) {
     throw invalid(value, shape, 'a non-negative safe integer');
   }
   return pad(String(value), shape);
 }
 
-/**
- * Checks the raw text and returns its digits. Numeric fields must be all digits (all-space text
- * included); alphanumeric fields may carry padding spaces (U+0020 only, not other whitespace) on
- * ALPHANUMERIC_PAD_SIDE and decode to undefined when all spaces.
- */
-function readDigits(raw: string, shape: FieldShape): string | undefined {
+/** Throws CodecDecodeError 'length' unless the raw text has exactly the field width. */
+export function checkLength(raw: string, shape: FieldShape): void {
   if (raw.length !== shape.length) {
     throw new CodecDecodeError(
       'length',
@@ -52,6 +53,20 @@ function readDigits(raw: string, shape: FieldShape): string | undefined {
       `Expected ${shape.length} characters for ${shape.kind}, got ${raw.length}`,
     );
   }
+}
+
+/**
+ * Checks the raw text and returns its digits. Numeric fields must be all digits (all-space text
+ * included); alphanumeric fields may carry padding spaces (U+0020 only, not other whitespace) on
+ * ALPHANUMERIC_PAD_SIDE and decode to undefined when all spaces. With `decimalPoint`, one '.'
+ * between digits is accepted as well (percentLiteral, SPEC §4.2).
+ */
+export function readDigits(
+  raw: string,
+  shape: FieldShape,
+  { decimalPoint = false }: { decimalPoint?: boolean } = {},
+): string | undefined {
+  checkLength(raw, shape);
   let start = 0;
   let end = raw.length;
   if (shape.type === 'alphanumeric') {
@@ -70,8 +85,13 @@ function readDigits(raw: string, shape: FieldShape): string | undefined {
       return undefined;
     }
   }
+  let seenPoint = false;
   for (let index = start; index < end; index++) {
     const char = raw[index];
+    if (decimalPoint && char === '.' && !seenPoint && index > start && index < end - 1) {
+      seenPoint = true;
+      continue;
+    }
     if (char === undefined || char < '0' || char > '9') {
       throw new CodecDecodeError(
         'numeric',
@@ -116,20 +136,31 @@ const digitStringCodec: Codec = {
   },
 };
 
-/** amountX100, rateX100: natural units with at most 2 decimals, written as value × 100. */
-const scaledCodec: Codec = {
+/**
+ * Returns `value × 100` as an integer; throws Opcn1214InternalError for a value that is not a
+ * finite number with at most 2 decimals (SPEC §4.4).
+ */
+export function scaleBy100(value: Primitive, shape: FieldShape): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw invalid(value, shape, 'a finite number');
+  }
+  const scaled = Math.round(value * 100);
+  if (Math.abs(value * 100 - scaled) > SCALE_EPSILON) {
+    throw invalid(value, shape, 'at most 2 decimals');
+  }
+  return scaled;
+}
+
+/**
+ * amountX100, rateX100 (and percentX100, SPEC §15 A-2): natural units with at most 2 decimals,
+ * written as value × 100.
+ */
+export const scaledCodec: Codec = {
   encode(value, shape) {
     if (value === undefined) {
       return blank(shape);
     }
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-      throw invalid(value, shape, 'a finite number');
-    }
-    const scaled = Math.round(value * 100);
-    if (Math.abs(value * 100 - scaled) > SCALE_EPSILON) {
-      throw invalid(value, shape, 'at most 2 decimals');
-    }
-    return encodeInteger(scaled, shape);
+    return encodeInteger(scaleBy100(value, shape), shape);
   },
   decode(raw, shape) {
     const digits = readDigits(raw, shape);
@@ -146,13 +177,7 @@ const fillerCodec: Codec = {
     return blank(shape);
   },
   decode(raw, shape) {
-    if (raw.length !== shape.length) {
-      throw new CodecDecodeError(
-        'length',
-        Math.min(raw.length, shape.length),
-        `Expected ${shape.length} characters for filler, got ${raw.length}`,
-      );
-    }
+    checkLength(raw, shape);
     return undefined;
   },
 };
