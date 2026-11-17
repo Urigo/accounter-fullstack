@@ -7,6 +7,8 @@ Byte-level fixtures of the generator (SPEC §13.5). Each fixture is a pair:
 - `<name>.opcn` is the file `generate1214(input, options)` produces, as windows-1255 bytes with CRLF
   line endings. It is binary for git (`.gitattributes`), so line endings are never converted.
 
+Golden inputs are frozen literals; never import builders into them.
+
 `tests/golden/golden.test.ts` generates every fixture and compares the bytes with the committed
 `.opcn` file. It also checks that the file's sha256 equals its row in
 [`VERIFICATION.md`](VERIFICATION.md), and that the table lists exactly the fixtures present.
