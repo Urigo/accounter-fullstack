@@ -219,8 +219,68 @@ const noWithholding1326Appendix = z.strictObject({
   amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[66]), z.number().optional()),
 });
 
+/** "מקום הנכס" of records 3027 and 3051 (SPEC §7.2). */
+const assetLocation = z.enum(['abroad', 'israel']).optional();
+
+/** The date of code 15, required in records 3050, 3051 and 3054 (SPEC §7.2). */
+const requiredCode15Date = z.strictObject({ code15: isoDate });
+
+/** Record 3027 (SPEC §7.2); every date is optional. */
+const sharesAppendix = z.strictObject({
+  symbol: z.literal(27),
+  expropriation: z.boolean().optional(),
+  assetDetails: z.string().optional(),
+  assetLocation,
+  relatedParty: z.boolean().optional(),
+  buyerName: z.string().optional(),
+  dates: z
+    .strictObject({
+      code15: isoDate.optional(),
+      code20: isoDate.optional(),
+      code53: isoDate.optional(),
+    })
+    .optional(),
+  amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[27]), z.number().optional()),
+});
+
+/** Record 3050 (SPEC §7.2). */
+const bettermentTaxAppendix = z.strictObject({
+  symbol: z.literal(50),
+  expropriation: z.boolean().optional(),
+  assetDetails: z.string().optional(),
+  purchaseDate: isoDate,
+  dates: requiredCode15Date,
+  amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[50]), z.number().optional()),
+});
+
+/** Record 3051 (SPEC §7.2); field rules check the wallet addresses' lengths. */
+const forcedVirtualCurrencyAppendix = z.strictObject({
+  symbol: z.literal(51),
+  assetDetails: z.string().optional(),
+  assetLocation,
+  relatedParty: z.boolean().optional(),
+  buyerName: z.string().optional(),
+  dates: requiredCode15Date,
+  /** Two slots in the record (236, 386): a third address is input.shape. */
+  walletAddresses: z.array(z.string()).min(1).max(2).optional(),
+  amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[51]), z.number().optional()),
+});
+
+/** Record 3054 (SPEC §7.2). */
+const oilPartnershipAppendix = z.strictObject({
+  symbol: z.literal(54),
+  assetDetails: z.string().optional(),
+  purchaseDate: isoDate,
+  dates: requiredCode15Date,
+  amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[54]), z.number().optional()),
+});
+
 /** A capital-gains appendix, discriminated by its transaction symbol (SPEC §3.7). */
 const capitalGainsAppendix = z.discriminatedUnion('symbol', [
+  sharesAppendix,
+  bettermentTaxAppendix,
+  forcedVirtualCurrencyAppendix,
+  oilPartnershipAppendix,
   securitiesAppendix,
   section6SecuritiesAppendix,
   reitAppendix,

@@ -2,12 +2,15 @@ import { encodeWindows1255 } from '../../src/codec/windows1255.js';
 import { generate1214, Opcn1214ParseError, parse1214, type Issue } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  bettermentTaxAppendix,
   breakdownCountries,
+  forcedVirtualCurrencyAppendix,
   foreignAppendix,
   foreignAppendixWithBreakdown,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
+  oilPartnershipAppendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -15,6 +18,7 @@ import {
   section6Appendices,
   section6Appendix,
   securitiesAppendix,
+  sharesAppendix,
   withholders,
 } from '../fixtures/builders.js';
 import { dropLine, goldenText, tamper as tamperAt } from '../fixtures/files.js';
@@ -743,29 +747,104 @@ describe('parse1214', () => {
     });
   });
 
-  it.each(['minimal', 'foreign', 'cg-63', 'cg-60', 'cg-64', 'cg-65', 'cg-66'])(
-    'never lets anything but Opcn1214ParseError escape for a corrupted %s golden',
-    name => {
-      const golden = goldenText(name);
-      const lines = golden.split(CRLF);
-      for (const [index, line] of lines.entries()) {
-        for (let position = 1; position <= line.length; position += 37) {
-          for (const value of ['X', ' ', '9', '\u05D0']) {
-            const corrupted = tamper(golden, index + 1, position, value);
-            try {
-              parse1214(corrupted);
-            } catch (error) {
-              expect(error).toBeInstanceOf(Opcn1214ParseError);
-              for (const issue of (error as Opcn1214ParseError).issues) {
-                expect(issue.line).toBeGreaterThan(0);
-                expect(issue.column).toBeGreaterThan(0);
-              }
+  describe('asset appendices (3027, 3050, 3051, 3054)', () => {
+    // Input order 51, 54, 50, 27; lines: 1000, 1020, 3027, 3050, 3051, 3054, 9999.
+    const input = minimalInput({
+      capitalGains: [
+        forcedVirtualCurrencyAppendix(),
+        oilPartnershipAppendix(),
+        bettermentTaxAppendix(),
+        sharesAppendix(),
+      ],
+    });
+    const file = generate1214(input, OPTIONS).text;
+
+    it('reads them back in file order: location literals, dates, wallet addresses, ×100 codes', () => {
+      const result = parse1214(file);
+      expect(result.issues).toEqual([]);
+      expect(result.report.capitalGains).toEqual([
+        sharesAppendix(),
+        bettermentTaxAppendix(),
+        forcedVirtualCurrencyAppendix(),
+        oilPartnershipAppendix(),
+      ]);
+      expect(result.report).toEqual(canonicalize(input, OPTIONS));
+    });
+
+    it('reports a blank required date as field.required at its file-order path', () => {
+      // 3050@193 purchase date, 3051@224 and 3054@202 code-15 dates; 3027@225 is optional.
+      const blank = ' '.repeat(10);
+      const tampered = tamper(
+        tamper(tamper(tamper(file, 4, 193, blank), 5, 224, blank), 6, 202, blank),
+        3,
+        225,
+        blank,
+      );
+      const result = parse1214(tampered);
+      expect(result.issues.map(issue => [issue.ruleId, issue.path, issue.recordType])).toEqual([
+        ['field.required', 'capitalGains[1].purchaseDate', '3050'],
+        ['field.required', 'capitalGains[2].dates.code15', '3051'],
+        ['field.required', 'capitalGains[3].dates.code15', '3054'],
+      ]);
+      expect(result.report.capitalGains?.[0]).toMatchObject({
+        dates: { code20: '2015-06-01', code53: '2010-01-31' },
+      });
+      expect(result.report.capitalGains?.[1]).not.toHaveProperty('purchaseDate');
+    });
+
+    it('locates a 3051 wallet-address or location problem at capitalGains[i]', () => {
+      // 3051@192 location 3 (allowed: 1, 2).
+      expect(parse1214(tamper(file, 5, 192, '3')).issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'field.enum',
+          path: 'capitalGains[2].assetLocation',
+          recordType: '3051',
+          recordIndex: 0,
+        }),
+      ]);
+      // A control character in the second wallet slot (3051@386–535).
+      expect(parse1214(tamper(file, 5, 535, '\u0001')).issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'field.charset',
+          path: 'capitalGains[2].walletAddresses[1]',
+          recordType: '3051',
+        }),
+      ]);
+    });
+  });
+
+  it.each([
+    'minimal',
+    'foreign',
+    'cg-27',
+    'cg-50',
+    'cg-51',
+    'cg-54',
+    'cg-63',
+    'cg-60',
+    'cg-64',
+    'cg-65',
+    'cg-66',
+  ])('never lets anything but Opcn1214ParseError escape for a corrupted %s golden', name => {
+    const golden = goldenText(name);
+    const lines = golden.split(CRLF);
+    for (const [index, line] of lines.entries()) {
+      for (let position = 1; position <= line.length; position += 37) {
+        for (const value of ['X', ' ', '9', '\u05D0']) {
+          const corrupted = tamper(golden, index + 1, position, value);
+          try {
+            parse1214(corrupted);
+          } catch (error) {
+            expect(error).toBeInstanceOf(Opcn1214ParseError);
+            for (const issue of (error as Opcn1214ParseError).issues) {
+              expect(issue.line).toBeGreaterThan(0);
+              expect(issue.column).toBeGreaterThan(0);
             }
           }
         }
       }
-    },
-  );
+    }
+  });
 });
 
 describe('parse1214: declarations rebuilt from their flags (SPEC §7.3)', () => {

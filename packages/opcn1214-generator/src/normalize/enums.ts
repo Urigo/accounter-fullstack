@@ -3,7 +3,12 @@
  * denormalizer reads the literal back.
  */
 import type { Primitive } from '../codec/types.js';
-import type { Declarations, RelatedCompany, WithholdingStatus } from '../model/input.js';
+import type {
+  AssetLocation,
+  Declarations,
+  RelatedCompany,
+  WithholdingStatus,
+} from '../model/input.js';
 
 /** A literal → code map of an enum input member. */
 type EnumCodes<L extends string> = Readonly<Record<L, number>>;
@@ -45,6 +50,18 @@ export const WITHHOLDING_STATUS_CODES = {
   notWithheldFirstHalf: 2,
   notWithheldSecondHalf: 3,
 } as const satisfies EnumCodes<WithholdingStatus>;
+
+/** 3027@193 and 3051@192 "מקום הנכס": 1 abroad, 2 Israel. */
+export const ASSET_LOCATION_CODES = {
+  abroad: 1,
+  israel: 2,
+} as const satisfies EnumCodes<AssetLocation>;
+
+/** The enum header keys of the capital-gains appendices (members of the appendix) and their maps. */
+export const CAPITAL_GAINS_ENUM_INPUTS: Readonly<Partial<Record<string, EnumCodes<string>>>> = {
+  withholdingStatus: WITHHOLDING_STATUS_CODES,
+  assetLocation: ASSET_LOCATION_CODES,
+};
 
 /** The enum header keys of record 1000 (each its own input path) and their maps. */
 export const ENUM_INPUTS: Readonly<Partial<Record<string, EnumCodes<string>>>> = {

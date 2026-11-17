@@ -2,25 +2,28 @@
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
  * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020, 1030,
- * 2000, 2200 and the capital-gains records of the modelled appendix types (3060, 3063, 3064, 3065, 3066).
+ * 2000, 2200 and the capital-gains records of the modelled appendix types (3027, 3050, 3051, 3054,
+ * 3060, 3063, 3064, 3065, 3066).
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
+import { readWalletAddresses, walletAddressKey } from './capital-gains/assets.js';
 import {
   CAPITAL_GAINS_INPUT_KEYS,
+  hasWalletAddresses,
   hasWithholders,
   type CapitalGainsInputSymbol,
 } from './capital-gains/index.js';
 import { readWithholders, withholderKey } from './capital-gains/securities.js';
 import { BANK_ACCOUNT_DIGITS, CODE_297_VALUES, type BankAccount } from './derive.js';
 import {
+  CAPITAL_GAINS_ENUM_INPUTS,
   ENUM_INPUTS,
   enumLiteral,
   RELATION_TYPE_CODES,
-  WITHHOLDING_STATUS_CODES,
 } from './enums.js';
 import {
   inputIndexOf,
@@ -244,9 +247,10 @@ function inputSymbol(record: NormalizedRecord): CapitalGainsInputSymbol | undefi
 
 /**
  * The capital-gains appendices of the 30xx `records` whose type has an input model, in file
- * order: the symbol of the record type, the header members (the withholding status as its
- * literal), the withholders (readWithholders) and the amounts (the transaction symbol, appendix
- * number and "מספר בתל"ם" sequence are derived).
+ * order: the symbol of the record type, the header members (the withholding status and asset
+ * location as their literals, dates under `dates`), the withholders (readWithholders), the wallet
+ * addresses (readWalletAddresses) and the amounts (the transaction symbol, appendix number and
+ * "מספר בתל"ם" sequence are derived).
  */
 function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
   return records.flatMap(record => {
@@ -257,11 +261,8 @@ function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
     const tree: InputTree = { symbol };
     for (const key of CAPITAL_GAINS_INPUT_KEYS[symbol]) {
       const value = record.values[key];
-      setKey(
-        tree,
-        key,
-        key === 'withholdingStatus' ? enumLiteral(WITHHOLDING_STATUS_CODES, value) : value,
-      );
+      const codes = CAPITAL_GAINS_ENUM_INPUTS[key];
+      setKey(tree, key, codes ? enumLiteral(codes, value) : value);
     }
     const withholders = hasWithholders(symbol)
       ? readWithholders((slot, member) => record.values[withholderKey(slot, member)])
@@ -269,7 +270,13 @@ function capitalGains(records: readonly NormalizedRecord[]): InputTree[] {
     if (withholders) {
       tree.withholders = withholders;
     }
-    // No code of the modelled appendix types (3060, 3063, 3064, 3065, 3066) is derived (SPEC §7.4).
+    const walletAddresses = hasWalletAddresses(symbol)
+      ? readWalletAddresses(slot => record.values[walletAddressKey(slot)])
+      : undefined;
+    if (walletAddresses) {
+      tree.walletAddresses = walletAddresses;
+    }
+    // No code of the modelled appendix types is derived (SPEC §7.4; 3077 codes 501–505 are, G5).
     tree.amounts = Object.fromEntries(record.codes);
     return [tree];
   });

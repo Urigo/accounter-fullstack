@@ -1,5 +1,7 @@
 import * as api from '../../src/index.js';
 import type {
+  AssetLocation,
+  BettermentTaxAppendix,
   CapitalGainsAppendix,
   CapitalGainsCode,
   CapitalGainsSymbol,
@@ -15,6 +17,7 @@ import type {
   EnumValue,
   FieldDef,
   FieldKind,
+  ForcedVirtualCurrencyAppendix,
   ForeignAppendix,
   ForeignAppendixCode,
   GenerateOptions,
@@ -25,6 +28,7 @@ import type {
   MainFormInputCode,
   NoWithholding1322Appendix,
   NoWithholding1326Appendix,
+  OilPartnershipAppendix,
   ParseOptions,
   ParseResult,
   Phone,
@@ -43,6 +47,7 @@ import type {
   SecuritiesAppendix,
   Severity,
   Shareholder,
+  SharesAppendix,
   SupportedTaxYear,
   ValidateOptions,
   ValidationResult,
@@ -98,7 +103,48 @@ describe('public API', () => {
     expectTypeOf<ReitAppendix>().toExtend<CapitalGainsAppendix>();
     expectTypeOf<NoWithholding1322Appendix>().toExtend<CapitalGainsAppendix>();
     expectTypeOf<NoWithholding1326Appendix>().toExtend<CapitalGainsAppendix>();
-    expectTypeOf<CapitalGainsAppendix['symbol']>().toEqualTypeOf<60 | 63 | 64 | 65 | 66>();
+    expectTypeOf<SharesAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<BettermentTaxAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<ForcedVirtualCurrencyAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<OilPartnershipAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<CapitalGainsAppendix['symbol']>().toEqualTypeOf<
+      27 | 50 | 51 | 54 | 60 | 63 | 64 | 65 | 66
+    >();
+    expectTypeOf<keyof SharesAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<27>>();
+    expectTypeOf<keyof BettermentTaxAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<50>>();
+    expectTypeOf<keyof ForcedVirtualCurrencyAppendix['amounts']>().toEqualTypeOf<
+      CapitalGainsCode<51>
+    >();
+    expectTypeOf<keyof OilPartnershipAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<54>>();
+    expectTypeOf<AssetLocation>().toEqualTypeOf<'abroad' | 'israel'>();
+    expectTypeOf<SharesAppendix['assetLocation']>().toEqualTypeOf<AssetLocation | undefined>();
+    expectTypeOf<SharesAppendix['dates']>().toEqualTypeOf<
+      { code15?: IsoDate; code20?: IsoDate; code53?: IsoDate } | undefined
+    >();
+    expectTypeOf<BettermentTaxAppendix['purchaseDate']>().toEqualTypeOf<IsoDate>();
+    expectTypeOf<BettermentTaxAppendix['dates']>().toEqualTypeOf<{ code15: IsoDate }>();
+    expectTypeOf<OilPartnershipAppendix['purchaseDate']>().toEqualTypeOf<IsoDate>();
+    expectTypeOf<OilPartnershipAppendix['dates']>().toEqualTypeOf<{ code15: IsoDate }>();
+    expectTypeOf<ForcedVirtualCurrencyAppendix['dates']>().toEqualTypeOf<{ code15: IsoDate }>();
+    expectTypeOf<ForcedVirtualCurrencyAppendix['walletAddresses']>().toEqualTypeOf<
+      [string] | [string, string] | undefined
+    >();
+    expectTypeOf<keyof BettermentTaxAppendix>().toEqualTypeOf<
+      'symbol' | 'expropriation' | 'assetDetails' | 'purchaseDate' | 'dates' | 'amounts'
+    >();
+    expectTypeOf<keyof OilPartnershipAppendix>().toEqualTypeOf<
+      'symbol' | 'assetDetails' | 'purchaseDate' | 'dates' | 'amounts'
+    >();
+    expectTypeOf<keyof ForcedVirtualCurrencyAppendix>().toEqualTypeOf<
+      | 'symbol'
+      | 'assetDetails'
+      | 'assetLocation'
+      | 'relatedParty'
+      | 'buyerName'
+      | 'dates'
+      | 'walletAddresses'
+      | 'amounts'
+    >();
     expectTypeOf<keyof NoWithholding1322Appendix['amounts']>().toEqualTypeOf<
       CapitalGainsCode<65>
     >();

@@ -1,5 +1,7 @@
 import { getLayout } from '../../src/layout/registry.js';
 import {
+  ASSET_LOCATION_CODES,
+  CAPITAL_GAINS_ENUM_INPUTS,
   CONSOLIDATED_REPORT_CODES,
   ENUM_INPUTS,
   enumCode,
@@ -63,6 +65,30 @@ describe('enum literal ↔ code maps (SPEC §7.2)', () => {
       );
     },
   );
+
+  it('assetLocation: abroad/israel → 1/2', () => {
+    expect(ASSET_LOCATION_CODES).toEqual({ abroad: 1, israel: 2 });
+  });
+
+  it.each(['3027', '3051'] as const)(
+    'assetLocation maps exactly the allowed values of its field in record %s',
+    type => {
+      const field = getLayout(2024).records[type].fields.find(
+        candidate => candidate.key === 'assetLocation',
+      );
+      expect(field?.kind).toBe('enum');
+      expect(Object.values(ASSET_LOCATION_CODES).sort(byValue)).toEqual(
+        field?.values?.map(value => value.value).sort(byValue),
+      );
+    },
+  );
+
+  it('lists the enum header keys of the capital-gains appendices with their maps', () => {
+    expect(CAPITAL_GAINS_ENUM_INPUTS).toEqual({
+      withholdingStatus: WITHHOLDING_STATUS_CODES,
+      assetLocation: ASSET_LOCATION_CODES,
+    });
+  });
 
   it.each(Object.entries(ENUM_INPUTS))(
     '%s maps exactly the allowed values of its field',
