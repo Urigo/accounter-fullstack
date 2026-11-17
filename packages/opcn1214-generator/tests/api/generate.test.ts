@@ -1,0 +1,156 @@
+import { decodeRecord } from '../../src/codec/record.js';
+import { decodeWindows1255 } from '../../src/codec/windows1255.js';
+import {
+  generate1214,
+  Opcn1214Error,
+  Opcn1214ValidationError,
+  validate1214,
+  type PhonePrefix,
+} from '../../src/index.js';
+import { getLayout } from '../../src/layout/registry.js';
+import { minimalInput } from '../fixtures/builders.js';
+
+const OPTIONS = { today: () => '2025-03-31' };
+const CRLF = '\r\n';
+
+/** The number of code-amount pairs in the record 1000 line of `text`, decoded from the file. */
+function writtenMainCodePairs(text: string): number {
+  const line = text.split(CRLF)[0] ?? '';
+  return decodeRecord(getLayout(2024).records['1000'], line, 0).codes.size;
+}
+
+function slice(line: string | undefined, position: number, length: number): string {
+  if (line === undefined) {
+    throw new Error('missing line');
+  }
+  return line.slice(position - 1, position - 1 + length);
+}
+
+/** The error generate1214 throws for `input`; fails the test when it does not throw. */
+function generationError(input: Parameters<typeof generate1214>[0]): Opcn1214ValidationError {
+  try {
+    generate1214(input, OPTIONS);
+  } catch (error) {
+    if (error instanceof Opcn1214ValidationError) {
+      return error;
+    }
+    throw error;
+  }
+  throw new Error('generate1214 did not throw');
+}
+
+describe('generate1214', () => {
+  it('returns the file as text and windows-1255 bytes', () => {
+    const result = generate1214(minimalInput(), OPTIONS);
+    const lines = result.text.split(CRLF);
+    expect(lines.pop()).toBe('');
+    expect(lines.map(line => line.length)).toEqual([4232, 1160, 150]);
+    expect(lines.map(line => line.slice(0, 8))).toEqual(['12141000', '12141020', '12149999']);
+    expect(result.text.endsWith(CRLF)).toBe(true);
+    expect(result.bytes).toBeInstanceOf(Uint8Array);
+    expect(result.bytes.length).toBe(result.text.length);
+    expect(decodeWindows1255(result.bytes)).toBe(result.text);
+    expect(slice(lines[0], 137, 9)).toBe('514000009');
+    expect(slice(lines[0], 146, 4)).toBe('2024');
+  });
+
+  it('suggests a file name from the file number and tax year', () => {
+    expect(generate1214(minimalInput(), OPTIONS).fileName).toBe('1214_514000009_2024.txt');
+    expect(generate1214(minimalInput({ taxYear: 2025 }), OPTIONS).fileName).toBe(
+      '1214_514000009_2025.txt',
+    );
+  });
+
+  it('uses the file number as written in the file (9 digits)', () => {
+    const result = generate1214(minimalInput({ company: { fileNumber: '12' } }), OPTIONS);
+    expect(slice(result.text, 137, 9)).toBe('000000012');
+    expect(result.fileName).toBe('1214_000000012_2024.txt');
+  });
+
+  it('summarizes the report', () => {
+    const { summary, text } = generate1214(minimalInput(), OPTIONS);
+    // Five input codes and the derived code 273 (SPEC §7.4).
+    expect(summary).toEqual({
+      reports: 1,
+      records: { '1000': 1, '1020': 1, '9999': 1 },
+      mainCodePairs: 6,
+      omittedZeroCodes: [],
+    });
+    expect(writtenMainCodePairs(text)).toBe(6);
+  });
+
+  it('counts records per type and the code pairs written in record 1000', () => {
+    const shareholder = minimalInput().shareholders[0];
+    if (!shareholder) {
+      throw new Error('missing shareholder');
+    }
+    const input = minimalInput({
+      amounts: { '010': 500 },
+      shareholders: [
+        { ...shareholder, dividendRightsPercent: 60 },
+        { ...shareholder, idNumber: '000000018', fullName: 'שרה כהן', dividendRightsPercent: 40 },
+      ],
+    });
+    const { summary, text } = generate1214(input, OPTIONS);
+    expect(summary.records).toEqual({ '1000': 1, '1020': 2, '9999': 1 });
+    expect(summary.mainCodePairs).toBe(7);
+    expect(writtenMainCodePairs(text)).toBe(7);
+    expect(text.split(CRLF).filter(line => line.slice(4, 8) === '1020')).toHaveLength(2);
+  });
+
+  it('lists omitted zero codes', () => {
+    const { summary, text } = generate1214(minimalInput({ amounts: { '010': 0 } }), OPTIONS);
+    expect(summary.omittedZeroCodes).toEqual([{ record: '1000', recordIndex: 0, code: '010' }]);
+    expect(summary.mainCodePairs).toBe(6);
+    expect(writtenMainCodePairs(text)).toBe(6);
+  });
+
+  it('honours options.today for the save date', () => {
+    const first = generate1214(minimalInput(), { today: () => '2025-03-31' });
+    const second = generate1214(minimalInput(), { today: () => '2025-04-01' });
+    expect(slice(first.text, 165, 10)).toBe('31/03/2025');
+    expect(slice(second.text, 165, 10)).toBe('01/04/2025');
+  });
+
+  it('prefers meta.saveDate over options.today', () => {
+    const result = generate1214(minimalInput({ meta: { saveDate: '2025-01-15' } }), OPTIONS);
+    expect(slice(result.text, 165, 10)).toBe('15/01/2025');
+  });
+
+  it('is deterministic', () => {
+    expect(generate1214(minimalInput(), OPTIONS).bytes).toEqual(
+      generate1214(minimalInput(), OPTIONS).bytes,
+    );
+  });
+
+  it('returns the warnings of a valid report', () => {
+    expect(generate1214(minimalInput(), OPTIONS).warnings).toEqual([]);
+  });
+
+  it('throws Opcn1214ValidationError carrying every error and warning', () => {
+    const input = minimalInput({
+      company: { registeredName: ' ', phone: { prefix: '01' as PhonePrefix } },
+    });
+    const { errors, warnings } = validate1214(input, OPTIONS);
+    expect(errors.length).toBeGreaterThan(1);
+    expect(warnings.length).toBeGreaterThan(0);
+
+    const error = generationError(input);
+    expect(error).toBeInstanceOf(Opcn1214Error);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('Opcn1214ValidationError');
+    expect(error.issues).toEqual([...errors, ...warnings]);
+    expect(error.message).toMatch(/^1214 report has 2 errors and 1 warning: field\.required at /);
+  });
+
+  it('throws for an unsupported tax year', () => {
+    const error = generationError({ ...minimalInput(), taxYear: 2023 as 2024 });
+    expect(error.issues.map(issue => issue.ruleId)).toEqual(['struct.taxYear.unsupported']);
+    expect(error.message).toMatch(/^1214 report has 1 error: struct\.taxYear\.unsupported at /);
+  });
+
+  it('throws for an input of the wrong shape', () => {
+    const error = generationError(null as never);
+    expect(error.issues[0]?.ruleId).toBe('struct.taxYear.unsupported');
+  });
+});
