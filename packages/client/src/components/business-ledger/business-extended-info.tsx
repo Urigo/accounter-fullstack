@@ -133,9 +133,11 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
     () =>
       data?.businessTransactionsFromLedgerRecords.__typename === 'CommonError'
         ? []
-        : (data?.businessTransactionsFromLedgerRecords.businessTransactions.sort((a, b) =>
-            a.invoiceDate > b.invoiceDate ? 1 : -1,
-          ) ?? []),
+        : // Copy before sorting: the array belongs to urql's cache. Records sharing a date keep the
+          // server's order, so the running balances below are deterministic.
+          [...(data?.businessTransactionsFromLedgerRecords.businessTransactions ?? [])].sort(
+            (a, b) => a.invoiceDate.localeCompare(b.invoiceDate),
+          ),
     [data],
   );
 

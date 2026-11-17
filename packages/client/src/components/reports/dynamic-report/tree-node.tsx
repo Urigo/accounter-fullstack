@@ -38,6 +38,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip.js';
 import { cn } from '@/lib/utils.js';
+import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
 import { DragOverlayContent } from './drag-overlay.js';
 import { RowTrailing, type RowAnnotations } from './row-trailing.js';
@@ -66,7 +67,11 @@ interface TreeNodeProps {
    * click itself (a revealed discussion lets the branch collapse) passes false.
    */
   isToggleLocked?: boolean;
+  /** The report's period and owner, so an expanded leaf lists only the ledger records behind its figure. */
+  ledgerFilter?: LedgerFilter;
 }
+
+export type LedgerFilter = Pick<BusinessTransactionsFilter, 'fromDate' | 'toDate' | 'ownerIds'>;
 
 const NO_ANNOTATIONS: RowAnnotations = {};
 
@@ -92,6 +97,7 @@ export function TreeNodeRow({
   annotations = NO_ANNOTATIONS,
   isForcedOpen = false,
   isToggleLocked = isForcedOpen,
+  ledgerFilter,
 }: TreeNodeProps): ReactElement {
   const { diff } = annotations;
   const [isDragging, setIsDragging] = useState(false);
@@ -338,9 +344,7 @@ export function TreeNodeRow({
           className="bg-muted/30 border-b border-border/50 py-2 overflow-x-auto"
           style={{ paddingInlineStart: `${indentPx + 32}px`, paddingInlineEnd: '8px' }}
         >
-          <div className="min-w-max">
-            <BusinessExtendedInfo businessID={node.id} />
-          </div>
+          <BusinessExtendedInfo businessID={node.id} filter={ledgerFilter} />
         </div>
       )}
     </div>

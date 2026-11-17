@@ -459,15 +459,20 @@ export function DynamicReport() {
     [guardScopeChange, updateSearchParams],
   );
 
+  // The scope every figure on screen is computed over. An expanded leaf's ledger records use it too,
+  // so they add up to the leaf's figure.
+  const ledgerFilter = useMemo(
+    () => ({
+      fromDate: fromDate as TimelessDateString,
+      toDate: toDate as TimelessDateString,
+      ownerIds: [scopeOwnerId],
+    }),
+    [fromDate, toDate, scopeOwnerId],
+  );
+
   const [{ data: businessSumsData, fetching: businessSumsFetching }] = useQuery({
     query: DynamicReportDocument,
-    variables: {
-      filters: {
-        fromDate: fromDate as TimelessDateString,
-        toDate: toDate as TimelessDateString,
-        ownerIds: [scopeOwnerId],
-      },
-    },
+    variables: { filters: ledgerFilter },
   });
 
   // Derive business sums array
@@ -979,7 +984,7 @@ export function DynamicReport() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col flex-1 min-h-96 bg-background">
       <Toolbar
         fromDate={fromDate}
         toDate={toDate}
@@ -1055,6 +1060,7 @@ export function DynamicReport() {
             onRename={handleRenameBranch}
             onDelete={handleDeleteBranch}
             newEntityIds={newEntityIds}
+            ledgerFilter={ledgerFilter}
           />
 
           <TreePanel
@@ -1078,6 +1084,7 @@ export function DynamicReport() {
             rowComments={comments.rowComments}
             reviewVisibility={comments.visibility}
             lockedOpenIds={comments.lockedOpenIds}
+            ledgerFilter={ledgerFilter}
           />
         </div>
       </div>

@@ -24,9 +24,10 @@ Auth0 is the identity provider for user authentication.
 
 Create or verify the following objects in the Auth0 tenant.
 
-### 2.1 Regular Web Application (Frontend Login)
+### 2.1 Single Page Application (Frontend Login)
 
-Create an Auth0 Application of type `Regular Web Application`.
+Create an Auth0 Application of type `Single Page Application`. The client signs in with
+`@auth0/auth0-react`, a browser PKCE flow with no client secret.
 
 Configure:
 
@@ -137,13 +138,12 @@ Notes:
 
 Auth0 frontend config is used in `packages/client/src/index.tsx`.
 
-Set in the root `.env` (or `packages/client/.env`). `vite.config.ts` exposes them to the app as
-`VITE_AUTH0_*`:
+`AUTH0_DOMAIN` and `AUTH0_AUDIENCE` come from the root `.env` (section 3, shared with the server).
+Set the client ID in `packages/client/.env` (see `packages/client/.env.template`). `build-env.ts`
+inlines all three into the app as `VITE_AUTH0_*`:
 
 ```bash
-AUTH0_DOMAIN=<tenant>.auth0.com
-AUTH0_FRONTEND_CLIENT_ID=<regular-web-app-client-id>
-AUTH0_AUDIENCE=https://api.accounter.com
+AUTH0_FRONTEND_CLIENT_ID=<spa-client-id>
 ```
 
 Notes:
@@ -190,7 +190,7 @@ Operational implications:
 Use this checklist after configuration:
 
 - [ ] Auth0 tenant exists and is reachable
-- [ ] Regular Web App configured with correct callback/logout/origin URLs
+- [ ] Single Page Application configured with correct callback/logout/origin URLs
 - [ ] Callback/logout/web origins/cors values exactly match frontend URL (scheme/host/port, no
       mismatch)
 - [ ] Refresh Token Rotation enabled with absolute + inactivity expiration configured

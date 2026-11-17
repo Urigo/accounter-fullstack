@@ -10,6 +10,7 @@ type EventOf<T extends ManualAutomationsRunEvent['__typename']> = Extract<
 export type FlaggedFee = EventOf<'ForeignFeeTransactionFlagged'>;
 export type MergedCharges = EventOf<'ChargesMergedByReference'>;
 export type FilledDebitDate = EventOf<'CreditcardDebitDateFilled'>;
+export type DeelCharge = EventOf<'DeelChargeSynced'>;
 
 /** A step that has not reported any status yet is `PENDING`. */
 export type AutomationStepView = {
@@ -23,6 +24,7 @@ export type ManualAutomationsRunView = {
   flaggedFees: FlaggedFee[];
   mergedCharges: MergedCharges[];
   filledDebitDates: FilledDebitDate[];
+  deelCharges: DeelCharge[];
 };
 
 /** Steps in execution order, as the server runs them. */
@@ -30,6 +32,7 @@ export const AUTOMATION_STEPS = [
   CronJobStep.FlagForeignFees,
   CronJobStep.MergeChargesByReference,
   CronJobStep.FillCreditcardDebitDates,
+  CronJobStep.FetchDeelDocuments,
 ] as const;
 
 const PENDING_STEP: AutomationStepView = { state: 'PENDING', affectedCount: null, errors: [] };
@@ -43,10 +46,12 @@ export function groupAutomationEvents(
       [CronJobStep.FlagForeignFees]: PENDING_STEP,
       [CronJobStep.MergeChargesByReference]: PENDING_STEP,
       [CronJobStep.FillCreditcardDebitDates]: PENDING_STEP,
+      [CronJobStep.FetchDeelDocuments]: PENDING_STEP,
     },
     flaggedFees: [],
     mergedCharges: [],
     filledDebitDates: [],
+    deelCharges: [],
   };
 
   for (const event of events) {
@@ -67,6 +72,9 @@ export function groupAutomationEvents(
       case 'CreditcardDebitDateFilled':
         view.filledDebitDates.push(event);
         break;
+      case 'DeelChargeSynced':
+        view.deelCharges.push(event);
+        break;
     }
   }
 
@@ -77,13 +85,17 @@ function plural(count: number, singular: string, pluralForm = `${singular}s`): s
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-/** One-line outcome of a run, e.g. "3 charges merged · 5 fees flagged · 12 debit dates filled". */
+/**
+ * One-line outcome of a run, e.g.
+ * "3 charges merged · 5 fees flagged · 12 debit dates filled · 2 Deel charges pulled".
+ */
 export function summarizeAutomationEvents(events: readonly ManualAutomationsRunEvent[]): {
   failed: boolean;
   withErrors: boolean;
   description: string;
 } {
-  const { steps, flaggedFees, mergedCharges, filledDebitDates } = groupAutomationEvents(events);
+  const { steps, flaggedFees, mergedCharges, filledDebitDates, deelCharges } =
+    groupAutomationEvents(events);
   const states = AUTOMATION_STEPS.map(step => steps[step].state);
   // count the charges that were folded into others, not the merge groups
   const mergedAwayCount = mergedCharges.reduce((sum, merge) => sum + merge.mergedCharges.length, 0);
@@ -95,6 +107,10 @@ export function summarizeAutomationEvents(events: readonly ManualAutomationsRunE
       `${plural(mergedAwayCount, 'charge')} merged`,
       `${plural(flaggedFees.length, 'fee')} flagged`,
       `${plural(filledDebitDates.length, 'debit date')} filled`,
+      // a business without Deel never ran the pull, so "0 pulled" would be misleading
+      ...(steps[CronJobStep.FetchDeelDocuments].state === CronJobStepState.NotConfigured
+        ? []
+        : [`${plural(deelCharges.length, 'Deel charge')} pulled`]),
     ].join(' · '),
   };
 }

@@ -1,6 +1,6 @@
-import { createContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react';
 import equal from 'deep-equal';
-import { useQuery } from 'urql';
+import { useClient, useQuery } from 'urql';
 import { useAuth0 } from '@auth0/auth0-react';
 import { AccounterLoader } from '../components/common/loaders/loader.js';
 import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
@@ -28,6 +28,11 @@ import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
 type ContextType = {
   userContext: UserInfo | null;
   setUserContext: (filtersContext: UserInfo | null) => void;
+  /**
+   * Re-reads the user context from the server, without the app-wide loader the first read shows,
+   * after a change to a setting it is derived from.
+   */
+  refreshUserContext?: () => Promise<void>;
 };
 
 export interface BusinessMembershipInfo {
@@ -78,6 +83,25 @@ type User = {
   username: string;
 };
 
+/**
+ * Runs the user context query again through the client rather than by re-executing the providers'
+ * `useQuery`: that would flip its `fetching`, and the providers swap the whole app for a loader
+ * while it is set.
+ */
+function useRefreshUserContext(
+  setDefaults: (defaults: UserContextQuery['userContext']) => void,
+): () => Promise<void> {
+  const client = useClient();
+  return useCallback(async () => {
+    const result = await client
+      .query(UserContextDocument, {}, { requestPolicy: 'network-only' })
+      .toPromise();
+    if (result.data) {
+      setDefaults(result.data.userContext);
+    }
+  }, [client, setDefaults]);
+}
+
 export const UserContext = createContext<ContextType>({
   userContext: null,
   setUserContext: () => void 0,
@@ -98,6 +122,7 @@ function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
   const [userContext, setUserContext] = useState<UserInfo | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [defaults, setDefaults] = useState<UserContextQuery['userContext']>(null);
+  const refreshUserContext = useRefreshUserContext(setDefaults);
 
   const [{ data, fetching }, fetchUserContext] = useQuery({
     query: UserContextDocument,
@@ -148,13 +173,16 @@ function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
   }
 
   return (
-    <UserContext.Provider value={{ userContext, setUserContext }}>{children}</UserContext.Provider>
+    <UserContext.Provider value={{ userContext, setUserContext, refreshUserContext }}>
+      {children}
+    </UserContext.Provider>
   );
 }
 
 function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode {
   const [userContext, setUserContext] = useState<UserInfo | null>(null);
   const [defaults, setDefaults] = useState<UserContextQuery['userContext']>(null);
+  const refreshUserContext = useRefreshUserContext(setDefaults);
 
   const [{ data, fetching }] = useQuery({
     query: UserContextDocument,
@@ -185,6 +213,8 @@ function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode 
   }
 
   return (
-    <UserContext.Provider value={{ userContext, setUserContext }}>{children}</UserContext.Provider>
+    <UserContext.Provider value={{ userContext, setUserContext, refreshUserContext }}>
+      {children}
+    </UserContext.Provider>
   );
 }

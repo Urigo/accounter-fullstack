@@ -39,13 +39,6 @@ export default async function globalSetup() {
     console.warn('[test-setup] Failed to establish isolated TEST_ENV_FILE:', describeError(e));
   }
 
-  // Enforce latest migration by default for local runs
-  if (!process.env.ENFORCE_LATEST_MIGRATION) {
-    process.env.ENFORCE_LATEST_MIGRATION = '1';
-    // eslint-disable-next-line no-console
-    console.log('[test-setup] ENFORCE_LATEST_MIGRATION=1 (default)');
-  }
-
   // Ensure core reference data exists outside per-test transactions
   // Specifically: countries table populated from CountryCode enum
   try {

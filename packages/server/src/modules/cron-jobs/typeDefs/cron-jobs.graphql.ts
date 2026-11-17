@@ -54,12 +54,14 @@ export default gql`
     | ForeignFeeTransactionFlagged
     | ChargesMergedByReference
     | CreditcardDebitDateFilled
+    | DeelChargeSynced
 
   " cron jobs steps, in execution order "
   enum CronJobStep {
     FLAG_FOREIGN_FEES
     MERGE_CHARGES_BY_REFERENCE
     FILL_CREDITCARD_DEBIT_DATES
+    FETCH_DEEL_DOCUMENTS
   }
 
   " cron job step state "
@@ -71,6 +73,8 @@ export default gql`
     FAILED
     " not executed, because a previous step failed "
     SKIPPED
+    " not executed, because the integration it needs is not set up for this business "
+    NOT_CONFIGURED
   }
 
   " status of a cron job step. Emitted when a step starts and when it ends "
@@ -110,5 +114,14 @@ export default gql`
   type CreditcardDebitDateFilled {
     transaction: Transaction!
     debitDate: TimelessDate!
+  }
+
+  " a charge that got Deel invoices when the cron jobs pulled Deel documents "
+  type DeelChargeSynced {
+    charge: Charge!
+    " true when the charge was created by this run, false when an existing charge was updated "
+    isNew: Boolean!
+    " number of Deel invoices recorded on the charge by this run "
+    invoiceCount: Int!
   }
 `;

@@ -10,6 +10,10 @@ import { useApiMutation } from './use-api-mutation.js';
   mutation UpdateSecuritiesContext($input: SecuritiesContextInput!) {
     updateSecuritiesContext(input: $input) {
       id
+      foreignSecuritiesBusiness {
+        id
+        name
+      }
       sortCode {
         id
         key
@@ -42,10 +46,10 @@ export const useUpdateSecuritiesContext = (): UseUpdateSecuritiesContext => {
   const { fetching, execute } = useApiMutation({
     document: UpdateSecuritiesContextDocument,
     notificationId: NOTIFICATION_ID,
-    loadingMessage: 'Saving securities tax categories',
-    errorMessage: 'Error saving securities tax categories',
+    loadingMessage: 'Saving securities settings',
+    errorMessage: 'Error saving securities settings',
     select: data => data.updateSecuritiesContext,
-    successToast: { description: 'Securities tax categories saved' },
+    successToast: { description: 'Securities settings saved' },
   });
 
   return {

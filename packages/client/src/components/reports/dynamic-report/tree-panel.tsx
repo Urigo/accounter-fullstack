@@ -14,7 +14,7 @@ import type { RowApproval } from './approval-status.js';
 import type { RowComments } from './comment-indicator.js';
 import type { RowDiff } from './diff-markers.js';
 import type { RowAnnotations } from './row-trailing.js';
-import { TreeNodeRow } from './tree-node.js';
+import { TreeNodeRow, type LedgerFilter } from './tree-node.js';
 import type { ApprovalStats, EffectiveApproval } from './utils/approvals.js';
 import type { ReportDiff } from './utils/diff.js';
 import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
@@ -64,9 +64,14 @@ interface TreePanelProps {
    * branch is locked. Report tree only.
    */
   lockedOpenIds?: ReadonlySet<string>;
+  /** The report's period and owner, which an expanded leaf's ledger records are filtered by. */
+  ledgerFilter?: LedgerFilter;
 }
 
-type RenderProps = Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'> & {
+type RenderProps = Pick<
+  TreePanelProps,
+  'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete' | 'ledgerFilter'
+> & {
   rowAnnotations: (node: FlatNode<CustomData>) => RowAnnotations;
   ghostIds: Set<string>;
   reviewVisibility: RowVisibility | null;
@@ -113,6 +118,7 @@ function renderSubtree(
             annotations={props.rowAnnotations(node)}
             isForcedOpen={isForcedOpen}
             isToggleLocked={isForcedOpen && (props.lockedOpenIds?.has(node.id) ?? true)}
+            ledgerFilter={props.ledgerFilter}
           />
           {node.droppable &&
             // A ghost branch is a record of a removed subtree, so it always shows what it contained.
@@ -147,6 +153,7 @@ export function TreePanel({
   rowComments,
   reviewVisibility = null,
   lockedOpenIds,
+  ledgerFilter,
 }: TreePanelProps): ReactElement {
   const panelRef = useRef<HTMLDivElement>(null);
   const [isOver, setIsOver] = useState(false);
@@ -254,6 +261,7 @@ export function TreePanel({
     ghostIds,
     reviewVisibility: treeId === 'report' ? reviewVisibility : null,
     lockedOpenIds,
+    ledgerFilter,
   };
 
   const hasRootNodes = renderedNodes.some(

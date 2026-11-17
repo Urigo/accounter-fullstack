@@ -1,3 +1,4 @@
+import { rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -128,6 +129,15 @@ describe('parseEnv — invalid configuration', () => {
 });
 
 describe('parseEnv — OpenTelemetry configuration', () => {
+  it('defaults the deployment environment to the source NODE_ENV, then development', () => {
+    expect(parseEnv(validEnv).otel.deploymentEnv).toBe('development');
+    expect(parseEnv({ ...validEnv, NODE_ENV: 'production' }).otel.deploymentEnv).toBe('production');
+    expect(
+      parseEnv({ ...validEnv, NODE_ENV: 'production', OTEL_DEPLOYMENT_ENV: 'staging' }).otel
+        .deploymentEnv,
+    ).toBe('staging');
+  });
+
   it('defaults OTEL to disabled with the MCP service identity', () => {
     const config = parseEnv(validEnv);
     expect(config.otel.enabled).toBe(false);
@@ -217,6 +227,22 @@ describe('loadEnv — fail-fast startup', () => {
     expect(() => loadEnv({})).toThrow('process.exit:1');
     expect(exit).toHaveBeenCalledWith(1);
     expect(String(errorLog.mock.calls[0]?.[0])).toContain('Invalid environment variables');
+  });
+
+  it('takes the OTEL deployment default from a NODE_ENV the env file supplies', () => {
+    const envFile = resolve(tmpdir(), `accounter-mcp-node-env-${process.pid}.env`);
+    writeFileSync(
+      envFile,
+      Object.entries({ ...validEnv, NODE_ENV: 'production' })
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n'),
+    );
+    process.env.TEST_ENV_FILE = envFile;
+    try {
+      expect(loadEnv({}).otel.deploymentEnv).toBe('production');
+    } finally {
+      rmSync(envFile, { force: true });
+    }
   });
 
   it('returns a validated config for a valid source without exiting', () => {

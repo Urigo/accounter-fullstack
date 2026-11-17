@@ -58,6 +58,22 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
             }
           }
         }
+        ... on DeelChargeSynced {
+          isNew
+          invoiceCount
+          charge {
+            id
+            userDescription
+            minDocumentsDate
+            totalAmount {
+              formatted
+            }
+            counterparty {
+              id
+              name
+            }
+          }
+        }
         ... on CreditcardDebitDateFilled {
           debitDate
           transaction {

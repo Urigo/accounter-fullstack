@@ -66,11 +66,26 @@ const ServerModel = zod.object({
   GATEWAY_CP_TOKEN: emptyString(zod.string().optional().default('')),
 });
 
+const models = {
+  general: GeneralModel,
+  featureFlags: FeatureFlagsModel,
+  cloudflare: CloudflareModel,
+  server: ServerModel,
+};
+
+/**
+ * Every variable the schema declares. `.env.template` must list exactly these (plus a short
+ * allowlist), which `__tests__/env-template.test.ts` enforces.
+ */
+export const ENV_SCHEMA_KEYS: ReadonlySet<string> = new Set(
+  Object.values(models).flatMap(model => Object.keys(model.shape)),
+);
+
 const configs = {
-  general: GeneralModel.safeParse(process.env),
-  featureFlags: FeatureFlagsModel.safeParse(process.env),
-  cloudflare: CloudflareModel.safeParse(process.env),
-  server: ServerModel.safeParse(process.env),
+  general: models.general.safeParse(process.env),
+  featureFlags: models.featureFlags.safeParse(process.env),
+  cloudflare: models.cloudflare.safeParse(process.env),
+  server: models.server.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];

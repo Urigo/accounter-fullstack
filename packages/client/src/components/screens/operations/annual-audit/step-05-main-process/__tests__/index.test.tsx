@@ -205,6 +205,12 @@ describe('Step05MainProcess', () => {
     // Baselines stay one click away
     expect(templateParam(container, `baseline-link-${BS}`)).toBe('bs-2024');
     expect(templateParam(container, `baseline-link-${PNL}`)).toBe('pnl-2024');
+    // Like the header actions, dynamic reports open in a new tab
+    for (const testId of [`baseline-link-${BS}`, `working-link-${BS}`]) {
+      expect(container.querySelector(`[data-testid="${testId}"]`)?.getAttribute('target')).toBe(
+        '_blank',
+      );
+    }
 
     await cleanup();
   });

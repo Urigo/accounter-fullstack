@@ -4,7 +4,9 @@ import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { clientBuildEnvDefines } from './build-env.js';
 
+// Fills `process.env` for `clientBuildEnvDefines`: `packages/client/.env` first, then the root `.env`.
 dotenv({
   path: [`.env`, `../../.env`],
 });
@@ -52,17 +54,7 @@ export default defineConfig({
     include: ['react-hook-form'],
     exclude: ['js-big-decimal'],
   },
-  define: {
-    'import.meta.env.VITE_AUTH0_DOMAIN': JSON.stringify(process.env.AUTH0_DOMAIN),
-    'import.meta.env.VITE_AUTH0_FRONTEND_CLIENT_ID': JSON.stringify(
-      process.env.AUTH0_FRONTEND_CLIENT_ID,
-    ),
-    'import.meta.env.VITE_AUTH0_AUDIENCE': JSON.stringify(process.env.AUTH0_AUDIENCE),
-    // `?? ''` rather than a bare stringify: an unset var would otherwise inline
-    // the literal `undefined` into the bundle instead of a value the client can
-    // test for.
-    'import.meta.env.VITE_GRAPHQL_URL': JSON.stringify(process.env.GRAPHQL_URL ?? ''),
-    'import.meta.env.VITE_DEV_AUTH': JSON.stringify(process.env.ALLOW_DEV_AUTH),
-    'import.meta.env.VITE_DEV_AUTH_USER_ID': JSON.stringify(process.env.DEV_AUTH_USER_ID),
-  },
+  // Every env variable the client reads, inlined at build time: see `build-env.ts` and
+  // `.env.template`.
+  define: clientBuildEnvDefines(),
 });

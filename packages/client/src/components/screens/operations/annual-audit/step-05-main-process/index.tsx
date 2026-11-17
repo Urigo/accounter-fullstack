@@ -78,6 +78,8 @@ function SlotRow({
         {baselineName ? (
           <a
             href={hrefFor(baselineName)}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
             data-testid={`baseline-link-${reportType}`}
           >
@@ -103,6 +105,8 @@ function SlotRow({
         {workingName && (
           <a
             href={hrefFor(workingName)}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm underline-offset-2 hover:underline"
             data-testid={`working-link-${reportType}`}
           >
@@ -197,15 +201,24 @@ export function Step05MainProcess(props: Step05Props) {
 
     const dynamicReportActions: StepAction[] = [];
     if (bsTemplate) {
-      dynamicReportActions.push({ label: 'Balance Sheet', href: bsHref(bsTemplate) });
+      dynamicReportActions.push({
+        label: 'Balance Sheet',
+        href: bsHref(bsTemplate),
+        openInNewTab: true,
+      });
     }
     if (pnlTemplate) {
-      dynamicReportActions.push({ label: 'Profit and Loss', href: pnlHref(pnlTemplate) });
+      dynamicReportActions.push({
+        label: 'Profit and Loss',
+        href: pnlHref(pnlTemplate),
+        openInNewTab: true,
+      });
     }
     if (dynamicReportActions.length === 0) {
       dynamicReportActions.push({
         label: 'Create Dynamic Report Template',
         href: ROUTES.REPORTS.DYNAMIC_REPORT(),
+        openInNewTab: true,
       });
     }
 

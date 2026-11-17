@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CronJobStep, CronJobStepState } from '../../../gql/graphql.js';
+import { UserContext, type UserInfo } from '../../../providers/index.js';
 import { ROUTES } from '../../../router/routes.js';
 import type { ManualAutomationsRunEvent } from '../manual-automations-events.js';
 import { ManualAutomations } from '../index.js';
@@ -19,13 +20,23 @@ vi.mock('../../../hooks/use-run-manual-automations.js', () => ({
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
-async function renderManualAutomations(state: { running: boolean; events: ManualAutomationsRunEvent[] }) {
+async function renderManualAutomations(
+  state: { running: boolean; events: ManualAutomationsRunEvent[] },
+  { adminBusinessId }: { adminBusinessId?: string } = {},
+) {
   useRunManualAutomationsMock.mockReturnValue({ ...state, error: undefined, runJobs: vi.fn() });
   container = document.createElement('div');
   document.body.append(container);
   await act(async () => {
     root = createRoot(container!);
-    root.render(<MemoryRouter>{React.createElement(ManualAutomations)}</MemoryRouter>);
+    const userContext = adminBusinessId
+      ? ({ context: { adminBusinessId } } as unknown as UserInfo)
+      : null;
+    root.render(
+      <UserContext.Provider value={{ userContext, setUserContext: () => void 0 }}>
+        <MemoryRouter>{React.createElement(ManualAutomations)}</MemoryRouter>
+      </UserContext.Provider>,
+    );
   });
   return container;
 }
@@ -123,6 +134,66 @@ describe('ManualAutomations screen', () => {
     expect(page.textContent).toContain('Failed to merge reference "REF-9"');
     expect(page.textContent).toContain('Step failed');
     expect(page.textContent).toContain('DB is down');
-    expect(page.textContent).toContain('1 charge merged · 0 fees flagged · 0 debit dates filled');
+    expect(page.textContent).toContain(
+      '1 charge merged · 0 fees flagged · 0 debit dates filled · 0 Deel charges pulled',
+    );
+  });
+
+  it('lists the charges the Deel step pulled', async () => {
+    const page = await renderManualAutomations({
+      running: false,
+      events: [
+        {
+          __typename: 'DeelChargeSynced',
+          isNew: true,
+          invoiceCount: 2,
+          charge: {
+            id: 'charge-deel',
+            userDescription: 'Deel payment for Dana',
+            minDocumentsDate: '2026-02-01',
+            totalAmount: { formatted: '$ -4,920.00' },
+            counterparty: { id: 'business-deel', name: 'Deel' },
+          },
+        },
+        {
+          __typename: 'CronJobStepStatus',
+          step: CronJobStep.FetchDeelDocuments,
+          state: CronJobStepState.Succeeded,
+          affectedCount: 1,
+          errors: null,
+        },
+      ],
+    });
+
+    const chargeLink = page.querySelector(`a[href="${ROUTES.CHARGES.DETAIL('charge-deel')}"]`);
+    expect(chargeLink?.textContent).toContain('Deel');
+    expect(page.textContent).toContain('Deel payment for Dana');
+    expect(page.textContent).toContain('$ -4,920.00');
+    expect(page.textContent).toContain('New');
+  });
+
+  it('points to the Admin Config tab when Deel is not connected', async () => {
+    const page = await renderManualAutomations(
+      {
+        running: false,
+        events: [
+          {
+            __typename: 'CronJobStepStatus',
+            step: CronJobStep.FetchDeelDocuments,
+            state: CronJobStepState.NotConfigured,
+            affectedCount: 0,
+            errors: null,
+          },
+        ],
+      },
+      { adminBusinessId: 'business-admin' },
+    );
+
+    expect(page.textContent).toContain("Deel isn't connected for this business.");
+    const setupLink = page.querySelector(
+      `a[href="${ROUTES.BUSINESSES.DETAIL('business-admin')}?tab=admin-config"]`,
+    );
+    expect(setupLink?.textContent).toBe('Connect it in Admin Config');
+    expect(page.querySelector('[aria-label="Not configured"]')).not.toBeNull();
   });
 });

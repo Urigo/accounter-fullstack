@@ -9,21 +9,14 @@ import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, fetchDeelDocumentsMock, logoutMock, useMyMembershipsMock } = vi.hoisted(
-  () => ({
-    useAuth0Mock: vi.fn(),
-    fetchDeelDocumentsMock: vi.fn(),
-    logoutMock: vi.fn(),
-    useMyMembershipsMock: vi.fn(),
-  }),
-);
+const { useAuth0Mock, logoutMock, useMyMembershipsMock } = vi.hoisted(() => ({
+  useAuth0Mock: vi.fn(),
+  logoutMock: vi.fn(),
+  useMyMembershipsMock: vi.fn(),
+}));
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
-}));
-
-vi.mock('../../hooks/use-fetch-deel-documents.js', () => ({
-  useFetchDeelDocuments: () => ({ fetching: false, fetchDocuments: fetchDeelDocumentsMock }),
 }));
 
 vi.mock('../../hooks/use-my-memberships.js', () => ({
@@ -233,6 +226,8 @@ describe('UserNav menu', () => {
 
     const link = container.querySelector(`a[href="${ROUTES.CHARGES.MANUAL_AUTOMATIONS}"]`);
     expect(link?.textContent).toContain('Manual Automations');
+    // the Deel pull is one of the automations now, not a menu item of its own
+    expect(container.textContent).not.toContain('Pull Deel Documents');
 
     await cleanup();
   });

@@ -1,4 +1,26 @@
+# Cloudflare Worker (`src/worker.ts`) environment reference. Copy to `.dev.vars` for
+# `worker:dev`; the gateway service uses `.env.template` instead.
+#
+# In production every value is a Wrangler secret
+# (`yarn workspace @accounter/email-ingestion-gateway wrangler secret put <NAME>`), never a
+# plain-text var: `wrangler.jsonc` declares no `vars`, and a deploy deletes any dashboard
+# plain-text var. `src/__tests__/env-template.test.ts` keeps this file in sync with `WorkerEnv`.
+
+# Required. HMAC-SHA256 key the Worker signs each webhook with; must equal the gateway's
+# CF_WEBHOOK_SECRET. [secret]
 CF_WEBHOOK_SECRET=replace-with-local-secret
+
+# Required. Gateway origin the Worker health-probes (`/health`) and posts to (`/webhook`).
 GATEWAY_URL=http://127.0.0.1:3000
-FALLBACK_EMAIL=legacy-listener@example.com
+
+# Required. Archive address every message is forwarded to before the webhook call. It must be a
+# verified Email Routing destination; unset or unverified means no archive copy.
 EMAIL_FORWARD_DESTINATION=archive@example.com
+
+# Recommended. Address the Worker forwards to when the gateway is unreachable or answers non-2xx.
+# Must be a verified destination, and different from EMAIL_FORWARD_DESTINATION.
+FALLBACK_EMAIL=legacy-listener@example.com
+
+# Optional. Ceiling on the gateway health probe, in ms (default: 120000). Raise it when the
+# gateway's host cold-starts slowly; a too-tight value sends healthy mail to FALLBACK_EMAIL.
+# HEALTH_PROBE_TIMEOUT_MS=120000

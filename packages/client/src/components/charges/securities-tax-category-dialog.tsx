@@ -73,6 +73,10 @@ type Props = {
    * Omitted when no ledger is waiting on it (a report asked).
    */
   chargeId?: string;
+  /** The trigger button's text; `Set <label>` by default. */
+  triggerLabel?: string;
+  /** The tab the dialog opens on; choosing an existing tax category by default. */
+  defaultMode?: Mode;
   onDone?: () => void;
 };
 
@@ -84,6 +88,8 @@ type Props = {
 export function SecuritiesTaxCategoryDialog({
   taxCategoryKey,
   chargeId,
+  triggerLabel,
+  defaultMode = 'existing',
   onDone,
 }: Props): ReactElement {
   const label = SECURITIES_TAX_CATEGORY_LABELS[taxCategoryKey];
@@ -93,7 +99,7 @@ export function SecuritiesTaxCategoryDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          Set {label}
+          {triggerLabel ?? `Set ${label}`}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg" onClick={event => event.stopPropagation()}>
@@ -109,6 +115,7 @@ export function SecuritiesTaxCategoryDialog({
         <SecuritiesTaxCategoryForm
           taxCategoryKey={taxCategoryKey}
           chargeId={chargeId}
+          defaultMode={defaultMode}
           onSaved={() => {
             setOpen(false);
             onDone?.();
@@ -122,10 +129,14 @@ export function SecuritiesTaxCategoryDialog({
 function SecuritiesTaxCategoryForm({
   taxCategoryKey,
   chargeId,
+  defaultMode,
   onSaved,
-}: Omit<Props, 'onDone'> & { onSaved: () => void }): ReactElement {
+}: Omit<Props, 'onDone' | 'triggerLabel' | 'defaultMode'> & {
+  defaultMode: Mode;
+  onSaved: () => void;
+}): ReactElement {
   const label = SECURITIES_TAX_CATEGORY_LABELS[taxCategoryKey];
-  const [mode, setMode] = useState<Mode>('existing');
+  const [mode, setMode] = useState<Mode>(defaultMode);
   const [selectedTaxCategoryId, setSelectedTaxCategoryId] = useState<string | null>(null);
   const [rememberSortCode, setRememberSortCode] = useState(true);
   const [fetchingSortCodes, setFetchingSortCodes] = useState(false);

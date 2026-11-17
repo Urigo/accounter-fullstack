@@ -32,6 +32,8 @@ export interface BaseStepProps {
 export interface StepAction {
   label: string;
   href?: string;
+  /** Open `href` in a new browser tab instead of the current one */
+  openInNewTab?: boolean;
   onClick?: () => void;
   disabled?: boolean;
 }
@@ -175,7 +177,18 @@ export function BaseStepCard({
                     onClick={action.onClick}
                     asChild={!!action.href && !disabled && !action.disabled}
                   >
-                    {action.href ? <a href={action.href}>{action.label}</a> : action.label}
+                    {action.href ? (
+                      <a
+                        href={action.href}
+                        {...(action.openInNewTab
+                          ? { target: '_blank', rel: 'noopener noreferrer' }
+                          : {})}
+                      >
+                        {action.label}
+                      </a>
+                    ) : (
+                      action.label
+                    )}
                   </Button>
                 );
               })}
