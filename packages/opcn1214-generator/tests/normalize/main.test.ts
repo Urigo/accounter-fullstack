@@ -511,10 +511,18 @@ describe('normalizeReport: record 1000 declarations and preparer', () => {
     expect(at(line, 1046, 3)).toBe('000');
   });
 
-  it('writes only the first five reportable positions', () => {
+  it('writes only the first five reportable positions and raises a notice for the sixth', () => {
     const input = minimalInput({
       declarations: { tookReportablePosition: true, reportablePositions: [1, 2, 3, 4, 5, 6] },
     });
+    expect(normalizeReport(input, LAYOUT, OPTIONS).notices).toEqual([
+      expect.objectContaining({
+        ruleId: 'main.reportablePositions.max',
+        severity: 'error',
+        path: 'declarations.reportablePositions[5]',
+        value: 6,
+      }),
+    ]);
     const record = mainRecord(input);
     expect(
       Object.keys(record.values).filter(key => key.startsWith('declarations.reportablePositions')),

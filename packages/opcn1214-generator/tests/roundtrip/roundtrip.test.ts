@@ -39,6 +39,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
         appliesAccountingStandards: true,
         directorsReceivedOpinion: true,
         tookReportablePosition: true,
+        // main.reportablePositions.required: a reportable position calls for its number.
+        reportablePositions: [3],
       },
       shareholders: [
         {
