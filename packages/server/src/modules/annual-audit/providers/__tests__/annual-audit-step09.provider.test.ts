@@ -7,6 +7,9 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     upsertStepStatusRun: vi.fn(),
     upsertStep09StatusRun: vi.fn(),
     resetStep09ForTemplateRun: vi.fn(),
+    upsertStep05EvidenceRun: vi.fn(),
+    renameWorkingTemplateRun: vi.fn(),
+    removeWorkingTemplateRun: vi.fn(),
     getBalanceChargeRun: vi.fn(),
   };
 
@@ -25,6 +28,15 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     }
     if (query.includes("$ownerId, $year, '9', $status")) {
       return { run: runMocks.upsertStep09StatusRun };
+    }
+    if (query.includes("VALUES ($ownerId, $year, '5', 'PENDING'")) {
+      return { run: runMocks.upsertStep05EvidenceRun };
+    }
+    if (query.includes('to_jsonb($newName::text)')) {
+      return { run: runMocks.renameWorkingTemplateRun };
+    }
+    if (query.includes("step_id   = '5'")) {
+      return { run: runMocks.removeWorkingTemplateRun };
     }
     if (query.includes('VALUES ($ownerId, $year, $stepId, $status')) {
       return { run: runMocks.upsertStepStatusRun };
@@ -464,3 +476,125 @@ describe('AnnualAuditProvider — resetStep09ForTemplate', () => {
   });
 });
 
+
+describe('AnnualAuditProvider — working templates (step 05)', () => {
+  let db: { query: ReturnType<typeof vi.fn> };
+  let provider: AnnualAuditProvider;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pgTypedRuntimeMock.reset();
+    db = { query: vi.fn() };
+    provider = new AnnualAuditProvider(
+      adminContextProviderMock as never,
+      dynamicReportProviderMock as never,
+      db as never,
+    );
+    dynamicReportProviderMock.getTemplate.mockResolvedValue({ name: 'any' });
+    pgTypedRuntimeMock.runMocks.upsertStep05EvidenceRun.mockResolvedValue([
+      makeStepRow({ step_id: '5', status: 'PENDING' }),
+    ]);
+  });
+
+  it('sets one report working template, keeping the other slot', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({
+        step_id: '5',
+        status: 'IN_PROGRESS',
+        evidence_json: { balanceSheetTemplateName: 'bs-wip' },
+      }),
+    ]);
+
+    await provider.setWorkingTemplate({
+      ownerId: 'owner-1',
+      year: 2025,
+      templateName: 'pnl-wip',
+      reportType: 'PROFIT_AND_LOSS',
+    });
+
+    expect(pgTypedRuntimeMock.runMocks.getStepStatusRun).toHaveBeenCalledWith(
+      { ownerId: 'owner-1', year: 2025, stepId: '5' },
+      db,
+    );
+    expect(pgTypedRuntimeMock.runMocks.upsertStep05EvidenceRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2025,
+        evidenceJson: JSON.stringify({
+          balanceSheetTemplateName: 'bs-wip',
+          profitAndLossTemplateName: 'pnl-wip',
+        }),
+      },
+      db,
+    );
+    // Locking is a step 09 concern only
+    expect(dynamicReportProviderMock.lockTemplate).not.toHaveBeenCalled();
+  });
+
+  it('sets both reports when reportType is omitted', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([]);
+
+    await provider.setWorkingTemplate({ ownerId: 'owner-1', year: 2025, templateName: 'wip' });
+
+    expect(pgTypedRuntimeMock.runMocks.upsertStep05EvidenceRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2025,
+        evidenceJson: JSON.stringify({
+          balanceSheetTemplateName: 'wip',
+          profitAndLossTemplateName: 'wip',
+        }),
+      },
+      db,
+    );
+  });
+
+  it('clears one report working template without inheriting the other', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({
+        step_id: '5',
+        evidence_json: { balanceSheetTemplateName: 'bs-wip', profitAndLossTemplateName: 'pnl-wip' },
+      }),
+    ]);
+
+    await provider.setWorkingTemplate({
+      ownerId: 'owner-1',
+      year: 2025,
+      templateName: null,
+      reportType: 'BALANCE_SHEET',
+    });
+
+    expect(dynamicReportProviderMock.getTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.upsertStep05EvidenceRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2025,
+        evidenceJson: JSON.stringify({ profitAndLossTemplateName: 'pnl-wip' }),
+      },
+      db,
+    );
+  });
+
+  it('rejects an unknown template', async () => {
+    dynamicReportProviderMock.getTemplate.mockResolvedValue(undefined);
+
+    await expect(
+      provider.setWorkingTemplate({ ownerId: 'owner-1', year: 2025, templateName: 'missing' }),
+    ).rejects.toThrow('Report template "missing" not found');
+    expect(pgTypedRuntimeMock.runMocks.upsertStep05EvidenceRun).not.toHaveBeenCalled();
+  });
+
+  it('renames and removes working-template pointers', async () => {
+    await provider.renameWorkingTemplate('owner-1', 'old', 'new');
+    await provider.removeWorkingTemplate('owner-1', 'gone');
+
+    expect(pgTypedRuntimeMock.runMocks.renameWorkingTemplateRun).toHaveBeenCalledWith(
+      { ownerId: 'owner-1', prevName: 'old', newName: 'new' },
+      db,
+    );
+    expect(pgTypedRuntimeMock.runMocks.removeWorkingTemplateRun).toHaveBeenCalledWith(
+      { ownerId: 'owner-1', templateName: 'gone' },
+      db,
+    );
+  });
+});

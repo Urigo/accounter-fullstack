@@ -73,6 +73,21 @@ export const annualAuditResolvers: AnnualAuditModule.Resolvers = {
         );
       }
     },
+    setAnnualAuditWorkingTemplate: async (_, { input }, { injector }) => {
+      try {
+        return await injector.get(AnnualAuditProvider).setWorkingTemplate({
+          ownerId: input.ownerId,
+          year: input.year,
+          templateName: input.templateName,
+          reportType: input.reportType,
+        });
+      } catch (error) {
+        throw errorSimplifier(
+          `Failed to set annual audit working template for owner ${input.ownerId}, year ${input.year}`,
+          error,
+        );
+      }
+    },
   },
   AnnualAuditStepStatusInfo: {
     evidence: stepStatus => stepStatus.evidence ?? null,

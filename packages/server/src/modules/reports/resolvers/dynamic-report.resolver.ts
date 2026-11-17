@@ -193,10 +193,12 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             newName,
             ownerId,
           })
-          .then(result => {
+          .then(async result => {
             if (result.length === 0) {
               throw new Error(`Report template "${name}" not found`);
             }
+            // Keep annual audit working-template pointers on the renamed template
+            await injector.get(AnnualAuditProvider).renameWorkingTemplate(ownerId, name, newName);
             return result[0];
           });
       } catch (error) {
@@ -262,10 +264,12 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             name,
             ownerId,
           })
-          .then(result => {
+          .then(async result => {
             if (result.length === 0) {
               throw new Error(`Report template "${name}" not found`);
             }
+            // Annual audit working templates that pointed here fall back to the baseline
+            await injector.get(AnnualAuditProvider).removeWorkingTemplate(ownerId, name);
             return result[0].name;
           });
       } catch (error) {
