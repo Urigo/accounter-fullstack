@@ -662,6 +662,10 @@ Environment variables are validated at startup with a strict schema
 ([`src/config/env.ts`](src/config/env.ts)). Missing required variables or malformed values cause the
 process to exit immediately with a clear error. Secrets are supplied via the environment only.
 
+For local development, copy [`.env.template`](.env.template) to `packages/mcp-server/.env` and fill
+in the required values. This package reads only its own `.env`, never the repo root one, and only at
+startup. The template documents every variable; the table below is the summary.
+
 | Variable                           | Required | Default                  | Description                                                        |
 | ---------------------------------- | -------- | ------------------------ | ------------------------------------------------------------------ |
 | `MCP_PUBLIC_BASE_URL`              | yes      | —                        | Public HTTPS origin of this MCP server (used in OAuth metadata)    |
@@ -670,12 +674,12 @@ process to exit immediately with a clear error. Secrets are supplied via the env
 | `GRAPHQL_UPSTREAM_URL`             | yes      | —                        | Base URL of the Accounter GraphQL server the tools call            |
 | `MCP_SERVER_PORT`                  | no       | `3100`                   | TCP port the HTTP transport listens on                             |
 | `MCP_ENABLED`                      | no       | `1`                      | Master kill-switch (`1` on / `0` off)                              |
-| `MCP_TOOL_ALLOWLIST`               | no       | `''` (none)              | Comma-separated tool names allowed (empty = least privilege)       |
+| `MCP_TOOL_ALLOWLIST`               | no       | `''` (all tools)         | Comma-separated tool names to expose; empty exposes every tool     |
 | `MCP_ENABLE_WRITE_TOOLS`           | no       | `0`                      | Expose mutating (write) tools (`1` on / `0` off)                   |
 | `AUTH0_JWKS_URL`                   | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
 | `GRAPHQL_UPSTREAM_TIMEOUT_MS`      | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
 | `GRAPHQL_UPSTREAM_LONG_TIMEOUT_MS` | no       | `300000`                 | Budget for long-running calls (document ingestion, VAT report)     |
-| `MCP_RATE_LIMIT_CONFIG`            | no       | `''` (defaults)          | Optional rate-limit override spec (parsed by the limiter later)    |
+| `MCP_RATE_LIMIT_CONFIG`            | no       | 60 calls / 60 s          | Per-user, per-tool limit as JSON `{"windowMs": …, "max": …}`       |
 | `OTEL_ENABLED`                     | no       | `0`                      | Enable OpenTelemetry tracing (`1` on / `0` off)                    |
 | `OTEL_SERVICE_NAME`                | no       | `accounter-mcp-server`   | `service.name` resource attribute                                  |
 | `OTEL_SERVICE_NAMESPACE`           | no       | `accounter`              | `service.namespace` resource attribute                             |
@@ -685,6 +689,8 @@ process to exit immediately with a clear error. Secrets are supplied via the env
 | `OTEL_TRACES_SAMPLER`              | no       | `always_on`              | Sampler strategy (`always_on`, `parentbased_traceidratio`, …)      |
 | `OTEL_TRACES_SAMPLER_ARG`          | if ratio | —                        | Ratio `0`–`1` for the ratio-based samplers                         |
 | `OTEL_STARTUP_STRICT`              | no       | —                        | `true` ⇒ abort the process on a telemetry startup failure          |
+| `NODE_ENV`                         | no       | —                        | Default for `OTEL_DEPLOYMENT_ENV`; not validated                   |
+| `TEST_ENV_FILE`                    | no       | —                        | Load this file instead of `.env` (shell or test harness only)      |
 
 ## Scripts
 
