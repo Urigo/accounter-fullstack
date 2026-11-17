@@ -8,7 +8,7 @@ import {
   type PhonePrefix,
 } from '../../src/index.js';
 import { getLayout } from '../../src/layout/registry.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
 
 const OPTIONS = { today: () => '2025-03-31' };
 const CRLF = '\r\n';
@@ -99,6 +99,43 @@ describe('generate1214', () => {
     expect(summary.mainCodePairs).toBe(7);
     expect(writtenMainCodePairs(text)).toBe(7);
     expect(text.split(CRLF).filter(line => line.slice(4, 8) === '1020')).toHaveLength(2);
+  });
+
+  it('writes related companies as 1010 records between 1000 and 1020, counted at 9999@139', () => {
+    const input = minimalInput({
+      relatedCompanies: [
+        { companyName: 'חברת האם', companyFileNumber: '12', relationType: 'parent' },
+        ...relatedCompanies(3).slice(1),
+      ],
+    });
+    const { summary, text } = generate1214(input, OPTIONS);
+    const lines = text.split(CRLF);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1010',
+      '1010',
+      '1010',
+      '1020',
+      '9999',
+      '',
+    ]);
+    expect(summary.records).toEqual({ '1000': 1, '1010': 3, '1020': 1, '9999': 1 });
+    expect(lines.slice(1, 4).map(line => line.length)).toEqual([1160, 1160, 1160]);
+    // 1010@137 serial, @139 name, @189 file number, @198 relation type, @199 assessing office.
+    expect(lines.slice(1, 4).map(line => slice(line, 137, 2))).toEqual(['01', '02', '03']);
+    expect(slice(lines[1], 139, 50)).toBe('חברת האם'.padStart(50, ' '));
+    expect(slice(lines[1], 189, 9)).toBe('000000012');
+    expect(slice(lines[1], 198, 1)).toBe('1');
+    expect(slice(lines[1], 199, 2)).toBe('00');
+    expect(slice(lines[2], 198, 3)).toBe('211');
+    expect(slice(lines[3], 198, 3)).toBe('312');
+    expect(slice(lines[5], 139, 2)).toBe('03');
+  });
+
+  it('writes 00 at 9999@139 without related companies', () => {
+    const lines = generate1214(minimalInput({ relatedCompanies: [] }), OPTIONS).text.split(CRLF);
+    expect(lines.map(line => line.slice(4, 8))).toEqual(['1000', '1020', '9999', '']);
+    expect(slice(lines[2], 139, 2)).toBe('00');
   });
 
   it('lists omitted zero codes', () => {

@@ -1,14 +1,14 @@
 /**
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
- * (meta, company, preparer, declarations, bank account, amounts) and records 1020.
+ * (meta, company, preparer, declarations, bank account, amounts) and records 1010 and 1020.
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
 import { BANK_ACCOUNT_DIGITS, CODE_297_VALUES, type BankAccount } from './derive.js';
-import { ENUM_INPUTS, enumLiteral } from './enums.js';
+import { ENUM_INPUTS, enumLiteral, RELATION_TYPE_CODES } from './enums.js';
 import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
 
 /**
@@ -86,6 +86,14 @@ export const MAIN_INPUT_KEYS = [
   'qualifyingCompany.amortizationAmount',
 ] as const;
 
+/** Header keys of record 1010 that are properties of a related company (`serialNumber` is derived). */
+export const RELATED_COMPANY_INPUT_KEYS = [
+  'companyName',
+  'companyFileNumber',
+  'relationType',
+  'assessingOfficeCode',
+] as const;
+
 /** Header keys of record 1020 that are properties of a shareholder (`serialNumber` is derived). */
 export const SHAREHOLDER_INPUT_KEYS = [
   'idNumber',
@@ -131,6 +139,15 @@ export function setKey(target: InputTree, key: string, value: InputValue): void 
     }
   }
   node[last] = value;
+}
+
+function relatedCompany(record: NormalizedRecord): InputTree {
+  const tree: InputTree = {};
+  for (const key of RELATED_COMPANY_INPUT_KEYS) {
+    const value = record.values[key];
+    setKey(tree, key, key === 'relationType' ? enumLiteral(RELATION_TYPE_CODES, value) : value);
+  }
+  return tree;
 }
 
 function shareholder(record: NormalizedRecord): InputTree {
@@ -200,6 +217,10 @@ export function denormalize(report: NormalizedReport): Report1214Input {
     amounts,
     shareholders: report.records.filter(record => record.recordType === '1020').map(shareholder),
   };
+  const related = report.records.filter(record => record.recordType === '1010');
+  if (related.length > 0) {
+    output.relatedCompanies = related.map(relatedCompany);
+  }
   for (const key of MAIN_INPUT_KEYS) {
     const value = main.values[key];
     const codes = ENUM_INPUTS[key];
