@@ -1595,17 +1595,17 @@ value for **every** non-filler key of `fields.csv`. This catches unmapped fields
 
 ### 13.5 Golden files
 
-| Fixture             | Content                                                                                      |
-| ------------------- | -------------------------------------------------------------------------------------------- |
-| `minimal`           | 1000 with only required fields and codes, one shareholder, 9999                              |
-| `main-full`         | every 1000 field set, 61 code pairs, bank account, 99 shareholders                           |
-| `kibbutz`           | `isKibbutz`, code 226, no shareholders                                                       |
-| `related-and-rd`    | 3 related companies, 5 R&D investments, code 165                                             |
-| `foreign`           | 2000 with every per-country code, 23 breakdowns incl. `-88` on 439, 10 countries on one code |
-| `cg-<symbol>` × 10  | one appendix per type, all fields filled                                                     |
-| `capital-gains-max` | 14 appendices of mixed types, checks numbering and sequence                                  |
-| `hebrew-edge`       | Hebrew with geresh/gershayim, niqqud, max-width names, typographic quotes (normalized)       |
-| `batch-50`          | 50 minimal reports                                                                           |
+| Fixture             | Content                                                                                       |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `minimal`           | 1000 with only required fields and codes, one shareholder, 9999                               |
+| `main-full`         | every 1000 field set, 61 code pairs, bank account, 99 shareholders                            |
+| `kibbutz`           | `isKibbutz`, code 226, no shareholders                                                        |
+| `related-and-rd`    | 3 related companies, 5 R&D investments, code 165                                              |
+| `foreign`           | 2000 with every per-country code, 23 breakdowns incl. `-88` on 439, 10 countries on one code  |
+| `cg-<symbol>` × 10  | one appendix per type, all fields filled                                                      |
+| `capital-gains-max` | 14 appendices of mixed types, checks numbering and sequence                                   |
+| `hebrew-edge`       | Hebrew with geresh/gershayim, final letters, max-width names, typographic quotes (normalized) |
+| `batch-50`          | 50 minimal reports                                                                            |
 
 Each golden `.opcn` file is committed as PENDING and verified on shopcn at the next checkpoint;
 `VERIFICATION.md` records its sha256, which the golden test asserts, so a changed golden cannot pass
@@ -1701,6 +1701,7 @@ phase noted, and this table updated with the outcome.
 | A-24 | Breakdown of code 442 = 0                                      | A per-country code that "has a value" needs a 2200 record (p.27); 442 is the only per-country code that may be 0                   | "Has a value" = written in the 2000 section, so 442 = 0 needs a breakdown; omitted zero codes need none          | P3 — verified (CP-3, 2026-11-17)          |
 | A-25 | Identifier check digits                                        | Not stated                                                                                                                         | Every `id9`/`shareholderId` value must pass the Israeli check digit (§4.2; `field.checkDigit`, source `checker`) | Found at CP-2/CP-3; re-verify after FIX-1 |
 | A-26 | Batch summary                                                  | Not stated                                                                                                                         | `mainCodePairs`: the most of any report (61 is per report); `omittedZeroCodes` carry `reportIndex`               | —                                         |
+| A-27 | Niqqud in text fields                                          | Not stated                                                                                                                         | Kept (windows-1255 has them, §4.3); kept out of `hebrew-edge` so a rejection cannot mask its other cases         | Unverified on shopcn                      |
 
 A-25 was found on shopcn, which validates identifier check digits and stops at the first error:
 `kibbutz` (1000@137 = 570000001) was rejected with "שגיאה בקובץ, ספרת בקורת שגויה", `main-full`
