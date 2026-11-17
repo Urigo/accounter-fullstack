@@ -356,6 +356,14 @@ const BALANCE_SHEET_CODES: ReadonlySet<number> = new Set(
   Object.keys(BALANCE_SHEET_CODE_NAMES).map(Number),
 );
 
+export function isProfitLossCode(code: number): boolean {
+  return PROFIT_LOSS_CODES.has(code);
+}
+
+export function isBalanceSheetCode(code: number): boolean {
+  return BALANCE_SHEET_CODES.has(code);
+}
+
 /* ------------------------------------------------------------------------------------------------
  * Report sections
  * ---------------------------------------------------------------------------------------------- */
@@ -535,4 +543,19 @@ export function fileEntries<T extends { code: number; amount: number }>(
     balanceSheet: REQUIRED_BALANCE_SHEET_CODES,
   }[section];
   return entries.filter(entry => entry.amount !== 0 || required.has(entry.code));
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Header helpers
+ * ---------------------------------------------------------------------------------------------- */
+
+/**
+ * Whether a 9-digit Israeli registration number belongs to a body of persons (חבר בני אדם).
+ * Corporations are registered under numbers starting with 5 (51 private company, 52 public
+ * company, 58 non-profit, ...). Partnerships (55) report through their partners, and personal ID
+ * numbers never start with 5 in practice, so both are treated as individuals.
+ */
+export function isCorporateRegistrationNumber(registrationNumber?: string | null): boolean {
+  const normalized = registrationNumber?.trim() ?? '';
+  return /^5\d{8}$/.test(normalized) && !normalized.startsWith('55');
 }

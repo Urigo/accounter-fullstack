@@ -4,6 +4,7 @@ import {
   buildProfitAndLossEntries,
   buildTaxAdjustmentEntries,
   fileEntries,
+  isCorporateRegistrationNumber,
   isDebitNaturedBalanceSheetCode,
   isDebitNaturedProfitLossCode,
   netAmountsByFinancialEntity,
@@ -419,5 +420,16 @@ describe('fileEntries', () => {
     const entries = buildProfitAndLossEntries(netAmountsByFinancialEntity(LEDGER), IRS_CODES);
     expect(entries.length).toBeGreaterThan(150);
     expect(fileEntries(entries, 'profitAndLoss').length).toBeLessThan(150);
+  });
+});
+
+describe('isCorporateRegistrationNumber', () => {
+  it('recognizes companies, not partnerships or personal IDs', () => {
+    expect(isCorporateRegistrationNumber('516123456')).toBe(true);
+    expect(isCorporateRegistrationNumber('520000000')).toBe(true);
+    expect(isCorporateRegistrationNumber('550000000')).toBe(false);
+    expect(isCorporateRegistrationNumber('012345678')).toBe(false);
+    expect(isCorporateRegistrationNumber('51612345')).toBe(false);
+    expect(isCorporateRegistrationNumber(null)).toBe(false);
   });
 });
