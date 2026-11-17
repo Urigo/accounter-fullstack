@@ -1,10 +1,17 @@
 /**
  * What each golden fixture claims to cover (SPEC §13.5), checked on its input and generated file.
  */
-import { generate1214, parse1214, validate1214 } from '../../src/index.js';
+import {
+  generate1214,
+  generate1214Batch,
+  parse1214,
+  parse1214Batch,
+  validate1214,
+} from '../../src/index.js';
 import { getLayout } from '../../src/layout/registry.js';
 import { COUNTRY_BREAKDOWN_CODES } from '../../src/model/codes.generated.js';
 import { normalizeReport } from '../../src/normalize/report.js';
+import * as batch50 from '../fixtures/golden/batch-50.input.js';
 import * as capitalGainsMax from '../fixtures/golden/capital-gains-max.input.js';
 import * as cg27 from '../fixtures/golden/cg-27.input.js';
 import * as cg50 from '../fixtures/golden/cg-50.input.js';
@@ -516,5 +523,44 @@ describe('golden capital-gains-max', () => {
     expect(parsed.report.capitalGains).toEqual(
       [2, 9, 7, 4, 10, 3, 12, 1, 11, 6, 8, 0, 5, 13].map(index => appendices[index]),
     );
+  });
+});
+
+describe('golden batch-50', () => {
+  const { inputs, options } = batch50;
+
+  it('holds 50 minimal reports with distinct, check-digit-valid file numbers', () => {
+    expect(inputs).toHaveLength(50);
+    const fileNumbers = inputs.map(input => input.company.fileNumber);
+    expect(new Set(fileNumbers).size).toBe(50);
+    for (const input of inputs) {
+      expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
+      expect(input.shareholders).toHaveLength(1);
+    }
+  });
+
+  it('writes 50 × (1000 + 1020 + 9999), each 9999 counting one report', () => {
+    const { text, fileName, summary } = generate1214Batch(inputs, options);
+    const lines = linesOf(text);
+    expect(lines).toHaveLength(150);
+    expect(lines.map(line => line.slice(4, 8))).toEqual(
+      Array.from({ length: 50 }, () => ['1000', '1020', '9999']).flat(),
+    );
+    expect(
+      lines
+        .filter(line => line.slice(4, 8) === '9999')
+        .every(line => line.slice(136, 138) === '01'),
+    ).toBe(true);
+    expect(fileName).toBe('1214_batch_50.txt');
+    expect(summary.reports).toBe(50);
+    expect(summary.records).toEqual({ '1000': 50, '1020': 50, '9999': 50 });
+  });
+
+  it('parses back as 50 reports in batch order', () => {
+    const results = parse1214Batch(generate1214Batch(inputs, options).bytes);
+    expect(results.map(result => result.report.company.fileNumber)).toEqual(
+      inputs.map(input => input.company.fileNumber),
+    );
+    expect(results.every(result => result.issues.length === 0)).toBe(true);
   });
 });

@@ -2,8 +2,8 @@
  * @accounter/opcn1214-generator: SHAAM form 1214 (OPCN) generator, validator and parser.
  * Public API (SPEC §6.4).
  */
-export { generate1214, type GenerateResult } from './api/generate.js';
-export { parse1214, type ParseResult } from './api/parse.js';
+export { generate1214, generate1214Batch, type GenerateResult } from './api/generate.js';
+export { parse1214, parse1214Batch, type ParseResult } from './api/parse.js';
 export { validate1214, type ValidationResult } from './api/validate.js';
 export { getLayout, supportedTaxYears } from './layout/registry.js';
 export {

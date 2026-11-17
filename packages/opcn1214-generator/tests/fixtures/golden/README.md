@@ -3,9 +3,11 @@
 Byte-level fixtures of the generator (SPEC §13.5). Each fixture is a pair:
 
 - `<name>.input.ts` exports `input` (a typed `Report1214Input`) and `options` (with a fixed `today`,
-  so the output never depends on the clock);
-- `<name>.opcn` is the file `generate1214(input, options)` produces, as windows-1255 bytes with CRLF
-  line endings. It is binary for git (`.gitattributes`), so line endings are never converted.
+  so the output never depends on the clock); a batch fixture (`batch-50`) exports `inputs` (the
+  reports, in file order) instead of `input`;
+- `<name>.opcn` is the file `generate1214(input, options)` (for a batch,
+  `generate1214Batch(inputs, options)`) produces, as windows-1255 bytes with CRLF line endings. It
+  is binary for git (`.gitattributes`), so line endings are never converted.
 
 Golden inputs are frozen literals; never import builders into them.
 

@@ -35,13 +35,16 @@ function issuesOf(input: unknown, ruleId: RuleId): Issue[] {
   return runPipeline(input, OPTIONS).issues.filter(issue => issue.ruleId === ruleId);
 }
 
-/** Issues of `ruleId` in the file of `input` after `edit`. */
+/** Issues of `ruleId` in the file of `input` after `edits`, applied in order. */
 function fileIssuesOf(
   input: Report1214Input,
-  edit: Parameters<typeof tamper>[1],
+  edits: Parameters<typeof tamper>[1] | ReadonlyArray<Parameters<typeof tamper>[1]>,
   ruleId: RuleId,
 ): Issue[] {
-  const text = tamper(generate1214(input, OPTIONS).text, edit);
+  const text = (Array.isArray(edits) ? edits : [edits]).reduce(
+    (edited: string, edit: Parameters<typeof tamper>[1]) => tamper(edited, edit),
+    generate1214(input, OPTIONS).text,
+  );
   return parse1214(text).issues.filter(issue => issue.ruleId === ruleId);
 }
 
@@ -440,11 +443,18 @@ describe('record 1000 consistency warnings (SPEC §10.3)', () => {
     const input = minimalInput({
       declarations: { tookReportablePosition: true, reportablePositions: [12] },
     });
+    // Code 273 = 2 (1030 only) follows 263 = 1 in the section; with 1030 = no it must be 9, or
+    // the file is parse.derivedMismatch.
+    const code273Value = generate1214(input, OPTIONS).text.indexOf('26312732', 2184) + 8;
+    expect(code273Value).toBeGreaterThan(2184);
     // 1000@1030: 2 = no.
     expect(
       fileIssuesOf(
         input,
-        { line: 1, position: 1030, value: '2' },
+        [
+          { line: 1, position: 1030, value: '2' },
+          { line: 1, position: code273Value, value: '9' },
+        ],
         'main.reportablePositions.unexpected',
       ),
     ).toEqual([expect.objectContaining({ path: 'declarations.reportablePositions' })]);

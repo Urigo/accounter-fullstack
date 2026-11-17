@@ -1,5 +1,5 @@
-import { Opcn1214ParseError } from '../../src/errors.js';
-import { parse1214 } from '../../src/index.js';
+import { Opcn1214ParseError, Opcn1214ValidationError } from '../../src/errors.js';
+import { generate1214Batch, parse1214, type Report1214Input } from '../../src/index.js';
 import type { ParseOptions } from '../../src/model/options.js';
 import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
@@ -20,10 +20,28 @@ function fileIssues(content: string | Uint8Array, options?: ParseOptions): reado
   }
 }
 
+/** Issues of a batch: errors are thrown (with the warnings), warnings of a valid batch returned. */
+function batchIssues(inputs: unknown[]): readonly Issue[] {
+  try {
+    // Untyped inputs on purpose: the batch validates every report.
+    return generate1214Batch(inputs as Report1214Input[], OPTIONS).warnings;
+  } catch (error) {
+    if (error instanceof Opcn1214ValidationError) {
+      return error.issues;
+    }
+    throw error;
+  }
+}
+
 function issuesOf(ruleCase: RuleCase, which: 'fail' | 'pass'): readonly Issue[] {
-  return ruleCase.kind === 'file'
-    ? fileIssues(ruleCase[which](), ruleCase.options)
-    : runPipeline(ruleCase[which](), OPTIONS).issues;
+  switch (ruleCase.kind) {
+    case 'file':
+      return fileIssues(ruleCase[which](), ruleCase.options);
+    case 'batch':
+      return batchIssues(ruleCase[which]());
+    case 'input':
+      return runPipeline(ruleCase[which](), OPTIONS).issues;
+  }
 }
 
 describe.each(RULES.map(rule => [rule.id, rule] as const))('rule %s', (id, rule) => {

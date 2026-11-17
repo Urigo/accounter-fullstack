@@ -27,6 +27,7 @@ import {
   dropLine,
   goldenBytes,
   goldenText,
+  repeatLine,
   swapLines,
   tamper,
   type Tamper,
@@ -156,7 +157,17 @@ interface FileRuleCase extends CaseBase {
   options?: ParseOptions;
 }
 
-export type RuleCase = InputRuleCase | FileRuleCase;
+/**
+ * A rule case run through generate1214Batch: issues come from the thrown Opcn1214ValidationError,
+ * or from GenerateResult.warnings.
+ */
+interface BatchRuleCase extends CaseBase {
+  kind: 'batch';
+  fail(): unknown[];
+  pass(): unknown[];
+}
+
+export type RuleCase = InputRuleCase | FileRuleCase | BatchRuleCase;
 
 export const RULE_CASES: { [K in RuleId]: RuleCase } = {
   'struct.taxYear.unsupported': {
@@ -188,6 +199,12 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => withMainCodePairs(62),
     pass: () => withMainCodePairs(61),
     path: 'amounts',
+  },
+  'struct.batch.size': {
+    kind: 'batch',
+    fail: () => [],
+    pass: () => [minimalInput()],
+    path: '',
   },
   'field.required': {
     kind: 'input',
@@ -723,6 +740,14 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     pass: () => minimalFile(),
     path: '',
   },
+  'parse.occurrences': {
+    kind: 'file',
+    // related-and-rd holds the maximum of 3 related companies; a fourth one is counted at 9999@139.
+    fail: () =>
+      tamper(repeatLine(goldenText('related-and-rd'), 2), { line: 12, position: 139, value: '04' }),
+    pass: () => goldenText('related-and-rd'),
+    path: '',
+  },
   'parse.control.missing': {
     kind: 'file',
     fail: () => dropLine(goldenText('minimal'), 3),
@@ -733,6 +758,12 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     kind: 'file',
     // 9999@141: number of 1020 records.
     fail: () => minimalFile({ line: 3, position: 141, value: '02' }),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.multipleReports': {
+    kind: 'file',
+    fail: () => goldenText('minimal').repeat(2),
     pass: () => minimalFile(),
     path: '',
   },
@@ -774,6 +805,13 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
       }),
     pass: () =>
       generatedFile(minimalInput({ foreignAppendix: foreignAppendixWithBreakdown('420') })),
+    path: '',
+  },
+  'parse.derivedMismatch': {
+    kind: 'file',
+    // 1000@1029 = 1 (directors received an opinion) calls for code 273 = 1; the file has 9.
+    fail: () => minimalFile({ line: 1, position: 1029, value: '1' }),
+    pass: () => minimalFile(),
     path: '',
   },
 };
