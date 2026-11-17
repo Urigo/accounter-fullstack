@@ -25,6 +25,7 @@ import { Step13TaxReport } from './step-13-tax-report/index.js';
 import { Step14TaxComplianceReport } from './step-14-tax-compliance-report/index.js';
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
+import { isLoadingStepStatuses } from './step-statuses-loading.js';
 import { YearPicker } from './year-picker.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -76,7 +77,7 @@ export const AnnualAuditFlow = (): ReactNode => {
     );
   }, [year, setFiltersContext, changeYear]);
 
-  const [{ data, fetching }, refetchStepStatuses] = useQuery({
+  const [{ data, fetching, operation }, refetchStepStatuses] = useQuery({
     query: AnnualAuditStepsStatusDocument,
     variables: { ownerId: adminBusinessId!, year },
     pause: !adminBusinessId,
@@ -86,7 +87,13 @@ export const AnnualAuditFlow = (): ReactNode => {
     () => refetchStepStatuses({ requestPolicy: 'network-only' }),
     [refetchStepStatuses],
   );
-  const isLoadingStepStatuses: boolean = !!(adminBusinessId && fetching);
+  const showLoadingCard = isLoadingStepStatuses({
+    adminBusinessId,
+    fetching,
+    hasData: !!data,
+    loadedYear: operation?.variables.year,
+    year,
+  });
 
   const totalSteps = 21;
 
@@ -173,7 +180,7 @@ export const AnnualAuditFlow = (): ReactNode => {
           </Card>
         </div>
 
-        {isLoadingStepStatuses ? (
+        {showLoadingCard ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center gap-3 py-10">
               <AccounterBarSpinner className="text-muted-foreground" />

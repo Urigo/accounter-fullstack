@@ -146,10 +146,11 @@ export function Step05MainProcess(props: Step05Props) {
   const onWorkingChange = useCallback(
     async (reportType: AnnualAuditReportType, templateName: string | null) => {
       if (!adminBusinessId) return;
-      await setWorkingTemplate({
+      const saved = await setWorkingTemplate({
         input: { ownerId: adminBusinessId, year, templateName, reportType },
       });
-      refetchManualData?.();
+      // A failed save already showed its error; nothing changed to refetch
+      if (saved) refetchManualData?.();
     },
     [adminBusinessId, year, setWorkingTemplate, refetchManualData],
   );

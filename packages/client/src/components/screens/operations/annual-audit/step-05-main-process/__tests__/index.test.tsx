@@ -69,7 +69,7 @@ vi.mock('../../step-base.js', () => ({
     actions,
   }: {
     children?: React.ReactNode;
-    actions?: Array<{ label: string; href?: string }>;
+    actions?: Array<{ label: string; href?: string; openInNewTab?: boolean }>;
   }) =>
     React.createElement(
       'div',
@@ -77,7 +77,12 @@ vi.mock('../../step-base.js', () => ({
       ...(actions ?? []).map(action =>
         React.createElement(
           'a',
-          { key: action.label, href: action.href, 'data-testid': `action-${action.label}` },
+          {
+            key: action.label,
+            href: action.href,
+            target: action.openInNewTab ? '_blank' : undefined,
+            'data-testid': `action-${action.label}`,
+          },
           action.label,
         ),
       ),
@@ -205,8 +210,13 @@ describe('Step05MainProcess', () => {
     // Baselines stay one click away
     expect(templateParam(container, `baseline-link-${BS}`)).toBe('bs-2024');
     expect(templateParam(container, `baseline-link-${PNL}`)).toBe('pnl-2024');
-    // Like the header actions, dynamic reports open in a new tab
-    for (const testId of [`baseline-link-${BS}`, `working-link-${BS}`]) {
+    // Dynamic reports open in a new tab, from the header actions and the inline links alike
+    for (const testId of [
+      'action-Balance Sheet',
+      'action-Profit and Loss',
+      `baseline-link-${BS}`,
+      `working-link-${BS}`,
+    ]) {
       expect(container.querySelector(`[data-testid="${testId}"]`)?.getAttribute('target')).toBe(
         '_blank',
       );
@@ -272,6 +282,30 @@ describe('Step05MainProcess', () => {
       input: { ownerId: OWNER, year: 2025, templateName: 'wip', reportType: PNL },
     });
     expect(refetchManualData).toHaveBeenCalled();
+
+    await cleanup();
+  });
+
+  it('does not refetch after a failed save', async () => {
+    const refetchManualData = vi.fn();
+    // The hook resolves to nothing when the mutation fails (it shows the error itself)
+    setWorkingTemplateMock.mockResolvedValue(undefined);
+    const { container, cleanup } = await render({
+      templates: [{ name: 'wip' }],
+      refetchManualData,
+    });
+
+    const select = container
+      .querySelector(`[data-testid="slot-${PNL}"]`)!
+      .querySelector('[data-testid="select-input"]') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'wip';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(setWorkingTemplateMock).toHaveBeenCalled();
+    expect(refetchManualData).not.toHaveBeenCalled();
 
     await cleanup();
   });
