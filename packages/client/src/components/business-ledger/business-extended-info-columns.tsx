@@ -101,14 +101,23 @@ export const getEndColumns = (): ColumnDef<PaginatedTableFeaturesConfig, Extende
     accessorKey: 'reference',
     id: 'reference',
     header: 'Reference',
-    cell: ({ row }) => <p className="text-sm whitespace-nowrap">{row.original.reference ?? ''}</p>,
+    // Break anywhere (references rarely have whitespace); `min-w-24` keeps the column from
+    // collapsing to a single character, which `wrap-anywhere` would otherwise allow.
+    cell: ({ row }) => (
+      <p className="text-sm whitespace-normal wrap-anywhere min-w-24">
+        {row.original.reference ?? ''}
+      </p>
+    ),
     enableSorting: false,
   },
   {
     accessorKey: 'details',
     id: 'details',
     header: 'Details',
-    cell: ({ row }) => <p className="text-sm whitespace-nowrap">{row.original.details ?? ''}</p>,
+    // Wrap on whitespace only.
+    cell: ({ row }) => (
+      <p className="text-sm whitespace-normal min-w-40">{row.original.details ?? ''}</p>
+    ),
     enableSorting: false,
   },
   {
