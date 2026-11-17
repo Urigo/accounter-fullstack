@@ -419,8 +419,7 @@ export async function fetchAndFilterInvoices(injector: Injector) {
 
 export async function fetchReceipts(injector: Injector) {
   try {
-    const res = await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERIOD_IN_MONTHS
-    return res.data.rows;
+    return await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERIOD_IN_MONTHS
   } catch (error) {
     const message = 'Error fetching Deel receipts';
     console.error(`${message}: ${error}`);
