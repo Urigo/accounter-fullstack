@@ -15,6 +15,7 @@ import {
   isOriginalGraphQLError,
   isUnexpectedGraphQLError,
 } from '../observability/graphql-errors.js';
+import { attachRequestLog } from '../observability/log-context.js';
 import {
   getLogger,
   isGraphQLError,
@@ -83,6 +84,8 @@ export function requestLogPlugin(): Plugin<AccounterContext> {
       // Yoga hands this same object to envelop as the operation's context, so `onExecute` and
       // `onExecutionResult` find the state on it.
       (context as Partial<AccounterContext>).requestLog = state;
+      // And on the request's log context, so every line written while handling it carries its ids.
+      attachRequestLog(state);
     },
     onParse({ context }) {
       return ({ result }) => {

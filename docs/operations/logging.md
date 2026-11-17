@@ -112,6 +112,34 @@ minted and `correlationId` is `null` (the OTel span attribute follows the same r
 arbitrary text off every line of a request. It bounds only length and characters: it doesn't make an
 inbound id unique (a client can send the same one on several requests) or prove where it came from.
 
+## Request context
+
+Every line written while handling a request carries that request's ids, wherever it is written (a
+resolver, a provider, a free helper, a DataLoader batch), with no call-site changes:
+
+| Field           | From                                                       |
+| --------------- | ---------------------------------------------------------- |
+| `requestId`     | always (see above)                                         |
+| `correlationId` | a valid inbound `X-Correlation-Id`                         |
+| `operationName` | the operation's name, once known                           |
+| `userId`        | the authenticated caller, once auth has resolved           |
+| `businessId`    | the business the operation runs as, once auth has resolved |
+
+A field that isn't known yet is left off the line (unlike `graphql-operation`, which writes `null`).
+
+How: `index.ts` runs each HTTP request in its own `AsyncLocalStorage` store (`withLogContext`,
+`observability/log-context.ts`); `requestLogPlugin` attaches the operation's state to it, and the
+logger's context provider reads it. A field the call site passes still wins.
+
+- The context follows the request through `await`s and into `@defer`red fields after the first
+  payload (covered by `log-context.test.ts`).
+- Lines outside a request (startup, jobs, the pool monitor) carry none of these.
+- A long-lived emitter's events run in the context of whichever request created it, so a handler of
+  one must not inherit it: wrap it in `withoutLogContext` (the pool's idle-client `'error'`), or
+  bind it to the right request with `AsyncLocalStorage.bind` (a checked-out client's `'error'`).
+- A server built on `yoga.fetch()` (tests) has no store, so its lines carry only what the call site
+  passes.
+
 ## Safety
 
 Every record goes through the same checks, whatever the call site passed:
@@ -189,3 +217,5 @@ Use these names for the same things everywhere, so one query finds them across m
   bodies. Log the id and look the rest up.
 - `module`, `component`, `service`, `env`, `release` and `msg` / `level` / `time` are set by the
   logger; don't pass them as fields.
+- Inside a request, `requestId`, `correlationId`, `operationName`, `userId` and `businessId` are
+  added for you (see [Request context](#request-context)); pass them only outside one.
