@@ -98,6 +98,18 @@ const baseUserContext: UserInfo = {
   },
 };
 
+function contextWithRole(role: string): UserInfo {
+  return {
+    ...baseUserContext,
+    context: {
+      ...baseUserContext.context,
+      adminBusinessId: 'business-1',
+      activeReadScope: ['business-1'],
+      memberships: [{ businessId: 'business-1', role, businessName: 'Acme' }],
+    },
+  };
+}
+
 async function renderUserNav(userContext: UserInfo = baseUserContext) {
   const container = document.createElement('div');
   document.body.append(container);
@@ -222,12 +234,56 @@ describe('UserNav menu', () => {
       logout: logoutMock,
     });
 
-    const { container, cleanup } = await renderUserNav();
+    const { container, cleanup } = await renderUserNav(contextWithRole('business_owner'));
 
     const link = container.querySelector(`a[href="${ROUTES.CHARGES.MANUAL_AUTOMATIONS}"]`);
     expect(link?.textContent).toContain('Manual Automations');
     // the Deel pull is one of the automations now, not a menu item of its own
     expect(container.textContent).not.toContain('Pull Deel Documents');
+
+    await cleanup();
+  });
+
+  it.each(['accountant', 'employee'])(
+    'hides manual automations from a %s, whom the server would refuse',
+    async role => {
+      useAuth0Mock.mockReturnValue({
+        isAuthenticated: true,
+        user: { name: 'John Doe', email: 'john@example.com' },
+        logout: logoutMock,
+      });
+
+      const { container, cleanup } = await renderUserNav(contextWithRole(role));
+
+      expect(container.querySelector(`a[href="${ROUTES.CHARGES.MANUAL_AUTOMATIONS}"]`)).toBeNull();
+      expect(container.textContent).not.toContain('Manual Automations');
+
+      await cleanup();
+    },
+  );
+
+  it('hides manual automations when the scope includes a business the user does not own', async () => {
+    useAuth0Mock.mockReturnValue({
+      isAuthenticated: true,
+      user: { name: 'John Doe', email: 'john@example.com' },
+      logout: logoutMock,
+    });
+    const userContext: UserInfo = {
+      ...baseUserContext,
+      context: {
+        ...baseUserContext.context,
+        adminBusinessId: 'business-1',
+        activeReadScope: ['business-1', 'business-2'],
+        memberships: [
+          { businessId: 'business-1', role: 'business_owner', businessName: 'Acme' },
+          { businessId: 'business-2', role: 'accountant', businessName: 'Globex' },
+        ],
+      },
+    };
+
+    const { container, cleanup } = await renderUserNav(userContext);
+
+    expect(container.textContent).not.toContain('Manual Automations');
 
     await cleanup();
   });

@@ -11,6 +11,7 @@ import { MultiSelect } from '../common/inputs/multi-select.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
 import { SyncDocumentsModal } from '../common/modals/sync-green-invoice-documents-modal.js';
 import { Tooltip } from '../common/tooltip.js';
+import { canRunManualAutomations } from '../manual-automations/manual-automations-access.js';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar.js';
 import { Button } from '../ui/button.js';
 import {
@@ -167,14 +168,16 @@ export function UserNav(): JSX.Element | null {
               </Button>
             </Tooltip>
           </DropdownMenuItem>
-          <Tooltip content="Run data fix-ups on demand: flag fees, merge charges, fill debit dates, pull Deel documents">
-            <DropdownMenuItem asChild>
-              <Link to={ROUTES.CHARGES.MANUAL_AUTOMATIONS}>
-                <CircleCheckBig className="size-4" />
-                <span className="hidden sm:inline">Manual Automations</span>
-              </Link>
-            </DropdownMenuItem>
-          </Tooltip>
+          {canRunManualAutomations(userContext?.context) && (
+            <Tooltip content="Run data fix-ups on demand: flag fees, merge charges, fill debit dates, pull Deel documents">
+              <DropdownMenuItem asChild>
+                <Link to={ROUTES.CHARGES.MANUAL_AUTOMATIONS}>
+                  <CircleCheckBig className="size-4" />
+                  <span className="hidden sm:inline">Manual Automations</span>
+                </Link>
+              </DropdownMenuItem>
+            </Tooltip>
+          )}
           <DropdownMenuItem>
             <LogoutButton />
           </DropdownMenuItem>
