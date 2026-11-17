@@ -1,9 +1,9 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type {
-  CronJobStep,
-  CronJobStepState,
-  CronJobStepStatus,
+  ManualAutomationStep,
+  ManualAutomationStepState,
+  ManualAutomationStepStatus,
   MergedChargeSnapshot,
 } from '../../../__generated__/types.js';
 import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
@@ -16,15 +16,15 @@ import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { syncDeelDocuments } from '../../deel/helpers/sync-deel-documents.helper.js';
 import { ProviderCredentialsProvider } from '../../provider-credentials/providers/provider-credentials.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
-import { CronJobsProvider } from '../providers/cron-jobs.provider.js';
+import { ManualAutomationsProvider } from '../providers/manual-automations.provider.js';
 import type { IGetReferenceMergeCandidatesResult } from '../types.js';
 import {
   buildMergeChargesByTransactionReferencePlan,
   type MergeChargePlan,
 } from './merge-charges-by-reference.helper.js';
 
-export type CronJobEventProto =
-  | ({ __typename: 'CronJobStepStatus' } & CronJobStepStatus)
+export type ManualAutomationEventProto =
+  | ({ __typename: 'ManualAutomationStepStatus' } & ManualAutomationStepStatus)
   | { __typename: 'ForeignFeeTransactionFlagged'; transaction: string }
   | {
       __typename: 'ChargesMergedByReference';
@@ -44,21 +44,21 @@ type StepOutcome = {
   affectedCount: number;
   errors: string[];
   /** Overrides the end state, which otherwise follows from `errors` */
-  state?: Extract<CronJobStepState, 'NOT_CONFIGURED'>;
+  state?: Extract<ManualAutomationStepState, 'NOT_CONFIGURED'>;
 };
 
 type StepRunner = (
   injector: Injector,
   ownerId: string,
-) => AsyncGenerator<CronJobEventProto, StepOutcome, undefined>;
+) => AsyncGenerator<ManualAutomationEventProto, StepOutcome, undefined>;
 
 function stepStatus(
-  step: CronJobStep,
-  state: CronJobStepState,
+  step: ManualAutomationStep,
+  state: ManualAutomationStepState,
   outcome?: Partial<StepOutcome>,
-): CronJobEventProto {
+): ManualAutomationEventProto {
   return {
-    __typename: 'CronJobStepStatus',
+    __typename: 'ManualAutomationStepStatus',
     step,
     state,
     affectedCount: outcome?.affectedCount ?? null,
@@ -97,15 +97,15 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * Runs the cron jobs steps in order, yielding a status event when each step starts and ends, and
+ * Runs the manual automation steps in order, yielding a status event when each step starts and ends, and
  * an event for every change a step makes. A failed step skips the steps after it; a step that
  * completes with item-level errors, or that is not configured for the business, does not.
  */
-export async function* runCronJobs(
+export async function* runManualAutomations(
   injector: Injector,
   ownerId: string,
-): AsyncGenerator<CronJobEventProto, void, undefined> {
-  const steps: [CronJobStep, StepRunner][] = [
+): AsyncGenerator<ManualAutomationEventProto, void, undefined> {
+  const steps: [ManualAutomationStep, StepRunner][] = [
     ['FLAG_FOREIGN_FEES', flagForeignFees],
     ['MERGE_CHARGES_BY_REFERENCE', mergeChargesByReference],
     ['FILL_CREDITCARD_DEBIT_DATES', fillCreditcardDebitDates],
@@ -130,7 +130,7 @@ export async function* runCronJobs(
       );
     } catch (error) {
       failed = true;
-      console.error(`Cron job step ${step} failed:`, error);
+      console.error(`Manual automation step ${step} failed:`, error);
       yield stepStatus(step, 'FAILED', { errors: [errorMessage(error)] });
     }
   }
@@ -139,8 +139,10 @@ export async function* runCronJobs(
 async function* flagForeignFees(
   injector: Injector,
   ownerId: string,
-): AsyncGenerator<CronJobEventProto, StepOutcome, undefined> {
-  const flagged = await injector.get(CronJobsProvider).flagForeignFeeTransactions({ ownerId });
+): AsyncGenerator<ManualAutomationEventProto, StepOutcome, undefined> {
+  const flagged = await injector
+    .get(ManualAutomationsProvider)
+    .flagForeignFeeTransactions({ ownerId });
   const transactionsProvider = injector.get(TransactionsProvider);
   for (const { id } of flagged) {
     transactionsProvider.transactionByIdLoader.clear(id);
@@ -152,7 +154,7 @@ async function* flagForeignFees(
 async function* mergeChargesByReference(
   injector: Injector,
   ownerId: string,
-): AsyncGenerator<CronJobEventProto, StepOutcome, undefined> {
+): AsyncGenerator<ManualAutomationEventProto, StepOutcome, undefined> {
   const { candidates, chargeById, plans, errors } = await loadReferenceMergePlans(
     injector,
     ownerId,
@@ -197,8 +199,10 @@ async function* mergeChargesByReference(
 async function* fillCreditcardDebitDates(
   injector: Injector,
   ownerId: string,
-): AsyncGenerator<CronJobEventProto, StepOutcome, undefined> {
-  const filled = await injector.get(CronJobsProvider).calculateCreditcardDebitDate({ ownerId });
+): AsyncGenerator<ManualAutomationEventProto, StepOutcome, undefined> {
+  const filled = await injector
+    .get(ManualAutomationsProvider)
+    .calculateCreditcardDebitDate({ ownerId });
   const transactionsProvider = injector.get(TransactionsProvider);
   let filledCount = 0;
   for (const { id, debit_date_override } of filled) {
@@ -219,7 +223,7 @@ async function* fillCreditcardDebitDates(
 // The sync runs for the admin context's owner, the same one the run gets, so it takes no ownerId
 async function* fetchDeelDocuments(
   injector: Injector,
-): AsyncGenerator<CronJobEventProto, StepOutcome, undefined> {
+): AsyncGenerator<ManualAutomationEventProto, StepOutcome, undefined> {
   const credentials = await injector.get(ProviderCredentialsProvider).getDeelCredentials();
   if (!credentials?.apiToken) {
     return { affectedCount: 0, errors: [], state: 'NOT_CONFIGURED' };
@@ -234,8 +238,8 @@ async function* fetchDeelDocuments(
   return { affectedCount: charges.length, errors: [] };
 }
 
-export async function loadReferenceMergePlans(injector: Injector, ownerId: string) {
-  const candidates = await injector.get(CronJobsProvider).getReferenceMergeCandidates({
+async function loadReferenceMergePlans(injector: Injector, ownerId: string) {
+  const candidates = await injector.get(ManualAutomationsProvider).getReferenceMergeCandidates({
     ownerId,
   });
 
@@ -261,7 +265,7 @@ export async function loadReferenceMergePlans(injector: Injector, ownerId: strin
  * review. Throws only when the merge itself fails, so nothing was merged. A failed re-flag comes
  * back as `approvalError`: the merge is already committed by then, and must still be reported.
  */
-export async function executeReferenceMergePlan(
+async function executeReferenceMergePlan(
   injector: Injector,
   { reference, baseChargeId, chargeIdsToMerge }: MergeChargePlan,
   chargeById: Map<string, IGetChargesByIdsResult>,

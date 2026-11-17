@@ -161,7 +161,7 @@ RETURNING t.id, t.debit_date_override;`;
   scope: Scope.Operation,
   global: true,
 })
-export class CronJobsProvider {
+export class ManualAutomationsProvider {
   constructor(private db: TenantAwareDBClient) {}
 
   public async getReferenceMergeCandidates(params: IGetReferenceMergeCandidatesParams) {

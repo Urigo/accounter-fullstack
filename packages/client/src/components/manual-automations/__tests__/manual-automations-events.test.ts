@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CronJobStep, CronJobStepState } from '../../../gql/graphql.js';
+import { ManualAutomationStep, ManualAutomationStepState } from '../../../gql/graphql.js';
 import {
   AUTOMATION_STEPS,
   groupAutomationEvents,
@@ -8,12 +8,12 @@ import {
 } from '../manual-automations-events.js';
 
 function status(
-  step: CronJobStep,
-  state: CronJobStepState,
+  step: ManualAutomationStep,
+  state: ManualAutomationStepState,
   extra: { affectedCount?: number; errors?: string[] } = {},
 ): ManualAutomationsRunEvent {
   return {
-    __typename: 'CronJobStepStatus',
+    __typename: 'ManualAutomationStepStatus',
     step,
     state,
     affectedCount: extra.affectedCount ?? null,
@@ -71,22 +71,22 @@ describe('groupAutomationEvents', () => {
 
   it('keeps the latest status of each step and collects the changes', () => {
     const events: ManualAutomationsRunEvent[] = [
-      status(CronJobStep.FlagForeignFees, CronJobStepState.Running),
+      status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Running),
       { __typename: 'ForeignFeeTransactionFlagged', transaction: transaction('fee-1') },
-      status(CronJobStep.FlagForeignFees, CronJobStepState.Succeeded, { affectedCount: 1 }),
-      status(CronJobStep.MergeChargesByReference, CronJobStepState.Running),
+      status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Succeeded, { affectedCount: 1 }),
+      status(ManualAutomationStep.MergeChargesByReference, ManualAutomationStepState.Running),
       merge,
     ];
 
     const view = groupAutomationEvents(events);
 
-    expect(view.steps[CronJobStep.FlagForeignFees]).toEqual({
-      state: CronJobStepState.Succeeded,
+    expect(view.steps[ManualAutomationStep.FlagForeignFees]).toEqual({
+      state: ManualAutomationStepState.Succeeded,
       affectedCount: 1,
       errors: [],
     });
-    expect(view.steps[CronJobStep.MergeChargesByReference].state).toBe(CronJobStepState.Running);
-    expect(view.steps[CronJobStep.FillCreditcardDebitDates].state).toBe('PENDING');
+    expect(view.steps[ManualAutomationStep.MergeChargesByReference].state).toBe(ManualAutomationStepState.Running);
+    expect(view.steps[ManualAutomationStep.FillCreditcardDebitDates].state).toBe('PENDING');
     expect(view.flaggedFees.map(fee => fee.transaction.id)).toEqual(['fee-1']);
     expect(view.mergedCharges).toEqual([merge]);
     expect(view.filledDebitDates).toEqual([]);
@@ -95,13 +95,13 @@ describe('groupAutomationEvents', () => {
 
   it('collects the charges the Deel step pulled', () => {
     const view = groupAutomationEvents([
-      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Running),
+      status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Running),
       deelCharge,
-      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 1 }),
+      status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Succeeded, { affectedCount: 1 }),
     ]);
 
     expect(view.deelCharges).toEqual([deelCharge]);
-    expect(view.steps[CronJobStep.FetchDeelDocuments].state).toBe(CronJobStepState.Succeeded);
+    expect(view.steps[ManualAutomationStep.FetchDeelDocuments].state).toBe(ManualAutomationStepState.Succeeded);
   });
 });
 
@@ -134,7 +134,7 @@ describe('summarizeAutomationEvents', () => {
   it('leaves Deel out when it is not connected', () => {
     expect(
       summarizeAutomationEvents([
-        status(CronJobStep.FetchDeelDocuments, CronJobStepState.NotConfigured, {
+        status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.NotConfigured, {
           affectedCount: 0,
         }),
       ]).description,
@@ -144,12 +144,12 @@ describe('summarizeAutomationEvents', () => {
   it('flags failed and partially failed runs', () => {
     expect(
       summarizeAutomationEvents([
-        status(CronJobStep.FlagForeignFees, CronJobStepState.Failed, { errors: ['boom'] }),
+        status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Failed, { errors: ['boom'] }),
       ]),
     ).toMatchObject({ failed: true, withErrors: false });
     expect(
       summarizeAutomationEvents([
-        status(CronJobStep.MergeChargesByReference, CronJobStepState.CompletedWithErrors, {
+        status(ManualAutomationStep.MergeChargesByReference, ManualAutomationStepState.CompletedWithErrors, {
           errors: ['one merge failed'],
         }),
       ]),

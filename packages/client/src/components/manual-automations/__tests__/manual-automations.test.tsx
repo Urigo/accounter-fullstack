@@ -2,7 +2,7 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CronJobStep, CronJobStepState } from '../../../gql/graphql.js';
+import { ManualAutomationStep, ManualAutomationStepState } from '../../../gql/graphql.js';
 import { UserContext, type UserInfo } from '../../../providers/index.js';
 import { ROUTES } from '../../../router/routes.js';
 import type { ManualAutomationsRunEvent } from '../manual-automations-events.js';
@@ -50,16 +50,16 @@ afterEach(async () => {
 
 const events: ManualAutomationsRunEvent[] = [
   {
-    __typename: 'CronJobStepStatus',
-    step: CronJobStep.FlagForeignFees,
-    state: CronJobStepState.Succeeded,
+    __typename: 'ManualAutomationStepStatus',
+    step: ManualAutomationStep.FlagForeignFees,
+    state: ManualAutomationStepState.Succeeded,
     affectedCount: 0,
     errors: null,
   },
   {
-    __typename: 'CronJobStepStatus',
-    step: CronJobStep.MergeChargesByReference,
-    state: CronJobStepState.Running,
+    __typename: 'ManualAutomationStepStatus',
+    step: ManualAutomationStep.MergeChargesByReference,
+    state: ManualAutomationStepState.Running,
     affectedCount: null,
     errors: null,
   },
@@ -114,16 +114,16 @@ describe('ManualAutomations screen', () => {
       events: [
         ...events,
         {
-          __typename: 'CronJobStepStatus',
-          step: CronJobStep.MergeChargesByReference,
-          state: CronJobStepState.CompletedWithErrors,
+          __typename: 'ManualAutomationStepStatus',
+          step: ManualAutomationStep.MergeChargesByReference,
+          state: ManualAutomationStepState.CompletedWithErrors,
           affectedCount: 1,
           errors: ['Failed to merge reference "REF-9"'],
         },
         {
-          __typename: 'CronJobStepStatus',
-          step: CronJobStep.FillCreditcardDebitDates,
-          state: CronJobStepState.Failed,
+          __typename: 'ManualAutomationStepStatus',
+          step: ManualAutomationStep.FillCreditcardDebitDates,
+          state: ManualAutomationStepState.Failed,
           affectedCount: null,
           errors: ['DB is down'],
         },
@@ -156,9 +156,9 @@ describe('ManualAutomations screen', () => {
           },
         },
         {
-          __typename: 'CronJobStepStatus',
-          step: CronJobStep.FetchDeelDocuments,
-          state: CronJobStepState.Succeeded,
+          __typename: 'ManualAutomationStepStatus',
+          step: ManualAutomationStep.FetchDeelDocuments,
+          state: ManualAutomationStepState.Succeeded,
           affectedCount: 1,
           errors: null,
         },
@@ -178,9 +178,9 @@ describe('ManualAutomations screen', () => {
         running: false,
         events: [
           {
-            __typename: 'CronJobStepStatus',
-            step: CronJobStep.FetchDeelDocuments,
-            state: CronJobStepState.NotConfigured,
+            __typename: 'ManualAutomationStepStatus',
+            step: ManualAutomationStep.FetchDeelDocuments,
+            state: ManualAutomationStepState.NotConfigured,
             affectedCount: 0,
             errors: null,
           },

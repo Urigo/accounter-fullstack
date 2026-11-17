@@ -27,7 +27,6 @@ import { commonModule } from './modules/common/index.js';
 import { contractsModule } from './modules/contracts/index.js';
 import { corporateTaxesModule } from './modules/corporate-taxes/index.js';
 import { countriesModule } from './modules/countries/index.js';
-import { cronJobsModule } from './modules/cron-jobs/index.js';
 import { deelModule } from './modules/deel/index.js';
 import { depreciationModule } from './modules/depreciation/index.js';
 import { dividendsModule } from './modules/dividends/index.js';
@@ -39,6 +38,7 @@ import { financialEntitiesModule } from './modules/financial-entities/index.js';
 import { foreignSecuritiesModule } from './modules/foreign-securities/index.js';
 import { greenInvoiceModule } from './modules/green-invoice/index.js';
 import { ledgerModule } from './modules/ledger/index.js';
+import { manualAutomationsModule } from './modules/manual-automations/index.js';
 import { miscExpensesModule } from './modules/misc-expenses/index.js';
 import { onboardingModule } from './modules/onboarding/index.js';
 import { priceIndexesModule } from './modules/price-indexes/index.js';
@@ -64,7 +64,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       businessTripsModule,
       chargesModule,
       chargesMatcherModule,
-      cronJobsModule,
+      manualAutomationsModule,
       depreciationModule,
       documentsModule,
       dividendsModule,

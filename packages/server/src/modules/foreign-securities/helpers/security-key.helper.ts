@@ -7,8 +7,8 @@ import { normalizeNumericReference } from '../../../shared/helpers/numeric-refer
  * up in descriptions (amounts, dates, rates), so the leading zero is required rather than
  * incidental.
  *
- * Mirrors the rules `cron-jobs` uses to alias foreign-securities references — the
- * `(0[0-9]{7,})` regex in `cron-jobs.provider.ts` and `getEmbeddedReferenceAliases` in
+ * Mirrors the rules `manual-automations` uses to alias foreign-securities references — the
+ * `(0[0-9]{7,})` regex in `manual-automations.provider.ts` and `getEmbeddedReferenceAliases` in
  * `merge-charges-by-reference.helper.ts` — sharing `normalizeNumericReference` with them.
  *
  * Returns the normalized keys in the order they appear, de-duplicated. Matches

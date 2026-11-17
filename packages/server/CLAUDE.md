@@ -17,9 +17,9 @@ Each module in `src/modules/<name>/` contains:
 ## Existing Modules (34)
 
 accountant-approval, admin-context, app-providers, auth, bank-deposits, business-trips, charges,
-charges-matcher, charts, common, contracts, cron-jobs, corporate-taxes, countries, deel,
-depreciation, dividends, documents, email-ingestion, exchange-rates, financial-accounts,
-financial-entities, green-invoice, ledger, misc-expenses, priority, reports, salaries, sort-codes,
+charges-matcher, charts, common, contracts, corporate-taxes, countries, deel, depreciation,
+dividends, documents, email-ingestion, exchange-rates, financial-accounts, financial-entities,
+green-invoice, ledger, manual-automations, misc-expenses, priority, reports, salaries, sort-codes,
 tags, transactions, vat, workspace-settings
 
 > **Deprecated:** `gmail-listener` remains only as a backward-compat re-export shim
