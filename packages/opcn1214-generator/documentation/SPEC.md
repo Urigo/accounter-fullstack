@@ -636,8 +636,13 @@ export interface GenerateResult {
   summary: {
     reports: number
     records: Partial<Record<RecordType, number>>
-    mainCodePairs: number // used of 61
-    omittedZeroCodes: Array<{ record: RecordType; recordIndex: number; code: string }>
+    mainCodePairs: number // used of 61 (batch: the most of any report)
+    omittedZeroCodes: Array<{
+      record: RecordType
+      recordIndex: number
+      code: string
+      reportIndex?: number // batch only
+    }>
   }
 }
 
@@ -1158,7 +1163,11 @@ only when 834 is absent: 834 is the source of truth, and a disagreeing 297 is
 8. Return `GenerateResult` (§6.2).
 
 `generate1214Batch` runs 1–7 per report, concatenates the reports in input order, and requires 1–50
-reports (`struct.batch.size`). Issues carry `reportIndex`.
+reports (`struct.batch.size`, checked first and alone). Issues carry `reportIndex`; if any report
+has an error, every error and warning of every report is thrown together. The result has
+`fileName: '1214_batch_<n>.txt'`, `summary.reports = n`, `summary.records` summed over the reports
+(9999 = n), `summary.mainCodePairs` the most of any report and `omittedZeroCodes` with their
+`reportIndex` (§15 A-26).
 
 ### 8.2 Parsing algorithm (`parse1214`)
 
@@ -1171,7 +1180,16 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
 3. Check record order (§3.3) and the **maximum** occurrences (minimums are business rules, e.g.
    `struct.shareholders.min`, so a kibbutz file without 1020 records parses); split reports at each
    9999 (batch). A tax year outside `supportedTaxYears()` is reported as
-   `struct.taxYear.unsupported`.
+   `struct.taxYear.unsupported`. `parse.occurrences` is reported once per limit, at the first record
+   over it: `RecordDef.maxOccurs` for 1010, 1020, 1030, 2000 and 2200, and 14 for all 30xx records
+   together; a second 1000 or 9999 in a report is `parse.order` (or starts the next report of a
+   batch), and a 51st report of a batch file is `parse.occurrences` at its first line. `parse1214`
+   given a file with a 1000 record after a 9999 record throws `parse.multipleReports` (only that
+   issue, at column 1 of that 1000 record); other records after the 9999 stay `parse.order`.
+   `parse1214Batch` splits after each 9999 and parses each report on its own (lines after the last
+   9999 form a final report, so a missing final 9999 is `parse.control.missing`); every structural
+   issue of every report is thrown together, with its file line and `reportIndex`, and the business
+   issues of each `ParseResult` carry `reportIndex` too.
 4. Decode header fields by layout (inverse of §4.2); header fillers are ignored (only positions
    9–136 are checked). Numeric fields must be all digits (`percentLiteral` may also hold one `.`
    between digits); alphanumeric values are trimmed of padding spaces (U+0020 only; other whitespace
@@ -1187,7 +1205,14 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
    non-digit income stays `parse.numeric`). A 2200 code (2200@137) that is not a per-country code of
    record 2000, or that an earlier 2200 record of the report already has, is `parse.fieldValue`; a
    2200 record with no 2000 record before it is `parse.order`.
-6. Verify 9999 counts against the records actually present.
+6. Verify 9999 counts against the records actually present. A report without any problem of steps
+   1–6 is then checked for `parse.derivedMismatch`: it is denormalized and normalized again, so
+   every derived value (§7.4) is derived by the generator's own derivations from its source in the
+   file, and each that differs from the file is an issue at its field or code (column of the code
+   entry, or the section start when the code is absent). 833 is read back as
+   `hasCapitalGainsAppendix` (§7.4), so only 833 = no while 30xx records or untransmitted appendices
+   exist can differ; a required derived field the file leaves empty is `field.required`, not a
+   mismatch. The country-entry affiliation of 2200 is `parse.countrySection` (step 5).
 7. Build `NormalizedReport`, denormalize to `Report1214Input`, and run the rule engine on it; return
    its issues in `ParseResult.issues` (they are not thrown), together with
    `struct.taxYear.provisionalLayout` for a file of a provisional tax year (§14). For a file written
@@ -1475,25 +1500,25 @@ date; 3054 purchase date and code-15 date; 3077 code-15 and code-20 dates) and r
 
 ### 10.7 Parse-only rules (`Opcn1214ParseError` issues)
 
-| Rule ID                 | Condition                                                                                                                                                                               |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `parse.empty`           | no records                                                                                                                                                                              |
-| `parse.encoding`        | bytes that do not decode in the selected encoding                                                                                                                                       |
-| `parse.lineLength`      | line length ≠ record length                                                                                                                                                             |
-| `parse.formType`        | positions 1–4 ≠ `1214`                                                                                                                                                                  |
-| `parse.recordType`      | unknown record type                                                                                                                                                                     |
-| `parse.prefixFiller`    | positions 9–136 not all `0`                                                                                                                                                             |
-| `parse.order`           | record out of the §3.3 order, a 2200 record with no 2000 record before it, a second 1000 before a 9999, or any record after the 9999 (a second 9999 too)                                |
-| `parse.occurrences`     | maximum record counts of §3.2 exceeded (minimums are business rules)                                                                                                                    |
-| `parse.control.missing` | report not terminated by 9999                                                                                                                                                           |
-| `parse.control.counts`  | 9999 counts differ from the records present                                                                                                                                             |
-| `parse.multipleReports` | `parse1214` given a batch (use `parse1214Batch`)                                                                                                                                        |
-| `parse.numeric`         | non-digit in a numeric field                                                                                                                                                            |
-| `parse.date`            | invalid `DD/MM/YYYY`                                                                                                                                                                    |
-| `parse.codeSection`     | unknown code, duplicate code, truncated entry, or non-zero data after the last entry                                                                                                    |
-| `parse.fieldValue`      | header value well-formed for its type but not one it can hold (flag/yes-no digit, phone prefix, a 2200 code that is not a per-country code of 2000 or repeats an earlier 2200 record's) |
-| `parse.countrySection`  | malformed country-amount section (affiliation ≠ 1, bad country, truncated entry, non-zero tail, > 10 entries)                                                                           |
-| `parse.derivedMismatch` | a derived value disagrees with its source (e.g. code 273 vs 1029/1030, 832 vs 2000 presence, serial numbers)                                                                            |
+| Rule ID                 | Condition                                                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `parse.empty`           | no records                                                                                                                                                                                 |
+| `parse.encoding`        | bytes that do not decode in the selected encoding                                                                                                                                          |
+| `parse.lineLength`      | line length ≠ record length                                                                                                                                                                |
+| `parse.formType`        | positions 1–4 ≠ `1214`                                                                                                                                                                     |
+| `parse.recordType`      | unknown record type                                                                                                                                                                        |
+| `parse.prefixFiller`    | positions 9–136 not all `0`                                                                                                                                                                |
+| `parse.order`           | record out of the §3.3 order, a 2200 record with no 2000 record before it, a second 1000 before a 9999, or a record after the 9999 that does not start the next report (a second 9999 too) |
+| `parse.occurrences`     | maximum record counts of §3.2 exceeded (minimums are business rules)                                                                                                                       |
+| `parse.control.missing` | report not terminated by 9999                                                                                                                                                              |
+| `parse.control.counts`  | 9999 counts differ from the records present                                                                                                                                                |
+| `parse.multipleReports` | `parse1214` given a batch (use `parse1214Batch`)                                                                                                                                           |
+| `parse.numeric`         | non-digit in a numeric field                                                                                                                                                               |
+| `parse.date`            | invalid `DD/MM/YYYY`                                                                                                                                                                       |
+| `parse.codeSection`     | unknown code, duplicate code, truncated entry, or non-zero data after the last entry                                                                                                       |
+| `parse.fieldValue`      | header value well-formed for its type but not one it can hold (flag/yes-no digit, phone prefix, a 2200 code that is not a per-country code of 2000 or repeats an earlier 2200 record's)    |
+| `parse.countrySection`  | malformed country-amount section (affiliation ≠ 1, bad country, truncated entry, non-zero tail, > 10 entries)                                                                              |
+| `parse.derivedMismatch` | a derived value disagrees with its source (e.g. code 273 vs 1029/1030, 832 vs 2000 presence, serial numbers)                                                                               |
 
 ---
 
@@ -1719,6 +1744,7 @@ phase noted, and this table updated with the outcome.
 | A-23 | Data provenance, 3051 header                                   | The PDF table on p.39 lost the position column during extraction                                                                   | Positions 137/139/142/192/193/194/224 taken from the PDF text layer and verified to chain with the lengths                     | —                                         |
 | A-24 | Breakdown of code 442 = 0                                      | A per-country code that "has a value" needs a 2200 record (p.27); 442 is the only per-country code that may be 0                   | "Has a value" = written in the 2000 section, so 442 = 0 needs a breakdown; omitted zero codes need none                        | P3 — unverified (awaits shopcn probes)    |
 | A-25 | Identifier check digits                                        | Not stated                                                                                                                         | Every `id9`/`shareholderId` value must pass the Israeli check digit (§4.2; `field.checkDigit`, source `checker`)               | Found at CP-2/CP-3; re-verify after FIX-1 |
+| A-26 | Batch summary                                                  | Not stated                                                                                                                         | `mainCodePairs`: the most of any report (61 is per report); `omittedZeroCodes` carry `reportIndex`                             | —                                         |
 | A-34 | 1000@1090 qualifying-company mark                              | p.12 gives 1090 the same name and notes as 1065 ("סימון – רכישה של \"חברה מזכה\"", 1-כן 2-לא)                                      | Inferred from 1091 (the amount): `amortizationClaimed`, amortization is claimed for the purchase                               | —                                         |
 
 A-25 was found on shopcn, which validates identifier check digits and stops at the first error:

@@ -68,3 +68,11 @@ export function swapLines(text: string, a: number, b: number): string {
   lines[b - 1] = first;
   return lines.join(CRLF);
 }
+
+/** `text` with `copies` copies of its `line`-th (1-based) line inserted right after it. */
+export function repeatLine(text: string, line: number, copies = 1): string {
+  const lines = linesOf(text);
+  const target = lineAt(lines, line);
+  lines.splice(line, 0, ...Array.from({ length: copies }, () => target));
+  return lines.join(CRLF);
+}

@@ -114,6 +114,14 @@ export const RULES = deepFreeze([
     specRef: { page: 13 },
   },
   {
+    id: 'struct.batch.size',
+    severity: 'error',
+    source: 'spec',
+    scope: 'input',
+    description: 'A batch (generate1214Batch) with no reports or more than 50 reports.',
+    specRef: { page: 1 },
+  },
+  {
     id: 'field.required',
     severity: 'error',
     source: 'spec',
@@ -623,7 +631,16 @@ export const RULES = deepFreeze([
     source: 'spec',
     scope: 'parse',
     description:
-      'A record out of the SPEC §3.3 order (the file must start with 1000; a 2200 record must follow a 2000 record), a second 1000 before a 9999, or any record after the 9999 (a second 9999 too).',
+      'A record out of the SPEC §3.3 order (the file must start with 1000; a 2200 record must follow a 2000 record), a second 1000 before a 9999, or a record after the 9999 that does not start the next report (a second 9999 too; a 1000 there is parse.multipleReports in parse1214).',
+  },
+  {
+    id: 'parse.occurrences',
+    severity: 'error',
+    source: 'spec',
+    scope: 'parse',
+    description:
+      'More records of a type than SPEC §3.2 allows (1010 > 3, 1020 > 99, 1030 > 5, 2000 > 1, 2200 > 30, capital-gains records 30xx > 14 together), or more than 50 reports in a batch file; minimums are business rules.',
+    specRef: { page: 2 },
   },
   {
     id: 'parse.control.missing',
@@ -640,6 +657,14 @@ export const RULES = deepFreeze([
     scope: 'parse',
     description: 'A count of the 9999 control record differs from the records present.',
     specRef: { page: 59 },
+  },
+  {
+    id: 'parse.multipleReports',
+    severity: 'error',
+    source: 'derived',
+    scope: 'parse',
+    description:
+      'parse1214 was given a file with more than one report (a 1000 record after a 9999 record); use parse1214Batch.',
   },
   {
     id: 'parse.numeric',
@@ -681,6 +706,14 @@ export const RULES = deepFreeze([
     description:
       'A country-amount section (record 2200) with an affiliation other than 1, a malformed country code, a truncated entry, more than 10 entries, or non-zero data after the last entry.',
     specRef: { page: 31 },
+  },
+  {
+    id: 'parse.derivedMismatch',
+    severity: 'error',
+    source: 'derived',
+    scope: 'parse',
+    description:
+      'A derived value (SPEC §7.4) that disagrees with the value derived again from its source in the file: 832 vs a 2000 record, 833 = no with capital-gains records or untransmitted appendices, codes 008/028/273/277/278/280/297, 1010/1020 serial numbers, 1030 affiliation, 30xx transaction symbol, appendix and "מספר בתל"ם" sequence numbers, 3077@245 improvement count.',
   },
 ] as const satisfies readonly RuleMetaInput[]);
 

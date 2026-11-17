@@ -8,7 +8,7 @@ import { CODE_LENGTH, COUNTRY_ENTRY_LENGTH } from '../codec/sections.js';
 import { CodecDecodeError, type CodecDecodeReason } from '../codec/types.js';
 import { Opcn1214InternalError, Opcn1214ParseError, unsupportedTaxYearIssue } from '../errors.js';
 import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
-import { getLayout, supportedTaxYears } from '../layout/registry.js';
+import { getLayout, REPORTS_PER_FILE, supportedTaxYears } from '../layout/registry.js';
 import type { CodeDef, FieldDef, RecordDef, RecordType, YearLayout } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
 import {
@@ -19,7 +19,13 @@ import {
   inputIndexOf,
   pathFor,
 } from '../normalize/paths.js';
-import { isRecordType, makeIssue, recordRank, type Issue } from '../validate/issue.js';
+import { isRecordType, recordRank, type Issue } from '../validate/issue.js';
+import {
+  derivedMismatches,
+  parseIssue,
+  type LocatedRecord,
+  type Location,
+} from '../validate/parse-rules.js';
 import type { RuleId } from '../validate/rules.js';
 import { controlValues } from './control.js';
 import type { FileLine } from './split.js';
@@ -31,32 +37,6 @@ const RESERVED = { start: 8, end: 136 } as const;
 const TAX_YEAR = { start: 145, end: 149 } as const;
 const YEAR = /^\d{4}$/;
 const NOT_ZERO = /[^0]/;
-
-/** Where an issue was found: 1-based line and column, plus the record when it is known. */
-interface Location {
-  line: number;
-  column: number;
-  recordType?: RecordType;
-  recordIndex?: number;
-}
-
-function parseIssue(
-  ruleId: RuleId,
-  message: string,
-  { line, column, ...record }: Location,
-  details: Omit<Issue, 'ruleId' | 'severity' | 'message' | 'path' | 'line' | 'column'> & {
-    path?: string;
-  } = {},
-): Issue {
-  return makeIssue(ruleId, {
-    message: `Line ${line}, column ${column}: ${message}`,
-    path: '',
-    ...record,
-    ...details,
-    line,
-    column,
-  });
-}
 
 /** 0-based offset of the first character of `text` (from `start`) that differs from `expected`. */
 function firstDifference(text: string, start: number, expected: string): number {
@@ -75,9 +55,13 @@ function recordTypeText(line: FileLine): string {
 /**
  * The layout selected by the tax year of the first 1000 record (SPEC §8.2 step 2), or undefined
  * (with an issue) when there is no 1000 record, bytes up to its tax year do not decode, or its tax
- * year is not a supported year.
+ * year is not a supported year. `lines` start at line `firstLine` of the file.
  */
-function selectLayout(lines: readonly FileLine[], issues: Issue[]): YearLayout | undefined {
+function selectLayout(
+  lines: readonly FileLine[],
+  firstLine: number,
+  issues: Issue[],
+): YearLayout | undefined {
   const index = lines.findIndex(line => recordTypeText(line) === '1000');
   const main = lines[index];
   // Bytes that do not decode after the tax year do not hide it: every windows-1255 byte is one
@@ -86,7 +70,7 @@ function selectLayout(lines: readonly FileLine[], issues: Issue[]): YearLayout |
     return undefined;
   }
   const at: Location = {
-    line: index + 1,
+    line: index + firstLine,
     column: TAX_YEAR.start + 1,
     recordType: '1000',
     recordIndex: 0,
@@ -387,8 +371,8 @@ function breakdownIssues(
 
 /**
  * The record-order issue of a record of `type` (SPEC §3.3), given the types of the records before
- * it. Any record after a 9999, a second 9999 included, is out of order until batches are split
- * there (H1).
+ * it in its report. A record after the 9999 of its report is out of order (batches are split at
+ * each 9999 before this check, so only records that do not start a new report get here).
  */
 function orderProblem(type: RecordType, before: readonly RecordType[]): string | undefined {
   const previous = before.at(-1);
@@ -450,31 +434,64 @@ function byLine(a: Issue, b: Issue): number {
 }
 
 /**
- * The NormalizedReport of a single-report file given as its lines: the layout comes from the tax
- * year of the first 1000 record; each line is checked (SPEC §8.2 steps 2–3), decoded with the
- * layout of its record type and indexed among the records of that type; 9999 is checked against
- * the records present (step 6) but not kept. Throws Opcn1214ParseError with every structural
- * problem of the file (an unsupported tax year included, as struct.taxYear.unsupported), sorted
- * by line and column.
+ * The maximum number of records of `type` in one report (SPEC §3.2): RecordDef.maxOccurs, or for
+ * a capital-gains record the limit of all of them together; undefined for 1000 and 9999, which
+ * occur once per report (a second one is parse.order, or starts the next report of a batch).
  */
-export function parseLines(lines: readonly FileLine[]): NormalizedReport {
-  if (lines.length === 0) {
-    throw new Opcn1214ParseError([
-      parseIssue('parse.empty', 'The file has no records.', { line: 1, column: 1 }),
-    ]);
+function occurrenceLimit(layout: YearLayout, type: RecordType): number | undefined {
+  if (type === '1000' || type === '9999') {
+    return undefined;
   }
+  return isCapitalGainsRecordType(type)
+    ? layout.limits.capitalGainsAppendices
+    : layout.records[type].maxOccurs;
+}
+
+/**
+ * The parse.occurrences issue of the record of `type` at `at` when it is the first one over its
+ * limit: `count` is the number of records of the type (of capital-gains records, for one of them)
+ * so far, this one included.
+ */
+function occurrenceIssue(
+  layout: YearLayout,
+  type: RecordType,
+  count: number,
+  at: Location,
+): Issue | undefined {
+  const max = occurrenceLimit(layout, type);
+  if (max === undefined || count !== max + 1) {
+    return undefined;
+  }
+  const what = isCapitalGainsRecordType(type) ? 'capital-gains records (30xx)' : `${type} records`;
+  return parseIssue('parse.occurrences', `More than ${max} ${what} in one report.`, at, {
+    value: count,
+    expected: `at most ${max}`,
+  });
+}
+
+/**
+ * The NormalizedReport of one report given as its lines, which start at line `firstLine` of the
+ * file (issue lines are file lines): the layout comes from the tax year of the first 1000 record;
+ * each line is checked (SPEC §8.2 steps 2–3: line shape, order, maximum occurrences), decoded with
+ * the layout of its record type and indexed among the records of that type; 9999 is checked
+ * against the records present (step 6) but not kept. A report without structural problems is then
+ * checked for derived values that disagree with their source (parse.derivedMismatch). Throws
+ * Opcn1214ParseError with every structural problem of the report (an unsupported tax year
+ * included, as struct.taxYear.unsupported), sorted by line and column.
+ */
+function parseReport(lines: readonly FileLine[], firstLine: number): NormalizedReport {
   const issues: Issue[] = [];
-  const layout = selectLayout(lines, issues);
+  const layout = selectLayout(lines, firstLine, issues);
   const counts = new Map<RecordType, number>();
   const types: RecordType[] = [];
-  const records: NormalizedRecord[] = [];
+  const located: LocatedRecord[] = [];
   let control: { record: NormalizedRecord; line: number } | undefined;
   const breakdownCodes = new Set<string>();
   // Capital-gains records are read back in file order, so their index among all of them is the
   // index of their appendix in `capitalGains` (denormalize).
   let capitalGainsCount = 0;
   for (const [offset, line] of lines.entries()) {
-    const lineNumber = offset + 1;
+    const lineNumber = offset + firstLine;
     const { type, decodable } = checkLine(line, lineNumber, layout, issues);
     if (!type) {
       continue;
@@ -487,6 +504,12 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
     const order = orderProblem(type, types);
     if (order) {
       issues.push(parseIssue('parse.order', order, at));
+    }
+    const occurrences =
+      layout &&
+      occurrenceIssue(layout, type, isCapitalGains ? capitalGainsCount : recordIndex + 1, at);
+    if (occurrences) {
+      issues.push(occurrences);
     }
     types.push(type);
     if (!layout || !decodable) {
@@ -504,7 +527,7 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
         if (type === '2200') {
           issues.push(...breakdownIssues(layout, record, lineNumber, breakdownCodes));
         }
-        records.push(withPaths(record));
+        located.push({ record: withPaths(record), line: lineNumber, text: line.text });
       }
     } catch (error) {
       if (!(error instanceof CodecDecodeError)) {
@@ -516,7 +539,7 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
   if (!types.includes('9999')) {
     issues.push(
       parseIssue('parse.control.missing', 'The report is not terminated by a 9999 record.', {
-        line: lines.length + 1,
+        line: lines.length + firstLine,
         column: 1,
       }),
     );
@@ -529,5 +552,113 @@ export function parseLines(lines: readonly FileLine[]): NormalizedReport {
   if (issues.length > 0 || !layout) {
     throw new Opcn1214ParseError(issues.sort(byLine));
   }
-  return { taxYear: layout.taxYear, layout, records, notices: [], omittedZeroCodes: [] };
+  const report: NormalizedReport = {
+    taxYear: layout.taxYear,
+    layout,
+    records: located.map(({ record }) => record),
+    notices: [],
+    omittedZeroCodes: [],
+  };
+  const mismatches = derivedMismatches(report, located);
+  if (mismatches.length > 0) {
+    throw new Opcn1214ParseError(mismatches.sort(byLine));
+  }
+  return report;
+}
+
+function emptyFileError(): Opcn1214ParseError {
+  return new Opcn1214ParseError([
+    parseIssue('parse.empty', 'The file has no records.', { line: 1, column: 1 }),
+  ]);
+}
+
+function isControlLine(line: FileLine): boolean {
+  return recordTypeText(line) === '9999';
+}
+
+/**
+ * The NormalizedReport of a single-report file given as its lines (SPEC §8.2 steps 2–7). Throws
+ * Opcn1214ParseError for an empty file, for a file that holds more than one report (a 1000 record
+ * after a 9999 record: parse.multipleReports, at that record's line), and with every structural
+ * problem of the report (parseReport); records after the 9999 that do not start a report are
+ * parse.order.
+ */
+export function parseLines(lines: readonly FileLine[]): NormalizedReport {
+  if (lines.length === 0) {
+    throw emptyFileError();
+  }
+  const control = lines.findIndex(isControlLine);
+  const next =
+    control === -1
+      ? -1
+      : lines.findIndex((line, index) => index > control && recordTypeText(line) === '1000');
+  if (next !== -1) {
+    throw new Opcn1214ParseError([
+      parseIssue(
+        'parse.multipleReports',
+        `The file holds more than one report (a new report starts after the 9999 record on line ${control + 1}); parse it with parse1214Batch.`,
+        { line: next + 1, column: 1 },
+      ),
+    ]);
+  }
+  return parseReport(lines, 1);
+}
+
+/** The reports of a batch file: its lines split after each 9999 record, with their first line. */
+function splitReports(lines: readonly FileLine[]): Array<{ lines: FileLine[]; firstLine: number }> {
+  const reports: Array<{ lines: FileLine[]; firstLine: number }> = [];
+  let current: FileLine[] = [];
+  let firstLine = 1;
+  for (const [offset, line] of lines.entries()) {
+    current.push(line);
+    if (isControlLine(line)) {
+      reports.push({ lines: current, firstLine });
+      current = [];
+      firstLine = offset + 2;
+    }
+  }
+  if (current.length > 0) {
+    reports.push({ lines: current, firstLine });
+  }
+  return reports;
+}
+
+/**
+ * The NormalizedReports of an OPCN batch file given as its lines (SPEC §3.1, §8.2 step 3): split
+ * after each 9999 record, each report parsed on its own (parseReport) with file line numbers. Throws
+ * Opcn1214ParseError for an empty file, or with every structural problem of every report, each
+ * issue carrying its 0-based `reportIndex`; a report after the 50th is parse.occurrences at its
+ * first line.
+ */
+export function parseBatchLines(lines: readonly FileLine[]): NormalizedReport[] {
+  if (lines.length === 0) {
+    throw emptyFileError();
+  }
+  const issues: Issue[] = [];
+  const reports: NormalizedReport[] = [];
+  const max = REPORTS_PER_FILE;
+  for (const [reportIndex, { lines: reportLines, firstLine }] of splitReports(lines).entries()) {
+    if (reportIndex === max) {
+      issues.push(
+        parseIssue(
+          'parse.occurrences',
+          `More than ${max} reports in one file.`,
+          { line: firstLine, column: 1 },
+          { reportIndex, expected: `at most ${max}` },
+        ),
+      );
+    }
+    try {
+      reports.push(parseReport(reportLines, firstLine));
+    } catch (error) {
+      if (!(error instanceof Opcn1214ParseError)) {
+        throw error;
+      }
+      issues.push(...error.issues.map(issue => ({ ...issue, reportIndex })));
+    }
+  }
+  if (issues.length > 0) {
+    throw new Opcn1214ParseError(issues.sort(byLine));
+  }
+  return reports;
 }
