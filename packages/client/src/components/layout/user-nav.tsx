@@ -1,8 +1,7 @@
 import { useContext, useState, type JSX } from 'react';
-import { Banknote, CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
+import { CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import { useFetchDeelDocuments } from '../../hooks/use-fetch-deel-documents.js';
 import { useMyMemberships } from '../../hooks/use-my-memberships.js';
 import { UserContext } from '../../providers/index.js';
 import { getBusinessScopeIds, setBusinessScope } from '../../providers/urql.js';
@@ -29,8 +28,6 @@ export function UserNav(): JSX.Element | null {
   const [pullDocumentsOpened, setPullDocumentsOpened] = useState(false);
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>(getBusinessScopeIds);
-  const { fetching: fetchingDeelDocuments, fetchDocuments: fetchDeelDocuments } =
-    useFetchDeelDocuments();
   // Scope-independent: `userContext.memberships` is fetched under the active
   // business scope, so it names only the in-scope businesses — leaving the rest
   // of this very picker as bare UUIDs. Skipped entirely when the picker could
@@ -158,18 +155,6 @@ export function UserNav(): JSX.Element | null {
               Add Balance Charge
             </Button>
           </DropdownMenuItem>
-          <Tooltip content="Pull Deel Documents">
-            <DropdownMenuItem asChild>
-              <Button
-                variant="ghost"
-                disabled={fetchingDeelDocuments}
-                onClick={() => fetchDeelDocuments()}
-              >
-                <Banknote className="size-4" />
-                <span className="hidden sm:inline">Pull Deel Documents</span>
-              </Button>
-            </DropdownMenuItem>
-          </Tooltip>
           <DropdownMenuItem>
             <Tooltip content="Pull Green Invoice Documents">
               <Button
