@@ -1,10 +1,27 @@
+import { Opcn1214UnsupportedYearError } from '../errors.js';
 import { LAYOUT_2024 } from './2024/layout.generated.js';
+import { LAYOUT_2025 } from './2025/index.js';
+import { deepFreeze } from './freeze.js';
 import type { YearLayout } from './types.js';
 
-/** Returns the layout of a supported tax year (2024 only for now). */
+/** Tax year → layout (SPEC §14), deep-frozen at module load. */
+const LAYOUTS: ReadonlyMap<number, YearLayout> = new Map<number, YearLayout>([
+  [2024, deepFreeze<YearLayout>(LAYOUT_2024)],
+  [2025, LAYOUT_2025],
+]);
+
+const SUPPORTED_TAX_YEARS: readonly number[] = Object.freeze([...LAYOUTS.keys()]);
+
+/** The tax years with a layout, ascending. */
+export function supportedTaxYears(): readonly number[] {
+  return SUPPORTED_TAX_YEARS;
+}
+
+/** Returns the layout of a supported tax year; throws Opcn1214UnsupportedYearError otherwise. */
 export function getLayout(taxYear: number): YearLayout {
-  if (taxYear === 2024) {
-    return LAYOUT_2024;
+  const layout = LAYOUTS.get(taxYear);
+  if (!layout) {
+    throw new Opcn1214UnsupportedYearError(taxYear, SUPPORTED_TAX_YEARS);
   }
-  throw new Error(`No 1214 layout for tax year ${taxYear}`);
+  return layout;
 }
