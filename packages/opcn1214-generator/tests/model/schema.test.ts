@@ -2,7 +2,7 @@ import type { z } from 'zod';
 import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import { report1214InputSchema, schemaFor } from '../../src/model/schema.js';
 import { zodIssuesToIssues } from '../../src/validate/shape.js';
-import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
 
 /** The input.shape issues of `input` against the schema of its year (2024 by default). */
 function shapeIssues(input: unknown) {
@@ -247,6 +247,67 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       expect(shapeIssues(input)).toEqual([
         expect.objectContaining({ path: `declarations.${member}`, expected: 'boolean' }),
       ]);
+    });
+  });
+
+  describe('other income, attachments, capital-gains summary and qualifying company', () => {
+    it('accepts every member', () => {
+      expect(shapeIssues(fullMainInput())).toEqual([]);
+    });
+
+    it('accepts empty groups and undefined members', () => {
+      const input = minimalInput({
+        otherTaxableIncome: {},
+        attachments: { donationReceiptsCount: undefined },
+        capitalGainsSummary: { reasons: {} },
+        qualifyingCompany: { amortizationAmount: undefined },
+      });
+      expect(shapeIssues(input)).toEqual([]);
+    });
+
+    it('reports unknown properties of every group', () => {
+      const base = fullMainInput();
+      const input = {
+        ...base,
+        otherTaxableIncome: { ...base.otherTaxableIncome, description: 'x' },
+        attachments: { ...base.attachments, count: 1 },
+        capitalGainsSummary: {
+          ...base.capitalGainsSummary,
+          transmittedCount: 1,
+          reasons: { ...base.capitalGainsSummary?.reasons, unknown: true },
+        },
+        qualifyingCompany: { ...base.qualifyingCompany, amount: 1 },
+      };
+      expect(shapePaths(input).sort()).toEqual([
+        'attachments.count',
+        'capitalGainsSummary.reasons.unknown',
+        'capitalGainsSummary.transmittedCount',
+        'otherTaxableIncome.description',
+        'qualifyingCompany.amount',
+      ]);
+    });
+
+    it('reports members of the wrong type', () => {
+      const input = minimalInput({
+        otherTaxableIncome: { source: 1 as never, ratePercent: '10' as never },
+        attachments: { donationReceiptsCount: '2' as never },
+        capitalGainsSummary: { untransmittedCount: true as never, reasons: { other: 1 as never } },
+        qualifyingCompany: { purchased: 'yes' as never, amortizationAmount: '0' as never },
+      });
+      expect(shapePaths(input).sort()).toEqual([
+        'attachments.donationReceiptsCount',
+        'capitalGainsSummary.reasons.other',
+        'capitalGainsSummary.untransmittedCount',
+        'otherTaxableIncome.ratePercent',
+        'otherTaxableIncome.source',
+        'qualifyingCompany.amortizationAmount',
+        'qualifyingCompany.purchased',
+      ]);
+    });
+
+    it('rejects null groups', () => {
+      const input = { ...minimalInput(), attachments: null };
+      expect(shapePaths(input)).toEqual(['attachments']);
     });
   });
 

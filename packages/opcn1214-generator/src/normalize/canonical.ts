@@ -9,7 +9,7 @@ import type { FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
 import { MAIN_INPUT_KEYS, setKey, SHAREHOLDER_INPUT_KEYS, type InputTree } from './denormalize.js';
-import { deriveHasCapitalGainsAppendix } from './derive.js';
+import { hasUntransmittedAppendices } from './derive.js';
 import { roundAmount } from './fields.js';
 import { DEFAULT_SOFTWARE_NAME } from './main.js';
 import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
@@ -166,8 +166,12 @@ export function canonicalize(
   if (positions.length > 0) {
     setKey(output, REPORTABLE_POSITIONS, positions);
   }
-  // 833 = yes is read back as hasCapitalGainsAppendix (denormalize); `false` writes no.
-  if (deriveHasCapitalGainsAppendix(input.declarations)) {
+  // 833 = yes is read back as hasCapitalGainsAppendix (denormalize) unless untransmitted
+  // appendices explain it; `false` writes no.
+  if (
+    input.declarations.hasCapitalGainsAppendix === true &&
+    !hasUntransmittedAppendices(input.capitalGainsSummary)
+  ) {
     setKey(output, 'declarations.hasCapitalGainsAppendix', true);
   }
   // The tree has the members of Report1214Input; values keep their input types.

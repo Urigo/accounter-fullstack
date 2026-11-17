@@ -37,7 +37,16 @@ export function normalizeMain(
   options: ValidateOptions,
 ): NormalizedMain {
   const def = layout.records['1000'];
-  const { company, declarations, meta, preparer } = input;
+  const {
+    attachments,
+    capitalGainsSummary,
+    company,
+    declarations,
+    meta,
+    otherTaxableIncome,
+    preparer,
+    qualifyingCompany,
+  } = input;
   const today = options.today ?? (() => todayInJerusalem());
   const notices: Issue[] = [];
   const prefix = (key: string, value: string | undefined) =>
@@ -73,7 +82,7 @@ export function normalizeMain(
       'preparer.phone.number': preparer?.phone?.number,
       // 832 (SPEC §7.4): the model has no foreign appendix yet.
       hasForeignAppendix: false,
-      'declarations.hasCapitalGainsAppendix': deriveHasCapitalGainsAppendix(declarations),
+      'declarations.hasCapitalGainsAppendix': deriveHasCapitalGainsAppendix(input),
       'declarations.form6111Obligation': enumCode(
         FORM_6111_OBLIGATION_CODES,
         declarations.form6111Obligation,
@@ -109,6 +118,20 @@ export function normalizeMain(
       'declarations.requestsAdvancePayments': declarations.requestsAdvancePayments,
       'declarations.hasBuildingIncome': declarations.hasBuildingIncome,
       'declarations.isTrustBeneficiary': declarations.isTrustBeneficiary,
+      'otherTaxableIncome.source': otherTaxableIncome?.source,
+      'otherTaxableIncome.amount': otherTaxableIncome?.amount,
+      'otherTaxableIncome.ratePercent': otherTaxableIncome?.ratePercent,
+      'attachments.donationReceiptsCount': attachments?.donationReceiptsCount,
+      'attachments.withholdingCertificatesCount': attachments?.withholdingCertificatesCount,
+      'capitalGainsSummary.totalAppendicesCount': capitalGainsSummary?.totalAppendicesCount,
+      'capitalGainsSummary.untransmittedCount': capitalGainsSummary?.untransmittedCount,
+      'capitalGainsSummary.reasons.lossOrNoGain': capitalGainsSummary?.reasons?.lossOrNoGain,
+      'capitalGainsSummary.reasons.overFiveImprovementBalances':
+        capitalGainsSummary?.reasons?.overFiveImprovementBalances,
+      'capitalGainsSummary.reasons.over14Appendices':
+        capitalGainsSummary?.reasons?.over14Appendices,
+      'capitalGainsSummary.reasons.other': capitalGainsSummary?.reasons?.other,
+      'capitalGainsSummary.reasons.otherText': capitalGainsSummary?.reasons?.otherText,
       'declarations.directorsReceivedOpinion': declarations.directorsReceivedOpinion,
       'declarations.tookReportablePosition': declarations.tookReportablePosition,
       'declarations.nonDeductibleSalaryExpenses': declarations.nonDeductibleSalaryExpenses,
@@ -122,6 +145,11 @@ export function normalizeMain(
         ]),
       ),
       'declarations.noBankAccount': declarations.noBankAccount,
+      'qualifyingCompany.purchased': qualifyingCompany?.purchased,
+      'qualifyingCompany.israeliPurchaseAmount': qualifyingCompany?.israeliPurchaseAmount,
+      'qualifyingCompany.foreignPurchaseAmount': qualifyingCompany?.foreignPurchaseAmount,
+      'qualifyingCompany.amortizationClaimed': qualifyingCompany?.amortizationClaimed,
+      'qualifyingCompany.amortizationAmount': qualifyingCompany?.amortizationAmount,
     },
     options.rounding,
   );

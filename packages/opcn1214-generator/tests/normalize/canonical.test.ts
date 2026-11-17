@@ -1,6 +1,6 @@
 import type { PhonePrefix, Report1214Input } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
 
 const TODAY = '2025-03-31';
 const OPTIONS = { today: () => TODAY };
@@ -188,6 +188,89 @@ describe('canonicalize', () => {
       preparer: { phone: { prefix: '01' as PhonePrefix, number: '7654321' } },
     });
     expect(canonicalize(input, OPTIONS).preparer).toEqual({ phone: { number: '7654321' } });
+  });
+
+  it('keeps every member of the full main input', () => {
+    const input = fullMainInput();
+    const result = canonicalize(input, OPTIONS);
+    expect(result.otherTaxableIncome).toEqual(input.otherTaxableIncome);
+    expect(result.attachments).toEqual(input.attachments);
+    expect(result.capitalGainsSummary).toEqual(input.capitalGainsSummary);
+    expect(result.qualifyingCompany).toEqual(input.qualifyingCompany);
+    expect(result.declarations).toEqual(input.declarations);
+  });
+
+  it('removes optional zero header numbers except the amountX 1091, and empty groups', () => {
+    const result = canonicalize(
+      minimalInput({
+        otherTaxableIncome: { source: '  ', amount: 0, ratePercent: 0 },
+        attachments: { donationReceiptsCount: 0, withholdingCertificatesCount: 0 },
+        capitalGainsSummary: {
+          totalAppendicesCount: 0,
+          untransmittedCount: 0,
+          reasons: { lossOrNoGain: false, other: false, otherText: '' },
+        },
+        qualifyingCompany: {
+          purchased: false,
+          israeliPurchaseAmount: 0,
+          foreignPurchaseAmount: 0,
+          amortizationClaimed: false,
+          amortizationAmount: 0,
+        },
+      }),
+      OPTIONS,
+    );
+    expect(result).not.toHaveProperty('otherTaxableIncome');
+    expect(result).not.toHaveProperty('attachments');
+    expect(result).not.toHaveProperty('capitalGainsSummary');
+    expect(result.qualifyingCompany).toEqual({
+      purchased: false,
+      amortizationClaimed: false,
+      amortizationAmount: 0,
+    });
+  });
+
+  it('normalizes the text members and rounds the amounts like generation', () => {
+    const result = canonicalize(
+      minimalInput({
+        otherTaxableIncome: { source: '  דמי\u00A0 שכירות ', amount: 10.5 },
+        capitalGainsSummary: { reasons: { other: true, otherText: ' סיבה  אחרת ' } },
+        qualifyingCompany: { israeliPurchaseAmount: 0.4, amortizationAmount: 0.4 },
+      }),
+      { ...OPTIONS, rounding: 'halfUp' },
+    );
+    expect(result.otherTaxableIncome).toEqual({ source: 'דמי שכירות', amount: 11 });
+    expect(result.capitalGainsSummary).toEqual({
+      reasons: { other: true, otherText: 'סיבה אחרת' },
+    });
+    expect(result.qualifyingCompany).toEqual({ amortizationAmount: 0 });
+  });
+
+  describe('833 has capital-gains appendix (SPEC §7.4)', () => {
+    it('keeps hasCapitalGainsAppendix true when no untransmitted appendix explains 833 = yes', () => {
+      for (const capitalGainsSummary of [undefined, { untransmittedCount: 0 }]) {
+        const result = canonicalize(
+          minimalInput({ declarations: { hasCapitalGainsAppendix: true }, capitalGainsSummary }),
+          OPTIONS,
+        );
+        expect(result.declarations.hasCapitalGainsAppendix).toBe(true);
+      }
+    });
+
+    it.each([true, false])(
+      'drops hasCapitalGainsAppendix %s when untransmittedCount > 0 already makes 833 = yes',
+      hasCapitalGainsAppendix => {
+        const result = canonicalize(
+          minimalInput({
+            declarations: { hasCapitalGainsAppendix },
+            capitalGainsSummary: { untransmittedCount: 2 },
+          }),
+          OPTIONS,
+        );
+        expect(result.declarations).not.toHaveProperty('hasCapitalGainsAppendix');
+        expect(result.capitalGainsSummary).toEqual({ untransmittedCount: 2 });
+      },
+    );
   });
 
   it('does not change its input', () => {

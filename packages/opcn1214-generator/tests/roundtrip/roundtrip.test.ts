@@ -10,7 +10,7 @@ import {
   type Report1214Input,
 } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, fullMainInput, minimalInput } from '../fixtures/builders.js';
 
 const OPTIONS: GenerateOptions = { today: () => '2025-03-31' };
 const GOLDEN_DIR = new URL('../fixtures/golden/', import.meta.url);
@@ -132,9 +132,42 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     }),
     OPTIONS,
   ],
+  ['every member of record 1000', fullMainInput(), OPTIONS],
+  [
+    'record 1000 groups written as absent or zero, amortization amount 0',
+    fullMainInput({
+      otherTaxableIncome: { source: ' ', amount: 0, ratePercent: 100 },
+      attachments: { donationReceiptsCount: 0 },
+      capitalGainsSummary: {
+        totalAppendicesCount: 0,
+        untransmittedCount: 0,
+        reasons: { lossOrNoGain: false, over14Appendices: false, other: false, otherText: '' },
+      },
+      qualifyingCompany: {
+        purchased: false,
+        israeliPurchaseAmount: 0,
+        amortizationClaimed: false,
+        amortizationAmount: 0,
+      },
+      declarations: { hasCapitalGainsAppendix: true },
+    }),
+    OPTIONS,
+  ],
+  [
+    'untransmitted appendices with an explicit hasCapitalGainsAppendix',
+    minimalInput({
+      declarations: { hasCapitalGainsAppendix: true },
+      capitalGainsSummary: { untransmittedCount: 1 },
+    }),
+    OPTIONS,
+  ],
   [
     'amounts rounded half up',
-    minimalInput({ amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 } }),
+    minimalInput({
+      amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },
+      otherTaxableIncome: { amount: 99.5 },
+      qualifyingCompany: { foreignPurchaseAmount: 0.4, amortizationAmount: 0.4 },
+    }),
     { ...OPTIONS, rounding: 'halfUp' },
   ],
 ];

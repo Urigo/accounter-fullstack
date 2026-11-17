@@ -1,5 +1,5 @@
 /** Derived main-form codes (SPEC §7.4). */
-import type { Declarations } from '../model/input.js';
+import type { Declarations, Report1214Input } from '../model/input.js';
 
 /**
  * Code 273 from the declarations 1029/1030 (p.19): yes/no → 1, no/yes → 2, yes/yes → 3,
@@ -25,13 +25,24 @@ export function deriveCode008(
   return declarations.appliesAccountingStandards ? 1 : undefined;
 }
 
+/** Whether `capitalGainsSummary.untransmittedCount` is greater than 0 (→ 833 = yes, SPEC §7.4). */
+export function hasUntransmittedAppendices(
+  summary: Report1214Input['capitalGainsSummary'],
+): boolean {
+  const count = summary?.untransmittedCount;
+  return typeof count === 'number' && count > 0;
+}
+
 /**
- * 1000@833, has a capital-gains appendix: yes when `hasCapitalGainsAppendix` is true. The input
- * model has no capital-gains appendices or untransmitted count yet (steps D2, G1), so it is
- * otherwise no.
+ * 1000@833, has a capital-gains appendix (SPEC §7.4): yes when `hasCapitalGainsAppendix` is true
+ * or `capitalGainsSummary.untransmittedCount` is greater than 0, otherwise no. The input model has
+ * no capital-gains appendices yet (step G1).
  */
 export function deriveHasCapitalGainsAppendix(
-  declarations: Pick<Declarations, 'hasCapitalGainsAppendix'>,
+  input: Pick<Report1214Input, 'declarations' | 'capitalGainsSummary'>,
 ): boolean {
-  return declarations.hasCapitalGainsAppendix === true;
+  return (
+    input.declarations.hasCapitalGainsAppendix === true ||
+    hasUntransmittedAppendices(input.capitalGainsSummary)
+  );
 }
