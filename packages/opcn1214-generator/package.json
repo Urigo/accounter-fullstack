@@ -49,17 +49,22 @@
   "scripts": {
     "build": "yarn lint && bob build",
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
+    "generate:layout": "tsx scripts/generate-layout.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
     "start": "node ./dist/esm/index.js",
-    "test": "vitest --passWithNoTests",
-    "test:watch": "vitest --watch"
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc -p tsconfig.typecheck.json"
   },
   "dependencies": {
+    "iconv-lite": "0.7.3",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
     "eslint": "10.15.0",
+    "prettier": "3.10.1",
+    "tsx": "4.23.15",
     "vitest": "5.1.0"
   },
   "publishConfig": {
