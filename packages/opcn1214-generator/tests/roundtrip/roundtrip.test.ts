@@ -162,6 +162,24 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     OPTIONS,
   ],
   [
+    'a bank account with leading zeros',
+    minimalInput({ bankAccount: { bank: '01', branch: '002', account: '678' } }),
+    OPTIONS,
+  ],
+  [
+    'an all-zero bank account (277 and 278 written as absent, 280 = 1)',
+    minimalInput({ bankAccount: { bank: '00', branch: '000', account: '0' } }),
+    OPTIONS,
+  ],
+  [
+    'derived codes 297 = 9 and 028',
+    minimalInput({
+      declarations: { form6111Obligation: 'notObliged' },
+      capitalGainsSummary: { untransmittedCount: 2 },
+    }),
+    OPTIONS,
+  ],
+  [
     'amounts rounded half up',
     minimalInput({
       amounts: { '081': 1000.5, '010': 0.4, '070': 2.5 },

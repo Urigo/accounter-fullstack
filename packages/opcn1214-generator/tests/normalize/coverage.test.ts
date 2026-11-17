@@ -33,6 +33,8 @@ describe('normalizer coverage (SPEC §13.3)', () => {
         email: 'office@example.com',
         fax: { prefix: '052', number: '7654321' },
       },
+      // fullMainInput() leaves 1064 out because it has a bank account.
+      declarations: { noBankAccount: true },
     });
     const report = normalizeReport(input, LAYOUT, { today: () => '2025-03-31' });
     expect(unmappedHeaderKeys(MAIN, report.records)).toEqual([]);

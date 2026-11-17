@@ -139,6 +139,10 @@ export const report1214InputSchema = z.strictObject({
   attachments: attachments.optional(),
   capitalGainsSummary: capitalGainsSummary.optional(),
   qualifyingCompany: qualifyingCompany.optional(),
+  /** Any strings: main.bankAccount.format checks the digits. */
+  bankAccount: z
+    .strictObject({ bank: z.string(), branch: z.string(), account: z.string() })
+    .optional(),
   amounts: z.partialRecord(z.enum(MAIN_FORM_INPUT_CODES), z.number().optional()),
   shareholders: z.array(shareholder),
 });

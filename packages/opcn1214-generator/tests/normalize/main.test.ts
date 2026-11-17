@@ -731,3 +731,94 @@ describe('normalizeReport: record 1000 other income, attachments, capital-gains 
     expect(normalizeReport(fullMainInput(), LAYOUT, OPTIONS).notices).toEqual([]);
   });
 });
+
+describe('normalizeReport: record 1000 derived codes (SPEC §7.4)', () => {
+  const BANK_ACCOUNT = { bank: '12', branch: '345', account: '678' };
+
+  it('bankAccount → 277 = account, 278 = bank then branch, 280 = 1', () => {
+    const input = minimalInput({ bankAccount: BANK_ACCOUNT });
+    const record = mainRecord(input);
+    expect(record.codes.get('277')).toBe(678);
+    expect(record.codes.get('278')).toBe(12_345);
+    expect(record.codes.get('280')).toBe(1);
+    expect(record.paths['code:277']).toBe('');
+    expect(record.paths['code:278']).toBe('');
+    expect(record.paths['code:280']).toBe('');
+    // 1000@2185: the code-amount section, in ascending code order after 273 = 9.
+    expect(mainLine(input).slice(2184)).toContain('2739' + '277000000000678' + '27812345' + '2801');
+    expect(normalizeReport(input, LAYOUT, OPTIONS).notices).toEqual([]);
+  });
+
+  it('keeps the leading zeros of the bank in 278 (bank 2 digits, branch 3 digits)', () => {
+    const input = minimalInput({
+      bankAccount: { bank: '01', branch: '002', account: '000000003' },
+    });
+    expect(mainRecord(input).codes.get('278')).toBe(1002);
+    expect(mainRecord(input).codes.get('277')).toBe(3);
+    expect(mainLine(input).slice(2184)).toContain('27801002');
+  });
+
+  it('writes no bank codes without bankAccount', () => {
+    const record = mainRecord();
+    expect(['277', '278', '280'].filter(code => record.codes.has(code))).toEqual([]);
+  });
+
+  it.each([
+    ['bank', { bank: '1' }, 'bankAccount.bank'],
+    ['bank', { bank: '123' }, 'bankAccount.bank'],
+    ['branch', { branch: '34' }, 'bankAccount.branch'],
+    ['branch', { branch: '3a5' }, 'bankAccount.branch'],
+    ['account', { account: '' }, 'bankAccount.account'],
+    ['account', { account: '1234567890' }, 'bankAccount.account'],
+  ])(
+    'a malformed %s (%o) raises main.bankAccount.format at %s and writes no bank codes',
+    (_, overrides, path) => {
+      const input = minimalInput({ bankAccount: { ...BANK_ACCOUNT, ...overrides } });
+      const report = normalizeReport(input, LAYOUT, OPTIONS);
+      expect(report.notices).toEqual([
+        expect.objectContaining({
+          ruleId: 'main.bankAccount.format',
+          severity: 'error',
+          path,
+          recordType: '1000',
+          recordIndex: 0,
+        }),
+      ]);
+      const record = report.records[0];
+      expect(['277', '278', '280'].filter(code => record?.codes.has(code))).toEqual([]);
+    },
+  );
+
+  it.each([
+    ['obliged', 8],
+    ['notObliged', 9],
+  ] as const)('form6111Obligation %s → 297 = %i', (form6111Obligation, expected) => {
+    const input = minimalInput({ declarations: { form6111Obligation } });
+    const record = mainRecord(input);
+    expect(record.codes.get('297')).toBe(expected);
+    expect(record.paths['code:297']).toBe('');
+    expect(mainLine(input).slice(2184)).toContain(`297${expected}`);
+  });
+
+  it.each(['notRelevant', undefined] as const)(
+    'form6111Obligation %s → no 297',
+    form6111Obligation => {
+      expect(
+        mainRecord(minimalInput({ declarations: { form6111Obligation } })).codes.has('297'),
+      ).toBe(false);
+    },
+  );
+
+  it('capitalGainsSummary.untransmittedCount 3 → 028 = 3', () => {
+    const input = minimalInput({ capitalGainsSummary: { untransmittedCount: 3 } });
+    const record = mainRecord(input);
+    expect(record.codes.get('028')).toBe(3);
+    expect(record.paths['code:028']).toBe('');
+    expect(mainLine(input).slice(2184)).toContain('02803');
+  });
+
+  it.each([0, undefined])('untransmittedCount %s → no 028', untransmittedCount => {
+    const input = minimalInput({ capitalGainsSummary: { untransmittedCount } });
+    expect(mainRecord(input).codes.has('028')).toBe(false);
+  });
+});
