@@ -5,8 +5,12 @@
   "description": "Fully typed application that generates, parses, and validates OPCN 1214 tax reports.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/urigo/accounter-fullstack.git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
     "directory": "packages/opcn1214-generator"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/opcn1214-generator#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
   },
   "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
@@ -17,52 +21,52 @@
   "module": "dist/esm/index.js",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js"
-    }
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
   },
-  "types": "dist/types/index.d.ts",
+  "typings": "dist/typings/index.d.ts",
   "keywords": [
     "1214",
     "opcn",
+    "shaam",
     "accountancy",
     "israeli-tax",
     "tax-forms",
     "accounter"
   ],
   "scripts": {
-    "build": "yarn clean && yarn lint && bob build",
-    "clean": "rimraf dist",
+    "build": "yarn lint && bob build",
     "dev": "node --experimental-json-modules --import ../../scripts/register-esm.js src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet --fix",
-    "prepublish": "yarn build",
     "start": "node ./dist/esm/index.js",
-    "test": "vitest --coverage",
+    "test": "vitest",
     "test:watch": "vitest --watch"
   },
   "dependencies": {
-    "date-fns": "4.1.0",
-    "zod": "3.25.67"
+    "zod": "4.6.7"
   },
   "devDependencies": {
-    "@types/node": "24.0.3",
-    "@typescript-eslint/eslint-plugin": "8.34.1",
-    "@typescript-eslint/parser": "8.34.1",
     "bob-the-bundler": "7.0.1",
-    "eslint": "9.29.0",
-    "eslint-config-prettier": "10.1.5",
-    "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-vitest": "0.5.4",
-    "prettier": "3.5.3",
-    "rimraf": "6.0.1",
-    "ts-node": "10.9.2",
-    "typedoc": "0.28.5",
-    "typescript": "5.8.3",
-    "vitest": "3.2.4"
+    "eslint": "10.15.0",
+    "vitest": "5.1.0"
   },
   "publishConfig": {
-    "directory": "dist",
+    "registry": "https://registry.npmjs.org",
     "access": "public"
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
   }
 }
