@@ -45,6 +45,30 @@ export const RULES = deepFreeze([
       'Wrong JavaScript type, missing required property, unknown property, null, array too long, or a date not in YYYY-MM-DD form.',
   },
   {
+    id: 'input.unknownCode',
+    severity: 'error',
+    source: 'spec',
+    scope: 'input',
+    description: 'A code-map key (amounts) that is not a code of that record for the tax year.',
+    specRef: { page: 13 },
+  },
+  {
+    id: 'input.derivedCode',
+    severity: 'error',
+    source: 'derived',
+    scope: 'input',
+    description:
+      'A derived code (008, 028, 273, 277, 278, 280, 297) passed in a code map; the message names the input property that controls it.',
+  },
+  {
+    id: 'struct.mainCodePairs.max',
+    severity: 'error',
+    source: 'spec',
+    scope: '1000',
+    description: 'More than 61 code-amount pairs in record 1000 (after derivations).',
+    specRef: { page: 13 },
+  },
+  {
     id: 'field.required',
     severity: 'error',
     source: 'spec',
@@ -150,6 +174,15 @@ export const RULES = deepFreeze([
     description:
       'A phone or fax number is not exactly 7 digits (shorter numbers would be silently zero-padded).',
     specRef: { page: 6 },
+  },
+  {
+    id: 'main.bankAccount.format',
+    severity: 'error',
+    source: 'spec',
+    scope: '1000',
+    description:
+      'bankAccount.bank is not exactly 2 digits, branch not exactly 3 digits, or account not 1–9 digits.',
+    specRef: { page: 19 },
   },
   {
     id: 'parse.empty',

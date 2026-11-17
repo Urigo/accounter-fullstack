@@ -1,12 +1,13 @@
 /**
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
- * (meta, company, preparer, declarations, amounts) and records 1020.
+ * (meta, company, preparer, declarations, bank account, amounts) and records 1020.
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
+import { BANK_ACCOUNT_DIGITS, CODE_297_VALUES, type BankAccount } from './derive.js';
 import { ENUM_INPUTS, enumLiteral } from './enums.js';
 import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
 
@@ -140,6 +141,38 @@ function shareholder(record: NormalizedRecord): InputTree {
   return tree;
 }
 
+/** Codes derived from `bankAccount` (SPEC §7.4). */
+const BANK_CODES = ['277', '278', '280'] as const;
+
+/**
+ * The bankAccount of the codes 277/278/280 (SPEC §7.4): present when any of them is; 278 is bank
+ * (2 digits) then branch (3 digits), 277 the account padded to 9 digits. A code written as absent
+ * (0) reads as zeros.
+ */
+function bankAccount(codes: ReadonlyMap<string, number>): BankAccount | undefined {
+  if (!BANK_CODES.some(code => codes.has(code))) {
+    return undefined;
+  }
+  const bankBranch = String(codes.get('278') ?? 0).padStart(5, '0');
+  return {
+    bank: bankBranch.slice(0, 2),
+    branch: bankBranch.slice(2),
+    account: String(codes.get('277') ?? 0).padStart(BANK_ACCOUNT_DIGITS, '0'),
+  };
+}
+
+/**
+ * form6111Obligation of code 297 (8 obliged, 9 not obliged), read only when 834 is absent: 834 is
+ * the source of truth (a mismatch is parse.derivedMismatch, step H1).
+ */
+function form6111ObligationOf297(main: NormalizedRecord): string | undefined {
+  if (main.values['declarations.form6111Obligation'] !== undefined) {
+    return undefined;
+  }
+  const code = main.codes.get('297');
+  return Object.entries(CODE_297_VALUES).find(([, value]) => value === code)?.[0];
+}
+
 /**
  * The Report1214Input of `report`, in canonical form: absent values are left out (a required
  * value missing from a parsed file included; its field.required issue reports it), derived values
@@ -172,6 +205,8 @@ export function denormalize(report: NormalizedReport): Report1214Input {
     const codes = ENUM_INPUTS[key];
     setKey(output, key, codes ? enumLiteral(codes, value) : value);
   }
+  setKey(output, 'declarations.form6111Obligation', form6111ObligationOf297(main));
+  setKey(output, 'bankAccount', bankAccount(main.codes));
   // A declaration object exists when its flag is marked (SPEC §7.3).
   for (const [object, { flag, member }] of Object.entries(PRESENCE_OBJECTS)) {
     if (main.values[flag] === true) {

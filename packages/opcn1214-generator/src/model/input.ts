@@ -113,7 +113,16 @@ export interface Report1214Input {
     /** 1091: may be 0, which is written (SPEC §15 A-21). */
     amortizationAmount?: number;
   };
-  /** Record 1000 code-amount section. */
+  /** → codes 277/278/280 = 1 (SPEC §7.4); only when changing the account on file. */
+  bankAccount?: {
+    /** Exactly 2 digits. */
+    bank: string;
+    /** Exactly 3 digits. */
+    branch: string;
+    /** 1–9 digits. */
+    account: string;
+  };
+  /** Record 1000 code-amount section; derived codes (SPEC §7.4) are not accepted. */
   amounts: Partial<Record<MainFormInputCode, number>>;
   /** Records 1020: 1–99 (0 allowed only for a kibbutz). */
   shareholders: Shareholder[];

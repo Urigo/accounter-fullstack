@@ -1,10 +1,21 @@
 /** Normalizer of record 1000, the main form (SPEC §7.2–§7.4, §4.5). */
 import type { YearLayout } from '../layout/types.js';
+import type { DerivedMainCode } from '../model/codes.generated.js';
 import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord } from '../model/normalized.js';
 import type { ValidateOptions } from '../model/options.js';
-import type { Issue } from '../validate/issue.js';
-import { deriveCode008, deriveCode273, deriveHasCapitalGainsAppendix } from './derive.js';
+import { makeIssue, type Issue } from '../validate/issue.js';
+import {
+  BANK_ACCOUNT_FORMAT,
+  deriveBankCodes,
+  deriveCode008,
+  deriveCode028,
+  deriveCode273,
+  deriveCode297,
+  deriveHasCapitalGainsAppendix,
+  malformedBankAccountMembers,
+  type BankAccount,
+} from './derive.js';
 import { CONSOLIDATED_REPORT_CODES, enumCode, FORM_6111_OBLIGATION_CODES } from './enums.js';
 import { headerValues, roundAmount } from './fields.js';
 import { codeKey, pathFor, REPORTABLE_POSITION_KEYS } from './paths.js';
@@ -21,6 +32,35 @@ export interface NormalizedMain {
   omittedZeroCodes: string[];
   /** Raised while normalizing: invalid phone prefixes, which are dropped (field.phonePrefix). */
   notices: Issue[];
+}
+
+/**
+ * Codes 277/278/280 of `bankAccount` (SPEC §7.4). A malformed member has no field of its own to be
+ * reported on, so it raises a main.bankAccount.format notice and no bank code is written.
+ */
+function bankCodes(
+  bankAccount: BankAccount | undefined,
+  notices: Issue[],
+): Partial<Record<'277' | '278' | '280', number>> {
+  if (bankAccount === undefined) {
+    return {};
+  }
+  const malformed = malformedBankAccountMembers(bankAccount);
+  for (const member of malformed) {
+    const { expected } = BANK_ACCOUNT_FORMAT[member];
+    notices.push(
+      makeIssue('main.bankAccount.format', {
+        message: `bankAccount.${member} ${JSON.stringify(bankAccount[member])} is not ${expected}.`,
+        path: `bankAccount.${member}`,
+        recordType: '1000',
+        recordIndex: 0,
+        value: bankAccount[member],
+        expected,
+        specRef: { page: 19 },
+      }),
+    );
+  }
+  return malformed.length > 0 ? {} : deriveBankCodes(bankAccount);
 }
 
 /** A presence flag (SPEC §7.3): marked when the declaration object exists, else absent. */
@@ -156,15 +196,22 @@ export function normalizeMain(
     options.rounding,
   );
 
-  const derivedCodes: Readonly<Partial<Record<string, number>>> = {
+  const bank = bankCodes(input.bankAccount, notices);
+  const derivedCodes: Readonly<Record<DerivedMainCode, number | undefined>> = {
     '008': deriveCode008(declarations),
+    '028': deriveCode028(capitalGainsSummary),
     '273': deriveCode273(declarations),
+    '277': bank['277'],
+    '278': bank['278'],
+    '280': bank['280'],
+    '297': deriveCode297(declarations),
   };
+  const derivedValues: Readonly<Partial<Record<string, number>>> = derivedCodes;
   const amounts: Readonly<Partial<Record<string, number>>> = input.amounts;
   const codes = new Map<string, number>();
   const omittedZeroCodes: string[] = [];
   for (const { code, derived, kind, zeroAllowed } of def.codes) {
-    const input = derived ? derivedCodes[code] : amounts[code];
+    const input = derived ? derivedValues[code] : amounts[code];
     if (input === undefined) {
       continue;
     }

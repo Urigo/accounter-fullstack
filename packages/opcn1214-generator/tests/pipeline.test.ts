@@ -104,6 +104,18 @@ describe('runPipeline', () => {
       });
     });
 
+    it('stops on unknown and derived code keys, which are not reported again as input.shape', () => {
+      // A field defect proves that normalization and the rules do not run.
+      const base = minimalInput({ company: { registeredName: '' } });
+      const input = { ...base, amounts: { ...base.amounts, '999': 1, '273': 9 } };
+      expect(runPipeline(input, OPTIONS)).toEqual({
+        issues: [
+          expect.objectContaining({ ruleId: 'input.derivedCode', path: 'amounts["273"]' }),
+          expect.objectContaining({ ruleId: 'input.unknownCode', path: 'amounts["999"]' }),
+        ],
+      });
+    });
+
     it('runs after the year stage', () => {
       const input = { ...minimalInput(), taxYear: 2023, faxx: 1 };
       expect(runPipeline(input, OPTIONS).issues.map(issue => issue.ruleId)).toEqual([

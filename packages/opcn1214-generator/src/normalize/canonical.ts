@@ -10,7 +10,7 @@ import type { CodeKind, FieldDef, FieldKind, RecordDef } from '../layout/types.j
 import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
 import { MAIN_INPUT_KEYS, setKey, SHAREHOLDER_INPUT_KEYS, type InputTree } from './denormalize.js';
-import { hasUntransmittedAppendices } from './derive.js';
+import { BANK_ACCOUNT_DIGITS, hasUntransmittedAppendices } from './derive.js';
 import { roundAmount } from './fields.js';
 import { DEFAULT_SOFTWARE_NAME } from './main.js';
 import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
@@ -130,9 +130,10 @@ function canonicalAmounts(
 
 /**
  * The canonical form of a valid `input` (SPEC §8.4) under the generation `options`: meta set to
- * the values written (software name default, also for a blank name; save date from `options.today`), text normalized,
- * digit strings padded to the field width, ×100 kinds in hundredths, empty optional values and non-zeroAllowed zero codes
- * removed, amounts rounded per `options.rounding`. `input` is not changed.
+ * the values written (software name default, also for a blank name; save date from
+ * `options.today`), text normalized, digit strings padded to the field width (the bank account
+ * number to 9 digits), ×100 kinds in hundredths, empty optional values and non-zeroAllowed zero
+ * codes removed, amounts rounded per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
   input: Report1214Input,
@@ -196,6 +197,15 @@ export function canonicalize(
     !hasUntransmittedAppendices(input.capitalGainsSummary)
   ) {
     setKey(output, 'declarations.hasCapitalGainsAppendix', true);
+  }
+  // Read back from 277/278/280 (denormalize): the account as 277 holds it, padded to 9 digits.
+  if (input.bankAccount) {
+    const { bank, branch, account } = input.bankAccount;
+    setKey(output, 'bankAccount', {
+      bank,
+      branch,
+      account: account.padStart(BANK_ACCOUNT_DIGITS, '0'),
+    });
   }
   // The tree has the members of Report1214Input; values keep their input types.
   return output as unknown as Report1214Input;
