@@ -291,6 +291,9 @@ __metadata:
   dependencies:
     bob-the-bundler: "npm:7.0.1"
     eslint: "npm:10.15.0"
+    iconv-lite: "npm:0.7.3"
+    prettier: "npm:3.10.1"
+    tsx: "npm:4.23.15"
     vitest: "npm:5.1.1"
     zod: "npm:4.6.7"
   languageName: unknown
