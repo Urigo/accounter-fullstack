@@ -13,14 +13,21 @@ import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import {
+  creditCardDealKey,
+  pairCreditCardRestatements,
+  type CreditCardDeal,
+} from '../helpers/otsar-hahayal-restatement.helper.js';
 import { formatValue, toCalendarDate } from '../helpers/utils.helper.js';
 import type {
-  IFetchOtsarHahayalCreditCardByKeysQuery,
-  IFetchOtsarHahayalCreditCardByKeysResult,
+  IFetchOtsarHahayalCreditCardByStatementsQuery,
+  IFetchOtsarHahayalCreditCardByStatementsResult,
   IFetchOtsarHahayalForeignByKeysQuery,
   IFetchOtsarHahayalForeignByKeysResult,
   IFetchOtsarHahayalIlsByKeysQuery,
   IFetchOtsarHahayalIlsByKeysResult,
+  IGetChargeIdsByOtsarHahayalCreditCardIdsQuery,
+  IUpdateOtsarHahayalCreditCardRestatementQuery,
   IUploadOtsarHahayalCreditCardTransactionsQuery,
   IUploadOtsarHahayalCreditCardTransactionsResult,
   IUploadOtsarHahayalForeignTransactionsQuery,
@@ -198,7 +205,9 @@ const uploadOtsarHahayalForeignTransactions = sql<IUploadOtsarHahayalForeignTran
   RETURNING id, account, branch, currency, date, description, credit, debit;
 `;
 
-const fetchOtsarHahayalCreditCardByKeys = sql<IFetchOtsarHahayalCreditCardByKeysQuery>`
+// Whole statements (card + charge date), not exact dates: a restated deal's date has moved, and its
+// stored row must still be found so it can be updated instead of duplicated.
+const fetchOtsarHahayalCreditCardByStatements = sql<IFetchOtsarHahayalCreditCardByStatementsQuery>`
   SELECT
     id,
     resource_id,
@@ -218,7 +227,29 @@ const fetchOtsarHahayalCreditCardByKeys = sql<IFetchOtsarHahayalCreditCardByKeys
   FROM accounter_schema.otsar_hahayal_creditcard_transactions
   WHERE resource_id = ANY($resourceIds!)
     AND card_type = ANY($cardTypes!)
-    AND date = ANY($dates!)
+    AND charge_date = ANY($chargeDates!)
+`;
+
+// The update trigger carries date/name/notes over to the row's transaction.
+const updateOtsarHahayalCreditCardRestatement = sql<IUpdateOtsarHahayalCreditCardRestatementQuery>`
+  UPDATE accounter_schema.otsar_hahayal_creditcard_transactions
+  SET
+    date = $date!,
+    name = $name!,
+    notes = $notes!,
+    counter = $counter!,
+    masked_pan = $maskedPan!,
+    billing_period = $billingPeriod!,
+    wallet_type = $walletType!
+  WHERE id = $id!
+  RETURNING id;
+`;
+
+const getChargeIdsByOtsarHahayalCreditCardIds = sql<IGetChargeIdsByOtsarHahayalCreditCardIdsQuery>`
+  SELECT DISTINCT charge_id
+  FROM accounter_schema.transactions
+  WHERE origin_key = ANY($sourceIds!)
+    AND source_origin = 'OTSAR_HAHAYAL_CREDIT_CARD';
 `;
 
 const uploadOtsarHahayalCreditCardTransactions = sql<IUploadOtsarHahayalCreditCardTransactionsQuery>`
@@ -260,10 +291,12 @@ const uploadOtsarHahayalCreditCardTransactions = sql<IUploadOtsarHahayalCreditCa
   RETURNING id, resource_id, date, name, charge_amount, charge_currency;
 `;
 
-const OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS: Array<{
-  key: string & keyof IFetchOtsarHahayalCreditCardByKeysResult;
+type OtsarHahayalCreditCardDiffField = {
+  key: string & keyof IFetchOtsarHahayalCreditCardByStatementsResult;
   incoming: (t: OtsarHahayalCreditCardTransactionInput) => string | number | boolean | null;
-}> = [
+};
+
+const OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS: OtsarHahayalCreditCardDiffField[] = [
   { key: 'masked_pan', incoming: t => t.maskedPan },
   { key: 'billing_period', incoming: t => t.dealGroup },
   { key: 'charge_date', incoming: t => toCalendarDate(t.chargeDate) },
@@ -272,15 +305,24 @@ const OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS: Array<{
   { key: 'charge_currency', incoming: t => t.chargeCurrency },
 ];
 
-const OTSAR_HAHAYAL_CREDITCARD_NUMERIC_FIELDS: (keyof IFetchOtsarHahayalCreditCardByKeysResult)[] =
-  ['deal_amount', 'charge_amount'] as const;
+/** The key fields a restatement rewrites on the stored row, reported alongside the diff fields. */
+const OTSAR_HAHAYAL_CREDITCARD_RESTATED_FIELDS: OtsarHahayalCreditCardDiffField[] = [
+  { key: 'date', incoming: t => toCalendarDate(t.date) },
+  { key: 'name', incoming: t => t.name },
+  { key: 'notes', incoming: t => t.notes },
+  { key: 'counter', incoming: t => t.counter },
+];
+
+const OTSAR_HAHAYAL_CREDITCARD_NUMERIC_FIELDS: (keyof IFetchOtsarHahayalCreditCardByStatementsResult)[] =
+  ['deal_amount', 'charge_amount', 'counter'] as const;
 
 function diffOtsarHahayalCreditCardRow(
-  existing: IFetchOtsarHahayalCreditCardByKeysResult,
+  existing: IFetchOtsarHahayalCreditCardByStatementsResult,
   incoming: OtsarHahayalCreditCardTransactionInput,
+  fields: OtsarHahayalCreditCardDiffField[] = OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS,
 ): ChangedField[] {
   const changed: ChangedField[] = [];
-  for (const { key, incoming: getIncoming } of OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS) {
+  for (const { key, incoming: getIncoming } of fields) {
     const isNumberField = OTSAR_HAHAYAL_CREDITCARD_NUMERIC_FIELDS.includes(key);
     const oldValue = formatValue(existing[key], isNumberField);
     const newValue = formatValue(getIncoming(incoming), isNumberField);
@@ -623,9 +665,20 @@ export class OtsarHahayalScraperIngestionProvider {
     };
   }
 
+  /**
+   * Uploads Otsar Hahayal credit-card deals.
+   *
+   * Deals that match a stored row exactly are skipped (with their non-key changes reported).
+   * Deals that restate a stored row — the bank's post-charge rewrite of a provisional Visa deal,
+   * see `pairCreditCardRestatements` — update that row in place, so its transaction keeps its
+   * charge, business and edits. Everything else is inserted.
+   *
+   * `restatedChargeIds` (not part of the GraphQL result) lists the charges whose transaction was
+   * rewritten by a restatement, for the caller to re-flag for accountant review.
+   */
   async uploadOtsarHahayalCreditCardTransactions(
     transactions: readonly OtsarHahayalCreditCardTransactionInput[],
-  ): Promise<ScraperUploadResult> {
+  ): Promise<ScraperUploadResult & { restatedChargeIds: string[] }> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -633,36 +686,72 @@ export class OtsarHahayalScraperIngestionProvider {
         insertedIds: [],
         insertedTransactions: [],
         changedTransactions: [],
+        restatedChargeIds: [],
       };
 
     const resourceIds = [...new Set(transactions.map(t => t.resourceId))];
     const cardTypes = [...new Set(transactions.map(t => t.cardType))];
-    const dates = transactions.map(t => toCalendarDate(t.date));
+    const chargeDates = [...new Set(transactions.map(t => toCalendarDate(t.chargeDate)))];
 
-    const existing = await fetchOtsarHahayalCreditCardByKeys.run(
-      { resourceIds, cardTypes, dates },
+    const existing = await fetchOtsarHahayalCreditCardByStatements.run(
+      { resourceIds, cardTypes, chargeDates },
       this.db,
     );
 
-    const existingByKey = new Map<string, IFetchOtsarHahayalCreditCardByKeysResult>();
-    for (const row of existing) {
-      const key = [
-        row.resource_id,
-        row.card_type,
-        row.date,
-        row.charge_date,
-        row.deal_amount,
-        row.deal_currency,
-        row.name,
-        row.notes,
-        row.counter,
-      ].join('|');
-      existingByKey.set(key, row);
+    const storedDeals = existing.map(row => ({ row, ...storedCreditCardDeal(row) }));
+    const incomingDeals = transactions.map((input, index) => ({
+      input,
+      index,
+      ...incomingCreditCardDeal(input),
+    }));
+
+    const existingByKey = new Map(storedDeals.map(deal => [creditCardDealKey(deal), deal.row]));
+
+    const { pairs: restatements, vanished } = pairCreditCardRestatements(
+      storedDeals,
+      incomingDeals,
+    );
+
+    const changedTransactions: ChangedTransaction[] = [];
+
+    for (const { stored, incoming } of restatements) {
+      const t = incoming.input;
+      await updateOtsarHahayalCreditCardRestatement.run(
+        {
+          id: stored.row.id,
+          date: toCalendarDate(t.date),
+          name: t.name,
+          notes: t.notes,
+          counter: t.counter,
+          maskedPan: t.maskedPan,
+          billingPeriod: t.dealGroup,
+          walletType: t.walletType,
+        },
+        this.db,
+      );
+      changedTransactions.push({
+        id: stored.row.id,
+        changedFields: [
+          ...diffOtsarHahayalCreditCardRow(stored.row, t, OTSAR_HAHAYAL_CREDITCARD_RESTATED_FIELDS),
+          ...diffOtsarHahayalCreditCardRow(stored.row, t),
+        ],
+      });
     }
+
+    if (vanished.length > 0) {
+      console.warn(
+        `[otsar-hahayal] ${vanished.length} stored credit-card deal(s) are missing from the latest ` +
+          `scrape of their statement and match no incoming deal; left unchanged: ` +
+          vanished.map(deal => deal.row.id).join(', '),
+      );
+    }
+
+    const restatedIndexes = new Set(restatements.map(({ incoming }) => incoming.index));
+    const toInsert = transactions.filter((_, index) => !restatedIndexes.has(index));
 
     const businessId = await this.getBusinessId();
 
-    const params = transactions.map(t => ({
+    const params = toInsert.map(t => ({
       resourceId: t.resourceId,
       maskedPan: t.maskedPan,
       cardType: t.cardType,
@@ -681,7 +770,9 @@ export class OtsarHahayalScraperIngestionProvider {
     }));
 
     const result: IUploadOtsarHahayalCreditCardTransactionsResult[] =
-      await uploadOtsarHahayalCreditCardTransactions.run({ transactions: params }, this.db);
+      params.length > 0
+        ? await uploadOtsarHahayalCreditCardTransactions.run({ transactions: params }, this.db)
+        : [];
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 
@@ -693,27 +784,28 @@ export class OtsarHahayalScraperIngestionProvider {
       account: r.resource_id ?? null,
     }));
 
-    const changedTransactions: ChangedTransaction[] = [];
-    for (const t of transactions) {
-      const key = [
-        t.resourceId,
-        t.cardType,
-        toCalendarDate(t.date),
-        toCalendarDate(t.chargeDate),
-        t.dealAmount,
-        t.dealCurrency,
-        t.name,
-        t.notes,
-        t.counter,
-      ].join('|');
-      const existingRow = existingByKey.get(key);
+    for (const deal of incomingDeals) {
+      if (restatedIndexes.has(deal.index)) continue;
+      const existingRow = existingByKey.get(creditCardDealKey(deal));
       if (existingRow && !insertedIdSet.has(existingRow.id)) {
-        const changedFields = diffOtsarHahayalCreditCardRow(existingRow, t);
+        const changedFields = diffOtsarHahayalCreditCardRow(existingRow, deal.input);
         if (changedFields.length > 0) {
           changedTransactions.push({ id: existingRow.id, changedFields });
         }
       }
     }
+
+    const restatedChargeIds =
+      restatements.length > 0
+        ? (
+            await getChargeIdsByOtsarHahayalCreditCardIds.run(
+              { sourceIds: restatements.map(({ stored }) => stored.row.id) },
+              this.db,
+            )
+          )
+            .map(r => r.charge_id)
+            .filter((id): id is string => typeof id === 'string')
+        : [];
 
     return {
       inserted: insertedIds.length,
@@ -721,6 +813,39 @@ export class OtsarHahayalScraperIngestionProvider {
       insertedIds,
       insertedTransactions,
       changedTransactions,
+      restatedChargeIds,
     };
   }
+}
+
+function storedCreditCardDeal(row: IFetchOtsarHahayalCreditCardByStatementsResult): CreditCardDeal {
+  return {
+    resourceId: row.resource_id,
+    cardType: row.card_type,
+    date: row.date,
+    chargeDate: row.charge_date,
+    name: row.name,
+    dealAmount: Number(row.deal_amount),
+    dealCurrency: row.deal_currency,
+    chargeAmount: Number(row.charge_amount),
+    chargeCurrency: row.charge_currency,
+    notes: row.notes,
+    counter: row.counter,
+  };
+}
+
+function incomingCreditCardDeal(t: OtsarHahayalCreditCardTransactionInput): CreditCardDeal {
+  return {
+    resourceId: t.resourceId,
+    cardType: t.cardType,
+    date: toCalendarDate(t.date),
+    chargeDate: toCalendarDate(t.chargeDate),
+    name: t.name,
+    dealAmount: t.dealAmount,
+    dealCurrency: t.dealCurrency,
+    chargeAmount: t.chargeAmount,
+    chargeCurrency: t.chargeCurrency,
+    notes: t.notes,
+    counter: t.counter,
+  };
 }
