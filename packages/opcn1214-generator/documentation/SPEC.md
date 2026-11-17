@@ -1099,7 +1099,7 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
    is part of the value). Dates must be valid `DD/MM/YYYY` or all spaces. Flag and yes/no fields
    accept only the digits they are written with (flag `0`/`1`, yes/no `0`/`1`/`2`), and phone-prefix
    fields only an allowed prefix or the absent value (spaces, or zeros in 822); any other value is a
-   parse error (codec reason `format`).
+   parse error (codec reason `format`, `parse.fieldValue`).
 5. Decode sections: read `code(3)` + value(width of that code) repeatedly; stop at the first
    position where the remaining text is all `0` (padding). An unknown code, a truncated entry or a
    non-zero tail is a parse error. Duplicate codes are a parse error.
@@ -1115,7 +1115,12 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
    it); `ParseResult.saveDate` / `softwareName` are then `''`.
 
 Structural problems from steps 1–6 throw `Opcn1214ParseError` with every problem found in the file
-(the parser continues to the next line where possible; it does not stop at the first problem).
+(the parser continues to the next line where possible; it does not stop at the first problem). Its
+issues are sorted by line, then column, and each has a 1-based `line` and `column`: the first
+offending character, the start of the record type for `parse.order`, the field position for
+`parse.control.counts`, and column 1 of the line after the last one for `parse.control.missing` (and
+of line 1 for `parse.empty`). A line with a structural problem (encoding, form or record type,
+prefix, length) is not decoded further, but still counts for the order and 9999 checks.
 
 ### 8.3 Determinism
 
@@ -1372,6 +1377,7 @@ date; 3054 purchase date and code-15 date; 3077 code-15 and code-20 dates) and r
 | `parse.numeric`         | non-digit in a numeric field                                                                                 |
 | `parse.date`            | invalid `DD/MM/YYYY`                                                                                         |
 | `parse.codeSection`     | unknown code, duplicate code, truncated entry, or non-zero data after the last entry                         |
+| `parse.fieldValue`      | header value well-formed for its type but not one it can hold (flag/yes-no digit, phone prefix)              |
 | `parse.countrySection`  | malformed country entry (affiliation ≠ 1, bad country, > 10 entries)                                         |
 | `parse.derivedMismatch` | a derived value disagrees with its source (e.g. code 273 vs 1029/1030, 832 vs 2000 presence, serial numbers) |
 

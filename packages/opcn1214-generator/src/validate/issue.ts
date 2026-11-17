@@ -66,6 +66,16 @@ const RECORD_ORDER: Readonly<Record<RecordType, number>> = {
   '9999': 17,
 };
 
+/** True for one of the record types of SPEC §3.2. */
+export function isRecordType(value: string): value is RecordType {
+  return Object.hasOwn(RECORD_ORDER, value);
+}
+
+/** Rank of a record type in the record order of a report (SPEC §3.3); 1000 is 1, 9999 last. */
+export function recordRank(type: RecordType): number {
+  return RECORD_ORDER[type];
+}
+
 function compareNumbers(a: number | undefined, b: number | undefined): number {
   return (a ?? -1) - (b ?? -1);
 }

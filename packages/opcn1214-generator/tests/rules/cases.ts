@@ -1,10 +1,20 @@
 /**
  * One pass/fail case per rule (SPEC §13.4). Typed by RuleId, so a rule without a case is a type
- * error. Fail cases are minimalInput() with one deliberate defect.
+ * error. Input fail cases are minimalInput() with one deliberate defect; file fail cases are the
+ * `minimal` golden file with one deliberate defect.
  */
 import type { PhonePrefix, Shareholder } from '../../src/model/input.js';
+import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import { minimalInput } from '../fixtures/builders.js';
+import {
+  dropLine,
+  goldenBytes,
+  goldenText,
+  swapLines,
+  tamper,
+  type Tamper,
+} from '../fixtures/files.js';
 
 /** minimalInput() with its single shareholder changed by `overrides`. */
 function withShareholder(overrides: Partial<Shareholder>) {
@@ -15,14 +25,45 @@ function withShareholder(overrides: Partial<Shareholder>) {
   return minimalInput({ shareholders });
 }
 
-/** A rule case run through runPipeline (validate1214 from C6 on). */
-export interface RuleCase {
-  kind: 'input';
-  fail(): unknown;
-  pass(): unknown;
+/** The `minimal` golden file text with one edit. */
+function minimalFile(edit?: Tamper): string {
+  const text = goldenText('minimal');
+  return edit ? tamper(text, edit) : text;
+}
+
+/** The `minimal` golden file as UTF-8 bytes. */
+function minimalUtf8(): Uint8Array {
+  return new TextEncoder().encode(goldenText('minimal'));
+}
+
+const UTF8: ParseOptions = { encoding: 'utf-8' };
+/** A byte that never occurs in UTF-8. */
+const INVALID_UTF8_BYTE = 0xff;
+
+interface CaseBase {
   /** Path the fail case's issue must carry. */
   path?: string;
 }
+
+/** A rule case run through runPipeline (validate1214 from C6 on). */
+interface InputRuleCase extends CaseBase {
+  kind: 'input';
+  fail(): unknown;
+  pass(): unknown;
+}
+
+/**
+ * A rule case run through parse1214: issues come from ParseResult.issues, or from the thrown
+ * Opcn1214ParseError for structural problems.
+ */
+interface FileRuleCase extends CaseBase {
+  kind: 'file';
+  fail(): string | Uint8Array;
+  pass(): string | Uint8Array;
+  options?: ParseOptions;
+}
+
+export type RuleCase = InputRuleCase | FileRuleCase;
 
 export const RULE_CASES: { [K in RuleId]: RuleCase } = {
   'struct.taxYear.unsupported': {
@@ -122,5 +163,91 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => minimalInput({ company: { phone: { number: '123' } } }),
     pass: () => minimalInput({ company: { phone: { number: '1234567' } } }),
     path: 'company.phone.number',
+  },
+  'parse.empty': {
+    kind: 'file',
+    fail: () => '',
+    pass: () => goldenBytes('minimal'),
+  },
+  'parse.encoding': {
+    kind: 'file',
+    // Line 1 is ASCII up to column 137, so byte 137 is column 137.
+    fail: () => {
+      const bytes = minimalUtf8();
+      bytes[136] = INVALID_UTF8_BYTE;
+      return bytes;
+    },
+    pass: minimalUtf8,
+    options: UTF8,
+    path: '',
+  },
+  'parse.lineLength': {
+    kind: 'file',
+    fail: () => minimalFile({ line: 3, position: 150, value: '', length: 1 }),
+    pass: () => goldenText('minimal').replaceAll('\r\n', '\n'),
+    path: '',
+  },
+  'parse.formType': {
+    kind: 'file',
+    fail: () => minimalFile({ line: 2, position: 1, value: '1215' }),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.recordType': {
+    kind: 'file',
+    fail: () => minimalFile({ line: 2, position: 5, value: '1021' }),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.prefixFiller': {
+    kind: 'file',
+    fail: () => minimalFile({ line: 2, position: 100, value: '1' }),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.order': {
+    kind: 'file',
+    fail: () => swapLines(goldenText('minimal'), 2, 3),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.control.missing': {
+    kind: 'file',
+    fail: () => dropLine(goldenText('minimal'), 3),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.control.counts': {
+    kind: 'file',
+    // 9999@141: number of 1020 records.
+    fail: () => minimalFile({ line: 3, position: 141, value: '02' }),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.numeric': {
+    kind: 'file',
+    fail: () => minimalFile({ line: 1, position: 137, value: 'X' }),
+    pass: () => minimalFile({ line: 1, position: 137, value: '0' }),
+    path: 'company.fileNumber',
+  },
+  'parse.date': {
+    kind: 'file',
+    fail: () => minimalFile({ line: 1, position: 165, value: '30/02/2025' }),
+    pass: () => minimalFile({ line: 1, position: 165, value: '28/02/2025' }),
+    path: 'meta.saveDate',
+  },
+  'parse.codeSection': {
+    kind: 'file',
+    // 1000@2185: the code-amount section; 999 is not a code.
+    fail: () => minimalFile({ line: 1, position: 2185, value: '999' }),
+    pass: () => minimalFile(),
+    path: '',
+  },
+  'parse.fieldValue': {
+    kind: 'file',
+    // 1000@878 is yes/no: written 1 or 2 (0 when absent).
+    fail: () => minimalFile({ line: 1, position: 878, value: '3' }),
+    pass: () => minimalFile({ line: 1, position: 878, value: '1' }),
+    path: 'declarations.hasTaxPlanningAction',
   },
 };
