@@ -33,6 +33,8 @@ const SHARED_WITH_ROOT = [
   'AUTH0_AUDIENCE',
   'ALLOW_DEV_AUTH',
   'DEBUG',
+  'NODE_ENV',
+  'RELEASE',
 ];
 
 const SERVER_TEMPLATE = new URL('../.env.template', import.meta.url);

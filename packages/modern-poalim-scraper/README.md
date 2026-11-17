@@ -19,3 +19,11 @@ Currently this library supports Bank Hapoalim, Bank Hapoalim business (with SMS 
 
 Should be easy to migrate more scrapers from
 [israeli-bank-scrapers](https://github.com/eshaham/israeli-bank-scrapers) into this new form.
+
+## Trying a scraper locally
+
+`src/test/scrape-*.ts` run one scraper against the real site with your own credentials (e.g.
+`yarn workspace @accounter/modern-poalim-scraper test:hapoalim`). Copy
+[`.env.template`](./.env.template) to `.env` in this package and fill in only the sources you want
+to try. The library itself reads no environment variables; callers such as `scraper-app` pass
+credentials in.
