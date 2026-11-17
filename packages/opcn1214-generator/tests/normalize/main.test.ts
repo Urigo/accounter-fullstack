@@ -114,7 +114,7 @@ describe('normalizeReport: record 1000 (skeleton)', () => {
     const record = mainRecord(
       minimalInput({
         company: {
-          withholdingFileNumber: '914000001',
+          withholdingFileNumber: '914000005',
           vatFileNumber: '514000009',
           occupationDescription: 'ייעוץ',
           booksAddress: 'רחוב יפו 2, ירושלים',
@@ -124,7 +124,7 @@ describe('normalizeReport: record 1000 (skeleton)', () => {
       }),
     );
     expect(record.values).toMatchObject({
-      'company.withholdingFileNumber': '914000001',
+      'company.withholdingFileNumber': '914000005',
       'company.vatFileNumber': '514000009',
       'company.occupationDescription': 'ייעוץ',
       'company.booksAddress': 'רחוב יפו 2, ירושלים',
@@ -336,7 +336,7 @@ describe('normalizeReport: record 1000 declarations and preparer', () => {
       ['preparer.contactName', 'דנה כהן', 613, 'דנה כהן'.padStart(50)],
       ['preparer.name', 'יוסי לוי', 663, 'יוסי לוי'.padStart(50)],
       ['preparer.profession', 'רואה חשבון', 713, 'רואה חשבון'.padStart(50)],
-      ['preparer.licensedDealerNumber', '012345678', 763, '012345678'],
+      ['preparer.licensedDealerNumber', '012345674', 763, '012345674'],
       ['preparer.address', 'רחוב יפו 10, ירושלים', 772, 'רחוב יפו 10, ירושלים'.padStart(50)],
       // 822 is a numeric prefix field: zero-padded (SPEC §15 A-19).
       ['preparer.phone.prefix', '02', 822, '002'],

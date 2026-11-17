@@ -8,7 +8,7 @@ const OPTIONS = { today: () => '2024-06-30' };
 
 const FIRST: RelatedCompany = {
   companyName: '  חברת  האם\u00A0בע"מ ',
-  companyFileNumber: '510000001',
+  companyFileNumber: '510000003',
   relationType: 'parent',
   assessingOfficeCode: 34,
 };
@@ -45,7 +45,7 @@ describe('normalizeReport: records 1010 (related companies)', () => {
     expect(first?.values).toEqual({
       serialNumber: 1,
       companyName: 'חברת האם בע"מ',
-      companyFileNumber: '510000001',
+      companyFileNumber: '510000003',
       relationType: 1,
       assessingOfficeCode: 34,
     });

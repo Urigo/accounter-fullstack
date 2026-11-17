@@ -26,7 +26,7 @@ function firstAllowed(def: FieldDef | CodeDef): number {
 const FIELD_SAMPLES: { [K in Exclude<FieldKind, 'filler'>]: (field: FieldDef) => Primitive } = {
   text: field => `t${field.position}`,
   hebrewText: () => HEBREW,
-  id9: () => '012345678',
+  id9: () => '012345674',
   shareholderId: () => '123456782',
   digits: field => digitsOf(field.length),
   year: () => 2024,
