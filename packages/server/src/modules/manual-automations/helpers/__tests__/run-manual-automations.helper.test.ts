@@ -8,13 +8,13 @@ import type { IGetChargesByIdsResult } from '../../../charges/types.js';
 import { syncDeelDocuments } from '../../../deel/helpers/sync-deel-documents.helper.js';
 import { ProviderCredentialsProvider } from '../../../provider-credentials/providers/provider-credentials.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
-import { CronJobsProvider } from '../../providers/cron-jobs.provider.js';
+import { ManualAutomationsProvider } from '../../providers/manual-automations.provider.js';
 import type { IGetReferenceMergeCandidatesResult } from '../../types.js';
 import {
   buildMergedChargeSnapshots,
-  runCronJobs,
-  type CronJobEventProto,
-} from '../run-cron-jobs.helper.js';
+  runManualAutomations,
+  type ManualAutomationEventProto,
+} from '../run-manual-automations.helper.js';
 
 vi.mock('../../../charges/helpers/merge-charges.helper.js', () => ({
   mergeChargesExecutor: vi.fn(),
@@ -80,20 +80,20 @@ function buildCandidate(
   };
 }
 
-type CronJobsProviderMock = {
+type ManualAutomationsProviderMock = {
   flagForeignFeeTransactions: ReturnType<typeof vi.fn>;
   getReferenceMergeCandidates: ReturnType<typeof vi.fn>;
   calculateCreditcardDebitDate: ReturnType<typeof vi.fn>;
 };
 
 function buildInjector(
-  cronJobsProvider: CronJobsProviderMock,
+  manualAutomationsProvider: ManualAutomationsProviderMock,
   charges: IGetChargesByIdsResult[],
   { deelCredentials = null }: { deelCredentials?: { apiToken: string } | null } = {},
 ) {
   const providers = new Map<unknown, unknown>([
     [ProviderCredentialsProvider, { getDeelCredentials: async () => deelCredentials }],
-    [CronJobsProvider, cronJobsProvider],
+    [ManualAutomationsProvider, manualAutomationsProvider],
     [
       ChargesProvider,
       {
@@ -108,17 +108,17 @@ function buildInjector(
   return { get: (token: unknown) => providers.get(token) } as unknown as Injector;
 }
 
-async function collect(events: AsyncIterable<CronJobEventProto>) {
-  const result: CronJobEventProto[] = [];
+async function collect(events: AsyncIterable<ManualAutomationEventProto>) {
+  const result: ManualAutomationEventProto[] = [];
   for await (const event of events) {
     result.push(event);
   }
   return result;
 }
 
-function statuses(events: CronJobEventProto[]) {
+function statuses(events: ManualAutomationEventProto[]) {
   return events
-    .filter(event => event.__typename === 'CronJobStepStatus')
+    .filter(event => event.__typename === 'ManualAutomationStepStatus')
     .map(event => `${event.step}:${event.state}`);
 }
 
@@ -160,7 +160,7 @@ describe('buildMergedChargeSnapshots', () => {
   });
 });
 
-describe('runCronJobs', () => {
+describe('runManualAutomations', () => {
   beforeEach(() => {
     vi.mocked(mergeChargesExecutor).mockReset().mockResolvedValue(undefined);
     vi.mocked(degradeChargesAccountantApproval).mockReset().mockResolvedValue(new Map());
@@ -190,7 +190,7 @@ describe('runCronJobs', () => {
       charges: [{ charge: deelCharge, isNew: true, invoiceCount: 2 }],
     });
 
-    const events = await collect(runCronJobs(injector, 'owner-1'));
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
 
     expect(statuses(events)).toEqual([
       'FLAG_FOREIGN_FEES:RUNNING',
@@ -202,7 +202,7 @@ describe('runCronJobs', () => {
       'FETCH_DEEL_DOCUMENTS:RUNNING',
       'FETCH_DEEL_DOCUMENTS:SUCCEEDED',
     ]);
-    expect(events.filter(event => event.__typename !== 'CronJobStepStatus')).toEqual([
+    expect(events.filter(event => event.__typename !== 'ManualAutomationStepStatus')).toEqual([
       { __typename: 'ForeignFeeTransactionFlagged', transaction: 'fee-1' },
       { __typename: 'ForeignFeeTransactionFlagged', transaction: 'fee-2' },
       {
@@ -231,7 +231,7 @@ describe('runCronJobs', () => {
       [],
     );
 
-    const events = await collect(runCronJobs(injector, 'owner-1'));
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
 
     expect(statuses(events)).toEqual([
       'FLAG_FOREIGN_FEES:RUNNING',
@@ -254,7 +254,7 @@ describe('runCronJobs', () => {
       [],
     );
 
-    const events = await collect(runCronJobs(injector, 'owner-1'));
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
 
     expect(statuses(events).slice(-2)).toEqual([
       'FETCH_DEEL_DOCUMENTS:RUNNING',
@@ -280,7 +280,7 @@ describe('runCronJobs', () => {
       }),
     );
 
-    const events = await collect(runCronJobs(injector, 'owner-1'));
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
 
     expect(statuses(events)).toEqual([
       'FLAG_FOREIGN_FEES:RUNNING',
@@ -331,7 +331,7 @@ describe('runCronJobs', () => {
       new Error('Error fetching Deel receipts', { cause }),
     );
 
-    const events = await collect(runCronJobs(injector, 'owner-1'));
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
 
     expect(events.at(-1)).toMatchObject({ state: 'FAILED', errors: [expected] });
   });
@@ -353,7 +353,7 @@ describe('runCronJobs', () => {
       charges,
     );
 
-    const events = await collect(runCronJobs(injector, 'owner-1'));
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
 
     // the merge is already committed, so it must show up even though the next write failed
     expect(events).toContainEqual(
@@ -366,7 +366,7 @@ describe('runCronJobs', () => {
     expect(
       events.find(
         event =>
-          event.__typename === 'CronJobStepStatus' &&
+          event.__typename === 'ManualAutomationStepStatus' &&
           event.step === 'MERGE_CHARGES_BY_REFERENCE' &&
           event.state === 'COMPLETED_WITH_ERRORS',
       ),
@@ -394,7 +394,7 @@ describe('runCronJobs', () => {
       [buildCharge('charge-a'), buildCharge('charge-b')],
     );
 
-    const events = await collect(runCronJobs(injector, 'owner-1'));
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
 
     expect(statuses(events)).toEqual([
       'FLAG_FOREIGN_FEES:RUNNING',

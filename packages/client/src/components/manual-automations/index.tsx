@@ -11,7 +11,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { CronJobStep, CronJobStepState } from '../../gql/graphql.js';
+import { ManualAutomationStep, ManualAutomationStepState } from '../../gql/graphql.js';
 import { useRunManualAutomations } from '../../hooks/use-run-manual-automations.js';
 import { UserContext } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
@@ -67,17 +67,17 @@ function ChargeLink({
 
 function StepStateIcon({ state }: { state: AutomationStepView['state'] }): ReactElement {
   switch (state) {
-    case CronJobStepState.Running:
+    case ManualAutomationStepState.Running:
       return <Spinner className="size-5" />;
-    case CronJobStepState.Succeeded:
+    case ManualAutomationStepState.Succeeded:
       return <CheckCircle2 className="size-5 text-green-600" aria-label="Succeeded" />;
-    case CronJobStepState.CompletedWithErrors:
+    case ManualAutomationStepState.CompletedWithErrors:
       return <AlertTriangle className="size-5 text-amber-500" aria-label="Completed with errors" />;
-    case CronJobStepState.Failed:
+    case ManualAutomationStepState.Failed:
       return <XCircle className="size-5 text-destructive" aria-label="Failed" />;
-    case CronJobStepState.Skipped:
+    case ManualAutomationStepState.Skipped:
       return <MinusCircle className="size-5 text-muted-foreground" aria-label="Skipped" />;
-    case CronJobStepState.NotConfigured:
+    case ManualAutomationStepState.NotConfigured:
       return <Unplug className="size-5 text-muted-foreground" aria-label="Not configured" />;
     default:
       return <Circle className="size-5 text-muted-foreground" aria-label="Pending" />;
@@ -99,19 +99,19 @@ function StepCard({
   children: ReactNode;
 }): ReactElement {
   const isDone =
-    step.state === CronJobStepState.Succeeded ||
-    step.state === CronJobStepState.CompletedWithErrors;
+    step.state === ManualAutomationStepState.Succeeded ||
+    step.state === ManualAutomationStepState.CompletedWithErrors;
 
   let placeholder: ReactNode = null;
   if (step.state === 'PENDING') {
     placeholder = 'Waiting for previous steps';
-  } else if (step.state === CronJobStepState.Skipped) {
+  } else if (step.state === ManualAutomationStepState.Skipped) {
     placeholder = 'Skipped, because a previous step failed';
-  } else if (step.state === CronJobStepState.NotConfigured) {
+  } else if (step.state === ManualAutomationStepState.NotConfigured) {
     placeholder = notConfiguredHint ?? 'Not configured for this business';
   } else if (itemsCount === 0 && isDone) {
     placeholder = 'Nothing to update';
-  } else if (itemsCount === 0 && step.state === CronJobStepState.Running) {
+  } else if (itemsCount === 0 && step.state === ManualAutomationStepState.Running) {
     placeholder = 'Running…';
   }
 
@@ -126,7 +126,9 @@ function StepCard({
         {step.errors.length > 0 && (
           <Alert variant="destructive">
             <AlertTitle>
-              {step.state === CronJobStepState.Failed ? 'Step failed' : 'Some items failed'}
+              {step.state === ManualAutomationStepState.Failed
+                ? 'Step failed'
+                : 'Some items failed'}
             </AlertTitle>
             <AlertDescription>
               <ul className="list-disc pl-4">
@@ -347,28 +349,28 @@ export function ManualAutomationsView({
           )}
           <StepCard
             title="Transactions flagged as fees"
-            step={steps[CronJobStep.FlagForeignFees]}
+            step={steps[ManualAutomationStep.FlagForeignFees]}
             itemsCount={flaggedFees.length}
           >
             <TransactionsTable rows={flaggedFees} />
           </StepCard>
           <StepCard
             title="Merged charges"
-            step={steps[CronJobStep.MergeChargesByReference]}
+            step={steps[ManualAutomationStep.MergeChargesByReference]}
             itemsCount={mergedCharges.length}
           >
             <MergedChargesTable merges={mergedCharges} />
           </StepCard>
           <StepCard
             title="Credit card debit dates filled"
-            step={steps[CronJobStep.FillCreditcardDebitDates]}
+            step={steps[ManualAutomationStep.FillCreditcardDebitDates]}
             itemsCount={filledDebitDates.length}
           >
             <TransactionsTable rows={filledDebitDates} debitDateHeader="Debit date set" />
           </StepCard>
           <StepCard
             title="Deel documents pulled"
-            step={steps[CronJobStep.FetchDeelDocuments]}
+            step={steps[ManualAutomationStep.FetchDeelDocuments]}
             itemsCount={deelCharges.length}
             notConfiguredHint={
               <>

@@ -5,16 +5,16 @@ import {
   summarizeAutomationEvents,
   type ManualAutomationsRunEvent,
 } from '../components/manual-automations/manual-automations-events.js';
-import { RunCronJobsDocument } from '../gql/graphql.js';
+import { RunManualAutomationsDocument } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation RunCronJobs {
-    runCronJobs {
+  mutation RunManualAutomations {
+    runManualAutomations {
       events @stream {
         __typename
-        ... on CronJobStepStatus {
+        ... on ManualAutomationStepStatus {
           step
           state
           affectedCount
@@ -110,7 +110,7 @@ type UseRunManualAutomations = {
 export const useRunManualAutomations = (): UseRunManualAutomations => {
   // `useMutation` updates its state on every streamed part, but clears `fetching` on the first
   // one — `hasNext` is what tells a run in progress from a finished one.
-  const [{ fetching, hasNext, data, error }, mutate] = useMutation(RunCronJobsDocument);
+  const [{ fetching, hasNext, data, error }, mutate] = useMutation(RunManualAutomationsDocument);
 
   const runJobs = useCallback(async () => {
     toast.loading('Running automations', { id: NOTIFICATION_ID });
@@ -121,7 +121,7 @@ export const useRunManualAutomations = (): UseRunManualAutomations => {
         return;
       }
       const { failed, withErrors, description } = summarizeAutomationEvents(
-        resData.runCronJobs.events,
+        resData.runManualAutomations.events,
       );
       if (failed) {
         toast.error('Error', { id: NOTIFICATION_ID, description, closeButton: true });
@@ -143,7 +143,7 @@ export const useRunManualAutomations = (): UseRunManualAutomations => {
 
   return {
     running: fetching || !!hasNext,
-    events: data?.runCronJobs.events ?? [],
+    events: data?.runManualAutomations.events ?? [],
     error,
     runJobs,
   };

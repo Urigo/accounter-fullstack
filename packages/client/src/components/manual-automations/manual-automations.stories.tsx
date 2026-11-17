@@ -2,7 +2,7 @@ import { useMemo, type ReactElement } from 'react';
 import { Client, Provider, type Exchange, type OperationResult } from 'urql';
 import { filter, make, mergeMap, pipe } from 'wonka';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CronJobStep, CronJobStepState } from '../../gql/graphql.js';
+import { ManualAutomationStep, ManualAutomationStepState } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/index.js';
 import { Toaster } from '../ui/sonner.js';
 import { ManualAutomations, ManualAutomationsView } from './index.js';
@@ -11,12 +11,12 @@ import type { ManualAutomationsRunEvent } from './manual-automations-events.js';
 // --- fixtures -------------------------------------------------------------------------------
 
 function status(
-  step: CronJobStep,
-  state: CronJobStepState,
+  step: ManualAutomationStep,
+  state: ManualAutomationStepState,
   extra: { affectedCount?: number; errors?: string[] } = {},
 ): ManualAutomationsRunEvent {
   return {
-    __typename: 'CronJobStepStatus',
+    __typename: 'ManualAutomationStepStatus',
     step,
     state,
     affectedCount: extra.affectedCount ?? null,
@@ -173,24 +173,32 @@ const deelCharges: ManualAutomationsRunEvent[] = [
 
 /** A full successful run, in the order the server streams it. */
 const completedRun: ManualAutomationsRunEvent[] = [
-  status(CronJobStep.FlagForeignFees, CronJobStepState.Running),
+  status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Running),
   ...flaggedFees,
-  status(CronJobStep.FlagForeignFees, CronJobStepState.Succeeded, { affectedCount: 2 }),
-  status(CronJobStep.MergeChargesByReference, CronJobStepState.Running),
+  status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Succeeded, {
+    affectedCount: 2,
+  }),
+  status(ManualAutomationStep.MergeChargesByReference, ManualAutomationStepState.Running),
   ...mergedCharges,
-  status(CronJobStep.MergeChargesByReference, CronJobStepState.Succeeded, { affectedCount: 2 }),
-  status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Running),
+  status(ManualAutomationStep.MergeChargesByReference, ManualAutomationStepState.Succeeded, {
+    affectedCount: 2,
+  }),
+  status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Running),
   ...filledDebitDates,
-  status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Succeeded, { affectedCount: 3 }),
-  status(CronJobStep.FetchDeelDocuments, CronJobStepState.Running),
+  status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Succeeded, {
+    affectedCount: 3,
+  }),
+  status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Running),
   ...deelCharges,
-  status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 2 }),
+  status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Succeeded, {
+    affectedCount: 2,
+  }),
 ];
 
 // --- live stream harness --------------------------------------------------------------------
 
 /**
- * Answers the `RunCronJobs` mutation the way the server does with `@stream`: one result per
+ * Answers the `RunManualAutomations` mutation the way the server does with `@stream`: one result per
  * event, each carrying everything received so far, with `hasNext` set until the last one.
  */
 function streamingExchange(
@@ -209,7 +217,10 @@ function streamingExchange(
             next({
               operation,
               data: {
-                runCronJobs: { __typename: 'CronJobsRun', events: events.slice(0, received) },
+                runManualAutomations: {
+                  __typename: 'ManualAutomationsRun',
+                  events: events.slice(0, received),
+                },
               },
               error: undefined,
               extensions: undefined,
@@ -281,14 +292,18 @@ export const Completed: Story = {
 export const NothingToUpdate: Story = {
   args: {
     events: [
-      status(CronJobStep.FlagForeignFees, CronJobStepState.Succeeded, { affectedCount: 0 }),
-      status(CronJobStep.MergeChargesByReference, CronJobStepState.Succeeded, {
+      status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Succeeded, {
         affectedCount: 0,
       }),
-      status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Succeeded, {
+      status(ManualAutomationStep.MergeChargesByReference, ManualAutomationStepState.Succeeded, {
         affectedCount: 0,
       }),
-      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 0 }),
+      status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Succeeded, {
+        affectedCount: 0,
+      }),
+      status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Succeeded, {
+        affectedCount: 0,
+      }),
     ],
   },
 };
@@ -297,21 +312,29 @@ export const NothingToUpdate: Story = {
 export const CompletedWithErrors: Story = {
   args: {
     events: [
-      status(CronJobStep.FlagForeignFees, CronJobStepState.Succeeded, { affectedCount: 2 }),
+      status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Succeeded, {
+        affectedCount: 2,
+      }),
       ...flaggedFees,
       mergedCharges[0],
-      status(CronJobStep.MergeChargesByReference, CronJobStepState.CompletedWithErrors, {
-        affectedCount: 1,
-        errors: [
-          'Failed to merge reference "00918273" into charge ID=charge-securities: Charge is locked by ledger lock',
-        ],
-      }),
+      status(
+        ManualAutomationStep.MergeChargesByReference,
+        ManualAutomationStepState.CompletedWithErrors,
+        {
+          affectedCount: 1,
+          errors: [
+            'Failed to merge reference "00918273" into charge ID=charge-securities: Charge is locked by ledger lock',
+          ],
+        },
+      ),
       ...filledDebitDates,
-      status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Succeeded, {
+      status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Succeeded, {
         affectedCount: 3,
       }),
       ...deelCharges,
-      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Succeeded, { affectedCount: 2 }),
+      status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Succeeded, {
+        affectedCount: 2,
+      }),
     ],
   },
 };
@@ -320,12 +343,12 @@ export const CompletedWithErrors: Story = {
 export const StepFailed: Story = {
   args: {
     events: [
-      status(CronJobStep.FlagForeignFees, CronJobStepState.Failed, {
+      status(ManualAutomationStep.FlagForeignFees, ManualAutomationStepState.Failed, {
         errors: ['Connection terminated unexpectedly'],
       }),
-      status(CronJobStep.MergeChargesByReference, CronJobStepState.Skipped),
-      status(CronJobStep.FillCreditcardDebitDates, CronJobStepState.Skipped),
-      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Skipped),
+      status(ManualAutomationStep.MergeChargesByReference, ManualAutomationStepState.Skipped),
+      status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Skipped),
+      status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Skipped),
     ],
   },
 };
@@ -336,7 +359,9 @@ export const DeelNotConfigured: Story = {
     adminBusinessId: 'business-admin',
     events: [
       ...completedRun.slice(0, completedRun.indexOf(filledDebitDates.at(-1)!) + 2),
-      status(CronJobStep.FetchDeelDocuments, CronJobStepState.NotConfigured, { affectedCount: 0 }),
+      status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.NotConfigured, {
+        affectedCount: 0,
+      }),
     ],
   },
 };
@@ -346,7 +371,7 @@ export const DeelFailed: Story = {
   args: {
     events: [
       ...completedRun.slice(0, completedRun.indexOf(filledDebitDates.at(-1)!) + 2),
-      status(CronJobStep.FetchDeelDocuments, CronJobStepState.Failed, {
+      status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Failed, {
         errors: [
           'Error fetching Deel invoices: Deel contract ID [3xkq7m2] not found in DB. Match business to the following contract details: …',
         ],

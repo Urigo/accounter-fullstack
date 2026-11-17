@@ -1,6 +1,11 @@
-import { CronJobStep, CronJobStepState, type RunCronJobsMutation } from '../../gql/graphql.js';
+import {
+  ManualAutomationStep,
+  ManualAutomationStepState,
+  type RunManualAutomationsMutation,
+} from '../../gql/graphql.js';
 
-export type ManualAutomationsRunEvent = RunCronJobsMutation['runCronJobs']['events'][number];
+export type ManualAutomationsRunEvent =
+  RunManualAutomationsMutation['runManualAutomations']['events'][number];
 
 type EventOf<T extends ManualAutomationsRunEvent['__typename']> = Extract<
   ManualAutomationsRunEvent,
@@ -14,13 +19,13 @@ export type DeelCharge = EventOf<'DeelChargeSynced'>;
 
 /** A step that has not reported any status yet is `PENDING`. */
 export type AutomationStepView = {
-  state: CronJobStepState | 'PENDING';
+  state: ManualAutomationStepState | 'PENDING';
   affectedCount: number | null;
   errors: readonly string[];
 };
 
 export type ManualAutomationsRunView = {
-  steps: Record<CronJobStep, AutomationStepView>;
+  steps: Record<ManualAutomationStep, AutomationStepView>;
   flaggedFees: FlaggedFee[];
   mergedCharges: MergedCharges[];
   filledDebitDates: FilledDebitDate[];
@@ -29,10 +34,10 @@ export type ManualAutomationsRunView = {
 
 /** Steps in execution order, as the server runs them. */
 export const AUTOMATION_STEPS = [
-  CronJobStep.FlagForeignFees,
-  CronJobStep.MergeChargesByReference,
-  CronJobStep.FillCreditcardDebitDates,
-  CronJobStep.FetchDeelDocuments,
+  ManualAutomationStep.FlagForeignFees,
+  ManualAutomationStep.MergeChargesByReference,
+  ManualAutomationStep.FillCreditcardDebitDates,
+  ManualAutomationStep.FetchDeelDocuments,
 ] as const;
 
 const PENDING_STEP: AutomationStepView = { state: 'PENDING', affectedCount: null, errors: [] };
@@ -43,10 +48,10 @@ export function groupAutomationEvents(
 ): ManualAutomationsRunView {
   const view: ManualAutomationsRunView = {
     steps: {
-      [CronJobStep.FlagForeignFees]: PENDING_STEP,
-      [CronJobStep.MergeChargesByReference]: PENDING_STEP,
-      [CronJobStep.FillCreditcardDebitDates]: PENDING_STEP,
-      [CronJobStep.FetchDeelDocuments]: PENDING_STEP,
+      [ManualAutomationStep.FlagForeignFees]: PENDING_STEP,
+      [ManualAutomationStep.MergeChargesByReference]: PENDING_STEP,
+      [ManualAutomationStep.FillCreditcardDebitDates]: PENDING_STEP,
+      [ManualAutomationStep.FetchDeelDocuments]: PENDING_STEP,
     },
     flaggedFees: [],
     mergedCharges: [],
@@ -56,7 +61,7 @@ export function groupAutomationEvents(
 
   for (const event of events) {
     switch (event.__typename) {
-      case 'CronJobStepStatus':
+      case 'ManualAutomationStepStatus':
         view.steps[event.step] = {
           state: event.state,
           affectedCount: event.affectedCount ?? null,
@@ -101,14 +106,15 @@ export function summarizeAutomationEvents(events: readonly ManualAutomationsRunE
   const mergedAwayCount = mergedCharges.reduce((sum, merge) => sum + merge.mergedCharges.length, 0);
 
   return {
-    failed: states.includes(CronJobStepState.Failed),
-    withErrors: states.includes(CronJobStepState.CompletedWithErrors),
+    failed: states.includes(ManualAutomationStepState.Failed),
+    withErrors: states.includes(ManualAutomationStepState.CompletedWithErrors),
     description: [
       `${plural(mergedAwayCount, 'charge')} merged`,
       `${plural(flaggedFees.length, 'fee')} flagged`,
       `${plural(filledDebitDates.length, 'debit date')} filled`,
       // a business without Deel never ran the pull, so "0 pulled" would be misleading
-      ...(steps[CronJobStep.FetchDeelDocuments].state === CronJobStepState.NotConfigured
+      ...(steps[ManualAutomationStep.FetchDeelDocuments].state ===
+      ManualAutomationStepState.NotConfigured
         ? []
         : [`${plural(deelCharges.length, 'Deel charge')} pulled`]),
     ].join(' · '),
