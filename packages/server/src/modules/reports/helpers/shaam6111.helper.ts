@@ -60,8 +60,11 @@ export const SHAAM_6111_FILE_NAME = 'DKASPI.DAT';
  * its owner's sort code (the same fallback used when an entity is created). A sort code of another
  * business with the same key never applies.
  */
-function irsCodesByEntity(
-  financialEntities: readonly IGetAllFinancialEntitiesResult[],
+export function irsCodesByEntity(
+  financialEntities: readonly Pick<
+    IGetAllFinancialEntitiesResult,
+    'id' | 'irs_code' | 'sort_code' | 'owner_id'
+  >[],
   defaultIrsCodeBySortCode: ReadonlyMap<string, number>,
 ): Map<string, number> {
   const irsCodes = new Map<string, number>();
