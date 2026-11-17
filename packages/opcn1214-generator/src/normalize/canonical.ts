@@ -16,7 +16,12 @@ import {
   type Report1214Input,
 } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
-import { CAPITAL_GAINS_INPUT_KEYS, placeCapitalGains } from './capital-gains/index.js';
+import {
+  CAPITAL_GAINS_INPUT_KEYS,
+  hasWithholders,
+  placeCapitalGains,
+} from './capital-gains/index.js';
+import { readWithholders, withholderKey } from './capital-gains/securities.js';
 import {
   COUNTRY_BREAKDOWN_INPUT_KEYS,
   FOREIGN_APPENDIX_INPUT_KEYS,
@@ -155,7 +160,8 @@ function canonicalAmounts(
 /**
  * The capital-gains appendices as the parser reads their 30xx records back: in emission order
  * (grouped by symbol ascending, input order within a symbol, SPEC §3.3), header members like any
- * header value, amounts like the 1000 amounts.
+ * header value, withholders slot by slot (readWithholders: each member like a header value,
+ * trailing empty slots and an empty list removed), amounts like the 1000 amounts.
  */
 function canonicalCapitalGains(
   layout: YearLayout,
@@ -167,6 +173,19 @@ function canonicalCapitalGains(
     const tree: InputTree = { symbol: appendix.symbol };
     for (const key of CAPITAL_GAINS_INPUT_KEYS[appendix.symbol]) {
       setKey(tree, key, canonicalValue(fieldOf(def, key), getKey(appendix, key), rounding));
+    }
+    const given = 'withholders' in appendix ? (appendix.withholders ?? []) : [];
+    const withholders = hasWithholders(appendix.symbol)
+      ? readWithholders((slot, member) =>
+          canonicalValue(
+            fieldOf(def, withholderKey(slot, member)),
+            given[slot]?.[member],
+            rounding,
+          ),
+        )
+      : undefined;
+    if (withholders) {
+      tree.withholders = withholders;
     }
     tree.amounts = canonicalAmounts(def, appendix.amounts, rounding);
     return tree;
@@ -180,8 +199,8 @@ function canonicalCapitalGains(
  * values, empty `relatedCompanies` and `rdInvestments` lists, an empty `countryBreakdown` and
  * non-zeroAllowed zero codes (of `amounts`, `foreignAppendix.amounts` and the capital-gains
  * amounts) removed, country codes zero-padded, capital-gains appendices in emission order and an
- * empty `capitalGains` list removed, amounts rounded per `options.rounding`. `input` is not
- * changed.
+ * empty `capitalGains` list removed, withholders as their slots are read back (trailing empty ones
+ * removed), amounts rounded per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
   input: Report1214Input,
