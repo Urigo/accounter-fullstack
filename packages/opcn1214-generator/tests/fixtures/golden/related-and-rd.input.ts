@@ -27,13 +27,13 @@ export const input: Report1214Input = {
   relatedCompanies: [
     {
       companyName: 'חברת האם בע"מ',
-      companyFileNumber: '510000001',
+      companyFileNumber: '510000003',
       relationType: 'parent',
       assessingOfficeCode: 34,
     },
     {
       companyName: 'חברת הבת בע"מ',
-      companyFileNumber: '510000002',
+      companyFileNumber: '510000011',
       relationType: 'subsidiary',
       assessingOfficeCode: 34,
     },
@@ -49,9 +49,9 @@ export const input: Report1214Input = {
   ],
   rdInvestments: [
     { companyName: 'מו"פ ראשונה בע"מ', companyFileNumber: '520000001', investmentAmount: 500_000 },
-    { companyName: 'מו"פ שנייה בע"מ', companyFileNumber: '520000002', investmentAmount: 400_000 },
-    { companyName: 'מו"פ שלישית בע"מ', companyFileNumber: '520000003', investmentAmount: 350_000 },
-    { companyName: 'מו"פ רביעית בע"מ', companyFileNumber: '520000004', investmentAmount: 300_000 },
+    { companyName: 'מו"פ שנייה בע"מ', companyFileNumber: '520000019', investmentAmount: 400_000 },
+    { companyName: 'מו"פ שלישית בע"מ', companyFileNumber: '520000027', investmentAmount: 350_000 },
+    { companyName: 'מו"פ רביעית בע"מ', companyFileNumber: '520000035', investmentAmount: 300_000 },
     { companyName: 'R&D Start-up Ltd', investmentAmount: 200_000 },
   ],
 };

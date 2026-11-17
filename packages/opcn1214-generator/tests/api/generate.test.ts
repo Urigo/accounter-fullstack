@@ -73,9 +73,9 @@ describe('generate1214', () => {
   });
 
   it('uses the file number as written in the file (9 digits)', () => {
-    const result = generate1214(minimalInput({ company: { fileNumber: '12' } }), OPTIONS);
-    expect(slice(result.text, 137, 9)).toBe('000000012');
-    expect(result.fileName).toBe('1214_000000012_2024.txt');
+    const result = generate1214(minimalInput({ company: { fileNumber: '18' } }), OPTIONS);
+    expect(slice(result.text, 137, 9)).toBe('000000018');
+    expect(result.fileName).toBe('1214_000000018_2024.txt');
   });
 
   it('summarizes the report', () => {
@@ -112,7 +112,7 @@ describe('generate1214', () => {
   it('writes related companies as 1010 records between 1000 and 1020, counted at 9999@139', () => {
     const input = minimalInput({
       relatedCompanies: [
-        { companyName: 'חברת האם', companyFileNumber: '12', relationType: 'parent' },
+        { companyName: 'חברת האם', companyFileNumber: '18', relationType: 'parent' },
         ...relatedCompanies(3).slice(1),
       ],
     });
@@ -132,7 +132,7 @@ describe('generate1214', () => {
     // 1010@137 serial, @139 name, @189 file number, @198 relation type, @199 assessing office.
     expect(lines.slice(1, 4).map(line => slice(line, 137, 2))).toEqual(['01', '02', '03']);
     expect(slice(lines[1], 139, 50)).toBe('חברת האם'.padStart(50, ' '));
-    expect(slice(lines[1], 189, 9)).toBe('000000012');
+    expect(slice(lines[1], 189, 9)).toBe('000000018');
     expect(slice(lines[1], 198, 1)).toBe('1');
     expect(slice(lines[1], 199, 2)).toBe('00');
     expect(slice(lines[2], 198, 3)).toBe('211');
@@ -150,7 +150,7 @@ describe('generate1214', () => {
     const input = minimalInput({
       relatedCompanies: relatedCompanies(1),
       rdInvestments: [
-        { companyName: 'חברת מו"פ', companyFileNumber: '12', investmentAmount: 250_000 },
+        { companyName: 'חברת מו"פ', companyFileNumber: '18', investmentAmount: 250_000 },
         ...rdInvestments(5).slice(1),
       ],
       amounts: { '165': 250_000 + rdInvestmentsTotal(5) - 100_000 },
@@ -175,10 +175,10 @@ describe('generate1214', () => {
     // 1030@137 affiliation, @138 name, @188 file number, @197 amount, @209 filler.
     expect(rd.map(line => slice(line, 137, 1))).toEqual(['1', '1', '1', '1', '1']);
     expect(slice(rd[0], 138, 50)).toBe('חברת מו"פ'.padStart(50, ' '));
-    expect(slice(rd[0], 188, 9)).toBe('000000012');
+    expect(slice(rd[0], 188, 9)).toBe('000000018');
     expect(slice(rd[0], 197, 12)).toBe('000000250000');
     expect(slice(rd[0], 209, 128)).toBe('0'.repeat(128));
-    expect(slice(rd[4], 188, 21)).toBe('520000005000000500000');
+    expect(slice(rd[4], 188, 21)).toBe('520000043000000500000');
     expect(slice(lines[8], 149, 2)).toBe('05');
   });
 

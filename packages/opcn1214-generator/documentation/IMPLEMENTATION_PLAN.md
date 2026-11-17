@@ -1160,6 +1160,8 @@ Done when
 > stop the plan and run a fix-up step (template at the end of Part 3) before C7a: the most likely
 > causes are SPEC §15 A-1 (alphanumeric padding side), A-5 (line endings) and A-6 (encoding).
 
+**Outcome CP-1 (2026-11-17):** `minimal` passed on shopcn (A-1, A-5, A-6 verified).
+
 #### C7a — Parser v1: happy path and round trip
 
 ```text
@@ -1545,6 +1547,9 @@ Done when
 > `VERIFICATION.md`. Focus: percentage fields 949 and 1020@199–209 (SPEC §15 A-2, A-3), phone
 > prefixes (A-19), bank code 278.
 
+**Outcome CP-2 (2026-11-17):** `main-full` and `kibbutz` rejected (identifier check digits, SPEC §15
+A-25) → FIX-1.
+
 ---
 
 ### Part E — Related companies and R&D investments
@@ -1736,6 +1741,9 @@ Done when
 
 > **Human checkpoint CP-3 (after F2).** Verify `related-and-rd` and `foreign` on shopcn (A-4, A-9,
 > A-14, A-16 in SPEC §15).
+
+**Outcome CP-3 (2026-11-17):** `foreign` passed (A-4, A-9, A-14, A-24 verified); `related-and-rd`
+rejected (identifier check digits, SPEC §15 A-25) → FIX-1.
 
 ---
 

@@ -16,6 +16,7 @@ import type {
   SecuritiesAppendix,
   Withholder,
 } from '../../src/model/input.js';
+import { isValidIsraeliCheckDigit } from '../../src/validate/check-digit.js';
 
 /** Overrides for a builder: objects merge recursively, arrays and other values replace. */
 export type DeepPartial<T> = T extends readonly unknown[]
@@ -37,6 +38,20 @@ function deepMerge(base: unknown, overrides: unknown): unknown {
     merged[key] = deepMerge(base[key], value);
   }
   return merged;
+}
+
+/**
+ * The 9-digit identifier made of the 8 digits of `prefix` (left-padded with zeros) and the check
+ * digit that makes it valid (SPEC §15 A-25), e.g. 51_000_000 → '510000003'.
+ */
+export function withCheckDigit(prefix: number): string {
+  const digits = String(prefix).padStart(8, '0');
+  for (let check = 0; check <= 9; check++) {
+    if (isValidIsraeliCheckDigit(`${digits}${check}`)) {
+      return `${digits}${check}`;
+    }
+  }
+  throw new Error(`no check digit for ${digits}`);
 }
 
 /** A valid skeleton report (SPEC §7.2) with `overrides` deep-merged into it. */
@@ -87,7 +102,7 @@ export function fullDeclarationsInput(
       contactName: 'דנה כהן',
       name: 'יוסי לוי',
       profession: 'רואה חשבון',
-      licensedDealerNumber: '012345678',
+      licensedDealerNumber: '012345674',
       address: 'רחוב יפו 10, ירושלים',
       phone: { prefix: '02', number: '6543210' },
     },
@@ -181,7 +196,7 @@ const RELATION_TYPES: ReadonlyArray<RelatedCompany['relationType']> = [
 export function relatedCompanies(count: number): RelatedCompany[] {
   return Array.from({ length: count }, (_, index) => ({
     companyName: `חברה קשורה ${index + 1} בע"מ`,
-    companyFileNumber: String(510_000_001 + index),
+    companyFileNumber: withCheckDigit(51_000_000 + index),
     relationType: RELATION_TYPES[index % RELATION_TYPES.length]!,
     assessingOfficeCode: 10 + index,
   }));
@@ -194,7 +209,7 @@ export function relatedCompanies(count: number): RelatedCompany[] {
 export function rdInvestments(count: number): RdInvestment[] {
   return Array.from({ length: count }, (_, index) => ({
     companyName: `חברת מו"פ ${index + 1} בע"מ`,
-    companyFileNumber: String(520_000_001 + index),
+    companyFileNumber: withCheckDigit(52_000_000 + index),
     investmentAmount: 100_000 * (index + 1),
   }));
 }

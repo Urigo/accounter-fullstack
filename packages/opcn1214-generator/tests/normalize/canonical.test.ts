@@ -88,20 +88,20 @@ describe('canonicalize', () => {
     const result = canonicalize(
       minimalInput({
         company: {
-          fileNumber: '12345',
-          withholdingFileNumber: '7',
+          fileNumber: '12344',
+          withholdingFileNumber: '75',
           vatFileNumber: '000000000',
           fax: { prefix: '052', number: '12345' },
         },
-        shareholders: [{ idNumber: '12', fullName: 'א', isControllingShareholder: true }],
+        shareholders: [{ idNumber: '18', fullName: 'א', isControllingShareholder: true }],
       }),
       OPTIONS,
     );
-    expect(result.company.fileNumber).toBe('000012345');
-    expect(result.company.withholdingFileNumber).toBe('000000007');
+    expect(result.company.fileNumber).toBe('000012344');
+    expect(result.company.withholdingFileNumber).toBe('000000075');
     expect(result.company).not.toHaveProperty('vatFileNumber');
     expect(result.company.fax).toEqual({ prefix: '052', number: '0012345' });
-    expect(result.shareholders[0]?.idNumber).toBe('000000012');
+    expect(result.shareholders[0]?.idNumber).toBe('000000018');
   });
 
   it('removes zero codes unless they are zeroAllowed', () => {
@@ -201,13 +201,13 @@ describe('canonicalize', () => {
   it('pads the digit strings of the preparer and the family company', () => {
     const result = canonicalize(
       minimalInput({
-        preparer: { licensedDealerNumber: '1234' },
-        declarations: { familyCompany: { representativeFileNumber: '77' } },
+        preparer: { licensedDealerNumber: '1230' },
+        declarations: { familyCompany: { representativeFileNumber: '75' } },
       }),
       OPTIONS,
     );
-    expect(result.preparer?.licensedDealerNumber).toBe('000001234');
-    expect(result.declarations.familyCompany).toEqual({ representativeFileNumber: '000000077' });
+    expect(result.preparer?.licensedDealerNumber).toBe('000001230');
+    expect(result.declarations.familyCompany).toEqual({ representativeFileNumber: '000000075' });
   });
 
   it('keeps a declaration object whose member is written as absent, as the parser reads it', () => {
@@ -356,7 +356,7 @@ describe('canonicalize', () => {
           relatedCompanies: [
             {
               companyName: '  חברה\u00A0 קשורה ',
-              companyFileNumber: '12',
+              companyFileNumber: '18',
               relationType: 'grandmother',
               assessingOfficeCode: 0,
             },
@@ -366,7 +366,7 @@ describe('canonicalize', () => {
         OPTIONS,
       );
       expect(result.relatedCompanies).toEqual([
-        { companyName: 'חברה קשורה', companyFileNumber: '000000012', relationType: 'grandmother' },
+        { companyName: 'חברה קשורה', companyFileNumber: '000000018', relationType: 'grandmother' },
         { companyName: 'B', relationType: 'other' },
       ]);
     });
@@ -391,14 +391,14 @@ describe('canonicalize', () => {
       const result = canonicalize(
         minimalInput({
           rdInvestments: [
-            { companyName: '  חברת\u00A0 מו"פ ', companyFileNumber: '12', investmentAmount: 99.5 },
+            { companyName: '  חברת\u00A0 מו"פ ', companyFileNumber: '18', investmentAmount: 99.5 },
             { companyName: 'B', companyFileNumber: '000000000', investmentAmount: 0 },
           ],
         }),
         { ...OPTIONS, rounding: 'halfUp' },
       );
       expect(result.rdInvestments).toEqual([
-        { companyName: 'חברת מו"פ', companyFileNumber: '000000012', investmentAmount: 100 },
+        { companyName: 'חברת מו"פ', companyFileNumber: '000000018', investmentAmount: 100 },
         { companyName: 'B', investmentAmount: 0 },
       ]);
     });
@@ -619,7 +619,7 @@ describe('canonicalize', () => {
   });
 
   it('does not change its input', () => {
-    const input: Report1214Input = minimalInput({ company: { fileNumber: '12' } });
+    const input: Report1214Input = minimalInput({ company: { fileNumber: '18' } });
     const copy = structuredClone(input);
     canonicalize(input, OPTIONS);
     expect(input).toEqual(copy);

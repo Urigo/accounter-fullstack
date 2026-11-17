@@ -20,6 +20,7 @@ import {
   section6Appendices,
   section6Appendix,
   securitiesAppendix,
+  withCheckDigit,
 } from '../fixtures/builders.js';
 import {
   dropLine,
@@ -47,7 +48,7 @@ function shareholder(idNumber: string, dividendRightsPercent?: number): Sharehol
 /** minimalInput() with `count` shareholders, distinct IDs, none stating dividend rights. */
 function withShareholderCount(count: number) {
   const shareholders = Array.from({ length: count }, (_, index) =>
-    shareholder(String(100_000_000 + index)),
+    shareholder(withCheckDigit(10_000_000 + index)),
   );
   return minimalInput({ shareholders });
 }
@@ -203,7 +204,7 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
   'field.numeric': {
     kind: 'input',
     fail: () => minimalInput({ company: { fileNumber: '12a' } }),
-    pass: () => minimalInput({ company: { fileNumber: '12' } }),
+    pass: () => minimalInput({ company: { fileNumber: '18' } }),
     path: 'company.fileNumber',
   },
   'field.length': {
@@ -211,6 +212,13 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => minimalInput({ company: { registeredName: 'א'.repeat(51) } }),
     pass: () => minimalInput({ company: { registeredName: 'א'.repeat(50) } }),
     path: 'company.registeredName',
+  },
+  'field.checkDigit': {
+    kind: 'input',
+    // SHAAM's structure checker rejected 570000001 at CP-2 ("ספרת בקורת שגויה").
+    fail: () => minimalInput({ company: { fileNumber: '570000001' } }),
+    pass: () => minimalInput(),
+    path: 'company.fileNumber',
   },
   'field.integer': {
     kind: 'input',
@@ -498,14 +506,14 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     kind: 'input',
     fail: () =>
       minimalInput({
-        shareholders: [shareholder('123456782', 50), shareholder('234567891', 49.99)],
+        shareholders: [shareholder('123456782', 50), shareholder('234567899', 49.99)],
       }),
     pass: () =>
       minimalInput({
         shareholders: [
           shareholder('123456782', 33.33),
-          shareholder('234567891', 33.33),
-          shareholder('345678917', 33.34),
+          shareholder('234567899', 33.33),
+          shareholder('345678916', 33.34),
         ],
       }),
     path: 'shareholders',
@@ -706,7 +714,8 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
   'parse.numeric': {
     kind: 'file',
     fail: () => minimalFile({ line: 1, position: 137, value: 'X' }),
-    pass: () => minimalFile({ line: 1, position: 137, value: '0' }),
+    // Another valid file number (the check digit is field.checkDigit's concern).
+    pass: () => minimalFile({ line: 1, position: 137, value: '123456782' }),
     path: 'company.fileNumber',
   },
   'parse.date': {

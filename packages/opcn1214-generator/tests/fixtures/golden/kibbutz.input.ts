@@ -8,7 +8,7 @@ import type { GenerateOptions, Report1214Input } from '../../../src/index.js';
 export const input: Report1214Input = {
   taxYear: 2024,
   company: {
-    fileNumber: '570000001',
+    fileNumber: '570000018',
     registeredName: 'קיבוץ לדוגמה אגודה שיתופית',
     mailingAddress: 'קיבוץ לדוגמה, ד.נ. גליל',
     businessAddress: 'קיבוץ לדוגמה, ד.נ. גליל',

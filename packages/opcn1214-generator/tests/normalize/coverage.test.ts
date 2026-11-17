@@ -33,7 +33,7 @@ describe('normalizer coverage (SPEC §13.3)', () => {
   it('record 1000: every non-filler header key is mapped', () => {
     const input = fullMainInput({
       company: {
-        withholdingFileNumber: '940000001',
+        withholdingFileNumber: '940000003',
         vatFileNumber: '514000009',
         occupationDescription: 'ייעוץ',
         booksAddress: 'רחוב יפו 2, ירושלים',

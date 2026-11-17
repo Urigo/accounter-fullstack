@@ -8,8 +8,11 @@ import type { Severity } from './issue.js';
 interface RuleMetaInput {
   id: string;
   severity: Severity;
-  /** 'spec' = stated in the PDF; 'derived' = our consistency check. */
-  source: 'spec' | 'derived';
+  /**
+   * 'spec' = stated in the PDF; 'derived' = our consistency check; 'checker' = enforced by SHAAM's
+   * structure checker (shopcn) but not stated in the PDF.
+   */
+  source: 'spec' | 'derived' | 'checker';
   scope: RecordType | 'report' | 'input' | 'parse';
   description: string;
   specRef?: { page: number; note?: string };
@@ -132,6 +135,15 @@ export const RULES = deepFreeze([
     scope: 'report',
     description:
       'Normalized text longer than the field width, or a number with more digits than the width.',
+  },
+  {
+    id: 'field.checkDigit',
+    severity: 'error',
+    source: 'checker',
+    scope: 'report',
+    description:
+      'An identifier (id9, shareholderId) of 1–9 digits fails the Israeli check digit (left-padded to 9 digits, weights 1, 2, 1, 2, …); SHAAM rejects the file.',
+    specRef: { page: 5, note: 'shopcn' },
   },
   {
     id: 'field.integer',
