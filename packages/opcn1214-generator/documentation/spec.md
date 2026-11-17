@@ -330,14 +330,8 @@ if (result.success) {
 import { generate } from 'opcn1214-generator'
 
 const reportData: ReportData = {
-  mainForm: {
-    /* ... */
-  },
-  shareholders: [
-    {
-      /* ... */
-    }
-  ]
+  mainForm: {/* ... */},
+  shareholders: [{/* ... */}]
   // ... other sections
 }
 
