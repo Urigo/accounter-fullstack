@@ -222,6 +222,24 @@ describe('ThreadView messages', () => {
     expect(content?.className).toContain('whitespace-pre-wrap');
   });
 
+  it('renders http(s) URLs as links that open in a new tab', () => {
+    renderThread({
+      thread: thread('a', [
+        message('m1', { content: 'Invoice: https://example.com/inv/1.\njavascript:alert(1)' }),
+      ]),
+    });
+    const content = container.querySelector('[data-comment-content]');
+    expect(content?.textContent).toBe('Invoice: https://example.com/inv/1.\njavascript:alert(1)');
+    const links = content?.querySelectorAll<HTMLAnchorElement>('a') ?? [];
+    expect(links).toHaveLength(1);
+    const [link] = links;
+    expect(link.hasAttribute('data-comment-link')).toBe(true);
+    expect(link.getAttribute('href')).toBe('https://example.com/inv/1');
+    expect(link.textContent).toBe('https://example.com/inv/1');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
   it('shows a period chip only on messages from another period or owner', () => {
     renderThread({
       thread: thread('a', [

@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils.js';
 import {
   isSamePeriod,
   isSendable,
+  linkifyComment,
   MAX_COMMENT_LENGTH,
   messagePeriodChip,
   type CommentMessage,
@@ -479,8 +480,9 @@ function MessageItem({
         </div>
       ) : (
         // Plain text, never HTML: React escapes it, and the line breaks the author typed are kept.
+        // http(s) URLs in it become links; nothing else is interpreted.
         <p className="text-sm wrap-break-word whitespace-pre-wrap" data-comment-content>
-          {message.content}
+          <CommentContent content={message.content} />
         </p>
       )}
 
@@ -504,5 +506,29 @@ function MessageItem({
         </AlertDialogContent>
       </AlertDialog>
     </li>
+  );
+}
+
+function CommentContent({ content }: { content?: string | null }): ReactElement {
+  return (
+    <>
+      {linkifyComment(content ?? '').map((segment, index) =>
+        segment.kind === 'link' ? (
+          <a
+            // Segments never reorder, so their position is a stable key.
+            key={index}
+            href={segment.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-all text-primary underline underline-offset-2"
+            data-comment-link
+          >
+            {segment.text}
+          </a>
+        ) : (
+          <span key={index}>{segment.text}</span>
+        ),
+      )}
+    </>
   );
 }
