@@ -1,0 +1,36 @@
+/** parse1214 (SPEC §6.1, §8.2): a single-report file back to the public input. */
+import { parseLines } from '../file/parse.js';
+import { splitFile } from '../file/split.js';
+import type { IsoDate, Report1214Input } from '../model/input.js';
+import type { ParseOptions } from '../model/options.js';
+import { denormalize } from '../normalize/denormalize.js';
+import { runRules } from '../validate/engine.js';
+import type { Issue } from '../validate/issue.js';
+
+/** The outcome of parse1214 (SPEC §6.2). */
+export interface ParseResult {
+  /** Canonical form (SPEC §8.4). */
+  report: Report1214Input;
+  /** Validation of the parsed content (errors and warnings), sorted (SPEC §9.1). */
+  issues: Issue[];
+  /** From 1000@165; '' when the file has none (field.required is then in `issues`). */
+  saveDate: IsoDate;
+  /** From 1000@150; '' when the file has none (field.required is then in `issues`). */
+  softwareName: string;
+}
+
+/**
+ * Parses a single-report file. Business-rule issues of the parsed content are returned as
+ * `issues`, not thrown. Structural problems are not collected yet: undecodable content throws
+ * CodecDecodeError, an unsupported tax year Opcn1214UnsupportedYearError.
+ */
+export function parse1214(content: string | Uint8Array, options?: ParseOptions): ParseResult {
+  const normalized = parseLines(splitFile(content, options));
+  const report = denormalize(normalized);
+  return {
+    report,
+    issues: runRules(normalized),
+    saveDate: report.meta?.saveDate ?? '',
+    softwareName: report.meta?.softwareName ?? '',
+  };
+}

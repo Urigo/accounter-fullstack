@@ -19,6 +19,8 @@ import type {
   Issue,
   MainFormCode,
   MainFormInputCode,
+  ParseOptions,
+  ParseResult,
   Phone,
   PhonePrefix,
   RecordDef,
@@ -46,6 +48,7 @@ describe('public API', () => {
         'RULES',
         'generate1214',
         'getLayout',
+        'parse1214',
         'supportedTaxYears',
         'validate1214',
       ].sort(),
@@ -68,6 +71,9 @@ describe('public API', () => {
     expectTypeOf<GenerateOptions>().toEqualTypeOf<ValidateOptions>();
     expectTypeOf<ValidationResult['errors']>().toEqualTypeOf<Issue[]>();
     expectTypeOf<GenerateResult['warnings']>().toEqualTypeOf<Issue[]>();
+    expectTypeOf<ParseResult['report']>().toEqualTypeOf<Report1214Input>();
+    expectTypeOf<ParseResult['issues']>().toEqualTypeOf<Issue[]>();
+    expectTypeOf<ParseOptions['encoding']>().toEqualTypeOf<'windows-1255' | 'utf-8' | undefined>();
     expectTypeOf<Issue['severity']>().toEqualTypeOf<Severity>();
     expectTypeOf<Issue['ruleId']>().toEqualTypeOf<RuleId>();
     expectTypeOf<(typeof api.RULES)[number]>().toExtend<RuleMeta>();
