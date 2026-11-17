@@ -1,4 +1,5 @@
 /** Structure rules (SPEC §9.2 stage 5, §10.1). */
+import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import type { NormalizedReport } from '../model/normalized.js';
 import { makeIssue, type Issue } from './issue.js';
 
@@ -109,6 +110,27 @@ export function shareholdersMax(report: NormalizedReport): Issue[] {
       value: count,
       expected: `at most ${MAX_SHAREHOLDERS}`,
       specRef: { page: 21 },
+    }),
+  ];
+}
+
+/**
+ * struct.capitalGains.max: more capital-gains appendices (30xx records, all types together) than a
+ * report may transmit (14, p.1, p.32); the excess belongs on 1000@962 with reasons 964–967.
+ */
+export function capitalGainsMax(report: NormalizedReport): Issue[] {
+  const max = report.layout.limits.capitalGainsAppendices;
+  const count = report.records.filter(record => isCapitalGainsRecordType(record.recordType)).length;
+  if (count <= max) {
+    return [];
+  }
+  return [
+    makeIssue('struct.capitalGains.max', {
+      message: `The report has ${count} capital-gains appendices; at most ${max} are allowed (report the rest as untransmitted, 1000@962).`,
+      path: 'capitalGains',
+      value: count,
+      expected: `at most ${max}`,
+      specRef: { page: 32 },
     }),
   ];
 }

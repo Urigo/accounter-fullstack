@@ -70,6 +70,7 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
 export interface NormalizedRecord {
   recordType: RecordType
   index: number // 0-based among records of the same type
+  inputIndex?: number // 30xx only: index in `capitalGains` (parser: index among all 30xx records)
   values: Record<string, Primitive> // FieldDef.key → value (derived keys included)
   codes: Map<string, number> // code-amount section, natural units
   countries: Array<{ country: string; income: number }> // 2200 only, otherwise []

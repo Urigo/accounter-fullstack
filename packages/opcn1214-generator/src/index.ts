@@ -26,6 +26,7 @@ export type {
   YearLayout,
 } from './layout/types.js';
 export type {
+  CapitalGainsAppendix,
   CompanyDetails,
   CountryBreakdown,
   CountryIncome,
@@ -38,6 +39,7 @@ export type {
   RdInvestment,
   RelatedCompany,
   Report1214Input,
+  Section6SecuritiesAppendix,
   Shareholder,
   SupportedTaxYear,
 } from './model/input.js';

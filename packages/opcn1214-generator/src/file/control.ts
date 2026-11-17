@@ -3,22 +3,9 @@
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
+import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import type { RecordType, YearLayout } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
-
-/** The ten capital-gains appendix record types (SPEC §3.7). */
-const CAPITAL_GAINS_TYPES: ReadonlySet<RecordType> = new Set([
-  '3027',
-  '3050',
-  '3051',
-  '3054',
-  '3060',
-  '3063',
-  '3064',
-  '3065',
-  '3066',
-  '3077',
-]);
 
 type Count = (types: readonly RecordType[]) => number;
 
@@ -34,7 +21,7 @@ const COUNTS: Readonly<Record<string, Count>> = {
   shareholderCount: countOf('1020'),
   // `01` if a foreign appendix exists, else `00` (SPEC §15 A-14).
   foreignAppendixCount: types => (countOf('2000')(types) > 0 ? 1 : 0),
-  capitalGainsAppendixCount: types => types.filter(type => CAPITAL_GAINS_TYPES.has(type)).length,
+  capitalGainsAppendixCount: types => types.filter(isCapitalGainsRecordType).length,
   foreignCountryRecordCount: countOf('2200'),
   rdInvestmentRecordCount: countOf('1030'),
 };

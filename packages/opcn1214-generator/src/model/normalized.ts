@@ -11,6 +11,12 @@ export interface NormalizedRecord {
   recordType: RecordType;
   /** 0-based among records of the same type. */
   index: number;
+  /**
+   * Capital-gains records (30xx) only: the 0-based index of the appendix in `capitalGains`, which
+   * pathFor needs because the records are grouped by type (SPEC §3.3), so `index` differs from it.
+   * The parser sets it to the record's index among all capital-gains records of the file.
+   */
+  inputIndex?: number;
   /** FieldDef.key → value (derived keys included). */
   values: Record<string, Primitive>;
   /** Code-amount section, natural units. */

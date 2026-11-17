@@ -8,6 +8,7 @@ import {
   rdInvestments,
   rdInvestmentsTotal,
   relatedCompanies,
+  section6Appendix,
 } from '../fixtures/builders.js';
 import { dropLine, goldenText, tamper as tamperAt } from '../fixtures/files.js';
 
@@ -458,7 +459,65 @@ describe('parse1214', () => {
     });
   });
 
-  it.each(['minimal', 'foreign'])(
+  describe('capital-gains appendices (30xx)', () => {
+    const appendices = [
+      section6Appendix(),
+      section6Appendix({ foreignAsset: false, amounts: { '029': 7 } }),
+    ];
+    // Lines: 1000, 1020, 2000, 3063, 3063, 9999.
+    const input = minimalInput({ foreignAppendix: foreignAppendix(), capitalGains: appendices });
+    const file = generate1214(input, OPTIONS).text;
+
+    it('reads the 3063 records after 2000 back as capitalGains, in file order', () => {
+      const result = parse1214(file);
+      expect(result.report.capitalGains).toEqual(appendices);
+      expect(result.report).toEqual(canonicalize(input, OPTIONS));
+      expect(result.issues).toEqual([]);
+    });
+
+    it('locates a header problem of a 3063 record at capitalGains[i]', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(file, 5, 143, 'X')))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.numeric',
+          path: 'capitalGains[1].lossesCarriedForward',
+          recordType: '3063',
+          recordIndex: 1,
+          line: 5,
+          column: 143,
+        }),
+      ]);
+      expect(parseErrorIssues(() => parse1214(tamper(file, 4, 142, '3')))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.fieldValue',
+          path: 'capitalGains[0].foreignAsset',
+          line: 4,
+        }),
+      ]);
+    });
+
+    it('reports a 3063 record before the 2000 record as parse.order', () => {
+      const lines = file.split(CRLF);
+      const reordered = [lines[0], lines[1], lines[3], lines[2], lines[4], lines[5], ''].join(CRLF);
+      expect(
+        parseErrorIssues(() => parse1214(reordered)).filter(
+          issue => issue.ruleId === 'parse.order',
+        ),
+      ).toEqual([expect.objectContaining({ recordType: '2000', line: 4 })]);
+    });
+
+    it('reports capital-gains records the 9999 record does not count (9999@145)', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(file, 6, 145, '01')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.control.counts', line: 6, column: 145 }),
+      ]);
+    });
+
+    it('reads 833 = yes back without hasCapitalGainsAppendix when appendices explain it', () => {
+      expect(file.split(CRLF)[0]?.slice(832, 833)).toBe('1');
+      expect(parse1214(file).report.declarations).not.toHaveProperty('hasCapitalGainsAppendix');
+    });
+  });
+
+  it.each(['minimal', 'foreign', 'cg-63'])(
     'never lets anything but Opcn1214ParseError escape for a corrupted %s golden',
     name => {
       const golden = goldenText(name);

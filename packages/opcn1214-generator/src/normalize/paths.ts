@@ -2,6 +2,7 @@
  * Input paths of model keys (SPEC §7.3, §9.1 path grammar). Shared by the normalizer, which fills
  * NormalizedRecord.paths, and the parser, which reports issues against the reconstructed input.
  */
+import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import type { RecordType } from '../layout/types.js';
 import { DERIVED_MAIN_CODES } from '../model/codes.generated.js';
 import type { NormalizedRecord } from '../model/normalized.js';
@@ -15,6 +16,7 @@ const DERIVED_KEYS: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
   '1010': ['serialNumber'],
   '1020': ['serialNumber'],
   '1030': ['affiliation'],
+  '3063': ['transactionSymbol', 'appendixNumber'],
 };
 
 const DERIVED_CODES: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
@@ -68,11 +70,15 @@ export function incomeEntryKey(index: number): string {
 
 /**
  * The `inputIndex` of pathFor for `record`: its index among records of its type, except for a 2200
- * record, whose input is keyed by the 2000 code it breaks down (0 when the record has none).
+ * record, whose input is keyed by the 2000 code it breaks down (0 when the record has none), and
+ * for a capital-gains record, whose `inputIndex` (its index in `capitalGains`) is used when set.
  */
 export function inputIndexOf(
-  record: Pick<NormalizedRecord, 'recordType' | 'index' | 'values'>,
+  record: Pick<NormalizedRecord, 'recordType' | 'index' | 'inputIndex' | 'values'>,
 ): number {
+  if (isCapitalGainsRecordType(record.recordType)) {
+    return record.inputIndex ?? record.index;
+  }
   if (record.recordType !== '2200') {
     return record.index;
   }
@@ -103,14 +109,17 @@ export function codeKey(code: string): string {
  *   breakdown itself, `foreignAppendix.countryBreakdown["420"]`; any other key, a header key or a
  *   country entry key (`countries[2].country`, `countries[2].income`), to
  *   `foreignAppendix.countryBreakdown["420"].<key>`.
+ * - Record 3063: `inputIndex` is the index of the appendix in `capitalGains` (inputIndexOf gives
+ *   it for a record); a header key maps to `capitalGains[i].<key>`, a code to
+ *   `capitalGains[i].amounts["022"]`.
  * - Derived values have no input path and map to `''` (report level): derived header keys
  *   (1000@832 `hasForeignAppendix`, 1010@137 and 1020@137 `serialNumber`, 1030@137
- *   `affiliation`) and derived codes (SPEC §7.4: 008,
- *   028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
+ *   `affiliation`, 3063@137 `transactionSymbol` and 3063@139 `appendixNumber`) and derived
+ *   codes (SPEC §7.4: 008, 028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
  *   (1000@833 `declarations.hasCapitalGainsAppendix`) keeps that property's path.
  *   Every field of the control record 9999 is derived, so its keys map to `''` as well.
- * - Records whose input is not modelled yet (30xx) map to `''`, so the parser can report issues on
- *   them; steps G1–G5 replace this with their input paths.
+ * - Capital-gains records whose input is not modelled yet map to `''`, so the parser can report
+ *   issues on them; steps G2–G5 replace this with their input paths.
  */
 export function pathFor(recordType: RecordType, inputIndex: number, key: string): string {
   const isCode = key.startsWith(CODE_KEY_PREFIX);
@@ -135,13 +144,16 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
       const breakdown = `foreignAppendix.countryBreakdown["${String(inputIndex).padStart(3, '0')}"]`;
       return key === BREAKDOWN_CODE_KEY ? breakdown : `${breakdown}.${key}`;
     }
-    // No input mapping yet: replaced by steps G1–G5.
+    case '3063':
+      return isCode
+        ? `capitalGains[${inputIndex}].amounts["${code}"]`
+        : `capitalGains[${inputIndex}].${key}`;
+    // No input mapping yet: replaced by steps G2–G5.
     case '3027':
     case '3050':
     case '3051':
     case '3054':
     case '3060':
-    case '3063':
     case '3064':
     case '3065':
     case '3066':

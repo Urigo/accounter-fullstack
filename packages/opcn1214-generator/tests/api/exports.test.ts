@@ -1,5 +1,6 @@
 import * as api from '../../src/index.js';
 import type {
+  CapitalGainsAppendix,
   CapitalGainsCode,
   CapitalGainsSymbol,
   CodeDef,
@@ -35,6 +36,7 @@ import type {
   Requirement,
   RuleId,
   RuleMeta,
+  Section6SecuritiesAppendix,
   Severity,
   Shareholder,
   SupportedTaxYear,
@@ -73,6 +75,13 @@ describe('public API', () => {
     >();
     expectTypeOf<Report1214Input['rdInvestments']>().toEqualTypeOf<RdInvestment[] | undefined>();
     expectTypeOf<Report1214Input['foreignAppendix']>().toEqualTypeOf<ForeignAppendix | undefined>();
+    expectTypeOf<Report1214Input['capitalGains']>().toEqualTypeOf<
+      CapitalGainsAppendix[] | undefined
+    >();
+    expectTypeOf<Section6SecuritiesAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<keyof Section6SecuritiesAppendix['amounts']>().toEqualTypeOf<
+      CapitalGainsCode<63>
+    >();
     expectTypeOf<ForeignAppendix['countryBreakdown']>().toEqualTypeOf<
       Partial<Record<CountryBreakdownCode, CountryBreakdown>> | undefined
     >();
