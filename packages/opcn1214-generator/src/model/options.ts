@@ -9,3 +9,9 @@ export interface ValidateOptions {
 }
 
 export type GenerateOptions = ValidateOptions;
+
+/** Options of parsing (SPEC §6.2). */
+export interface ParseOptions {
+  /** Encoding of a Uint8Array input. Default 'windows-1255'. Strings are taken as already decoded. */
+  encoding?: 'windows-1255' | 'utf-8';
+}

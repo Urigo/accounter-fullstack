@@ -1105,7 +1105,10 @@ reports (`struct.batch.size`). Issues carry `reportIndex`.
    non-zero tail is a parse error. Duplicate codes are a parse error.
 6. Verify 9999 counts against the records actually present.
 7. Build `NormalizedReport`, denormalize to `Report1214Input` (canonical form, §8.4), and run the
-   rule engine on it; return its issues in `ParseResult.issues` (they are not thrown).
+   rule engine on it; return its issues in `ParseResult.issues` (they are not thrown). Issue paths
+   are those of the reconstructed input, the n-th record of a type standing for the n-th input
+   element. A required value that the file leaves empty is absent from `ParseResult.report` too (its
+   `field.required` issue reports it); `ParseResult.saveDate` / `softwareName` are then `''`.
 
 Structural problems from steps 1–6 throw `Opcn1214ParseError` with every problem found in the file
 (the parser continues to the next line where possible; it does not stop at the first problem).
