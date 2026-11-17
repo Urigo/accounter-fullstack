@@ -17,12 +17,18 @@ import { startTenantDbClientWatchdog } from './modules/app-providers/tenant-db-c
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
 import { PriceIndexSyncProvider } from './modules/price-indexes/providers/price-index-sync.provider.js';
 import {
+  logContextFields,
+  withLogContext,
+  withoutLogContext,
+} from './observability/log-context.js';
+import {
   createYogaLogger,
   getLogger,
   knownLogModules,
   LOG_SCOPES,
   serializeError,
   setLogBaseFields,
+  setLogContextProvider,
   setLogLevel,
   setModuleLogLevels,
 } from './observability/log.js';
@@ -61,6 +67,9 @@ async function main() {
     env: env.otel.deploymentEnv,
     release: env.logging.release,
   });
+  // The current request's ids (`requestId`, `operationName`, `userId`, …) on every line written
+  // while handling it; see `withLogContext` below.
+  setLogContextProvider(logContextFields);
   const knownModules = knownLogModules();
   for (const module of Object.keys(env.logging.moduleLevels)) {
     if (!knownModules.has(module)) {
@@ -252,7 +261,8 @@ async function main() {
     },
   });
 
-  const server = createServer(yoga);
+  // Each request runs in its own log context, so every line it writes carries its ids.
+  const server = createServer((req, res) => withLogContext(() => yoga(req, res)));
 
   // Graceful shutdown handler
   let isShuttingDown = false;
@@ -310,7 +320,10 @@ async function main() {
   // Pool errors: log but don't shutdown on transient errors
   // The pool will attempt to recover from connection issues automatically
   pool.on('error', err => {
-    dbLog('error', 'db-pool-idle-client-error', { error: serializeError(err) });
+    // An idle connection's events run in the context of the request that opened it: not this one's.
+    withoutLogContext(() =>
+      dbLog('error', 'db-pool-idle-client-error', { error: serializeError(err) }),
+    );
     // Only shutdown on critical errors that indicate the pool is permanently broken
     // For now, log and let the pool attempt recovery
     // If queries start failing consistently, they'll be caught by application error handlers

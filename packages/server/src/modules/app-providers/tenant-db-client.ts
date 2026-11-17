@@ -528,8 +528,11 @@ export class TenantAwareDBClient {
         // this class exists to prevent.
         this.releaseClient(true);
       };
-      client.on('error', onClientError);
-      this.clientErrorListener = onClientError;
+      // Bound to this request's log context: the socket's own events run in the context of
+      // whichever request opened the pooled connection.
+      const boundOnClientError = AsyncLocalStorage.bind(onClientError);
+      client.on('error', boundOnClientError);
+      this.clientErrorListener = boundOnClientError;
       this.activeClient = client;
       connectionHolders.add(this);
     }
