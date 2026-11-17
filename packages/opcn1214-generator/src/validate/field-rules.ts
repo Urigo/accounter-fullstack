@@ -3,6 +3,7 @@
  * record, driven by their FieldDef/CodeDef.
  */
 import { isIsoDate } from '../codec/date.js';
+import { scaleBy100Exact } from '../codec/numeric.js';
 import type { Primitive } from '../codec/types.js';
 import type { CodeDef, EnumValue, FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
@@ -107,17 +108,6 @@ interface Finding {
   expected: string;
 }
 
-/**
- * True when `value` has more than 2 decimals. Integer arithmetic on the value × 100 (SPEC §4.4),
- * with a tolerance that grows with the magnitude: the product carries a rounding error of about
- * one ulp, which exceeds a fixed 1e-6 for amounts above about 10^8.
- */
-function hasMoreThanTwoDecimals(value: number): boolean {
-  const scaled = value * 100;
-  const tolerance = Math.max(1e-6, 4 * Number.EPSILON * Math.abs(scaled));
-  return !Number.isFinite(scaled) || Math.abs(scaled - Math.round(scaled)) > tolerance;
-}
-
 /** The field.enum finding of a value of `kind`, whose allowed values are `values`. */
 function enumFindings(
   kind: FieldKind,
@@ -149,7 +139,7 @@ function numberFindings(kind: FieldKind, value: number, width: number, name: str
       expected: 'an integer',
     });
   }
-  if (DECIMAL_KINDS.has(kind) && hasMoreThanTwoDecimals(value)) {
+  if (DECIMAL_KINDS.has(kind) && scaleBy100Exact(value) === undefined) {
     findings.push({
       ruleId: 'field.decimals',
       message: `${name} has more than 2 decimals.`,

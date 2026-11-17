@@ -1,3 +1,5 @@
+import { codecFor } from '../../src/codec/registry.js';
+import { Opcn1214InternalError } from '../../src/errors.js';
 import { getLayout } from '../../src/layout/registry.js';
 import type { PhonePrefix, Shareholder } from '../../src/model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../../src/model/normalized.js';
@@ -560,6 +562,46 @@ describe('fieldRules on synthetic records', () => {
     /** Paths of the given codes of the synthetic 3077 record. */
     const codePaths = (...codes: string[]) =>
       Object.fromEntries(codes.map(code => [`code:${code}`, `capitalGains[0].amounts["${code}"]`]));
+
+    it('field.decimals reports an issue exactly when the amountX100 encoder throws', () => {
+      // Seeded linear congruential generator, so the sample is the same on every run.
+      let seed = 1214;
+      const next = () => {
+        seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+        return seed / 2_147_483_648;
+      };
+      const sample: number[] = [
+        9_481_199_461.12,
+        1_233_840_766.34,
+        5_457_046_861.81,
+        9_637_299_614.7,
+        9_481_199_461.001,
+        9_999_999_999.99,
+        1.005,
+        1.234,
+        0.07,
+        0.1 + 0.2,
+        10.123,
+      ];
+      for (let i = 0; i < 500; i++) {
+        const cents = Math.floor(next() * 1e12);
+        sample.push(cents / 100, Math.floor(next() * 1e12) / 1000, Math.floor(next() * 1e6) / 1000);
+      }
+      const shape = { length: 12, type: 'numeric', kind: 'amountX100' } as const;
+      for (const value of sample) {
+        let throws = false;
+        try {
+          codecFor('amountX100').encode(value, shape);
+        } catch (error) {
+          expect(error).toBeInstanceOf(Opcn1214InternalError);
+          throws = true;
+        }
+        const decimals = fieldRules(expense(value)).some(
+          issue => issue.ruleId === 'field.decimals',
+        );
+        expect({ value, decimals }).toEqual({ value, decimals: throws });
+      }
+    });
 
     it('field.decimals and field.negative: amountX100 code values', () => {
       const issues = runRules(

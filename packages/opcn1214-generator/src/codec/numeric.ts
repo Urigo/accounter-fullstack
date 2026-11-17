@@ -8,7 +8,7 @@ import { ALPHANUMERIC_PAD_SIDE, padAlphanumeric, padNumeric } from './padding.js
 import { CodecDecodeError, type Codec, type FieldShape, type Primitive } from './types.js';
 
 const DIGITS = /^\d+$/;
-/** Tolerance of the ×100 decimals check (SPEC §4.4). */
+/** Minimum tolerance of the ×100 decimals check (SPEC §4.4). */
 const SCALE_EPSILON = 1e-6;
 
 /** The absent value of a field: zeros (numeric) or spaces (alphanumeric). */
@@ -132,6 +132,19 @@ const digitStringCodec: Codec = {
 };
 
 /**
+ * `value × 100` as an integer, or undefined when `value` is not finite or has more than 2
+ * decimals (SPEC §4.4). The tolerance grows with the magnitude: the product carries a rounding
+ * error of about one ulp, which exceeds a fixed 1e-6 for amounts above about 10^8. The single
+ * decimals check of the package: field.decimals and the ×100 encoders both use it.
+ */
+export function scaleBy100Exact(value: number): number | undefined {
+  const product = value * 100;
+  const scaled = Math.round(product);
+  const tolerance = Math.max(SCALE_EPSILON, 4 * Number.EPSILON * Math.abs(product));
+  return Number.isFinite(product) && Math.abs(product - scaled) <= tolerance ? scaled : undefined;
+}
+
+/**
  * Returns `value × 100` as an integer; throws Opcn1214InternalError for a value that is not a
  * finite number with at most 2 decimals (SPEC §4.4).
  */
@@ -139,8 +152,8 @@ export function scaleBy100(value: Primitive, shape: FieldShape): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw invalid(value, shape, 'a finite number');
   }
-  const scaled = Math.round(value * 100);
-  if (Math.abs(value * 100 - scaled) > SCALE_EPSILON) {
+  const scaled = scaleBy100Exact(value);
+  if (scaled === undefined) {
     throw invalid(value, shape, 'at most 2 decimals');
   }
   return scaled;

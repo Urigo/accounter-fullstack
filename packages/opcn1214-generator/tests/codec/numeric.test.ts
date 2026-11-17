@@ -114,6 +114,9 @@ describe('numeric codecs', () => {
       ['amountX100', 0.1 + 0.2, 12, 'numeric', '000000000030'],
       ['amountX100', 7, 12, 'numeric', '000000000700'],
       ['amountX100', 0, 12, 'numeric', '000000000000'],
+      // ×100 carries a rounding error above 1e-6 here; the tolerance grows with the magnitude.
+      ['amountX100', 9_481_199_461.12, 12, 'numeric', '948119946112'],
+      ['amountX100', 1_233_840_766.34, 12, 'numeric', '123384076634'],
       ['rateX100', 23, 4, 'numeric', '2300'],
       ['rateX100', 50, 4, 'numeric', '5000'],
       ['filler', undefined, 5, 'numeric', '00000'],
@@ -154,7 +157,9 @@ describe('numeric codecs', () => {
       ['rateX100', Number.NaN, 4],
       // more than 2 decimals for ×100 kinds
       ['amountX100', 1.234, 12],
+      ['amountX100', 1.005, 12],
       ['amountX100', 0.001, 12],
+      ['amountX100', 9_481_199_461.001, 12],
       ['rateX100', 23.001, 4],
       // wider than the field
       ['amount', 1_000_000_000_000, 12],
