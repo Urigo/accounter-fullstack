@@ -2218,6 +2218,9 @@ CP-2 to CP-4 re-checks were regenerated in FIX-2 and are PENDING.
 `capital-gains-max` rejected (an improvement without an expense, SPEC §15 A-32) → FIX-3; `main-full`
 rejected (beneficiary-enterprise notice date before the tax year, 1000@852, SPEC §15 A-33) → FIX-3.
 
+**Outcome FIX-3 re-check (2026-11-18):** `main-full` and `capital-gains-max` passed. Every golden
+file is verified on shopcn; CP-5 is closed.
+
 ---
 
 ### Fix-up step template (when a checkpoint fails)
