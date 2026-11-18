@@ -1,11 +1,13 @@
 import { GraphQLError } from 'graphql';
-import { generateReport } from '@accounter/shaam6111-generator';
+import { encodeReportFile, generateReport, ValidationError } from '@accounter/shaam6111-generator';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import {
   convertLocalReportDataToShaam6111ReportData,
   getShaam6111Data,
+  SHAAM_6111_FILE_NAME,
+  validateShaam6111Report,
 } from '../helpers/shaam6111.helper.js';
 import type { ReportsModule } from '../types.js';
 
@@ -49,14 +51,27 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
     data: ({ reportData }) => reportData,
     file: ({ reportData }) => {
       const adjustedReportData = convertLocalReportDataToShaam6111ReportData(reportData);
-      const reportContent = generateReport(adjustedReportData, true);
+      let reportContent: string;
+      try {
+        reportContent = generateReport(adjustedReportData, true);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          throw new GraphQLError(
+            'The 6111 report does not pass SHAAM validation; see the report validation issues',
+            { extensions: { code: 'SHAAM6111_VALIDATION_FAILED' } },
+          );
+        }
+        throw error;
+      }
       return {
         id: `shaam6111-${reportData.header.idNumber}-${reportData.header.taxYear}-file`,
         reportContent,
         diffContent: '', // TODO: implement diff content
-        fileName: `shaam6111-${reportData.header.idNumber}-${reportData.header.taxYear}-file`, // TODO: check if specific file name format is required
+        fileName: SHAAM_6111_FILE_NAME,
+        encodedContent: Buffer.from(encodeReportFile(reportContent)).toString('base64'),
       };
     },
+    validation: ({ reportData }) => validateShaam6111Report(reportData),
     year: ({ reportData }) => parseInt(reportData.header.taxYear, 10),
   },
   Shaam6111Data: {
@@ -78,9 +93,9 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
         includesProfitLoss: reportData.header.includesProfitLoss,
         includesTaxAdjustment: reportData.header.includesTaxAdjustment,
         includesBalanceSheet: reportData.header.includesBalanceSheet,
-        profitLossEntryCount: reportData.profitAndLoss.length,
-        taxAdjustmentEntryCount: reportData.taxAdjustment.length,
-        balanceSheetEntryCount: reportData.balanceSheet?.length ?? 0,
+        profitLossEntryCount: reportData.header.profitLossEntryCount,
+        taxAdjustmentEntryCount: reportData.header.taxAdjustmentEntryCount,
+        balanceSheetEntryCount: reportData.header.balanceSheetEntryCount,
         ifrsImplementationYear: reportData.header.ifrsImplementationYear,
         ifrsReportingOption: reportData.header.ifrsReportingOption,
         softwareRegistrationNumber: reportData.header.softwareRegistrationNumber,

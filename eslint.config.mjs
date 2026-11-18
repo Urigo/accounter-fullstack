@@ -226,6 +226,8 @@ export default [
               'ScraperUploadResult',
               'Shaam6111Header',
               'Shaam6111ReportEntry',
+              'Shaam6111Validation',
+              'Shaam6111ValidationIssue',
               'SicknessDays',
               'Suggestions',
               'SuggestionsEmailListenerConfig',

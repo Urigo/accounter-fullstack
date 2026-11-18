@@ -21,16 +21,45 @@ export default gql`
     id: ID!
     business: Business!
     year: Int!
-    file: Shaam6111File!
+    " The file to upload to SHAAM. Null (with an error) while the report has blocking validation issues, so data and validation still resolve alongside it "
+    file: Shaam6111File
     data: Shaam6111Data!
+    " SHAAM validation rules applied to the report, plus data-quality diagnostics "
+    validation: Shaam6111Validation!
   }
 
   " Shaam6111 file content "
   type Shaam6111File {
     id: ID!
+    " The report record (8612 characters), as text "
     reportContent: String!
     diffContent: String
     fileName: String!
+    " The full file (record + CR LF + EOF marker), Windows-1255 encoded, as base64 "
+    encodedContent: String!
+  }
+
+  " Result of validating a Shaam6111 report "
+  type Shaam6111Validation {
+    " Whether the report has no blocking (ERROR) issue "
+    isValid: Boolean!
+    issues: [Shaam6111ValidationIssue!]!
+  }
+
+  " Severity of a Shaam6111 validation issue "
+  enum Shaam6111ValidationSeverity {
+    " Blocks the file: SHAAM would reject it "
+    ERROR
+    " Does not block the file, but should be reviewed before filing "
+    WARNING
+  }
+
+  " A single Shaam6111 validation issue "
+  type Shaam6111ValidationIssue {
+    severity: Shaam6111ValidationSeverity!
+    message: String!
+    " Where the issue is, e.g. header.withholdingTaxFileNumber or balanceSheet "
+    path: String
   }
 
   " Shaam6111 report data "

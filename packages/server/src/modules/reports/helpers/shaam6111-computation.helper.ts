@@ -50,6 +50,14 @@ export type Shaam6111Entry = {
   label: string;
 };
 
+export type Shaam6111IssueSeverity = 'ERROR' | 'WARNING';
+
+export type Shaam6111Issue = {
+  severity: Shaam6111IssueSeverity;
+  message: string;
+  path?: string | null;
+};
+
 type LedgerRecordAmounts = {
   credit_entity1: string | null;
   credit_entity2: string | null;
@@ -501,4 +509,30 @@ export function buildTaxAdjustmentEntries(inputs: Shaam6111TaxAdjustmentInputs):
     map.set(code, amount + 0);
   }
   return toEntries(map, TAX_ADJUSTMENT_CODE_NAMES);
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * File preparation
+ * ---------------------------------------------------------------------------------------------- */
+
+/** Codes that must appear in the file even when zero (validated by SHAAM). */
+const REQUIRED_PROFIT_LOSS_CODES: ReadonlySet<number> = new Set([6666]);
+const REQUIRED_TAX_ADJUSTMENT_CODES: ReadonlySet<number> = new Set([100]);
+const REQUIRED_BALANCE_SHEET_CODES: ReadonlySet<number> = new Set([7000, 8888, 9000, 9999]);
+
+/**
+ * Keeps the lines that go into the file: SHAAM takes at most 150 lines per section, and the
+ * form lists ~150 P&L and ~165 balance sheet codes, so only the non-zero lines (and the
+ * mandatory totals) are reported.
+ */
+export function fileEntries<T extends { code: number; amount: number }>(
+  entries: readonly T[],
+  section: 'profitAndLoss' | 'taxAdjustment' | 'balanceSheet',
+): T[] {
+  const required = {
+    profitAndLoss: REQUIRED_PROFIT_LOSS_CODES,
+    taxAdjustment: REQUIRED_TAX_ADJUSTMENT_CODES,
+    balanceSheet: REQUIRED_BALANCE_SHEET_CODES,
+  }[section];
+  return entries.filter(entry => entry.amount !== 0 || required.has(entry.code));
 }

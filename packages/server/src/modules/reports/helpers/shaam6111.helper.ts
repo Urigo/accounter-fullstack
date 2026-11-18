@@ -11,6 +11,7 @@ import {
   ReportData,
   ReportEntry,
   ReportingMethod,
+  validateData,
   YesNo,
 } from '@accounter/shaam6111-generator';
 import type * as SchemaTypes from '../../../__generated__/types.js';
@@ -35,11 +36,16 @@ import {
   buildProfitAndLossEntries,
   buildTaxAdjustmentEntries,
   countRoundedLines,
+  fileEntries,
   netAmountsByFinancialEntity,
   profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
+  type Shaam6111Issue,
 } from './shaam6111-computation.helper.js';
 import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helper.js';
+
+/** The SHAAM 6111 file name, per the software-houses specification (IKSP/DKASPI.DAT). */
+export const SHAAM_6111_FILE_NAME = 'DKASPI.DAT';
 
 export async function getShaam6111Data(
   injector: Injector,
@@ -157,12 +163,12 @@ export async function getShaam6111Data(
     reportingMethod: 'ACCRUAL', // TODO: migrate to DB
     accountingMethod: 'DOUBLE_ENTRY', // TODO: migrate to DB
     accountingSystem: 'COMPUTERIZED',
-    includesProfitLoss: !!profitAndLoss.length,
-    includesTaxAdjustment: !!taxAdjustment.length,
-    includesBalanceSheet: !!balanceSheet.length,
-    profitLossEntryCount: profitAndLoss.length,
-    taxAdjustmentEntryCount: taxAdjustment.length,
-    balanceSheetEntryCount: balanceSheet.length,
+    includesProfitLoss: true,
+    includesTaxAdjustment: true,
+    includesBalanceSheet: true,
+    profitLossEntryCount: fileEntries(profitAndLoss, 'profitAndLoss').length,
+    taxAdjustmentEntryCount: fileEntries(taxAdjustment, 'taxAdjustment').length,
+    balanceSheetEntryCount: fileEntries(balanceSheet, 'balanceSheet').length,
     softwareRegistrationNumber: '99999999',
     isPartnership: false, // TODO: migrate to DB
     partnershipCount: undefined, // TODO: migrate to DB
@@ -183,6 +189,27 @@ export async function getShaam6111Data(
     individualOrCompany: 'INDIVIDUAL', // TODO: migrate to DB
   };
   return reportData;
+}
+
+/**
+ * Validates the report the way SHAAM will (the generator's rules on the lines that go into the
+ * file), and merges in the report's own diagnostics.
+ */
+export function validateShaam6111Report(
+  reportData: SchemaTypes.Shaam6111Data,
+  issues: readonly Shaam6111Issue[] = [],
+): { isValid: boolean; issues: Shaam6111Issue[] } {
+  const { errors } = validateData(convertLocalReportDataToShaam6111ReportData(reportData));
+  const validationIssues: Shaam6111Issue[] = (errors ?? []).map(error => ({
+    severity: 'ERROR',
+    path: error.path,
+    message: error.message,
+  }));
+  const allIssues = [...validationIssues, ...issues];
+  return {
+    isValid: !allIssues.some(issue => issue.severity === 'ERROR'),
+    issues: allIssues,
+  };
 }
 
 export function accountingMethodSafeParser(
@@ -352,19 +379,17 @@ export function yesNoToOptionalBoolean(yesNo?: YesNo): boolean | undefined {
 export function convertLocalReportDataToShaam6111ReportData(
   localReportData: SchemaTypes.Shaam6111Data,
 ): ReportData {
-  const profitAndLoss: ReportEntry[] = localReportData.profitAndLoss.map(entry => ({
-    code: entry.code,
-    amount: entry.amount,
-  }));
-  const taxAdjustment: ReportEntry[] = localReportData.taxAdjustment.map(entry => ({
-    code: entry.code,
-    amount: entry.amount,
-  }));
-  const balanceSheet: ReportEntry[] = localReportData.balanceSheet
-    ? localReportData.balanceSheet.map(entry => ({
-        code: entry.code,
-        amount: entry.amount,
-      }))
+  const toReportEntries = (entries: readonly SchemaTypes.Shaam6111ReportEntry[]): ReportEntry[] =>
+    entries.map(entry => ({ code: entry.code, amount: entry.amount }));
+  // Only the non-zero lines (and mandatory totals) go into the file: a section holds 150 lines
+  const profitAndLoss = toReportEntries(
+    fileEntries(localReportData.profitAndLoss, 'profitAndLoss'),
+  );
+  const taxAdjustment = toReportEntries(
+    fileEntries(localReportData.taxAdjustment, 'taxAdjustment'),
+  );
+  const balanceSheet = localReportData.balanceSheet
+    ? toReportEntries(fileEntries(localReportData.balanceSheet, 'balanceSheet'))
     : [];
   const adjustedReportData: ReportData = {
     profitAndLoss,
@@ -380,12 +405,12 @@ export function convertLocalReportDataToShaam6111ReportData(
       accountingMethod: accountingMethodSafeParser(localReportData.header.accountingMethod),
       accountingSystem: accountingSystemSafeParser(localReportData.header.accountingSystem),
       isPartnership: yesNoOptionalSafeParser(localReportData.header.isPartnership),
-      includesProfitLoss: yesNoSafeParser(localReportData.header.includesProfitLoss),
-      includesTaxAdjustment: yesNoSafeParser(localReportData.header.includesTaxAdjustment),
-      includesBalanceSheet: yesNoSafeParser(localReportData.header.includesBalanceSheet),
-      profitLossEntryCount: localReportData.profitAndLoss.length,
-      taxAdjustmentEntryCount: localReportData.taxAdjustment.length,
-      balanceSheetEntryCount: localReportData.balanceSheet?.length,
+      includesProfitLoss: yesNoSafeParser(profitAndLoss.length > 0),
+      includesTaxAdjustment: yesNoSafeParser(taxAdjustment.length > 0),
+      includesBalanceSheet: yesNoSafeParser(balanceSheet.length > 0),
+      profitLossEntryCount: profitAndLoss.length,
+      taxAdjustmentEntryCount: taxAdjustment.length,
+      balanceSheetEntryCount: balanceSheet.length,
       ifrsImplementationYear: localReportData.header.ifrsImplementationYear || undefined,
       ifrsReportingOption: localReportData.header.ifrsReportingOption
         ? ifrsReportingOptionSafeParser(localReportData.header.ifrsReportingOption)
@@ -398,7 +423,7 @@ export function convertLocalReportDataToShaam6111ReportData(
       amountsInThousands: yesNoSafeParser(localReportData.header.amountsInThousands),
     },
     individualOrCompany: individualOrCompanySafeParser(
-      localReportData.individualOrCompany ?? 'COMPANY', // TODO: deduce default value from header
+      localReportData.individualOrCompany ?? 'COMPANY',
     ),
   };
 
