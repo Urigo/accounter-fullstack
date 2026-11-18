@@ -16,8 +16,8 @@ const getChargesApprovalStatus = sql<IGetChargesApprovalStatusQuery>`
          COUNT(*) FILTER (WHERE accountant_status = 'UNAPPROVED') AS unapproved_charges
   FROM accounter_schema.extended_charges
   WHERE owner_id in $$ownerIds
-  AND GREATEST(documents_max_date, transactions_max_event_date, transactions_max_debit_date, ledger_max_invoice_date, ledger_max_value_date, securities_executions_max_date) >= $fromDate ::DATE
-  AND LEAST(documents_min_date, transactions_min_event_date, transactions_min_debit_date, ledger_min_invoice_date, ledger_min_value_date, securities_executions_min_date) <= $toDate ::DATE;`;
+  AND GREATEST(documents_max_date, transactions_max_event_date, transactions_max_debit_date, ledger_max_invoice_date, ledger_max_value_date) >= $fromDate ::DATE
+  AND LEAST(documents_min_date, transactions_min_event_date, transactions_min_debit_date, ledger_min_invoice_date, ledger_min_value_date) <= $toDate ::DATE;`;
 
 const degradeChargeAccountantApproval = sql<IDegradeChargeAccountantApprovalQuery>`
   UPDATE accounter_schema.charges
