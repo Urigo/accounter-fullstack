@@ -19,6 +19,7 @@ import corporateTaxRulingComplianceReport from './typeDefs/corporate-tax-ruling-
 import depreciationReport from './typeDefs/depreciation-report.graphql.js';
 import dynamicReportComments from './typeDefs/dynamic-report-comments.graphql.js';
 import dynamicReport from './typeDefs/dynamic-report.graphql.js';
+import irsCodesReport from './typeDefs/irs-codes-report.graphql.js';
 import pcn from './typeDefs/pcn.graphql.js';
 import profitAndLoss from './typeDefs/profit-and-loss.graphql.js';
 import securitiesSemiAnnualReport from './typeDefs/securities-semi-annual-report.graphql.js';
@@ -48,6 +49,7 @@ export const reportsModule = createModule({
     uniformFormat,
     annualRevenue,
     securitiesSemiAnnualReport,
+    irsCodesReport,
   ],
   resolvers: [
     reportsResolvers,
