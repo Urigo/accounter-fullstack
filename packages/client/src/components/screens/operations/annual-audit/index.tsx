@@ -293,7 +293,7 @@ export const AnnualAuditFlow = (): ReactNode => {
 
             <Step09SaveTemplate
               id="9"
-              title="Save Final Dynamic Report Template"
+              title="Save Final Dynamic Report Templates"
               icon={<FileText className="h-4 w-4" />}
               year={year}
               adminBusinessId={adminBusinessId}

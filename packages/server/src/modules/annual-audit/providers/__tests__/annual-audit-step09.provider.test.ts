@@ -23,7 +23,7 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     ) {
       return { run: runMocks.getStepStatusesRun };
     }
-    if (query.includes("VALUES ($ownerId, $year, '9', 'COMPLETED'")) {
+    if (query.includes("$ownerId, $year, '9', $status")) {
       return { run: runMocks.upsertStep09StatusRun };
     }
     if (query.includes('VALUES ($ownerId, $year, $stepId, $status')) {
@@ -59,12 +59,14 @@ vi.mock('@pgtyped/runtime', () => ({
 const dynamicReportProviderMock = {
   lockTemplate: vi.fn(),
   unlockTemplate: vi.fn(),
+  getTemplate: vi.fn(),
 };
 
 vi.mock('../../reports/providers/dynamic-report.provider.js', () => ({
   DynamicReportProvider: class {
     lockTemplate = dynamicReportProviderMock.lockTemplate;
     unlockTemplate = dynamicReportProviderMock.unlockTemplate;
+    getTemplate = dynamicReportProviderMock.getTemplate;
   },
 }));
 
@@ -104,6 +106,8 @@ describe('AnnualAuditProvider — setStep09Status', () => {
 
     db = { query: vi.fn() };
     adminContextProviderMock.getVerifiedAdminContext.mockResolvedValue({ ownerId: 'owner-1' });
+    // Templates are unlocked unless a test says otherwise
+    dynamicReportProviderMock.getTemplate.mockResolvedValue({ name: 'any', is_locked: false });
 
     provider = new AnnualAuditProvider(
       adminContextProviderMock as never,
@@ -112,11 +116,15 @@ describe('AnnualAuditProvider — setStep09Status', () => {
     );
   });
 
-  it('locks the new template and sets step 09 to COMPLETED on first call (no existing)', async () => {
+  it('locks the template for both reports and completes step 09 when reportType is omitted', async () => {
     pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([]);
     dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'template-A', is_locked: true });
+    const evidence = {
+      balanceSheetTemplateName: 'template-A',
+      profitAndLossTemplateName: 'template-A',
+    };
     pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([
-      makeStepRow({ evidence_json: { lockedTemplateName: 'template-A' } }),
+      makeStepRow({ evidence_json: evidence }),
     ]);
 
     const result = await provider.setStep09Status({
@@ -130,9 +138,223 @@ describe('AnnualAuditProvider — setStep09Status', () => {
       name: 'template-A',
       ownerId: 'owner-1',
     });
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2024,
+        status: 'COMPLETED',
+        evidenceJson: JSON.stringify(evidence),
+      },
+      db,
+    );
     expect(result.status).toBe('COMPLETED');
     expect(result.stepId).toBe('9');
-    expect(result.evidence).toBe(JSON.stringify({ lockedTemplateName: 'template-A' }));
+    expect(result.evidence).toBe(JSON.stringify(evidence));
+  });
+
+  it('keeps step 09 IN_PROGRESS while only one report template is locked', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([]);
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'bs-2024', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'bs-2024',
+      reportType: 'BALANCE_SHEET',
+    });
+
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2024,
+        status: 'IN_PROGRESS',
+        evidenceJson: JSON.stringify({ balanceSheetTemplateName: 'bs-2024' }),
+      },
+      db,
+    );
+  });
+
+  it('completes step 09 once the second report template is locked', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({ status: 'IN_PROGRESS', evidence_json: { balanceSheetTemplateName: 'bs-2024' } }),
+    ]);
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'pnl-2024', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'pnl-2024',
+      reportType: 'PROFIT_AND_LOSS',
+    });
+
+    expect(dynamicReportProviderMock.unlockTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2024,
+        status: 'COMPLETED',
+        evidenceJson: JSON.stringify({
+          balanceSheetTemplateName: 'bs-2024',
+          profitAndLossTemplateName: 'pnl-2024',
+        }),
+      },
+      db,
+    );
+  });
+
+  it('replacing one report keeps the shared template locked while the other report uses it', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({
+        evidence_json: {
+          balanceSheetTemplateName: 'shared',
+          profitAndLossTemplateName: 'shared',
+        },
+      }),
+    ]);
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'bs-new', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'bs-new',
+      reportType: 'BALANCE_SHEET',
+    });
+
+    expect(dynamicReportProviderMock.unlockTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.resetStep09ForTemplateRun).not.toHaveBeenCalled();
+  });
+
+  it('replacing one report unlocks its old template when nothing else uses it', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({
+        evidence_json: {
+          balanceSheetTemplateName: 'bs-old',
+          profitAndLossTemplateName: 'pnl',
+        },
+      }),
+    ]);
+    dynamicReportProviderMock.unlockTemplate.mockResolvedValue({ name: 'bs-old', is_locked: false });
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'bs-new', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'bs-new',
+      reportType: 'BALANCE_SHEET',
+    });
+
+    expect(dynamicReportProviderMock.unlockTemplate).toHaveBeenCalledTimes(1);
+    expect(dynamicReportProviderMock.unlockTemplate).toHaveBeenCalledWith({
+      name: 'bs-old',
+      ownerId: 'owner-1',
+    });
+    expect(pgTypedRuntimeMock.runMocks.resetStep09ForTemplateRun).toHaveBeenCalledWith(
+      { ownerId: 'owner-1', templateName: 'bs-old' },
+      db,
+    );
+  });
+
+  it('replacing the only locked report keeps the other report unset', async () => {
+    // Only the Balance Sheet is locked so far
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({ status: 'IN_PROGRESS', evidence_json: { balanceSheetTemplateName: 'bs-a' } }),
+    ]);
+    dynamicReportProviderMock.unlockTemplate.mockResolvedValue({ name: 'bs-a', is_locked: false });
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'bs-c', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'bs-c',
+      reportType: 'BALANCE_SHEET',
+    });
+
+    // The old Balance Sheet template is released, not kept on as the P&L template
+    expect(dynamicReportProviderMock.unlockTemplate).toHaveBeenCalledWith({
+      name: 'bs-a',
+      ownerId: 'owner-1',
+    });
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2024,
+        status: 'IN_PROGRESS',
+        evidenceJson: JSON.stringify({ balanceSheetTemplateName: 'bs-c' }),
+      },
+      db,
+    );
+  });
+
+  it("refuses a template locked as another year's final template", async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([]);
+    dynamicReportProviderMock.getTemplate.mockResolvedValue({ name: 'final-2023', is_locked: true });
+
+    await expect(
+      provider.setStep09Status({
+        ownerId: 'owner-1',
+        year: 2024,
+        templateName: 'final-2023',
+        reportType: 'BALANCE_SHEET',
+      }),
+    ).rejects.toThrow('locked as another year\'s final template');
+    expect(dynamicReportProviderMock.lockTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).not.toHaveBeenCalled();
+  });
+
+  it("lets a year use its own locked template for the other report", async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({ status: 'IN_PROGRESS', evidence_json: { balanceSheetTemplateName: 'shared' } }),
+    ]);
+    dynamicReportProviderMock.getTemplate.mockResolvedValue({ name: 'shared', is_locked: true });
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'shared', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'shared',
+      reportType: 'PROFIT_AND_LOSS',
+    });
+
+    expect(dynamicReportProviderMock.getTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'COMPLETED' }),
+      db,
+    );
+  });
+
+  it('legacy single-template evidence keeps serving the report that is not being replaced', async () => {
+    pgTypedRuntimeMock.runMocks.getStepStatusRun.mockResolvedValue([
+      makeStepRow({ evidence_json: { lockedTemplateName: 'legacy' } }),
+    ]);
+    dynamicReportProviderMock.lockTemplate.mockResolvedValue({ name: 'pnl-new', is_locked: true });
+    pgTypedRuntimeMock.runMocks.upsertStep09StatusRun.mockResolvedValue([makeStepRow()]);
+
+    await provider.setStep09Status({
+      ownerId: 'owner-1',
+      year: 2024,
+      templateName: 'pnl-new',
+      reportType: 'PROFIT_AND_LOSS',
+    });
+
+    expect(dynamicReportProviderMock.unlockTemplate).not.toHaveBeenCalled();
+    expect(pgTypedRuntimeMock.runMocks.upsertStep09StatusRun).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        year: 2024,
+        status: 'COMPLETED',
+        evidenceJson: JSON.stringify({
+          balanceSheetTemplateName: 'legacy',
+          profitAndLossTemplateName: 'pnl-new',
+        }),
+      },
+      db,
+    );
   });
 
   it('unlocks the old template and locks the new one on re-selection', async () => {
@@ -241,3 +463,4 @@ describe('AnnualAuditProvider — resetStep09ForTemplate', () => {
     );
   });
 });
+

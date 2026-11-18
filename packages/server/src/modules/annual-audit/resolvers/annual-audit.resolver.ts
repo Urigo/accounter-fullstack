@@ -48,6 +48,7 @@ export const annualAuditResolvers: AnnualAuditModule.Resolvers = {
           ownerId: input.ownerId,
           year: input.year,
           templateName: input.templateName,
+          reportType: input.reportType,
         });
       } catch (error) {
         throw errorSimplifier(

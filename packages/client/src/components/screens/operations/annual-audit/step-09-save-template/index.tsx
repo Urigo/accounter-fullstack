@@ -1,19 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { useSetAnnualAuditStep09Status } from '@/hooks/use-set-annual-audit-step09-status.js';
 import {
   AllDynamicReportsDocument,
+  AnnualAuditReportType,
   AnnualAuditStepStatus,
   Step09SaveTemplateStatusDocument,
 } from '../../../../../gql/graphql.js';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../../../ui/select.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
+import { selectableTemplateOptions, TemplateSelect } from '../template-select.js';
+import { parseLockedTemplates } from '../template-slots.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -32,6 +28,52 @@ interface Step09Props extends BaseStepProps {
   adminBusinessId?: string;
 }
 
+interface FinalSlotProps {
+  label: string;
+  reportType: AnnualAuditReportType;
+  finalName: string | null;
+  templates: ReadonlyArray<{ name: string; isLocked: boolean }>;
+  /** Names this year's step 09 already locks — they stay selectable in both pickers */
+  lockedNames: ReadonlyArray<string | null>;
+  onSelect: (reportType: AnnualAuditReportType, templateName: string) => void;
+  saving: boolean;
+}
+
+function FinalSlot({
+  label,
+  reportType,
+  finalName,
+  templates,
+  lockedNames,
+  onSelect,
+  saving,
+}: FinalSlotProps): ReactElement {
+  const options = useMemo(
+    () => selectableTemplateOptions(templates, lockedNames),
+    [templates, lockedNames],
+  );
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-4 gap-y-2"
+      data-testid={`final-${reportType}`}
+    >
+      <div className="w-32 text-sm font-medium">{label}</div>
+      <TemplateSelect
+        value={finalName}
+        options={options}
+        placeholder="Select a report template..."
+        onChange={name => {
+          if (name) onSelect(reportType, name);
+        }}
+        disabled={saving}
+        ariaLabel={`Final ${label} template`}
+      />
+      {finalName && <span className="text-sm text-muted-foreground">Locked: {finalName}</span>}
+    </div>
+  );
+}
+
 export function Step09SaveTemplate(props: Step09Props) {
   const [status, setStatus] = useState<StepStatus>('pending');
   const { adminBusinessId, id, onStatusChange, year } = props;
@@ -43,28 +85,21 @@ export function Step09SaveTemplate(props: Step09Props) {
     pause: !adminBusinessId,
   });
 
-  const [{ data: templatesData, fetching: fetchingTemplates }] = useQuery({
+  const [{ data: templatesData, fetching: fetchingTemplates }, refetchTemplates] = useQuery({
     query: AllDynamicReportsDocument,
   });
 
   // Report status changes to parent
   useEffect(() => onStatusChange?.(id, status), [status, onStatusChange, id]);
 
-  // Derive step 9 evidence from fetched step statuses
   const step09Record = useMemo(
     () => statusData?.annualAuditStepStatuses.find(s => s.stepId === id),
     [statusData, id],
   );
 
-  const lockedTemplateName = useMemo<string | null>(() => {
-    if (!step09Record?.evidence) return null;
-    try {
-      const parsed = JSON.parse(step09Record.evidence) as { lockedTemplateName?: string };
-      return parsed.lockedTemplateName ?? null;
-    } catch {
-      return null;
-    }
-  }, [step09Record]);
+  // What this year actually locks, per report: a report not locked yet stays empty in its picker
+  const final = useMemo(() => parseLockedTemplates(step09Record?.evidence), [step09Record]);
+  const bothLocked = !!final.balanceSheetTemplateName && !!final.profitAndLossTemplateName;
 
   // Update status badge
   useEffect(() => {
@@ -72,76 +107,71 @@ export function Step09SaveTemplate(props: Step09Props) {
       setStatus('blocked');
     } else if (fetchingStatus || fetchingTemplates || saving) {
       setStatus('loading');
-    } else if (step09Record?.status === AnnualAuditStepStatus.Completed && lockedTemplateName) {
+    } else if (step09Record?.status === AnnualAuditStepStatus.Completed && bothLocked) {
       setStatus('completed');
+    } else if (step09Record?.status === AnnualAuditStepStatus.InProgress) {
+      setStatus('in-progress');
     } else {
       setStatus('pending');
     }
-  }, [
-    adminBusinessId,
-    fetchingStatus,
-    fetchingTemplates,
-    saving,
-    step09Record,
-    lockedTemplateName,
-  ]);
+  }, [adminBusinessId, fetchingStatus, fetchingTemplates, saving, step09Record, bothLocked]);
 
   const templates = useMemo(() => templatesData?.allDynamicReports ?? [], [templatesData]);
-
-  // Templates available to select: unlocked ones, plus the currently locked one (if set)
-  const selectableTemplates = useMemo(
-    () => templates.filter(t => !t.isLocked || t.name === lockedTemplateName),
-    [templates, lockedTemplateName],
+  const lockedNames = useMemo(
+    () => [final.balanceSheetTemplateName, final.profitAndLossTemplateName],
+    [final],
   );
+
+  const afterSave = useCallback(() => {
+    refetchStatus({ requestPolicy: 'network-only' });
+    // Locking changes which templates are selectable
+    refetchTemplates({ requestPolicy: 'network-only' });
+  }, [refetchStatus, refetchTemplates]);
 
   const onTemplateSelected = useCallback(
-    async (templateName: string) => {
+    async (reportType: AnnualAuditReportType, templateName: string) => {
       if (!adminBusinessId) return;
-      await setStep09Status({ input: { ownerId: adminBusinessId, year, templateName } });
-      refetchStatus();
+      const saved = await setStep09Status({
+        input: { ownerId: adminBusinessId, year, templateName, reportType },
+      });
+      // A failed save already showed its error; nothing changed to refetch
+      if (saved) afterSave();
     },
-    [adminBusinessId, year, setStep09Status, refetchStatus],
+    [adminBusinessId, year, setStep09Status, afterSave],
   );
 
+  const description = useMemo(() => {
+    if (status !== 'completed') {
+      return 'Select the final Balance Sheet and Profit and Loss templates to lock for this fiscal year';
+    }
+    if (final.balanceSheetTemplateName === final.profitAndLossTemplateName) {
+      return `Final template: ${final.balanceSheetTemplateName}`;
+    }
+    return `Final templates: Balance Sheet ${final.balanceSheetTemplateName} · Profit and Loss ${final.profitAndLossTemplateName}`;
+  }, [status, final]);
+
   return (
-    <BaseStepCard
-      {...props}
-      status={status}
-      description={
-        status === 'completed'
-          ? `Final template: ${lockedTemplateName}`
-          : 'Select the final dynamic report template to lock for this fiscal year'
-      }
-    >
+    <BaseStepCard {...props} status={status} description={description}>
       {adminBusinessId && !fetchingTemplates && !fetchingStatus && (
-        <div className="px-6 pb-4">
-          <div className="flex items-center gap-2">
-            <Select
-              value={lockedTemplateName ?? ''}
-              onValueChange={onTemplateSelected}
-              disabled={saving}
-            >
-              <SelectTrigger className="w-[280px]">
-                <SelectValue placeholder="Select a report template..." />
-              </SelectTrigger>
-              <SelectContent>
-                {selectableTemplates.length === 0 ? (
-                  <SelectItem value="__none__" disabled>
-                    No unlocked templates available
-                  </SelectItem>
-                ) : (
-                  selectableTemplates.map(t => (
-                    <SelectItem key={t.id} value={t.name}>
-                      {t.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {lockedTemplateName && (
-              <span className="text-sm text-muted-foreground">Saved: {lockedTemplateName}</span>
-            )}
-          </div>
+        <div className="space-y-3 px-6 pb-4">
+          <FinalSlot
+            label="Balance Sheet"
+            reportType={AnnualAuditReportType.BalanceSheet}
+            finalName={final.balanceSheetTemplateName}
+            templates={templates}
+            lockedNames={lockedNames}
+            onSelect={onTemplateSelected}
+            saving={saving}
+          />
+          <FinalSlot
+            label="Profit and Loss"
+            reportType={AnnualAuditReportType.ProfitAndLoss}
+            finalName={final.profitAndLossTemplateName}
+            templates={templates}
+            lockedNames={lockedNames}
+            onSelect={onTemplateSelected}
+            saving={saving}
+          />
         </div>
       )}
     </BaseStepCard>
