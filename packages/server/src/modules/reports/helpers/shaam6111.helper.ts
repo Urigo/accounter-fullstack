@@ -50,7 +50,11 @@ import {
   retainedProfitFromProfitAndLoss,
   type Shaam6111Issue,
 } from './shaam6111-computation.helper.js';
-import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helper.js';
+import {
+  calculateCumulativeRnDExpenses,
+  calculateTaxAmounts,
+  researchAndDevelopmentForTax,
+} from './tax.helper.js';
 
 /** The SHAAM 6111 file name, per the software-houses specification (IKSP/DKASPI.DAT). */
 export const SHAAM_6111_FILE_NAME = 'DKASPI.DAT';
@@ -237,7 +241,8 @@ export async function getShaam6111Data(
   const yearProfitLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
   const profitLossByYear = new Map([[year, yearProfitLoss]]);
   const { profitBeforeTax, researchAndDevelopmentExpenses } = yearProfitLoss;
-  const researchAndDevelopmentAddBack = researchAndDevelopmentExpenses.amount * -1;
+  const researchAndDevelopmentAddBack =
+    researchAndDevelopmentForTax(researchAndDevelopmentExpenses).amount * -1;
   const taxableCumulativeResearchAndDevelopment =
     calculateCumulativeRnDExpenses(year, decoratedLedgerByYear, profitLossByYear) / 3;
   const taxAmounts = await calculateTaxAmounts(

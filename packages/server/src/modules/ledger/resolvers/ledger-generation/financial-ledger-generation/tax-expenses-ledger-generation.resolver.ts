@@ -22,6 +22,7 @@ import {
 import {
   calculateCumulativeRnDExpenses,
   calculateTaxAmounts,
+  researchAndDevelopmentForTax,
 } from '../../../../reports/helpers/tax.helper.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../../helpers/misc-expenses-ledger.helper.js';
@@ -116,7 +117,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       injector,
       year,
       decoratedLedgerByYear.get(year) ?? [],
-      researchAndDevelopmentExpenses.amount * -1,
+      researchAndDevelopmentForTax(researchAndDevelopmentExpenses).amount * -1,
       taxableCumulativeResearchAndDevelopmentExpensesAmount,
       profitBeforeTax.amount,
     );

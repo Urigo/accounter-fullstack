@@ -7,12 +7,29 @@ import { businessTripSummary } from '../../business-trips/resolvers/business-tri
 import { BusinessTripProto } from '../../business-trips/types.js';
 import { CorporateTaxesProvider } from '../../corporate-taxes/providers/corporate-taxes.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
+import type { CommentaryProto } from '../types.js';
 import {
   amountByFinancialEntityIdAndSortCodeValidations,
   FilteringOptions,
   recordsByFinancialEntityIdAndSortCodeValidations,
 } from './misc.helper.js';
 import { DecoratedLedgerRecord, getProfitLossReportAmounts } from './profit-and-loss.helper.js';
+
+const RESERVES_SORT_CODE = 931;
+
+/**
+ * R&D for the tax computation. Reserves (931) are part of R&D in the P&L, but for tax they are
+ * adjusted once, as reserves (6111 line 150), and never go through the section 20A spread.
+ */
+export function researchAndDevelopmentForTax(researchAndDevelopment: CommentaryProto) {
+  const records = researchAndDevelopment.records.filter(
+    record => record.sortCode !== RESERVES_SORT_CODE,
+  );
+  return {
+    amount: records.reduce((sum, record) => sum + record.amount, 0),
+    records,
+  } satisfies CommentaryProto;
+}
 
 export async function calculateTaxAmounts(
   injector: Injector,
@@ -71,7 +88,7 @@ export async function calculateTaxAmounts(
   };
   const reservesFilter: FilteringOptions = {
     rule: (financialEntityId, sortCode) =>
-      sortCode === 931 && !excludedTaxCategories.includes(financialEntityId),
+      sortCode === RESERVES_SORT_CODE && !excludedTaxCategories.includes(financialEntityId),
     negate: true,
   };
   const nontaxableLinkageFilter: FilteringOptions = {
@@ -176,8 +193,9 @@ export function calculateCumulativeRnDExpenses(
       profitLossByYear.set(rndYear, profitLossHelperReportAmounts);
     }
 
-    cumulativeResearchAndDevelopmentExpensesAmount +=
-      profitLossHelperReportAmounts.researchAndDevelopmentExpenses.amount;
+    cumulativeResearchAndDevelopmentExpensesAmount += researchAndDevelopmentForTax(
+      profitLossHelperReportAmounts.researchAndDevelopmentExpenses,
+    ).amount;
   }
 
   return cumulativeResearchAndDevelopmentExpensesAmount;
