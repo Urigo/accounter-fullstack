@@ -47,6 +47,11 @@ const updateFinancialEntity = sql<IUpdateFinancialEntityQuery>`
     $irsCode,
     irs_code
   ),
+  -- 0 clears the contra code (NULL leaves it unchanged)
+  contra_irs_code = CASE
+    WHEN $contraIrsCode::smallint = 0 THEN NULL
+    ELSE COALESCE($contraIrsCode::smallint, contra_irs_code)
+  END,
   is_active = COALESCE(
     $isActive,
     is_active

@@ -14,7 +14,8 @@ export function generateHeaderRecord(header: HeaderRecord): string {
     padOrTrim(header.vatFileNumber ?? '', 9) +
     padOrTrim(header.withholdingTaxFileNumber ?? '', 9) +
     padOrTrim(header.industryCode, 4) +
-    padOrTrim(header.businessDescription ?? '', 50, ' ', false) +
+    // right-aligned (Hebrew text), per the spec
+    padOrTrim(header.businessDescription ?? '', 50, ' ') +
     padOrTrim(header.businessType.toString(), 2, '0') +
     padOrTrim(header.reportingMethod.toString(), 2, '0') +
     padOrTrim(header.accountingMethod.toString(), 2, '0') +

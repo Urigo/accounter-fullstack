@@ -71,6 +71,7 @@ import {
     id
     pcn874RecordType
     irsCode
+    contraIrsCode
     isActive
     ownerId
     ... on LtdFinancialEntity {
@@ -117,6 +118,7 @@ interface ConfigurationFormValues {
   taxCategory: string;
   pcn874RecordType: Pcn874RecordType;
   irsCode: number | null;
+  contraIrsCode: number | null;
   description: string;
   tags: string[];
   phrases: string[];
@@ -146,6 +148,7 @@ function ConfigurationsSectionFragmentToFormValues(
     taxCategory: business.taxCategory?.id ?? undefined,
     pcn874RecordType: business?.pcn874RecordType ?? undefined,
     irsCode: business?.irsCode ?? undefined,
+    contraIrsCode: business?.contraIrsCode ?? undefined,
     description: business.suggestions?.description ?? undefined,
     tags: business.suggestions?.tags?.map(tag => tag.id) ?? [],
     phrases: business.suggestions?.phrases ?? [],
@@ -190,6 +193,8 @@ function convertFormDataToUpdateBusinessInput(
     taxCategory: formData.taxCategory,
     pcn874RecordType: formData.pcn874RecordType,
     irsCode: formData.irsCode,
+    // 0 clears the contra code on the server
+    contraIrsCode: formData.contraIrsCode === null ? 0 : formData.contraIrsCode,
     isActive: formData.isActive,
     isReceiptEnough: formData.isReceiptEnough,
     isDocumentsOptional: formData.isDocumentsOptional,
@@ -231,13 +236,24 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
 
     const dirtyFields = form.formState.dirtyFields as MakeBoolean<typeof values>;
     const isIrsCodeCleared = dirtyFields.irsCode === true && values.irsCode === null;
-    const valuesForDirtyPicker = isIrsCodeCleared ? { ...values, irsCode: undefined } : values;
+    const isContraIrsCodeCleared =
+      dirtyFields.contraIrsCode === true && values.contraIrsCode === null;
+    const valuesForDirtyPicker = {
+      ...values,
+      ...(isIrsCodeCleared ? { irsCode: undefined } : {}),
+      ...(isContraIrsCodeCleared ? { contraIrsCode: undefined } : {}),
+    };
 
     const dataToUpdate = relevantDataPicker(valuesForDirtyPicker, dirtyFields);
 
-    const normalizedDataToUpdate = isIrsCodeCleared
-      ? { ...dataToUpdate, irsCode: null }
-      : dataToUpdate;
+    const normalizedDataToUpdate =
+      isIrsCodeCleared || isContraIrsCodeCleared
+        ? {
+            ...dataToUpdate,
+            ...(isIrsCodeCleared ? { irsCode: null } : {}),
+            ...(isContraIrsCodeCleared ? { contraIrsCode: null } : {}),
+          }
+        : dataToUpdate;
 
     if (!normalizedDataToUpdate) return;
 
@@ -565,6 +581,26 @@ function DefaultSettingsSubSection({
           render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>IRS Code</FormLabel>
+              <FormControl>
+                <NumberInput
+                  value={field.value ?? undefined}
+                  onValueChange={value => field.onChange(value ?? null)}
+                  hideControls
+                  decimalScale={0}
+                  className={dirtyFieldMarker(fieldState)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="contraIrsCode"
+          render={({ field, fieldState }) => (
+            <FormItem>
+              <FormLabel>Contra IRS Code</FormLabel>
               <FormControl>
                 <NumberInput
                   value={field.value ?? undefined}

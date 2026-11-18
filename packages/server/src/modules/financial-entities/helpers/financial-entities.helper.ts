@@ -4,6 +4,7 @@ export function hasFinancialEntitiesCoreProperties(proto: object): boolean {
     keys.includes('name') ||
     keys.includes('sortCode') ||
     keys.includes('irsCode') ||
+    keys.includes('contraIrsCode') ||
     keys.includes('isActive')
   );
 }

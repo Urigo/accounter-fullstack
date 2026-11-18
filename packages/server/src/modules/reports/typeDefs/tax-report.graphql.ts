@@ -24,6 +24,8 @@ export default gql`
 
     fines: ReportCommentary!
     untaxableGifts: ReportCommentary!
+    " Donations (non-deductible; tax category set in the admin context) "
+    donations: ReportCommentary!
     businessTripsExcessExpensesAmount: FinancialAmount!
     salaryExcessExpensesAmount: FinancialAmount!
     reserves: ReportCommentary!

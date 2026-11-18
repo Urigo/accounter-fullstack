@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import { type UseFormReturn } from 'react-hook-form';
+import { type Control, type UseFormReturn } from 'react-hook-form';
 import type { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { dirtyFieldMarker } from '../../../helpers/index.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
@@ -98,6 +98,28 @@ export function ModifyTaxCategoryFields({
           </FormItem>
         )}
       />
+
+      {!isInsert && (
+        <FormField
+          name="contraIrsCode"
+          control={control as unknown as Control<UpdateTaxCategoryInput>}
+          render={({ field, fieldState }): ReactElement => (
+            <FormItem>
+              <FormLabel>Contra IRS Code (opposite-side balance)</FormLabel>
+              <FormControl>
+                <NumberInput
+                  {...field}
+                  className={dirtyFieldMarker(fieldState)}
+                  value={field.value ?? undefined}
+                  hideControls
+                  decimalScale={0}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         control={control}

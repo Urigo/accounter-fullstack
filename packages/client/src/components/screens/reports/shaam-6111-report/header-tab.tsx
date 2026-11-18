@@ -1,20 +1,26 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
 import { Fragment } from 'react/jsx-runtime';
 import {
-  AccountingMethod,
-  AccountingSystem,
-  AuditOpinionType,
-  BusinessType,
-  CurrencyType,
-  IfrsReportingOption,
   ReportingMethod,
   Shaam6111DataContentHeaderBusinessFragmentDoc,
   Shaam6111DataContentHeaderFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
+import { Alert, AlertDescription, AlertTitle } from '../../../ui/alert.js';
 import { TabsContent } from '../../../ui/tabs.js';
 import { DataField } from './data-field.js';
+import {
+  getAccountingMethodText,
+  getAccountingSystemText,
+  getAuditOpinionTypeText,
+  getBusinessTypeText,
+  getCurrencyTypeText,
+  getIfrsReportingOptionText,
+  getReportingMethodText,
+} from './header-labels.js';
+import { HeaderSettingsDialog } from './header-settings-dialog.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -57,105 +63,6 @@ import { DataField } from './data-field.js';
   }
 `;
 
-const getBusinessTypeText = (type: BusinessType) => {
-  switch (type) {
-    case BusinessType.Industrial:
-      return 'תעשייתי';
-    case BusinessType.Commercial:
-      return 'מסחרי';
-    case BusinessType.Service:
-      return 'נותני שירותים';
-    case BusinessType.Multiple:
-      return 'הדיווח כולל יותר מעסק אחד';
-    case BusinessType.Combination:
-      return 'שילוב';
-    default:
-      return '';
-  }
-};
-
-const getReportingMethodText = (method: ReportingMethod) => {
-  switch (method) {
-    case ReportingMethod.Cash:
-      return 'מזומן';
-    case ReportingMethod.Accrual:
-      return 'מצטבר';
-    case ReportingMethod.DollarRegulations:
-      return 'לפי תקנות דולריות';
-    default:
-      return '';
-  }
-};
-
-const getCurrencyTypeText = (type: CurrencyType) => {
-  switch (type) {
-    case CurrencyType.Shekels:
-      return 'שקלים';
-    case CurrencyType.Dollars:
-      return 'דולרים';
-    default:
-      return '';
-  }
-};
-
-const getAccountingMethodText = (method: AccountingMethod) => {
-  switch (method) {
-    case AccountingMethod.DoubleEntry:
-      return 'כפולה';
-    case AccountingMethod.SingleEntry:
-      return 'חד-צידית';
-    default:
-      return '';
-  }
-};
-
-const getAccountingSystemText = (system: AccountingSystem) => {
-  switch (system) {
-    case AccountingSystem.Computerized:
-      return 'ממוחשב';
-    case AccountingSystem.Manual:
-      return 'ידני';
-    default:
-      return '';
-  }
-};
-
-const getIfrsReportingOptionText = (option?: IfrsReportingOption | null) => {
-  switch (option) {
-    case IfrsReportingOption.Option_1:
-      return 'חלופה 1';
-    case IfrsReportingOption.Option_2Adjustments:
-      return 'התאמות חשבונאיות למי שיישם את חלופה 2 בהוראת ביצוע 7/2010';
-    case IfrsReportingOption.Option_3Adjustments:
-      return 'התאמות חשבונאיות למי שיישם את חלופה 3 בהוראת ביצוע 7/2010';
-    case IfrsReportingOption.None:
-      return 'ללא חלופה';
-    default:
-      return '';
-  }
-};
-
-const getAuditOpinionTypeText = (type?: AuditOpinionType | null) => {
-  switch (type) {
-    case AuditOpinionType.Unqualified:
-      return 'נוסח אחיד (בלתי מסוייג)';
-    case AuditOpinionType.UnqualifiedWithGoingConcern:
-      return 'בנוסח אחיד עם הפניית תשומת לב להערת עסק חי';
-    case AuditOpinionType.UnqualifiedWithOtherEmphases:
-      return 'בנוסח אחיד עם הפניות תשומת לב אחרת';
-    case AuditOpinionType.Qualified:
-      return 'הסתייגות';
-    case AuditOpinionType.Adverse:
-      return 'שלילית';
-    case AuditOpinionType.Disclaimer:
-      return 'המנעות';
-    case AuditOpinionType.None:
-      return 'אין חוות דעת';
-    default:
-      return '';
-  }
-};
-
 const getBooleanText = (value: boolean) => {
   if (value === undefined || value === null) return '';
   return value ? 'כן' : 'לא';
@@ -164,13 +71,46 @@ const getBooleanText = (value: boolean) => {
 type HeaderTabProps = {
   data: FragmentType<typeof Shaam6111DataContentHeaderFragmentDoc>;
   businessInfo: FragmentType<typeof Shaam6111DataContentHeaderBusinessFragmentDoc>;
+  businessId: string;
+  year: number;
+  /** Header warnings (unset fields), from the report validation */
+  warnings: string[];
+  onSettingsSaved?: () => void;
 };
 
-export function HeaderTab({ data, businessInfo }: HeaderTabProps) {
+export function HeaderTab({
+  data,
+  businessInfo,
+  businessId,
+  year,
+  warnings,
+  onSettingsSaved,
+}: HeaderTabProps) {
   const { header } = getFragmentData(Shaam6111DataContentHeaderFragmentDoc, data);
   const business = getFragmentData(Shaam6111DataContentHeaderBusinessFragmentDoc, businessInfo);
   return (
     <TabsContent value="header" className="border rounded-md p-4">
+      <div className="flex justify-end mb-4" dir="rtl">
+        <HeaderSettingsDialog
+          businessId={businessId}
+          year={year}
+          initialValues={header}
+          onSaved={onSettingsSaved}
+        />
+      </div>
+      {warnings.length > 0 && (
+        <Alert className="mb-4 border-amber-300 bg-amber-50 text-amber-900" dir="ltr">
+          <AlertTriangle className="h-4 w-4 text-amber-700!" />
+          <AlertTitle>Header fields to set</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4">
+              {warnings.map(warning => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6" dir="rtl">
         <div className="space-y-4">
           <h3 className="text-lg font-bold border-b pb-2">פרטים מזהים</h3>

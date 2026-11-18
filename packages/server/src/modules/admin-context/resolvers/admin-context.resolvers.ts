@@ -547,6 +547,14 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
         'salaryExcessExpensesTaxCategory',
         dbAdminContext.general.taxCategories.salaryExcessExpensesTaxCategoryId,
       ),
+    donationsTaxCategory: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.general.taxCategories.donationsTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'donationsTaxCategory',
+            dbAdminContext.general.taxCategories.donationsTaxCategoryId,
+          )
+        : null,
     ledgerLock: dbAdminContext => dbAdminContext.ledgerLock ?? null,
     dateEstablished: dbAdminContext => dbAdminContext.dateEstablished ?? null,
     initialAccounterYear: dbAdminContext => dbAdminContext.initialAccounterYear ?? null,

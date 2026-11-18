@@ -91,6 +91,7 @@ export const taxReport: ResolverFn<
       researchAndDevelopmentExpensesForTax,
       fines,
       untaxableGifts,
+      donations,
       businessTripsExcessExpensesAmount,
       salaryExcessExpensesAmount,
       reserves,
@@ -126,6 +127,7 @@ export const taxReport: ResolverFn<
       researchAndDevelopmentExpensesForTax,
       fines,
       untaxableGifts,
+      donations,
       businessTripsExcessExpensesAmount,
       salaryExcessExpensesAmount,
       reserves,
@@ -192,6 +194,15 @@ export const taxReportYearMapper: TaxReportYearResolvers = {
     return {
       amount: formatFinancialAmount(parent.untaxableGifts.amount, defaultLocalCurrency),
       records: parent.untaxableGifts.records,
+    };
+  },
+  donations: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(parent.donations.amount, defaultLocalCurrency),
+      records: parent.donations.records,
     };
   },
   businessTripsExcessExpensesAmount: async (parent, _, { injector }) => {

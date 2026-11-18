@@ -18,6 +18,11 @@ export type * from './__generated__/dynamic-report-comments.types.js';
 export type * from './__generated__/balance-report.types.js';
 export type * from './__generated__/vat-report.types.js';
 export type * from './__generated__/annual-revenue-report.types.js';
+export type {
+  IGetShaam6111SettingsUpToYearQuery,
+  IGetShaam6111SettingsUpToYearResult,
+  IUpsertShaam6111SettingsQuery,
+} from './__generated__/shaam6111-settings.types.js';
 
 /**
  * Stamp stored per leaf in `dynamic_report_template_snapshots.leaf_approvals`. A report-level
@@ -85,6 +90,7 @@ export type TaxReportYearProto = {
   researchAndDevelopmentExpensesForTax: number;
   fines: CommentaryProto;
   untaxableGifts: CommentaryProto;
+  donations: CommentaryProto;
   businessTripsExcessExpensesAmount: number;
   salaryExcessExpensesAmount: number;
   reserves: CommentaryProto;
@@ -125,4 +131,6 @@ export type Shaam6111ReportProto = {
   businessId: string;
   /** Diagnostics found while computing the report (mapping gaps, missing header data) */
   issues: Shaam6111Issue[];
+  /** The year's manual tax-adjustment amounts, by line code */
+  taxAdjustmentOverrides: Record<string, number>;
 };

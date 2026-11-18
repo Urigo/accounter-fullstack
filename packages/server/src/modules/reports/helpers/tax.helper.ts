@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import type { AdminContext } from '../../admin-context/types.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { businessTripSummary } from '../../business-trips/resolvers/business-trip-summary.resolver.js';
 import { BusinessTripProto } from '../../business-trips/types.js';
@@ -21,6 +22,8 @@ export async function calculateTaxAmounts(
   yearlyResearchAndDevelopmentExpensesAmount: number,
   threeYearsResearchAndDevelopmentExpensesForTax: number,
   profitBeforeTaxAmount: number,
+  /** The reported business's admin context; defaults to the logged-in one */
+  adminContext?: AdminContext,
 ) {
   const {
     general: {
@@ -28,9 +31,10 @@ export async function calculateTaxAmounts(
         fineTaxCategoryId,
         untaxableGiftsTaxCategoryId,
         salaryExcessExpensesTaxCategoryId,
+        donationsTaxCategoryId,
       },
     },
-  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  } = adminContext ?? (await injector.get(AdminContextProvider).getVerifiedAdminContext());
 
   const taxRateVariablesPromise = injector
     .get(CorporateTaxesProvider)
@@ -69,6 +73,11 @@ export async function calculateTaxAmounts(
     rule: taxCategoryId => taxCategoryId === fineTaxCategoryId,
     negate: true,
   };
+  // donations are not a deductible expense (they earn a section 46 credit instead)
+  const donationsFilter: FilteringOptions = {
+    rule: taxCategoryId => !!donationsTaxCategoryId && taxCategoryId === donationsTaxCategoryId,
+    negate: true,
+  };
   const reservesFilter: FilteringOptions = {
     rule: (financialEntityId, sortCode) =>
       sortCode === 931 && !excludedTaxCategories.includes(financialEntityId),
@@ -84,13 +93,14 @@ export async function calculateTaxAmounts(
     rule: (_, sortCode) => sortCode === 991,
     negate: false,
   };
-  const [untaxableGifts, fines, reserves, nontaxableLinkage, specialTaxableIncome] =
+  const [untaxableGifts, fines, reserves, nontaxableLinkage, specialTaxableIncome, donations] =
     recordsByFinancialEntityIdAndSortCodeValidations(decoratedLedgerRecords, [
       untaxableGiftsFilter,
       finesFilter,
       reservesFilter,
       nontaxableLinkageFilter,
       specialTaxableIncomeFilter,
+      donationsFilter,
     ]);
 
   let businessTripsExcessExpensesAmount = 0;
@@ -132,6 +142,7 @@ export async function calculateTaxAmounts(
     yearlyResearchAndDevelopmentExpensesAmount +
     fines.amount +
     untaxableGifts.amount +
+    donations.amount +
     businessTripsExcessExpensesAmount +
     salaryExcessExpensesAmount +
     reserves.amount +
@@ -150,6 +161,7 @@ export async function calculateTaxAmounts(
     researchAndDevelopmentExpensesForTax,
     fines,
     untaxableGifts,
+    donations,
     businessTripsExcessExpensesAmount,
     salaryExcessExpensesAmount,
     reserves,

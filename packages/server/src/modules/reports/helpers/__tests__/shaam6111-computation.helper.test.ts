@@ -7,6 +7,8 @@ import {
   isCorporateRegistrationNumber,
   isDebitNaturedBalanceSheetCode,
   isDebitNaturedProfitLossCode,
+  irsCodesByBalanceSide,
+  isOverridableTaxAdjustmentCode,
   netAmountsByFinancialEntity,
   profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
@@ -201,6 +203,23 @@ describe('buildBalanceSheetEntries', () => {
     expect(amountOf(overdrawn, 7110)).toBe(150 - 1000);
     expect(amountOf(overdrawn, 9999)).toBe(amountOf(overdrawn, 8888));
   });
+
+  it('moves a balance on the wrong side to the entity contra code', () => {
+    const contraCodes = new Map([['bank', 9110]]);
+    const overdrawnNet = netAmountsByFinancialEntity([...LEDGER, entry('salaries', 'bank', 1000)]);
+    const overdrawn = buildBalanceSheetEntries(
+      overdrawnNet,
+      irsCodesByBalanceSide(overdrawnNet, IRS_CODES, contraCodes),
+      retainedProfit - 1000,
+    );
+    expect(amountOf(overdrawn, 7110)).toBe(0);
+    expect(amountOf(overdrawn, 9110)).toBe(1000 - 150);
+    expect(amountOf(overdrawn, 9999)).toBe(amountOf(overdrawn, 8888));
+
+    // the same entity on its usual side keeps its own code
+    const net = netAmountsByFinancialEntity(LEDGER);
+    expect(irsCodesByBalanceSide(net, IRS_CODES, contraCodes).get('bank')).toBe(7110);
+  });
 });
 
 describe('buildTaxAdjustmentEntries', () => {
@@ -229,7 +248,8 @@ describe('buildTaxAdjustmentEntries', () => {
       inputs.businessTripsExcessExpenses +
       inputs.salaryExcessExpenses +
       inputs.reserves +
-      inputs.nontaxableLinkage
+      inputs.nontaxableLinkage +
+      (inputs.donations ?? 0)
     );
   }
 
@@ -239,7 +259,8 @@ describe('buildTaxAdjustmentEntries', () => {
     expect(amountOf(entries, 104)).toBe(400);
     expect(amountOf(entries, 110)).toBe(10 + 5 + 7 + 3);
     expect(amountOf(entries, 150)).toBe(20);
-    expect(amountOf(entries, 190)).toBe(4);
+    expect(amountOf(entries, 182)).toBe(4);
+    expect(amountOf(entries, 190)).toBe(0);
     expect(amountOf(entries, 200)).toBe(0);
     expect(amountOf(entries, 370)).toBe(25 + 20 + 4);
     expect(amountOf(entries, 510)).toBe(0);
@@ -257,7 +278,7 @@ describe('buildTaxAdjustmentEntries', () => {
       researchAndDevelopmentAddBack: 300,
       researchAndDevelopmentForTax: -250,
     });
-    expect(amountOf(addition, 190)).toBe(50 + 4);
+    expect(amountOf(addition, 190)).toBe(50);
     expect(amountOf(addition, 200)).toBe(0);
 
     const deductionInputs = {
@@ -267,8 +288,8 @@ describe('buildTaxAdjustmentEntries', () => {
     };
     const deduction = buildTaxAdjustmentEntries(deductionInputs);
     expect(amountOf(deduction, 190)).toBe(0);
-    expect(amountOf(deduction, 200)).toBe(100 - 4);
-    expect(amountOf(deduction, 370)).toBe(25 + 20 - 96);
+    expect(amountOf(deduction, 200)).toBe(100);
+    expect(amountOf(deduction, 370)).toBe(25 + 20 + 4 - 100);
     expect(amountOf(deduction, 500)).toBe(taxReportTaxableIncome(deductionInputs));
   });
 
@@ -283,6 +304,57 @@ describe('buildTaxAdjustmentEntries', () => {
     });
     expect(amountOf(entries, 110)).toBe(0);
     expect(amountOf(entries, 200)).toBe(50);
+  });
+
+  it('reports book and tax depreciation (120 / 130) as equal, leaving 370 unchanged', () => {
+    const entries = buildTaxAdjustmentEntries({ ...baseInputs, depreciation: 1234.4 });
+    expect(amountOf(entries, 120)).toBe(1234);
+    expect(amountOf(entries, 130)).toBe(1234);
+    expect(amountOf(entries, 370)).toBe(25 + 20 + 4);
+  });
+
+  it('reports financing expenses on tax debts in 182, and a net credit as a deduction', () => {
+    const credit = buildTaxAdjustmentEntries({ ...baseInputs, nontaxableLinkage: -30 });
+    expect(amountOf(credit, 182)).toBe(0);
+    expect(amountOf(credit, 200)).toBe(30);
+  });
+
+  it('reports donations in 183 and keeps 500 on the taxable income', () => {
+    const inputs = { ...baseInputs, donations: 60 };
+    const entries = buildTaxAdjustmentEntries(inputs);
+    expect(amountOf(entries, 183)).toBe(60);
+    expect(amountOf(entries, 370)).toBe(25 + 20 + 4 + 60);
+    expect(amountOf(entries, 500)).toBe(taxReportTaxableIncome(inputs));
+  });
+
+  it('replaces computed lines with manual amounts and recomputes the totals', () => {
+    const entries = buildTaxAdjustmentEntries({
+      ...baseInputs,
+      overrides: new Map([
+        [110, 0],
+        [160, 15],
+        [480, 100],
+        // totals and 100 are always computed
+        [370, 999],
+        [100, 999],
+      ]),
+    });
+    expect(amountOf(entries, 100)).toBe(400);
+    expect(amountOf(entries, 110)).toBe(0);
+    expect(amountOf(entries, 160)).toBe(15);
+    expect(amountOf(entries, 370)).toBe(20 + 15 + 4);
+    expect(amountOf(entries, 400)).toBe(400 + 39);
+    expect(amountOf(entries, 480)).toBe(100);
+    expect(amountOf(entries, 500)).toBe(439 - 100);
+  });
+
+  it('only accepts manual amounts for lines that are not computed totals', () => {
+    expect(isOverridableTaxAdjustmentCode(480)).toBe(true);
+    expect(isOverridableTaxAdjustmentCode(120)).toBe(true);
+    expect(isOverridableTaxAdjustmentCode(100)).toBe(false);
+    expect(isOverridableTaxAdjustmentCode(370)).toBe(false);
+    expect(isOverridableTaxAdjustmentCode(500)).toBe(false);
+    expect(isOverridableTaxAdjustmentCode(12345)).toBe(false);
   });
 
   it('reports special-rate income (510) only with a preferred rate, and never negative', () => {

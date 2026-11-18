@@ -133,6 +133,8 @@ export default gql`
     dividendWithholdingTaxBusinessId: UUID
     dividendTaxCategoryId: UUID
     salaryExcessExpensesTaxCategoryId: UUID
+    " Tax category of donations: added back for tax, and reported on SHAAM 6111 line 183 "
+    donationsTaxCategoryId: UUID
     ledgerLock: TimelessDate
     foreignSecuritiesBusinessId: UUID
       @deprecated(reason: "Use updateSecuritiesContext(input: { foreignSecuritiesBusinessId })")
@@ -209,6 +211,8 @@ export default gql`
     dividendWithholdingTaxBusiness: Business
     dividendTaxCategory: TaxCategory
     salaryExcessExpensesTaxCategory: TaxCategory!
+    " Tax category of donations: added back for tax, and reported on SHAAM 6111 line 183 "
+    donationsTaxCategory: TaxCategory
     ledgerLock: TimelessDate
     foreignSecuritiesBusiness: Business
       @deprecated(reason: "Use securitiesContext.foreignSecuritiesBusiness")
