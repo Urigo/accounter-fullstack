@@ -25,6 +25,8 @@ export interface BaseStepProps {
   level?: number;
   onStatusChange?: (stepId: string, status: StepStatus) => void;
   manualData: AnnualAuditStepsStatusQuery['annualAuditStepStatuses'] | undefined;
+  /** Re-fetches `manualData` after a step changes shared step data (e.g. evidence) */
+  refetchManualData?: () => void;
 }
 
 export interface StepAction {

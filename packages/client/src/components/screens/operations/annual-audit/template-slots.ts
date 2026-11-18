@@ -1,6 +1,7 @@
 /**
  * Annual audit dynamic-report templates come in two slots — Balance Sheet and Profit and Loss.
- * Step 09 stores the final (locked) ones as JSON evidence on its step status row. Mirrors `packages/server/src/modules/annual-audit/helpers/template-slots.helper.ts`.
+ * Step 09 (final, locked) and step 05 (working) store them as JSON evidence on their step status
+ * rows. Mirrors `packages/server/src/modules/annual-audit/helpers/template-slots.helper.ts`.
  */
 export interface TemplateSlots {
   balanceSheetTemplateName: string | null;
@@ -62,6 +63,19 @@ export function parseLockedTemplates(evidence: string | null | undefined): Templ
   return {
     balanceSheetTemplateName: asName(parsed.balanceSheetTemplateName) ?? legacy,
     profitAndLossTemplateName: asName(parsed.profitAndLossTemplateName) ?? legacy,
+  };
+}
+
+/**
+ * Working (step 05) templates. Each slot stands on its own: an unset slot falls back to the
+ * baseline for that report, not to the other report's working template.
+ */
+export function parseWorkingTemplates(evidence: string | null | undefined): TemplateSlots {
+  const parsed = parseEvidence(evidence);
+  if (!parsed) return EMPTY_SLOTS;
+  return {
+    balanceSheetTemplateName: asName(parsed.balanceSheetTemplateName),
+    profitAndLossTemplateName: asName(parsed.profitAndLossTemplateName),
   };
 }
 

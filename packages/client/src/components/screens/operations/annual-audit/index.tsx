@@ -25,6 +25,7 @@ import { Step13TaxReport } from './step-13-tax-report/index.js';
 import { Step14TaxComplianceReport } from './step-14-tax-compliance-report/index.js';
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
+import { isLoadingStepStatuses } from './step-statuses-loading.js';
 import { YearPicker } from './year-picker.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -35,6 +36,7 @@ import { YearPicker } from './year-picker.js';
       stepId
       status
       notes
+      evidence
     }
   }
 `;
@@ -75,12 +77,23 @@ export const AnnualAuditFlow = (): ReactNode => {
     );
   }, [year, setFiltersContext, changeYear]);
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching, operation }, refetchStepStatuses] = useQuery({
     query: AnnualAuditStepsStatusDocument,
     variables: { ownerId: adminBusinessId!, year },
     pause: !adminBusinessId,
   });
-  const isLoadingStepStatuses: boolean = !!(adminBusinessId && fetching);
+  // No urql cache is installed, so a step that writes shared step data asks for a fresh copy
+  const refetchManualData = useCallback(
+    () => refetchStepStatuses({ requestPolicy: 'network-only' }),
+    [refetchStepStatuses],
+  );
+  const showLoadingCard = isLoadingStepStatuses({
+    adminBusinessId,
+    fetching,
+    hasData: !!data,
+    loadedYear: operation?.variables.year,
+    year,
+  });
 
   const totalSteps = 21;
 
@@ -167,7 +180,7 @@ export const AnnualAuditFlow = (): ReactNode => {
           </Card>
         </div>
 
-        {isLoadingStepStatuses ? (
+        {showLoadingCard ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center gap-3 py-10">
               <AccounterBarSpinner className="text-muted-foreground" />
@@ -231,6 +244,7 @@ export const AnnualAuditFlow = (): ReactNode => {
               icon={<FileText className="h-4 w-4" />}
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
+              refetchManualData={refetchManualData}
               year={year}
               adminBusinessId={adminBusinessId}
             />
