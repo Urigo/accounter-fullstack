@@ -26,12 +26,17 @@ const LEDGER_SLOTS = [
 
 /**
  * Groups ledger records by the IRS code of each side's financial entity, then by entity.
+ * An entity without its own IRS code falls back to its sort code's default IRS code.
  * Amounts are credit minus debit (local currency). Codes are sorted ascending, with the
  * no-IRS-code (misc) group last.
  */
 export function groupLedgerRecordsByIrsCode(
   ledgerRecords: IGetLedgerRecordsByDatesResult[],
-  entitiesById: Map<string, Pick<IGetAllFinancialEntitiesResult, 'id' | 'name' | 'irs_code'>>,
+  entitiesById: Map<
+    string,
+    Pick<IGetAllFinancialEntitiesResult, 'id' | 'name' | 'irs_code' | 'sort_code'>
+  >,
+  defaultIrsCodeBySortCode: Map<number, number> = new Map(),
 ): IrsCodeGroup[] {
   const groups = new Map<number | null, Map<string, EntityAccumulator>>();
 
@@ -42,7 +47,10 @@ export function groupLedgerRecordsByIrsCode(
         continue;
       }
       const entity = entitiesById.get(entityId);
-      const irsCode = entity?.irs_code ?? null;
+      const irsCode =
+        entity?.irs_code ??
+        (entity?.sort_code == null ? null : defaultIrsCodeBySortCode.get(entity.sort_code)) ??
+        null;
       const amount = Number(record[slot.amount] ?? 0) * slot.sign;
 
       let group = groups.get(irsCode);

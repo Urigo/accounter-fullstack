@@ -3,12 +3,17 @@ import type { IGetAllFinancialEntitiesResult } from '../../../financial-entities
 import type { IGetLedgerRecordsByDatesResult } from '../../../ledger/types.js';
 import { groupLedgerRecordsByIrsCode } from '../irs-codes-report.helper.js';
 
-type Entity = Pick<IGetAllFinancialEntitiesResult, 'id' | 'name' | 'irs_code'>;
+type Entity = Pick<IGetAllFinancialEntitiesResult, 'id' | 'name' | 'irs_code' | 'sort_code'>;
 
-const REVENUE_A: Entity = { id: 'revenue-a', name: 'Revenue A', irs_code: 1010 };
-const REVENUE_B: Entity = { id: 'revenue-b', name: 'Another revenue', irs_code: 1010 };
-const EXPENSE: Entity = { id: 'expense', name: 'Expense', irs_code: 3011 };
-const BANK: Entity = { id: 'bank', name: 'Bank', irs_code: null };
+const REVENUE_A: Entity = { id: 'revenue-a', name: 'Revenue A', irs_code: 1010, sort_code: 800 };
+const REVENUE_B: Entity = {
+  id: 'revenue-b',
+  name: 'Another revenue',
+  irs_code: 1010,
+  sort_code: 800,
+};
+const EXPENSE: Entity = { id: 'expense', name: 'Expense', irs_code: 3011, sort_code: 920 };
+const BANK: Entity = { id: 'bank', name: 'Bank', irs_code: null, sort_code: null };
 
 const entitiesById = new Map(
   [REVENUE_A, REVENUE_B, EXPENSE, BANK].map(entity => [entity.id, entity]),
@@ -124,5 +129,39 @@ describe('groupLedgerRecordsByIrsCode', () => {
         entities: [{ financialEntityId: 'unknown', amount: 5, ledgerRecords: records }],
       },
     ]);
+  });
+
+  describe('sort code default IRS code fallback', () => {
+    const SUPPLIER: Entity = { id: 'supplier', name: 'Supplier', irs_code: null, sort_code: 920 };
+    const OVERRIDDEN: Entity = {
+      id: 'overridden',
+      name: 'Overridden',
+      irs_code: 3020,
+      sort_code: 920,
+    };
+    const NO_DEFAULT: Entity = { id: 'no-default', name: 'No default', irs_code: null, sort_code: 999 };
+    const entities = new Map(
+      [SUPPLIER, OVERRIDDEN, NO_DEFAULT].map(entity => [entity.id, entity]),
+    );
+    const defaultIrsCodeBySortCode = new Map([[920, 3011]]);
+
+    const groupsOf = (entityId: string) =>
+      groupLedgerRecordsByIrsCode(
+        [makeRecord({ id: 'r1', debit_entity1: entityId, debit_local_amount1: '10' })],
+        entities,
+        defaultIrsCodeBySortCode,
+      ).map(group => [group.irsCode, group.entities.map(entity => entity.financialEntityId)]);
+
+    it("uses the sort code's default IRS code when the entity has none", () => {
+      expect(groupsOf(SUPPLIER.id)).toEqual([[3011, [SUPPLIER.id]]]);
+    });
+
+    it("prefers the entity's own IRS code over its sort code's default", () => {
+      expect(groupsOf(OVERRIDDEN.id)).toEqual([[3020, [OVERRIDDEN.id]]]);
+    });
+
+    it('keeps an entity whose sort code has no default in misc', () => {
+      expect(groupsOf(NO_DEFAULT.id)).toEqual([[null, [NO_DEFAULT.id]]]);
+    });
   });
 });
