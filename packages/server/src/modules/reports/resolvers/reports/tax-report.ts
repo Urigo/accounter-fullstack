@@ -22,7 +22,11 @@ import {
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from '../../helpers/profit-and-loss.helper.js';
-import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from '../../helpers/tax.helper.js';
+import {
+  calculateCumulativeRnDExpenses,
+  calculateTaxAmounts,
+  researchAndDevelopmentForTax,
+} from '../../helpers/tax.helper.js';
 
 export const taxReport: ResolverFn<
   ResolversTypes['TaxReport'],
@@ -74,7 +78,10 @@ export const taxReport: ResolverFn<
       profitLossByYear.set(year, profitAndLoss);
     }
 
-    const { profitBeforeTax, researchAndDevelopmentExpenses } = profitAndLoss;
+    const { profitBeforeTax } = profitAndLoss;
+    const researchAndDevelopmentExpenses = researchAndDevelopmentForTax(
+      profitAndLoss.researchAndDevelopmentExpenses,
+    );
 
     const adjustedResearchAndDevelopmentExpensesAmount = researchAndDevelopmentExpenses.amount * -1;
 
