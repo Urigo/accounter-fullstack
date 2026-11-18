@@ -48,6 +48,12 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
   },
   Mutation: {
     updateAdminContext: async (_, { context }, { injector }) => {
+      // the lock date moves only through lockLedgerRecords / unlockLedger, which log the change
+      if (context.ledgerLock != null) {
+        throw new GraphQLError(
+          'ledgerLock cannot be set here; use lockLedgerRecords or unlockLedger',
+        );
+      }
       // the foreign-securities inputs are stored in securities_context, which has no foreign keys:
       // validate them the way updateSecuritiesContext does
       await validateSecuritiesContextPatch(injector, {

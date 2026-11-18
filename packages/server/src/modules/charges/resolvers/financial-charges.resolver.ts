@@ -5,6 +5,7 @@ import { errorSimplifier } from '../../../shared/errors.js';
 import { instantToTimelessDate } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
+import { isYearLocked } from '../../ledger/helpers/ledger-lock-date.helper.js';
 import { getMinDate } from '../../ledger/helpers/ledger-lock.js';
 import { generateLedgerRecordsForFinancialCharge } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
@@ -105,7 +106,9 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         },
       } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && date <= ledgerLock) {
-        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+        throw new GraphQLError(
+          `Cannot generate revaluation charge for ${date}: ledger is locked until ${ledgerLock}`,
+        );
       }
       try {
         const charge = await generateAndTagCharge(
@@ -134,7 +137,9 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
       } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && date <= ledgerLock) {
-        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+        throw new GraphQLError(
+          `Cannot generate bank deposits revaluation charge for ${date}: ledger is locked until ${ledgerLock}`,
+        );
       }
       try {
         if (!bankDepositInterestIncomeTaxCategoryId) {
@@ -165,8 +170,10 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         ledgerLock,
         authorities: { taxExpensesTaxCategoryId },
       } = await getWriteTargetAdminContext(injector, ownerId);
-      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
-        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      if (isYearLocked(year, ledgerLock)) {
+        throw new GraphQLError(
+          `Cannot generate tax expenses charge for ${year.substring(0, 4)}: ledger is locked until ${ledgerLock}`,
+        );
       }
       try {
         const charge = await generateAndTagCharge(
@@ -194,8 +201,10 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         ledgerLock,
         depreciation: { accumulatedDepreciationTaxCategoryId },
       } = await getWriteTargetAdminContext(injector, ownerId);
-      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
-        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      if (isYearLocked(year, ledgerLock)) {
+        throw new GraphQLError(
+          `Cannot generate depreciation charge for ${year.substring(0, 4)}: ledger is locked until ${ledgerLock}`,
+        );
       }
       if (!accumulatedDepreciationTaxCategoryId) {
         throw new GraphQLError('Accumulated depreciation tax category missing');
@@ -226,8 +235,10 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         ledgerLock,
         salaries: { recoveryReserveTaxCategoryId },
       } = await getWriteTargetAdminContext(injector, ownerId);
-      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
-        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      if (isYearLocked(year, ledgerLock)) {
+        throw new GraphQLError(
+          `Cannot generate recovery reserve charge for ${year.substring(0, 4)}: ledger is locked until ${ledgerLock}`,
+        );
       }
       if (!recoveryReserveTaxCategoryId) {
         throw new GraphQLError('Recovery reserve tax category missing');
@@ -258,8 +269,10 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         ledgerLock,
         salaries: { vacationReserveTaxCategoryId },
       } = await getWriteTargetAdminContext(injector, ownerId);
-      if (ledgerLock && `${year}-12-31` <= ledgerLock) {
-        throw new GraphQLError('Cannot generate revaluation charge for locked period');
+      if (isYearLocked(year, ledgerLock)) {
+        throw new GraphQLError(
+          `Cannot generate vacation reserves charge for ${year.substring(0, 4)}: ledger is locked until ${ledgerLock}`,
+        );
       }
       if (!vacationReserveTaxCategoryId) {
         throw new GraphQLError('Vacation reserve tax category missing');

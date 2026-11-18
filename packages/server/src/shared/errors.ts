@@ -1,8 +1,8 @@
 import { GraphQLError } from 'graphql';
 
 export class LedgerLockError extends GraphQLError {
-  constructor() {
-    super('Cannot adjust locked ledger records', {
+  constructor(message = 'Cannot adjust locked ledger records') {
+    super(message, {
       extensions: {
         code: 'LEDGER_LOCK_ERROR',
       },
