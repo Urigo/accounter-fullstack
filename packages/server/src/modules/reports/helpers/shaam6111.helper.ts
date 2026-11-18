@@ -29,11 +29,7 @@ import { IGetAllFinancialEntitiesResult } from '../../financial-entities/types.j
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import type { IGetLedgerRecordsByDatesResult } from '../../ledger/types.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
-import {
-  DecoratedLedgerRecord,
-  decorateLedgerRecords,
-  getProfitLossReportAmounts,
-} from './profit-and-loss.helper.js';
+import { DecoratedLedgerRecord, decorateLedgerRecords } from './profit-and-loss.helper.js';
 import {
   BALANCE_SHEET_SUMMARY_CODES,
   buildBalanceSheetEntries,
@@ -50,7 +46,7 @@ import {
   retainedProfitFromProfitAndLoss,
   type Shaam6111Issue,
 } from './shaam6111-computation.helper.js';
-import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helper.js';
+import { calculateYearTax } from './tax.helper.js';
 
 /** The SHAAM 6111 file name, per the software-houses specification (IKSP/DKASPI.DAT). */
 export const SHAAM_6111_FILE_NAME = 'DKASPI.DAT';
@@ -233,28 +229,15 @@ export async function getShaam6111Data(
       decorateLedgerRecords(ledgerByYear.get(rndYear) ?? [], financialEntitiesById),
     );
   }
-  const decoratedLedgerRecords = decoratedLedgerByYear.get(year) ?? [];
-  const yearProfitLoss = getProfitLossReportAmounts(decoratedLedgerRecords);
-  const profitLossByYear = new Map([[year, yearProfitLoss]]);
-  const { profitBeforeTax, researchAndDevelopmentExpenses } = yearProfitLoss;
-  const researchAndDevelopmentAddBack = researchAndDevelopmentExpenses.amount * -1;
-  const taxableCumulativeResearchAndDevelopment =
-    calculateCumulativeRnDExpenses(year, decoratedLedgerByYear, profitLossByYear) / 3;
-  const taxAmounts = await calculateTaxAmounts(
-    injector,
-    year,
-    decoratedLedgerRecords,
-    researchAndDevelopmentAddBack,
-    taxableCumulativeResearchAndDevelopment,
-    profitBeforeTax.amount,
-  );
+  const taxAmounts = await calculateYearTax(injector, year, decoratedLedgerByYear);
+  const { profitBeforeTax } = taxAmounts.profitAndLoss;
   const taxAdjustment = buildTaxAdjustmentEntries({
     profitBeforeTax: profitBeforeTax.amount,
     // rule 3.7 (100 = 6666) holds whenever the two differ only by rounding
     profitAndLossTotal: profitAndLossMatchesBooks(profitAndLoss, profitBeforeTax.amount)
       ? profitAndLoss.find(entry => entry.code === 6666)?.amount
       : undefined,
-    researchAndDevelopmentAddBack,
+    researchAndDevelopmentAddBack: taxAmounts.researchAndDevelopmentAddBack,
     researchAndDevelopmentForTax: taxAmounts.researchAndDevelopmentExpensesForTax,
     fines: taxAmounts.fines.amount,
     untaxableGifts: taxAmounts.untaxableGifts.amount,

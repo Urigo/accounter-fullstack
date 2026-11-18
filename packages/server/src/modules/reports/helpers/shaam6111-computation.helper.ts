@@ -449,7 +449,10 @@ export type Shaam6111TaxAdjustmentInputs = {
    * still match the books. Without it, 100 is the books' profit.
    */
   profitAndLossTotal?: number;
-  /** Current-year R&D expense booked in the P&L, as a positive add-back. */
+  /**
+   * Current-year R&D expense booked in the P&L, excluding reserves (931), which line 150 adjusts,
+   * as a positive add-back.
+   */
   researchAndDevelopmentAddBack: number;
   /**
    * Section 20A R&D deduction for the year (negative): a third of the last three years' R&D,
