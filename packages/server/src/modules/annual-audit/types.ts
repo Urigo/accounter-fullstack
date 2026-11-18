@@ -40,3 +40,12 @@ export interface SetAnnualAuditStep09StatusInput {
   /** Omitted = lock the template for both reports */
   reportType?: AnnualAuditReportType | null;
 }
+
+export interface SetAnnualAuditWorkingTemplateInput {
+  ownerId: string;
+  year: number;
+  /** null clears the working template */
+  templateName?: string | null;
+  /** Omitted = both reports */
+  reportType?: AnnualAuditReportType | null;
+}

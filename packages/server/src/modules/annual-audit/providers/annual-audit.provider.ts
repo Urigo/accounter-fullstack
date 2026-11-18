@@ -13,16 +13,21 @@ import {
 import type {
   AnnualAuditOpeningBalanceStatusResult,
   AnnualAuditOpeningBalanceUserType,
+  AnnualAuditReportType,
   AnnualAuditStepStatus,
   AnnualAuditStepStatusResult,
   IGetBalanceChargeQuery,
   IGetStepStatusesQuery,
   IGetStepStatusQuery,
+  IRemoveWorkingTemplateQuery,
+  IRenameWorkingTemplateQuery,
   IResetStep09ForTemplateQuery,
+  IUpsertStep05EvidenceQuery,
   IUpsertStep09StatusQuery,
   IUpsertStepStatusQuery,
   SetAnnualAuditStep09StatusInput,
   SetAnnualAuditStepStatusInput,
+  SetAnnualAuditWorkingTemplateInput,
 } from '../types.js';
 
 const getStepStatuses = sql<IGetStepStatusesQuery>`
@@ -100,6 +105,56 @@ const resetStep09ForTemplate = sql<IResetStep09ForTemplateQuery>`
     );
 `;
 
+/**
+ * Merges working-template changes into step 05 evidence in one statement: drops the cleared keys,
+ * then sets the patched ones. Other keys, the status and the notes are left as they are, and two
+ * overlapping calls for different reports can't overwrite each other.
+ */
+const upsertStep05Evidence = sql<IUpsertStep05EvidenceQuery>`
+  INSERT INTO accounter_schema.annual_audit_step_status
+    (owner_id, year, step_id, status, evidence_json)
+  VALUES ($ownerId, $year, '5', 'PENDING', $patch::jsonb)
+  ON CONFLICT (owner_id, year, step_id) DO UPDATE
+    SET evidence_json =
+      (COALESCE(annual_audit_step_status.evidence_json, '{}'::jsonb) - $removedKeys::text[])
+      || EXCLUDED.evidence_json
+  RETURNING owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at;
+`;
+
+/** Points step 05 working-template evidence at a renamed template, across all years. */
+const renameWorkingTemplate = sql<IRenameWorkingTemplateQuery>`
+  UPDATE accounter_schema.annual_audit_step_status
+  SET evidence_json = (
+    SELECT jsonb_object_agg(
+      e.key,
+      CASE WHEN e.value = to_jsonb($prevName::text) THEN to_jsonb($newName::text) ELSE e.value END
+    )
+    FROM jsonb_each(evidence_json) AS e
+  )
+  WHERE owner_id = $ownerId
+    AND step_id   = '5'
+    AND (
+      evidence_json->>'balanceSheetTemplateName' = $prevName
+      OR evidence_json->>'profitAndLossTemplateName' = $prevName
+    );
+`;
+
+/** Drops step 05 working-template evidence keys that point at a deleted template. */
+const removeWorkingTemplate = sql<IRemoveWorkingTemplateQuery>`
+  UPDATE accounter_schema.annual_audit_step_status
+  SET evidence_json = (
+    SELECT COALESCE(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
+    FROM jsonb_each(evidence_json) AS e
+    WHERE e.value <> to_jsonb($templateName::text)
+  )
+  WHERE owner_id = $ownerId
+    AND step_id   = '5'
+    AND (
+      evidence_json->>'balanceSheetTemplateName' = $templateName
+      OR evidence_json->>'profitAndLossTemplateName' = $templateName
+    );
+`;
+
 const getBalanceCharge = sql<IGetBalanceChargeQuery>`
   WITH ledger_by_charge AS (
     SELECT count(DISTINCT x.id) AS ledger_count,
@@ -136,6 +191,12 @@ const getBalanceCharge = sql<IGetBalanceChargeQuery>`
     AND l.min_value_date <= make_date($year, 12, 31)
     AND l.max_value_date >= make_date($year, 12, 31)
     AND user_description ILIKE '%balance%'`;
+
+/** Step 05 evidence keys holding each report's working template. */
+const WORKING_TEMPLATE_KEYS: ReadonlyArray<{ reportType: AnnualAuditReportType; key: string }> = [
+  { reportType: 'BALANCE_SHEET', key: 'balanceSheetTemplateName' },
+  { reportType: 'PROFIT_AND_LOSS', key: 'profitAndLossTemplateName' },
+];
 
 @Injectable({
   scope: Scope.Operation,
@@ -324,6 +385,55 @@ export class AnnualAuditProvider {
 
   public async resetStep09ForTemplate(ownerId: string, templateName: string): Promise<void> {
     await resetStep09ForTemplate.run({ ownerId, templateName }, this.db);
+  }
+
+  // ─── Step 05: working templates ──────────────────────────────────────────
+
+  public async setWorkingTemplate(
+    input: SetAnnualAuditWorkingTemplateInput,
+  ): Promise<AnnualAuditStepStatusResult> {
+    const { ownerId, year, reportType } = input;
+    const templateName = input.templateName || null;
+
+    if (templateName) {
+      const template = await this.dynamicReportProvider.getTemplate({
+        name: templateName,
+        ownerId,
+      });
+      if (!template) {
+        throw new Error(`Report template "${templateName}" not found`);
+      }
+    }
+
+    // Set the chosen report(s) to the template, or clear them, without reading the row first
+    const keys = WORKING_TEMPLATE_KEYS.filter(
+      ({ reportType: keyReportType }) => !reportType || keyReportType === reportType,
+    ).map(({ key }) => key);
+    const patch = templateName ? Object.fromEntries(keys.map(key => [key, templateName])) : {};
+    const removedKeys = templateName ? [] : keys;
+
+    const [row] = await upsertStep05Evidence.run(
+      { ownerId, year, patch: JSON.stringify(patch), removedKeys },
+      this.db,
+    );
+    if (!row) {
+      throw new Error('Failed to save annual audit working template');
+    }
+    return this.mapStepStatusRow(row);
+  }
+
+  /** Follows a dynamic report template rename in every year's working templates. */
+  public async renameWorkingTemplate(
+    ownerId: string,
+    prevName: string,
+    newName: string,
+  ): Promise<void> {
+    await renameWorkingTemplate.run({ ownerId, prevName, newName }, this.db);
+  }
+
+  /** Forgets a deleted dynamic report template in every year's working templates. */
+  public async removeWorkingTemplate(ownerId: string, templateName: string): Promise<void> {
+    await removeWorkingTemplate.run({ ownerId, templateName }, this.db);
   }
 
   private mapStepStatusRow(r: {

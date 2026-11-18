@@ -14,6 +14,7 @@ import {
 import { testDbConfig } from '../../../../__tests__/helpers/test-db-config.js';
 import { pgTypeParsers } from '../../../../shared/helpers/pg-type-parsers.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
+import { AnnualAuditProvider } from '../../../annual-audit/providers/annual-audit.provider.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import { authDirectiveTransformer } from '../../../auth/directives/auth-directives.js';
@@ -134,9 +135,19 @@ function createContext(userId: string, { ownerId = TEST_OWNER_ID, roleId = 'acco
         auth0UserId === USER_1_AUTH0_ID ? { name: USER_1_NAME, email: 'grace@example.com' } : null,
       ),
   } as unknown as Auth0ManagementProvider;
+  // One operation-scoped DB client shared by the report providers, as in a real request, so a
+  // resolver's transaction() covers every provider call inside it
+  const db = createDbClient(ownerId);
+  const reportProvider = new DynamicReportProvider(db, createMockAdminContextProvider(ownerId));
   const services = new Map<unknown, unknown>([
+    [TenantAwareDBClient, db],
     [DynamicReportCommentsProvider, createCommentsProvider(ownerId)],
-    [DynamicReportProvider, createReportProvider(ownerId)],
+    [DynamicReportProvider, reportProvider],
+    // Template rename/delete keep annual audit working-template pointers in sync through it
+    [
+      AnnualAuditProvider,
+      new AnnualAuditProvider(createMockAdminContextProvider(ownerId), reportProvider, db),
+    ],
     [
       BusinessUsersProvider,
       new BusinessUsersProvider(createDbClient(ownerId), {} as never, auth0, {} as never),
@@ -378,6 +389,10 @@ async function insertTemplate(ownerId: string, name = TEMPLATE_NAME) {
 async function cleanup() {
   await pool.query(
     'DELETE FROM accounter_schema.dynamic_report_templates WHERE owner_id = ANY($1)',
+    [[TEST_OWNER_ID, OTHER_OWNER_ID]],
+  );
+  await pool.query(
+    'DELETE FROM accounter_schema.annual_audit_step_status WHERE owner_id = ANY($1)',
     [[TEST_OWNER_ID, OTHER_OWNER_ID]],
   );
 }
@@ -862,6 +877,70 @@ describe('template lifecycle', () => {
     // A new template under the same name starts clean.
     await insertTemplate(TEST_OWNER_ID);
     expect(await listThreads(USER_1)).toEqual([]);
+  });
+
+  it('a template rename or delete updates annual audit working templates', async () => {
+    // Step 05 of an annual audit points its working Balance Sheet template here
+    await pool.query(
+      `INSERT INTO accounter_schema.annual_audit_step_status
+         (owner_id, year, step_id, status, evidence_json)
+       VALUES ($1, 2025, '5', 'PENDING', $2::jsonb)`,
+      [
+        TEST_OWNER_ID,
+        JSON.stringify({
+          balanceSheetTemplateName: TEMPLATE_NAME,
+          profitAndLossTemplateName: 'other-template',
+        }),
+      ],
+    );
+    const workingEvidence = async () => {
+      const { rows } = await pool.query<{ evidence_json: unknown }>(
+        `SELECT evidence_json FROM accounter_schema.annual_audit_step_status
+         WHERE owner_id = $1 AND year = 2025 AND step_id = '5'`,
+        [TEST_OWNER_ID],
+      );
+      return rows[0]?.evidence_json;
+    };
+
+    await reportMutations.updateDynamicReportTemplateName(
+      {},
+      { name: TEMPLATE_NAME, newName: 'renamed-working-template' },
+      createContext(USER_1),
+      {},
+    );
+    expect(await workingEvidence()).toEqual({
+      balanceSheetTemplateName: 'renamed-working-template',
+      profitAndLossTemplateName: 'other-template',
+    });
+
+    await reportMutations.deleteDynamicReportTemplate(
+      {},
+      { name: 'renamed-working-template' },
+      createContext(USER_1),
+      {},
+    );
+    expect(await workingEvidence()).toEqual({ profitAndLossTemplateName: 'other-template' });
+  });
+
+  it('a failed working-template sync rolls the template delete back', async () => {
+    vi.spyOn(AnnualAuditProvider.prototype, 'removeWorkingTemplate').mockRejectedValue(
+      new Error('sync failed'),
+    );
+
+    await expect(
+      reportMutations.deleteDynamicReportTemplate(
+        {},
+        { name: TEMPLATE_NAME },
+        createContext(USER_1),
+        {},
+      ),
+    ).rejects.toThrow();
+
+    const { rows } = await pool.query(
+      'SELECT name FROM accounter_schema.dynamic_report_templates WHERE owner_id = $1 AND name = $2',
+      [TEST_OWNER_ID, TEMPLATE_NAME],
+    );
+    expect(rows).toHaveLength(1);
   });
 
   it('Save as new (insertDynamicReportTemplate) starts with no threads', async () => {

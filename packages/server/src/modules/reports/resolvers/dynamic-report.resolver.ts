@@ -2,6 +2,7 @@ import type { DynamicReportNode } from '../../../__generated__/types.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
 import { BusinessUsersProvider } from '../../auth/providers/business-users.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -186,19 +187,21 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
-        return injector
-          .get(DynamicReportProvider)
-          .updateTemplateName({
+        // One transaction: if the working-template sync fails, the rename is rolled back too, so
+        // neither is left half-done (and a retry doesn't fail on a template that already moved)
+        return await injector.get(TenantAwareDBClient).transaction(async () => {
+          const result = await injector.get(DynamicReportProvider).updateTemplateName({
             prevName: name,
             newName,
             ownerId,
-          })
-          .then(result => {
-            if (result.length === 0) {
-              throw new Error(`Report template "${name}" not found`);
-            }
-            return result[0];
           });
+          if (result.length === 0) {
+            throw new Error(`Report template "${name}" not found`);
+          }
+          // Keep annual audit working-template pointers on the renamed template
+          await injector.get(AnnualAuditProvider).renameWorkingTemplate(ownerId, name, newName);
+          return result[0];
+        });
       } catch (error) {
         throw errorSimplifier(`Failed to update dynamic report template name "${name}"`, error);
       }
@@ -256,18 +259,19 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
-        return injector
-          .get(DynamicReportProvider)
-          .deleteTemplate({
-            name,
-            ownerId,
-          })
-          .then(result => {
-            if (result.length === 0) {
-              throw new Error(`Report template "${name}" not found`);
-            }
-            return result[0].name;
-          });
+        // One transaction: if the working-template sync fails, the delete is rolled back too, so
+        // step 05 is never left pointing at a template that no longer exists
+        return await injector.get(TenantAwareDBClient).transaction(async () => {
+          const result = await injector
+            .get(DynamicReportProvider)
+            .deleteTemplate({ name, ownerId });
+          if (result.length === 0) {
+            throw new Error(`Report template "${name}" not found`);
+          }
+          // Annual audit working templates that pointed here fall back to the baseline
+          await injector.get(AnnualAuditProvider).removeWorkingTemplate(ownerId, name);
+          return result[0].name;
+        });
       } catch (error) {
         throw errorSimplifier(`Failed to delete dynamic report template "${name}"`, error);
       }
