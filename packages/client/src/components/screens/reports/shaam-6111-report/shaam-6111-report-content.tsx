@@ -1,18 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, Eye, EyeOff, Save } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import {
   Shaam6111DataContentFragmentDoc,
   Shaam6111DataContentHeaderBusinessFragmentDoc,
+  Shaam6111ValidationIssuesFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { Button } from '../../../ui/button.js';
 import { Tabs, TabsList, TabsTrigger } from '../../../ui/tabs.js';
 import { BalanceSheetTab } from './balance-sheet-tab.js';
+import { Shaam6111DownloadButton } from './download-button.js';
 import { HeaderTab } from './header-tab.js';
 import { ProfitAndLossTab } from './profit-and-loss-tab.js';
 import { TaxAdjustmentTab } from './tax-adjustment-tab.js';
+import { Shaam6111ValidationIssues } from './validation-issues.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -29,6 +32,7 @@ type Shaam6111ReportContentProps = {
   data: FragmentType<typeof Shaam6111DataContentFragmentDoc>;
   referenceData?: FragmentType<typeof Shaam6111DataContentFragmentDoc>;
   businessInfo: FragmentType<typeof Shaam6111DataContentHeaderBusinessFragmentDoc>;
+  validation: FragmentType<typeof Shaam6111ValidationIssuesFragmentDoc>;
   selectedBusiness: string;
   selectedYear: string;
   referenceYear?: string;
@@ -38,10 +42,13 @@ export function Shaam6111ReportContent({
   data,
   referenceData,
   businessInfo,
+  validation,
+  selectedBusiness,
   selectedYear,
   referenceYear,
 }: Shaam6111ReportContentProps) {
   const reportData = getFragmentData(Shaam6111DataContentFragmentDoc, data);
+  const { isValid } = getFragmentData(Shaam6111ValidationIssuesFragmentDoc, validation);
   const referenceReportData = getFragmentData(Shaam6111DataContentFragmentDoc, referenceData);
   const [activeTab, setActiveTab] = useState('header');
   const [showEmptyFields, setShowEmptyFields] = useState(true);
@@ -66,16 +73,14 @@ export function Shaam6111ReportContent({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            הורד
-          </Button>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Save className="h-4 w-4" />
-            שמור
-          </Button>
+          <Shaam6111DownloadButton
+            year={Number.parseInt(selectedYear, 10)}
+            businessId={selectedBusiness}
+            disabled={!isValid}
+          />
         </div>
       </div>
+      <Shaam6111ValidationIssues validation={validation} />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-4 w-full" dir="rtl">
           <TabsTrigger value="header">פרטים מזהים</TabsTrigger>

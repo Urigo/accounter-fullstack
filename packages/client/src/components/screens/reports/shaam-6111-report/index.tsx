@@ -27,6 +27,9 @@ import { getShaam6111AvailableYears } from './years.js';
         id
         ...Shaam6111DataContentHeaderBusiness
       }
+      validation {
+        ...Shaam6111ValidationIssues
+      }
     }
   }
 `;
@@ -217,6 +220,7 @@ function Content({
         data={reportData}
         referenceData={referenceData?.shaam6111.data}
         businessInfo={data.shaam6111.business}
+        validation={data.shaam6111.validation}
         selectedBusiness={selectedBusiness}
         selectedYear={selectedYear}
         referenceYear={referenceYear}
