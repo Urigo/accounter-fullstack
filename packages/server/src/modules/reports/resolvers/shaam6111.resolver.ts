@@ -25,11 +25,12 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
         businessId = ownerId;
       }
-      const reportData = await getShaam6111Data(injector, businessId, year);
+      const { reportData, issues } = await getShaam6111Data(injector, businessId, year);
 
       return {
         businessId,
         reportData,
+        issues,
       };
     },
   },
@@ -71,7 +72,7 @@ export const shaam6111Resolvers: ReportsModule.Resolvers = {
         encodedContent: Buffer.from(encodeReportFile(reportContent)).toString('base64'),
       };
     },
-    validation: ({ reportData }) => validateShaam6111Report(reportData),
+    validation: ({ reportData, issues }) => validateShaam6111Report(reportData, issues),
     year: ({ reportData }) => parseInt(reportData.header.taxYear, 10),
   },
   Shaam6111Data: {

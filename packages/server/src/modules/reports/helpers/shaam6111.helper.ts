@@ -8,6 +8,7 @@ import {
   CurrencyType,
   IFRSReportingOption,
   IndividualOrCompanyEnum,
+  isValidIsraeliID,
   ReportData,
   ReportEntry,
   ReportingMethod,
@@ -21,23 +22,30 @@ import {
   timelessDateFromParts,
 } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { AdminBusinessesProvider } from '../../financial-entities/providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { IGetAllFinancialEntitiesResult } from '../../financial-entities/types.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import type { IGetLedgerRecordsByDatesResult } from '../../ledger/types.js';
+import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import {
   DecoratedLedgerRecord,
   decorateLedgerRecords,
   getProfitLossReportAmounts,
 } from './profit-and-loss.helper.js';
 import {
+  BALANCE_SHEET_SUMMARY_CODES,
   buildBalanceSheetEntries,
   buildProfitAndLossEntries,
   buildTaxAdjustmentEntries,
   countRoundedLines,
   fileEntries,
+  isBalanceSheetCode,
+  isCorporateRegistrationNumber,
+  isProfitLossCode,
   netAmountsByFinancialEntity,
+  PROFIT_LOSS_SUMMARY_CODES,
   profitAndLossMatchesBooks,
   retainedProfitFromProfitAndLoss,
   type Shaam6111Issue,
@@ -47,20 +55,115 @@ import { calculateCumulativeRnDExpenses, calculateTaxAmounts } from './tax.helpe
 /** The SHAAM 6111 file name, per the software-houses specification (IKSP/DKASPI.DAT). */
 export const SHAAM_6111_FILE_NAME = 'DKASPI.DAT';
 
+/**
+ * Resolves each financial entity's 6111 code: its own IRS code, or else the default IRS code of
+ * its owner's sort code (the same fallback used when an entity is created). A sort code of another
+ * business with the same key never applies.
+ */
+export function irsCodesByEntity(
+  financialEntities: readonly Pick<
+    IGetAllFinancialEntitiesResult,
+    'id' | 'irs_code' | 'sort_code' | 'owner_id'
+  >[],
+  defaultIrsCodeBySortCode: ReadonlyMap<string, number>,
+): Map<string, number> {
+  const irsCodes = new Map<string, number>();
+  for (const entity of financialEntities) {
+    const irsCode =
+      entity.irs_code ??
+      (entity.sort_code == null
+        ? undefined
+        : defaultIrsCodeBySortCode.get(`${entity.owner_id}:${entity.sort_code}`));
+    if (irsCode != null) {
+      irsCodes.set(entity.id, irsCode);
+    }
+  }
+  return irsCodes;
+}
+
+const formatAmount = (amount: number) =>
+  Math.round(amount).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+/**
+ * Flags entities whose balance can't reach the report: no IRS code at all, or an IRS code that
+ * is not a P&L / balance sheet line (a typo, a tax-adjustment code, or a summary code, which is
+ * always computed from its lines). Groups them per sort code so a large client list stays short.
+ */
+function mappingIssues(
+  cumulativeNetByEntity: ReadonlyMap<string, number>,
+  financialEntitiesById: ReadonlyMap<string, IGetAllFinancialEntitiesResult>,
+  irsCodeByEntity: ReadonlyMap<string, number>,
+  sortCodeNames: ReadonlyMap<number, string>,
+): Shaam6111Issue[] {
+  const unmappedBySortCode = new Map<number | null, { total: number; names: string[] }>();
+  const invalidCodes: string[] = [];
+  for (const [entityId, amount] of cumulativeNetByEntity) {
+    if (Math.round(amount) === 0) {
+      continue;
+    }
+    const entity = financialEntitiesById.get(entityId);
+    const irsCode = irsCodeByEntity.get(entityId);
+    if (irsCode == null) {
+      const sortCode = entity?.sort_code ?? null;
+      const group = unmappedBySortCode.get(sortCode) ?? { total: 0, names: [] };
+      group.total += amount;
+      group.names.push(entity?.name ?? entityId);
+      unmappedBySortCode.set(sortCode, group);
+      continue;
+    }
+    const isLeaf =
+      (isProfitLossCode(irsCode) && !PROFIT_LOSS_SUMMARY_CODES.has(irsCode)) ||
+      (isBalanceSheetCode(irsCode) && !BALANCE_SHEET_SUMMARY_CODES.has(irsCode));
+    if (!isLeaf) {
+      invalidCodes.push(`${entity?.name ?? entityId} (${irsCode})`);
+    }
+  }
+
+  const issues: Shaam6111Issue[] = [];
+  for (const [sortCode, { total, names }] of [...unmappedBySortCode.entries()].sort(
+    ([a], [b]) => (a ?? 0) - (b ?? 0),
+  )) {
+    const sortCodeLabel =
+      sortCode == null
+        ? 'without a sort code'
+        : `in sort code ${sortCode}${sortCodeNames.has(sortCode) ? ` (${sortCodeNames.get(sortCode)})` : ''}`;
+    const examples = names.slice(0, 5).join(', ') + (names.length > 5 ? ', …' : '');
+    issues.push({
+      severity: 'WARNING',
+      path: 'mapping',
+      message: `${names.length} ${names.length === 1 ? 'entity' : 'entities'} ${sortCodeLabel} with a balance of ${formatAmount(total)} (credit − debit, up to year end) have no IRS code and are left out of the report: ${examples}`,
+    });
+  }
+  if (invalidCodes.length) {
+    issues.push({
+      severity: 'WARNING',
+      path: 'mapping',
+      message: `Entities mapped to an IRS code that is not a 6111 P&L or balance sheet line (or is a total, which is always computed) are left out of the report: ${invalidCodes.slice(0, 10).join(', ')}${invalidCodes.length > 10 ? ', …' : ''}`,
+    });
+  }
+  return issues;
+}
+
+export type Shaam6111ComputedReport = {
+  reportData: SchemaTypes.Shaam6111Data;
+  issues: Shaam6111Issue[];
+};
+
 export async function getShaam6111Data(
   injector: Injector,
   businessId: string,
   year: number,
-): Promise<SchemaTypes.Shaam6111Data> {
+): Promise<Shaam6111ComputedReport> {
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
     throw new Error(`Invalid year. Must be between 2000 and 2100. Received: ${year}`);
   }
 
   const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const financialEntityId = businessId || ownerId;
-  const business = await injector
-    .get(BusinessesProvider)
-    .getBusinessByIdLoader.load(financialEntityId);
+  const [business, adminBusiness] = await Promise.all([
+    injector.get(BusinessesProvider).getBusinessByIdLoader.load(financialEntityId),
+    injector.get(AdminBusinessesProvider).getAdminBusinessByIdLoader.load(financialEntityId),
+  ]);
 
   if (!business) {
     throw new Error('Business not found');
@@ -72,20 +175,32 @@ export async function getShaam6111Data(
 
   const fromDate = timelessDateFromParts(1990, 1, 1); // TODO: maybe take company init date as from date
   const toDate = endOfTimelessYear(year);
-  const [ledgerRecords, financialEntities] = await Promise.all([
-    injector.get(LedgerProvider).getLedgerRecordsByDates({ fromDate, toDate }),
+  const [ledgerRecords, financialEntities, sortCodes] = await Promise.all([
+    // the report is per business: read that business's books, not the session's default owner
+    injector
+      .get(LedgerProvider)
+      .getLedgerRecordsByDates({ fromDate, toDate, ownerId: financialEntityId }),
     injector.get(FinancialEntitiesProvider).getAllFinancialEntities(),
+    injector.get(SortCodesProvider).getAllSortCodes(),
   ]);
 
   const financialEntitiesById = new Map<string, IGetAllFinancialEntitiesResult>(
     financialEntities.map(entity => [entity.id, entity]),
   );
-  const irsCodeByEntity = new Map<string, number>();
-  for (const entity of financialEntities) {
-    if (entity.irs_code != null) {
-      irsCodeByEntity.set(entity.id, entity.irs_code);
+  const defaultIrsCodeBySortCode = new Map<string, number>();
+  const sortCodeNames = new Map<number, string>();
+  for (const sortCode of sortCodes) {
+    if (sortCode.owner_id === financialEntityId || !sortCodeNames.has(sortCode.key)) {
+      sortCodeNames.set(sortCode.key, sortCode.name);
+    }
+    if (sortCode.default_irs_code != null) {
+      defaultIrsCodeBySortCode.set(
+        `${sortCode.owner_id}:${sortCode.key}`,
+        sortCode.default_irs_code,
+      );
     }
   }
+  const irsCodeByEntity = irsCodesByEntity(financialEntities, defaultIrsCodeBySortCode);
 
   const ledgerByYear = new Map<number, IGetLedgerRecordsByDatesResult[]>();
   for (const record of ledgerRecords) {
@@ -151,12 +266,47 @@ export async function getShaam6111Data(
     hasPreferredTaxRate: taxAmounts.taxRate !== taxAmounts.specialTaxRate,
   });
 
+  const issues: Shaam6111Issue[] = mappingIssues(
+    cumulativeNetByEntity,
+    financialEntitiesById,
+    irsCodeByEntity,
+    sortCodeNames,
+  );
+
+  const profitLossTotal = profitAndLoss.find(entry => entry.code === 6666)?.amount ?? 0;
+  const booksProfitBeforeTax = Math.round(profitBeforeTax.amount);
+  // each 6666 line is rounded to the shekel on its own: only a gap beyond that is a mapping problem
+  if (!profitAndLossMatchesBooks(profitAndLoss, profitBeforeTax.amount)) {
+    issues.push({
+      severity: 'ERROR',
+      path: 'profitAndLoss.6666',
+      message: `Profit before tax per IRS codes (6666: ${formatAmount(profitLossTotal)}) differs from the books (code 100: ${formatAmount(booksProfitBeforeTax)}) by ${formatAmount(profitLossTotal - booksProfitBeforeTax)}. Check the IRS codes of the P&L entities listed above.`,
+    });
+  }
+
+  const isCompany = isCorporateRegistrationNumber(business.vat_number);
+  // The withholding (ניכויים) file is a separate 9-digit file, never the company's own number
+  const withholdingTaxFileNumber = [
+    adminBusiness?.company_tax_id,
+    adminBusiness?.tax_nikuim_pinkas_number,
+  ]
+    .map(id => id?.trim())
+    .find(id => !!id && id !== business.vat_number && isValidIsraeliID(id));
+  if (isCompany && !withholdingTaxFileNumber) {
+    issues.push({
+      severity: 'WARNING',
+      path: 'header.withholdingTaxFileNumber',
+      message:
+        'No valid withholding tax (ניכויים) file number is set for the business; it is mandatory when one exists. Set it in the business admin settings (Withholding Tax → Company Tax ID).',
+    });
+  }
+
   const header: SchemaTypes.Shaam6111Header = {
     taxFileNumber: business.vat_number,
     taxYear: year.toString(),
     idNumber: business.vat_number,
     vatFileNumber: business.vat_number,
-    withholdingTaxFileNumber: undefined, // TODO: fetch from admin business
+    withholdingTaxFileNumber,
     industryCode: '6201', // TODO: migrate to DB
     businessDescription: 'פיתוח פלטפורמת תוכנה', // TODO: migrate to DB
     businessType: 'MULTIPLE', // TODO: migrate to DB
@@ -186,9 +336,9 @@ export async function getShaam6111Data(
     profitAndLoss,
     taxAdjustment,
     balanceSheet,
-    individualOrCompany: 'INDIVIDUAL', // TODO: migrate to DB
+    individualOrCompany: isCompany ? 'COMPANY' : 'INDIVIDUAL',
   };
-  return reportData;
+  return { reportData, issues };
 }
 
 /**

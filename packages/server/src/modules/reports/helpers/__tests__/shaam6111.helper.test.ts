@@ -11,6 +11,7 @@ import {
 } from '../shaam6111-computation.helper.js';
 import {
   convertLocalReportDataToShaam6111ReportData,
+  irsCodesByEntity,
   validateShaam6111Report,
 } from '../shaam6111.helper.js';
 
@@ -146,5 +147,36 @@ describe('SHAAM 6111 report validation', () => {
       { severity: 'WARNING', message: 'check the withholding file number' },
     ]);
     expect(isValid).toBe(true);
+  });
+});
+
+describe('irsCodesByEntity', () => {
+  const OWNER = 'owner-a';
+  const OTHER_OWNER = 'owner-b';
+  // `${owner}:${sortCode}` → default IRS code, as built from the sort codes in the read scope
+  const DEFAULTS = new Map([
+    [`${OWNER}:100`, 7110],
+    [`${OTHER_OWNER}:200`, 7310],
+  ]);
+
+  it("prefers the entity's own IRS code, then its owner's sort-code default", () => {
+    const codes = irsCodesByEntity(
+      [
+        { id: 'own-code', irs_code: 7120, sort_code: 100, owner_id: OWNER },
+        { id: 'default', irs_code: null, sort_code: 100, owner_id: OWNER },
+      ],
+      DEFAULTS,
+    );
+    expect(codes.get('own-code')).toBe(7120);
+    expect(codes.get('default')).toBe(7110);
+  });
+
+  it("never takes another business's default for the same sort-code key", () => {
+    const codes = irsCodesByEntity(
+      [{ id: 'unmapped', irs_code: null, sort_code: 200, owner_id: OWNER }],
+      DEFAULTS,
+    );
+    // owner-a's sort code 200 has no default: the entity stays unmapped (and gets flagged)
+    expect(codes.has('unmapped')).toBe(false);
   });
 });
