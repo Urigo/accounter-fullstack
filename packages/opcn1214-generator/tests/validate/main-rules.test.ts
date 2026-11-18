@@ -5,6 +5,7 @@ import { renderReport } from '../../src/file/assemble.js';
 import type { Report1214Input } from '../../src/model/input.js';
 import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
+import { expectedWithholdingFileNumber } from '../../src/validate/main-rules.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import {
   foreignAppendix,
@@ -709,5 +710,83 @@ describe('capital-gains appendices and record 1000 (SPEC §10.3)', () => {
         expected: 'at most 14',
       }),
     ]);
+  });
+});
+
+describe('main.withholdingFile.companyNumber (SPEC §10.3, §15 A-28)', () => {
+  it('expectedWithholdingFileNumber: 9, the first 7 digits of the company, a check digit', () => {
+    // shopcn accepted 951400001 for company 514000009 (FIX-2).
+    expect(expectedWithholdingFileNumber('514000009')).toBe('951400001');
+    expect(expectedWithholdingFileNumber('514000017')).toBe('951400001');
+    // A short file number is left-padded to 9 digits first.
+    expect(expectedWithholdingFileNumber('18')).toBe('900000001');
+  });
+
+  it.each(['940000001', '940000003', '951400000'])(
+    'reports %s for company 514000009 (rejected by shopcn), stating the expected number',
+    withholdingFileNumber => {
+      const issues = issuesOf(
+        minimalInput({ company: { withholdingFileNumber } }),
+        'main.withholdingFile.companyNumber',
+      );
+      // 951400000 has the right first 8 digits: only its check digit is wrong (field.checkDigit).
+      if (withholdingFileNumber === '951400000') {
+        expect(issues).toEqual([]);
+        return;
+      }
+      expect(issues).toEqual([
+        expect.objectContaining({
+          severity: 'error',
+          path: 'company.withholdingFileNumber',
+          recordType: '1000',
+          value: withholdingFileNumber,
+          expected: '951400001',
+          field: { position: 225, length: 9, nameHe: 'תיק ניכויים' },
+        }),
+      ]);
+      expect(issues[0]?.message).toContain('951400001');
+    },
+  );
+
+  it('leaves a wrong check digit alone to field.checkDigit', () => {
+    const issues = runPipeline(
+      minimalInput({ company: { withholdingFileNumber: '951400000' } }),
+      OPTIONS,
+    ).issues;
+    expect(issues.map(issue => issue.ruleId)).toEqual(['field.checkDigit']);
+  });
+
+  it('accepts the derived number, an absent one and a short company number', () => {
+    expect(
+      runPipeline(minimalInput({ company: { withholdingFileNumber: '951400001' } }), OPTIONS)
+        .issues,
+    ).toEqual([]);
+    expect(issuesOf(minimalInput(), 'main.withholdingFile.companyNumber')).toEqual([]);
+    expect(
+      issuesOf(
+        minimalInput({ company: { fileNumber: '18', withholdingFileNumber: '900000001' } }),
+        'main.withholdingFile.companyNumber',
+      ),
+    ).toEqual([]);
+  });
+
+  it('does not judge values that fail field.numeric', () => {
+    expect(
+      issuesOf(
+        minimalInput({ company: { withholdingFileNumber: '95140000a' } }),
+        'main.withholdingFile.companyNumber',
+      ),
+    ).toEqual([]);
+  });
+
+  it('is reported on parsed files too', () => {
+    const input = minimalInput({ company: { withholdingFileNumber: '951400001' } });
+    expect(
+      fileIssuesOf(
+        input,
+        { line: 1, position: 225, value: '940000003' },
+        'main.withholdingFile.companyNumber',
+      ),
+    ).toEqual([expect.objectContaining({ path: 'company.withholdingFileNumber' })]);
   });
 });

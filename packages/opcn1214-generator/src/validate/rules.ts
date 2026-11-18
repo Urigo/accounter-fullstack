@@ -238,6 +238,15 @@ export const RULES = deepFreeze([
     specRef: { page: 6 },
   },
   {
+    id: 'main.withholdingFile.companyNumber',
+    severity: 'error',
+    source: 'checker',
+    scope: '1000',
+    description:
+      'The withholding file number (1000@225) does not start with 9 and the first 7 digits of the company file number (1000@137, left-padded to 9 digits); its 9th digit is the check digit (field.checkDigit). SHAAM rejects the file.',
+    specRef: { page: 6, note: 'shopcn' },
+  },
+  {
     id: 'main.familyCompany.fileNumber',
     severity: 'error',
     source: 'spec',
@@ -577,6 +586,15 @@ export const RULES = deepFreeze([
     description:
       'A 3077 appendix with code 071 = 1 (virtual currency) and no wallet address in 489 (the first slot).',
     specRef: { page: 57 },
+  },
+  {
+    id: 'cg.codePairs.max',
+    severity: 'error',
+    source: 'checker',
+    scope: 'report',
+    description:
+      'More than 20 code-amount pairs written in one capital-gains appendix (30xx record; omitted zero codes do not count); only 3060 and 3065 have more than 20 codes. SHAAM rejects the file.',
+    specRef: { page: 44, note: 'shopcn' },
   },
   {
     id: 'parse.empty',
