@@ -16,32 +16,6 @@ import type {
 } from '../../salaries/types.js';
 import { LedgerProvider } from '../providers/ledger.provider.js';
 
-function parseVacationDaysBalance(balance: string | null): number | null {
-  if (balance == null || balance.trim() === '') {
-    return null;
-  }
-  const days = Number(balance);
-  return Number.isNaN(days) ? null : days;
-}
-
-function isHourlySalary(salary: IGetSalaryRecordsByDatesResult): boolean {
-  const jobPercentage = Number(salary.job_percentage);
-  return Number.isNaN(jobPercentage) || jobPercentage === 0;
-}
-
-// Average monthly hours over the year's hourly salary records. The hourly daily wage is scaled by
-// it, so part-time hourly work is applied once, in the wage.
-function averageMonthlyHours(salaries: IGetSalaryRecordsByDatesResult[]): number {
-  const hours = salaries
-    .filter(isHourlySalary)
-    .map(salary => Number(salary.hours))
-    .filter(value => !Number.isNaN(value) && value > 0);
-  if (!hours.length) {
-    return 0;
-  }
-  return hours.reduce((sum, value) => sum + value, 0) / hours.length;
-}
-
 export async function calculateVacationReserveAmount(injector: Injector, year: number) {
   const {
     ownerId,
@@ -74,13 +48,11 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     {
       employee: IGetEmployeesByEmployerResult;
       latestSalary: IGetSalaryRecordsByDatesResult | null;
-      salaries: IGetSalaryRecordsByDatesResult[];
     }
   >();
   const yearEnd = endOfTimelessYear(year);
 
-  // Only employees still employed at year-end carry a reserve. Leavers are excluded, so their
-  // reserve from prior years is released through the delta below.
+  // employees who left by year-end are excluded: their reserve is released through the delta
   for (const employee of employees) {
     if (getTimelessDateYear(employee.start_work_date!) > year) {
       continue;
@@ -89,11 +61,7 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
       continue;
     }
 
-    employeeMap.set(employee.business_id, {
-      employee,
-      latestSalary: null,
-      salaries: [],
-    });
+    employeeMap.set(employee.business_id, { employee, latestSalary: null });
   }
 
   for (const salaryRecord of salaries) {
@@ -114,51 +82,42 @@ export async function calculateVacationReserveAmount(injector: Injector, year: n
     if (!employee.latestSalary || salaryRecord.month > employee.latestSalary.month) {
       employee.latestSalary = salaryRecord;
     }
-
-    employee.salaries.push(salaryRecord);
   }
 
-  const employeesWithoutSalaries: string[] = [];
+  let vacationReserveAmount = 0;
   const employeesWithoutBalance: string[] = [];
+
   for (const { employee, latestSalary } of employeeMap.values()) {
     if (!latestSalary) {
-      employeesWithoutSalaries.push(employee.business_id);
-    } else if (parseVacationDaysBalance(latestSalary.vacation_days_balance) === null) {
-      employeesWithoutBalance.push(employee.business_id);
+      throw new GraphQLError(`Employee ${employee.business_id} has no salary records in ${year}`);
     }
+    // the year-end payslip balance is the number of unused vacation days
+    if (latestSalary.vacation_days_balance == null || latestSalary.vacation_days_balance === '') {
+      employeesWithoutBalance.push(employee.business_id);
+      continue;
+    }
+    const vacationDays = Number(latestSalary.vacation_days_balance);
+
+    // part-time is applied once, through the actual monthly pay
+    const isHourly =
+      Number.isNaN(Number(latestSalary.job_percentage)) ||
+      Number(latestSalary.job_percentage) === 0;
+    const monthlyPay = isHourly
+      ? Number(latestSalary.hourly_rate) * Number(latestSalary.hours)
+      : Number(latestSalary.base_salary) + Number(latestSalary.global_additional_hours);
+    if (!monthlyPay || Number.isNaN(monthlyPay)) {
+      throw new GraphQLError(
+        `Employee ${employee.business_id} has no valid salary amount for last month`,
+      );
+    }
+    const dailySalary = monthlyPay / AVERAGE_MONTHLY_WORK_DAYS;
+    vacationReserveAmount += Math.round(vacationDays * dailySalary);
   }
-  if (employeesWithoutSalaries.length) {
-    throw new GraphQLError(
-      `Employees with no salary records in ${year}: ${employeesWithoutSalaries.join(', ')}`,
-    );
-  }
+
   if (employeesWithoutBalance.length) {
     throw new GraphQLError(
       `Missing ${year} year-end vacation days balance for employees: ${employeesWithoutBalance.join(', ')}`,
     );
-  }
-
-  let vacationReserveAmount = 0;
-
-  for (const employeeData of employeeMap.values()) {
-    const latestSalary = employeeData.latestSalary!;
-    // The year-end payslip balance is the authoritative count of unused vacation days, in the
-    // employee's own working days. Part-time work is reflected in the daily wage, not here.
-    const vacationDays = parseVacationDaysBalance(latestSalary.vacation_days_balance)!;
-
-    const dailySalary = isHourlySalary(latestSalary)
-      ? (Number(latestSalary.hourly_rate) * averageMonthlyHours(employeeData.salaries)) /
-        AVERAGE_MONTHLY_WORK_DAYS
-      : (Number(latestSalary.base_salary) + Number(latestSalary.global_additional_hours ?? 0)) /
-        AVERAGE_MONTHLY_WORK_DAYS;
-    if (!dailySalary || Number.isNaN(dailySalary)) {
-      throw new GraphQLError(
-        `Employee ${employeeData.employee.business_id} has no valid salary amount for last month`,
-      );
-    }
-
-    const employeeReserve = Math.round(vacationDays * dailySalary);
-    vacationReserveAmount += employeeReserve;
   }
 
   const prevVacationReserveAmount = vacationLedgerRecords.reduce((acc, record) => {

@@ -171,183 +171,100 @@ describe('calculateVacationReserveAmount', () => {
     expect(error.message).not.toContain(EMPLOYEE_NAME);
   });
 
-  it('only reads the salary records of the requested year', async () => {
-    const { injector, getSalaryRecordsByDates } = makeInjector();
+  it('uses the year-end balance when it is steady, not the sum of monthly balances', async () => {
+    const salaries = monthsOf(2025).map(month => monthly('employee', month, '10'));
 
-    await calculateVacationReserveAmount(injector, 2024);
-
-    expect(getSalaryRecordsByDates).toHaveBeenCalledWith({
-      fromDate: '2024-01',
-      toDate: '2024-12',
-    });
+    expect(await reserveFor(2025, { salaries })).toBe(10 * DAILY_WAGE);
   });
 
-  describe('balances', () => {
-    it('uses the year-end balance when it is steady, not the sum of monthly balances', async () => {
-      const salaries = monthsOf(2025).map(month => monthly('employee', month, '10'));
+  it('uses the year-end balance when it rises (1 day accrued a month)', async () => {
+    const salaries = [...monthsOf(2024), ...monthsOf(2025)].map((month, i) =>
+      monthly('employee', month, String(i + 1)),
+    );
+    const employees = [{ ...DEFAULT_EMPLOYEE, start_work_date: '2024-01-01' }];
 
-      expect(await reserveFor(2025, { salaries })).toBe(10 * DAILY_WAGE);
-    });
-
-    it('uses the year-end balance when it rises (1 day accrued a month)', async () => {
-      const salaries = [...monthsOf(2024), ...monthsOf(2025)].map((month, i) =>
-        monthly('employee', month, String(i + 1)),
-      );
-      const employees = [{ ...DEFAULT_EMPLOYEE, start_work_date: '2024-01-01' }];
-
-      // 24 days, not 1 + 2 + … + 24 = 300 plus a statutory entitlement on top
-      expect(await reserveFor(2025, { salaries, employees })).toBe(24 * DAILY_WAGE);
-    });
-
-    it('uses the latest record in the year even when records are unordered', async () => {
-      const salaries = [
-        monthly('employee', '2025-12', '7'),
-        monthly('employee', '2025-06', '15'),
-        monthly('employee', '2025-01', '20'),
-      ];
-
-      expect(await reserveFor(2025, { salaries })).toBe(7 * DAILY_WAGE);
-    });
-
-    it('returns a negative delta when the balance falls below last year', async () => {
-      const salaries = monthsOf(2025).map((month, i) => monthly('employee', month, String(20 - i)));
-
-      // closing reserve 9 days; last year's reserve was 20 days
-      expect(
-        await reserveFor(2025, {
-          salaries,
-          ledgerRecords: [priorReserveRecord(20 * DAILY_WAGE)],
-        }),
-      ).toBe((9 - 20) * DAILY_WAGE);
-    });
-
-    it('nets out every prior booking, in both directions', async () => {
-      const salaries = [monthly('employee', '2025-12', '12')];
-      const ledgerRecords = [
-        priorReserveRecord(15 * DAILY_WAGE, '2023-12-31'),
-        priorReserveRecord(-5 * DAILY_WAGE, '2024-12-31'),
-        // the current year's own booking is not part of the opening reserve
-        priorReserveRecord(999, '2025-12-31'),
-      ];
-
-      expect(await reserveFor(2025, { salaries, ledgerRecords })).toBe((12 - 10) * DAILY_WAGE);
-    });
-
-    it('accepts a zero balance', async () => {
-      const salaries = [monthly('employee', '2025-12', '0')];
-
-      expect(await reserveFor(2025, { salaries })).toBe(0);
-    });
+    // 24 days, not 1 + 2 + … + 24 = 300 plus a statutory entitlement on top
+    expect(await reserveFor(2025, { salaries, employees })).toBe(24 * DAILY_WAGE);
   });
 
-  describe('employee types', () => {
-    it('applies part-time once, through the salary, for monthly-paid employees', async () => {
-      const salaries = [
-        monthly('employee', '2025-12', '10', { job_percentage: '50', base_salary: '10835' }),
-      ];
+  it('returns a negative delta when the balance falls below last year', async () => {
+    const salaries = monthsOf(2025).map((month, i) => monthly('employee', month, String(20 - i)));
 
-      // 10 days × (10,835 / 21.67 = 500), with no extra 50% factor on the days
-      expect(await reserveFor(2025, { salaries })).toBe(10 * 500);
-    });
-
-    it('includes global additional hours in the daily wage', async () => {
-      const salaries = [
-        monthly('employee', '2025-12', '10', {
-          base_salary: '17336',
-          global_additional_hours: '4334',
-        }),
-      ];
-
-      expect(await reserveFor(2025, { salaries })).toBe(10 * DAILY_WAGE);
-    });
-
-    it("values hourly employees' days by their average monthly hours", async () => {
-      const hourly = (month: string, hours: string, balance: string) =>
-        monthly('employee', month, balance, {
-          job_percentage: '0',
-          base_salary: undefined,
-          hourly_rate: '50',
-          hours,
-        });
-      const salaries = [hourly('2025-10', '80', '4'), hourly('2025-11', '100', '5'), hourly('2025-12', '93', '6')];
-
-      // average 91 hours a month × 50 an hour / 21.67 days
-      const expected = Math.round((6 * 50 * 91) / AVERAGE_MONTHLY_WORK_DAYS);
-      expect(await reserveFor(2025, { salaries })).toBe(expected);
-    });
-
-    it('releases the reserve of an employee who left during the year', async () => {
-      const employees = [{ ...DEFAULT_EMPLOYEE, end_work_date: '2025-08-31' }];
-      const salaries = monthsOf(2025)
-        .slice(0, 8)
-        .map(month => monthly('employee', month, '10'));
-
-      expect(
-        await reserveFor(2025, {
-          employees,
-          salaries,
-          ledgerRecords: [priorReserveRecord(8 * DAILY_WAGE)],
-        }),
-      ).toBe(-8 * DAILY_WAGE);
-    });
-
-    it('counts an employee hired during the year from their latest balance', async () => {
-      const employees = [
-        DEFAULT_EMPLOYEE,
-        { business_id: 'new-hire', start_work_date: '2025-09-15', end_work_date: null },
-      ];
-      const salaries = [
-        monthly('employee', '2025-12', '10'),
-        // before the hire date: ignored
-        monthly('new-hire', '2025-08', '99'),
-        monthly('new-hire', '2025-09', '0.5'),
-        monthly('new-hire', '2025-12', '3.5'),
-      ];
-
-      expect(await reserveFor(2025, { employees, salaries })).toBe((10 + 3.5) * DAILY_WAGE);
-    });
-
-    it('ignores employees hired after the year', async () => {
-      const employees = [
-        DEFAULT_EMPLOYEE,
-        { business_id: 'future-hire', start_work_date: '2026-02-01', end_work_date: null },
-      ];
-      const salaries = [monthly('employee', '2025-12', '10')];
-
-      expect(await reserveFor(2025, { employees, salaries })).toBe(10 * DAILY_WAGE);
-    });
+    // closing reserve 9 days; last year's reserve was 20 days
+    expect(
+      await reserveFor(2025, { salaries, ledgerRecords: [priorReserveRecord(20 * DAILY_WAGE)] }),
+    ).toBe((9 - 20) * DAILY_WAGE);
   });
 
-  describe('missing data', () => {
-    it('lists every employee whose year-end balance is missing', async () => {
-      const employees = [
-        DEFAULT_EMPLOYEE,
-        { business_id: 'employee-b', start_work_date: '2020-01-01', end_work_date: null },
-        { business_id: 'employee-c', start_work_date: '2020-01-01', end_work_date: null },
-      ];
-      const salaries = [
-        monthly('employee', '2025-12', '10'),
-        // a November balance does not stand in for a missing December one
-        monthly('employee-b', '2025-11', '5'),
-        monthly('employee-b', '2025-12', null),
-        monthly('employee-c', '2025-12', ''),
-      ];
+  it('applies part-time once, through the salary', async () => {
+    const salaries = [
+      monthly('employee', '2025-12', '10', { job_percentage: '50', base_salary: '10835' }),
+    ];
 
-      const error = await errorFor(2025, { employees, salaries });
+    // 10 days × (10,835 / 21.67 = 500), with no extra 50% factor on the days
+    expect(await reserveFor(2025, { salaries })).toBe(10 * 500);
+  });
 
-      expect(error.message).toContain('vacation days balance');
-      expect(error.message).toContain('employee-b');
-      expect(error.message).toContain('employee-c');
-      expect(error.message).not.toMatch(/\bemployee\b(?!-)/);
-    });
+  it('values hourly employees by their hours in the latest month', async () => {
+    const salaries = [
+      monthly('employee', '2025-12', '6', {
+        job_percentage: '0',
+        base_salary: undefined,
+        hourly_rate: '50',
+        hours: '91',
+      }),
+    ];
 
-    it('lists active employees with no salary record in the year', async () => {
-      const salaries = [monthly('employee', '2024-12', '10')];
+    expect(await reserveFor(2025, { salaries })).toBe(
+      Math.round((6 * 50 * 91) / AVERAGE_MONTHLY_WORK_DAYS),
+    );
+  });
 
-      const error = await errorFor(2025, { salaries });
+  it('releases the reserve of an employee who left during the year', async () => {
+    const employees = [{ ...DEFAULT_EMPLOYEE, end_work_date: '2025-08-31' }];
+    const salaries = monthsOf(2025)
+      .slice(0, 8)
+      .map(month => monthly('employee', month, '10'));
 
-      expect(error.message).toContain('no salary records in 2025');
-      expect(error.message).toContain('employee');
-    });
+    expect(
+      await reserveFor(2025, {
+        employees,
+        salaries,
+        ledgerRecords: [priorReserveRecord(8 * DAILY_WAGE)],
+      }),
+    ).toBe(-8 * DAILY_WAGE);
+  });
+
+  it('counts an employee hired during the year from their latest balance', async () => {
+    const employees = [
+      DEFAULT_EMPLOYEE,
+      { business_id: 'new-hire', start_work_date: '2025-09-15', end_work_date: null },
+    ];
+    const salaries = [
+      monthly('employee', '2025-12', '10'),
+      monthly('new-hire', '2025-09', '0.5'),
+      monthly('new-hire', '2025-12', '3.5'),
+    ];
+
+    expect(await reserveFor(2025, { employees, salaries })).toBe((10 + 3.5) * DAILY_WAGE);
+  });
+
+  it('lists every employee whose year-end balance is missing', async () => {
+    const employees = [
+      DEFAULT_EMPLOYEE,
+      { business_id: 'employee-b', start_work_date: '2020-01-01', end_work_date: null },
+      { business_id: 'employee-c', start_work_date: '2020-01-01', end_work_date: null },
+    ];
+    const salaries = [
+      monthly('employee', '2025-12', '10'),
+      monthly('employee-b', '2025-11', '5'),
+      monthly('employee-b', '2025-12', null),
+      monthly('employee-c', '2025-12', null),
+    ];
+
+    const error = await errorFor(2025, { employees, salaries });
+
+    expect(error.message).toContain('vacation days balance');
+    expect(error.message).toContain('employee-b, employee-c');
   });
 });

@@ -68,7 +68,7 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
 
     // the delta's sign decides the direction: an increase is Dr expense / Cr reserve, a decrease
     // is Dr reserve / Cr expense. No change means no entry.
-    if (Math.round(vacationReserveAmount * 100) !== 0) {
+    if (vacationReserveAmount !== 0) {
       const isDecrease = vacationReserveAmount < 0;
       ledgerEntries.push({
         id: EMPTY_UUID,
