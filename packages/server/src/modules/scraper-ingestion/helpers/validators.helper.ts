@@ -164,6 +164,7 @@ export function validatePoalimSwiftTransactions(
     referenceNumber: t.referenceNumber,
     transferCatenatedId: t.transferCatenatedId,
     dataOriginCode: t.dataOriginCode,
+    documentTypeCode: t.documentTypeCode,
     swiftIsnSerialNumber: t.swiftIsnSerialNumber,
     swiftBankCode: t.swiftBankCode,
     orderCustomerName: t.orderCustomerName,
