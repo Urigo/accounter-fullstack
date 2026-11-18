@@ -64,23 +64,32 @@ export const generateLedgerRecordsForVacationReserveExpenses: ResolverFn<
 
     const { vacationReserveAmount } = await calculateVacationReserveAmount(injector, year);
 
-    const ledgerEntry: LedgerProto = {
-      id: EMPTY_UUID,
-      invoiceDate: endOfTimelessYear(year),
-      valueDate: endOfTimelessYear(year),
-      currency: defaultLocalCurrency,
-      isCreditorCounterparty: true,
-      creditAccountID1: vacationReserveTaxCategoryId,
-      debitAccountID1: vacationReserveExpensesTaxCategoryId,
-      localCurrencyCreditAmount1: Math.abs(vacationReserveAmount),
-      localCurrencyDebitAmount1: Math.abs(vacationReserveAmount),
-      description: `Vacation reserve for ${year}`,
-      ownerId: charge.owner_id,
-      chargeId: charge.id,
-      currencyRate: 1,
-    };
+    const ledgerEntries: LedgerProto[] = [];
 
-    const ledgerEntries = [ledgerEntry];
+    // the delta's sign decides the direction: an increase is Dr expense / Cr reserve, a decrease
+    // is Dr reserve / Cr expense. No change means no entry.
+    if (Math.round(vacationReserveAmount * 100) !== 0) {
+      const isDecrease = vacationReserveAmount < 0;
+      ledgerEntries.push({
+        id: EMPTY_UUID,
+        invoiceDate: endOfTimelessYear(year),
+        valueDate: endOfTimelessYear(year),
+        currency: defaultLocalCurrency,
+        isCreditorCounterparty: isDecrease,
+        creditAccountID1: isDecrease
+          ? vacationReserveExpensesTaxCategoryId
+          : vacationReserveTaxCategoryId,
+        debitAccountID1: isDecrease
+          ? vacationReserveTaxCategoryId
+          : vacationReserveExpensesTaxCategoryId,
+        localCurrencyCreditAmount1: Math.abs(vacationReserveAmount),
+        localCurrencyDebitAmount1: Math.abs(vacationReserveAmount),
+        description: `Vacation reserve for ${year}`,
+        ownerId: charge.owner_id,
+        chargeId: charge.id,
+        currencyRate: 1,
+      });
+    }
 
     // generate ledger from misc expenses
     await generateMiscExpensesLedger(charge, injector).then(entries => {
