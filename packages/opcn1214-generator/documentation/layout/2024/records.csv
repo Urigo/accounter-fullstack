@@ -1,0 +1,18 @@
+record,order,description,length,prefixLength,headerStart,headerLength,sectionStart,sectionLength,sectionKind,minOccurs,maxOccurs
+1000,1,"Form 1214 main record: company details, preparer, declarations, all main-form amounts",4232,136,137,2048,2185,2048,codeAmount,1,1
+1010,2,Related companies in Israel and abroad (part C),1160,136,137,1024,,,,0,3
+1020,3,Shareholders and amounts (part D),1160,136,137,1024,,,,1,99
+1030,4,Investments in R&D companies,336,136,137,200,,,,0,5
+2000,5,Foreign appendix,2184,136,137,1024,1161,1024,codeAmount,0,1
+2200,6,"Foreign income by country, one record per 2000 code",1210,136,137,50,187,1024,countryAmount,0,30
+3027,7,Capital gains: sale of shares (symbol 27),2184,136,137,1024,1161,1024,codeAmount,0,14
+3050,8,Capital gains: betterment-tax transaction (symbol 50),2184,136,137,1024,1161,1024,codeAmount,0,14
+3051,9,"Capital gains: forced transaction, virtual currency (symbol 51)",2184,136,137,1024,1161,1024,codeAmount,0,14
+3054,10,Capital gains: oil-partnership participation units (symbol 54),2184,136,137,1024,1161,1024,codeAmount,0,14
+3060,11,Capital gains: securities (symbol 60),2184,136,137,1024,1161,1024,codeAmount,0,14
+3063,12,Capital gains: securities under section 6 (symbol 63),2184,136,137,1024,1161,1024,codeAmount,0,14
+3064,13,Capital gains: REIT funds (symbol 64),2184,136,137,1024,1161,1024,codeAmount,0,14
+3065,14,"Capital gains: no tax withheld at source, form 1322 (symbol 65)",2184,136,137,1024,1161,1024,codeAmount,0,14
+3066,15,"Capital gains: no tax withheld at source, form 1326 (symbol 66)",2184,136,137,1024,1161,1024,codeAmount,0,14
+3077,16,Capital gains: all other transactions incl. goodwill (symbol 77),2184,136,137,1024,1161,1024,codeAmount,0,14
+9999,17,Control (closing) record,150,136,137,14,,,,1,1
