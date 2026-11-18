@@ -155,6 +155,7 @@ const SWIFT_PAYLOAD: any = {
       referenceNumber: 'REF-1',
       transferCatenatedId: 'TID-1',
       dataOriginCode: 1,
+      documentTypeCode: 7,
       details: {
         swiftBankDetails: {
           swiftIsnSerialNumber: '001',
@@ -354,6 +355,12 @@ describe('uploadPoalimSwift', () => {
     await client().uploadPoalimSwift(SWIFT_PAYLOAD, BANK_ACCOUNT);
     expect(Array.isArray(lastVariables['swifts'])).toBe(true);
     expect(lastVariables['swifts'] as unknown[]).toHaveLength(1);
+  });
+
+  it('forwards documentTypeCode', async () => {
+    await client().uploadPoalimSwift(SWIFT_PAYLOAD, BANK_ACCOUNT);
+    const [swift] = lastVariables['swifts'] as Record<string, unknown>[];
+    expect(swift['documentTypeCode']).toBe(7);
   });
 
   it('returns UploadResult', async () => {

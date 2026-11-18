@@ -615,6 +615,7 @@ export function poalimSwiftVars(
     referenceNumber: s.referenceNumber,
     transferCatenatedId: s.transferCatenatedId,
     dataOriginCode: s.dataOriginCode.toString(),
+    documentTypeCode: s.documentTypeCode,
 
     swiftIsnSerialNumber: s.details.swiftBankDetails.swiftIsnSerialNumber,
     swiftBankCode: s.details.swiftBankDetails.swiftBankCode,

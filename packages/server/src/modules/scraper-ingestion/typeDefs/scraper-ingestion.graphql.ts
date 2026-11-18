@@ -278,6 +278,7 @@ export default gql`
     currencyCodeCatenatedKey: String
     currencyLongDescription: String
     dataOriginCode: String
+    documentTypeCode: Int
     formattedStartDate: String
     orderCustomerName: String
     referenceNumber: String

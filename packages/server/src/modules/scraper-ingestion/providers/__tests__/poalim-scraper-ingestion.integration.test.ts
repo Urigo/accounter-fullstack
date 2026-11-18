@@ -329,6 +329,32 @@ describe('uploadPoalimSwiftTransactions', () => {
       { field: 'swift_remittance_information_70', oldValue: 'null', newValue: 'INVOICE 42' },
     ]);
   });
+
+  async function storedDocumentTypeCode(): Promise<number | null> {
+    const { rows } = await pool.query<{ document_type_code: number | null }>(
+      `SELECT document_type_code FROM accounter_schema.poalim_swift_account_transactions
+       WHERE transfer_catenated_id = $1`,
+      [baseSwift.transferCatenatedId],
+    );
+    return rows[0].document_type_code;
+  }
+
+  it('stores documentTypeCode on insert', async () => {
+    await provider.uploadPoalimSwiftTransactions([{ ...baseSwift, documentTypeCode: 3 }]);
+    expect(await storedDocumentTypeCode()).toBe(3);
+  });
+
+  it('reports a different documentTypeCode as a change and keeps the stored one', async () => {
+    await provider.uploadPoalimSwiftTransactions([{ ...baseSwift, documentTypeCode: 3 }]);
+    const result = await provider.uploadPoalimSwiftTransactions([
+      { ...baseSwift, documentTypeCode: 4 },
+    ]);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual([
+      { field: 'document_type_code', oldValue: '3', newValue: '4' },
+    ]);
+    expect(await storedDocumentTypeCode()).toBe(3);
+  });
 });
 
 

@@ -9,6 +9,7 @@ const SwiftItemSchema = z
     chargePartyName: z.string(),
     referenceNumber: z.string(),
     transferCatenatedId: z.string(),
+    documentTypeCode: z.number().int(),
   })
   .loose();
 
