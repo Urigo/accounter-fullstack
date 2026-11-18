@@ -141,6 +141,11 @@ const Shaam6111Report = lazy(() =>
     default: m.Shaam6111Report,
   })),
 );
+const IrsCodesReport = lazy(() =>
+  import('../components/screens/reports/irs-codes-report/index.js').then(m => ({
+    default: m.IrsCodesReport,
+  })),
+);
 const YearlyLedgerReport = lazy(() =>
   import('../components/reports/yearly-ledger/index.js').then(m => ({
     default: m.YearlyLedgerReport,
@@ -592,6 +597,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Shaam 6111 Report',
                   breadcrumb: 'Shaam 6111',
+                },
+              },
+              {
+                path: 'irs-codes',
+                element: withSuspense(IrsCodesReport, <ReportSkeleton />),
+                handle: {
+                  title: 'IRS Codes Report',
+                  breadcrumb: 'IRS Codes',
                 },
               },
               {

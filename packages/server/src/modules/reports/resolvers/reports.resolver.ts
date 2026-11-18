@@ -14,6 +14,7 @@ import {
   corporateTaxRulingComplianceReport,
   corporateTaxRulingComplianceReportDifferences,
 } from './reports/corporate-tax-ruling-compliance-report.js';
+import { irsCodesReport } from './reports/irs-codes-report.resolver.js';
 import {
   profitAndLossReport,
   profitAndLossReportYearMapper,
@@ -31,6 +32,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     taxReport,
     corporateTaxRulingComplianceReport,
     yearlyLedgerReport,
+    irsCodesReport,
     uniformFormat: async (_, { fromDate, toDate }, context, info) => {
       const { injector } = context;
       const accountsPromise = accountsForUniformFormat(context, info, fromDate, toDate).catch(

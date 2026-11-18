@@ -185,6 +185,7 @@ export const ROUTES = {
     DEPRECIATION: (filter?: DepreciationReportFilter | null) =>
       `/reports/depreciation${getDepreciationReportParams(filter)}`,
     SHAAM_6111: '/reports/shaam-6111',
+    IRS_CODES: '/reports/irs-codes',
     YEARLY_LEDGER: '/reports/yearly-ledger',
     ANNUAL_REVENUE: '/reports/annual-revenue',
     CORPORATE_TAX_RULING_COMPLIANCE: (year?: number) =>
