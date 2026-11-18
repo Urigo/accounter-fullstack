@@ -161,7 +161,12 @@ export const input: Report1214Input = {
       dates: { code15: '2024-01-15', code20: '1999-12-31' },
       improvements: [
         { expense: 20_000, date: '2005-07-07', code50Amount: 20_000 },
-        { accumulatedDepreciation: 3000.5, date: '2010-10-10', code50Amount: 2999.5 },
+        {
+          expense: 15_000,
+          accumulatedDepreciation: 3000.5,
+          date: '2010-10-10',
+          code50Amount: 11_999.5,
+        },
       ],
       replacementAsset: { details: 'קרקע חלופית', purchaseDate: '2024-05-01', price: 900_000 },
       amounts: { '015': 1_100_000, '092': 1 },

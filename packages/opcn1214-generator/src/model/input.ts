@@ -603,9 +603,12 @@ export interface OtherTransactionsAppendix {
    * only five slots exist (cg.improvements.max), and their number is 3077@245.
    */
   improvements?: Array<{
-    /** "סכום ההוצאה על ההשבחה", written ×100 (agorot allowed). */
+    /**
+     * "סכום ההוצאה על ההשבחה", written ×100 (agorot allowed). Required, greater than 0: SHAAM
+     * counts only improvements with an expense (cg.improvements.expense, SPEC §15 A-32).
+     */
     expense?: number;
-    /** "סכום הפחת שנצבר", written ×100 (agorot allowed). */
+    /** "סכום הפחת שנצבר", written ×100 (agorot allowed); at most `expense`. */
     accumulatedDepreciation?: number;
     /** "תאריך של קוד 50", written DD/MM/YYYY. */
     date: IsoDate;
