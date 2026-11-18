@@ -1,12 +1,17 @@
-import { validate1214 } from '../../src/index.js';
-import type { Report1214Input } from '../../src/model/input.js';
+import { generate1214, parse1214, validate1214 } from '../../src/index.js';
+import { getLayout } from '../../src/layout/registry.js';
+import type { RecordType } from '../../src/layout/types.js';
+import type { Report1214Input, SecuritiesAppendix } from '../../src/model/input.js';
 import {
   forcedVirtualCurrencyAppendix,
   improvements,
   minimalInput,
+  noWithholding1322Appendix,
   otherTransactionsAppendix,
   section6Appendix,
+  securitiesAppendix,
 } from '../fixtures/builders.js';
+import { tamper } from '../fixtures/files.js';
 
 const OPTIONS = { today: () => '2024-06-30' };
 
@@ -127,5 +132,71 @@ describe('cg.virtualCurrency.wallet (SPEC §10.6)', () => {
     expect(issuesOf(minimalInput({ capitalGains: [withoutWallet, forcedWithoutWallet] }))).toEqual(
       [],
     );
+  });
+});
+
+/**
+ * Amounts for every code of `record` (3060 or 3065, which share their 21 codes), 7 each and 0 for
+ * the codes in `zero`.
+ */
+function everyCode(
+  record: Extract<RecordType, '3060' | '3065'>,
+  zero: readonly string[] = [],
+): SecuritiesAppendix['amounts'] {
+  return Object.fromEntries(
+    getLayout(2024).records[record].codes.map(def => [def.code, zero.includes(def.code) ? 0 : 7]),
+  );
+}
+
+describe('cg.codePairs.max (SPEC §10.6, §15 A-30)', () => {
+  it('reports a 3060 or 3065 appendix with all 21 codes written, at its amounts', () => {
+    const { errors } = validate1214(
+      minimalInput({
+        capitalGains: [
+          securitiesAppendix({ amounts: everyCode('3060') }),
+          noWithholding1322Appendix({ amounts: everyCode('3065') }),
+        ],
+      }),
+      OPTIONS,
+    );
+    expect(errors).toEqual([
+      expect.objectContaining({
+        ruleId: 'cg.codePairs.max',
+        severity: 'error',
+        path: 'capitalGains[0].amounts',
+        recordType: '3060',
+        recordIndex: 0,
+        value: 21,
+        expected: 'at most 20',
+      }),
+      expect.objectContaining({
+        ruleId: 'cg.codePairs.max',
+        path: 'capitalGains[1].amounts',
+        recordType: '3065',
+        value: 21,
+      }),
+    ]);
+  });
+
+  it('counts the codes written: an omitted zero code does not count', () => {
+    expect(
+      issuesOf(
+        minimalInput({
+          capitalGains: [securitiesAppendix({ amounts: everyCode('3060', ['099']) })],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('is reported on parsed files too', () => {
+    // 20 codes written; append a 21st pair (code 099) after them in the section at 1161.
+    const input = minimalInput({
+      capitalGains: [securitiesAppendix({ amounts: everyCode('3060', ['099']) })],
+    });
+    const { text } = generate1214(input, OPTIONS);
+    const edited = tamper(text, { line: 3, position: 1161 + 20 * 13, value: '0990000000007' });
+    expect(parse1214(edited).issues.filter(issue => issue.ruleId === 'cg.codePairs.max')).toEqual([
+      expect.objectContaining({ path: 'capitalGains[0].amounts', value: 21 }),
+    ]);
   });
 });

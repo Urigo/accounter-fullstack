@@ -6,7 +6,12 @@
 import { generate1214 } from '../../src/api/generate.js';
 import { getLayout } from '../../src/layout/registry.js';
 import type { CountryCode } from '../../src/model/codes.generated.js';
-import type { PhonePrefix, Report1214Input, Shareholder } from '../../src/model/input.js';
+import type {
+  PhonePrefix,
+  Report1214Input,
+  SecuritiesAppendix,
+  Shareholder,
+} from '../../src/model/input.js';
 import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import {
@@ -21,6 +26,7 @@ import {
   relatedCompanies,
   section6Appendices,
   section6Appendix,
+  securitiesAppendix,
   withCheckDigit,
 } from '../fixtures/builders.js';
 import {
@@ -80,6 +86,15 @@ function withMainCodePairs(pairs: number) {
     throw new Error(`not enough plain codes for ${pairs} pairs`);
   }
   return minimalInput({ amounts: Object.fromEntries(extra) });
+}
+
+/** Amounts for the first `count` codes of record 3060, each non-zero (all are written). */
+function codeAmounts(count: number): SecuritiesAppendix['amounts'] {
+  return Object.fromEntries(
+    getLayout(2024)
+      .records['3060'].codes.slice(0, count)
+      .map((def, index) => [def.code, 100 + index]),
+  );
 }
 
 /** The file generate1214 writes for `input`, with `edit` applied to it. */
@@ -292,6 +307,13 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => minimalInput({ company: { phone: { number: '123' } } }),
     pass: () => minimalInput({ company: { phone: { number: '1234567' } } }),
     path: 'company.phone.number',
+  },
+  'main.withholdingFile.companyNumber': {
+    kind: 'input',
+    // shopcn rejected 940000003 for company 514000009 and accepted 951400001 (FIX-2, A-28).
+    fail: () => minimalInput({ company: { withholdingFileNumber: '940000003' } }),
+    pass: () => minimalInput({ company: { withholdingFileNumber: '951400001' } }),
+    path: 'company.withholdingFileNumber',
   },
   'main.familyCompany.fileNumber': {
     kind: 'file',
@@ -653,6 +675,13 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
       }),
     pass: () => generatedFile(minimalInput({ capitalGains: [otherTransactionsAppendix()] })),
     path: 'capitalGains[0].walletAddresses',
+  },
+  'cg.codePairs.max': {
+    kind: 'input',
+    // shopcn: "לא ניתן למלא יותר מ 20 שדות" for a 3060 appendix with all 21 codes (FIX-2, A-30).
+    fail: () => minimalInput({ capitalGains: [securitiesAppendix({ amounts: codeAmounts(21) })] }),
+    pass: () => minimalInput({ capitalGains: [securitiesAppendix({ amounts: codeAmounts(20) })] }),
+    path: 'capitalGains[0].amounts',
   },
   'struct.relatedCompanies.max': {
     kind: 'input',

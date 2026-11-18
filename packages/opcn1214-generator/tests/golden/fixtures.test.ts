@@ -230,6 +230,19 @@ describe('golden cg-63', () => {
   });
 });
 
+/**
+ * The codes of record `type`, sorted, without the one each 21-code record leaves out: SHAAM accepts
+ * at most 20 pairs in one appendix (cg.codePairs.max, SPEC §15 A-30), so cg-60 and cg-65 leave out
+ * code 099 (FIX-2).
+ */
+function codesUpTo20(type: '3060' | '3064' | '3065' | '3066'): string[] {
+  const leftOut = type === '3060' || type === '3065' ? ['099'] : [];
+  return LAYOUT.records[type].codes
+    .map(code => code.code)
+    .filter(code => !leftOut.includes(code))
+    .sort();
+}
+
 describe.each([
   ['cg-60', cg60, '3060'],
   ['cg-64', cg64, '3064'],
@@ -241,14 +254,12 @@ describe.each([
     expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
   });
 
-  it(`has one ${type} appendix with four withholders and every code of record ${type}`, () => {
+  it(`has one ${type} appendix with four withholders and every code of record ${type} (at most 20)`, () => {
     expect(input.capitalGains).toHaveLength(1);
     const [appendix] = input.capitalGains ?? [];
     expect(appendix?.symbol).toBe(symbol);
     expect(appendix && 'withholders' in appendix ? appendix.withholders : []).toHaveLength(4);
-    expect(Object.keys(appendix?.amounts ?? {}).sort()).toEqual(
-      LAYOUT.records[type].codes.map(code => code.code).sort(),
-    );
+    expect(Object.keys(appendix?.amounts ?? {}).sort()).toEqual(codesUpTo20(type));
   });
 
   it(`sets every non-filler header field of record ${type}`, () => {
@@ -282,7 +293,7 @@ describe.each([
     expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
   });
 
-  it(`has one ${type} appendix with a withholding status and every code of record ${type}`, () => {
+  it(`has one ${type} appendix with a withholding status and every code of record ${type} (at most 20)`, () => {
     expect(input.capitalGains).toHaveLength(1);
     const [appendix] = input.capitalGains ?? [];
     expect(appendix?.symbol).toBe(symbol);
@@ -290,9 +301,7 @@ describe.each([
     if (type === '3065') {
       expect(appendix && 'withholders' in appendix ? appendix.withholders : []).toHaveLength(4);
     }
-    expect(Object.keys(appendix?.amounts ?? {}).sort()).toEqual(
-      LAYOUT.records[type].codes.map(code => code.code).sort(),
-    );
+    expect(Object.keys(appendix?.amounts ?? {}).sort()).toEqual(codesUpTo20(type));
   });
 
   it(`sets every non-filler header field of record ${type}`, () => {

@@ -144,7 +144,10 @@ export interface CompanyDetails {
   fileNumber: string;
   /** 1000@175, ≤ 50 (SHAAM replaces it with the registry name if different). */
   registeredName: string;
-  /** 1000@225 "תיק ניכויים". */
+  /**
+   * 1000@225 "תיק ניכויים": 9, the first 7 digits of `fileNumber` and a check digit (SPEC §15
+   * A-28; 514000009 → 951400001).
+   */
   withholdingFileNumber?: string;
   /** 1000@234. */
   vatFileNumber?: string;
@@ -251,7 +254,7 @@ export interface Declarations {
 
 /** A related company in Israel or abroad, record 1010 (SPEC §7.2). */
 export interface RelatedCompany {
-  /** 1010@139, ≤ 50. */
+  /** 1010@139, ≤ 50, starting with a Hebrew letter (SPEC §15 A-29). */
   companyName: string;
   /** 1010@189 "מספר תיק חברה". */
   companyFileNumber?: string;
@@ -288,7 +291,7 @@ export interface Shareholder {
 
 /** An investment in an R&D company, record 1030 (SPEC §7.2); affiliation 1030@137 is derived. */
 export interface RdInvestment {
-  /** 1030@138, ≤ 50. */
+  /** 1030@138, ≤ 50, starting with a Hebrew letter (SPEC §15 A-29). */
   companyName: string;
   /** 1030@188 "מספר תיק חברה". */
   companyFileNumber?: string;
@@ -579,7 +582,7 @@ export interface OtherTransactionsAppendix {
   walletAddresses?: [string] | [string, string];
   /**
    * Record 3077 code-amount section without the derived codes 501–505: 020/027/040 take agorot
-   * (written ×100), 018 is the rate 23 or 50 (written ×100), 092 a single digit (SPEC §15 A-11),
+   * (written ×100), 018 is the rate 23 or 50 (written ×100), 092 is 1 (SPEC §15 A-31),
    * 071 = 1 marks virtual currency; no code of 3077 is zeroAllowed (SPEC §4.5).
    */
   amounts: Partial<
