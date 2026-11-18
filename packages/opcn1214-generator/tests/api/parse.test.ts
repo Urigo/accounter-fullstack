@@ -780,5 +780,6 @@ describe('parse1214', () => {
         }
       }
     }
-  });
+    // Thousands of parses per golden: give it room on slow CI runners instead of the 5 s default.
+  }, 60_000);
 });
