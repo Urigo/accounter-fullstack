@@ -99,7 +99,9 @@ export const taxReport: ResolverFn<
       taxRate,
       specialTaxableIncome,
       specialTaxRate,
-      annualTaxExpenseAmount,
+      currentTaxExpense,
+      taxableLoss,
+      mixedRateLoss,
     } = await calculateTaxAmounts(
       injector,
       year,
@@ -135,7 +137,9 @@ export const taxReport: ResolverFn<
       taxRate,
       specialTaxableIncome,
       specialTaxRate,
-      annualTaxExpense: annualTaxExpenseAmount,
+      annualTaxExpense: currentTaxExpense,
+      taxableLoss,
+      mixedRateLoss,
     });
   }
 
@@ -241,6 +245,12 @@ export const taxReportYearMapper: TaxReportYearResolvers = {
     };
   },
   specialTaxRate: parent => parent.specialTaxRate,
+  taxableLoss: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return formatFinancialAmount(parent.taxableLoss, defaultLocalCurrency);
+  },
   annualTaxExpense: async (parent, _, { injector }) => {
     const { defaultLocalCurrency } = await injector
       .get(AdminContextProvider)

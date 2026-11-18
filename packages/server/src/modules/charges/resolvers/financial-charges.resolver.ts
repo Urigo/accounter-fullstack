@@ -59,6 +59,23 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         toAnyDate: year,
       });
 
+      const { taxExpensesTaxCategoryId } = targetAdminContext.authorities;
+      let taxExpensesCharge = charges.find(c =>
+        c.business_array?.includes(taxExpensesTaxCategoryId),
+      );
+      if (!taxExpensesCharge) {
+        // A loss-year tax charge has no ledger (current tax is 0), hence no dates, so the
+        // year-filtered query misses it. Look it up by the description it is generated with.
+        const undatedCharges = await injector.get(ChargesProvider).getChargesByFilters({
+          ownerIds: [targetAdminContext.ownerId],
+          type: 'FINANCIAL',
+          freeText: `Tax expenses charge for ${year.substring(0, 4)}`,
+        });
+        taxExpensesCharge = undatedCharges.find(
+          c => c.tax_category_id === taxExpensesTaxCategoryId,
+        );
+      }
+
       return {
         id: `${year}-financial-charges`,
         revaluationCharge: charges.find(c =>
@@ -66,9 +83,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
             targetAdminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
           ),
         ),
-        taxExpensesCharge: charges.find(c =>
-          c.business_array?.includes(targetAdminContext.authorities.taxExpensesTaxCategoryId),
-        ),
+        taxExpensesCharge,
         depreciationCharge: targetAdminContext.depreciation.accumulatedDepreciationTaxCategoryId
           ? charges.find(c =>
               c.business_array?.includes(
