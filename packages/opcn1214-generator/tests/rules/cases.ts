@@ -664,6 +664,24 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     pass: () => minimalInput({ capitalGains: [otherTransactionsAppendix()] }),
     path: 'capitalGains[0].improvements[1].code50Amount',
   },
+  'cg.improvements.expense': {
+    kind: 'input',
+    // shopcn: "חוסר התאמה בין הנתונים למספר יתרות השבחה" for an improvement with a depreciation but
+    // no expense (FIX-3, A-32).
+    fail: () =>
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix({
+            improvements: [
+              improvements(1)[0]!,
+              { accumulatedDepreciation: 3000.5, date: '2010-10-10', code50Amount: 2999.5 },
+            ],
+          }),
+        ],
+      }),
+    pass: () => minimalInput({ capitalGains: [otherTransactionsAppendix()] }),
+    path: 'capitalGains[0].improvements[1].expense',
+  },
   'cg.virtualCurrency.wallet': {
     kind: 'file',
     // Line 3 is the 3077 record; 3077@489 is its first (and only) wallet address.

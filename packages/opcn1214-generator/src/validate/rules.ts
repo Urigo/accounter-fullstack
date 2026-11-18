@@ -554,6 +554,15 @@ export const RULES = [
     specRef: { page: 58 },
   },
   {
+    id: 'cg.improvements.expense',
+    severity: 'error',
+    source: 'checker',
+    scope: '3077',
+    description:
+      'An improvement of a 3077 appendix without an expense greater than 0, or with an accumulated depreciation above its expense. SHAAM counts only improvements with an expense against the improvement count (245) and rejects the file.',
+    specRef: { page: 58, note: 'shopcn' },
+  },
+  {
     id: 'cg.virtualCurrency.wallet',
     severity: 'error',
     source: 'spec',

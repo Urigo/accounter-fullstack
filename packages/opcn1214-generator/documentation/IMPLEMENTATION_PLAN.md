@@ -2214,6 +2214,10 @@ Done when
 **Outcome CP-5 (2026-11-18):** `hebrew-edge` and `batch-50` passed; the five files rejected at the
 CP-2 to CP-4 re-checks were regenerated in FIX-2 and are PENDING.
 
+**Outcome FIX-2 re-check (2026-11-18):** `cg-60`, `cg-65` and `related-and-rd` passed;
+`capital-gains-max` rejected (an improvement without an expense, SPEC §15 A-32) → FIX-3; `main-full`
+rejected (beneficiary-enterprise notice date, 1000@852) → FIX-3 part 2, waiting for probes.
+
 ---
 
 ### Fix-up step template (when a checkpoint fails)

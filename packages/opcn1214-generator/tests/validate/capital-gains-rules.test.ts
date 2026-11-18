@@ -40,6 +40,8 @@ describe('cg.improvements.code50Amount (SPEC §10.6)', () => {
         }),
       ),
     ).toEqual([
+      ['cg.improvements.expense', 'capitalGains[1].improvements[0].expense', '3077', 0],
+      ['cg.improvements.expense', 'capitalGains[1].improvements[2].expense', '3077', 0],
       ['cg.improvements.code50Amount', 'capitalGains[1].improvements[0].code50Amount', '3077', 0],
       ['cg.improvements.code50Amount', 'capitalGains[1].improvements[2].code50Amount', '3077', 0],
     ]);
@@ -78,6 +80,8 @@ describe('cg.improvements.code50Amount (SPEC §10.6)', () => {
         }),
       ),
     ).toEqual([
+      ['cg.improvements.expense', 'capitalGains[1].improvements[0].expense', '3077', 1],
+      ['cg.improvements.expense', 'capitalGains[1].improvements[1].expense', '3077', 1],
       ['cg.improvements.code50Amount', 'capitalGains[1].improvements[0].code50Amount', '3077', 1],
     ]);
   });
@@ -94,6 +98,107 @@ describe('cg.improvements.code50Amount (SPEC §10.6)', () => {
         }),
       ),
     ).toEqual([]);
+  });
+});
+
+describe('cg.improvements.expense (SPEC §10.6, §15 A-32)', () => {
+  it('reports an improvement without an expense or with an expense of 0, at its expense', () => {
+    const { errors } = validate1214(
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix(),
+          otherTransactionsAppendix({
+            improvements: [
+              improvements(1)[0]!,
+              { accumulatedDepreciation: 3000.5, date: '2010-10-10', code50Amount: 2999.5 },
+              { expense: 0, date: '2011-01-01', code50Amount: 100 },
+            ],
+          }),
+        ],
+      }),
+      OPTIONS,
+    );
+    expect(errors).toEqual([
+      expect.objectContaining({
+        ruleId: 'cg.improvements.expense',
+        severity: 'error',
+        message:
+          'Improvement 2 has no expense; SHAAM counts an improvement (3077@245) only when it has an expense greater than 0.',
+        path: 'capitalGains[1].improvements[1].expense',
+        recordType: '3077',
+        recordIndex: 1,
+        expected: 'an expense greater than 0',
+      }),
+      expect.objectContaining({
+        ruleId: 'cg.improvements.expense',
+        message:
+          'Improvement 3 has no expense; SHAAM counts an improvement (3077@245) only when it has an expense greater than 0.',
+        path: 'capitalGains[1].improvements[2].expense',
+      }),
+    ]);
+  });
+
+  it('reports an accumulated depreciation above the expense, at the depreciation', () => {
+    const { errors } = validate1214(
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix({
+            improvements: [
+              {
+                expense: 1000,
+                accumulatedDepreciation: 1000.01,
+                date: '2015-01-01',
+                code50Amount: 1,
+              },
+            ],
+          }),
+        ],
+      }),
+      OPTIONS,
+    );
+    expect(errors).toEqual([
+      expect.objectContaining({
+        ruleId: 'cg.improvements.expense',
+        severity: 'error',
+        message:
+          'Improvement 1 has an accumulated depreciation (1000.01) above its expense (1000).',
+        path: 'capitalGains[0].improvements[0].accumulatedDepreciation',
+        recordType: '3077',
+        recordIndex: 0,
+        value: 1000.01,
+        expected: 'at most 1000',
+      }),
+    ]);
+  });
+
+  it('accepts a depreciation equal to the expense, no depreciation, or no improvements', () => {
+    expect(
+      issuesOf(
+        minimalInput({
+          capitalGains: [
+            otherTransactionsAppendix({
+              improvements: [
+                { expense: 500, accumulatedDepreciation: 500, date: '2015-01-01', code50Amount: 1 },
+                { expense: 0.01, date: '2016-01-01', code50Amount: 0.01 },
+              ],
+            }),
+            otherTransactionsAppendix({ improvements: undefined }),
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('is reported on parsed files too', () => {
+    // 3077@281–292: the expense of improvement 2 (slot 1), blanked to zeros.
+    const { text } = generate1214(
+      minimalInput({ capitalGains: [otherTransactionsAppendix()] }),
+      OPTIONS,
+    );
+    const edited = tamper(text, { line: 3, position: 281, value: '0'.repeat(12) });
+    expect(
+      parse1214(edited).issues.filter(issue => issue.ruleId === 'cg.improvements.expense'),
+    ).toEqual([expect.objectContaining({ path: 'capitalGains[0].improvements[1].expense' })]);
   });
 });
 

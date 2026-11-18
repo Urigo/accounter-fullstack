@@ -456,8 +456,9 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
         otherTransactionsAppendix({
           assetDetails: '  מבנה\u00A0 \u201Cהנגב\u201D ',
           improvements: [
-            { date: '2020-01-01' },
-            { expense: 0, accumulatedDepreciation: 0.01, date: '2020-02-01', code50Amount: 0 },
+            // cg.improvements.expense: every improvement has an expense > 0 (A-32).
+            { expense: 0.01, date: '2020-01-01' },
+            { expense: 0.01, accumulatedDepreciation: 0.01, date: '2020-02-01', code50Amount: 0 },
             { expense: 99_999_999.99, date: '2020-03-01', code50Amount: 0.01 },
           ],
           replacementAsset: { details: ' ' },
