@@ -1,5 +1,78 @@
 # @accounter/modern-poalim-scraper
 
+## 0.11.1
+
+### Patch Changes
+
+- [#4634](https://github.com/Urigo/accounter-fullstack/pull/4634) [`9c833a1`](https://github.com/Urigo/accounter-fullstack/commit/9c833a1af7a27d9aa0677e8db3648f061ea98439) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`uuid@14.0.3` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.3) (from `14.0.2`, in `dependencies`)
+
+- [#4639](https://github.com/Urigo/accounter-fullstack/pull/4639) [`a4121e9`](https://github.com/Urigo/accounter-fullstack/commit/a4121e9614f49dfe7a023f1f65d9e6a13dc0ecac) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.64.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.0) (from `1.63.0`, in `dependencies`)
+
+- [#4643](https://github.com/Urigo/accounter-fullstack/pull/4643) [`0cec65f`](https://github.com/Urigo/accounter-fullstack/commit/0cec65f89583a24fd86ff49c884b555a51e6866a) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.13.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.13.0) (from `25.12.0`, in `dependencies`)
+
+- [#4663](https://github.com/Urigo/accounter-fullstack/pull/4663) [`b614910`](https://github.com/Urigo/accounter-fullstack/commit/b614910b987cc59885ece1001e15df401f9ef75d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`zod@4.6.7` ↗︎](https://www.npmjs.com/package/zod/v/4.6.7) (from `4.6.5`, in `dependencies`)
+
+- [#4684](https://github.com/Urigo/accounter-fullstack/pull/4684) [`8a9c5be`](https://github.com/Urigo/accounter-fullstack/commit/8a9c5be6042af604d8ca8058aa1a0b0965579cfc) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.14.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.14.0) (from `25.13.0`, in `dependencies`)
+
+- [#4723](https://github.com/Urigo/accounter-fullstack/pull/4723) [`35a00dd`](https://github.com/Urigo/accounter-fullstack/commit/35a00dd2b79ef43c684be0dcb74fb8a80b88320e) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.14.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.14.0) (from `25.13.0`, in `dependencies`)
+
+- [#4725](https://github.com/Urigo/accounter-fullstack/pull/4725) [`6a5f5b6`](https://github.com/Urigo/accounter-fullstack/commit/6a5f5b68ac675498cc3164ffc960d20c5524623c) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.64.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.64.1) (from `1.64.0`, in `dependencies`)
+
+- [#4763](https://github.com/Urigo/accounter-fullstack/pull/4763) [`d4f979f`](https://github.com/Urigo/accounter-fullstack/commit/d4f979ff3ea72e7508db7801d3e74d9dccb6bbf9) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.15.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.15.0) (from `25.14.0`, in `dependencies`)
+
+- [#4771](https://github.com/Urigo/accounter-fullstack/pull/4771) [`b13ce9c`](https://github.com/Urigo/accounter-fullstack/commit/b13ce9c11b690909367418625e2307421bae54f2) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4772](https://github.com/Urigo/accounter-fullstack/pull/4772) [`593ec81`](https://github.com/Urigo/accounter-fullstack/commit/593ec810870358bee0d9d0b5806e03bd32ee735b) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4773](https://github.com/Urigo/accounter-fullstack/pull/4773) [`f92ab61`](https://github.com/Urigo/accounter-fullstack/commit/f92ab612b56409ed71d733e888b62838b5300fbf) Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4780](https://github.com/Urigo/accounter-fullstack/pull/4780) [`793503f`](https://github.com/Urigo/accounter-fullstack/commit/793503fb68471a79873c86f572509f783230935f) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.15.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.15.0) (from `25.14.0`, in `dependencies`)
+
+- [#4792](https://github.com/Urigo/accounter-fullstack/pull/4792) [`5e77e66`](https://github.com/Urigo/accounter-fullstack/commit/5e77e66344233868d7db934346ef4f91bd67197b) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.16.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.16.0) (from `25.15.0`, in `dependencies`)
+
+- [#4927](https://github.com/Urigo/accounter-fullstack/pull/4927) [`9d897fe`](https://github.com/Urigo/accounter-fullstack/commit/9d897feca750ae4c9d3a44ea065a7fe38a977b0d) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.65.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.65.0) (from `1.64.1`, in `dependencies`)
+
+- [#4941](https://github.com/Urigo/accounter-fullstack/pull/4941) [`f905c6c`](https://github.com/Urigo/accounter-fullstack/commit/f905c6c51511a7092a5d1cc1ee42bcf1a9ba6673) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`node-xlsx@0.25.0` ↗︎](https://www.npmjs.com/package/node-xlsx/v/0.25.0) (from `0.24.0`, in `dependencies`)
+
+- [#4943](https://github.com/Urigo/accounter-fullstack/pull/4943) [`3c5bd29`](https://github.com/Urigo/accounter-fullstack/commit/3c5bd29c2e306f5b6da18056c5894fb669a70b2e) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`puppeteer@25.17.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.17.0) (from `25.16.0`, in `dependencies`)
+
+- [#4969](https://github.com/Urigo/accounter-fullstack/pull/4969) [`d215099`](https://github.com/Urigo/accounter-fullstack/commit/d215099354861e9f98ffafa704379a36508690d5) Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+    - Updated dependency [`playwright@1.65.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.65.1) (from `1.65.0`, in `dependencies`)
+
+- [#4687](https://github.com/Urigo/accounter-fullstack/pull/4687) [`36a4755`](https://github.com/Urigo/accounter-fullstack/commit/36a47555bc9264bd2ff27e345b531810d9ad3aee) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Poalim securities transactions with the `איחוד/הפחתת הון` (consolidation / capital reduction)
+  payment type no longer fail schema validation. The value is accepted by the scraper schemas and
+  exposed in GraphQL as the new `SecurityPaymentType.CONSOLIDATION_OR_CAPITAL_REDUCTION` member.
+
+- [#5080](https://github.com/Urigo/accounter-fullstack/pull/5080) [`9b6095e`](https://github.com/Urigo/accounter-fullstack/commit/9b6095e7856da6401bb9df333e4a055ea052eee5) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Store the document type code of Poalim SWIFT transfers. Poalim now sends an integer
+  `documentTypeCode` on every SWIFT item instead of `null`, which failed the scraper's schema
+  validation and stopped the Poalim scrape. The scraper now requires the field, the scraper app sends
+  it as `PoalimSwiftTransactionInput.documentTypeCode`, and the server stores it in the new
+  `poalim_swift_account_transactions.document_type_code` column. A code that differs from the stored
+  one is reported as a changed field. Deploy the server before the scraper app: an older server
+  rejects the new input field.
+
+- [#4994](https://github.com/Urigo/accounter-fullstack/pull/4994) [`79fc048`](https://github.com/Urigo/accounter-fullstack/commit/79fc0480cafeddbd9a0e7dd6d2f3e9611fabdc23) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Each scraper now documents its environment variables in a `.env.template`: new templates for the
+  etana, etherscan and kraken scrapers (their READMEs point at them instead of inline blocks), a
+  described template for the VAT scraper, and a new modern-poalim-scraper template holding the bank
+  credentials its `src/test` dev scripts read (moved out of the root template, plus the missing
+  `OTSAR_HAHAYAL_*`). A repo-wide test now fails when any template lists a variable no code reads.
+
 ## 0.11.0
 
 ### Minor Changes

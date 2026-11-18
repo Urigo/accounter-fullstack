@@ -1,5 +1,14 @@
 # @accounter/email-ingestion-gateway
 
+## 0.1.2
+
+### Patch Changes
+
+- [#4993](https://github.com/Urigo/accounter-fullstack/pull/4993) [`1764899`](https://github.com/Urigo/accounter-fullstack/commit/17648999972c6e785c10ab5b3476f7c188ae3ce5) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Adds `.env.template` for the gateway service and completes `.dev.vars.example` for the Cloudflare
+  Worker (adds `HEALTH_PROBE_TIMEOUT_MS`), with a test that keeps both, and the README tables, in sync
+  with the code. `wrangler.jsonc` now sets `keep_vars: false`: every Worker value is a secret, so the
+  config file is the source of truth and a dashboard plain-text var is removed on the next deploy.
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @accounter/etana-scraper
 
+## 0.0.2
+
+### Patch Changes
+
+- [#4994](https://github.com/Urigo/accounter-fullstack/pull/4994) [`79fc048`](https://github.com/Urigo/accounter-fullstack/commit/79fc0480cafeddbd9a0e7dd6d2f3e9611fabdc23) Thanks [@gilgardosh](https://github.com/gilgardosh)! - Each scraper now documents its environment variables in a `.env.template`: new templates for the
+  etana, etherscan and kraken scrapers (their READMEs point at them instead of inline blocks), a
+  described template for the VAT scraper, and a new modern-poalim-scraper template holding the bank
+  credentials its `src/test` dev scripts read (moved out of the root template, plus the missing
+  `OTSAR_HAHAYAL_*`). A repo-wide test now fails when any template lists a variable no code reads.
+
 ## 0.0.1
 
 ### Patch Changes
