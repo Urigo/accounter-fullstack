@@ -50,15 +50,10 @@ interface Step01Props extends BaseStepProps {
 
 export function Step01ValidateCharges(props: Step01Props) {
   const [status, setStatus] = useState<StepStatus>('loading');
-  const [chargeData, setChargeData] = useState<ChargeValidationData>({
-    approvedPercentage: 0,
-    pendingPercentage: 0,
-    unapprovedPercentage: 100,
-    totalCharges: 1,
-    approvedCount: 0,
-    pendingCount: 0,
-    unapprovedCount: 1,
-  });
+  // `null` until the counts are actually fetched. While a manual override is
+  // persisted the query is not run automatically, and showing placeholder
+  // counts would claim charges need attention when none were checked.
+  const [chargeData, setChargeData] = useState<ChargeValidationData | null>(null);
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
   const [hasReportedCompletion, setHasReportedCompletion] = useState(false);
   const [overriddenStatus, setOverriddenStatus] = useState<StepStatus | undefined>(undefined);
@@ -178,11 +173,11 @@ export function Step01ValidateCharges(props: Step01Props) {
   const actions = useMemo((): StepAction[] => {
     if (persistedManualStatus) {
       return [
-        { label: 'Review Charges', href },
+        { label: 'Review Charges', href, openInNewTab: true },
         { label: 'Revalidate', onClick: refreshData, disabled: fetching },
       ];
     }
-    return [{ label: 'Review Charges', href }];
+    return [{ label: 'Review Charges', href, openInNewTab: true }];
   }, [persistedManualStatus, href, refreshData, fetching]);
 
   const finalStatus = overriddenStatus ?? status;
@@ -207,9 +202,15 @@ export function Step01ValidateCharges(props: Step01Props) {
       footer={
         <div className="w-full flex items-center gap-2 pt-2 border-t">
           <span className="text-sm font-medium">Charge Validation Details</span>
-          <Badge variant="outline" className="text-xs">
-            {chargeData.pendingCount + chargeData.unapprovedCount} need attention
-          </Badge>
+          {chargeData ? (
+            <Badge variant="outline" className="text-xs">
+              {chargeData.pendingCount + chargeData.unapprovedCount} need attention
+            </Badge>
+          ) : fetching ? null : (
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              Not checked
+            </Badge>
+          )}
         </div>
       }
       onToggleExpanded={() => setIsDetailsExpanded(prev => !prev)}
@@ -222,91 +223,97 @@ export function Step01ValidateCharges(props: Step01Props) {
                 <div className="flex justify-between items-center text-sm">
                   <span className="font-medium">Charge Review Progress</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">
-                      {chargeData.totalCharges.toLocaleString()} total charges
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={refreshData}
-                      disabled={status === 'loading'}
-                    >
+                    {chargeData && (
+                      <span className="text-muted-foreground">
+                        {chargeData.totalCharges.toLocaleString()} total charges
+                      </span>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={refreshData} disabled={fetching}>
                       Refresh
                     </Button>
                   </div>
                 </div>
 
-                {/* Combined Progress Bar */}
-                <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
-                    style={{ width: `${chargeData.approvedPercentage}%` }}
-                  />
-                  <div
-                    className="absolute top-0 h-full bg-orange-500 transition-all duration-300"
-                    style={{
-                      left: `${chargeData.approvedPercentage}%`,
-                      width: `${chargeData.pendingPercentage}%`,
-                    }}
-                  />
-                  <div
-                    className="absolute top-0 h-full bg-red-500 transition-all duration-300"
-                    style={{
-                      left: `${chargeData.approvedPercentage + chargeData.pendingPercentage}%`,
-                      width: `${chargeData.unapprovedPercentage}%`,
-                    }}
-                  />
-                </div>
+                {chargeData ? (
+                  <>
+                    {/* Combined Progress Bar */}
+                    <div className="relative h-6 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="absolute left-0 top-0 h-full bg-green-500 transition-all duration-300"
+                        style={{ width: `${chargeData.approvedPercentage}%` }}
+                      />
+                      <div
+                        className="absolute top-0 h-full bg-orange-500 transition-all duration-300"
+                        style={{
+                          left: `${chargeData.approvedPercentage}%`,
+                          width: `${chargeData.pendingPercentage}%`,
+                        }}
+                      />
+                      <div
+                        className="absolute top-0 h-full bg-red-500 transition-all duration-300"
+                        style={{
+                          left: `${chargeData.approvedPercentage + chargeData.pendingPercentage}%`,
+                          width: `${chargeData.unapprovedPercentage}%`,
+                        }}
+                      />
+                    </div>
 
-                {/* Legend */}
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full" />
-                    <div>
-                      <div className="font-medium text-green-700">
-                        Approved ({chargeData.approvedPercentage.toFixed(2)}%)
+                    {/* Legend */}
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-green-500 rounded-full" />
+                        <div>
+                          <div className="font-medium text-green-700">
+                            Approved ({chargeData.approvedPercentage.toFixed(2)}%)
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {chargeData.approvedCount.toLocaleString()} charges
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {chargeData.approvedCount.toLocaleString()} charges
+
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full" />
+                        <div>
+                          <div className="font-medium text-orange-700">
+                            Pending ({chargeData.pendingPercentage.toFixed(2)}%)
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {chargeData.pendingCount.toLocaleString()} charges
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full" />
+                        <div>
+                          <div className="font-medium text-red-700">
+                            Unapproved ({chargeData.unapprovedPercentage.toFixed(2)}%)
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {chargeData.unapprovedCount.toLocaleString()} charges
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full" />
-                    <div>
-                      <div className="font-medium text-orange-700">
-                        Pending ({chargeData.pendingPercentage.toFixed(2)}%)
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {chargeData.pendingCount.toLocaleString()} charges
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full" />
-                    <div>
-                      <div className="font-medium text-red-700">
-                        Unapproved ({chargeData.unapprovedPercentage.toFixed(2)}%)
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {chargeData.unapprovedCount.toLocaleString()} charges
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Counts not loaded. Click Refresh to check.
+                  </p>
+                )}
               </div>
 
-              {(chargeData.pendingPercentage > 0 || chargeData.unapprovedPercentage > 0) && (
-                <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
-                  <span className="text-sm text-orange-800">
-                    {chargeData.pendingCount + chargeData.unapprovedCount} charges need review
-                    before proceeding
-                  </span>
-                </div>
-              )}
+              {chargeData &&
+                (chargeData.pendingPercentage > 0 || chargeData.unapprovedPercentage > 0) && (
+                  <div className="flex items-center gap-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm text-orange-800">
+                      {chargeData.pendingCount + chargeData.unapprovedCount} charges need review
+                      before proceeding
+                    </span>
+                  </div>
+                )}
             </div>
           </CardContent>
           {adminBusinessId && (
