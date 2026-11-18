@@ -761,25 +761,29 @@ describe('parse1214', () => {
     'cg-66',
     'cg-77',
     'capital-gains-max',
-  ])('never lets anything but Opcn1214ParseError escape for a corrupted %s golden', name => {
-    const golden = goldenText(name);
-    const lines = golden.split(CRLF);
-    for (const [index, line] of lines.entries()) {
-      for (let position = 1; position <= line.length; position += 37) {
-        for (const value of ['X', ' ', '9', '\u05D0']) {
-          const corrupted = tamper(golden, index + 1, position, value);
-          try {
-            parse1214(corrupted);
-          } catch (error) {
-            expect(error).toBeInstanceOf(Opcn1214ParseError);
-            for (const issue of (error as Opcn1214ParseError).issues) {
-              expect(issue.line).toBeGreaterThan(0);
-              expect(issue.column).toBeGreaterThan(0);
+  ])(
+    'never lets anything but Opcn1214ParseError escape for a corrupted %s golden',
+    name => {
+      const golden = goldenText(name);
+      const lines = golden.split(CRLF);
+      for (const [index, line] of lines.entries()) {
+        for (let position = 1; position <= line.length; position += 37) {
+          for (const value of ['X', ' ', '9', '\u05D0']) {
+            const corrupted = tamper(golden, index + 1, position, value);
+            try {
+              parse1214(corrupted);
+            } catch (error) {
+              expect(error).toBeInstanceOf(Opcn1214ParseError);
+              for (const issue of (error as Opcn1214ParseError).issues) {
+                expect(issue.line).toBeGreaterThan(0);
+                expect(issue.column).toBeGreaterThan(0);
+              }
             }
           }
         }
       }
-    }
-    // Thousands of parses per golden: give it room on slow CI runners instead of the 5 s default.
-  }, 60_000);
+      // Thousands of parses per golden: give it room on slow CI runners instead of the 5 s default.
+    },
+    60_000,
+  );
 });
