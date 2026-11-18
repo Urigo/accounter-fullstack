@@ -611,7 +611,10 @@ export function randomValidInput(seed: number): Report1214Input {
     form1343Attached: optional() ? chance(rng, 0.5) : undefined,
     form1344Attached: optional() ? chance(rng, 0.5) : undefined,
     preferredEnterprise: optional() ? chance(rng, 0.5) : undefined,
-    beneficiaryEnterprise: optional(0.2) ? { noticeDate: randomDate(rng) } : undefined,
+    // main.beneficiaryEnterprise.noticeDateBeforeTaxYear: not before the tax year (A-33).
+    beneficiaryEnterprise: optional(0.2)
+      ? { noticeDate: randomDate(rng, taxYear, taxYear) }
+      : undefined,
     dividendDistributed: optional() ? chance(rng, 0.5) : undefined,
     specialYear: optional(0.2)
       ? { balanceSheetDate: randomDate(rng, taxYear, taxYear) }

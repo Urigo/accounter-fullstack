@@ -238,7 +238,7 @@ export interface Declarations {
   claimsCapitalInvestmentLawBenefits?: boolean;
   /** 850. */
   preferredEnterprise?: boolean;
-  /** 851 + 852. */
+  /** 851 + 852; the notice date may not precede the tax year (SPEC §15 A-33). */
   beneficiaryEnterprise?: { noticeDate: IsoDate };
   /** 862. */
   dividendDistributed?: boolean;

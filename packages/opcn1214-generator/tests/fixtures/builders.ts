@@ -124,7 +124,7 @@ export function fullDeclarationsInput(
       form1344Attached: true,
       claimsCapitalInvestmentLawBenefits: true,
       preferredEnterprise: true,
-      beneficiaryEnterprise: { noticeDate: '2023-05-14' },
+      beneficiaryEnterprise: { noticeDate: '2024-05-14' },
       dividendDistributed: true,
       specialYear: { balanceSheetDate: '2024-09-30' },
       foreignInvestors: true,

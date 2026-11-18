@@ -5,7 +5,10 @@ import { renderReport } from '../../src/file/assemble.js';
 import type { Report1214Input } from '../../src/model/input.js';
 import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
-import { expectedWithholdingFileNumber } from '../../src/validate/main-rules.js';
+import {
+  earliestNoticeDate,
+  expectedWithholdingFileNumber,
+} from '../../src/validate/main-rules.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import {
   foreignAppendix,
@@ -174,7 +177,7 @@ describe('record 1000 conditional requirements (SPEC §10.3)', () => {
   it.each([
     [
       'main.beneficiaryEnterprise.noticeDate',
-      { beneficiaryEnterprise: { noticeDate: '2023-05-14' } },
+      { beneficiaryEnterprise: { noticeDate: '2024-05-14' } },
       852,
       'declarations.beneficiaryEnterprise.noticeDate',
     ],
@@ -788,5 +791,71 @@ describe('main.withholdingFile.companyNumber (SPEC §10.3, §15 A-28)', () => {
         'main.withholdingFile.companyNumber',
       ),
     ).toEqual([expect.objectContaining({ path: 'company.withholdingFileNumber' })]);
+  });
+});
+
+describe('main.beneficiaryEnterprise.noticeDateBeforeTaxYear (SPEC §10.3, §15 A-33)', () => {
+  const RULE = 'main.beneficiaryEnterprise.noticeDateBeforeTaxYear';
+  const withNoticeDate = (noticeDate: string, balanceSheetDate?: string) =>
+    minimalInput({
+      declarations: {
+        beneficiaryEnterprise: { noticeDate },
+        ...(balanceSheetDate === undefined ? {} : { specialYear: { balanceSheetDate } }),
+      },
+    });
+
+  it('earliestNoticeDate: 1 January of the tax year, or an earlier special-year start', () => {
+    expect(earliestNoticeDate(2024)).toBe('2024-01-01');
+    expect(earliestNoticeDate(2024, '2024-09-30')).toBe('2023-10-01');
+    expect(earliestNoticeDate(2024, '2024-02-29')).toBe('2023-03-01');
+    expect(earliestNoticeDate(2024, '2024-12-31')).toBe('2024-01-01');
+    // A special year starting after 1 January does not make the bound stricter.
+    expect(earliestNoticeDate(2024, '2025-03-31')).toBe('2024-01-01');
+    // An invalid balance-sheet date is left to field.date.
+    expect(earliestNoticeDate(2024, '2024-02-30')).toBe('2024-01-01');
+  });
+
+  it('reports 14/05/2023 in tax year 2024 (rejected by shopcn), naming the earliest date', () => {
+    expect(issuesOf(withNoticeDate('2023-05-14'), RULE)).toEqual([
+      expect.objectContaining({
+        severity: 'error',
+        message:
+          'The beneficiary-enterprise notice date (1000@852) 14/05/2023 is before the start of tax year 2024; the earliest date SHAAM accepts is 01/01/2024.',
+        path: 'declarations.beneficiaryEnterprise.noticeDate',
+        recordType: '1000',
+        value: '2023-05-14',
+        expected: 'on or after 01/01/2024',
+        field: expect.objectContaining({ position: 852, length: 10 }),
+      }),
+    ]);
+  });
+
+  it('checks the calendar-year boundary', () => {
+    expect(issuesOf(withNoticeDate('2023-12-31'), RULE)).toHaveLength(1);
+    expect(runPipeline(withNoticeDate('2024-01-01'), OPTIONS).issues).toEqual([]);
+  });
+
+  it('accepts the dates shopcn accepted: 14/05/2024 and 15/01/2025 (no upper bound)', () => {
+    expect(runPipeline(withNoticeDate('2024-05-14'), OPTIONS).issues).toEqual([]);
+    expect(runPipeline(withNoticeDate('2025-01-15'), OPTIONS).issues).toEqual([]);
+  });
+
+  it('allows the start of a special year that begins before 1 January', () => {
+    expect(issuesOf(withNoticeDate('2023-10-01', '2024-09-30'), RULE)).toEqual([]);
+    expect(issuesOf(withNoticeDate('2023-09-30', '2024-09-30'), RULE)).toEqual([
+      expect.objectContaining({ expected: 'on or after 01/10/2023' }),
+    ]);
+    expect(issuesOf(withNoticeDate('2023-03-01', '2024-02-29'), RULE)).toEqual([]);
+    expect(issuesOf(withNoticeDate('2023-02-28', '2024-02-29'), RULE)).toHaveLength(1);
+  });
+
+  it('is reported on parsed files too', () => {
+    expect(
+      fileIssuesOf(
+        withNoticeDate('2024-05-14'),
+        { line: 1, position: 852, value: '14/05/2023' },
+        RULE,
+      ),
+    ).toEqual([expect.objectContaining({ path: 'declarations.beneficiaryEnterprise.noticeDate' })]);
   });
 });
