@@ -83,6 +83,11 @@ const taxReportQuery = dedupeFragments(TaxReportDocument);
         annualTaxExpense {
           formatted
         }
+        taxableLoss {
+          raw
+          formatted
+        }
+        mixedRateLoss
       }
       reference {
         id
@@ -140,6 +145,11 @@ const taxReportQuery = dedupeFragments(TaxReportDocument);
         annualTaxExpense {
           formatted
         }
+        taxableLoss {
+          raw
+          formatted
+        }
+        mixedRateLoss
       }
     }
   }
@@ -188,6 +198,19 @@ export const TaxReport = (): ReactElement => {
         <AccounterBarSpinner className="self-center" />
       ) : (
         <div className="flex flex-col gap-4">
+          {report &&
+            [report, ...referenceYearsData]
+              .filter(yearReport => yearReport.mixedRateLoss)
+              .map(yearReport => (
+                <div
+                  key={yearReport.year}
+                  className="rounded-md border border-yellow-400 bg-yellow-50 p-3 text-sm text-yellow-900"
+                >
+                  {yearReport.year}: regular-rate and preferred-rate (sort code 991) taxable incomes
+                  have opposite signs, so the tax nets a loss against a profit at different rates.
+                  Confirm the loss-offset order with the accountant.
+                </div>
+              ))}
           {report && (
             <Table className="text-base">
               <TableHeader>
@@ -369,6 +392,19 @@ export const TaxReport = (): ReactElement => {
                 </TableRow>
               </TableBody>
               <tfoot>
+                {[report, ...referenceYearsData].some(
+                  yearReport => yearReport.taxableLoss.raw > 0,
+                ) && (
+                  <TableRow>
+                    <TableHead>Taxable Loss</TableHead>
+                    <TableHead>{report.taxableLoss.formatted}</TableHead>
+                    <TableHead />
+                    {referenceYearsData.map(report => (
+                      <TableHead key={report.year}>{report.taxableLoss.formatted}</TableHead>
+                    ))}
+                    <TableCell />
+                  </TableRow>
+                )}
                 <TableRow>
                   <TableHead>Annual Tax Expense</TableHead>
                   <TableHead>{report.annualTaxExpense.formatted}</TableHead>

@@ -33,7 +33,12 @@ export default gql`
     taxRate: Float!
     specialTaxableIncome: ReportCommentary!
     specialTaxRate: Float!
+    " current tax for the year; never negative (0 in a loss year) "
     annualTaxExpense: FinancialAmount!
+    " total taxable loss for the year as a positive amount, or 0 "
+    taxableLoss: FinancialAmount!
+    " regular-rate and preferred-rate (sort code 991) incomes have opposite signs, so the tax nets a loss against a profit at different rates; confirm with the accountant "
+    mixedRateLoss: Boolean!
   }
 
   " Tax report commentary summary "

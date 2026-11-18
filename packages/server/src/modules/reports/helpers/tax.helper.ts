@@ -143,8 +143,13 @@ export async function calculateTaxAmounts(
 
   const specialTaxRate = Number(taxRateVariables.original_tax_rate) / 100;
 
-  const annualTaxExpenseAmount =
-    taxableIncomeAmount * taxRate + specialTaxableIncome.amount * specialTaxRate;
+  const { annualTaxExpenseAmount, currentTaxExpense, taxableLoss, mixedRateLoss } =
+    computeCurrentTax({
+      taxableIncomeAmount,
+      taxRate,
+      specialTaxableIncomeAmount: specialTaxableIncome.amount,
+      specialTaxRate,
+    });
 
   return {
     researchAndDevelopmentExpensesForTax,
@@ -159,6 +164,43 @@ export async function calculateTaxAmounts(
     specialTaxableIncome,
     specialTaxRate,
     annualTaxExpenseAmount,
+    currentTaxExpense,
+    taxableLoss,
+    mixedRateLoss,
+  };
+}
+
+/**
+ * Current tax for the year, from the regular-rate and preferred-rate (sort code 991) taxable incomes.
+ *
+ * - `annualTaxExpenseAmount`: the raw formula; negative in a loss year.
+ * - `currentTaxExpense`: what gets booked — current tax is never negative (a loss is carried
+ *   forward instead, which is out of scope here).
+ * - `taxableLoss`: the year's total taxable loss as a positive amount, or 0.
+ * - `mixedRateLoss`: one income is a loss while the other is a profit. The formula nets them at
+ *   different rates; the loss-offset order must be confirmed with the accountant, so this is flagged.
+ */
+export function computeCurrentTax({
+  taxableIncomeAmount,
+  taxRate,
+  specialTaxableIncomeAmount,
+  specialTaxRate,
+}: {
+  taxableIncomeAmount: number;
+  taxRate: number;
+  specialTaxableIncomeAmount: number;
+  specialTaxRate: number;
+}) {
+  const annualTaxExpenseAmount =
+    taxableIncomeAmount * taxRate + specialTaxableIncomeAmount * specialTaxRate;
+
+  return {
+    annualTaxExpenseAmount,
+    currentTaxExpense: Math.max(0, annualTaxExpenseAmount),
+    taxableLoss: Math.max(0, -(taxableIncomeAmount + specialTaxableIncomeAmount)),
+    mixedRateLoss:
+      (taxableIncomeAmount < 0 && specialTaxableIncomeAmount > 0) ||
+      (taxableIncomeAmount > 0 && specialTaxableIncomeAmount < 0),
   };
 }
 

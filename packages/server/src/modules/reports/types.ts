@@ -95,6 +95,8 @@ export type TaxReportYearProto = {
   specialTaxableIncome: CommentaryProto;
   specialTaxRate: number;
   annualTaxExpense: number;
+  taxableLoss: number;
+  mixedRateLoss: boolean;
 };
 
 /** The records `getVatRecords` builds for one month. */
