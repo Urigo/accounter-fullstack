@@ -78,6 +78,7 @@ export async function buildAdminContextFromDb(
         developmentForeignTaxCategoryId: dbContext.development_foreign_tax_category_id,
         developmentLocalTaxCategoryId: dbContext.development_local_tax_category_id,
         salaryExcessExpensesTaxCategoryId: dbContext.salary_excess_expenses_tax_category_id,
+        donationsTaxCategoryId: dbContext.donations_tax_category_id ?? null,
       },
     },
     crossYear: {

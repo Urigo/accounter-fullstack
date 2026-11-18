@@ -38,6 +38,8 @@ export type AdminContext = {
       developmentForeignTaxCategoryId: string;
       developmentLocalTaxCategoryId: string;
       salaryExcessExpensesTaxCategoryId: string;
+      /** Donations (SHAAM 6111 tax-adjustment line 183); not deductible as an expense */
+      donationsTaxCategoryId: string | null;
     };
   };
   crossYear: {

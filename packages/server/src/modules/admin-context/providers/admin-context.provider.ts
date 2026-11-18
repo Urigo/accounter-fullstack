@@ -286,6 +286,10 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $salaryExcessExpensesTaxCategoryId,
       salary_excess_expenses_tax_category_id
     ),
+    donations_tax_category_id = COALESCE(
+      $donationsTaxCategoryId,
+      donations_tax_category_id
+    ),
     ledger_lock = COALESCE(
       $ledgerLock,
       ledger_lock
@@ -489,6 +493,7 @@ export class AdminContextProvider {
           developmentForeignTaxCategoryId: rawContext.development_foreign_tax_category_id,
           developmentLocalTaxCategoryId: rawContext.development_local_tax_category_id,
           salaryExcessExpensesTaxCategoryId: rawContext.salary_excess_expenses_tax_category_id,
+          donationsTaxCategoryId: rawContext.donations_tax_category_id ?? null,
         },
       },
     };

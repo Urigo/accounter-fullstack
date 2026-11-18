@@ -65,6 +65,8 @@ export default gql`
     ownerId: UUID
     name: String!
     irsCode: Int
+    " SHAAM 6111 code for a balance on the opposite side of the usual one (e.g. an overdrawn bank account) "
+    contraIrsCode: Int
     createdAt: DateTime!
     updatedAt: DateTime!
     isActive: Boolean!
@@ -94,6 +96,8 @@ export default gql`
     name: String
     sortCode: Int
     irsCode: Int
+    " SHAAM 6111 code for a balance on the opposite side of the usual one; 0 clears it "
+    contraIrsCode: Int
     isActive: Boolean
 
     hashavshevetName: String

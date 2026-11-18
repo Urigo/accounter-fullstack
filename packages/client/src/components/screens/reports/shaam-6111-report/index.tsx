@@ -30,6 +30,10 @@ import { getShaam6111AvailableYears } from './years.js';
       validation {
         ...Shaam6111ValidationIssues
       }
+      taxAdjustmentOverrides {
+        code
+        amount
+      }
     }
   }
 `;
@@ -88,7 +92,7 @@ export function Shaam6111Report() {
     [updateSearchParam],
   );
 
-  const [{ data, fetching, error }] = useQuery({
+  const [{ data, fetching, error }, refetch] = useQuery({
     query: Shaam6111ReportScreenDocument,
     variables: {
       year: selectedYear ? Number.parseInt(selectedYear, 10) : 0,
@@ -158,6 +162,7 @@ export function Shaam6111Report() {
             selectedBusiness={selectedBusiness}
             selectedYear={selectedYear}
             referenceYear={loadedReference ? referenceYear : undefined}
+            onSettingsSaved={() => refetch({ requestPolicy: 'network-only' })}
           />
         </CardContent>
       </Card>
@@ -174,6 +179,7 @@ function Content({
   selectedBusiness,
   selectedYear,
   referenceYear,
+  onSettingsSaved,
 }: {
   fetching: boolean;
   errorMessage?: string;
@@ -183,6 +189,7 @@ function Content({
   selectedBusiness?: string;
   selectedYear?: string;
   referenceYear?: string;
+  onSettingsSaved?: () => void;
 }) {
   if (fetching) {
     return (
@@ -224,6 +231,8 @@ function Content({
         selectedBusiness={selectedBusiness}
         selectedYear={selectedYear}
         referenceYear={referenceYear}
+        taxAdjustmentOverrides={data.shaam6111.taxAdjustmentOverrides}
+        onSettingsSaved={onSettingsSaved}
       />
     </>
   );

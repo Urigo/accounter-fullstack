@@ -23,6 +23,7 @@ import { Step10ExportTrialBalance } from './step-10-export-trial-balance/index.j
 import { Step11DepreciationReport } from './step-11-depreciation-report/index.js';
 import { Step13TaxReport } from './step-13-tax-report/index.js';
 import { Step14TaxComplianceReport } from './step-14-tax-compliance-report/index.js';
+import { Step16Shaam6111 } from './step-16-shaam-6111/index.js';
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
 import { isLoadingStepStatuses } from './step-statuses-loading.js';
@@ -378,15 +379,14 @@ export const AnnualAuditFlow = (): ReactNode => {
               ]}
             />
 
-            <SimpleStep
+            <Step16Shaam6111
               id="16"
               title="Generate 6111 Report"
               icon={<FileText className="h-4 w-4" />}
+              year={year}
+              adminBusinessId={adminBusinessId}
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
-              actions={[
-                { label: 'Generate 6111', href: `${ROUTES.REPORTS.SHAAM_6111}?year=${year}` },
-              ]}
             />
 
             <SimpleStep

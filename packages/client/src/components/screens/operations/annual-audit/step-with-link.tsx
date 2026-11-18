@@ -10,6 +10,13 @@ interface StepWithLinkProps extends BaseStepProps {
   year: number;
   linkLabel: string;
   linkHref: string;
+  /**
+   * Whether the step's own check passes. Until it does, the step can't be marked done, and a step
+   * marked done earlier shows as in progress.
+   */
+  ready?: boolean;
+  /** Shown while `ready` is false */
+  notReadyMessage?: string;
 }
 
 export function StepWithLink({
@@ -18,13 +25,22 @@ export function StepWithLink({
   year,
   linkLabel,
   linkHref,
+  ready = true,
+  notReadyMessage,
   ...props
 }: StepWithLinkProps): ReactElement {
-  const { status, saving, fetchingStatus, handleMarkDone, handleUnmark } = useAnnualAuditStep({
+  const {
+    status: manualStatus,
+    saving,
+    fetchingStatus,
+    handleMarkDone,
+    handleUnmark,
+  } = useAnnualAuditStep({
     stepId,
     adminBusinessId,
     year,
   });
+  const status = !ready && manualStatus === 'completed' ? 'in-progress' : manualStatus;
 
   const { onStatusChange, id } = props;
   useEffect(() => onStatusChange?.(id, status), [status, onStatusChange, id]);
@@ -40,16 +56,24 @@ export function StepWithLink({
                 {linkLabel}
               </a>
             </Button>
-            {status === 'completed' ? (
+            {manualStatus === 'completed' ? (
               <Button variant="ghost" size="sm" disabled={saving} onClick={handleUnmark}>
                 Unmark
               </Button>
             ) : (
-              <Button variant="outline" size="sm" disabled={saving} onClick={handleMarkDone}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={saving || !ready}
+                onClick={handleMarkDone}
+              >
                 Mark as Done
               </Button>
             )}
           </div>
+          {!ready && notReadyMessage && (
+            <p className="mt-2 text-sm text-muted-foreground">{notReadyMessage}</p>
+          )}
         </div>
       )}
     </BaseStepCard>

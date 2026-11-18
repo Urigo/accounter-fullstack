@@ -5,15 +5,44 @@ export default gql`
     shaam6111(year: Int!, businessId: UUID): Shaam6111Report!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
-    shaam6111ByYear(businessId: UUID, fromYear: Int!, toYear: Int!): [Shaam6111Report!]!
-      @requiresAuth
-      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
-    updateShaam6111(businessId: UUID, year: Int!, content: String!): Boolean!
-      @requiresAuth
-      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " Stores a year's 6111 header settings and/or manual tax-adjustment amounts (audit-logged) "
+    updateShaam6111(
+      businessId: UUID
+      year: Int!
+      " Replaces the year's header settings; unset fields are taken from earlier years (except the audit opinion) "
+      header: Shaam6111HeaderInput
+      " Replaces the year's manual tax-adjustment amounts "
+      taxAdjustmentOverrides: [Shaam6111LineOverrideInput!]
+    ): Boolean! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+  }
+
+  " 6111 header fields that the books can't supply "
+  input Shaam6111HeaderInput {
+    industryCode: String
+    businessDescription: String
+    businessType: BusinessType
+    reportingMethod: ReportingMethod
+    accountingMethod: AccountingMethod
+    accountingSystem: AccountingSystem
+    ifrsImplementationYear: String
+    ifrsReportingOption: IFRSReportingOption
+    softwareRegistrationNumber: String
+    isPartnership: Boolean
+    partnershipCount: Int
+    partnershipProfitShare: Int
+    currencyType: CurrencyType
+    amountsInThousands: Boolean
+    " Set every year, from the auditor's opinion "
+    auditOpinionType: AuditOpinionType
+  }
+
+  " A manual amount for a tax-adjustment line "
+  input Shaam6111LineOverrideInput {
+    code: Int!
+    amount: Int!
   }
 
   " record of Shaam6111 report "
@@ -26,6 +55,14 @@ export default gql`
     data: Shaam6111Data!
     " SHAAM validation rules applied to the report, plus data-quality diagnostics "
     validation: Shaam6111Validation!
+    " The year's manual tax-adjustment amounts "
+    taxAdjustmentOverrides: [Shaam6111LineOverride!]!
+  }
+
+  " A manual amount for a 6111 line "
+  type Shaam6111LineOverride {
+    code: Int!
+    amount: Int!
   }
 
   " Shaam6111 file content "
@@ -175,7 +212,7 @@ export default gql`
     "Business description (50 characters max) - right-aligned Hebrew text (תאור העסק)"
     businessDescription: String
     "Business type - mandatory field (סוג עסק)"
-    businessType: BusinessType!
+    businessType: BusinessType
     "Reporting method - mandatory field (שיטת דיווח)"
     reportingMethod: ReportingMethod!
     "Accounting method - mandatory field (שיטת חשבונאות)"
@@ -219,5 +256,7 @@ export default gql`
     code: Int!
     amount: Int!
     label: String!
+    " The amount before manual amounts were applied, when they changed this line "
+    computedAmount: Int
   }
 `;
