@@ -111,7 +111,7 @@ const familyCompanyInput = () =>
   });
 /** minimalInput() with a beneficiary enterprise. */
 const beneficiaryEnterpriseInput = () =>
-  minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2023-05-14' } } });
+  minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2024-05-14' } } });
 /** minimalInput() with a special tax year. */
 const specialYearInput = () =>
   minimalInput({ declarations: { specialYear: { balanceSheetDate: '2024-09-30' } } });
@@ -356,6 +356,15 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
         value: ' '.repeat(10),
       }),
     pass: () => generatedFile(beneficiaryEnterpriseInput()),
+    path: 'declarations.beneficiaryEnterprise.noticeDate',
+  },
+  'main.beneficiaryEnterprise.noticeDateBeforeTaxYear': {
+    kind: 'input',
+    // shopcn: "הערך '14/05/2023' אינו תקין במילוי 'תאריך מפעל מוטב'" in tax year 2024 (FIX-3, A-33).
+    fail: () =>
+      minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2023-05-14' } } }),
+    pass: () =>
+      minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2024-05-14' } } }),
     path: 'declarations.beneficiaryEnterprise.noticeDate',
   },
   'main.specialYear.balanceSheetDate': {

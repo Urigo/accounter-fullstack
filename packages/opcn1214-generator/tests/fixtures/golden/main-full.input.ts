@@ -67,7 +67,7 @@ export const input: Report1214Input = {
     claimsCapitalInvestmentLawBenefits: true,
     preferredEnterprise: true,
     beneficiaryEnterprise: {
-      noticeDate: '2023-05-14',
+      noticeDate: '2024-05-14',
     },
     dividendDistributed: true,
     specialYear: {

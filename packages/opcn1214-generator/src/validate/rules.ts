@@ -274,6 +274,15 @@ export const RULES = [
     specRef: { page: 8 },
   },
   {
+    id: 'main.beneficiaryEnterprise.noticeDateBeforeTaxYear',
+    severity: 'error',
+    source: 'checker',
+    scope: '1000',
+    description:
+      'The beneficiary-enterprise notice date (852) is before the start of the tax year: 1 January of taxYear, or the start of a special year ending on the balance-sheet date (864) when that is earlier. SHAAM rejects the file.',
+    specRef: { page: 8, note: 'shopcn' },
+  },
+  {
     id: 'main.specialYear.balanceSheetDate',
     severity: 'error',
     source: 'spec',

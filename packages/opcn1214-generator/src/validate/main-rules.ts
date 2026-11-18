@@ -2,6 +2,7 @@
  * Record 1000 conditional requirements and consistency warnings (SPEC §9.2 stage 4, §10.3): pure
  * checks over the normalized main record, so they run on validated input and on parsed files alike.
  */
+import { isIsoDate } from '../codec/date.js';
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
@@ -22,6 +23,8 @@ type ReportRule = (report: NormalizedReport) => Issue[];
 const FAMILY_COMPANY = 'declarations.familyCompany.isFamilyCompany';
 const BENEFICIARY_ENTERPRISE = 'declarations.beneficiaryEnterprise.marked';
 const SPECIAL_YEAR = 'declarations.specialYear.marked';
+const NOTICE_DATE = 'declarations.beneficiaryEnterprise.noticeDate';
+const BALANCE_SHEET_DATE = 'declarations.specialYear.balanceSheetDate';
 const INVESTMENT_LAW = 'declarations.claimsCapitalInvestmentLawBenefits';
 /** The field the positions issue is located at, 1000@1034. */
 const FIRST_POSITION = 'declarations.reportablePositions[0]';
@@ -253,15 +256,81 @@ function investmentLawFlag(report: NormalizedReport): Issue[] {
 const beneficiaryEnterpriseNoticeDate = requiresField(
   'main.beneficiaryEnterprise.noticeDate',
   BENEFICIARY_ENTERPRISE,
-  'declarations.beneficiaryEnterprise.noticeDate',
+  NOTICE_DATE,
   'A beneficiary enterprise is marked (1000@851)',
 );
+
+/** An ISO `YYYY-MM-DD` date as written in the file, `DD/MM/YYYY`. */
+function fileDate(iso: string): string {
+  const [year, month, day] = iso.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+/** The ISO date of a UTC Date. */
+function isoOf(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * The earliest beneficiary-enterprise notice date (1000@852) SHAAM accepts (SPEC §15 A-33): the
+ * start of the tax year, 1 January of `taxYear`. With a valid special-year balance-sheet date
+ * (1000@864) the special year's start is used when it is earlier: the day after the same calendar
+ * date one year before (29 February maps to 28 February), so 2024-09-30 → 2023-10-01 and
+ * 2024-02-29 → 2023-03-01. Permissive on purpose: shopcn was only probed with a calendar year.
+ */
+export function earliestNoticeDate(taxYear: number, balanceSheetDate?: string): string {
+  const yearStart = isoOf(new Date(Date.UTC(taxYear, 0, 1)));
+  if (balanceSheetDate === undefined || !isIsoDate(balanceSheetDate)) {
+    return yearStart;
+  }
+  const [year, month, day] = balanceSheetDate.split('-').map(Number) as [number, number, number];
+  const lastDayOfMonth = new Date(Date.UTC(year - 1, month, 0)).getUTCDate();
+  const specialYearStart = isoOf(
+    new Date(Date.UTC(year - 1, month - 1, Math.min(day, lastDayOfMonth) + 1)),
+  );
+  return specialYearStart < yearStart ? specialYearStart : yearStart;
+}
+
+/**
+ * main.beneficiaryEnterprise.noticeDateBeforeTaxYear: the notice date (1000@852) may not precede
+ * the start of the tax year (SPEC §15 A-33, found on shopcn); earliestNoticeDate gives the bound.
+ * An invalid date is left to field.date.
+ */
+function beneficiaryEnterpriseNoticeDateBeforeTaxYear(report: NormalizedReport): Issue[] {
+  return mainRecords(report).flatMap(record => {
+    const noticeDate = record.values[NOTICE_DATE];
+    if (!isIsoDate(noticeDate)) {
+      return [];
+    }
+    const balanceSheetDate = record.values[BALANCE_SHEET_DATE];
+    const earliest = earliestNoticeDate(
+      report.taxYear,
+      typeof balanceSheetDate === 'string' ? balanceSheetDate : undefined,
+    );
+    if (noticeDate >= earliest) {
+      return [];
+    }
+    const field = mainField(report, NOTICE_DATE);
+    return [
+      makeIssue('main.beneficiaryEnterprise.noticeDateBeforeTaxYear', {
+        message: `The beneficiary-enterprise notice date (1000@${field.position}) ${fileDate(noticeDate)} is before the start of tax year ${report.taxYear}; the earliest date SHAAM accepts is ${fileDate(earliest)}.`,
+        path: record.paths[NOTICE_DATE] ?? pathFor(record.recordType, record.index, NOTICE_DATE),
+        recordType: record.recordType,
+        recordIndex: record.index,
+        field: { position: field.position, length: field.length, nameHe: field.nameHe },
+        value: noticeDate,
+        expected: `on or after ${fileDate(earliest)}`,
+        specRef: { page: field.specPage },
+      }),
+    ];
+  });
+}
 
 /** main.specialYear.balanceSheetDate: 863 marked without 864 (p.8). */
 const specialYearBalanceSheetDate = requiresField(
   'main.specialYear.balanceSheetDate',
   SPECIAL_YEAR,
-  'declarations.specialYear.balanceSheetDate',
+  BALANCE_SHEET_DATE,
   'A special year is marked (1000@863)',
 );
 
@@ -588,6 +657,7 @@ export const MAIN_RULES: readonly ReportRule[] = [
   houseCompanyCode084,
   investmentLawFlag,
   beneficiaryEnterpriseNoticeDate,
+  beneficiaryEnterpriseNoticeDateBeforeTaxYear,
   specialYearBalanceSheetDate,
   kibbutzCode226,
   buildingIncomeCode259,
