@@ -31,17 +31,20 @@ import type {
   RdInvestment,
   RecordDef,
   RecordType,
+  ReitAppendix,
   RelatedCompany,
   Report1214Input,
   Requirement,
   RuleId,
   RuleMeta,
   Section6SecuritiesAppendix,
+  SecuritiesAppendix,
   Severity,
   Shareholder,
   SupportedTaxYear,
   ValidateOptions,
   ValidationResult,
+  Withholder,
   YearLayout,
 } from '../../src/index.js';
 
@@ -82,6 +85,18 @@ describe('public API', () => {
     expectTypeOf<keyof Section6SecuritiesAppendix['amounts']>().toEqualTypeOf<
       CapitalGainsCode<63>
     >();
+    expectTypeOf<SecuritiesAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<ReitAppendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<CapitalGainsAppendix['symbol']>().toEqualTypeOf<60 | 63 | 64>();
+    expectTypeOf<keyof SecuritiesAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<60>>();
+    expectTypeOf<keyof ReitAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<64>>();
+    expectTypeOf<SecuritiesAppendix['withholders']>().toEqualTypeOf<Withholder[] | undefined>();
+    expectTypeOf<ReitAppendix['withholders']>().toEqualTypeOf<Withholder[] | undefined>();
+    expectTypeOf<Withholder>().toEqualTypeOf<{
+      name?: string;
+      branch?: string;
+      account?: string;
+    }>();
     expectTypeOf<ForeignAppendix['countryBreakdown']>().toEqualTypeOf<
       Partial<Record<CountryBreakdownCode, CountryBreakdown>> | undefined
     >();

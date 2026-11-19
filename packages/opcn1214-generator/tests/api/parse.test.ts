@@ -7,8 +7,11 @@ import {
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
+  reitAppendix,
   relatedCompanies,
   section6Appendix,
+  securitiesAppendix,
+  withholders,
 } from '../fixtures/builders.js';
 import { dropLine, goldenText, tamper as tamperAt } from '../fixtures/files.js';
 
@@ -517,7 +520,58 @@ describe('parse1214', () => {
     });
   });
 
-  it.each(['minimal', 'foreign', 'cg-63'])(
+  describe('securities and REIT appendices (3060, 3064)', () => {
+    // Input order 64, 60; lines: 1000, 1020, 3060, 3064, 9999.
+    const input = minimalInput({
+      capitalGains: [reitAppendix({ withholders: withholders(4) }), securitiesAppendix()],
+    });
+    const file = generate1214(input, OPTIONS).text;
+
+    it('reads them back in file order, withholders included', () => {
+      const result = parse1214(file);
+      expect(result.issues).toEqual([]);
+      expect(result.report.capitalGains).toEqual([
+        securitiesAppendix(),
+        reitAppendix({ withholders: withholders(4) }),
+      ]);
+      expect(result.report).toEqual(canonicalize(input, OPTIONS));
+    });
+
+    it('locates a withholder problem at capitalGains[i].withholders[j], i in file order', () => {
+      // 3064@302: the branch of the fourth withholder.
+      expect(parseErrorIssues(() => parse1214(tamper(file, 4, 302, 'X')))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.numeric',
+          path: 'capitalGains[1].withholders[3].branch',
+          recordType: '3064',
+          recordIndex: 0,
+          line: 4,
+          column: 302,
+        }),
+      ]);
+      // 3060@145: gainFromInvestmentFund, yes/no.
+      expect(parseErrorIssues(() => parse1214(tamper(file, 3, 145, '3')))).toEqual([
+        expect.objectContaining({
+          ruleId: 'parse.fieldValue',
+          path: 'capitalGains[0].gainFromInvestmentFund',
+          recordType: '3060',
+          line: 3,
+        }),
+      ]);
+    });
+
+    it('reports a 3060 record after a 3064 record as parse.order', () => {
+      const lines = file.split(CRLF);
+      const reordered = [lines[0], lines[1], lines[3], lines[2], lines[4], ''].join(CRLF);
+      expect(
+        parseErrorIssues(() => parse1214(reordered)).filter(
+          issue => issue.ruleId === 'parse.order',
+        ),
+      ).toEqual([expect.objectContaining({ recordType: '3060', line: 4 })]);
+    });
+  });
+
+  it.each(['minimal', 'foreign', 'cg-63', 'cg-60', 'cg-64'])(
     'never lets anything but Opcn1214ParseError escape for a corrupted %s golden',
     name => {
       const golden = goldenText(name);

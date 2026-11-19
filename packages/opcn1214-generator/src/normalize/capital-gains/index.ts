@@ -9,19 +9,30 @@ import type { NormalizedRecord } from '../../model/normalized.js';
 import type { ValidateOptions } from '../../model/options.js';
 import { codeSection, headerValues } from '../fields.js';
 import { SECTION6_INPUT_KEYS, section6Header } from './section6.js';
+import { SECURITIES_INPUT_KEYS, securitiesHeader } from './securities.js';
 
 /** The transaction symbols the input model has an appendix type for. */
 export type CapitalGainsInputSymbol = CapitalGainsAppendix['symbol'];
 
 /**
- * Header keys of each appendix type that are members of the appendix, besides `symbol` and
- * `amounts` (the transaction symbol and appendix number are derived).
+ * Header keys of each appendix type that are scalar members of the appendix, besides `symbol`,
+ * `amounts` and `withholders` (the transaction symbol and appendix number are derived).
  */
 export const CAPITAL_GAINS_INPUT_KEYS: Readonly<
   Record<CapitalGainsInputSymbol, readonly string[]>
 > = {
+  60: SECURITIES_INPUT_KEYS,
   63: SECTION6_INPUT_KEYS,
+  64: SECURITIES_INPUT_KEYS,
 };
+
+/** The symbols whose appendix has `withholders`, header keys `withholders[i].*` (SPEC §7.3). */
+const WITHHOLDING_SYMBOLS: ReadonlySet<CapitalGainsInputSymbol> = new Set([60, 64]);
+
+/** True when appendices of `symbol` have `withholders` (records 3060, 3064). */
+export function hasWithholders(symbol: CapitalGainsInputSymbol): boolean {
+  return WITHHOLDING_SYMBOLS.has(symbol);
+}
 
 /** Header keys of the derived transaction symbol (30xx@137) and appendix number (30xx@139). */
 const TRANSACTION_SYMBOL_KEY = 'transactionSymbol';
@@ -59,6 +70,9 @@ export function placeCapitalGains<T extends { symbol: number }>(
 /** The header input values of an appendix of any type, by FieldDef.key (derived ones aside). */
 function headerInput(appendix: CapitalGainsAppendix) {
   switch (appendix.symbol) {
+    case 60:
+    case 64:
+      return securitiesHeader(appendix);
     case 63:
       return section6Header(appendix);
   }

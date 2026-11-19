@@ -10,9 +10,12 @@ import {
   fullMainInput,
   minimalInput,
   rdInvestments,
+  reitAppendix,
   relatedCompanies,
   section6Appendices,
   section6Appendix,
+  securitiesAppendix,
+  withholders,
 } from '../fixtures/builders.js';
 
 /** The input.shape issues of `input` against the schema of its year (2024 by default). */
@@ -153,6 +156,63 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       'capitalGains[1].foreignAsset',
       'capitalGains[1].lossesCarriedForward',
       'capitalGains[1].withholders',
+    ]);
+  });
+
+  it('accepts 3060 and 3064 appendices, complete or with only the required members', () => {
+    expect(
+      shapeIssues(
+        minimalInput({
+          capitalGains: [
+            securitiesAppendix({ withholders: withholders(4) }),
+            reitAppendix({ withholders: withholders(4) }),
+            { symbol: 60, amounts: {} },
+            { symbol: 64, amounts: {}, withholders: [{}] },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it.each([60, 64])(
+    'rejects a %s appendix with a fifth withholder, an unknown member or wrong types',
+    symbol => {
+      const build = symbol === 60 ? securitiesAppendix : reitAppendix;
+      const input = {
+        ...minimalInput(),
+        capitalGains: [
+          { ...build(), withholders: [...withholders(4), { name: 'בנק' }] },
+          {
+            ...build(),
+            soldToRelatedParty: 'yes',
+            gainFromInvestmentFund: 1,
+            withholders: [{ name: 'בנק', branch: 12, bank: '10' }],
+          },
+          { ...build(), withholdingStatus: 'notWithheldFirstHalf' },
+        ],
+      };
+      expect(shapePaths(input).sort()).toEqual([
+        'capitalGains[0].withholders',
+        'capitalGains[1].gainFromInvestmentFund',
+        'capitalGains[1].soldToRelatedParty',
+        'capitalGains[1].withholders[0].bank',
+        'capitalGains[1].withholders[0].branch',
+        'capitalGains[2].withholdingStatus',
+      ]);
+    },
+  );
+
+  it('rejects codes of another appendix type in the amounts of 3060 and 3064', () => {
+    // 022 is a code of 3063, not of 3060; 012 a code of 3060, not of 3064.
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        { ...securitiesAppendix(), symbol: 64 },
+        { ...reitAppendix(), symbol: 60, amounts: { '013': 1 } },
+      ],
+    };
+    expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.unknownCode', 'capitalGains[0].amounts["012"]'],
     ]);
   });
 
@@ -663,6 +723,32 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       ]);
       // The input is not changed.
       expect(Object.keys(input.capitalGains[1]!.amounts).sort()).toEqual(['022', '15', '999']);
+    });
+
+    it('scans the amounts of 3060 and 3064 appendices against their own codes', () => {
+      const input = {
+        ...minimalInput(),
+        capitalGains: [
+          reitAppendix(),
+          { ...securitiesAppendix(), amounts: { '012': 1, '022': 2 } },
+          { ...reitAppendix(), amounts: { '013': 1, '012': 3 } },
+        ],
+      };
+      // The second 3064 appendix is record 3064 #1 (index among appendices of its symbol).
+      expect(checkShape(input, 2024)).toEqual([
+        expect.objectContaining({
+          ruleId: 'input.unknownCode',
+          path: 'capitalGains[1].amounts["022"]',
+          recordType: '3060',
+          recordIndex: 0,
+        }),
+        expect.objectContaining({
+          ruleId: 'input.unknownCode',
+          path: 'capitalGains[2].amounts["012"]',
+          recordType: '3064',
+          recordIndex: 1,
+        }),
+      ]);
     });
 
     it('reports a code of another record in capitalGains[i].amounts as input.unknownCode', () => {

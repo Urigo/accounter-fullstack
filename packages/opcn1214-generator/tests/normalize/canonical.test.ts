@@ -7,9 +7,12 @@ import {
   fullMainInput,
   minimalInput,
   rdInvestments,
+  reitAppendix,
   relatedCompanies,
   section6Appendices,
   section6Appendix,
+  securitiesAppendix,
+  withholders,
 } from '../fixtures/builders.js';
 
 const TODAY = '2025-03-31';
@@ -479,6 +482,80 @@ describe('canonicalize', () => {
       expect(result.capitalGains).toEqual([
         { symbol: 63, foreignAsset: false, amounts: {} },
         { symbol: 63, foreignAsset: true, amounts: { '022': 3, '056': 3000 } },
+      ]);
+    });
+
+    it('keeps canonical 3060 and 3064 appendices, emitted grouped by type ascending', () => {
+      const appendices = [
+        reitAppendix({ withholders: withholders(4) }),
+        securitiesAppendix(),
+        section6Appendix(),
+      ];
+      expect(
+        canonicalize(minimalInput({ capitalGains: appendices }), OPTIONS).capitalGains,
+      ).toEqual([appendices[1], appendices[2], appendices[0]]);
+    });
+
+    it('pads withholder branch and account to the field width (D-3), normalizes the name', () => {
+      const result = canonicalize(
+        minimalInput({
+          capitalGains: [
+            securitiesAppendix({
+              withholders: [{ name: '  בנק\u00A0 לאומי ', branch: '12', account: '345' }],
+            }),
+          ],
+        }),
+        OPTIONS,
+      );
+      expect(result.capitalGains?.[0]).toMatchObject({
+        withholders: [{ name: 'בנק לאומי', branch: '012', account: '000000345' }],
+      });
+    });
+
+    it('keeps an empty withholder slot before a filled one, drops trailing empty slots', () => {
+      const result = canonicalize(
+        minimalInput({
+          capitalGains: [
+            reitAppendix({
+              withholders: [{ name: ' ' }, { branch: '7' }, { branch: '000', account: '' }, {}],
+            }),
+            securitiesAppendix({ withholders: [{}, { name: '' }] }),
+            securitiesAppendix({ withholders: [] }),
+          ],
+        }),
+        OPTIONS,
+      );
+      expect(
+        result.capitalGains?.map(appendix => (appendix as { withholders?: unknown }).withholders),
+      ).toEqual([undefined, undefined, [{}, { branch: '007' }]]);
+    });
+
+    it('keeps "no" flags (written as 2), removes zero losses and zero codes', () => {
+      const result = canonicalize(
+        minimalInput({
+          capitalGains: [
+            {
+              symbol: 64,
+              foreignAsset: false,
+              soldToRelatedParty: false,
+              boughtFromRelatedParty: false,
+              gainFromInvestmentFund: false,
+              lossesCarriedForward: 0,
+              amounts: { '013': 0, '056': 4 },
+            },
+          ],
+        }),
+        OPTIONS,
+      );
+      expect(result.capitalGains).toEqual([
+        {
+          symbol: 64,
+          foreignAsset: false,
+          soldToRelatedParty: false,
+          boughtFromRelatedParty: false,
+          gainFromInvestmentFund: false,
+          amounts: { '056': 4 },
+        },
       ]);
     });
 

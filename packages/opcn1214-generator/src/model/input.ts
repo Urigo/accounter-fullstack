@@ -350,7 +350,39 @@ export interface CountryIncome {
  * SPEC §3.7). Its transaction symbol (30xx@137) and appendix number (30xx@139) are derived
  * (SPEC §7.4).
  */
-export type CapitalGainsAppendix = Section6SecuritiesAppendix;
+export type CapitalGainsAppendix = SecuritiesAppendix | Section6SecuritiesAppendix | ReitAppendix;
+
+/**
+ * A withholding agent of a securities appendix (records 3060, 3064): one of the four slots
+ * "מנכה", "סניף", "חשבון" at 146–313 (SPEC §7.3). An empty slot is written as absent.
+ */
+export interface Withholder {
+  /** "מנכה", up to 30 characters; must start with a Hebrew letter (field.hebrewFirstLetter). */
+  name?: string;
+  /** "סניף", up to 3 digits, zero-padded when written ('12' → '012'). */
+  branch?: string;
+  /** "חשבון", up to 9 digits, zero-padded when written. */
+  account?: string;
+}
+
+/** Capital gains from securities, record 3060 (SPEC §7.2, p.43–45). */
+export interface SecuritiesAppendix {
+  symbol: 60;
+  /** 30xx@142 "נכס חו"ל" (yes/no). */
+  foreignAsset?: boolean;
+  /** 30xx@143 "מכירה לצד קשור" (yes/no). */
+  soldToRelatedParty?: boolean;
+  /** 30xx@144 "רכישה מצד קשור" (yes/no). */
+  boughtFromRelatedParty?: boolean;
+  /** 30xx@145 "רווח מקרן השקעות" (yes/no, SPEC §15 A-8). */
+  gainFromInvestmentFund?: boolean;
+  /** 30xx@146–313: at most 4 withholding agents (input.shape), keyed `withholders[i].*`. */
+  withholders?: Withholder[];
+  /** 30xx@314, losses carried forward, whole shekels. */
+  lossesCarriedForward?: number;
+  /** Record 3060 code-amount section; no code of 3060 is zeroAllowed (SPEC §4.5). */
+  amounts: Partial<Record<CapitalGainsCode<60>, number>>;
+}
 
 /** Capital gains from securities under section 6, record 3063 (SPEC §7.2). */
 export interface Section6SecuritiesAppendix {
@@ -361,4 +393,14 @@ export interface Section6SecuritiesAppendix {
   lossesCarriedForward?: number;
   /** Record 3063 code-amount section; no code of 3063 is zeroAllowed (SPEC §4.5). */
   amounts: Partial<Record<CapitalGainsCode<63>, number>>;
+}
+
+/**
+ * Capital gains from real-estate investment trust units, record 3064 (SPEC §7.2, p.48–49): the
+ * header of record 3060 with its own codes.
+ */
+export interface ReitAppendix extends Omit<SecuritiesAppendix, 'symbol' | 'amounts'> {
+  symbol: 64;
+  /** Record 3064 code-amount section; no code of 3064 is zeroAllowed (SPEC §4.5). */
+  amounts: Partial<Record<CapitalGainsCode<64>, number>>;
 }
