@@ -191,14 +191,18 @@ const getCreditCardStatementLinksByStatementKeys = sql<IGetCreditCardStatementLi
     AND l.card_account_id IN $$cardAccountIds
     AND (l.card_account_id::text || '|' || l.currency::text || '|' || l.debit_date::text) IN $$statementKeys;`;
 
-/** The charges, among the given ones, that hold a bank transaction with a stored statement link */
+/**
+ * The charges, among the given ones, that hold a bank transaction with a stored statement link of
+ * one of the given owners
+ */
 const getLinkedChargeIds = sql<IGetLinkedChargeIdsQuery>`
-  SELECT DISTINCT t.charge_id
+  SELECT DISTINCT t.charge_id, l.owner_id
   FROM accounter_schema.creditcard_statement_links l
     JOIN accounter_schema.transactions t
       ON t.id = l.bank_transaction_id
       AND t.owner_id = l.owner_id
-  WHERE t.charge_id IN $$chargeIds;`;
+  WHERE t.charge_id IN $$chargeIds
+    AND l.owner_id IN $$ownerIds;`;
 
 /**
  * The financial accounts of the bank row's owner whose number equals the row's reference: the
@@ -371,6 +375,12 @@ export type NewCreditCardStatementLink = StatementKey & {
   linkMethod: CreditCardStatementLinkMethod;
 };
 
+type ChargeOfOwner = { chargeId: string; ownerId: string };
+
+function chargeOfOwnerKey(chargeId: string, ownerId: string) {
+  return `${ownerId}|${chargeId}`;
+}
+
 function statementKeysParams(keys: readonly StatementKey[]) {
   return {
     cardAccountIds: Array.from(new Set(keys.map(key => key.cardAccountId))),
@@ -522,15 +532,22 @@ export class CreditCardStatementsProvider {
       this.batchLinksByBankTransactionIds(bankTransactionIds),
   );
 
-  private async batchHasLinksByChargeIds(chargeIds: readonly string[]) {
-    const rows = await getLinkedChargeIds.run({ chargeIds }, this.db);
-    const linked = new Set(rows.map(row => row.charge_id));
-    return chargeIds.map(id => linked.has(id));
+  private async batchHasLinksByChargeIds(keys: readonly ChargeOfOwner[]) {
+    const rows = await getLinkedChargeIds.run(
+      {
+        chargeIds: Array.from(new Set(keys.map(key => key.chargeId))),
+        ownerIds: Array.from(new Set(keys.map(key => key.ownerId))),
+      },
+      this.db,
+    );
+    const linked = new Set(rows.map(row => chargeOfOwnerKey(row.charge_id, row.owner_id)));
+    return keys.map(key => linked.has(chargeOfOwnerKey(key.chargeId, key.ownerId)));
   }
 
-  /** Whether a bank transaction of the charge has a stored statement link */
-  public hasLinksByChargeIdLoader = new DataLoader((chargeIds: readonly string[]) =>
-    this.batchHasLinksByChargeIds(chargeIds),
+  /** Whether a bank transaction of the charge has a stored statement link of the charge's owner */
+  public hasLinksByChargeIdLoader = new DataLoader(
+    (keys: readonly ChargeOfOwner[]) => this.batchHasLinksByChargeIds(keys),
+    { cacheKeyFn: key => chargeOfOwnerKey(key.chargeId, key.ownerId) },
   );
 
   private async batchLegacyReferenceAccountIdsByBankTransactionIds(

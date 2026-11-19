@@ -54,6 +54,14 @@ export const validateCharge = (
   return result;
 };
 
+/**
+ * Drops a charge's memoized validation, for a caller that changed what it is computed from and
+ * returns the charge in the same request.
+ */
+export function forgetChargeValidation(injector: Injector, chargeId: string): void {
+  validationCache.get(injector)?.delete(chargeId);
+}
+
 const computeChargeValidation = async (
   charge: IGetChargesByIdsResult,
   injector: Injector,
@@ -93,19 +101,11 @@ const computeChargeValidation = async (
   const isMultiSecurityCharge =
     chargeType === ChargeTypeEnum.ForeignSecurities && spansSeveralSecurities;
 
-  // A card debit linked to its card statements is booked against the linked card accounts: the
-  // ledger needs neither a counterparty business nor a tax category for it
-  const isLinkedCardDebit =
-    chargeType === ChargeTypeEnum.CreditcardBankCharge &&
-    (await injector.get(CreditCardStatementsProvider).hasLinksByChargeIdLoader.load(charge.id));
-
   // check for consistent counterparty business
   const businessNotRequired =
     [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary, ChargeTypeEnum.Financial].includes(
       chargeType,
-    ) ||
-    isGeneralFees ||
-    isLinkedCardDebit;
+    ) || isGeneralFees;
   const businessPromise =
     mainBusinessId && !businessNotRequired
       ? injector.get(BusinessesProvider).getBusinessByIdLoader.load(mainBusinessId)
@@ -217,12 +217,21 @@ const computeChargeValidation = async (
   }
 
   // validate tax category
+  // A card debit linked to its card statements, with no relevant documents, is booked against the
+  // linked card accounts: the ledger doesn't need a tax category for it. Its counterparty is still
+  // required (a transaction without one is invalid).
+  const isLinkedCardDebitWithoutDocuments =
+    chargeType === ChargeTypeEnum.CreditcardBankCharge &&
+    invoiceCount + receiptCount === 0 &&
+    (await injector
+      .get(CreditCardStatementsProvider)
+      .hasLinksByChargeIdLoader.load({ chargeId: charge.id, ownerId: charge.owner_id }));
   const shouldHaveTaxCategory =
     ![
       ChargeTypeEnum.Salary,
       ChargeTypeEnum.InternalTransfer,
       ChargeTypeEnum.ForeignSecurities,
-    ].includes(chargeType) && !isLinkedCardDebit;
+    ].includes(chargeType) && !isLinkedCardDebitWithoutDocuments;
   const taxCategoryIsFine = !shouldHaveTaxCategory || !!taxCategoryId;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);

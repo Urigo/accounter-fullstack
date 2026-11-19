@@ -820,6 +820,27 @@ describe('credit card statements', () => {
   });
 
   describe('ledger and charge type lookups', () => {
+    it('refuses to link a statement in another currency than the bank transaction', async () => {
+      const bankAccount = await createAccount('BANK_ACCOUNT', '900023');
+      const card = await createAccount('CREDIT_CARD', '9393');
+      const debit = await createTransaction({
+        accountId: bankAccount,
+        amount: '-16.00',
+        eventDate: '2026-10-22',
+      });
+
+      const result = await callMutation('linkCreditCardStatements', {
+        bankTransactionId: debit.id,
+        statements: [{ cardAccountId: card, currency: 'USD', debitDate: '2026-10-22' }],
+      });
+
+      expect(errorOf(result)).toBe(
+        'A bank transaction in ILS cannot settle a card statement in USD',
+      );
+      expect(await linksOf(debit.id)).toEqual([]);
+      expect(degradeChargesAccountantApproval).not.toHaveBeenCalled();
+    });
+
     it('tells which charges hold a linked bank transaction', async () => {
       const bankAccount = await createAccount('BANK_ACCOUNT', '900021');
       const card = await createAccount('CREDIT_CARD', '7171');
@@ -847,7 +868,14 @@ describe('credit card statements', () => {
         ]);
 
       const loader = createInjector().get(CreditCardStatementsProvider).hasLinksByChargeIdLoader;
-      expect(await loader.loadMany([linked.chargeId, unlinked.chargeId])).toEqual([true, false]);
+      expect(
+        await loader.loadMany([
+          { chargeId: linked.chargeId, ownerId: OWNER_ID },
+          { chargeId: unlinked.chargeId, ownerId: OWNER_ID },
+          // another owner's view of the same charge has no link of its own
+          { chargeId: linked.chargeId, ownerId: OTHER_OWNER_ID },
+        ]),
+      ).toEqual([true, false, false]);
     });
 
     it("resolves a reference to the owner's own accounts only", async () => {

@@ -30,6 +30,11 @@ const BANK_ACCOUNT = '00000000-0000-4000-8000-00000000c111';
 const OTHER_BANK_ACCOUNT = '00000000-0000-4000-8000-00000000c112';
 const ACCOUNT_11200 = '00000000-0000-4000-8000-00000000c113';
 const LINKED_ELSEWHERE_CARD = '00000000-0000-4000-8000-00000000c114';
+/** The owner's card issuer business: one of its wallets */
+const ISSUER_ID = '00000000-0000-4000-8000-00000000c121';
+const SUPPLIER_ID = '00000000-0000-4000-8000-00000000c122';
+const INVOICED_CHARGE_ID = '00000000-0000-4000-8000-00000000c131';
+const PROFORMA_CHARGE_ID = '00000000-0000-4000-8000-00000000c132';
 
 let sequence = 0;
 function nextId() {
@@ -47,6 +52,9 @@ type Row = {
   currency?: 'ILS' | 'USD';
   isFee?: boolean;
   ownerId?: string;
+  /** Defaults to the issuer for bank debits */
+  businessId?: string | null;
+  chargeId?: string;
 };
 
 function row(input: Omit<Row, 'id'>): Row {
@@ -98,16 +106,42 @@ const debits = {
     ownerId: OTHER_OWNER_ID,
   }),
   alreadyLinked: row({ accountId: BANK_ACCOUNT, reference: '8547', date: '2026-04-01' }),
+  // the fallback only served debits counted against a wallet business
+  nonWallet: row({
+    accountId: BANK_ACCOUNT,
+    reference: '8547',
+    date: '2026-05-10',
+    businessId: SUPPLIER_ID,
+  }),
+  // nor charges booked from their documents
+  invoiced: row({
+    accountId: BANK_ACCOUNT,
+    reference: '8547',
+    date: '2026-05-20',
+    chargeId: INVOICED_CHARGE_ID,
+  }),
+  // a proforma is not a relevant document
+  withProforma: row({
+    accountId: BANK_ACCOUNT,
+    reference: '8547',
+    date: '2026-06-01',
+    chargeId: PROFORMA_CHARGE_ID,
+  }),
+  // two debits falling back to the same statement key: the later one is left unlinked
+  collisionFirst: row({ accountId: BANK_ACCOUNT, reference: '8547', date: '2026-07-01' }),
+  collisionSecond: row({ accountId: BANK_ACCOUNT, reference: '8547', date: '2026-07-01' }),
 };
 
 // Card rows, making up statements (card account, currency, debit date)
+const cardRow = (accountId: string, date: string, amount: string) =>
+  row({ accountId, reference: 'card', date, amount, businessId: null });
 const cardRows = [
-  row({ accountId: CARD_9200, reference: 'card', date: '2026-01-11', amount: '-10' }),
-  row({ accountId: CARD_9200, reference: 'card', date: '2026-01-13', amount: '-20' }),
-  row({ accountId: CARD_9200, reference: 'card', date: '2026-01-16', amount: '-30' }),
-  row({ accountId: CARD_2260, reference: 'card', date: '2026-02-01', amount: '-40' }),
-  row({ accountId: CARD_2260, reference: 'card', date: '2026-02-01', amount: '-41' }),
-  row({ accountId: CARD_4333, reference: 'card', date: '2026-03-03', amount: '-50' }),
+  cardRow(CARD_9200, '2026-01-11', '-10'),
+  cardRow(CARD_9200, '2026-01-13', '-20'),
+  cardRow(CARD_9200, '2026-01-16', '-30'),
+  cardRow(CARD_2260, '2026-02-01', '-40'),
+  cardRow(CARD_2260, '2026-02-01', '-41'),
+  cardRow(CARD_4333, '2026-03-03', '-50'),
 ];
 
 describe('credit card legacy links migration', () => {
@@ -160,13 +194,51 @@ describe('credit card legacy links migration', () => {
           INSERT INTO accounter_schema.transactions (
             id, account_id, charge_id, source_id, source_description, currency, event_date,
             debit_date, amount, current_balance, source_reference, source_origin, origin_key,
-            owner_id, is_fee
+            owner_id, is_fee, business_id
           ) VALUES (
-            ${seed.id}, ${seed.accountId}, ${nextId()}, ${nextId()}, ${seed.description ?? 'TEST'},
+            ${seed.id}, ${seed.accountId}, ${seed.chargeId ?? nextId()}, ${nextId()},
+            ${seed.description ?? 'TEST'},
             ${seed.currency ?? 'ILS'}, ${seed.date}, ${seed.date}, ${seed.amount ?? '-100'}, 0,
             ${seed.reference}, 'TEST', ${seed.id}, ${seed.ownerId ?? OWNER_ID},
-            ${seed.isFee ?? false}
+            ${seed.isFee ?? false}, ${seed.businessId === undefined ? ISSUER_ID : seed.businessId}
           )
+        `);
+      }
+      // the issuer is one of the owner's wallets; the other required columns get a filler id
+      const requiredColumns = await connection.anyFirst(
+        sql.type(z.object({ column_name: z.string() }))`
+          SELECT column_name::text
+          FROM information_schema.columns
+          WHERE table_schema = 'accounter_schema'
+            AND table_name = 'user_context'
+            AND is_nullable = 'NO'
+            AND column_default IS NULL
+            AND data_type = 'uuid'
+            AND column_name <> 'owner_id'
+        `,
+      );
+      for (const ownerId of [OWNER_ID, OTHER_OWNER_ID]) {
+        await connection.query(sql.unsafe`
+          INSERT INTO accounter_schema.user_context (
+            owner_id, isracard_business_id, ${sql.join(
+              requiredColumns.map(column => sql.identifier([column])),
+              sql.fragment`, `,
+            )}
+          ) VALUES (
+            ${ownerId}, ${ISSUER_ID}, ${sql.join(
+              requiredColumns.map(() => sql.fragment`${nextId()}`),
+              sql.fragment`, `,
+            )}
+          )
+        `);
+      }
+      for (const [chargeId, type] of [
+        [INVOICED_CHARGE_ID, 'INVOICE'],
+        [PROFORMA_CHARGE_ID, 'PROFORMA'],
+      ] as const) {
+        await connection.query(sql.unsafe`
+          INSERT INTO accounter_schema.documents (charge_id, type, owner_id)
+          VALUES (${chargeId}, ${type}, ${OWNER_ID})
         `);
       }
       await connection.query(sql.unsafe`
@@ -261,7 +333,16 @@ describe('credit card legacy links migration', () => {
       linkOf(debits.ref22200Mastercard.id, CARD_4333, 'ILS', '2026-03-03'),
       // untouched
       linkOf(debits.alreadyLinked.id, LINKED_ELSEWHERE_CARD, 'ILS', '2026-04-01'),
+      linkOf(debits.withProforma.id, CARD_9200, 'ILS', '2026-06-01'),
+      linkOf(debits.collisionFirst.id, CARD_9200, 'ILS', '2026-07-01'),
     ]);
+  });
+
+  it('leaves non-wallet, invoiced and colliding debits unlinked', async () => {
+    const linked = new Set((await links()).map(link => link.bank_transaction_id));
+    for (const debit of [debits.nonWallet, debits.invoiced, debits.collisionSecond]) {
+      expect(linked.has(debit.id)).toBe(false);
+    }
   });
 
   it('restores FORCE RLS on the tables it opened', async () => {

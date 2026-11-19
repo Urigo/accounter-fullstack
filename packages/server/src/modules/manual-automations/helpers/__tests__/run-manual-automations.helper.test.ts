@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChargeTypeEnum } from '../../../../shared/enums.js';
 import { degradeChargesAccountantApproval } from '../../../accountant-approval/helpers/degrade-charges.helper.js';
 import { getChargeType } from '../../../charges/helpers/charge-type.js';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+} from '../../../charges/helpers/common.helper.js';
 import { mergeChargesExecutor } from '../../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../../charges/types.js';
@@ -37,6 +41,11 @@ vi.mock('../../../deel/helpers/sync-deel-documents.helper.js', () => ({
 }));
 vi.mock('../../../transactions/helpers/link-creditcard-statements.helper.js', () => ({
   autoLinkCreditCardStatements: vi.fn(),
+}));
+vi.mock('../../../charges/helpers/common.helper.js', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../../charges/helpers/common.helper.js')>()),
+  getChargeBusinesses: vi.fn(),
+  getChargeDocumentsMeta: vi.fn(),
 }));
 vi.mock('../../../charges/helpers/charge-type.js', () => ({
   getChargeType: vi.fn(),
@@ -610,9 +619,19 @@ describe('creditcardLinksChangeAccounting', () => {
     return { cardAccountId, currency: 'ILS', debitDate: '2026-03-02' as const };
   }
 
+  const ISSUER = 'business-issuer';
+
   function injectorFor(charge: IGetChargesByIdsResult, legacyAccountIds: string[]) {
     const providers = new Map<unknown, unknown>([
       [ChargesProvider, { getChargeByIdLoader: { load: async () => charge } }],
+      [
+        AdminContextProvider,
+        {
+          getVerifiedAdminContext: async () => ({
+            financialAccounts: { internalWalletsIds: ['business-bank', ISSUER] },
+          }),
+        },
+      ],
       [
         CreditCardStatementsProvider,
         {
@@ -628,8 +647,57 @@ describe('creditcardLinksChangeAccounting', () => {
   const bankRow = { id: 'bank-1', charge_id: 'charge-1' };
   const approved = buildCharge('charge-1', { accountant_status: 'APPROVED', type: null });
 
+  function withMainBusiness(mainBusinessId: string | null) {
+    vi.mocked(getChargeBusinesses).mockResolvedValue({
+      allBusinessIds: mainBusinessId ? [mainBusinessId] : [],
+      mainBusinessIds: mainBusinessId ? [mainBusinessId] : [],
+      offsettingBusinessIds: [],
+      spansSeveralSecurities: false,
+      mainBusinessId,
+    });
+  }
+
+  function withDocuments(invoiceCount: number, receiptCount = 0) {
+    vi.mocked(getChargeDocumentsMeta).mockResolvedValue({
+      invoiceCount,
+      receiptCount,
+    } as Awaited<ReturnType<typeof getChargeDocumentsMeta>>);
+  }
+
   beforeEach(() => {
     vi.mocked(getChargeType).mockReset().mockResolvedValue(ChargeTypeEnum.CreditcardBankCharge);
+    withMainBusiness(ISSUER);
+    withDocuments(0);
+  });
+
+  it('flags an approved card debit whose main business is not an internal wallet', async () => {
+    withMainBusiness('business-supplier');
+
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, [LEGACY_CARD]), bankRow, [
+        statementOf(LEGACY_CARD),
+      ]),
+    ).resolves.toBe(true);
+  });
+
+  it('flags an approved card debit without a main business', async () => {
+    withMainBusiness(null);
+
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, [LEGACY_CARD]), bankRow, [
+        statementOf(LEGACY_CARD),
+      ]),
+    ).resolves.toBe(true);
+  });
+
+  it('flags an approved card debit booked from its documents', async () => {
+    withDocuments(0, 1);
+
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, [LEGACY_CARD]), bankRow, [
+        statementOf(LEGACY_CARD),
+      ]),
+    ).resolves.toBe(true);
   });
 
   it('keeps an approved card debit linked to the account its reference resolved to', async () => {

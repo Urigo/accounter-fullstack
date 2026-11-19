@@ -13,6 +13,10 @@ import type { TimelessDateString } from '../../../shared/types/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { forgetDerivedChargeType, getChargeType } from '../../charges/helpers/charge-type.js';
+import {
+  getChargeBusinesses,
+  getChargeDocumentsMeta,
+} from '../../charges/helpers/common.helper.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -293,10 +297,14 @@ async function* linkCreditcardStatements(
 
 /**
  * Whether linking an approved charge's bank debit to these card statements changes how the charge
- * is booked: it was not a card debit before (so the link changes its type and ledger), or its
- * ledger booked the debit against another card account than the linked one(s). The latter is the
- * financial account of the owner numbered as the debit's reference, the ledger's rule for unlinked
- * debits. Charges that are not approved have nothing to re-flag.
+ * is booked. A link only records what the ledger already did when all of these hold, and then the
+ * charge is not re-flagged:
+ * - the charge already was a card debit;
+ * - it has no relevant documents, and its main business is one of the owner's internal wallets
+ *   (the conditions under which the ledger booked an unlinked debit against a card account);
+ * - the linked card account is exactly the account the ledger booked it against: the owner's
+ *   only financial account numbered as the debit's reference.
+ * Charges that are not approved have nothing to re-flag.
  */
 export async function creditcardLinksChangeAccounting(
   injector: Injector,
@@ -308,8 +316,21 @@ export async function creditcardLinksChangeAccounting(
     return false;
   }
 
-  const chargeType = await getChargeType(charge, injector);
+  const [chargeType, { mainBusinessId }, { invoiceCount, receiptCount }, adminContext] =
+    await Promise.all([
+      getChargeType(charge, injector),
+      getChargeBusinesses(charge, injector),
+      getChargeDocumentsMeta(charge, injector),
+      injector.get(AdminContextProvider).getVerifiedAdminContext(),
+    ]);
   if (chargeType !== ChargeTypeEnum.CreditcardBankCharge) {
+    return true;
+  }
+  const bookedByReference =
+    invoiceCount + receiptCount === 0 &&
+    !!mainBusinessId &&
+    adminContext.financialAccounts.internalWalletsIds.includes(mainBusinessId);
+  if (!bookedByReference) {
     return true;
   }
 

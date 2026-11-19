@@ -282,6 +282,12 @@ async function linkedStatementParts(
   if (links.length === 0) {
     return null;
   }
+  const foreignCurrencyLink = links.find(link => link.currency !== transaction.currency);
+  if (foreignCurrencyLink) {
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}": a linked card statement is in ${foreignCurrencyLink.currency} but the debit is in ${transaction.currency}; fix the links`,
+    );
+  }
 
   const counterAccountIds = await Promise.all(
     links.map(link =>
@@ -347,7 +353,7 @@ export async function ledgerEntryFromMainTransaction(
   let mainAccountId: string = transactionBusinessId;
 
   const {
-    financialAccounts: { internalWalletsIds },
+    financialAccounts: { internalWalletsIds, creditCardIds },
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   if (
@@ -360,8 +366,12 @@ export async function ledgerEntryFromMainTransaction(
       .get(FinancialAccountsProvider)
       .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
     if (!account) {
+      // a card debit that names no card account: it needs a stored link to its card statement
+      const linkHint = creditCardIds.includes(businessId)
+        ? `: link the debit to its card statement in the charge's CreditCard Transactions panel`
+        : '';
       throw new LedgerError(
-        `Transaction reference "${transaction.source_reference}" is missing account`,
+        `Transaction reference "${transaction.source_reference}" is missing account${linkHint}`,
       );
     }
     mainAccountId = await getFinancialAccountTaxCategoryId(injector, {

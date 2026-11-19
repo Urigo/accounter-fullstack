@@ -25,7 +25,10 @@ const charge = {
 } as IGetChargesByIdsResult;
 
 function makeInjector(linkedChargeIds: string[]) {
-  const hasLinks = vi.fn(async (chargeId: string) => linkedChargeIds.includes(chargeId));
+  const hasLinks = vi.fn(
+    async ({ chargeId, ownerId }: { chargeId: string; ownerId: string }) =>
+      ownerId === charge.owner_id && linkedChargeIds.includes(chargeId),
+  );
   const providers = new Map<unknown, unknown>([
     [
       AdminContextProvider,

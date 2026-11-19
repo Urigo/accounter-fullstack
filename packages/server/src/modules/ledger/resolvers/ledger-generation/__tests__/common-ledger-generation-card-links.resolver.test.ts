@@ -21,6 +21,7 @@ import { TransactionsProvider } from '../../../../transactions/providers/transac
 import type { IGetTransactionsByChargeIdsResult } from '../../../../transactions/types.js';
 import { BalanceCancellationProvider } from '../../../providers/balance-cancellation.provider.js';
 import { UnbalancedBusinessesProvider } from '../../../providers/unbalanced-businesses.provider.js';
+import { ledgerEntriesFromMainTransaction } from '../../../helpers/common-charge-ledger.helper.js';
 import { generateLedgerRecordsForCommonCharge } from '../common-ledger-generation.resolver.js';
 import {
   buildTransaction,
@@ -107,7 +108,15 @@ function bankDebit(options: {
   };
 }
 
-type Link = { cardAccountId: string; debitDate: TimelessDateString; cardAmounts: string[] };
+type Link = {
+  cardAccountId: string;
+  debitDate: TimelessDateString;
+  cardAmounts: string[];
+  /** Defaults to the bank transaction's owner */
+  ownerId?: string;
+  /** Defaults to the bank transaction's currency */
+  currency?: Currency;
+};
 
 function makeInjector(options: {
   transaction: IGetTransactionsByChargeIdsResult;
@@ -120,7 +129,11 @@ function makeInjector(options: {
   const links = options.links ?? [];
   const cardRows = new Map(
     links.map(link => [
-      statementKeyId({ cardAccountId: link.cardAccountId, currency, debitDate: link.debitDate }),
+      statementKeyId({
+        cardAccountId: link.cardAccountId,
+        currency: link.currency ?? currency,
+        debitDate: link.debitDate,
+      }),
       link.cardAmounts.map((amount, index) => ({
         id: `${link.cardAccountId}-${index}`,
         owner_id: OWNER_ID,
@@ -146,6 +159,7 @@ function makeInjector(options: {
             },
             financialAccounts: {
               internalWalletsIds: options.internalWalletsIds ?? [],
+              creditCardIds: [ISSUER_ID],
               swiftBusinessId: null,
             },
           }),
@@ -162,10 +176,10 @@ function makeInjector(options: {
             load: async (id: string) =>
               id === options.transaction.id
                 ? links.map(link => ({
-                    owner_id: OWNER_ID,
+                    owner_id: link.ownerId ?? OWNER_ID,
                     bank_transaction_id: id,
                     card_account_id: link.cardAccountId,
-                    currency,
+                    currency: link.currency ?? currency,
                     debit_date: link.debitDate,
                     link_method: 'MANUAL',
                   }))
@@ -412,7 +426,9 @@ describe('generateLedgerRecordsForCommonCharge — card debits', () => {
 
     const { errors } = await generate(injector);
 
-    expect(errors).toContain('Transaction reference "8547" is missing account');
+    expect(errors).toContain(
+      `Transaction reference "8547" is missing account: link the debit to its card statement in the charge's CreditCard Transactions panel`,
+    );
   });
 
   it('still requires a counterparty for an unlinked debit', async () => {
@@ -423,5 +439,97 @@ describe('generateLedgerRecordsForCommonCharge — card debits', () => {
     const { errors } = await generate(injector);
 
     expect(errors).toContain('Transaction reference "debit-ref" is missing business_id');
+  });
+
+  it('books each part in its own direction: a statement in credit offsets the others', async () => {
+    const injector = makeInjector({
+      transaction: bankDebit({ amount: '-500', businessId: null }),
+      links: [
+        { cardAccountId: CARD_A, debitDate: DAY, cardAmounts: ['-600'] },
+        { cardAccountId: CARD_B, debitDate: DAY, cardAmounts: ['100'] },
+      ],
+    });
+
+    const { records, balance, errors } = await generate(injector);
+
+    expect(errors).toEqual([]);
+    expect(balance?.isBalanced).toBe(true);
+    expect(records.map(summarize)).toEqual([
+      expect.objectContaining({
+        debit: accountTaxCategoryId(CARD_A, Currency.Ils),
+        credit: accountTaxCategoryId(BANK_ACCOUNT_ID, Currency.Ils),
+        localAmount: 600,
+      }),
+      expect.objectContaining({
+        debit: accountTaxCategoryId(BANK_ACCOUNT_ID, Currency.Ils),
+        credit: accountTaxCategoryId(CARD_B, Currency.Ils),
+        localAmount: 100,
+      }),
+    ]);
+  });
+
+  it("ignores another owner's link", async () => {
+    const injector = makeInjector({
+      transaction: bankDebit({ amount: '-500', businessId: null }),
+      links: [
+        { cardAccountId: CARD_A, debitDate: DAY, cardAmounts: ['-500'] },
+        { cardAccountId: CARD_B, debitDate: DAY, cardAmounts: ['-70'], ownerId: 'owner-other' },
+      ],
+    });
+
+    const { records, errors } = await generate(injector);
+
+    // the own link alone: one statement, the whole debit
+    expect(errors).toEqual([]);
+    expect(records.map(summarize)).toEqual([
+      expect.objectContaining({
+        debit: accountTaxCategoryId(CARD_A, Currency.Ils),
+        localAmount: 500,
+      }),
+    ]);
+  });
+
+  it('refuses a link in another currency than the debit', async () => {
+    const injector = makeInjector({
+      transaction: bankDebit({ amount: '-500', businessId: null, reference: 'debit-ref' }),
+      links: [
+        { cardAccountId: CARD_A, debitDate: DAY, cardAmounts: ['-500'], currency: Currency.Usd },
+      ],
+    });
+
+    const { errors } = await generate(injector);
+
+    expect(errors).toEqual([
+      'Transaction reference "debit-ref": a linked card statement is in USD but the debit is in ILS; fix the links',
+    ]);
+  });
+});
+
+describe('ledgerEntriesFromMainTransaction', () => {
+  it('ignores the links of a charge with relevant documents', async () => {
+    const injector = makeInjector({
+      transaction: bankDebit({ amount: '-500', businessId: ISSUER_ID, reference: '4242' }),
+      links: [{ cardAccountId: CARD_B, debitDate: DAY, cardAmounts: ['-500'] }],
+      internalWalletsIds: [ISSUER_ID],
+      accountsByNumber: { '4242': CARD_A },
+    });
+
+    const entries = await ledgerEntriesFromMainTransaction(
+      bankDebit({ amount: '-500', businessId: ISSUER_ID, reference: '4242' }),
+      injector,
+      CHARGE_ID,
+      OWNER_ID,
+      ISSUER_ID,
+      true,
+    );
+
+    // booked against the counterparty, as any payment of an invoiced charge
+    expect(entries).toEqual([
+      expect.objectContaining({
+        debitAccountID1: ISSUER_ID,
+        creditAccountID1: accountTaxCategoryId(BANK_ACCOUNT_ID, Currency.Ils),
+        localCurrencyDebitAmount1: 500,
+      }),
+    ]);
   });
 });

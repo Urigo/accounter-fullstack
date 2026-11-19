@@ -142,7 +142,9 @@ async function deriveChargeType(
   // the admin context, and debits whose counterparty is not the issuer)
   if (
     (mainBusinessId && creditCardIds.includes(mainBusinessId)) ||
-    (await injector.get(CreditCardStatementsProvider).hasLinksByChargeIdLoader.load(charge.id))
+    (await injector
+      .get(CreditCardStatementsProvider)
+      .hasLinksByChargeIdLoader.load({ chargeId: charge.id, ownerId: charge.owner_id }))
   ) {
     return ChargeTypeEnum.CreditcardBankCharge;
   }
