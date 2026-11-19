@@ -79,7 +79,11 @@ const financialAccountSchema = z.object({
   branchTypeCode: optionalInt,
   mymailEntitlementSwitch: optionalInt,
   productLabel: z.string().optional(),
+  settlementAccountId: z.string().optional(),
 });
+
+/** Select value for "no settlement account" (a Select item cannot have an empty value) */
+const NO_SETTLEMENT_ACCOUNT = 'none';
 
 function convertToFinancialAccountForm(account: FinancialAccount): FinancialAccountForm {
   return {
@@ -109,6 +113,7 @@ function convertToFinancialAccountForm(account: FinancialAccount): FinancialAcco
     branchTypeCode: account.branchTypeCode,
     mymailEntitlementSwitch: account.mymailEntitlementSwitch,
     productLabel: account.productLabel,
+    settlementAccountId: account.settlementAccountId ?? NO_SETTLEMENT_ACCOUNT,
   };
 }
 
@@ -116,6 +121,8 @@ type FinancialAccountForm = z.infer<typeof financialAccountSchema>;
 
 interface ModalProps {
   ownerId: string;
+  /** Bank accounts of the same owner, offered as a card's settlement account */
+  bankAccounts?: { id: string; name: string; number: string }[];
   onDone?: () => void;
 }
 
@@ -124,7 +131,7 @@ export interface ModifyFinancialAccountModalRef {
 }
 
 export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModalRef, ModalProps>(
-  function ModifyFinancialAccountModal({ ownerId, onDone }, ref): JSX.Element {
+  function ModifyFinancialAccountModal({ ownerId, bankAccounts = [], onDone }, ref): JSX.Element {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState<FinancialAccount | null>(null);
     const { createFinancialAccount, creating } = useCreateFinancialAccount();
@@ -155,6 +162,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
         branchTypeCode: undefined,
         mymailEntitlementSwitch: undefined,
         productLabel: undefined,
+        settlementAccountId: NO_SETTLEMENT_ACCOUNT,
       },
       mode: 'onBlur',
     });
@@ -245,6 +253,12 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               }
             : undefined;
 
+        const isCard = values.type === FinancialAccountType.CreditCard;
+        const settlementAccountId =
+          values.settlementAccountId && values.settlementAccountId !== NO_SETTLEMENT_ACCOUNT
+            ? values.settlementAccountId
+            : null;
+
         if (editingAccount) {
           await updateFinancialAccount({
             financialAccountId: editingAccount.id,
@@ -255,6 +269,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               privateOrBusiness,
               bankAccountDetails,
               currencies: values.currencies,
+              ...(isCard && { settlementAccountId }),
             },
           });
         } else {
@@ -266,6 +281,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               type: values.type,
               privateOrBusiness,
               bankAccountDetails,
+              ...(isCard && settlementAccountId && { settlementAccountId }),
             },
           });
         }
@@ -371,6 +387,40 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                   />
                 </div>
               </div>
+
+              {watch('type') === FinancialAccountType.CreditCard && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold">Card Settlement</h3>
+                  <FormField
+                    control={control}
+                    name="settlementAccountId"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel>Debited from bank account</FormLabel>
+                        <Select
+                          value={field.value ?? NO_SETTLEMENT_ACCOUNT}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger id="settlementAccountId">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NO_SETTLEMENT_ACCOUNT}>Not set</SelectItem>
+                            {bankAccounts.map(account => (
+                              <SelectItem key={account.id} value={account.id}>
+                                {account.name === account.number
+                                  ? account.number
+                                  : `${account.name} (${account.number})`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               {/* Currencies & Tax Categories */}
               <div className="space-y-4">

@@ -2,7 +2,11 @@ import { useMemo, type ReactElement } from 'react';
 import { Client, Provider, type Exchange, type OperationResult } from 'urql';
 import { filter, make, mergeMap, pipe } from 'wonka';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ManualAutomationStep, ManualAutomationStepState } from '../../gql/graphql.js';
+import {
+  CreditCardStatementLinkMethod,
+  ManualAutomationStep,
+  ManualAutomationStepState,
+} from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/index.js';
 import { Toaster } from '../ui/sonner.js';
 import { ManualAutomations, ManualAutomationsView } from './index.js';
@@ -144,6 +148,27 @@ const filledDebitDates: ManualAutomationsRunEvent[] = [
   },
 ];
 
+const linkedStatements: ManualAutomationsRunEvent[] = [
+  {
+    __typename: 'CreditcardStatementsLinked',
+    method: CreditCardStatementLinkMethod.Reference,
+    bankTransaction: transaction('bank-1', {
+      eventDate: '2026-10-02',
+      amount: '₪ -1,469.90',
+      description: 'ISRACARD',
+      account: 'Poalim ILS ••1234',
+    }),
+    statements: [
+      {
+        id: 'card-isracard|ILS|2026-10-02',
+        debitDate: '2026-10-02',
+        total: { formatted: '₪ -1,469.90' },
+        cardAccount: { id: 'card-isracard', name: 'Isracard ••4821' },
+      },
+    ],
+  },
+];
+
 const deelCharges: ManualAutomationsRunEvent[] = [
   {
     __typename: 'DeelChargeSynced',
@@ -187,6 +212,11 @@ const completedRun: ManualAutomationsRunEvent[] = [
   ...filledDebitDates,
   status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Succeeded, {
     affectedCount: 3,
+  }),
+  status(ManualAutomationStep.LinkCreditcardStatements, ManualAutomationStepState.Running),
+  ...linkedStatements,
+  status(ManualAutomationStep.LinkCreditcardStatements, ManualAutomationStepState.Succeeded, {
+    affectedCount: 1,
   }),
   status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Running),
   ...deelCharges,
@@ -301,6 +331,9 @@ export const NothingToUpdate: Story = {
       status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Succeeded, {
         affectedCount: 0,
       }),
+      status(ManualAutomationStep.LinkCreditcardStatements, ManualAutomationStepState.Succeeded, {
+        affectedCount: 0,
+      }),
       status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Succeeded, {
         affectedCount: 0,
       }),
@@ -331,6 +364,10 @@ export const CompletedWithErrors: Story = {
       status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Succeeded, {
         affectedCount: 3,
       }),
+      ...linkedStatements,
+      status(ManualAutomationStep.LinkCreditcardStatements, ManualAutomationStepState.Succeeded, {
+        affectedCount: 1,
+      }),
       ...deelCharges,
       status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Succeeded, {
         affectedCount: 2,
@@ -348,6 +385,7 @@ export const StepFailed: Story = {
       }),
       status(ManualAutomationStep.MergeChargesByReference, ManualAutomationStepState.Skipped),
       status(ManualAutomationStep.FillCreditcardDebitDates, ManualAutomationStepState.Skipped),
+      status(ManualAutomationStep.LinkCreditcardStatements, ManualAutomationStepState.Skipped),
       status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Skipped),
     ],
   },
@@ -358,7 +396,7 @@ export const DeelNotConfigured: Story = {
   args: {
     adminBusinessId: 'business-admin',
     events: [
-      ...completedRun.slice(0, completedRun.indexOf(filledDebitDates.at(-1)!) + 2),
+      ...completedRun.slice(0, completedRun.indexOf(linkedStatements.at(-1)!) + 2),
       status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.NotConfigured, {
         affectedCount: 0,
       }),
@@ -370,7 +408,7 @@ export const DeelNotConfigured: Story = {
 export const DeelFailed: Story = {
   args: {
     events: [
-      ...completedRun.slice(0, completedRun.indexOf(filledDebitDates.at(-1)!) + 2),
+      ...completedRun.slice(0, completedRun.indexOf(linkedStatements.at(-1)!) + 2),
       status(ManualAutomationStep.FetchDeelDocuments, ManualAutomationStepState.Failed, {
         errors: [
           'Error fetching Deel invoices: Deel contract ID [3xkq7m2] not found in DB. Match business to the following contract details: …',

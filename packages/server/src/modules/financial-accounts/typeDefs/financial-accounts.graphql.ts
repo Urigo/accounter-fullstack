@@ -51,6 +51,8 @@ export default gql`
     " the external identifier of the card "
     number: String!
     fourDigits: String!
+    " the bank account the card is debited from, if configured "
+    settlementAccount: BankFinancialAccount
   }
 
   " represent a single credit card "
@@ -93,6 +95,8 @@ export default gql`
     privateOrBusiness: PrivateOrBusinessType!
     bankAccountDetails: BankAccountInsertInput
     currencies: [FinancialAccountCurrencyInput!]
+    " credit cards only: the bank account (of the same owner) the card is debited from "
+    settlementAccountId: UUID
   }
 
   " input type for updating a financial account "
@@ -104,6 +108,8 @@ export default gql`
     privateOrBusiness: PrivateOrBusinessType
     bankAccountDetails: BankAccountUpdateInput
     currencies: [FinancialAccountCurrencyInput!]
+    " credit cards only: the bank account (of the same owner) the card is debited from. null clears it "
+    settlementAccountId: UUID
   }
 
   extend interface Transaction {

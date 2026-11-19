@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type JSX } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Button } from '@/components/ui/button.js';
 import {
   AdminFinancialAccountsSectionDocument,
+  FinancialAccountType,
   PrivateOrBusinessType,
   type AdminFinancialAccountsSectionQuery,
 } from '@/gql/graphql.js';
@@ -53,6 +54,11 @@ import type { FinancialAccount } from '../../financial-accounts/types.js';
         mymailEntitlementSwitch
         productLabel
       }
+      ... on CardFinancialAccount {
+        settlementAccount {
+          id
+        }
+      }
     }
   }
 `;
@@ -92,6 +98,9 @@ function convertFinancialAccountDataToFormValues(
           productLabel: account.productLabel ?? undefined,
         }
       : {}),
+    ...(account.__typename === 'CardFinancialAccount'
+      ? { settlementAccountId: account.settlementAccount?.id ?? null }
+      : {}),
   };
 }
 
@@ -118,6 +127,15 @@ export function FinancialAccountsSection({ adminId }: Props): JSX.Element {
   }, [data]);
 
   const modalRef = useRef<ModifyFinancialAccountModalRef>(null);
+
+  // the bank accounts a card of this owner can be debited from
+  const bankAccounts = useMemo(
+    () =>
+      accounts
+        .filter(account => account.type === FinancialAccountType.BankAccount)
+        .map(({ id, name, number }) => ({ id, name, number })),
+    [accounts],
+  );
 
   const handleOpenModal = (account?: FinancialAccount): void => {
     modalRef.current?.open(account);
@@ -162,7 +180,12 @@ export function FinancialAccountsSection({ adminId }: Props): JSX.Element {
         </div>
       )}
 
-      <ModifyFinancialAccountModal ownerId={adminId} ref={modalRef} onDone={() => refetch()} />
+      <ModifyFinancialAccountModal
+        ownerId={adminId}
+        bankAccounts={bankAccounts}
+        ref={modalRef}
+        onDone={() => refetch()}
+      />
     </div>
   );
 }

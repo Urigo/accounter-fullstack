@@ -122,6 +122,11 @@ const config: CodegenConfig = {
           Contract: '../modules/contracts/types.js#IGetAllOpenContractsResult',
           Country: '../shared/enums.js#CountryCode as CountryCodeEnum',
           CreditcardBankCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
+          CreditCardStatement: '../modules/transactions/types.js#ResolvedCreditCardStatement',
+          CreditCardStatementSuggestion:
+            '../modules/transactions/types.js#CreditCardStatementSuggestionProto',
+          CreditCardStatementSuggestions:
+            '../modules/transactions/types.js#CreditCardStatementSuggestionsProto',
           CreditInvoice: '../modules/documents/types.js#IGetAllDocumentsResult',
           CryptoWalletFinancialAccount:
             '../modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
