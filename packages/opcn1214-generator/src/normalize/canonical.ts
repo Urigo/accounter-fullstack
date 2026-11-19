@@ -8,7 +8,13 @@ import { getLayout } from '../layout/registry.js';
 import type { FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import { PHONE_PREFIXES, type Report1214Input } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
-import { MAIN_INPUT_KEYS, setKey, SHAREHOLDER_INPUT_KEYS, type InputTree } from './denormalize.js';
+import {
+  MAIN_INPUT_KEYS,
+  RELATED_COMPANY_INPUT_KEYS,
+  setKey,
+  SHAREHOLDER_INPUT_KEYS,
+  type InputTree,
+} from './denormalize.js';
 import { BANK_ACCOUNT_DIGITS, hasUntransmittedAppendices } from './derive.js';
 import { roundAmount } from './fields.js';
 import { DEFAULT_SOFTWARE_NAME } from './main.js';
@@ -110,8 +116,8 @@ function canonicalAmounts(
  * The canonical form of a valid `input` (SPEC §8.4) under the generation `options`: meta set to
  * the values written (software name default, save date from `options.today`), text normalized,
  * digit strings padded to the field width (the bank account number to 9 digits), empty optional
- * values and non-zeroAllowed zero codes removed, amounts rounded per `options.rounding`. `input` is
- * not changed.
+ * values, an empty `relatedCompanies` list and non-zeroAllowed zero codes removed, amounts rounded
+ * per `options.rounding`. `input` is not changed.
  */
 export function canonicalize(
   input: Report1214Input,
@@ -119,6 +125,7 @@ export function canonicalize(
 ): Report1214Input {
   const layout = getLayout(input.taxYear);
   const mainDef = layout.records['1000'];
+  const relatedDef = layout.records['1010'];
   const shareholderDef = layout.records['1020'];
   const { rounding } = options;
   const today = options.today ?? (() => todayInJerusalem());
@@ -143,6 +150,16 @@ export function canonicalize(
       return tree;
     }),
   };
+  // No 1010 record is written for an empty list, so the parser reads none back.
+  if (input.relatedCompanies && input.relatedCompanies.length > 0) {
+    output.relatedCompanies = input.relatedCompanies.map(company => {
+      const tree: InputTree = {};
+      for (const key of RELATED_COMPANY_INPUT_KEYS) {
+        setKey(tree, key, canonicalValue(fieldOf(relatedDef, key), company[key], rounding));
+      }
+      return tree;
+    });
+  }
   for (const key of MAIN_INPUT_KEYS) {
     setKey(output, key, canonicalValue(fieldOf(mainDef, key), getKey(source, key), rounding));
   }
