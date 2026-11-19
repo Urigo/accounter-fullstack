@@ -45,6 +45,25 @@ export function relatedCompaniesMax(report: NormalizedReport): Issue[] {
   ];
 }
 
+/** struct.rdInvestments.max: more R&D investments (1030 records) than the layout allows (5, p.2). */
+export function rdInvestmentsMax(report: NormalizedReport): Issue[] {
+  const max = report.layout.records['1030'].maxOccurs;
+  const count = report.records.filter(record => record.recordType === '1030').length;
+  if (count <= max) {
+    return [];
+  }
+  return [
+    makeIssue('struct.rdInvestments.max', {
+      message: `The report has ${count} R&D investments; at most ${max} are allowed.`,
+      path: 'rdInvestments',
+      recordType: '1030',
+      value: count,
+      expected: `at most ${max}`,
+      specRef: { page: 2 },
+    }),
+  ];
+}
+
 /** Most shareholders (1020 records) in a report (p.2, p.21). */
 const MAX_SHAREHOLDERS = 99;
 

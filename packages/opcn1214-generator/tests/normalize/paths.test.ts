@@ -44,7 +44,11 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     expect(pathFor('1010', 2, 'relationType')).toBe('relatedCompanies[2].relationType');
   });
 
-  it.each(['1000', '1010', '1020'] as const)(
+  it('maps a record 1030 key into its R&D investment', () => {
+    expect(pathFor('1030', 4, 'investmentAmount')).toBe('rdInvestments[4].investmentAmount');
+  });
+
+  it.each(['1000', '1010', '1020', '1030'] as const)(
     'maps every derived field of record %s to the empty path',
     recordType => {
       const derived = LAYOUT.records[recordType].fields.filter(field => field.derived);
@@ -59,7 +63,7 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     expect(pathFor('1000', 0, `code:${code}`)).toBe('');
   });
 
-  it.each(['1030', '2000', '2200', '3027', '3077'] as const)(
+  it.each(['2000', '2200', '3027', '3077'] as const)(
     'maps keys of record %s, which has no input mapping yet, to the empty path',
     recordType => {
       expect(pathFor(recordType, 0, 'anything')).toBe('');

@@ -1,6 +1,11 @@
 import { generate1214, Opcn1214ParseError, parse1214, type Issue } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
+import {
+  minimalInput,
+  rdInvestments,
+  rdInvestmentsTotal,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 import { dropLine, goldenText, tamper as tamperAt } from '../fixtures/files.js';
 
 const OPTIONS = { today: () => '2025-03-31' };
@@ -226,6 +231,50 @@ describe('parse1214', () => {
     it('reports 1010 records the 9999 record does not count (9999@139)', () => {
       expect(parseErrorIssues(() => parse1214(tamper(related, 5, 139, '01')))).toEqual([
         expect.objectContaining({ ruleId: 'parse.control.counts', line: 5, column: 139 }),
+      ]);
+    });
+  });
+
+  describe('R&D investments (1030)', () => {
+    const rd = generate1214(
+      minimalInput({ rdInvestments: rdInvestments(2), amounts: { '165': rdInvestmentsTotal(2) } }),
+      OPTIONS,
+    ).text;
+
+    it('reads 1030 records after 1020 back as rdInvestments', () => {
+      const result = parse1214(rd);
+      expect(result.report.rdInvestments).toEqual(rdInvestments(2));
+      expect(result.report.amounts['165']).toBe(rdInvestmentsTotal(2));
+      expect(result.issues).toEqual([]);
+    });
+
+    it.each([
+      ['a 1030 record before 1000', [2, 0, 1, 3, 4], '1030', 1],
+      ['a 1020 record after a 1030 record', [0, 2, 1, 3, 4], '1020', 3],
+    ])('reports %s as parse.order', (_, order, recordType, line) => {
+      const lines = rd.split(CRLF);
+      const reordered = [...order.map(index => lines[index]), ''].join(CRLF);
+      expect(parseErrorIssues(() => parse1214(reordered))).toContainEqual(
+        expect.objectContaining({ ruleId: 'parse.order', recordType, line }),
+      );
+    });
+
+    it('locates issues of 1030 records by their input index', () => {
+      // 1030@138: a blank company name.
+      const result = parse1214(tamper(rd, 4, 138, ' '.repeat(50)));
+      expect(result.issues).toEqual([
+        expect.objectContaining({
+          ruleId: 'field.required',
+          path: 'rdInvestments[1].companyName',
+          recordType: '1030',
+          recordIndex: 1,
+        }),
+      ]);
+    });
+
+    it('reports 1030 records the 9999 record does not count (9999@149)', () => {
+      expect(parseErrorIssues(() => parse1214(tamper(rd, 5, 149, '01')))).toEqual([
+        expect.objectContaining({ ruleId: 'parse.control.counts', line: 5, column: 149 }),
       ]);
     });
   });

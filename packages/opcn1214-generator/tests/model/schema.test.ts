@@ -6,6 +6,7 @@ import {
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
+  rdInvestments,
   relatedCompanies,
 } from '../fixtures/builders.js';
 
@@ -49,6 +50,23 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expect(shapePaths(input)).toEqual([
       'relatedCompanies[0].relationType',
       'relatedCompanies[1].country',
+    ]);
+  });
+
+  it('accepts any number of R&D investments (struct.rdInvestments.max counts them)', () => {
+    expect(shapeIssues(minimalInput({ rdInvestments: [] }))).toEqual([]);
+    expect(shapeIssues(minimalInput({ rdInvestments: rdInvestments(8) }))).toEqual([]);
+  });
+
+  it('rejects an R&D investment without an amount and an unknown member', () => {
+    const [investment] = rdInvestments(1);
+    const input = {
+      ...minimalInput(),
+      rdInvestments: [{ companyName: 'חברת מו"פ' }, { ...investment, affiliation: 1 }],
+    };
+    expect(shapePaths(input)).toEqual([
+      'rdInvestments[0].investmentAmount',
+      'rdInvestments[1].affiliation',
     ]);
   });
 

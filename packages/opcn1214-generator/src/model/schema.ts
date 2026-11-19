@@ -126,6 +126,12 @@ const relatedCompany = z.strictObject({
   assessingOfficeCode: z.number().optional(),
 });
 
+const rdInvestment = z.strictObject({
+  companyName: z.string(),
+  companyFileNumber: z.string().optional(),
+  investmentAmount: z.number(),
+});
+
 const shareholder = z.strictObject({
   idNumber: z.string(),
   fullName: z.string(),
@@ -163,6 +169,8 @@ export const report1214InputSchema = z.strictObject({
   /** Any length: struct.relatedCompanies.max reports more than three. */
   relatedCompanies: z.array(relatedCompany).optional(),
   shareholders: z.array(shareholder),
+  /** Any length: struct.rdInvestments.max reports more than five. */
+  rdInvestments: z.array(rdInvestment).optional(),
 });
 
 /** The input schema of `taxYear` (SPEC §9.2: the schema is per year). */

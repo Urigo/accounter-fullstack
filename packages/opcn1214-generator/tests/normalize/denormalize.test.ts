@@ -2,7 +2,7 @@ import { getLayout } from '../../src/layout/registry.js';
 import type { NormalizedRecord, NormalizedReport } from '../../src/model/normalized.js';
 import { denormalize } from '../../src/normalize/denormalize.js';
 import { normalizeReport } from '../../src/normalize/report.js';
-import { minimalInput, relatedCompanies } from '../fixtures/builders.js';
+import { minimalInput, rdInvestments, relatedCompanies } from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
 const OPTIONS = { today: () => '2025-03-31' };
@@ -92,5 +92,17 @@ describe('denormalize: related companies (records 1010)', () => {
 
   it('leaves no relatedCompanies without 1010 records', () => {
     expect(denormalize(reportWith(() => undefined))).not.toHaveProperty('relatedCompanies');
+  });
+});
+
+describe('denormalize: R&D investments (records 1030)', () => {
+  it('reads 1030 records back as rdInvestments, without the derived affiliation', () => {
+    const investments = rdInvestments(5);
+    const report = normalizeReport(minimalInput({ rdInvestments: investments }), LAYOUT, OPTIONS);
+    expect(denormalize(report).rdInvestments).toEqual(investments);
+  });
+
+  it('leaves no rdInvestments without 1030 records', () => {
+    expect(denormalize(reportWith(() => undefined))).not.toHaveProperty('rdInvestments');
   });
 });

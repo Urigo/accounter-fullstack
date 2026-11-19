@@ -1,6 +1,11 @@
 import { getLayout } from '../../src/layout/registry.js';
 import { normalizeReport } from '../../src/normalize/report.js';
-import { fullDeclarationsInput, fullMainInput, relatedCompanies } from '../fixtures/builders.js';
+import {
+  fullDeclarationsInput,
+  fullMainInput,
+  rdInvestments,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 import { unmappedHeaderKeys } from '../helpers/coverage.js';
 
 const LAYOUT = getLayout(2024);
@@ -44,6 +49,12 @@ describe('normalizer coverage (SPEC §13.3)', () => {
     const input = fullMainInput({ relatedCompanies: relatedCompanies(1) });
     const report = normalizeReport(input, LAYOUT, { today: () => '2025-03-31' });
     expect(unmappedHeaderKeys(LAYOUT.records['1010'], report.records)).toEqual([]);
+  });
+
+  it('record 1030: every non-filler header key is mapped', () => {
+    const input = fullMainInput({ rdInvestments: rdInvestments(1) });
+    const report = normalizeReport(input, LAYOUT, { today: () => '2025-03-31' });
+    expect(unmappedHeaderKeys(LAYOUT.records['1030'], report.records)).toEqual([]);
   });
 
   it('every 1000 header key between positions 563 and 1064 outside the D2 groups is produced', () => {
