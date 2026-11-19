@@ -56,7 +56,7 @@
   "dependencies": {
     "@graphql-hive/logger": "1.2.0",
     "@graphql-mesh/fusion-runtime": "1.14.0",
-    "@graphql-mesh/transport-rest": "0.12.4",
+    "@graphql-mesh/transport-rest": "0.12.5",
     "graphql": "16.15.0"
   },
   "devDependencies": {
