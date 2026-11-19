@@ -18,6 +18,13 @@ export interface OtsarHahayalOptions {
   fetchCreditCards?: boolean;
   fetchInvestments?: boolean;
   validateSchema?: boolean;
+  /**
+   * Fetch the card-breakdown drill-down of the bank's credit card debit rows, and set those rows'
+   * `originReference` to the debited card's last 4 digits. Other rows' drill-downs are not
+   * fetched (with `validateSchema`, every drill-down is fetched and validated anyway). A failed
+   * drill-down keeps its row without the card hint.
+   */
+  fetchCardDebitDetails?: boolean;
   fromDate?: string;
   toDate?: string;
   headless?: boolean;
@@ -29,6 +36,7 @@ const DEFAULT_OPTIONS: OtsarHahayalOptions = {
   fetchCreditCards: true,
   fetchInvestments: true,
   validateSchema: false,
+  fetchCardDebitDetails: true,
 };
 
 export async function otsarHahayal(

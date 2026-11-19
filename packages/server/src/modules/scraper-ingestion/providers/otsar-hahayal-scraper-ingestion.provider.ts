@@ -21,6 +21,7 @@ import type {
   IFetchOtsarHahayalForeignByKeysResult,
   IFetchOtsarHahayalIlsByKeysQuery,
   IFetchOtsarHahayalIlsByKeysResult,
+  ISetOtsarHahayalIlsOriginReferenceQuery,
   IUploadOtsarHahayalCreditCardTransactionsQuery,
   IUploadOtsarHahayalCreditCardTransactionsResult,
   IUploadOtsarHahayalForeignTransactionsQuery,
@@ -32,6 +33,7 @@ import type {
 const fetchOtsarHahayalIlsByKeys = sql<IFetchOtsarHahayalIlsByKeysQuery>`
   SELECT
     id,
+    owner_id,
     account_number,
     branch_number,
     date_of_registration,
@@ -133,6 +135,21 @@ const uploadOtsarHahayalIlsTransactions = sql<IUploadOtsarHahayalIlsTransactions
   )
   ON CONFLICT (account_number, branch_number, date_of_registration, date_of_business_day, reference, origin_reference, credit_amount, debit_amount) DO NOTHING
   RETURNING id, account_number, branch_number, date_of_registration, description, credit_amount, debit_amount;
+`;
+
+/**
+ * Gives a row stored without a card hint the hint a later scrape found (see
+ * `uploadOtsarHahayalIlsTransactions`). Only the hint columns change, and the table has no UPDATE
+ * trigger, so no transaction or charge is created.
+ */
+const setOtsarHahayalIlsOriginReference = sql<ISetOtsarHahayalIlsOriginReferenceQuery>`
+  UPDATE accounter_schema.otsar_hahayal_ils_account_transactions
+  SET origin_reference = $originReference!,
+    drill_down_data = COALESCE(drill_down_data, $drillDownData)
+  WHERE id = $id!
+    AND owner_id = $ownerId!
+    AND origin_reference = ''
+  RETURNING id;
 `;
 
 const fetchOtsarHahayalForeignByKeys = sql<IFetchOtsarHahayalForeignByKeysQuery>`
@@ -340,6 +357,16 @@ function diffOtsarHahayalIlsRow(
   return changed;
 }
 
+/** An ILS row's conflict key without its card hint (`origin_reference`) */
+function ilsRowKey(parts: ReadonlyArray<string | number | null | undefined>): string {
+  return parts.join('_');
+}
+
+/** The full conflict key of an ILS row: its row key plus its card hint */
+function ilsConflictKey(rowKey: string, originReference: string): string {
+  return `${rowKey}|${originReference}`;
+}
+
 const OTSAR_HAHAYAL_FOREIGN_DIFF_FIELDS: Array<{
   key: string & keyof IFetchOtsarHahayalForeignByKeysResult;
   incoming: (t: OtsarHahayalForeignTransactionInput) => string | number | boolean | null;
@@ -422,103 +449,181 @@ export class OtsarHahayalScraperIngestionProvider {
       .map(t => t.branchNumber ?? null)
       .filter((n): n is number => n !== null);
 
-    const existing = await fetchOtsarHahayalIlsByKeys.run(
-      { accountNumbers, branchNumbers, dateOfRegistrations },
-      this.db,
-    );
-
-    const existingByKey = new Map<string, IFetchOtsarHahayalIlsByKeysResult>();
-    for (const row of existing) {
-      const key = [
-        row.account_number,
-        row.branch_number,
-        row.date_of_registration ? instantToTimelessDate(row.date_of_registration) : '',
-        row.date_of_business_day ? instantToTimelessDate(row.date_of_business_day) : '',
-        row.reference,
-        row.origin_reference,
-        formatValue(row.credit_amount, true),
-        formatValue(row.debit_amount, true),
-      ].join('_');
-      existingByKey.set(key, row);
-    }
-
     const businessId = await this.getBusinessId();
 
-    const params = transactions.map(t => ({
-      accountNumber: t.accountNumber,
-      accountType: t.accountType,
-      branchNumber: t.branchNumber,
-      actionCode: t.actionCode,
-      bfbSource: t.bfbSource,
-      closingBalance: t.closingBalance,
-      correspondentAccount: t.correspondentAccount,
-      correspondentAccountType: t.correspondentAccountType,
-      correspondentBank: t.correspondentBank,
-      correspondentBranch: t.correspondentBranch,
-      creditAmount: t.creditAmount,
-      customerName: t.customerName,
-      dateOfBusinessDay: t.dateOfBusinessDay,
-      dateOfRegistration: t.dateOfRegistration,
-      debitAmount: t.debitAmount,
-      depositorId: t.depositorId,
-      description: t.description,
-      drillDownUrl: t.drillDownUrl,
-      drillDownData: t.drillDownData ?? null,
-      firstTransactionOfDay: t.firstTransactionOfDay,
-      lastTransactionOfDay: t.lastTransactionOfDay,
-      name: t.name,
-      openingBalance: t.openingBalance,
-      operationSource: t.operationSource,
-      reference: t.reference,
-      salaryInd: t.salaryInd,
-      transactionSource: t.transactionSource,
-      transactionReason: t.transactionReason,
-      originReference: t.originReference ?? '',
-      ownerId: businessId,
-    }));
+    // Read, claim and insert in one transaction, so a concurrent upload can't claim or insert the
+    // same row in between
+    return this.db.transaction(async () => {
+      const existing = await fetchOtsarHahayalIlsByKeys.run(
+        { accountNumbers, branchNumbers, dateOfRegistrations },
+        this.db,
+      );
 
-    const result: IUploadOtsarHahayalIlsTransactionsResult[] =
-      await uploadOtsarHahayalIlsTransactions.run({ transactions: params }, this.db);
-    const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
-    const insertedIdSet = new Set(insertedIds);
-
-    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
-      id: r.id,
-      date: r.date_of_registration ? instantToTimelessDate(r.date_of_registration) : null,
-      description: r.description ?? null,
-      amount:
-        Number(r.debit_amount) === 0 ? String(r.credit_amount) : String(-Number(r.debit_amount)),
-      account: String(r.account_number),
-    }));
-
-    const changedTransactions: ChangedTransaction[] = [];
-    for (const t of transactions) {
-      const key = [
-        t.accountNumber,
-        t.branchNumber,
-        t.dateOfRegistration ? toCalendarDate(t.dateOfRegistration) : '',
-        t.dateOfBusinessDay ? toCalendarDate(t.dateOfBusinessDay) : '',
-        t.reference,
-        t.originReference ?? '',
-        formatValue(t.creditAmount, true),
-        formatValue(t.debitAmount, true),
-      ].join('_');
-      const existingRow = existingByKey.get(key);
-      if (existingRow && !insertedIdSet.has(existingRow.id)) {
-        const changedFields = diffOtsarHahayalIlsRow(existingRow, t);
-        if (changedFields.length > 0) {
-          changedTransactions.push({ id: existingRow.id, changedFields });
-        }
+      const existingByKey = new Map<string, IFetchOtsarHahayalIlsByKeysResult>();
+      const existingByRowKey = new Map<string, IFetchOtsarHahayalIlsByKeysResult[]>();
+      for (const row of existing) {
+        const rowKey = ilsRowKey([
+          row.account_number,
+          row.branch_number,
+          row.date_of_registration ? instantToTimelessDate(row.date_of_registration) : '',
+          row.date_of_business_day ? instantToTimelessDate(row.date_of_business_day) : '',
+          row.reference,
+          formatValue(row.credit_amount, true),
+          formatValue(row.debit_amount, true),
+        ]);
+        existingByKey.set(ilsConflictKey(rowKey, row.origin_reference), row);
+        const sameRow = existingByRowKey.get(rowKey) ?? [];
+        sameRow.push(row);
+        existingByRowKey.set(rowKey, sameRow);
       }
-    }
 
-    return {
-      inserted: insertedIds.length,
-      skipped: transactions.length - insertedIds.length,
-      insertedIds,
-      insertedTransactions,
-      changedTransactions,
-    };
+      /**
+       * The card hint (`origin_reference`) is part of the conflict key, but the scraper only finds
+       * it when it can fetch the row's card breakdown. So the same bank row can arrive with or
+       * without it:
+       * - stored without it, arriving with it: the stored row is given the hint instead of
+       *   inserting a second copy (which would create a duplicate transaction and charge). Each
+       *   stored row is claimed once.
+       * - stored with it, arriving without it: the stored row is kept and nothing is inserted.
+       */
+      const claims: Array<{
+        storedRow: IFetchOtsarHahayalIlsByKeysResult;
+        incoming: OtsarHahayalIlsTransactionInput;
+      }> = [];
+      const claimedIds = new Set<string>();
+      const toInsert: OtsarHahayalIlsTransactionInput[] = [];
+      const changedTransactions: ChangedTransaction[] = [];
+
+      for (const t of transactions) {
+        const rowKey = ilsRowKey([
+          t.accountNumber,
+          t.branchNumber,
+          t.dateOfRegistration ? toCalendarDate(t.dateOfRegistration) : '',
+          t.dateOfBusinessDay ? toCalendarDate(t.dateOfBusinessDay) : '',
+          t.reference,
+          formatValue(t.creditAmount, true),
+          formatValue(t.debitAmount, true),
+        ]);
+        const originReference = t.originReference ?? '';
+        const exactRow = existingByKey.get(ilsConflictKey(rowKey, originReference));
+        if (exactRow) {
+          // already stored as is: the insert is a no-op
+          const changedFields = diffOtsarHahayalIlsRow(exactRow, t);
+          if (changedFields.length > 0) {
+            changedTransactions.push({ id: exactRow.id, changedFields });
+          }
+          continue;
+        }
+
+        const ownStoredRows = businessId
+          ? (existingByRowKey.get(rowKey) ?? []).filter(row => row.owner_id === businessId)
+          : [];
+        if (originReference === '') {
+          const hinted = ownStoredRows.filter(row => row.origin_reference !== '');
+          if (hinted.length > 0) {
+            if (hinted.length === 1) {
+              const changedFields = diffOtsarHahayalIlsRow(hinted[0], t);
+              if (changedFields.length > 0) {
+                changedTransactions.push({ id: hinted[0].id, changedFields });
+              }
+            }
+            continue;
+          }
+        } else {
+          const hintless = ownStoredRows.find(
+            row => row.origin_reference === '' && !claimedIds.has(row.id),
+          );
+          if (hintless) {
+            claimedIds.add(hintless.id);
+            claims.push({ storedRow: hintless, incoming: t });
+            continue;
+          }
+        }
+        toInsert.push(t);
+      }
+
+      for (const { storedRow, incoming } of claims) {
+        const [updated] = await setOtsarHahayalIlsOriginReference.run(
+          {
+            id: storedRow.id,
+            ownerId: storedRow.owner_id ?? '',
+            originReference: incoming.originReference ?? '',
+            drillDownData: incoming.drillDownData ?? null,
+          },
+          this.db,
+        );
+        if (!updated) {
+          // claimed elsewhere since it was read: insert it, the conflict key settles it
+          toInsert.push(incoming);
+          continue;
+        }
+        changedTransactions.push({
+          id: storedRow.id,
+          changedFields: [
+            ...diffOtsarHahayalIlsRow(storedRow, incoming),
+            { field: 'origin_reference', oldValue: '', newValue: incoming.originReference ?? '' },
+          ],
+        });
+      }
+
+      const params = toInsert.map(t => ({
+        accountNumber: t.accountNumber,
+        accountType: t.accountType,
+        branchNumber: t.branchNumber,
+        actionCode: t.actionCode,
+        bfbSource: t.bfbSource,
+        closingBalance: t.closingBalance,
+        correspondentAccount: t.correspondentAccount,
+        correspondentAccountType: t.correspondentAccountType,
+        correspondentBank: t.correspondentBank,
+        correspondentBranch: t.correspondentBranch,
+        creditAmount: t.creditAmount,
+        customerName: t.customerName,
+        dateOfBusinessDay: t.dateOfBusinessDay,
+        dateOfRegistration: t.dateOfRegistration,
+        debitAmount: t.debitAmount,
+        depositorId: t.depositorId,
+        description: t.description,
+        drillDownUrl: t.drillDownUrl,
+        drillDownData: t.drillDownData ?? null,
+        firstTransactionOfDay: t.firstTransactionOfDay,
+        lastTransactionOfDay: t.lastTransactionOfDay,
+        name: t.name,
+        openingBalance: t.openingBalance,
+        operationSource: t.operationSource,
+        reference: t.reference,
+        salaryInd: t.salaryInd,
+        transactionSource: t.transactionSource,
+        transactionReason: t.transactionReason,
+        originReference: t.originReference ?? '',
+        ownerId: businessId,
+      }));
+
+      const result: IUploadOtsarHahayalIlsTransactionsResult[] =
+        params.length > 0
+          ? await uploadOtsarHahayalIlsTransactions.run({ transactions: params }, this.db)
+          : [];
+      const insertedIds = result
+        .map(r => r.id)
+        .filter((id): id is string => typeof id === 'string');
+
+      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+        id: r.id,
+        date: r.date_of_registration ? instantToTimelessDate(r.date_of_registration) : null,
+        description: r.description ?? null,
+        amount:
+          Number(r.debit_amount) === 0 ? String(r.credit_amount) : String(-Number(r.debit_amount)),
+        account: String(r.account_number),
+      }));
+
+      return {
+        inserted: insertedIds.length,
+        skipped: transactions.length - insertedIds.length,
+        insertedIds,
+        insertedTransactions,
+        changedTransactions,
+      };
+    });
   }
 
   async uploadOtsarHahayalForeignTransactions(

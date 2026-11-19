@@ -58,6 +58,12 @@ import type { FinancialAccount } from '../../financial-accounts/types.js';
         settlementAccount {
           id
         }
+        suggestedSettlementAccount {
+          id
+          name
+          number
+        }
+        suggestedSettlementAccountLinksCount
       }
     }
   }
@@ -99,7 +105,17 @@ function convertFinancialAccountDataToFormValues(
         }
       : {}),
     ...(account.__typename === 'CardFinancialAccount'
-      ? { settlementAccountId: account.settlementAccount?.id ?? null }
+      ? {
+          settlementAccountId: account.settlementAccount?.id ?? null,
+          suggestedSettlementAccount: account.suggestedSettlementAccount
+            ? {
+                id: account.suggestedSettlementAccount.id,
+                name: account.suggestedSettlementAccount.name,
+                number: account.suggestedSettlementAccount.number,
+                linksCount: account.suggestedSettlementAccountLinksCount ?? 0,
+              }
+            : null,
+        }
       : {}),
   };
 }

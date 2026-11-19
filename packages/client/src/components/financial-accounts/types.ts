@@ -1,4 +1,5 @@
 import type { Currency, FinancialAccountType } from '@/gql/graphql.js';
+import type { SettlementAccountSuggestionValue } from './settlement-account-suggestion.js';
 
 export interface CurrencyTaxCategory {
   currency: Currency;
@@ -33,4 +34,6 @@ export interface FinancialAccount {
   // Credit-card-specific fields
   /** The bank account the card is debited from */
   settlementAccountId?: string | null;
+  /** The bank account the card's linked debits mostly come from, when no settlement account is set */
+  suggestedSettlementAccount?: SettlementAccountSuggestionValue | null;
 }

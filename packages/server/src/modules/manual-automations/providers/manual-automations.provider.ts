@@ -123,38 +123,100 @@ const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
   WHERE t.id = matches.id
   RETURNING t.id;`;
 
+/**
+ * Fills `debit_date_override` on the owner's ILS card rows that came without a debit date (the
+ * issuers whose debit date can be NULL: Isracard, Amex, Cal). The date is that of the earliest
+ * bank debit that strongly points at the row's card, within 40 days after the purchase.
+ *
+ * Strong card clues, as the statement matcher defines them, on the owner's non-card, non-fee ILS
+ * bank rows:
+ * - a raw bank hint (`bank_transaction_card_hints`: Poalim 491 reference, Otsar Hahayal
+ *   `origin_reference`) equal to the card's last 4 digits;
+ * - on a row whose counterparty is one of the owner's card issuers: a reference equal to the card
+ *   number, or the card's name in the description.
+ */
 const calculateCreditcardDebitDate = sql<ICalculateCreditcardDebitDateQuery>`
-WITH alt_debit_date AS (SELECT p.event_date,
-                               p.reference_number::text
-                        FROM accounter_schema.poalim_ils_account_transactions p
-                        WHERE p.activity_type_code = 491
-                        ORDER BY p.event_date DESC),
-     altered_transactions AS (SELECT DISTINCT ON (t.id) t.id,
-                                                        alt_debit_date.event_date AS alt_debit_date,
-                                                        t.owner_id
-                              FROM accounter_schema.transactions t
-                                       LEFT JOIN accounter_schema.financial_accounts a ON a.id = t.account_id
-                                       LEFT JOIN alt_debit_date
-                                                 ON alt_debit_date.reference_number = a.account_number AND
-                                                    alt_debit_date.event_date > t.event_date AND
-                                                    alt_debit_date.event_date < (t.event_date + '40 days'::interval) AND
-                                                    alt_debit_date.event_date = ((SELECT min(add.event_date) AS min
-                                                                                  FROM alt_debit_date add
-                                                                                  WHERE add.reference_number = a.account_number
-                                                                                    AND add.event_date > t.event_date
-                                                                                    AND add.event_date < (t.event_date + '40 days'::interval)))
-                              WHERE t.debit_date IS NULL
-                                AND t.debit_date_override IS NULL
-                                AND currency = 'ILS'
-                                AND (t.source_origin = 'ISRACARD' OR t.source_origin = 'AMEX'))
+WITH card_rows AS (
+  SELECT t.id,
+    t.event_date,
+    btrim(a.account_number) AS account_number,
+    btrim(a.account_name) AS account_name,
+    regexp_replace(a.account_number, '\D', '', 'g') AS card_digits
+  FROM accounter_schema.transactions t
+    JOIN accounter_schema.financial_accounts a
+      ON a.id = t.account_id
+      AND a.owner_id = t.owner_id
+      AND a.type = 'CREDIT_CARD'
+  WHERE t.owner_id = $ownerId
+    AND t.debit_date IS NULL
+    AND t.debit_date_override IS NULL
+    AND t.currency = 'ILS'
+    AND t.source_origin IN ('ISRACARD', 'AMEX', 'CAL')
+),
+bank_rows AS (
+  SELECT b.id,
+    b.event_date,
+    btrim(b.source_reference) AS source_reference,
+    b.source_description,
+    b.business_id
+  FROM accounter_schema.transactions b
+    JOIN accounter_schema.financial_accounts ba
+      ON ba.id = b.account_id
+      AND ba.owner_id = b.owner_id
+      AND ba.type <> 'CREDIT_CARD'
+  WHERE b.owner_id = $ownerId
+    AND b.is_fee IS FALSE
+    AND b.currency = 'ILS'
+),
+-- raw hints, as the matcher reads them: left-padded to 4 characters, then their last 4 digits
+hinted_bank_rows AS (
+  SELECT b.id,
+    b.event_date,
+    regexp_replace(lpad(btrim(h.hint), greatest(length(btrim(h.hint)), 4), '0'), '\D', '', 'g') AS hint_digits
+  FROM bank_rows b
+    JOIN accounter_schema.bank_transaction_card_hints h
+      ON h.transaction_id = b.id
+      AND h.owner_id = $ownerId
+),
+card_debits AS (
+  SELECT c.id AS card_transaction_id,
+    hb.event_date
+  FROM card_rows c
+    JOIN hinted_bank_rows hb
+      ON length(c.card_digits) >= 4
+      AND length(hb.hint_digits) >= 4
+      AND right(hb.hint_digits, 4) = right(c.card_digits, 4)
+      AND hb.event_date > c.event_date
+      AND hb.event_date < c.event_date + 40
+  UNION ALL
+  SELECT c.id AS card_transaction_id,
+    b.event_date
+  FROM card_rows c
+    JOIN bank_rows b
+      ON b.business_id = ANY ($creditCardBusinessIds::uuid[])
+      AND b.event_date > c.event_date
+      AND b.event_date < c.event_date + 40
+      AND (
+        (c.account_number <> '' AND b.source_reference = c.account_number)
+        OR (
+          c.account_name IS NOT NULL
+          AND c.account_name <> ''
+          AND b.source_description LIKE '%' || c.account_name || '%'
+        )
+      )
+),
+earliest_debits AS (
+  SELECT card_transaction_id, min(event_date) AS debit_date
+  FROM card_debits
+  GROUP BY card_transaction_id
+)
 UPDATE accounter_schema.transactions t
-SET debit_date_override = at.alt_debit_date
-FROM altered_transactions at
-where at.id = t.id
+SET debit_date_override = d.debit_date
+FROM earliest_debits d
+WHERE t.id = d.card_transaction_id
+  AND t.owner_id = $ownerId
   AND t.debit_date IS NULL
   AND t.debit_date_override IS NULL
-  AND at.alt_debit_date IS NOT NULL
-  AND at.owner_id = $ownerId
 RETURNING t.id, t.debit_date_override;`;
 
 @Injectable({

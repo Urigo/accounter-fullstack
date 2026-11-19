@@ -36,6 +36,7 @@ import { useCreateFinancialAccount } from '@/hooks/use-create-financial-account.
 import { useGetTaxCategories } from '@/hooks/use-get-tax-categories.js';
 import { useUpdateFinancialAccount } from '@/hooks/use-update-financial-account.js';
 import { ComboBox } from '../common/index.js';
+import { SettlementAccountSuggestion } from './settlement-account-suggestion.js';
 import type { FinancialAccount } from './types.js';
 import { getAccountTypeLabel } from './utils.js';
 
@@ -167,7 +168,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
       mode: 'onBlur',
     });
 
-    const { control, handleSubmit: rhfHandleSubmit, watch, reset } = form;
+    const { control, handleSubmit: rhfHandleSubmit, watch, reset, setValue } = form;
 
     const handleOpenModal = (account?: FinancialAccount): void => {
       if (account) {
@@ -419,6 +420,15 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                       </FormItem>
                     )}
                   />
+                  {editingAccount?.suggestedSettlementAccount &&
+                    watch('settlementAccountId') === NO_SETTLEMENT_ACCOUNT && (
+                      <SettlementAccountSuggestion
+                        suggestion={editingAccount.suggestedSettlementAccount}
+                        onUse={bankAccountId =>
+                          setValue('settlementAccountId', bankAccountId, { shouldDirty: true })
+                        }
+                      />
+                    )}
                 </div>
               )}
 

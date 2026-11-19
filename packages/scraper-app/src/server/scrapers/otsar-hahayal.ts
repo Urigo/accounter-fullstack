@@ -79,6 +79,9 @@ export async function scrapeOtsarHahayal(
       fromDate: dateFrom.toISOString(),
       toDate: dateTo.toISOString(),
       headless,
+      // the card's last 4 digits on the bank's card-debit rows (`originReference`), so the server
+      // can tie each debit to its card statement
+      fetchCardDebitDetails: true,
     },
   );
 

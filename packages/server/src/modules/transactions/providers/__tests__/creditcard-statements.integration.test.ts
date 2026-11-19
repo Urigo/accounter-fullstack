@@ -901,4 +901,56 @@ describe('credit card statements', () => {
       expect(await loader.loadMany([debit.id, noMatch.id])).toEqual([[card], []]);
     });
   });
+
+  describe('suggested settlement account', () => {
+    async function linkDebit(
+      bankAccountId: string,
+      cardAccountId: string,
+      debitDate: `${number}-${number}-${number}`,
+    ) {
+      const debit = await createTransaction({
+        accountId: bankAccountId,
+        amount: '-10.00',
+        eventDate: debitDate,
+      });
+      await createInjector()
+        .get(CreditCardStatementsProvider)
+        .insertLinks([
+          {
+            ownerId: OWNER_ID,
+            bankTransactionId: debit.id,
+            cardAccountId,
+            currency: 'ILS',
+            debitDate,
+            linkMethod: 'MANUAL',
+          },
+        ]);
+    }
+
+    it('suggests the bank account most of the card links come from, once 2 agree', async () => {
+      const mainBank = await createAccount('BANK_ACCOUNT', '900031');
+      const otherBank = await createAccount('BANK_ACCOUNT', '900032');
+      const card = await createAccount('CREDIT_CARD', '6161');
+      const oneLinkCard = await createAccount('CREDIT_CARD', '6262');
+      const tiedCard = await createAccount('CREDIT_CARD', '6363');
+      const unlinkedCard = await createAccount('CREDIT_CARD', '6464');
+      await linkDebit(mainBank, card, '2026-11-01');
+      await linkDebit(mainBank, card, '2026-11-02');
+      await linkDebit(otherBank, card, '2026-11-03');
+      await linkDebit(mainBank, oneLinkCard, '2026-11-01');
+      await linkDebit(mainBank, tiedCard, '2026-11-01');
+      await linkDebit(mainBank, tiedCard, '2026-11-02');
+      await linkDebit(otherBank, tiedCard, '2026-11-03');
+      await linkDebit(otherBank, tiedCard, '2026-11-04');
+
+      const loader = createInjector().get(FinancialCreditCardAccountsProvider)
+        .getSettlementAccountSuggestionByCardIdLoader;
+      expect(await loader.loadMany([card, oneLinkCard, tiedCard, unlinkedCard])).toEqual([
+        { bankAccountId: mainBank, linksCount: 2 },
+        null,
+        null,
+        null,
+      ]);
+    });
+  });
 });

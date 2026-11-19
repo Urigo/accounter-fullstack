@@ -224,9 +224,12 @@ async function* fillCreditcardDebitDates(
   injector: Injector,
   ownerId: string,
 ): AsyncGenerator<ManualAutomationEventProto, StepOutcome, undefined> {
-  const filled = await injector
-    .get(ManualAutomationsProvider)
-    .calculateCreditcardDebitDate({ ownerId });
+  // a reference or card name only counts on a debit to one of the owner's card issuers
+  const { financialAccounts } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  const filled = await injector.get(ManualAutomationsProvider).calculateCreditcardDebitDate({
+    ownerId,
+    creditCardBusinessIds: [...financialAccounts.creditCardIds],
+  });
   const transactionsProvider = injector.get(TransactionsProvider);
   let filledCount = 0;
   for (const { id, debit_date_override } of filled) {

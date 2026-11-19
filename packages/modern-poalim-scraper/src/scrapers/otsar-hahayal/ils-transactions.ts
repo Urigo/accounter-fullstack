@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { type Page } from 'playwright';
+import { enrichCardDebitRows } from './card-debit-details.js';
 import { OtsarHahayalOptions } from './index.js';
 import { drillDownDataSchema, ilsTransactionsResponseSchema } from './schemas.js';
 import type {
@@ -106,6 +107,45 @@ function enrichTransactionWithOriginReference(transactions: IlsTransaction[]) {
   }
 }
 
+/** Fetches a drill-down page of the logged-in session: parsed JSON, or the raw text */
+async function fetchDrillDown(
+  page: Page,
+  headers: Record<string, string>,
+  drillDownUrl: string,
+): Promise<unknown> {
+  return page.evaluate(
+    async ({ drillDownUrl, headers }) => {
+      const response = await fetch(`https://online.bankotsar.co.il${drillDownUrl}`, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'content-type': 'application/json',
+          priority: 'u=1, i',
+          'sec-ch-ua': '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"macOS"',
+          'sec-fetch-dest': 'empty',
+          'sec-fetch-mode': 'cors',
+          'sec-fetch-site': 'same-origin',
+          ...headers,
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Drill-down request failed with status ${response.status}`);
+      }
+
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    },
+    { drillDownUrl, headers },
+  );
+}
+
 export async function getIlsTransactions(
   page: Page,
   headers: Record<string, string>,
@@ -173,34 +213,7 @@ export async function getIlsTransactions(
             transaction.drillDownData = drilldownDataMap.get(transaction.drillDownUrl)!;
             continue;
           }
-          const apiDrilldownData = await page.evaluate(
-            async ({ drillDownUrl, headers }) => {
-              const response = await fetch(`https://online.bankotsar.co.il${drillDownUrl}`, {
-                method: 'GET',
-                headers: {
-                  accept: 'application/json, text/plain, */*',
-                  'accept-language': 'en-US,en;q=0.9',
-                  'content-type': 'application/json',
-                  priority: 'u=1, i',
-                  'sec-ch-ua': '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-                  'sec-ch-ua-mobile': '?0',
-                  'sec-ch-ua-platform': '"macOS"',
-                  'sec-fetch-dest': 'empty',
-                  'sec-fetch-mode': 'cors',
-                  'sec-fetch-site': 'same-origin',
-                  ...headers,
-                },
-              });
-
-              const text = await response.text();
-              try {
-                return JSON.parse(text);
-              } catch {
-                return text;
-              }
-            },
-            { drillDownUrl: transaction.drillDownUrl, headers },
-          );
+          const apiDrilldownData = await fetchDrillDown(page, headers, transaction.drillDownUrl);
 
           const parsed = drillDownDataSchema.parse(apiDrilldownData);
           drilldownDataMap.set(transaction.drillDownUrl, parsed);
@@ -216,6 +229,14 @@ export async function getIlsTransactions(
       isValid: validation.success,
       errors: validation.success ? null : validation.error.issues,
     };
+  }
+
+  // Card-debit rows: the card's last 4 digits from their card-breakdown drill-down
+  const rawTransactions: unknown = apiData?.transactions;
+  if (options.fetchCardDebitDetails && Array.isArray(rawTransactions)) {
+    await enrichCardDebitRows(rawTransactions, drillDownUrl =>
+      fetchDrillDown(page, headers, drillDownUrl),
+    );
   }
 
   return { data: apiData, isValid: null };

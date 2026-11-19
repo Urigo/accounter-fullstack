@@ -7,5 +7,7 @@ export type {
   IGetFinancialAccountsOwnershipResult,
   IGetFinancialCreditCardAccountsByIdsQuery,
   IGetFinancialCreditCardAccountsByIdsResult,
+  IGetSettlementAccountLinkCountsByCardIdsQuery,
+  IGetSettlementAccountLinkCountsByCardIdsResult,
   IUpsertCreditCardSettlementAccountQuery,
 } from './__generated__/financial-credit-card-accounts.types.js';

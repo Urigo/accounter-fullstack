@@ -53,6 +53,10 @@ export default gql`
     fourDigits: String!
     " the bank account the card is debited from, if configured "
     settlementAccount: BankFinancialAccount
+    " when no settlement account is configured: the bank account most of the card's linked debits come from, once at least 2 agree "
+    suggestedSettlementAccount: BankFinancialAccount
+    " the number of the card's linked debits that come from the suggested settlement account "
+    suggestedSettlementAccountLinksCount: Int
   }
 
   " represent a single credit card "
