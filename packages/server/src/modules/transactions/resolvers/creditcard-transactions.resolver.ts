@@ -5,6 +5,8 @@ import type { Currency } from '../../../shared/enums.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { forgetDerivedChargeType } from '../../charges/helpers/charge-type.js';
+import { forgetChargeValidation } from '../../charges/helpers/validate.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialCreditCardAccountsProvider } from '../../financial-accounts/providers/financial-credit-card-accounts.provider.js';
@@ -25,12 +27,17 @@ type StatementKeyInput = {
 /**
  * Loads the bank transaction and the card accounts of a link mutation and checks they belong to
  * the current owner. Returns the bank transaction's charge id.
+ *
+ * With `sameCurrency`, also checks every statement is in the bank transaction's currency: a debit
+ * settles statements in its own currency, and the ledger books it so. Unlinking skips that check,
+ * so a link stored in another currency can still be removed.
  */
 async function validateLinkTarget(
   injector: Injector,
   ownerId: string,
   bankTransactionId: string,
   statements: readonly StatementKeyInput[],
+  { sameCurrency = true }: { sameCurrency?: boolean } = {},
 ): Promise<string> {
   const statementsProvider = injector.get(CreditCardStatementsProvider);
   const bankTransaction =
@@ -43,6 +50,16 @@ async function validateLinkTarget(
   }
   if (bankTransaction.is_fee) {
     throw new GraphQLError('A fee transaction cannot settle a card statement');
+  }
+  if (sameCurrency) {
+    const otherCurrency = statements.find(
+      statement => statement.currency !== bankTransaction.currency,
+    );
+    if (otherCurrency) {
+      throw new GraphQLError(
+        `A bank transaction in ${bankTransaction.currency} cannot settle a card statement in ${otherCurrency.currency}`,
+      );
+    }
   }
 
   const cardAccountIds = Array.from(new Set(statements.map(s => s.cardAccountId)));
@@ -64,6 +81,9 @@ async function validateLinkTarget(
 /** Re-flags the charge for accountant review and returns its fresh state. */
 async function freshCharge(injector: Injector, chargeId: string) {
   injector.get(CreditCardTransactionsProvider).clearCache();
+  // links drive the charge type (and so its validation): derive them again for the response
+  forgetDerivedChargeType(injector, chargeId);
+  forgetChargeValidation(injector, chargeId);
   const degraded = await degradeChargesAccountantApproval(injector, [chargeId]);
   const charge =
     degraded.get(chargeId) ??
@@ -161,9 +181,13 @@ export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers &
     unlinkCreditCardStatement: async (_, { bankTransactionId, statement }, { injector }) => {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-        const chargeId = await validateLinkTarget(injector, ownerId, bankTransactionId, [
-          statement,
-        ]);
+        const chargeId = await validateLinkTarget(
+          injector,
+          ownerId,
+          bankTransactionId,
+          [statement],
+          { sameCurrency: false },
+        );
         // also records the rejection, so it is not proposed again for this bank transaction
         const deleted = await injector.get(CreditCardStatementsProvider).unlinkStatement({
           ...statement,

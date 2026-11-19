@@ -58,7 +58,11 @@ export function transactionExchangeRateDate(
   return transaction.debit_timestamp ?? transaction.debit_date_override ?? transaction.debit_date;
 }
 
-export function validateTransactionBasicVariables(transaction: IGetTransactionsByChargeIdsResult) {
+/**
+ * The currency and dates a transaction is booked at. Throws a `LedgerError` when the transaction has
+ * no debit date. Unlike `validateTransactionBasicVariables`, it does not require a counterparty.
+ */
+export function validateTransactionDates(transaction: IGetTransactionsByChargeIdsResult) {
   const currency = formatCurrency(transaction.currency);
   const debitDate = transaction.debit_date_override ?? transaction.debit_date;
   if (!debitDate) {
@@ -74,6 +78,16 @@ export function validateTransactionBasicVariables(transaction: IGetTransactionsB
     : debitDate;
   const exchangeRateDate: TimelessDateString | Date =
     transactionExchangeRateDate(transaction) ?? debitDate;
+
+  return {
+    currency,
+    valueDate,
+    exchangeRateDate,
+  };
+}
+
+export function validateTransactionBasicVariables(transaction: IGetTransactionsByChargeIdsResult) {
+  const { currency, valueDate, exchangeRateDate } = validateTransactionDates(transaction);
 
   if (!transaction.business_id) {
     throw new LedgerError(

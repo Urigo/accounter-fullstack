@@ -15,6 +15,11 @@ import {
 import type { IGetDocumentsByChargeIdResult } from '../../documents/types.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
+import {
+  statementKeyId,
+  toCents,
+} from '../../transactions/helpers/creditcard-statement-matcher.helper.js';
+import { CreditCardStatementsProvider } from '../../transactions/providers/creditcard-statements.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
 import { VatProvider } from '../../vat/providers/vat.provider.js';
 import { IGetBalanceCancellationByChargesIdsResult } from '../types.js';
@@ -22,6 +27,7 @@ import {
   getFinancialAccountTaxCategoryId,
   LedgerError,
   validateTransactionBasicVariables,
+  validateTransactionDates,
 } from './utils.helper.js';
 
 export async function ledgerEntryFromDocument(
@@ -188,30 +194,152 @@ export async function ledgerEntryFromDocument(
   return ledgerEntry;
 }
 
-function getCreditCardAccountByTransactionReferenceAndDescription(
-  sourceReference: string,
-  sourceDescription: string | null,
-): string | null {
-  if (sourceReference === '8547') {
-    return '6fed9073-f571-402e-9da0-ac0669f658d2'; // 9200
-  }
-  if (sourceReference === '13795') {
-    if (sourceDescription?.includes('2260')) {
-      return '0e86514c-9ddb-4c82-b731-6107f7293b1f'; //2260
+/** One booking of a bank transaction: the account it is booked against and its signed amount */
+type MainTransactionPart = {
+  counterAccountId: string;
+  /** Signed, in the transaction currency */
+  amount: number;
+};
+
+/**
+ * Books a transaction as one entry per part, all at the transaction's dates and exchange rate. The
+ * transaction's own financial account is the other side of every entry.
+ */
+async function ledgerEntriesFromTransactionParts(
+  transaction: IGetTransactionsByChargeIdsResult,
+  injector: Injector,
+  chargeId: string,
+  ownerId: string,
+  parts: readonly MainTransactionPart[],
+): Promise<StrictLedgerProto[]> {
+  const { currency, valueDate, exchangeRateDate } = validateTransactionDates(transaction);
+
+  const { defaultLocalCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
+
+  // one rate for every part: they all settle at the transaction's own date
+  const exchangeRate =
+    currency === defaultLocalCurrency
+      ? null
+      : await injector
+          .get(ExchangeProvider)
+          .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
+
+  const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
+
+  return parts.map(part => {
+    let amount = part.amount;
+    let foreignAmount: number | undefined = undefined;
+    if (exchangeRate !== null) {
+      foreignAmount = amount;
+      // calculate amounts in ILS
+      amount = exchangeRate * amount;
     }
-    if (sourceDescription?.includes('4333')) {
-      return '782070ce-ec7e-4be0-ab69-46c89528bf04'; //4333
-    }
-  }
-  if (sourceReference === '22200' && sourceDescription?.includes('מסטרקארד')) {
-    return '782070ce-ec7e-4be0-ab69-46c89528bf04'; //4333
-  }
-  if (sourceReference === '11200' && sourceDescription?.includes('כ.א.ל')) {
-    return '6fed9073-f571-402e-9da0-ac0669f658d2'; // 9200
-  }
-  return null;
+
+    const isCreditorCounterparty = amount > 0;
+
+    return {
+      id: transaction.id,
+      invoiceDate: transaction.event_date,
+      valueDate,
+      exchangeRateDate,
+      currency,
+      creditAccountID1: isCreditorCounterparty ? part.counterAccountId : accountTaxCategoryId,
+      creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+      localCurrencyCreditAmount1: Math.abs(amount),
+      debitAccountID1: isCreditorCounterparty ? accountTaxCategoryId : part.counterAccountId,
+      debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
+      localCurrencyDebitAmount1: Math.abs(amount),
+      description: transaction.source_description ?? undefined,
+      reference: transaction.origin_key,
+      isCreditorCounterparty,
+      ownerId,
+      currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
+      chargeId,
+    };
+  });
 }
 
+function formatCents(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+/**
+ * The parts of a bank transaction with stored card statement links, or `null` when it has none.
+ * Each linked statement is booked against its card account. A single statement takes the whole
+ * transaction amount; several statements each take their card total, which must add up to the
+ * transaction amount exactly.
+ */
+async function linkedStatementParts(
+  transaction: IGetTransactionsByChargeIdsResult,
+  injector: Injector,
+): Promise<MainTransactionPart[] | null> {
+  const provider = injector.get(CreditCardStatementsProvider);
+  const links = (await provider.getLinksByBankTransactionIdLoader.load(transaction.id)).filter(
+    link => link.owner_id === transaction.owner_id,
+  );
+  if (links.length === 0) {
+    return null;
+  }
+  const foreignCurrencyLink = links.find(link => link.currency !== transaction.currency);
+  if (foreignCurrencyLink) {
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}": a linked card statement is in ${foreignCurrencyLink.currency} but the debit is in ${transaction.currency}; fix the links`,
+    );
+  }
+
+  const counterAccountIds = await Promise.all(
+    links.map(link =>
+      getFinancialAccountTaxCategoryId(injector, {
+        ...transaction,
+        account_id: link.card_account_id,
+      }),
+    ),
+  );
+
+  if (links.length === 1) {
+    return [{ counterAccountId: counterAccountIds[0], amount: Number(transaction.amount) }];
+  }
+
+  const statementTotalsCents = await Promise.all(
+    links.map(async link => {
+      const rows = await provider.getCardTransactionsByStatementKeyLoader.load(
+        statementKeyId({
+          cardAccountId: link.card_account_id,
+          currency: link.currency,
+          debitDate: link.debit_date,
+        }),
+      );
+      return rows
+        .filter(row => row.owner_id === transaction.owner_id)
+        .reduce((sum, row) => sum + toCents(row.amount), 0);
+    }),
+  );
+  const linkedCents = statementTotalsCents.reduce((sum, total) => sum + total, 0);
+  const bankCents = toCents(transaction.amount);
+  if (linkedCents !== bankCents) {
+    throw new LedgerError(
+      `Transaction reference "${transaction.source_reference}": linked card statements total ${formatCents(linkedCents)} but the debit is ${formatCents(bankCents)}; fix the links`,
+    );
+  }
+
+  return links
+    .map((_link, index) => ({
+      counterAccountId: counterAccountIds[index],
+      amount: statementTotalsCents[index] / 100,
+    }))
+    .filter(part => part.amount !== 0);
+}
+
+/**
+ * Books a charge's main (non-fee) transaction. A single entry, against the transaction's
+ * counterparty; or, for a card debit into an internal wallet without relevant documents, against
+ * the financial account numbered as the transaction's reference.
+ *
+ * Does not read stored card statement links: the common charge generator books those with
+ * `ledgerEntriesFromMainTransaction`.
+ */
 export async function ledgerEntryFromMainTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
   injector: Injector,
@@ -220,14 +348,12 @@ export async function ledgerEntryFromMainTransaction(
   businessId?: string,
   gotRelevantDocuments = false,
 ): Promise<StrictLedgerProto> {
-  const { currency, valueDate, exchangeRateDate, transactionBusinessId } =
-    validateTransactionBasicVariables(transaction);
+  const { transactionBusinessId } = validateTransactionBasicVariables(transaction);
 
   let mainAccountId: string = transactionBusinessId;
 
   const {
-    defaultLocalCurrency,
-    financialAccounts: { internalWalletsIds },
+    financialAccounts: { internalWalletsIds, creditCardIds },
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   if (
@@ -239,61 +365,63 @@ export async function ledgerEntryFromMainTransaction(
     const account = await injector
       .get(FinancialAccountsProvider)
       .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
-    let accountId = account?.id ?? null;
-    accountId ??= getCreditCardAccountByTransactionReferenceAndDescription(
-      transaction.source_reference,
-      transaction.source_description,
-    );
-    if (!accountId) {
+    if (!account) {
+      // a card debit that names no card account: it needs a stored link to its card statement
+      const linkHint = creditCardIds.includes(businessId)
+        ? `: link the debit to its card statement in the charge's CreditCard Transactions panel`
+        : '';
       throw new LedgerError(
-        `Transaction reference "${transaction.source_reference}" is missing account`,
+        `Transaction reference "${transaction.source_reference}" is missing account${linkHint}`,
       );
     }
     mainAccountId = await getFinancialAccountTaxCategoryId(injector, {
       ...transaction,
-      account_id: accountId,
+      account_id: account.id,
     });
   }
 
-  let amount = Number(transaction.amount);
-  let foreignAmount: number | undefined = undefined;
+  const [ledgerEntry] = await ledgerEntriesFromTransactionParts(
+    transaction,
+    injector,
+    chargeId,
+    ownerId,
+    [{ counterAccountId: mainAccountId, amount: Number(transaction.amount) }],
+  );
+  return ledgerEntry;
+}
 
-  if (currency !== defaultLocalCurrency) {
-    // get exchange rate for currency
-    const exchangeRate = await injector
-      .get(ExchangeProvider)
-      .getExchangeRates(currency, defaultLocalCurrency, exchangeRateDate);
-
-    foreignAmount = amount;
-    // calculate amounts in ILS
-    amount = exchangeRate * amount;
+/**
+ * Books a charge's main (non-fee) transaction for the common charge generator.
+ *
+ * A bank transaction with stored card statement links and no relevant documents is booked against
+ * the linked card accounts, one entry per linked statement; it needs no counterparty business.
+ * Anything else is booked as `ledgerEntryFromMainTransaction` books it.
+ */
+export async function ledgerEntriesFromMainTransaction(
+  transaction: IGetTransactionsByChargeIdsResult,
+  injector: Injector,
+  chargeId: string,
+  ownerId: string,
+  businessId?: string,
+  gotRelevantDocuments = false,
+): Promise<StrictLedgerProto[]> {
+  if (!gotRelevantDocuments) {
+    const parts = await linkedStatementParts(transaction, injector);
+    if (parts) {
+      return ledgerEntriesFromTransactionParts(transaction, injector, chargeId, ownerId, parts);
+    }
   }
 
-  const accountTaxCategoryId = await getFinancialAccountTaxCategoryId(injector, transaction);
-
-  const isCreditorCounterparty = amount > 0;
-
-  const ledgerEntry: StrictLedgerProto = {
-    id: transaction.id,
-    invoiceDate: transaction.event_date,
-    valueDate,
-    exchangeRateDate,
-    currency,
-    creditAccountID1: isCreditorCounterparty ? mainAccountId : accountTaxCategoryId,
-    creditAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-    localCurrencyCreditAmount1: Math.abs(amount),
-    debitAccountID1: isCreditorCounterparty ? accountTaxCategoryId : mainAccountId,
-    debitAmount1: foreignAmount ? Math.abs(foreignAmount) : undefined,
-    localCurrencyDebitAmount1: Math.abs(amount),
-    description: transaction.source_description ?? undefined,
-    reference: transaction.origin_key,
-    isCreditorCounterparty,
-    ownerId,
-    currencyRate: transaction.currency_rate ? Number(transaction.currency_rate) : undefined,
-    chargeId,
-  };
-
-  return ledgerEntry;
+  return [
+    await ledgerEntryFromMainTransaction(
+      transaction,
+      injector,
+      chargeId,
+      ownerId,
+      businessId,
+      gotRelevantDocuments,
+    ),
+  ];
 }
 
 export async function ledgerEntryFromBalanceCancellation(

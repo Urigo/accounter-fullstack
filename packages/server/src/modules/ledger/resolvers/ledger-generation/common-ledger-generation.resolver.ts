@@ -22,9 +22,9 @@ import type { currency } from '../../../transactions/types.js';
 import {
   getExchangeDates,
   isRefundCharge,
+  ledgerEntriesFromMainTransaction,
   ledgerEntryFromBalanceCancellation,
   ledgerEntryFromDocument,
-  ledgerEntryFromMainTransaction,
 } from '../../helpers/common-charge-ledger.helper.js';
 import { handleCrossYearLedgerEntries } from '../../helpers/cross-year-ledger.helper.js';
 import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
@@ -203,7 +203,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       // for each transaction, create a ledger record
       const mainTransactionsPromises = mainTransactions.map(async transaction => {
-        const ledgerEntry = await ledgerEntryFromMainTransaction(
+        // one entry, or one per card statement a bank debit is linked to
+        const ledgerEntries = await ledgerEntriesFromMainTransaction(
           transaction,
           injector,
           chargeId,
@@ -218,14 +219,16 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           }
         });
 
-        if (!ledgerEntry) {
+        if (!ledgerEntries) {
           return;
         }
 
-        financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalance(ledgerEntry);
-        dates.add(exchangeRatePointKey(ledgerEntry));
-        currencies.add(ledgerEntry.currency);
+        for (const ledgerEntry of ledgerEntries) {
+          financialAccountLedgerEntries.push(ledgerEntry);
+          updateLedgerBalance(ledgerEntry);
+          dates.add(exchangeRatePointKey(ledgerEntry));
+          currencies.add(ledgerEntry.currency);
+        }
       });
 
       // create a ledger record for fee transactions

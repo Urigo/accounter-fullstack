@@ -3,6 +3,7 @@ import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { getForeignSecuritiesBusinessIds } from '../../foreign-securities/helpers/foreign-securities-businesses.helper.js';
+import { CreditCardStatementsProvider } from '../../transactions/providers/creditcard-statements.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { charge_type, IGetChargesByIdsResult } from '../types.js';
 import { getChargeBusinesses } from './common.helper.js';
@@ -78,6 +79,14 @@ export async function getChargeType(
   return derived;
 }
 
+/**
+ * Drops a charge's memoized derived type, for a caller that changed what it is derived from (say,
+ * linked one of its bank transactions to a card statement) and reads the type again.
+ */
+export function forgetDerivedChargeType(injector: Injector, chargeId: string): void {
+  derivedChargeTypeCache.get(injector)?.delete(chargeId);
+}
+
 async function deriveChargeType(
   charge: IGetChargesByIdsResult,
   injector: Injector,
@@ -128,7 +137,15 @@ async function deriveChargeType(
     return ChargeTypeEnum.MonthlyVat;
   }
 
-  if (mainBusinessId && creditCardIds.includes(mainBusinessId)) {
+  // A card debit: counted against a card issuer business, or holding a bank transaction with a
+  // stored link to the card statement(s) it settles (which also covers issuers with no business in
+  // the admin context, and debits whose counterparty is not the issuer)
+  if (
+    (mainBusinessId && creditCardIds.includes(mainBusinessId)) ||
+    (await injector
+      .get(CreditCardStatementsProvider)
+      .hasLinksByChargeIdLoader.load({ chargeId: charge.id, ownerId: charge.owner_id }))
+  ) {
     return ChargeTypeEnum.CreditcardBankCharge;
   }
 

@@ -23,6 +23,7 @@ import { BalanceCancellationProvider } from '../modules/ledger/providers/balance
 import { LedgerProvider } from '../modules/ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbalanced-businesses.provider.js';
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
+import { CreditCardStatementsProvider } from '../modules/transactions/providers/creditcard-statements.provider.js';
 import { TransactionsProvider } from '../modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
 
@@ -191,6 +192,8 @@ export function createLedgerTestContext(options: {
       }
       case ChargeSpreadProvider:
         return new ChargeSpreadProvider(tenantAwareDB, adminContextProvider);
+      case CreditCardStatementsProvider:
+        return new CreditCardStatementsProvider(tenantAwareDB, adminContextProvider);
       default:
         throw new Error(
           `Unsupported provider requested by injector: ${
