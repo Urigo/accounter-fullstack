@@ -4,6 +4,7 @@
  */
 export { generate1214, generate1214Batch, type GenerateResult } from './api/generate.js';
 export { parse1214, parse1214Batch, type ParseResult } from './api/parse.js';
+export { parseResponseFile, type ResponseRecord } from './api/response.js';
 export { validate1214, type ValidationResult } from './api/validate.js';
 export { getLayout, supportedTaxYears } from './layout/registry.js';
 export {

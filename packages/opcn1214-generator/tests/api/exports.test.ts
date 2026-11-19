@@ -42,6 +42,7 @@ import type {
   RelatedCompany,
   Report1214Input,
   Requirement,
+  ResponseRecord,
   RuleId,
   RuleMeta,
   Section6SecuritiesAppendix,
@@ -72,6 +73,7 @@ describe('public API', () => {
         'getLayout',
         'parse1214',
         'parse1214Batch',
+        'parseResponseFile',
         'supportedTaxYears',
         'validate1214',
       ].sort(),
@@ -227,6 +229,18 @@ describe('public API', () => {
     expectTypeOf<GenerateResult['warnings']>().toEqualTypeOf<Issue[]>();
     expectTypeOf<ParseResult['report']>().toEqualTypeOf<Report1214Input>();
     expectTypeOf<ParseResult['issues']>().toEqualTypeOf<Issue[]>();
+    expectTypeOf<ResponseRecord>().toEqualTypeOf<{
+      fileNumber: string;
+      taxYear: number;
+      code: string;
+      meaning: string;
+      accepted: boolean;
+      detail?: string;
+      line: number;
+    }>();
+    expectTypeOf(api.parseResponseFile).toEqualTypeOf<
+      (content: string | Uint8Array) => ResponseRecord[]
+    >();
     expectTypeOf<ParseOptions['encoding']>().toEqualTypeOf<'windows-1255' | 'utf-8' | undefined>();
     expectTypeOf<Issue['severity']>().toEqualTypeOf<Severity>();
     expectTypeOf<Issue['ruleId']>().toEqualTypeOf<RuleId>();
