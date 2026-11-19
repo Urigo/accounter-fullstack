@@ -54,7 +54,7 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     minimalInput({
       meta: { softwareName: 'My  Soft', saveDate: '2025-01-02' },
       company: {
-        withholdingFileNumber: '940000003',
+        withholdingFileNumber: '951400001',
         vatFileNumber: '514000009',
         occupationDescription: '  ייצור\u00A0תוכנה ',
         booksAddress: 'רחוב יפו 10, ירושלים',
@@ -118,7 +118,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     minimalInput({
       company: {
         fileNumber: '12344',
-        withholdingFileNumber: '75',
+        // 9 + the first 7 digits of 000012344 + check digit (main.withholdingFile.companyNumber).
+        withholdingFileNumber: '900001231',
         fax: { prefix: '02', number: '7654321' },
       },
       shareholders: [
@@ -243,7 +244,7 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     minimalInput({
       rdInvestments: [
         { companyName: '  חברת\u00A0 מו"פ ', companyFileNumber: '75', investmentAmount: 1500 },
-        { companyName: 'R&D Ltd', companyFileNumber: '', investmentAmount: 0 },
+        { companyName: 'מו"פ בע"מ', companyFileNumber: '', investmentAmount: 0 },
       ],
       amounts: { '165': 1500 },
     }),

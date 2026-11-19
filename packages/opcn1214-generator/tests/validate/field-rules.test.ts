@@ -3,6 +3,7 @@ import { Opcn1214InternalError } from '../../src/errors.js';
 import { getLayout } from '../../src/layout/registry.js';
 import type { PhonePrefix, Shareholder } from '../../src/model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../../src/model/normalized.js';
+import { codeKey } from '../../src/normalize/paths.js';
 import { normalizeReport } from '../../src/normalize/report.js';
 import { runPipeline } from '../../src/pipeline.js';
 import { runRules } from '../../src/validate/engine.js';
@@ -291,6 +292,43 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
       expect(issuesOf(input, 'field.charset').map(issue => issue.path)).toEqual([
         'shareholders[0].fullName',
       ]);
+    });
+  });
+
+  describe('shopcn findings of FIX-2 (SPEC §15 A-29, A-31)', () => {
+    it('requires a Hebrew first letter in related-company and R&D-investee names', () => {
+      // shopcn: "הערך 'Foreign Affiliate Ltd' אינו תקין במילוי 'חברות קשורות: שם חברה'".
+      const input = minimalInput({
+        amounts: { '165': 1 },
+        relatedCompanies: [{ companyName: 'Foreign Affiliate Ltd', relationType: 'parent' }],
+        rdInvestments: [{ companyName: 'R&D Start-up Ltd', investmentAmount: 1 }],
+      });
+      expect(issuesOf(input, 'field.hebrewFirstLetter').map(issue => issue.path)).toEqual([
+        'relatedCompanies[0].companyName',
+        'rdInvestments[0].companyName',
+      ]);
+    });
+
+    it('allows only 1 in code 092 of record 3077', () => {
+      // shopcn accepted 1 (cg-77) and rejected 2 (capital-gains-max).
+      const appendix = (value: number) =>
+        minimalInput({
+          capitalGains: [
+            {
+              symbol: 77,
+              dates: { code15: '2024-07-01', code20: '2009-02-01' },
+              amounts: { '015': 1000, '092': value },
+            },
+          ],
+        });
+      expect(issuesOf(appendix(2), 'field.enum')).toEqual([
+        expect.objectContaining({
+          path: 'capitalGains[0].amounts["092"]',
+          code: '092',
+          expected: 'one of 1',
+        }),
+      ]);
+      expect(issuesOf(appendix(1), 'field.enum')).toEqual([]);
     });
   });
 
@@ -757,11 +795,17 @@ describe('fieldRules on synthetic records', () => {
     });
 
     it('field.integer: num code with a fraction', () => {
-      expect(
-        fieldRules(report3077({}, codePaths('092'), new Map([['092', 1.5]]))).map(
-          issue => issue.ruleId,
-        ),
-      ).toEqual(['field.integer']);
+      // 1000 code 141 is a num code; 3077 code 092 became an enum in FIX-2 (SPEC §15 A-31).
+      const report = normalizeReport(minimalInput(), LAYOUT, OPTIONS);
+      const main = report.records[0];
+      if (!main) {
+        throw new Error('expected record 1000');
+      }
+      main.codes.set('141', 1.5);
+      main.paths[codeKey('141')] = 'amounts["141"]';
+      expect(fieldRules(report).map(issue => [issue.ruleId, issue.code])).toEqual([
+        ['field.integer', '141'],
+      ]);
     });
 
     it('field.date: header date in a 30xx record', () => {

@@ -35,6 +35,7 @@ import {
   type Withholder,
   type WithholdingStatus,
 } from '../../src/model/input.js';
+import { expectedWithholdingFileNumber } from '../../src/validate/main-rules.js';
 import type { Improvement } from './builders.js';
 
 /** A source of uniform numbers in [0, 1). */
@@ -303,7 +304,8 @@ function randomPreparer(rng: Rng): PreparerDetails {
 
 function randomRelatedCompany(rng: Rng): RelatedCompany {
   return compact({
-    companyName: randomText(rng, 50),
+    // hebrewText since FIX-2 (SPEC §15 A-29).
+    companyName: randomText(rng, 50, true),
     companyFileNumber: maybe(rng, () => randomId9(rng), 0.7),
     relationType: pick(rng, [
       'parent',
@@ -321,7 +323,8 @@ function randomRelatedCompany(rng: Rng): RelatedCompany {
 
 function randomRdInvestment(rng: Rng): RdInvestment {
   return compact({
-    companyName: randomText(rng, 50),
+    // hebrewText since FIX-2 (SPEC §15 A-29).
+    companyName: randomText(rng, 50, true),
     companyFileNumber: maybe(rng, () => randomId9(rng), 0.7),
     investmentAmount: randomPositiveWhole(rng, 9),
   });
@@ -457,13 +460,17 @@ function yesNo(rng: Rng): boolean | undefined {
   return maybe(rng, () => chance(rng, 0.5));
 }
 
+/** Code-amount pairs in one capital-gains appendix (cg.codePairs.max). */
+const CAPITAL_GAINS_CODE_PAIRS = 20;
+
 /** A valid appendix of type `symbol`, with random optional members and codes. */
 function randomAppendix(
   rng: Rng,
   symbol: CapitalGainsSymbol,
   def: RecordDef,
 ): CapitalGainsAppendix {
-  const amounts = randomCodeAmounts(rng, def);
+  // cg.codePairs.max: SHAAM accepts at most 20 pairs in one appendix (SPEC §15 A-30).
+  const amounts = randomCodeAmounts(rng, def, { max: CAPITAL_GAINS_CODE_PAIRS });
   switch (symbol) {
     case 27:
       return compact({
@@ -795,6 +802,7 @@ export function randomValidInput(seed: number): Report1214Input {
       capitalGainsCount > 0 || untransmittedCount !== undefined ? true : chance(rng, 0.5);
   }
 
+  const fileNumber = randomId9(rng);
   const report: Report1214Input = compact({
     taxYear,
     meta: chance(rng, 0.5)
@@ -804,9 +812,10 @@ export function randomValidInput(seed: number): Report1214Input {
         })
       : undefined,
     company: compact({
-      fileNumber: randomId9(rng),
+      fileNumber,
       registeredName: randomText(rng, 50),
-      withholdingFileNumber: maybe(rng, () => randomId9(rng)),
+      // main.withholdingFile.companyNumber: derived from the company file number (SPEC §15 A-28).
+      withholdingFileNumber: maybe(rng, () => expectedWithholdingFileNumber(fileNumber)),
       vatFileNumber: maybe(rng, () => randomId9(rng)),
       occupationDescription: maybe(rng, () => randomText(rng, 50)),
       mailingAddress: randomAddress(rng),

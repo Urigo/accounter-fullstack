@@ -25,7 +25,7 @@ export const input: Report1214Input = {
       prefix: '03',
       number: '1234567',
     },
-    withholdingFileNumber: '940000003',
+    withholdingFileNumber: '951400001',
     vatFileNumber: '514000009',
     occupationDescription: 'ייעוץ',
     booksAddress: 'רחוב יפו 2, ירושלים',
