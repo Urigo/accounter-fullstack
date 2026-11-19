@@ -26,6 +26,8 @@ import type {
   IGetCreditCardStatementLinksByBankTransactionIdsQuery,
   IGetCreditCardStatementLinksByBankTransactionIdsResult,
   IGetCreditCardStatementLinksByStatementKeysQuery,
+  IGetLegacyReferenceAccountsByBankTransactionIdsQuery,
+  IGetLinkedChargeIdsQuery,
   IGetRejectionsByBankTransactionIdsQuery,
   IInsertCreditCardStatementLinksQuery,
   IInsertRejectionQuery,
@@ -188,6 +190,28 @@ const getCreditCardStatementLinksByStatementKeys = sql<IGetCreditCardStatementLi
   WHERE l.owner_id = $ownerId
     AND l.card_account_id IN $$cardAccountIds
     AND (l.card_account_id::text || '|' || l.currency::text || '|' || l.debit_date::text) IN $$statementKeys;`;
+
+/** The charges, among the given ones, that hold a bank transaction with a stored statement link */
+const getLinkedChargeIds = sql<IGetLinkedChargeIdsQuery>`
+  SELECT DISTINCT t.charge_id
+  FROM accounter_schema.creditcard_statement_links l
+    JOIN accounter_schema.transactions t
+      ON t.id = l.bank_transaction_id
+      AND t.owner_id = l.owner_id
+  WHERE t.charge_id IN $$chargeIds;`;
+
+/**
+ * The financial accounts of the bank row's owner whose number equals the row's reference: the
+ * card account the ledger books a card debit against when the row has no stored link.
+ */
+const getLegacyReferenceAccountsByBankTransactionIds = sql<IGetLegacyReferenceAccountsByBankTransactionIdsQuery>`
+  SELECT t.id AS bank_transaction_id,
+    fa.id AS account_id
+  FROM accounter_schema.transactions t
+    JOIN accounter_schema.financial_accounts fa
+      ON fa.owner_id = t.owner_id
+      AND fa.account_number = t.source_reference
+  WHERE t.id IN $$bankTransactionIds;`;
 
 const insertCreditCardStatementLinks = sql<IInsertCreditCardStatementLinksQuery>`
   INSERT INTO accounter_schema.creditcard_statement_links (
@@ -498,6 +522,38 @@ export class CreditCardStatementsProvider {
       this.batchLinksByBankTransactionIds(bankTransactionIds),
   );
 
+  private async batchHasLinksByChargeIds(chargeIds: readonly string[]) {
+    const rows = await getLinkedChargeIds.run({ chargeIds }, this.db);
+    const linked = new Set(rows.map(row => row.charge_id));
+    return chargeIds.map(id => linked.has(id));
+  }
+
+  /** Whether a bank transaction of the charge has a stored statement link */
+  public hasLinksByChargeIdLoader = new DataLoader((chargeIds: readonly string[]) =>
+    this.batchHasLinksByChargeIds(chargeIds),
+  );
+
+  private async batchLegacyReferenceAccountIdsByBankTransactionIds(
+    bankTransactionIds: readonly string[],
+  ) {
+    const rows = await getLegacyReferenceAccountsByBankTransactionIds.run(
+      { bankTransactionIds },
+      this.db,
+    );
+    return bankTransactionIds.map(id =>
+      rows.filter(row => row.bank_transaction_id === id).map(row => row.account_id),
+    );
+  }
+
+  /**
+   * Per bank transaction, the owner's financial accounts numbered as its reference: what the ledger
+   * resolved a card debit to before links existed.
+   */
+  public getLegacyReferenceAccountIdsByBankTransactionIdLoader = new DataLoader(
+    (bankTransactionIds: readonly string[]) =>
+      this.batchLegacyReferenceAccountIdsByBankTransactionIds(bankTransactionIds),
+  );
+
   private async batchCardTransactionsByStatementKeys(keyIds: readonly string[]) {
     const keys = keyIds.map(parseStatementKeyId);
     const rows = await getCardTransactionsByStatementKeys.run(statementKeysParams(keys), this.db);
@@ -680,6 +736,7 @@ export class CreditCardStatementsProvider {
     this.getCandidateStatementsByBankTransactionIdLoader.clearAll();
     this.getLinksByBankTransactionIdLoader.clearAll();
     this.getRejectedStatementsByBankTransactionIdLoader.clearAll();
+    this.hasLinksByChargeIdLoader.clearAll();
   }
 }
 

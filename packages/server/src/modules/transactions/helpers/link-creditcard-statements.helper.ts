@@ -19,9 +19,22 @@ const DEFAULT_BATCH_SIZE = 100;
 
 export type AutoLinkedStatements = {
   bankTransactionId: string;
+  /** The charge holding the bank transaction */
+  chargeId: string;
   method: AutoLinkMethod;
   statements: ResolvedCreditCardStatement[];
+  /** What `assessLink` returned for this debit, before its links were written */
+  changesAccounting: boolean;
 };
+
+/**
+ * Called for each debit about to be linked, before anything is written: whether the links change
+ * how its charge is booked.
+ */
+export type AutoLinkAssessment = (
+  bankRow: BankTransactionRow,
+  links: readonly StatementKey[],
+) => Promise<boolean>;
 
 export type AutoLinkOutcome = {
   linkedCount: number;
@@ -44,10 +57,11 @@ export async function* autoLinkCreditCardStatements(
     ownerId: string;
     creditCardBusinessIds: readonly string[];
     batchSize?: number;
+    assessLink?: AutoLinkAssessment;
   },
 ): AsyncGenerator<AutoLinkedStatements, AutoLinkOutcome, undefined> {
   const provider = injector.get(CreditCardStatementsProvider);
-  const { ownerId, creditCardBusinessIds, batchSize = DEFAULT_BATCH_SIZE } = params;
+  const { ownerId, creditCardBusinessIds, batchSize = DEFAULT_BATCH_SIZE, assessLink } = params;
 
   const candidateIds = await provider.getAutoLinkCandidateBankTransactionIds({
     ownerId,
@@ -104,11 +118,26 @@ export async function* autoLinkCreditCardStatements(
         continue;
       }
 
+      let changesAccounting = false;
+      if (assessLink) {
+        try {
+          changesAccounting = await assessLink(bankRow, result.links);
+        } catch (error) {
+          errors.push(
+            `Failed to assess the links of bank transaction ID=${bankRow.id}, so it was not linked: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`,
+          );
+          continue;
+        }
+      }
+
       const linked = await persistLinks(provider, ownerId, bankRow, result.links, result.method);
       if (linked instanceof Error) {
         errors.push(linked.message);
         continue;
       }
+      linked.changesAccounting = changesAccounting;
       for (const statement of linked.statements) {
         claimed.set(statementKeyId(statement), bankRow.id);
       }
@@ -147,7 +176,9 @@ async function persistLinks(
   }
   return {
     bankTransactionId: bankRow.id,
+    chargeId: bankRow.charge_id,
     method,
+    changesAccounting: false,
     statements: links.map(link => ({
       cardAccountId: link.cardAccountId,
       currency: link.currency,

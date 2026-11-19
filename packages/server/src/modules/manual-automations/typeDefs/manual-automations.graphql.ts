@@ -87,6 +87,8 @@ export default gql`
     bankTransaction: Transaction!
     method: CreditCardStatementLinkMethod!
     statements: [CreditCardStatement!]!
+    " the debit's charge, when the link changed how an approved charge is booked and re-flagged it for accountant review "
+    degradedCharge: Charge
   }
 
   " a charge that got Deel invoices when the manual automations pulled Deel documents "

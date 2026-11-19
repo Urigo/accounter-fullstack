@@ -6,17 +6,24 @@ import type {
   ManualAutomationStepStatus,
   MergedChargeSnapshot,
 } from '../../../__generated__/types.js';
+import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
 import { minTimelessDate } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { forgetDerivedChargeType, getChargeType } from '../../charges/helpers/charge-type.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { syncDeelDocuments } from '../../deel/helpers/sync-deel-documents.helper.js';
 import { ProviderCredentialsProvider } from '../../provider-credentials/providers/provider-credentials.provider.js';
+import type { StatementKey } from '../../transactions/helpers/creditcard-statement-matcher.helper.js';
 import { autoLinkCreditCardStatements } from '../../transactions/helpers/link-creditcard-statements.helper.js';
+import {
+  CreditCardStatementsProvider,
+  type BankTransactionRow,
+} from '../../transactions/providers/creditcard-statements.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { ResolvedCreditCardStatement } from '../../transactions/types.js';
 import { ManualAutomationsProvider } from '../providers/manual-automations.provider.js';
@@ -41,6 +48,8 @@ export type ManualAutomationEventProto =
       bankTransaction: string;
       method: 'REFERENCE' | 'AMOUNT';
       statements: ResolvedCreditCardStatement[];
+      /** The charge, when the link re-flagged it for accountant review */
+      degradedCharge: IGetChargesByIdsResult | null;
     }
   | {
       __typename: 'DeelChargeSynced';
@@ -234,9 +243,11 @@ async function* fillCreditcardDebitDates(
 /**
  * Persists confident bank-debit ⇄ card-statement links (also the history backfill).
  *
- * Unlike the merge step, it does not re-flag charges for accountant review: in this phase a link
- * drives neither the ledger nor the charge type, only the card statements a charge shows. Whether
- * it should once the ledger reads the links is decided with that change.
+ * Stored links drive the ledger and the charge type, so a link that changes how a charge is booked
+ * re-flags the charge for accountant review. Links that only record what the ledger already did (a
+ * charge that already was a card debit, now linked to the card account its reference resolved to)
+ * do not, so the first backfill doesn't re-flag the whole card history. That is decided before the
+ * links are written, from the charge as it was.
  */
 async function* linkCreditcardStatements(
   injector: Injector,
@@ -246,19 +257,71 @@ async function* linkCreditcardStatements(
   const linking = autoLinkCreditCardStatements(injector, {
     ownerId,
     creditCardBusinessIds: financialAccounts.creditCardIds,
+    assessLink: (bankRow, links) => creditcardLinksChangeAccounting(injector, bankRow, links),
   });
+  const errors: string[] = [];
   let next = await linking.next();
   while (!next.done) {
-    const { bankTransactionId, method, statements } = next.value;
+    const { bankTransactionId, chargeId, method, statements, changesAccounting } = next.value;
+    let degradedCharge: IGetChargesByIdsResult | null = null;
+    // the charge's type may have changed with the link
+    forgetDerivedChargeType(injector, chargeId);
+    if (changesAccounting) {
+      try {
+        const degraded = await degradeChargesAccountantApproval(injector, [chargeId]);
+        degradedCharge = degraded.get(chargeId) ?? null;
+      } catch (error) {
+        errors.push(
+          `Linked bank transaction ID=${bankTransactionId} to its card statements, but failed to flag charge ID=${chargeId} for accountant review: ${errorMessage(error)}`,
+        );
+      }
+    }
     yield {
       __typename: 'CreditcardStatementsLinked',
       bankTransaction: bankTransactionId,
       method,
       statements,
+      degradedCharge,
     };
     next = await linking.next();
   }
-  return { affectedCount: next.value.linkedCount, errors: next.value.errors };
+  return {
+    affectedCount: next.value.linkedCount,
+    errors: [...next.value.errors, ...errors],
+  };
+}
+
+/**
+ * Whether linking an approved charge's bank debit to these card statements changes how the charge
+ * is booked: it was not a card debit before (so the link changes its type and ledger), or its
+ * ledger booked the debit against another card account than the linked one(s). The latter is the
+ * financial account of the owner numbered as the debit's reference, the ledger's rule for unlinked
+ * debits. Charges that are not approved have nothing to re-flag.
+ */
+export async function creditcardLinksChangeAccounting(
+  injector: Injector,
+  bankRow: Pick<BankTransactionRow, 'id' | 'charge_id'>,
+  links: readonly StatementKey[],
+): Promise<boolean> {
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(bankRow.charge_id);
+  if (!charge || charge.accountant_status !== 'APPROVED') {
+    return false;
+  }
+
+  const chargeType = await getChargeType(charge, injector);
+  if (chargeType !== ChargeTypeEnum.CreditcardBankCharge) {
+    return true;
+  }
+
+  const legacyAccountIds = await injector
+    .get(CreditCardStatementsProvider)
+    .getLegacyReferenceAccountIdsByBankTransactionIdLoader.load(bankRow.id);
+  const linkedAccountIds = new Set(links.map(link => link.cardAccountId));
+  const keepsLegacyAccount =
+    legacyAccountIds.length === 1 &&
+    linkedAccountIds.size === 1 &&
+    linkedAccountIds.has(legacyAccountIds[0]);
+  return !keepsLegacyAccount;
 }
 
 // The sync runs for the admin context's owner, the same one the run gets, so it takes no ownerId

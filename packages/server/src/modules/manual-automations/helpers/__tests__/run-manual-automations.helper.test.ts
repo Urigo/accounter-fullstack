@@ -1,7 +1,9 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ChargeTypeEnum } from '../../../../shared/enums.js';
 import { degradeChargesAccountantApproval } from '../../../accountant-approval/helpers/degrade-charges.helper.js';
+import { getChargeType } from '../../../charges/helpers/charge-type.js';
 import { mergeChargesExecutor } from '../../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../../charges/types.js';
@@ -13,11 +15,13 @@ import {
   type AutoLinkedStatements,
   type AutoLinkOutcome,
 } from '../../../transactions/helpers/link-creditcard-statements.helper.js';
+import { CreditCardStatementsProvider } from '../../../transactions/providers/creditcard-statements.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { ManualAutomationsProvider } from '../../providers/manual-automations.provider.js';
 import type { IGetReferenceMergeCandidatesResult } from '../../types.js';
 import {
   buildMergedChargeSnapshots,
+  creditcardLinksChangeAccounting,
   runManualAutomations,
   type ManualAutomationEventProto,
 } from '../run-manual-automations.helper.js';
@@ -33,6 +37,10 @@ vi.mock('../../../deel/helpers/sync-deel-documents.helper.js', () => ({
 }));
 vi.mock('../../../transactions/helpers/link-creditcard-statements.helper.js', () => ({
   autoLinkCreditCardStatements: vi.fn(),
+}));
+vi.mock('../../../charges/helpers/charge-type.js', () => ({
+  getChargeType: vi.fn(),
+  forgetDerivedChargeType: vi.fn(),
 }));
 
 function linkingRun(
@@ -230,7 +238,13 @@ describe('runManualAutomations', () => {
     };
     vi.mocked(autoLinkCreditCardStatements).mockImplementation(() =>
       linkingRun([
-        { bankTransactionId: 'bank-1', method: 'REFERENCE', statements: [linkedStatement] },
+        {
+          bankTransactionId: 'bank-1',
+          chargeId: 'charge-card',
+          method: 'REFERENCE',
+          statements: [linkedStatement],
+          changesAccounting: false,
+        },
       ]),
     );
 
@@ -263,6 +277,7 @@ describe('runManualAutomations', () => {
         bankTransaction: 'bank-1',
         method: 'REFERENCE',
         statements: [linkedStatement],
+        degradedCharge: null,
       },
       { __typename: 'DeelChargeSynced', charge: deelCharge, isNew: true, invoiceCount: 2 },
     ]);
@@ -271,7 +286,10 @@ describe('runManualAutomations', () => {
     expect(autoLinkCreditCardStatements).toHaveBeenCalledWith(injector, {
       ownerId: 'owner-1',
       creditCardBusinessIds: ['issuer-1'],
+      assessLink: expect.any(Function),
     });
+    // the link changed nothing the accountant approved
+    expect(degradeChargesAccountantApproval).not.toHaveBeenCalledWith(injector, ['charge-card']);
     // linking step status, then the Deel step's RUNNING, synced charge and SUCCEEDED
     expect(events.at(-4)).toMatchObject({
       step: 'LINK_CREDITCARD_STATEMENTS',
@@ -494,5 +512,176 @@ describe('runManualAutomations', () => {
 
     expect(statuses(events)).toContain('LINK_CREDITCARD_STATEMENTS:COMPLETED_WITH_ERRORS');
     expect(statuses(events).at(-1)).toBe('FETCH_DEEL_DOCUMENTS:NOT_CONFIGURED');
+  });
+
+  it('re-flags a charge whose accounting a link changed, and reports it', async () => {
+    const statement = {
+      cardAccountId: 'card-1',
+      currency: 'ILS',
+      debitDate: '2026-03-02' as const,
+      bankTransactionId: 'bank-1',
+      linkMethod: 'AMOUNT' as const,
+      confirmed: true,
+    };
+    vi.mocked(autoLinkCreditCardStatements).mockImplementation(() =>
+      linkingRun([
+        {
+          bankTransactionId: 'bank-1',
+          chargeId: 'charge-changed',
+          method: 'AMOUNT',
+          statements: [statement],
+          changesAccounting: true,
+        },
+        {
+          bankTransactionId: 'bank-2',
+          chargeId: 'charge-unchanged',
+          method: 'REFERENCE',
+          statements: [{ ...statement, bankTransactionId: 'bank-2' }],
+          changesAccounting: false,
+        },
+      ]),
+    );
+    const degradedCharge = buildCharge('charge-changed', { accountant_status: 'PENDING' });
+    vi.mocked(degradeChargesAccountantApproval).mockResolvedValue(
+      new Map([['charge-changed', degradedCharge]]),
+    );
+    const injector = buildInjector(
+      {
+        flagForeignFeeTransactions: vi.fn().mockResolvedValue([]),
+        getReferenceMergeCandidates: vi.fn().mockResolvedValue([]),
+        calculateCreditcardDebitDate: vi.fn().mockResolvedValue([]),
+      },
+      [],
+    );
+
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
+
+    expect(degradeChargesAccountantApproval).toHaveBeenCalledTimes(1);
+    expect(degradeChargesAccountantApproval).toHaveBeenCalledWith(injector, ['charge-changed']);
+    expect(events.filter(event => event.__typename === 'CreditcardStatementsLinked')).toEqual([
+      expect.objectContaining({ bankTransaction: 'bank-1', degradedCharge }),
+      expect.objectContaining({ bankTransaction: 'bank-2', degradedCharge: null }),
+    ]);
+    expect(statuses(events)).toContain('LINK_CREDITCARD_STATEMENTS:SUCCEEDED');
+  });
+
+  it('reports a link whose accountant-review flagging failed', async () => {
+    vi.mocked(autoLinkCreditCardStatements).mockImplementation(() =>
+      linkingRun([
+        {
+          bankTransactionId: 'bank-1',
+          chargeId: 'charge-changed',
+          method: 'AMOUNT',
+          statements: [],
+          changesAccounting: true,
+        },
+      ]),
+    );
+    vi.mocked(degradeChargesAccountantApproval).mockRejectedValue(new Error('no permission'));
+    const injector = buildInjector(
+      {
+        flagForeignFeeTransactions: vi.fn().mockResolvedValue([]),
+        getReferenceMergeCandidates: vi.fn().mockResolvedValue([]),
+        calculateCreditcardDebitDate: vi.fn().mockResolvedValue([]),
+      },
+      [],
+    );
+
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
+
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        step: 'LINK_CREDITCARD_STATEMENTS',
+        state: 'COMPLETED_WITH_ERRORS',
+        affectedCount: 1,
+        errors: [
+          'Linked bank transaction ID=bank-1 to its card statements, but failed to flag charge ID=charge-changed for accountant review: no permission',
+        ],
+      }),
+    );
+  });
+});
+
+describe('creditcardLinksChangeAccounting', () => {
+  const LEGACY_CARD = 'card-legacy';
+  const OTHER_CARD = 'card-other';
+
+  function statementOf(cardAccountId: string) {
+    return { cardAccountId, currency: 'ILS', debitDate: '2026-03-02' as const };
+  }
+
+  function injectorFor(charge: IGetChargesByIdsResult, legacyAccountIds: string[]) {
+    const providers = new Map<unknown, unknown>([
+      [ChargesProvider, { getChargeByIdLoader: { load: async () => charge } }],
+      [
+        CreditCardStatementsProvider,
+        {
+          getLegacyReferenceAccountIdsByBankTransactionIdLoader: {
+            load: async () => legacyAccountIds,
+          },
+        },
+      ],
+    ]);
+    return { get: (token: unknown) => providers.get(token) } as unknown as Injector;
+  }
+
+  const bankRow = { id: 'bank-1', charge_id: 'charge-1' };
+  const approved = buildCharge('charge-1', { accountant_status: 'APPROVED', type: null });
+
+  beforeEach(() => {
+    vi.mocked(getChargeType).mockReset().mockResolvedValue(ChargeTypeEnum.CreditcardBankCharge);
+  });
+
+  it('keeps an approved card debit linked to the account its reference resolved to', async () => {
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, [LEGACY_CARD]), bankRow, [
+        statementOf(LEGACY_CARD),
+      ]),
+    ).resolves.toBe(false);
+  });
+
+  it('flags an approved charge that becomes a card debit with the link', async () => {
+    vi.mocked(getChargeType).mockResolvedValue(ChargeTypeEnum.Common);
+
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, [LEGACY_CARD]), bankRow, [
+        statementOf(LEGACY_CARD),
+      ]),
+    ).resolves.toBe(true);
+  });
+
+  it('flags an approved card debit linked to another card account', async () => {
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, [LEGACY_CARD]), bankRow, [
+        statementOf(OTHER_CARD),
+      ]),
+    ).resolves.toBe(true);
+  });
+
+  it('flags an approved card debit linked to several card accounts', async () => {
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, [LEGACY_CARD]), bankRow, [
+        statementOf(LEGACY_CARD),
+        statementOf(OTHER_CARD),
+      ]),
+    ).resolves.toBe(true);
+  });
+
+  it('flags an approved card debit whose reference resolved to no account', async () => {
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(approved, []), bankRow, [
+        statementOf(LEGACY_CARD),
+      ]),
+    ).resolves.toBe(true);
+  });
+
+  it('leaves charges that are not approved alone', async () => {
+    const pending = buildCharge('charge-1', { accountant_status: 'PENDING', type: null });
+    vi.mocked(getChargeType).mockResolvedValue(ChargeTypeEnum.Common);
+
+    await expect(
+      creditcardLinksChangeAccounting(injectorFor(pending, []), bankRow, [statementOf(OTHER_CARD)]),
+    ).resolves.toBe(false);
+    expect(getChargeType).not.toHaveBeenCalled();
   });
 });

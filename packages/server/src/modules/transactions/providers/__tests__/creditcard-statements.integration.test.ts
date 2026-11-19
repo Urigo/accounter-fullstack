@@ -818,4 +818,59 @@ describe('credit card statements', () => {
       expect(await linksOf(debit.id)).toEqual([]);
     });
   });
+
+  describe('ledger and charge type lookups', () => {
+    it('tells which charges hold a linked bank transaction', async () => {
+      const bankAccount = await createAccount('BANK_ACCOUNT', '900021');
+      const card = await createAccount('CREDIT_CARD', '7171');
+      const linked = await createTransaction({
+        accountId: bankAccount,
+        amount: '-12.00',
+        eventDate: '2026-10-20',
+      });
+      const unlinked = await createTransaction({
+        accountId: bankAccount,
+        amount: '-13.00',
+        eventDate: '2026-10-20',
+      });
+      await createInjector()
+        .get(CreditCardStatementsProvider)
+        .insertLinks([
+          {
+            ownerId: OWNER_ID,
+            bankTransactionId: linked.id,
+            cardAccountId: card,
+            currency: 'ILS',
+            debitDate: '2026-10-20',
+            linkMethod: 'MANUAL',
+          },
+        ]);
+
+      const loader = createInjector().get(CreditCardStatementsProvider).hasLinksByChargeIdLoader;
+      expect(await loader.loadMany([linked.chargeId, unlinked.chargeId])).toEqual([true, false]);
+    });
+
+    it("resolves a reference to the owner's own accounts only", async () => {
+      const bankAccount = await createAccount('BANK_ACCOUNT', '900022');
+      const card = await createAccount('CREDIT_CARD', '8282');
+      // another owner's account with the same number is not the owner's card
+      await createAccount('CREDIT_CARD', '8282', null, OTHER_OWNER_ID);
+      const debit = await createTransaction({
+        accountId: bankAccount,
+        amount: '-14.00',
+        eventDate: '2026-10-21',
+        sourceReference: '8282',
+      });
+      const noMatch = await createTransaction({
+        accountId: bankAccount,
+        amount: '-15.00',
+        eventDate: '2026-10-21',
+        sourceReference: '0000-no-account',
+      });
+
+      const loader = createInjector().get(CreditCardStatementsProvider)
+        .getLegacyReferenceAccountIdsByBankTransactionIdLoader;
+      expect(await loader.loadMany([debit.id, noMatch.id])).toEqual([[card], []]);
+    });
+  });
 });

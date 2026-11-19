@@ -108,6 +108,8 @@ export async function ledgerUnbalancedBusinessesByCharge(
 ): Promise<Set<string> | undefined> {
   const chargeType = await getChargeType(charge, injector);
   switch (chargeType) {
+    // a card debit is booked by the common charge generator, with the same allowance
+    case 'CreditcardBankCharge':
     case 'CommonCharge': {
       const unbalancedBusinesses = await injector
         .get(UnbalancedBusinessesProvider)
@@ -153,8 +155,6 @@ export async function ledgerUnbalancedBusinessesByCharge(
       throw new Error('Bank Deposit Charge is not supported yet');
     case 'ForeignSecuritiesCharge':
       throw new Error('Foreign Securities Charge is not supported yet');
-    case 'CreditcardBankCharge':
-      throw new Error('Credit Card Bank Charge is not supported yet');
     case 'FinancialCharge':
       throw new Error('Financial Charge is not supported yet');
     default:

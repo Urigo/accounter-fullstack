@@ -11,6 +11,7 @@ import { DocumentsProvider } from '../../documents/providers/documents.provider.
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { SecurityExecutionChargesProvider } from '../../foreign-securities/providers/security-execution-charges.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
+import { CreditCardStatementsProvider } from '../../transactions/providers/creditcard-statements.provider.js';
 import type { IGetChargesByIdsResult } from '../types.js';
 import { getChargeType } from './charge-type.js';
 import {
@@ -92,11 +93,19 @@ const computeChargeValidation = async (
   const isMultiSecurityCharge =
     chargeType === ChargeTypeEnum.ForeignSecurities && spansSeveralSecurities;
 
+  // A card debit linked to its card statements is booked against the linked card accounts: the
+  // ledger needs neither a counterparty business nor a tax category for it
+  const isLinkedCardDebit =
+    chargeType === ChargeTypeEnum.CreditcardBankCharge &&
+    (await injector.get(CreditCardStatementsProvider).hasLinksByChargeIdLoader.load(charge.id));
+
   // check for consistent counterparty business
   const businessNotRequired =
     [ChargeTypeEnum.InternalTransfer, ChargeTypeEnum.Salary, ChargeTypeEnum.Financial].includes(
       chargeType,
-    ) || isGeneralFees;
+    ) ||
+    isGeneralFees ||
+    isLinkedCardDebit;
   const businessPromise =
     mainBusinessId && !businessNotRequired
       ? injector.get(BusinessesProvider).getBusinessByIdLoader.load(mainBusinessId)
@@ -208,11 +217,12 @@ const computeChargeValidation = async (
   }
 
   // validate tax category
-  const shouldHaveTaxCategory = ![
-    ChargeTypeEnum.Salary,
-    ChargeTypeEnum.InternalTransfer,
-    ChargeTypeEnum.ForeignSecurities,
-  ].includes(chargeType);
+  const shouldHaveTaxCategory =
+    ![
+      ChargeTypeEnum.Salary,
+      ChargeTypeEnum.InternalTransfer,
+      ChargeTypeEnum.ForeignSecurities,
+    ].includes(chargeType) && !isLinkedCardDebit;
   const taxCategoryIsFine = !shouldHaveTaxCategory || !!taxCategoryId;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);
