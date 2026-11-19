@@ -1,10 +1,14 @@
 /**
  * Strict zod schemas of the public input (SPEC §7, §9.2 stage 2), mirroring `input.ts`. They check
- * JavaScript shape only: digit strings, phone prefixes and (later) country codes are plain strings
+ * JavaScript shape only: digit strings, phone prefixes and country codes are plain strings
  * and dates only need the ISO form, so the semantic field rules stay reachable for untyped callers.
  */
 import { z } from 'zod';
-import { FOREIGN_APPENDIX_CODES, MAIN_FORM_INPUT_CODES } from './codes.generated.js';
+import {
+  COUNTRY_BREAKDOWN_CODES,
+  FOREIGN_APPENDIX_CODES,
+  MAIN_FORM_INPUT_CODES,
+} from './codes.generated.js';
 import type { SupportedTaxYear } from './input.js';
 
 /** `YYYY-MM-DD`; calendar validity is checked by field.date. */
@@ -132,6 +136,13 @@ const rdInvestment = z.strictObject({
   investmentAmount: z.number(),
 });
 
+/** Any string as `country`: foreign.breakdown.country.unknown checks it (SPEC §9.2). */
+const countryBreakdown = z.strictObject({
+  deductionsOffsetsAndExemptions: z.number().optional(),
+  /** Any length: foreign.breakdown.countries.min / .max count them. */
+  countries: z.array(z.strictObject({ country: z.string(), income: z.number() })),
+});
+
 const foreignAppendix = z.strictObject({
   otherTaxableIncomeDescription: z.string().optional(),
   otherTaxableIncome: z.number().optional(),
@@ -142,6 +153,9 @@ const foreignAppendix = z.strictObject({
   taxRefundDeclaration: z.boolean(),
   taxRefundDeclarationAmount: z.number().optional(),
   amounts: z.partialRecord(z.enum(FOREIGN_APPENDIX_CODES), z.number().optional()),
+  countryBreakdown: z
+    .partialRecord(z.enum(COUNTRY_BREAKDOWN_CODES), countryBreakdown.optional())
+    .optional(),
 });
 
 const shareholder = z.strictObject({

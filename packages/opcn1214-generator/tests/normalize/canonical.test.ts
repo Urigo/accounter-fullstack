@@ -1,7 +1,8 @@
-import type { PhonePrefix, Report1214Input } from '../../src/index.js';
+import type { CountryCode, PhonePrefix, Report1214Input } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
   foreignAppendix,
+  foreignAppendixWithBreakdown,
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
@@ -403,6 +404,51 @@ describe('canonicalize', () => {
         taxRefundDeclaration: false,
         amounts: { '425': 3, '442': 0 },
       });
+    });
+
+    it('keeps a canonical country breakdown as it is', () => {
+      const input = minimalInput({ foreignAppendix: foreignAppendixWithBreakdown('420') });
+      expect(canonicalize(input, OPTIONS).foreignAppendix).toEqual(input.foreignAppendix);
+    });
+
+    it('pads country codes, rounds, drops zero deductions and keeps incomes of 0', () => {
+      const result = canonicalize(
+        minimalInput({
+          foreignAppendix: foreignAppendix({
+            amounts: { '420': 1, '439': 1 },
+            countryBreakdown: {
+              '420': {
+                deductionsOffsetsAndExemptions: 0,
+                countries: [
+                  { country: '40' as CountryCode, income: 2.5 },
+                  { country: '840', income: 0 },
+                ],
+              },
+              '439': {
+                deductionsOffsetsAndExemptions: 0.4,
+                countries: [{ country: '-88', income: 1 }],
+              },
+            },
+          }),
+        }),
+        { ...OPTIONS, rounding: 'halfUp' },
+      );
+      expect(result.foreignAppendix?.countryBreakdown).toEqual({
+        '420': {
+          countries: [
+            { country: '040', income: 3 },
+            { country: '840', income: 0 },
+          ],
+        },
+        '439': { countries: [{ country: '-88', income: 1 }] },
+      });
+    });
+
+    it('removes an empty countryBreakdown and undefined breakdowns', () => {
+      for (const countryBreakdown of [{}, { '420': undefined }]) {
+        const input = minimalInput({ foreignAppendix: { ...foreignAppendix(), countryBreakdown } });
+        expect(canonicalize(input, OPTIONS).foreignAppendix).not.toHaveProperty('countryBreakdown');
+      }
     });
 
     it('leaves no foreignAppendix when the input has none', () => {

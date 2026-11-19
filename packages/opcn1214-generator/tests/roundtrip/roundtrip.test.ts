@@ -9,10 +9,16 @@ import {
   type GenerateOptions,
   type Report1214Input,
 } from '../../src/index.js';
-import { FOREIGN_APPENDIX_CODES } from '../../src/model/codes.generated.js';
+import {
+  COUNTRY_BREAKDOWN_CODES,
+  FOREIGN_APPENDIX_CODES,
+  type CountryCode,
+} from '../../src/model/codes.generated.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
 import {
+  breakdownCountries,
   foreignAppendix,
+  foreignAppendixWithBreakdown,
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
@@ -262,17 +268,45 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
           '442': 0,
           '494': 999_999_999_999,
         },
+        // Every per-country code written (442 = 0 included) needs its breakdown.
+        countryBreakdown: Object.fromEntries(
+          COUNTRY_BREAKDOWN_CODES.map(code => [code, { countries: breakdownCountries(1) }]),
+        ),
       },
     }),
     OPTIONS,
   ],
   [
-    'every record type of E and F: related companies, R&D investments and a foreign appendix',
+    'country breakdowns: deductions, ten countries, -88 on 439, padded codes and zero values',
+    minimalInput({
+      foreignAppendix: foreignAppendix({
+        amounts: { '416': 1, '420': 50_000, '439': 7000, '442': 0 },
+        countryBreakdown: {
+          '420': {
+            deductionsOffsetsAndExemptions: 999_999_999_999,
+            countries: breakdownCountries(10),
+          },
+          '439': {
+            deductionsOffsetsAndExemptions: 0,
+            countries: [
+              { country: '-88', income: 4000 },
+              { country: '40' as CountryCode, income: 0 },
+            ],
+          },
+          '442': { countries: [{ country: '999', income: 999_999_999_999 }] },
+          '416': { countries: [{ country: '004', income: 1 }] },
+        },
+      }),
+    }),
+    OPTIONS,
+  ],
+  [
+    'every record type of E and F: related companies, R&D investments, a foreign appendix and a breakdown',
     fullMainInput({
       relatedCompanies: relatedCompanies(3),
       rdInvestments: rdInvestments(5),
       amounts: { '165': rdInvestmentsTotal(5) },
-      foreignAppendix: foreignAppendix(),
+      foreignAppendix: foreignAppendixWithBreakdown('420'),
     }),
     OPTIONS,
   ],
@@ -285,6 +319,15 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
       foreignAppendix: foreignAppendix({
         otherTaxableIncome: 0.5,
         amounts: { '401': 0.4, '403': 2.5, '442': 0.4 },
+        countryBreakdown: {
+          '442': {
+            deductionsOffsetsAndExemptions: 0.4,
+            countries: [
+              { country: '840', income: 0.4 },
+              { country: '040', income: 1.5 },
+            ],
+          },
+        },
       }),
     }),
     { ...OPTIONS, rounding: 'halfUp' },

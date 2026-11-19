@@ -1,13 +1,15 @@
 /**
  * Generic field rules (SPEC §9.3, §10.2): one pass over the header fields and codes of every
- * record, driven by their FieldDef/CodeDef.
+ * record, driven by their FieldDef/CodeDef, and over the incomes of the country entries of 2200
+ * records.
  */
 import { isIsoDate } from '../codec/date.js';
 import { scaleBy100Exact } from '../codec/numeric.js';
+import { COUNTRY_INCOME_SHAPE } from '../codec/sections.js';
 import type { Primitive } from '../codec/types.js';
 import type { CodeDef, EnumValue, FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
-import { codeKey, pathFor } from '../normalize/paths.js';
+import { codeKey, incomeEntryKey, inputIndexOf, pathFor } from '../normalize/paths.js';
 import { isAllowedTextChar } from '../normalize/text.js';
 import { makeIssue, type Issue } from './issue.js';
 import type { RuleId } from './rules.js';
@@ -74,7 +76,7 @@ function missingPath(record: NormalizedRecord, key: string, siblings: readonly s
       return path.slice(0, path.length - sibling.length) + key;
     }
   }
-  return pathFor(record.recordType, record.index, key);
+  return pathFor(record.recordType, inputIndexOf(record), key);
 }
 
 /** True when `value`, written per its kind (×100, percent literal or integer), exceeds `width`. */
@@ -94,7 +96,7 @@ function tooManyDigits(kind: FieldKind, value: number, width: number): boolean {
 
 /** The input path of a key: its `paths` entry (every key with a value has one), else pathFor. */
 function pathOf(record: NormalizedRecord, key: string): string {
-  return record.paths[key] ?? pathFor(record.recordType, record.index, key);
+  return record.paths[key] ?? pathFor(record.recordType, inputIndexOf(record), key);
 }
 
 function codePoint(char: string): string {
@@ -331,6 +333,29 @@ function checkCode(record: NormalizedRecord, def: CodeDef): Issue[] {
   ].map(finding => issue(finding.ruleId, finding.message, finding.expected));
 }
 
+/**
+ * The issues of the income of every country entry of a 2200 record (SPEC §3.6): an amount of
+ * COUNTRY_INCOME_SHAPE, checked like a code value (field.negative, field.integer, field.length).
+ */
+function checkCountryIncomes(record: NormalizedRecord): Issue[] {
+  return record.countries.flatMap(({ income }, index) => {
+    const name = `The income of country entry ${index + 1} of record ${record.recordType}`;
+    const key = incomeEntryKey(index);
+    return numberFindings(COUNTRY_INCOME_SHAPE.kind, income, COUNTRY_INCOME_SHAPE.length, name).map(
+      finding =>
+        makeIssue(finding.ruleId, {
+          message: finding.message,
+          path: pathOf(record, key),
+          recordType: record.recordType,
+          recordIndex: record.index,
+          value: income,
+          expected: finding.expected,
+          specRef: { page: 31 },
+        }),
+    );
+  });
+}
+
 /** Issues of the generic field rules over every record of `report` (unsorted). */
 export function fieldRules(report: NormalizedReport): Issue[] {
   return report.records.flatMap(record => {
@@ -341,6 +366,7 @@ export function fieldRules(report: NormalizedReport): Issue[] {
         .filter(field => field.kind !== 'filler')
         .flatMap(field => checkField(record, field, phoneNumbers.has(field.key))),
       ...def.codes.flatMap(code => checkCode(record, code)),
+      ...checkCountryIncomes(record),
     ];
   });
 }

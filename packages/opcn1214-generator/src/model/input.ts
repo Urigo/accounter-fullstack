@@ -3,7 +3,12 @@
  * strings, identification numbers as digit strings, booleans for flags and yes/no fields, code maps
  * keyed by the 3-digit code string.
  */
-import type { ForeignAppendixCode, MainFormInputCode } from './codes.generated.js';
+import type {
+  CountryBreakdownCode,
+  CountryCode,
+  ForeignAppendixCode,
+  MainFormInputCode,
+} from './codes.generated.js';
 
 /** An ISO calendar date, `YYYY-MM-DD` (SPEC §7.2). */
 export type IsoDate = string;
@@ -308,4 +313,28 @@ export interface ForeignAppendix {
   taxRefundDeclarationAmount?: number;
   /** Record 2000 code-amount section; a 0 is written only for the zeroAllowed code 442 (SPEC §4.5). */
   amounts: Partial<Record<ForeignAppendixCode, number>>;
+  /**
+   * Records 2200, one per per-country code written in `amounts` (SPEC §3.6): required for each such
+   * code (foreign.breakdown.required) and allowed only for them (foreign.breakdown.orphan).
+   */
+  countryBreakdown?: Partial<Record<CountryBreakdownCode, CountryBreakdown>>;
+}
+
+/** The income of one foreign-appendix code by country, record 2200 (SPEC §3.6, §7.2). */
+export interface CountryBreakdown {
+  /** 2200@140, total deductions, offsets and exemptions of the code. */
+  deductionsOffsetsAndExemptions?: number;
+  /** The 2200 country-amount section: 1–10 countries, each at most once. */
+  countries: CountryIncome[];
+}
+
+/** One entry of a country breakdown; its affiliation (always 1) is derived (SPEC §7.4). */
+export interface CountryIncome {
+  /**
+   * A code of countries.csv, zero-padded to 3 digits when written (`'40'` → `'040'`); `'-88'`
+   * (country unknown) only for code 439 (foreign.breakdown.country.unknownOnlyFor439).
+   */
+  country: CountryCode;
+  /** Income before deductions, offsets and exemptions, whole shekels. */
+  income: number;
 }

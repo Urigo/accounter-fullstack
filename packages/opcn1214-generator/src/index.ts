@@ -27,11 +27,16 @@ export type {
 } from './layout/types.js';
 export type {
   CompanyDetails,
+  CountryBreakdown,
+  CountryIncome,
   Declarations,
+  ForeignAppendix,
   IsoDate,
   Phone,
   PhonePrefix,
   PreparerDetails,
+  RdInvestment,
+  RelatedCompany,
   Report1214Input,
   Shareholder,
   SupportedTaxYear,

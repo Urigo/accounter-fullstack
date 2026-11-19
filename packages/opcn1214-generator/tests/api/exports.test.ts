@@ -5,13 +5,16 @@ import type {
   CodeDef,
   CodeKind,
   CompanyDetails,
+  CountryBreakdown,
   CountryBreakdownCode,
   CountryCode,
+  CountryIncome,
   Declarations,
   DerivedMainCode,
   EnumValue,
   FieldDef,
   FieldKind,
+  ForeignAppendix,
   ForeignAppendixCode,
   GenerateOptions,
   GenerateResult,
@@ -24,8 +27,10 @@ import type {
   Phone,
   PhonePrefix,
   PreparerDetails,
+  RdInvestment,
   RecordDef,
   RecordType,
+  RelatedCompany,
   Report1214Input,
   Requirement,
   RuleId,
@@ -63,6 +68,16 @@ describe('public API', () => {
     expectTypeOf<Report1214Input['preparer']>().toEqualTypeOf<PreparerDetails | undefined>();
     expectTypeOf<Report1214Input['shareholders']>().toEqualTypeOf<Shareholder[]>();
     expectTypeOf<Report1214Input['taxYear']>().toEqualTypeOf<SupportedTaxYear>();
+    expectTypeOf<Report1214Input['relatedCompanies']>().toEqualTypeOf<
+      RelatedCompany[] | undefined
+    >();
+    expectTypeOf<Report1214Input['rdInvestments']>().toEqualTypeOf<RdInvestment[] | undefined>();
+    expectTypeOf<Report1214Input['foreignAppendix']>().toEqualTypeOf<ForeignAppendix | undefined>();
+    expectTypeOf<ForeignAppendix['countryBreakdown']>().toEqualTypeOf<
+      Partial<Record<CountryBreakdownCode, CountryBreakdown>> | undefined
+    >();
+    expectTypeOf<CountryBreakdown['countries']>().toEqualTypeOf<CountryIncome[]>();
+    expectTypeOf<CountryIncome['country']>().toEqualTypeOf<CountryCode>();
     expectTypeOf<CompanyDetails['phone']>().toEqualTypeOf<Phone>();
     expectTypeOf<Phone['prefix']>().toEqualTypeOf<PhonePrefix>();
     expectTypeOf<IsoDate>().toEqualTypeOf<string>();

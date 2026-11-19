@@ -1,8 +1,8 @@
 /**
  * Denormalizer (IMPLEMENTATION_PLAN.md §1.1): turns a NormalizedReport back into the public
  * Report1214Input, in canonical form (SPEC §8.4). Covers the input model as it exists: record 1000
- * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020, 1030 and
- * 2000.
+ * (meta, company, preparer, declarations, bank account, amounts) and records 1010, 1020, 1030,
+ * 2000 and 2200.
  */
 import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
@@ -10,7 +10,12 @@ import type { Report1214Input } from '../model/input.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
 import { BANK_ACCOUNT_DIGITS, CODE_297_VALUES, type BankAccount } from './derive.js';
 import { ENUM_INPUTS, enumLiteral, RELATION_TYPE_CODES } from './enums.js';
-import { PRESENCE_OBJECTS, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
+import {
+  inputIndexOf,
+  PRESENCE_OBJECTS,
+  REPORTABLE_POSITION_KEYS,
+  REPORTABLE_POSITIONS,
+} from './paths.js';
 
 /**
  * Header keys of record 1000 that are their own input path (SPEC §7.3); the enum keys hold their
@@ -178,13 +183,41 @@ function rdInvestment(record: NormalizedRecord): InputTree {
   return tree;
 }
 
-function foreignAppendix(record: NormalizedRecord): InputTree {
+/** Header keys of record 2200 that are members of a breakdown (2200@137 is its key). */
+export const COUNTRY_BREAKDOWN_INPUT_KEYS = ['deductionsOffsetsAndExemptions'] as const;
+
+function countryBreakdown(record: NormalizedRecord): InputTree {
+  const tree: InputTree = {};
+  for (const key of COUNTRY_BREAKDOWN_INPUT_KEYS) {
+    setKey(tree, key, record.values[key]);
+  }
+  // The affiliation of every entry is derived (SPEC §7.4).
+  tree.countries = record.countries.map(({ country, income }) => ({ country, income }));
+  return tree;
+}
+
+/**
+ * The foreign appendix of the 2000 `record`, with the 2200 `breakdowns` keyed by the 3-digit code
+ * each one breaks down (2200@137); no `countryBreakdown` without 2200 records.
+ */
+function foreignAppendix(
+  record: NormalizedRecord,
+  breakdowns: readonly NormalizedRecord[],
+): InputTree {
   const tree: InputTree = {};
   for (const key of FOREIGN_APPENDIX_INPUT_KEYS) {
     setKey(tree, key, record.values[key]);
   }
   // No code of record 2000 is derived (SPEC §7.4).
   tree.amounts = Object.fromEntries(record.codes);
+  if (breakdowns.length > 0) {
+    tree.countryBreakdown = Object.fromEntries(
+      breakdowns.map(breakdown => [
+        String(inputIndexOf(breakdown)).padStart(3, '0'),
+        countryBreakdown(breakdown),
+      ]),
+    );
+  }
   return tree;
 }
 
@@ -263,10 +296,12 @@ export function denormalize(report: NormalizedReport): Report1214Input {
   if (rd.length > 0) {
     output.rdInvestments = rd.map(rdInvestment);
   }
-  // The appendix exists exactly when a 2000 record does; whether 832 agrees is checked by H1.
+  // The appendix exists exactly when a 2000 record does; whether 832 agrees is checked by H1. The
+  // parser only admits 2200 records after a 2000 record, each for a distinct per-country code.
   const foreign = report.records.find(record => record.recordType === '2000');
   if (foreign) {
-    output.foreignAppendix = foreignAppendix(foreign);
+    const breakdowns = report.records.filter(record => record.recordType === '2200');
+    output.foreignAppendix = foreignAppendix(foreign, breakdowns);
   }
   for (const key of MAIN_INPUT_KEYS) {
     const value = main.values[key];

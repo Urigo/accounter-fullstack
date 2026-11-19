@@ -4,6 +4,7 @@
  */
 import type { RecordType } from '../layout/types.js';
 import { DERIVED_MAIN_CODES } from '../model/codes.generated.js';
+import type { NormalizedRecord } from '../model/normalized.js';
 
 /** Prefix of code-amount keys in NormalizedRecord.paths: `code:${code}`. */
 const CODE_KEY_PREFIX = 'code:';
@@ -52,6 +53,33 @@ export const REPORTABLE_POSITION_KEYS = [0, 1, 2, 3, 4].map(
   index => `${REPORTABLE_POSITIONS}[${index}]`,
 );
 
+/** Header key of 2200@137, the 2000 code a 2200 record breaks down (SPEC §3.6). */
+export const BREAKDOWN_CODE_KEY = 'code';
+
+/** The key of the country of the `index`-th entry of a 2200 record in NormalizedRecord.paths. */
+export function countryEntryKey(index: number): string {
+  return `countries[${index}].country`;
+}
+
+/** The key of the income of the `index`-th entry of a 2200 record in NormalizedRecord.paths. */
+export function incomeEntryKey(index: number): string {
+  return `countries[${index}].income`;
+}
+
+/**
+ * The `inputIndex` of pathFor for `record`: its index among records of its type, except for a 2200
+ * record, whose input is keyed by the 2000 code it breaks down (0 when the record has none).
+ */
+export function inputIndexOf(
+  record: Pick<NormalizedRecord, 'recordType' | 'index' | 'values'>,
+): number {
+  if (record.recordType !== '2200') {
+    return record.index;
+  }
+  const code = record.values[BREAKDOWN_CODE_KEY];
+  return typeof code === 'number' ? code : 0;
+}
+
 /** The key of a code in NormalizedRecord.paths. */
 export function codeKey(code: string): string {
   return CODE_KEY_PREFIX + code;
@@ -70,14 +98,19 @@ export function codeKey(code: string): string {
  * - Record 1030: a header key maps to `rdInvestments[i].<key>`.
  * - Record 2000 (at most one): a header key maps to `foreignAppendix.<key>`, a code to
  *   `foreignAppendix.amounts["420"]`. Nothing of record 2000 is derived.
+ * - Record 2200: the input keys breakdowns by code, so `inputIndex` is the 2000 code the record
+ *   breaks down (inputIndexOf gives it for a record). Its code (2200@137 `code`) maps to the
+ *   breakdown itself, `foreignAppendix.countryBreakdown["420"]`; any other key, a header key or a
+ *   country entry key (`countries[2].country`, `countries[2].income`), to
+ *   `foreignAppendix.countryBreakdown["420"].<key>`.
  * - Derived values have no input path and map to `''` (report level): derived header keys
  *   (1000@832 `hasForeignAppendix`, 1010@137 and 1020@137 `serialNumber`, 1030@137
  *   `affiliation`) and derived codes (SPEC §7.4: 008,
  *   028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
  *   (1000@833 `declarations.hasCapitalGainsAppendix`) keeps that property's path.
  *   Every field of the control record 9999 is derived, so its keys map to `''` as well.
- * - Records whose input is not modelled yet (2200, 30xx) map to `''`, so the parser can report
- *   issues on them; steps F2 (2200) and G1–G5 (30xx) replace this with their input paths.
+ * - Records whose input is not modelled yet (30xx) map to `''`, so the parser can report issues on
+ *   them; steps G1–G5 replace this with their input paths.
  */
 export function pathFor(recordType: RecordType, inputIndex: number, key: string): string {
   const isCode = key.startsWith(CODE_KEY_PREFIX);
@@ -98,8 +131,11 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
       return `rdInvestments[${inputIndex}].${key}`;
     case '2000':
       return isCode ? `foreignAppendix.amounts["${code}"]` : `foreignAppendix.${key}`;
-    // No input mapping yet: replaced by steps F2 and G1–G5.
-    case '2200':
+    case '2200': {
+      const breakdown = `foreignAppendix.countryBreakdown["${String(inputIndex).padStart(3, '0')}"]`;
+      return key === BREAKDOWN_CODE_KEY ? breakdown : `${breakdown}.${key}`;
+    }
+    // No input mapping yet: replaced by steps G1–G5.
     case '3027':
     case '3050':
     case '3051':
