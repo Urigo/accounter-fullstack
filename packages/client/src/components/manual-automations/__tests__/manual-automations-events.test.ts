@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ManualAutomationStep, ManualAutomationStepState } from '../../../gql/graphql.js';
+import {
+  CreditCardStatementLinkMethod,
+  ManualAutomationStep,
+  ManualAutomationStepState,
+} from '../../../gql/graphql.js';
 import {
   AUTOMATION_STEPS,
   groupAutomationEvents,
@@ -61,6 +65,20 @@ const deelCharge: ManualAutomationsRunEvent = {
   },
 };
 
+const linkedStatements: ManualAutomationsRunEvent = {
+  __typename: 'CreditcardStatementsLinked',
+  method: CreditCardStatementLinkMethod.Reference,
+  bankTransaction: transaction('bank-1'),
+  statements: [
+    {
+      id: 'card-1|ILS|2026-02-02',
+      debitDate: '2026-02-02',
+      total: { formatted: '₪ -10.00' },
+      cardAccount: { id: 'card-1', name: 'Card' },
+    },
+  ],
+};
+
 describe('groupAutomationEvents', () => {
   it('reports steps without a status as pending', () => {
     const { steps } = groupAutomationEvents([]);
@@ -90,7 +108,23 @@ describe('groupAutomationEvents', () => {
     expect(view.flaggedFees.map(fee => fee.transaction.id)).toEqual(['fee-1']);
     expect(view.mergedCharges).toEqual([merge]);
     expect(view.filledDebitDates).toEqual([]);
+    expect(view.linkedStatements).toEqual([]);
     expect(view.deelCharges).toEqual([]);
+  });
+
+  it('collects the card debits the linking step linked', () => {
+    const view = groupAutomationEvents([
+      status(ManualAutomationStep.LinkCreditcardStatements, ManualAutomationStepState.Running),
+      linkedStatements,
+      status(ManualAutomationStep.LinkCreditcardStatements, ManualAutomationStepState.Succeeded, {
+        affectedCount: 1,
+      }),
+    ]);
+
+    expect(view.linkedStatements).toEqual([linkedStatements]);
+    expect(view.steps[ManualAutomationStep.LinkCreditcardStatements].state).toBe(
+      ManualAutomationStepState.Succeeded,
+    );
   });
 
   it('collects the charges the Deel step pulled', () => {
@@ -120,6 +154,7 @@ describe('summarizeAutomationEvents', () => {
         debitDate: '2026-02-02',
         transaction: transaction('cc-2'),
       },
+      linkedStatements,
       deelCharge,
     ]);
 
@@ -127,7 +162,7 @@ describe('summarizeAutomationEvents', () => {
       failed: false,
       withErrors: false,
       description:
-        '2 charges merged · 1 fee flagged · 2 debit dates filled · 1 Deel charge pulled',
+        '2 charges merged · 1 fee flagged · 2 debit dates filled · 1 card debit linked · 1 Deel charge pulled',
     });
   });
 
@@ -138,7 +173,7 @@ describe('summarizeAutomationEvents', () => {
           affectedCount: 0,
         }),
       ]).description,
-    ).toBe('0 charges merged · 0 fees flagged · 0 debit dates filled');
+    ).toBe('0 charges merged · 0 fees flagged · 0 debit dates filled · 0 card debits linked');
   });
 
   it('flags failed and partially failed runs', () => {

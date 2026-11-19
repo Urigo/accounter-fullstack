@@ -74,6 +74,33 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
             }
           }
         }
+        ... on CreditcardStatementsLinked {
+          method
+          bankTransaction {
+            id
+            chargeId
+            eventDate
+            sourceDescription
+            amount {
+              formatted
+            }
+            account {
+              id
+              name
+            }
+          }
+          statements {
+            id
+            debitDate
+            total {
+              formatted
+            }
+            cardAccount {
+              id
+              name
+            }
+          }
+        }
         ... on CreditcardDebitDateFilled {
           debitDate
           transaction {

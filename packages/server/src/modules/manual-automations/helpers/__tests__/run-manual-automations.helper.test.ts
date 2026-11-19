@@ -6,7 +6,13 @@ import { mergeChargesExecutor } from '../../../charges/helpers/merge-charges.hel
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../../charges/types.js';
 import { syncDeelDocuments } from '../../../deel/helpers/sync-deel-documents.helper.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ProviderCredentialsProvider } from '../../../provider-credentials/providers/provider-credentials.provider.js';
+import {
+  autoLinkCreditCardStatements,
+  type AutoLinkedStatements,
+  type AutoLinkOutcome,
+} from '../../../transactions/helpers/link-creditcard-statements.helper.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { ManualAutomationsProvider } from '../../providers/manual-automations.provider.js';
 import type { IGetReferenceMergeCandidatesResult } from '../../types.js';
@@ -25,6 +31,19 @@ vi.mock('../../../accountant-approval/helpers/degrade-charges.helper.js', () => 
 vi.mock('../../../deel/helpers/sync-deel-documents.helper.js', () => ({
   syncDeelDocuments: vi.fn(),
 }));
+vi.mock('../../../transactions/helpers/link-creditcard-statements.helper.js', () => ({
+  autoLinkCreditCardStatements: vi.fn(),
+}));
+
+function linkingRun(
+  linked: AutoLinkedStatements[],
+  outcome: Partial<AutoLinkOutcome> = {},
+): AsyncGenerator<AutoLinkedStatements, AutoLinkOutcome, undefined> {
+  return (async function* () {
+    yield* linked;
+    return { linkedCount: linked.length, errors: [], ...outcome };
+  })();
+}
 
 function buildCharge(
   id: string,
@@ -94,6 +113,15 @@ function buildInjector(
   const providers = new Map<unknown, unknown>([
     [ProviderCredentialsProvider, { getDeelCredentials: async () => deelCredentials }],
     [ManualAutomationsProvider, manualAutomationsProvider],
+    [
+      AdminContextProvider,
+      {
+        getVerifiedAdminContext: async () => ({
+          ownerId: 'owner-1',
+          financialAccounts: { creditCardIds: ['issuer-1'] },
+        }),
+      },
+    ],
     [
       ChargesProvider,
       {
@@ -165,6 +193,9 @@ describe('runManualAutomations', () => {
     vi.mocked(mergeChargesExecutor).mockReset().mockResolvedValue(undefined);
     vi.mocked(degradeChargesAccountantApproval).mockReset().mockResolvedValue(new Map());
     vi.mocked(syncDeelDocuments).mockReset().mockResolvedValue({ charges: [] });
+    vi.mocked(autoLinkCreditCardStatements)
+      .mockReset()
+      .mockImplementation(() => linkingRun([]));
   });
 
   it('streams every change and a status per step', async () => {
@@ -189,6 +220,19 @@ describe('runManualAutomations', () => {
     vi.mocked(syncDeelDocuments).mockResolvedValue({
       charges: [{ charge: deelCharge, isNew: true, invoiceCount: 2 }],
     });
+    const linkedStatement = {
+      cardAccountId: 'card-1',
+      currency: 'ILS',
+      debitDate: '2026-03-02' as const,
+      bankTransactionId: 'bank-1',
+      linkMethod: 'REFERENCE' as const,
+      confirmed: true,
+    };
+    vi.mocked(autoLinkCreditCardStatements).mockImplementation(() =>
+      linkingRun([
+        { bankTransactionId: 'bank-1', method: 'REFERENCE', statements: [linkedStatement] },
+      ]),
+    );
 
     const events = await collect(runManualAutomations(injector, 'owner-1'));
 
@@ -199,6 +243,8 @@ describe('runManualAutomations', () => {
       'MERGE_CHARGES_BY_REFERENCE:SUCCEEDED',
       'FILL_CREDITCARD_DEBIT_DATES:RUNNING',
       'FILL_CREDITCARD_DEBIT_DATES:SUCCEEDED',
+      'LINK_CREDITCARD_STATEMENTS:RUNNING',
+      'LINK_CREDITCARD_STATEMENTS:SUCCEEDED',
       'FETCH_DEEL_DOCUMENTS:RUNNING',
       'FETCH_DEEL_DOCUMENTS:SUCCEEDED',
     ]);
@@ -212,12 +258,26 @@ describe('runManualAutomations', () => {
         mergedCharges: [expect.objectContaining({ id: 'charge-b', date: '2026-01-10' })],
       },
       { __typename: 'CreditcardDebitDateFilled', transaction: 'cc-1', debitDate: '2026-03-02' },
+      {
+        __typename: 'CreditcardStatementsLinked',
+        bankTransaction: 'bank-1',
+        method: 'REFERENCE',
+        statements: [linkedStatement],
+      },
       { __typename: 'DeelChargeSynced', charge: deelCharge, isNew: true, invoiceCount: 2 },
     ]);
     expect(mergeChargesExecutor).toHaveBeenCalledWith(['charge-b'], 'charge-a', injector);
     expect(syncDeelDocuments).toHaveBeenCalledWith(injector);
-    // debit dates step status, then the Deel step's RUNNING, synced charge and SUCCEEDED
-    expect(events.at(-4)).toMatchObject({ affectedCount: 1, errors: null });
+    expect(autoLinkCreditCardStatements).toHaveBeenCalledWith(injector, {
+      ownerId: 'owner-1',
+      creditCardBusinessIds: ['issuer-1'],
+    });
+    // linking step status, then the Deel step's RUNNING, synced charge and SUCCEEDED
+    expect(events.at(-4)).toMatchObject({
+      step: 'LINK_CREDITCARD_STATEMENTS',
+      affectedCount: 1,
+      errors: null,
+    });
     expect(events.at(-1)).toMatchObject({ affectedCount: 1, errors: null });
   });
 
@@ -238,6 +298,7 @@ describe('runManualAutomations', () => {
       'FLAG_FOREIGN_FEES:FAILED',
       'MERGE_CHARGES_BY_REFERENCE:SKIPPED',
       'FILL_CREDITCARD_DEBIT_DATES:SKIPPED',
+      'LINK_CREDITCARD_STATEMENTS:SKIPPED',
       'FETCH_DEEL_DOCUMENTS:SKIPPED',
     ]);
     expect(events[1]).toMatchObject({ errors: ['DB is down'] });
@@ -289,6 +350,8 @@ describe('runManualAutomations', () => {
       'MERGE_CHARGES_BY_REFERENCE:SUCCEEDED',
       'FILL_CREDITCARD_DEBIT_DATES:RUNNING',
       'FILL_CREDITCARD_DEBIT_DATES:SUCCEEDED',
+      'LINK_CREDITCARD_STATEMENTS:RUNNING',
+      'LINK_CREDITCARD_STATEMENTS:SUCCEEDED',
       'FETCH_DEEL_DOCUMENTS:RUNNING',
       'FETCH_DEEL_DOCUMENTS:FAILED',
     ]);
@@ -403,6 +466,8 @@ describe('runManualAutomations', () => {
       'MERGE_CHARGES_BY_REFERENCE:COMPLETED_WITH_ERRORS',
       'FILL_CREDITCARD_DEBIT_DATES:RUNNING',
       'FILL_CREDITCARD_DEBIT_DATES:SUCCEEDED',
+      'LINK_CREDITCARD_STATEMENTS:RUNNING',
+      'LINK_CREDITCARD_STATEMENTS:SUCCEEDED',
       'FETCH_DEEL_DOCUMENTS:RUNNING',
       'FETCH_DEEL_DOCUMENTS:NOT_CONFIGURED',
     ]);
@@ -410,5 +475,24 @@ describe('runManualAutomations', () => {
       affectedCount: 0,
       errors: ['Failed to merge reference "REF-1" into charge ID=charge-a: locked'],
     });
+  });
+
+  it('reports item-level linking errors without failing the step', async () => {
+    vi.mocked(autoLinkCreditCardStatements).mockImplementation(() =>
+      linkingRun([], { errors: ['Failed to link bank transaction ID=bank-1: taken'] }),
+    );
+    const injector = buildInjector(
+      {
+        flagForeignFeeTransactions: vi.fn().mockResolvedValue([]),
+        getReferenceMergeCandidates: vi.fn().mockResolvedValue([]),
+        calculateCreditcardDebitDate: vi.fn().mockResolvedValue([]),
+      },
+      [],
+    );
+
+    const events = await collect(runManualAutomations(injector, 'owner-1'));
+
+    expect(statuses(events)).toContain('LINK_CREDITCARD_STATEMENTS:COMPLETED_WITH_ERRORS');
+    expect(statuses(events).at(-1)).toBe('FETCH_DEEL_DOCUMENTS:NOT_CONFIGURED');
   });
 });

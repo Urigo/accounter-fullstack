@@ -10,12 +10,15 @@ import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
 import { minTimelessDate } from '../../../shared/helpers/timeless-date.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { syncDeelDocuments } from '../../deel/helpers/sync-deel-documents.helper.js';
 import { ProviderCredentialsProvider } from '../../provider-credentials/providers/provider-credentials.provider.js';
+import { autoLinkCreditCardStatements } from '../../transactions/helpers/link-creditcard-statements.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import type { ResolvedCreditCardStatement } from '../../transactions/types.js';
 import { ManualAutomationsProvider } from '../providers/manual-automations.provider.js';
 import type { IGetReferenceMergeCandidatesResult } from '../types.js';
 import {
@@ -33,6 +36,12 @@ export type ManualAutomationEventProto =
       mergedCharges: MergedChargeSnapshot[];
     }
   | { __typename: 'CreditcardDebitDateFilled'; transaction: string; debitDate: TimelessDateString }
+  | {
+      __typename: 'CreditcardStatementsLinked';
+      bankTransaction: string;
+      method: 'REFERENCE' | 'AMOUNT';
+      statements: ResolvedCreditCardStatement[];
+    }
   | {
       __typename: 'DeelChargeSynced';
       charge: IGetChargesByIdsResult;
@@ -109,6 +118,8 @@ export async function* runManualAutomations(
     ['FLAG_FOREIGN_FEES', flagForeignFees],
     ['MERGE_CHARGES_BY_REFERENCE', mergeChargesByReference],
     ['FILL_CREDITCARD_DEBIT_DATES', fillCreditcardDebitDates],
+    // after the debit dates are filled, so card statements are complete
+    ['LINK_CREDITCARD_STATEMENTS', linkCreditcardStatements],
     // last, so a Deel failure (API, credentials, unknown contract) never blocks the fix-ups
     ['FETCH_DEEL_DOCUMENTS', fetchDeelDocuments],
   ];
@@ -218,6 +229,36 @@ async function* fillCreditcardDebitDates(
     };
   }
   return { affectedCount: filledCount, errors: [] };
+}
+
+/**
+ * Persists confident bank-debit ⇄ card-statement links (also the history backfill).
+ *
+ * Unlike the merge step, it does not re-flag charges for accountant review: in this phase a link
+ * drives neither the ledger nor the charge type, only the card statements a charge shows. Whether
+ * it should once the ledger reads the links is decided with that change.
+ */
+async function* linkCreditcardStatements(
+  injector: Injector,
+  ownerId: string,
+): AsyncGenerator<ManualAutomationEventProto, StepOutcome, undefined> {
+  const { financialAccounts } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  const linking = autoLinkCreditCardStatements(injector, {
+    ownerId,
+    creditCardBusinessIds: financialAccounts.creditCardIds,
+  });
+  let next = await linking.next();
+  while (!next.done) {
+    const { bankTransactionId, method, statements } = next.value;
+    yield {
+      __typename: 'CreditcardStatementsLinked',
+      bankTransaction: bankTransactionId,
+      method,
+      statements,
+    };
+    next = await linking.next();
+  }
+  return { affectedCount: next.value.linkedCount, errors: next.value.errors };
 }
 
 // The sync runs for the admin context's owner, the same one the run gets, so it takes no ownerId

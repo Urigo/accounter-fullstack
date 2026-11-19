@@ -530,6 +530,7 @@ export function ChargeExtendedInfo({
                       chargeProps={
                         charge as FragmentType<typeof CreditcardBankChargeInfoFragmentDoc>
                       }
+                      onChange={onExtendedChange}
                     />
                   )}
                 </AccordionContent>

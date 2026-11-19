@@ -1,8 +1,10 @@
 import { GraphQLError } from 'graphql';
+import type { Injector } from 'graphql-modules';
 import type { Writeable } from '../../../shared/types/index.js';
 import { FinancialAccountsTaxCategoriesProvider } from '../providers/financial-accounts-tax-categories.provider.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../providers/financial-bank-accounts.provider.js';
+import { FinancialCreditCardAccountsProvider } from '../providers/financial-credit-card-accounts.provider.js';
 import type {
   FinancialAccountsModule,
   IInsertFinancialAccountsParams,
@@ -14,6 +16,32 @@ import {
   commonFinancialEntityFields,
   commonTransactionFields,
 } from './common.js';
+
+/**
+ * A card's settlement account must be a bank account of the card's own tenant. Throws a
+ * user-facing error otherwise.
+ */
+async function validateSettlementAccount(
+  injector: Injector,
+  params: {
+    accountType: string | null | undefined;
+    cardOwnerId: string;
+    settlementAccountId: string;
+  },
+) {
+  if (params.accountType !== 'CREDIT_CARD') {
+    throw new GraphQLError('Only credit card accounts can have a settlement account');
+  }
+  const [settlementAccount] = await injector
+    .get(FinancialCreditCardAccountsProvider)
+    .getFinancialAccountsOwnership([params.settlementAccountId]);
+  if (!settlementAccount || settlementAccount.owner_id !== params.cardOwnerId) {
+    throw new GraphQLError(`Settlement account ID="${params.settlementAccountId}" not found`);
+  }
+  if (settlementAccount.type !== 'BANK_ACCOUNT') {
+    throw new GraphQLError('The settlement account must be a bank account');
+  }
+}
 
 export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
   Query: {
@@ -45,6 +73,13 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
         .then(() => true);
     },
     createFinancialAccount: async (_, { input }, { injector }) => {
+      if (input.settlementAccountId) {
+        await validateSettlementAccount(injector, {
+          accountType: input.type,
+          cardOwnerId: input.ownerId,
+          settlementAccountId: input.settlementAccountId,
+        });
+      }
       try {
         const bankAccount: IInsertFinancialAccountsParams['bankAccounts'][number] = {
           accountNumber: input.number,
@@ -88,6 +123,14 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           });
         }
 
+        if (input.settlementAccountId) {
+          await injector.get(FinancialCreditCardAccountsProvider).setSettlementAccount({
+            cardAccountId: account.id,
+            ownerId: account.owner_id,
+            settlementAccountId: input.settlementAccountId,
+          });
+        }
+
         if (input.currencies && input.currencies.length > 0) {
           await injector
             .get(FinancialAccountsTaxCategoriesProvider)
@@ -109,6 +152,25 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
       }
     },
     updateFinancialAccount: async (_, { id, fields }, { injector }) => {
+      // undefined leaves the settlement account as is, null clears it
+      if (fields.settlementAccountId !== undefined) {
+        const [current] = await injector
+          .get(FinancialCreditCardAccountsProvider)
+          .getFinancialAccountsOwnership([id]);
+        if (!current) {
+          throw new GraphQLError(`Financial account ID="${id}" not found`);
+        }
+        const accountType = fields.type ?? current.type;
+        if (fields.settlementAccountId) {
+          await validateSettlementAccount(injector, {
+            accountType,
+            cardOwnerId: current.owner_id,
+            settlementAccountId: fields.settlementAccountId,
+          });
+        } else if (accountType !== 'CREDIT_CARD') {
+          throw new GraphQLError('Only credit card accounts can have a settlement account');
+        }
+      }
       try {
         const updatedAccount: IUpdateFinancialAccountParams = {
           financialAccountId: id,
@@ -144,6 +206,14 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
             partyPreferredIndication: fields.bankAccountDetails.partyPreferredIndication,
             productLabel: fields.bankAccountDetails.productLabel,
             serviceAuthorizationDesc: fields.bankAccountDetails.serviceAuthorizationDesc,
+          });
+        }
+
+        if (fields.settlementAccountId !== undefined) {
+          await injector.get(FinancialCreditCardAccountsProvider).setSettlementAccount({
+            cardAccountId: account.id,
+            ownerId: account.owner_id,
+            settlementAccountId: fields.settlementAccountId,
           });
         }
 
@@ -242,6 +312,18 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     ...commonFinancialAccountFields,
     fourDigits: DbAccount => DbAccount.account_number,
     name: DbAccount => DbAccount.account_name ?? DbAccount.account_number,
+    settlementAccount: async (DbAccount, _, { injector }) => {
+      const cardAccount = await injector
+        .get(FinancialCreditCardAccountsProvider)
+        .getCreditCardAccountByIdLoader.load(DbAccount.id);
+      if (!cardAccount?.settlement_account_id) {
+        return null;
+      }
+      const settlementAccount = await injector
+        .get(FinancialAccountsProvider)
+        .getFinancialAccountByAccountIDLoader.load(cardAccount.settlement_account_id);
+      return settlementAccount?.type === 'BANK_ACCOUNT' ? settlementAccount : null;
+    },
   },
   CryptoWalletFinancialAccount: {
     __isTypeOf: DbAccount => DbAccount.type === 'CRYPTO_WALLET',

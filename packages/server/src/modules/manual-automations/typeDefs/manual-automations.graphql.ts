@@ -18,6 +18,7 @@ export default gql`
     | ForeignFeeTransactionFlagged
     | ChargesMergedByReference
     | CreditcardDebitDateFilled
+    | CreditcardStatementsLinked
     | DeelChargeSynced
 
   " manual automation steps, in execution order "
@@ -25,6 +26,7 @@ export default gql`
     FLAG_FOREIGN_FEES
     MERGE_CHARGES_BY_REFERENCE
     FILL_CREDITCARD_DEBIT_DATES
+    LINK_CREDITCARD_STATEMENTS
     FETCH_DEEL_DOCUMENTS
   }
 
@@ -78,6 +80,13 @@ export default gql`
   type CreditcardDebitDateFilled {
     transaction: Transaction!
     debitDate: TimelessDate!
+  }
+
+  " a bank card debit the manual automations linked to the card statement(s) it settles "
+  type CreditcardStatementsLinked {
+    bankTransaction: Transaction!
+    method: CreditCardStatementLinkMethod!
+    statements: [CreditCardStatement!]!
   }
 
   " a charge that got Deel invoices when the manual automations pulled Deel documents "

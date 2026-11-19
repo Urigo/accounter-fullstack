@@ -30,4 +30,7 @@ export interface FinancialAccount {
   branchTypeCode?: number;
   mymailEntitlementSwitch?: number;
   productLabel?: string;
+  // Credit-card-specific fields
+  /** The bank account the card is debited from */
+  settlementAccountId?: string | null;
 }

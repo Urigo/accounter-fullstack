@@ -33,6 +33,7 @@ import {
   type DeelCharge,
   type FilledDebitDate,
   type FlaggedFee,
+  type LinkedStatements,
   type ManualAutomationsRunEvent,
   type MergedCharges,
 } from './manual-automations-events.js';
@@ -237,6 +238,55 @@ function DeelChargesTable({ charges }: { charges: DeelCharge[] }): ReactElement 
   );
 }
 
+const LINK_METHOD_LABELS: Record<LinkedStatements['method'], string> = {
+  REFERENCE: 'Card reference',
+  AMOUNT: 'Amount',
+  MANUAL: 'Manual',
+};
+
+function LinkedStatementsTable({ links }: { links: LinkedStatements[] }): ReactElement {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Date</TableHead>
+          <TableHead>Bank account</TableHead>
+          <TableHead>Amount</TableHead>
+          <TableHead>Statements</TableHead>
+          <TableHead>Matched by</TableHead>
+          <TableHead>Charge</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {links.map(({ bankTransaction, statements, method }) => (
+          <TableRow key={bankTransaction.id}>
+            <TableCell>{formatDate(bankTransaction.eventDate)}</TableCell>
+            <TableCell>{bankTransaction.account.name}</TableCell>
+            <TableCell>{bankTransaction.amount.formatted}</TableCell>
+            <TableCell>
+              {statements.map(statement => (
+                <div key={statement.id}>
+                  {[
+                    statement.cardAccount.name,
+                    formatDate(statement.debitDate),
+                    statement.total.formatted,
+                  ].join(' · ')}
+                </div>
+              ))}
+            </TableCell>
+            <TableCell>
+              <Badge variant="outline">{LINK_METHOD_LABELS[method]}</Badge>
+            </TableCell>
+            <TableCell>
+              <ChargeLink chargeId={bankTransaction.chargeId}>Open</ChargeLink>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 function TransactionsTable({
   rows,
   debitDateHeader,
@@ -281,7 +331,7 @@ function TransactionsTable({
 
 const PAGE_TITLE = 'Manual Automations';
 const PAGE_DESCRIPTION =
-  'Flag foreign transfer fees, merge charges that share a transaction reference, fill missing credit card debit dates, and pull Deel documents';
+  'Flag foreign transfer fees, merge charges that share a transaction reference, fill missing credit card debit dates, link card debits to their statements, and pull Deel documents';
 
 type ManualAutomationsViewProps = {
   /** True from the moment the run starts until its last streamed event arrives. */
@@ -303,10 +353,8 @@ export function ManualAutomationsView({
   adminBusinessId,
   canRun = true,
 }: ManualAutomationsViewProps): ReactElement {
-  const { steps, flaggedFees, mergedCharges, filledDebitDates, deelCharges } = useMemo(
-    () => groupAutomationEvents(events),
-    [events],
-  );
+  const { steps, flaggedFees, mergedCharges, filledDebitDates, linkedStatements, deelCharges } =
+    useMemo(() => groupAutomationEvents(events), [events]);
   const hasRun = running || events.length > 0;
 
   if (!canRun) {
@@ -367,6 +415,13 @@ export function ManualAutomationsView({
             itemsCount={filledDebitDates.length}
           >
             <TransactionsTable rows={filledDebitDates} debitDateHeader="Debit date set" />
+          </StepCard>
+          <StepCard
+            title="Card debits linked to statements"
+            step={steps[ManualAutomationStep.LinkCreditcardStatements]}
+            itemsCount={linkedStatements.length}
+          >
+            <LinkedStatementsTable links={linkedStatements} />
           </StepCard>
           <StepCard
             title="Deel documents pulled"

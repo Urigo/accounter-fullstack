@@ -219,6 +219,7 @@ import migration_2026_10_21T12_00_00_price_indexes from './actions/2026-10-21T12
 import migration_2026_10_21T14_00_00_charges_securities_executions from './actions/2026-10-21T14-00-00.charges-securities-executions.js';
 import migration_2026_10_25T12_00_00_provider_credentials_business_id from './actions/2026-10-25T12-00-00.provider-credentials-business-id.js';
 import migration_2026_11_18T12_00_00_poalim_swift_document_type_code from './actions/2026-11-18T12-00-00.poalim-swift-document-type-code.js';
+import migration_2026_11_19T12_00_00_creditcard_statement_links from './actions/2026-11-19T12-00-00.creditcard-statement-links.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -442,6 +443,7 @@ export const MIGRATIONS = [
   migration_2026_10_21T14_00_00_charges_securities_executions,
   migration_2026_10_25T12_00_00_provider_credentials_business_id,
   migration_2026_11_18T12_00_00_poalim_swift_document_type_code,
+  migration_2026_11_19T12_00_00_creditcard_statement_links,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

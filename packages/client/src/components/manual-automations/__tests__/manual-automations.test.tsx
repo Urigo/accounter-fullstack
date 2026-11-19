@@ -142,7 +142,7 @@ describe('ManualAutomations screen', () => {
     expect(page.textContent).toContain('Step failed');
     expect(page.textContent).toContain('DB is down');
     expect(page.textContent).toContain(
-      '1 charge merged · 0 fees flagged · 0 debit dates filled · 0 Deel charges pulled',
+      '1 charge merged · 0 fees flagged · 0 debit dates filled · 0 card debits linked · 0 Deel charges pulled',
     );
   });
 
