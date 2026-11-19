@@ -34,7 +34,7 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
 
   describe('field.required', () => {
     it('reports a missing required header field with its layout position', () => {
-      const input = minimalInput({ company: { registeredName: undefined } });
+      const input = minimalInput({ company: { registeredName: '' } });
       expect(issuesOf(input, 'field.required')).toEqual([
         expect.objectContaining({
           severity: 'error',
@@ -308,14 +308,24 @@ describe('field rules through runPipeline (SPEC §9.3, §10.2)', () => {
   });
 
   describe('field.date', () => {
-    it.each(['2024-02-30', '2023-02-29', '2024-13-01', '30/06/2024', '2024-6-30'])(
-      'reports %s',
+    it.each(['2024-02-30', '2023-02-29', '2024-13-01'])('reports %s', saveDate => {
+      expect(issuesOf(minimalInput({ meta: { saveDate } }), 'field.date')).toEqual([
+        expect.objectContaining({
+          path: 'meta.saveDate',
+          value: saveDate,
+          field: { position: 165, length: 10, nameHe: 'תאריך שמירה' },
+        }),
+      ]);
+    });
+
+    it.each(['30/06/2024', '2024-6-30'])(
+      'leaves the non-ISO form %s to the shape stage',
       saveDate => {
-        expect(issuesOf(minimalInput({ meta: { saveDate } }), 'field.date')).toEqual([
+        expect(runPipeline(minimalInput({ meta: { saveDate } }), OPTIONS).issues).toEqual([
           expect.objectContaining({
+            ruleId: 'input.shape',
             path: 'meta.saveDate',
             value: saveDate,
-            field: { position: 165, length: 10, nameHe: 'תאריך שמירה' },
           }),
         ]);
       },

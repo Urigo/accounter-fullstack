@@ -46,4 +46,39 @@ describe('runPipeline', () => {
       ]);
     });
   });
+
+  describe('shape stage (input.shape)', () => {
+    it('stops after the shape stage with only its issues', () => {
+      // Two shape defects and a field defect: the field rules must not run.
+      const base = minimalInput({ company: { registeredName: '' } });
+      const input = { ...base, meta: null, company: { ...base.company, faxx: '1' } };
+      expect(runPipeline(input, OPTIONS)).toEqual({
+        issues: [
+          expect.objectContaining({ ruleId: 'input.shape', severity: 'error', path: 'meta' }),
+          expect.objectContaining({ ruleId: 'input.shape', path: 'company.faxx' }),
+        ],
+      });
+    });
+
+    it('runs after the year stage', () => {
+      const input = { ...minimalInput(), taxYear: 2023, faxx: 1 };
+      expect(runPipeline(input, OPTIONS).issues.map(issue => issue.ruleId)).toEqual([
+        'struct.taxYear.unsupported',
+      ]);
+    });
+
+    it.each([
+      ['null', null],
+      ['an array', []],
+      ['a string', 'x'],
+      ['a number', 42],
+      ['an empty object', {}],
+      ['an object with only a tax year', { taxYear: 2024 }],
+      ['wrongly typed members', { taxYear: 2024, company: [], amounts: 'x', shareholders: [null] }],
+    ])('never throws for %s', (_, input) => {
+      const result = runPipeline(input, OPTIONS);
+      expect(result.report).toBeUndefined();
+      expect(result.issues.length).toBeGreaterThan(0);
+    });
+  });
 });
