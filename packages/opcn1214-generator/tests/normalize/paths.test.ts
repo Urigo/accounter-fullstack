@@ -48,6 +48,22 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     expect(pathFor('1030', 4, 'investmentAmount')).toBe('rdInvestments[4].investmentAmount');
   });
 
+  it('maps a record 2000 key into the foreign appendix and a code to its amounts entry', () => {
+    expect(pathFor('2000', 0, 'otherTaxableIncome')).toBe('foreignAppendix.otherTaxableIncome');
+    expect(pathFor('2000', 0, 'taxRefundDeclaration')).toBe('foreignAppendix.taxRefundDeclaration');
+    expect(pathFor('2000', 0, 'code:420')).toBe('foreignAppendix.amounts["420"]');
+    expect(pathFor('2000', 0, 'code:442')).toBe('foreignAppendix.amounts["442"]');
+  });
+
+  it('maps every field and code of record 2000, none of which is derived, to an input path', () => {
+    const def = LAYOUT.records['2000'];
+    expect(def.fields.filter(field => field.derived)).toEqual([]);
+    expect(def.codes.filter(code => code.derived)).toEqual([]);
+    for (const field of def.fields.filter(candidate => candidate.kind !== 'filler')) {
+      expect(pathFor('2000', 0, field.key)).toBe(`foreignAppendix.${field.key}`);
+    }
+  });
+
   it.each(['1000', '1010', '1020', '1030'] as const)(
     'maps every derived field of record %s to the empty path',
     recordType => {
@@ -63,7 +79,7 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     expect(pathFor('1000', 0, `code:${code}`)).toBe('');
   });
 
-  it.each(['2000', '2200', '3027', '3077'] as const)(
+  it.each(['2200', '3027', '3077'] as const)(
     'maps keys of record %s, which has no input mapping yet, to the empty path',
     recordType => {
       expect(pathFor(recordType, 0, 'anything')).toBe('');

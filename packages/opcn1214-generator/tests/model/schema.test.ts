@@ -3,6 +3,7 @@ import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import { report1214InputSchema, schemaFor } from '../../src/model/schema.js';
 import { checkShape, zodIssuesToIssues } from '../../src/validate/shape.js';
 import {
+  foreignAppendix,
   fullDeclarationsInput,
   fullMainInput,
   minimalInput,
@@ -67,6 +68,28 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expect(shapePaths(input)).toEqual([
       'rdInvestments[0].investmentAmount',
       'rdInvestments[1].affiliation',
+    ]);
+  });
+
+  it('accepts a foreign appendix, complete or with only the required members', () => {
+    expect(shapeIssues(minimalInput({ foreignAppendix: foreignAppendix() }))).toEqual([]);
+    expect(
+      shapeIssues(minimalInput({ foreignAppendix: { taxRefundDeclaration: false, amounts: {} } })),
+    ).toEqual([]);
+  });
+
+  it('rejects a foreign appendix without its required members, or with an unknown member', () => {
+    expect(shapePaths({ ...minimalInput(), foreignAppendix: {} }).sort()).toEqual([
+      'foreignAppendix.amounts',
+      'foreignAppendix.taxRefundDeclaration',
+    ]);
+    const input = {
+      ...minimalInput(),
+      foreignAppendix: { ...foreignAppendix(), taxRefundDeclaration: 1, countries: [] },
+    };
+    expect(shapePaths(input).sort()).toEqual([
+      'foreignAppendix.countries',
+      'foreignAppendix.taxRefundDeclaration',
     ]);
   });
 
@@ -436,6 +459,74 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
         ['input.unknownCode', 'amounts["999"]'],
         ['input.unknownCode', 'amounts["abc"]'],
       ]);
+    });
+
+    it('reports an unknown foreignAppendix.amounts key as input.unknownCode (SPEC §9.2)', () => {
+      const input = {
+        ...minimalInput(),
+        foreignAppendix: { ...foreignAppendix(), amounts: { '401': 5, '999': 7 } },
+      };
+      expect(checkShape(input, 2024)).toEqual([
+        {
+          ruleId: 'input.unknownCode',
+          severity: 'error',
+          message: '"999" is not a code of record 2000 for tax year 2024.',
+          path: 'foreignAppendix.amounts["999"]',
+          recordType: '2000',
+          recordIndex: 0,
+          code: '999',
+          value: 7,
+        },
+      ]);
+    });
+
+    it('reports a code of another record in foreignAppendix.amounts as input.unknownCode', () => {
+      // 273 is a derived code of record 1000, not a code of record 2000.
+      const input = {
+        ...minimalInput(),
+        foreignAppendix: { ...foreignAppendix(), amounts: { '273': 1, '018': 2 } },
+      };
+      expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
+        ['input.unknownCode', 'foreignAppendix.amounts["273"]'],
+        ['input.unknownCode', 'foreignAppendix.amounts["018"]'],
+      ]);
+    });
+
+    it('reports foreign code-map keys together with the zod issues of the appendix, each once', () => {
+      const input = {
+        ...minimalInput(),
+        foreignAppendix: { amounts: { '401': 'x', abc: 1 } },
+      };
+      expect(
+        checkShape(input, 2024)
+          .map(issue => [issue.ruleId, issue.path])
+          .sort(),
+      ).toEqual([
+        ['input.shape', 'foreignAppendix.amounts["401"]'],
+        ['input.shape', 'foreignAppendix.taxRefundDeclaration'],
+        ['input.unknownCode', 'foreignAppendix.amounts["abc"]'],
+      ]);
+    });
+
+    it('leaves a foreign appendix or its amounts that is not an object to zod', () => {
+      expect(
+        checkShape({ ...minimalInput(), foreignAppendix: [] }, 2024).map(issue => issue.path),
+      ).toEqual(['foreignAppendix']);
+      expect(
+        checkShape(
+          { ...minimalInput(), foreignAppendix: { taxRefundDeclaration: true, amounts: null } },
+          2024,
+        ).map(issue => issue.path),
+      ).toEqual(['foreignAppendix.amounts']);
+    });
+
+    it('does not change the foreign appendix of its input', () => {
+      const input = {
+        ...minimalInput(),
+        foreignAppendix: { ...foreignAppendix(), amounts: { '999': 5 } },
+      };
+      checkShape(input, 2024);
+      expect(input.foreignAppendix.amounts).toEqual({ '999': 5 });
     });
 
     it('leaves a code map that is not an object to zod', () => {

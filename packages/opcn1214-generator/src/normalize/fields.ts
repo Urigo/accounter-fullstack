@@ -4,7 +4,7 @@ import { Opcn1214InternalError } from '../errors.js';
 import type { CodeKind, FieldDef, FieldKind, RecordDef } from '../layout/types.js';
 import type { NormalizedRecord } from '../model/normalized.js';
 import type { ValidateOptions } from '../model/options.js';
-import { pathFor } from './paths.js';
+import { codeKey, pathFor } from './paths.js';
 import { normalizeText } from './text.js';
 
 /** Kinds the `rounding` option applies to (SPEC §4.4). */
@@ -75,4 +75,36 @@ export function headerValues(
     }
   }
   return { values, paths };
+}
+
+/**
+ * The code-amount section of the record of type `def.type` produced from the `inputIndex`-th input
+ * element: `amounts` maps codes to input values (derived codes included, by the caller). Values
+ * are rounded per `rounding` (SPEC §4.4), then a 0 is dropped for every code that is not
+ * zeroAllowed and listed in `omittedZeroCodes` (SPEC §4.5). Keys that are not codes of the record
+ * are ignored (the shape stage reports them). Codes come out in ascending order.
+ */
+export function codeSection(
+  def: RecordDef,
+  inputIndex: number,
+  amounts: Readonly<Partial<Record<string, number>>>,
+  rounding: ValidateOptions['rounding'],
+): Pick<NormalizedRecord, 'codes' | 'paths'> & { omittedZeroCodes: string[] } {
+  const codes = new Map<string, number>();
+  const paths: Record<string, string> = {};
+  const omittedZeroCodes: string[] = [];
+  for (const { code, kind, zeroAllowed } of def.codes) {
+    const input = amounts[code];
+    if (input === undefined) {
+      continue;
+    }
+    const value = roundAmount(kind, input, rounding);
+    if (value === 0 && !zeroAllowed) {
+      omittedZeroCodes.push(code);
+      continue;
+    }
+    codes.set(code, value);
+    paths[codeKey(code)] = pathFor(def.type, inputIndex, codeKey(code));
+  }
+  return { codes, paths, omittedZeroCodes };
 }

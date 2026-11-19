@@ -3,7 +3,12 @@
  * against EVERY rule of SPEC §10 (no errors and no warnings); later steps rely on that, so any
  * change here has to keep it so.
  */
-import type { RdInvestment, RelatedCompany, Report1214Input } from '../../src/model/input.js';
+import type {
+  ForeignAppendix,
+  RdInvestment,
+  RelatedCompany,
+  Report1214Input,
+} from '../../src/model/input.js';
 
 /** Overrides for a builder: objects merge recursively, arrays and other values replace. */
 export type DeepPartial<T> = T extends readonly unknown[]
@@ -190,4 +195,24 @@ export function rdInvestments(count: number): RdInvestment[] {
 /** The total investment of `rdInvestments(count)`, the code 165 that matches it. */
 export function rdInvestmentsTotal(count: number): number {
   return rdInvestments(count).reduce((sum, investment) => sum + investment.investmentAmount, 0);
+}
+
+/**
+ * A valid foreign appendix (SPEC §7.2, record 2000) with every header member set to a value that is
+ * written to the file and three codes that call for no country breakdown (401, 425, 494).
+ * `overrides` are deep-merged into it.
+ */
+export function foreignAppendix(overrides: DeepPartial<ForeignAppendix> = {}): ForeignAppendix {
+  const base: ForeignAppendix = {
+    otherTaxableIncomeDescription: 'תמלוגים מחו"ל',
+    otherTaxableIncome: 40_000,
+    foreignTaxPaidOnOtherIncome: 6000,
+    totalForeignTaxableIncome: 120_000,
+    totalForeignLoss: 15_000,
+    participationExemptionHoldingCompany: 7000,
+    taxRefundDeclaration: true,
+    taxRefundDeclarationAmount: 2500,
+    amounts: { '401': 80_000, '425': 12_345, '494': 1 },
+  };
+  return deepMerge(base, overrides) as ForeignAppendix;
 }

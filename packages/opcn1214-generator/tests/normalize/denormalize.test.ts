@@ -2,7 +2,12 @@ import { getLayout } from '../../src/layout/registry.js';
 import type { NormalizedRecord, NormalizedReport } from '../../src/model/normalized.js';
 import { denormalize } from '../../src/normalize/denormalize.js';
 import { normalizeReport } from '../../src/normalize/report.js';
-import { minimalInput, rdInvestments, relatedCompanies } from '../fixtures/builders.js';
+import {
+  foreignAppendix,
+  minimalInput,
+  rdInvestments,
+  relatedCompanies,
+} from '../fixtures/builders.js';
 
 const LAYOUT = getLayout(2024);
 const OPTIONS = { today: () => '2025-03-31' };
@@ -104,5 +109,26 @@ describe('denormalize: R&D investments (records 1030)', () => {
 
   it('leaves no rdInvestments without 1030 records', () => {
     expect(denormalize(reportWith(() => undefined))).not.toHaveProperty('rdInvestments');
+  });
+});
+
+describe('denormalize: foreign appendix (record 2000)', () => {
+  it('reads a 2000 record back as foreignAppendix, header members and amounts', () => {
+    const appendix = foreignAppendix({ amounts: { '442': 0 } });
+    const report = normalizeReport(minimalInput({ foreignAppendix: appendix }), LAYOUT, OPTIONS);
+    expect(denormalize(report).foreignAppendix).toEqual(appendix);
+  });
+
+  it('keeps an empty amounts map and a "no" refund declaration', () => {
+    const appendix = { taxRefundDeclaration: false, amounts: {} };
+    const report = normalizeReport(minimalInput({ foreignAppendix: appendix }), LAYOUT, OPTIONS);
+    expect(denormalize(report).foreignAppendix).toEqual(appendix);
+  });
+
+  it('leaves no foreignAppendix without a 2000 record, whatever 832 says', () => {
+    const report = reportWith(main => {
+      main.values.hasForeignAppendix = true;
+    });
+    expect(denormalize(report)).not.toHaveProperty('foreignAppendix');
   });
 });

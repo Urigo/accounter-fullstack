@@ -9,6 +9,7 @@ import type { PhonePrefix, Report1214Input, Shareholder } from '../../src/model/
 import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import {
+  foreignAppendix,
   minimalInput,
   rdInvestments,
   rdInvestmentsTotal,
@@ -453,6 +454,23 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
         ],
       }),
     path: 'shareholders[1].idNumber',
+  },
+  'foreign.otherIncome.description': {
+    kind: 'input',
+    // A blank description is absent after normalization.
+    fail: () =>
+      minimalInput({ foreignAppendix: foreignAppendix({ otherTaxableIncomeDescription: ' ' }) }),
+    pass: () => minimalInput({ foreignAppendix: foreignAppendix() }),
+    path: 'foreignAppendix.otherTaxableIncomeDescription',
+  },
+  'foreign.refund.amount': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({
+        foreignAppendix: { ...foreignAppendix(), taxRefundDeclarationAmount: undefined },
+      }),
+    pass: () => minimalInput({ foreignAppendix: foreignAppendix() }),
+    path: 'foreignAppendix.taxRefundDeclarationAmount',
   },
   'struct.relatedCompanies.max': {
     kind: 'input',

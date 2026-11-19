@@ -1,6 +1,7 @@
 /** Rule engine (SPEC §9.2 stages 3–5): runs every rule over a NormalizedReport. */
 import type { NormalizedReport } from '../model/normalized.js';
 import { fieldRules } from './field-rules.js';
+import { FOREIGN_RULES } from './foreign-rules.js';
 import { compareIssues, type Issue } from './issue.js';
 import { MAIN_RULES } from './main-rules.js';
 import { SHAREHOLDER_RULES } from './shareholder-rules.js';
@@ -15,7 +16,11 @@ import {
 type ReportRule = (report: NormalizedReport) => Issue[];
 
 /** Stage 4: business rules (main.*, shareholders.*, foreign.*, cg.*). */
-const BUSINESS_RULES: readonly ReportRule[] = [...MAIN_RULES, ...SHAREHOLDER_RULES];
+const BUSINESS_RULES: readonly ReportRule[] = [
+  ...MAIN_RULES,
+  ...SHAREHOLDER_RULES,
+  ...FOREIGN_RULES,
+];
 /** Stage 5: structure rules (struct.*). */
 const STRUCTURE_RULES: readonly ReportRule[] = [
   mainCodePairsMax,
