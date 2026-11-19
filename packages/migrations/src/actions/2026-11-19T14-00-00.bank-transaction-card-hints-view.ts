@@ -6,8 +6,10 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  * `bank_transaction_card_hints` lists, per bank transaction, the card identifiers found in the
  * bank's raw scraper row:
  * - Poalim ILS: a card debit (activity 491) carries the card number as its `reference_number`.
- * - Otsar Hahayal ILS: a card-debit row carries the card's last 4 digits in `origin_reference`
- *   (from its card-breakdown drill-down). The raw row is pinned to the transaction's owner.
+ * - Otsar Hahayal ILS: a card-debit row carries the card's last 4 digits in `origin_reference`,
+ *   taken from its card-breakdown drill-down (`T20C2211`, stored in `drill_down_data`). Rows of
+ *   other drill-down types are not hints: `validateSchema` scrapes store transfer references in
+ *   `origin_reference` too. The raw row is pinned to the transaction's owner.
  *
  * It was a CTE of the statement links provider. As a view it is shared by the statement matcher's
  * hint loader, the LINK_CREDITCARD_STATEMENTS candidates and the FILL_CREDITCARD_DEBIT_DATES
@@ -43,7 +45,10 @@ FROM accounter_schema.transactions t
   JOIN accounter_schema.otsar_hahayal_ils_account_transactions o
     ON o.id = rl.otsar_hahayal_ils_id
     AND (o.owner_id = t.owner_id OR o.owner_id IS NULL)
-WHERE btrim(o.origin_reference) <> '';
+  -- only a card breakdown names a card: other drill-downs (523/526 transfers, stored by
+  -- validateSchema runs) keep a transfer reference in origin_reference
+  AND o.drill_down_data ? 'T20C2211'
+WHERE btrim(o.origin_reference) ~ '^[0-9]{4}$';
 
 COMMENT ON VIEW accounter_schema.bank_transaction_card_hints IS
   'Card identifiers in the banks'' raw rows, per bank transaction: Poalim 491 reference_number, Otsar Hahayal ILS origin_reference';

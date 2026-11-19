@@ -10,6 +10,16 @@
 /** Drill-down type of the card-breakdown page */
 export const CARD_DEBIT_DRILL_DOWN_TYPE = '211';
 
+/** Each drill-down request is aborted after this long; its row is kept without a hint */
+export const DRILL_DOWN_TIMEOUT_MS = 20_000;
+
+/**
+ * Budget for drill-downs whose URL names no type, fetched only in case they are card breakdowns:
+ * at most this many requests and this much time in total, so the scrape stays well within the
+ * browser's 5-minute limit. Typed card-breakdown URLs are not limited.
+ */
+export const UNTYPED_DRILL_DOWN_BUDGET = { maxRequests: 50, maxTotalMs: 60_000 } as const;
+
 /** Drill-down responses that are a plain security name, never a card breakdown */
 const NON_CARD_DRILL_DOWN_PATHS = ['PaperNameServiceServlet'];
 
@@ -68,51 +78,109 @@ export type CardDebitDetailsRow = {
   originReference?: unknown;
 };
 
+export type EnrichCardDebitRowsOptions = {
+  logger?: Pick<Console, 'warn' | 'info'>;
+  untypedBudget?: { maxRequests: number; maxTotalMs: number };
+  /** Clock, for tests */
+  now?: () => number;
+};
+
+export type EnrichCardDebitRowsResult = {
+  /** Rows given a card hint */
+  enriched: number;
+  /** Drill-down requests that failed or timed out */
+  failed: number;
+  /** Requests for URLs that named no type */
+  untypedFetched: number;
+  /** URLs that named no type and were not fetched, once the budget ran out */
+  untypedSkipped: number;
+};
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Fetches the card-breakdown drill-downs of the given rows and, on each card-debit row, sets
- * `originReference` to the card's last 4 digits and `drillDownData` to the breakdown. Rows of any
- * other drill-down type are left untouched.
+ * `originReference` to the card's last 4 digits and `drillDownData` to the breakdown, always
+ * together. Rows of any other drill-down type are left untouched.
  *
- * A failed fetch is logged and its rows are kept without the hint: the scrape never fails over a
- * drill-down. Each URL is fetched once.
+ * A failed or timed-out fetch is logged and its rows are kept without the hint: the scrape never
+ * fails over a drill-down. Each URL is fetched once. URLs that name no type are fetched within
+ * `untypedBudget`; the rest are skipped, and the totals are logged.
  */
 export async function enrichCardDebitRows(
   rows: readonly CardDebitDetailsRow[],
   fetchDrillDown: (drillDownUrl: string) => Promise<unknown>,
-  logger: Pick<Console, 'warn'> = console,
-): Promise<{ enriched: number; failed: number }> {
-  const responses = new Map<string, Promise<unknown>>();
-  let enriched = 0;
-  let failed = 0;
+  options: EnrichCardDebitRowsOptions = {},
+): Promise<EnrichCardDebitRowsResult> {
+  const logger = options.logger ?? console;
+  const budget = options.untypedBudget ?? UNTYPED_DRILL_DOWN_BUDGET;
+  const now = options.now ?? Date.now;
+
+  const responses = new Map<string, unknown>();
+  const result: EnrichCardDebitRowsResult = {
+    enriched: 0,
+    failed: 0,
+    untypedFetched: 0,
+    untypedSkipped: 0,
+  };
+  let untypedMs = 0;
+  let budgetLogged = false;
 
   for (const row of rows) {
     const url = typeof row.drillDownUrl === 'string' ? row.drillDownUrl : '';
     if (!mayBeCardDebitDrillDown(url)) {
       continue;
     }
-    let response = responses.get(url);
-    if (!response) {
-      response = fetchDrillDown(url).catch((error: unknown) => {
-        failed++;
+
+    if (!responses.has(url)) {
+      const untyped = drillDownTypeOfUrl(url) === null;
+      if (
+        untyped &&
+        (result.untypedFetched >= budget.maxRequests || untypedMs >= budget.maxTotalMs)
+      ) {
+        result.untypedSkipped++;
+        if (!budgetLogged) {
+          budgetLogged = true;
+          logger.warn(
+            'Otsar Hahayal: drill-down budget for URLs without a type is spent; their rows are kept without a card hint',
+          );
+        }
+        continue;
+      }
+
+      const startedAt = now();
+      let data: unknown = null;
+      try {
+        data = await fetchDrillDown(url);
+      } catch (error) {
+        result.failed++;
         logger.warn(
-          `Otsar Hahayal: failed to fetch a drill-down, keeping the row without its card hint: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          `Otsar Hahayal: failed to fetch a drill-down, keeping the row without its card hint: ${errorText(error)}`,
         );
-        return null;
-      });
-      responses.set(url, response);
+      }
+      if (untyped) {
+        result.untypedFetched++;
+        untypedMs += now() - startedAt;
+      }
+      responses.set(url, data);
     }
 
-    const data = await response;
+    const data = responses.get(url);
     const lastFour = cardLastFourOfDrillDown(data);
     if (!lastFour) {
       continue;
     }
     row.originReference = lastFour;
     row.drillDownData = data;
-    enriched++;
+    result.enriched++;
   }
 
-  return { enriched, failed };
+  if (result.untypedFetched > 0 || result.untypedSkipped > 0) {
+    logger.info(
+      `Otsar Hahayal: ${result.untypedFetched} drill-down URL(s) without a type fetched by fallback, ${result.untypedSkipped} skipped over budget`,
+    );
+  }
+  return result;
 }

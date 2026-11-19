@@ -421,7 +421,11 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                     )}
                   />
                   {editingAccount?.suggestedSettlementAccount &&
-                    watch('settlementAccountId') === NO_SETTLEMENT_ACCOUNT && (
+                    watch('settlementAccountId') === NO_SETTLEMENT_ACCOUNT &&
+                    // only an account the picker offers, so "Use" always shows in it
+                    bankAccounts.some(
+                      account => account.id === editingAccount.suggestedSettlementAccount?.id,
+                    ) && (
                       <SettlementAccountSuggestion
                         suggestion={editingAccount.suggestedSettlementAccount}
                         onUse={bankAccountId =>

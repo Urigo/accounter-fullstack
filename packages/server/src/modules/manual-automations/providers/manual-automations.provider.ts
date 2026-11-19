@@ -132,8 +132,9 @@ const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
  * bank rows:
  * - a raw bank hint (`bank_transaction_card_hints`: Poalim 491 reference, Otsar Hahayal
  *   `origin_reference`) equal to the card's last 4 digits;
- * - on a row whose counterparty is one of the owner's card issuers: a reference equal to the card
- *   number, or the card's name in the description.
+ * - on a row whose counterparty is one of the owner's card issuers and that has no raw hint: a
+ *   reference equal to the card number, or the card's name in the description. A raw hint decides
+ *   the card, so another card's name in the description of a hinted debit gives it no date.
  */
 const calculateCreditcardDebitDate = sql<ICalculateCreditcardDebitDateQuery>`
 WITH card_rows AS (
@@ -141,7 +142,7 @@ WITH card_rows AS (
     t.event_date,
     btrim(a.account_number) AS account_number,
     btrim(a.account_name) AS account_name,
-    regexp_replace(a.account_number, '\D', '', 'g') AS card_digits
+    regexp_replace(a.account_number, '[^0-9]', '', 'g') AS card_digits
   FROM accounter_schema.transactions t
     JOIN accounter_schema.financial_accounts a
       ON a.id = t.account_id
@@ -172,7 +173,7 @@ bank_rows AS (
 hinted_bank_rows AS (
   SELECT b.id,
     b.event_date,
-    regexp_replace(lpad(btrim(h.hint), greatest(length(btrim(h.hint)), 4), '0'), '\D', '', 'g') AS hint_digits
+    regexp_replace(lpad(btrim(h.hint), greatest(length(btrim(h.hint)), 4), '0'), '[^0-9]', '', 'g') AS hint_digits
   FROM bank_rows b
     JOIN accounter_schema.bank_transaction_card_hints h
       ON h.transaction_id = b.id
@@ -201,9 +202,11 @@ card_debits AS (
         OR (
           c.account_name IS NOT NULL
           AND c.account_name <> ''
-          AND b.source_description LIKE '%' || c.account_name || '%'
+          AND strpos(b.source_description, c.account_name) > 0
         )
       )
+  -- a raw hint names the card the row pays: then its reference or description names no other
+  WHERE NOT EXISTS (SELECT 1 FROM hinted_bank_rows hb WHERE hb.id = b.id)
 ),
 earliest_debits AS (
   SELECT card_transaction_id, min(event_date) AS debit_date

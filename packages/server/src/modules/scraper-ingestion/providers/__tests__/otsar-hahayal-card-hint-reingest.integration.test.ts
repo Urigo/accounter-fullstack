@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Injector } from 'graphql-modules';
 import type { Pool } from 'pg';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { connectTestDb } from '../../../../__tests__/helpers/db-connection.js';
 import { runMigrationsIfNeeded } from '../../../../__tests__/helpers/db-migrations.js';
 import type { OtsarHahayalIlsTransactionInput } from '../../../../__generated__/types.js';
@@ -23,6 +23,7 @@ import { OtsarHahayalScraperIngestionProvider } from '../otsar-hahayal-scraper-i
 let pool: Pool;
 
 const OWNER_ID = '00000000-0000-4000-8000-00000000dd01';
+const OTHER_OWNER_ID = '00000000-0000-4000-8000-00000000dd02';
 const BANK_ACCOUNT_NUMBER = 987_001;
 const CARD_LAST_FOUR = '1234';
 
@@ -55,12 +56,75 @@ function createDbClient() {
   return db;
 }
 
-/** One simulated upload request */
-function createIngestionProvider() {
-  return new OtsarHahayalScraperIngestionProvider(
-    createDbClient(),
-    createAuthContextProvider(OWNER_ID),
+/**
+ * One simulated upload request. `beforeClaim` runs once, from another connection, right before
+ * the provider's claim UPDATE: a concurrent writer.
+ */
+function createIngestionProvider(beforeClaim?: () => Promise<unknown>) {
+  const db = createDbClient();
+  if (beforeClaim) {
+    const query = db.query.bind(db);
+    let pending: (() => Promise<unknown>) | null = beforeClaim;
+    vi.spyOn(db, 'query').mockImplementation(async (text, params) => {
+      if (pending && text.includes('SET origin_reference')) {
+        const hook = pending;
+        pending = null;
+        await hook();
+      }
+      return query(text, params);
+    });
+  }
+  return new OtsarHahayalScraperIngestionProvider(db, createAuthContextProvider(OWNER_ID));
+}
+
+/** A raw row written by someone else, committed, with triggers off */
+async function insertRawRow(params: {
+  ownerId: string;
+  reference: number;
+  originReference: string;
+}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL session_replication_role = replica');
+    await client.query(
+      `INSERT INTO accounter_schema.otsar_hahayal_ils_account_transactions (
+         owner_id, account_number, account_type, branch_number, action_code, bfb_source,
+         closing_balance, correspondent_account, correspondent_account_type, correspondent_bank,
+         correspondent_branch, credit_amount, customer_name, date_of_business_day,
+         date_of_registration, debit_amount, depositor_id, description, drill_down_url,
+         first_transaction_of_day, last_transaction_of_day, name, opening_balance,
+         operation_source, reference, salary_ind, transaction_source, transaction_reason,
+         origin_reference
+       )
+       VALUES ($1, $2, 409, 101, 0, '77', 1000, 0, 0, 0, 0, 0, ' ', '2026-05-10T00:00:00',
+         '2026-05-10T00:00:00', 321.5, 0, 'Card charges', '', true, true, ' ', 1321.5, ' ', $3, 0,
+         ' ', ' ', $4)`,
+      [params.ownerId, BANK_ACCOUNT_NUMBER, params.reference, params.originReference],
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** The raw rows stored for one reference of the test bank account */
+async function rawRowsOf(reference: number) {
+  const { rows } = await pool.query<{
+    owner_id: string;
+    origin_reference: string;
+    drill_down_data: unknown;
+  }>(
+    `SELECT owner_id, origin_reference, drill_down_data
+     FROM accounter_schema.otsar_hahayal_ils_account_transactions
+     WHERE account_number = $1 AND reference = $2
+     ORDER BY owner_id, origin_reference`,
+    [BANK_ACCOUNT_NUMBER, reference],
   );
+  return rows;
 }
 
 function createInjector(): Injector {
@@ -217,6 +281,18 @@ beforeAll(async () => {
      ON CONFLICT (id) DO NOTHING`,
     [OWNER_ID],
   );
+  await pool.query(
+    `INSERT INTO accounter_schema.financial_entities (id, name, type, owner_id)
+     VALUES ($1, 'otsar-reingest-test-other-owner', 'business', NULL)
+     ON CONFLICT (id) DO NOTHING`,
+    [OTHER_OWNER_ID],
+  );
+  await pool.query(
+    `INSERT INTO accounter_schema.businesses (id, owner_id, country)
+     VALUES ($1, $1, 'ISR')
+     ON CONFLICT (id) DO NOTHING`,
+    [OTHER_OWNER_ID],
+  );
   await createAccount('BANK_ACCOUNT', String(BANK_ACCOUNT_NUMBER));
   const card = await createAccount('CREDIT_CARD', `123456xxxxxx${CARD_LAST_FOUR}`);
   // the card statement the debit settles: same total, issuer date one day before the bank's
@@ -247,8 +323,10 @@ afterAll(async () => {
   await pool.query('DELETE FROM accounter_schema.financial_accounts WHERE id = ANY($1)', [
     created.accountIds,
   ]);
-  await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [OWNER_ID]);
-  await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = $1', [OWNER_ID]);
+  for (const id of [OWNER_ID, OTHER_OWNER_ID]) {
+    await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [id]);
+    await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = $1', [id]);
+  }
 });
 
 describe('re-ingesting an Otsar Hahayal card debit with its card hint', () => {
@@ -340,8 +418,8 @@ describe('re-ingesting an Otsar Hahayal card debit with its card hint', () => {
 
     // two card debits that only their hints tell apart (scraped before as one row)
     const second = await createIngestionProvider().uploadOtsarHahayalIlsTransactions([
-      cardDebitRow({ reference: otherReference, originReference: '1111' }),
-      cardDebitRow({ reference: otherReference, originReference: '2222' }),
+      cardDebitRow({ reference: otherReference, originReference: '1111', drillDownData: CARD_BREAKDOWN }),
+      cardDebitRow({ reference: otherReference, originReference: '2222', drillDownData: CARD_BREAKDOWN }),
     ]);
     expect(second.inserted).toBe(1);
 
@@ -353,5 +431,78 @@ describe('re-ingesting an Otsar Hahayal card debit with its card hint', () => {
       [BANK_ACCOUNT_NUMBER, otherReference],
     );
     expect(rows.map(row => row.origin_reference)).toEqual(['1111', '2222']);
+  });
+
+  it("does not claim another owner's hint-less row", async () => {
+    const reference = 5001;
+    await insertRawRow({ ownerId: OTHER_OWNER_ID, reference, originReference: '' });
+
+    const result = await createIngestionProvider().uploadOtsarHahayalIlsTransactions([
+      cardDebitRow({ reference, originReference: CARD_LAST_FOUR, drillDownData: CARD_BREAKDOWN }),
+    ]);
+
+    expect(result.inserted).toBe(1);
+    expect((await rawRowsOf(reference)).map(row => [row.owner_id, row.origin_reference])).toEqual([
+      [OWNER_ID, CARD_LAST_FOUR],
+      [OTHER_OWNER_ID, ''],
+    ]);
+  });
+
+  it('keeps drill_down_data that is already set when it claims a row', async () => {
+    const reference = 5002;
+    const stored = JSON.stringify({ note: 'stored before' });
+    await createIngestionProvider().uploadOtsarHahayalIlsTransactions([
+      cardDebitRow({ reference, drillDownData: stored }),
+    ]);
+
+    const result = await createIngestionProvider().uploadOtsarHahayalIlsTransactions([
+      cardDebitRow({ reference, originReference: CARD_LAST_FOUR, drillDownData: CARD_BREAKDOWN }),
+    ]);
+
+    expect(result).toMatchObject({ inserted: 0, skipped: 1 });
+    expect(await rawRowsOf(reference)).toEqual([
+      { owner_id: OWNER_ID, origin_reference: CARD_LAST_FOUR, drill_down_data: JSON.parse(stored) },
+    ]);
+  });
+
+  it('inserts the row when the stored one got another hint before the claim', async () => {
+    const reference = 5003;
+    await createIngestionProvider().uploadOtsarHahayalIlsTransactions([cardDebitRow({ reference })]);
+
+    const result = await createIngestionProvider(() =>
+      pool.query(
+        `UPDATE accounter_schema.otsar_hahayal_ils_account_transactions
+         SET origin_reference = '5678'
+         WHERE account_number = $1 AND reference = $2`,
+        [BANK_ACCOUNT_NUMBER, reference],
+      ),
+    ).uploadOtsarHahayalIlsTransactions([
+      cardDebitRow({ reference, originReference: CARD_LAST_FOUR, drillDownData: CARD_BREAKDOWN }),
+    ]);
+
+    expect(result.inserted).toBe(1);
+    expect((await rawRowsOf(reference)).map(row => row.origin_reference)).toEqual([
+      CARD_LAST_FOUR,
+      '5678',
+    ]);
+  });
+
+  it('falls back to the insert when the claim collides with a hidden row', async () => {
+    const reference = 5004;
+    await createIngestionProvider().uploadOtsarHahayalIlsTransactions([cardDebitRow({ reference })]);
+
+    // another owner's row with the same conflict key, written right before the claim
+    const result = await createIngestionProvider(() =>
+      insertRawRow({ ownerId: OTHER_OWNER_ID, reference, originReference: CARD_LAST_FOUR }),
+    ).uploadOtsarHahayalIlsTransactions([
+      cardDebitRow({ reference, originReference: CARD_LAST_FOUR, drillDownData: CARD_BREAKDOWN }),
+    ]);
+
+    // the upload went through: the fallback insert met the conflict key and did nothing
+    expect(result).toMatchObject({ inserted: 0, skipped: 1, changedTransactions: [] });
+    expect((await rawRowsOf(reference)).map(row => [row.owner_id, row.origin_reference])).toEqual([
+      [OWNER_ID, ''],
+      [OTHER_OWNER_ID, CARD_LAST_FOUR],
+    ]);
   });
 });

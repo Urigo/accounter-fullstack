@@ -71,7 +71,7 @@ describe('cardLastFourOfDrillDown', () => {
 });
 
 describe('enrichCardDebitRows', () => {
-  const silentLogger = { warn: vi.fn() };
+  const silentLogger = { warn: vi.fn(), info: vi.fn() };
 
   it('sets the card hint on card-debit rows only, fetching each candidate URL once', async () => {
     const rows: CardDebitDetailsRow[] = [
@@ -85,10 +85,10 @@ describe('enrichCardDebitRows', () => {
       url.includes('ID=1') ? cardBreakdown('1234') : TRANSFER_DRILL_DOWN,
     );
 
-    const result = await enrichCardDebitRows(rows, fetchDrillDown, silentLogger);
+    const result = await enrichCardDebitRows(rows, fetchDrillDown, { logger: silentLogger });
 
     expect(fetchDrillDown.mock.calls.map(([url]) => url)).toEqual(['/a?SUGBAKA=211&ID=1', '/a?ID=3']);
-    expect(result).toEqual({ enriched: 2, failed: 0 });
+    expect(result).toEqual({ enriched: 2, failed: 0, untypedFetched: 1, untypedSkipped: 0 });
     expect(rows[0]).toMatchObject({ originReference: '1234', drillDownData: cardBreakdown('1234') });
     expect(rows[1]).toMatchObject({ originReference: '1234' });
     // a fetched response of another type sets nothing
@@ -101,7 +101,7 @@ describe('enrichCardDebitRows', () => {
       { drillDownUrl: '/a?SUGBAKA=211&ID=1' },
       { drillDownUrl: '/a?SUGBAKA=211&ID=2' },
     ];
-    const logger = { warn: vi.fn() };
+    const logger = { warn: vi.fn(), info: vi.fn() };
     const fetchDrillDown = vi.fn(async (url: string) => {
       if (url.includes('ID=1')) {
         throw new Error('network down');
@@ -109,12 +109,73 @@ describe('enrichCardDebitRows', () => {
       return cardBreakdown('5678');
     });
 
-    const result = await enrichCardDebitRows(rows, fetchDrillDown, logger);
+    const result = await enrichCardDebitRows(rows, fetchDrillDown, { logger });
 
-    expect(result).toEqual({ enriched: 1, failed: 1 });
+    expect(result).toEqual({ enriched: 1, failed: 1, untypedFetched: 0, untypedSkipped: 0 });
     expect(rows[0]).toEqual({ drillDownUrl: '/a?SUGBAKA=211&ID=1' });
     expect(rows[1]).toMatchObject({ originReference: '5678' });
     expect(logger.warn).toHaveBeenCalledOnce();
     expect(String(logger.warn.mock.calls[0]?.[0])).toContain('network down');
+  });
+
+  it('keeps a row without its hint when its drill-down times out', async () => {
+    const rows: CardDebitDetailsRow[] = [{ drillDownUrl: '/a?SUGBAKA=211&ID=1' }];
+    const abort = Object.assign(new Error('The operation was aborted.'), { name: 'AbortError' });
+
+    const result = await enrichCardDebitRows(rows, vi.fn().mockRejectedValue(abort), {
+      logger: silentLogger,
+    });
+
+    expect(result).toMatchObject({ enriched: 0, failed: 1 });
+    expect(rows[0]).toEqual({ drillDownUrl: '/a?SUGBAKA=211&ID=1' });
+  });
+
+  it('fetches URLs without a type within a budget, and always fetches typed card URLs', async () => {
+    const rows: CardDebitDetailsRow[] = [
+      { drillDownUrl: '/a?ID=1' },
+      { drillDownUrl: '/a?ID=2' },
+      { drillDownUrl: '/a?ID=3' },
+      { drillDownUrl: '/a?SUGBAKA=211&ID=4' },
+    ];
+    const fetchDrillDown = vi.fn(async (url: string) =>
+      url.includes('ID=4') ? cardBreakdown('4444') : TRANSFER_DRILL_DOWN,
+    );
+    const logger = { warn: vi.fn(), info: vi.fn() };
+
+    const result = await enrichCardDebitRows(rows, fetchDrillDown, {
+      logger,
+      untypedBudget: { maxRequests: 2, maxTotalMs: 60_000 },
+    });
+
+    expect(fetchDrillDown.mock.calls.map(([url]) => url)).toEqual([
+      '/a?ID=1',
+      '/a?ID=2',
+      '/a?SUGBAKA=211&ID=4',
+    ]);
+    expect(result).toEqual({ enriched: 1, failed: 0, untypedFetched: 2, untypedSkipped: 1 });
+    expect(rows[3]).toMatchObject({ originReference: '4444' });
+    expect(logger.warn).toHaveBeenCalledOnce();
+    expect(String(logger.info.mock.calls[0]?.[0])).toContain('2 drill-down URL(s) without a type');
+  });
+
+  it('stops fetching URLs without a type once their time budget is spent', async () => {
+    let clock = 0;
+    const fetchDrillDown = vi.fn(async () => {
+      clock += 40_000;
+      return TRANSFER_DRILL_DOWN;
+    });
+
+    const result = await enrichCardDebitRows(
+      [{ drillDownUrl: '/a?ID=1' }, { drillDownUrl: '/a?ID=2' }, { drillDownUrl: '/a?ID=3' }],
+      fetchDrillDown,
+      {
+        logger: silentLogger,
+        untypedBudget: { maxRequests: 50, maxTotalMs: 60_000 },
+        now: () => clock,
+      },
+    );
+
+    expect(fetchDrillDown).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ untypedFetched: 2, untypedSkipped: 1 });
   });
 });

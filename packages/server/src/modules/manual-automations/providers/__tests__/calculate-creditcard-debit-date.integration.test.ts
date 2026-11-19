@@ -105,7 +105,16 @@ async function createPoalim491RawRow(referenceNumber: number, eventDate: string)
   return id;
 }
 
-async function createOtsarRawRow(originReference: string) {
+/** An Otsar ILS raw row; its drill-down is a card breakdown naming `originReference` by default */
+async function createOtsarRawRow(originReference: string, drillDownType = 'T20C2211') {
+  const drillDownData =
+    drillDownType === 'T20C2211'
+      ? {
+          T20C2211: {
+            'OUT-DATA': { 'ALL-CARDS': { 'KARTIS-DETAILS': { 'OUT-MSKART': originReference } } },
+          },
+        }
+      : { [drillDownType]: { 'OUT-DATA': {} } };
   const id = randomUUID();
   await withoutTriggers(client =>
     client.query(
@@ -116,12 +125,12 @@ async function createOtsarRawRow(originReference: string) {
          date_of_registration, debit_amount, depositor_id, description, drill_down_url,
          first_transaction_of_day, last_transaction_of_day, name, opening_balance,
          operation_source, reference, salary_ind, transaction_source, transaction_reason,
-         origin_reference
+         origin_reference, drill_down_data
        )
        VALUES ($1, $2, 900102, 0, 1, 0, '77', 0, 0, 0, 0, 0, 0, ' ', now(), now(), 100, 0,
          'Card charges', '', true, false, ' ', 0, ' ', floor(random() * 1000000)::int, 0, ' ',
-         ' ', $3)`,
-      [id, OWNER_ID, originReference],
+         ' ', $3, $4::jsonb)`,
+      [id, OWNER_ID, originReference, JSON.stringify(drillDownData)],
     ),
   );
   created.otsarRawIds.push(id);
@@ -245,7 +254,12 @@ const cards = {} as Record<
   | 'nameByIssuer'
   | 'weakDescription'
   | 'referenceWithoutIssuer'
-  | 'alreadyDated',
+  | 'alreadyDated'
+  | 'otsarTransferReference'
+  | 'namedPoalimCard'
+  | 'earliestOfTwo'
+  | 'zeroPadded'
+  | 'maskedPan',
   string
 >;
 
@@ -365,6 +379,75 @@ beforeAll(async () => {
     sourceReference: '4680',
   });
   cards.referenceWithoutIssuer = await createCardRow(unknownCounterpartyCard, '2026-10-01');
+
+  // an Otsar transfer (validateSchema stores its reference in origin_reference) whose last 4
+  // digits are a card's: not a card hint
+  const transferCard = await createAccount('CREDIT_CARD', '6543');
+  await createTransaction({
+    accountId: otsar,
+    eventDate: '2026-11-05',
+    sourceOrigin: 'OTSAR_HAHAYAL',
+    otsarRawId: await createOtsarRawRow('6543', 'T10C1523'),
+  });
+  cards.otsarTransferReference = await createCardRow(transferCard, '2026-10-25');
+
+  // a named Poalim card, and another card's earlier 491 debit to the issuer whose description
+  // holds that name: the raw hint decides, so the named card gets its own 491 date
+  const namedPoalimCard = await createAccount('CREDIT_CARD', '1122');
+  await pool.query(`UPDATE accounter_schema.financial_accounts SET account_name = $2 WHERE id = $1`, [
+    namedPoalimCard,
+    'Test Silver Card',
+  ]);
+  await createAccount('CREDIT_CARD', '3344');
+  for (const [reference, date, description] of [
+    [3344, '2026-12-05', 'ISRACARD Test Silver Card'],
+    [1122, '2026-12-15', 'ISRACARD'],
+  ] as const) {
+    await createTransaction({
+      accountId: poalim,
+      eventDate: date,
+      sourceOrigin: 'POALIM',
+      sourceReference: String(reference),
+      sourceDescription: description,
+      businessId: ISSUER_ID,
+      poalimRawId: await createPoalim491RawRow(reference, date),
+    });
+  }
+  cards.namedPoalimCard = await createCardRow(namedPoalimCard, '2026-11-30');
+
+  // two strong debits in the window: the earliest wins
+  const twoDebitsCard = await createAccount('CREDIT_CARD', '5566');
+  for (const date of ['2027-01-20', '2027-01-10']) {
+    await createTransaction({
+      accountId: poalim,
+      eventDate: date,
+      sourceOrigin: 'POALIM',
+      sourceReference: '5566',
+      poalimRawId: await createPoalim491RawRow(5566, date),
+    });
+  }
+  cards.earliestOfTwo = await createCardRow(twoDebitsCard, '2027-01-01');
+
+  // a card number with a leading zero, against Poalim's numeric reference
+  const zeroPaddedCard = await createAccount('CREDIT_CARD', '0123');
+  await createTransaction({
+    accountId: poalim,
+    eventDate: '2027-02-10',
+    sourceOrigin: 'POALIM',
+    sourceReference: '123',
+    poalimRawId: await createPoalim491RawRow(123, '2027-02-10'),
+  });
+  cards.zeroPadded = await createCardRow(zeroPaddedCard, '2027-02-01');
+
+  // a masked PAN card account, matched on its last 4 digits
+  const maskedPanCard = await createAccount('CREDIT_CARD', '123456xxxxxx7788');
+  await createTransaction({
+    accountId: otsar,
+    eventDate: '2027-03-10',
+    sourceOrigin: 'OTSAR_HAHAYAL',
+    otsarRawId: await createOtsarRawRow('7788'),
+  });
+  cards.maskedPan = await createCardRow(maskedPanCard, '2027-03-01');
 });
 
 afterEach(async () => {
@@ -401,6 +484,8 @@ describe('calculateCreditcardDebitDate', () => {
       [cards.poalimCycle1]: '2026-06-10',
       [cards.poalimCycle2]: '2026-07-10',
       [cards.poalimAmex]: '2026-06-12',
+      [cards.namedPoalimCard]: '2026-12-15',
+      [cards.earliestOfTwo]: '2027-01-10',
     });
 
     const filled = await createProvider().calculateCreditcardDebitDate({
@@ -418,8 +503,12 @@ describe('calculateCreditcardDebitDate', () => {
       [cards.otsarHinted]: '2026-08-05',
       [cards.calByIssuerReference]: '2026-08-20',
       [cards.nameByIssuer]: '2026-09-12',
+      // the old rule compared text: '123' never matched the card numbered '0123'
+      [cards.zeroPadded]: '2027-02-10',
+      [cards.maskedPan]: '2027-03-10',
     });
     for (const id of [
+      cards.otsarTransferReference,
       cards.poalimTooLate,
       cards.weakDescription,
       cards.referenceWithoutIssuer,

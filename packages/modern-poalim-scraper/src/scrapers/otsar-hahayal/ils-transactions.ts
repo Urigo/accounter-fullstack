@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { type Page } from 'playwright';
-import { enrichCardDebitRows } from './card-debit-details.js';
+import { DRILL_DOWN_TIMEOUT_MS, enrichCardDebitRows } from './card-debit-details.js';
 import { OtsarHahayalOptions } from './index.js';
 import { drillDownDataSchema, ilsTransactionsResponseSchema } from './schemas.js';
 import type {
@@ -107,42 +107,58 @@ function enrichTransactionWithOriginReference(transactions: IlsTransaction[]) {
   }
 }
 
-/** Fetches a drill-down page of the logged-in session: parsed JSON, or the raw text */
+/**
+ * Fetches a drill-down page of the logged-in session: parsed JSON, or the raw text.
+ *
+ * With no options it behaves as the `validateSchema` path always has: any response body is
+ * returned, whatever its status. The card-debit enrichment passes `strict` (a non-OK status
+ * throws) and a `timeoutMs` after which the request is aborted.
+ */
 async function fetchDrillDown(
   page: Page,
   headers: Record<string, string>,
   drillDownUrl: string,
+  options: { strict?: boolean; timeoutMs?: number } = {},
 ): Promise<unknown> {
   return page.evaluate(
-    async ({ drillDownUrl, headers }) => {
-      const response = await fetch(`https://online.bankotsar.co.il${drillDownUrl}`, {
-        method: 'GET',
-        headers: {
-          accept: 'application/json, text/plain, */*',
-          'accept-language': 'en-US,en;q=0.9',
-          'content-type': 'application/json',
-          priority: 'u=1, i',
-          'sec-ch-ua': '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
-          'sec-ch-ua-mobile': '?0',
-          'sec-ch-ua-platform': '"macOS"',
-          'sec-fetch-dest': 'empty',
-          'sec-fetch-mode': 'cors',
-          'sec-fetch-site': 'same-origin',
-          ...headers,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Drill-down request failed with status ${response.status}`);
-      }
-
-      const text = await response.text();
+    async ({ drillDownUrl, headers, strict, timeoutMs }) => {
+      const controller = timeoutMs ? new AbortController() : null;
+      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
       try {
-        return JSON.parse(text);
-      } catch {
-        return text;
+        const response = await fetch(`https://online.bankotsar.co.il${drillDownUrl}`, {
+          method: 'GET',
+          headers: {
+            accept: 'application/json, text/plain, */*',
+            'accept-language': 'en-US,en;q=0.9',
+            'content-type': 'application/json',
+            priority: 'u=1, i',
+            'sec-ch-ua': '"Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"macOS"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            ...headers,
+          },
+          ...(controller ? { signal: controller.signal } : {}),
+        });
+        if (strict && !response.ok) {
+          throw new Error(`Drill-down request failed with status ${response.status}`);
+        }
+
+        const text = await response.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          return text;
+        }
+      } finally {
+        if (timer) {
+          clearTimeout(timer);
+        }
       }
     },
-    { drillDownUrl, headers },
+    { drillDownUrl, headers, strict: options.strict ?? false, timeoutMs: options.timeoutMs ?? 0 },
   );
 }
 
@@ -235,7 +251,10 @@ export async function getIlsTransactions(
   const rawTransactions: unknown = apiData?.transactions;
   if (options.fetchCardDebitDetails && Array.isArray(rawTransactions)) {
     await enrichCardDebitRows(rawTransactions, drillDownUrl =>
-      fetchDrillDown(page, headers, drillDownUrl),
+      fetchDrillDown(page, headers, drillDownUrl, {
+        strict: true,
+        timeoutMs: DRILL_DOWN_TIMEOUT_MS,
+      }),
     );
   }
 

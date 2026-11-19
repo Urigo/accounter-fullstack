@@ -21,6 +21,7 @@ import type {
   IFetchOtsarHahayalForeignByKeysResult,
   IFetchOtsarHahayalIlsByKeysQuery,
   IFetchOtsarHahayalIlsByKeysResult,
+  ILockOtsarHahayalIlsAccountQuery,
   ISetOtsarHahayalIlsOriginReferenceQuery,
   IUploadOtsarHahayalCreditCardTransactionsQuery,
   IUploadOtsarHahayalCreditCardTransactionsResult,
@@ -150,6 +151,11 @@ const setOtsarHahayalIlsOriginReference = sql<ISetOtsarHahayalIlsOriginReference
     AND owner_id = $ownerId!
     AND origin_reference = ''
   RETURNING id;
+`;
+
+/** Serializes ILS uploads of one owner's account, until the end of the transaction */
+const lockOtsarHahayalIlsAccount = sql<ILockOtsarHahayalIlsAccountQuery>`
+  SELECT pg_advisory_xact_lock(hashtextextended($lockKey!, 0)) AS locked;
 `;
 
 const fetchOtsarHahayalForeignByKeys = sql<IFetchOtsarHahayalForeignByKeysQuery>`
@@ -357,6 +363,9 @@ function diffOtsarHahayalIlsRow(
   return changed;
 }
 
+/** Postgres `unique_violation` */
+const UNIQUE_VIOLATION = '23505';
+
 /** An ILS row's conflict key without its card hint (`origin_reference`) */
 function ilsRowKey(parts: ReadonlyArray<string | number | null | undefined>): string {
   return parts.join('_');
@@ -451,9 +460,19 @@ export class OtsarHahayalScraperIngestionProvider {
 
     const businessId = await this.getBusinessId();
 
-    // Read, claim and insert in one transaction, so a concurrent upload can't claim or insert the
-    // same row in between
+    // Read, claim and insert in one transaction, holding a lock per account of the batch, so
+    // another upload of the same owner's account waits until this one commits: it then reads the
+    // rows this one claimed or inserted. Rows of other owners are not visible here (RLS); a claim
+    // that collides with one is caught below.
     return this.db.transaction(async () => {
+      const lockedAccounts = Array.from(new Set(accountNumbers)).sort((a, b) => a - b);
+      for (const accountNumber of lockedAccounts) {
+        await lockOtsarHahayalIlsAccount.run(
+          { lockKey: `otsar_ils:${businessId ?? ''}:${accountNumber}` },
+          this.db,
+        );
+      }
+
       const existing = await fetchOtsarHahayalIlsByKeys.run(
         { accountNumbers, branchNumbers, dateOfRegistrations },
         this.db,
@@ -543,17 +562,29 @@ export class OtsarHahayalScraperIngestionProvider {
       }
 
       for (const { storedRow, incoming } of claims) {
-        const [updated] = await setOtsarHahayalIlsOriginReference.run(
-          {
-            id: storedRow.id,
-            ownerId: storedRow.owner_id ?? '',
-            originReference: incoming.originReference ?? '',
-            drillDownData: incoming.drillDownData ?? null,
-          },
-          this.db,
-        );
+        let updated: { id: string } | undefined;
+        try {
+          // in a savepoint, so a failed claim doesn't abort the upload's transaction
+          [updated] = await this.db.transaction(() =>
+            setOtsarHahayalIlsOriginReference.run(
+              {
+                id: storedRow.id,
+                ownerId: storedRow.owner_id ?? '',
+                originReference: incoming.originReference ?? '',
+                drillDownData: incoming.drillDownData ?? null,
+              },
+              this.db,
+            ),
+          );
+        } catch (error) {
+          // a row with the same conflict key that RLS hides from this upload
+          if ((error as { code?: string } | null)?.code !== UNIQUE_VIOLATION) {
+            throw error;
+          }
+          updated = undefined;
+        }
         if (!updated) {
-          // claimed elsewhere since it was read: insert it, the conflict key settles it
+          // no longer hintless, or the hint collides: insert it, the conflict key settles it
           toInsert.push(incoming);
           continue;
         }
