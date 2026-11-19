@@ -6,6 +6,8 @@ import {
   breakdownCountries,
   foreignAppendix,
   minimalInput,
+  noWithholding1322Appendix,
+  noWithholding1326Appendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
@@ -180,6 +182,22 @@ describe('denormalize: capital-gains appendices (records 30xx)', () => {
       appendices[0],
     ]);
     expect(denormalize(report).capitalGains?.[1]).not.toHaveProperty('withholders');
+  });
+
+  it('reads 3065 and 3066 records back with the withholding status literal, without the sequence', () => {
+    const appendices = [
+      noWithholding1326Appendix({ withholdingStatus: 'notWithheldFirstHalf' }),
+      noWithholding1322Appendix({ withholders: withholders(4) }),
+      { symbol: 66 as const, amounts: {} },
+      noWithholding1322Appendix({ withholdingStatus: 'notWithheldSecondHalf' }),
+    ];
+    const report = normalizeReport(minimalInput({ capitalGains: appendices }), LAYOUT, OPTIONS);
+    const capitalGains = denormalize(report).capitalGains;
+    expect(capitalGains).toEqual([appendices[1], appendices[3], appendices[0], appendices[2]]);
+    expect(capitalGains?.[3]).not.toHaveProperty('withholdingStatus');
+    for (const appendix of capitalGains ?? []) {
+      expect(appendix).not.toHaveProperty('sequenceNumber');
+    }
   });
 
   it('keeps an appendix with no header member and no codes', () => {

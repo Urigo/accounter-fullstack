@@ -3,7 +3,7 @@
  * denormalizer reads the literal back.
  */
 import type { Primitive } from '../codec/types.js';
-import type { Declarations, RelatedCompany } from '../model/input.js';
+import type { Declarations, RelatedCompany, WithholdingStatus } from '../model/input.js';
 
 /** A literal → code map of an enum input member. */
 type EnumCodes<L extends string> = Readonly<Record<L, number>>;
@@ -36,6 +36,15 @@ export const RELATION_TYPE_CODES = {
   grandmother: 7,
   other: 8,
 } as const satisfies EnumCodes<RelatedCompany['relationType']>;
+
+/**
+ * 3065@146 and 3066@143 "מס במקור": 2 not withheld, gains accrued January–June of the tax year;
+ * 3 not withheld, gains accrued July–December (SPEC §15 A-18). An absent status is written as 0.
+ */
+export const WITHHOLDING_STATUS_CODES = {
+  notWithheldFirstHalf: 2,
+  notWithheldSecondHalf: 3,
+} as const satisfies EnumCodes<WithholdingStatus>;
 
 /** The enum header keys of record 1000 (each its own input path) and their maps. */
 export const ENUM_INPUTS: Readonly<Partial<Record<string, EnumCodes<string>>>> = {

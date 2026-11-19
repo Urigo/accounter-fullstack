@@ -23,6 +23,8 @@ import type {
   Issue,
   MainFormCode,
   MainFormInputCode,
+  NoWithholding1322Appendix,
+  NoWithholding1326Appendix,
   ParseOptions,
   ParseResult,
   Phone,
@@ -45,6 +47,7 @@ import type {
   ValidateOptions,
   ValidationResult,
   Withholder,
+  WithholdingStatus,
   YearLayout,
 } from '../../src/index.js';
 
@@ -87,7 +90,30 @@ describe('public API', () => {
     >();
     expectTypeOf<SecuritiesAppendix>().toExtend<CapitalGainsAppendix>();
     expectTypeOf<ReitAppendix>().toExtend<CapitalGainsAppendix>();
-    expectTypeOf<CapitalGainsAppendix['symbol']>().toEqualTypeOf<60 | 63 | 64>();
+    expectTypeOf<NoWithholding1322Appendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<NoWithholding1326Appendix>().toExtend<CapitalGainsAppendix>();
+    expectTypeOf<CapitalGainsAppendix['symbol']>().toEqualTypeOf<60 | 63 | 64 | 65 | 66>();
+    expectTypeOf<keyof NoWithholding1322Appendix['amounts']>().toEqualTypeOf<
+      CapitalGainsCode<65>
+    >();
+    expectTypeOf<keyof NoWithholding1326Appendix['amounts']>().toEqualTypeOf<
+      CapitalGainsCode<66>
+    >();
+    expectTypeOf<NoWithholding1322Appendix['withholders']>().toEqualTypeOf<
+      Withholder[] | undefined
+    >();
+    expectTypeOf<WithholdingStatus>().toEqualTypeOf<
+      'notWithheldFirstHalf' | 'notWithheldSecondHalf'
+    >();
+    expectTypeOf<NoWithholding1322Appendix['withholdingStatus']>().toEqualTypeOf<
+      WithholdingStatus | undefined
+    >();
+    expectTypeOf<NoWithholding1326Appendix['withholdingStatus']>().toEqualTypeOf<
+      WithholdingStatus | undefined
+    >();
+    expectTypeOf<keyof NoWithholding1326Appendix>().toEqualTypeOf<
+      'symbol' | 'foreignAsset' | 'withholdingStatus' | 'lossesCarriedForward' | 'amounts'
+    >();
     expectTypeOf<keyof SecuritiesAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<60>>();
     expectTypeOf<keyof ReitAppendix['amounts']>().toEqualTypeOf<CapitalGainsCode<64>>();
     expectTypeOf<SecuritiesAppendix['withholders']>().toEqualTypeOf<Withholder[] | undefined>();

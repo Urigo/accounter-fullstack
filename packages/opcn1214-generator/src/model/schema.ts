@@ -167,20 +167,20 @@ const section6SecuritiesAppendix = z.strictObject({
   amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[63]), z.number().optional()),
 });
 
-/** A withholding agent of records 3060/3064 (SPEC §7.2); field rules check the values. */
+/** A withholding agent of records 3060/3064/3065 (SPEC §7.2); field rules check the values. */
 const withholder = z.strictObject({
   name: z.string().optional(),
   branch: z.string().optional(),
   account: z.string().optional(),
 });
 
-/** The header members shared by records 3060 and 3064 (SPEC §7.2 SecuritiesAppendix). */
+/** The header members shared by records 3060, 3064 and 3065 (SPEC §7.2 SecuritiesAppendix). */
 const securitiesHeader = {
   foreignAsset: z.boolean().optional(),
   soldToRelatedParty: z.boolean().optional(),
   boughtFromRelatedParty: z.boolean().optional(),
   gainFromInvestmentFund: z.boolean().optional(),
-  /** Four slots in the record (146–313): a fifth withholder is input.shape. */
+  /** Four slots in the record (3060/3064: 146–313): a fifth withholder is input.shape. */
   withholders: z.array(withholder).max(4).optional(),
   lossesCarriedForward: z.number().optional(),
 };
@@ -199,11 +199,33 @@ const reitAppendix = z.strictObject({
   amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[64]), z.number().optional()),
 });
 
+/** "מס במקור" of records 3065 and 3066 (SPEC §7.2). */
+const withholdingStatus = z.enum(['notWithheldFirstHalf', 'notWithheldSecondHalf']).optional();
+
+/** Record 3065 (SPEC §7.2). */
+const noWithholding1322Appendix = z.strictObject({
+  symbol: z.literal(65),
+  ...securitiesHeader,
+  withholdingStatus,
+  amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[65]), z.number().optional()),
+});
+
+/** Record 3066 (SPEC §7.2). */
+const noWithholding1326Appendix = z.strictObject({
+  symbol: z.literal(66),
+  foreignAsset: z.boolean().optional(),
+  withholdingStatus,
+  lossesCarriedForward: z.number().optional(),
+  amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[66]), z.number().optional()),
+});
+
 /** A capital-gains appendix, discriminated by its transaction symbol (SPEC §3.7). */
 const capitalGainsAppendix = z.discriminatedUnion('symbol', [
   securitiesAppendix,
   section6SecuritiesAppendix,
   reitAppendix,
+  noWithholding1322Appendix,
+  noWithholding1326Appendix,
 ]);
 
 const shareholder = z.strictObject({

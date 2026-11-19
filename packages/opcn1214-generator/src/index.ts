@@ -33,6 +33,8 @@ export type {
   Declarations,
   ForeignAppendix,
   IsoDate,
+  NoWithholding1322Appendix,
+  NoWithholding1326Appendix,
   Phone,
   PhonePrefix,
   PreparerDetails,
@@ -45,6 +47,7 @@ export type {
   Shareholder,
   SupportedTaxYear,
   Withholder,
+  WithholdingStatus,
 } from './model/input.js';
 export type {
   CapitalGainsCode,

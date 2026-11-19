@@ -144,6 +144,32 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     },
   );
 
+  it.each(['3065', '3066'] as const)(
+    'maps a record %s key into capitalGains[i]; symbol, appendix number and sequence are derived',
+    recordType => {
+      expect(pathFor(recordType, 3, 'withholdingStatus')).toBe('capitalGains[3].withholdingStatus');
+      expect(pathFor(recordType, 1, 'lossesCarriedForward')).toBe(
+        'capitalGains[1].lossesCarriedForward',
+      );
+      expect(pathFor(recordType, 2, 'code:056')).toBe('capitalGains[2].amounts["056"]');
+      const derived = LAYOUT.records[recordType].fields.filter(field => field.derived);
+      expect(derived.map(field => field.key)).toEqual([
+        'transactionSymbol',
+        'appendixNumber',
+        'sequenceNumber',
+      ]);
+      for (const field of derived) {
+        expect(pathFor(recordType, 1, field.key)).toBe('');
+      }
+    },
+  );
+
+  it('maps a record 3065 withholder slot key into capitalGains[i].withholders[j]', () => {
+    expect(pathFor('3065', 0, 'withholders[3].account')).toBe(
+      'capitalGains[0].withholders[3].account',
+    );
+  });
+
   it.each(['3027', '3077'] as const)(
     'maps keys of record %s, which has no input mapping yet, to the empty path',
     recordType => {

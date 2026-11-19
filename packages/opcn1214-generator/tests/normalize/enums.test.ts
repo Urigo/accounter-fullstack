@@ -6,6 +6,7 @@ import {
   enumLiteral,
   FORM_6111_OBLIGATION_CODES,
   RELATION_TYPE_CODES,
+  WITHHOLDING_STATUS_CODES,
 } from '../../src/normalize/enums.js';
 
 const MAIN = getLayout(2024).records['1000'];
@@ -45,6 +46,23 @@ describe('enum literal ↔ code maps (SPEC §7.2)', () => {
       field?.values?.map(value => value.value).sort(byValue),
     );
   });
+
+  it('withholdingStatus: notWithheldFirstHalf/notWithheldSecondHalf → 2/3 (SPEC §15 A-18)', () => {
+    expect(WITHHOLDING_STATUS_CODES).toEqual({ notWithheldFirstHalf: 2, notWithheldSecondHalf: 3 });
+  });
+
+  it.each(['3065', '3066'] as const)(
+    'withholdingStatus maps exactly the allowed values of its field in record %s',
+    type => {
+      const field = getLayout(2024).records[type].fields.find(
+        candidate => candidate.key === 'withholdingStatus',
+      );
+      expect(field?.kind).toBe('enum');
+      expect(Object.values(WITHHOLDING_STATUS_CODES).sort(byValue)).toEqual(
+        field?.values?.map(value => value.value).sort(byValue),
+      );
+    },
+  );
 
   it.each(Object.entries(ENUM_INPUTS))(
     '%s maps exactly the allowed values of its field',

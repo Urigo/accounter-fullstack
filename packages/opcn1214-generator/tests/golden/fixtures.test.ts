@@ -8,6 +8,8 @@ import { normalizeReport } from '../../src/normalize/report.js';
 import * as cg60 from '../fixtures/golden/cg-60.input.js';
 import * as cg63 from '../fixtures/golden/cg-63.input.js';
 import * as cg64 from '../fixtures/golden/cg-64.input.js';
+import * as cg65 from '../fixtures/golden/cg-65.input.js';
+import * as cg66 from '../fixtures/golden/cg-66.input.js';
 import * as foreign from '../fixtures/golden/foreign.input.js';
 import * as kibbutz from '../fixtures/golden/kibbutz.input.js';
 import * as mainFull from '../fixtures/golden/main-full.input.js';
@@ -248,6 +250,51 @@ describe.each([
     expect(lines[0]?.slice(2184)).toContain('02801');
     // 30xx@137: the symbol; 30xx@139: appendix number 1.
     expect(lines[2]?.slice(136, 141)).toBe(`${symbol}001`);
+    expect(lines[3]?.slice(144, 146)).toBe('01');
+    const parsed = parse1214(text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains).toEqual(input.capitalGains);
+  });
+});
+
+describe.each([
+  ['cg-65', cg65, '3065', 146, 325, '3'],
+  ['cg-66', cg66, '3066', 143, 154, '2'],
+] as const)('golden %s', (_name, fixture, type, statusPosition, sequencePosition, status) => {
+  const { input, options } = fixture;
+  const symbol = Number(type.slice(2));
+
+  it('is valid against every rule: no errors and no warnings', () => {
+    expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it(`has one ${type} appendix with a withholding status and every code of record ${type}`, () => {
+    expect(input.capitalGains).toHaveLength(1);
+    const [appendix] = input.capitalGains ?? [];
+    expect(appendix?.symbol).toBe(symbol);
+    expect(appendix).toHaveProperty('withholdingStatus');
+    if (type === '3065') {
+      expect(appendix && 'withholders' in appendix ? appendix.withholders : []).toHaveLength(4);
+    }
+    expect(Object.keys(appendix?.amounts ?? {}).sort()).toEqual(
+      LAYOUT.records[type].codes.map(code => code.code).sort(),
+    );
+  });
+
+  it(`sets every non-filler header field of record ${type}`, () => {
+    const report = normalizeReport(input, LAYOUT, options);
+    expect(unmappedHeaderKeys(LAYOUT.records[type], report.records)).toEqual([]);
+  });
+
+  it(`writes 1000, 1020, ${type}, 9999 with the status at ${statusPosition} and sequence 01 at ${sequencePosition}`, () => {
+    const { text } = generate1214(input, options);
+    const lines = linesOf(text);
+    expect(lines.map(line => line.slice(4, 8))).toEqual(['1000', '1020', type, '9999']);
+    expect(lines[0]?.slice(832, 833)).toBe('1');
+    expect(lines[0]?.slice(2184)).toContain('02801');
+    expect(lines[2]?.slice(136, 141)).toBe(`${symbol}001`);
+    expect(lines[2]?.slice(statusPosition - 1, statusPosition)).toBe(status);
+    expect(lines[2]?.slice(sequencePosition - 1, sequencePosition + 1)).toBe('01');
     expect(lines[3]?.slice(144, 146)).toBe('01');
     const parsed = parse1214(text);
     expect(parsed.issues).toEqual([]);

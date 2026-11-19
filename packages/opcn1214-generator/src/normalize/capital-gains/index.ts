@@ -8,6 +8,12 @@ import type { CapitalGainsAppendix } from '../../model/input.js';
 import type { NormalizedRecord } from '../../model/normalized.js';
 import type { ValidateOptions } from '../../model/options.js';
 import { codeSection, headerValues } from '../fields.js';
+import {
+  NO_WITHHOLDING_1322_INPUT_KEYS,
+  NO_WITHHOLDING_1326_INPUT_KEYS,
+  noWithholding1322Header,
+  noWithholding1326Header,
+} from './no-withholding.js';
 import { SECTION6_INPUT_KEYS, section6Header } from './section6.js';
 import { SECURITIES_INPUT_KEYS, securitiesHeader } from './securities.js';
 
@@ -24,12 +30,14 @@ export const CAPITAL_GAINS_INPUT_KEYS: Readonly<
   60: SECURITIES_INPUT_KEYS,
   63: SECTION6_INPUT_KEYS,
   64: SECURITIES_INPUT_KEYS,
+  65: NO_WITHHOLDING_1322_INPUT_KEYS,
+  66: NO_WITHHOLDING_1326_INPUT_KEYS,
 };
 
 /** The symbols whose appendix has `withholders`, header keys `withholders[i].*` (SPEC §7.3). */
-const WITHHOLDING_SYMBOLS: ReadonlySet<CapitalGainsInputSymbol> = new Set([60, 64]);
+const WITHHOLDING_SYMBOLS: ReadonlySet<CapitalGainsInputSymbol> = new Set([60, 64, 65]);
 
-/** True when appendices of `symbol` have `withholders` (records 3060, 3064). */
+/** True when appendices of `symbol` have `withholders` (records 3060, 3064, 3065). */
 export function hasWithholders(symbol: CapitalGainsInputSymbol): boolean {
   return WITHHOLDING_SYMBOLS.has(symbol);
 }
@@ -37,6 +45,8 @@ export function hasWithholders(symbol: CapitalGainsInputSymbol): boolean {
 /** Header keys of the derived transaction symbol (30xx@137) and appendix number (30xx@139). */
 const TRANSACTION_SYMBOL_KEY = 'transactionSymbol';
 const APPENDIX_NUMBER_KEY = 'appendixNumber';
+/** Header key of the derived "מספר בתל"ם" sequence, in the record types that have one (SPEC §7.4). */
+const SEQUENCE_NUMBER_KEY = 'sequenceNumber';
 
 /** Where an appendix goes in the file (SPEC §3.3, §7.4). */
 export interface CapitalGainsPlacement<T> {
@@ -75,6 +85,10 @@ function headerInput(appendix: CapitalGainsAppendix) {
       return securitiesHeader(appendix);
     case 63:
       return section6Header(appendix);
+    case 65:
+      return noWithholding1322Header(appendix);
+    case 66:
+      return noWithholding1326Header(appendix);
   }
 }
 
@@ -87,8 +101,8 @@ export interface NormalizedCapitalGains {
 
 /**
  * The 30xx records of `appendices` in emission order (placeCapitalGains): each indexed among the
- * records of its type, with its input index, the derived symbol (30xx@137) and appendix number
- * (30xx@139), its header values and its code-amount section (amounts rounded per
+ * records of its type, with its input index, the derived symbol (30xx@137), appendix number
+ * (30xx@139) and, where the record type has the field, "מספר בתל"ם" sequence, its header values and its code-amount section (amounts rounded per
  * `options.rounding`, SPEC §4.4, then zero codes omitted). Paths per pathFor (records 30xx).
  */
 export function normalizeCapitalGains(
@@ -98,16 +112,18 @@ export function normalizeCapitalGains(
 ): NormalizedCapitalGains {
   const omittedZeroCodes: NormalizedCapitalGains['omittedZeroCodes'] = [];
   const records = placeCapitalGains(appendices).map(
-    ({ appendix, inputIndex, appendixNumber }): NormalizedRecord => {
+    ({ appendix, inputIndex, appendixNumber, sequenceNumber }): NormalizedRecord => {
       const recordType = capitalGainsRecordType(appendix.symbol);
       const def = layout.records[recordType];
       const index = appendixNumber - 1;
+      const hasSequence = def.fields.some(field => field.key === SEQUENCE_NUMBER_KEY);
       const { values, paths } = headerValues(
         def,
         inputIndex,
         {
           [TRANSACTION_SYMBOL_KEY]: appendix.symbol,
           [APPENDIX_NUMBER_KEY]: appendixNumber,
+          ...(hasSequence ? { [SEQUENCE_NUMBER_KEY]: sequenceNumber } : {}),
           ...headerInput(appendix),
         },
         options.rounding,
