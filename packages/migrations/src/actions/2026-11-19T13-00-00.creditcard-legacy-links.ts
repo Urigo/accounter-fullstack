@@ -5,14 +5,14 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  * Tables the backfill reads or writes. It runs with no tenant session, so FORCE RLS would hide
  * every row from it (or fail the read), and the links' write policy would reject every insert.
  */
-const TABLES = [
+export const CREDITCARD_LEGACY_LINKS_TABLES = [
   'transactions',
   'financial_accounts',
   'documents',
   'user_context',
   'businesses_securities',
   'creditcard_statement_links',
-];
+] as const;
 
 /**
  * Bank ⇄ credit card linkage, phase 2: the ledger's hard-coded card fallback becomes data.
@@ -46,18 +46,22 @@ const TABLES = [
  *
  * A debit whose statement key is already taken (say, two debits falling back to the same date)
  * is not linked: its ledger then reports that the debit needs linking. Such debits are listed in
- * a WARNING, which does not fail the migration.
+ * a WARNING, which does not fail the migration. Slonik only collects server notices on the query
+ * result, so the migration prints them to the deploy output itself.
+ *
+ * `NO FORCE ROW LEVEL SECURITY` takes an ACCESS EXCLUSIVE lock on each table until the migration
+ * commits, so the migration briefly blocks requests.
  */
 export default {
   name: '2026-11-19T13-00-00.creditcard-legacy-links.sql',
   run: async ({ connection }) => {
-    for (const table of TABLES) {
+    for (const table of CREDITCARD_LEGACY_LINKS_TABLES) {
       await connection.query(sql.unsafe`
         ALTER TABLE ${sql.identifier(['accounter_schema', table])} NO FORCE ROW LEVEL SECURITY
       `);
     }
 
-    await connection.query(sql.unsafe`
+    const backfill = await connection.query(sql.unsafe`
       DO $$
       DECLARE
         d record;
@@ -204,8 +208,12 @@ export default {
       END
       $$;
     `);
+    for (const notice of backfill.notices) {
+      // eslint-disable-next-line no-console -- the deploy output is where the warning must land
+      console.warn(notice.message);
+    }
 
-    for (const table of [...TABLES].reverse()) {
+    for (const table of [...CREDITCARD_LEGACY_LINKS_TABLES].reverse()) {
       await connection.query(sql.unsafe`
         ALTER TABLE ${sql.identifier(['accounter_schema', table])} FORCE ROW LEVEL SECURITY
       `);

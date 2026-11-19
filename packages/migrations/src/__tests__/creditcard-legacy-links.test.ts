@@ -1,12 +1,24 @@
 import { createPool, sql, type DatabasePool } from 'slonik';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import z from 'zod';
-import legacyLinks from '../actions/2026-11-19T13-00-00.creditcard-legacy-links.js';
+import legacyLinks, {
+  CREDITCARD_LEGACY_LINKS_TABLES,
+} from '../actions/2026-11-19T13-00-00.creditcard-legacy-links.js';
 import { createConnectionString } from '../connection-string.js';
 import { env } from '../environment.js';
 import { assertLocalDatabase } from '../local-db-guard.js';
 import { runMigrations } from '../pg-migrator.js';
 import { MIGRATIONS } from '../run-pg-migrations.js';
+
+/** Every table the migration lifts FORCE RLS on, and must restore it on */
+const RLS_TABLES = [
+  'businesses_securities',
+  'creditcard_statement_links',
+  'documents',
+  'financial_accounts',
+  'transactions',
+  'user_context',
+];
 
 const TEST_DB_NAME = `accounter_migration_test_cc_legacy_links_${Date.now()}`;
 
@@ -147,6 +159,8 @@ const cardRows = [
 describe('credit card legacy links migration', () => {
   let rootPool: DatabasePool;
   let testPool: DatabasePool;
+  /** What the migration printed with `console.warn` */
+  const warnings: string[] = [];
 
   beforeAll(async () => {
     assertLocalDatabase({ ...env.postgres }, 'the credit card legacy links migration suite');
@@ -268,9 +282,13 @@ describe('credit card legacy links migration', () => {
 
     await testPool.transaction(async connection => {
       await connection.query(sql.unsafe`SET LOCAL ROLE ${sql.identifier([MIGRATOR_ROLE])}`);
-      const result = await legacyLinks.run({ sql: sql.unsafe, connection });
-      if (result) {
-        await connection.query(result);
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      try {
+        // the migration runs its own queries and returns nothing to run
+        await legacyLinks.run({ sql: sql.unsafe, connection });
+      } finally {
+        warnings.push(...warn.mock.calls.map(args => args.map(String).join(' ')));
+        warn.mockRestore();
       }
     });
   }, 180_000);
@@ -338,6 +356,15 @@ describe('credit card legacy links migration', () => {
     ]);
   });
 
+  it('prints the debits it could not link to the deploy output', () => {
+    expect(warnings).toEqual([
+      expect.stringContaining(
+        `creditcard-legacy-links: 1 bank transaction(s) not linked, their card statement key is already taken`,
+      ),
+    ]);
+    expect(warnings[0]).toContain(debits.collisionSecond.id);
+  });
+
   it('leaves non-wallet, invoiced and colliding debits unlinked', async () => {
     const linked = new Set((await links()).map(link => link.bank_transaction_id));
     for (const debit of [debits.nonWallet, debits.invoiced, debits.collisionSecond]) {
@@ -345,18 +372,19 @@ describe('credit card legacy links migration', () => {
     }
   });
 
-  it('restores FORCE RLS on the tables it opened', async () => {
+  it('restores FORCE RLS on every table it opened', async () => {
+    expect([...CREDITCARD_LEGACY_LINKS_TABLES].sort()).toEqual(RLS_TABLES);
     const forced = await testPool.anyFirst(
       sql.type(z.object({ relname: z.string() }))`
-        SELECT c.relname
+        SELECT c.relname::text
         FROM pg_class c
           JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname = 'accounter_schema'
-          AND c.relname IN ('transactions', 'financial_accounts', 'creditcard_statement_links')
+          AND c.relname = ANY(${sql.array(RLS_TABLES, 'text')})
           AND c.relforcerowsecurity
         ORDER BY c.relname
       `,
     );
-    expect(forced).toEqual(['creditcard_statement_links', 'financial_accounts', 'transactions']);
+    expect(forced).toEqual(RLS_TABLES);
   });
 });
