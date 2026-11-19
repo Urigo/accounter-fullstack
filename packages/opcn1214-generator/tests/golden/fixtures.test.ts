@@ -5,6 +5,7 @@ import { generate1214, parse1214, validate1214 } from '../../src/index.js';
 import { getLayout } from '../../src/layout/registry.js';
 import { COUNTRY_BREAKDOWN_CODES } from '../../src/model/codes.generated.js';
 import { normalizeReport } from '../../src/normalize/report.js';
+import * as cg63 from '../fixtures/golden/cg-63.input.js';
 import * as foreign from '../fixtures/golden/foreign.input.js';
 import * as kibbutz from '../fixtures/golden/kibbutz.input.js';
 import * as mainFull from '../fixtures/golden/main-full.input.js';
@@ -172,5 +173,41 @@ describe('golden foreign', () => {
     const parsed = parse1214(text);
     expect(parsed.issues).toEqual([]);
     expect(parsed.report.foreignAppendix).toEqual(appendix);
+  });
+});
+
+describe('golden cg-63', () => {
+  const { input, options } = cg63;
+
+  it('is valid against every rule: no errors and no warnings', () => {
+    expect(validate1214(input, options)).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it('has one 3063 appendix with every code of record 3063', () => {
+    expect(input.capitalGains).toHaveLength(1);
+    const [appendix] = input.capitalGains ?? [];
+    expect(appendix?.symbol).toBe(63);
+    expect(Object.keys(appendix?.amounts ?? {}).sort()).toEqual(
+      LAYOUT.records['3063'].codes.map(code => code.code),
+    );
+  });
+
+  it('sets every non-filler header field of record 3063', () => {
+    const report = normalizeReport(input, LAYOUT, options);
+    expect(unmappedHeaderKeys(LAYOUT.records['3063'], report.records)).toEqual([]);
+  });
+
+  it('writes 1000, 1020, 3063, 9999 with 833 = yes, code 028 = 1 and 9999@145 = 01', () => {
+    const { text } = generate1214(input, options);
+    const lines = linesOf(text);
+    expect(lines.map(line => line.slice(4, 8))).toEqual(['1000', '1020', '3063', '9999']);
+    expect(lines[0]?.slice(832, 833)).toBe('1');
+    expect(lines[0]?.slice(2184)).toContain('02801');
+    // 3063@137: symbol 63; 3063@139: appendix number 1.
+    expect(lines[2]?.slice(136, 141)).toBe('63001');
+    expect(lines[3]?.slice(144, 146)).toBe('01');
+    const parsed = parse1214(text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains).toEqual(input.capitalGains);
   });
 });

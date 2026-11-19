@@ -8,7 +8,7 @@ import type { Declarations, Report1214Input } from '../model/input.js';
  */
 export const DERIVED_MAIN_CODE_SOURCES: Readonly<Record<DerivedMainCode, readonly string[]>> = {
   '008': ['declarations.appliesAccountingStandards'],
-  '028': ['capitalGainsSummary.untransmittedCount'],
+  '028': ['capitalGains', 'capitalGainsSummary.untransmittedCount'],
   '273': ['declarations.directorsReceivedOpinion', 'declarations.tookReportablePosition'],
   '277': ['bankAccount'],
   '278': ['bankAccount'],
@@ -94,11 +94,17 @@ export function deriveCode008(
 }
 
 /**
- * Code 028, the number of capital-gains forms attached (SPEC §7.4): the untransmitted count when
- * greater than 0, else omitted. The transmitted appendices are added by step G1.
+ * Code 028, the number of capital-gains forms attached, transmitted and not (SPEC §7.4, p.14): the
+ * capital-gains appendices plus `capitalGainsSummary.untransmittedCount`, omitted when 0.
  */
-export function deriveCode028(summary: Report1214Input['capitalGainsSummary']): number | undefined {
-  return hasUntransmittedAppendices(summary) ? summary?.untransmittedCount : undefined;
+export function deriveCode028(
+  input: Pick<Report1214Input, 'capitalGains' | 'capitalGainsSummary'>,
+): number | undefined {
+  const untransmitted = hasUntransmittedAppendices(input.capitalGainsSummary)
+    ? (input.capitalGainsSummary?.untransmittedCount ?? 0)
+    : 0;
+  const count = (input.capitalGains?.length ?? 0) + untransmitted;
+  return count > 0 ? count : undefined;
 }
 
 /** Whether `capitalGainsSummary.untransmittedCount` is greater than 0 (→ 833 = yes, SPEC §7.4). */
@@ -110,16 +116,17 @@ export function hasUntransmittedAppendices(
 }
 
 /**
- * 1000@833, has a capital-gains appendix (SPEC §7.4): yes when `hasCapitalGainsAppendix` is true
- * or `capitalGainsSummary.untransmittedCount` is greater than 0, otherwise no. The input model has
- * no capital-gains appendices yet (step G1).
+ * 1000@833, has a capital-gains appendix (SPEC §7.4): yes when `hasCapitalGainsAppendix` is true,
+ * `capitalGainsSummary.untransmittedCount` is greater than 0 or any capital-gains appendix exists,
+ * otherwise no.
  */
 export function deriveHasCapitalGainsAppendix(
-  input: Pick<Report1214Input, 'declarations' | 'capitalGainsSummary'>,
+  input: Pick<Report1214Input, 'declarations' | 'capitalGainsSummary' | 'capitalGains'>,
 ): boolean {
   return (
     input.declarations.hasCapitalGainsAppendix === true ||
-    hasUntransmittedAppendices(input.capitalGainsSummary)
+    hasUntransmittedAppendices(input.capitalGainsSummary) ||
+    (input.capitalGains?.length ?? 0) > 0
   );
 }
 

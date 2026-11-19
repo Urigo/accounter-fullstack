@@ -11,6 +11,8 @@ import {
   minimalInput,
   rdInvestments,
   relatedCompanies,
+  section6Appendices,
+  section6Appendix,
 } from '../fixtures/builders.js';
 
 /** The input.shape issues of `input` against the schema of its year (2024 by default). */
@@ -127,6 +129,38 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       'foreignAppendix.countryBreakdown["420"].deductions',
       'foreignAppendix.countryBreakdown["439"].countries[0].country',
       'foreignAppendix.countryBreakdown["439"].countries[1].income',
+    ]);
+  });
+
+  it('accepts capital-gains appendices, complete or with only the required members, any number', () => {
+    expect(shapeIssues(minimalInput({ capitalGains: [section6Appendix()] }))).toEqual([]);
+    expect(shapeIssues(minimalInput({ capitalGains: [{ symbol: 63, amounts: {} }] }))).toEqual([]);
+    // Any number: struct.capitalGains.max counts them.
+    expect(shapeIssues(minimalInput({ capitalGains: [] }))).toEqual([]);
+    expect(shapeIssues(minimalInput({ capitalGains: section6Appendices(15) }))).toEqual([]);
+  });
+
+  it('rejects a 3063 appendix without amounts, with an unknown member or wrong types', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        { symbol: 63 },
+        { ...section6Appendix(), foreignAsset: 1, lossesCarriedForward: '5', withholders: [] },
+      ],
+    };
+    expect(shapePaths(input).sort()).toEqual([
+      'capitalGains[0].amounts',
+      'capitalGains[1].foreignAsset',
+      'capitalGains[1].lossesCarriedForward',
+      'capitalGains[1].withholders',
+    ]);
+  });
+
+  it('rejects an appendix whose symbol is not a modelled transaction symbol', () => {
+    const input = { ...minimalInput(), capitalGains: [{ ...section6Appendix(), symbol: 99 }] };
+    expect(shapePaths(input)).toEqual(['capitalGains[0].symbol']);
+    expect(shapePaths({ ...minimalInput(), capitalGains: [{ amounts: {} }] })).toEqual([
+      'capitalGains[0].symbol',
     ]);
   });
 
@@ -465,7 +499,7 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
 
     it.each([
       ['008', 'declarations.appliesAccountingStandards'],
-      ['028', 'capitalGainsSummary.untransmittedCount'],
+      ['028', 'capitalGains and capitalGainsSummary.untransmittedCount'],
       ['273', 'declarations.directorsReceivedOpinion and declarations.tookReportablePosition'],
       ['277', 'bankAccount'],
       ['278', 'bankAccount'],
@@ -600,6 +634,63 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       };
       checkShape(input, 2024);
       expect(input.foreignAppendix.amounts).toEqual({ '999': 5 });
+    });
+
+    it('reports an unknown capitalGains[i].amounts key as input.unknownCode (SPEC §9.2)', () => {
+      const input = {
+        ...minimalInput(),
+        capitalGains: [
+          section6Appendix(),
+          { ...section6Appendix(), amounts: { '022': 1, '999': 7, '15': 2 } },
+        ],
+      };
+      // Integer-like keys ('15', '999') come first, in ascending order (JavaScript key order).
+      expect(checkShape(input, 2024)).toEqual([
+        expect.objectContaining({
+          ruleId: 'input.unknownCode',
+          path: 'capitalGains[1].amounts["15"]',
+        }),
+        {
+          ruleId: 'input.unknownCode',
+          severity: 'error',
+          message: '"999" is not a code of record 3063 for tax year 2024.',
+          path: 'capitalGains[1].amounts["999"]',
+          recordType: '3063',
+          recordIndex: 1,
+          code: '999',
+          value: 7,
+        },
+      ]);
+      // The input is not changed.
+      expect(Object.keys(input.capitalGains[1]!.amounts).sort()).toEqual(['022', '15', '999']);
+    });
+
+    it('reports a code of another record in capitalGains[i].amounts as input.unknownCode', () => {
+      // 028 is a derived code of record 1000; 015 is a code of other appendices, not of 3063.
+      const input = {
+        ...minimalInput(),
+        capitalGains: [{ ...section6Appendix(), amounts: { '028': 1, '015': 2 } }],
+      };
+      expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
+        ['input.unknownCode', 'capitalGains[0].amounts["028"]'],
+        ['input.unknownCode', 'capitalGains[0].amounts["015"]'],
+      ]);
+    });
+
+    it('leaves capital gains, an appendix, an unknown symbol or amounts that are not objects to zod', () => {
+      const paths = (capitalGains: unknown) =>
+        checkShape({ ...minimalInput(), capitalGains }, 2024).map(issue => [
+          issue.ruleId,
+          issue.path,
+        ]);
+      expect(paths({})).toEqual([['input.shape', 'capitalGains']]);
+      expect(paths([null])).toEqual([['input.shape', 'capitalGains[0]']]);
+      expect(paths([{ symbol: 63, amounts: [] }])).toEqual([
+        ['input.shape', 'capitalGains[0].amounts'],
+      ]);
+      expect(paths([{ symbol: 99, amounts: { '999': 1 } }])).toEqual([
+        ['input.shape', 'capitalGains[0].symbol'],
+      ]);
     });
 
     it('leaves a code map that is not an object to zod', () => {
