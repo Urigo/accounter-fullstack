@@ -134,6 +134,30 @@ export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers &
         return commonError(error, 'Failed to link credit card statements');
       }
     },
+    dismissCreditCardStatements: async (_, { bankTransactionId, statements }, { injector }) => {
+      try {
+        if (statements.length === 0) {
+          throw new GraphQLError('No statements to dismiss');
+        }
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        const chargeId = await validateLinkTarget(injector, ownerId, bankTransactionId, statements);
+
+        const statementsProvider = injector.get(CreditCardStatementsProvider);
+        const linkedHere = (
+          await statementsProvider.getLinksByStatementKeys(ownerId, statements)
+        ).filter(link => link.bank_transaction_id === bankTransactionId);
+        if (linkedHere.length > 0) {
+          throw new GraphQLError(
+            'The statement is linked to this bank transaction: unlink it instead of dismissing it',
+          );
+        }
+        await statementsProvider.rejectStatements({ ownerId, bankTransactionId, statements });
+
+        return { charge: await freshCharge(injector, chargeId) };
+      } catch (error) {
+        return commonError(error, 'Failed to dismiss credit card statements');
+      }
+    },
     unlinkCreditCardStatement: async (_, { bankTransactionId, statement }, { injector }) => {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
@@ -227,6 +251,11 @@ export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers &
     bankTransaction: statement => statement.bankTransactionId,
     linkMethod: statement => statement.linkMethod,
     confirmed: statement => statement.confirmed,
+  },
+  CreditCardStatementSuggestion: {
+    statements: suggestion => suggestion.statements,
+    reason: suggestion => suggestion.reason,
+    previouslyRejected: suggestion => suggestion.previouslyRejected,
   },
   CreditCardStatementSuggestions: {
     bankTransaction: suggestions => suggestions.bankTransactionId,

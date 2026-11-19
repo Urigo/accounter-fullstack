@@ -311,7 +311,9 @@ function resolveStrongCard(items: readonly Enriched[], bankCents: number): Enric
  * c. a statement with the exact amount, unique among ALL available candidates, that is scoped
  *    (its card is configured as paid from this bank account, or is hinted) → AMOUNT;
  * d. exactly one combination of 2–4 scoped candidates summing to the amount, when no single
- *    candidate has the exact amount → AMOUNT;
+ *    candidate has the exact amount, and only when the bank row mentions a card (any hint) or its
+ *    counterparty is a card issuer → AMOUNT. A row whose only link to the cards is a settlement
+ *    account needs a unique exact amount (rule c);
  * e. otherwise ranked suggestions, nothing linked.
  *
  * Candidates already linked to another bank transaction, rejected for this one, in another
@@ -376,8 +378,10 @@ export function matchCreditCardStatements(
     return { links: [toKey(exact[0].statement)], method: 'AMOUNT' };
   }
 
-  // d. exactly one combination of scoped candidates summing to the amount
+  // d. exactly one combination of scoped candidates summing to the amount, on a card debit
   const scoped = enriched.filter(isScoped);
+  const isCardDebit =
+    bankTransaction.counterpartyIsCardIssuer || enriched.some(item => item.hint !== 'NONE');
   const subsetMatches: Enriched[][] = [];
   if (exact.length === 0 && scoped.length <= MAX_SUBSET_SEARCH_CANDIDATES) {
     for (let size = 2; size <= Math.min(MAX_COMBINED_STATEMENTS, scoped.length); size++) {
@@ -387,7 +391,8 @@ export function matchCreditCardStatements(
         }
       }
     }
-    if (subsetMatches.length === 1) {
+    // without a card clue a combination is only suggested, never linked
+    if (isCardDebit && subsetMatches.length === 1) {
       return { links: subsetMatches[0].map(item => toKey(item.statement)), method: 'AMOUNT' };
     }
   }
@@ -410,6 +415,30 @@ export function suggestCreditCardStatements(
   const excluded = new Set((options.excludeKeys ?? []).map(statementKeyId));
   const enriched = prepareCandidates(bankTransaction, rawHints, candidates, options).filter(
     item => !excluded.has(statementKeyId(item.statement)),
+  );
+  return rankSuggestions(
+    enriched.map(item => [item]),
+    toCents(bankTransaction.amount),
+    options.linkedCents ?? 0,
+  );
+}
+
+/**
+ * Statements a user unlinked from (or dismissed for) this bank transaction, ranked like
+ * suggestions, so they can be linked again by hand. Never used for a confident match.
+ */
+export function suggestRejectedCreditCardStatements(
+  bankTransaction: MatcherBankTransaction,
+  rawHints: readonly BankCardHint[],
+  candidates: readonly CandidateStatement[],
+  options: { rejectedKeys: readonly StatementKey[]; linkedCents?: number },
+): RankedSuggestion[] {
+  const rejected = new Set(options.rejectedKeys.map(statementKeyId));
+  if (rejected.size === 0) {
+    return [];
+  }
+  const enriched = prepareCandidates(bankTransaction, rawHints, candidates, {}).filter(item =>
+    rejected.has(statementKeyId(item.statement)),
   );
   return rankSuggestions(
     enriched.map(item => [item]),

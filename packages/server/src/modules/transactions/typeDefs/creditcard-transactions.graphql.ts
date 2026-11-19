@@ -20,7 +20,14 @@ export default gql`
     ): CreditCardStatementLinkResult!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
-    " remove a stored link between a bank debit and a card statement "
+    " reject a match computed for a bank debit without linking anything: the statements are not proposed again for it (link them by hand to undo) "
+    dismissCreditCardStatements(
+      bankTransactionId: UUID!
+      statements: [CreditCardStatementKeyInput!]!
+    ): CreditCardStatementLinkResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " remove a stored link between a bank debit and a card statement; it is not proposed again for that debit "
     unlinkCreditCardStatement(
       bankTransactionId: UUID!
       statement: CreditCardStatementKeyInput!
@@ -61,6 +68,8 @@ export default gql`
     statements: [CreditCardStatement!]!
     " short explanation of the ranking "
     reason: String!
+    " a statement a user unlinked or dismissed for this bank debit, offered to undo that. Never linked automatically "
+    previouslyRejected: Boolean!
   }
 
   " ranked candidate statements a person may link to a bank debit, instead of or in addition to the ones shown "

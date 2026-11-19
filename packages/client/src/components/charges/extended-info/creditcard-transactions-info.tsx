@@ -1,5 +1,5 @@
 import { useCallback, useMemo, type ReactElement } from 'react';
-import { AlertTriangle, Check, Link2, Unlink } from 'lucide-react';
+import { AlertTriangle, Check, Link2, Unlink, X } from 'lucide-react';
 import {
   CreditcardBankChargeInfoFragmentDoc,
   CreditCardStatementLinkMethod,
@@ -7,6 +7,7 @@ import {
   type CreditcardBankChargeInfoFragment,
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { useDismissCreditCardStatements } from '../../../hooks/use-dismiss-credit-card-statements.js';
 import { useLinkCreditCardStatements } from '../../../hooks/use-link-credit-card-statements.js';
 import { useUnlinkCreditCardStatement } from '../../../hooks/use-unlink-credit-card-statement.js';
 import { ChargeNavigateButton } from '../../common/index.js';
@@ -69,6 +70,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
         }
         suggestions {
           reason
+          previouslyRejected
           statements {
             id
             currency
@@ -105,6 +107,17 @@ type BankDebitGroup = {
   statements: Statement[];
   suggestions: CreditcardCharge['creditCardStatementSuggestions'][number]['suggestions'];
 };
+
+/** What Link does to the statements already shown for the debit */
+function suggestionsTitle(group: BankDebitGroup): string {
+  if (group.statements.length === 0) {
+    return 'Candidate statements';
+  }
+  if (group.statements.some(statement => !statement.confirmed)) {
+    return 'Other candidates: Link stores the chosen statement instead of the unconfirmed match';
+  }
+  return 'Other candidates: Link adds the chosen statement to the linked ones';
+}
 
 const LINK_METHOD_LABELS: Record<CreditCardStatementLinkMethod, string> = {
   [CreditCardStatementLinkMethod.Reference]: 'Card reference',
@@ -206,7 +219,8 @@ export function CreditcardTransactionsInfo({ chargeProps, onChange }: Props): Re
   const charge = getFragmentData(CreditcardBankChargeInfoFragmentDoc, chargeProps);
   const { linkCreditCardStatements, fetching: linking } = useLinkCreditCardStatements();
   const { unlinkCreditCardStatement, fetching: unlinking } = useUnlinkCreditCardStatement();
-  const busy = linking || unlinking;
+  const { dismissCreditCardStatements, fetching: dismissing } = useDismissCreditCardStatements();
+  const busy = linking || unlinking || dismissing;
 
   const { statements, suggestions } = useMemo(
     () =>
@@ -268,6 +282,19 @@ export function CreditcardTransactionsInfo({ chargeProps, onChange }: Props): Re
     [linkCreditCardStatements, onChange],
   );
 
+  const dismiss = useCallback(
+    async (bankTransactionId: string, toDismiss: Statement[]) => {
+      const result = await dismissCreditCardStatements({
+        bankTransactionId,
+        statements: toDismiss.map(statementKey),
+      });
+      if (result) {
+        onChange?.();
+      }
+    },
+    [dismissCreditCardStatements, onChange],
+  );
+
   const unlink = useCallback(
     async (bankTransactionId: string, statement: Statement) => {
       const result = await unlinkCreditCardStatement({
@@ -301,16 +328,29 @@ export function CreditcardTransactionsInfo({ chargeProps, onChange }: Props): Re
                 <span className="text-muted-foreground">({group.description})</span>
               )}
               {unconfirmed.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="ml-auto"
-                  disabled={busy}
-                  onClick={() => void link(group.bankTransactionId, unconfirmed)}
-                >
-                  <Check className="size-4" />
-                  {unconfirmed.length > 1 ? `Confirm ${unconfirmed.length} statements` : 'Confirm'}
-                </Button>
+                <div className="ml-auto flex flex-row gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void link(group.bankTransactionId, unconfirmed)}
+                  >
+                    <Check className="size-4" />
+                    {unconfirmed.length > 1
+                      ? `Confirm ${unconfirmed.length} statements`
+                      : 'Confirm'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy}
+                    title="Reject this match without linking: it will not be proposed again"
+                    onClick={() => void dismiss(group.bankTransactionId, unconfirmed)}
+                  >
+                    <X className="size-4" />
+                    Dismiss
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -363,11 +403,7 @@ export function CreditcardTransactionsInfo({ chargeProps, onChange }: Props): Re
 
             {group.suggestions.length > 0 ? (
               <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium">
-                  {group.statements.length > 0
-                    ? 'Other candidate statements'
-                    : 'Candidate statements'}
-                </span>
+                <span className="text-sm font-medium">{suggestionsTitle(group)}</span>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -391,6 +427,11 @@ export function CreditcardTransactionsInfo({ chargeProps, onChange }: Props): Re
                           ))}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
+                          {candidate.previouslyRejected && (
+                            <Badge variant="outline" className="mr-2">
+                              Previously unlinked
+                            </Badge>
+                          )}
                           {candidate.reason}
                         </TableCell>
                         <TableCell className="text-right">

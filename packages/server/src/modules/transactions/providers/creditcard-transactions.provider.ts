@@ -6,6 +6,7 @@ import {
   matchCreditCardStatements,
   statementKeyId,
   suggestCreditCardStatements,
+  suggestRejectedCreditCardStatements,
   toCents,
   type AutoLinkMethod,
   type BankCardHint,
@@ -33,6 +34,8 @@ export type ResolvedCreditCardStatement = StatementKey & {
 export type CreditCardStatementSuggestionProto = {
   statements: ResolvedCreditCardStatement[];
   reason: string;
+  /** A statement a user unlinked or dismissed for this bank transaction, offered to undo that */
+  previouslyRejected: boolean;
 };
 
 /** The card statements behind one bank transaction of a charge. */
@@ -121,9 +124,13 @@ export async function loadMatcherInput(
   });
 }
 
-function toSuggestionProto(suggestion: RankedSuggestion): CreditCardStatementSuggestionProto {
+function toSuggestionProto(
+  suggestion: RankedSuggestion,
+  previouslyRejected: boolean,
+): CreditCardStatementSuggestionProto {
   return {
     reason: suggestion.reason,
+    previouslyRejected,
     statements: suggestion.statements.map(statement => ({
       cardAccountId: statement.cardAccountId,
       currency: statement.currency,
@@ -151,12 +158,10 @@ export class CreditCardTransactionsProvider {
   private async resolveBankTransaction(
     bankTransaction: BankTransactionRow,
   ): Promise<BankTransactionStatements> {
-    const [links, input] = await Promise.all([
-      this.statementsProvider.getLinksByBankTransactionIdLoader.load(bankTransaction.id),
-      bankTransaction.effective_date
-        ? loadMatcherInput(this.statementsProvider, bankTransaction)
-        : null,
-    ]);
+    const links = await this.statementsProvider.getLinksByBankTransactionIdLoader.load(
+      bankTransaction.id,
+    );
+    const bankCents = toCents(bankTransaction.amount);
 
     if (links.length > 0) {
       const statements = links.map(link => ({
@@ -169,20 +174,22 @@ export class CreditCardTransactionsProvider {
       }));
       const totals = await Promise.all(statements.map(key => this.getStatementTotalCents(key)));
       const linkedCents = totals.reduce((sum, total) => sum + total, 0);
-      const suggestions =
-        input && linkedCents !== toCents(bankTransaction.amount)
-          ? suggestCreditCardStatements(input.bank, input.hints, input.candidates, {
-              rejectedKeys: input.rejectedKeys,
-              excludeKeys: statements,
-              linkedCents,
-            })
-          : [];
-      return { bankTransaction, statements, suggestions: suggestions.map(toSuggestionProto) };
+      // a fully linked, balanced debit needs no candidates: skip the matcher's queries
+      if (linkedCents === bankCents || !bankTransaction.effective_date) {
+        return { bankTransaction, statements, suggestions: [] };
+      }
+      const input = await loadMatcherInput(this.statementsProvider, bankTransaction);
+      return {
+        bankTransaction,
+        statements,
+        suggestions: this.suggestionsFor(input, { excludeKeys: statements, linkedCents }),
+      };
     }
 
-    if (!input) {
+    if (!bankTransaction.effective_date) {
       return { bankTransaction, statements: [], suggestions: [] };
     }
+    const input = await loadMatcherInput(this.statementsProvider, bankTransaction);
 
     const result = matchCreditCardStatements(input.bank, input.hints, input.candidates, {
       rejectedKeys: input.rejectedKeys,
@@ -191,15 +198,14 @@ export class CreditCardTransactionsProvider {
       return {
         bankTransaction,
         statements: [],
-        suggestions: result.suggestions.map(toSuggestionProto),
+        suggestions: [
+          ...result.suggestions.map(suggestion => toSuggestionProto(suggestion, false)),
+          ...this.rejectedSuggestionsFor(input, 0),
+        ],
       };
     }
 
     const method: AutoLinkMethod = result.method;
-    const alternatives = suggestCreditCardStatements(input.bank, input.hints, input.candidates, {
-      rejectedKeys: input.rejectedKeys,
-      excludeKeys: result.links,
-    });
     return {
       bankTransaction,
       statements: result.links.map(key => ({
@@ -208,8 +214,35 @@ export class CreditCardTransactionsProvider {
         linkMethod: method,
         confirmed: false,
       })),
-      suggestions: alternatives.map(toSuggestionProto),
+      suggestions: this.suggestionsFor(input, { excludeKeys: result.links, linkedCents: 0 }),
     };
+  }
+
+  /**
+   * Alternatives to, or additions to, the statements already shown, followed by the statements a
+   * user unlinked or dismissed for this bank transaction (marked, never matched automatically).
+   */
+  private suggestionsFor(
+    input: MatcherInput,
+    shown: { excludeKeys: readonly StatementKey[]; linkedCents: number },
+  ): CreditCardStatementSuggestionProto[] {
+    return [
+      ...suggestCreditCardStatements(input.bank, input.hints, input.candidates, {
+        rejectedKeys: input.rejectedKeys,
+        ...shown,
+      }).map(suggestion => toSuggestionProto(suggestion, false)),
+      ...this.rejectedSuggestionsFor(input, shown.linkedCents),
+    ];
+  }
+
+  private rejectedSuggestionsFor(
+    input: MatcherInput,
+    linkedCents: number,
+  ): CreditCardStatementSuggestionProto[] {
+    return suggestRejectedCreditCardStatements(input.bank, input.hints, input.candidates, {
+      rejectedKeys: input.rejectedKeys,
+      linkedCents,
+    }).map(suggestion => toSuggestionProto(suggestion, true));
   }
 
   private async batchStatementsByChargeIds(chargeIds: readonly string[]) {

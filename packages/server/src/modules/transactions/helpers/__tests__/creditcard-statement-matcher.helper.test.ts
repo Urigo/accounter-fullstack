@@ -5,6 +5,7 @@ import {
   isConfidentMatch,
   matchCreditCardStatements,
   suggestCreditCardStatements,
+  suggestRejectedCreditCardStatements,
   toCents,
   type BankCardHint,
   type CandidateStatement,
@@ -164,7 +165,7 @@ describe('matchCreditCardStatements', () => {
   });
 
   it('links a combined debit to the only subset of statements summing to the amount', () => {
-    const result = matchCreditCardStatements(bank(), [], [
+    const result = matchCreditCardStatements(bank({ counterpartyIsCardIssuer: true }), [], [
       statement('card-a', { total: '-1000.00', settlementAccountId: BANK_ACCOUNT }),
       statement('card-b', { total: '-500.00', settlementAccountId: BANK_ACCOUNT }),
       statement('card-c', { total: '-320.00', settlementAccountId: BANK_ACCOUNT }),
@@ -381,5 +382,44 @@ describe('matchCreditCardStatements', () => {
       expect(suggestions.map(s => s.statements[0].cardAccountId)).toEqual(['card-c', 'card-b']);
       expect(suggestions[0].amountDifferenceCents).toBe(0);
     });
+  });
+
+  describe('rule (d): combined debits', () => {
+    const settled = [
+      statement('card-a', { total: '-1000.00', settlementAccountId: BANK_ACCOUNT }),
+      statement('card-b', { total: '-500.00', settlementAccountId: BANK_ACCOUNT }),
+    ];
+
+    it('does not link a settlement-only row on a combination of statements', () => {
+      const result = matchCreditCardStatements(bank(), [], settled);
+      expect(isConfidentMatch(result)).toBe(false);
+      if (!isConfidentMatch(result)) {
+        expect(result.suggestions[0].statements).toHaveLength(2);
+      }
+    });
+
+    it('links the combination when the counterparty is a card issuer', () => {
+      const result = matchCreditCardStatements(
+        bank({ counterpartyIsCardIssuer: true }),
+        [],
+        settled,
+      );
+      expect(linkedCards(result)).toEqual({
+        method: 'AMOUNT',
+        keys: ['card-a@2026-03-10', 'card-b@2026-03-10'],
+      });
+    });
+  });
+
+  it('offers rejected statements only through suggestRejectedCreditCardStatements', () => {
+    const rejected = statement('card-a');
+    const others = suggestCreditCardStatements(bank(), [], [rejected, statement('card-b')], {
+      rejectedKeys: [rejected],
+    });
+    expect(others.map(s => s.statements[0].cardAccountId)).toEqual(['card-b']);
+    const previous = suggestRejectedCreditCardStatements(bank(), [], [rejected, statement('card-b')], {
+      rejectedKeys: [rejected],
+    });
+    expect(previous.map(s => s.statements[0].cardAccountId)).toEqual(['card-a']);
   });
 });

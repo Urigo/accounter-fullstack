@@ -87,7 +87,9 @@ const getBankCardHintsByTransactionIds = sql<IGetBankCardHintsByTransactionIdsQu
     WHERE t.id IN $$transactionIds
   ),
   bank_card_hints AS (
-    -- Poalim ILS: a card debit (activity 491) carries the card number as its reference
+    -- Poalim ILS: a card debit (activity 491) carries the card number as its reference. The raw
+    -- Poalim table has no owner column: the row is reached only through the bank row own
+    -- source_id, and the bank rows are those of the requested transactions
     SELECT b.id AS transaction_id,
       'POALIM_491'::text AS source,
       p.reference_number::text AS hint
@@ -236,7 +238,9 @@ const getCardTransactionsByStatementKeys = sql<IGetCardTransactionsByStatementKe
  * - rows carrying a card clue: a raw bank hint (Poalim 491, Otsar Hahayal `origin_reference`), a
  *   reference equal to a card number, a card name in the description, or the last 4 digits of a
  *   card as a standalone group in the description.
- * The matcher decides; the clue-only rows still need an exact, unique amount to be linked.
+ * Only rows with at least one card statement in the date window are returned, so rows that can
+ * never match are not re-matched on every run. The matcher decides; rows without a strong clue
+ * still need an exact, unique amount to be linked.
  */
 const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTransactionIdsQuery>`
   SELECT t.id
@@ -257,6 +261,20 @@ const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTran
       SELECT 1
       FROM accounter_schema.creditcard_statement_links l
       WHERE l.bank_transaction_id = t.id
+    )
+    -- a card statement in the date window, in the row currency: otherwise nothing can match
+    AND EXISTS (
+      SELECT 1
+      FROM accounter_schema.transactions ct
+        JOIN accounter_schema.financial_accounts ca
+          ON ca.id = ct.account_id
+          AND ca.owner_id = ct.owner_id
+          AND ca.type = 'CREDIT_CARD'
+      WHERE ct.owner_id = t.owner_id
+        AND ct.currency = t.currency
+        AND COALESCE(ct.debit_date_override, ct.debit_date)
+          BETWEEN COALESCE(t.debit_date_override, t.debit_date, t.event_date) - $windowDays::int
+          AND COALESCE(t.debit_date_override, t.debit_date, t.event_date) + $windowDays::int
     )
     AND (
       t.business_id = ANY ($creditCardBusinessIds::uuid[])
@@ -519,6 +537,7 @@ export class CreditCardStatementsProvider {
       {
         ownerId: params.ownerId,
         creditCardBusinessIds: [...params.creditCardBusinessIds],
+        windowDays: STATEMENT_DATE_WINDOW_DAYS,
       },
       this.db,
     );
@@ -621,6 +640,24 @@ export class CreditCardStatementsProvider {
       });
       return inserted;
     });
+  }
+
+  /** A user's dismissal of a computed match: records the rejections, in one transaction */
+  public async rejectStatements(params: {
+    ownerId: string;
+    bankTransactionId: string;
+    statements: readonly StatementKey[];
+  }) {
+    await this.db.transaction(async () => {
+      for (const statement of params.statements) {
+        await this.rejectStatement({
+          ...statement,
+          ownerId: params.ownerId,
+          bankTransactionId: params.bankTransactionId,
+        });
+      }
+    });
+    this.clearCache();
   }
 
   /**

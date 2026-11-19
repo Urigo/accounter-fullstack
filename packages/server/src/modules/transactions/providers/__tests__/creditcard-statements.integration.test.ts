@@ -357,7 +357,7 @@ type MutationResult =
   | { charge: { id: string } };
 
 async function callMutation(
-  name: 'linkCreditCardStatements' | 'unlinkCreditCardStatement',
+  name: 'linkCreditCardStatements' | 'unlinkCreditCardStatement' | 'dismissCreditCardStatements',
   args: Record<string, unknown>,
   injector = createInjector(),
 ): Promise<MutationResult> {
@@ -729,7 +729,13 @@ describe('credit card statements', () => {
         .get(CreditCardTransactionsProvider)
         .getStatementsByChargeIdLoader.load(scenario.max.bankChargeId);
       expect(bank.statements).toEqual([]);
-      expect(bank.suggestions).toEqual([]);
+      // offered again only as a previously unlinked suggestion, to undo the unlink
+      expect(bank.suggestions).toEqual([
+        expect.objectContaining({
+          previouslyRejected: true,
+          statements: [expect.objectContaining({ cardAccountId: scenario.max.cardAccountId })],
+        }),
+      ]);
 
       expect(await runAutomation()).toEqual([]);
       expect(await linksOf(scenario.max.bankTransactionId)).toEqual([]);
@@ -752,6 +758,64 @@ describe('credit card statements', () => {
         [scenario.max.bankTransactionId],
       );
       expect(rows).toHaveLength(0);
+    });
+
+    it('refuses a bank fee row as the bank debit', async () => {
+      const fee = await createTransaction({
+        accountId: await createAccount('BANK_ACCOUNT', '900011'),
+        amount: '-61.00',
+        eventDate: '2026-08-03',
+        isFee: true,
+      });
+      const result = await callMutation('linkCreditCardStatements', {
+        bankTransactionId: fee.id,
+        statements: [
+          { cardAccountId: scenario.max.cardAccountId, currency: 'ILS', debitDate: '2026-08-03' },
+        ],
+      });
+      expect(errorOf(result)).toMatch(/fee transaction cannot settle/);
+    });
+
+    it('dismisses a computed match: not shown again as a match, not linked by the automation', async () => {
+      const bankAccount = await createAccount('BANK_ACCOUNT', '900012');
+      const card = await createAccount('CREDIT_CARD', '6464');
+      const debit = await createTransaction({
+        accountId: bankAccount,
+        amount: '-77.00',
+        eventDate: '2026-10-05',
+        sourceDescription: 'CARD 6464',
+      });
+      await createTransaction({
+        accountId: card,
+        amount: '-77.00',
+        eventDate: '2026-09-12',
+        debitDate: '2026-10-05',
+      });
+      const statement = { cardAccountId: card, currency: 'ILS', debitDate: '2026-10-05' };
+
+      const before = await createInjector()
+        .get(CreditCardTransactionsProvider)
+        .getStatementsByChargeIdLoader.load(debit.chargeId);
+      expect(before[0].statements).toMatchObject([{ ...statement, confirmed: false }]);
+
+      const result = await callMutation('dismissCreditCardStatements', {
+        bankTransactionId: debit.id,
+        statements: [statement],
+      });
+      expect(errorOf(result)).toBeNull();
+      expect(degradeChargesAccountantApproval).toHaveBeenCalledWith(expect.anything(), [
+        debit.chargeId,
+      ]);
+
+      const [after] = await createInjector()
+        .get(CreditCardTransactionsProvider)
+        .getStatementsByChargeIdLoader.load(debit.chargeId);
+      expect(after.statements).toEqual([]);
+      expect(after.suggestions).toEqual([
+        expect.objectContaining({ previouslyRejected: true }),
+      ]);
+      expect(await runAutomation()).toEqual([]);
+      expect(await linksOf(debit.id)).toEqual([]);
     });
   });
 });
