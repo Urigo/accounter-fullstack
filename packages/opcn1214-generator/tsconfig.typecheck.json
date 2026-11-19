@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/opcn1214-generator.tsbuildinfo"
+  },
+  "include": ["src", "tests", "scripts", "vitest.config.ts"]
+}
