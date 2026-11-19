@@ -4,7 +4,7 @@ import type { Shareholder } from '../../src/model/input.js';
 import { runPipeline } from '../../src/pipeline.js';
 import type { Issue } from '../../src/validate/issue.js';
 import type { RuleId } from '../../src/validate/rules.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { minimalInput, withCheckDigit } from '../fixtures/builders.js';
 import { tamper } from '../fixtures/files.js';
 
 const OPTIONS = { today: () => '2024-06-30' };
@@ -20,7 +20,7 @@ function holder(idNumber: string, dividendRightsPercent?: number): Shareholder {
 
 /** Distinct, valid shareholder IDs. */
 function id(index: number): string {
-  return String(100_000_000 + index);
+  return withCheckDigit(10_000_000 + index);
 }
 
 function issuesOf(shareholders: Shareholder[], ruleId: RuleId, kibbutz = false): Issue[] {
@@ -79,7 +79,7 @@ describe('shareholder rules (SPEC §10.4)', () => {
     it('reports every repeat after the first occurrence, at its idNumber', () => {
       const shareholders = [
         holder('123456782', 25),
-        holder('234567891', 25),
+        holder('234567899', 25),
         holder('123456782', 25),
         holder('123456782', 25),
       ];

@@ -44,7 +44,7 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     minimalInput({
       meta: { softwareName: 'My  Soft', saveDate: '2025-01-02' },
       company: {
-        withholdingFileNumber: '940000001',
+        withholdingFileNumber: '940000003',
         vatFileNumber: '514000009',
         occupationDescription: '  ייצור\u00A0תוכנה ',
         booksAddress: 'רחוב יפו 10, ירושלים',
@@ -107,8 +107,8 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     'digit strings that need padding',
     minimalInput({
       company: {
-        fileNumber: '12345',
-        withholdingFileNumber: '7',
+        fileNumber: '12344',
+        withholdingFileNumber: '75',
         fax: { prefix: '02', number: '7654321' },
       },
       shareholders: [
@@ -126,12 +126,12 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
   [
     'the other enum values, two reportable positions and padded declaration digits',
     fullDeclarationsInput({
-      preparer: { licensedDealerNumber: '1234', phone: { prefix: '052' } },
+      preparer: { licensedDealerNumber: '1230', phone: { prefix: '052' } },
       declarations: {
         reportablePositions: [12, 7],
         form6111Obligation: 'notRelevant',
         consolidatedReport: 'consolidatedUnderSection23',
-        familyCompany: { representativeFileNumber: '77' },
+        familyCompany: { representativeFileNumber: '75' },
         requestsAdvancePayments: false,
         hasBuildingIncome: true,
         partOfMultinationalGroup: false,
@@ -208,7 +208,7 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
       relatedCompanies: [
         {
           companyName: '  חברה\u00A0 קשורה ',
-          companyFileNumber: '77',
+          companyFileNumber: '75',
           relationType: 'jointlyControlled',
           assessingOfficeCode: 0,
         },
@@ -232,7 +232,7 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
     'R&D investments, optional members written as absent or padded, an amount of 0',
     minimalInput({
       rdInvestments: [
-        { companyName: '  חברת\u00A0 מו"פ ', companyFileNumber: '77', investmentAmount: 1500 },
+        { companyName: '  חברת\u00A0 מו"פ ', companyFileNumber: '75', investmentAmount: 1500 },
         { companyName: 'R&D Ltd', companyFileNumber: '', investmentAmount: 0 },
       ],
       amounts: { '165': 1500 },

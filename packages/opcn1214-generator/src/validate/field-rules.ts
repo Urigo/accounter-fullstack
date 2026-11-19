@@ -11,6 +11,7 @@ import type { CodeDef, EnumValue, FieldDef, FieldKind, RecordDef } from '../layo
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
 import { codeKey, incomeEntryKey, inputIndexOf, pathFor } from '../normalize/paths.js';
 import { isAllowedTextChar } from '../normalize/text.js';
+import { isValidIsraeliCheckDigit } from './check-digit.js';
 import { makeIssue, type Issue } from './issue.js';
 import type { RuleId } from './rules.js';
 
@@ -25,6 +26,8 @@ const SLOT = /^[^[]*\[\d+\]/;
 
 const TEXT_KINDS: ReadonlySet<FieldKind> = new Set(['text', 'hebrewText']);
 const DIGIT_STRING_KINDS: ReadonlySet<FieldKind> = new Set(['id9', 'shareholderId', 'digits']);
+/** Identifier kinds whose value must pass the Israeli check digit (SPEC §15 A-25). */
+const CHECK_DIGIT_KINDS: ReadonlySet<FieldKind> = new Set(['id9', 'shareholderId']);
 // The kind sets below apply to fields and codes alike: every CodeKind is also a FieldKind.
 /** Kinds whose value must be an integer (SPEC §4.4, §10.2 field.integer). */
 const WHOLE_KINDS: ReadonlySet<FieldKind> = new Set(['amount', 'amountX', 'num']);
@@ -167,6 +170,7 @@ function numberFindings(kind: FieldKind, value: number, width: number, name: str
 
 /** The findings of a digit string (id9, shareholderId, digits). */
 function digitStringFindings(
+  kind: FieldKind,
   value: string,
   width: number,
   isPhoneNumber: boolean,
@@ -193,6 +197,13 @@ function digitStringFindings(
       ruleId: 'field.phoneNumber',
       message: `${name} must have exactly ${PHONE_NUMBER_LENGTH} digits.`,
       expected: `exactly ${PHONE_NUMBER_LENGTH} digits`,
+    });
+  } else if (CHECK_DIGIT_KINDS.has(kind) && digitsOnly && !isValidIsraeliCheckDigit(value)) {
+    // Likewise: only a well-formed identifier has a check digit to verify.
+    findings.push({
+      ruleId: 'field.checkDigit',
+      message: `${name} fails the Israeli check digit.`,
+      expected: 'a number with a valid Israeli check digit',
     });
   }
   return findings;
@@ -243,7 +254,7 @@ function valueFindings(
       expected: 'a real calendar date YYYY-MM-DD',
     });
   } else if (typeof value === 'string' && DIGIT_STRING_KINDS.has(field.kind)) {
-    findings.push(...digitStringFindings(value, field.length, isPhoneNumber, name));
+    findings.push(...digitStringFindings(field.kind, value, field.length, isPhoneNumber, name));
   } else if (typeof value === 'string' && TEXT_KINDS.has(field.kind)) {
     findings.push(...textFindings(field.kind, value, field.length, name));
   } else if (typeof value === 'number') {

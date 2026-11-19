@@ -368,7 +368,7 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
         declarations: {
           ...base.declarations,
           isFamilyCompany: true,
-          familyCompany: { representativeFileNumber: '1', marked: true },
+          familyCompany: { representativeFileNumber: '18', marked: true },
           beneficiaryEnterprise: { noticeDate: '2024-01-01', marked: true },
           specialYear: { balanceSheetDate: '2024-01-01', marked: true },
         },

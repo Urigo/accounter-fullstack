@@ -25,7 +25,7 @@ export const input: Report1214Input = {
       prefix: '03',
       number: '1234567',
     },
-    withholdingFileNumber: '940000001',
+    withholdingFileNumber: '940000003',
     vatFileNumber: '514000009',
     occupationDescription: 'ייעוץ',
     booksAddress: 'רחוב יפו 2, ירושלים',
@@ -40,7 +40,7 @@ export const input: Report1214Input = {
     contactName: 'דנה כהן',
     name: 'יוסי לוי',
     profession: 'רואה חשבון',
-    licensedDealerNumber: '012345678',
+    licensedDealerNumber: '012345674',
     address: 'רחוב יפו 10, ירושלים',
     phone: {
       prefix: '02',
