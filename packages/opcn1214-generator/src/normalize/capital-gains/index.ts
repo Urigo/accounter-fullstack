@@ -9,6 +9,14 @@ import type { NormalizedRecord } from '../../model/normalized.js';
 import type { ValidateOptions } from '../../model/options.js';
 import { codeSection, headerValues } from '../fields.js';
 import {
+  assetHeader,
+  BETTERMENT_TAX_INPUT_KEYS,
+  FORCED_VIRTUAL_CURRENCY_INPUT_KEYS,
+  OIL_PARTNERSHIP_INPUT_KEYS,
+  SHARES_INPUT_KEYS,
+  walletAddressesHeader,
+} from './assets.js';
+import {
   NO_WITHHOLDING_1322_INPUT_KEYS,
   NO_WITHHOLDING_1326_INPUT_KEYS,
   noWithholding1322Header,
@@ -21,12 +29,17 @@ import { SECURITIES_INPUT_KEYS, securitiesHeader } from './securities.js';
 export type CapitalGainsInputSymbol = CapitalGainsAppendix['symbol'];
 
 /**
- * Header keys of each appendix type that are scalar members of the appendix, besides `symbol`,
- * `amounts` and `withholders` (the transaction symbol and appendix number are derived).
+ * Header keys of each appendix type that are scalar members of the appendix (dotted for a member
+ * of a nested object: `dates.code15`), besides `symbol`, `amounts`, `withholders` and
+ * `walletAddresses` (the transaction symbol, appendix number and sequence are derived).
  */
 export const CAPITAL_GAINS_INPUT_KEYS: Readonly<
   Record<CapitalGainsInputSymbol, readonly string[]>
 > = {
+  27: SHARES_INPUT_KEYS,
+  50: BETTERMENT_TAX_INPUT_KEYS,
+  51: FORCED_VIRTUAL_CURRENCY_INPUT_KEYS,
+  54: OIL_PARTNERSHIP_INPUT_KEYS,
   60: SECURITIES_INPUT_KEYS,
   63: SECTION6_INPUT_KEYS,
   64: SECURITIES_INPUT_KEYS,
@@ -40,6 +53,14 @@ const WITHHOLDING_SYMBOLS: ReadonlySet<CapitalGainsInputSymbol> = new Set([60, 6
 /** True when appendices of `symbol` have `withholders` (records 3060, 3064, 3065). */
 export function hasWithholders(symbol: CapitalGainsInputSymbol): boolean {
   return WITHHOLDING_SYMBOLS.has(symbol);
+}
+
+/** The symbols whose appendix has `walletAddresses`, header keys `walletAddresses[i]` (SPEC §7.3). */
+const WALLET_SYMBOLS: ReadonlySet<CapitalGainsInputSymbol> = new Set([51]);
+
+/** True when appendices of `symbol` have `walletAddresses` (record 3051). */
+export function hasWalletAddresses(symbol: CapitalGainsInputSymbol): boolean {
+  return WALLET_SYMBOLS.has(symbol);
 }
 
 /** Header keys of the derived transaction symbol (30xx@137) and appendix number (30xx@139). */
@@ -80,6 +101,17 @@ export function placeCapitalGains<T extends { symbol: number }>(
 /** The header input values of an appendix of any type, by FieldDef.key (derived ones aside). */
 function headerInput(appendix: CapitalGainsAppendix) {
   switch (appendix.symbol) {
+    case 27:
+      return assetHeader(appendix, SHARES_INPUT_KEYS);
+    case 50:
+      return assetHeader(appendix, BETTERMENT_TAX_INPUT_KEYS);
+    case 51:
+      return {
+        ...assetHeader(appendix, FORCED_VIRTUAL_CURRENCY_INPUT_KEYS),
+        ...walletAddressesHeader(appendix.walletAddresses),
+      };
+    case 54:
+      return assetHeader(appendix, OIL_PARTNERSHIP_INPUT_KEYS);
     case 60:
     case 64:
       return securitiesHeader(appendix);
@@ -95,15 +127,16 @@ function headerInput(appendix: CapitalGainsAppendix) {
 export interface NormalizedCapitalGains {
   /** In emission order (SPEC §3.3). */
   records: NormalizedRecord[];
-  /** Codes whose input value 0 was omitted (no 30xx code is zeroAllowed, SPEC §4.5). */
+  /** Codes whose input value 0 was omitted (every 30xx code but 3054 016, SPEC §4.5). */
   omittedZeroCodes: Array<{ record: CapitalGainsRecordType; recordIndex: number; code: string }>;
 }
 
 /**
  * The 30xx records of `appendices` in emission order (placeCapitalGains): each indexed among the
  * records of its type, with its input index, the derived symbol (30xx@137), appendix number
- * (30xx@139) and, where the record type has the field, "מספר בתל"ם" sequence, its header values and its code-amount section (amounts rounded per
- * `options.rounding`, SPEC §4.4, then zero codes omitted). Paths per pathFor (records 30xx).
+ * (30xx@139) and, where the record type has the field, "מספר בתל"ם" sequence, its header values
+ * and its code-amount section (amounts rounded per `options.rounding`, SPEC §4.4, then zero codes
+ * omitted unless zeroAllowed). Paths per pathFor (records 30xx).
  */
 export function normalizeCapitalGains(
   appendices: readonly CapitalGainsAppendix[],

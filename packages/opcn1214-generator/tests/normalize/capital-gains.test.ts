@@ -9,18 +9,23 @@ import type { Report1214Input } from '../../src/model/input.js';
 import type { ValidateOptions } from '../../src/model/options.js';
 import { placeCapitalGains } from '../../src/normalize/capital-gains/index.js';
 import { normalizeReport } from '../../src/normalize/report.js';
+import { fieldRules } from '../../src/validate/field-rules.js';
 import {
+  bettermentTaxAppendix,
   breakdownCountries,
+  forcedVirtualCurrencyAppendix,
   foreignAppendixWithBreakdown,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
+  oilPartnershipAppendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
   section6Appendices,
   section6Appendix,
   securitiesAppendix,
+  sharesAppendix,
   withholders,
 } from '../fixtures/builders.js';
 import { unmappedHeaderKeys } from '../helpers/coverage.js';
@@ -890,6 +895,559 @@ describe('the "מספר בתל"ם" sequence across mixed appendices (SPEC §7.4,
       section6Appendix(),
       noWithholding1322Appendix(),
       noWithholding1326Appendix(),
+    ]);
+  });
+});
+
+/** The [ruleId, path, recordType] of every error of `input`. */
+function errorsOf(input: Report1214Input): Array<[string, string, string | undefined]> {
+  return validate1214(input, OPTIONS).errors.map(issue => [
+    issue.ruleId,
+    issue.path,
+    issue.recordType,
+  ]);
+}
+
+/**
+ * The [ruleId, path] of the field-rule issues of the report of `input`, normalized without the
+ * shape stage: an untyped caller's input that lacks a member the types require (SPEC §9.3).
+ */
+function fieldIssuesOf(input: unknown): Array<[string, string]> {
+  return fieldRules(reportOf(input as Report1214Input)).map(issue => [issue.ruleId, issue.path]);
+}
+
+describe('normalizeReport: record 3027 (shares)', () => {
+  const def = LAYOUT.records['3027'];
+
+  it('has the asset header with three dates and the sequence at 255', () => {
+    expect(
+      def.fields.filter(f => f.kind !== 'filler').map(f => [f.key, f.position, f.length, f.kind]),
+    ).toEqual([
+      ['transactionSymbol', 137, 2, 'const'],
+      ['appendixNumber', 139, 3, 'serial'],
+      ['expropriation', 142, 1, 'yesNo'],
+      ['assetDetails', 143, 50, 'hebrewText'],
+      ['assetLocation', 193, 1, 'enum'],
+      ['relatedParty', 194, 1, 'yesNo'],
+      ['buyerName', 195, 30, 'text'],
+      ['dates.code15', 225, 10, 'date'],
+      ['dates.code20', 235, 10, 'date'],
+      ['dates.code53', 245, 10, 'date'],
+      ['sequenceNumber', 255, 2, 'serial'],
+    ]);
+  });
+
+  it('maps the header, the dates as dates.<code> and the location code, with input paths', () => {
+    const [record] = capitalGainsRecords(minimalInput({ capitalGains: [sharesAppendix()] }));
+    expect(record?.recordType).toBe('3027');
+    expect(record?.inputIndex).toBe(0);
+    expect(record?.values).toEqual({
+      transactionSymbol: 27,
+      appendixNumber: 1,
+      sequenceNumber: 1,
+      expropriation: false,
+      assetDetails: 'מניות חברה פרטית',
+      assetLocation: 1,
+      relatedParty: true,
+      buyerName: 'קונה בע"מ',
+      'dates.code15': '2024-03-15',
+      'dates.code20': '2015-06-01',
+      'dates.code53': '2010-01-31',
+    });
+    expect([...(record?.codes ?? [])]).toEqual([
+      ['015', 90_000],
+      ['018', 23],
+      ['020', 1234.56],
+      ['074', 5000],
+    ]);
+    expect(record?.paths).toEqual({
+      transactionSymbol: '',
+      appendixNumber: '',
+      sequenceNumber: '',
+      expropriation: 'capitalGains[0].expropriation',
+      assetDetails: 'capitalGains[0].assetDetails',
+      assetLocation: 'capitalGains[0].assetLocation',
+      relatedParty: 'capitalGains[0].relatedParty',
+      buyerName: 'capitalGains[0].buyerName',
+      'dates.code15': 'capitalGains[0].dates.code15',
+      'dates.code20': 'capitalGains[0].dates.code20',
+      'dates.code53': 'capitalGains[0].dates.code53',
+      'code:015': 'capitalGains[0].amounts["015"]',
+      'code:018': 'capitalGains[0].amounts["018"]',
+      'code:020': 'capitalGains[0].amounts["020"]',
+      'code:074': 'capitalGains[0].amounts["074"]',
+    });
+  });
+
+  it('sets every non-filler header field of record 3027', () => {
+    const report = reportOf(minimalInput({ capitalGains: [sharesAppendix()] }));
+    expect(unmappedHeaderKeys(def, report.records)).toEqual([]);
+  });
+
+  it('writes the header at its layout positions, the dates as DD/MM/YYYY', () => {
+    const [line] = linesOfType(minimalInput({ capitalGains: [sharesAppendix()] }), '3027');
+    expect(at(line, 137, 5)).toBe('27001');
+    expect(at(line, 142, 1)).toBe('2');
+    expect(at(line, 143, 50)).toBe('מניות חברה פרטית'.padStart(50, ' '));
+    expect(at(line, 193, 1)).toBe('1');
+    expect(at(line, 194, 1)).toBe('1');
+    expect(at(line, 195, 30)).toBe('קונה בע"מ'.padStart(30, ' '));
+    expect(at(line, 225, 10)).toBe('15/03/2024');
+    expect(at(line, 235, 10)).toBe('01/06/2015');
+    expect(at(line, 245, 10)).toBe('31/01/2010');
+    expect(at(line, 255, 2)).toBe('01');
+    expect(at(line, 257, 904)).toMatch(/^0+$/);
+  });
+
+  it('writes codes 020/053/027 ×100 with agorot (1234.56 → 123456) and the rate 018 ×100', () => {
+    const [line] = linesOfType(
+      minimalInput({
+        capitalGains: [
+          sharesAppendix({
+            amounts: { '015': 7, '018': 23, '020': 1234.56, '027': 0.01, '053': 99 },
+          }),
+        ],
+      }),
+      '3027',
+    );
+    expect(at(line, 1161, 3 + 10 + 3 + 4 + 3 * (3 + 12) + 3 + 10)).toBe(
+      '015' +
+        '0000000007' +
+        '018' +
+        '2300' +
+        '020' +
+        '000000123456' +
+        '027' +
+        '000000000001' +
+        '053' +
+        '000000009900' +
+        '074' +
+        '0000005000',
+    );
+    const [rate50] = linesOfType(
+      minimalInput({ capitalGains: [sharesAppendix({ amounts: { '015': 1, '018': 50 } })] }),
+      '3027',
+    );
+    expect(at(rate50, 1174, 7)).toBe('0185000');
+  });
+
+  it('reports code 018 outside {23, 50} as field.enum and a third decimal as field.decimals', () => {
+    expect(
+      errorsOf(
+        minimalInput({
+          capitalGains: [
+            section6Appendix(),
+            sharesAppendix({ amounts: { '018': 30, '053': 1.234 } }),
+          ],
+        }),
+      ),
+    ).toEqual([
+      ['field.enum', 'capitalGains[1].amounts["018"]', '3027'],
+      ['field.decimals', 'capitalGains[1].amounts["053"]', '3027'],
+    ]);
+  });
+
+  it('writes assetLocation abroad → 1, israel → 2, absent → 0', () => {
+    const location = (assetLocation: 'abroad' | 'israel' | undefined) =>
+      at(
+        linesOfType(minimalInput({ capitalGains: [sharesAppendix({ assetLocation })] }), '3027')[0],
+        193,
+        1,
+      );
+    expect(location('abroad')).toBe('1');
+    expect(location('israel')).toBe('2');
+    expect(location(undefined)).toBe('0');
+  });
+
+  it('accepts an appendix without dates or other members: the date fields are blank', () => {
+    const input = minimalInput({ capitalGains: [{ symbol: 27, amounts: { '015': 1 } }] });
+    expect(validate1214(input, OPTIONS)).toEqual({ valid: true, errors: [], warnings: [] });
+    const [line] = linesOfType(input, '3027');
+    expect(at(line, 142, 1)).toBe('0');
+    expect(at(line, 225, 30)).toBe(' '.repeat(30));
+    expect(at(line, 255, 2)).toBe('01');
+    const partial = minimalInput({
+      capitalGains: [
+        sharesAppendix({ dates: { code15: undefined, code20: undefined, code53: '2020-02-29' } }),
+      ],
+    });
+    const [partialLine] = linesOfType(partial, '3027');
+    expect(at(partialLine, 225, 30)).toBe(' '.repeat(20) + '29/02/2020');
+  });
+
+  it('reports a date that is not a real calendar date at capitalGains[i].dates.<code>', () => {
+    expect(
+      errorsOf(
+        minimalInput({ capitalGains: [sharesAppendix({ dates: { code20: '2023-02-29' } })] }),
+      ),
+    ).toEqual([['field.date', 'capitalGains[0].dates.code20', '3027']]);
+  });
+
+  it('takes a buyer name that does not start with a Hebrew letter (kind text)', () => {
+    expect(
+      errorsOf(minimalInput({ capitalGains: [sharesAppendix({ buyerName: 'Buyer Ltd' })] })),
+    ).toEqual([]);
+  });
+});
+
+describe.each([
+  ['3050', 'betterment tax', bettermentTaxAppendix, 193, 203],
+  ['3054', 'oil partnership', oilPartnershipAppendix, 192, 202],
+] as const)(
+  'normalizeReport: record %s (%s)',
+  (type, _name, build, purchaseDatePosition, code15Position) => {
+    const def = LAYOUT.records[type];
+    const symbol = Number(type.slice(2));
+
+    it('requires the purchase date and the code-15 date and has no sequence field', () => {
+      const keys = def.fields.filter(f => f.kind !== 'filler').map(f => f.key);
+      expect(keys).not.toContain('sequenceNumber');
+      expect(
+        def.fields
+          .filter(f => f.key === 'purchaseDate' || f.key === 'dates.code15')
+          .map(f => [f.key, f.position, f.required, f.kind]),
+      ).toEqual([
+        ['purchaseDate', purchaseDatePosition, 'yes', 'date'],
+        ['dates.code15', code15Position, 'yes', 'date'],
+      ]);
+    });
+
+    it('maps the header with input paths', () => {
+      const appendix = build();
+      const [record] = capitalGainsRecords(minimalInput({ capitalGains: [appendix] }));
+      expect(record?.recordType).toBe(type);
+      expect(record?.values).toEqual({
+        transactionSymbol: symbol,
+        appendixNumber: 1,
+        ...('expropriation' in appendix ? { expropriation: appendix.expropriation } : {}),
+        assetDetails: appendix.assetDetails,
+        purchaseDate: appendix.purchaseDate,
+        'dates.code15': appendix.dates.code15,
+      });
+      expect(record?.paths).toMatchObject({
+        transactionSymbol: '',
+        appendixNumber: '',
+        assetDetails: 'capitalGains[0].assetDetails',
+        purchaseDate: 'capitalGains[0].purchaseDate',
+        'dates.code15': 'capitalGains[0].dates.code15',
+        'code:015': 'capitalGains[0].amounts["015"]',
+      });
+    });
+
+    it(`sets every non-filler header field of record ${type}`, () => {
+      const report = reportOf(minimalInput({ capitalGains: [build()] }));
+      expect(unmappedHeaderKeys(def, report.records)).toEqual([]);
+    });
+
+    it('writes the header at its layout positions', () => {
+      const appendix = build({ purchaseDate: '2001-02-03', dates: { code15: '2024-11-30' } });
+      const [line] = linesOfType(minimalInput({ capitalGains: [appendix] }), type);
+      expect(at(line, 137, 5)).toBe(`${symbol}001`);
+      expect(at(line, purchaseDatePosition, 10)).toBe('03/02/2001');
+      expect(at(line, code15Position, 10)).toBe('30/11/2024');
+      expect(at(line, purchaseDatePosition - 50, 50)).toBe(
+        (appendix.assetDetails ?? '').padStart(50, ' '),
+      );
+      expect(at(line, code15Position + 10, 1160 - code15Position - 9)).toMatch(/^0+$/);
+    });
+
+    it('reports an absent purchase date or code-15 date: input.shape for typed input', () => {
+      const appendix: Record<string, unknown> = { ...build() };
+      delete appendix['purchaseDate'];
+      const input = { ...minimalInput(), capitalGains: [appendix, { ...build(), dates: {} }] };
+      expect(validate1214(input, OPTIONS).errors.map(issue => [issue.ruleId, issue.path])).toEqual([
+        ['input.shape', 'capitalGains[0].purchaseDate'],
+        ['input.shape', 'capitalGains[1].dates.code15'],
+      ]);
+    });
+
+    it('reports them as field.required at capitalGains[i].purchaseDate / .dates.code15', () => {
+      const withoutPurchaseDate: Record<string, unknown> = { ...build() };
+      delete withoutPurchaseDate['purchaseDate'];
+      const withoutDates: Record<string, unknown> = { ...build() };
+      delete withoutDates['dates'];
+      expect(
+        fieldIssuesOf({
+          ...minimalInput(),
+          capitalGains: [section6Appendix(), withoutDates, withoutPurchaseDate],
+        }),
+      ).toEqual([
+        ['field.required', 'capitalGains[1].dates.code15'],
+        ['field.required', 'capitalGains[2].purchaseDate'],
+      ]);
+    });
+  },
+);
+
+describe('record 3050 codes', () => {
+  it('accepts code 014 = 10 or 20 and reports any other value as field.enum', () => {
+    expect(
+      errorsOf(minimalInput({ capitalGains: [bettermentTaxAppendix({ amounts: { '014': 20 } })] })),
+    ).toEqual([]);
+    expect(
+      errorsOf(minimalInput({ capitalGains: [bettermentTaxAppendix({ amounts: { '014': 15 } })] })),
+    ).toEqual([['field.enum', 'capitalGains[0].amounts["014"]', '3050']]);
+  });
+
+  it('writes 014, then 015, 016 and the rate 018 ×100 in ascending code order', () => {
+    const [line] = linesOfType(minimalInput({ capitalGains: [bettermentTaxAppendix()] }), '3050');
+    expect(at(line, 1161, 5 + 13 + 13 + 7)).toBe(
+      '01410' + '0150001200000' + '0160000700000' + '0185000',
+    );
+  });
+
+  it('reports code 018 outside {23, 50} as field.enum (D-6)', () => {
+    expect(
+      errorsOf(minimalInput({ capitalGains: [bettermentTaxAppendix({ amounts: { '018': 25 } })] })),
+    ).toEqual([['field.enum', 'capitalGains[0].amounts["018"]', '3050']]);
+  });
+
+  it('omits code 016 = 0 (not zeroAllowed in 3050)', () => {
+    const report = reportOf(
+      minimalInput({ capitalGains: [bettermentTaxAppendix({ amounts: { '016': 0 } })] }),
+    );
+    expect(report.omittedZeroCodes).toEqual([{ record: '3050', recordIndex: 0, code: '016' }]);
+  });
+});
+
+describe('record 3054 codes', () => {
+  it('writes code 016 = 0 (zeroAllowed, SPEC §4.5)', () => {
+    const input = minimalInput({
+      capitalGains: [oilPartnershipAppendix({ amounts: { '015': 0, '016': 0 } })],
+    });
+    const report = reportOf(input);
+    expect(report.omittedZeroCodes).toEqual([{ record: '3054', recordIndex: 0, code: '015' }]);
+    const [line] = linesOfType(input, '3054');
+    expect(at(line, 1161, 14)).toBe('0160000000000' + '0');
+    expect(validate1214(input, OPTIONS).errors).toEqual([]);
+  });
+});
+
+describe('normalizeReport: record 3051 (forced virtual-currency transaction)', () => {
+  const def = LAYOUT.records['3051'];
+
+  it('has the asset header, the sequence at 234 and two wallet addresses at 236 and 386', () => {
+    expect(
+      def.fields
+        .filter(f => f.kind !== 'filler')
+        .map(f => [f.key, f.position, f.length, f.kind, f.required]),
+    ).toEqual([
+      ['transactionSymbol', 137, 2, 'const', 'yes'],
+      ['appendixNumber', 139, 3, 'serial', 'yes'],
+      ['assetDetails', 142, 50, 'hebrewText', 'no'],
+      ['assetLocation', 192, 1, 'enum', 'no'],
+      ['relatedParty', 193, 1, 'yesNo', 'no'],
+      ['buyerName', 194, 30, 'hebrewText', 'no'],
+      ['dates.code15', 224, 10, 'date', 'yes'],
+      ['sequenceNumber', 234, 2, 'serial', 'yes'],
+      ['walletAddresses[0]', 236, 150, 'text', 'no'],
+      ['walletAddresses[1]', 386, 150, 'text', 'no'],
+    ]);
+  });
+
+  it('maps the header, walletAddresses[i] to keys walletAddresses[i], with input paths', () => {
+    const [record] = capitalGainsRecords(
+      minimalInput({ capitalGains: [forcedVirtualCurrencyAppendix()] }),
+    );
+    expect(record?.recordType).toBe('3051');
+    expect(record?.values).toEqual({
+      transactionSymbol: 51,
+      appendixNumber: 1,
+      sequenceNumber: 1,
+      assetDetails: 'ביטקוין',
+      assetLocation: 2,
+      relatedParty: false,
+      buyerName: 'בורסת מטבעות',
+      'dates.code15': '2024-12-31',
+      'walletAddresses[0]': 'bc1qwalletaddressone',
+      'walletAddresses[1]': 'bc1qwalletaddresstwo',
+    });
+    expect([...(record?.codes ?? [])]).toEqual([
+      ['015', 80_000],
+      ['016', 30_000],
+      ['071', 1],
+    ]);
+    expect(record?.paths).toEqual({
+      transactionSymbol: '',
+      appendixNumber: '',
+      sequenceNumber: '',
+      assetDetails: 'capitalGains[0].assetDetails',
+      assetLocation: 'capitalGains[0].assetLocation',
+      relatedParty: 'capitalGains[0].relatedParty',
+      buyerName: 'capitalGains[0].buyerName',
+      'dates.code15': 'capitalGains[0].dates.code15',
+      'walletAddresses[0]': 'capitalGains[0].walletAddresses[0]',
+      'walletAddresses[1]': 'capitalGains[0].walletAddresses[1]',
+      'code:015': 'capitalGains[0].amounts["015"]',
+      'code:016': 'capitalGains[0].amounts["016"]',
+      'code:071': 'capitalGains[0].amounts["071"]',
+    });
+  });
+
+  it('sets every non-filler header field of record 3051', () => {
+    const report = reportOf(minimalInput({ capitalGains: [forcedVirtualCurrencyAppendix()] }));
+    expect(unmappedHeaderKeys(def, report.records)).toEqual([]);
+  });
+
+  it('writes the header at its layout positions, the wallet addresses padded to 150', () => {
+    const [line] = linesOfType(
+      minimalInput({ capitalGains: [forcedVirtualCurrencyAppendix()] }),
+      '3051',
+    );
+    expect(at(line, 137, 5)).toBe('51001');
+    expect(at(line, 142, 50)).toBe('ביטקוין'.padStart(50, ' '));
+    expect(at(line, 192, 2)).toBe('22');
+    expect(at(line, 194, 30)).toBe('בורסת מטבעות'.padStart(30, ' '));
+    expect(at(line, 224, 10)).toBe('31/12/2024');
+    expect(at(line, 234, 2)).toBe('01');
+    expect(at(line, 236, 150)).toBe('bc1qwalletaddressone'.padStart(150, ' '));
+    expect(at(line, 386, 150)).toBe('bc1qwalletaddresstwo'.padStart(150, ' '));
+    expect(at(line, 536, 625)).toMatch(/^0+$/);
+    expect(at(line, 1161, 13 + 13 + 4)).toBe('0150000080000' + '0160000030000' + '0711');
+  });
+
+  it('writes one wallet address in the first slot and leaves the second blank', () => {
+    const [line] = linesOfType(
+      minimalInput({
+        capitalGains: [forcedVirtualCurrencyAppendix({ walletAddresses: ['0xabc'] })],
+      }),
+      '3051',
+    );
+    expect(at(line, 236, 150)).toBe('0xabc'.padStart(150, ' '));
+    expect(at(line, 386, 150)).toBe(' '.repeat(150));
+  });
+
+  it('requires codes 071 and 016 (field.required; 0 counts as absent) and 071 = 1', () => {
+    expect(
+      errorsOf(
+        minimalInput({
+          capitalGains: [
+            sharesAppendix(),
+            forcedVirtualCurrencyAppendix({ amounts: { '071': undefined, '016': 0 } }),
+          ],
+        }),
+      ),
+    ).toEqual([
+      ['field.required', 'capitalGains[1].amounts["016"]', '3051'],
+      ['field.required', 'capitalGains[1].amounts["071"]', '3051'],
+    ]);
+    expect(
+      errorsOf(
+        minimalInput({ capitalGains: [forcedVirtualCurrencyAppendix({ amounts: { '071': 2 } })] }),
+      ),
+    ).toEqual([['field.enum', 'capitalGains[0].amounts["071"]', '3051']]);
+  });
+
+  it('reports an absent code-15 date: input.shape for typed input, field.required in the model', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [{ ...forcedVirtualCurrencyAppendix(), dates: {} }],
+    };
+    expect(validate1214(input, OPTIONS).errors.map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.shape', 'capitalGains[0].dates.code15'],
+    ]);
+    expect(fieldIssuesOf(input)).toEqual([['field.required', 'capitalGains[0].dates.code15']]);
+  });
+
+  it('reports a wallet address over 150 characters at its slot and a third one as input.shape', () => {
+    expect(
+      errorsOf(
+        minimalInput({
+          capitalGains: [
+            forcedVirtualCurrencyAppendix({ walletAddresses: ['a', 'b'.repeat(151)] }),
+          ],
+        }),
+      ),
+    ).toEqual([['field.length', 'capitalGains[0].walletAddresses[1]', '3051']]);
+    expect(
+      errorsOf(
+        minimalInput({
+          capitalGains: [forcedVirtualCurrencyAppendix({ walletAddresses: ['a'.repeat(150)] })],
+        }),
+      ),
+    ).toEqual([]);
+    const input = {
+      ...minimalInput(),
+      capitalGains: [{ ...forcedVirtualCurrencyAppendix(), walletAddresses: ['a', 'b', 'c'] }],
+    };
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({ ruleId: 'input.shape', path: 'capitalGains[0].walletAddresses' }),
+    ]);
+  });
+
+  it('reports a buyer name that does not start with a Hebrew letter (kind hebrewText)', () => {
+    expect(
+      errorsOf(
+        minimalInput({ capitalGains: [forcedVirtualCurrencyAppendix({ buyerName: 'Exchange' })] }),
+      ),
+    ).toEqual([['field.hebrewFirstLetter', 'capitalGains[0].buyerName', '3051']]);
+  });
+});
+
+describe('the "מספר בתל"ם" sequence with asset appendices (SPEC §7.4, §15 A-7)', () => {
+  // Input order 51, 63, 27, 65, 50, 54, 27: emitted 3027, 3027, 3050, 3051, 3054, 3063, 3065.
+  const appendices = [
+    forcedVirtualCurrencyAppendix(),
+    section6Appendix(),
+    sharesAppendix(),
+    noWithholding1322Appendix(),
+    bettermentTaxAppendix(),
+    oilPartnershipAppendix(),
+    sharesAppendix({ assetLocation: 'israel' }),
+  ];
+  const input = minimalInput({ capitalGains: appendices });
+
+  it('numbers 3027, 3051 and 3065 by their emission position among all appendices', () => {
+    expect(
+      capitalGainsRecords(input).map(r => [
+        r.recordType,
+        r.inputIndex,
+        r.values.appendixNumber,
+        r.values.sequenceNumber,
+      ]),
+    ).toEqual([
+      ['3027', 2, 1, 1],
+      ['3027', 6, 2, 2],
+      ['3050', 4, 1, undefined],
+      ['3051', 0, 1, 4],
+      ['3054', 5, 1, undefined],
+      ['3063', 1, 1, undefined],
+      ['3065', 3, 1, 7],
+    ]);
+  });
+
+  it('writes the sequences at 3027@255, 3051@234 and 3065@325', () => {
+    const lines = linesOf(input);
+    expect(lines.map(line => line.slice(4, 8))).toEqual([
+      '1000',
+      '1020',
+      '3027',
+      '3027',
+      '3050',
+      '3051',
+      '3054',
+      '3063',
+      '3065',
+      '9999',
+    ]);
+    expect([at(lines[2], 255, 2), at(lines[3], 255, 2)]).toEqual(['01', '02']);
+    expect(at(lines[5], 234, 2)).toBe('04');
+    expect(at(lines[8], 325, 2)).toBe('07');
+    expect(at(lines.at(-1), 145, 2)).toBe('07');
+  });
+
+  it('generates the seven records and parses them back in file order', () => {
+    expect(validate1214(input, OPTIONS)).toEqual({ valid: true, errors: [], warnings: [] });
+    const parsed = parse1214(generate1214(input, OPTIONS).text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains).toEqual([
+      appendices[2],
+      appendices[6],
+      appendices[4],
+      appendices[0],
+      appendices[5],
+      appendices[1],
+      appendices[3],
     ]);
   });
 });

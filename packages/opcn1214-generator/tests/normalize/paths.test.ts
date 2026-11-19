@@ -170,12 +170,45 @@ describe('pathFor (SPEC §7.3, §9.1 path grammar)', () => {
     );
   });
 
-  it.each(['3027', '3077'] as const)(
-    'maps keys of record %s, which has no input mapping yet, to the empty path',
+  it.each(['3027', '3051'] as const)(
+    'maps a record %s key, dates and wallet slots included, into capitalGains[i]; the sequence is derived',
     recordType => {
-      expect(pathFor(recordType, 0, 'anything')).toBe('');
+      expect(pathFor(recordType, 2, 'assetLocation')).toBe('capitalGains[2].assetLocation');
+      expect(pathFor(recordType, 1, 'dates.code15')).toBe('capitalGains[1].dates.code15');
+      expect(pathFor(recordType, 0, 'code:015')).toBe('capitalGains[0].amounts["015"]');
+      const derived = LAYOUT.records[recordType].fields.filter(field => field.derived);
+      expect(derived.map(field => field.key)).toEqual([
+        'transactionSymbol',
+        'appendixNumber',
+        'sequenceNumber',
+      ]);
+      for (const field of derived) {
+        expect(pathFor(recordType, 1, field.key)).toBe('');
+      }
     },
   );
+
+  it('maps a record 3051 wallet slot key into capitalGains[i].walletAddresses[j]', () => {
+    expect(pathFor('3051', 4, 'walletAddresses[1]')).toBe('capitalGains[4].walletAddresses[1]');
+  });
+
+  it.each(['3050', '3054'] as const)(
+    'maps a record %s key into capitalGains[i]; symbol and appendix number are derived',
+    recordType => {
+      expect(pathFor(recordType, 3, 'purchaseDate')).toBe('capitalGains[3].purchaseDate');
+      expect(pathFor(recordType, 0, 'dates.code15')).toBe('capitalGains[0].dates.code15');
+      expect(pathFor(recordType, 1, 'code:016')).toBe('capitalGains[1].amounts["016"]');
+      const derived = LAYOUT.records[recordType].fields.filter(field => field.derived);
+      expect(derived.map(field => field.key)).toEqual(['transactionSymbol', 'appendixNumber']);
+      for (const field of derived) {
+        expect(pathFor(recordType, 1, field.key)).toBe('');
+      }
+    },
+  );
+
+  it('maps keys of record 3077, which has no input mapping yet, to the empty path', () => {
+    expect(pathFor('3077', 0, 'anything')).toBe('');
+  });
 
   it('maps the fields of the control record 9999, which are all derived, to the empty path', () => {
     for (const field of LAYOUT.records['9999'].fields) {

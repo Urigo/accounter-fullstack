@@ -1023,6 +1023,8 @@ a test asserts that every non-filler key in `fields.csv` is produced (§13.3).
 | `qualifyingCompany.*` (1065–1091)                    | `qualifyingCompany.*` (`purchased`/`amortizationClaimed` are yes/no) |
 | `withholders[0..3].*` (3060/3064/3065)               | `withholders[i].*`                                                   |
 | `withholdingStatus` (3065@146, 3066@143)             | `withholdingStatus` (first/second half → 2/3), absent → `0`          |
+| `assetLocation` (3027@193, 3051@192)                 | `assetLocation` (abroad/israel → 1/2), absent → `0`                  |
+| `dates.code*` (3027/3050/3051/3054)                  | `dates.code15` / `code20` / `code53`, written `DD/MM/YYYY`           |
 | `improvements[0..4].*` (3077)                        | `improvements[i].expense / accumulatedDepreciation / date`           |
 | `walletAddresses[0..1]` (3051/3077)                  | `walletAddresses[i]`                                                 |
 
@@ -1047,16 +1049,22 @@ Capital-gains appendices are keyed by their index in `capitalGains`: a header ke
 maps to `capitalGains[i].<key>` and a code to `capitalGains[i].amounts["022"]`, where `i` is the
 appendix's input index, not its position in the file (records are grouped by type, §3.3). The
 transaction symbol (30xx@137), the appendix number (30xx@139) and the "מספר בתל"ם" sequence
-(3065@325, 3066@154, §7.4) are derived and have no input path; the withholding status is read back
-as its literal (an absent status, written as 0, stays absent). When parsing, `capitalGains` lists
-the appendices in file order (grouped by type ascending), the symbol comes from the record type, and
-`capitalGains` exists only when the file has 30xx records.
+(3027@255, 3051@234, 3065@325, 3066@154, §7.4) are derived and have no input path; the withholding
+status and the asset location are read back as their literals (an absent value, written as 0, stays
+absent), and the dates under `dates` (no `dates` object when none is written). When parsing,
+`capitalGains` lists the appendices in file order (grouped by type ascending), the symbol comes from
+the record type, and `capitalGains` exists only when the file has 30xx records.
 
 The withholders of 3060/3064/3065 are written slot by slot: `withholders[j]` fills the j-th slot
 (header keys `withholders[j].name`, `.branch`, `.account`), so an issue on it is reported at
 `capitalGains[i].withholders[j].<member>`. When parsing, `withholders` lists the slots up to the
 last one with any value; an empty slot before it is read back as `{}` (keeping the indices of the
 slots after it), and `withholders` is absent when no slot has a value.
+
+The wallet addresses of 3051 are written slot by slot as well (`walletAddresses[j]`, header key
+`walletAddresses[j]`, issue path `capitalGains[i].walletAddresses[j]`). When parsing,
+`walletAddresses` lists the slots up to the last one with a value; an empty first slot before a
+filled second one is read back as `''`, and `walletAddresses` is absent when no slot has a value.
 
 Only five reportable positions have a field: more than five raise one `main.reportablePositions.max`
 notice at `declarations.reportablePositions[5]` (the first position not written), and the first five

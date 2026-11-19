@@ -4,6 +4,8 @@ import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import { report1214InputSchema, schemaFor } from '../../src/model/schema.js';
 import { checkShape, zodIssuesToIssues } from '../../src/validate/shape.js';
 import {
+  bettermentTaxAppendix,
+  forcedVirtualCurrencyAppendix,
   foreignAppendix,
   foreignAppendixWithBreakdown,
   fullDeclarationsInput,
@@ -11,12 +13,14 @@ import {
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
+  oilPartnershipAppendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
   section6Appendices,
   section6Appendix,
   securitiesAppendix,
+  sharesAppendix,
   withholders,
 } from '../fixtures/builders.js';
 
@@ -265,6 +269,84 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
     expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
       ['input.unknownCode', 'capitalGains[0].amounts["022"]'],
       ['input.unknownCode', 'capitalGains[1].amounts["012"]'],
+    ]);
+  });
+
+  it('accepts 3027, 3050, 3054 and 3051 appendices, complete or with only the required members', () => {
+    expect(
+      shapeIssues(
+        minimalInput({
+          capitalGains: [
+            sharesAppendix(),
+            bettermentTaxAppendix(),
+            oilPartnershipAppendix(),
+            forcedVirtualCurrencyAppendix(),
+            forcedVirtualCurrencyAppendix({ walletAddresses: ['0x1'] }),
+            { symbol: 27, amounts: {} },
+            { symbol: 27, dates: {}, amounts: {} },
+            {
+              symbol: 50,
+              purchaseDate: '2020-01-01',
+              dates: { code15: '2024-01-01' },
+              amounts: {},
+            },
+            {
+              symbol: 54,
+              purchaseDate: '2020-01-01',
+              dates: { code15: '2024-01-01' },
+              amounts: {},
+            },
+            { symbol: 51, dates: { code15: '2024-01-01' }, amounts: {} },
+          ],
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it('rejects a missing required date, an unknown location, three wallet addresses and foreign members', () => {
+    const { purchaseDate: _purchaseDate, ...withoutPurchaseDate } = bettermentTaxAppendix();
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        withoutPurchaseDate,
+        { ...oilPartnershipAppendix(), dates: {} },
+        { ...forcedVirtualCurrencyAppendix(), walletAddresses: ['a', 'b', 'c'] },
+        { ...forcedVirtualCurrencyAppendix(), walletAddresses: [] },
+        { ...sharesAppendix(), assetLocation: 1, dates: { code15: '15/03/2024' } },
+        { ...oilPartnershipAppendix(), expropriation: true },
+        { ...sharesAppendix(), walletAddresses: ['a'] },
+        { ...bettermentTaxAppendix(), dates: { code15: '2024-01-01', code20: '2024-01-01' } },
+      ],
+    };
+    expect(shapePaths(input).sort()).toEqual([
+      'capitalGains[0].purchaseDate',
+      'capitalGains[1].dates.code15',
+      'capitalGains[2].walletAddresses',
+      'capitalGains[3].walletAddresses',
+      'capitalGains[4].assetLocation',
+      'capitalGains[4].dates.code15',
+      'capitalGains[5].expropriation',
+      'capitalGains[6].walletAddresses',
+      'capitalGains[7].dates.code20',
+    ]);
+  });
+
+  it('rejects codes of another appendix type in the amounts of 3027, 3050, 3054 and 3051', () => {
+    // 020 is a code of 3027 only; 014 of 3050 only; 071 of 3051 only.
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        { ...sharesAppendix(), amounts: { '020': 1, '014': 10 } },
+        { ...bettermentTaxAppendix(), amounts: { '014': 10, '071': 1 } },
+        { ...oilPartnershipAppendix(), amounts: { '016': 0, '020': 1 } },
+        { ...forcedVirtualCurrencyAppendix(), amounts: { '071': 1, '016': 1, '018': 23 } },
+      ],
+    };
+    expect(checkShape(input, 2024).map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.unknownCode', 'capitalGains[0].amounts["014"]'],
+      ['input.unknownCode', 'capitalGains[1].amounts["071"]'],
+      ['input.unknownCode', 'capitalGains[2].amounts["020"]'],
+      ['input.unknownCode', 'capitalGains[3].amounts["018"]'],
     ]);
   });
 

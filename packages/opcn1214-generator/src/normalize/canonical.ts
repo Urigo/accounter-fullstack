@@ -16,8 +16,10 @@ import {
   type Report1214Input,
 } from '../model/input.js';
 import type { GenerateOptions } from '../model/options.js';
+import { readWalletAddresses, walletAddressKey } from './capital-gains/assets.js';
 import {
   CAPITAL_GAINS_INPUT_KEYS,
+  hasWalletAddresses,
   hasWithholders,
   placeCapitalGains,
 } from './capital-gains/index.js';
@@ -160,8 +162,9 @@ function canonicalAmounts(
 /**
  * The capital-gains appendices as the parser reads their 30xx records back: in emission order
  * (grouped by symbol ascending, input order within a symbol, SPEC §3.3), header members like any
- * header value, withholders slot by slot (readWithholders: each member like a header value,
- * trailing empty slots and an empty list removed), amounts like the 1000 amounts.
+ * header value (an empty `dates` removed), withholders slot by slot (readWithholders: each member
+ * like a header value, trailing empty slots and an empty list removed), wallet addresses likewise
+ * (readWalletAddresses: an empty slot before a filled one as `''`), amounts like the 1000 amounts.
  */
 function canonicalCapitalGains(
   layout: YearLayout,
@@ -186,6 +189,15 @@ function canonicalCapitalGains(
       : undefined;
     if (withholders) {
       tree.withholders = withholders;
+    }
+    const addresses = 'walletAddresses' in appendix ? (appendix.walletAddresses ?? []) : [];
+    const walletAddresses = hasWalletAddresses(appendix.symbol)
+      ? readWalletAddresses(slot =>
+          canonicalValue(fieldOf(def, walletAddressKey(slot)), addresses[slot], rounding),
+        )
+      : undefined;
+    if (walletAddresses) {
+      tree.walletAddresses = walletAddresses;
     }
     tree.amounts = canonicalAmounts(def, appendix.amounts, rounding);
     return tree;
