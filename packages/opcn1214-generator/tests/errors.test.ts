@@ -1,6 +1,7 @@
 import {
   Opcn1214Error,
   Opcn1214InternalError,
+  Opcn1214ParseError,
   Opcn1214UnsupportedYearError,
   Opcn1214ValidationError,
 } from '../src/errors.js';
@@ -103,6 +104,22 @@ describe('errors', () => {
       const issues = [issue('field.required', 'a'), issue('field.length', 'b')];
       expect(new Opcn1214ValidationError(issues).message).toBe(
         '1214 report has 2 errors: field.required at a; field.length at b',
+      );
+    });
+  });
+
+  describe('Opcn1214ParseError', () => {
+    it('extends Opcn1214Error, sets name and counts the problems in the message', () => {
+      const issues = [issue('parse.lineLength', ''), issue('parse.numeric', 'company.fileNumber')];
+      const error = new Opcn1214ParseError(issues);
+      expect(error).toBeInstanceOf(Opcn1214Error);
+      expect(error.name).toBe('Opcn1214ParseError');
+      expect(error.issues).toEqual(issues);
+      expect(error.message).toBe(
+        '1214 file has 2 structural problems: parse.lineLength; parse.numeric at company.fileNumber',
+      );
+      expect(new Opcn1214ParseError([issue('parse.empty', '')]).message).toBe(
+        '1214 file has 1 structural problem: parse.empty',
       );
     });
   });
