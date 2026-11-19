@@ -140,6 +140,8 @@ type TransactionSeed = {
   chargeId?: string;
   /** Otsar Hahayal ILS raw row's origin_reference, to create the transaction from such a row */
   otsarOriginReference?: string;
+  /** The Otsar raw row's drill-down data; a card breakdown naming `otsarOriginReference` by default */
+  otsarDrillDownData?: unknown;
   /** Poalim ILS raw card-debit row (activity 491) reference, to create the transaction from one */
   poalim491Reference?: number;
   isFee?: boolean;
@@ -162,7 +164,17 @@ async function withoutTriggers(fn: (client: PoolClient) => Promise<void>) {
   }
 }
 
-async function createOtsarRawRow(originReference: string): Promise<string> {
+/** A card-breakdown (T20C2211) drill-down naming the card by its last 4 digits */
+function otsarCardBreakdown(lastFour: string) {
+  return {
+    T20C2211: { 'OUT-DATA': { 'ALL-CARDS': { 'KARTIS-DETAILS': { 'OUT-MSKART': lastFour } } } },
+  };
+}
+
+async function createOtsarRawRow(
+  originReference: string,
+  drillDownData: unknown = otsarCardBreakdown(originReference),
+): Promise<string> {
   const id = randomUUID();
   await withoutTriggers(client =>
     client
@@ -174,12 +186,12 @@ async function createOtsarRawRow(originReference: string): Promise<string> {
            date_of_registration, debit_amount, depositor_id, description, drill_down_url,
            first_transaction_of_day, last_transaction_of_day, name, opening_balance,
            operation_source, reference, salary_ind, transaction_source, transaction_reason,
-           origin_reference
+           origin_reference, drill_down_data
          )
          VALUES ($1, $2, 111, 0, 222, 0, '77', 0, 0, 0, 0, 0, 0, 'Test Customer', now(), now(),
            500, 0, 'Card breakdown', 'https://example.com', true, false, 'Test', 0, 'WEB',
-           floor(random() * 1000000)::int, 0, 'BANK', 'Test', $3)`,
-        [id, OWNER_ID, originReference],
+           floor(random() * 1000000)::int, 0, 'BANK', 'Test', $3, $4::jsonb)`,
+        [id, OWNER_ID, originReference, JSON.stringify(drillDownData)],
       )
       .then(() => undefined),
   );
@@ -228,7 +240,10 @@ async function createTransaction(seed: TransactionSeed) {
 
   const rawListId = randomUUID();
   if (seed.otsarOriginReference !== undefined) {
-    const otsarRawId = await createOtsarRawRow(seed.otsarOriginReference);
+    const otsarRawId = await createOtsarRawRow(
+      seed.otsarOriginReference,
+      ...(seed.otsarDrillDownData === undefined ? [] : [seed.otsarDrillDownData]),
+    );
     await pool.query(
       `INSERT INTO accounter_schema.transactions_raw_list (id, otsar_hahayal_ils_id) VALUES ($1, $2)`,
       [rawListId, otsarRawId],
@@ -899,6 +914,110 @@ describe('credit card statements', () => {
       const loader = createInjector().get(CreditCardStatementsProvider)
         .getLegacyReferenceAccountIdsByBankTransactionIdLoader;
       expect(await loader.loadMany([debit.id, noMatch.id])).toEqual([[card], []]);
+    });
+  });
+
+  describe('suggested settlement account', () => {
+    async function linkDebit(
+      bankAccountId: string,
+      cardAccountId: string,
+      debitDate: `${number}-${number}-${number}`,
+    ) {
+      const debit = await createTransaction({
+        accountId: bankAccountId,
+        amount: '-10.00',
+        eventDate: debitDate,
+      });
+      await createInjector()
+        .get(CreditCardStatementsProvider)
+        .insertLinks([
+          {
+            ownerId: OWNER_ID,
+            bankTransactionId: debit.id,
+            cardAccountId,
+            currency: 'ILS',
+            debitDate,
+            linkMethod: 'MANUAL',
+          },
+        ]);
+    }
+
+    it('suggests the bank account most of the card links come from, once 2 agree', async () => {
+      const mainBank = await createAccount('BANK_ACCOUNT', '900031');
+      const otherBank = await createAccount('BANK_ACCOUNT', '900032');
+      const card = await createAccount('CREDIT_CARD', '6161');
+      const oneLinkCard = await createAccount('CREDIT_CARD', '6262');
+      const tiedCard = await createAccount('CREDIT_CARD', '6363');
+      const unlinkedCard = await createAccount('CREDIT_CARD', '6464');
+      await linkDebit(mainBank, card, '2026-11-01');
+      await linkDebit(mainBank, card, '2026-11-02');
+      await linkDebit(otherBank, card, '2026-11-03');
+      await linkDebit(mainBank, oneLinkCard, '2026-11-01');
+      await linkDebit(mainBank, tiedCard, '2026-11-01');
+      await linkDebit(mainBank, tiedCard, '2026-11-02');
+      await linkDebit(otherBank, tiedCard, '2026-11-03');
+      await linkDebit(otherBank, tiedCard, '2026-11-04');
+
+      const loader = createInjector().get(FinancialCreditCardAccountsProvider)
+        .getSettlementAccountSuggestionByCardIdLoader;
+      expect(await loader.loadMany([card, oneLinkCard, tiedCard, unlinkedCard])).toEqual([
+        { bankAccountId: mainBank, linksCount: 2 },
+        null,
+        null,
+        null,
+      ]);
+    });
+  });
+
+  describe('Otsar Hahayal raw hints', () => {
+    it('reads origin_reference only from card breakdowns', async () => {
+      const bankAccount = await createAccount('BANK_ACCOUNT', '900041');
+      const card = await createAccount('CREDIT_CARD', '123456xxxxxx5151');
+      // a validateSchema scrape stores an outgoing transfer's reference in origin_reference
+      const transfer = await createTransaction({
+        accountId: bankAccount,
+        amount: '-70.00',
+        eventDate: '2026-11-10',
+        sourceOrigin: 'OTSAR_HAHAYAL',
+        otsarOriginReference: '5151',
+        otsarDrillDownData: { T10C1523: { 'OUT-DATA': {} } },
+      });
+      const incomingTransfer = await createTransaction({
+        accountId: bankAccount,
+        amount: '-71.00',
+        eventDate: '2026-11-10',
+        sourceOrigin: 'OTSAR_HAHAYAL',
+        otsarOriginReference: '5151',
+        otsarDrillDownData: { T10C1526: { 'OUT-DATA': {} } },
+      });
+      const cardDebit = await createTransaction({
+        accountId: bankAccount,
+        amount: '-72.00',
+        eventDate: '2026-11-10',
+        sourceOrigin: 'OTSAR_HAHAYAL',
+        otsarOriginReference: '5151',
+      });
+      // the card's statement in the window, with another total: only a strong hint would link it
+      await createTransaction({
+        accountId: card,
+        amount: '-99.00',
+        eventDate: '2026-10-20',
+        debitDate: '2026-11-10',
+      });
+
+      const loader = createInjector().get(CreditCardStatementsProvider)
+        .getBankCardHintsByTransactionIdLoader;
+      expect(await loader.loadMany([transfer.id, incomingTransfer.id, cardDebit.id])).toEqual([
+        [],
+        [],
+        [{ transactionId: cardDebit.id, source: 'OTSAR_HAHAYAL_ILS', hint: '5151' }],
+      ]);
+
+      const linked = await runAutomation();
+      expect(linked.map(item => item.bankTransactionId)).not.toContain(transfer.id);
+      expect(linked.map(item => item.bankTransactionId)).not.toContain(incomingTransfer.id);
+      expect(await linksOf(transfer.id)).toEqual([]);
+      expect(await linksOf(incomingTransfer.id)).toEqual([]);
     });
   });
 });

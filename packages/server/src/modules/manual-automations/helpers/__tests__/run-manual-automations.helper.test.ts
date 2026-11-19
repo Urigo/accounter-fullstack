@@ -292,6 +292,9 @@ describe('runManualAutomations', () => {
     ]);
     expect(mergeChargesExecutor).toHaveBeenCalledWith(['charge-b'], 'charge-a', injector);
     expect(syncDeelDocuments).toHaveBeenCalledWith(injector);
+    expect(
+      injector.get(ManualAutomationsProvider).calculateCreditcardDebitDate,
+    ).toHaveBeenCalledWith({ ownerId: 'owner-1', creditCardBusinessIds: ['issuer-1'] });
     expect(autoLinkCreditCardStatements).toHaveBeenCalledWith(injector, {
       ownerId: 'owner-1',
       creditCardBusinessIds: ['issuer-1'],

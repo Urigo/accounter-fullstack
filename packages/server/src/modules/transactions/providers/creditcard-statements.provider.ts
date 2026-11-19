@@ -78,44 +78,15 @@ const getBankTransactionsByIds = sql<IGetBankTransactionsByIdsQuery>`
 /**
  * Card identifiers found in the banks' raw rows, one row per (bank transaction, hint).
  *
- * Supporting another bank's raw clue means adding one `UNION ALL` branch to `bank_card_hints`.
- * The generic clues every bank shares (the card number as reference, the card's name or last 4
- * digits in the description) come from the `transactions` row itself and are read by the matcher.
+ * The raw clues are defined once, in the `bank_transaction_card_hints` view: supporting another
+ * bank's raw clue means adding one `UNION ALL` branch there. The generic clues every bank shares
+ * (the card number as reference, the card's name or last 4 digits in the description) come from
+ * the `transactions` row itself and are read by the matcher.
  */
 const getBankCardHintsByTransactionIds = sql<IGetBankCardHintsByTransactionIdsQuery>`
-  WITH bank AS (
-    SELECT t.id, t.source_id, t.owner_id
-    FROM accounter_schema.transactions t
-    WHERE t.id IN $$transactionIds
-  ),
-  bank_card_hints AS (
-    -- Poalim ILS: a card debit (activity 491) carries the card number as its reference. The raw
-    -- Poalim table has no owner column: the row is reached only through the bank row own
-    -- source_id, and the bank rows are those of the requested transactions
-    SELECT b.id AS transaction_id,
-      'POALIM_491'::text AS source,
-      p.reference_number::text AS hint
-    FROM bank b
-      JOIN accounter_schema.transactions_raw_list rl
-        ON rl.id = b.source_id
-      JOIN accounter_schema.poalim_ils_account_transactions p
-        ON p.id = rl.poalim_ils_id
-        AND p.activity_type_code = 491
-    UNION ALL
-    -- Otsar Hahayal ILS: card-breakdown rows carry the last 4 digits of the card (OUT-MSKART)
-    SELECT b.id AS transaction_id,
-      'OTSAR_HAHAYAL_ILS'::text AS source,
-      btrim(o.origin_reference) AS hint
-    FROM bank b
-      JOIN accounter_schema.transactions_raw_list rl
-        ON rl.id = b.source_id
-      JOIN accounter_schema.otsar_hahayal_ils_account_transactions o
-        ON o.id = rl.otsar_hahayal_ils_id
-        AND (o.owner_id = b.owner_id OR o.owner_id IS NULL)
-  )
   SELECT h.transaction_id, h.source, h.hint
-  FROM bank_card_hints h
-  WHERE h.hint <> '' AND h.hint IS NOT NULL;`;
+  FROM accounter_schema.bank_transaction_card_hints h
+  WHERE h.transaction_id IN $$transactionIds;`;
 
 /**
  * Card statements around each bank transaction's date: the card rows of one card account, in the
@@ -277,12 +248,6 @@ const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTran
       ON a.id = t.account_id
       AND a.owner_id = t.owner_id
       AND a.type <> 'CREDIT_CARD'
-    LEFT JOIN accounter_schema.transactions_raw_list rl
-      ON rl.id = t.source_id
-    LEFT JOIN accounter_schema.otsar_hahayal_ils_account_transactions o
-      ON o.id = rl.otsar_hahayal_ils_id
-    LEFT JOIN accounter_schema.poalim_ils_account_transactions p
-      ON p.id = rl.poalim_ils_id
   WHERE t.owner_id = $ownerId
     AND t.is_fee IS FALSE
     AND NOT EXISTS (
@@ -306,8 +271,12 @@ const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTran
     )
     AND (
       t.business_id = ANY ($creditCardBusinessIds::uuid[])
-      OR btrim(COALESCE(o.origin_reference, '')) <> ''
-      OR p.activity_type_code = 491
+      OR EXISTS (
+        SELECT 1
+        FROM accounter_schema.bank_transaction_card_hints h
+        WHERE h.transaction_id = t.id
+          AND h.owner_id = t.owner_id
+      )
       OR EXISTS (
         SELECT 1
         FROM accounter_schema.financial_credit_card_accounts cca

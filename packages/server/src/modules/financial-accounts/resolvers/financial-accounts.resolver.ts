@@ -17,6 +17,40 @@ import {
   commonTransactionFields,
 } from './common.js';
 
+/** The card's configured settlement account, when it is a bank account */
+async function getSettlementAccount(injector: Injector, cardAccountId: string) {
+  const cardAccount = await injector
+    .get(FinancialCreditCardAccountsProvider)
+    .getCreditCardAccountByIdLoader.load(cardAccountId);
+  if (!cardAccount?.settlement_account_id) {
+    return null;
+  }
+  const settlementAccount = await injector
+    .get(FinancialAccountsProvider)
+    .getFinancialAccountByAccountIDLoader.load(cardAccount.settlement_account_id);
+  return settlementAccount?.type === 'BANK_ACCOUNT' ? settlementAccount : null;
+}
+
+/**
+ * The bank account suggested from the card's link history, with the number of links behind it:
+ * only for a card without a settlement account.
+ */
+async function getSettlementAccountSuggestion(injector: Injector, cardAccountId: string) {
+  if (await getSettlementAccount(injector, cardAccountId)) {
+    return null;
+  }
+  const suggestion = await injector
+    .get(FinancialCreditCardAccountsProvider)
+    .getSettlementAccountSuggestionByCardIdLoader.load(cardAccountId);
+  if (!suggestion) {
+    return null;
+  }
+  const account = await injector
+    .get(FinancialAccountsProvider)
+    .getFinancialAccountByAccountIDLoader.load(suggestion.bankAccountId);
+  return account?.type === 'BANK_ACCOUNT' ? { account, linksCount: suggestion.linksCount } : null;
+}
+
 /**
  * A card's settlement account must be a bank account of the card's own tenant. Throws a
  * user-facing error otherwise.
@@ -312,17 +346,15 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
     ...commonFinancialAccountFields,
     fourDigits: DbAccount => DbAccount.account_number,
     name: DbAccount => DbAccount.account_name ?? DbAccount.account_number,
-    settlementAccount: async (DbAccount, _, { injector }) => {
-      const cardAccount = await injector
-        .get(FinancialCreditCardAccountsProvider)
-        .getCreditCardAccountByIdLoader.load(DbAccount.id);
-      if (!cardAccount?.settlement_account_id) {
-        return null;
-      }
-      const settlementAccount = await injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountIDLoader.load(cardAccount.settlement_account_id);
-      return settlementAccount?.type === 'BANK_ACCOUNT' ? settlementAccount : null;
+    settlementAccount: async (DbAccount, _, { injector }) =>
+      getSettlementAccount(injector, DbAccount.id),
+    suggestedSettlementAccount: async (DbAccount, _, { injector }) => {
+      const suggestion = await getSettlementAccountSuggestion(injector, DbAccount.id);
+      return suggestion?.account ?? null;
+    },
+    suggestedSettlementAccountLinksCount: async (DbAccount, _, { injector }) => {
+      const suggestion = await getSettlementAccountSuggestion(injector, DbAccount.id);
+      return suggestion?.linksCount ?? null;
     },
   },
   CryptoWalletFinancialAccount: {
