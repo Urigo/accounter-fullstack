@@ -31,6 +31,7 @@ export async function updateSingleBusiness(
       ...fields,
       financialEntityId: businessId,
       irsCode: fields.irsCode ?? null,
+      contraIrsCode: fields.contraIrsCode ?? null,
       isActive: fields.isActive ?? null,
     });
   }

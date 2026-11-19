@@ -30,7 +30,7 @@ import type {
 } from '../types.js';
 
 const getTaxCategoryByBusinessIDs = sql<IGetTaxCategoryByBusinessIDsQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, tcm.business_id, tcm.owner_id
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.contra_irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, tcm.business_id, tcm.owner_id
 FROM accounter_schema.tax_categories tc
 LEFT JOIN accounter_schema.financial_entities fe
   ON fe.id = tc.id
@@ -39,14 +39,14 @@ LEFT JOIN accounter_schema.business_tax_category_match tcm
 WHERE tcm.business_id IN $$BusinessIds;`;
 
 const getTaxCategoryBySortCodes = sql<IGetTaxCategoryBySortCodesQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fe.owner_id
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.contra_irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fe.owner_id
 FROM accounter_schema.tax_categories tc
 LEFT JOIN accounter_schema.financial_entities fe
   ON fe.id = tc.id
 WHERE fe.sort_code IN $$sortCodes;`;
 
 const getTaxCategoryByFinancialAccountIdsAndCurrencies = sql<IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.contra_irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
 FROM accounter_schema.financial_accounts_tax_categories fatc
 LEFT JOIN accounter_schema.tax_categories tc
   ON fatc.tax_category_id = tc.id
@@ -56,7 +56,7 @@ WHERE fatc.currency IN $$Currencies
 AND fatc.financial_account_id IN $$FinancialAccountIds;`;
 
 const getTaxCategoryByFinancialAccountOwnerIds = sql<IGetTaxCategoryByFinancialAccountOwnerIdsQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency, fa.owner as "financial_account_owner_id"
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.contra_irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency, fa.owner as "financial_account_owner_id"
 FROM accounter_schema.financial_accounts_tax_categories fatc
 LEFT JOIN accounter_schema.tax_categories tc
   ON fatc.tax_category_id = tc.id
@@ -67,7 +67,7 @@ LEFT JOIN accounter_schema.financial_accounts fa
 WHERE fa.owner IN $$ownerIds;`;
 
 const getTaxCategoryByFinancialAccountIds = sql<IGetTaxCategoryByFinancialAccountIdsQuery>`
-SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
+SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.owner_id, fe.irs_code, fe.contra_irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fatc.financial_account_id, fatc.currency
 FROM accounter_schema.financial_accounts_tax_categories fatc
 LEFT JOIN accounter_schema.tax_categories tc
   ON fatc.tax_category_id = tc.id

@@ -225,6 +225,7 @@ export default [
               'ReportCommentarySubRecord',
               'ScraperUploadResult',
               'Shaam6111Header',
+              'Shaam6111LineOverride',
               'Shaam6111ReportEntry',
               'Shaam6111Validation',
               'Shaam6111ValidationIssue',

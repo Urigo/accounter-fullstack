@@ -22,6 +22,7 @@ export const commonFinancialEntityFields:
   ownerId: dbFinancialEntity => dbFinancialEntity.owner_id,
   name: dbFinancialEntity => dbFinancialEntity.name,
   irsCode: dbFinancialEntity => dbFinancialEntity.irs_code,
+  contraIrsCode: dbFinancialEntity => dbFinancialEntity.contra_irs_code,
   isActive: dbFinancialEntity => !!dbFinancialEntity.is_active,
   createdAt: dbFinancialEntity => dbFinancialEntity.created_at,
   updatedAt: dbFinancialEntity => dbFinancialEntity.updated_at,

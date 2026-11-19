@@ -42,6 +42,8 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    " SHAAM 6111 code for a balance on the opposite side of the usual one (e.g. an overdrawn bank account) "
+    contraIrsCode: Int
     isActive: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -75,6 +77,8 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    " SHAAM 6111 code for a balance on the opposite side of the usual one (e.g. an overdrawn bank account) "
+    contraIrsCode: Int
     isActive: Boolean!
     isReceiptEnough: Boolean
     isDocumentsOptional: Boolean
@@ -114,6 +118,8 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    " SHAAM 6111 code for a balance on the opposite side of the usual one (e.g. an overdrawn bank account) "
+    contraIrsCode: Int
     isActive: Boolean!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -170,6 +176,8 @@ export default gql`
 
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
+    " SHAAM 6111 code for a balance on the opposite side of the usual one; 0 clears it "
+    contraIrsCode: Int
     isActive: Boolean
   }
 

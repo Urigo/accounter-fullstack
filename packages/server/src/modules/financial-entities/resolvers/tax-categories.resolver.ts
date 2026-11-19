@@ -48,6 +48,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
           ...fields,
           financialEntityId: taxCategoryId,
           irsCode: fields.irsCode ?? null,
+          contraIrsCode: fields.contraIrsCode ?? null,
           isActive: fields.isActive ?? true,
         });
       }
@@ -138,6 +139,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     ownerId: parent => parent.owner_id,
     name: parent => parent.name,
     irsCode: parent => parent.irs_code,
+    contraIrsCode: parent => parent.contra_irs_code,
     createdAt: parent => parent.created_at,
     updatedAt: parent => parent.updated_at,
     isActive: parent => parent.is_active ?? true,
