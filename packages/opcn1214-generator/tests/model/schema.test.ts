@@ -2,7 +2,7 @@ import type { z } from 'zod';
 import type { PhonePrefix, Report1214Input } from '../../src/model/input.js';
 import { report1214InputSchema, schemaFor } from '../../src/model/schema.js';
 import { zodIssuesToIssues } from '../../src/validate/shape.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
 
 /** The input.shape issues of `input` against the schema of its year (2024 by default). */
 function shapeIssues(input: unknown) {
@@ -139,6 +139,114 @@ describe('input schema (SPEC §7.1, §9.2 stage 2)', () => {
       const [issue] = shapeIssues({ ...minimalInput(), shareholders: {} });
       expect(issue).toEqual(expect.objectContaining({ path: 'shareholders', expected: 'array' }));
       expect(issue).not.toHaveProperty('value');
+    });
+  });
+
+  describe('declarations and preparer', () => {
+    it('accepts every optional declaration and the preparer', () => {
+      expect(shapeIssues(fullDeclarationsInput())).toEqual([]);
+    });
+
+    it('accepts an empty preparer and undefined optional declarations', () => {
+      const input = minimalInput({
+        preparer: {},
+        declarations: { form6111Obligation: undefined, familyCompany: undefined },
+      });
+      expect(shapeIssues(input)).toEqual([]);
+    });
+
+    it('reports unknown properties of the preparer, its phone and the declaration objects', () => {
+      const base = fullDeclarationsInput();
+      const input = {
+        ...base,
+        preparer: { ...base.preparer, mobile: '1', phone: { ...base.preparer?.phone, ext: '2' } },
+        declarations: {
+          ...base.declarations,
+          isFamilyCompany: true,
+          familyCompany: { representativeFileNumber: '1', marked: true },
+          beneficiaryEnterprise: { noticeDate: '2024-01-01', marked: true },
+          specialYear: { balanceSheetDate: '2024-01-01', marked: true },
+        },
+      };
+      expect(shapePaths(input).sort()).toEqual([
+        'declarations.beneficiaryEnterprise.marked',
+        'declarations.familyCompany.marked',
+        'declarations.isFamilyCompany',
+        'declarations.specialYear.marked',
+        'preparer.mobile',
+        'preparer.phone.ext',
+      ]);
+    });
+
+    it('requires the member of each declaration object', () => {
+      const input = minimalInput({
+        declarations: {
+          familyCompany: {} as never,
+          beneficiaryEnterprise: {} as never,
+          specialYear: {} as never,
+        },
+      });
+      expect(shapePaths(input).sort()).toEqual([
+        'declarations.beneficiaryEnterprise.noticeDate',
+        'declarations.familyCompany.representativeFileNumber',
+        'declarations.specialYear.balanceSheetDate',
+      ]);
+    });
+
+    it('reports non-ISO declaration dates', () => {
+      const input = minimalInput({
+        declarations: {
+          beneficiaryEnterprise: { noticeDate: '14/05/2023' },
+          specialYear: { balanceSheetDate: '2024-9-30' },
+        },
+      });
+      expect(shapePaths(input).sort()).toEqual([
+        'declarations.beneficiaryEnterprise.noticeDate',
+        'declarations.specialYear.balanceSheetDate',
+      ]);
+    });
+
+    it.each([
+      ['form6111Obligation', 'required'],
+      ['consolidatedReport', 'consolidated'],
+    ])('reports a %s that is not one of its literals', (member, value) => {
+      const input = minimalInput({ declarations: { [member]: value as never } });
+      expect(shapePaths(input)).toEqual([`declarations.${member}`]);
+    });
+
+    it('accepts any number of integer reportable positions (D4 reports more than five)', () => {
+      const positions = [1, 2, 3, 4, 5, 6, 7];
+      expect(
+        shapeIssues(minimalInput({ declarations: { reportablePositions: positions } })),
+      ).toEqual([]);
+      expect(shapeIssues(minimalInput({ declarations: { reportablePositions: [] } }))).toEqual([]);
+    });
+
+    it('rejects reportable positions that are not integers', () => {
+      const input = minimalInput({
+        declarations: { reportablePositions: [1, 2.5, '3' as never] },
+      });
+      expect(shapePaths(input)).toEqual([
+        'declarations.reportablePositions[1]',
+        'declarations.reportablePositions[2]',
+      ]);
+    });
+
+    it('accepts any string as the preparer phone prefix (field.phonePrefix checks it)', () => {
+      const input = fullDeclarationsInput({ preparer: { phone: { prefix: '01' as PhonePrefix } } });
+      expect(shapeIssues(input)).toEqual([]);
+    });
+
+    it.each([
+      'financialStatementsAttached',
+      'requestsAdvancePayments',
+      'hasCapitalGainsAppendix',
+      'noBankAccount',
+    ])('reports a non-boolean %s', member => {
+      const input = minimalInput({ declarations: { [member]: 1 as never } });
+      expect(shapeIssues(input)).toEqual([
+        expect.objectContaining({ path: `declarations.${member}`, expected: 'boolean' }),
+      ]);
     });
   });
 

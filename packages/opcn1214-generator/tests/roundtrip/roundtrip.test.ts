@@ -10,7 +10,7 @@ import {
   type Report1214Input,
 } from '../../src/index.js';
 import { canonicalize } from '../../src/normalize/canonical.js';
-import { minimalInput } from '../fixtures/builders.js';
+import { fullDeclarationsInput, minimalInput } from '../fixtures/builders.js';
 
 const OPTIONS: GenerateOptions = { today: () => '2025-03-31' };
 const GOLDEN_DIR = new URL('../fixtures/golden/', import.meta.url);
@@ -97,6 +97,38 @@ const VARIANTS: ReadonlyArray<[string, Report1214Input, GenerateOptions]> = [
           dividendRightsPercent: 100,
         },
       ],
+    }),
+    OPTIONS,
+  ],
+  ['every declaration and the preparer', fullDeclarationsInput(), OPTIONS],
+  [
+    'the other enum values, two reportable positions and padded declaration digits',
+    fullDeclarationsInput({
+      preparer: { licensedDealerNumber: '1234', phone: { prefix: '052' } },
+      declarations: {
+        reportablePositions: [12, 7],
+        form6111Obligation: 'notRelevant',
+        consolidatedReport: 'consolidatedUnderSection23',
+        familyCompany: { representativeFileNumber: '77' },
+        requestsAdvancePayments: false,
+        hasBuildingIncome: true,
+        partOfMultinationalGroup: false,
+      },
+      amounts: { '259': 3 },
+    }),
+    OPTIONS,
+  ],
+  [
+    'declarations written as absent',
+    minimalInput({
+      preparer: { name: ' ', officeName: 'משרד' },
+      declarations: {
+        form6111Obligation: 'notObliged',
+        consolidatedReport: 'notRelevant',
+        isHouseCompany: false,
+        hasCapitalGainsAppendix: false,
+        reportablePositions: [],
+      },
     }),
     OPTIONS,
   ],
