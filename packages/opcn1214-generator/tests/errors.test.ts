@@ -4,9 +4,11 @@ import {
   Opcn1214UnsupportedYearError,
 } from '../src/errors.js';
 import type { Issue } from '../src/validate/issue.js';
+import type { RuleId } from '../src/validate/rules.js';
 
+/** These tests only format issues: rule IDs of later steps (and made-up ones) are fine here. */
 function issue(ruleId: string, path: string): Issue {
-  return { ruleId, severity: 'error', message: `${ruleId} failed`, path };
+  return { ruleId: ruleId as RuleId, severity: 'error', message: `${ruleId} failed`, path };
 }
 
 describe('errors', () => {

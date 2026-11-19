@@ -29,24 +29,46 @@ export class Opcn1214Error extends Error {
   }
 }
 
+/** `taxYear` for a message; never throws, whatever the value. */
+function showTaxYear(taxYear: unknown): string {
+  switch (typeof taxYear) {
+    case 'string':
+      return JSON.stringify(taxYear);
+    case 'object':
+      return taxYear === null ? 'null' : 'an object';
+    case 'function':
+      return 'a function';
+    case 'symbol':
+      return 'a symbol';
+    default:
+      return String(taxYear);
+  }
+}
+
+/** The struct.taxYear.unsupported issue of `taxYear` (SPEC §10.1); `taxYear` may be any value. */
+export function unsupportedTaxYearIssue(
+  taxYear: unknown,
+  supportedYears: readonly number[],
+): Issue {
+  const supported = supportedYears.join(', ');
+  return {
+    ruleId: 'struct.taxYear.unsupported',
+    severity: 'error',
+    message: `Tax year ${showTaxYear(taxYear)} is not supported (supported: ${supported}).`,
+    path: 'taxYear',
+    value: taxYear,
+    expected: `one of ${supported}`,
+  };
+}
+
 /** Thrown by `getLayout` for a tax year without a layout. */
 export class Opcn1214UnsupportedYearError extends Opcn1214Error {
   readonly taxYear: number;
 
   constructor(taxYear: number, supportedYears: readonly number[], options?: ErrorOptions) {
-    const supported = supportedYears.join(', ');
     super(
       `Unsupported tax year ${taxYear}`,
-      [
-        {
-          ruleId: 'struct.taxYear.unsupported',
-          severity: 'error',
-          message: `Tax year ${taxYear} is not supported (supported: ${supported}).`,
-          path: 'taxYear',
-          value: taxYear,
-          expected: `one of ${supported}`,
-        },
-      ],
+      [unsupportedTaxYearIssue(taxYear, supportedYears)],
       options,
     );
     this.name = 'Opcn1214UnsupportedYearError';
