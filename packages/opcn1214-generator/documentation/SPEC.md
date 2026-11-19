@@ -1021,7 +1021,9 @@ a test asserts that every non-filler key in `fields.csv` is produced (§13.3).
 The input path of a presence flag (836, 851, 863) is the object it stands for
 (`declarations.familyCompany`); its member keeps its own path. When parsing, the object exists
 exactly when its flag is marked (a member value without the flag is not carried into the report),
-and the reportable positions are the non-zero values of 1034–1046 in field order.
+and the reportable positions are the non-zero values of 1034–1046 in field order. 833 = yes is read
+back as `declarations.hasCapitalGainsAppendix: true` only when the derivation of §7.4 does not
+already explain it (no `untransmittedCount > 0`, no capital-gains appendix in the file).
 
 ### 7.4 Derived values (never taken from the caller)
 
