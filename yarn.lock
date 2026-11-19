@@ -116,7 +116,7 @@ __metadata:
     react-error-boundary: "npm:6.1.6"
     react-hook-form: "npm:7.92.0"
     react-number-format: "npm:5.4.5"
-    react-router-dom: "npm:7.18.5"
+    react-router-dom: "npm:7.18.6"
     react-to-pdf: "npm:3.2.2"
     recharts: "npm:3.10.1"
     simple-icons: "npm:16.38.0"
@@ -209,7 +209,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:7.0.1"
     "@graphql-hive/logger": "npm:1.2.0"
     "@graphql-mesh/compose-cli": "npm:1.8.4"
-    "@graphql-mesh/fusion-runtime": "npm:1.14.0"
+    "@graphql-mesh/fusion-runtime": "npm:1.14.1"
     "@graphql-mesh/transport-rest": "npm:0.12.5"
     "@graphql-tools/utils": "npm:13.2.2"
     "@omnigraph/json-schema": "npm:0.112.6"
@@ -226,7 +226,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.20.0"
     pino-pretty: "npm:13.2.0"
-    puppeteer: "npm:25.18.0"
+    puppeteer: "npm:25.18.1"
   languageName: unknown
   linkType: soft
 
@@ -256,7 +256,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:1.45.0"
     "@types/node": "npm:26.6.6"
     dotenv: "npm:18.0.10"
-    jose: "npm:6.2.17"
+    jose: "npm:6.2.18"
     tsx: "npm:4.23.15"
     typescript: "npm:6.0.3"
     vitest: "npm:5.1.1"
@@ -276,7 +276,7 @@ __metadata:
     node-xlsx: "npm:0.25.0"
     nodemon: "npm:3.1.14"
     playwright: "npm:1.65.1"
-    puppeteer: "npm:25.18.0"
+    puppeteer: "npm:25.18.1"
     puppeteer-extra: "npm:3.3.6"
     puppeteer-extra-plugin-stealth: "npm:2.11.2"
     typescript: "npm:6.0.3"
@@ -304,7 +304,7 @@ __metadata:
     "@fastify/websocket": "npm:11.3.7"
     "@testing-library/dom": "npm:10.4.2"
     "@testing-library/react": "npm:16.3.3"
-    "@testing-library/user-event": "npm:14.6.12"
+    "@testing-library/user-event": "npm:14.6.13"
     "@vitejs/plugin-react": "npm:6.3.0"
     date-fns: "npm:4.4.0"
     fast-xml-parser: "npm:5.12.1"
@@ -353,7 +353,7 @@ __metadata:
     "@types/node": "npm:26.6.6"
     "@types/pg": "npm:8.23.1"
     "@whatwg-node/fetch": "npm:0.12.1"
-    ai: "npm:7.0.176"
+    ai: "npm:7.0.177"
     async-mutex: "npm:0.5.0"
     auth0: "npm:7.8.0"
     basic-auth: "npm:3.1.0"
@@ -368,7 +368,7 @@ __metadata:
     graphql-yoga: "npm:5.24.6"
     iconv-lite: "npm:0.7.3"
     inline-css: "npm:4.0.3"
-    jose: "npm:6.2.17"
+    jose: "npm:6.2.18"
     json-bigint-patch: "npm:0.0.9"
     node-cache: "npm:5.1.2"
     node-xlsx: "npm:0.25.0"
@@ -429,16 +429,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:4.0.149":
-  version: 4.0.149
-  resolution: "@ai-sdk/gateway@npm:4.0.149"
+"@ai-sdk/gateway@npm:4.0.150":
+  version: 4.0.150
+  resolution: "@ai-sdk/gateway@npm:4.0.150"
   dependencies:
     "@ai-sdk/provider": "npm:4.0.39"
     "@ai-sdk/provider-utils": "npm:5.0.82"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/588bc1b1f7cfe9d44e1d6c0f46539d138e8713b34690b99a6817c0cb85be3555d84e83fda84aebe36bed921e11fa7e946e29d7e1eb3501deaa12f887c4e4204f
+  checksum: 10c0/ea72c64517a71c56e545064c2d8e111bce156b02d3274ba7a67c001df2113fed45212fab6f1d2e2856b623a14a29dcb6ac79ed92c32bf703a60a208735196889
   languageName: node
   linkType: hard
 
@@ -3030,9 +3030,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/fusion-runtime@npm:1.14.0":
-  version: 1.14.0
-  resolution: "@graphql-mesh/fusion-runtime@npm:1.14.0"
+"@graphql-mesh/fusion-runtime@npm:1.14.1":
+  version: 1.14.1
+  resolution: "@graphql-mesh/fusion-runtime@npm:1.14.1"
   dependencies:
     "@envelop/core": "npm:^5.4.0"
     "@envelop/instrumentation": "npm:^1.0.0"
@@ -3056,7 +3056,7 @@ __metadata:
     tslib: "npm:^2.8.1"
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-  checksum: 10c0/c7fb27d6303b45976cd81cc3f5d521b741938c226bff840435ac9b06397b24c7db49c3116978a201becd53aee09c90d1e3608f6ff27cb950c357defa3c88d1ec
+  checksum: 10c0/d6c4db6303dd87f2eb2747142b7b0121c6d00bae328a14b936770f21516bece9bef85bc446c3a5cadabe1524ac1a9a9e64cf373abef9ee70c55ba5d1c92b3be8
   languageName: node
   linkType: hard
 
@@ -9615,12 +9615,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@testing-library/user-event@npm:14.6.12, @testing-library/user-event@npm:^14.6.3":
-  version: 14.6.12
-  resolution: "@testing-library/user-event@npm:14.6.12"
+"@testing-library/user-event@npm:14.6.13, @testing-library/user-event@npm:^14.6.3":
+  version: 14.6.13
+  resolution: "@testing-library/user-event@npm:14.6.13"
   peerDependencies:
     "@testing-library/dom": ">=7.21.4"
-  checksum: 10c0/6b5b1c8219a17b00d6fcc968f9d257a62d3be3a5fa05b9373d26a965e272613f8a58c3d716b8ba226741fd1c77ecced6db23118020813ed2731e73ab944edbe3
+  checksum: 10c0/29cb1c17275ac8b0be3800fbcbcfd3b87c2fc7134aa91df4dc404e3962c4204e720c2286d654d15669eb9e0ee9428a9e246e162149ef9704ea6082b5e303ba85
   languageName: node
   linkType: hard
 
@@ -11088,16 +11088,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:7.0.176":
-  version: 7.0.176
-  resolution: "ai@npm:7.0.176"
+"ai@npm:7.0.177":
+  version: 7.0.177
+  resolution: "ai@npm:7.0.177"
   dependencies:
-    "@ai-sdk/gateway": "npm:4.0.149"
+    "@ai-sdk/gateway": "npm:4.0.150"
     "@ai-sdk/provider": "npm:4.0.39"
     "@ai-sdk/provider-utils": "npm:5.0.82"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/5f793204835d96e603a391e8e704c9c3fcf2acef7e50367b3a875677d9e16a527eb63af7ae6fe50b9a4d32d0559fe701c91872a87f39302b8299932095b0c31b
+  checksum: 10c0/31cf61ca65c1e58b757e5da6dd649988c3df4d743dc60688812b67961b835db6de84b7a4f0c4196579248de8d019af63dd06e4325b9946f8c184d0f82d6be170
   languageName: node
   linkType: hard
 
@@ -17963,10 +17963,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:6.2.17, jose@npm:^6.0.8, jose@npm:^6.2.15":
-  version: 6.2.17
-  resolution: "jose@npm:6.2.17"
-  checksum: 10c0/1a00d44656e38664c54a8b2d903b6c947b3fc4275f7ede2462f74e50ce320359ea324deba15652dcc158c14ed99135a2382a4c5718be350923a9e583bea727db
+"jose@npm:6.2.18, jose@npm:^6.0.8, jose@npm:^6.2.15":
+  version: 6.2.18
+  resolution: "jose@npm:6.2.18"
+  checksum: 10c0/95144c43dfa0c8206f13f8133ed74ba9106785df81c864d6399af06616ad8fdbdc18937109aac099f560f6159aaf2fe2fca3984a6629c899af396a1e9986008d
   languageName: node
   linkType: hard
 
@@ -21733,9 +21733,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer-core@npm:25.18.0":
-  version: 25.18.0
-  resolution: "puppeteer-core@npm:25.18.0"
+"puppeteer-core@npm:25.18.1":
+  version: 25.18.1
+  resolution: "puppeteer-core@npm:25.18.1"
   dependencies:
     "@puppeteer/browsers": "npm:3.2.7"
     chromium-bidi: "npm:157.0.8090-0"
@@ -21743,7 +21743,7 @@ __metadata:
     typed-query-selector: "npm:^2.12.3"
     webdriver-bidi-protocol: "npm:1.0.2"
     ws: "npm:^8.22.1"
-  checksum: 10c0/f9dfe06c75b4302cdcceb764a57b0381456c814032e0de48b3576053e1cfe9b0a3a4af54fa8315e0168abd5d125ebd4d0c42da2196e0b6f2fa4d204fb1c2e8aa
+  checksum: 10c0/c2473be4d128e807815ddaa1ebaa9b17985546ced815c4256c15b8cef0e478de55dd769af95653a9c6772bf73d2315beb8e50daa4b0c3707d711a182380b1c3d
   languageName: node
   linkType: hard
 
@@ -21847,19 +21847,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:*, puppeteer@npm:25.18.0":
-  version: 25.18.0
-  resolution: "puppeteer@npm:25.18.0"
+"puppeteer@npm:*, puppeteer@npm:25.18.1":
+  version: 25.18.1
+  resolution: "puppeteer@npm:25.18.1"
   dependencies:
     "@puppeteer/browsers": "npm:3.2.7"
     chromium-bidi: "npm:157.0.8090-0"
     devtools-protocol: "npm:0.0.1717327"
     lilconfig: "npm:^3.1.4"
-    puppeteer-core: "npm:25.18.0"
+    puppeteer-core: "npm:25.18.1"
     typed-query-selector: "npm:^2.12.3"
   bin:
     puppeteer: lib/puppeteer/node/cli.js
-  checksum: 10c0/168aed51faaa5bd8a83d0c2b97776317a472b4d5f2194302e9cdd1ab7d53bf1ba57c47f69310ce129177a70d84e5495b26566aa2a105573a821678f45bc494ce
+  checksum: 10c0/74e77eba6b6c95fedacc1a4638f97d4d4b74ff1596f7e74e7f9be375a6b6662d6e5598c7913a22f70d0793d125cadd5b429e5a5981ed7c5d321649e2f67c4dd5
   languageName: node
   linkType: hard
 
@@ -22270,21 +22270,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:7.18.5":
-  version: 7.18.5
-  resolution: "react-router-dom@npm:7.18.5"
+"react-router-dom@npm:7.18.6":
+  version: 7.18.6
+  resolution: "react-router-dom@npm:7.18.6"
   dependencies:
-    react-router: "npm:7.18.5"
+    react-router: "npm:7.18.6"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/9e19ccb3fa061d86ad90eb906657cab6b2e4313b4eb02882f7515493c3d61c978a383ee0954854f2a9238ac013bdd03c526a5de14819c8ecaae62b5280774030
+  checksum: 10c0/6a564a97e4bbd5278673c7fa4fd8c66722abecc783bd57fd41a3bde7585b3312ead7cb31ba5cf8fc6e0e5989791e3c01ab40f7d92c96706db48559983871a202
   languageName: node
   linkType: hard
 
-"react-router@npm:7.18.5":
-  version: 7.18.5
-  resolution: "react-router@npm:7.18.5"
+"react-router@npm:7.18.6":
+  version: 7.18.6
+  resolution: "react-router@npm:7.18.6"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -22294,7 +22294,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/dbed9b4d0019873615028e2fe7bf7782ab4f41d9f287595b9a82f4a6d619dc5d3b88449fb3e717282f9f558312f29f88325372a7bb67355472703291607f9280
+  checksum: 10c0/1227a7fc566f47799a2f157213e07dcafff584b08454ec46c74ff05babe3c2adf10c25701ce546141be1b328675b658312af3ae6dcca5c551ee9a5c88732067c
   languageName: node
   linkType: hard
 
