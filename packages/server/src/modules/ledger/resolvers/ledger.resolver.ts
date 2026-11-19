@@ -9,8 +9,10 @@ import {
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import type { Currency } from '../../../shared/enums.js';
 import { compareTimelessDates, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { getActingUserId } from '../../auth/helpers/acting-user.helper.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import {
   getChargeDocumentsMeta,
@@ -18,6 +20,7 @@ import {
 } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { accountant_statusArray, type IGetChargesByIdsResult } from '../../charges/types.js';
+import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '../../financial-entities/types.js';
 import {
@@ -113,6 +116,27 @@ function assertLedgerDateRange(
 // Max charges regenerated in parallel by `regenerateLedgerRecords`. Keeps large
 // batch selections from saturating the DB connection pool.
 const REGENERATE_LEDGER_CONCURRENCY = 5;
+
+// Moves the owner's ledger lock date and records who moved it, when, from/to and why.
+// "Locked" is derived from this date, so moving it back reopens the period.
+async function setLedgerLock(
+  injector: Injector,
+  ownerId: string,
+  from: TimelessDateString | null,
+  to: TimelessDateString,
+  action: 'LEDGER_LOCKED' | 'LEDGER_UNLOCKED',
+  reason?: string,
+) {
+  await injector.get(AdminContextProvider).updateAdminContext({ ownerId, ledgerLock: to });
+  await injector.get(AuditLogsProvider).log({
+    ownerId,
+    userId: (await getActingUserId(injector)) ?? undefined,
+    action,
+    entity: 'LedgerLock',
+    entityId: ownerId,
+    details: { from, to, ...(reason ? { reason } : {}) },
+  });
+}
 
 // Regenerate the ledger records for a single charge. Any failure (charge not
 // found, locked, or a generation/storage error) is returned as a `CommonError`
@@ -453,33 +477,34 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       return results;
     },
     lockLedgerRecords: async (_, { date }, { injector }) => {
-      try {
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
-        const lockByRecords = injector
-          .get(LedgerProvider)
-          .lockLedgerRecords(date)
-          .catch(e => {
-            console.error(`Error locking ledger records for ${date}: ${e}`);
-            throw new Error(`Error locking ledger records for ${date}`);
-          });
-        const lockByDate = injector
-          .get(AdminContextProvider)
-          .updateAdminContext({
-            ownerId,
-            ledgerLock: date,
-          })
-          .catch(e => {
-            console.error(`Error locking ledger by date ${date}: ${e}`);
-            throw new Error(`Error locking ledger by date ${date}`);
-          });
-        await Promise.all([lockByRecords, lockByDate]);
-
-        return true;
-      } catch (error) {
-        console.error(`Error locking ledger for ${date}: ${error}`);
-        return false;
+      const { ownerId, ledgerLock } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      if (ledgerLock && date < ledgerLock) {
+        throw new GraphQLError(
+          `Ledger is already locked until ${ledgerLock}. Use unlockLedger to reopen it.`,
+        );
       }
+      await setLedgerLock(injector, ownerId, ledgerLock ?? null, date, 'LEDGER_LOCKED');
+      return true;
+    },
+    unlockLedger: async (_, { date, reason }, { injector }) => {
+      const { ownerId, ledgerLock } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      if (!reason.trim()) {
+        throw new GraphQLError('A reason is required to reopen the ledger');
+      }
+      if (!ledgerLock) {
+        throw new GraphQLError('Ledger is not locked');
+      }
+      if (date >= ledgerLock) {
+        throw new GraphQLError(
+          `Reopen date must be before the current lock date (${ledgerLock}). Use lockLedgerRecords to move the lock forward.`,
+        );
+      }
+      await setLedgerLock(injector, ownerId, ledgerLock, date, 'LEDGER_UNLOCKED', reason);
+      return true;
     },
   },
   LedgerRecord: {

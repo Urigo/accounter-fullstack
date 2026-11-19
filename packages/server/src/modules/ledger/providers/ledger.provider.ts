@@ -6,6 +6,7 @@ import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { isLedgerDateLocked } from '../helpers/ledger-lock-date.helper.js';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
   IDeleteLedgerRecordsByChargeIdsQuery,
@@ -20,7 +21,6 @@ import type {
   IGetLedgerRecordsByIdsQuery,
   IInsertLedgerRecordsParams,
   IInsertLedgerRecordsQuery,
-  ILockLedgerRecordsQuery,
   IReplaceLedgerRecordsChargeIdParams,
   IReplaceLedgerRecordsChargeIdQuery,
   IUpdateLedgerRecordParams,
@@ -253,16 +253,6 @@ const replaceLedgerRecordsChargeId = sql<IReplaceLedgerRecordsChargeIdQuery>`
   RETURNING *
 `;
 
-const lockLedgerRecords = sql<ILockLedgerRecordsQuery>`
-  UPDATE accounter_schema.ledger_records
-    SET
-    locked = TRUE
-  WHERE
-    invoice_date <= $date
-    OR value_date <= $date
-  RETURNING *
-`;
-
 /**
  * Fallback cap for a filtered ledger search that names no `limit`. The table is
  * the largest in the schema, so an unbounded read is a foot-gun — a caller that
@@ -411,12 +401,54 @@ export class LedgerProvider {
     return getLedgerBalanceToDate.run({ date }, this.db);
   }
 
+  /**
+   * The ledger lock date of a record's owner. "Locked" is derived from this date (not from the
+   * per-record `locked` column), so moving the lock date back reopens the period.
+   */
+  private async getLockDate(ownerId?: string | null): Promise<TimelessDateString | undefined> {
+    if (!ownerId) {
+      const { ledgerLock } = await this.adminContextProvider.getVerifiedAdminContext();
+      return ledgerLock;
+    }
+    const ownerContext = await this.adminContextProvider.adminContextByOwnerIdLoader.load(ownerId);
+    return ownerContext?.ledgerLock;
+  }
+
+  /** Throws if any of the records is dated on or before its owner's ledger lock. */
+  private async assertNotLocked(
+    records: readonly {
+      ownerId?: string | null | void;
+      invoiceDate?: TimelessDateString | null | void;
+      valueDate?: TimelessDateString | null | void;
+    }[],
+  ) {
+    for (const record of records) {
+      const lockDate = await this.getLockDate(record.ownerId || null);
+      if (isLedgerDateLocked(lockDate, record.invoiceDate || null, record.valueDate || null)) {
+        throw new LedgerLockError(
+          `Cannot write ledger records dated on or before the ledger lock date (${lockDate})`,
+        );
+      }
+    }
+  }
+
   public async updateLedgerRecord(params: IUpdateLedgerRecordParams) {
-    // validate non are locked
+    // validate the record isn't locked, and isn't moved into the locked period
     if (params.ledgerId) {
       const record = await this.getLedgerRecordsByIdLoader.load(params.ledgerId);
-      if (record?.locked) {
-        throw new LedgerLockError();
+      if (record) {
+        await this.assertNotLocked([
+          {
+            ownerId: record.owner_id,
+            invoiceDate: record.invoice_date,
+            valueDate: record.value_date,
+          },
+          {
+            ownerId: record.owner_id,
+            invoiceDate: params.invoiceDate,
+            valueDate: params.valueDate,
+          },
+        ]);
       }
     }
 
@@ -431,20 +463,25 @@ export class LedgerProvider {
     this.clearCache();
     const { defaultLocalCurrency } = await this.adminContextProvider.getVerifiedAdminContext();
     params.ledgerRecords.map(record => validateLedgerRecordParams(record, defaultLocalCurrency));
+    await this.assertNotLocked(params.ledgerRecords);
     return insertLedgerRecords.run(params, this.db);
   }
 
   private async deleteLedgerRecordsByIds(ids: readonly string[]) {
     // validate non are locked
     const records = await this.getLedgerRecordsByIdLoader.loadMany(ids);
-    records.map(record => {
-      if (record instanceof Error) {
-        throw record;
-      }
-      if (record?.locked) {
-        throw new LedgerLockError();
-      }
-    });
+    await this.assertNotLocked(
+      records.map(record => {
+        if (record instanceof Error) {
+          throw record;
+        }
+        return {
+          ownerId: record?.owner_id,
+          invoiceDate: record?.invoice_date,
+          valueDate: record?.value_date,
+        };
+      }),
+    );
 
     this.clearCache();
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
@@ -466,14 +503,18 @@ export class LedgerProvider {
   private async deleteLedgerRecordsByChargeIds(chargeIds: readonly string[]) {
     // validate non are locked
     const records = await this.getLedgerRecordsByChargesIdLoader.loadMany(chargeIds);
-    records.map(record => {
-      if (record instanceof Error) {
-        throw record;
-      }
-      if (record.some(r => r.locked)) {
-        throw new LedgerLockError();
-      }
-    });
+    await this.assertNotLocked(
+      records.flatMap(record => {
+        if (record instanceof Error) {
+          throw record;
+        }
+        return record.map(r => ({
+          ownerId: r.owner_id,
+          invoiceDate: r.invoice_date,
+          valueDate: r.value_date,
+        }));
+      }),
+    );
 
     this.clearCache();
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
@@ -495,11 +536,6 @@ export class LedgerProvider {
   public replaceLedgerRecordsChargeId(params: IReplaceLedgerRecordsChargeIdParams) {
     this.clearCache();
     return replaceLedgerRecordsChargeId.run(params, this.db);
-  }
-
-  public lockLedgerRecords(date: TimelessDateString) {
-    this.clearCache();
-    return lockLedgerRecords.run({ date }, this.db);
   }
 
   public clearCache() {

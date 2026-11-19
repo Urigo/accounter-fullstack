@@ -7,7 +7,9 @@ export type AuditAction =
   | 'API_KEY_REVOKED'
   | 'BUSINESS_USER_REMOVED'
   | 'USER_LOGIN'
-  | 'USER_ROLE_CHANGED';
+  | 'USER_ROLE_CHANGED'
+  | 'LEDGER_LOCKED'
+  | 'LEDGER_UNLOCKED';
 
 export interface AuditEvent {
   ownerId?: string;

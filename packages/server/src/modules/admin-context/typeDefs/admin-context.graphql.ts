@@ -133,7 +133,7 @@ export default gql`
     dividendWithholdingTaxBusinessId: UUID
     dividendTaxCategoryId: UUID
     salaryExcessExpensesTaxCategoryId: UUID
-    ledgerLock: TimelessDate
+    ledgerLock: TimelessDate @deprecated(reason: "Use lockLedgerRecords or unlockLedger")
     foreignSecuritiesBusinessId: UUID
       @deprecated(reason: "Use updateSecuritiesContext(input: { foreignSecuritiesBusinessId })")
     foreignSecuritiesFeesCategoryId: UUID
