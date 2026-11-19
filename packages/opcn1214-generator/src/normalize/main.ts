@@ -18,7 +18,7 @@ import {
 } from './derive.js';
 import { CONSOLIDATED_REPORT_CODES, enumCode, FORM_6111_OBLIGATION_CODES } from './enums.js';
 import { headerValues, roundAmount } from './fields.js';
-import { codeKey, pathFor, REPORTABLE_POSITION_KEYS } from './paths.js';
+import { codeKey, pathFor, REPORTABLE_POSITION_KEYS, REPORTABLE_POSITIONS } from './paths.js';
 import { phonePrefix } from './phone.js';
 import { todayInJerusalem } from './today.js';
 
@@ -29,7 +29,11 @@ export interface NormalizedMain {
   record: NormalizedRecord;
   /** Codes whose input value 0 was omitted because the code is not zeroAllowed (SPEC §4.5). */
   omittedZeroCodes: string[];
-  /** Raised while normalizing: invalid phone prefixes, which are dropped (field.phonePrefix). */
+  /**
+   * Raised while normalizing: invalid phone prefixes, which are dropped (field.phonePrefix), a
+   * malformed bank account (main.bankAccount.format) and positions after the fifth
+   * (main.reportablePositions.max).
+   */
   notices: Issue[];
 }
 
@@ -60,6 +64,29 @@ function bankCodes(
     );
   }
   return malformed.length > 0 ? {} : deriveBankCodes(bankAccount);
+}
+
+/**
+ * main.reportablePositions.max: only five reportable positions have a field (1000@1034–1046), so a
+ * sixth one has none to be reported on; it raises a notice at the first position that is not
+ * written. The first five are still written.
+ */
+function checkReportablePositionCount(positions: readonly number[] | undefined, notices: Issue[]) {
+  const max = REPORTABLE_POSITION_KEYS.length;
+  if (positions === undefined || positions.length <= max) {
+    return;
+  }
+  notices.push(
+    makeIssue('main.reportablePositions.max', {
+      message: `${REPORTABLE_POSITIONS} has ${positions.length} positions; at most ${max} can be reported (1000@1034–1046).`,
+      path: `${REPORTABLE_POSITIONS}[${max}]`,
+      recordType: '1000',
+      recordIndex: 0,
+      value: positions.length,
+      expected: `at most ${max} positions`,
+      specRef: { page: 11 },
+    }),
+  );
 }
 
 /** A presence flag (SPEC §7.3): marked when the declaration object exists, else absent. */
@@ -194,6 +221,7 @@ export function normalizeMain(
     options.rounding,
   );
 
+  checkReportablePositionCount(declarations.reportablePositions, notices);
   const bank = bankCodes(input.bankAccount, notices);
   const derivedCodes: Readonly<Record<DerivedMainCode, number | undefined>> = {
     '008': deriveCode008(declarations),

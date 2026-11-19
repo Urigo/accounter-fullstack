@@ -1,10 +1,11 @@
 /**
  * One pass/fail case per rule (SPEC §13.4). Typed by RuleId, so a rule without a case is a type
  * error. Input fail cases are minimalInput() with one deliberate defect; file fail cases are the
- * `minimal` golden file with one deliberate defect.
+ * `minimal` golden file, or a file generated from a valid input, with one deliberate defect.
  */
+import { generate1214 } from '../../src/api/generate.js';
 import { getLayout } from '../../src/layout/registry.js';
-import type { PhonePrefix, Shareholder } from '../../src/model/input.js';
+import type { PhonePrefix, Report1214Input, Shareholder } from '../../src/model/input.js';
 import type { ParseOptions } from '../../src/model/options.js';
 import type { RuleId } from '../../src/validate/rules.js';
 import { minimalInput } from '../fixtures/builders.js';
@@ -52,6 +53,25 @@ function withMainCodePairs(pairs: number) {
   }
   return minimalInput({ amounts: Object.fromEntries(extra) });
 }
+
+/** The file generate1214 writes for `input`, with `edit` applied to it. */
+function generatedFile(input: Report1214Input, edit?: Tamper): string {
+  const { text } = generate1214(input, { today: () => '2024-06-30' });
+  return edit ? tamper(text, edit) : text;
+}
+
+/** minimalInput() with a family company and the code 080 it calls for. */
+const familyCompanyInput = () =>
+  minimalInput({
+    declarations: { familyCompany: { representativeFileNumber: '300000007' } },
+    amounts: { '080': 0 },
+  });
+/** minimalInput() with a beneficiary enterprise. */
+const beneficiaryEnterpriseInput = () =>
+  minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2023-05-14' } } });
+/** minimalInput() with a special tax year. */
+const specialYearInput = () =>
+  minimalInput({ declarations: { specialYear: { balanceSheetDate: '2024-09-30' } } });
 
 /** The `minimal` golden file text with one edit. */
 function minimalFile(edit?: Tamper): string {
@@ -203,6 +223,101 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
     fail: () => minimalInput({ company: { phone: { number: '123' } } }),
     pass: () => minimalInput({ company: { phone: { number: '1234567' } } }),
     path: 'company.phone.number',
+  },
+  'main.familyCompany.fileNumber': {
+    kind: 'file',
+    // The input type requires the file number with the object; a file can leave 1000@837 empty.
+    fail: () =>
+      generatedFile(familyCompanyInput(), { line: 1, position: 837, value: '0'.repeat(9) }),
+    pass: () => generatedFile(familyCompanyInput()),
+    path: 'declarations.familyCompany.representativeFileNumber',
+  },
+  'main.familyCompany.code080': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({ declarations: { familyCompany: { representativeFileNumber: '300000007' } } }),
+    pass: familyCompanyInput,
+    path: 'amounts["080"]',
+  },
+  'main.houseCompany.code084': {
+    kind: 'input',
+    fail: () => minimalInput({ declarations: { isHouseCompany: true } }),
+    pass: () => minimalInput({ declarations: { isHouseCompany: true }, amounts: { '084': 0 } }),
+    path: 'amounts["084"]',
+  },
+  'main.investmentLaw.flag': {
+    kind: 'input',
+    fail: () => minimalInput({ amounts: { '101': 1 } }),
+    pass: () =>
+      minimalInput({
+        declarations: { claimsCapitalInvestmentLawBenefits: true },
+        amounts: { '101': 1 },
+      }),
+    path: 'declarations.claimsCapitalInvestmentLawBenefits',
+  },
+  'main.beneficiaryEnterprise.noticeDate': {
+    kind: 'file',
+    // 1000@852: the input type requires the date with the object.
+    fail: () =>
+      generatedFile(beneficiaryEnterpriseInput(), {
+        line: 1,
+        position: 852,
+        value: ' '.repeat(10),
+      }),
+    pass: () => generatedFile(beneficiaryEnterpriseInput()),
+    path: 'declarations.beneficiaryEnterprise.noticeDate',
+  },
+  'main.specialYear.balanceSheetDate': {
+    kind: 'file',
+    // 1000@864: the input type requires the date with the object.
+    fail: () =>
+      generatedFile(specialYearInput(), { line: 1, position: 864, value: ' '.repeat(10) }),
+    pass: () => generatedFile(specialYearInput()),
+    path: 'declarations.specialYear.balanceSheetDate',
+  },
+  'main.kibbutz.code226': {
+    kind: 'input',
+    fail: () => minimalInput({ declarations: { isKibbutz: true } }),
+    pass: () => minimalInput({ declarations: { isKibbutz: true }, amounts: { '226': 1 } }),
+    path: 'amounts["226"]',
+  },
+  'main.buildingIncome.code259': {
+    kind: 'input',
+    fail: () => minimalInput({ declarations: { hasBuildingIncome: true } }),
+    pass: () => minimalInput({ declarations: { hasBuildingIncome: true }, amounts: { '259': 3 } }),
+    path: 'amounts["259"]',
+  },
+  'main.cgReasons.otherText': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({ capitalGainsSummary: { untransmittedCount: 1, reasons: { other: true } } }),
+    pass: () =>
+      minimalInput({
+        capitalGainsSummary: {
+          untransmittedCount: 1,
+          reasons: { other: true, otherText: 'העסקה בוטלה' },
+        },
+      }),
+    path: 'capitalGainsSummary.reasons.otherText',
+  },
+  'main.reportablePositions.required': {
+    kind: 'input',
+    fail: () => minimalInput({ declarations: { tookReportablePosition: true } }),
+    pass: () =>
+      minimalInput({ declarations: { tookReportablePosition: true, reportablePositions: [12] } }),
+    path: 'declarations.reportablePositions',
+  },
+  'main.reportablePositions.max': {
+    kind: 'input',
+    fail: () =>
+      minimalInput({
+        declarations: { tookReportablePosition: true, reportablePositions: [1, 2, 3, 4, 5, 6] },
+      }),
+    pass: () =>
+      minimalInput({
+        declarations: { tookReportablePosition: true, reportablePositions: [1, 2, 3, 4, 5] },
+      }),
+    path: 'declarations.reportablePositions[5]',
   },
   'main.bankAccount.format': {
     kind: 'input',

@@ -1025,6 +1025,10 @@ and the reportable positions are the non-zero values of 1034–1046 in field ord
 back as `declarations.hasCapitalGainsAppendix: true` only when the derivation of §7.4 does not
 already explain it (no `untransmittedCount > 0`, no capital-gains appendix in the file).
 
+Only five reportable positions have a field: more than five raise one `main.reportablePositions.max`
+notice at `declarations.reportablePositions[5]` (the first position not written), and the first five
+are still written.
+
 ### 7.4 Derived values (never taken from the caller)
 
 | Output                                                          | Derivation                                                                                                               | Enforces (spec)                            |
