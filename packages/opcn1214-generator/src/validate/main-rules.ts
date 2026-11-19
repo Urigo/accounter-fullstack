@@ -1,7 +1,8 @@
 /**
- * Record 1000 conditional requirements (SPEC §9.2 stage 4, §10.3): pure checks over the normalized
- * main record, so they run on validated input and on parsed files alike.
+ * Record 1000 conditional requirements and consistency warnings (SPEC §9.2 stage 4, §10.3): pure
+ * checks over the normalized main record, so they run on validated input and on parsed files alike.
  */
+import type { Primitive } from '../codec/types.js';
 import { Opcn1214InternalError } from '../errors.js';
 import type { FieldDef } from '../layout/types.js';
 import type { NormalizedRecord, NormalizedReport } from '../model/normalized.js';
@@ -24,6 +25,28 @@ const INVESTMENT_LAW = 'declarations.claimsCapitalInvestmentLawBenefits';
 const FIRST_POSITION = 'declarations.reportablePositions[0]';
 /** Codes whose presence calls for 849 (p.8). */
 const INVESTMENT_LAW_CODES = ['101', '102'] as const;
+/** Code 226 value "other cooperative society, not a kibbutz" (p.18). */
+const OTHER_COOPERATIVE = 9;
+const UNTRANSMITTED_COUNT = 'capitalGainsSummary.untransmittedCount';
+/** The reasons for untransmitted capital-gains appendices, 1000@964–967 (p.10–11). */
+const UNTRANSMITTED_REASONS = [
+  'capitalGainsSummary.reasons.lossOrNoGain',
+  'capitalGainsSummary.reasons.overFiveImprovementBalances',
+  'capitalGainsSummary.reasons.over14Appendices',
+  'capitalGainsSummary.reasons.other',
+] as const;
+/** Codes derived from `bankAccount` (SPEC §7.4). */
+const BANK_ACCOUNT_CODES = ['277', '278', '280'] as const;
+const ISRAELI_PURCHASE = 'qualifyingCompany.israeliPurchaseAmount';
+const FOREIGN_PURCHASE = 'qualifyingCompany.foreignPurchaseAmount';
+
+/**
+ * True for a number above 0: an optional count or amount of 0 is absent in the file (SPEC §8.4), so
+ * input and parsed files are judged alike.
+ */
+function isPositive(value: Primitive): boolean {
+  return typeof value === 'number' && value > 0;
+}
 
 /** The 1000 records of `report` (one per report). */
 function mainRecords(report: NormalizedReport): NormalizedRecord[] {
@@ -213,7 +236,178 @@ function reportablePositionsRequired(report: NormalizedReport): Issue[] {
     );
 }
 
-/** The conditional requirements of record 1000 (main.reportablePositions.max is a normalizer notice). */
+/** main.kibbutz.code226Other: code 226 = 9 ("other cooperative, not kibbutz") while kibbutz (p.18). */
+function kibbutzCode226Other(report: NormalizedReport): Issue[] {
+  return mainRecords(report)
+    .filter(
+      record =>
+        record.values['declarations.isKibbutz'] === true &&
+        record.codes.get('226') === OTHER_COOPERATIVE,
+    )
+    .map(record => ({
+      ...codeIssue(
+        'main.kibbutz.code226Other',
+        report,
+        record,
+        '226',
+        `The company is a kibbutz (1000@877), but code 226 is ${OTHER_COOPERATIVE} ("other cooperative society, not a kibbutz").`,
+      ),
+      value: OTHER_COOPERATIVE,
+    }));
+}
+
+/**
+ * main.reportablePositions.unexpected: positions 1034–1046 given while tookReportablePosition
+ * (1030) is no (p.11). Reported at the positions array, located at the first position field.
+ */
+function reportablePositionsUnexpected(report: NormalizedReport): Issue[] {
+  return mainRecords(report)
+    .filter(
+      record =>
+        record.values['declarations.tookReportablePosition'] === false &&
+        REPORTABLE_POSITION_KEYS.some(key => record.values[key] !== undefined),
+    )
+    .map(record =>
+      fieldIssue(
+        'main.reportablePositions.unexpected',
+        report,
+        record,
+        FIRST_POSITION,
+        `Reportable position numbers (1000@1034–1046) are given, but declarations.tookReportablePosition is no (1000@1030).`,
+        REPORTABLE_POSITIONS,
+      ),
+    );
+}
+
+/**
+ * main.cgUntransmitted.reason: untransmitted appendices (962 > 0) without any of the reasons
+ * 964–967 (p.10–11). Reported at the reasons object, located at the first reason field.
+ */
+function cgUntransmittedReason(report: NormalizedReport): Issue[] {
+  return mainRecords(report)
+    .filter(
+      record =>
+        isPositive(record.values[UNTRANSMITTED_COUNT]) &&
+        UNTRANSMITTED_REASONS.every(key => record.values[key] !== true),
+    )
+    .map(record =>
+      fieldIssue(
+        'main.cgUntransmitted.reason',
+        report,
+        record,
+        UNTRANSMITTED_REASONS[0],
+        `${String(record.values[UNTRANSMITTED_COUNT])} capital-gains appendices were not transmitted (1000@962), but no reason (1000@964–967) is marked.`,
+        'capitalGainsSummary.reasons',
+      ),
+    );
+}
+
+/** main.cgUntransmitted.reasonWithoutCount: a reason 964–967 marked while 962 is 0 or absent. */
+function cgUntransmittedReasonWithoutCount(report: NormalizedReport): Issue[] {
+  return mainRecords(report)
+    .filter(
+      record =>
+        UNTRANSMITTED_REASONS.some(key => record.values[key] === true) &&
+        !isPositive(record.values[UNTRANSMITTED_COUNT]),
+    )
+    .map(record =>
+      fieldIssue(
+        'main.cgUntransmitted.reasonWithoutCount',
+        report,
+        record,
+        UNTRANSMITTED_COUNT,
+        `A reason for untransmitted capital-gains appendices (1000@964–967) is marked, but ${UNTRANSMITTED_COUNT} (1000@962) is 0 or absent.`,
+      ),
+    );
+}
+
+/** main.bankAccount.withNoBank: noBankAccount (1064) marked while a bank account is given (p.12). */
+function bankAccountWithNoBank(report: NormalizedReport): Issue[] {
+  return mainRecords(report)
+    .filter(
+      record =>
+        record.values['declarations.noBankAccount'] === true &&
+        BANK_ACCOUNT_CODES.some(code => record.codes.has(code)),
+    )
+    .map(record =>
+      fieldIssue(
+        'main.bankAccount.withNoBank',
+        report,
+        record,
+        'declarations.noBankAccount',
+        'declarations.noBankAccount (1000@1064) is marked, but a bank account (codes 277/278/280) is given.',
+      ),
+    );
+}
+
+/**
+ * main.qualifyingCompany.purchaseAmounts: purchased (1065 = yes) without either purchase amount
+ * (1066, 1078) (p.12). Located at the first amount.
+ */
+function qualifyingCompanyPurchaseAmounts(report: NormalizedReport): Issue[] {
+  return mainRecords(report)
+    .filter(
+      record =>
+        record.values['qualifyingCompany.purchased'] === true &&
+        !isPositive(record.values[ISRAELI_PURCHASE]) &&
+        !isPositive(record.values[FOREIGN_PURCHASE]),
+    )
+    .map(record =>
+      fieldIssue(
+        'main.qualifyingCompany.purchaseAmounts',
+        report,
+        record,
+        ISRAELI_PURCHASE,
+        `qualifyingCompany.purchased is yes (1000@1065), but neither ${ISRAELI_PURCHASE} (1000@1066) nor ${FOREIGN_PURCHASE} (1000@1078) is given.`,
+      ),
+    );
+}
+
+/**
+ * main.qualifyingCompany.amortizationAmount: amortizationClaimed (1090 = yes) without the amount
+ * (1091), where 0 is an amount (p.12; SPEC §15 A-21).
+ */
+const qualifyingCompanyAmortizationAmount = requiresField(
+  'main.qualifyingCompany.amortizationAmount',
+  'qualifyingCompany.amortizationClaimed',
+  'qualifyingCompany.amortizationAmount',
+  'qualifyingCompany.amortizationClaimed is yes (1000@1090)',
+);
+
+/** A rule: when the count `countKey` is above 0, `code` must be in the code-amount section (p.10). */
+function countRequiresCode(ruleId: RuleId, countKey: string, code: string): ReportRule {
+  return report =>
+    mainRecords(report)
+      .filter(record => isPositive(record.values[countKey]) && !record.codes.has(code))
+      .map(record =>
+        codeIssue(
+          ruleId,
+          report,
+          record,
+          code,
+          `${countKey} (1000@${mainField(report, countKey).position}) is ${String(record.values[countKey])}, but code ${code}, whose certificates it counts, is absent.`,
+        ),
+      );
+}
+
+/** main.attachments.code070: donation receipts attached (954 > 0) without code 070. */
+const attachmentsCode070 = countRequiresCode(
+  'main.attachments.code070',
+  'attachments.donationReceiptsCount',
+  '070',
+);
+
+/** main.attachments.code010: withholding certificates attached (957 > 0) without code 010. */
+const attachmentsCode010 = countRequiresCode(
+  'main.attachments.code010',
+  'attachments.withholdingCertificatesCount',
+  '010',
+);
+
+/**
+ * The conditional requirements and consistency warnings of record 1000
+ * (main.reportablePositions.max and main.bankAccount.format are normalizer notices).
+ */
 export const MAIN_RULES: readonly ReportRule[] = [
   familyCompanyFileNumber,
   familyCompanyCode080,
@@ -225,4 +419,13 @@ export const MAIN_RULES: readonly ReportRule[] = [
   buildingIncomeCode259,
   cgReasonsOtherText,
   reportablePositionsRequired,
+  kibbutzCode226Other,
+  reportablePositionsUnexpected,
+  cgUntransmittedReason,
+  cgUntransmittedReasonWithoutCount,
+  bankAccountWithNoBank,
+  qualifyingCompanyPurchaseAmounts,
+  qualifyingCompanyAmortizationAmount,
+  attachmentsCode070,
+  attachmentsCode010,
 ];
