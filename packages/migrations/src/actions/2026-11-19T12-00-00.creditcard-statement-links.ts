@@ -15,8 +15,11 @@ import { type MigrationExecutor } from '../pg-migrator.js';
  *   settles. One bank debit can settle several statements (a combined debit), but a statement is
  *   settled once: `UNIQUE (card_account_id, currency, debit_date)`. Deleting the bank transaction
  *   or the card account drops its links.
+ * - `creditcard_statement_link_rejections` records a link a user removed, so neither the automation
+ *   nor the read-time matcher proposes it again for that bank transaction. Linking the statement
+ *   again by hand deletes the rejection.
  *
- * Both tables carry `owner_id` and get the same RLS policies as
+ * All three tables carry `owner_id` and get the same RLS policies as
  * `2026-09-28T10-30-00.rls-dynamic-report-comments.ts`: reads follow the request's authorized
  * scope, writes are pinned to the single write target, and the RESTRICTIVE per-command policies
  * keep DELETE and UPDATE on the write target. FORCE makes them apply to the table owner too.
@@ -90,6 +93,31 @@ CREATE INDEX IF NOT EXISTS idx_creditcard_statement_links_bank_transaction_id
 CREATE INDEX IF NOT EXISTS idx_creditcard_statement_links_owner_id
     ON accounter_schema.creditcard_statement_links (owner_id);
 
+CREATE TABLE IF NOT EXISTS accounter_schema.creditcard_statement_link_rejections
+(
+    id                  uuid DEFAULT uuidv7()      NOT NULL
+        CONSTRAINT creditcard_statement_link_rejections_pk PRIMARY KEY,
+    owner_id            uuid                       NOT NULL
+        CONSTRAINT fk_creditcard_statement_link_rejections_owner_id
+            REFERENCES accounter_schema.businesses (id),
+    bank_transaction_id uuid                       NOT NULL
+        CONSTRAINT fk_creditcard_statement_link_rejections_bank_transaction_id
+            REFERENCES accounter_schema.transactions (id)
+            ON DELETE CASCADE,
+    card_account_id     uuid                       NOT NULL
+        CONSTRAINT fk_creditcard_statement_link_rejections_card_account_id
+            REFERENCES accounter_schema.financial_accounts (id)
+            ON DELETE CASCADE,
+    currency            accounter_schema.currency  NOT NULL,
+    debit_date          date                       NOT NULL,
+    created_at          timestamptz DEFAULT now()  NOT NULL,
+    CONSTRAINT creditcard_statement_link_rejections_unique
+        UNIQUE (bank_transaction_id, card_account_id, currency, debit_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_creditcard_statement_link_rejections_owner_id
+    ON accounter_schema.creditcard_statement_link_rejections (owner_id);
+
 -- RLS: financial_credit_card_accounts
 ALTER TABLE accounter_schema.financial_credit_card_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE accounter_schema.financial_credit_card_accounts FORCE ROW LEVEL SECURITY;
@@ -130,6 +158,28 @@ CREATE POLICY tenant_isolation_delete ON accounter_schema.creditcard_statement_l
 
 DROP POLICY IF EXISTS tenant_isolation_update ON accounter_schema.creditcard_statement_links;
 CREATE POLICY tenant_isolation_update ON accounter_schema.creditcard_statement_links
+    AS RESTRICTIVE
+    FOR UPDATE
+    USING (owner_id = accounter_schema.get_current_business_id());
+
+-- RLS: creditcard_statement_link_rejections
+ALTER TABLE accounter_schema.creditcard_statement_link_rejections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE accounter_schema.creditcard_statement_link_rejections FORCE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS tenant_isolation ON accounter_schema.creditcard_statement_link_rejections;
+CREATE POLICY tenant_isolation ON accounter_schema.creditcard_statement_link_rejections
+    FOR ALL
+    USING (owner_id = ANY (accounter_schema.get_current_business_scope()))
+    WITH CHECK (owner_id = accounter_schema.get_current_business_id());
+
+DROP POLICY IF EXISTS tenant_isolation_delete ON accounter_schema.creditcard_statement_link_rejections;
+CREATE POLICY tenant_isolation_delete ON accounter_schema.creditcard_statement_link_rejections
+    AS RESTRICTIVE
+    FOR DELETE
+    USING (owner_id = accounter_schema.get_current_business_id());
+
+DROP POLICY IF EXISTS tenant_isolation_update ON accounter_schema.creditcard_statement_link_rejections;
+CREATE POLICY tenant_isolation_update ON accounter_schema.creditcard_statement_link_rejections
     AS RESTRICTIVE
     FOR UPDATE
     USING (owner_id = accounter_schema.get_current_business_id());

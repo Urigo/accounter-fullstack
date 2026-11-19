@@ -41,6 +41,9 @@ async function validateLinkTarget(
   if (bankTransaction.account_type === 'CREDIT_CARD') {
     throw new GraphQLError('A credit card transaction cannot settle a card statement');
   }
+  if (bankTransaction.is_fee) {
+    throw new GraphQLError('A fee transaction cannot settle a card statement');
+  }
 
   const cardAccountIds = Array.from(new Set(statements.map(s => s.cardAccountId)));
   const accounts = await injector
@@ -116,16 +119,15 @@ export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers &
         const uniqueStatements = Array.from(
           new Map(statements.map(statement => [statementKeyId(statement), statement])).values(),
         );
-        await statementsProvider.insertLinks(
-          uniqueStatements
-            .filter(statement => !alreadyLinked.has(statementKeyId(statement)))
-            .map(statement => ({
-              ...statement,
-              ownerId,
-              bankTransactionId,
-              linkMethod: 'MANUAL' as const,
-            })),
-        );
+        // also forgets any earlier unlink of these statements from this bank transaction
+        await statementsProvider.linkStatementsManually({
+          ownerId,
+          bankTransactionId,
+          statements: uniqueStatements.filter(
+            statement => !alreadyLinked.has(statementKeyId(statement)),
+          ),
+          relinked: uniqueStatements,
+        });
 
         return { charge: await freshCharge(injector, chargeId) };
       } catch (error) {
@@ -138,7 +140,8 @@ export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers &
         const chargeId = await validateLinkTarget(injector, ownerId, bankTransactionId, [
           statement,
         ]);
-        const deleted = await injector.get(CreditCardStatementsProvider).deleteLink({
+        // also records the rejection, so it is not proposed again for this bank transaction
+        const deleted = await injector.get(CreditCardStatementsProvider).unlinkStatement({
           ...statement,
           ownerId,
           bankTransactionId,
@@ -186,8 +189,10 @@ export const CreditCardTransactionsResolvers: TransactionsModule.Resolvers &
       const perBank = await injector
         .get(CreditCardTransactionsProvider)
         .getStatementsByChargeIdLoader.load(dbCharge.id);
+      // unlinked debits (even without candidates, so the panel can say so), and debits whose
+      // shown statements may be wrong or incomplete
       return perBank
-        .filter(({ statements }) => statements.length === 0)
+        .filter(({ statements, suggestions }) => statements.length === 0 || suggestions.length > 0)
         .map(({ bankTransaction, suggestions }) => ({
           bankTransactionId: bankTransaction.id,
           suggestions,

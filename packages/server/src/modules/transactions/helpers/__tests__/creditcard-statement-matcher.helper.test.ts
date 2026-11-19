@@ -4,6 +4,7 @@ import {
   cardKey,
   isConfidentMatch,
   matchCreditCardStatements,
+  suggestCreditCardStatements,
   toCents,
   type BankCardHint,
   type CandidateStatement,
@@ -22,6 +23,7 @@ function bank(overrides: Partial<MatcherBankTransaction> = {}): MatcherBankTrans
     effectiveDate: '2026-03-10',
     sourceReference: '000111',
     sourceDescription: 'Card debit',
+    counterpartyIsCardIssuer: false,
     ...overrides,
   };
 }
@@ -75,7 +77,7 @@ describe('toCents', () => {
 
 describe('matchCreditCardStatements', () => {
   it('links by reference when the bank reference equals the card number (Poalim)', () => {
-    const result = matchCreditCardStatements(bank({ sourceReference: '1111' }), [], [
+    const result = matchCreditCardStatements(bank({ sourceReference: '1111', counterpartyIsCardIssuer: true }), [], [
       statement('card-a', { accountNumber: '1111', total: '-1499.00' }),
       statement('card-b', { accountNumber: '2222', total: '-1500.00' }),
     ]);
@@ -139,7 +141,7 @@ describe('matchCreditCardStatements', () => {
     expect(
       linkedCards(
         matchCreditCardStatements(
-          bank({ amount: '-700.00', sourceReference: '1111' }),
+          bank({ amount: '-700.00', sourceReference: '1111', counterpartyIsCardIssuer: true }),
           [],
           candidates,
         ),
@@ -148,7 +150,12 @@ describe('matchCreditCardStatements', () => {
     expect(
       linkedCards(
         matchCreditCardStatements(
-          bank({ id: 'bank-tx-2', amount: '-800.00', sourceReference: '2222' }),
+          bank({
+            id: 'bank-tx-2',
+            amount: '-800.00',
+            sourceReference: '2222',
+            counterpartyIsCardIssuer: true,
+          }),
           [],
           candidates,
         ),
@@ -170,7 +177,7 @@ describe('matchCreditCardStatements', () => {
 
   it('accepts a one-day shift between the bank and issuer dates', () => {
     const result = matchCreditCardStatements(
-      bank({ effectiveDate: '2026-03-02', sourceReference: '1111' }),
+      bank({ effectiveDate: '2026-03-02', sourceReference: '1111', counterpartyIsCardIssuer: true }),
       [],
       [
         statement('card-a', { accountNumber: '1111', debitDate: '2026-03-01' }),
@@ -188,7 +195,7 @@ describe('matchCreditCardStatements', () => {
   });
 
   it('excludes a statement already linked to a different bank transaction', () => {
-    const result = matchCreditCardStatements(bank({ sourceReference: '1111' }), [], [
+    const result = matchCreditCardStatements(bank({ sourceReference: '1111', counterpartyIsCardIssuer: true }), [], [
       statement('card-a', {
         accountNumber: '1111',
         linkedBankTransactionId: 'another-bank-tx',
@@ -229,5 +236,150 @@ describe('matchCreditCardStatements', () => {
       expect(result.suggestions[0].statements[0].cardAccountId).toBe('card-b');
       expect(result.suggestions[0].hint).toBe('WEAK');
     }
+  });
+
+  describe('scoping of reference clues', () => {
+    it('does not link a non-card bank row whose reference collides with a card number', () => {
+      const result = matchCreditCardStatements(bank({ sourceReference: '1111', amount: '-42.00' }), [], [
+        statement('card-a', { accountNumber: '1111', total: '-1500.00' }),
+      ]);
+      expect(isConfidentMatch(result)).toBe(false);
+    });
+
+    it('treats such a collision as a weak hint, linking only on the exact amount', () => {
+      const result = matchCreditCardStatements(bank({ sourceReference: '1111' }), [], [
+        statement('card-a', { accountNumber: '1111', total: '-1500.00' }),
+      ]);
+      expect(linkedCards(result)).toEqual({ method: 'REFERENCE', keys: ['card-a@2026-03-10'] });
+    });
+
+    it('links a Poalim 491 raw hint even without the issuer counterparty', () => {
+      const result = matchCreditCardStatements(
+        bank(),
+        [{ transactionId: 'bank-tx-1', source: 'POALIM_491', hint: '1111' }],
+        [statement('card-a', { accountNumber: '1111', total: '-1490.00' })],
+      );
+      expect(linkedCards(result)).toEqual({ method: 'REFERENCE', keys: ['card-a@2026-03-10'] });
+    });
+  });
+
+  describe('rule (a): strong hints', () => {
+    const issuerBank = (overrides: Partial<MatcherBankTransaction> = {}) =>
+      bank({ counterpartyIsCardIssuer: true, sourceDescription: 'GOLD BLUE', ...overrides });
+
+    it('links the only statement of a hinted card even when the amount differs', () => {
+      const result = matchCreditCardStatements(issuerBank({ sourceReference: '1111' }), [], [
+        statement('card-a', { accountNumber: '1111', total: '-1400.00' }),
+      ]);
+      expect(linkedCards(result)).toEqual({ method: 'REFERENCE', keys: ['card-a@2026-03-10'] });
+    });
+
+    it('picks the exact-amount statement of a hinted card with two statements in the window', () => {
+      const result = matchCreditCardStatements(issuerBank({ sourceReference: '1111' }), [], [
+        statement('card-a', { accountNumber: '1111', total: '-200.00' }),
+        statement('card-a', { accountNumber: '1111', total: '-1500.00', debitDate: '2026-03-13' }),
+      ]);
+      expect(linkedCards(result)).toEqual({ method: 'REFERENCE', keys: ['card-a@2026-03-13'] });
+    });
+
+    it('links all statements of a hinted card when together they make the debit', () => {
+      const result = matchCreditCardStatements(issuerBank({ sourceReference: '1111' }), [], [
+        statement('card-a', { accountNumber: '1111', total: '-1000.00' }),
+        statement('card-a', { accountNumber: '1111', total: '-500.00', debitDate: '2026-03-12' }),
+      ]);
+      expect(linkedCards(result)).toEqual({
+        method: 'REFERENCE',
+        keys: ['card-a@2026-03-10', 'card-a@2026-03-12'],
+      });
+    });
+
+    it('returns suggestions when a hinted card has several statements and none fits', () => {
+      const result = matchCreditCardStatements(issuerBank({ sourceReference: '1111' }), [], [
+        statement('card-a', { accountNumber: '1111', total: '-100.00' }),
+        statement('card-a', { accountNumber: '1111', total: '-200.00', debitDate: '2026-03-12' }),
+        // an unhinted card with the exact amount, paid from this account: never linked instead
+        statement('card-b', { accountNumber: '2222', settlementAccountId: BANK_ACCOUNT }),
+      ]);
+      expect(isConfidentMatch(result)).toBe(false);
+    });
+
+    it('links the single hinted card resolved to the exact amount among several', () => {
+      const result = matchCreditCardStatements(
+        issuerBank({ sourceDescription: 'GOLD and BLUE cards' }),
+        [],
+        [
+          statement('card-gold', { accountNumber: '1111', accountName: 'GOLD', total: '-1500.00' }),
+          statement('card-blue', { accountNumber: '2222', accountName: 'BLUE', total: '-300.00' }),
+        ],
+      );
+      expect(linkedCards(result)).toEqual({ method: 'REFERENCE', keys: ['card-gold@2026-03-10'] });
+    });
+
+    it('links several hinted cards when their statements add up to the debit', () => {
+      const result = matchCreditCardStatements(
+        issuerBank({ sourceDescription: 'GOLD and BLUE cards' }),
+        [],
+        [
+          statement('card-gold', { accountNumber: '1111', accountName: 'GOLD', total: '-1200.00' }),
+          statement('card-blue', { accountNumber: '2222', accountName: 'BLUE', total: '-300.00' }),
+        ],
+      );
+      expect(linkedCards(result)).toEqual({
+        method: 'REFERENCE',
+        keys: ['card-blue@2026-03-10', 'card-gold@2026-03-10'],
+      });
+    });
+
+    it('returns suggestions when several hinted cards do not resolve', () => {
+      const result = matchCreditCardStatements(
+        issuerBank({ sourceDescription: 'GOLD and BLUE cards' }),
+        [],
+        [
+          statement('card-gold', { accountNumber: '1111', accountName: 'GOLD', total: '-1000.00' }),
+          statement('card-blue', { accountNumber: '2222', accountName: 'BLUE', total: '-300.00' }),
+        ],
+      );
+      expect(isConfidentMatch(result)).toBe(false);
+      if (!isConfidentMatch(result)) {
+        expect(result.suggestions.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  it('rule (c): requires the exact amount to be unique among all candidates', () => {
+    const result = matchCreditCardStatements(bank(), [], [
+      statement('card-a', { settlementAccountId: BANK_ACCOUNT }),
+      // unscoped, but has the same amount: the scoped one is no longer unique
+      statement('card-b'),
+    ]);
+    expect(isConfidentMatch(result)).toBe(false);
+  });
+
+  it('never proposes a rejected statement for that bank transaction', () => {
+    const rejected = statement('card-a', { accountNumber: '1111' });
+    const result = matchCreditCardStatements(
+      bank({ sourceReference: '1111', counterpartyIsCardIssuer: true }),
+      [],
+      [rejected, statement('card-b')],
+      { rejectedKeys: [rejected] },
+    );
+    expect(isConfidentMatch(result)).toBe(false);
+    if (!isConfidentMatch(result)) {
+      expect(result.suggestions.map(s => s.statements[0].cardAccountId)).toEqual(['card-b']);
+    }
+  });
+
+  describe('suggestCreditCardStatements', () => {
+    it('ranks the statement closing the gap first, excluding those already shown', () => {
+      const linked = statement('card-a', { total: '-1000.00' });
+      const suggestions = suggestCreditCardStatements(
+        bank(),
+        [],
+        [linked, statement('card-b', { total: '-80.00' }), statement('card-c', { total: '-500.00' })],
+        { excludeKeys: [linked], linkedCents: -100_000 },
+      );
+      expect(suggestions.map(s => s.statements[0].cardAccountId)).toEqual(['card-c', 'card-b']);
+      expect(suggestions[0].amountDifferenceCents).toBe(0);
+    });
   });
 });

@@ -8,7 +8,7 @@ export default gql`
     validCreditCardAmount: Boolean!
     " card statements settled by the charge's bank debits, linked or confidently matched "
     creditCardStatements: [CreditCardStatement!]!
-    " candidate statements for each bank debit that has no linked or matched statement "
+    " candidate statements per bank debit: for an unlinked debit, for a debit whose statements are only a computed (unconfirmed) match, and for a debit whose linked statements do not add up to it. Excludes the statements already shown "
     creditCardStatementSuggestions: [CreditCardStatementSuggestions!]!
   }
 
@@ -63,7 +63,7 @@ export default gql`
     reason: String!
   }
 
-  " ranked candidate statements for a bank debit that is not linked "
+  " ranked candidate statements a person may link to a bank debit, instead of or in addition to the ones shown "
   type CreditCardStatementSuggestions {
     bankTransaction: Transaction!
     suggestions: [CreditCardStatementSuggestion!]!

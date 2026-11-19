@@ -96,6 +96,16 @@ type Statement = CreditcardCharge['creditCardStatements'][number];
 type SuggestedStatement =
   CreditcardCharge['creditCardStatementSuggestions'][number]['suggestions'][number]['statements'][number];
 
+type BankAmount = Statement['total'];
+type BankDebitGroup = {
+  bankTransactionId: string;
+  amount: BankAmount;
+  effectiveDate: string | null;
+  description: string | null;
+  statements: Statement[];
+  suggestions: CreditcardCharge['creditCardStatementSuggestions'][number]['suggestions'];
+};
+
 const LINK_METHOD_LABELS: Record<CreditCardStatementLinkMethod, string> = {
   [CreditCardStatementLinkMethod.Reference]: 'Card reference',
   [CreditCardStatementLinkMethod.Amount]: 'Amount',
@@ -209,24 +219,41 @@ export function CreditcardTransactionsInfo({ chargeProps, onChange }: Props): Re
     [charge],
   );
 
-  // statements grouped by the bank debit settling them, to compare their totals with the debit
-  const byBankTransaction = useMemo(() => {
-    const groups = new Map<string, { bankAmount: Statement['total']; statements: Statement[] }>();
-    for (const statement of statements) {
-      const bank = statement.bankTransaction;
-      if (!bank) {
-        continue;
+  // one group per bank debit: the statements it settles (stored or matched) and the candidates
+  // a person may link instead or in addition
+  const groups = useMemo(() => {
+    const byBank = new Map<string, BankDebitGroup>();
+    const groupOf = (id: string, amount: BankAmount): BankDebitGroup => {
+      const existing = byBank.get(id);
+      if (existing) {
+        return existing;
       }
-      const group = groups.get(bank.id) ?? { bankAmount: bank.amount, statements: [] };
-      group.statements.push(statement);
-      groups.set(bank.id, group);
+      const group: BankDebitGroup = {
+        bankTransactionId: id,
+        amount,
+        effectiveDate: null,
+        description: null,
+        statements: [],
+        suggestions: [],
+      };
+      byBank.set(id, group);
+      return group;
+    };
+    for (const statement of statements) {
+      if (statement.bankTransaction) {
+        groupOf(statement.bankTransaction.id, statement.bankTransaction.amount).statements.push(
+          statement,
+        );
+      }
     }
-    return Array.from(groups.entries()).map(([bankTransactionId, group]) => ({
-      bankTransactionId,
-      ...group,
-      totalCents: group.statements.reduce((sum, s) => sum + toCents(s.total.raw), 0),
-    }));
-  }, [statements]);
+    for (const { bankTransaction, suggestions: candidates } of suggestions) {
+      const group = groupOf(bankTransaction.id, bankTransaction.amount);
+      group.effectiveDate = bankTransaction.effectiveDate ?? null;
+      group.description = bankTransaction.sourceDescription || null;
+      group.suggestions = candidates;
+    }
+    return Array.from(byBank.values());
+  }, [statements, suggestions]);
 
   const link = useCallback(
     async (bankTransactionId: string, toLink: (Statement | SuggestedStatement)[]) => {
@@ -254,123 +281,144 @@ export function CreditcardTransactionsInfo({ chargeProps, onChange }: Props): Re
     [unlinkCreditCardStatement, onChange],
   );
 
-  if (statements.length === 0 && suggestions.length === 0) {
+  if (groups.length === 0) {
     return <p className="text-sm text-muted-foreground">No bank debit found on this charge.</p>;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {byBankTransaction.map(group => (
-        <div key={group.bankTransactionId} className="flex flex-col gap-3">
-          {group.totalCents !== toCents(group.bankAmount.raw) && (
-            <Alert variant="destructive">
-              <AlertTriangle className="size-4" />
-              <AlertTitle>Statement totals do not match the bank debit</AlertTitle>
-              <AlertDescription>
-                Bank debit {group.bankAmount.formatted}, statements total{' '}
-                {(group.totalCents / 100).toFixed(2)}. Card transactions may be missing, or the
-                wrong statement is linked.
-              </AlertDescription>
-            </Alert>
-          )}
-          {group.statements.map(statement => (
-            <div key={statement.id} className="flex flex-col gap-2 rounded-md border p-2">
-              <div className="flex flex-row flex-wrap items-center gap-2">
-                <span className="font-medium">{cardLabel(statement.cardAccount)}</span>
-                <span className="text-sm text-muted-foreground">
-                  Debit date {statement.debitDate}
-                </span>
-                <span className="text-sm">{statement.total.formatted}</span>
-                {statement.linkMethod && (
-                  <Badge variant="secondary">{LINK_METHOD_LABELS[statement.linkMethod]}</Badge>
-                )}
-                {!statement.confirmed && <Badge variant="outline">Unconfirmed</Badge>}
-                <div className="ml-auto flex flex-row gap-2">
-                  {statement.confirmed ? (
+      {groups.map(group => {
+        const unconfirmed = group.statements.filter(statement => !statement.confirmed);
+        const totalCents = group.statements.reduce((sum, s) => sum + toCents(s.total.raw), 0);
+        return (
+          <div key={group.bankTransactionId} className="flex flex-col gap-3 rounded-md border p-2">
+            <div className="flex flex-row flex-wrap items-center gap-2 text-sm">
+              <span className="font-medium">Bank debit {group.amount.formatted}</span>
+              {group.effectiveDate && (
+                <span className="text-muted-foreground">on {group.effectiveDate}</span>
+              )}
+              {group.description && (
+                <span className="text-muted-foreground">({group.description})</span>
+              )}
+              {unconfirmed.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto"
+                  disabled={busy}
+                  onClick={() => void link(group.bankTransactionId, unconfirmed)}
+                >
+                  <Check className="size-4" />
+                  {unconfirmed.length > 1 ? `Confirm ${unconfirmed.length} statements` : 'Confirm'}
+                </Button>
+              )}
+            </div>
+
+            {group.statements.length > 0 && totalCents !== toCents(group.amount.raw) && (
+              <Alert variant="destructive">
+                <AlertTriangle className="size-4" />
+                <AlertTitle>Statement totals do not match the bank debit</AlertTitle>
+                <AlertDescription>
+                  Bank debit {group.amount.formatted}, statements total{' '}
+                  {(totalCents / 100).toFixed(2)}. Card transactions may be missing, or a statement
+                  is missing or wrong.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {group.statements.map(statement => (
+              <div key={statement.id} className="flex flex-col gap-2 rounded-md border p-2">
+                <div className="flex flex-row flex-wrap items-center gap-2">
+                  <span className="font-medium">{cardLabel(statement.cardAccount)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Debit date {statement.debitDate}
+                  </span>
+                  <span className="text-sm">{statement.total.formatted}</span>
+                  {statement.linkMethod && (
+                    <Badge variant="secondary">{LINK_METHOD_LABELS[statement.linkMethod]}</Badge>
+                  )}
+                  {!statement.confirmed && <Badge variant="outline">Unconfirmed</Badge>}
+                  {statement.confirmed && (
                     <Button
                       size="sm"
                       variant="outline"
+                      className="ml-auto"
                       disabled={busy}
                       onClick={() => void unlink(group.bankTransactionId, statement)}
                     >
                       <Unlink className="size-4" />
                       Unlink
                     </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => void link(group.bankTransactionId, [statement])}
-                    >
-                      <Check className="size-4" />
-                      Confirm
-                    </Button>
                   )}
                 </div>
+                <StatementTransactionsTable statement={statement} />
               </div>
-              <StatementTransactionsTable statement={statement} />
-            </div>
-          ))}
-        </div>
-      ))}
+            ))}
 
-      {suggestions.map(({ bankTransaction, suggestions: candidates }) => (
-        <div key={bankTransaction.id} className="flex flex-col gap-2 rounded-md border p-2">
-          <div className="text-sm">
-            <span className="font-medium">No statement linked</span> to the bank debit of{' '}
-            {bankTransaction.amount.formatted}
-            {bankTransaction.effectiveDate ? ` on ${bankTransaction.effectiveDate}` : ''}
-            {bankTransaction.sourceDescription ? ` (${bankTransaction.sourceDescription})` : ''}
+            {group.statements.length === 0 && (
+              <p className="text-sm">
+                <span className="font-medium">No statement linked</span> to this bank debit.
+              </p>
+            )}
+
+            {group.suggestions.length > 0 ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium">
+                  {group.statements.length > 0
+                    ? 'Other candidate statements'
+                    : 'Candidate statements'}
+                </span>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Statements</TableHead>
+                      <TableHead>Why</TableHead>
+                      <TableHead />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.suggestions.map(candidate => (
+                      <TableRow key={candidate.statements.map(s => s.id).join(',')}>
+                        <TableCell>
+                          {candidate.statements.map(statement => (
+                            <div key={statement.id}>
+                              {[
+                                cardLabel(statement.cardAccount),
+                                statement.debitDate,
+                                statement.total.formatted,
+                              ].join(' · ')}
+                            </div>
+                          ))}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {candidate.reason}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => void link(group.bankTransactionId, candidate.statements)}
+                          >
+                            <Link2 className="size-4" />
+                            Link
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              group.statements.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No card statement found around this debit date.
+                </p>
+              )
+            )}
           </div>
-          {candidates.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No card statement found around this debit date.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Statements</TableHead>
-                  <TableHead>Why</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {candidates.map(candidate => (
-                  <TableRow key={candidate.statements.map(s => s.id).join(',')}>
-                    <TableCell>
-                      {candidate.statements.map(statement => (
-                        <div key={statement.id}>
-                          {[
-                            cardLabel(statement.cardAccount),
-                            statement.debitDate,
-                            statement.total.formatted,
-                          ].join(' · ')}
-                        </div>
-                      ))}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {candidate.reason}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() => void link(bankTransaction.id, candidate.statements)}
-                      >
-                        <Link2 className="size-4" />
-                        Link
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

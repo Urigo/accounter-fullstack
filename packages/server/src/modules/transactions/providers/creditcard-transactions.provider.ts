@@ -5,11 +5,13 @@ import {
   isConfidentMatch,
   matchCreditCardStatements,
   statementKeyId,
+  suggestCreditCardStatements,
   toCents,
   type AutoLinkMethod,
+  type BankCardHint,
   type CandidateStatement,
   type MatcherBankTransaction,
-  type MatchResult,
+  type RankedSuggestion,
   type StatementKey,
 } from '../helpers/creditcard-statement-matcher.helper.js';
 import {
@@ -37,11 +39,14 @@ export type CreditCardStatementSuggestionProto = {
 export type BankTransactionStatements = {
   bankTransaction: BankTransactionRow;
   statements: ResolvedCreditCardStatement[];
-  /** Only when nothing is linked or confidently matched */
+  /** Statements a person may link instead of, or in addition to, the ones shown */
   suggestions: CreditCardStatementSuggestionProto[];
 };
 
-export function toMatcherBankTransaction(row: BankTransactionRow): MatcherBankTransaction {
+export function toMatcherBankTransaction(
+  row: BankTransactionRow,
+  counterpartyIsCardIssuer: boolean,
+): MatcherBankTransaction {
   return {
     id: row.id,
     accountId: row.account_id,
@@ -50,6 +55,7 @@ export function toMatcherBankTransaction(row: BankTransactionRow): MatcherBankTr
     effectiveDate: row.effective_date as TimelessDateString,
     sourceReference: row.source_reference,
     sourceDescription: row.source_description,
+    counterpartyIsCardIssuer,
   };
 }
 
@@ -70,30 +76,63 @@ export function toCandidateStatement(row: CandidateStatementRow): CandidateState
   };
 }
 
-/**
- * Runs the matcher for one bank transaction, read-only: loads its raw hints and candidate
- * statements and decides. Never writes.
- */
-export async function matchBankTransaction(
+export type MatcherInput = {
+  bank: MatcherBankTransaction;
+  hints: BankCardHint[];
+  candidates: CandidateStatement[];
+  rejectedKeys: StatementKey[];
+};
+
+export function buildMatcherInput(
+  bankTransaction: BankTransactionRow,
+  loaded: {
+    hints: BankCardHint[];
+    candidates: readonly CandidateStatementRow[];
+    rejectedKeys: StatementKey[];
+    counterpartyIsCardIssuer: boolean;
+  },
+): MatcherInput {
+  return {
+    bank: toMatcherBankTransaction(bankTransaction, loaded.counterpartyIsCardIssuer),
+    hints: loaded.hints,
+    candidates: loaded.candidates
+      .map(toCandidateStatement)
+      .filter((c): c is CandidateStatement => !!c),
+    rejectedKeys: loaded.rejectedKeys,
+  };
+}
+
+/** Everything the matcher needs about one bank transaction, loaded through the batch loaders. */
+export async function loadMatcherInput(
   statementsProvider: CreditCardStatementsProvider,
   bankTransaction: BankTransactionRow,
-): Promise<MatchResult> {
-  if (!bankTransaction.effective_date) {
-    return { suggestions: [] };
-  }
-  const [hints, candidates] = await Promise.all([
+): Promise<MatcherInput> {
+  const [hints, candidates, rejectedKeys, counterpartyIsCardIssuer] = await Promise.all([
     statementsProvider.getBankCardHintsByTransactionIdLoader.load(bankTransaction.id),
     statementsProvider.getCandidateStatementsByBankTransactionIdLoader.load(bankTransaction.id),
+    statementsProvider.getRejectedStatementsByBankTransactionIdLoader.load(bankTransaction.id),
+    statementsProvider.isCounterpartyCardIssuer(bankTransaction),
   ]);
-  return matchCreditCardStatements(
-    toMatcherBankTransaction(bankTransaction),
-    hints.map(hint => ({
-      transactionId: hint.transaction_id,
-      source: hint.source ?? '',
-      hint: hint.hint ?? '',
+  return buildMatcherInput(bankTransaction, {
+    hints,
+    candidates,
+    rejectedKeys,
+    counterpartyIsCardIssuer,
+  });
+}
+
+function toSuggestionProto(suggestion: RankedSuggestion): CreditCardStatementSuggestionProto {
+  return {
+    reason: suggestion.reason,
+    statements: suggestion.statements.map(statement => ({
+      cardAccountId: statement.cardAccountId,
+      currency: statement.currency,
+      debitDate: statement.debitDate,
+      bankTransactionId: null,
+      linkMethod: null,
+      confirmed: false,
     })),
-    candidates.map(toCandidateStatement).filter((c): c is CandidateStatement => !!c),
-  );
+  };
 }
 
 @Injectable({
@@ -103,55 +142,73 @@ export async function matchBankTransaction(
 export class CreditCardTransactionsProvider {
   constructor(private statementsProvider: CreditCardStatementsProvider) {}
 
+  /**
+   * The statements of one bank transaction: its stored links, else a confident match computed on
+   * read (never written). Suggestions come along when nothing is shown, when only a computed match
+   * is shown (so a wrong one can be corrected), and when the stored links do not add up to the
+   * debit (so a missing statement can be added).
+   */
   private async resolveBankTransaction(
     bankTransaction: BankTransactionRow,
   ): Promise<BankTransactionStatements> {
-    const links = await this.statementsProvider.getLinksByBankTransactionIdLoader.load(
-      bankTransaction.id,
-    );
+    const [links, input] = await Promise.all([
+      this.statementsProvider.getLinksByBankTransactionIdLoader.load(bankTransaction.id),
+      bankTransaction.effective_date
+        ? loadMatcherInput(this.statementsProvider, bankTransaction)
+        : null,
+    ]);
+
     if (links.length > 0) {
+      const statements = links.map(link => ({
+        cardAccountId: link.card_account_id,
+        currency: link.currency,
+        debitDate: link.debit_date,
+        bankTransactionId: link.bank_transaction_id,
+        linkMethod: link.link_method,
+        confirmed: true,
+      }));
+      const totals = await Promise.all(statements.map(key => this.getStatementTotalCents(key)));
+      const linkedCents = totals.reduce((sum, total) => sum + total, 0);
+      const suggestions =
+        input && linkedCents !== toCents(bankTransaction.amount)
+          ? suggestCreditCardStatements(input.bank, input.hints, input.candidates, {
+              rejectedKeys: input.rejectedKeys,
+              excludeKeys: statements,
+              linkedCents,
+            })
+          : [];
+      return { bankTransaction, statements, suggestions: suggestions.map(toSuggestionProto) };
+    }
+
+    if (!input) {
+      return { bankTransaction, statements: [], suggestions: [] };
+    }
+
+    const result = matchCreditCardStatements(input.bank, input.hints, input.candidates, {
+      rejectedKeys: input.rejectedKeys,
+    });
+    if (!isConfidentMatch(result)) {
       return {
         bankTransaction,
-        statements: links.map(link => ({
-          cardAccountId: link.card_account_id,
-          currency: link.currency,
-          debitDate: link.debit_date,
-          bankTransactionId: link.bank_transaction_id,
-          linkMethod: link.link_method,
-          confirmed: true,
-        })),
-        suggestions: [],
+        statements: [],
+        suggestions: result.suggestions.map(toSuggestionProto),
       };
     }
 
-    const result = await matchBankTransaction(this.statementsProvider, bankTransaction);
-    if (isConfidentMatch(result)) {
-      const method: AutoLinkMethod = result.method;
-      return {
-        bankTransaction,
-        statements: result.links.map(key => ({
-          ...key,
-          bankTransactionId: bankTransaction.id,
-          linkMethod: method,
-          confirmed: false,
-        })),
-        suggestions: [],
-      };
-    }
+    const method: AutoLinkMethod = result.method;
+    const alternatives = suggestCreditCardStatements(input.bank, input.hints, input.candidates, {
+      rejectedKeys: input.rejectedKeys,
+      excludeKeys: result.links,
+    });
     return {
       bankTransaction,
-      statements: [],
-      suggestions: result.suggestions.map(suggestion => ({
-        reason: suggestion.reason,
-        statements: suggestion.statements.map(statement => ({
-          cardAccountId: statement.cardAccountId,
-          currency: statement.currency,
-          debitDate: statement.debitDate,
-          bankTransactionId: null,
-          linkMethod: null,
-          confirmed: false,
-        })),
+      statements: result.links.map(key => ({
+        ...key,
+        bankTransactionId: bankTransaction.id,
+        linkMethod: method,
+        confirmed: false,
       })),
+      suggestions: alternatives.map(toSuggestionProto),
     };
   }
 

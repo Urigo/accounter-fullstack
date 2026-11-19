@@ -2,6 +2,7 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   STATEMENT_DATE_WINDOW_DAYS,
@@ -12,6 +13,7 @@ import type {
   creditcard_statement_link_method,
   currency,
   IDeleteCreditCardStatementLinkQuery,
+  IDeleteRejectionsQuery,
   IGetAutoLinkCandidateBankTransactionIdsQuery,
   IGetBankCardHintsByTransactionIdsQuery,
   IGetBankTransactionsByChargeIdsQuery,
@@ -24,10 +26,12 @@ import type {
   IGetCreditCardStatementLinksByBankTransactionIdsQuery,
   IGetCreditCardStatementLinksByBankTransactionIdsResult,
   IGetCreditCardStatementLinksByStatementKeysQuery,
+  IGetRejectionsByBankTransactionIdsQuery,
   IInsertCreditCardStatementLinksQuery,
+  IInsertRejectionQuery,
 } from '../types.js';
 
-/** Transactions of non-card accounts: the bank side of a card debit. */
+/** Transactions of non-card accounts, fees aside: the bank side of a card debit. */
 const getBankTransactionsByChargeIds = sql<IGetBankTransactionsByChargeIdsQuery>`
   SELECT t.id,
     t.charge_id,
@@ -38,6 +42,8 @@ const getBankTransactionsByChargeIds = sql<IGetBankTransactionsByChargeIdsQuery>
     t.currency,
     t.source_reference,
     t.source_description,
+    t.business_id,
+    t.is_fee,
     COALESCE(t.debit_date_override, t.debit_date, t.event_date) AS effective_date
   FROM accounter_schema.transactions t
     JOIN accounter_schema.financial_accounts a
@@ -45,6 +51,7 @@ const getBankTransactionsByChargeIds = sql<IGetBankTransactionsByChargeIdsQuery>
       AND a.owner_id = t.owner_id
   WHERE t.charge_id IN $$chargeIds
     AND a.type <> 'CREDIT_CARD'
+    AND t.is_fee IS FALSE
   ORDER BY t.event_date, t.id;`;
 
 const getBankTransactionsByIds = sql<IGetBankTransactionsByIdsQuery>`
@@ -57,6 +64,8 @@ const getBankTransactionsByIds = sql<IGetBankTransactionsByIdsQuery>`
     t.currency,
     t.source_reference,
     t.source_description,
+    t.business_id,
+    t.is_fee,
     COALESCE(t.debit_date_override, t.debit_date, t.event_date) AS effective_date
   FROM accounter_schema.transactions t
     JOIN accounter_schema.financial_accounts a
@@ -78,6 +87,17 @@ const getBankCardHintsByTransactionIds = sql<IGetBankCardHintsByTransactionIdsQu
     WHERE t.id IN $$transactionIds
   ),
   bank_card_hints AS (
+    -- Poalim ILS: a card debit (activity 491) carries the card number as its reference
+    SELECT b.id AS transaction_id,
+      'POALIM_491'::text AS source,
+      p.reference_number::text AS hint
+    FROM bank b
+      JOIN accounter_schema.transactions_raw_list rl
+        ON rl.id = b.source_id
+      JOIN accounter_schema.poalim_ils_account_transactions p
+        ON p.id = rl.poalim_ils_id
+        AND p.activity_type_code = 491
+    UNION ALL
     -- Otsar Hahayal ILS: card-breakdown rows carry the last 4 digits of the card (OUT-MSKART)
     SELECT b.id AS transaction_id,
       'OTSAR_HAHAYAL_ILS'::text AS source,
@@ -210,9 +230,13 @@ const getCardTransactionsByStatementKeys = sql<IGetCardTransactionsByStatementKe
   ORDER BY t.event_date, t.id;`;
 
 /**
- * Bank transactions of the owner that may be card debits and are not linked yet: debits counted
- * against a card issuer business, or rows carrying a strong card hint (the card number as
- * reference, the card's name in the description, or a raw bank hint).
+ * Bank transactions of the owner that may be card debits and are not linked yet (fees aside):
+ * - debits counted against a card issuer business;
+ * - rows of a bank account configured as some card's settlement account;
+ * - rows carrying a card clue: a raw bank hint (Poalim 491, Otsar Hahayal `origin_reference`), a
+ *   reference equal to a card number, a card name in the description, or the last 4 digits of a
+ *   card as a standalone group in the description.
+ * The matcher decides; the clue-only rows still need an exact, unique amount to be linked.
  */
 const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTransactionIdsQuery>`
   SELECT t.id
@@ -225,7 +249,10 @@ const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTran
       ON rl.id = t.source_id
     LEFT JOIN accounter_schema.otsar_hahayal_ils_account_transactions o
       ON o.id = rl.otsar_hahayal_ils_id
+    LEFT JOIN accounter_schema.poalim_ils_account_transactions p
+      ON p.id = rl.poalim_ils_id
   WHERE t.owner_id = $ownerId
+    AND t.is_fee IS FALSE
     AND NOT EXISTS (
       SELECT 1
       FROM accounter_schema.creditcard_statement_links l
@@ -234,6 +261,13 @@ const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTran
     AND (
       t.business_id = ANY ($creditCardBusinessIds::uuid[])
       OR btrim(COALESCE(o.origin_reference, '')) <> ''
+      OR p.activity_type_code = 491
+      OR EXISTS (
+        SELECT 1
+        FROM accounter_schema.financial_credit_card_accounts cca
+        WHERE cca.owner_id = t.owner_id
+          AND cca.settlement_account_id = t.account_id
+      )
       OR EXISTS (
         SELECT 1
         FROM accounter_schema.financial_accounts card
@@ -246,10 +280,42 @@ const getAutoLinkCandidateBankTransactionIds = sql<IGetAutoLinkCandidateBankTran
               AND card.account_name <> ''
               AND t.source_description LIKE '%' || card.account_name || '%'
             )
+            OR (
+              length(regexp_replace(card.account_number, '[^0-9]', '', 'g')) >= 4
+              AND ' ' || regexp_replace(COALESCE(t.source_description, ''), '[^0-9]', ' ', 'g') || ' '
+                LIKE '% ' || right(regexp_replace(card.account_number, '[^0-9]', '', 'g'), 4) || ' %'
+            )
           )
       )
     )
   ORDER BY COALESCE(t.debit_date_override, t.debit_date, t.event_date), t.id;`;
+
+const getRejectionsByBankTransactionIds = sql<IGetRejectionsByBankTransactionIdsQuery>`
+  SELECT r.*
+  FROM accounter_schema.creditcard_statement_link_rejections r
+    JOIN accounter_schema.transactions t
+      ON t.id = r.bank_transaction_id
+      AND t.owner_id = r.owner_id
+  WHERE r.bank_transaction_id IN $$bankTransactionIds;`;
+
+const insertRejection = sql<IInsertRejectionQuery>`
+  INSERT INTO accounter_schema.creditcard_statement_link_rejections (
+    owner_id,
+    bank_transaction_id,
+    card_account_id,
+    currency,
+    debit_date
+  )
+  VALUES ($ownerId, $bankTransactionId, $cardAccountId, $currency, $debitDate)
+  ON CONFLICT (bank_transaction_id, card_account_id, currency, debit_date) DO NOTHING
+  RETURNING *;`;
+
+const deleteRejections = sql<IDeleteRejectionsQuery>`
+  DELETE FROM accounter_schema.creditcard_statement_link_rejections
+  WHERE owner_id = $ownerId
+    AND bank_transaction_id = $bankTransactionId
+    AND (card_account_id::text || '|' || currency::text || '|' || debit_date::text) IN $$statementKeys
+  RETURNING id;`;
 
 export type BankTransactionRow = IGetBankTransactionsByIdsResult;
 export type CandidateStatementRow = IGetCandidateStatementsByBankTransactionIdsResult;
@@ -275,7 +341,80 @@ function statementKeysParams(keys: readonly StatementKey[]) {
   global: true,
 })
 export class CreditCardStatementsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    private adminContextProvider: AdminContextProvider,
+  ) {}
+
+  /**
+   * Whether the bank row's counterparty is one of its owner's card issuer businesses (the admin
+   * context's `creditCardIds`). Read per owner, since a request's read scope can span businesses.
+   */
+  public async isCounterpartyCardIssuer(
+    row: Pick<BankTransactionRow, 'owner_id' | 'business_id'>,
+  ): Promise<boolean> {
+    if (!row.business_id) {
+      return false;
+    }
+    const context = await this.adminContextProvider.adminContextByOwnerIdLoader.load(row.owner_id);
+    return !!context?.financialAccounts.creditCardIds.includes(row.business_id);
+  }
+
+  private async batchRejectionsByBankTransactionIds(bankTransactionIds: readonly string[]) {
+    const rows = await getRejectionsByBankTransactionIds.run({ bankTransactionIds }, this.db);
+    return bankTransactionIds.map(id =>
+      rows
+        .filter(row => row.bank_transaction_id === id)
+        .map(row => ({
+          cardAccountId: row.card_account_id,
+          currency: row.currency as string,
+          debitDate: row.debit_date,
+        })),
+    );
+  }
+
+  /** Statements a user unlinked from each bank transaction */
+  public getRejectedStatementsByBankTransactionIdLoader = new DataLoader(
+    (bankTransactionIds: readonly string[]) =>
+      this.batchRejectionsByBankTransactionIds(bankTransactionIds),
+  );
+
+  /** Remembers that a user unlinked this statement from this bank transaction */
+  public async rejectStatement(
+    params: StatementKey & { ownerId: string; bankTransactionId: string },
+  ) {
+    await insertRejection.run(
+      {
+        ownerId: params.ownerId,
+        bankTransactionId: params.bankTransactionId,
+        cardAccountId: params.cardAccountId,
+        currency: params.currency as currency,
+        debitDate: params.debitDate,
+      },
+      this.db,
+    );
+    this.getRejectedStatementsByBankTransactionIdLoader.clear(params.bankTransactionId);
+  }
+
+  /** Forgets earlier rejections, when a user links the statements again */
+  public async clearRejections(params: {
+    ownerId: string;
+    bankTransactionId: string;
+    statements: readonly StatementKey[];
+  }) {
+    if (params.statements.length === 0) {
+      return;
+    }
+    await deleteRejections.run(
+      {
+        ownerId: params.ownerId,
+        bankTransactionId: params.bankTransactionId,
+        statementKeys: Array.from(new Set(params.statements.map(statementKeyId))),
+      },
+      this.db,
+    );
+    this.getRejectedStatementsByBankTransactionIdLoader.clear(params.bankTransactionId);
+  }
 
   private async batchBankTransactionsByChargeIds(chargeIds: readonly string[]) {
     const rows = await getBankTransactionsByChargeIds.run({ chargeIds }, this.db);
@@ -299,9 +438,14 @@ export class CreditCardStatementsProvider {
 
   private async batchBankCardHintsByTransactionIds(transactionIds: readonly string[]) {
     const rows = await getBankCardHintsByTransactionIds.run({ transactionIds }, this.db);
-    return transactionIds.map(id => rows.filter(row => row.transaction_id === id));
+    return transactionIds.map(id =>
+      rows
+        .filter(row => row.transaction_id === id && row.hint)
+        .map(row => ({ transactionId: id, source: row.source ?? '', hint: row.hint ?? '' })),
+    );
   }
 
+  /** Card clues from the banks' raw rows, per bank transaction */
   public getBankCardHintsByTransactionIdLoader = new DataLoader(
     (transactionIds: readonly string[]) => this.batchBankCardHintsByTransactionIds(transactionIds),
   );
@@ -449,9 +593,56 @@ export class CreditCardStatementsProvider {
     return deleted;
   }
 
+  /**
+   * A user's link: inserts the MANUAL links and forgets earlier rejections of the `relinked`
+   * statements for this bank transaction, in one transaction.
+   */
+  public async linkStatementsManually(params: {
+    ownerId: string;
+    bankTransactionId: string;
+    statements: readonly StatementKey[];
+    relinked: readonly StatementKey[];
+  }) {
+    return this.db.transaction(async () => {
+      const inserted = await this.insertLinks(
+        params.statements.map(statement => ({
+          cardAccountId: statement.cardAccountId,
+          currency: statement.currency,
+          debitDate: statement.debitDate,
+          ownerId: params.ownerId,
+          bankTransactionId: params.bankTransactionId,
+          linkMethod: 'MANUAL' as const,
+        })),
+      );
+      await this.clearRejections({
+        ownerId: params.ownerId,
+        bankTransactionId: params.bankTransactionId,
+        statements: params.relinked,
+      });
+      return inserted;
+    });
+  }
+
+  /**
+   * A user's unlink: deletes the link and records the rejection, in one transaction. Returns the
+   * deleted link (empty when the statement was not linked to this bank transaction).
+   */
+  public async unlinkStatement(
+    params: StatementKey & { ownerId: string; bankTransactionId: string },
+  ) {
+    return this.db.transaction(async () => {
+      const deleted = await this.deleteLink(params);
+      if (deleted.length > 0) {
+        await this.rejectStatement(params);
+      }
+      return deleted;
+    });
+  }
+
   public clearCache() {
     this.getCandidateStatementsByBankTransactionIdLoader.clearAll();
     this.getLinksByBankTransactionIdLoader.clearAll();
+    this.getRejectedStatementsByBankTransactionIdLoader.clearAll();
   }
 }
 

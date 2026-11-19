@@ -231,6 +231,13 @@ async function* fillCreditcardDebitDates(
   return { affectedCount: filledCount, errors: [] };
 }
 
+/**
+ * Persists confident bank-debit ⇄ card-statement links (also the history backfill).
+ *
+ * Unlike the merge step, it does not re-flag charges for accountant review: in this phase a link
+ * drives neither the ledger nor the charge type, only the card statements a charge shows. Whether
+ * it should once the ledger reads the links is decided with that change.
+ */
 async function* linkCreditcardStatements(
   injector: Injector,
   ownerId: string,

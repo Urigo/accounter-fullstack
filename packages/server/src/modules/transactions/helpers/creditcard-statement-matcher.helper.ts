@@ -18,7 +18,7 @@ const MAX_COMBINED_STATEMENTS = 4;
 /** Scoped candidates above this count are not searched for combined debits (combinatorics). */
 const MAX_SUBSET_SEARCH_CANDIDATES = 24;
 
-/** Number of suggestions returned when nothing can be linked automatically. */
+/** Number of suggestions returned for a bank transaction. */
 const MAX_SUGGESTIONS = 5;
 
 export type StatementKey = {
@@ -39,9 +39,18 @@ export type MatcherBankTransaction = {
   effectiveDate: TimelessDateString;
   sourceReference: string | null;
   sourceDescription: string | null;
+  /**
+   * True when the bank row's counterparty is one of the owner's card issuer businesses. Only then
+   * is a reference equal to a card number, or a card name in the description, a strong hint: on
+   * any other row such a coincidence is weak evidence.
+   */
+  counterpartyIsCardIssuer: boolean;
 };
 
-/** A card identifier found in the bank's raw data, e.g. Otsar Hahayal's `origin_reference`. */
+/**
+ * A card identifier found in the bank's raw data, e.g. Poalim's card-debit reference (activity
+ * 491) or Otsar Hahayal's `origin_reference`. Always a strong hint.
+ */
 export type BankCardHint = {
   transactionId: string;
   source: string;
@@ -64,7 +73,7 @@ export type HintStrength = 'STRONG' | 'WEAK' | 'NONE';
 export type RankedSuggestion = {
   statements: CandidateStatement[];
   hint: HintStrength;
-  /** Statement total minus the bank amount, in cents */
+  /** Statement total (plus any already linked total) minus the bank amount, in cents */
   amountDifferenceCents: number;
   /** Largest distance, in days, between the bank date and a statement's debit date */
   dateDistanceDays: number;
@@ -120,27 +129,29 @@ type CardHintInput = Pick<CandidateStatement, 'accountNumber' | 'accountName'>;
 
 /** How strongly the bank row points at this card. */
 export function cardHintStrength(
-  bankTransaction: Pick<MatcherBankTransaction, 'sourceReference' | 'sourceDescription'>,
+  bankTransaction: Pick<
+    MatcherBankTransaction,
+    'sourceReference' | 'sourceDescription' | 'counterpartyIsCardIssuer'
+  >,
   rawHints: readonly Pick<BankCardHint, 'hint'>[],
   card: CardHintInput,
 ): HintStrength {
+  const key = cardKey(card.accountNumber);
+  if (key && rawHints.some(({ hint }) => cardKey(hint.trim().padStart(4, '0')) === key)) {
+    return 'STRONG';
+  }
+
   const reference = bankTransaction.sourceReference?.trim();
   const accountNumber = card.accountNumber?.trim();
-  if (reference && accountNumber && reference === accountNumber) {
-    return 'STRONG';
-  }
   const accountName = card.accountName?.trim();
-  if (accountName && bankTransaction.sourceDescription?.includes(accountName)) {
-    return 'STRONG';
+  const referencesCard =
+    (!!reference && !!accountNumber && reference === accountNumber) ||
+    (!!accountName && !!bankTransaction.sourceDescription?.includes(accountName));
+  if (referencesCard) {
+    return bankTransaction.counterpartyIsCardIssuer ? 'STRONG' : 'WEAK';
   }
-  const key = cardKey(card.accountNumber);
-  if (!key) {
-    return 'NONE';
-  }
-  if (rawHints.some(({ hint }) => cardKey(hint) === key)) {
-    return 'STRONG';
-  }
-  if (fourDigitGroups(bankTransaction.sourceDescription).has(key)) {
+
+  if (key && fourDigitGroups(bankTransaction.sourceDescription).has(key)) {
     return 'WEAK';
   }
   return 'NONE';
@@ -174,7 +185,7 @@ function describeSuggestion(suggestion: Omit<RankedSuggestion, 'reason'>): strin
   if (suggestion.hint === 'STRONG') {
     parts.push('card referenced by the bank');
   } else if (suggestion.hint === 'WEAK') {
-    parts.push('card digits in the description');
+    parts.push('card mentioned by the bank row');
   }
   if (suggestion.statements.length > 1) {
     parts.push(`combined debit of ${suggestion.statements.length} statements`);
@@ -193,114 +204,49 @@ function describeSuggestion(suggestion: Omit<RankedSuggestion, 'reason'>): strin
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/**
- * Decides which statement(s) a bank card debit settles.
- *
- * Decision order:
- * a. a strong hint (reference = card number, card name in the description, a raw bank hint
- *    matching the card's last 4 digits) → that card's statement closest to the bank date
- *    (REFERENCE), even if the amount differs;
- * b. a weak hint (the card's last 4 digits in the description) with an exact amount → REFERENCE;
- * c. an exact amount that is unique among the scoped candidates (the card is configured as paid
- *    from this bank account, or is hinted) → AMOUNT;
- * d. exactly one combination of 2–4 scoped candidates summing to the amount → AMOUNT;
- * e. otherwise ranked suggestions, nothing linked.
- *
- * Candidates already linked to another bank transaction, in another currency, outside the date
- * window, or configured as paid from a different bank account are never considered.
- */
-export function matchCreditCardStatements(
+export type MatcherOptions = {
+  /** Statements a user unlinked from this bank transaction: never proposed again for it */
+  rejectedKeys?: readonly StatementKey[];
+};
+
+type Enriched = {
+  statement: CandidateStatement;
+  hint: HintStrength;
+  cents: number;
+  distance: number;
+};
+
+/** The candidates this bank transaction may settle, with their hint, total and date distance. */
+function prepareCandidates(
   bankTransaction: MatcherBankTransaction,
   rawHints: readonly BankCardHint[],
   candidates: readonly CandidateStatement[],
-): MatchResult {
-  const bankCents = toCents(bankTransaction.amount);
+  options: MatcherOptions,
+): Enriched[] {
   const hintsOfTransaction = rawHints.filter(hint => hint.transactionId === bankTransaction.id);
+  const rejected = new Set((options.rejectedKeys ?? []).map(statementKeyId));
+  return candidates
+    .filter(
+      candidate =>
+        candidate.currency === bankTransaction.currency &&
+        !rejected.has(statementKeyId(candidate)) &&
+        (!candidate.linkedBankTransactionId ||
+          candidate.linkedBankTransactionId === bankTransaction.id) &&
+        (!candidate.settlementAccountId ||
+          candidate.settlementAccountId === bankTransaction.accountId) &&
+        daysBetween(candidate.debitDate, bankTransaction.effectiveDate) <=
+          STATEMENT_DATE_WINDOW_DAYS,
+    )
+    .map(statement => ({
+      statement,
+      hint: cardHintStrength(bankTransaction, hintsOfTransaction, statement),
+      cents: toCents(statement.total),
+      distance: daysBetween(statement.debitDate, bankTransaction.effectiveDate),
+    }));
+}
 
-  const available = candidates.filter(
-    candidate =>
-      candidate.currency === bankTransaction.currency &&
-      (!candidate.linkedBankTransactionId ||
-        candidate.linkedBankTransactionId === bankTransaction.id) &&
-      (!candidate.settlementAccountId ||
-        candidate.settlementAccountId === bankTransaction.accountId) &&
-      daysBetween(candidate.debitDate, bankTransaction.effectiveDate) <= STATEMENT_DATE_WINDOW_DAYS,
-  );
-
-  const enriched = available.map(statement => ({
-    statement,
-    hint: cardHintStrength(bankTransaction, hintsOfTransaction, statement),
-    cents: toCents(statement.total),
-    distance: daysBetween(statement.debitDate, bankTransaction.effectiveDate),
-  }));
-  type Enriched = (typeof enriched)[number];
-
-  const closest = (items: Enriched[]): Enriched | undefined =>
-    [...items].sort(
-      (a, b) =>
-        a.distance - b.distance ||
-        Math.abs(a.cents - bankCents) - Math.abs(b.cents - bankCents) ||
-        a.statement.debitDate.localeCompare(b.statement.debitDate),
-    )[0];
-
-  // a. strong hint
-  const strongCards = new Set(
-    enriched.filter(item => item.hint === 'STRONG').map(item => item.statement.cardAccountId),
-  );
-  if (strongCards.size > 0) {
-    const perCard = [...strongCards]
-      .map(cardId => closest(enriched.filter(item => item.statement.cardAccountId === cardId)))
-      .filter((item): item is Enriched => !!item);
-    if (perCard.length === 1) {
-      return { links: [toKey(perCard[0].statement)], method: 'REFERENCE' };
-    }
-    const exact = perCard.filter(item => item.cents === bankCents);
-    if (exact.length === 1) {
-      return { links: [toKey(exact[0].statement)], method: 'REFERENCE' };
-    }
-    if (
-      exact.length === 0 &&
-      perCard.length <= MAX_COMBINED_STATEMENTS &&
-      perCard.reduce((sum, item) => sum + item.cents, 0) === bankCents
-    ) {
-      return { links: perCard.map(item => toKey(item.statement)), method: 'REFERENCE' };
-    }
-  }
-
-  // b. weak hint + exact amount
-  const weakExact = enriched.filter(item => item.hint === 'WEAK' && item.cents === bankCents);
-  if (weakExact.length === 1) {
-    return { links: [toKey(weakExact[0].statement)], method: 'REFERENCE' };
-  }
-
-  // c. exact amount, unique among the scoped candidates
-  const scoped = enriched.filter(
-    item =>
-      item.hint !== 'NONE' || item.statement.settlementAccountId === bankTransaction.accountId,
-  );
-  const scopedExact = scoped.filter(item => item.cents === bankCents);
-  if (scopedExact.length === 1) {
-    return { links: [toKey(scopedExact[0].statement)], method: 'AMOUNT' };
-  }
-
-  // d. exactly one combination of scoped candidates summing to the amount
-  const subsetMatches: Enriched[][] = [];
-  if (scopedExact.length === 0 && scoped.length <= MAX_SUBSET_SEARCH_CANDIDATES) {
-    for (let size = 2; size <= Math.min(MAX_COMBINED_STATEMENTS, scoped.length); size++) {
-      for (const subset of combinations(scoped, size)) {
-        if (subset.reduce((sum, item) => sum + item.cents, 0) === bankCents) {
-          subsetMatches.push(subset);
-        }
-      }
-    }
-    if (subsetMatches.length === 1) {
-      return { links: subsetMatches[0].map(item => toKey(item.statement)), method: 'AMOUNT' };
-    }
-  }
-
-  // e. ranked suggestions
-  const suggestionSets: Enriched[][] = [...enriched.map(item => [item]), ...subsetMatches];
-  const suggestions = suggestionSets
+function rankSuggestions(sets: Enriched[][], bankCents: number, baseCents = 0): RankedSuggestion[] {
+  return sets
     .map(set => {
       const hint = set.reduce<HintStrength>(
         (best, item) => (HINT_RANK[item.hint] > HINT_RANK[best] ? item.hint : best),
@@ -309,7 +255,8 @@ export function matchCreditCardStatements(
       const base = {
         statements: set.map(item => item.statement),
         hint,
-        amountDifferenceCents: set.reduce((sum, item) => sum + item.cents, 0) - bankCents,
+        amountDifferenceCents:
+          baseCents + set.reduce((sum, item) => sum + item.cents, 0) - bankCents,
         dateDistanceDays: Math.max(...set.map(item => item.distance)),
       };
       return { ...base, reason: describeSuggestion(base) };
@@ -322,6 +269,151 @@ export function matchCreditCardStatements(
         a.statements.length - b.statements.length,
     )
     .slice(0, MAX_SUGGESTIONS);
+}
 
-  return { suggestions };
+const sumCents = (items: readonly Enriched[]) => items.reduce((sum, item) => sum + item.cents, 0);
+
+/**
+ * Rule (a) for one strongly hinted card: its only statement in the window; else its only statement
+ * with the exact amount; else all its statements in the window, when they add up to the debit.
+ * Null when none of these holds.
+ */
+function resolveStrongCard(items: readonly Enriched[], bankCents: number): Enriched[] | null {
+  if (items.length === 1) {
+    return [...items];
+  }
+  const exact = items.filter(item => item.cents === bankCents);
+  if (exact.length === 1) {
+    return exact;
+  }
+  if (items.length > 1 && sumCents(items) === bankCents) {
+    return [...items];
+  }
+  return null;
+}
+
+/**
+ * Decides which statement(s) a bank card debit settles.
+ *
+ * Hints: a raw bank hint matching the card's last 4 digits is strong. A reference equal to the
+ * card number, or the card's name in the description, is strong only when the bank row's
+ * counterparty is a card issuer, and weak otherwise. The card's last 4 digits as a standalone group
+ * in the description are weak.
+ *
+ * Decision order:
+ * a. strong hints → per hinted card: its only statement in the window, else its only exact-amount
+ *    statement, else all its statements when they add up to the debit (REFERENCE, even if the
+ *    amount differs). With several hinted cards: the single card resolved to the exact amount, or
+ *    all resolved cards when they add up to the debit (at most 4 statements). When a strong hint
+ *    exists but nothing resolves, only suggestions are returned: a card the bank row did not
+ *    mention is never linked on amount alone.
+ * b. a weak hint with the exact amount, on a single statement → REFERENCE;
+ * c. a statement with the exact amount, unique among ALL available candidates, that is scoped
+ *    (its card is configured as paid from this bank account, or is hinted) → AMOUNT;
+ * d. exactly one combination of 2–4 scoped candidates summing to the amount, when no single
+ *    candidate has the exact amount → AMOUNT;
+ * e. otherwise ranked suggestions, nothing linked.
+ *
+ * Candidates already linked to another bank transaction, rejected for this one, in another
+ * currency, outside the date window, or configured as paid from a different bank account are
+ * never considered.
+ */
+export function matchCreditCardStatements(
+  bankTransaction: MatcherBankTransaction,
+  rawHints: readonly BankCardHint[],
+  candidates: readonly CandidateStatement[],
+  options: MatcherOptions = {},
+): MatchResult {
+  const bankCents = toCents(bankTransaction.amount);
+  const enriched = prepareCandidates(bankTransaction, rawHints, candidates, options);
+  const singles = enriched.map(item => [item]);
+
+  // a. strong hints
+  const strongCards = Array.from(
+    new Set(
+      enriched.filter(item => item.hint === 'STRONG').map(item => item.statement.cardAccountId),
+    ),
+  );
+  if (strongCards.length > 0) {
+    const resolved = strongCards
+      .map(cardId =>
+        resolveStrongCard(
+          enriched.filter(item => item.statement.cardAccountId === cardId),
+          bankCents,
+        ),
+      )
+      .filter((items): items is Enriched[] => !!items);
+
+    if (strongCards.length === 1 && resolved.length === 1) {
+      return { links: resolved[0].map(item => toKey(item.statement)), method: 'REFERENCE' };
+    }
+    if (strongCards.length > 1 && resolved.length > 0) {
+      const exact = resolved.filter(items => sumCents(items) === bankCents);
+      if (exact.length === 1) {
+        return { links: exact[0].map(item => toKey(item.statement)), method: 'REFERENCE' };
+      }
+      const all = resolved.flat();
+      if (all.length <= MAX_COMBINED_STATEMENTS && sumCents(all) === bankCents) {
+        return { links: all.map(item => toKey(item.statement)), method: 'REFERENCE' };
+      }
+    }
+    return {
+      suggestions: rankSuggestions([...singles, ...resolved.filter(r => r.length > 1)], bankCents),
+    };
+  }
+
+  // b. weak hint + exact amount
+  const weakExact = enriched.filter(item => item.hint === 'WEAK' && item.cents === bankCents);
+  if (weakExact.length === 1) {
+    return { links: [toKey(weakExact[0].statement)], method: 'REFERENCE' };
+  }
+
+  // c. exact amount, unique among all candidates, on a scoped statement
+  const isScoped = (item: Enriched) =>
+    item.hint !== 'NONE' || item.statement.settlementAccountId === bankTransaction.accountId;
+  const exact = enriched.filter(item => item.cents === bankCents);
+  if (exact.length === 1 && isScoped(exact[0])) {
+    return { links: [toKey(exact[0].statement)], method: 'AMOUNT' };
+  }
+
+  // d. exactly one combination of scoped candidates summing to the amount
+  const scoped = enriched.filter(isScoped);
+  const subsetMatches: Enriched[][] = [];
+  if (exact.length === 0 && scoped.length <= MAX_SUBSET_SEARCH_CANDIDATES) {
+    for (let size = 2; size <= Math.min(MAX_COMBINED_STATEMENTS, scoped.length); size++) {
+      for (const subset of combinations(scoped, size)) {
+        if (sumCents(subset) === bankCents) {
+          subsetMatches.push(subset);
+        }
+      }
+    }
+    if (subsetMatches.length === 1) {
+      return { links: subsetMatches[0].map(item => toKey(item.statement)), method: 'AMOUNT' };
+    }
+  }
+
+  // e. ranked suggestions
+  return { suggestions: rankSuggestions([...singles, ...subsetMatches], bankCents) };
+}
+
+/**
+ * Ranked single statements a person may add to a bank transaction that already shows statements
+ * (stored links, or a match computed on read): `excludeKeys` are those already shown, and
+ * `linkedCents` their total, so a statement that closes the gap to the debit ranks first.
+ */
+export function suggestCreditCardStatements(
+  bankTransaction: MatcherBankTransaction,
+  rawHints: readonly BankCardHint[],
+  candidates: readonly CandidateStatement[],
+  options: MatcherOptions & { excludeKeys?: readonly StatementKey[]; linkedCents?: number } = {},
+): RankedSuggestion[] {
+  const excluded = new Set((options.excludeKeys ?? []).map(statementKeyId));
+  const enriched = prepareCandidates(bankTransaction, rawHints, candidates, options).filter(
+    item => !excluded.has(statementKeyId(item.statement)),
+  );
+  return rankSuggestions(
+    enriched.map(item => [item]),
+    toCents(bankTransaction.amount),
+    options.linkedCents ?? 0,
+  );
 }

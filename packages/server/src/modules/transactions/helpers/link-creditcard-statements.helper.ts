@@ -4,8 +4,7 @@ import {
   type BankTransactionRow,
 } from '../providers/creditcard-statements.provider.js';
 import {
-  toCandidateStatement,
-  toMatcherBankTransaction,
+  buildMatcherInput,
   type ResolvedCreditCardStatement,
 } from '../providers/creditcard-transactions.provider.js';
 import {
@@ -13,7 +12,6 @@ import {
   matchCreditCardStatements,
   statementKeyId,
   type AutoLinkMethod,
-  type CandidateStatement,
   type StatementKey,
 } from './creditcard-statement-matcher.helper.js';
 
@@ -63,44 +61,45 @@ export async function* autoLinkCreditCardStatements(
 
   for (let start = 0; start < candidateIds.length; start += batchSize) {
     const batchIds = candidateIds.slice(start, start + batchSize);
-    const [bankRows, hints, candidates] = await Promise.all([
+    // loaded up front for the whole batch: the writes below clear the providers' caches
+    const [bankRows, hints, candidates, rejections] = await Promise.all([
       provider.getBankTransactionByIdLoader.loadMany(batchIds),
       provider.getBankCardHintsByTransactionIdLoader.loadMany(batchIds),
       provider.getCandidateStatementsByBankTransactionIdLoader.loadMany(batchIds),
+      provider.getRejectedStatementsByBankTransactionIdLoader.loadMany(batchIds),
     ]);
 
     for (let i = 0; i < batchIds.length; i++) {
       const bankRow = bankRows[i];
       const rowHints = hints[i];
       const rowCandidates = candidates[i];
+      const rowRejections = rejections[i];
       if (
         !bankRow ||
         bankRow instanceof Error ||
         rowHints instanceof Error ||
         rowCandidates instanceof Error ||
+        rowRejections instanceof Error ||
         !bankRow.effective_date
       ) {
         continue;
       }
 
-      const statements = rowCandidates
-        .map(toCandidateStatement)
-        .filter((statement): statement is CandidateStatement => !!statement)
-        .map(statement => ({
-          ...statement,
-          linkedBankTransactionId:
-            statement.linkedBankTransactionId ?? claimed.get(statementKeyId(statement)) ?? null,
-        }));
+      const input = buildMatcherInput(bankRow, {
+        hints: rowHints,
+        candidates: rowCandidates,
+        rejectedKeys: rowRejections,
+        counterpartyIsCardIssuer: await provider.isCounterpartyCardIssuer(bankRow),
+      });
+      const statements = input.candidates.map(statement => ({
+        ...statement,
+        linkedBankTransactionId:
+          statement.linkedBankTransactionId ?? claimed.get(statementKeyId(statement)) ?? null,
+      }));
 
-      const result = matchCreditCardStatements(
-        toMatcherBankTransaction(bankRow),
-        rowHints.map(hint => ({
-          transactionId: hint.transaction_id,
-          source: hint.source ?? '',
-          hint: hint.hint ?? '',
-        })),
-        statements,
-      );
+      const result = matchCreditCardStatements(input.bank, input.hints, statements, {
+        rejectedKeys: input.rejectedKeys,
+      });
       if (!isConfidentMatch(result)) {
         continue;
       }
