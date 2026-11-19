@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import * as api from '../../src/index.js';
 import type {
   AssetLocation,
@@ -252,5 +253,103 @@ describe('public API', () => {
     expectTypeOf<CodeDef['kind']>().toEqualTypeOf<CodeKind>();
     expectTypeOf<FieldDef['required']>().toEqualTypeOf<Requirement>();
     expectTypeOf<NonNullable<CodeDef['values']>[number]>().toEqualTypeOf<EnumValue>();
+  });
+
+  it('has the function signatures of SPEC §6.1', () => {
+    expectTypeOf(api.validate1214).toEqualTypeOf<
+      (input: unknown, options?: ValidateOptions) => ValidationResult
+    >();
+    expectTypeOf(api.generate1214).toEqualTypeOf<
+      (input: Report1214Input, options?: GenerateOptions) => GenerateResult
+    >();
+    expectTypeOf(api.generate1214Batch).toEqualTypeOf<
+      (inputs: readonly Report1214Input[], options?: GenerateOptions) => GenerateResult
+    >();
+    expectTypeOf(api.parse1214).toEqualTypeOf<
+      (content: string | Uint8Array, options?: ParseOptions) => ParseResult
+    >();
+    expectTypeOf(api.parse1214Batch).toEqualTypeOf<
+      (content: string | Uint8Array, options?: ParseOptions) => ParseResult[]
+    >();
+    expectTypeOf(api.supportedTaxYears).toEqualTypeOf<() => readonly number[]>();
+    expectTypeOf(api.getLayout).toEqualTypeOf<(taxYear: number) => YearLayout>();
+    expect(api.supportedTaxYears()).toEqual([2024, 2025]);
+  });
+
+  it('exports exactly the public types (SPEC §6.4)', () => {
+    const index = readFileSync(new URL('../../src/index.ts', import.meta.url), 'utf8');
+    const typeNames = [
+      ...[...index.matchAll(/export type \{([^}]*)\}/g)].flatMap(match =>
+        (match[1] ?? '').split(','),
+      ),
+      ...[...index.matchAll(/\btype (\w+)\s*[,}]/g)].map(match => match[1] ?? ''),
+    ]
+      .map(name => name.trim())
+      .filter(name => name !== '');
+    expect(typeNames.sort()).toEqual(
+      [
+        // §7 input model
+        'AssetLocation',
+        'BettermentTaxAppendix',
+        'CapitalGainsAppendix',
+        'CompanyDetails',
+        'CountryBreakdown',
+        'CountryIncome',
+        'Declarations',
+        'ForcedVirtualCurrencyAppendix',
+        'ForeignAppendix',
+        'IsoDate',
+        'NoWithholding1322Appendix',
+        'NoWithholding1326Appendix',
+        'OilPartnershipAppendix',
+        'OtherTransactionsAppendix',
+        'Phone',
+        'PhonePrefix',
+        'PreparerDetails',
+        'RdInvestment',
+        'ReitAppendix',
+        'RelatedCompany',
+        'Report1214Input',
+        'Section6SecuritiesAppendix',
+        'SecuritiesAppendix',
+        'Shareholder',
+        'SharesAppendix',
+        'SupportedTaxYear',
+        'Withholder',
+        'WithholdingStatus',
+        // §5.3 code unions
+        'CapitalGainsCode',
+        'CapitalGainsSymbol',
+        'CountryBreakdownCode',
+        'CountryCode',
+        'DerivedMainCode',
+        'ForeignAppendixCode',
+        'MainFormCode',
+        'MainFormInputCode',
+        // issues and rules
+        'Issue',
+        'RuleId',
+        'RuleMeta',
+        'Severity',
+        // options and results
+        'GenerateOptions',
+        'GenerateResult',
+        'ParseOptions',
+        'ParseResult',
+        'ResponseRecord',
+        'ValidateOptions',
+        'ValidationResult',
+        // layout
+        'CodeDef',
+        'CodeKind',
+        'EnumValue',
+        'FieldDef',
+        'FieldKind',
+        'RecordDef',
+        'RecordType',
+        'Requirement',
+        'YearLayout',
+      ].sort(),
+    );
   });
 });
