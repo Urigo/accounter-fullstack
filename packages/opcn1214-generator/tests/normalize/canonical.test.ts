@@ -11,6 +11,7 @@ import {
   noWithholding1322Appendix,
   noWithholding1326Appendix,
   oilPartnershipAppendix,
+  otherTransactionsAppendix,
   rdInvestments,
   reitAppendix,
   relatedCompanies,
@@ -652,6 +653,41 @@ describe('canonicalize', () => {
       ]);
       expect(result.capitalGains?.[1]?.amounts).not.toHaveProperty('016');
       expect(result.capitalGains?.[4]).not.toHaveProperty('walletAddresses');
+    });
+
+    it('canonicalizes 3077 appendices: improvements slot by slot, replacement asset, wallets', () => {
+      const result = canonicalize(
+        minimalInput({
+          capitalGains: [
+            otherTransactionsAppendix({
+              improvements: [
+                { expense: 0, accumulatedDepreciation: 0, date: '2020-01-01', code50Amount: 0 },
+                { expense: 0.5, date: '2021-01-01', code50Amount: 1.25 },
+              ],
+              replacementAsset: { details: ' ', price: 0.4 },
+              walletAddresses: [' ', ' 0xabc '],
+              amounts: { '092': 0, '015': 2.5 },
+            }),
+            { ...otherTransactionsAppendix(), improvements: [], replacementAsset: {} },
+          ],
+        }),
+        { ...OPTIONS, rounding: 'halfUp' },
+      );
+      expect(result.capitalGains).toEqual([
+        {
+          ...otherTransactionsAppendix(),
+          improvements: [
+            { date: '2020-01-01' },
+            { expense: 0.5, date: '2021-01-01', code50Amount: 1.25 },
+          ],
+          replacementAsset: { purchaseDate: '2024-09-01' },
+          walletAddresses: ['', '0xabc'],
+          amounts: { '015': 3, '020': 1_500_000.5, '071': 1 },
+        },
+        { ...otherTransactionsAppendix(), improvements: undefined, replacementAsset: undefined },
+      ]);
+      expect(result.capitalGains?.[1]).not.toHaveProperty('improvements');
+      expect(result.capitalGains?.[1]).not.toHaveProperty('replacementAsset');
     });
 
     it('removes an empty list, as the parser reads a report without capital-gains records', () => {

@@ -9,6 +9,7 @@ import {
   COUNTRY_BREAKDOWN_CODES,
   FOREIGN_APPENDIX_CODES,
   MAIN_FORM_INPUT_CODES,
+  type CapitalGainsCode,
 } from './codes.generated.js';
 import type { SupportedTaxYear } from './input.js';
 
@@ -275,6 +276,47 @@ const oilPartnershipAppendix = z.strictObject({
   amounts: z.partialRecord(z.enum(CAPITAL_GAINS_CODES[54]), z.number().optional()),
 });
 
+/** The codes of record 3077 derived from the improvements (SPEC §7.4). */
+const IMPROVEMENT_CODES: readonly string[] = ['501', '502', '503', '504', '505'];
+
+/** The input codes of record 3077: its codes without the derived 501–505. */
+const OTHER_TRANSACTIONS_CODES = CAPITAL_GAINS_CODES[77].filter(
+  (code): code is Exclude<CapitalGainsCode<77>, '501' | '502' | '503' | '504' | '505'> =>
+    !IMPROVEMENT_CODES.includes(code),
+);
+
+/** Record 3077 (SPEC §7.2); field rules check the wallet addresses' lengths. */
+const otherTransactionsAppendix = z.strictObject({
+  symbol: z.literal(77),
+  expropriation: z.boolean().optional(),
+  assetDetails: z.string().optional(),
+  assetLocation,
+  relatedParty: z.boolean().optional(),
+  buyerName: z.string().optional(),
+  dates: z.strictObject({ code15: isoDate, code20: isoDate }),
+  /** Any length: cg.improvements.max reports more than five. */
+  improvements: z
+    .array(
+      z.strictObject({
+        expense: z.number().optional(),
+        accumulatedDepreciation: z.number().optional(),
+        date: isoDate,
+        code50Amount: z.number().optional(),
+      }),
+    )
+    .optional(),
+  replacementAsset: z
+    .strictObject({
+      details: z.string().optional(),
+      purchaseDate: isoDate.optional(),
+      price: z.number().optional(),
+    })
+    .optional(),
+  /** Two slots in the record (489, 639): a third address is input.shape. */
+  walletAddresses: z.array(z.string()).min(1).max(2).optional(),
+  amounts: z.partialRecord(z.enum(OTHER_TRANSACTIONS_CODES), z.number().optional()),
+});
+
 /** A capital-gains appendix, discriminated by its transaction symbol (SPEC §3.7). */
 const capitalGainsAppendix = z.discriminatedUnion('symbol', [
   sharesAppendix,
@@ -286,6 +328,7 @@ const capitalGainsAppendix = z.discriminatedUnion('symbol', [
   reitAppendix,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
+  otherTransactionsAppendix,
 ]);
 
 const shareholder = z.strictObject({

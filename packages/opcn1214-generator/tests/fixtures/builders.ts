@@ -13,6 +13,7 @@ import type {
   NoWithholding1322Appendix,
   NoWithholding1326Appendix,
   OilPartnershipAppendix,
+  OtherTransactionsAppendix,
   RdInvestment,
   ReitAppendix,
   RelatedCompany,
@@ -467,4 +468,45 @@ export function forcedVirtualCurrencyAppendix(
     amounts: { '071': 1, '015': 80_000, '016': 30_000 },
   };
   return deepMerge(base, overrides) as ForcedVirtualCurrencyAppendix;
+}
+
+/** An improvement of a 3077 appendix (SPEC §7.2). */
+export type Improvement = NonNullable<OtherTransactionsAppendix['improvements']>[number];
+
+/**
+ * `count` valid improvements of a 3077 appendix, canonical (SPEC §8.4): the i-th (0-based) has an
+ * expense with agorot, an accumulated depreciation, a date in 201i and a code-50 amount with agorot.
+ */
+export function improvements(count: number): Improvement[] {
+  return Array.from({ length: count }, (_, index) => ({
+    expense: 10_000 * (index + 1) + 0.25,
+    accumulatedDepreciation: 1000 * (index + 1),
+    date: `201${index}-0${index + 1}-15`,
+    code50Amount: 9000 * (index + 1) + 0.5,
+  }));
+}
+
+/**
+ * A valid capital-gains appendix for other transactions (SPEC §7.2, record 3077) with every header
+ * member set to a value that is written to the file (two improvements, a replacement asset and one
+ * wallet address) and three codes: 015, 020 with agorot (×100) and 071 = 1 (virtual currency, which
+ * calls for the wallet address). `overrides` are deep-merged into it.
+ */
+export function otherTransactionsAppendix(
+  overrides: DeepPartial<OtherTransactionsAppendix> = {},
+): OtherTransactionsAppendix {
+  const base: OtherTransactionsAppendix = {
+    symbol: 77,
+    expropriation: false,
+    assetDetails: 'מבנה תעשייה',
+    assetLocation: 'israel',
+    relatedParty: true,
+    buyerName: 'רוכש נכסים בע"מ',
+    dates: { code15: '2024-07-01', code20: '2009-02-01' },
+    improvements: improvements(2),
+    replacementAsset: { details: 'מבנה חלופי', purchaseDate: '2024-09-01', price: 2_000_000 },
+    walletAddresses: ['bc1qotherwalletone'],
+    amounts: { '015': 3_000_000, '020': 1_500_000.5, '071': 1 },
+  };
+  return deepMerge(base, overrides) as OtherTransactionsAppendix;
 }

@@ -6,6 +6,7 @@ import { isCapitalGainsRecordType } from '../layout/capital-gains.js';
 import type { RecordType } from '../layout/types.js';
 import { DERIVED_MAIN_CODES } from '../model/codes.generated.js';
 import type { NormalizedRecord } from '../model/normalized.js';
+import { improvementSlotOfCode } from './capital-gains/other.js';
 
 /** Prefix of code-amount keys in NormalizedRecord.paths: `code:${code}`. */
 const CODE_KEY_PREFIX = 'code:';
@@ -25,6 +26,7 @@ const DERIVED_KEYS: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
   '3064': ['transactionSymbol', 'appendixNumber'],
   '3065': ['transactionSymbol', 'appendixNumber', 'sequenceNumber'],
   '3066': ['transactionSymbol', 'appendixNumber', 'sequenceNumber'],
+  '3077': ['transactionSymbol', 'appendixNumber', 'improvementCount', 'sequenceNumber'],
 };
 
 const DERIVED_CODES: Readonly<Partial<Record<RecordType, readonly string[]>>> = {
@@ -117,20 +119,22 @@ export function codeKey(code: string): string {
  *   breakdown itself, `foreignAppendix.countryBreakdown["420"]`; any other key, a header key or a
  *   country entry key (`countries[2].country`, `countries[2].income`), to
  *   `foreignAppendix.countryBreakdown["420"].<key>`.
- * - Records 3027, 3050, 3051, 3054, 3060, 3063, 3064, 3065, 3066: `inputIndex` is the index of
- *   the appendix in `capitalGains` (inputIndexOf gives it for a record); a header key maps to
- *   `capitalGains[i].<key>` (a date, a withholder slot or a wallet slot key too:
+ * - Records 30xx (the ten capital-gains record types): `inputIndex` is the index of the appendix
+ *   in `capitalGains` (inputIndexOf gives it for a record); a header key maps to
+ *   `capitalGains[i].<key>` (a date, a slot or a nested member key too:
  *   `capitalGains[i].dates.code15`, `capitalGains[i].withholders[2].name`,
- *   `capitalGains[i].walletAddresses[1]`), a code to `capitalGains[i].amounts["022"]`.
+ *   `capitalGains[i].walletAddresses[1]`, `capitalGains[i].improvements[0].date`,
+ *   `capitalGains[i].replacementAsset.price`), a code to `capitalGains[i].amounts["022"]`. The
+ *   derived codes 501–505 of record 3077 map to the code-50 amount they come from,
+ *   `capitalGains[i].improvements[0].code50Amount` (code 501).
  * - Derived values have no input path and map to `''` (report level): derived header keys
  *   (1000@832 `hasForeignAppendix`, 1010@137 and 1020@137 `serialNumber`, 1030@137
- *   `affiliation`, 30xx@137 `transactionSymbol`, 30xx@139 `appendixNumber` and the "מספר בתל"ם"
- *   `sequenceNumber` (3027@255, 3051@234, 3065@325, 3066@154)) and derived
- *   codes (SPEC §7.4: 008, 028, 273, 277, 278, 280, 297). A derived value whose key is itself an input property
- *   (1000@833 `declarations.hasCapitalGainsAppendix`) keeps that property's path.
- *   Every field of the control record 9999 is derived, so its keys map to `''` as well.
- * - Capital-gains records whose input is not modelled yet map to `''`, so the parser can report
- *   issues on them; step G5 replaces this with their input paths.
+ *   `affiliation`, 30xx@137 `transactionSymbol`, 30xx@139 `appendixNumber`, 3077@245
+ *   `improvementCount` and the "מספר בתל"ם" `sequenceNumber` (3027@255, 3051@234, 3065@325,
+ *   3066@154, 3077@487)) and derived codes of record 1000 (SPEC §7.4: 008, 028, 273, 277, 278,
+ *   280, 297). A derived value whose key is itself an input property (1000@833
+ *   `declarations.hasCapitalGainsAppendix`) keeps that property's path. Every field of the
+ *   control record 9999 is derived, so its keys map to `''` as well.
  */
 export function pathFor(recordType: RecordType, inputIndex: number, key: string): string {
   const isCode = key.startsWith(CODE_KEY_PREFIX);
@@ -164,12 +168,15 @@ export function pathFor(recordType: RecordType, inputIndex: number, key: string)
     case '3064':
     case '3065':
     case '3066':
-      return isCode
+    case '3077': {
+      if (!isCode) {
+        return `capitalGains[${inputIndex}].${key}`;
+      }
+      const slot = recordType === '3077' ? improvementSlotOfCode(code) : undefined;
+      return slot === undefined
         ? `capitalGains[${inputIndex}].amounts["${code}"]`
-        : `capitalGains[${inputIndex}].${key}`;
-    // No input mapping yet: replaced by step G5.
-    case '3077':
-      return '';
+        : `capitalGains[${inputIndex}].improvements[${slot}].code50Amount`;
+    }
     // Control record: every field is derived (SPEC §7.4).
     case '9999':
       return '';

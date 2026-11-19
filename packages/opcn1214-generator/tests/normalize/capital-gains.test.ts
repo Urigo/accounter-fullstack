@@ -15,10 +15,12 @@ import {
   breakdownCountries,
   forcedVirtualCurrencyAppendix,
   foreignAppendixWithBreakdown,
+  improvements,
   minimalInput,
   noWithholding1322Appendix,
   noWithholding1326Appendix,
   oilPartnershipAppendix,
+  otherTransactionsAppendix,
   rdInvestments,
   rdInvestmentsTotal,
   reitAppendix,
@@ -1447,6 +1449,401 @@ describe('the "מספר בתל"ם" sequence with asset appendices (SPEC §7.4, �
       appendices[0],
       appendices[5],
       appendices[1],
+      appendices[3],
+    ]);
+  });
+});
+
+describe('normalizeReport: record 3077 (other transactions)', () => {
+  const def = LAYOUT.records['3077'];
+
+  it('has the asset header, five improvement slots, a replacement asset, the sequence and two wallets', () => {
+    expect(
+      def.fields
+        .filter(f => f.kind !== 'filler')
+        .map(f => [f.key, f.position, f.length, f.kind, f.required]),
+    ).toEqual([
+      ['transactionSymbol', 137, 2, 'const', 'yes'],
+      ['appendixNumber', 139, 3, 'serial', 'yes'],
+      ['expropriation', 142, 1, 'yesNo', 'no'],
+      ['assetDetails', 143, 50, 'text', 'no'],
+      ['assetLocation', 193, 1, 'enum', 'no'],
+      ['relatedParty', 194, 1, 'yesNo', 'no'],
+      ['buyerName', 195, 30, 'text', 'no'],
+      ['dates.code15', 225, 10, 'date', 'yes'],
+      ['dates.code20', 235, 10, 'date', 'yes'],
+      ['improvementCount', 245, 2, 'count', 'no'],
+      ...[0, 1, 2, 3, 4].flatMap(slot => [
+        [`improvements[${slot}].expense`, 247 + 34 * slot, 12, 'amountX100', 'no'],
+        [`improvements[${slot}].accumulatedDepreciation`, 259 + 34 * slot, 12, 'amountX100', 'no'],
+        [`improvements[${slot}].date`, 271 + 34 * slot, 10, 'date', 'yes'],
+      ]),
+      ['replacementAsset.details', 417, 50, 'text', 'no'],
+      ['replacementAsset.purchaseDate', 467, 10, 'date', 'no'],
+      ['replacementAsset.price', 477, 10, 'amount', 'no'],
+      ['sequenceNumber', 487, 2, 'serial', 'yes'],
+      ['walletAddresses[0]', 489, 150, 'text', 'no'],
+      ['walletAddresses[1]', 639, 150, 'text', 'no'],
+    ]);
+    expect(def.codes.filter(code => code.derived).map(code => code.code)).toEqual([
+      '501',
+      '502',
+      '503',
+      '504',
+      '505',
+    ]);
+  });
+
+  it('maps improvements[i] to keys improvements[i].*, code50Amount to code 50(i+1), 245 to the count', () => {
+    const [section6, other] = capitalGainsRecords(
+      minimalInput({ capitalGains: [section6Appendix(), otherTransactionsAppendix()] }),
+    );
+    expect(section6?.recordType).toBe('3063');
+    expect(other?.recordType).toBe('3077');
+    expect(other?.values).toEqual({
+      transactionSymbol: 77,
+      appendixNumber: 1,
+      sequenceNumber: 2,
+      expropriation: false,
+      assetDetails: 'מבנה תעשייה',
+      assetLocation: 2,
+      relatedParty: true,
+      buyerName: 'רוכש נכסים בע"מ',
+      'dates.code15': '2024-07-01',
+      'dates.code20': '2009-02-01',
+      improvementCount: 2,
+      'improvements[0].expense': 10_000.25,
+      'improvements[0].accumulatedDepreciation': 1000,
+      'improvements[0].date': '2010-01-15',
+      'improvements[1].expense': 20_000.25,
+      'improvements[1].accumulatedDepreciation': 2000,
+      'improvements[1].date': '2011-02-15',
+      'replacementAsset.details': 'מבנה חלופי',
+      'replacementAsset.purchaseDate': '2024-09-01',
+      'replacementAsset.price': 2_000_000,
+      'walletAddresses[0]': 'bc1qotherwalletone',
+    });
+    expect([...(other?.codes ?? [])]).toEqual([
+      ['015', 3_000_000],
+      ['020', 1_500_000.5],
+      ['071', 1],
+      ['501', 9000.5],
+      ['502', 18_000.5],
+    ]);
+    expect(other?.paths).toEqual({
+      transactionSymbol: '',
+      appendixNumber: '',
+      sequenceNumber: '',
+      improvementCount: '',
+      expropriation: 'capitalGains[1].expropriation',
+      assetDetails: 'capitalGains[1].assetDetails',
+      assetLocation: 'capitalGains[1].assetLocation',
+      relatedParty: 'capitalGains[1].relatedParty',
+      buyerName: 'capitalGains[1].buyerName',
+      'dates.code15': 'capitalGains[1].dates.code15',
+      'dates.code20': 'capitalGains[1].dates.code20',
+      'improvements[0].expense': 'capitalGains[1].improvements[0].expense',
+      'improvements[0].accumulatedDepreciation':
+        'capitalGains[1].improvements[0].accumulatedDepreciation',
+      'improvements[0].date': 'capitalGains[1].improvements[0].date',
+      'improvements[1].expense': 'capitalGains[1].improvements[1].expense',
+      'improvements[1].accumulatedDepreciation':
+        'capitalGains[1].improvements[1].accumulatedDepreciation',
+      'improvements[1].date': 'capitalGains[1].improvements[1].date',
+      'replacementAsset.details': 'capitalGains[1].replacementAsset.details',
+      'replacementAsset.purchaseDate': 'capitalGains[1].replacementAsset.purchaseDate',
+      'replacementAsset.price': 'capitalGains[1].replacementAsset.price',
+      'walletAddresses[0]': 'capitalGains[1].walletAddresses[0]',
+      'code:015': 'capitalGains[1].amounts["015"]',
+      'code:020': 'capitalGains[1].amounts["020"]',
+      'code:071': 'capitalGains[1].amounts["071"]',
+      'code:501': 'capitalGains[1].improvements[0].code50Amount',
+      'code:502': 'capitalGains[1].improvements[1].code50Amount',
+    });
+  });
+
+  it('sets every non-filler header field of record 3077 with five improvements and two wallets', () => {
+    const report = reportOf(
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix({
+            improvements: improvements(5),
+            walletAddresses: ['0x1', '0x2'],
+          }),
+        ],
+      }),
+    );
+    expect(unmappedHeaderKeys(def, report.records)).toEqual([]);
+  });
+
+  it('writes the header at its layout positions: ×100 improvement amounts, dates DD/MM/YYYY', () => {
+    const [line] = linesOfType(
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix({
+            improvements: improvements(5),
+            walletAddresses: ['0x1', '0x2'],
+          }),
+        ],
+      }),
+      '3077',
+    );
+    expect(at(line, 137, 5)).toBe('77001');
+    expect(at(line, 142, 1)).toBe('2');
+    expect(at(line, 143, 50)).toBe('מבנה תעשייה'.padStart(50, ' '));
+    expect(at(line, 193, 2)).toBe('21');
+    expect(at(line, 195, 30)).toBe('רוכש נכסים בע"מ'.padStart(30, ' '));
+    expect(at(line, 225, 10)).toBe('01/07/2024');
+    expect(at(line, 235, 10)).toBe('01/02/2009');
+    expect(at(line, 245, 2)).toBe('05');
+    expect(at(line, 247, 12)).toBe('000001000025');
+    expect(at(line, 259, 12)).toBe('000000100000');
+    expect(at(line, 271, 10)).toBe('15/01/2010');
+    expect(at(line, 383, 12)).toBe('000005000025');
+    expect(at(line, 395, 12)).toBe('000000500000');
+    expect(at(line, 407, 10)).toBe('15/05/2014');
+    expect(at(line, 417, 50)).toBe('מבנה חלופי'.padStart(50, ' '));
+    expect(at(line, 467, 10)).toBe('01/09/2024');
+    expect(at(line, 477, 10)).toBe('0002000000');
+    expect(at(line, 487, 2)).toBe('01');
+    expect(at(line, 489, 150)).toBe('0x1'.padStart(150, ' '));
+    expect(at(line, 639, 150)).toBe('0x2'.padStart(150, ' '));
+    expect(at(line, 789, 372)).toMatch(/^0+$/);
+  });
+
+  it('writes codes 501–505 ×100 after the input codes, in ascending code order', () => {
+    const [line] = linesOfType(
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix({ improvements: improvements(5), amounts: { '092': 7 } }),
+        ],
+      }),
+      '3077',
+    );
+    expect(at(line, 1161, 13 + 15 + 4 + 4 + 5 * 15)).toBe(
+      '0150003000000' +
+        '020000150000050' +
+        '0711' +
+        '0927' +
+        '501000000900050' +
+        '502000001800050' +
+        '503000002700050' +
+        '504000003600050' +
+        '505000004500050',
+    );
+  });
+
+  it('writes 245 = 00 and blank slots without improvements, and reads none back', () => {
+    const appendix = otherTransactionsAppendix({ improvements: undefined });
+    const input = minimalInput({ capitalGains: [appendix] });
+    const [record] = capitalGainsRecords(input);
+    expect(record?.values).not.toHaveProperty('improvementCount');
+    const [line] = linesOfType(input, '3077');
+    expect(at(line, 245, 2)).toBe('00');
+    expect(at(line, 247, 24)).toMatch(/^0+$/);
+    expect(at(line, 271, 10)).toBe(' '.repeat(10));
+    const parsed = parse1214(generate1214(input, OPTIONS).text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains?.[0]).not.toHaveProperty('improvements');
+  });
+
+  it('raises no field.required for the empty slots 2–5 of a 3077 with one improvement', () => {
+    const input = minimalInput({
+      capitalGains: [otherTransactionsAppendix({ improvements: improvements(1) })],
+    });
+    expect(validate1214(input, OPTIONS)).toEqual({ valid: true, errors: [], warnings: [] });
+  });
+
+  it('raises cg.improvements.max as a notice for a sixth improvement and writes the first five', () => {
+    const input = minimalInput({
+      capitalGains: [
+        section6Appendix(),
+        otherTransactionsAppendix({ improvements: improvements(6) }),
+      ],
+    });
+    const report = reportOf(input);
+    expect(report.notices).toEqual([
+      expect.objectContaining({
+        ruleId: 'cg.improvements.max',
+        severity: 'error',
+        path: 'capitalGains[1].improvements[5]',
+        recordType: '3077',
+        recordIndex: 0,
+      }),
+    ]);
+    const record = report.records.find(r => r.recordType === '3077');
+    expect(record?.values['improvements[4].date']).toBe('2014-05-15');
+    expect(
+      Object.keys(record?.values ?? {}).filter(key => key.startsWith('improvements[5]')),
+    ).toEqual([]);
+    expect([...(record?.codes.keys() ?? [])].filter(code => code.startsWith('50'))).toEqual([
+      '501',
+      '502',
+      '503',
+      '504',
+      '505',
+    ]);
+    expect(errorsOf(input)).toEqual([
+      ['cg.improvements.max', 'capitalGains[1].improvements[5]', '3077'],
+    ]);
+  });
+
+  it('accepts code 092 as a single digit 0–9 (SPEC §15 A-11)', () => {
+    for (const value of [1, 9]) {
+      expect(
+        errorsOf(
+          minimalInput({
+            capitalGains: [otherTransactionsAppendix({ amounts: { '092': value } })],
+          }),
+        ),
+      ).toEqual([]);
+    }
+    expect(
+      errorsOf(
+        minimalInput({ capitalGains: [otherTransactionsAppendix({ amounts: { '092': 10 } })] }),
+      ),
+    ).toEqual([['field.length', 'capitalGains[0].amounts["092"]', '3077']]);
+  });
+
+  it('requires dates.code15 and dates.code20: input.shape for typed input, field.required in the model', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [{ ...otherTransactionsAppendix(), dates: {} }],
+    };
+    expect(validate1214(input, OPTIONS).errors.map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.shape', 'capitalGains[0].dates.code15'],
+      ['input.shape', 'capitalGains[0].dates.code20'],
+    ]);
+    expect(fieldIssuesOf(input)).toEqual([
+      ['field.required', 'capitalGains[0].dates.code15'],
+      ['field.required', 'capitalGains[0].dates.code20'],
+    ]);
+  });
+
+  it('reports an improvement without a date: input.shape for typed input, field.required in the model', () => {
+    const { date: _date, ...undated } = improvements(2)[1]!;
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        { ...otherTransactionsAppendix(), improvements: [improvements(1)[0], undated] },
+      ],
+    };
+    expect(validate1214(input, OPTIONS).errors.map(issue => [issue.ruleId, issue.path])).toEqual([
+      ['input.shape', 'capitalGains[0].improvements[1].date'],
+    ]);
+    expect(fieldIssuesOf(input)).toEqual([
+      ['field.required', 'capitalGains[0].improvements[1].date'],
+    ]);
+  });
+
+  it('reports a problem of an improvement or of its code-50 amount at the improvement', () => {
+    expect(
+      errorsOf(
+        minimalInput({
+          capitalGains: [
+            otherTransactionsAppendix({
+              improvements: [
+                improvements(1)[0]!,
+                { expense: 1.234, date: '2020-02-30', code50Amount: -1 },
+              ],
+            }),
+          ],
+        }),
+      ),
+    ).toEqual([
+      ['field.decimals', 'capitalGains[0].improvements[1].expense', '3077'],
+      ['field.date', 'capitalGains[0].improvements[1].date', '3077'],
+      ['field.negative', 'capitalGains[0].improvements[1].code50Amount', '3077'],
+    ]);
+  });
+
+  it('reports a derived code 501–505 in amounts as input.derivedCode naming the improvement', () => {
+    const input = {
+      ...minimalInput(),
+      capitalGains: [
+        section6Appendix(),
+        { ...otherTransactionsAppendix(), amounts: { '015': 1, '501': 5, '505': 6 } },
+      ],
+    };
+    const { errors } = validate1214(input, OPTIONS);
+    expect(errors.map(issue => [issue.ruleId, issue.path, issue.recordType])).toEqual([
+      ['input.derivedCode', 'capitalGains[1].amounts["501"]', '3077'],
+      ['input.derivedCode', 'capitalGains[1].amounts["505"]', '3077'],
+    ]);
+    expect(errors[0]?.message).toContain('capitalGains[1].improvements[0].code50Amount');
+    expect(errors[1]?.message).toContain('capitalGains[1].improvements[4].code50Amount');
+  });
+
+  it('reports a wallet address over 150 characters at its slot and a third one as input.shape', () => {
+    expect(
+      errorsOf(
+        minimalInput({
+          capitalGains: [otherTransactionsAppendix({ walletAddresses: ['a', 'b'.repeat(151)] })],
+        }),
+      ),
+    ).toEqual([['field.length', 'capitalGains[0].walletAddresses[1]', '3077']]);
+    const input = {
+      ...minimalInput(),
+      capitalGains: [{ ...otherTransactionsAppendix(), walletAddresses: ['a', 'b', 'c'] }],
+    };
+    expect(validate1214(input, OPTIONS).errors).toEqual([
+      expect.objectContaining({ ruleId: 'input.shape', path: 'capitalGains[0].walletAddresses' }),
+    ]);
+  });
+
+  it('generates a 3077 with every member and parses it back', () => {
+    const appendix = otherTransactionsAppendix({
+      improvements: improvements(5),
+      walletAddresses: ['0x1', '0x2'],
+      amounts: { '092': 3 },
+    });
+    const input = minimalInput({ capitalGains: [appendix] });
+    expect(validate1214(input, OPTIONS)).toEqual({ valid: true, errors: [], warnings: [] });
+    const parsed = parse1214(generate1214(input, OPTIONS).text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains).toEqual([appendix]);
+  });
+});
+
+describe('the "מספר בתל"ם" sequence with a 3077 appendix (SPEC §7.4, §15 A-7)', () => {
+  // Input order 77, 27, 66, 77: emitted 3027, 3066, 3077, 3077.
+  const appendices = [
+    otherTransactionsAppendix(),
+    sharesAppendix(),
+    noWithholding1326Appendix(),
+    otherTransactionsAppendix({ assetLocation: 'abroad', improvements: improvements(1) }),
+  ];
+  const input = minimalInput({ capitalGains: appendices });
+
+  it('numbers the 3077 appendices per symbol and writes their sequence at 487', () => {
+    expect(
+      capitalGainsRecords(input).map(r => [
+        r.recordType,
+        r.inputIndex,
+        r.values.appendixNumber,
+        r.values.sequenceNumber,
+      ]),
+    ).toEqual([
+      ['3027', 1, 1, 1],
+      ['3066', 2, 1, 2],
+      ['3077', 0, 1, 3],
+      ['3077', 3, 2, 4],
+    ]);
+    const lines = linesOfType(input, '3077');
+    expect(lines.map(line => [at(line, 137, 5), at(line, 487, 2)])).toEqual([
+      ['77001', '03'],
+      ['77002', '04'],
+    ]);
+  });
+
+  it('generates the four records and parses them back in file order', () => {
+    expect(validate1214(input, OPTIONS)).toEqual({ valid: true, errors: [], warnings: [] });
+    const parsed = parse1214(generate1214(input, OPTIONS).text);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.report.capitalGains).toEqual([
+      appendices[1],
+      appendices[2],
+      appendices[0],
       appendices[3],
     ]);
   });
