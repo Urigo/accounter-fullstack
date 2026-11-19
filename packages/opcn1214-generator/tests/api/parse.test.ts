@@ -656,8 +656,9 @@ describe('parse1214', () => {
     });
 
     it("reports improvement 2's expense without a date as field.required at its file-order path", () => {
-      // 3077@281: the expense of improvement 2 (slot 1); its date (3077@305) stays blank.
-      const result = parse1214(tamper(file, 4, 281, '000000012345'));
+      // 3077@281: the expense of improvement 2 (slot 1); its date (3077@305) stays blank. The
+      // improvement count (3077@245) follows the filled slots, or the file is parse.derivedMismatch.
+      const result = parse1214(tamper(tamper(file, 4, 281, '000000012345'), 4, 245, '02'));
       expect(result.issues.map(issue => [issue.ruleId, issue.path, issue.severity])).toEqual([
         ['field.required', 'capitalGains[1].improvements[1].date', 'error'],
         ['cg.improvements.code50Amount', 'capitalGains[1].improvements[1].code50Amount', 'warning'],

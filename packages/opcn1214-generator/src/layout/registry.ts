@@ -25,3 +25,9 @@ export function getLayout(taxYear: number): YearLayout {
   }
   return layout;
 }
+
+/**
+ * Reports per OPCN file (SPEC §3.1, p.1), the same for every year (YearLayout.limits): a batch
+ * holds 1 to this many reports, whatever their tax years.
+ */
+export const REPORTS_PER_FILE: YearLayout['limits']['reportsPerFile'] = 50;
