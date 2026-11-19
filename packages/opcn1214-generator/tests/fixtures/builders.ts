@@ -113,10 +113,11 @@ export function fullDeclarationsInput(
 
 /**
  * `fullDeclarationsInput()` with the remaining header groups of record 1000 set (SPEC §7.2): other
- * taxable income, attachments (with the codes 070 and 010 they certify), the capital-gains summary
- * and the qualifying company, each member to a value that is written to the file. 833 is derived
- * from the untransmitted count, so `hasCapitalGainsAppendix` is left out (the input is canonical).
- * `overrides` are deep-merged into it.
+ * taxable income, attachments (with the codes 070 and 010 they certify), the capital-gains summary,
+ * the qualifying company and the bank account, each member to a value that is written to the file.
+ * 833 is derived from the untransmitted count, so `hasCapitalGainsAppendix` is left out (the input
+ * is canonical), and `noBankAccount` is left out because a bank account is given. `overrides` are
+ * deep-merged into it.
  */
 export function fullMainInput(overrides: DeepPartial<Report1214Input> = {}): Report1214Input {
   const base = deepMerge(fullDeclarationsInput(), {
@@ -140,8 +141,11 @@ export function fullMainInput(overrides: DeepPartial<Report1214Input> = {}): Rep
       amortizationClaimed: true,
       amortizationAmount: 150_000,
     },
+    bankAccount: { bank: '12', branch: '345', account: '123456789' },
     amounts: { '010': 1200, '070': 500 },
   }) as Report1214Input;
   delete base.declarations.hasCapitalGainsAppendix;
+  // A bank account and noBankAccount contradict each other (main.bankAccount.withNoBank).
+  delete base.declarations.noBankAccount;
   return deepMerge(base, overrides) as Report1214Input;
 }
