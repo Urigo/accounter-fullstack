@@ -111,7 +111,7 @@ const familyCompanyInput = () =>
   });
 /** minimalInput() with a beneficiary enterprise. */
 const beneficiaryEnterpriseInput = () =>
-  minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2023-05-14' } } });
+  minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2024-05-14' } } });
 /** minimalInput() with a special tax year. */
 const specialYearInput = () =>
   minimalInput({ declarations: { specialYear: { balanceSheetDate: '2024-09-30' } } });
@@ -356,6 +356,15 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
         value: ' '.repeat(10),
       }),
     pass: () => generatedFile(beneficiaryEnterpriseInput()),
+    path: 'declarations.beneficiaryEnterprise.noticeDate',
+  },
+  'main.beneficiaryEnterprise.noticeDateBeforeTaxYear': {
+    kind: 'input',
+    // shopcn: "הערך '14/05/2023' אינו תקין במילוי 'תאריך מפעל מוטב'" in tax year 2024 (FIX-3, A-33).
+    fail: () =>
+      minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2023-05-14' } } }),
+    pass: () =>
+      minimalInput({ declarations: { beneficiaryEnterprise: { noticeDate: '2024-05-14' } } }),
     path: 'declarations.beneficiaryEnterprise.noticeDate',
   },
   'main.specialYear.balanceSheetDate': {
@@ -663,6 +672,24 @@ export const RULE_CASES: { [K in RuleId]: RuleCase } = {
       }),
     pass: () => minimalInput({ capitalGains: [otherTransactionsAppendix()] }),
     path: 'capitalGains[0].improvements[1].code50Amount',
+  },
+  'cg.improvements.expense': {
+    kind: 'input',
+    // shopcn: "חוסר התאמה בין הנתונים למספר יתרות השבחה" for an improvement with a depreciation but
+    // no expense (FIX-3, A-32).
+    fail: () =>
+      minimalInput({
+        capitalGains: [
+          otherTransactionsAppendix({
+            improvements: [
+              improvements(1)[0]!,
+              { accumulatedDepreciation: 3000.5, date: '2010-10-10', code50Amount: 2999.5 },
+            ],
+          }),
+        ],
+      }),
+    pass: () => minimalInput({ capitalGains: [otherTransactionsAppendix()] }),
+    path: 'capitalGains[0].improvements[1].expense',
   },
   'cg.virtualCurrency.wallet': {
     kind: 'file',
