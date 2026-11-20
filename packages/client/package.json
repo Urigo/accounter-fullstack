@@ -85,7 +85,7 @@
     "@types/react-dom": "19.3.0",
     "@urql/devtools": "2.0.3",
     "@vitejs/plugin-react": "6.3.0",
-    "autoprefixer": "10.6.2",
+    "autoprefixer": "10.7.0",
     "happy-dom": "21.0.4",
     "storybook": "10.6.7",
     "tailwindcss": "4.3.5",
