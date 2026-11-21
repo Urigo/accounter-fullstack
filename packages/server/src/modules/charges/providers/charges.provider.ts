@@ -207,6 +207,11 @@ export function toNumericSearchText(text: string | null): string | null {
  * which would otherwise drop the charges that have none of the excluded thing.
  * `excludedFreeText` works the other way round, as an `excluded_matches` CTE the
  * charge must not appear in.
+ *
+ * Paging: `$limit` / `$offset` page the sorted result, and NULL for either means every row
+ * (Postgres reads `LIMIT NULL` as no limit and `OFFSET NULL` as 0), so callers that need the
+ * whole set pass neither. `total_count` is `COUNT(*) OVER ()`, taken before LIMIT/OFFSET: the
+ * number of matching charges, identical on every row of the page.
  */
 const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   WITH search_matches AS (
@@ -840,7 +845,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   )
   SELECT
     ec.*,
-    ABS(ec.event_amount) as abs_event_amount
+    ABS(ec.event_amount) as abs_event_amount,
+    COUNT(*) OVER () AS total_count
   FROM enriched_charges ec
   WHERE
   ($isBusinessIds = 0 OR ec.business_array && $businessIds)
@@ -872,7 +878,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   CASE WHEN $asc = false AND $sortColumn = 'event_amount' THEN (ec.event_amount, ec.id) END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END DESC,
-  ec.id;
+  ec.id
+  LIMIT $limit OFFSET $offset;
   `;
 
 const getSimilarCharges = sql<IGetSimilarChargesQuery>`
@@ -1406,6 +1413,9 @@ export class ChargesProvider {
       freeTextNumeric: toNumericSearchText(freeText),
       excludedFreeText,
       excludedFreeTextNumeric: toNumericSearchText(excludedFreeText),
+      // Unset means every matching charge; only the paged lists pass these.
+      limit: params.limit ?? null,
+      offset: params.offset ?? null,
     };
     return getChargesByFilters.run(fullParams, this.db).then(charges => {
       // The enriched rows are supersets of the plain charge rows — prime the
