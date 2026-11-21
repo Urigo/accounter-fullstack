@@ -5,7 +5,13 @@ import { PageSkeleton, ReportSkeleton, TableSkeleton } from '../components/layou
 import { LandingRoute, ProtectedRoute, PublicOnlyGuard } from './guards/auth-guards.js';
 import { DashboardLayoutRoute } from './layouts/dashboard-layout.js';
 import { RootLayout } from './layouts/root-layout.js';
-import { businessLoader, chargeLoader } from './loaders/index.js';
+import {
+  allChargesLoader,
+  businessLoader,
+  chargeLoader,
+  loadAllChargesScreen,
+  shouldRevalidateAllCharges,
+} from './loaders/index.js';
 import { ROUTES } from './routes.js';
 
 /**
@@ -14,9 +20,7 @@ import { ROUTES } from './routes.js';
  */
 
 // Charges
-const AllCharges = lazy(() =>
-  import('../components/screens/charges/all-charges.js').then(m => ({ default: m.AllCharges })),
-);
+const AllCharges = lazy(() => loadAllChargesScreen().then(m => ({ default: m.AllCharges })));
 const MissingInfoCharges = lazy(() =>
   import('../components/screens/charges/missing-info-charges.js').then(m => ({
     default: m.MissingInfoCharges,
@@ -321,6 +325,9 @@ export const routes: RouteObject[] = [
             children: [
               {
                 index: true,
+                // Starts the list query without waiting for the screen; see the loader.
+                loader: allChargesLoader,
+                shouldRevalidate: shouldRevalidateAllCharges,
                 element: withSuspense(AllCharges, <TableSkeleton />),
                 handle: { title: 'All Charges' },
               },

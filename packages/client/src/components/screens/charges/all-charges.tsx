@@ -3,11 +3,16 @@ import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { ChargesTable } from '@/components/charges/charges-table.js';
-import { AllChargesDocument } from '../../../gql/graphql.js';
+import { AllChargesDocument, type AllChargesQuery } from '../../../gql/graphql.js';
 import { isObjectEmpty } from '../../../helpers/form.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlPage } from '../../../hooks/use-url-page.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
+import {
+  ALL_CHARGES_PAGE_SIZE,
+  subscribeAllChargesPrefetch,
+  type AllChargesVariables,
+} from '../../../router/loaders/all-charges-loader.js';
 import { ChargesFilters, useChargesFilter } from '../../charges/charges-filters/index.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
@@ -39,22 +44,57 @@ export const AllCharges = (): ReactElement => {
   // Nothing is fetched until a filter is applied — the list is too large to load unfiltered.
   const isFilterApplied = !isObjectEmpty(filter);
 
-  const [{ data, fetching }, fetchCharges] = useQuery({
+  const variables = useMemo<AllChargesVariables>(
+    () => ({ filters: filter, page: activePage, limit: ALL_CHARGES_PAGE_SIZE }),
+    [filter, activePage],
+  );
+
+  const [{ data: fetchedData, fetching }, fetchCharges] = useQuery({
     query: AllChargesDocument,
-    variables: {
-      filters: filter,
-      page: activePage,
-      limit: 100,
-    },
+    variables,
     pause: true,
   });
 
-  // refetch charges on filter or page change
+  // The route loader usually started this screen's first request before the screen mounted
+  // (see `allChargesLoader`). Its result is kept here, with the variables it was for.
+  const [prefetched, setPrefetched] = useState<{
+    variables: AllChargesVariables;
+    data: AllChargesQuery;
+  }>();
+  const [awaitingPrefetch, setAwaitingPrefetch] = useState(false);
+
+  // fetch charges on filter or page change, taking over the loader's request when it matches
   useEffect(() => {
-    if (isFilterApplied) {
-      fetchCharges({ requestPolicy: 'network-only' });
+    if (!isFilterApplied) {
+      return;
     }
-  }, [isFilterApplied, filter, activePage, fetchCharges]);
+    const unsubscribe = subscribeAllChargesPrefetch(variables, outcome => {
+      setAwaitingPrefetch(false);
+      if (outcome.kind === 'data') {
+        // Arrives again as each deferred part of the response lands.
+        setPrefetched({ variables, data: outcome.data });
+      } else if (outcome.kind === 'skipped') {
+        fetchCharges({ requestPolicy: 'network-only' });
+      }
+    });
+    if (!unsubscribe) {
+      fetchCharges({ requestPolicy: 'network-only' });
+      return;
+    }
+    setAwaitingPrefetch(true);
+    return () => {
+      unsubscribe();
+      setAwaitingPrefetch(false);
+    };
+  }, [isFilterApplied, variables, fetchCharges]);
+
+  // urql's result wins once the screen has fetched anything itself. Until then the prefetched
+  // result shows, and it keeps showing (as stale rows under the overlay) while the first
+  // refetch for other variables is in flight, as urql's own results do.
+  const data =
+    fetchedData ??
+    (prefetched && (fetching || prefetched.variables === variables) ? prefetched.data : undefined);
+  const loading = fetching || awaitingPrefetch;
 
   // urql returns a fresh `data` object on every (re)fetch. Keep a stable,
   // deeply-equal reference for the charge nodes so the table and its rows only
@@ -131,14 +171,14 @@ export const AllCharges = (): ReactElement => {
 
   return (
     <PageLayout title="All Charges" description="Manage charges">
-      {fetching && !data ? (
+      {loading && !data ? (
         <AccounterBarSpinner className="self-center" />
       ) : chargeNodes ? (
         // Keep the current table mounted while a filter/page change refetches,
         // but overlay a spinner so it's clear the charges are being reloaded
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
-          <LoadingOverlay visible={fetching} blur={1} />
+          <LoadingOverlay visible={loading} blur={1} />
           <ChargesTable
             data={chargeNodes}
             rowSelection={rowSelection}
