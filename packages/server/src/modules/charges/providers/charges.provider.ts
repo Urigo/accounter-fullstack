@@ -609,15 +609,14 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
            string_agg(COALESCE(d.description, '') || ' ' || COALESCE(d.remarks, '') || ' ' || COALESCE(d.serial_number, ''), ' ') AS search_text
     FROM accounter_schema.documents d
     JOIN filtered_charges fc ON fc.id = d.charge_id
+    -- The counterparty is whichever side of the document is not the owner. Written as an equality
+    -- (not "creditor = owner AND debtor = business OR ...") so Postgres can use a hash/index join
+    -- instead of a nested loop over every (document, business) pair.
     LEFT JOIN accounter_schema.businesses
-      ON (
-        d.creditor_id = fc.owner_id
-        AND d.debtor_id = businesses.id
-      )
-      OR (
-        d.creditor_id = businesses.id
-        AND d.debtor_id = fc.owner_id
-      )
+      ON businesses.id = CASE
+        WHEN d.creditor_id = fc.owner_id THEN d.debtor_id
+        WHEN d.debtor_id = fc.owner_id THEN d.creditor_id
+      END
     LEFT JOIN accounter_schema.documents_issued doc_issued ON d.id = doc_issued.id
     GROUP BY d.charge_id
   ),
