@@ -16,7 +16,10 @@ import {
 } from '../../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../../auth/providers/scope.provider.js';
-import { suggestionDataSchema } from '../../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import {
+  suggestionDataSchema,
+  type SuggestionData,
+} from '../../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '../../../tags/providers/charge-tags.provider.js';
 import { TagsProvider } from '../../../tags/providers/tags.provider.js';
@@ -36,6 +39,64 @@ function previousTenantMonthName(month: '2-digit' | 'long'): string {
   const previousMonth = addMonthsToTimelessDate(todayTimelessDate(), -1);
   // a UTC-midnight `Date` of that day, formatted in UTC: the same calendar month
   return timelessDateToUtcDate(previousMonth).toLocaleString('default', { month, timeZone: 'UTC' });
+}
+
+type PhraseSuggestion = Pick<SuggestionData, 'description' | 'tags'>;
+type AllBusinesses = Awaited<ReturnType<BusinessesProvider['getAllBusinesses']>>;
+
+// Keyed by the request's cached business list, so the phrase table is built once per request
+// rather than once per charge (thousands of businesses carry suggestion data).
+const phraseSuggestionsByBusinesses = new WeakMap<
+  AllBusinesses,
+  Record<string, PhraseSuggestion>
+>();
+
+/**
+ * Every suggestion phrase of every business, mapped to that business's suggestion. A phrase two
+ * businesses share goes to the later one. Only the description and the raw tag references are
+ * kept: tags are looked up once a phrase matches, for that one suggestion.
+ */
+export function getPhraseSuggestions(businesses: AllBusinesses): Record<string, PhraseSuggestion> {
+  const cached = phraseSuggestionsByBusinesses.get(businesses);
+  if (cached) {
+    return cached;
+  }
+  const suggestions: Record<string, PhraseSuggestion> = {};
+  for (const business of businesses) {
+    if (!business.suggestion_data) continue;
+    const {
+      data: suggestionData,
+      error,
+      success,
+    } = suggestionDataSchema.safeParse(business.suggestion_data);
+    if (!success) {
+      console.error('Failed to parse suggestion data for business', {
+        businessId: business.id,
+        error,
+      });
+      continue;
+    }
+    for (const phrase of suggestionData.phrases ?? []) {
+      suggestions[phrase] = { description: suggestionData.description, tags: suggestionData.tags };
+    }
+  }
+  phraseSuggestionsByBusinesses.set(businesses, suggestions);
+  return suggestions;
+}
+
+/** Resolves a suggestion's tag references (ids, or names on legacy data); unknown ones drop out. */
+function loadSuggestionTags(
+  tags: readonly string[] | undefined,
+  injector: GraphQLModules.Context['injector'],
+): Promise<IGetTagsByIDsResult[]> {
+  const tagsProvider = injector.get(TagsProvider);
+  return Promise.all(
+    (tags ?? []).map(tag =>
+      UUID_REGEX.test(tag)
+        ? tagsProvider.getTagByIDLoader.load(tag)
+        : tagsProvider.getTagByNameLoader.load(tag),
+    ),
+  ).then(loaded => loaded.filter(Boolean) as IGetTagsByIDsResult[]);
 }
 
 const missingInfoSuggestions: Resolver<
@@ -104,13 +165,7 @@ const missingInfoSuggestions: Resolver<
 
         return {
           description: suggestionData.description,
-          tags: await Promise.all(
-            (suggestionData.tags ?? []).map(tag =>
-              UUID_REGEX.test(tag)
-                ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
-                : injector.get(TagsProvider).getTagByNameLoader.load(tag),
-            ),
-          ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
+          tags: await loadSuggestionTags(suggestionData.tags, injector),
         };
       }
     }
@@ -151,53 +206,9 @@ const missingInfoSuggestions: Resolver<
       }
     }
 
-    const allBusinesses = await injector.get(BusinessesProvider).getAllBusinesses();
-    const suggestions: Record<string, Suggestion> = {};
-    for (const business of allBusinesses) {
-      if (!business.suggestion_data) continue;
-      const {
-        data: suggestionData,
-        error,
-        success,
-      } = suggestionDataSchema.safeParse(business.suggestion_data);
-      if (!success) {
-        console.error('Failed to parse suggestion data for business', {
-          businessId: business.id,
-          error,
-        });
-        continue;
-      }
-
-      if (business.id in allBusinessIds) {
-        return {
-          description: suggestionData.description,
-          tags: await Promise.all(
-            (suggestionData.tags ?? []).map(tag =>
-              UUID_REGEX.test(tag)
-                ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
-                : injector.get(TagsProvider).getTagByNameLoader.load(tag),
-            ),
-          ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[]),
-        };
-      }
-
-      if (!suggestionData.phrases) continue;
-
-      for (const phrase of suggestionData.phrases) {
-        suggestions[phrase] = {
-          description: suggestionData.description,
-          tags: suggestionData.tags
-            ? await Promise.all(
-                suggestionData.tags.map(tag =>
-                  UUID_REGEX.test(tag)
-                    ? injector.get(TagsProvider).getTagByIDLoader.load(tag)
-                    : injector.get(TagsProvider).getTagByNameLoader.load(tag),
-                ),
-              ).then(tags => tags.filter(Boolean) as IGetTagsByIDsResult[])
-            : [],
-        };
-      }
-    }
+    const suggestions = getPhraseSuggestions(
+      await injector.get(BusinessesProvider).getAllBusinesses(),
+    );
 
     const transactions = await injector
       .get(TransactionsProvider)
@@ -205,11 +216,11 @@ const missingInfoSuggestions: Resolver<
     const description = transactions.map(t => t.source_description).join(' ');
 
     for (const [phrase, suggestion] of Object.entries(suggestions)) {
-      if (Array.isArray(phrase) && new RegExp(phrase.join('|')).test(description)) {
-        return suggestion;
-      }
       if (description.includes(phrase)) {
-        return suggestion;
+        return {
+          description: suggestion.description,
+          tags: await loadSuggestionTags(suggestion.tags, injector),
+        };
       }
     }
 
