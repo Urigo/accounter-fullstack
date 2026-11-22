@@ -960,6 +960,7 @@ describe('uploadPoalimDepositTaxEvents', () => {
     const result = await provider.uploadPoalimDepositTaxEvents([baseEvent, withdrawalEvent]);
     expect(result.inserted).toBe(0);
     expect(result.skipped).toBe(2);
+    expect(result.changedTransactions).toEqual([]);
   });
 
   it('overwrites a restated event instead of adding a row', async () => {
@@ -968,6 +969,12 @@ describe('uploadPoalimDepositTaxEvents', () => {
       { ...baseEvent, taxEventAmount: 4.5, debitAmount: 1.13 },
     ]);
     expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(0);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual([
+      { field: 'tax_event_amount', oldValue: '4.43', newValue: '4.5' },
+      { field: 'debit_amount', oldValue: '0', newValue: '1.13' },
+    ]);
 
     const { rows } = await pool.query(
       `SELECT tax_event_amount, debit_amount FROM accounter_schema.poalim_deposit_tax_events
@@ -977,6 +984,33 @@ describe('uploadPoalimDepositTaxEvents', () => {
     expect(rows).toHaveLength(1);
     expect(Number(rows[0].tax_event_amount)).toBe(4.5);
     expect(Number(rows[0].debit_amount)).toBe(1.13);
+  });
+
+  it('overwrites a restated formattedExecutingDate on its own', async () => {
+    await provider.uploadPoalimDepositTaxEvents([baseEvent]);
+    const result = await provider.uploadPoalimDepositTaxEvents([
+      { ...baseEvent, formattedExecutingDate: '2025-11-18T22:00:00.000Z' },
+    ]);
+    expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(0);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual([
+      {
+        field: 'formatted_executing_date',
+        oldValue: '2025-11-19T00:00:00.000Z',
+        newValue: '2025-11-18T22:00:00.000Z',
+      },
+    ]);
+
+    const { rows } = await pool.query(
+      `SELECT formatted_executing_date FROM accounter_schema.poalim_deposit_tax_events
+       WHERE owner_id = $1`,
+      [TEST_OWNER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect((rows[0].formatted_executing_date as Date).toISOString()).toBe(
+      '2025-11-18T22:00:00.000Z',
+    );
   });
 
   it('collapses in-batch duplicates of the natural key', async () => {
@@ -989,6 +1023,21 @@ describe('uploadPoalimDepositTaxEvents', () => {
     await expect(
       provider.uploadPoalimDepositTaxEvents([{ ...baseEvent, taxEventAmount: Number.NaN }]),
     ).rejects.toThrow(/taxEventAmount/);
+  });
+
+  it.each(['2025-02-30', '2025-11-19garbage'])(
+    'rejects an invalid executingDate (%s)',
+    async executingDate => {
+      await expect(
+        provider.uploadPoalimDepositTaxEvents([{ ...baseEvent, executingDate }]),
+      ).rejects.toThrow(/Invalid executingDate/);
+    },
+  );
+
+  it('rejects a blank actionTypeDescription', async () => {
+    await expect(
+      provider.uploadPoalimDepositTaxEvents([{ ...baseEvent, actionTypeDescription: '   ' }]),
+    ).rejects.toThrow(/Missing actionTypeDescription/);
   });
 
   it('returns empty result for empty input', async () => {

@@ -37,6 +37,8 @@ import {
   validatePoalimSwiftTransactions,
 } from '../helpers/validators.helper.js';
 import type {
+  IFetchPoalimDepositTaxEventsByKeysQuery,
+  IFetchPoalimDepositTaxEventsByKeysResult,
   IFetchPoalimForeignByKeysQuery,
   IFetchPoalimForeignByKeysResult,
   IFetchPoalimIlsByKeysQuery,
@@ -47,6 +49,7 @@ import type {
   IFetchPoalimSecuritiesTransactionsByKeysResult,
   IFetchPoalimSwiftByIdsQuery,
   IFetchPoalimSwiftByIdsResult,
+  IUploadPoalimDepositTaxEventsParams,
   IUploadPoalimDepositTaxEventsQuery,
   IUploadPoalimDepositTaxEventsResult,
   IUploadPoalimForeignTransactionsParams,
@@ -848,6 +851,30 @@ const uploadPoalimSecuritiesTransactions = sql<IUploadPoalimSecuritiesTransactio
     (xmax = 0) AS inserted;
 `;
 
+const fetchPoalimDepositTaxEventsByKeys = sql<IFetchPoalimDepositTaxEventsByKeysQuery>`
+  SELECT
+    id,
+    bank_number,
+    branch_number,
+    account_number,
+    event_serial_number,
+    executing_date,
+    formatted_executing_date,
+    action_type_description,
+    short_product_name,
+    tax_action_type_description,
+    tax_event_amount,
+    debit_currency_shorted_description,
+    debit_amount,
+    crdit_amount,
+    additional_information_existence_switch
+  FROM accounter_schema.poalim_deposit_tax_events
+  WHERE bank_number = ANY($bankNumbers!)
+    AND branch_number = ANY($branchNumbers!)
+    AND account_number = ANY($accountNumbers!)
+    AND executing_date = ANY($executingDates!)
+`;
+
 /**
  * Upserts deposits tax events on their natural key (account + executing date + daily serial).
  * The bank may restate an event's figures, so a re-scrape overwrites them; the WHERE skips the
@@ -900,6 +927,7 @@ const uploadPoalimDepositTaxEvents = sql<IUploadPoalimDepositTaxEventsQuery>`
     additional_information_existence_switch = EXCLUDED.additional_information_existence_switch,
     updated_at = now()
   WHERE (
+    poalim_deposit_tax_events.formatted_executing_date,
     poalim_deposit_tax_events.action_type_description,
     poalim_deposit_tax_events.short_product_name,
     poalim_deposit_tax_events.tax_action_type_description,
@@ -909,6 +937,7 @@ const uploadPoalimDepositTaxEvents = sql<IUploadPoalimDepositTaxEventsQuery>`
     poalim_deposit_tax_events.crdit_amount,
     poalim_deposit_tax_events.additional_information_existence_switch
   ) IS DISTINCT FROM (
+    EXCLUDED.formatted_executing_date,
     EXCLUDED.action_type_description,
     EXCLUDED.short_product_name,
     EXCLUDED.tax_action_type_description,
@@ -1421,6 +1450,101 @@ function diffPoalimSecurityTransactionRow(
     const isNumberField = POALIM_SECURITIES_TRANSACTIONS_NUMERIC_FIELDS.includes(key);
     const oldValue = formatValue(existing[key], isNumberField);
     const newValue = formatValue(getIncoming(incoming), isNumberField);
+    if (oldValue !== newValue) {
+      changed.push({ field: key, oldValue, newValue });
+    }
+  }
+  return changed;
+}
+
+/**
+ * The columns a re-scrape of a known deposits tax event can restate — everything outside the
+ * natural key, matching the upsert's change check.
+ */
+const POALIM_DEPOSIT_TAX_EVENTS_DIFF_FIELDS: Array<{
+  key: keyof IFetchPoalimDepositTaxEventsByKeysResult;
+  incoming: (e: IUploadPoalimDepositTaxEventsParams['events'][number]) => unknown;
+}> = [
+  { key: 'formatted_executing_date', incoming: e => e.formattedExecutingDate ?? null },
+  { key: 'action_type_description', incoming: e => e.actionTypeDescription ?? null },
+  { key: 'short_product_name', incoming: e => e.shortProductName ?? null },
+  { key: 'tax_action_type_description', incoming: e => e.taxActionTypeDescription ?? null },
+  { key: 'tax_event_amount', incoming: e => e.taxEventAmount ?? null },
+  {
+    key: 'debit_currency_shorted_description',
+    incoming: e => e.debitCurrencyShortedDescription ?? null,
+  },
+  { key: 'debit_amount', incoming: e => e.debitAmount ?? null },
+  { key: 'crdit_amount', incoming: e => e.crditAmount ?? null },
+  {
+    key: 'additional_information_existence_switch',
+    incoming: e => e.additionalInformationExistenceSwitch ?? null,
+  },
+];
+
+/**
+ * `formatted_executing_date` is a TIMESTAMPTZ: the stored value comes back as a `Date`, while the
+ * incoming one is the bank's offset-bearing string. Compare them as instants.
+ */
+function toInstant(value: unknown): string | null {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
+}
+
+const POALIM_DEPOSIT_TAX_EVENTS_NUMERIC_FIELDS: (keyof IFetchPoalimDepositTaxEventsByKeysResult)[] =
+  ['tax_event_amount', 'debit_amount', 'crdit_amount', 'additional_information_existence_switch'];
+
+/** The distinct non-null values of a key column, for a coarse `= ANY(...)` fetch. */
+function distinct<T>(values: readonly (T | null | void)[]): T[] {
+  return Array.from(new Set(values.filter((v): v is T => v != null)));
+}
+
+/** The natural key (minus owner_id, which RLS pins) of a deposits tax event, input or stored. */
+function depositTaxEventKeyOf(
+  e:
+    | Pick<
+        IFetchPoalimDepositTaxEventsByKeysResult,
+        | 'bank_number'
+        | 'branch_number'
+        | 'account_number'
+        | 'executing_date'
+        | 'event_serial_number'
+      >
+    | Pick<
+        IUploadPoalimDepositTaxEventsParams['events'][number],
+        'bankNumber' | 'branchNumber' | 'accountNumber' | 'executingDate' | 'eventSerialNumber'
+      >,
+): string {
+  return 'bank_number' in e
+    ? [
+        e.bank_number,
+        e.branch_number,
+        e.account_number,
+        e.executing_date,
+        e.event_serial_number,
+      ].join('|')
+    : [e.bankNumber, e.branchNumber, e.accountNumber, e.executingDate, e.eventSerialNumber].join(
+        '|',
+      );
+}
+
+function diffPoalimDepositTaxEventRow(
+  existing: IFetchPoalimDepositTaxEventsByKeysResult,
+  incoming: IUploadPoalimDepositTaxEventsParams['events'][number],
+): ChangedField[] {
+  const changed: ChangedField[] = [];
+  for (const { key, incoming: getIncoming } of POALIM_DEPOSIT_TAX_EVENTS_DIFF_FIELDS) {
+    const isNumberField = POALIM_DEPOSIT_TAX_EVENTS_NUMERIC_FIELDS.includes(key);
+    const isInstant = key === 'formatted_executing_date';
+    const oldValue = formatValue(
+      isInstant ? toInstant(existing[key]) : existing[key],
+      isNumberField,
+    );
+    const newValue = formatValue(
+      isInstant ? toInstant(getIncoming(incoming)) : getIncoming(incoming),
+      isNumberField,
+    );
     if (oldValue !== newValue) {
       changed.push({ field: key, oldValue, newValue });
     }
@@ -1991,14 +2115,25 @@ export class PoalimScraperIngestionProvider {
     // In-batch dedup on the natural key: Postgres rejects an upsert that touches the same row twice.
     const byKey = new Map<string, ReturnType<typeof validatePoalimDepositTaxEvents>[number]>();
     for (const e of validatePoalimDepositTaxEvents(events)) {
-      byKey.set(
-        [e.bankNumber, e.branchNumber, e.accountNumber, e.executingDate, e.eventSerialNumber].join(
-          '|',
-        ),
-        e,
-      );
+      byKey.set(depositTaxEventKeyOf(e), e);
     }
     const validated = Array.from(byKey.values()).map(e => ({ ...e, ownerId: businessId }));
+
+    // Coarse fetch on the account columns and executing dates; the full natural key (with the
+    // daily serial) is matched in memory below. RLS scopes the rows to the tenant.
+    const existing = await fetchPoalimDepositTaxEventsByKeys.run(
+      {
+        bankNumbers: distinct(validated.map(e => e.bankNumber)),
+        branchNumbers: distinct(validated.map(e => e.branchNumber)),
+        accountNumbers: distinct(validated.map(e => e.accountNumber)),
+        executingDates: distinct(validated.map(e => e.executingDate)),
+      },
+      this.db,
+    );
+    const existingByKey = new Map<string, IFetchPoalimDepositTaxEventsByKeysResult>();
+    for (const row of existing) {
+      existingByKey.set(depositTaxEventKeyOf(row), row);
+    }
 
     const returned: IUploadPoalimDepositTaxEventsResult[] = await uploadPoalimDepositTaxEvents.run(
       { events: validated },
@@ -2016,12 +2151,25 @@ export class PoalimScraperIngestionProvider {
       account: `${r.branch_number}-${r.account_number}`,
     }));
 
+    // A restated event: the stored row differs from the incoming one outside the natural key.
+    const insertedIdSet = new Set(insertedIds);
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const e of validated) {
+      const existingRow = existingByKey.get(depositTaxEventKeyOf(e));
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffPoalimDepositTaxEventRow(existingRow, e);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
+        }
+      }
+    }
+
     return {
       inserted: insertedIds.length,
-      skipped: events.length - insertedIds.length,
+      skipped: events.length - insertedIds.length - changedTransactions.length,
       insertedIds,
       insertedTransactions,
-      changedTransactions: [],
+      changedTransactions,
     };
   }
 }

@@ -13,6 +13,8 @@ import {
   PoalimSecurityTransactionInput,
   PoalimSwiftTransactionInput,
 } from '../../../__generated__/types.js';
+import { TIMELESS_DATE_REGEX } from '../../../shared/constants.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import {
   IUploadAmexTransactionsParams,
   IUploadCalTransactionsParams,
@@ -322,22 +324,23 @@ export function validatePoalimSecuritiesTransactions(
   }));
 }
 
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 /**
  * ownerId is not derivable from the input — the provider stamps it from the auth context.
- * Rejects rows the table could not hold meaningfully: a non-ISO executing date, or a
- * non-finite amount (the ledger sums these, so NaN/Infinity must never land).
+ * Rejects rows the table could not hold meaningfully: an executing date that is not exactly a
+ * real `YYYY-MM-DD` calendar date (checked on the whole string, so trailing garbage or an
+ * impossible day such as 2025-02-30 is refused here rather than truncated or left to Postgres),
+ * a non-finite amount (the ledger sums these, so NaN/Infinity must never land), or a blank
+ * action type.
  */
 export function validatePoalimDepositTaxEvents(
   events: readonly PoalimDepositTaxEventInput[],
 ): Omit<IUploadPoalimDepositTaxEventsParams['events'][number], 'ownerId'>[] {
   return events.map((e, index) => {
-    const executingDate = toCalendarDate(e.executingDate);
     const where = `deposit tax event #${index} (account ${e.branchNumber}-${e.accountNumber}, ${e.executingDate}, serial ${e.eventSerialNumber})`;
-    if (!ISO_DATE_REGEX.test(executingDate) || Number.isNaN(Date.parse(executingDate))) {
+    if (!TIMELESS_DATE_REGEX.test(e.executingDate)) {
       throw new GraphQLError(`Invalid executingDate on ${where}`);
     }
+    const executingDate = e.executingDate as TimelessDateString;
     for (const [field, value] of [
       ['taxEventAmount', e.taxEventAmount],
       ['debitAmount', e.debitAmount],
