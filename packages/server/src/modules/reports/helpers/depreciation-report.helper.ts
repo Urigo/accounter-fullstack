@@ -15,7 +15,12 @@ import { DepreciationProvider } from '../../depreciation/providers/depreciation.
 
 export { calculateDepreciation };
 
-export async function calculateDepreciationAmount(injector: Injector, year: number) {
+/** The yearly depreciation of `ownerId`'s assets, split by depreciation type */
+export async function calculateDepreciationAmount(
+  injector: Injector,
+  year: number,
+  ownerId: string,
+) {
   const depreciationRecords = await injector
     .get(DepreciationProvider)
     .getDepreciationRecordsByDates({
@@ -29,6 +34,9 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
 
   await Promise.all(
     depreciationRecords.map(async record => {
+      if (record.owner_id !== ownerId) {
+        return;
+      }
       const depreciationCategory = await injector
         .get(DepreciationCategoriesProvider)
         .getDepreciationCategoriesByIdLoader.load(record.category);

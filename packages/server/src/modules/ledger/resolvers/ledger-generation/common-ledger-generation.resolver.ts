@@ -293,8 +293,6 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         for (const entry of entries) {
           feeFinancialAccountLedgerEntries.push(entry);
           updateLedgerBalance(entry);
-          dates.add(exchangeRatePointKey(entry));
-          currencies.add(entry.currency);
         }
       });
     entriesPromises.push(disposalsLedgerPromise);

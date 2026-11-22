@@ -67,7 +67,7 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       gnmDepreciationYearlyAmount,
       marketingDepreciationYearlyAmount,
       totalDepreciationYearlyAmount,
-    } = await calculateDepreciationAmount(injector, year);
+    } = await calculateDepreciationAmount(injector, year, charge.owner_id);
     const ledgerEntries: LedgerProto[] = [];
 
     function addLedgerEntry(
@@ -142,7 +142,9 @@ export const generateLedgerRecordsForDepreciationExpenses: ResolverFn<
       toDate: endOfTimelessYear(year),
     });
     const disposalsLedger = await generateDepreciationDisposalsLedger(
-      yearDisposals.filter(disposal => !disposal.charge_id),
+      yearDisposals.filter(
+        disposal => !disposal.charge_id && disposal.owner_id === charge.owner_id,
+      ),
       charge,
       injector,
     );
