@@ -71,9 +71,47 @@ let businessScope: string | null = (() => {
 })();
 let onClientReset: ((client: Client) => void) | null = null;
 
+let markTokenProviderRegistered: () => void = () => {};
+/**
+ * Settles once a token provider is first registered. The router starts its loaders while the
+ * module graph evaluates, before the Auth0 bridge has rendered and registered one.
+ */
+const tokenProviderRegistered = new Promise<void>(resolve => {
+  markTokenProviderRegistered = resolve;
+});
+
+/** How long a loader waits for a token provider before giving up on an early request. */
+const TOKEN_PROVIDER_WAIT_MS = 5000;
+
+/**
+ * Whether a request sent now would carry credentials, for route loaders that start a query
+ * before the app has rendered.
+ *
+ * A loader must not send a query without them: the server would answer UNAUTHENTICATED, and the
+ * auth exchange would respond to that with the interactive re-login flow, for a request no
+ * screen asked for yet. So this waits for the token provider, and answers false when there is no
+ * session (or none turns up in time); the screen then makes its own request as usual.
+ */
+export async function canSendAuthenticatedRequests(): Promise<boolean> {
+  if (import.meta.env.VITE_DEV_AUTH === '1') {
+    return !!import.meta.env.VITE_DEV_AUTH_USER_ID?.trim();
+  }
+  const registered = await Promise.race([
+    tokenProviderRegistered.then(() => true),
+    new Promise<false>(resolve => setTimeout(() => resolve(false), TOKEN_PROVIDER_WAIT_MS)),
+  ]);
+  if (!registered) {
+    return false;
+  }
+  const token = await getAccessToken();
+  return token.status === 'token';
+}
+
 export function setUrqlAccessTokenProvider(provider: AccessTokenProvider | null): void {
   accessTokenProvider = provider;
-  if (!provider) {
+  if (provider) {
+    markTokenProviderRegistered();
+  } else {
     bearerToken = null;
     loginRedirectInProgress = false;
   }
