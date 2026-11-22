@@ -142,6 +142,10 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $bankDepositInterestIncomeTaxCategoryId,
       bank_deposit_interest_income_tax_category_id
     ),
+    bank_deposit_withholding_tax_category_id = COALESCE(
+      $bankDepositWithholdingTaxCategoryId,
+      bank_deposit_withholding_tax_category_id
+    ),
     business_trip_tax_category_id = COALESCE(
       $businessTripTaxCategoryId,
       business_trip_tax_category_id
@@ -400,6 +404,7 @@ export class AdminContextProvider {
         bankDepositBusinessId: rawContext.bank_deposit_business_id,
         bankDepositInterestIncomeTaxCategoryId:
           rawContext.bank_deposit_interest_income_tax_category_id,
+        bankDepositWithholdingTaxCategoryId: rawContext.bank_deposit_withholding_tax_category_id,
       },
       foreignSecurities: {
         foreignSecuritiesBusinessId: securities.foreignSecuritiesBusinessId,

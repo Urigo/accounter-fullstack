@@ -66,6 +66,8 @@ export type AdminContext = {
   bankDeposits: {
     bankDepositBusinessId: string | null;
     bankDepositInterestIncomeTaxCategoryId: string | null;
+    /** Withholding tax receivable (ניכוי במקור) for tax the bank withholds on deposit interest */
+    bankDepositWithholdingTaxCategoryId: string | null;
   };
 
   foreignSecurities: {

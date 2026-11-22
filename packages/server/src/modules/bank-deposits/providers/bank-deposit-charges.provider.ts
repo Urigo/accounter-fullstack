@@ -6,8 +6,8 @@ import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { identifyInterestTransactionIds } from '../helpers/bank-deposit-interest.helper.js';
 import type {
   BankDepositMetadataProto,
   IGetAllDepositsWithTransactionsQuery,
@@ -353,7 +353,7 @@ export class BankDepositChargesProvider {
       throw new GraphQLError('Failed to create bank deposit');
     }
 
-    await this.upsertBankDepositCharge({ chargeId, depositId: deposit.id });
+    await this.upsertBankDepositCharge({ chargeId, depositId: deposit.id, accountId });
     this.getBankDepositByChargeIdLoader.clear(chargeId);
 
     return deposit;
