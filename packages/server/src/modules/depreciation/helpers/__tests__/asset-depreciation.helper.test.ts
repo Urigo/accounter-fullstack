@@ -97,6 +97,20 @@ describe('calculateAssetYear without disposals', () => {
     });
   });
 
+  it('shows a fully depreciated asset at its full cost, with no residual value', () => {
+    const asset: AssetDepreciationInput = {
+      cost: 10_000,
+      depreciationRate: 25,
+      activationDate: d('2019-01-01'),
+      // as the records query computes it: activation + 100/rate × 365 days
+      expirationDate: d('2022-12-31'),
+    };
+    const result = calculateAssetYear(asset, [], 2025);
+    expect(result.openingAccumulatedDepreciation).toBe(10_000);
+    expect(result.yearDepreciation).toBe(0);
+    expect(result.netBookValue).toBe(0);
+  });
+
   it('ignores disposals dated after the requested year', () => {
     const asset: AssetDepreciationInput = {
       cost: 100_000,

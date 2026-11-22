@@ -2,10 +2,8 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
-import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { depreciatesOnOrAfter } from '../helpers/asset-depreciation.helper.js';
 import type {
   IDeleteDepreciationRecordByChargeIdParams,
   IDeleteDepreciationRecordByChargeIdQuery,
@@ -14,6 +12,7 @@ import type {
   IGetDepreciationRecordsActivatedByParams,
   IGetDepreciationRecordsActivatedByQuery,
   IGetDepreciationRecordsByChargeIdsQuery,
+  IGetDepreciationRecordsByDatesParams,
   IGetDepreciationRecordsByDatesQuery,
   IGetDepreciationRecordsByIdsQuery,
   IInsertDepreciationRecordParams,
@@ -35,11 +34,18 @@ const getDepreciationRecordsByIds = sql<IGetDepreciationRecordsByIdsQuery>`
   WHERE d.id IN $$depreciationRecordIds;`;
 
 const getDepreciationRecordsByDates = sql<IGetDepreciationRecordsByDatesQuery>`
-  SELECT d.*, dc.percentage AS category_percentage
-  FROM accounter_schema.depreciation d
-  LEFT JOIN accounter_schema.depreciation_categories dc
-            ON d.category = dc.id
-  WHERE d.activation_date <= $toDate;`;
+  WITH depreciation AS (SELECT d.*
+                      FROM accounter_schema.depreciation d
+                      WHERE activation_date <= $toDate)
+  SELECT d.*
+  FROM depreciation d
+  WHERE d.amount IS NULL
+    OR d.amount > COALESCE((
+      SELECT SUM(dd.disposed_cost)
+      FROM accounter_schema.depreciation_disposals dd
+      WHERE dd.depreciation_id = d.id
+        AND dd.disposal_date < $fromDate
+    ), 0);`;
 
 const getDepreciationRecordsActivatedBy = sql<IGetDepreciationRecordsActivatedByQuery>`
   SELECT d.*
@@ -144,23 +150,12 @@ export class DepreciationProvider {
   );
 
   /**
-   * The records that depreciate during the given period: activated by its end, and not done
-   * depreciating before its start (`depreciatesOnOrAfter`, from the category rate and the
-   * activation date); records in a category that is not depreciated (0%) are always returned.
+   * Assets on the books during the period: activated by `toDate` and not fully disposed of before
+   * `fromDate`. Fully depreciated assets that are still owned are included, and so are records in a
+   * category that is not depreciated (0%).
    */
-  public async getDepreciationRecordsByDates({
-    fromDate,
-    toDate,
-  }: {
-    fromDate: TimelessDateString;
-    toDate: TimelessDateString;
-  }) {
-    const rows = await getDepreciationRecordsByDates.run({ toDate }, this.db);
-    const records = rows.flatMap(({ category_percentage, ...record }) =>
-      depreciatesOnOrAfter(Number(category_percentage), record.activation_date, fromDate)
-        ? [record]
-        : [],
-    );
+  public async getDepreciationRecordsByDates(params: IGetDepreciationRecordsByDatesParams) {
+    const records = await getDepreciationRecordsByDates.run(params, this.db);
     for (const record of records) {
       this.getDepreciationRecordByIdLoader.prime(record.id, record);
     }
