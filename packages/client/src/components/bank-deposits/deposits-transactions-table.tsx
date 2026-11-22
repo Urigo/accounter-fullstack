@@ -175,7 +175,7 @@ export function DepositsTransactionsTable({
           ...base,
           id: `${step.id}:tax`,
           kind: 'tax',
-          amount: { ...step.taxCapitalized, raw: tax, formatted: `${tax.toFixed(2)}` },
+          amount: { ...step.taxCapitalized, raw: tax, formatted: tax.toFixed(2) },
           // only the tax withheld inside the deposit reduces it; tax on paid-out interest
           // was taken off the interest line
           localOverride: step.taxCapitalized.raw,
@@ -270,13 +270,13 @@ export function DepositsTransactionsTable({
                 id: 'actions',
                 header: 'Actions',
                 cell: ({ row }) =>
-                  row.original.kind !== 'transaction' ? null : (
+                  row.original.kind === 'transaction' ? (
                     <DepositReassignDialog
                       depositId={depositId}
                       chargeId={row.original.chargeId}
                       refetch={refetch}
                     />
-                  ),
+                  ) : null,
               },
             ]
           : [];
