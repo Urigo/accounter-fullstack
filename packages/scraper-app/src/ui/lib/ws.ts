@@ -49,6 +49,7 @@ export type AccountStep = {
   swift?: TxnTypeState;
   securitiesInfo?: TxnTypeState;
   securitiesTransactions?: TxnTypeState;
+  depositTaxEvents?: TxnTypeState;
 };
 
 export type TaskState = {

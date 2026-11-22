@@ -16,3 +16,7 @@ export type {
   HapoalimSecuritiesTransactions,
   PoalimSecurityTransaction,
 } from './hapoalim-securities-transactions-schema.js';
+export type {
+  HapoalimDepositsTaxCollection,
+  PoalimDepositTaxEvent,
+} from './hapoalim-deposits-tax-collection-schema.js';

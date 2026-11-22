@@ -10,6 +10,7 @@ import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
+import type { PoalimDepositsTaxEventsPayload } from '../payload-schemas/poalim-deposits-tax-events.schema.js';
 import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
 import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
 import type {
@@ -28,6 +29,7 @@ import {
   otsarCreditCardVars,
   otsarForeignVars,
   otsarIlsVars,
+  poalimDepositTaxEventsVars,
   poalimForeignVars,
   poalimIlsVars,
   poalimSecuritiesInfoVars,
@@ -42,6 +44,7 @@ import {
   UPLOAD_OTSAR_CREDITCARD,
   UPLOAD_OTSAR_FOREIGN,
   UPLOAD_OTSAR_ILS,
+  UPLOAD_POALIM_DEPOSIT_TAX_EVENTS,
   UPLOAD_POALIM_FOREIGN,
   UPLOAD_POALIM_ILS,
   UPLOAD_POALIM_SECURITIES,
@@ -129,6 +132,17 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
         UPLOAD_POALIM_SECURITIES_TRANSACTIONS,
         poalimSecuritiesTransactionsVars(payload, bankAccount),
         'uploadPoalimSecuritiesTransactions',
+      );
+    },
+
+    async uploadPoalimDepositTaxEvents(
+      payload: PoalimDepositsTaxEventsPayload,
+      bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number },
+    ): Promise<ScraperUploadResult> {
+      return request(
+        UPLOAD_POALIM_DEPOSIT_TAX_EVENTS,
+        poalimDepositTaxEventsVars(payload, bankAccount),
+        'uploadPoalimDepositTaxEvents',
       );
     },
 

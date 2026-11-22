@@ -9,6 +9,7 @@ export type PoalimSource = {
   options?: {
     isBusinessAccount?: boolean;
     fetchSecurities?: boolean;
+    fetchDepositsTaxEvents?: boolean;
     acceptedAccountNumbers?: string[];
     acceptedBranchNumbers?: string[];
     ignoredAccountNumbers?: string[];

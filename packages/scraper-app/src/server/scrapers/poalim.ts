@@ -14,6 +14,7 @@ import { registerDiscoveredAccounts } from '../account-discovery.js';
 import { checkAccounts } from '../check-accounts.js';
 import { effectiveSet } from '../filter-payload.js';
 import type { OtpManager } from '../otp-manager.js';
+import type { PoalimDepositsTaxEventsPayload } from '../payload-schemas/poalim-deposits-tax-events.schema.js';
 import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
 import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
 import { BlockedError } from '../scrape-runner.js';
@@ -67,6 +68,11 @@ function describeValidationError(errors: unknown): string {
   }
 }
 
+/** Local-calendar YYYYMMDD as a number, comparable with the bank's `executingDate`. */
+function toYyyymmdd(date: Date): number {
+  return date.getFullYear() * 10_000 + (date.getMonth() + 1) * 100 + date.getDate();
+}
+
 export async function scrapePoalim(
   creds: PoalimCreds,
   dateFrom: Date,
@@ -82,6 +88,8 @@ export async function scrapePoalim(
     securitiesInfo: PoalimSecuritiesInfoPayload | null;
     securitiesTransactions: PoalimSecuritiesTransactionsPayload | null;
     securitiesTransactionsWarning?: string;
+    depositTaxEvents: PoalimDepositsTaxEventsPayload | null;
+    depositTaxEventsWarning?: string;
     bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
   }[]
 > {
@@ -198,10 +206,13 @@ export async function scrapePoalim(
       securitiesInfo: PoalimSecuritiesInfoPayload | null;
       securitiesTransactions: PoalimSecuritiesTransactionsPayload | null;
       securitiesTransactionsWarning?: string;
+      depositTaxEvents: PoalimDepositsTaxEventsPayload | null;
+      depositTaxEventsWarning?: string;
       bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
     }[] = [];
     const isBusiness = creds.options?.isBusinessAccount ?? false;
     const fetchSecurities = creds.options?.fetchSecurities ?? false;
+    const fetchDepositsTaxEvents = creds.options?.fetchDepositsTaxEvents ?? false;
 
     for (const account of filteredAccounts) {
       let ils: HapoalimILSTransactions | null = null;
@@ -211,6 +222,8 @@ export async function scrapePoalim(
       let securitiesInfo: PoalimSecuritiesInfoPayload | null = null;
       let securitiesTransactions: PoalimSecuritiesTransactionsPayload | null = null;
       let securitiesTransactionsWarning: string | undefined;
+      let depositTaxEvents: PoalimDepositsTaxEventsPayload | null = null;
+      let depositTaxEventsWarning: string | undefined;
       const accountId = `${account.branchNumber}-${account.accountNumber}`;
       const accountRef = {
         bankNumber: account.bankNumber,
@@ -335,6 +348,42 @@ export async function scrapePoalim(
         securitiesTransactionsWarning = securitiesTransactionsTruncated;
       }
 
+      if (fetchDepositsTaxEvents) {
+        emit({
+          type: 'task-account-txns-fetching',
+          sourceId: creds.id,
+          accountId,
+          txnType: 'depositTaxEvents',
+        });
+        const {
+          data: depositTaxEventsData,
+          isValid: depositTaxEventsValid,
+          errors: depositTaxEventsErrors,
+        } = await scraper.getDepositsTaxCollection(accountRef, {
+          fromDate: dateFrom,
+          toDate: dateTo,
+        });
+        if (depositTaxEventsValid === false) {
+          throw new Error(
+            `Poalim deposits tax events failed schema validation for account ${accountId}: ${describeValidationError(depositTaxEventsErrors)}`,
+          );
+        }
+        if (depositTaxEventsData) {
+          const validated = validatePayload('poalim-deposits-tax-events', depositTaxEventsData);
+          // Today's events are still open: the bank may add more and renumber the daily
+          // serial (part of the dedup key), so only settled days are uploaded.
+          const today = toYyyymmdd(new Date());
+          const settled = validated.savingsAndCurrentProductsTaxEvents.filter(
+            e => e.executingDate < today,
+          );
+          const pending = validated.savingsAndCurrentProductsTaxEvents.length - settled.length;
+          if (pending > 0) {
+            depositTaxEventsWarning = `${pending} deposit tax event(s) dated today or later were skipped; they upload on the next scrape`;
+          }
+          depositTaxEvents = { ...validated, savingsAndCurrentProductsTaxEvents: settled };
+        }
+      }
+
       accountsData.push({
         ils,
         foreign,
@@ -342,6 +391,8 @@ export async function scrapePoalim(
         securitiesInfo,
         securitiesTransactions,
         ...(securitiesTransactionsWarning ? { securitiesTransactionsWarning } : {}),
+        depositTaxEvents,
+        ...(depositTaxEventsWarning ? { depositTaxEventsWarning } : {}),
         bankAccount: accountRef,
       });
     }

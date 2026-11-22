@@ -7,6 +7,7 @@ import {
   captureMytradeSession,
   fetchGetWithinPage,
   fetchPoalimMytradeWithinPage,
+  fetchPoalimXSRFGetWithinPage,
   fetchPoalimXSRFWithinPage,
 } from '../utils/fetch.js';
 import {
@@ -17,6 +18,10 @@ import {
   HapoalimDepositsSchema,
   type HapoalimDeposits,
 } from '../zod-schemas/hapoalim-deposits-schema.js';
+import {
+  HapoalimDepositsTaxCollectionSchema,
+  type HapoalimDepositsTaxCollection,
+} from '../zod-schemas/hapoalim-deposits-tax-collection-schema.js';
 import {
   HapoalimForeignDepositsSchema,
   type HapoalimForeignDeposits,
@@ -229,6 +234,8 @@ export async function hapoalim(
   // TODO: https://www.npmjs.com/package/node-fetch-cookies
 
   /** The mytrade API takes its date range as ddMMyyyy, unlike the yyyyMMdd used elsewhere. */
+  const toYyyymmdd = (date: Date) =>
+    `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
   const toMytradeDateString = (date: Date) =>
     `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
 
@@ -528,6 +535,45 @@ export async function hapoalim(
       }
 
       return { data: await getDepositsFunction, isValid: null };
+    },
+    /**
+     * Deposits tax events (interest realized per deposit event, paid out or capitalized,
+     * and the tax charged / credited on it) from the deposits tax-collection screen.
+     * Rows carry no account: callers stamp the requested account onto them.
+     */
+    getDepositsTaxCollection: async (
+      account: {
+        bankNumber: number;
+        branchNumber: number;
+        accountNumber: number;
+      },
+      range?: { fromDate: Date; toDate: Date },
+    ): Promise<{
+      data: HapoalimDepositsTaxCollection | null;
+      isValid: boolean | null;
+      errors?: unknown;
+    }> => {
+      const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
+      const url = `${apiSiteUrl}/deposits-and-savings/taxCollection?view=savingsAndCurrentProducts&accountId=${fullAccountNumber}&startDate=${toYyyymmdd(range?.fromDate ?? startDate)}&endDate=${toYyyymmdd(range?.toDate ?? now)}&lang=he`;
+      const data = await fetchPoalimXSRFGetWithinPage<HapoalimDepositsTaxCollection>(
+        page,
+        url,
+        '/deposits-and-savings/tax-collection',
+      );
+
+      if (!options?.validateSchema) {
+        return { data, isValid: null };
+      }
+      if (!data) {
+        // 204: no deposit tax events in the window
+        return { data, isValid: true };
+      }
+      const validation = HapoalimDepositsTaxCollectionSchema.safeParse(data);
+      return {
+        data: validation.data ?? null,
+        isValid: validation.success,
+        errors: validation.success ? null : validation.error.issues,
+      };
     },
     getForeignDeposits: async (account: {
       bankNumber: number;

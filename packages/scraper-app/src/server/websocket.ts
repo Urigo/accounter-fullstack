@@ -474,6 +474,41 @@ function buildTask(
               insertedTransactions.push(...(rsectxn.insertedTransactions ?? []));
               changedTransactions.push(...(rsectxn.changedTransactions ?? []));
             }
+
+            const depositTaxEventsPayload = accountData.depositTaxEvents;
+            if (depositTaxEventsPayload) {
+              if (accountData.depositTaxEventsWarning) {
+                emit({
+                  type: 'task-account-warning',
+                  sourceId: src.id,
+                  accountId,
+                  txnType: 'depositTaxEvents',
+                  message: accountData.depositTaxEventsWarning,
+                });
+              }
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'depositTaxEvents',
+                count: depositTaxEventsPayload.savingsAndCurrentProductsTaxEvents.length,
+              });
+              const rdep = await uploadClient.uploadPoalimDepositTaxEvents(
+                depositTaxEventsPayload,
+                accountData.bankAccount,
+              );
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'depositTaxEvents',
+                inserted: rdep.inserted,
+                skipped: rdep.skipped,
+              });
+              totalInserted += rdep.inserted;
+              totalSkipped += rdep.skipped;
+              allIds.push(...rdep.insertedIds);
+            }
           }
           return {
             inserted: totalInserted,
