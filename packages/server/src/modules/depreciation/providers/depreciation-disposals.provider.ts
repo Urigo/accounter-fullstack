@@ -60,7 +60,7 @@ const updateDepreciationDisposal = sql<IUpdateDepreciationDisposalQuery>`
     disposal_date = COALESCE($disposalDate, disposal_date),
     disposed_cost = COALESCE($disposedCost, disposed_cost),
     proceeds = COALESCE($proceeds, proceeds),
-    description = COALESCE($description, description),
+    description = $description,
     updated_at = clock_timestamp()
   WHERE id = $id
   RETURNING *;`;

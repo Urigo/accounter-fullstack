@@ -47,6 +47,7 @@ const getDepreciationRecordsActivatedBy = sql<IGetDepreciationRecordsActivatedBy
   LEFT JOIN accounter_schema.depreciation_categories dc
             ON d.category = dc.id
   WHERE d.activation_date <= $date
+    AND d.owner_id = $ownerId
   ORDER BY d.activation_date, d.id;`;
 
 const replaceDepreciationRecordsChargeId = sql<IReplaceDepreciationRecordsChargeIdQuery>`
@@ -168,14 +169,19 @@ export class DepreciationProvider {
     return records;
   }
 
-  /** Every asset activated on or before `date`, including fully depreciated and disposed ones */
-  public getDepreciationRecordsActivatedBy(params: IGetDepreciationRecordsActivatedByParams) {
-    return getDepreciationRecordsActivatedBy.run(params, this.db).then(records => {
-      records.map(record => {
-        this.getDepreciationRecordByIdLoader.prime(record.id, record);
-      });
-      return records;
-    });
+  /**
+   * Every asset of the business being written to, activated on or before `date`, including fully
+   * depreciated and disposed ones
+   */
+  public async getDepreciationRecordsActivatedBy(
+    params: Omit<IGetDepreciationRecordsActivatedByParams, 'ownerId'>,
+  ) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    const records = await getDepreciationRecordsActivatedBy.run({ ...params, ownerId }, this.db);
+    for (const record of records) {
+      this.getDepreciationRecordByIdLoader.prime(record.id, record);
+    }
+    return records;
   }
 
   public updateDepreciationRecord(params: IUpdateDepreciationRecordParams) {

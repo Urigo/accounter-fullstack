@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { DepreciationCategoriesProvider } from '../providers/depreciation-categories.provider.js';
 import { DepreciationDisposalsProvider } from '../providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../providers/depreciation.provider.js';
@@ -115,9 +116,21 @@ export function resolveDisposalProceeds(candidate: DisposalCandidate): number {
   return candidate.proceeds ?? 0;
 }
 
+/** Whether a disposal dated `disposalDate` falls in the ledger's locked period */
+export function isDisposalDateLocked(
+  disposalDate: TimelessDateString,
+  ledgerLock: TimelessDateString | null | undefined,
+): boolean {
+  return !!ledgerLock && disposalDate <= ledgerLock;
+}
+
 /**
  * Validates a new or edited disposal against its asset and the asset's other disposals, and
  * computes it. Returns the errors, or the computed result when valid.
+ *
+ * The asset and the linked charge must belong to the business the disposal is written for: RLS
+ * lets a request read every business in its scope, but foreign keys are checked without RLS, so an
+ * asset or charge of another business would otherwise load fine here and be linked to this one.
  */
 export async function checkDisposal(
   injector: Injector,
@@ -128,9 +141,12 @@ export async function checkDisposal(
   | { errors?: never; result: AssetDisposalResult; remainingCost: number }
 > {
   const { record, asset, disposals } = context;
-  const { defaultLocalCurrency, ledgerLock } = await injector
-    .get(AdminContextProvider)
-    .getVerifiedAdminContext();
+  const [{ defaultLocalCurrency, ledgerLock, ownerId }, charge] = await Promise.all([
+    injector.get(AdminContextProvider).getVerifiedAdminContext(),
+    candidate.chargeId
+      ? injector.get(ChargesProvider).getChargeByIdLoader.load(candidate.chargeId)
+      : undefined,
+  ]);
 
   const proceeds = resolveDisposalProceeds(candidate);
   const errors = validateDisposalKind({
@@ -140,6 +156,16 @@ export async function checkDisposal(
     chargeId: candidate.chargeId,
   });
 
+  if (record.owner_id !== ownerId) {
+    errors.push('The depreciation record belongs to a different business');
+  }
+  if (candidate.chargeId) {
+    if (!charge) {
+      errors.push(`Charge with id ${candidate.chargeId} not found`);
+    } else if (charge.owner_id !== ownerId) {
+      errors.push(`Charge with id ${candidate.chargeId} belongs to a different business`);
+    }
+  }
   if (record.amount == null) {
     errors.push('Set an amount on the depreciation record before disposing of it');
   }
@@ -148,7 +174,15 @@ export async function checkDisposal(
       `Disposals are only supported for assets recorded in ${defaultLocalCurrency} (this asset is in ${record.currency})`,
     );
   }
-  if (ledgerLock && candidate.disposalDate <= ledgerLock) {
+  const stored = candidate.id
+    ? disposals.find(disposal => disposal.id === candidate.id)
+    : undefined;
+  if (stored && isDisposalDateLocked(stored.disposal_date, ledgerLock)) {
+    // moving a disposal out of a closed period would change that period too
+    errors.push(
+      `The disposal is dated ${stored.disposal_date}, in the locked period (${ledgerLock}), and can't be changed`,
+    );
+  } else if (isDisposalDateLocked(candidate.disposalDate, ledgerLock)) {
     errors.push(`Disposal date ${candidate.disposalDate} is in the locked period (${ledgerLock})`);
   }
 

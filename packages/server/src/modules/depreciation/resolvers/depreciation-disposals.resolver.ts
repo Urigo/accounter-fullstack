@@ -8,6 +8,7 @@ import { remainingAssetCost } from '../helpers/asset-depreciation.helper.js';
 import {
   checkDisposal,
   computeStoredDisposal,
+  isDisposalDateLocked,
   loadAssetContext,
   toDisposalInput,
 } from '../helpers/depreciation-disposals.helper.js';
@@ -49,8 +50,9 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
         const disposedBefore = disposals
           .filter(disposal => disposal.disposal_date <= activeOn)
           .map(toDisposalInput);
+        // a record without an amount can't be disposed of, so it isn't offered
         return (
-          record.amount == null ||
+          record.amount != null &&
           remainingAssetCost({ cost: Number(record.amount) }, disposedBefore) > 0
         );
       });
@@ -139,8 +141,8 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           disposedCost,
           proceeds:
             input.proceeds ??
-            // a refund's proceeds follow its cost; otherwise keep what was stored
-            (type === 'COST_REFUND' ? disposedCost : Number(existing.proceeds)),
+            // a sale keeps its stored proceeds; a refund's follow its cost and a write-off has none
+            (type === 'SALE' ? Number(existing.proceeds) : null),
         });
         if (check.errors) {
           return commonError(check.errors.join('; '));
@@ -154,7 +156,8 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
           disposalDate: input.disposalDate ?? null,
           disposedCost: input.disposedCost ?? null,
           proceeds: check.result.proceeds,
-          description: input.description ?? null,
+          // null clears the description; leaving it out keeps the stored one
+          description: input.description === undefined ? existing.description : input.description,
         });
         if (!updated) {
           return commonError('Error updating depreciation disposal');
@@ -169,7 +172,20 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
       }
     },
     deleteDepreciationDisposal: async (_, { id }, { injector }) => {
-      const [deleted] = await injector.get(DepreciationDisposalsProvider).deleteDisposal({ id });
+      const provider = injector.get(DepreciationDisposalsProvider);
+      const [existing, { ledgerLock }] = await Promise.all([
+        provider.getDisposalByIdLoader.load(id),
+        injector.get(AdminContextProvider).getVerifiedAdminContext(),
+      ]);
+      if (!existing) {
+        return false;
+      }
+      if (isDisposalDateLocked(existing.disposal_date, ledgerLock)) {
+        throw new GraphQLError(
+          `The disposal is dated ${existing.disposal_date}, in the locked period (${ledgerLock}), and can't be deleted`,
+        );
+      }
+      const [deleted] = await provider.deleteDisposal({ id });
       if (!deleted) {
         return false;
       }
@@ -195,10 +211,13 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
       const disposals = await injector
         .get(DepreciationDisposalsProvider)
         .getDisposalsByDepreciationIdLoader.load(record.id);
-      return localAmount(
-        injector,
-        remainingAssetCost({ cost: Number(record.amount ?? 0) }, disposals.map(toDisposalInput)),
+      const remaining = remainingAssetCost(
+        { cost: Number(record.amount ?? 0) },
+        disposals.map(toDisposalInput),
       );
+      return record.currency
+        ? formatFinancialAmount(remaining, record.currency)
+        : localAmount(injector, remaining);
     },
   },
   CommonCharge: {
