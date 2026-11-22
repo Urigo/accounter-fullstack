@@ -657,6 +657,47 @@ export default gql`
     subTransactions: String!
   }
 
+  # ── Payoneer ────────────────────────────────────────────────────────────────
+
+  " Input for a Payoneer account activity item (from the activity details of the item) "
+  input PayoneerTransactionInput {
+    " Payoneer account holder ID (activityMainData.EntityId) "
+    accountId: String!
+    " Activity item ID (activityMainData.ActivityItemId) "
+    transactionId: String!
+    " Activity type code (e.g. 10 = incoming payment, 1 = withdrawal to bank) "
+    activityType: Int!
+    " Activity item status code (2 = completed) "
+    status: Int
+    " Activity time; Payoneer reports UTC, and a time without an offset is read as UTC "
+    activityDate: String!
+    currency: String!
+    " Change to the Payoneer balance, fee included "
+    amount: Float!
+    " Fee Payoneer took, as a non-positive number (0 when none) "
+    fee: Float!
+    " Balance after the item "
+    balance: Float
+    " Description as listed in the transactions list "
+    description: String!
+    " Payer name for payments, target bank account name for withdrawals "
+    counterpartyName: String
+    " Payment description (remittance info) or the user's withdrawal description "
+    paymentDescription: String
+    " Payoneer receiving account the payment arrived to "
+    receivingAccount: String
+    " Withdrawal transfer ID (activityDetails.LoadId) "
+    transferId: String
+    " Withdrawal target account (IBAN) "
+    targetAccount: String
+    " Gross payment amount, before the fee "
+    grossAmount: Float
+    " Amount sent to the bank on a withdrawal, after the fee "
+    amountSent: Float
+    " The full activity details response, as JSON "
+    rawData: String
+  }
+
   # ── Otsar HaHayal Credit Card ─────────────────────────────────────────────────
 
   " Input for an Otsar HaHayal credit card transaction "
@@ -771,5 +812,8 @@ export default gql`
     uploadOtsarHahayalCreditCardTransactions(
       transactions: [OtsarHahayalCreditCardTransactionInput!]!
     ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadPayoneerTransactions(transactions: [PayoneerTransactionInput!]!): ScraperUploadResult!
+      @requiresRole(role: "scraper")
   }
 `;

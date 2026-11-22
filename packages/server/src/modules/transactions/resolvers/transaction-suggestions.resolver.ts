@@ -43,6 +43,7 @@ const missingInfoSuggestions = async (
     etherScanBusinessId,
     krakenBusinessId,
     etanaBusinessId,
+    payoneerBusinessId,
     isracardBusinessId,
     otsarHahayalBusinessId,
     otsarHahayalCreditCardBusinessId,
@@ -73,6 +74,14 @@ const missingInfoSuggestions = async (
         }
         return {
           business: etanaBusinessId,
+        };
+      }
+      case 'PAYONEER': {
+        if (!payoneerBusinessId) {
+          throw new Error('Payoneer business is not set');
+        }
+        return {
+          business: payoneerBusinessId,
         };
       }
       case 'ETHERSCAN': {

@@ -1,6 +1,7 @@
 import { withScraperUploadErrors } from '../helpers/upload-error.helper.js';
 import { IsracardAmexScraperIngestionProvider } from '../providers/isracard-amex-scraper-ingestion.provider.js';
 import { OtsarHahayalScraperIngestionProvider } from '../providers/otsar-hahayal-scraper-ingestion.provider.js';
+import { PayoneerScraperIngestionProvider } from '../providers/payoneer-scraper-ingestion.provider.js';
 import { PoalimScraperIngestionProvider } from '../providers/poalim-scraper-ingestion.provider.js';
 import { ScraperIngestionProvider } from '../providers/scraper-ingestion.provider.js';
 import type { ScraperIngestionModule } from '../types.js';
@@ -88,6 +89,11 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
         injector
           .get(OtsarHahayalScraperIngestionProvider)
           .uploadOtsarHahayalCreditCardTransactions(transactions),
+      ),
+
+    uploadPayoneerTransactions: (_, { transactions }, { injector }) =>
+      withScraperUploadErrors('uploadPayoneerTransactions', () =>
+        injector.get(PayoneerScraperIngestionProvider).uploadPayoneerTransactions(transactions),
       ),
   },
 };

@@ -34,6 +34,7 @@
     "migration:check-conflicts": "node --import ./scripts/register-esm.js ./scripts/check-migration-conflicts.ts",
     "mock:client": "concurrently -c magenta,cyan -n MOCK,CLIENT \"yarn mock:server\" \"ALLOW_DEV_AUTH=1 DEV_AUTH_USER_ID=00000000-0000-0000-0000-000000000000 yarn workspace @accounter/client dev\"",
     "mock:server": "node scripts/graphql-mock-server.mjs",
+    "payoneer:import": "tsx scripts/payoneer-import.ts",
     "pre-commit": "lint-staged",
     "prettier:check": "prettier --cache --check .",
     "prettier:fix": "prettier --cache --write --list-different .",

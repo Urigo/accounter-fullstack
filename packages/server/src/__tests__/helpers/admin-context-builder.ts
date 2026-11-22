@@ -96,6 +96,7 @@ export async function buildAdminContextFromDb(
       calBusinessId: null,
       otsarHahayalCreditCardBusinessId: null,
       etanaBusinessId: null,
+      payoneerBusinessId: null,
       krakenBusinessId: null,
       etherScanBusinessId: null,
       foreignSecuritiesBusinessId: null,

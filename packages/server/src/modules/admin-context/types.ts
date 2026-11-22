@@ -56,6 +56,7 @@ export type AdminContext = {
     calBusinessId: string | null;
     otsarHahayalCreditCardBusinessId: string | null;
     etanaBusinessId: string | null;
+    payoneerBusinessId: string | null;
     krakenBusinessId: string | null;
     etherScanBusinessId: string | null;
     foreignSecuritiesBusinessId: string | null;
