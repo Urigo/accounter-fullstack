@@ -97,6 +97,8 @@ export default gql`
     rndDepreciationExpensesTaxCategoryId: UUID
     gnmDepreciationExpensesTaxCategoryId: UUID
     marketingDepreciationExpensesTaxCategoryId: UUID
+    depreciationDisposalGainTaxCategoryId: UUID
+    depreciationDisposalLossTaxCategoryId: UUID
     bankDepositInterestIncomeTaxCategoryId: UUID
     bankDepositWithholdingTaxCategoryId: UUID
     businessTripTaxCategoryId: UUID
@@ -174,6 +176,8 @@ export default gql`
     rndDepreciationExpensesTaxCategory: TaxCategory
     gnmDepreciationExpensesTaxCategory: TaxCategory
     marketingDepreciationExpensesTaxCategory: TaxCategory
+    depreciationDisposalGainTaxCategory: TaxCategory
+    depreciationDisposalLossTaxCategory: TaxCategory
     bankDepositInterestIncomeTaxCategory: TaxCategory
     " Withholding tax receivable for tax the bank withholds on deposit interest "
     bankDepositWithholdingTaxCategory: TaxCategory
