@@ -7,3 +7,5 @@ export type IGetChargesByFiltersResult = ChargeRequiredWrapper<IGetChargesByFilt
 
 export type * from './__generated__/charges.types.js';
 export type * from './__generated__/charge-spread.types.js';
+// Both generated files declare it; name one so the two star re-exports don't collide.
+export type { NumberOrString } from './__generated__/charges.types.js';

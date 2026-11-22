@@ -1454,3 +1454,46 @@ describe('ChargesProvider.getChargesByFilters', () => {
     });
   });
 });
+
+describe('ChargesProvider.getChargesByFilters paging', () => {
+  // The paged lists ask the database for one page; every other caller passes no window and gets
+  // every matching charge, as before.
+
+  it('returns every matching charge without a limit, each carrying the total', async () => {
+    const rows = await query();
+    expect(rows).toHaveLength(CHARGE_NAMES.length);
+    expect(new Set(rows.map(row => row.total_count))).toEqual(new Set([String(CHARGE_NAMES.length)]));
+  });
+
+  it('pages through the same order as the unpaged query, with the full total on every page', async () => {
+    const all = (await query()).map(row => row.id);
+    const pageSize = 7;
+    const paged: string[] = [];
+    for (let offset = 0; offset < all.length; offset += pageSize) {
+      const rows = await query({ limit: pageSize, offset });
+      expect(rows.length).toBe(Math.min(pageSize, all.length - offset));
+      for (const row of rows) {
+        expect(row.total_count).toBe(String(all.length));
+      }
+      paged.push(...rows.map(row => row.id));
+    }
+    expect(paged).toEqual(all);
+  });
+
+  it('counts only the charges the filters keep', async () => {
+    const rows = await query({ withoutTags: true, limit: 3, offset: 0 });
+    expect(rows).toHaveLength(3);
+    expect(rows[0]!.total_count).toBe(String(CHARGE_NAMES.length - 2));
+  });
+
+  it('pages in the requested sort order', async () => {
+    const amounts = { ...among('coffee', 'consulting', 'supplierReceipt', 'proforma') };
+    const secondPage = await query({ ...amounts, sortColumn: 'event_amount', asc: true, limit: 2, offset: 2 });
+    expect(secondPage.map(row => chargeNamesById.get(row.id))).toEqual(['proforma', 'consulting']);
+    expect(secondPage[0]!.total_count).toBe('4');
+  });
+
+  it('returns no rows for a page past the end', async () => {
+    expect(await query({ limit: 10, offset: CHARGE_NAMES.length })).toEqual([]);
+  });
+});
