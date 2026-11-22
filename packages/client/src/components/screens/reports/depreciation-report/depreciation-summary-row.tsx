@@ -47,6 +47,7 @@ export const DepreciationSummaryRow = ({ data, groupName }: Props): ReactElement
       <TableCell>
         {summary.netValue ? formatStringifyAmount(summary.netValue, 0) : undefined}
       </TableCell>
+      <TableCell className="print:hidden" />
     </TableRow>
   );
 };

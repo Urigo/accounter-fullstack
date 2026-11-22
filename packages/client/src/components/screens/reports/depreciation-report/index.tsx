@@ -132,6 +132,7 @@ export const DepreciationReport = (): ReactElement => {
                 Depreciation
               </TableHead>
               <TableHead className="text-center border-x">Remaining</TableHead>
+              <TableHead className="print:hidden" />
             </TableRow>
             <TableRow className="border-b border-black">
               <TableHead className="whitespace-normal">Assets List and Descriptions</TableHead>
@@ -148,6 +149,7 @@ export const DepreciationReport = (): ReactElement => {
               </TableHead>
               <TableHead className="whitespace-normal">Total Depreciation</TableHead>
               <TableHead className="whitespace-normal">Net Book Value</TableHead>
+              <TableHead className="whitespace-normal print:hidden">Charge</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -163,6 +165,7 @@ export const DepreciationReport = (): ReactElement => {
                         {formatStringifyAmount(category.category.percentage, 0)}%
                       </TableCell>
                       <TableCell colSpan={5} />
+                      <TableCell className="print:hidden" />
                     </TableRow>
                     {category.records
                       .sort((a, b) => a.purchaseDate.localeCompare(b.purchaseDate))

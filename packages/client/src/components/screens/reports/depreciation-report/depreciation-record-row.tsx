@@ -6,6 +6,7 @@ import {
 import { getFragmentData } from '../../../../gql/index.js';
 import { formatTimelessDate } from '../../../../helpers/dates.js';
 import { formatStringifyAmount } from '../../../../helpers/numbers.js';
+import { ChargeNavigateButton } from '../../../common/index.js';
 import { TableCell, TableRow } from '../../../ui/table.js';
 
 type Props = {
@@ -51,6 +52,9 @@ export const DepreciationRecordRow = ({ record }: Props): ReactElement => {
         {summary.totalDepreciation ? formatStringifyAmount(summary.totalDepreciation, 0) : '-'}
       </TableCell>
       <TableCell>{summary.netValue ? formatStringifyAmount(summary.netValue, 0) : '-'}</TableCell>
+      <TableCell className="print:hidden">
+        <ChargeNavigateButton chargeId={record.chargeId} />
+      </TableCell>
     </TableRow>
   );
 };
