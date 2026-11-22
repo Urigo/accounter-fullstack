@@ -1,5 +1,5 @@
 import { useMemo, type ReactElement } from 'react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { Controller, useForm, useWatch, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import {
   DepreciationDisposalPickerDocument,
@@ -7,7 +7,7 @@ import {
   DepreciationDisposalType,
   type InsertDepreciationDisposalInput,
 } from '../../../gql/graphql.js';
-import { formatStringifyAmount, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { formatStringifyAmount, TIMELESS_DATE_REGEX, UUID_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationDisposal } from '../../../hooks/use-add-depreciation-disposal.js';
 import { useUpdateDepreciationDisposal } from '../../../hooks/use-update-depreciation-disposal.js';
 import { Button } from '../../ui/button.js';
@@ -116,6 +116,21 @@ type Props = {
 const amount = (value: number) =>
   value < 0 ? `(${formatStringifyAmount(-value, 0)})` : formatStringifyAmount(value, 0);
 
+/**
+ * Proceeds to send on an edit. They are explicit for every type, so changing the type never keeps
+ * the stored proceeds: a write-off has none, and a cost refund's equal the refunded cost.
+ */
+function proceedsForUpdate(input: InsertDepreciationDisposalInput): number | null | undefined {
+  switch (input.type) {
+    case DepreciationDisposalType.WriteOff:
+      return 0;
+    case DepreciationDisposalType.CostRefund:
+      return input.disposedCost;
+    default:
+      return input.proceeds;
+  }
+}
+
 export function DepreciationDisposalModal({
   opened,
   close,
@@ -135,11 +150,14 @@ export function DepreciationDisposalModal({
       description: disposal?.description ?? '',
     },
   });
-  const { control, handleSubmit, watch } = form;
-  const values = watch();
+  const { control, handleSubmit } = form;
+  const values = useWatch({ control });
 
   const pickAsset = !disposal && !depreciationRecordId;
   const validDate = TIMELESS_DATE_REGEX.test(values.disposalDate ?? '');
+  const chargeIdValue = values.chargeId?.trim() ?? '';
+  const chargeIdError =
+    chargeIdValue && !UUID_REGEX.test(chargeIdValue) ? 'Invalid charge ID' : undefined;
 
   const [{ data: assetsData, fetching: fetchingAssets }] = useQuery({
     query: DepreciationDisposalPickerDocument,
@@ -161,7 +179,9 @@ export function DepreciationDisposalModal({
     const disposedCost = Number(values.disposedCost);
     if (
       !values.depreciationRecordId ||
+      !values.type ||
       !validDate ||
+      chargeIdError ||
       Number.isNaN(disposedCost) ||
       disposedCost <= 0
     ) {
@@ -169,7 +189,7 @@ export function DepreciationDisposalModal({
     }
     return {
       depreciationRecordId: values.depreciationRecordId,
-      chargeId: values.chargeId || null,
+      chargeId: chargeIdValue || null,
       type: values.type,
       disposalDate: values.disposalDate as TimelessDate,
       disposedCost,
@@ -177,11 +197,11 @@ export function DepreciationDisposalModal({
         values.type === DepreciationDisposalType.Sale ? Number(values.proceeds || 0) : undefined,
       description: values.description || null,
     };
-  }, [values, validDate]);
+  }, [values, validDate, chargeIdValue, chargeIdError]);
 
   // The preview validates a new disposal next to the asset's stored ones, so it is only shown
   // when recording a new disposal.
-  const [{ data: previewData }] = useQuery({
+  const [{ data: previewData, error: previewError }] = useQuery({
     query: DepreciationDisposalPreviewDocument,
     variables: { input: input! },
     pause: !input || !!disposal,
@@ -202,7 +222,7 @@ export function DepreciationDisposalModal({
             type: input.type,
             disposalDate: input.disposalDate,
             disposedCost: input.disposedCost,
-            proceeds: input.proceeds,
+            proceeds: proceedsForUpdate(input),
             chargeId: input.chargeId,
             description: input.description,
           },
@@ -319,8 +339,14 @@ export function DepreciationDisposalModal({
                     : 'Charge ID carrying the money'}
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} value={field.value ?? ''} placeholder="Charge UUID" />
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    placeholder="Charge UUID"
+                    aria-invalid={!!chargeIdError}
+                  />
                 </FormControl>
+                {chargeIdError && <p className="text-sm text-red-600">{chargeIdError}</p>}
               </FormItem>
             )}
           />
@@ -339,6 +365,11 @@ export function DepreciationDisposalModal({
 
           {preview?.__typename === 'CommonError' && (
             <p className="text-sm text-red-600">{preview.message}</p>
+          )}
+          {previewError && !disposal && (
+            <p className="text-sm text-red-600">
+              Could not preview the disposal: {previewError.message}
+            </p>
           )}
           {preview?.__typename === 'DepreciationDisposalComputation' && (
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm border rounded-sm p-3">
