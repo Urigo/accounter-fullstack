@@ -276,6 +276,14 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
             dbAdminContext.bankDeposits.bankDepositInterestIncomeTaxCategoryId,
           )
         : null,
+    bankDepositWithholdingTaxCategory: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.bankDeposits.bankDepositWithholdingTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'bankDepositWithholdingTaxCategory',
+            dbAdminContext.bankDeposits.bankDepositWithholdingTaxCategoryId,
+          )
+        : null,
     businessTripTaxCategory: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.businessTrips.businessTripTaxCategoryId
         ? fetchTaxCategory(

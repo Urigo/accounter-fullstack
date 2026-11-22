@@ -6,8 +6,8 @@ import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { identifyInterestTransactionIds } from '../helpers/bank-deposit-interest.helper.js';
 import type {
   BankDepositMetadataProto,
   IGetAllDepositsWithTransactionsQuery,
@@ -31,7 +31,7 @@ const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
     WHERE new_deposit_id IN $$depositIds;`;
 
 const getBankDepositsByChargeIds = sql<IGetBankDepositsByChargeIdsQuery>`
-  SELECT bd.id, bd.name, bd.currency, bd.account_id, bd.open_date, bd.close_date, cbd.id as charge_id
+  SELECT bd.id, bd.name, bd.currency, bd.account_id, bd.open_date, bd.close_date, bd.owner_id, cbd.id as charge_id
   FROM accounter_schema.charges_bank_deposits cbd
   INNER JOIN accounter_schema.bank_deposits bd
     ON cbd.new_deposit_id = bd.id
@@ -353,7 +353,7 @@ export class BankDepositChargesProvider {
       throw new GraphQLError('Failed to create bank deposit');
     }
 
-    await this.upsertBankDepositCharge({ chargeId, depositId: deposit.id });
+    await this.upsertBankDepositCharge({ chargeId, depositId: deposit.id, accountId });
     this.getBankDepositByChargeIdLoader.clear(chargeId);
 
     return deposit;

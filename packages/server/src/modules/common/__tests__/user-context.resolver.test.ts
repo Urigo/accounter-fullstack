@@ -94,6 +94,7 @@ describe('userContext resolver (multi-business)', () => {
       bankDeposits: {
         bankDepositBusinessId: 'bank-deposit-1',
         bankDepositInterestIncomeTaxCategoryId: null,
+        bankDepositWithholdingTaxCategoryId: null,
       },
     } as AdminContextFixture);
     expect(result.financialAccountsBusinessesIds).toEqual([
