@@ -42,7 +42,8 @@ export function naturalDepreciationEndDate(
  * @param activationDate - Date when the asset depreciation began
  * @param calculationYear - Year for which to calculate depreciation (as of December 31st)
  * @param depreciationEndDate - Optional natural end of depreciation (the asset's expiration date).
- *  In its year the whole remaining value is depreciated. Disposals are not modelled here: use
+ *  In its year the whole remaining value is depreciated; in later years the accumulated
+ *  depreciation stays at that year's closing balance. Disposals are not modelled here: use
  *  `calculateAssetYear` for assets that were sold, refunded or written off.
  * @returns Object containing yearly depreciation amount and past depreciation amount
  */
@@ -75,17 +76,21 @@ export function calculateDepreciation(
 
   // If depreciation ended before the calculation year, no yearly depreciation
   if (depreciationEndDate < startOfCalculationYear) {
-    // Calculate total depreciation up to the end date
-    const totalYearsActive = differenceInTimelessDays(depreciationEndDate, activationDate) / 365.25;
-    const totalDepreciation = Math.min(
+    // Accumulated depreciation stays at its closing balance of the end year. That call does not
+    // come back here (the end date is inside its year), and gives zeros when the end year is
+    // before the activation year.
+    const atEnd = calculateDepreciation(
+      depreciationRate,
       valueAmount,
-      Math.round(valueAmount * normalizedRate * totalYearsActive),
+      activationDate,
+      getTimelessDateYear(depreciationEndDate),
+      depreciationEndDate,
     );
 
     return {
       yearlyDepreciationAmount: 0,
       yearlyDepreciationRate: 0,
-      pastDepreciationAmount: totalDepreciation,
+      pastDepreciationAmount: atEnd.pastDepreciationAmount + atEnd.yearlyDepreciationAmount,
     };
   }
 
@@ -205,12 +210,27 @@ export type AssetYearResult = {
   disposals: AssetDisposalResult[];
 };
 
-function sortDisposals(disposals: readonly AssetDisposalInput[]): AssetDisposalInput[] {
-  return [...disposals].sort((a, b) =>
-    a.disposalDate === b.disposalDate
-      ? a.id.localeCompare(b.id)
-      : a.disposalDate.localeCompare(b.disposalDate),
-  );
+/**
+ * Rounds a disposal's amounts to whole shekels, as the asset's cost is rounded, so that every
+ * function here compares and subtracts the same numbers (DB numerics carry agorot).
+ */
+function roundDisposalAmounts(disposal: AssetDisposalInput): AssetDisposalInput {
+  return {
+    ...disposal,
+    disposedCost: Math.round(disposal.disposedCost),
+    proceeds: Math.round(disposal.proceeds),
+  };
+}
+
+/** The disposals with rounded amounts, by date (then id) */
+function normalizeDisposals(disposals: readonly AssetDisposalInput[]): AssetDisposalInput[] {
+  return disposals
+    .map(roundDisposalAmounts)
+    .sort((a, b) =>
+      a.disposalDate === b.disposalDate
+        ? a.id.localeCompare(b.id)
+        : a.disposalDate.localeCompare(b.disposalDate),
+    );
 }
 
 /**
@@ -225,7 +245,12 @@ function sortDisposals(disposals: readonly AssetDisposalInput[]): AssetDisposalI
  * - at a disposal, the slice takes round(accumulated × disposedCost / cost) of the accumulated
  *   depreciation; its gain or loss is proceeds − (disposedCost − that share);
  * - what remains keeps depreciating at the same rate on the reduced cost, and the year of the
- *   natural end date takes the whole remaining value, as `calculateDepreciation` does.
+ *   natural end date takes the whole remaining value, as `calculateDepreciation` does: the segment
+ *   that reaches the end date takes it (before any disposal on or after the end date, so such a
+ *   disposal leaves with its slice fully depreciated), and later segments depreciate nothing.
+ *
+ * Amounts are whole shekels: the cost, and each disposal's disposed cost and proceeds, are rounded
+ * once on the way in, and the results report the rounded values.
  */
 export function calculateAssetYear(
   asset: AssetDepreciationInput,
@@ -256,7 +281,7 @@ export function calculateAssetYear(
     return zero;
   }
 
-  const sorted = sortDisposals(disposals).filter(
+  const sorted = normalizeDisposals(disposals).filter(
     disposal => getTimelessDateYear(disposal.disposalDate) <= year,
   );
 
@@ -338,8 +363,11 @@ function rollAssetYear(
     }
     let amount: number;
     if (from > expirationDate) {
+      // Segments after the end date depreciate nothing
       amount = 0;
-    } else if (last && isFinalYear) {
+    } else if (isFinalYear && (last || to >= expirationDate)) {
+      // The segment that reaches the end date takes the whole remaining value, also when a
+      // disposal falls on the end date or after it
       amount = remaining;
     } else {
       const segmentEnd = to > expirationDate ? expirationDate : to;
@@ -416,17 +444,18 @@ export function computeDisposal(
   return results.find(result => result.id === disposalId) ?? null;
 }
 
-/** Cost still on the books after all the given disposals. */
+/** Cost still on the books after all the given disposals, in whole shekels. */
 export function remainingAssetCost(
   asset: Pick<AssetDepreciationInput, 'cost'>,
   disposals: readonly Pick<AssetDisposalInput, 'disposedCost'>[],
 ): number {
-  const disposed = disposals.reduce((sum, disposal) => sum + disposal.disposedCost, 0);
+  const disposed = disposals.reduce((sum, disposal) => sum + Math.round(disposal.disposedCost), 0);
   return Math.max(0, Math.round(asset.cost) - disposed);
 }
 
 /**
- * Validates an asset's full set of disposals (existing ones plus a new or edited one).
+ * Validates an asset's full set of disposals (existing ones plus a new or edited one), on amounts
+ * rounded to whole shekels as `calculateAssetYear` uses them.
  * Returns error messages; an empty array means valid.
  */
 export function validateAssetDisposals(
@@ -441,7 +470,7 @@ export function validateAssetDisposals(
   }
 
   let disposed = 0;
-  for (const disposal of sortDisposals(disposals)) {
+  for (const disposal of normalizeDisposals(disposals)) {
     if (disposal.disposalDate < asset.activationDate) {
       errors.push(
         `Disposal date ${disposal.disposalDate} is before the asset's activation date ${asset.activationDate}`,
