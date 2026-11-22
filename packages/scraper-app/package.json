@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@accounter/modern-poalim-scraper": "workspace:^",
-    "@fastify/static": "10.1.11",
+    "@fastify/static": "10.1.12",
     "@fastify/websocket": "11.3.7",
     "date-fns": "4.4.0",
     "fast-xml-parser": "5.12.1",
@@ -43,7 +43,7 @@
   "devDependencies": {
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
-    "@testing-library/user-event": "14.6.12",
+    "@testing-library/user-event": "14.6.13",
     "@vitejs/plugin-react": "6.3.0",
     "msw": "3.0.7",
     "tsup": "9.0.0",
