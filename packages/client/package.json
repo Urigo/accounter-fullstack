@@ -20,6 +20,8 @@
     "client:build": "yarn build",
     "client:dev": "yarn dev",
     "dev": "vite",
+    "e2e": "playwright test -c e2e/playwright.config.ts",
+    "e2e:typecheck": "tsc -p e2e/tsconfig.json",
     "generate": "yarn generate:graphql",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
@@ -76,6 +78,7 @@
     "zustand": "5.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@storybook/addon-a11y": "10.6.8",
     "@storybook/react-vite": "10.6.8",
     "@tailwindcss/vite": "4.3.5",
