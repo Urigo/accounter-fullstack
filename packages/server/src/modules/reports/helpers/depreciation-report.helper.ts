@@ -1,8 +1,16 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { endOfTimelessYear, startOfTimelessYear } from '../../../shared/helpers/index.js';
-import { calculateDepreciation } from '../../depreciation/helpers/asset-depreciation.helper.js';
+import {
+  calculateAssetYear,
+  calculateDepreciation,
+} from '../../depreciation/helpers/asset-depreciation.helper.js';
+import {
+  toAssetInput,
+  toDisposalInput,
+} from '../../depreciation/helpers/depreciation-disposals.helper.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
+import { DepreciationDisposalsProvider } from '../../depreciation/providers/depreciation-disposals.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
 
 export { calculateDepreciation };
@@ -29,11 +37,12 @@ export async function calculateDepreciationAmount(injector: Injector, year: numb
         return;
       }
 
-      // the end of depreciation follows from the category rate and the activation date
-      const { yearlyDepreciationAmount } = calculateDepreciation(
-        Number(depreciationCategory.percentage),
-        Number(record.amount),
-        record.activation_date,
+      const disposals = await injector
+        .get(DepreciationDisposalsProvider)
+        .getDisposalsByDepreciationIdLoader.load(record.id);
+      const { yearDepreciation: yearlyDepreciationAmount } = calculateAssetYear(
+        toAssetInput(record, depreciationCategory),
+        disposals.map(toDisposalInput),
         year,
       );
       // nothing to add, e.g. a record in a category that is not depreciated (0%)

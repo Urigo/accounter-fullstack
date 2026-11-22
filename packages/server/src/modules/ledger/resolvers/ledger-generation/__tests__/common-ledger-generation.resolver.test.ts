@@ -10,6 +10,7 @@ import {
   getChargeDocumentsMeta,
 } from '../../../../charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '../../../../charges/types.js';
+import { DepreciationDisposalsProvider } from '../../../../depreciation/providers/depreciation-disposals.provider.js';
 import { DocumentsProvider } from '../../../../documents/providers/documents.provider.js';
 import { ExchangeProvider } from '../../../../exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '../../../../financial-entities/providers/businesses.provider.js';
@@ -19,6 +20,7 @@ import { MiscExpensesProvider } from '../../../../misc-expenses/providers/misc-e
 import { TransactionsProvider } from '../../../../transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../../../transactions/types.js';
 import { ledgerEntryFromDocument } from '../../../helpers/common-charge-ledger.helper.js';
+import { generateDepreciationDisposalsLedger } from '../../../helpers/depreciation-disposal-ledger.helper.js';
 import { BalanceCancellationProvider } from '../../../providers/balance-cancellation.provider.js';
 import { UnbalancedBusinessesProvider } from '../../../providers/unbalanced-businesses.provider.js';
 import { generateLedgerRecordsForCommonCharge } from '../common-ledger-generation.resolver.js';
@@ -56,6 +58,10 @@ vi.mock('../../../../charges/helpers/common.helper.js', async importOriginal => 
 vi.mock('../../../helpers/common-charge-ledger.helper.js', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../helpers/common-charge-ledger.helper.js')>()),
   ledgerEntryFromDocument: vi.fn(),
+}));
+
+vi.mock('../../../helpers/depreciation-disposal-ledger.helper.js', () => ({
+  generateDepreciationDisposalsLedger: vi.fn(async () => ({ entries: [], errors: [] })),
 }));
 
 vi.mock('../../../helpers/cross-year-ledger.helper.js', () => ({
@@ -139,6 +145,7 @@ function payment(options: {
 function makeInjector(options: {
   transactions: IGetTransactionsByChargeIdsResult[];
   rates: MockRate[];
+  disposals?: unknown[];
 }): Injector {
   return makeMockInjector(
     new Map<unknown, unknown>([
@@ -209,6 +216,10 @@ function makeInjector(options: {
         },
       ],
       [MiscExpensesProvider, { getExpensesByChargeIdLoader: { load: async () => [] } }],
+      [
+        DepreciationDisposalsProvider,
+        { getDisposalsByChargeIdLoader: { load: async () => options.disposals ?? [] } },
+      ],
       [FinancialEntitiesProvider, makeFinancialEntitiesProvider([SUPPLIER_ID])],
     ]),
   );
@@ -300,5 +311,57 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
     expect(exchangeRecords(records)).toEqual([]);
     expect(balance?.isBalanced).toBe(false);
     expect(errors).toContain('Failed to balance: Dates are consistent and currencies are foreign');
+  });
+  it('appends the entries of asset disposals the charge carries', async () => {
+    // a supplier refund booked to the asset account, with a disposal linked to the charge
+    vi.mocked(ledgerEntryFromDocument).mockResolvedValue(
+      invoiceEntry({ currency: Currency.Ils, amount: 3600, rate: 1 }),
+    );
+    const disposal = { id: 'disposal', depreciation_id: 'asset', charge_id: CHARGE_ID };
+    vi.mocked(generateDepreciationDisposalsLedger).mockResolvedValueOnce({
+      entries: [
+        {
+          id: 'disposal-ad',
+          chargeId: CHARGE_ID,
+          ownerId: OWNER_ID,
+          invoiceDate: DAY,
+          valueDate: DAY,
+          currency: Currency.Ils,
+          currencyRate: 1,
+          isCreditorCounterparty: true,
+          debitAccountID1: 'tax-category-accumulated-depreciation',
+          creditAccountID1: EXPENSES_TAX_CATEGORY_ID,
+          localCurrencyDebitAmount1: 500,
+          localCurrencyCreditAmount1: 500,
+          description: 'Asset disposal: accumulated depreciation',
+        },
+      ],
+      errors: [],
+    });
+    const injector = makeInjector({
+      transactions: [payment({ currency: Currency.Ils, amount: '-3600' })],
+      rates: [],
+      disposals: [disposal],
+    });
+
+    const { records, errors } = await generate(injector);
+
+    expect(errors).toEqual([]);
+    expect(generateDepreciationDisposalsLedger).toHaveBeenCalledWith(
+      [disposal],
+      charge,
+      injector,
+      EXPENSES_TAX_CATEGORY_ID,
+    );
+    expect(records.map(summarize)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          debit: 'tax-category-accumulated-depreciation',
+          credit: EXPENSES_TAX_CATEGORY_ID,
+          localAmount: 500,
+          valueDate: DAY,
+        }),
+      ]),
+    );
   });
 });

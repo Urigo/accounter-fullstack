@@ -15,6 +15,7 @@ import {
   getChargeTaxCategoryId,
 } from '../../../charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '../../../deel/helpers/deel.helper.js';
+import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -27,6 +28,7 @@ import {
   ledgerEntryFromMainTransaction,
 } from '../../helpers/common-charge-ledger.helper.js';
 import { handleCrossYearLedgerEntries } from '../../helpers/cross-year-ledger.helper.js';
+import { generateDepreciationDisposalsLedger } from '../../helpers/depreciation-disposal-ledger.helper.js';
 import { validateExchangeRate } from '../../helpers/exchange-ledger.helper.js';
 import {
   getEntriesFromFeeTransaction,
@@ -268,6 +270,34 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       });
     });
     entriesPromises.push(expensesLedgerPromise);
+
+    // generate ledger for disposals of depreciated assets this charge carries the money for
+    const disposalsLedgerPromise = injector
+      .get(DepreciationDisposalsProvider)
+      .getDisposalsByChargeIdLoader.load(chargeId)
+      .then(async disposals => {
+        if (disposals.length === 0) {
+          return;
+        }
+        const proceedsAccountId =
+          charge.tax_category_id ?? (await getChargeTaxCategoryId(chargeId, injector));
+        const { entries, errors: disposalErrors } = await generateDepreciationDisposalsLedger(
+          disposals,
+          charge,
+          injector,
+          proceedsAccountId,
+        );
+        for (const error of disposalErrors) {
+          errors.add(error);
+        }
+        for (const entry of entries) {
+          feeFinancialAccountLedgerEntries.push(entry);
+          updateLedgerBalance(entry);
+          dates.add(exchangeRatePointKey(entry));
+          currencies.add(entry.currency);
+        }
+      });
+    entriesPromises.push(disposalsLedgerPromise);
 
     await Promise.all(entriesPromises);
 
