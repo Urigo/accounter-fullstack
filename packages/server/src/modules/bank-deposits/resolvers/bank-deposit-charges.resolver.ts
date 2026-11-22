@@ -3,6 +3,7 @@ import { Currency } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { BankDepositChargesProvider } from '../providers/bank-deposit-charges.provider.js';
 import { BankDepositsProvider } from '../providers/bank-deposits.provider.js';
@@ -156,6 +157,60 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
     },
   },
   BankDeposit: {
+    timeline: async (deposit, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      let timeline;
+      try {
+        const loaded = await injector
+          .get(DepositTimelineProvider)
+          .depositTimelineLoader.load(deposit.id);
+        // the loader may still resolve to an Error rather than reject
+        if (loaded instanceof Error) throw loaded;
+        timeline = loaded;
+      } catch (e) {
+        // degrade like `metadata`: the transactions are still worth showing without the timeline
+        console.error(`Error building timeline for deposit ${deposit.name}:`, e);
+        return null;
+      }
+      const { currency } = timeline;
+      return {
+        id: deposit.id,
+        warnings: timeline.warnings,
+        steps: timeline.steps.map(step => ({
+          id: `${deposit.id}:${step.chargeId}`,
+          chargeId: step.chargeId,
+          date: step.date,
+          rate: step.rate,
+          principalFlow: formatFinancialAmount(step.principalFlow, currency),
+          visibleInterest: formatFinancialAmount(step.visibleInterest, currency),
+          revaluation: formatFinancialAmount(step.revaluation, defaultLocalCurrency),
+          capitalizedInterest: formatFinancialAmount(step.capitalizedInterest, currency),
+          capitalizedInterestLocal: formatFinancialAmount(
+            step.capitalizedInterestLocal,
+            defaultLocalCurrency,
+          ),
+          taxCapitalized: formatFinancialAmount(step.taxCapitalized, defaultLocalCurrency),
+          taxPaidOut: formatFinancialAmount(step.taxPaidOut, defaultLocalCurrency),
+          principalAfter: formatFinancialAmount(step.pAfter, currency),
+          localBalanceAfter: formatFinancialAmount(step.lAfter, defaultLocalCurrency),
+          source: step.source,
+          warnings: step.warnings,
+        })),
+        yearEnds: timeline.yearEnds.map(yearEnd => ({
+          id: `${deposit.id}:year-end:${yearEnd.date}`,
+          date: yearEnd.date,
+          revaluation: formatFinancialAmount(yearEnd.revaluation, defaultLocalCurrency),
+        })),
+        unmatchedTaxEvents: timeline.unmatchedTaxEvents.map(row => ({
+          id: row.id,
+          date: row.date,
+          actionTypeDescription: row.actionTypeDescription,
+          taxableAmount: formatFinancialAmount(row.taxEventAmount, defaultLocalCurrency),
+        })),
+      };
+    },
     metadata: async (deposit, _, { injector }) => {
       try {
         const [metadata, timeline] = await Promise.all([
