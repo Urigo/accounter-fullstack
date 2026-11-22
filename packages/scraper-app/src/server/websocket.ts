@@ -475,17 +475,19 @@ function buildTask(
               changedTransactions.push(...(rsectxn.changedTransactions ?? []));
             }
 
+            // Emitted whether or not anything uploads: a failed fetch leaves no payload
+            // but still has to be reported.
+            if (accountData.depositTaxEventsWarning) {
+              emit({
+                type: 'task-account-warning',
+                sourceId: src.id,
+                accountId,
+                txnType: 'depositTaxEvents',
+                message: accountData.depositTaxEventsWarning,
+              });
+            }
             const depositTaxEventsPayload = accountData.depositTaxEvents;
             if (depositTaxEventsPayload) {
-              if (accountData.depositTaxEventsWarning) {
-                emit({
-                  type: 'task-account-warning',
-                  sourceId: src.id,
-                  accountId,
-                  txnType: 'depositTaxEvents',
-                  message: accountData.depositTaxEventsWarning,
-                });
-              }
               emit({
                 type: 'task-account-txns-uploading',
                 sourceId: src.id,
@@ -508,6 +510,8 @@ function buildTask(
               totalInserted += rdep.inserted;
               totalSkipped += rdep.skipped;
               allIds.push(...rdep.insertedIds);
+              insertedTransactions.push(...(rdep.insertedTransactions ?? []));
+              changedTransactions.push(...(rdep.changedTransactions ?? []));
             }
           }
           return {

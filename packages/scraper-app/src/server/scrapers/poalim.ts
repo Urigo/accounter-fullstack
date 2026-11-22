@@ -355,14 +355,22 @@ export async function scrapePoalim(
           accountId,
           txnType: 'depositTaxEvents',
         });
-        const {
-          data: depositTaxEventsData,
-          isValid: depositTaxEventsValid,
-          errors: depositTaxEventsErrors,
-        } = await scraper.getDepositsTaxCollection(accountRef, {
-          fromDate: dateFrom,
-          toDate: dateTo,
-        });
+        // A failed fetch (e.g. a non-OK status for an account with no deposits product)
+        // must not cost the rest of the scrape its uploads: report it and move on.
+        let depositTaxEventsResult:
+          Awaited<ReturnType<typeof scraper.getDepositsTaxCollection>> | undefined;
+        try {
+          depositTaxEventsResult = await scraper.getDepositsTaxCollection(accountRef, {
+            fromDate: dateFrom,
+            toDate: dateTo,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          depositTaxEventsWarning = `Deposits tax events could not be fetched for account ${accountId}: ${message}`;
+        }
+        const depositTaxEventsData = depositTaxEventsResult?.data;
+        const depositTaxEventsValid = depositTaxEventsResult?.isValid;
+        const depositTaxEventsErrors = depositTaxEventsResult?.errors;
         if (depositTaxEventsValid === false) {
           throw new Error(
             `Poalim deposits tax events failed schema validation for account ${accountId}: ${describeValidationError(depositTaxEventsErrors)}`,

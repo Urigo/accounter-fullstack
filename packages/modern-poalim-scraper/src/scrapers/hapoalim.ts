@@ -233,9 +233,9 @@ export async function hapoalim(
   const endDateString = new Date().toISOString().substr(0, 10).replace(/-/g, '');
   // TODO: https://www.npmjs.com/package/node-fetch-cookies
 
-  /** The mytrade API takes its date range as ddMMyyyy, unlike the yyyyMMdd used elsewhere. */
   const toYyyymmdd = (date: Date) =>
     `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+  /** The mytrade API takes its date range as ddMMyyyy, unlike the yyyyMMdd used elsewhere. */
   const toMytradeDateString = (date: Date) =>
     `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
 
