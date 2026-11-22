@@ -49,6 +49,8 @@ const BANK_ACCOUNT_ID = 'account-bank';
 const INTEREST_BUSINESS_ID = 'business-bank-interest';
 const INTEREST_INCOME_TAX_CATEGORY_ID = 'tax-category-deposit-interest-income';
 const EXCHANGE_RATES_TAX_CATEGORY_ID = 'tax-category-exchange-rates';
+const WITHHOLDING_TAX_CATEGORY_ID = 'tax-category-withholding';
+const INTEREST_BUSINESS_TAX_CATEGORY_ID = 'tax-category-interest-business';
 
 type Line = { id: string; chargeId: string; date: string; amount: number; isInterest?: boolean };
 
@@ -63,12 +65,17 @@ const lines: Line[] = [
 ];
 
 const taxRows = [
-  ['2025-11-19', PAID_OUT_INTEREST_ACTION, 0.01],
-  ['2025-11-19', CAPITALIZED_INTEREST_ACTION, 4.43],
-  ['2025-12-01', CAPITALIZED_INTEREST_ACTION, 7.44],
-  ['2025-12-03', CAPITALIZED_INTEREST_ACTION, 2.69],
-  ['2025-12-05', PAID_OUT_INTEREST_ACTION, 2.69],
+  ['2025-11-19', PAID_OUT_INTEREST_ACTION, 0.01, 0],
+  ['2025-11-19', CAPITALIZED_INTEREST_ACTION, 4.43, 0],
+  ['2025-12-01', CAPITALIZED_INTEREST_ACTION, 7.44, 0],
+  ['2025-12-03', CAPITALIZED_INTEREST_ACTION, 2.69, 0],
+  ['2025-12-05', PAID_OUT_INTEREST_ACTION, 2.69, 0],
 ] as const;
+
+/** Same rows, but the bank withheld 0.47 tax on the 2.69 net interest paid out on 05/12 */
+const taxRowsWithWithholding = taxRows.map(([date, action, amount, tax]) =>
+  date === '2025-12-05' ? ([date, action, 3.16, 0.47] as const) : ([date, action, amount, tax] as const),
+);
 
 function transactionsOf(chargeId: string): IGetTransactionsByChargeIdsResult[] {
   return lines
@@ -104,7 +111,7 @@ function chargeOf(chargeId: string): IGetChargesByIdsResult {
   } as IGetChargesByIdsResult;
 }
 
-function timeline(withBankRows: boolean) {
+function timeline(withBankRows: boolean, rows: ReadonlyArray<readonly [string, string, number, number]> = taxRows) {
   const movements: DepositMovement[] = lines.map(line => ({
     id: line.id,
     chargeId: line.chargeId,
@@ -115,12 +122,12 @@ function timeline(withBankRows: boolean) {
   }));
   const bankFigures = withBankRows
     ? matchDepositTaxEvents(
-        taxRows.map(([date, action, amount]) => ({
+        rows.map(([date, action, amount, tax]) => ({
           id: `${date}-${action}`,
           date: date as TimelessDateString,
           actionTypeDescription: action,
           taxEventAmount: amount,
-          debitAmount: 0,
+          debitAmount: tax,
           crditAmount: 0,
         })),
         [{ depositId: DEPOSIT_ID, movements }],
@@ -140,7 +147,20 @@ function timeline(withBankRows: boolean) {
   };
 }
 
-function injectorFor(withBankRows: boolean): Injector {
+type InjectorOptions = {
+  withBankRows?: boolean;
+  /** Tax category of the interest business (the visible interest lines' credit account) */
+  interestTaxCategoryId?: string;
+  withholdingTaxCategoryId?: string | null;
+  loadTimeline?: () => Promise<ReturnType<typeof timeline>>;
+};
+
+function injectorFor({
+  withBankRows = true,
+  interestTaxCategoryId = INTEREST_INCOME_TAX_CATEGORY_ID,
+  withholdingTaxCategoryId = null,
+  loadTimeline = async () => timeline(withBankRows),
+}: InjectorOptions = {}): Injector {
   return makeInjector(
     new Map<unknown, unknown>([
       [
@@ -153,7 +173,7 @@ function injectorFor(withBankRows: boolean): Injector {
             bankDeposits: {
               bankDepositBusinessId: DEPOSIT_BUSINESS_ID,
               bankDepositInterestIncomeTaxCategoryId: INTEREST_INCOME_TAX_CATEGORY_ID,
-              bankDepositWithholdingTaxCategoryId: null,
+              bankDepositWithholdingTaxCategoryId: withholdingTaxCategoryId,
             },
           }),
         },
@@ -171,7 +191,7 @@ function injectorFor(withBankRows: boolean): Injector {
         TaxCategoriesProvider,
         {
           taxCategoryByBusinessIDsLoader: {
-            load: async () => ({ id: INTEREST_INCOME_TAX_CATEGORY_ID }),
+            load: async () => ({ id: interestTaxCategoryId }),
           },
           taxCategoryByFinancialAccountIdsAndCurrenciesLoader: {
             load: async () => ({ id: 'tax-category-bank-account' }),
@@ -184,7 +204,7 @@ function injectorFor(withBankRows: boolean): Injector {
       ],
       [
         DepositTimelineProvider,
-        { depositTimelineLoader: { load: async () => timeline(withBankRows) } },
+        { depositTimelineLoader: { load: loadTimeline } },
       ],
       [FinancialEntitiesProvider, makeFinancialEntitiesProvider([DEPOSIT_BUSINESS_ID])],
       [SecurityBusinessesProvider, { getAllSecurityBusinessIds: async () => new Set<string>() }],
@@ -192,15 +212,17 @@ function injectorFor(withBankRows: boolean): Injector {
   );
 }
 
-async function generate(chargeId: string, withBankRows = true) {
-  return expectGeneratedRecords(
-    await generateLedgerRecordsForBankDeposit(
-      chargeOf(chargeId) as never,
-      { insertLedgerRecordsIfNotExists: false },
-      { injector: injectorFor(withBankRows) } as never,
-      {} as never,
-    ),
+async function generateRaw(chargeId: string, options: InjectorOptions = {}) {
+  return generateLedgerRecordsForBankDeposit(
+    chargeOf(chargeId) as never,
+    { insertLedgerRecordsIfNotExists: false },
+    { injector: injectorFor(options) } as never,
+    {} as never,
   );
+}
+
+async function generate(chargeId: string, withBankRows = true) {
+  return expectGeneratedRecords(await generateRaw(chargeId, { withBankRows }));
 }
 
 /** Debit − credit of the deposit account, local currency */
@@ -211,6 +233,18 @@ function depositAccountBalance(result: Awaited<ReturnType<typeof generate>>) {
     if (record.credit_entity1 === DEPOSIT_BUSINESS_ID) next -= Number(record.credit_local_amount1);
     return next;
   }, 0);
+}
+
+/** The gross-up of the tax withheld from paid-out interest (not the in-deposit `|tax` entry) */
+function taxPaidOutRecord(result: Awaited<ReturnType<typeof generate>>) {
+  const records = result.records.filter(
+    r =>
+      r.description === 'Bank deposit interest tax withheld' &&
+      r.debit_entity1 === WITHHOLDING_TAX_CATEGORY_ID &&
+      r.credit_entity1 !== DEPOSIT_BUSINESS_ID,
+  );
+  expect(records).toHaveLength(1);
+  return records[0];
 }
 
 describe('generateLedgerRecordsForBankDeposit', () => {
@@ -235,4 +269,63 @@ describe('generateLedgerRecordsForBankDeposit', () => {
       expect(total).toBeCloseTo(0, 6);
     },
   );
+
+  it('credits the paid-out tax gross-up to the visible interest line account', async () => {
+    const result = expectGeneratedRecords(
+      await generateRaw('c5', {
+        interestTaxCategoryId: INTEREST_BUSINESS_TAX_CATEGORY_ID,
+        withholdingTaxCategoryId: WITHHOLDING_TAX_CATEGORY_ID,
+        loadTimeline: async () => timeline(true, taxRowsWithWithholding),
+      }),
+    );
+    expect(result.errors).toEqual([]);
+
+    // the visible (net) interest line is credited to the interest business' tax category
+    expect(
+      result.records.filter(r => r.credit_entity1 === INTEREST_BUSINESS_TAX_CATEGORY_ID),
+    ).toHaveLength(2);
+
+    const taxPaidOut = taxPaidOutRecord(result);
+    expect(taxPaidOut?.debit_entity1).toBe(WITHHOLDING_TAX_CATEGORY_ID);
+    // the same account as the visible interest line, not the admin-context default
+    expect(taxPaidOut?.credit_entity1).toBe(INTEREST_BUSINESS_TAX_CATEGORY_ID);
+    expect(Number(taxPaidOut?.credit_local_amount1)).toBeCloseTo(0.47, 6);
+  });
+
+  it('falls back to the interest income tax category when the charge has no visible interest line', async () => {
+    // the 0.47 tax is moved onto c4, which has no interest line
+    const rows = taxRows.map(([date, action, amount, tax]) =>
+      date === '2025-12-03'
+        ? ([date, PAID_OUT_INTEREST_ACTION, 0.47, 0.47] as const)
+        : ([date, action, amount, tax] as const),
+    );
+    const result = expectGeneratedRecords(
+      await generateRaw('c4', {
+        interestTaxCategoryId: INTEREST_BUSINESS_TAX_CATEGORY_ID,
+        withholdingTaxCategoryId: WITHHOLDING_TAX_CATEGORY_ID,
+        loadTimeline: async () => timeline(true, rows),
+      }),
+    );
+    const taxPaidOut = taxPaidOutRecord(result);
+    expect(taxPaidOut?.credit_entity1).toBe(INTEREST_INCOME_TAX_CATEGORY_ID);
+    expect(Number(taxPaidOut?.credit_local_amount1)).toBeCloseTo(0.47, 6);
+  });
+
+  it('returns the charge records plus a ledger error when the deposit timeline fails', async () => {
+    const result = await generateRaw('c2', {
+      loadTimeline: async () => {
+        throw new Error('missing exchange rate');
+      },
+    });
+    expect(result).not.toHaveProperty('__typename', 'CommonError');
+    const generated = expectGeneratedRecords(result);
+    expect(generated.errors).toContain(
+      'Failed to build bank deposit timeline: missing exchange rate',
+    );
+    // the bank movement and the visible interest line are still booked
+    expect(generated.records).toHaveLength(2);
+    expect(generated.records.some(r => r.credit_entity1 === INTEREST_INCOME_TAX_CATEGORY_ID)).toBe(
+      true,
+    );
+  });
 });

@@ -125,23 +125,41 @@ export class DepositTimelineProvider {
     // Bank rows carry no deposit id: match them against every deposit of the same account
     let bankFigures: Parameters<typeof buildDepositTimeline>[0]['bankFigures'];
     let unmatchedTaxEvents: DepositTaxEventRow[] = [];
+    const siblingWarnings: string[] = [];
     if (deposit.account_id) {
       const rows = await this.taxEventsProvider.taxEventsByAccountIdLoader.load(deposit.account_id);
       if (rows.length) {
         const accountDeposits = (await this.bankDepositsProvider.getAllBankDeposits()).filter(
           d => d.account_id === deposit.account_id,
         );
-        const accountDepositsMovements = await Promise.all(
-          accountDeposits.map(async d => ({
-            depositId: d.id,
-            movements:
-              d.id === depositId
-                ? movements
-                : await this.bankDepositChargesProvider.getTransactionsByBankDepositLoader
-                    .load(d.id)
-                    .then(t => this.toMovements(t, defaultLocalCurrency)),
-          })),
-        );
+        // A sibling deposit that fails to build (e.g. a missing rate) must not break this one:
+        // skip it from matching and say so on this timeline.
+        const accountDepositsMovements = (
+          await Promise.all(
+            accountDeposits.map(async d => {
+              if (d.id === depositId) {
+                return { depositId: d.id, movements };
+              }
+              try {
+                const siblingTransactions =
+                  await this.bankDepositChargesProvider.getTransactionsByBankDepositLoader.load(
+                    d.id,
+                  );
+                return {
+                  depositId: d.id,
+                  movements: await this.toMovements(siblingTransactions, defaultLocalCurrency),
+                };
+              } catch (e) {
+                siblingWarnings.push(
+                  `Bank deposit "${d.name}" in the same account was skipped when matching bank tax rows: ${
+                    e instanceof Error ? e.message : String(e)
+                  }`,
+                );
+                return null;
+              }
+            }),
+          )
+        ).filter(d => d !== null);
         const matched = matchDepositTaxEvents(
           rows.map(r => ({
             id: r.id,
@@ -177,12 +195,28 @@ export class DepositTimelineProvider {
       isClosed: !!deposit.close_date,
     });
 
-    return { ...timeline, depositId, currency, unmatchedTaxEvents };
+    return {
+      ...timeline,
+      warnings: [...siblingWarnings, ...timeline.warnings],
+      depositId,
+      currency,
+      unmatchedTaxEvents,
+    };
   }
 
+  /**
+   * `load()` rejects when a deposit's timeline cannot be built: DataLoader treats an `Error` in the
+   * batch result as a rejection, so callers must handle it with try/catch.
+   */
   public depositTimelineLoader = new DataLoader(
     (depositIds: readonly string[]) =>
-      Promise.all(depositIds.map(id => this.buildTimeline(id).catch((e: unknown) => e as Error))),
+      Promise.all(
+        depositIds.map(id =>
+          this.buildTimeline(id).catch((e: unknown) =>
+            e instanceof Error ? e : new Error(String(e)),
+          ),
+        ),
+      ),
     { cacheKeyFn: id => id },
   );
 }

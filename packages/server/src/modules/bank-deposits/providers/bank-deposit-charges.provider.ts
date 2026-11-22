@@ -31,7 +31,7 @@ const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
     WHERE new_deposit_id IN $$depositIds;`;
 
 const getBankDepositsByChargeIds = sql<IGetBankDepositsByChargeIdsQuery>`
-  SELECT bd.id, bd.name, bd.currency, bd.account_id, bd.open_date, bd.close_date, cbd.id as charge_id
+  SELECT bd.id, bd.name, bd.currency, bd.account_id, bd.open_date, bd.close_date, bd.owner_id, cbd.id as charge_id
   FROM accounter_schema.charges_bank_deposits cbd
   INNER JOIN accounter_schema.bank_deposits bd
     ON cbd.new_deposit_id = bd.id

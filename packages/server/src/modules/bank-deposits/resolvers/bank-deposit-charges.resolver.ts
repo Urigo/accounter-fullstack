@@ -160,9 +160,16 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
       try {
         const [metadata, timeline] = await Promise.all([
           injector.get(BankDepositChargesProvider).getBankDepositMetadataLoader.load(deposit.id),
-          injector.get(DepositTimelineProvider).depositTimelineLoader.load(deposit.id),
+          injector
+            .get(DepositTimelineProvider)
+            .depositTimelineLoader.load(deposit.id)
+            .catch((e: unknown) => {
+              // the timeline is an enrichment: fall back to the plain metadata when it fails
+              console.error(`Failed to build timeline for bank deposit ${deposit.id}`, e);
+              return null;
+            }),
         ]);
-        if (timeline instanceof Error) {
+        if (!timeline) {
           return metadata;
         }
         // Balance and interest include the interest the bank capitalized into the deposit

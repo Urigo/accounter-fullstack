@@ -17,23 +17,23 @@ import type {
 } from '../types.js';
 
 const getAllBankDeposits = sql<IGetAllBankDepositsQuery>`
-  SELECT id, name, currency, account_id, open_date, close_date
+  SELECT id, name, currency, account_id, open_date, close_date, owner_id
   FROM accounter_schema.bank_deposits;`;
 
 const getAllOpenBankDeposits = sql<IGetAllOpenBankDepositsQuery>`
-  SELECT id, name, currency, account_id, open_date, close_date
+  SELECT id, name, currency, account_id, open_date, close_date, owner_id
   FROM accounter_schema.bank_deposits
   WHERE close_date IS NULL;`;
 
 const getBankDepositsByIds = sql<IGetBankDepositsByIdsQuery>`
-  SELECT id, name, currency, account_id, open_date, close_date
+  SELECT id, name, currency, account_id, open_date, close_date, owner_id
   FROM accounter_schema.bank_deposits
   WHERE id IN $$depositIds;`;
 
 const insertBankDeposit = sql<IInsertBankDepositQuery>`
   INSERT INTO accounter_schema.bank_deposits (name, currency, account_id, open_date, close_date, owner_id)
   VALUES ($name, $currency, $accountId, $openDate, $closeDate, $ownerId)
-  RETURNING id, name, currency, account_id, open_date, close_date;`;
+  RETURNING id, name, currency, account_id, open_date, close_date, owner_id;`;
 
 const updateBankDeposit = sql<IUpdateBankDepositQuery>`
   UPDATE accounter_schema.bank_deposits
@@ -43,7 +43,7 @@ const updateBankDeposit = sql<IUpdateBankDepositQuery>`
       close_date = $closeDate,
       account_id = $accountId
   WHERE id = $depositId
-  RETURNING id, name, currency, account_id, open_date, close_date;`;
+  RETURNING id, name, currency, account_id, open_date, close_date, owner_id;`;
 
 @Injectable({
   scope: Scope.Operation,

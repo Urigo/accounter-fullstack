@@ -8,7 +8,10 @@ import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { BankDepositChargesProvider } from '../../../bank-deposits/providers/bank-deposit-charges.provider.js';
-import { DepositTimelineProvider } from '../../../bank-deposits/providers/deposit-timeline.provider.js';
+import {
+  DepositTimelineProvider,
+  type DepositTimelineResult,
+} from '../../../bank-deposits/providers/deposit-timeline.provider.js';
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
@@ -71,6 +74,8 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     const financialAccountLedgerEntries: StrictLedgerProto[] = [];
     const interestLedgerEntries: StrictLedgerProto[] = [];
     const feeFinancialAccountLedgerEntries: LedgerProto[] = [];
+    // tax categories the visible interest lines were booked to, with their (local) amounts
+    const interestTaxCategories: Array<{ taxCategoryId: string; amount: number }> = [];
 
     let isWithdrawal = false;
 
@@ -170,6 +175,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       };
 
       interestLedgerEntries.push(ledgerEntry);
+      interestTaxCategories.push({ taxCategoryId: businessTaxCategory.id, amount });
       updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
     });
 
@@ -214,11 +220,15 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         return;
       }
 
-      const timeline = await injector
-        .get(DepositTimelineProvider)
-        .depositTimelineLoader.load(deposit.id);
-      if (timeline instanceof Error) {
-        throw new LedgerError(`Failed to build bank deposit timeline: ${timeline.message}`);
+      let timeline: DepositTimelineResult;
+      try {
+        timeline = await injector
+          .get(DepositTimelineProvider)
+          .depositTimelineLoader.load(deposit.id);
+      } catch (e) {
+        throw new LedgerError(
+          `Failed to build bank deposit timeline: ${e instanceof Error ? e.message : String(e)}`,
+        );
       }
       const step = timeline.steps.find(s => s.chargeId === chargeId);
       if (!step) {
@@ -289,13 +299,21 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
         });
       }
 
-      // 3. tax withheld by the bank: inside the deposit, and on the paid-out interest
+      // 3. tax withheld by the bank: inside the deposit, and on the paid-out interest.
+      // The paid-out gross-up credits the same account as this charge's visible interest line
+      // (the largest one when there are several), so gross interest stays in one income account.
+      const visibleInterestTaxCategoryId =
+        interestTaxCategories.length > 0
+          ? interestTaxCategories.reduce((a, b) =>
+              Math.abs(b.amount) > Math.abs(a.amount) ? b : a,
+            ).taxCategoryId
+          : null;
       const taxEntries: Array<{ amount: number; suffix: string; counterAccount: string | null }> = [
         { amount: step.taxCapitalized, suffix: '|tax', counterAccount: depositAccountId },
         {
           amount: step.taxPaidOut,
           suffix: '|tax-paid-out',
-          counterAccount: bankDepositInterestIncomeTaxCategoryId,
+          counterAccount: visibleInterestTaxCategoryId ?? bankDepositInterestIncomeTaxCategoryId,
         },
       ];
       for (const { amount: tax, suffix, counterAccount } of taxEntries) {
