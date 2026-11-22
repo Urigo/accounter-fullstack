@@ -158,12 +158,21 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
   },
   BankDeposit: {
     timeline: async (deposit, _, { injector }) => {
-      const [timeline, { defaultLocalCurrency }] = await Promise.all([
-        injector.get(DepositTimelineProvider).depositTimelineLoader.load(deposit.id),
-        injector.get(AdminContextProvider).getVerifiedAdminContext(),
-      ]);
-      if (timeline instanceof Error) {
-        throw errorSimplifier(`Error building timeline for deposit ${deposit.name}`, timeline);
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      let timeline;
+      try {
+        const loaded = await injector
+          .get(DepositTimelineProvider)
+          .depositTimelineLoader.load(deposit.id);
+        // the loader may still resolve to an Error rather than reject
+        if (loaded instanceof Error) throw loaded;
+        timeline = loaded;
+      } catch (e) {
+        // degrade like `metadata`: the transactions are still worth showing without the timeline
+        console.error(`Error building timeline for deposit ${deposit.name}:`, e);
+        return null;
       }
       const { currency } = timeline;
       return {
@@ -173,6 +182,7 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
           id: `${deposit.id}:${step.chargeId}`,
           chargeId: step.chargeId,
           date: step.date,
+          rate: step.rate,
           principalFlow: formatFinancialAmount(step.principalFlow, currency),
           visibleInterest: formatFinancialAmount(step.visibleInterest, currency),
           revaluation: formatFinancialAmount(step.revaluation, defaultLocalCurrency),
@@ -187,6 +197,11 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
           localBalanceAfter: formatFinancialAmount(step.lAfter, defaultLocalCurrency),
           source: step.source,
           warnings: step.warnings,
+        })),
+        yearEnds: timeline.yearEnds.map(yearEnd => ({
+          id: `${deposit.id}:year-end:${yearEnd.date}`,
+          date: yearEnd.date,
+          revaluation: formatFinancialAmount(yearEnd.revaluation, defaultLocalCurrency),
         })),
         unmatchedTaxEvents: timeline.unmatchedTaxEvents.map(row => ({
           id: row.id,

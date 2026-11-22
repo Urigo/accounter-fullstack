@@ -12,9 +12,9 @@ import {
 } from '../../gql/graphql.js';
 import { AccounterBarSpinner } from '../ui/accounter-spinner.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { columns, type DepositRowKind, type DepositTransactionRowType } from './columns.js';
+import { columns, type DepositTransactionRowType } from './columns.js';
 import { DepositReassignDialog } from './deposit-reassign-dialog.js';
-import { identifyInterestTransactionIds } from './utils.js';
+import { buildDepositTableRows } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -35,31 +35,31 @@ import { identifyInterestTransactionIds } from './utils.js';
           id
           chargeId
           date
+          rate
           revaluation {
             raw
-            formatted
-            currency
           }
           capitalizedInterest {
             raw
-            formatted
-            currency
           }
           capitalizedInterestLocal {
             raw
           }
           taxCapitalized {
             raw
-            formatted
-            currency
           }
           taxPaidOut {
             raw
-            formatted
-            currency
           }
           source
           warnings
+        }
+        yearEnds {
+          id
+          date
+          revaluation {
+            raw
+          }
         }
         unmatchedTaxEvents {
           id
@@ -74,18 +74,6 @@ import { identifyInterestTransactionIds } from './utils.js';
     }
   }
 `;
-
-const currencyMap: Partial<
-  Record<Currency, 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek' | 'usd'>
-> = {
-  [Currency.Eur]: 'eur',
-  [Currency.Gbp]: 'gbp',
-  [Currency.Cad]: 'cad',
-  [Currency.Jpy]: 'jpy',
-  [Currency.Aud]: 'aud',
-  [Currency.Sek]: 'sek',
-  [Currency.Usd]: 'usd',
-};
 
 type Props = {
   depositId: string;
@@ -129,121 +117,14 @@ export function DepositsTransactionsTable({
     if (!data?.deposit?.metadata.transactions) {
       return [];
     }
-
-    const transactions = data.deposit.metadata.transactions.map(rawTx => ({
-      ...getFragmentData(DepositTransactionFieldsFragmentDoc, rawTx),
-      kind: 'transaction' as DepositRowKind,
-      source: null as string | null,
-      localOverride: null as number | null,
-    }));
-
-    // Amounts the bank realized on each deposit event without a transaction of their own:
-    // revaluation, interest capitalized into the deposit and tax withheld inside it. Bank-account
-    // point of view like the transactions: negative = added to the deposit.
-    const localCurrency = (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
-    const realized: typeof transactions = [];
-    for (const step of data.deposit.timeline.steps) {
-      const base = {
-        chargeId: step.chargeId,
-        eventDate: step.date,
-        debitExchangeRates: null,
-        eventExchangeRates: null,
-        source: step.source ?? null,
-      };
-      if (Math.abs(step.revaluation.raw) >= 0.005) {
-        realized.push({
-          ...base,
-          id: `${step.id}:revaluation`,
-          kind: 'revaluation',
-          amount: { ...step.revaluation, raw: 0, formatted: '—' },
-          localOverride: -step.revaluation.raw,
-          source: null,
-        });
-      }
-      if (Math.abs(step.capitalizedInterest.raw) >= 0.005) {
-        realized.push({
-          ...base,
-          id: `${step.id}:interest`,
-          kind: 'capitalizedInterest',
-          amount: { ...step.capitalizedInterest, raw: -step.capitalizedInterest.raw },
-          localOverride: -step.capitalizedInterestLocal.raw,
-        });
-      }
-      const tax = step.taxCapitalized.raw + step.taxPaidOut.raw;
-      if (Math.abs(tax) >= 0.005) {
-        realized.push({
-          ...base,
-          id: `${step.id}:tax`,
-          kind: 'tax',
-          amount: { ...step.taxCapitalized, raw: tax, formatted: tax.toFixed(2) },
-          // only the tax withheld inside the deposit reduces it; tax on paid-out interest
-          // was taken off the interest line
-          localOverride: step.taxCapitalized.raw,
-          source: null,
-        });
-      }
-    }
-
-    // Identify interest transactions using shared client helper
-    const interestTransactionIds = identifyInterestTransactionIds(transactions, {
-      getId: tx => tx.id,
-      getChargeId: tx => tx.chargeId,
-      getAmount: tx => Number(tx.amount.raw ?? 0),
+    return buildDepositTableRows({
+      transactions: data.deposit.metadata.transactions.map(rawTx =>
+        getFragmentData(DepositTransactionFieldsFragmentDoc, rawTx),
+      ),
+      timeline: data.deposit.timeline,
+      depositCurrency: data.deposit.currency,
+      localCurrency: (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils,
     });
-
-    // Sort by date ascending for cumulative calculation
-    const sortedTransactions = [...realized, ...transactions].sort((a, b) => {
-      const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
-      const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
-      return dateA - dateB;
-    });
-
-    let cumulativeBalance = 0;
-    let totalInterest = 0;
-    let localCumulativeBalance = 0;
-
-    const rows: DepositTransactionRowType[] = [];
-
-    for (const tx of sortedTransactions) {
-      let rate: number | null = null;
-      const currencyKey = currencyMap[tx.amount.currency];
-      if (currencyKey) {
-        rate = tx.debitExchangeRates?.[currencyKey] ?? tx.eventExchangeRates?.[currencyKey] ?? null;
-      }
-      const amount = Number(tx.amount.raw);
-      const localAmount = tx.localOverride ?? amount * (rate ?? 1);
-      const isInterest = tx.kind === 'transaction' && interestTransactionIds.has(tx.id);
-
-      if (tx.kind === 'capitalizedInterest') {
-        // re-deposited: it is interest and it stays in the deposit
-        totalInterest -= amount;
-        cumulativeBalance += amount;
-        localCumulativeBalance += localAmount;
-      } else if (tx.kind === 'revaluation') {
-        localCumulativeBalance += localAmount;
-      } else if (tx.kind === 'tax') {
-        localCumulativeBalance += localAmount;
-      } else if (isInterest) {
-        // paid out with the event: interest, not principal
-        totalInterest += amount;
-      } else {
-        cumulativeBalance += amount;
-        localCumulativeBalance += localAmount;
-      }
-
-      const { localOverride: _localOverride, ...row } = tx;
-      rows.push({
-        ...row,
-        cumulativeBalance,
-        localCumulativeBalance,
-        localAmount,
-        localCurrency,
-        totalInterest,
-        isInterest,
-      });
-    }
-
-    return rows;
   }, [data, userContext?.context.defaultLocalCurrency]);
 
   // Keep a stable reference across refetches so the table only re-renders when
@@ -300,16 +181,25 @@ export function DepositsTransactionsTable({
     );
   }
 
+  const timeline = data?.deposit?.timeline;
+  // the deposit loaded but its timeline couldn't be built: the table shows the transactions only
+  const timelineMissing = !!data?.deposit && !timeline;
   const timelineWarnings = [
-    ...(data?.deposit?.timeline.warnings ?? []),
-    ...(data?.deposit?.timeline.steps.flatMap(step => step.warnings) ?? []),
+    ...(timeline?.warnings ?? []),
+    ...(timeline?.steps.flatMap(step => step.warnings) ?? []),
   ];
-  const unmatchedTaxEvents = data?.deposit?.timeline.unmatchedTaxEvents ?? [];
+  const unmatchedTaxEvents = timeline?.unmatchedTaxEvents ?? [];
 
   return (
     <>
-      {(timelineWarnings.length > 0 || unmatchedTaxEvents.length > 0) && (
+      {(timelineMissing || timelineWarnings.length > 0 || unmatchedTaxEvents.length > 0) && (
         <div className="mb-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-sm text-amber-800">
+          {timelineMissing && (
+            <div>
+              The deposit timeline couldn&apos;t be built, so capitalized interest, tax and
+              revaluations are not shown and the balances cover the transactions only.
+            </div>
+          )}
           {timelineWarnings.map(warning => (
             <div key={warning}>{warning}</div>
           ))}

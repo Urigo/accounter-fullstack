@@ -35,8 +35,8 @@ export default gql`
 
   extend type BankDeposit {
     metadata: BankDepositMetadata!
-    " The deposit replayed event by event the way the bank treats it (see the deposit ledger) "
-    timeline: BankDepositTimeline!
+    " The deposit replayed event by event the way the bank treats it (see the deposit ledger). Null when the timeline can't be built (e.g. a missing exchange rate) "
+    timeline: BankDepositTimeline
   }
 
   " Where a timeline step's capitalized interest and tax come from "
@@ -54,6 +54,8 @@ export default gql`
     id: ID!
     chargeId: UUID!
     date: TimelessDate!
+    " Exchange rate of the event: local currency per deposit-currency unit (1 for local deposits) "
+    rate: Float!
     " Principal moved into (+) or out of (−) the deposit, deposit currency "
     principalFlow: FinancialAmount!
     " Interest paid out with the event (the charge's interest lines), deposit currency "
@@ -84,10 +86,20 @@ export default gql`
     taxableAmount: FinancialAmount!
   }
 
+  " A booked year-end revaluation checkpoint (31/12, at that day's rate) of a foreign-currency deposit "
+  type BankDepositYearEnd {
+    id: ID!
+    date: TimelessDate!
+    " FX revaluation of the carried principal at the year end, local currency "
+    revaluation: FinancialAmount!
+  }
+
   " A deposit's event-by-event accounting "
   type BankDepositTimeline {
     id: ID!
     steps: [BankDepositTimelineStep!]!
+    " Year-end revaluations applied between the steps "
+    yearEnds: [BankDepositYearEnd!]!
     unmatchedTaxEvents: [BankDepositUnmatchedTaxEvent!]!
     warnings: [String!]!
   }
