@@ -71,24 +71,15 @@ CREATE INDEX IF NOT EXISTS depreciation_disposals_disposal_date_index
 CREATE INDEX IF NOT EXISTS depreciation_disposals_owner_id_index
     ON accounter_schema.depreciation_disposals (owner_id);
 
+-- The foreign keys are declared inline on the new columns: Postgres then skips checking existing
+-- rows (all NULL). Adding them afterwards with ADD CONSTRAINT runs that check as a query against
+-- user_context, whose forced RLS policy needs a business context that migrations don't have.
 ALTER TABLE accounter_schema.user_context
-    ADD COLUMN IF NOT EXISTS depreciation_disposal_gain_tax_category_id uuid NULL,
-    ADD COLUMN IF NOT EXISTS depreciation_disposal_loss_tax_category_id uuid NULL;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_context_tax_categories_id_fk_40') THEN
-    ALTER TABLE accounter_schema.user_context
-      ADD CONSTRAINT user_context_tax_categories_id_fk_40
-        FOREIGN KEY (depreciation_disposal_gain_tax_category_id)
-          REFERENCES accounter_schema.tax_categories (id);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_context_tax_categories_id_fk_41') THEN
-    ALTER TABLE accounter_schema.user_context
-      ADD CONSTRAINT user_context_tax_categories_id_fk_41
-        FOREIGN KEY (depreciation_disposal_loss_tax_category_id)
-          REFERENCES accounter_schema.tax_categories (id);
-  END IF;
-END $$;
+    ADD COLUMN IF NOT EXISTS depreciation_disposal_gain_tax_category_id uuid NULL
+        CONSTRAINT user_context_tax_categories_id_fk_40
+            REFERENCES accounter_schema.tax_categories (id),
+    ADD COLUMN IF NOT EXISTS depreciation_disposal_loss_tax_category_id uuid NULL
+        CONSTRAINT user_context_tax_categories_id_fk_41
+            REFERENCES accounter_schema.tax_categories (id);
 `,
 } satisfies MigrationExecutor;
