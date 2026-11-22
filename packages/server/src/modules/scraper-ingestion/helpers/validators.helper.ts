@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import {
   AmexTransactionInput,
   CalTransactionInput,
@@ -5,6 +6,7 @@ import {
   DiscountTransactionInput,
   IsracardTransactionInput,
   MaxTransactionInput,
+  PoalimDepositTaxEventInput,
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
   PoalimSecurityInput,
@@ -18,6 +20,7 @@ import {
   IUploadDiscountTransactionsParams,
   IUploadIsracardTransactionsParams,
   IUploadMaxTransactionsParams,
+  IUploadPoalimDepositTaxEventsParams,
   IUploadPoalimForeignTransactionsParams,
   IUploadPoalimIlsTransactionsParams,
   IUploadPoalimSecuritiesParams,
@@ -317,6 +320,53 @@ export function validatePoalimSecuritiesTransactions(
     financialAccountNumber: t.financialAccountNumber,
     accountName: t.accountName,
   }));
+}
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * ownerId is not derivable from the input — the provider stamps it from the auth context.
+ * Rejects rows the table could not hold meaningfully: a non-ISO executing date, or a
+ * non-finite amount (the ledger sums these, so NaN/Infinity must never land).
+ */
+export function validatePoalimDepositTaxEvents(
+  events: readonly PoalimDepositTaxEventInput[],
+): Omit<IUploadPoalimDepositTaxEventsParams['events'][number], 'ownerId'>[] {
+  return events.map((e, index) => {
+    const executingDate = toCalendarDate(e.executingDate);
+    const where = `deposit tax event #${index} (account ${e.branchNumber}-${e.accountNumber}, ${e.executingDate}, serial ${e.eventSerialNumber})`;
+    if (!ISO_DATE_REGEX.test(executingDate) || Number.isNaN(Date.parse(executingDate))) {
+      throw new GraphQLError(`Invalid executingDate on ${where}`);
+    }
+    for (const [field, value] of [
+      ['taxEventAmount', e.taxEventAmount],
+      ['debitAmount', e.debitAmount],
+      ['crditAmount', e.crditAmount],
+    ] as const) {
+      if (!Number.isFinite(value)) {
+        throw new GraphQLError(`Invalid ${field} on ${where}`);
+      }
+    }
+    if (!e.actionTypeDescription?.trim()) {
+      throw new GraphQLError(`Missing actionTypeDescription on ${where}`);
+    }
+    return {
+      bankNumber: e.bankNumber,
+      branchNumber: e.branchNumber,
+      accountNumber: e.accountNumber,
+      eventSerialNumber: e.eventSerialNumber,
+      executingDate,
+      formattedExecutingDate: e.formattedExecutingDate ?? null,
+      actionTypeDescription: e.actionTypeDescription,
+      shortProductName: e.shortProductName ?? null,
+      taxActionTypeDescription: e.taxActionTypeDescription ?? null,
+      taxEventAmount: e.taxEventAmount,
+      debitCurrencyShortedDescription: e.debitCurrencyShortedDescription ?? null,
+      debitAmount: e.debitAmount,
+      crditAmount: e.crditAmount,
+      additionalInformationExistenceSwitch: e.additionalInformationExistenceSwitch ?? null,
+    };
+  });
 }
 
 export function validateCalTransactions(

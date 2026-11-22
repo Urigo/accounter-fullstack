@@ -691,6 +691,34 @@ export default gql`
     counter: Int!
   }
 
+  # ── Poalim Deposit Tax Events ───────────────────────────────────────────────
+
+  # Field names mirror the bank's own, misspelling included (crditAmount), so the mapping stays
+  # mechanical. The response rows carry no account; bank/branch/account are the requested account.
+  " A single deposits tax event from Poalim's deposits tax-collection report: interest realized on a deposit event (paid out on withdrawal, or capitalized into the deposit) and the tax charged or credited on it "
+  input PoalimDepositTaxEventInput {
+    bankNumber: Int!
+    branchNumber: Int!
+    accountNumber: Int!
+    " Serial of the event within its executing date (restarts every day) "
+    eventSerialNumber: Int!
+    " Executing date, YYYY-MM-DD "
+    executingDate: String!
+    formattedExecutingDate: String
+    " e.g. 'תשלום ריבית ל' (interest capitalized into the deposit) or 'משיכה' (interest paid out on withdrawal) "
+    actionTypeDescription: String!
+    shortProductName: String
+    taxActionTypeDescription: String
+    " Taxable amount (gross interest) "
+    taxEventAmount: Float!
+    debitCurrencyShortedDescription: String
+    " Tax charged "
+    debitAmount: Float!
+    " Tax credited (bank's spelling) "
+    crditAmount: Float!
+    additionalInformationExistenceSwitch: Int
+  }
+
   # ── Mutations ────────────────────────────────────────────────────────────────
 
   extend type Mutation {
@@ -710,6 +738,9 @@ export default gql`
     uploadPoalimSecuritiesTransactions(
       transactions: [PoalimSecurityTransactionInput!]!
     ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadPoalimDepositTaxEvents(events: [PoalimDepositTaxEventInput!]!): ScraperUploadResult!
+      @requiresRole(role: "scraper")
 
     uploadIsracardTransactions(transactions: [IsracardTransactionInput!]!): ScraperUploadResult!
       @requiresRole(role: "scraper")

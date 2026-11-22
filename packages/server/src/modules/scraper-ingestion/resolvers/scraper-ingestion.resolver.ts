@@ -34,6 +34,11 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
           .uploadPoalimSecuritiesTransactions(transactions),
       ),
 
+    uploadPoalimDepositTaxEvents: (_, { events }, { injector }) =>
+      withScraperUploadErrors('uploadPoalimDepositTaxEvents', () =>
+        injector.get(PoalimScraperIngestionProvider).uploadPoalimDepositTaxEvents(events),
+      ),
+
     uploadIsracardTransactions: (_, { transactions }, { injector }) =>
       withScraperUploadErrors('uploadIsracardTransactions', () =>
         injector.get(IsracardAmexScraperIngestionProvider).uploadIsracardTransactions(transactions),

@@ -87,17 +87,10 @@ describe('RLS All Tables Migration', () => {
    * left without RLS. Keep this list as short as the truth allows — every entry is
    * a table the invariant below cannot vouch for.
    *
-   * - `bank_deposits`: NOT a deliberate exemption. It has a NOT NULL `owner_id`
-   *   with an FK to `businesses` and is read unscoped
-   *   (`SELECT * FROM accounter_schema.bank_deposits;` in
-   *   `packages/server/src/modules/bank-deposits/providers/bank-deposits.provider.ts`),
-   *   so it is the same gap this suite exists to catch — it was simply never added
-   *   to any of the RLS migration lists (`charges_bank_deposits`, a different
-   *   table, is in them, which is how it was missed). Left out of scope of the
-   *   salaries fix deliberately rather than silently; removing this entry is the
-   *   whole of what closing it requires here.
+   * Currently empty: `bank_deposits`, the last entry, got RLS in
+   * `2026-11-22T12-00-00.add-poalim-deposit-tax-events-table`.
    */
-  const RLS_EXEMPT_OWNER_ID_TABLES = new Set(['bank_deposits']);
+  const RLS_EXEMPT_OWNER_ID_TABLES = new Set<string>();
 
   /**
    * The invariant that would have caught a table losing RLS: in `accounter_schema`,

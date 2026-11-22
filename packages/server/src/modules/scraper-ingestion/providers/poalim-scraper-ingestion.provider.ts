@@ -5,6 +5,7 @@ import type {
   ChangedField,
   ChangedTransaction,
   InsertedTransactionSummary,
+  PoalimDepositTaxEventInput,
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
   PoalimSecurityInput,
@@ -28,6 +29,7 @@ import {
 } from '../helpers/security-transaction-identity.helper.js';
 import { formatValue } from '../helpers/utils.helper.js';
 import {
+  validatePoalimDepositTaxEvents,
   validatePoalimForeignTransactions,
   validatePoalimIlsTransactions,
   validatePoalimSecurities,
@@ -45,6 +47,8 @@ import type {
   IFetchPoalimSecuritiesTransactionsByKeysResult,
   IFetchPoalimSwiftByIdsQuery,
   IFetchPoalimSwiftByIdsResult,
+  IUploadPoalimDepositTaxEventsQuery,
+  IUploadPoalimDepositTaxEventsResult,
   IUploadPoalimForeignTransactionsParams,
   IUploadPoalimForeignTransactionsQuery,
   IUploadPoalimForeignTransactionsResult,
@@ -839,6 +843,86 @@ const uploadPoalimSecuritiesTransactions = sql<IUploadPoalimSecuritiesTransactio
     trade_type,
     eng_name,
     net_value_trade_currency,
+    branch_number,
+    account_number,
+    (xmax = 0) AS inserted;
+`;
+
+/**
+ * Upserts deposits tax events on their natural key (account + executing date + daily serial).
+ * The bank may restate an event's figures, so a re-scrape overwrites them; the WHERE skips the
+ * write when nothing changed, and `inserted` tells new rows from updated ones in RETURNING.
+ */
+const uploadPoalimDepositTaxEvents = sql<IUploadPoalimDepositTaxEventsQuery>`
+  INSERT INTO accounter_schema.poalim_deposit_tax_events (
+    owner_id,
+    bank_number,
+    branch_number,
+    account_number,
+    event_serial_number,
+    executing_date,
+    formatted_executing_date,
+    action_type_description,
+    short_product_name,
+    tax_action_type_description,
+    tax_event_amount,
+    debit_currency_shorted_description,
+    debit_amount,
+    crdit_amount,
+    additional_information_existence_switch
+  )
+  VALUES $$events(
+    ownerId,
+    bankNumber,
+    branchNumber,
+    accountNumber,
+    eventSerialNumber,
+    executingDate,
+    formattedExecutingDate,
+    actionTypeDescription,
+    shortProductName,
+    taxActionTypeDescription,
+    taxEventAmount,
+    debitCurrencyShortedDescription,
+    debitAmount,
+    crditAmount,
+    additionalInformationExistenceSwitch
+  )
+  ON CONFLICT ON CONSTRAINT poalim_deposit_tax_events_natural_key DO UPDATE SET
+    formatted_executing_date = EXCLUDED.formatted_executing_date,
+    action_type_description = EXCLUDED.action_type_description,
+    short_product_name = EXCLUDED.short_product_name,
+    tax_action_type_description = EXCLUDED.tax_action_type_description,
+    tax_event_amount = EXCLUDED.tax_event_amount,
+    debit_currency_shorted_description = EXCLUDED.debit_currency_shorted_description,
+    debit_amount = EXCLUDED.debit_amount,
+    crdit_amount = EXCLUDED.crdit_amount,
+    additional_information_existence_switch = EXCLUDED.additional_information_existence_switch,
+    updated_at = now()
+  WHERE (
+    poalim_deposit_tax_events.action_type_description,
+    poalim_deposit_tax_events.short_product_name,
+    poalim_deposit_tax_events.tax_action_type_description,
+    poalim_deposit_tax_events.tax_event_amount,
+    poalim_deposit_tax_events.debit_currency_shorted_description,
+    poalim_deposit_tax_events.debit_amount,
+    poalim_deposit_tax_events.crdit_amount,
+    poalim_deposit_tax_events.additional_information_existence_switch
+  ) IS DISTINCT FROM (
+    EXCLUDED.action_type_description,
+    EXCLUDED.short_product_name,
+    EXCLUDED.tax_action_type_description,
+    EXCLUDED.tax_event_amount,
+    EXCLUDED.debit_currency_shorted_description,
+    EXCLUDED.debit_amount,
+    EXCLUDED.crdit_amount,
+    EXCLUDED.additional_information_existence_switch
+  )
+  RETURNING
+    id,
+    executing_date,
+    action_type_description,
+    tax_event_amount,
     branch_number,
     account_number,
     (xmax = 0) AS inserted;
@@ -1879,6 +1963,65 @@ export class PoalimScraperIngestionProvider {
       insertedIds,
       insertedTransactions,
       changedTransactions,
+    };
+  }
+
+  async uploadPoalimDepositTaxEvents(
+    events: readonly PoalimDepositTaxEventInput[],
+  ): Promise<ScraperUploadResult> {
+    if (events.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
+
+    const businessId = await this.getBusinessId();
+    if (!businessId) {
+      // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
+      // tenant context the insert would fail deep inside Postgres with an opaque error.
+      throw new GraphQLError(
+        'Cannot upload Poalim deposit tax events: no business context found in the auth context',
+        { extensions: { code: 'FORBIDDEN' } },
+      );
+    }
+
+    // In-batch dedup on the natural key: Postgres rejects an upsert that touches the same row twice.
+    const byKey = new Map<string, ReturnType<typeof validatePoalimDepositTaxEvents>[number]>();
+    for (const e of validatePoalimDepositTaxEvents(events)) {
+      byKey.set(
+        [e.bankNumber, e.branchNumber, e.accountNumber, e.executingDate, e.eventSerialNumber].join(
+          '|',
+        ),
+        e,
+      );
+    }
+    const validated = Array.from(byKey.values()).map(e => ({ ...e, ownerId: businessId }));
+
+    const returned: IUploadPoalimDepositTaxEventsResult[] = await uploadPoalimDepositTaxEvents.run(
+      { events: validated },
+      this.db,
+    );
+    // RETURNING covers updated rows too (a restated event); only the new ones count as inserted.
+    const result = returned.filter(r => r.inserted);
+    const insertedIds = result.map(r => r.id);
+
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.executing_date ?? null,
+      description: r.action_type_description ?? null,
+      amount: r.tax_event_amount == null ? null : String(r.tax_event_amount),
+      account: `${r.branch_number}-${r.account_number}`,
+    }));
+
+    return {
+      inserted: insertedIds.length,
+      skipped: events.length - insertedIds.length,
+      insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 }
