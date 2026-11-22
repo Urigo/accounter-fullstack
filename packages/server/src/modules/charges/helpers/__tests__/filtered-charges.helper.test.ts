@@ -94,6 +94,17 @@ describe('fetchFilteredCharges paging', () => {
     expect(result.pageInfo).toEqual({ totalPages: 2, totalRecords: 3 });
   });
 
+  it.each([
+    ['a negative page', { page: -1, limit: 100 }],
+    ['a zero limit', { page: 0, limit: 0 }],
+    ['a negative limit', { page: 0, limit: -5 }],
+  ])('rejects %s as bad input without querying', async (_, window) => {
+    await expect(fetchFilteredCharges(injector, { filters: {}, ...window })).rejects.toMatchObject(
+      { extensions: { code: 'BAD_USER_INPUT' } },
+    );
+    expect(getChargesByFilters).not.toHaveBeenCalled();
+  });
+
   it('returns nothing without querying when restricted to no ids', async () => {
     const result = await fetchFilteredCharges(injector, {
       filters: {},

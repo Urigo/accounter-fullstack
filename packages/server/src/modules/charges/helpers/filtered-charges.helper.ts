@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { ChargeFilter } from '../../../__generated__/types.js';
 import { ChargeSortByField, ChargeTypeEnum } from '../../../shared/enums.js';
@@ -44,6 +45,14 @@ export async function fetchFilteredCharges(
     nodes: [],
     pageInfo: { totalPages: 0, totalRecords: 0 },
   };
+
+  // Both reach SQL as OFFSET / LIMIT, where a negative value is a query error and a zero limit
+  // would return no row to read the total from.
+  if (page < 0 || limit < 1) {
+    throw new GraphQLError('`page` must be 0 or more and `limit` must be 1 or more', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+  }
 
   if (restrictToIds?.length === 0) {
     return emptyResult;

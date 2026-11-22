@@ -544,7 +544,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
           operationName: 'McpGetChargesByFilters',
           variables: {
             filters: buildChargeFilters(input.filters ?? {}, context.readScope.memberBusinessIds),
-            // Upstream `allCharges` is 0-based (it slices `[page * limit, …]`),
+            // Upstream `allCharges` pages are 0-based (`OFFSET page * limit`),
             // so translate the 1-based input page here.
             page: input.page - 1,
             limit: input.pageSize,
