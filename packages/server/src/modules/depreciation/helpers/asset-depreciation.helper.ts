@@ -211,21 +211,19 @@ export type AssetYearResult = {
 };
 
 /**
- * Rounds a disposal's amounts to whole shekels, as the asset's cost is rounded, so that every
- * function here compares and subtracts the same numbers (DB numerics carry agorot).
+ * Rounds a disposal's disposed cost to whole shekels, as the asset's cost is rounded, so that every
+ * function here compares and subtracts the same numbers (DB numerics carry agorot). Proceeds are
+ * kept as given: they only feed the gain or loss, and the ledger moves them out of the charge's
+ * proceeds in full.
  */
-function roundDisposalAmounts(disposal: AssetDisposalInput): AssetDisposalInput {
-  return {
-    ...disposal,
-    disposedCost: Math.round(disposal.disposedCost),
-    proceeds: Math.round(disposal.proceeds),
-  };
+function roundDisposedCost(disposal: AssetDisposalInput): AssetDisposalInput {
+  return { ...disposal, disposedCost: Math.round(disposal.disposedCost) };
 }
 
-/** The disposals with rounded amounts, by date (then id) */
+/** The disposals with rounded disposed cost, by date (then id) */
 function normalizeDisposals(disposals: readonly AssetDisposalInput[]): AssetDisposalInput[] {
   return disposals
-    .map(roundDisposalAmounts)
+    .map(roundDisposedCost)
     .sort((a, b) =>
       a.disposalDate === b.disposalDate
         ? a.id.localeCompare(b.id)
@@ -249,8 +247,9 @@ function normalizeDisposals(disposals: readonly AssetDisposalInput[]): AssetDisp
  *   that reaches the end date takes it (before any disposal on or after the end date, so such a
  *   disposal leaves with its slice fully depreciated), and later segments depreciate nothing.
  *
- * Amounts are whole shekels: the cost, and each disposal's disposed cost and proceeds, are rounded
- * once on the way in, and the results report the rounded values.
+ * Cost amounts are whole shekels: the asset's cost and each disposal's disposed cost are rounded
+ * once on the way in, and the results report the rounded values. Proceeds are used as given, so
+ * their agorot carry into the gain or loss.
  */
 export function calculateAssetYear(
   asset: AssetDepreciationInput,
@@ -454,8 +453,8 @@ export function remainingAssetCost(
 }
 
 /**
- * Validates an asset's full set of disposals (existing ones plus a new or edited one), on amounts
- * rounded to whole shekels as `calculateAssetYear` uses them.
+ * Validates an asset's full set of disposals (existing ones plus a new or edited one), on cost
+ * amounts rounded to whole shekels as `calculateAssetYear` uses them (proceeds as given).
  * Returns error messages; an empty array means valid.
  */
 export function validateAssetDisposals(
@@ -477,7 +476,7 @@ export function validateAssetDisposals(
       );
     }
     if (Number.isNaN(disposal.disposedCost) || disposal.disposedCost <= 0) {
-      errors.push('Disposed cost must be positive');
+      errors.push('Disposed cost must be at least 1 (amounts are rounded to whole shekels)');
     }
     if (Number.isNaN(disposal.proceeds) || disposal.proceeds < 0) {
       errors.push('Proceeds cannot be negative');
@@ -488,7 +487,9 @@ export function validateAssetDisposals(
     disposed += disposal.disposedCost;
   }
   if (disposed > cost) {
-    errors.push(`Disposed cost (${disposed}) exceeds the asset's cost (${cost})`);
+    errors.push(
+      `Disposed cost (${disposed}) exceeds the asset's cost (${cost}), both rounded to whole shekels`,
+    );
   }
   return errors;
 }

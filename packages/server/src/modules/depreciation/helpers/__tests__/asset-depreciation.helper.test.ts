@@ -484,10 +484,10 @@ describe('disposal amounts with agorot', () => {
         full,
         { id: 'g', disposalDate: d('2026-01-31'), disposedCost: 0.4, proceeds: 0 },
       ]),
-    ).toContain('Disposed cost must be positive');
+    ).toContain('Disposed cost must be at least 1 (amounts are rounded to whole shekels)');
   });
 
-  it('reports whole-shekel amounts on a partial disposal', () => {
+  it('rounds the disposed cost of a partial refund, and keeps the agorot of its proceeds', () => {
     const refund = {
       id: 'r',
       disposalDate: d('2025-07-01'),
@@ -495,13 +495,48 @@ describe('disposal amounts with agorot', () => {
       proceeds: 33_333.33,
     };
     const result = computeDisposal(asset(100_000), [refund], 'r');
-    expect(result).toMatchObject({ disposedCost: 33_333, proceeds: 33_333 });
-    expect(Number.isInteger(result?.netBookValue)).toBe(true);
-    expect(Number.isInteger(result?.gainLoss)).toBe(true);
+    // accumulated at the refund: 12,568 + 12,466 = 25,034; the slice takes 25,034 × 33,333/100,000
+    expect(result).toMatchObject({
+      disposedCost: 33_333,
+      accumulatedDepreciation: 8345,
+      netBookValue: 24_988,
+      proceeds: 33_333.33,
+    });
+    // the agorot of the proceeds carry into the gain: 33,333.33 − 24,988
+    expect(result?.gainLoss).toBeCloseTo(8345.33, 2);
     const year = calculateAssetYear(asset(100_000), [refund], 2025);
     expect(year.closingCost).toBe(66_667);
     expect(Number.isInteger(year.netBookValue)).toBe(true);
     expect(remainingAssetCost(asset(100_000), [refund])).toBe(66_667);
+  });
+
+  it('keeps the agorot of a sale price in the proceeds and the gain', () => {
+    const sale = {
+      id: 's',
+      disposalDate: d('2025-12-31'),
+      disposedCost: 100_000,
+      proceeds: 70_000.45,
+    };
+    const result = computeDisposal(asset(100_000), [sale], 's');
+    expect(result).toMatchObject({
+      disposedCost: 100_000,
+      accumulatedDepreciation: 37_568,
+      netBookValue: 62_432,
+      proceeds: 70_000.45,
+    });
+    expect(result?.gainLoss).toBeCloseTo(7568.45, 2);
+    expect(validateAssetDisposals(asset(100_000), [sale])).toEqual([]);
+  });
+
+  it('says that the totals are rounded when they exceed the cost', () => {
+    expect(
+      validateAssetDisposals(asset(100_000.4), [
+        { id: 'a', disposalDate: d('2025-01-01'), disposedCost: 60_000.4, proceeds: 0 },
+        { id: 'b', disposalDate: d('2025-02-01'), disposedCost: 40_000.6, proceeds: 0 },
+      ]),
+    ).toEqual([
+      "Disposed cost (100001) exceeds the asset's cost (100000), both rounded to whole shekels",
+    ]);
   });
 });
 
@@ -540,6 +575,15 @@ describe('validateAssetDisposals', () => {
         { id: 'a', disposalDate: d('2025-01-01'), disposedCost: 0, proceeds: -1 },
       ]),
     ).toHaveLength(2);
+    expect(
+      validateAssetDisposals(asset, [
+        { id: 'a', disposalDate: d('2025-01-01'), disposedCost: -5, proceeds: 0 },
+        { id: 'b', disposalDate: d('2025-01-02'), disposedCost: Number.NaN, proceeds: 0 },
+      ]),
+    ).toEqual([
+      'Disposed cost must be at least 1 (amounts are rounded to whole shekels)',
+      'Disposed cost must be at least 1 (amounts are rounded to whole shekels)',
+    ]);
     expect(validateAssetDisposals({ ...asset, cost: 0 }, [])).toHaveLength(1);
   });
 });
