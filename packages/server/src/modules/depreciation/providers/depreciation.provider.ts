@@ -40,8 +40,8 @@ const getDepreciationRecordsByDates = sql<IGetDepreciationRecordsByDatesQuery>`
   SELECT d.*
   FROM depreciation d
   WHERE d.amount IS NULL
-    OR d.amount > COALESCE((
-      SELECT SUM(dd.disposed_cost)
+    OR ROUND(d.amount) > COALESCE((
+      SELECT SUM(ROUND(dd.disposed_cost))
       FROM accounter_schema.depreciation_disposals dd
       WHERE dd.depreciation_id = d.id
         AND dd.disposal_date < $fromDate

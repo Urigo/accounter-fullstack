@@ -262,6 +262,32 @@ describe('calculateAssetYear with sales and write-offs', () => {
     expect(result.closingCost).toBe(0);
   });
 
+  it('sells a fully depreciated asset after its end year at a gain equal to the proceeds', () => {
+    const oldAsset: AssetDepreciationInput = {
+      cost: 10_000,
+      depreciationRate: 25,
+      activationDate: d('2019-01-01'),
+      // as the records query computes it: activation + 100/rate × 365 days
+      expirationDate: d('2022-12-31'),
+    };
+    const sale: AssetDisposalInput = {
+      id: 'sale',
+      disposalDate: d('2025-06-30'),
+      disposedCost: 10_000,
+      proceeds: 1500,
+    };
+    const result = calculateAssetYear(oldAsset, [sale], 2025);
+    expect(result.openingAccumulatedDepreciation).toBe(10_000);
+    expect(result.yearDepreciation).toBe(0);
+    expect(result.disposals[0]).toMatchObject({
+      accumulatedDepreciation: 10_000,
+      netBookValue: 0,
+      gainLoss: 1500,
+    });
+    expect(result.closingCost).toBe(0);
+    expect(result.netBookValue).toBe(0);
+  });
+
   it('handles a disposal in the activation year', () => {
     const newAsset: AssetDepreciationInput = {
       cost: 36_500,

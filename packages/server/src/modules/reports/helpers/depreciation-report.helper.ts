@@ -53,7 +53,7 @@ export async function calculateDepreciationAmount(
         disposals.map(toDisposalInput),
         year,
       );
-      // nothing to add, e.g. a record in a category that is not depreciated (0%)
+      // nothing to add: fully depreciated or disposed of, or in a category that is not depreciated (0%)
       if (yearlyDepreciationAmount === 0) {
         return;
       }
