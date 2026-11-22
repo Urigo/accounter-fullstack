@@ -107,12 +107,13 @@ function startPrefetch(variables: AllChargesVariables): Prefetch {
     if (prefetch !== current) {
       return;
     }
-    // The scope decides which businesses' charges come back. If it changes before the response
-    // is complete (the app settles it at boot), the result is for the wrong scope.
+    // The scope decides which businesses' charges come back. If the user switches it before the
+    // response is complete, the result is for the wrong scope.
     const scope = scopeKey();
     let finished = false;
-    // Subscribed rather than `toPromise()`, which keeps only the first part of a deferred
-    // response. The subscription is what keeps the request alive, so it must not end with the
+    // Subscribed rather than `toPromise()`, which resolves only once the whole deferred response
+    // is in: streaming every part gets the first rows to the screen before the deferred fields
+    // land. The subscription is what keeps the request alive, so it must not end with the
     // screen's interest in it.
     const subscription = getUrqlClient()
       .query(AllChargesDocument, variables, { requestPolicy: 'network-only' })
