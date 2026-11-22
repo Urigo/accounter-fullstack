@@ -28,7 +28,7 @@ export default {
   name: '2026-11-22T12-00-00.add-poalim-deposit-tax-events-table.sql',
   run: ({ sql }) => sql`
     CREATE TABLE IF NOT EXISTS accounter_schema.poalim_deposit_tax_events (
-      id                                      UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+      id                                      UUID        NOT NULL DEFAULT uuidv7() PRIMARY KEY,
       owner_id                                UUID        NOT NULL
                                                           REFERENCES accounter_schema.businesses (id) ON DELETE CASCADE,
 
