@@ -241,3 +241,51 @@ describe('scrapePoalim — schema validation failures are surfaced', () => {
     expect(close).toHaveBeenCalledOnce();
   });
 });
+
+describe('scrapePoalim — deposits tax events', () => {
+  const DEPOSITS_CREDS = { ...CREDS, options: { fetchDepositsTaxEvents: true } };
+
+  it('turns a failed tax-collection fetch into a warning and keeps the other payloads', async () => {
+    const scraper = makeScraper({
+      getDepositsTaxCollection: vi.fn().mockRejectedValue(new Error('HTTP 404')),
+    });
+    const initMock = await getInitMock();
+    initMock.mockResolvedValue({
+      hapoalim: vi.fn().mockResolvedValue(scraper),
+      close: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const result = await scrapePoalim(
+      DEPOSITS_CREDS,
+      new Date(),
+      new Date(),
+      true,
+      new OtpManager(),
+      noop,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].ils).not.toBeNull();
+    expect(result[0].depositTaxEvents).toBeNull();
+    expect(result[0].depositTaxEventsWarning).toMatch(
+      /^Deposits tax events could not be fetched for account .+: HTTP 404$/,
+    );
+  });
+
+  it('still fails the scrape when the tax-collection response fails schema validation', async () => {
+    const scraper = makeScraper({
+      getDepositsTaxCollection: vi
+        .fn()
+        .mockResolvedValue({ data: {}, isValid: false, errors: [] }),
+    });
+    const initMock = await getInitMock();
+    initMock.mockResolvedValue({
+      hapoalim: vi.fn().mockResolvedValue(scraper),
+      close: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      scrapePoalim(DEPOSITS_CREDS, new Date(), new Date(), true, new OtpManager(), noop),
+    ).rejects.toThrow('failed schema validation');
+  });
+});

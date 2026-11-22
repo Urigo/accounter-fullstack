@@ -199,18 +199,29 @@ export const TaskAccountVaultCheckedSchema = z.object({
   status: z.enum(['accepted', 'ignored', 'blocked', 'unknown']),
 });
 
+/** The per-account data kinds a scrape fetches and uploads, one task-row cell each. */
+export const TxnTypeSchema = z.enum([
+  'ils',
+  'foreign',
+  'swift',
+  'securitiesInfo',
+  'securitiesTransactions',
+  'depositTaxEvents',
+]);
+export type TxnType = z.infer<typeof TxnTypeSchema>;
+
 export const TaskAccountTxnsFetchingSchema = z.object({
   type: z.literal('task-account-txns-fetching'),
   sourceId: z.string(),
   accountId: z.string(),
-  txnType: z.enum(['ils', 'foreign', 'swift', 'securitiesInfo', 'securitiesTransactions']),
+  txnType: TxnTypeSchema,
 });
 
 export const TaskAccountTxnsUploadingSchema = z.object({
   type: z.literal('task-account-txns-uploading'),
   sourceId: z.string(),
   accountId: z.string(),
-  txnType: z.enum(['ils', 'foreign', 'swift', 'securitiesInfo', 'securitiesTransactions']),
+  txnType: TxnTypeSchema,
   count: z.number(),
 });
 
@@ -218,7 +229,7 @@ export const TaskAccountTxnsDoneSchema = z.object({
   type: z.literal('task-account-txns-done'),
   sourceId: z.string(),
   accountId: z.string(),
-  txnType: z.enum(['ils', 'foreign', 'swift', 'securitiesInfo', 'securitiesTransactions']),
+  txnType: TxnTypeSchema,
   inserted: z.number(),
   skipped: z.number(),
 });
@@ -232,7 +243,7 @@ export const TaskAccountWarningSchema = z.object({
   type: z.literal('task-account-warning'),
   sourceId: z.string(),
   accountId: z.string(),
-  txnType: z.enum(['ils', 'foreign', 'swift', 'securitiesInfo', 'securitiesTransactions']),
+  txnType: TxnTypeSchema,
   message: z.string(),
 });
 
