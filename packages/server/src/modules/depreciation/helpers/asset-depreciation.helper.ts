@@ -447,10 +447,10 @@ export function validateAssetDisposals(
         `Disposal date ${disposal.disposalDate} is before the asset's activation date ${asset.activationDate}`,
       );
     }
-    if (!(disposal.disposedCost > 0)) {
+    if (Number.isNaN(disposal.disposedCost) || disposal.disposedCost <= 0) {
       errors.push('Disposed cost must be positive');
     }
-    if (!(disposal.proceeds >= 0)) {
+    if (Number.isNaN(disposal.proceeds) || disposal.proceeds < 0) {
       errors.push('Proceeds cannot be negative');
     }
     if (disposed >= cost) {
