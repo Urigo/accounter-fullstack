@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { Mutex } from 'async-mutex';
 import { GraphQLError } from 'graphql';
 import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
@@ -9,6 +8,7 @@ import type { AuthContext } from '../../shared/types/auth.js';
 import type { DbRequestState } from '../../shared/types/index.js';
 import { AuthContextProvider } from '../auth/providers/auth-context.provider.js';
 import { DBProvider } from './db.provider.js';
+import { SessionLock } from './session-lock.js';
 
 /**
  * Statements that may modify data (or session/schema state). Used to decide
@@ -22,6 +22,27 @@ const DATA_MODIFYING_SQL =
 
 export function isDataModifyingQuery(text: string): boolean {
   return DATA_MODIFYING_SQL.test(text);
+}
+
+/**
+ * How many times a read is sent again after failing only because another statement aborted the
+ * session. Each attempt runs on a newer session than the last, so this only runs out when several
+ * statements of one request fail one after another.
+ */
+const MAX_ABORTED_SESSION_RETRIES = 5;
+
+/** Postgres 25P02: a statement ran in a transaction that an earlier statement had already failed. */
+function isAbortedTransactionError(error: unknown): boolean {
+  return (error as { code?: unknown } | null)?.code === '25P02';
+}
+
+/**
+ * Switches pg's pipeline mode on a checked-out connection. pg reads the flag on every query, so it
+ * can change while nothing is queued on the connection: when a session takes the connection, and
+ * again before it goes back to the pool, so other borrowers get the ordinary one-at-a-time mode.
+ */
+function setPipelineMode(client: PoolClient, on: boolean): void {
+  (client as PoolClient & { pipeline: boolean }).pipeline = on;
 }
 
 /**
@@ -209,7 +230,15 @@ export function startTenantDbClientWatchdog(options: WatchdogOptions): { stop: (
   global: true,
 })
 export class TenantAwareDBClient {
-  private mutex = new Mutex();
+  /**
+   * Reads hold it shared and run concurrently, pipelined on the one connection; everything that
+   * changes the session holds it exclusively. See {@link SessionLock}.
+   */
+  private mutex = new SessionLock();
+  /** Opening the session, shared by the reads that all need it at once. */
+  private sessionOpening: Promise<PoolClient> | null = null;
+  /** Bumped every time a session (transaction) opens, to tell one session from the next. */
+  private sessionGeneration = 0;
   private storage = new AsyncLocalStorage<boolean>();
   private activeClient: PoolClient | null = null;
   private sessionOpen = false;
@@ -389,6 +418,9 @@ export class TenantAwareDBClient {
     text: string,
     params?: unknown[],
   ): Promise<QueryResult<T> & { rowCount: number }> {
+    if (!this.autoRelease && !isDataModifyingQuery(text)) {
+      return this.readOnSession<T>(text, params);
+    }
     return this.mutex.runExclusive(async () => {
       this.ensureNotDisposed();
       const client = await this.ensureSession();
@@ -411,6 +443,66 @@ export class TenantAwareDBClient {
         }
       }
     });
+  }
+
+  /**
+   * A read on the request's session, alongside any other reads in flight: the connection is in
+   * pipeline mode, so they go out without waiting for each other's results.
+   *
+   * A failed statement aborts the whole transaction, so the reads pipelined behind it fail too,
+   * with 25P02. The session is rolled back once (by whichever failed read gets there first), and a
+   * read that failed only because of that is run again on a fresh session. The statement that
+   * failed for its own reason fails as before, so callers that expect and handle an error still
+   * see only their own. See {@link MAX_ABORTED_SESSION_RETRIES}.
+   */
+  private async readOnSession<T extends QueryResultRow = QueryResultRow>(
+    text: string,
+    params?: unknown[],
+    retries = 0,
+  ): Promise<QueryResult<T> & { rowCount: number }> {
+    const release = await this.mutex.acquireShared();
+    let generation: number | null = null;
+    let failure: unknown;
+    try {
+      this.ensureNotDisposed();
+      const client = await this.ensureSessionShared();
+      generation = this.sessionGeneration;
+      this.markActivity(text);
+      const result = await client.query<T>(text, params);
+      this.markActivity(text);
+      return { ...result, rowCount: result.rowCount ?? 0 };
+    } catch (error) {
+      failure = error;
+    } finally {
+      release();
+    }
+
+    if (generation !== null) {
+      await this.mutex.runExclusive(async () => {
+        if (this.sessionOpen && this.sessionGeneration === generation) {
+          await this.endSession('ROLLBACK');
+        }
+      });
+    }
+    if (retries < MAX_ABORTED_SESSION_RETRIES && isAbortedTransactionError(failure)) {
+      return this.readOnSession<T>(text, params, retries + 1);
+    }
+    throw failure;
+  }
+
+  /**
+   * {@link ensureSession} for a holder of the shared lock: concurrent reads that find no open
+   * session wait for one opening instead of each opening their own. Nothing can close the session
+   * meanwhile, since closing it needs the lock exclusively.
+   */
+  private ensureSessionShared(): Promise<PoolClient> {
+    if (this.activeClient && this.sessionOpen) {
+      return Promise.resolve(this.activeClient);
+    }
+    this.sessionOpening ??= this.ensureSession().finally(() => {
+      this.sessionOpening = null;
+    });
+    return this.sessionOpening;
   }
 
   /**
@@ -495,7 +587,7 @@ export class TenantAwareDBClient {
   /**
    * Ensure the request-scoped session is open: one pooled connection for the
    * whole request, with an open transaction carrying the RLS variables.
-   * Always called while holding the mutex.
+   * Called holding the lock exclusively, or shared through {@link ensureSessionShared}.
    */
   private async ensureSession(): Promise<PoolClient> {
     if (!this.activeClient) {
@@ -527,6 +619,9 @@ export class TenantAwareDBClient {
       };
       client.on('error', onClientError);
       this.clientErrorListener = onClientError;
+      // A request's reads overlap on its connection. Per-query sessions (autoRelease) await each
+      // query in turn, so they keep the ordinary mode.
+      setPipelineMode(client, !this.autoRelease);
       this.activeClient = client;
       connectionHolders.add(this);
     }
@@ -537,6 +632,7 @@ export class TenantAwareDBClient {
         await client.query('BEGIN');
         await this.setRLSVariables(client);
         this.sessionOpen = true;
+        this.sessionGeneration++;
       } catch (error) {
         // A failed BEGIN/RLS setup leaves the connection in an unknown state —
         // discard it entirely rather than returning it to the pool.
@@ -583,6 +679,7 @@ export class TenantAwareDBClient {
         this.clientErrorListener = null;
       }
       try {
+        setPipelineMode(this.activeClient, false);
         this.activeClient.release(destroy);
       } catch (e) {
         log('error', 'db-release-client-failed', { error: serializeError(e), ...this.logFields });
