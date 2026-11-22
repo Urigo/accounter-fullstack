@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { connectTestDb, closeTestDb } from '../../../../__tests__/helpers/db-connection.js';
 import { runMigrationsIfNeeded } from '../../../../__tests__/helpers/db-migrations.js';
 import type {
+  PoalimDepositTaxEventInput,
   IsracardTransactionInput,
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
@@ -904,6 +905,149 @@ describe('uploadPoalimSecuritiesTransactions', () => {
       insertedIds: [],
       changedTransactions: [],
       insertedTransactions: [],
+    });
+  });
+});
+
+// ── Poalim deposit tax events ─────────────────────────────────────────────────
+
+describe('uploadPoalimDepositTaxEvents', () => {
+  beforeEach(() => truncateOwned('poalim_deposit_tax_events'));
+
+  // Synthetic values only — never lifted from a real bank capture.
+  const baseEvent: PoalimDepositTaxEventInput = {
+    bankNumber: 12,
+    branchNumber: 615,
+    accountNumber: 100000,
+    eventSerialNumber: 1,
+    executingDate: '2025-11-19',
+    formattedExecutingDate: '2025-11-19T00:00:00.000Z',
+    actionTypeDescription: 'תשלום ריבית ל',
+    shortProductName: 'פר"י',
+    taxActionTypeDescription: 'תשלום',
+    taxEventAmount: 4.43,
+    debitCurrencyShortedDescription: 'ש"ח',
+    debitAmount: 0,
+    crditAmount: 0,
+    additionalInformationExistenceSwitch: 1,
+  };
+  const withdrawalEvent: PoalimDepositTaxEventInput = {
+    ...baseEvent,
+    eventSerialNumber: 2,
+    actionTypeDescription: 'משיכה',
+    taxEventAmount: 0.01,
+  };
+
+  it('inserts new events and stamps owner_id', async () => {
+    const result = await provider.uploadPoalimDepositTaxEvents([baseEvent, withdrawalEvent]);
+    expect(result.inserted).toBe(2);
+    expect(result.skipped).toBe(0);
+    expect(result.insertedIds).toHaveLength(2);
+
+    const { rows } = await pool.query(
+      `SELECT owner_id, executing_date::text AS executing_date, tax_event_amount
+       FROM accounter_schema.poalim_deposit_tax_events
+       WHERE owner_id = $1 ORDER BY event_serial_number`,
+      [TEST_OWNER_ID],
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0].executing_date).toBe('2025-11-19');
+    expect(Number(rows[0].tax_event_amount)).toBe(4.43);
+  });
+
+  it('is idempotent — re-uploading the same events inserts nothing', async () => {
+    await provider.uploadPoalimDepositTaxEvents([baseEvent, withdrawalEvent]);
+    const result = await provider.uploadPoalimDepositTaxEvents([baseEvent, withdrawalEvent]);
+    expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(2);
+    expect(result.changedTransactions).toEqual([]);
+  });
+
+  it('overwrites a restated event instead of adding a row', async () => {
+    await provider.uploadPoalimDepositTaxEvents([baseEvent]);
+    const result = await provider.uploadPoalimDepositTaxEvents([
+      { ...baseEvent, taxEventAmount: 4.5, debitAmount: 1.13 },
+    ]);
+    expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(0);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual([
+      { field: 'tax_event_amount', oldValue: '4.43', newValue: '4.5' },
+      { field: 'debit_amount', oldValue: '0', newValue: '1.13' },
+    ]);
+
+    const { rows } = await pool.query(
+      `SELECT tax_event_amount, debit_amount FROM accounter_schema.poalim_deposit_tax_events
+       WHERE owner_id = $1`,
+      [TEST_OWNER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(Number(rows[0].tax_event_amount)).toBe(4.5);
+    expect(Number(rows[0].debit_amount)).toBe(1.13);
+  });
+
+  it('overwrites a restated formattedExecutingDate on its own', async () => {
+    await provider.uploadPoalimDepositTaxEvents([baseEvent]);
+    const result = await provider.uploadPoalimDepositTaxEvents([
+      { ...baseEvent, formattedExecutingDate: '2025-11-18T22:00:00.000Z' },
+    ]);
+    expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(0);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual([
+      {
+        field: 'formatted_executing_date',
+        oldValue: '2025-11-19T00:00:00.000Z',
+        newValue: '2025-11-18T22:00:00.000Z',
+      },
+    ]);
+
+    const { rows } = await pool.query(
+      `SELECT formatted_executing_date FROM accounter_schema.poalim_deposit_tax_events
+       WHERE owner_id = $1`,
+      [TEST_OWNER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect((rows[0].formatted_executing_date as Date).toISOString()).toBe(
+      '2025-11-18T22:00:00.000Z',
+    );
+  });
+
+  it('collapses in-batch duplicates of the natural key', async () => {
+    const result = await provider.uploadPoalimDepositTaxEvents([baseEvent, baseEvent]);
+    expect(result.inserted).toBe(1);
+    expect(result.skipped).toBe(1);
+  });
+
+  it('rejects a non-finite amount', async () => {
+    await expect(
+      provider.uploadPoalimDepositTaxEvents([{ ...baseEvent, taxEventAmount: Number.NaN }]),
+    ).rejects.toThrow(/taxEventAmount/);
+  });
+
+  it.each(['2025-02-30', '2025-11-19garbage'])(
+    'rejects an invalid executingDate (%s)',
+    async executingDate => {
+      await expect(
+        provider.uploadPoalimDepositTaxEvents([{ ...baseEvent, executingDate }]),
+      ).rejects.toThrow(/Invalid executingDate/);
+    },
+  );
+
+  it('rejects a blank actionTypeDescription', async () => {
+    await expect(
+      provider.uploadPoalimDepositTaxEvents([{ ...baseEvent, actionTypeDescription: '   ' }]),
+    ).rejects.toThrow(/Missing actionTypeDescription/);
+  });
+
+  it('returns empty result for empty input', async () => {
+    const result = await provider.uploadPoalimDepositTaxEvents([]);
+    expect(result).toEqual({
+      inserted: 0,
+      skipped: 0,
+      insertedIds: [],
+      insertedTransactions: [],
+      changedTransactions: [],
     });
   });
 });
