@@ -42,7 +42,13 @@ export default defineConfig({
   test: {
     globals: true,
     alias,
-    exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
+    // `**/.claude/**`: Claude Code keeps its git worktrees in `.claude/worktrees/<name>/`, each a
+    // full checkout of this repo inside the repo folder. Vitest globs with `dot: true`, so
+    // without this entry every `**/*.test.ts` pattern also matches the copies in there, and a
+    // `yarn test` in the main checkout runs another branch's tests against this checkout's
+    // database. One of those copies is the demo seed test, which resets the database it is
+    // pointed at. `scripts/__tests__/vitest-collection.test.ts` holds this in place.
+    exclude: [...defaultExclude, '**/dist/**', '**/build/**', '**/.claude/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
     // `globalSetup` is deliberately NOT set here. It asserts a local Postgres and seeds it,
     // and inherited arrays are merged rather than overridden, so a project cannot opt out of
@@ -54,12 +60,16 @@ export default defineConfig({
           name: 'unit',
           globalSetup: ['./scripts/vitest-global-setup.ts'],
           include: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.tsx', '**/*.spec.tsx'],
+          // Every entry starts with `**/` on purpose. The `include` above matches at any depth,
+          // so an exclude anchored at the repo root only covers this checkout: a second copy of
+          // the repo anywhere below it (a git worktree, a vendored clone) would have its
+          // database-backed and demo seed tests collected here as "unit" tests.
           exclude: [
-            'packages/server/src/__tests__/**',
-            'packages/server/src/demo-fixtures/**',
+            '**/packages/server/src/__tests__/**',
+            '**/packages/server/src/demo-fixtures/**',
             '**/*.integration.test.ts',
             // Client tests live in the `client` project below, which runs without a database.
-            'packages/client/**',
+            '**/packages/client/**',
           ],
         },
       },
@@ -89,7 +99,9 @@ export default defineConfig({
             'packages/email-ingestion-gateway/src/**/*.integration.test.ts',
             'packages/scraper-app/src/**/*.integration.test.ts',
           ],
-          exclude: ['packages/server/src/demo-fixtures/**'],
+          // Root-anchored `include` patterns cannot reach a nested checkout, so this project
+          // never had the `unit` problem; the exclude is written at any depth to match it.
+          exclude: ['**/packages/server/src/demo-fixtures/**'],
         },
       },
       {
