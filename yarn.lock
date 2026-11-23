@@ -353,7 +353,7 @@ __metadata:
     "@types/node": "npm:26.6.6"
     "@types/pg": "npm:8.23.1"
     "@whatwg-node/fetch": "npm:0.12.1"
-    ai: "npm:7.0.179"
+    ai: "npm:7.0.180"
     async-mutex: "npm:0.5.0"
     auth0: "npm:7.8.0"
     basic-auth: "npm:3.1.0"
@@ -429,16 +429,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:4.0.152":
-  version: 4.0.152
-  resolution: "@ai-sdk/gateway@npm:4.0.152"
+"@ai-sdk/gateway@npm:4.0.153":
+  version: 4.0.153
+  resolution: "@ai-sdk/gateway@npm:4.0.153"
   dependencies:
     "@ai-sdk/provider": "npm:4.0.39"
     "@ai-sdk/provider-utils": "npm:5.0.83"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/7c2a349d384fc571dba6134e35a6e2fbd6a615ff749a97bd6a6522111eb258f742fe9d0098c3fd6604ec4a3ed969051a6db5926f752ae9585e912f18968016ba
+  checksum: 10c0/8992e69e907bad175a9016c2cf39cc36e3cc0309dfd30af790feec4138b8e319d88603b004b671f4c9a3cbac563588bd4ce9bb9c64b19de40cd2f9a33c1a438c
   languageName: node
   linkType: hard
 
@@ -2587,9 +2587,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.68.6":
-  version: 0.68.6
-  resolution: "@graphql-hive/cli@npm:0.68.6"
+"@graphql-hive/cli@npm:0.68.7":
+  version: 0.68.7
+  resolution: "@graphql-hive/cli@npm:0.68.7"
   dependencies:
     "@graphql-hive/core": "npm:0.24.0"
     "@graphql-inspector/core": "npm:^8.0.3"
@@ -2600,9 +2600,9 @@ __metadata:
     "@graphql-tools/url-loader": "npm:^9.1.12"
     "@graphql-tools/utils": "npm:^12.0.3"
     "@graphql-typed-document-node/core": "npm:3.2.0"
-    "@oclif/core": "npm:3.26.6"
-    "@oclif/plugin-help": "npm:6.2.36"
-    "@oclif/plugin-update": "npm:4.7.16"
+    "@oclif/core": "npm:3.27.0"
+    "@oclif/plugin-help": "npm:6.3.0"
+    "@oclif/plugin-update": "npm:4.8.0"
     "@theguild/federation-composition": "npm:0.27.2"
     cli-table3: "npm:0.6.5"
     colors: "npm:1.4.0"
@@ -2613,7 +2613,7 @@ __metadata:
     zod: "npm:^4.6.6"
   bin:
     hive: bin/run
-  checksum: 10c0/7b0ea8137bb1b32a0d63a5f2cb4fd876d1af4ca987bff6eace6b1efbed1edaf8ee2d421bcca637b5e42256ef18456f3a1ed6cb93636b9a219ce993734fb8ca0c
+  checksum: 10c0/0234df12f198a31e4a655b78b47472430d23c4ecd682ef2dbbb9337e2e8c88b32974191bd334de7f5695e46d1f71f6ad8a28deab967145ad5e818c3f9fb07c82
   languageName: node
   linkType: hard
 
@@ -5560,9 +5560,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oclif/core@npm:3.26.6":
-  version: 3.26.6
-  resolution: "@oclif/core@npm:3.26.6"
+"@oclif/core@npm:3.27.0":
+  version: 3.27.0
+  resolution: "@oclif/core@npm:3.27.0"
   dependencies:
     "@types/cli-progress": "npm:^3.11.5"
     ansi-escapes: "npm:^4.3.2"
@@ -5572,7 +5572,7 @@ __metadata:
     clean-stack: "npm:^3.0.1"
     cli-progress: "npm:^3.12.0"
     color: "npm:^4.2.3"
-    debug: "npm:^4.3.4"
+    debug: "npm:^4.3.5"
     ejs: "npm:^3.1.10"
     get-package-type: "npm:^0.1.0"
     globby: "npm:^11.1.0"
@@ -5592,7 +5592,7 @@ __metadata:
     widest-line: "npm:^3.1.0"
     wordwrap: "npm:^1.0.0"
     wrap-ansi: "npm:^7.0.0"
-  checksum: 10c0/43f93c4b44a81f922b56666cbd88e5eae10820fdba36211e26ef1572aaea229ea6800f138c50aa2ebd65603904d425cc64cd5fe76b0cec20515728173d7e0463
+  checksum: 10c0/4f663ccb3bed74fa5b73a82f3bf722c9be5564f0543cc29bd70e1a76b953bd2fe6ca1d6684561a3bd7bd1fe70eab1855b98f5563b2109d11161c06283c312b93
   languageName: node
   linkType: hard
 
@@ -5622,34 +5622,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oclif/plugin-help@npm:6.2.36":
-  version: 6.2.36
-  resolution: "@oclif/plugin-help@npm:6.2.36"
+"@oclif/plugin-help@npm:6.3.0":
+  version: 6.3.0
+  resolution: "@oclif/plugin-help@npm:6.3.0"
   dependencies:
     "@oclif/core": "npm:^4"
-  checksum: 10c0/d4517e99c863b919d535cb3a23e48fd37091026055ed6d51b51e9460032e75f801209c1988c86b39011c07476255520920ca366eca8235129781cb01ca4bf440
+  checksum: 10c0/3f0dfc8286b0e1458406491f3563a38250421949a9e2919e4c066e2dc4eeeeecd7b1b074aaa7cbed9ff3f1113833b23e9c60b41051406c111eca7bc265ed7082
   languageName: node
   linkType: hard
 
-"@oclif/plugin-update@npm:4.7.16":
-  version: 4.7.16
-  resolution: "@oclif/plugin-update@npm:4.7.16"
+"@oclif/plugin-update@npm:4.8.0":
+  version: 4.8.0
+  resolution: "@oclif/plugin-update@npm:4.8.0"
   dependencies:
     "@inquirer/select": "npm:^2.5.0"
     "@oclif/core": "npm:^4"
-    "@oclif/table": "npm:^0.5.1"
+    "@oclif/table": "npm:^0.5.9"
     ansis: "npm:^3.17.0"
     debug: "npm:^4.4.1"
     filesize: "npm:^6.1.0"
     got: "npm:^13"
     proxy-agent: "npm:^6.5.0"
-    semver: "npm:^7.7.3"
-    tar-fs: "npm:^2.1.4"
-  checksum: 10c0/b2711ef87114ce0c91ac8e371067cc82d33cb6dc775b9ef535d0d71c5f8b41d5a142765ddda695bf6512d49210bb439df4c30d0c329361fe7155e92db539c467
+    semver: "npm:^7.8.5"
+    tar-fs: "npm:^2.1.5"
+  checksum: 10c0/f94388901073fd284f5b8820884da0f2cf269345519c83d8f4a4a1c23f0df34044ece81b3c70f36a949598262bd755e88fc42687377e9595add343560fb27b8c
   languageName: node
   linkType: hard
 
-"@oclif/table@npm:^0.5.1":
+"@oclif/table@npm:^0.5.9":
   version: 0.5.9
   resolution: "@oclif/table@npm:0.5.9"
   dependencies:
@@ -11043,7 +11043,7 @@ __metadata:
     "@graphql-codegen/typescript-operations": "npm:7.0.2"
     "@graphql-codegen/typescript-resolvers": "npm:7.0.1"
     "@graphql-eslint/eslint-plugin": "npm:4.4.2"
-    "@graphql-hive/cli": "npm:0.68.6"
+    "@graphql-hive/cli": "npm:0.68.7"
     "@graphql-inspector/cli": "npm:7.0.8"
     "@graphql-tools/mock": "npm:10.1.4"
     "@parcel/watcher": "npm:2.6.0"
@@ -11129,16 +11129,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:7.0.179":
-  version: 7.0.179
-  resolution: "ai@npm:7.0.179"
+"ai@npm:7.0.180":
+  version: 7.0.180
+  resolution: "ai@npm:7.0.180"
   dependencies:
-    "@ai-sdk/gateway": "npm:4.0.152"
+    "@ai-sdk/gateway": "npm:4.0.153"
     "@ai-sdk/provider": "npm:4.0.39"
     "@ai-sdk/provider-utils": "npm:5.0.83"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1f10422550809f3a74933f02adcc32c87d75b06ef83c44e370107bb70ca9bb8ba5b4a2762c7d4fd608c66562f1f4602c0b8a273f98b436befba371089a8b87ec
+  checksum: 10c0/0bf1bfd239587af1bbe43c2c491d4958eb1a344e722b9e2d48116f8201c2fe12b361109a235d06c998a227743a0fdb8d43552cbda51203f0ba07616345ddb424
   languageName: node
   linkType: hard
 
@@ -24655,15 +24655,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar-fs@npm:^2.1.4":
-  version: 2.1.5
-  resolution: "tar-fs@npm:2.1.5"
+"tar-fs@npm:^2.1.5":
+  version: 2.1.6
+  resolution: "tar-fs@npm:2.1.6"
   dependencies:
     chownr: "npm:^1.1.1"
     mkdirp-classic: "npm:^0.5.2"
     pump: "npm:^3.0.0"
     tar-stream: "npm:^2.1.4"
-  checksum: 10c0/b987429214c3ab3be1f439b4e097dc310acf449c35f355956d801f59ef4cfde3b9827797ab2d2f087ed024e459eedc9b3cd860c9190b86e356ba348ade928684
+  checksum: 10c0/c036d5e8644e40eb48c0541855f261093536a60c7458f5a6a8b49a30b815ed7bc46b1263ec4e3b4b214bbd12857c8c3f605be62e44f5897b226ff4680314ac0c
   languageName: node
   linkType: hard
 
