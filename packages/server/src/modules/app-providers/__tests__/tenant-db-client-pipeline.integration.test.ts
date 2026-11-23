@@ -96,6 +96,55 @@ describe('TenantAwareDBClient read pipelining against Postgres', () => {
     }
   });
 
+  it('commits a write that was waiting behind a failed read', async () => {
+    const client = requestClient();
+    const id = Math.floor(Math.random() * 1_000_000);
+    try {
+      // The write is asked for while both reads are in flight, so it is the next to take the
+      // session, which the first read has aborted by then.
+      const [failed, retried, written] = await Promise.all([
+        client.query('SELECT 1 / 0 AS v').then(
+          () => 'ok',
+          (error: { code?: string }) => error.code,
+        ),
+        client.query<{ v: number }>('SELECT 2 AS v'),
+        client.query(`INSERT INTO public.${TABLE} (id) VALUES ($1)`, [id]),
+      ]);
+
+      expect(failed).toBe('22012');
+      expect(retried.rows).toEqual([{ v: 2 }]);
+      expect(written.rowCount).toBe(1);
+      const elsewhere = await pool.query(`SELECT id FROM public.${TABLE} WHERE id = $1`, [id]);
+      expect(elsewhere.rows).toEqual([{ id }]);
+    } finally {
+      await client.dispose();
+    }
+  });
+
+  it('commits a transaction() scope that was waiting behind a failed read', async () => {
+    const client = requestClient();
+    const id = Math.floor(Math.random() * 1_000_000);
+    try {
+      const [failed, inserted] = await Promise.all([
+        client.query('SELECT 1 / 0 AS v').then(
+          () => 'ok',
+          (error: { code?: string }) => error.code,
+        ),
+        client.transaction(async tx => {
+          const result = await tx.query(`INSERT INTO public.${TABLE} (id) VALUES ($1)`, [id]);
+          return result.rowCount;
+        }),
+      ]);
+
+      expect(failed).toBe('22012');
+      expect(inserted).toBe(1);
+      const elsewhere = await pool.query(`SELECT id FROM public.${TABLE} WHERE id = $1`, [id]);
+      expect(elsewhere.rows).toEqual([{ id }]);
+    } finally {
+      await client.dispose();
+    }
+  });
+
   it('commits a write at once, and the reads after it see it', async () => {
     const client = requestClient();
     const id = Math.floor(Math.random() * 1_000_000);

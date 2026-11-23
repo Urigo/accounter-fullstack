@@ -22,6 +22,13 @@ let client: TenantAwareDBClient;
 
 /** Session plumbing answers at once; the statements under test wait for the test to answer. */
 const AUTO_ANSWERED = /^(BEGIN|COMMIT|ROLLBACK)$|set_config/;
+/** The statements that end a transaction, and with it the aborted state. */
+const ENDS_TRANSACTION = /^(COMMIT|ROLLBACK)$/;
+/**
+ * Whether the transaction is aborted, as Postgres leaves it after a failed statement: it refuses
+ * every statement sent from then on with 25P02, until the transaction ends.
+ */
+let aborted: boolean;
 
 function makeClient(): TenantAwareDBClient {
   const authContext = {
@@ -62,6 +69,7 @@ function answer(text: string, rows: unknown[] = [{ text }]): void {
 function fail(text: string, error: unknown): void {
   const index = pending.findIndex(item => item.text === text);
   expect(index, `"${text}" is waiting for an answer`).toBeGreaterThanOrEqual(0);
+  aborted = true;
   pending.splice(index, 1)[0]!.reject(error);
 }
 
@@ -81,15 +89,24 @@ beforeEach(() => {
   });
   pending = [];
   sent = [];
+  aborted = false;
   connection = {
     query: vi.fn((text: string) => {
-      sent.push(text.trim());
-      if (AUTO_ANSWERED.test(text.trim())) {
+      const statement = text.trim();
+      sent.push(statement);
+      if (ENDS_TRANSACTION.test(statement)) {
+        aborted = false;
+        return Promise.resolve({ rows: [] });
+      }
+      if (aborted) {
+        return Promise.reject(pgError('25P02', 'current transaction is aborted'));
+      }
+      if (AUTO_ANSWERED.test(statement)) {
         return Promise.resolve({ rows: [] });
       }
       return new Promise((resolve, reject) => {
         pending.push({
-          text: text.trim(),
+          text: statement,
           resolve: rows => resolve({ rows, rowCount: rows?.length ?? 0 }),
           reject,
         });
@@ -197,6 +214,67 @@ describe('TenantAwareDBClient read pipelining', () => {
     expect(logged.map(record => [record.msg, record.attempt, record.requestId])).toEqual([
       ['db-read-retried-after-aborted-session', 1, 'req'],
     ]);
+  });
+
+  it('gives a write that was waiting behind a failed read a fresh session', async () => {
+    const insert = 'INSERT INTO accounter_schema.tags (name) VALUES ($1)';
+    const broken = client.query('SELECT broken');
+    const innocent = client.query('SELECT innocent');
+    await settle();
+    // Asked for while both reads are in flight, so it is next in line: ahead of the rollback the
+    // reads queue when they fail.
+    const write = client.query(insert, ['x']);
+    await settle();
+
+    fail('SELECT broken', pgError('57014', 'canceling statement due to statement timeout'));
+    fail('SELECT innocent', pgError('25P02', 'current transaction is aborted'));
+    await settle();
+
+    // The write rolled the aborted session back itself, and ran on a new one.
+    expect(sent.slice(2)).toEqual([
+      'SELECT broken',
+      'SELECT innocent',
+      'ROLLBACK',
+      'BEGIN',
+      expect.stringContaining('set_config'),
+      insert,
+    ]);
+    answer(insert, [{ id: 1 }]);
+    await expect(write).resolves.toMatchObject({ rowCount: 1 });
+    await expect(broken).rejects.toMatchObject({ code: '57014' });
+
+    // The read that failed only because of the broken one is still retried, after the write.
+    await settle();
+    answer('SELECT innocent', [{ ok: true }]);
+    await expect(innocent).resolves.toMatchObject({ rows: [{ ok: true }] });
+    expect(sent.filter(text => text === 'ROLLBACK')).toHaveLength(1);
+  });
+
+  it('gives a transaction() scope that was waiting behind a failed read a fresh session', async () => {
+    const insert = 'INSERT INTO accounter_schema.tags (name) VALUES ($1)';
+    const broken = client.query('SELECT broken');
+    await settle();
+    const transaction = client.transaction(async tx => {
+      await tx.query(insert, ['x']);
+      return 'committed';
+    });
+    await settle();
+
+    fail('SELECT broken', pgError('42501', 'permission denied for table tags'));
+    await settle();
+
+    // Its first statement runs on a new session, not on the one the read aborted.
+    expect(sent.slice(2)).toEqual([
+      'SELECT broken',
+      'ROLLBACK',
+      'BEGIN',
+      expect.stringContaining('set_config'),
+      insert,
+    ]);
+    answer(insert);
+    await expect(transaction).resolves.toBe('committed');
+    await expect(broken).rejects.toMatchObject({ code: '42501' });
+    expect(sent.at(-1)).toBe('COMMIT');
   });
 
   it('keeps retrying while other reads keep aborting its sessions, then gives up', async () => {

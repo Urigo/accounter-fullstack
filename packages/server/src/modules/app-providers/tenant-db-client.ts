@@ -239,6 +239,11 @@ export class TenantAwareDBClient {
   private sessionOpening: Promise<PoolClient> | null = null;
   /** Bumped every time a session (transaction) opens, to tell one session from the next. */
   private sessionGeneration = 0;
+  /**
+   * The newest session a failed read has left aborted, by its {@link sessionGeneration}; 0 until
+   * one has. See {@link sessionAborted}.
+   */
+  private abortedGeneration = 0;
   private storage = new AsyncLocalStorage<boolean>();
   private activeClient: PoolClient | null = null;
   private sessionOpen = false;
@@ -450,10 +455,13 @@ export class TenantAwareDBClient {
    * pipeline mode, so they go out without waiting for each other's results.
    *
    * A failed statement aborts the whole transaction, so the reads pipelined behind it fail too,
-   * with 25P02. The session is rolled back once (by whichever failed read gets there first), and a
-   * read that failed only because of that is run again on a fresh session. The statement that
-   * failed for its own reason fails as before, so callers that expect and handle an error still
-   * see only their own. See {@link MAX_ABORTED_SESSION_RETRIES}.
+   * with 25P02. The session is rolled back once, by whatever takes it next (see
+   * {@link sessionAborted}), and a read that failed only because of that is run again on a fresh
+   * session. The statement that failed for its own reason fails as before, so callers that expect
+   * and handle an error still see only their own. See {@link MAX_ABORTED_SESSION_RETRIES}.
+   *
+   * A write or `transaction()` that was already waiting for these reads goes first: the retry, and
+   * the failed read's own error, come after it.
    */
   private async readOnSession<T extends QueryResultRow = QueryResultRow>(
     text: string,
@@ -473,13 +481,20 @@ export class TenantAwareDBClient {
       return { ...result, rowCount: result.rowCount ?? 0 };
     } catch (error) {
       failure = error;
+      if (generation !== null) {
+        // Recorded while this read still holds the lock: a write or transaction() that is already
+        // waiting takes the session before the rollback below gets its turn.
+        this.abortedGeneration = Math.max(this.abortedGeneration, generation);
+      }
     } finally {
       release();
     }
 
     if (generation !== null) {
+      // Readers take an open session as it is, so the retry below, or the next read to arrive,
+      // needs this rollback to have happened.
       await this.mutex.runExclusive(async () => {
-        if (this.sessionOpen && this.sessionGeneration === generation) {
+        if (this.sessionAborted) {
           await this.endSession('ROLLBACK');
         }
       });
@@ -510,6 +525,18 @@ export class TenantAwareDBClient {
       this.sessionOpening = null;
     });
     return this.sessionOpening;
+  }
+
+  /**
+   * Whether a read has failed on the open session, which leaves its transaction aborted: Postgres
+   * refuses every further statement on it with 25P02.
+   *
+   * The failed read asks for a rollback, but only after it lets go of the lock, so a write or
+   * `transaction()` that was already waiting is served first. That is why {@link ensureSession}
+   * rolls an aborted session back before handing it to anyone.
+   */
+  private get sessionAborted(): boolean {
+    return this.sessionOpen && this.abortedGeneration === this.sessionGeneration;
   }
 
   /**
@@ -597,6 +624,12 @@ export class TenantAwareDBClient {
    * Called holding the lock exclusively, or shared through {@link ensureSessionShared}.
    */
   private async ensureSession(): Promise<PoolClient> {
+    if (this.sessionAborted) {
+      // Only ever true for an exclusive holder: readers are handed an open session as it is, by
+      // ensureSessionShared, and never get here with one.
+      await this.endSession('ROLLBACK');
+    }
+
     if (!this.activeClient) {
       const client = await this.dbProvider.pool.connect();
 
