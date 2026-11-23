@@ -53,6 +53,14 @@ function onACommand(optIn: (typeof PER_COMMAND_OPT_INS)[number]): string {
 /** Upgrade the migration CLI's warning to a hard failure. See `assertLocalDatabase`. */
 export const ENFORCE_LOCAL_DB_ENV = 'ENFORCE_LOCAL_DB';
 
+/**
+ * The command every message here suggests for looking at where `.env` points. It names the
+ * four variables that identify the target, so it does not print `POSTGRES_PASSWORD`: these
+ * messages are read in terminals, CI logs and agent transcripts, and whoever follows the hint
+ * should not end up with the password on screen.
+ */
+export const INSPECT_ENV_COMMAND = "grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env";
+
 export type DatabaseTarget = {
   host?: string | undefined;
   port?: number | string | undefined;
@@ -206,7 +214,7 @@ function buildMessage(resolved: ResolvedTarget, context: string): string {
     'The repo root .env is shared by codegen, migrations, seeds and all DB-backed tests, so a',
     'command that looks local is only as local as that file currently is. Check it now:',
     '',
-    "  grep '^POSTGRES' .env",
+    `  ${INSPECT_ENV_COMMAND}`,
     '',
     'Then either point it at the dev container, or override for this command only:',
     '',
@@ -279,7 +287,7 @@ export function assertLocalDatabaseOnly(
       'is shared by codegen, migrations, seeds and all DB-backed tests and must only ever hold',
       'local credentials. Check it without printing the password:',
       '',
-      "  grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env",
+      `  ${INSPECT_ENV_COMMAND}`,
     ].join('\n'),
   );
 }
@@ -321,7 +329,8 @@ export function warnIfRemoteDatabase(
       `  ⚠️  ${context} is targeting a NON-LOCAL database:`,
       `  ⚠️    ${describeDatabaseTarget(resolved.target)}${resolved.hostFromPgHost ? ' (from PGHOST)' : ''}`,
       '  ⚠️',
-      "  ⚠️  If that was not deliberate, stop now (Ctrl-C) and check: grep '^POSTGRES' .env",
+      '  ⚠️  If that was not deliberate, stop now (Ctrl-C) and check:',
+      `  ⚠️    ${INSPECT_ENV_COMMAND}`,
       `  ⚠️  Set ${ENFORCE_LOCAL_DB_ENV}=1 to make this a hard failure instead of a warning.`,
       '  ⚠️  ================================================================',
       '',

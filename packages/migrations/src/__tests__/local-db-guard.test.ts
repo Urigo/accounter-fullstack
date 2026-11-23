@@ -154,7 +154,9 @@ describe('assertLocalDatabase', () => {
     }
     expect(message).toContain('accounter2.postgres.database.azure.com');
     expect(message).toContain(ALLOW_REMOTE_DB_ENV);
-    expect(message).toContain("grep '^POSTGRES' .env");
+    // The hint must not be one that prints POSTGRES_PASSWORD along with the rest.
+    expect(message).toContain("grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env");
+    expect(message).not.toContain("grep '^POSTGRES' .env");
   });
 
   it('never leaks a password into the error message', () => {
@@ -266,6 +268,15 @@ describe('warnIfRemoteDatabase', () => {
     expect(logger.warn.mock.calls[0]?.[0]).toContain(
       'accounter2.postgres.database.azure.com',
     );
+  });
+
+  it('suggests a way to inspect .env that does not print the password', () => {
+    const logger = { warn: vi.fn() };
+    warnIfRemoteDatabase(REMOTE, 'migration:run', {}, logger);
+
+    const banner = String(logger.warn.mock.calls[0]?.[0]);
+    expect(banner).toContain("grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env");
+    expect(banner).not.toContain("grep '^POSTGRES' .env");
   });
 
   it('throws instead of warning when ENFORCE_LOCAL_DB=1', () => {

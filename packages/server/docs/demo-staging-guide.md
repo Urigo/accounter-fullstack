@@ -656,8 +656,8 @@ docker ps | grep postgres
 # Start if not running
 docker-compose -f docker/docker-compose.dev.yml up -d
 
-# Verify env vars
-cat .env | grep POSTGRES
+# Verify where the env vars point (this leaves the password out)
+grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env
 ```
 
 ---
