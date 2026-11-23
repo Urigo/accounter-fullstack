@@ -280,6 +280,11 @@ export function getUrqlClient(): Client {
 
   globalClient = createClient({
     url,
+    // Every operation goes to one URL, as a POST. The API is on another origin, so each request
+    // needs a CORS preflight, and browsers cache a preflight per URL (the server allows two hours).
+    // urql's default sends queries as GET with the query and variables in the URL, so every new
+    // page or filter was a new URL and paid a preflight round trip of its own.
+    preferGetMethod: false,
     exchanges: [
       // Dev only, and first so it observes every operation and result. Tree-shaken
       // from production builds by the constant condition.

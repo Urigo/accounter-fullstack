@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { PageSkeleton } from '../../components/layout/page-skeleton.js';
-import { useViewer } from '../../hooks/use-viewer.js';
+import { useSessionViewer } from '../../hooks/use-viewer.js';
 import { hasStoredAuth0Session } from '../../lib/auth0-session.js';
 import { ROUTES } from '../routes.js';
 
@@ -57,7 +57,10 @@ function Auth0ProtectedRoute({ children }: GuardProps): ReactElement {
  * screen handles its own failures.
  */
 export function OnboardingGuard({ children }: GuardProps): ReactElement {
-  const { fetching, error, viewer } = useViewer();
+  // From the boot request `UserProvider` sends, rather than a query of its own: that one was sent
+  // twice per load (the provider's loader remounts this guard), the second time after the boot
+  // request, holding the shell back by another round trip.
+  const { fetching, error, viewer } = useSessionViewer();
 
   if (fetching) {
     return <PageSkeleton />;

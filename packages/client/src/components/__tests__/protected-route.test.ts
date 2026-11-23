@@ -17,10 +17,10 @@ vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
 }));
 
-// ProtectedRoute composes OnboardingGuard, which queries `viewer` through urql.
+// ProtectedRoute composes OnboardingGuard, which reads `viewer` from the boot request.
 // Stubbing the hook keeps these cases about auth state alone.
 vi.mock('../../hooks/use-viewer.js', () => ({
-  useViewer: useViewerMock,
+  useSessionViewer: useViewerMock,
 }));
 
 const ACTIVE_VIEWER = {
