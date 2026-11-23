@@ -1,6 +1,9 @@
 import { config } from 'dotenv';
 import pg from 'pg';
-import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
+import {
+  assertLocalDatabase,
+  assertOptInsNotInEnvFile,
+} from '../packages/migrations/src/local-db-guard.js';
 import { seedAdminCore } from '../packages/server/scripts/seed-admin-context.js';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
 import type {
@@ -16,7 +19,7 @@ import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/i
 import type { FixtureSpec } from '../packages/server/src/fixtures/fixture-spec.js';
 import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
-config();
+const loadedEnv = config();
 
 /**
  * Custom error class for demo seeding failures
@@ -181,6 +184,12 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
 
 async function seedDemoData() {
   // 1. Guard checks
+  //
+  // First, before any gate below reads its opt-in: `config()` above has already copied .env
+  // into process.env, so an ALLOW_DEMO_SEED or ALLOW_REMOTE_DB left in that file would satisfy
+  // those gates for every run without anyone typing it.
+  assertOptInsNotInEnvFile(loadedEnv.parsed, '.env');
+
   if (process.env.NODE_ENV === 'production') {
     console.error('❌ Refusing to seed demo data in production environment');
     process.exit(1);

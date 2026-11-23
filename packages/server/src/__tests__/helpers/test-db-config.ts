@@ -1,9 +1,13 @@
 import type { PoolConfig } from 'pg';
 import { config } from 'dotenv';
-import { assertLocalDatabase } from '../../../../migrations/src/local-db-guard.js';
+import {
+  assertLocalDatabase,
+  assertOptInsNotInEnvFile,
+} from '../../../../migrations/src/local-db-guard.js';
 
-// Load environment variables
-config({ path: [`.env`, `../../.env`] });
+// Load environment variables. The result is kept so `assertTestDatabaseIsLocal` can tell an
+// opt-in that came from these files apart from one the caller typed.
+const loadedEnv = config({ path: [`.env`, `../../.env`] });
 
 /**
  * Shared database configuration for test environments
@@ -30,8 +34,14 @@ export const testDbConfig: PoolConfig = {
  *
  * Tests must never target a deployed database, so this refuses rather than warns; override
  * POSTGRES_* for the command, or set ALLOW_REMOTE_DB=1 if you really mean it.
+ *
+ * It also refuses an ALLOW_REMOTE_DB or ALLOW_DEMO_SEED set in the .env files loaded above.
+ * This module's load is what puts them into process.env -- the vitest global setup's import
+ * of it reaches every test worker -- so one left in .env would switch the remote-host check
+ * off, and let the demo-seed E2E run, with nobody having asked for either.
  */
 export function assertTestDatabaseIsLocal(): void {
+  assertOptInsNotInEnvFile(loadedEnv.parsed, 'a .env file (.env or ../../.env)');
   assertLocalDatabase(
     {
       host: testDbConfig.host,

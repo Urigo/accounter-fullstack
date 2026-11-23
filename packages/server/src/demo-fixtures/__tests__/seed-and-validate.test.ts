@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import {
+  ALLOW_DEMO_SEED_ENV,
+  ALLOW_REMOTE_DB_ENV,
+} from '../../../../migrations/src/local-db-guard.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,10 +30,28 @@ const __dirname = dirname(__filename);
  * it. It used to pass `ALLOW_DEMO_SEED: '1'` to the seed process unconditionally, which made a
  * plain `yarn vitest` (every project) or an IDE test run enough to wipe whatever database the
  * root .env pointed at -- production, on 2026-11-23. Now the caller's own `ALLOW_DEMO_SEED=1`
- * is required: without it the suite is skipped, and the seed process inherits the caller's
- * environment unchanged.
+ * is required: without it the suite is skipped.
  */
 const demoSeedAllowed = process.env.ALLOW_DEMO_SEED === '1';
+
+// A skip is silent: if the CI job that runs this project ever stops setting ALLOW_DEMO_SEED,
+// the suite would quietly stop running and the job would stay green. Fail instead.
+if (process.env.CI && !demoSeedAllowed) {
+  throw new Error(
+    `The demo-seed E2E was selected in CI without ${ALLOW_DEMO_SEED_ENV}=1, so it would be ` +
+      'skipped. Set it on the CI step that runs `--project demo-seed`.',
+  );
+}
+
+/**
+ * The environment the seed and validate processes run with: the caller's, minus the
+ * remote-database opt-in. This test has no reason to reach a deployed database, so the seed's
+ * own guard -- the code that actually connects -- is left with no way to allow one, whatever
+ * the caller exported. The seed also refuses an opt-in set in .env, so the file cannot put it
+ * back.
+ */
+const childEnv: NodeJS.ProcessEnv = { ...process.env };
+delete childEnv[ALLOW_REMOTE_DB_ENV];
 
 describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
   // Increase timeout for this integration test (30 seconds)
@@ -58,8 +80,8 @@ describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
           ['--import', registerEsmPath, seedScriptPath],
           {
             cwd: workspaceRoot,
-            // The caller's environment, unchanged: ALLOW_DEMO_SEED must come from the caller.
-            env: process.env,
+            // ALLOW_DEMO_SEED must come from the caller; ALLOW_REMOTE_DB is stripped (above).
+            env: childEnv,
             stdio: 'inherit', // Show output for debugging
           },
         );
@@ -82,7 +104,7 @@ describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
           ['--import', registerEsmPath, validateScriptPath],
           {
             cwd: workspaceRoot,
-            env: process.env,
+            env: childEnv,
             stdio: 'inherit',
           },
         );
