@@ -50,8 +50,10 @@ const LOCAL_HOSTNAMES = new Set([
  * Strip what a hand-edited `.env` tends to leave behind: dotenv already removes matching
  * quotes, but a value typed by hand can still carry surrounding whitespace or stray quotes.
  * Shared by classification and display so the two never disagree about what was read.
+ * Exported for the same reason: `scripts/demo-seed-guard.ts` classifies a database *name* and
+ * has to judge the value this module displays.
  */
-function stripQuotesAndTrim(value: string): string {
+export function stripQuotesAndTrim(value: string): string {
   return value
     .trim()
     .replace(/^['"]|['"]$/g, '')
@@ -73,7 +75,7 @@ const MAX_DISPLAY_LENGTH = 120;
  * verbatim into an error, and an ANSI escape sequence there would corrupt the terminal of
  * whoever is reading it — the one place we can be sure a human is looking.
  */
-function sanitizeForDisplay(value: string | number): string {
+export function sanitizeForDisplay(value: string | number): string {
   const text = stripQuotesAndTrim(String(value)).replace(
     // eslint-disable-next-line no-control-regex -- stripping control characters is the point
     /[\u0000-\u001F\u007F-\u009F]/g,
@@ -178,6 +180,44 @@ export function assertLocalDatabase(
     return;
   }
   throw new Error(buildMessage(target, context));
+}
+
+/**
+ * Throw unless the target is local. There is no opt-in.
+ *
+ * `assertLocalDatabase` can be switched off for one command with `ALLOW_REMOTE_DB=1`. That is
+ * right for a suite someone deliberately points at a remote scratch database, and wrong for a
+ * caller that destroys data: the variable is a general "this command may leave the machine"
+ * switch, the refusal above prints it as the way through, and whoever sets it to get an
+ * unrelated suite past the guard has not agreed to a reset.
+ *
+ * Use this where the caller wipes what it connects to and a deployed database is never the
+ * target. Today that is the demo seed test, which starts a script that truncates the domain
+ * tables.
+ */
+export function assertLocalDatabaseOnly(target: DatabaseTarget, context: string): void {
+  if (isLocalDatabaseHost(target.host)) {
+    return;
+  }
+  throw new Error(
+    [
+      `Refusing to run ${context} against a non-local database: ${describeDatabaseTarget(target)}`,
+      '',
+      `It resets the database it connects to, so it only runs against a local Postgres.`,
+      `${ALLOW_REMOTE_DB_ENV} does not apply here and there is no other override.`,
+      '',
+      'Point the command at a local database by overriding the target for this command only:',
+      '',
+      '  POSTGRES_HOST=localhost POSTGRES_PORT=5432 POSTGRES_DB=accounter \\',
+      '    POSTGRES_USER=postgres POSTGRES_SSL=0 <your command>',
+      '',
+      'If the target above is a surprise, the repo root .env is where it came from. That file',
+      'is shared by codegen, migrations, seeds and all DB-backed tests and must only ever hold',
+      'local credentials. Check it without printing the password:',
+      '',
+      "  grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env",
+    ].join('\n'),
+  );
 }
 
 /**

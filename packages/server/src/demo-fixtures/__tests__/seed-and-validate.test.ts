@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
+import { resolveDemoSeedTestEnv } from '../../__tests__/helpers/demo-seed-test-env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,12 +16,19 @@ const __dirname = dirname(__filename);
  * 3. End-to-end data integrity from seed to validation
  *
  * Prerequisites:
- * - Database connection available
- * - ALLOW_DEMO_SEED=1 environment variable set
+ * - A LOCAL database connection (this test resets the database it is pointed at)
+ * - ALLOW_DEMO_SEED=1 environment variable set by whoever runs it
  * - Migrations applied
  *
  * Note: This is a slow test (~10-30 seconds) and should be run separately
  * or marked as integration test in CI/CD pipelines.
+ *
+ * It belongs to the `demo-seed` vitest project only. A copy of this file inside a nested git
+ * worktree used to be collected by the `unit` project during a plain `yarn test`, and the test
+ * set ALLOW_DEMO_SEED=1 for the seed script itself, so the script truncated whatever database
+ * the root `.env` pointed at. Two things in this file are there so it cannot do that, whatever
+ * collects it: it refuses any target that is not local, and it no longer sets
+ * ALLOW_DEMO_SEED. See `resolveDemoSeedTestEnv`.
  */
 describe('Seed and Validate Integration', () => {
   // Increase timeout for this integration test (30 seconds)
@@ -42,6 +50,11 @@ describe('Seed and Validate Integration', () => {
       );
       const registerEsmPath = resolve(workspaceRoot, 'scripts/register-esm.js');
 
+      // Before anything is started: throws unless the database the children would reach is
+      // local and ALLOW_DEMO_SEED=1 came from the caller. Both children get exactly the
+      // environment that was checked.
+      const childEnv = resolveDemoSeedTestEnv(workspaceRoot);
+
       // Step 1: Run seed script
       const seedExitCode = await new Promise<number>((resolve, reject) => {
         const seedProcess = spawn(
@@ -49,10 +62,7 @@ describe('Seed and Validate Integration', () => {
           ['--import', registerEsmPath, seedScriptPath],
           {
             cwd: workspaceRoot,
-            env: {
-              ...process.env,
-              ALLOW_DEMO_SEED: '1',
-            },
+            env: childEnv,
             stdio: 'inherit', // Show output for debugging
           },
         );
@@ -75,7 +85,7 @@ describe('Seed and Validate Integration', () => {
           ['--import', registerEsmPath, validateScriptPath],
           {
             cwd: workspaceRoot,
-            env: process.env,
+            env: childEnv,
             stdio: 'inherit',
           },
         );

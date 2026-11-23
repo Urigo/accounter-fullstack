@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ALLOW_REMOTE_DB_ENV,
   ENFORCE_LOCAL_DB_ENV,
   assertLocalDatabase,
+  assertLocalDatabaseOnly,
   describeDatabaseTarget,
   isLocalDatabaseHost,
   isRemoteDatabaseAllowed,
@@ -167,6 +168,73 @@ describe('assertLocalDatabase', () => {
     expect(() =>
       assertLocalDatabase(REMOTE, 'the RLS suite', { [ALLOW_REMOTE_DB_ENV]: '1' }),
     ).not.toThrow();
+  });
+});
+
+describe('assertLocalDatabaseOnly', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('passes for a local target', () => {
+    expect(() => assertLocalDatabaseOnly(LOCAL, 'the demo seed test')).not.toThrow();
+  });
+
+  it('treats an absent host as local, like the rest of the guard', () => {
+    expect(() => assertLocalDatabaseOnly({ db: 'accounter' }, 'the demo seed test')).not.toThrow();
+  });
+
+  it('throws for a non-local target and names it', () => {
+    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test')).toThrow(
+      'Refusing to run the demo seed test against a non-local database: ' +
+        'accounter_prod_user@accounter2.postgres.database.azure.com:5432/accounter_prod_db',
+    );
+  });
+
+  it('is not switched off by ALLOW_REMOTE_DB=1, unlike assertLocalDatabase', () => {
+    // It takes no `env` argument, so the only way the variable could matter is through the
+    // process environment. Stub it there and prove it does not. Nothing in this file connects
+    // to anything: the guard is pure.
+    vi.stubEnv(ALLOW_REMOTE_DB_ENV, '1');
+
+    expect(() => assertLocalDatabase(REMOTE, 'the test harness')).not.toThrow();
+    expect(() => assertLocalDatabaseOnly(REMOTE, 'the demo seed test')).toThrow(
+      /non-local database/,
+    );
+  });
+
+  it('says there is no override instead of advertising one', () => {
+    let message = '';
+    try {
+      assertLocalDatabaseOnly(REMOTE, 'the demo seed test');
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain(
+      `${ALLOW_REMOTE_DB_ENV} does not apply here and there is no other override`,
+    );
+    expect(message).not.toContain(`${ALLOW_REMOTE_DB_ENV}=1`);
+  });
+
+  it('points at .env without a command that would print the password', () => {
+    let message = '';
+    try {
+      assertLocalDatabaseOnly(REMOTE, 'the demo seed test');
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain("grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env");
+    expect(message).not.toContain("grep '^POSTGRES' .env");
+  });
+
+  it('never leaks a password into the error message', () => {
+    let message = '';
+    try {
+      assertLocalDatabaseOnly({ ...REMOTE, password: 'super-secret' } as never, 'ctx');
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).not.toContain('super-secret');
   });
 });
 
