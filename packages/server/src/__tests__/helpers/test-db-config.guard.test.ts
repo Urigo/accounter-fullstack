@@ -84,4 +84,21 @@ describe('test-db-config import safety', () => {
 
     expect(() => mod.assertTestDatabaseIsLocal()).not.toThrow();
   });
+
+  // An opt-in in .env reaches process.env through this module's own dotenv load, where it is
+  // indistinguishable from one the caller typed -- and the global setup's import of this module
+  // hands it to every test worker. Importing must still be safe; connecting must refuse.
+  it('refuses at connect time when a .env file sets ALLOW_REMOTE_DB', async () => {
+    process.env.POSTGRES_HOST = 'localhost';
+    vi.doMock('dotenv', () => ({ config: () => ({ parsed: { ALLOW_REMOTE_DB: '1' } }) }));
+
+    try {
+      const mod = await loadFreshConfig();
+
+      expect(typeof mod.qualifyTable).toBe('function');
+      expect(() => mod.assertTestDatabaseIsLocal()).toThrow(/ALLOW_REMOTE_DB is set in a \.env/);
+    } finally {
+      vi.doUnmock('dotenv');
+    }
+  });
 });

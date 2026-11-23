@@ -1,17 +1,22 @@
 import { config } from 'dotenv';
 import pg from 'pg';
-import { assertLocalDatabase } from '../packages/migrations/src/local-db-guard.js';
+import {
+  assertLocalDatabase,
+  assertOptInsNotInEnvFile,
+} from '../packages/migrations/src/local-db-guard.js';
 import { makeUUID } from '../packages/server/src/demo-fixtures/helpers/deterministic-uuid.js';
 import { seedCountries as seedCountriesUtil } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
 
-config();
+const loadedEnv = config();
 
 type FinancialAccountType = 'BANK_ACCOUNT' | 'CREDIT_CARD' | 'CRYPTO_WALLET';
 
 async function seed() {
   // This script INSERTs business, account and tax-category rows. It is named
   // `seed:production` and targeting a deployed database is a legitimate use -- but it must
-  // be a decision, so require ALLOW_REMOTE_DB=1 rather than inheriting it from .env.
+  // be a decision, so require ALLOW_REMOTE_DB=1 rather than inheriting it from .env. `config()`
+  // above has already copied .env into process.env, so refuse an opt-in found there first.
+  assertOptInsNotInEnvFile(loadedEnv.parsed, '.env');
   assertLocalDatabase(
     {
       host: process.env.POSTGRES_HOST,

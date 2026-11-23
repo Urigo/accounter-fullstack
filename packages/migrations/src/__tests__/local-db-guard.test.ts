@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  ALLOW_DEMO_SEED_ENV,
   ALLOW_REMOTE_DB_ENV,
   ENFORCE_LOCAL_DB_ENV,
+  PER_COMMAND_OPT_INS,
   assertLocalDatabase,
+  assertOptInsNotInEnvFile,
   describeDatabaseTarget,
   isLocalDatabaseHost,
   isRemoteDatabaseAllowed,
@@ -205,5 +208,102 @@ describe('warnIfRemoteDatabase', () => {
       ),
     ).not.toThrow();
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * `pg` resolves a blank host as `config.host || process.env.PGHOST || 'localhost'`, so an unset
+ * POSTGRES_HOST is only local if PGHOST is unset too. The guard used to call it local
+ * regardless, and the seeds pass POSTGRES_HOST straight through to `pg.Client`.
+ */
+describe('PGHOST fallback', () => {
+  const PG_HOST = 'prod.invalid';
+  const withPgHost = (extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv => ({
+    PGHOST: PG_HOST,
+    ...extra,
+  });
+
+  it.each([
+    ['absent', undefined],
+    ['empty', ''],
+    ['blank', '  '],
+    ['only quotes', "''"],
+  ])('refuses an %s host when PGHOST is remote', (_label, host) => {
+    expect(() => assertLocalDatabase({ host, db: 'accounter' }, 'the seed', withPgHost())).toThrow(
+      /Refusing to run the seed against a non-local database: prod\.invalid\/accounter/,
+    );
+  });
+
+  it('says the host came from PGHOST', () => {
+    expect(() => assertLocalDatabase({}, 'the seed', withPgHost())).toThrow(/comes from PGHOST/);
+  });
+
+  it('lets an explicit host win over PGHOST, as pg does', () => {
+    expect(() => assertLocalDatabase(LOCAL, 'the seed', withPgHost())).not.toThrow();
+    expect(() => assertLocalDatabase(REMOTE, 'the seed', { PGHOST: 'localhost' })).toThrow(
+      /accounter2\.postgres\.database\.azure\.com/,
+    );
+  });
+
+  it('passes an absent host when PGHOST is local or blank', () => {
+    expect(() => assertLocalDatabase({}, 'the seed', { PGHOST: 'localhost' })).not.toThrow();
+    expect(() => assertLocalDatabase({}, 'the seed', { PGHOST: '' })).not.toThrow();
+    expect(() => assertLocalDatabase({}, 'the seed', {})).not.toThrow();
+  });
+
+  it('still honors ALLOW_REMOTE_DB=1', () => {
+    expect(() =>
+      assertLocalDatabase({}, 'the seed', withPgHost({ [ALLOW_REMOTE_DB_ENV]: '1' })),
+    ).not.toThrow();
+  });
+
+  it('applies to warnIfRemoteDatabase too', () => {
+    const logger = { warn: vi.fn() };
+    warnIfRemoteDatabase({ host: '' }, 'migration:run', withPgHost(), logger);
+    expect(logger.warn).toHaveBeenCalledOnce();
+    expect(logger.warn.mock.calls[0]?.[0]).toContain(`${PG_HOST} (from PGHOST)`);
+
+    expect(() =>
+      warnIfRemoteDatabase(
+        { host: '' },
+        'migration:run',
+        withPgHost({ [ENFORCE_LOCAL_DB_ENV]: '1' }),
+        logger,
+      ),
+    ).toThrow(/comes from PGHOST/);
+  });
+});
+
+describe('assertOptInsNotInEnvFile', () => {
+  it('passes when the file sets no opt-in', () => {
+    expect(() => assertOptInsNotInEnvFile(undefined, '.env')).not.toThrow();
+    expect(() => assertOptInsNotInEnvFile({}, '.env')).not.toThrow();
+    expect(() =>
+      assertOptInsNotInEnvFile({ POSTGRES_HOST: 'localhost', ENFORCE_LOCAL_DB: '1' }, '.env'),
+    ).not.toThrow();
+  });
+
+  it.each(PER_COMMAND_OPT_INS)('refuses %s set in the file', key => {
+    expect(() => assertOptInsNotInEnvFile({ [key]: '1' }, '.env')).toThrow(
+      new RegExp(`${key} is set in \\.env`),
+    );
+  });
+
+  it('refuses on presence, whatever the value', () => {
+    // A dormant `=0` is one edit away from switching a guard off for every command.
+    expect(() => assertOptInsNotInEnvFile({ [ALLOW_REMOTE_DB_ENV]: '0' }, '.env')).toThrow(
+      /ALLOW_REMOTE_DB is set/,
+    );
+  });
+
+  it('names every offending key and how to pass it per command', () => {
+    expect(() =>
+      assertOptInsNotInEnvFile(
+        { [ALLOW_REMOTE_DB_ENV]: '1', [ALLOW_DEMO_SEED_ENV]: '1' },
+        'the root .env',
+      ),
+    ).toThrow(
+      /ALLOW_REMOTE_DB and ALLOW_DEMO_SEED are set in the root \.env[\s\S]*ALLOW_REMOTE_DB=1 <your command>[\s\S]*ALLOW_DEMO_SEED=1 <your command>/,
+    );
   });
 });
