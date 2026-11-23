@@ -60,6 +60,7 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 **Seed Script** (successful run):
 
 ```
+✅ Demo seed target accepted (local-host)
 ✅ Connected to database
 🧹 Clearing existing demo data...
 ✅ Domain tables cleared
@@ -390,6 +391,31 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 ---
 
+#### Error: "Refusing to seed demo data into …"
+
+**Cause**: The seed starts by truncating the domain tables, so it checks which database it is about
+to reset (`scripts/demo-seed-guard.ts`) before it connects, and again against the name the server
+reports right before the `TRUNCATE`. `ALLOW_DEMO_SEED=1` is not enough on its own, and
+`ALLOW_REMOTE_DB=1` does not apply.
+
+- **"the database name … says production"**: the name carries `prod`, `production`, `prd` or `live`.
+  This is refused on any host and nothing overrides it. If `POSTGRES_*` was not meant to point
+  there, fix the environment (most often the root `.env`, which must only hold local credentials).
+  Check it without printing the password: `grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env`
+- **"nothing marks this remote database as a demo environment"**: on a remote host the seed only
+  runs when the database name carries `staging`, `stage`, `demo`, `test`, `testing`, `preview`,
+  `sandbox`, `e2e` or `local`. A local database passes whatever it is called.
+
+**Solution**: For a new demo environment, put one of those words in its database name. If the name
+cannot change, confirm the reset by naming the database exactly, in that environment's deploy
+settings:
+
+```bash
+ALLOW_DEMO_SEED_DATABASE= name < database > ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+---
+
 #### Error: "Foreign key violation on business_id"
 
 **Cause**: Use-case references a business that doesn't exist in fixtures.
@@ -626,6 +652,11 @@ ALLOW_DEMO_SEED=1
 # Auth (set manually in dashboard)
 AUTHORIZED_USERS=demo@accounter.local,admin@accounter.local
 ```
+
+`POSTGRES_DB` matters to the seed step. The seed resets a remote database only when its name marks
+it as a demo environment, and `accounter_staging` does. For an environment whose database name
+carries none of the accepted words, also set `ALLOW_DEMO_SEED_DATABASE` to that exact name (see the
+"Refusing to seed demo data into …" entry under Troubleshooting).
 
 ### Deployment Workflow
 
