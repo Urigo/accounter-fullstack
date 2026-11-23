@@ -37,10 +37,14 @@ const getDepreciationRecordsByDates = sql<IGetDepreciationRecordsByDatesQuery>`
   WITH depreciation AS (SELECT d.*
                       FROM accounter_schema.depreciation d
                       WHERE activation_date <= $toDate)
+  -- Disposed cost is in the local currency. A foreign-currency asset without a local override has
+  -- its local cost only once converted, so it is kept here unfiltered: the engine is authoritative,
+  -- and an asset it finds fully disposed of simply contributes a zero row.
   SELECT d.*
   FROM depreciation d
-  WHERE d.amount IS NULL
-    OR ROUND(d.amount) > COALESCE((
+  WHERE COALESCE(d.local_amount, d.amount) IS NULL
+    OR (d.local_amount IS NULL AND d.currency IS NOT NULL AND d.currency <> $localCurrency)
+    OR ROUND(COALESCE(d.local_amount, d.amount)) > COALESCE((
       SELECT SUM(ROUND(dd.disposed_cost))
       FROM accounter_schema.depreciation_disposals dd
       WHERE dd.depreciation_id = d.id
@@ -86,14 +90,18 @@ const updateDepreciationRecord = sql<IUpdateDepreciationRecordQuery>`
   category = COALESCE(
     $categoryId,
     category
-  )
+  ),
+  local_amount = CASE
+    WHEN $clearLocalAmount::boolean THEN NULL
+    ELSE COALESCE($localAmount, local_amount)
+  END
   WHERE
     id = $id
   RETURNING *;`;
 
 const insertDepreciationRecord = sql<IInsertDepreciationRecordQuery>`
-  INSERT INTO accounter_schema.depreciation (charge_id, amount, currency, activation_date, type, category, owner_id)
-  VALUES ($chargeId, $amount, $currency, $activationDate, $type, $categoryId, $ownerId)
+  INSERT INTO accounter_schema.depreciation (charge_id, amount, local_amount, currency, activation_date, type, category, owner_id)
+  VALUES ($chargeId, $amount, $localAmount, $currency, $activationDate, $type, $categoryId, $ownerId)
   RETURNING *`;
 
 const deleteDepreciationRecord = sql<IDeleteDepreciationRecordQuery>`
@@ -154,8 +162,14 @@ export class DepreciationProvider {
    * `fromDate`. Fully depreciated assets that are still owned are included, and so are records in a
    * category that is not depreciated (0%).
    */
-  public async getDepreciationRecordsByDates(params: IGetDepreciationRecordsByDatesParams) {
-    const records = await getDepreciationRecordsByDates.run(params, this.db);
+  public async getDepreciationRecordsByDates(
+    params: Omit<IGetDepreciationRecordsByDatesParams, 'localCurrency'>,
+  ) {
+    const { defaultLocalCurrency } = await this.adminContextProvider.getVerifiedAdminContext();
+    const records = await getDepreciationRecordsByDates.run(
+      { ...params, localCurrency: defaultLocalCurrency },
+      this.db,
+    );
     for (const record of records) {
       this.getDepreciationRecordByIdLoader.prime(record.id, record);
     }

@@ -16,6 +16,7 @@ import {
 } from '../../../charges/helpers/common.helper.js';
 import { getDeelEmployeeId, isDeelDocument } from '../../../deel/helpers/deel.helper.js';
 import { DepreciationDisposalsProvider } from '../../../depreciation/providers/depreciation-disposals.provider.js';
+import { DepreciationProvider } from '../../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
@@ -482,7 +483,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
         if (exchangeRateEntry) {
           if (documentsTaxCategoryId) {
-            exchangeRateTaxCategory = documentsTaxCategoryId;
+            // a depreciated asset's cost is fixed at the document date's rate, so the asset account
+            // must not absorb the difference to the payment's rate: book it to exchange rates
+            const depreciationRecords = await injector
+              .get(DepreciationProvider)
+              .getDepreciationRecordsByChargeIdLoader.load(chargeId);
+            exchangeRateTaxCategory =
+              depreciationRecords.length > 0 ? exchangeRateTaxCategoryId : documentsTaxCategoryId;
           } else {
             exchangeRateTaxCategory =
               exchangeRateEntry.debitAccountID1 === entityId

@@ -16,6 +16,7 @@ import {
 } from '../../../helpers/index.js';
 import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
 import { ComboBox } from '../../common/inputs/combo-box.js';
+import { NumberInput } from '../../common/inputs/number-input.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { TableCell, TableRow } from '../../ui/table.js';
@@ -33,6 +34,14 @@ import { depreciationTypes } from './index.js';
       formatted
       raw
     }
+    localAmount {
+      currency
+      formatted
+      raw
+    }
+    localAmountOverride
+    exchangeRate
+    exchangeRateDate
     activationDate
     category {
       id
@@ -73,8 +82,18 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
   const {
     control,
     handleSubmit,
+    watch,
     formState: { dirtyFields },
   } = form;
+
+  const recordCurrency =
+    depreciationRecord.amount?.currency ?? depreciationRecord.charge.totalAmount?.currency;
+  const localCurrency = depreciationRecord.localAmount?.currency;
+  const currency = watch('currency') ?? recordCurrency;
+  // the local cost override applies to an asset paid for in a foreign currency
+  const showLocalAmountOverride =
+    depreciationRecord.localAmountOverride != null ||
+    (!!currency && !!localCurrency && currency !== localCurrency);
 
   const { updateDepreciationRecord, fetching: updatingInProcess } = useUpdateDepreciationRecord();
 
@@ -144,6 +163,39 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
                 {depreciationRecord.amount?.formatted ??
                   depreciationRecord.charge.totalAmount?.formatted}
               </div>
+            )}
+            {isEditMode && showLocalAmountOverride && (
+              <FormField
+                name="localAmount"
+                control={control}
+                defaultValue={depreciationRecord.localAmountOverride ?? undefined}
+                render={({ field, fieldState }): ReactElement => (
+                  <div className="mt-2">
+                    <NumberInput
+                      {...field}
+                      form={`form ${depreciationRecord.id}`}
+                      value={field.value ?? undefined}
+                      // an emptied field clears the override
+                      onChange={value => field.onChange(value ?? null)}
+                      label={`${localCurrency ?? 'Local'} cost (override)`}
+                      placeholder="Converted automatically"
+                      thousandSeparator=","
+                      decimalScale={2}
+                      min={0}
+                      hideControls
+                      error={fieldState.error?.message}
+                    />
+                  </div>
+                )}
+              />
+            )}
+            {!isEditMode && depreciationRecord.localAmount && (
+              <LocalCost
+                localAmount={depreciationRecord.localAmount.formatted}
+                isOverride={depreciationRecord.localAmountOverride != null}
+                exchangeRate={depreciationRecord.exchangeRate}
+                exchangeRateDate={depreciationRecord.exchangeRateDate}
+              />
             )}
           </form>
         </TableCell>
@@ -275,3 +327,29 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
     </Form>
   );
 };
+
+/** The local cost of an asset paid for in a foreign currency, or overridden */
+function LocalCost({
+  localAmount,
+  isOverride,
+  exchangeRate,
+  exchangeRateDate,
+}: {
+  localAmount: string;
+  isOverride: boolean;
+  exchangeRate?: number | null;
+  exchangeRateDate?: Parameters<typeof formatTimelessDate>[0] | null;
+}): ReactElement | null {
+  if (isOverride) {
+    return <div className="text-muted-foreground text-xs">Cost: {localAmount} (override)</div>;
+  }
+  if (exchangeRate == null) {
+    return null;
+  }
+  return (
+    <div className="text-muted-foreground text-xs">
+      Cost: {localAmount} (at {exchangeRate}
+      {exchangeRateDate ? ` on ${formatTimelessDate(exchangeRateDate)}` : ''})
+    </div>
+  );
+}

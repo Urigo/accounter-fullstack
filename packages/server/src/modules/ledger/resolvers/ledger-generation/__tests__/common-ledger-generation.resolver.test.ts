@@ -15,6 +15,7 @@ import {
 } from '../../../../charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '../../../../charges/types.js';
 import { DepreciationDisposalsProvider } from '../../../../depreciation/providers/depreciation-disposals.provider.js';
+import { DepreciationProvider } from '../../../../depreciation/providers/depreciation.provider.js';
 import { DocumentsProvider } from '../../../../documents/providers/documents.provider.js';
 import { ExchangeProvider } from '../../../../exchange-rates/providers/exchange.provider.js';
 import { BusinessesProvider } from '../../../../financial-entities/providers/businesses.provider.js';
@@ -203,6 +204,7 @@ function makeInjector(options: {
   transactions: IGetTransactionsByChargeIdsResult[];
   rates: MockRate[];
   disposals?: unknown[];
+  depreciationRecords?: unknown[];
 }): Injector {
   return makeMockInjector(
     new Map<unknown, unknown>([
@@ -277,6 +279,14 @@ function makeInjector(options: {
         DepreciationDisposalsProvider,
         { getDisposalsByChargeIdLoader: { load: async () => options.disposals ?? [] } },
       ],
+      [
+        DepreciationProvider,
+        {
+          getDepreciationRecordsByChargeIdLoader: {
+            load: async () => options.depreciationRecords ?? [],
+          },
+        },
+      ],
       [FinancialEntitiesProvider, makeFinancialEntitiesProvider([SUPPLIER_ID])],
     ]),
   );
@@ -349,6 +359,44 @@ describe.each(TEST_TIMEZONES)('generateLedgerRecordsForCommonCharge (TZ=%s)', ti
         localAmount: 5,
         invoiceDate: DAY,
         valueDate: DAY,
+      }),
+    ]);
+  });
+
+  it("books an asset purchase's rate difference to exchange rates, not to the asset account", async () => {
+    // a $1,000 asset invoiced at the day's ₪3.60 and paid a week later at ₪3.70: the asset's cost
+    // stays at the invoice rate, so the ₪100 difference is a financial expense
+    vi.mocked(ledgerEntryFromDocument).mockResolvedValue(
+      invoiceEntry({ currency: Currency.Usd, amount: 1000, rate: 3.6 }),
+    );
+    const paymentDay: TimelessDateString = '2025-03-19';
+    const injector = makeInjector({
+      transactions: [
+        buildTransaction({
+          id: 'payment',
+          chargeId: CHARGE_ID,
+          ownerId: OWNER_ID,
+          accountId: PAYING_ACCOUNT_ID,
+          businessId: SUPPLIER_ID,
+          amount: '-1000',
+          currency: Currency.Usd,
+          debitDate: paymentDay,
+        }),
+      ],
+      rates: [[Currency.Usd, paymentDay, 3.7]],
+      depreciationRecords: [{ id: 'asset', charge_id: CHARGE_ID }],
+    });
+
+    const { records, balance, errors } = await generate(injector);
+
+    expect(errors).toEqual([]);
+    expect(balance?.isBalanced).toBe(true);
+    expect(exchangeRecords(records).map(summarize)).toEqual([
+      expect.objectContaining({
+        debit: 'tax-category-exchange-rates',
+        credit: SUPPLIER_ID,
+        currency: Currency.Ils,
+        localAmount: 100,
       }),
     ]);
   });

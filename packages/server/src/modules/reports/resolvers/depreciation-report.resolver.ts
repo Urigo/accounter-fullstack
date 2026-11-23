@@ -15,7 +15,7 @@ import {
   type AssetYearResult,
 } from '../../depreciation/helpers/asset-depreciation.helper.js';
 import {
-  toAssetInput,
+  loadAssetInput,
   toDisposalInput,
 } from '../../depreciation/helpers/depreciation-disposals.helper.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
@@ -180,19 +180,20 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
             return;
           }
 
-          const [charge, { transactionsMinDebitDate }, disposals] = await Promise.all([
+          const [charge, { transactionsMinDebitDate }, disposals, asset] = await Promise.all([
             injector.get(ChargesProvider).getChargeByIdLoader.load(record.charge_id),
             getChargeTransactionsMeta(record.charge_id, injector),
             injector
               .get(DepreciationDisposalsProvider)
               .getDisposalsByDepreciationIdLoader.load(record.id),
+            // the cost basis in the local currency: a foreign-currency asset is converted
+            loadAssetInput(injector, record, depreciationCategory.category),
           ]);
           if (!charge || charge instanceof Error) {
             console.error('No charge for depreciation record', record);
             return;
           }
 
-          const asset = toAssetInput(record, depreciationCategory.category);
           const yearResult = calculateAssetYear(asset, disposals.map(toDisposalInput), year);
           if (isClosedBeforeYear(asset, disposals, startOfTimelessYear(year), yearResult)) {
             return;

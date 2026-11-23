@@ -20,7 +20,16 @@ export default gql`
     id: UUID!
     chargeId: UUID!
     charge: Charge!
+    " the asset's cost, in the currency it was paid in "
     amount: FinancialAmount!
+    " the asset's cost basis in the local currency: the override when set, else the amount converted at the purchase date's rate. Null when the record has no amount "
+    localAmount: FinancialAmount
+    " the local cost basis override, if set "
+    localAmountOverride: Float
+    " the rate the amount was converted at; null for local-currency records and overrides "
+    exchangeRate: Float
+    " the date of the rate the amount was converted at; null for local-currency records and overrides "
+    exchangeRateDate: TimelessDate
     activationDate: TimelessDate!
     category: DepreciationCategory!
     type: DepreciationType
@@ -75,6 +84,8 @@ export default gql`
     chargeId: UUID!
     amount: Float
     currency: Currency
+    " cost basis override in the local currency, for an asset paid for in a foreign currency "
+    localAmount: Float
     activationDate: TimelessDate!
     type: DepreciationType
     categoryId: UUID!
@@ -89,6 +100,8 @@ export default gql`
     chargeId: UUID
     amount: Float
     currency: Currency
+    " cost basis override in the local currency; null clears it, leaving it out keeps it "
+    localAmount: Float
     activationDate: TimelessDate
     type: DepreciationType
     categoryId: UUID

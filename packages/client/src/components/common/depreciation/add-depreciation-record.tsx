@@ -1,14 +1,17 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import {
   AllDepreciationCategoriesDocument,
+  Currency,
   type InsertDepreciationRecordInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useAddDepreciationRecord } from '../../../hooks/use-add-depreciation-record.js';
+import { UserContext } from '../../../providers/index.js';
 import { ComboBox } from '../../common/inputs/combo-box.js';
+import { NumberInput } from '../../common/inputs/number-input.js';
 import { Button } from '../../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { LoadingOverlay } from '../../ui/overlay.js';
@@ -62,8 +65,12 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
   const form = useForm<InsertDepreciationRecordInput>({
     defaultValues: { chargeId },
   });
-  const { control, handleSubmit } = form;
+  const { control, handleSubmit, watch } = form;
   const [fetching, setFetching] = useState(false);
+  const { userContext } = useContext(UserContext);
+  const localCurrency = (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
+  const currency = watch('currency');
+  const isForeignCurrency = !!currency && currency !== localCurrency;
 
   const [{ data, fetching: fetchingCategories }] = useQuery({
     query: AllDepreciationCategoriesDocument,
@@ -72,7 +79,12 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
   const { addDepreciationRecord, fetching: addingInProcess } = useAddDepreciationRecord();
 
   const onSubmit: SubmitHandler<InsertDepreciationRecordInput> = data => {
-    addDepreciationRecord({ fields: data }).then(() => {
+    const fields = {
+      ...data,
+      // a local cost override only applies to an asset paid for in a foreign currency
+      localAmount: isForeignCurrency ? (data.localAmount ?? null) : null,
+    };
+    addDepreciationRecord({ fields }).then(() => {
       onAdd?.();
       close();
     });
@@ -144,6 +156,32 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
                 />
               )}
             />
+            {isForeignCurrency && (
+              <Controller
+                name="localAmount"
+                control={control}
+                render={({ field, fieldState }): ReactElement => (
+                  <div className="mt-2">
+                    <NumberInput
+                      {...field}
+                      value={field.value ?? undefined}
+                      onChange={value => field.onChange(value ?? null)}
+                      label={`${localCurrency} cost (override)`}
+                      placeholder="Converted automatically"
+                      thousandSeparator=","
+                      decimalScale={2}
+                      min={0}
+                      hideControls
+                      error={fieldState.error?.message}
+                    />
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      Leave empty to convert at the Bank of Israel rate of the purchase invoice date
+                      (or of the first payment, or of the activation date)
+                    </p>
+                  </div>
+                )}
+              />
+            )}
             <Controller
               name="categoryId"
               control={control}

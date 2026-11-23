@@ -4,6 +4,7 @@ import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { resolveAssetLocalCost } from '../helpers/asset-cost.helper.js';
 import { remainingAssetCost } from '../helpers/asset-depreciation.helper.js';
 import {
   checkDisposal,
@@ -41,22 +42,23 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
       const records = await injector
         .get(DepreciationProvider)
         .getDepreciationRecordsActivatedBy({ date: activeOn });
-      const disposalsPerRecord = await injector
-        .get(DepreciationDisposalsProvider)
-        .getDisposalsByDepreciationIdLoader.loadMany(records.map(record => record.id));
-      return records.filter((record, index) => {
+      const [disposalsPerRecord, localCosts] = await Promise.all([
+        injector
+          .get(DepreciationDisposalsProvider)
+          .getDisposalsByDepreciationIdLoader.loadMany(records.map(record => record.id)),
+        Promise.all(records.map(record => resolveAssetLocalCost(injector, record))),
+      ]);
+      return records.filter((_record, index) => {
         const disposals = disposalsPerRecord[index];
         if (disposals instanceof Error) {
           throw disposals;
         }
+        const { cost } = localCosts[index];
         const disposedBefore = disposals
           .filter(disposal => disposal.disposal_date <= activeOn)
           .map(toDisposalInput);
         // a record without an amount can't be disposed of, so it isn't offered
-        return (
-          record.amount != null &&
-          remainingAssetCost({ cost: Number(record.amount) }, disposedBefore) > 0
-        );
+        return cost != null && remainingAssetCost({ cost }, disposedBefore) > 0;
       });
     },
     previewDepreciationDisposal: async (_, { input }, { injector }) => {
@@ -237,16 +239,15 @@ export const depreciationDisposalsResolvers: DepreciationModule.Resolvers &
         .get(DepreciationDisposalsProvider)
         .getDisposalsByDepreciationIdLoader.load(record.id),
     remainingCost: async (record, _, { injector }) => {
-      const disposals = await injector
-        .get(DepreciationDisposalsProvider)
-        .getDisposalsByDepreciationIdLoader.load(record.id);
-      const remaining = remainingAssetCost(
-        { cost: Number(record.amount ?? 0) },
-        disposals.map(toDisposalInput),
-      );
-      return record.currency
-        ? formatFinancialAmount(remaining, record.currency)
-        : localAmount(injector, remaining);
+      const [disposals, { cost }] = await Promise.all([
+        injector
+          .get(DepreciationDisposalsProvider)
+          .getDisposalsByDepreciationIdLoader.load(record.id),
+        resolveAssetLocalCost(injector, record),
+      ]);
+      // disposals are in the local currency, so the remaining cost is too
+      const remaining = remainingAssetCost({ cost: cost ?? 0 }, disposals.map(toDisposalInput));
+      return localAmount(injector, remaining);
     },
   },
   CommonCharge: {

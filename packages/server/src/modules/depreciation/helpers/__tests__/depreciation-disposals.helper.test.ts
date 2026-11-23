@@ -53,10 +53,13 @@ function buildInjector({ ledgerLock }: { ledgerLock?: TimelessDateString } = {})
 
 function buildContext({
   record: recordOverrides = {},
+  localCost,
   disposals = [],
   percentage,
 }: {
   record?: Partial<IGetDepreciationRecordsByIdsResult>;
+  /** the resolved local cost; defaults to the record's amount */
+  localCost?: number | null;
   disposals?: Partial<IGetDepreciationDisposalsByIdsResult>[];
   percentage?: string;
 } = {}): AssetContext {
@@ -74,10 +77,13 @@ function buildContext({
     id: 'category',
     percentage: percentage ?? '10',
   } as IGetAllDepreciationCategoriesResult;
+  const defaultCost = record.amount == null ? null : Number(record.amount);
+  const cost = localCost === undefined ? defaultCost : localCost;
   return {
     record,
     category,
-    asset: toAssetInput(record, category),
+    localCost: cost,
+    asset: toAssetInput(record, category, cost),
     disposals: disposals.map(
       disposal =>
         ({
@@ -335,15 +341,35 @@ describe('checkDisposal', () => {
     );
   });
 
-  it('rejects an asset recorded in a foreign currency', async () => {
+  it('disposes of an asset paid in a foreign currency at its local cost', async () => {
+    // $3,000 at ₪4 is a ₪12,000 cost; the disposal's amounts are in shekels
     const check = await checkDisposal(
       buildInjector(),
-      buildContext({ record: { currency: 'USD' } as Partial<IGetDepreciationRecordsByIdsResult> }),
+      buildContext({
+        record: { amount: '3000', currency: 'USD' } as Partial<IGetDepreciationRecordsByIdsResult>,
+        localCost: 12_000,
+      }),
       sale,
     );
 
+    expect(check.errors).toBeUndefined();
+    expect(check.result).toMatchObject({ disposedCost: 4000, proceeds: 3000 });
+    expect(check.remainingCost).toBe(8000);
+  });
+
+  it('rejects disposing of more than the local cost of a foreign-currency asset', async () => {
+    const check = await checkDisposal(
+      buildInjector(),
+      buildContext({
+        record: { amount: '3000', currency: 'USD' } as Partial<IGetDepreciationRecordsByIdsResult>,
+        localCost: 12_000,
+      }),
+      { ...sale, disposedCost: 13_000 },
+    );
+
+    // the check is against the ₪12,000 local cost, not the 3,000 in dollars
     expect(check.errors).toContain(
-      'Disposals are only supported for assets recorded in ILS (this asset is in USD)',
+      "Disposed cost (13000) exceeds the asset's cost (12000), both rounded to whole shekels",
     );
   });
 

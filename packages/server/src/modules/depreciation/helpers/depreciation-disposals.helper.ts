@@ -12,6 +12,7 @@ import type {
   IGetDepreciationDisposalsByIdsResult,
   IGetDepreciationRecordsByIdsResult,
 } from '../types.js';
+import { resolveAssetLocalCost, type AssetCostRecord } from './asset-cost.helper.js';
 import {
   calculateAssetYear,
   computeCostRefund,
@@ -25,12 +26,14 @@ import {
   type DepreciationDisposalKind,
 } from './asset-depreciation.helper.js';
 
+/** The engine's input for an asset; `cost` is its cost basis in the local currency */
 export function toAssetInput(
-  record: Pick<IGetDepreciationRecordsByIdsResult, 'amount' | 'activation_date'>,
+  record: Pick<IGetDepreciationRecordsByIdsResult, 'activation_date'>,
   category: Pick<IGetAllDepreciationCategoriesResult, 'percentage'>,
+  cost: number | null,
 ): AssetDepreciationInput {
   return {
-    cost: Number(record.amount ?? 0),
+    cost: cost ?? 0,
     depreciationRate: Number(category.percentage),
     activationDate: record.activation_date,
   };
@@ -58,6 +61,16 @@ export function storedProceeds(
   return disposal.type === 'COST_REFUND' ? 0 : Number(disposal.proceeds);
 }
 
+/** The engine's input for an asset, at its cost basis in the local currency */
+export async function loadAssetInput(
+  injector: Injector,
+  record: AssetCostRecord,
+  category: Pick<IGetAllDepreciationCategoriesResult, 'percentage'>,
+): Promise<AssetDepreciationInput> {
+  const { cost } = await resolveAssetLocalCost(injector, record);
+  return toAssetInput(record, category, cost);
+}
+
 export function toDisposalInput(
   disposal: Pick<
     IGetDepreciationDisposalsByIdsResult,
@@ -77,6 +90,8 @@ export function toDisposalInput(
 export type AssetContext = {
   record: IGetDepreciationRecordsByIdsResult;
   category: IGetAllDepreciationCategoriesResult;
+  /** the asset's cost basis in the local currency, or null when the record has no amount */
+  localCost: number | null;
   asset: AssetDepreciationInput;
   disposals: IGetDepreciationDisposalsByIdsResult[];
 };
@@ -100,7 +115,14 @@ export async function loadAssetContext(
   if (!category) {
     throw new GraphQLError(`Depreciation category with id ${record.category} not found`);
   }
-  return { record, category, asset: toAssetInput(record, category), disposals };
+  const { cost } = await resolveAssetLocalCost(injector, record);
+  return {
+    record,
+    category,
+    localCost: cost,
+    asset: toAssetInput(record, category, cost),
+    disposals,
+  };
 }
 
 /**
@@ -251,8 +273,8 @@ export async function checkDisposal(
       remainingBookValue: number;
     }
 > {
-  const { record, asset, disposals } = context;
-  const [{ defaultLocalCurrency, ledgerLock, ownerId }, charge] = await Promise.all([
+  const { record, localCost, asset, disposals } = context;
+  const [{ ledgerLock, ownerId }, charge] = await Promise.all([
     injector.get(AdminContextProvider).getVerifiedAdminContext(),
     candidate.chargeId
       ? injector.get(ChargesProvider).getChargeByIdLoader.load(candidate.chargeId)
@@ -278,13 +300,8 @@ export async function checkDisposal(
       errors.push(`Charge with id ${candidate.chargeId} belongs to a different business`);
     }
   }
-  if (record.amount == null) {
+  if (localCost == null) {
     errors.push('Set an amount on the depreciation record before disposing of it');
-  }
-  if (record.currency && record.currency !== defaultLocalCurrency) {
-    errors.push(
-      `Disposals are only supported for assets recorded in ${defaultLocalCurrency} (this asset is in ${record.currency})`,
-    );
   }
   const stored = candidate.id
     ? disposals.find(disposal => disposal.id === candidate.id)
