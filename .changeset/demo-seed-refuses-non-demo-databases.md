@@ -22,11 +22,12 @@ script only warned about a non-local target before its `TRUNCATE`.
   override, and no longer sets `ALLOW_DEMO_SEED=1` itself: it has to be on the command, as the
   README already said.
 - **The demo seed** (`yarn seed:staging-demo`) refuses to reset a database that is not a demo
-  database. A name carrying `prod`, `production`, `prd` or `live` is refused on any host and nothing
-  overrides it. On a remote host the name has to carry `staging`, `stage`, `demo`, `test`,
-  `testing`, `preview`, `sandbox`, `e2e` or `local`; any other remote database has to be confirmed
-  with the new `ALLOW_DEMO_SEED_DATABASE=<exact database name>`. The rule is checked before
-  connecting and again against the name the server reports, right before the `TRUNCATE`.
+  database, on a local host as well as a remote one. A name carrying `prod`, `production`, `prd` or
+  `live` is refused and nothing overrides it. A name carrying `staging`, `stage`, `demo`, `test`,
+  `testing`, `preview`, `sandbox`, `e2e` or `local` is accepted, and so is the dev container's
+  `accounter` on a local host. Any other database, a local copy of production included, has to be
+  confirmed with the new `ALLOW_DEMO_SEED_DATABASE=<exact database name>`. The rule is checked
+  before connecting and again against the name the server reports, right before the `TRUNCATE`.
   `ALLOW_REMOTE_DB=1` does not unlock it.
 
 Staging deploys are unaffected: `ALLOW_DEMO_SEED=1 yarn seed:staging-demo` against

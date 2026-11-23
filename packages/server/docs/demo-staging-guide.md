@@ -60,7 +60,7 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 **Seed Script** (successful run):
 
 ```
-✅ Demo seed target accepted (local-host)
+✅ Demo seed target accepted (local-dev-database)
 ✅ Connected to database
 🧹 Clearing existing demo data...
 ✅ Domain tables cleared
@@ -402,16 +402,18 @@ reports right before the `TRUNCATE`. `ALLOW_DEMO_SEED=1` is not enough on its ow
   This is refused on any host and nothing overrides it. If `POSTGRES_*` was not meant to point
   there, fix the environment (most often the root `.env`, which must only hold local credentials).
   Check it without printing the password: `grep -E '^POSTGRES_(HOST|PORT|DB|USER)=' .env`
-- **"nothing marks this remote database as a demo environment"**: on a remote host the seed only
-  runs when the database name carries `staging`, `stage`, `demo`, `test`, `testing`, `preview`,
-  `sandbox`, `e2e` or `local`. A local database passes whatever it is called.
+- **"nothing marks … as a demo database"**: the seed only runs when the database name carries
+  `staging`, `stage`, `demo`, `test`, `testing`, `preview`, `sandbox`, `e2e` or `local` (and does
+  not contain `prod`), or, on a local host, when the database is the dev container's `accounter`.
+  Being reachable on `localhost` is not enough: a local copy of production under another name is
+  refused too.
 
 **Solution**: For a new demo environment, put one of those words in its database name. If the name
-cannot change, confirm the reset by naming the database exactly, in that environment's deploy
-settings:
+cannot change, confirm the reset by naming the database exactly, on the command or in that
+environment's deploy settings. With a database called `accounter_uat`:
 
 ```bash
-ALLOW_DEMO_SEED_DATABASE= name < database > ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+ALLOW_DEMO_SEED_DATABASE=accounter_uat ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 ```
 
 ---

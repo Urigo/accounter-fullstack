@@ -286,7 +286,7 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 - **Deterministic UUIDs**: Stable entity IDs via UUID v5 generation
 - **Modular Registry**: Self-contained use-case fixtures with metadata
 - **Production Safeguards**: The seed truncates the domain tables, so it refuses a database whose
-  name says production, and any remote database that is not a demo environment (see
+  name says production, and any other database that is not a demo database (see
   [Database safety](../../README.md#database-safety))
 - **Comprehensive Validation**: Ledger balance checks, entity reconciliation
 

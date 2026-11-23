@@ -194,15 +194,17 @@ The tooling also checks its target, as a second line of defence. The checks are 
 | `yarn generate`                                                  | Not checked. It only reads.                                                     |
 
 `yarn seed:staging-demo` truncates the domain tables before it inserts, so it decides by the name of
-the database it is about to reset (`scripts/demo-seed-guard.ts`):
+the database it is about to reset (`scripts/demo-seed-guard.ts`), on a local host as well as a
+remote one:
 
-- A local database is accepted, whatever it is called.
-- A remote database is accepted when its name carries `staging`, `stage`, `demo`, `test`, `testing`,
-  `preview`, `sandbox`, `e2e` or `local`. That is how a staging deploy runs it.
-- Any other remote database has to be confirmed by name, for that one command:
-  `ALLOW_DEMO_SEED_DATABASE=<exact database name>`.
-- A database whose name carries `prod`, `production`, `prd` or `live` is refused on any host, local
-  included, and nothing overrides that.
+- A database whose name carries `prod`, `production`, `prd` or `live` is refused, and nothing
+  overrides that.
+- A database whose name carries `staging`, `stage`, `demo`, `test`, `testing`, `preview`, `sandbox`,
+  `e2e` or `local` is accepted. That is how a staging deploy runs it.
+- On a local host, the dev container's own database, `accounter`, is accepted.
+- Any other database has to be confirmed by name, for that one command:
+  `ALLOW_DEMO_SEED_DATABASE=<exact database name>`. That includes a local copy of production under
+  another name, and a name with `prod` glued to other letters (`preprod_staging`).
 
 ### `ENFORCE_LOCAL_DB=1`
 
