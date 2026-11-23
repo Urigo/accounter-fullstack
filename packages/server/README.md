@@ -189,7 +189,8 @@ Full seed-and-validate pipeline test that:
 
 **Prerequisites:**
 
-- PostgreSQL running, on a local host (a remote one is refused unless `ALLOW_REMOTE_DB=1`)
+- PostgreSQL running on a local host. The test always refuses a remote one: it strips
+  `ALLOW_REMOTE_DB` from the seed's environment, so there is no opt-in
 - Migrations applied
 - `ALLOW_DEMO_SEED=1` environment variable; without it the test is skipped
 

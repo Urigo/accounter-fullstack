@@ -10,6 +10,7 @@ import type {
   Fixture,
   FixtureAccountTaxCategories,
 } from '../packages/server/src/__tests__/helpers/fixture-types.js';
+import { assertOptInsNotInTestEnvFiles } from '../packages/server/src/__tests__/helpers/test-db-config.js';
 import { makeUUID } from '../packages/server/src/demo-fixtures/helpers/deterministic-uuid.js';
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
 import { seedDemoUsers } from '../packages/server/src/demo-fixtures/helpers/seed-demo-users.js';
@@ -189,6 +190,9 @@ async function seedDemoData() {
   // into process.env, so an ALLOW_DEMO_SEED or ALLOW_REMOTE_DB left in that file would satisfy
   // those gates for every run without anyone typing it.
   assertOptInsNotInEnvFile(loadedEnv.parsed, '.env');
+  // The same for the files test-db-config.ts loaded: it is imported (via fixture-loader) before
+  // the `config()` above runs, and it also loads ../../.env, which that call never parses.
+  assertOptInsNotInTestEnvFiles();
 
   if (process.env.NODE_ENV === 'production') {
     console.error('❌ Refusing to seed demo data in production environment');

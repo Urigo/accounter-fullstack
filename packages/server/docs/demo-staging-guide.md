@@ -48,14 +48,20 @@ The seed starts with a `TRUNCATE ... CASCADE` of every domain table: run against
 data matters, it destroys it. Every one of these must now hold, or the seed refuses before touching
 anything:
 
-| Guard                          | Satisfied by                                        |
-| ------------------------------ | --------------------------------------------------- |
-| `ALLOW_DEMO_SEED=1`            | The caller, per command. No test or script sets it. |
-| `NODE_ENV` is not `production` | —                                                   |
-| `POSTGRES_HOST` is local       | Or `ALLOW_REMOTE_DB=1` for the command (staging)    |
+| Guard                                              | Satisfied by                                        |
+| -------------------------------------------------- | --------------------------------------------------- |
+| No `ALLOW_DEMO_SEED` / `ALLOW_REMOTE_DB` in `.env` | Remove them from the file; pass them per command    |
+| `ALLOW_DEMO_SEED=1`                                | The caller, per command. No test or script sets it. |
+| `NODE_ENV` is not `production`                     | —                                                   |
+| The host is local                                  | Or `ALLOW_REMOTE_DB=1` for the command (staging)    |
+
+"The host" is `POSTGRES_HOST`, or `PGHOST` when `POSTGRES_HOST` is unset or blank, the same fallback
+`pg` uses. ".env" means every env file the seed loads, including the `../../.env` that
+`test-db-config.ts` reads.
 
 The demo-seed E2E test (`yarn test:demo-seed`) is skipped unless `ALLOW_DEMO_SEED=1` is already set,
-so a plain `yarn vitest` run or an IDE test run cannot start the seed.
+so a plain `yarn vitest` run or an IDE test run cannot start the seed. It also strips
+`ALLOW_REMOTE_DB` from the seed's environment, so it only ever runs against a local database.
 
 ### Local Seed & Validate
 

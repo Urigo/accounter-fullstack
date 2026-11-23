@@ -23,6 +23,19 @@ export const testDbConfig: PoolConfig = {
 };
 
 /**
+ * Refuse an ALLOW_REMOTE_DB or ALLOW_DEMO_SEED set in the .env files this module loaded.
+ *
+ * Importing this module is what puts those files into process.env, and it is imported by more
+ * than tests: `scripts/seed-demo-data.ts` reaches it through `fixture-loader.ts`, so its
+ * `../../.env` is loaded before the seed's own `config()` runs and is invisible to the seed's
+ * own check. Anything gated on an opt-in that can run with this module loaded must call this
+ * too, so the files are checked by the code that loaded them rather than by a copy of the list.
+ */
+export function assertOptInsNotInTestEnvFiles(): void {
+  assertOptInsNotInEnvFile(loadedEnv.parsed, 'a .env file (.env or ../../.env)');
+}
+
+/**
  * Refuse to let the test harness touch a deployed database.
  *
  * Called from the places that actually open a connection, NOT at module scope. This module
@@ -41,7 +54,7 @@ export const testDbConfig: PoolConfig = {
  * off, and let the demo-seed E2E run, with nobody having asked for either.
  */
 export function assertTestDatabaseIsLocal(): void {
-  assertOptInsNotInEnvFile(loadedEnv.parsed, 'a .env file (.env or ../../.env)');
+  assertOptInsNotInTestEnvFiles();
   assertLocalDatabase(
     {
       host: testDbConfig.host,

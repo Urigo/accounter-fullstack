@@ -36,7 +36,11 @@ const demoSeedAllowed = process.env.ALLOW_DEMO_SEED === '1';
 
 // A skip is silent: if the CI job that runs this project ever stops setting ALLOW_DEMO_SEED,
 // the suite would quietly stop running and the job would stay green. Fail instead.
-if (process.env.CI && !demoSeedAllowed) {
+//
+// Only an affirmative CI value counts: GitHub Actions sets `true`, some setups use `1`, and
+// `CI=false` / `CI=0` are common ways to switch CI behaviour off locally -- those should skip.
+const inCI = process.env.CI === 'true' || process.env.CI === '1';
+if (inCI && !demoSeedAllowed) {
   throw new Error(
     `The demo-seed E2E was selected in CI without ${ALLOW_DEMO_SEED_ENV}=1, so it would be ` +
       'skipped. Set it on the CI step that runs `--project demo-seed`.',

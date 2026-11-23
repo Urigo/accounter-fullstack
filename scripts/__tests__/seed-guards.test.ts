@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -37,13 +37,27 @@ afterAll(() => {
   }
 });
 
+/**
+ * `envFile` is the cwd's `.env`. `parentEnvFile`, when given, is written two levels up, where
+ * `test-db-config.ts` (which the demo seed imports) also loads `../../.env` from -- the run then
+ * happens in `<temp>/a/b` so that file stays inside the temp directory.
+ */
 function runSeed(
   script: 'seed-demo-data.ts' | 'seed.ts',
-  { env = {}, envFile = '' }: { env?: Record<string, string>; envFile?: string },
+  {
+    env = {},
+    envFile = '',
+    parentEnvFile,
+  }: { env?: Record<string, string>; envFile?: string; parentEnvFile?: string },
 ): { status: number | null; output: string } {
-  const cwd = mkdtempSync(join(tmpdir(), 'accounter-seed-guard-'));
-  tempDirs.push(cwd);
+  const base = mkdtempSync(join(tmpdir(), 'accounter-seed-guard-'));
+  tempDirs.push(base);
+  const cwd = join(base, 'a', 'b');
+  mkdirSync(cwd, { recursive: true });
   writeFileSync(join(cwd, '.env'), envFile, 'utf8');
+  if (parentEnvFile !== undefined) {
+    writeFileSync(join(base, '.env'), parentEnvFile, 'utf8');
+  }
 
   const baseEnv: Record<string, string> = {};
   for (const key of ['PATH', 'HOME', 'TMPDIR']) {
@@ -105,6 +119,19 @@ describe('scripts/seed-demo-data.ts guards', () => {
     expect(status).not.toBe(0);
     expect(output).toContain('ALLOW_REMOTE_DB is set in .env');
     expect(output).not.toContain('Connected to database');
+  });
+
+  // The seed imports test-db-config.ts (via fixture-loader), which loads ../../.env into
+  // process.env before the seed's own config() runs -- a file the seed's own check never saw.
+  it('refuses ALLOW_DEMO_SEED set in ../../.env', () => {
+    const { status, output } = run({
+      env: UNREACHABLE_LOCAL,
+      parentEnvFile: 'ALLOW_DEMO_SEED=1\n',
+    });
+
+    expect(status).not.toBe(0);
+    expect(output).toContain('ALLOW_DEMO_SEED is set in a .env file (.env or ../../.env)');
+    expect(output).not.toContain('ECONNREFUSED');
   });
 
   // The other direction: the staging deploy seeds a deployed database on purpose, with both
