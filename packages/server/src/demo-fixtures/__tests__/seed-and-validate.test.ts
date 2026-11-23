@@ -21,8 +21,17 @@ const __dirname = dirname(__filename);
  *
  * Note: This is a slow test (~10-30 seconds) and should be run separately
  * or marked as integration test in CI/CD pipelines.
+ *
+ * The seed TRUNCATEs every domain table, so this test must never grant itself permission to run
+ * it. It used to pass `ALLOW_DEMO_SEED: '1'` to the seed process unconditionally, which made a
+ * plain `yarn vitest` (every project) or an IDE test run enough to wipe whatever database the
+ * root .env pointed at -- production, on 2026-11-23. Now the caller's own `ALLOW_DEMO_SEED=1`
+ * is required: without it the suite is skipped, and the seed process inherits the caller's
+ * environment unchanged.
  */
-describe('Seed and Validate Integration', () => {
+const demoSeedAllowed = process.env.ALLOW_DEMO_SEED === '1';
+
+describe.skipIf(!demoSeedAllowed)('Seed and Validate Integration', () => {
   // Increase timeout for this integration test (30 seconds)
   it(
     'seeds demo data and passes validation',
@@ -49,10 +58,8 @@ describe('Seed and Validate Integration', () => {
           ['--import', registerEsmPath, seedScriptPath],
           {
             cwd: workspaceRoot,
-            env: {
-              ...process.env,
-              ALLOW_DEMO_SEED: '1',
-            },
+            // The caller's environment, unchanged: ALLOW_DEMO_SEED must come from the caller.
+            env: process.env,
             stdio: 'inherit', // Show output for debugging
           },
         );

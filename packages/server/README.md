@@ -189,9 +189,9 @@ Full seed-and-validate pipeline test that:
 
 **Prerequisites:**
 
-- PostgreSQL running
+- PostgreSQL running, on a local host (a remote one is refused unless `ALLOW_REMOTE_DB=1`)
 - Migrations applied
-- `ALLOW_DEMO_SEED=1` environment variable
+- `ALLOW_DEMO_SEED=1` environment variable; without it the test is skipped
 
 **Graceful Failure**: If migrations are stale, the test fails with a clear error message directing
 you to run migrations, rather than hanging or producing cryptic errors.
@@ -269,7 +269,8 @@ that can be seeded with deterministic UUIDs for stable demo data across deployme
 ### Quick Start
 
 ```bash
-# Seed demo data (staging/local only - requires explicit flag)
+# Seed demo data (staging/local only - requires explicit flag,
+# see docs/demo-staging-guide.md#safety-guards)
 ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 # Validate seeded data integrity

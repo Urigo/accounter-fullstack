@@ -157,7 +157,8 @@ Integration and demo-seed tests require:
 
 1. **PostgreSQL running**: Start with `docker compose -f docker/docker-compose.dev.yml up -d db`
 2. **Migrations applied**: Run `yarn workspace @accounter-helper/migrations migration:run`
-3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` environment variable
+3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` for the command; without it the demo-seed test is
+   skipped. The demo seed truncates every domain table, so it refuses a non-local database.
 
 If migrations are stale, demo-seed tests fail gracefully with instructions to run migrations.
 

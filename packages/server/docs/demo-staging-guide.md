@@ -42,6 +42,21 @@ Use-Case Registry → Seed Orchestrator → Validation Layer
 - Migrations applied: `yarn workspace @accounter/migrations migration:run`
 - Environment variables configured (see `.env.example`)
 
+### Safety guards
+
+The seed starts with a `TRUNCATE ... CASCADE` of every domain table: run against a database whose
+data matters, it destroys it. Every one of these must now hold, or the seed refuses before touching
+anything:
+
+| Guard                          | Satisfied by                                        |
+| ------------------------------ | --------------------------------------------------- |
+| `ALLOW_DEMO_SEED=1`            | The caller, per command. No test or script sets it. |
+| `NODE_ENV` is not `production` | —                                                   |
+| `POSTGRES_HOST` is local       | Or `ALLOW_REMOTE_DB=1` for the command (staging)    |
+
+The demo-seed E2E test (`yarn test:demo-seed`) is skipped unless `ALLOW_DEMO_SEED=1` is already set,
+so a plain `yarn vitest` run or an IDE test run cannot start the seed.
+
 ### Local Seed & Validate
 
 ```bash
@@ -390,6 +405,19 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 ---
 
+#### Error: "Refusing to run the demo data seed against a non-local database"
+
+**Cause**: `POSTGRES_HOST` is not a local host.
+
+**Solution**: First make sure that host is the database you mean to wipe: `grep '^POSTGRES' .env`.
+If it is a staging database, opt in for the command only:
+
+```bash
+ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+---
+
 #### Error: "Foreign key violation on business_id"
 
 **Cause**: Use-case references a business that doesn't exist in fixtures.
@@ -594,7 +622,7 @@ cat .env | grep POSTGRES
 yarn install \
   && yarn build \
   && yarn workspace @accounter/migrations migration:run \
-  && ALLOW_DEMO_SEED=1 yarn seed:staging-demo \
+  && ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo \
   && yarn validate:demo
 ```
 
@@ -603,7 +631,8 @@ yarn install \
 1. `yarn install` - Install dependencies
 2. `yarn build` - Compile TypeScript
 3. `yarn workspace @accounter/migrations migration:run` - Apply schema migrations
-4. `ALLOW_DEMO_SEED=1 yarn seed:staging-demo` - Seed demo data (with safety flag)
+4. `ALLOW_REMOTE_DB=1 ALLOW_DEMO_SEED=1 yarn seed:staging-demo` - Seed demo data (with safety flags;
+   the staging database is remote, so the local-host guard needs the explicit opt-in)
 5. `yarn validate:demo` - Verify data integrity (fails deploy if validation errors)
 
 ### Environment Variables
@@ -621,7 +650,6 @@ POSTGRES_SSL=1
 
 # Environment
 NODE_ENV=staging
-ALLOW_DEMO_SEED=1
 
 # Auth (set manually in dashboard)
 AUTHORIZED_USERS=demo@accounter.local,admin@accounter.local
